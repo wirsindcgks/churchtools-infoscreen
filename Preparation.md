@@ -4,42 +4,92 @@ Abzuarbeiten vor der ersten Zeile Anwendungscode. Jeder Punkt nennt, **was zu tu
 Ergebnis erkennt** und **welche Frage aus `Plan.md`, Abschnitt G** er beantwortet. Befunde gehören danach in
 `Plan.md` – diese Datei ist die Arbeitsliste, der Plan ist das Gedächtnis.
 
-Die Reihenfolge folgt dem Preis: erst was nichts kostet, dann was Zeit kostet, zuletzt was Daten anfasst.
+Die Reihenfolge folgte bisher dem Preis: erst was nichts kostet, dann was Zeit kostet, zuletzt was Daten
+anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
+
+> **⏱ Die Testinstanz läuft ab**
+>
+> `https://test-cg-ks.church.tools` – leer, Build 32882 wie produktiv, **30 Tage Lizenz, bis etwa 2026-10-22**.
+> Eine Verlängerung ist ungeklärt (**F1**, zuerst zu fragen).
+>
+> **Regel, die dieser Liste vorgeht: Was nur eine Instanz beantworten kann, wird zuerst gemessen.
+> Was lokal geht, geht auch im November noch.** Damit ändert sich die Reihenfolge:
+> **T** → **B** → **C**, **D**, **E** (alle instanzgebunden, alle auf der Testinstanz) → erst danach die
+> Oberfläche gegen den Mock. **F1 geht heute raus**, nicht am Ende.
+>
+> **Und alles, was die Instanz überlebt, wird mitgeschrieben**: Fixtures ins Repo, Typ-Snapshot einchecken.
+> Das ist der Ertrag dieser 30 Tage.
 
 **Grundregel:** Ein `404` der ChurchTools-API ist kein Beweis für eine fehlende Route. Jede Prüfung läuft
 angemeldet und mit ausreichenden Rechten, sonst ist ihr Ergebnis wertlos (Lehre aus G1).
 
 ---
 
+## T. Trägt die Testinstanz? (fünf Minuten, vor allem anderen)
+
+Ohne diesen Befund ist jede Planung auf die Testinstanz hin wertlos – der Lizenzumfang einer Testinstanz
+muss dem der Produktivinstanz nicht gleichen.
+
+- [ ] **T1 · Custom Modules auf der Testinstanz** – **angemeldet**, nicht anonym
+      `GET /api/config` → `feature_custommodule`, `GET /api/custommodules` → **200**.
+      Anonym geprüft ist das wertlos: Die anonyme `config`-Antwort führt das Flag gar nicht, und
+      `/api/custommodules` antwortet anonym mit 404 – gemessen am 2026-09-22, und genau die Falle aus **G1**.
+      - Trägt → alles Instanzgebundene wandert dorthin, die Produktivinstanz bleibt unberührt.
+      - Trägt nicht → zurück zum kontrollierten Vorgehen auf der Produktivinstanz, und F1 wird dringend.
+
+- [ ] **T2 · Zugang einrichten**
+      Eigener Administrator-Benutzer, Zugangsdaten in die lokale `.env` (**nicht ins Repo**).
+      Die Instanz ist leer – ein Kalender, ein paar Termine mit Bild und zwei Gruppen sind die Grundlage
+      für alles Weitere und liefern zugleich die Fixtures.
+
+- [ ] **T3 · Ablaufdatum notieren**
+      In ChurchTools nachsehen, wann die Lizenz tatsächlich endet, und das Datum hier und in `Plan.md`
+      eintragen. Ein geschätztes Datum taugt nicht als Taktgeber.
+
 ## A. Kostenlos – nur hinsehen (ca. 30 Minuten)
 
 Alles an `ctpassstore`, dem fremden Modul, das auf unserer Instanz bereits läuft. Nichts wird gebaut,
 nichts verändert.
 
-- [ ] **A1 · Einbettung ansehen** → beantwortet **G6**
-      `https://<instanz>/ccm/ctpassstore/` öffnen, Entwicklerwerkzeuge daneben.
-      - Steht die ChurchTools-Navigation drumherum?
-      - Hängt das Modul in einem `<iframe>` oder im Dokument der Hostseite?
-        (Elemente-Ansicht: Gibt es ein `iframe` um `#app`?)
-      - Ist `window.settings.base_url` in der Konsole gesetzt?
-      - Woher kommen die Assets – `/ccm/ctpassstore/assets/…`?
-      **Erwartung laut Indiz:** kein iframe. Falls bestätigt: Die Bühne braucht eine eigene Stilgrenze, und
-      der Kiosk-Modus wird `position: fixed; inset: 0`.
+**Stand 2026-09-22: A1, A3 und A4 sind erledigt**, sie haben G6, G7 und G4 beantwortet. Offen ist allein A2 –
+der Antwort-Header. Ein Aufruf, zwei Minuten.
 
-- [ ] **A2 · Content-Security-Policy ablesen** → beantwortet **G15**
+- [x] **A1 · Einbettung ansehen** → **beantwortet G6** *(2026-09-22)*
+      **Kein iframe.** ChurchTools hängt die Extension in den eigenen Dokumentkopf
+      (`<script src="/ccm/ctpassstore/assets/index-BtWd1lCL.js" type="module">` samt zugehörigem CSS),
+      die Navigation steht drumherum, das Modul rendert in deren Inhaltsbereich. Assets kommen aus
+      `/ccm/<key>/assets/…` mit Build-Hash im Namen. `window.settings` liegt als JSON im Dokument
+      (`<script type="application/json" id="ct-settings-json">`) mit `base_url`, `files_url`, `csrfToken`,
+      `modules` und dem vollständigen `auth`-Objekt. Folgen stehen in `Plan.md`, G6.
+
+- [ ] **A2 · Content-Security-Policy ablesen** → beantwortet **G15** – **der letzte offene Punkt im A-Block**
       Im Netzwerk-Reiter die Antwort der Modulseite anklicken, Antwort-Header lesen:
       `Content-Security-Policy`, `X-Frame-Options`.
+      Im Quelltext steht keine CSP als `<meta http-equiv>`, aber ein leeres `nonce=""` an einem Inline-Skript –
+      die Vorrichtung ist da, über den scharfen Zustand sagt sie nichts. Nur der Header entscheidet.
+      Gleich mitnehmen: der **Statuscode** von `/ccm/ctpassstore/pasword` (200 oder 404 mit Rumpf?) – offener Rest von A3.
       Entscheidet, ob `srcdoc`-Rahmen, Inline-Styles und eingebettete Fremdseiten überhaupt erlaubt sind.
 
-- [ ] **A3 · SPA-Fallback prüfen** → beantwortet **G7**
-      `https://<instanz>/ccm/ctpassstore/irgendwas` aufrufen.
-      - Modulseite → echte History-Routen sind möglich.
-      - 404 → **Hash-Route bleibt Vorgabe** (`#/player?screen=foyer-links`).
-      Für uns kritischer als für andere: Der Player lädt sich nachts neu, und zwar auf seiner eigenen URL.
+- [x] **A3 · SPA-Fallback prüfen** → **beantwortet G7** *(2026-09-22)*
+      `/ccm/ctpassstore/pasword` liefert die Modulseite, keinen ChurchTools-404.
+      **Echte History-Routen sind möglich** – der Player darf auf `…/player?screen=foyer-links` neu laden,
+      die Hash-Route ist nicht mehr Vorgabe.
+      Zwei Nachträge: Der Inhaltsbereich blieb **leer**, weil `ct-pass-store` für die unbekannte Route nichts
+      anzeigt – unser Router braucht eine **Catch-all-Route** mit benennbarer Fehlerseite, denn auf einem
+      Foyer-TV ist Leere nicht von einem Absturz zu unterscheiden. Und der **Statuscode** ist ungelesen;
+      für den Kiosk-Browser gleichgültig, für einen Service Worker (E1) nicht. → mit A2 nachholen.
 
-- [ ] **A4 · Rechteobjekt ansehen** → bestätigt **G4**
-      Angemeldet `https://<instanz>/api/permissions/global` aufrufen und unter `data.ctpassstore` nachsehen,
-      wie ein echtes `CustomModulePermission` aussieht.
+- [x] **A4 · Rechteobjekt ansehen** → **bestätigt G4** *(2026-09-22)*
+      `GET /api/permissions/global` → `data.ctpassstore` trägt **alle neun Schlüssel** des Typs aus
+      `Plan.md`, F – der Snapshot aus `ct-pass-store` stimmt Feld für Feld mit unserer Instanz überein.
+      Fehlende Rechte sind `[]` bzw. `false`, keine fehlenden Schlüssel.
+      **Zwei Befunde nebenbei**, beide in `Plan.md` eingearbeitet:
+      - `"ctradius":{"view":false,…}` – alles leer, obwohl der abgefragte Benutzer Administrator ist.
+        **Adminrecht impliziert kein Modulrecht.** Wer in B6 sein Testmodul aufruft und nichts sieht,
+        sucht den Fehler zuerst bei der Rechtevergabe, nicht im Build.
+      - Die Kopie im Seitenquelltext (`ct-settings-json`) ist **beschnitten und anders kodiert**
+        (`{"4":"4"}` statt `[4]`, Leeres fällt weg, `ctradius` fehlt ganz).
+        Rechte werden über die API gelesen, nicht aus der Seite.
 
 ## B. Entwicklungsumgebung (ca. ein halber Abend)
 
@@ -48,7 +98,7 @@ nichts verändert.
       **`.env` gehört nicht ins Repo** – vor dem ersten Commit prüfen, dass `.gitignore` sie erfasst.
 
 - [ ] **B2 · Vite-Proxy statt CORS**
-      `/api` → Instanz im Vite-Dev-Server proxen. Das vermeidet CORS vollständig und löst zugleich den
+      `/api` → **Testinstanz** im Vite-Dev-Server proxen. Das vermeidet CORS vollständig und löst zugleich den
       Safari-Fall. **Nicht** `access_control_allow_origins` der Instanz öffnen.
 
 - [ ] **B3 · „Hallo <Vorname>" aus `/whoami`**
@@ -61,12 +111,19 @@ nichts verändert.
 - [ ] **B5 · Typ-Snapshot holen**
       `ct-types.d.ts` aus der generierten Typdatei **unserer** Instanz übernehmen, nicht von Hand pflegen und
       nicht aus der Demo. Als versionierten Snapshot einchecken.
+      Die Testinstanz taugt dafür (Build 32882, derselbe Stand) – **und sie ist der Grund, es jetzt zu tun**:
+      Die Spezifikation wird pro Benutzer und Rechten gefiltert ausgeliefert (G1), nach Ablauf der Lizenz
+      gibt es sie dort nicht mehr. Mit einem Administrator-Konto holen, einchecken, fertig.
 
 - [ ] **B6 · Testmodul anlegen**
-      Eigener Key `infoscreen-cgks-test`, damit eine spätere produktive Installation unberührt bleibt.
-      Bauen mit `VITE_KEY=infoscreen-cgks-test npm run release`, hochladen über
+      **Auf der Testinstanz** – und dort gleich unter dem echten Key `infoscreen-cgks`, weil damit auch der
+      spätere Pfad `/ccm/infoscreen-cgks/` mitgetestet wird. Der Ausweichkey `infoscreen-cgks-test` bleibt für
+      den Fall, dass doch auf der Produktivinstanz gearbeitet werden muss.
+      Bauen mit `VITE_KEY=infoscreen-cgks npm run release`, hochladen über
       System-Einstellungen → Extensions → Extension hinzufügen. **Kurzbezeichner muss exakt zum Build passen,
       Ordnernamen sind case-sensitiv.**
+      **Direkt danach die Rechte vergeben** – sonst ist das Modul auch für den Administrator unsichtbar
+      und der Fehler wird im Build gesucht (A4).
 
 ## C. Am eigenen Testmodul messen (ca. eine Stunde)
 
@@ -95,23 +152,36 @@ Setzt B6 voraus. Diese vier Punkte entscheiden über den Zuschnitt des Datenmode
 
 - [ ] **D1 · Wiki-Kategorie als Mediathek** → beantwortet **G8**
       Kategorie „Infoscreen-Medien" anlegen, Bild über `POST /files/wiki_<kategorie>/<id>` hochladen,
-      über `GET` wiederfinden.
+      über `GET` wiederfinden. **Die Antwort des `GET` vollständig ansehen:** Trägt die Datei neben `fileUrl`
+      auch eine **`imageUrl`** (`/images/{fileId}/{hash}`)? Das ist die eigentliche Frage, nicht der Upload –
+      siehe `Plan.md`, G14.
 
 - [ ] **D2 · Das Bild tatsächlich anzeigen** → beantwortet **G14**
-      Die zurückgegebene Datei-URL in ein `<img src="…">` setzen und im Browser anzeigen.
-      **Das ist der eigentliche Test**, nicht der Upload. Er beantwortet zugleich:
-      Ist die URL cookie-authentifiziert, tokenbehaftet oder läuft sie ab? Davon hängt ab, ob ein
-      Service Worker oder der Player sie überhaupt laden und zwischenspeichern kann.
+      Beide Adressen in ein `<img src="…">` setzen – angemeldet **und** in einem zweiten, abgemeldeten Fenster.
+      - **`imageUrl` vorhanden und anonym 200** → mit `?w=1920&h=1080&fit=max` gegenprüfen. Damit sind
+        serverseitige Skalierung, Cachefähigkeit und G14 in einem Zug erledigt. Zu notieren bleibt, dass diese
+        Adressen nur ein Hash schützt – das gehört in die Betriebsdoku, nicht in eine Fußnote.
+      - **Nur `fileUrl`** → abgemeldet ein 401 zu erwarten, angemeldet 200 über das Session-Cookie. Für den
+        Player tragfähig, weil er auf derselben Domain läuft – aber ohne Skalierung, und die Frage an den
+        Service Worker (E1) bleibt offen.
 
 - [ ] **D3 · Fallweise Ausweichpfade prüfen**
       Nur falls D1 scheitert: `attachments` (woran bindet `domainIdentifier`?), dann
       `POST /files/{domainType}/{domainIdentifier}/link` für externe Adressen.
+      **Nicht zu prüfen: `appointment_image` als Ablage.** Geprüft und verworfen – es bräuchte Trägertermine,
+      die im Kalender, in der App und auf der Gemeindeseite auftauchen (Begründung in `Plan.md`, G8).
       Ergebnis entscheidet über **Offene Entscheidung 5** – ob „nur externe URLs" ein tragfähiger MVP ist.
 
-- [ ] **D4 · Aufräumen**
-      Testdateien und Test-Wiki-Kategorie wieder entfernen. Uploads erzeugen echte Inhalte.
+- [ ] **D4 · Aufräumen** – **nur auf der Produktivinstanz**
+      Dort entfernen Testdateien und Test-Wiki-Kategorie wieder; Uploads erzeugen echte Inhalte.
+      Auf der Testinstanz darf alles stehen bleiben – das ist ihr Zweck.
 
-## E. Player-Voraussetzungen (nach Phase 2, nicht früher)
+## E. Player-Voraussetzungen – **vorgezogen**
+
+~~(nach Phase 2, nicht früher)~~ Die Verschiebung nach hinten schützte die Produktivinstanz vor einem
+Dauerpasswort auf einer SD-Karte. Auf der leeren Testinstanz gibt es diesen Grund nicht mehr, wohl aber
+eine Frist: **E1 bis E4 sind instanzgebunden und gehören deshalb in die ersten Tage.** Nur E5 hängt an
+Hardware, nicht an der Instanz, und kann warten.
 
 - [ ] **E1 · Service Worker unter `/ccm/`** → beantwortet **G10**
       Registrierung versuchen: Scope, MIME-Typ, schreibt ChurchTools den Pfad um?
@@ -125,9 +195,10 @@ Setzt B6 voraus. Diese vier Punkte entscheiden über den Zuschnitt des Datenmode
 - [ ] **E3 · Rückzugsweg üben** – **vor** dem produktiven Einsatz
       `DELETE /api/persons/{id}/logintoken` einmal ausführen und prüfen, dass der Token wirklich ungültig ist.
       Der Token ist ein Dauerpasswort auf einer SD-Karte; der Weg zurück muss geübt sein, bevor er gebraucht wird.
+      Auf der Testinstanz kostet dieses Üben nichts – genau deshalb wird es dort gemacht und nicht produktiv.
 
 - [ ] **E4 · `login_token` in der URL am `/ccm/`-Pfad** → beantwortet **G9**
-      `…/ccm/infoscreen-cgks-test/?login_token=<TOKEN>&user_id=<ID>&no_url_rewrite=true` in einem
+      `…/ccm/infoscreen-cgks/player?screen=…&login_token=<TOKEN>&user_id=<ID>&no_url_rewrite=true` in einem
       privaten Fenster aufrufen. **Prüfen, dass wirklich der Infoscreen-Benutzer angemeldet ist** – ChurchTools
       antwortet anonym als öffentlicher Benutzer, ein fehlgeschlagener Login fällt sonst nicht auf.
 
@@ -140,7 +211,8 @@ Setzt B6 voraus. Diese vier Punkte entscheiden über den Zuschnitt des Datenmode
 Früh anstoßen, weil die Antwort nicht von uns abhängt.
 
 - [ ] **F1 · Support anschreiben** – `support@churchtools.de`
-      - Instanz für die Entwicklung einer Extension (wir sind Kunde, 30 Tage reichen nicht)
+      - **Zuerst: Lässt sich die Testinstanz über die 30 Tage hinaus verlängern?** Wir sind Kunde und
+        entwickeln eine Extension; 30 Tage reichen dafür nicht. Diese Antwort taktet die gesamte Phase 0.
       - Ist ein Rate-Limit dokumentiert? (**G16**)
       - Ist ein Speicherziel für Dateien aus Custom Modules geplant? (**G8** – das kann nur ChurchTools beantworten)
 
@@ -178,7 +250,8 @@ bevor das Screen-Schema steht.
 
 - Keine Zugangsdaten und keine Instanz-URL ins Repo – `.env` bleibt ignoriert, der Release-Build setzt
   `VITE_BASE_URL`, `VITE_USERNAME` und `VITE_PASSWORD` ausdrücklich leer.
-- Keine Tests gegen die Produktivinstanz, die Daten verändern. Das Testmodul hat einen eigenen Key und
-  schreibt nur in eigene Kategorien.
-- Keine Testinstanz unter erfundenem Gemeindenamen anlegen.
+- Keine Tests gegen die Produktivinstanz, die Daten verändern – dafür gibt es jetzt die Testinstanz.
+  Muss doch produktiv gearbeitet werden, hat das Testmodul einen eigenen Key und schreibt nur in eigene Kategorien.
+- Keine Testinstanz unter erfundenem Gemeindenamen anlegen – die vorhandene läuft auf den echten Namen.
+- Die Frist nicht verstreichen lassen, ohne die Fixtures und den Typ-Snapshot im Repo zu haben.
 - An bestehenden Rollen der Rechteverwaltung nichts ändern – eigene Testgruppe verwenden.

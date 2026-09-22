@@ -4,7 +4,8 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 
 ## Rahmendaten
 
-- **Stand**: 2026-09-22, Phase 0 läuft. Die Kernfrage ist beantwortet: Custom Modules sind auf unserer Instanz verfügbar, die Architektur dieses Plans trägt. Hinzu kommt die Lektüre des Quellcodes von `ct-pass-store` – des Moduls, das auf unserer Instanz bereits läuft –, die Struktur und Grenzen des Speichers, das Rechtemodell und den Installationsweg belegt. Code existiert noch nicht. Einzelheiten im Phase-0-Protokoll (Abschnitt G).
+- **Stand**: 2026-09-22, Phase 0 läuft. Die Kernfrage ist beantwortet: Custom Modules sind auf unserer Instanz verfügbar, die Architektur dieses Plans trägt. Hinzu kommt die Lektüre des Quellcodes von `ct-pass-store` – des Moduls, das auf unserer Instanz bereits läuft –, die Struktur und Grenzen des Speichers, das Rechtemodell und den Installationsweg belegt. Am selben Tag kamen drei Befunde dazu: Der Quelltext von `/ccm/ctpassstore/` beantwortet die Einbettungsfrage (G6, kein iframe) und bestätigt das Rechteobjekt (G4), ein erfundener Unterpfad den SPA-Fallback (G7, echte Routen tragen), und im Nachbarprojekt `churchtools-plugin` sind die Adressen gemessen, unter denen ChurchTools Bilder ausliefert (G14). Code existiert noch nicht. Einzelheiten im Phase-0-Protokoll (Abschnitt G).
+- **Testinstanz**: `https://test-cg-ks.church.tools` (leer, Build 32882 wie produktiv) – **30 Tage Lizenz, bis etwa 2026-10-22**, Verlängerung ungeklärt. Sie taktet Phase 0: zuerst messen, was nur eine Instanz beantwortet. Siehe „Entwicklungs- und Testumgebung".
 - **Autor / Repo**: `wirsindcgks <media@cg-ks.de>`, geplant unter `github.com/wirsindcgks/churchtools-infoscreen`
 - **Lizenz**: GPL-2.0-or-later (wie `churchtools-plugin`)
 - **Arbeitsname Produkt**: ChurchTools Infoscreen Designer
@@ -48,7 +49,7 @@ ChurchTools-Instanz
 
 **Die Bühne ist 1920×1080, der Fernseher ist es nicht immer.** `transform: scale()` setzt ein passendes Seitenverhältnis voraus. Im Foyer stehen aber 4K-Geräte, hochkant gedrehte Bildschirme, gelegentlich ein Beamer mit krummer Auflösung – und fast alle haben Overscan. Die Regel deshalb ausformuliert: Die Bühne hat feste Pixelmaße, alles darauf wird in Pixeln positioniert, und ein einziger Skalierungsfaktor (`--stage-scale`) bildet sie auf den Viewport ab. Passt das Seitenverhältnis nicht, wird **eingepasst statt beschnitten** (Letterbox); je Screen gibt es zusätzlich eine Overscan-Korrektur in Prozent. Das kostet jetzt einen Absatz und später keine zwei Wochen.
 
-**Die Bühne braucht eine Mauer nach außen.** Nach G6 läuft eine Extension vermutlich im Dokument der Hostseite, nicht in einem iframe – dann gelten ChurchTools' eigene Stile auch für unsere Blöcke. Eine Bühne, deren Aussehen von einem Update der Hostseite abhängt, ist als Gestaltungswerkzeug wertlos. Die Stage bekommt deshalb eine eigene Stilgrenze: alle Blockstile als Custom Properties auf einem Wurzelelement, `all: initial` an der Bühnenkante, und keine Abhängigkeit von geerbten Schriftgrößen oder Farben. Das ist billig, solange es von Anfang an steht.
+**Die Bühne braucht eine Mauer nach außen – und zwar in beide Richtungen.** Nach G6 läuft eine Extension im Dokument der Hostseite, nicht in einem iframe: Das ist jetzt belegt, nicht vermutet. ChurchTools' Stile gelten also für unsere Blöcke, und unsere Stile gelten für ChurchTools – die zweite Richtung ist die unangenehmere, weil sie fremde Oberflächen beschädigt, die niemand mit uns in Verbindung bringt. Alle eigenen Regeln gehören deshalb unter eine Wurzelklasse, keine nackten Elementselektoren. Zur Gegenrichtung hilft ein Detail aus dem Quelltext: Die Hostseite deklariert `@layer theme, base, oldcss, components, utilities` – ungeschichtetes CSS schlägt geschichtetes, unsere Bühne gewinnt also ohne `!important`. Eine Bühne, deren Aussehen von einem Update der Hostseite abhängt, ist als Gestaltungswerkzeug wertlos. Die Stage bekommt deshalb eine eigene Stilgrenze: alle Blockstile als Custom Properties auf einem Wurzelelement, `all: initial` an der Bühnenkante, und keine Abhängigkeit von geerbten Schriftgrößen oder Farben. Das ist billig, solange es von Anfang an steht.
 
 **Der Player verträgt kein Code-Splitting.** Wird eine neue Version der Extension hochgeladen, ändern sich die Asset-Namen im `dist/`. Ein Kiosk-Tab, der seit Wochen offen ist und dann einen nachzuladenden Chunk anfordert, bekommt einen 404 – weißer Bildschirm im Foyer, ausgelöst durch ein Update, das jemand vormittags gemacht hat. Der Player wird deshalb als **ein Bündel** gebaut, ohne verzögert geladene Routen, und fängt zusätzlich Ladefehler von Modulen ab, um sich neu zu laden statt stehenzubleiben. Für den Designer gilt das nicht; er wird von einem Menschen benutzt, der ein Neuladen versteht.
 
@@ -104,8 +105,9 @@ Drei Wege, für drei Situationen:
 2. **Entwicklung** – `POST /login` mit Benutzername/Passwort aus der `.env`, nur unter `import.meta.env.MODE === 'development'`.
 3. **Der Raspberry Pi** – Login-Token des dedizierten Infoscreen-Benutzers, als Query-Parameter an die Player-URL:
    ```
-   https://<instanz>.church.tools/ccm/infoscreen-cgks/?screen=3&login_token=<TOKEN>&user_id=<ID>&no_url_rewrite=true
+   https://<instanz>.church.tools/ccm/infoscreen-cgks/player?screen=foyer-links&login_token=<TOKEN>&user_id=<ID>&no_url_rewrite=true
    ```
+   Der Pfad `/player` statt eines Parameters am Wurzelpfad ist seit G7 gedeckt: ChurchTools liefert für unbekannte Unterpfade die Modulseite aus, ein nächtliches Neuladen auf dieser Adresse fällt also nicht ins Leere. Der Screen wird über seinen **Slug** benannt, nicht über die `id` – siehe Abschnitt E.
    Der Token wird über `GET /api/persons/<id>/logintoken` geholt (legt ihn bei Bedarf an; an 2FA-Konten wird keiner ausgegeben). **Adminrecht braucht nur, wer den Token einer fremden Person zieht** – `ct-pass-store` ruft denselben Endpunkt aus der Extension heraus für die eigene Benutzer-ID auf, ohne besondere Rechte. Für den URL-Generator im Designer heißt das: Wer sich als Infoscreen-Benutzer anmeldet, kann sich seinen Token selbst holen; für den bequemen Weg über ein Adminkonto bleibt es beim Adminrecht. Alternativ liefert `POST /api/login/token` mit Benutzername und Passwort `{personId, token}`, ohne eine Sitzung zu eröffnen. Gegen die API lässt sich ein solcher Token auch als Kopfzeile einsetzen – `Authorization: Login <token>`, so macht es das PHP-Backend von `ct-pass-store`. Für den Pi hilft das nicht (er ruft eine URL auf und kann keine Kopfzeilen setzen), wohl aber für Werkzeuge und Testskripte, die ohne Sitzung arbeiten sollen. Der `churchtools-client` nutzt den Token außerdem, um nach Sitzungsablauf selbsttätig neu anzumelden – für ein Gerät, das monatelang durchläuft, ist genau das der entscheidende Punkt.
 
    **Der Token ist ein Dauerpasswort.** Er steht in der URL, im Browserverlauf des Pi und in der `fullpageos.txt` auf der SD-Karte. Konsequenz für den Plan: eigener Benutzer mit minimalen Rechten, dokumentierter Weg zum Zurückziehen (`DELETE /api/persons/{id}/logintoken`), und im Designer ein Dialog, der die fertige URL erzeugt und dabei erklärt, was sie enthält.
@@ -190,7 +192,7 @@ In der Entwicklung legt `getOrCreateModule()` das Modul selbst an, im Produktivb
   };
   ```
 
-  Die Datenrechte sind **Listen von Kategorie-IDs**, `view` und `create custom category` sind modulweite Schalter. Genau der Zuschnitt, den dieses Modul braucht:
+  **Gegen die eigene Instanz geprüft** (2026-09-22, G4): Die Antwort trägt alle neun Schlüssel, fehlende Rechte als `[]` bzw. `false`. Die Datenrechte sind **Listen von Kategorie-IDs**, `view` und `create custom category` sind modulweite Schalter. Genau der Zuschnitt, den dieses Modul braucht:
 
   | Rolle | Rechte am Custom Module |
   | --- | --- |
@@ -201,6 +203,7 @@ In der Entwicklung legt `getOrCreateModule()` das Modul selbst an, im Produktivb
 
 - **Der Player braucht mehr als Modulrechte.** Die Tabelle oben regelt nur den Zugriff auf unseren eigenen Speicher. Zum Rendern braucht derselbe Benutzer Leserechte auf **Kalender, Beiträge, Gruppen** und – falls der Wiki-Weg für Medien gewinnt – auf die **Wiki-Kategorie samt Dateien**. Das ist die tatsächliche Reichweite des Tokens auf der SD-Karte, und sie gehört so in die Betriebsdoku. Der Grundsatz „minimale Rechte" bemisst sich an dieser Liste, nicht an der kurzen darüber.
 - **Kategorien haben eine `securityLevelId`.** `ct-pass-store` setzt sie auf `1`. Was die Stufen im Zusammenspiel mit den Kategorie-Rechten bewirken, ist ungeklärt (G13) – für `status`, die einzige Kategorie mit Schreibrecht für ein unbeaufsichtigtes Gerät, lohnt der Blick.
+- **Ein frisch installiertes Modul ist für alle unsichtbar – auch für Administratoren.** Belegt am zweiten Modul der Instanz: `ctradius` steht mit `view: false` und durchweg leeren Listen im Rechteobjekt eines Admin-Kontos (G4). Die Rechtevergabe ist damit **der erste Schritt nach dem Hochladen**, nicht der letzte vor der Übergabe; in der Einrichtungsdoku steht sie an erster Stelle, und wer in Phase 0 sein Testmodul aufruft und nichts sieht, sucht den Fehler zuerst hier.
 - **Die Rechte heißen in der Oberfläche anders als in der API.** In der ChurchTools-Rechteverwaltung stehen sie als „Extension ansehen", „Custom Category ansehen", „Custom Data ansehen/anlegen/bearbeiten/löschen", jeweils mit Auswahl der Kategorien. Die `README` von `ct-pass-store` führt die Zuordnung je Rolle vor – eine brauchbare Vorlage für unsere eigene Einrichtungsdoku in Phase 5.
 - **Der Heartbeat braucht ein Schreibrecht.** Die Statusanzeige „zuletzt gesehen" aus Phase 5 setzt voraus, dass der Player schreibt – und damit, dass der Token auf der SD-Karte schreiben darf. Deshalb liegt `status` in einer eigenen Kategorie, auf die sich dieses Recht begrenzen lässt. Wer das nicht will, überwacht die Screens von außen (ein Lebenszeichen des Pi an Home Assistant) und lässt die Kategorie weg.
 - **Das Fehlerprotokoll braucht eine Mengenregel.** `status` wird von einem Gerät beschrieben, das monatelang unbeaufsichtigt läuft, und ein Datenwert fasst 10.000 Zeichen. Festlegung: **genau ein Wert je Screen, überschreibend**, mit den letzten Ereignissen als Ringpuffer darin – kein Anhängen, kein Wert je Vorfall. Sonst erzeugt ein Screen in einer schlechten Nacht hundert Werte, die niemand wieder wegräumt.
@@ -212,7 +215,7 @@ In der Entwicklung legt `getOrCreateModule()` das Modul selbst an, im Produktivb
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G5 sind beantwortet, G6–G17 offen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
+**Eine durchgehende Nummerierung.** G1–G7 sind beantwortet, G14 zur Hälfte, der Rest offen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
 #### Beantwortet
 
@@ -226,19 +229,68 @@ Die frühere Annahme, es brauche eine Version über 3.136.2, ist damit **widerle
 
 **G3 – Ein Datenwert hat keinen Schlüssel und keine Version.** *(2026-09-22, Typ-Snapshot und zwei Implementierungen in `ct-pass-store`)* `CustomModuleDataValue` kennt nur `id`, `dataCategoryId`, `domainId?`, `domainType?`, `value?`. Kein Name, kein `updatedAt`, kein ETag. Beide Implementierungen holen ganze Kategorien und filtern im Client. **Damit ist auch die frühere Frage nach einer Konfliktprüfung beim `PUT` beantwortet – es gibt keine.** Folgen: Slug statt `id` als Adresse, Revision im JSON, Index zuletzt schreiben. Siehe Abschnitt E.
 
-**G4 – Rechtemodell und der Endpunkt dazu.** *(2026-09-22, `ct-pass-store`)* `GET /permissions/global` → `data[<extensionkey>]`; Datenrechte als Kategorie-ID-Listen, `view` und `create custom category` als Schalter. Vollständiger Typ und Rollenzuschnitt in Abschnitt F.
+**G4 – Rechtemodell und der Endpunkt dazu.** *(2026-09-22, `ct-pass-store` – und an der eigenen Instanz gemessen)* `GET /permissions/global` → `data[<extensionkey>]`; Datenrechte als Kategorie-ID-Listen, `view` und `create custom category` als Schalter. Vollständiger Typ und Rollenzuschnitt in Abschnitt F.
+
+**Am 2026-09-22 an der echten Instanz gegengelesen.** `GET /api/permissions/global` liefert unter `data.ctpassstore` **alle neun Schlüssel** des Typs oben, in genau dieser Form – der Typ-Snapshot aus `ct-pass-store` stimmt Feld für Feld mit unserer Instanz überein:
+
+```json
+"ctpassstore":{"view":true,"view custom category":[4,10],"create custom category":false,
+"edit custom category":[],"delete custom category":[],"view custom data":[4,10],
+"create custom data":[],"edit custom data":[],"delete custom data":[]}
+```
+
+Drei Dinge stehen damit fest, die der Plan bisher nur annahm:
+
+1. **Fehlende Rechte sind leere Listen, nicht fehlende Schlüssel.** Ein Client darf `perm['edit custom data']` ohne Fallback lesen; `[]` und `false` sind die Normalfälle.
+2. **Adminrecht impliziert kein Modulrecht.** Dasselbe Objekt führt das zweite Modul der Instanz mit `"ctradius":{"view":false,…}` – alles leer, obwohl der abgefragte Benutzer Administrator ist. Folge für den Betrieb: **Nach dem Hochladen unserer Extension sieht sie zunächst niemand**, auch der Administrator nicht, bis die Rechte vergeben sind. Das gehört in die Einrichtungsdoku – und in Phase 0 an B6, sonst sucht man den Fehler im Build.
+3. **Der Player-Zuschnitt aus Abschnitt F ist ausdrückbar.** `view` plus Lesekategorien plus `create/edit custom data` allein auf `status` sind genau die Felder, die es gibt.
+
+**Die Kopie im Seitenquelltext taugt dafür nicht.** Dasselbe Recht steht im `ct-settings-json` als `{"view":true,"view custom category":{"4":"4","10":"10"},"view custom data":{"4":"4","10":"10"}}` – alles Leere ist weggefallen, die Listen sind zu Objekten geworden, und `ctradius` fehlt ganz. Zwei Formen für dieselbe Tatsache: **Rechte werden über die API gelesen, nicht aus der Seite**, sonst hängt die Oberfläche an einem Format, das niemand zusagt.
 
 **G5 – Paketierung, Installation und Kategorieanlage.** *(2026-09-22, `ct-pass-store`)* `npm run deploy` baut `dist/` und packt es mit `zip -r … dist/ -x "*.map"` nach `releases/<name>-v<version>-<commit>.zip`; im ZIP liegt der Ordner `dist/` auf oberster Ebene. In ChurchTools: System-Einstellungen → Extensions → Extension hinzufügen, dort **Name, Kurzbezeichner, Beschreibung und Sortierindex** setzen und das ZIP ablegen. Der Kurzbezeichner ist der Extension-Key aus dem Build. Die **Kategorien legt die Extension anschließend selbst an**, über einen Setup-Assistenten beim ersten Aufruf.
 
-**Nebenbefunde der Instanz** (in A und B eingearbeitet): CORS ist unkonfiguriert und `access_control_allow_credentials` steht auf `false`; die Upload-Grenze liegt bei 128 MB je Datei; Zeitzone `Europe/Berlin`; gehostet bei ChurchTools, also kein Self-Hosting; Wiki, Kalender, Gruppen, Beiträge, Ressourcen und Dienste sind aktiv – sämtliche Datenquellen der Blocktabelle stehen zur Verfügung.
+**G6 – Kein iframe: Die Extension läuft im Dokument der Hostseite.** *(2026-09-22, Quelltext von `/ccm/ctpassstore/`)* ChurchTools liefert seine eigene Seite aus – `<base href="https://cg-ks.church.tools/">`, die vollständige Hauptnavigation, der eigene Vue-Build unter `system/dist/assets/…` – und hängt die Extension in **denselben Dokumentkopf**:
+
+```html
+<script src="/ccm/ctpassstore/assets/index-BtWd1lCL.js" type="module"></script>
+<link rel="stylesheet" href="/ccm/ctpassstore/assets/index-DNQr0TSY.css">
+```
+
+Kein `iframe`, kein eigenes Dokument, kein eigener Ursprung. Das Modul erscheint als eigener Punkt der Hauptnavigation („Sekundär-Passwort", neben Beiträge, Personen, Gruppen …) und rendert unterhalb der Navigationsleiste in deren Inhaltsbereich. Der Menüname kommt aus der Installation, nicht aus dem Modul: Die Oberfläche von `ctpassstore` ist englisch, der Eintrag deutsch.
+
+Vier Folgen, bisher vorgesehen, jetzt belegt:
+
+1. **Die Stile gehen in beide Richtungen** – siehe Abschnitt C. Die Hostseite deklariert `@layer theme, base, oldcss, components, utilities`; ungeschichtetes CSS schlägt geschichtetes, die Bühne gewinnt also ohne `!important`. ChurchTools legt zudem ein globales Vuetify-Theme als `:root`-Variablensatz an – Variablennamen, die wir nicht benutzen dürfen.
+2. **Der Player bekommt die Fläche nicht geschenkt.** Er rendert im Inhaltsbereich unterhalb der Navigation; der Kiosk-Modus wird damit Fallback (a), `position: fixed; inset: 0` über den gesamten Viewport.
+3. **Die Asset-Namen tragen einen Build-Hash** (`index-BtWd1lCL.js`). Risiko 9 ist damit keine Theorie: Nach einem Upload zeigt ein wochenlang offener Kiosk-Tab auf Dateien, die es nicht mehr gibt. Ein Bündel ohne Code-Splitting bleibt Vorgabe.
+4. **Die Einstellungen liegen im Dokument**, als JSON in `<script type="application/json" id="ct-settings-json">`: `base_url`, `files_url`, `csrfToken`, `version`/`jsversion`, die `modules`-Liste, das vollständige `auth`-Objekt (siehe G4) und der angemeldete Benutzer. Der Player kann das lesen, statt zu fragen – aber nur, solange ChurchTools die Seite baut, und **nicht für die Rechte**: Die Kopie im Dokument ist beschnitten und anders kodiert als die API-Antwort (siehe G4). Die Anmeldung des Pi (G9) ersetzt sie ohnehin nicht.
+
+**G7 – Unbekannte Unterpfade fallen auf die Modulseite zurück.** *(2026-09-22, `/ccm/ctpassstore/pasword` – ein Pfad, den das Modul nicht kennt)* Die Seite kommt: ChurchTools-Navigation, Modul-Seitenleiste, leerer Inhaltsbereich. ChurchTools liefert für den unbekannten Pfad also die `index.html` der Extension aus, statt einen eigenen 404 zu zeigen. **Echte History-Routen sind damit möglich** – der Player darf auf `…/ccm/infoscreen-cgks/player?screen=foyer-links` neu laden.
+
+Zwei Dinge gehören zur Antwort dazu. Erstens ist der leere Inhaltsbereich die Sache des Moduls, nicht des Servers: `ct-pass-store` hat für die unbekannte Route keinen Treffer und zeigt nichts. Unser Router braucht deshalb eine **Catch-all-Route**, die statt Leere eine benennbare Fehlerseite zeigt – auf einem Foyer-TV ist ein leerer Inhaltsbereich nicht von einem Absturz zu unterscheiden. Zweitens ist der **HTTP-Statuscode nicht abgelesen**; möglich bleibt ein 404 mit ausgelieferter Seite im Rumpf. Für den Kiosk-Browser ändert das nichts, für einen Service Worker (G10) schon – beim nächsten Aufruf im Netzwerk-Reiter mitnehmen.
+
+**Nebenbefunde der Instanz** (in A und B eingearbeitet): CORS ist unkonfiguriert und `access_control_allow_credentials` steht auf `false`; die Upload-Grenze liegt bei 128 MB je Datei; Zeitzone `Europe/Berlin`; gehostet bei ChurchTools, also kein Self-Hosting; Wiki, Kalender, Gruppen, Beiträge, Ressourcen und Dienste sind aktiv – sämtliche Datenquellen der Blocktabelle stehen zur Verfügung. **Nachtrag vom Quelltext:** Die `modules`-Liste der Instanz nennt **zwei** fremde Module, `ctpassstore` und `ctradius`. Custom Modules sind hier also kein Einzelfall, und mit `ctradius` steht eine zweite Lesequelle bereit, falls eine Frage an `ct-pass-store` unbeantwortet bleibt.
+
+#### Teilweise beantwortet
+
+**G14 – Datei-Adressen sind cookie-authentifiziert, und daneben steht ein Bilddienst.** *(2026-09-15, gemessen im Nachbarprojekt `churchtools-plugin` gegen dieselbe Instanz; dort `plan.md`, Abschnitt „Terminbilder über den Bilddienst")* Ein Bild am Termin trägt zwei Adressen:
+
+| Feld | Form | Ohne Anmeldung |
+| --- | --- | --- |
+| `fileUrl` | `?q=public/filedownload&id=…&filename=<hash>` | **401** „Die Berechtigung appointment_image ist notwendig" |
+| `imageUrl` | `/images/{fileId}/{hash}` | **200** |
+
+Mit `Authorization: Login` antwortet der Download 302 auf dieselbe Adresse plus Session-Cookie, mit dem Cookie dann 200. **Der Dateidownload ist also cookie-authentifiziert** – für den Player die günstige Antwort: Er läuft unter `/ccm/` auf derselben Domain, das Cookie geht bei einem `<img src="/…">` von selbst mit. Was das WordPress-Plugin ausschloss – es lädt von einem fremden Server –, trifft ihn nicht.
+
+Hinter `imageUrl` steht **League Glide**, ein Bilddienst mit `w`, `h` und `fit`: `?w=1600` skaliert auf die Breite, `?w=…&h=…` schneidet mittig auf das Format, `?w=…&h=…&fit=max` behält das Seitenverhältnis und vergrößert nicht (`w=5000&h=5000` lieferte das Original mit 1620×1080). Der in ChurchTools gespeicherte Ausschnitt gilt weiter; `crop=original` würde ihn umgehen. Dass diese Adressform nicht auf Termine beschränkt ist, zeigt der Quelltext aus G6: Auch das Profilbild des angemeldeten Benutzers steht dort als `/images/{id}/{hash}`.
+
+**Offen bleibt der Teil, der über die Mediathek entscheidet:** ob eine **selbst hochgeladene** Datei ebenfalls eine `imageUrl` am Bilddienst bekommt. Das ist die eigentliche Frage an D1/D2 – nicht der Upload. Falls ja, ist mitzuschreiben: Diese Adressen sind **ohne Anmeldung** abrufbar, geschützt nur durch den Hash im Pfad. Für Foyer-Bilder meist unerheblich, aber eine Entscheidung, keine Nebensache.
 
 #### Offen
 
-**G6 – Wird die Extension in die ChurchTools-Oberfläche eingebettet, und wie?** Ein starkes Indiz spricht **gegen** einen iframe: `ct-pass-store` lädt seinen CSS-Reset ausdrücklich „only in development mode … to simulate CT environment". Einen Reset, den man in der Entwicklung nachbaut, weil die Hostseite ihn im Produktivbetrieb liefert, gibt es nur im gemeinsamen Dokument. Falls das stimmt, folgt daraus zweierlei: ChurchTools-CSS kann in unsere Bühne hineinlecken – sie braucht eine eigene Isolation –, und der Kiosk-Modus wird Fallback (a), `position: fixed; inset: 0` über den gesamten Viewport. Weitere Fallbacks: (b) gezieltes Ausblenden der Hostseiten-Chrome per CSS, (c) Player als eigene, minimale HTML-Datei im Paket. **Fünf Minuten an `/ccm/ctpassstore/` klären das.**
-
-**G7 – Fallen unbekannte Unterpfade auf `index.html` zurück?** Neues Indiz: `ct-pass-store` benutzt `createWebHistory()` mit echten Pfaden (`/ccm/ctpassstore/password|setup|settings`) und läuft damit produktiv. Das beweist den serverseitigen Fallback **nicht** – clientseitige Navigation nach dem Laden der Startseite braucht ihn nie. Für uns wiegt die Frage schwerer als für die: Der Player lädt sich nachts neu, und ein Neuladen auf einem Unterpfad ist genau der Fall, der den Fallback braucht. Bis zur Klärung bleibt die **Hash-Route Vorgabe** (`#/player?screen=foyer-links`).
-
 **G8 – Wohin gehen hochgeladene Bilder und Videos?** Unverändert der teuerste offene Punkt. Der Typ-Snapshot von `ct-pass-store` (2025-09-02) führt dieselbe `domainType`-Liste wie unsere Spezifikation – **kein Ziel für Custom Modules**, das Problem ist also nicht nur eine Frage unserer Version. Siehe „Medien und eigener Web-Code".
+
+**Ausgeschieden ist seit dem 2026-09-22 `appointment_image` als Ablage.** Naheliegend ist der Gedanke, weil der Typ nachweislich Bilder annimmt und ausliefert – er scheitert aber am `domainIdentifier`: Der ist die **Basis** eines Termins, ein eigener Speicher hieße also Trägertermine. Die stünden dann im Kalender, in der App, im nativen Infoscreen und in der WordPress-Synchronisation der Gemeindeseite; wer einen davon löscht, nimmt die Bilder still mit; und Bilder hochladen setzte Schreibrechte auf einem Kalender voraus – für jemanden, der nur Screens gestalten soll. Als **Datenquelle** für vorhandene Terminbilder bleibt der Typ richtig; als Mediathek nicht.
 
 **G9 – Wie verhält sich `login_token` in der URL bei einem Custom Module?** Beim nativen Infoscreen erprobt, für `/ccm/`-Pfade ungeprüft. `ct-pass-store` hilft hier nicht: Es benutzt Tokens gegenüber seinem eigenen Backend, nicht zur Anmeldung einer Seite.
 
@@ -250,9 +302,7 @@ Die frühere Annahme, es brauche eine Version über 3.136.2, ist damit **widerle
 
 **G13 – Was bewirkt `securityLevelId` an einer Kategorie?** Besonders für `status`, die einzige Kategorie, auf die ein unbeaufsichtigtes Gerät schreibt.
 
-**G14 – Wie kommen Bilder in den Player?** `<img src="/api/files/…">` funktioniert nur, wenn die Datei-URL dieselbe Anmeldung benutzt wie der API-Zugriff. Ob ChurchTools-Datei-URLs cookie-authentifiziert, tokenbehaftet oder ablaufend sind, ist ungeklärt – und dieselbe Antwort entscheidet, ob ein Service Worker sie überhaupt zwischenspeichern kann. Gehört an denselben Versuch wie G8.
-
-**G15 – Liefert ChurchTools auf `/ccm/`-Seiten eine Content-Security-Policy?** Sie könnte `srcdoc`-Rahmen, Inline-Styles des Vite-Builds oder das Einbetten fremder Seiten einschränken. Zugleich zu entscheiden: Geben wir dem Sandbox-Rahmen selbst eine CSP per `<meta http-equiv>` mit? Die Sandbox schützt unsere Daten, sie unterbindet keine ausgehenden Verbindungen des Fremdcodes. Am selben Aufruf abzulesen wie G6.
+**G15 – Liefert ChurchTools auf `/ccm/`-Seiten eine Content-Security-Policy?** Sie könnte `srcdoc`-Rahmen, Inline-Styles des Vite-Builds oder das Einbetten fremder Seiten einschränken. Zugleich zu entscheiden: Geben wir dem Sandbox-Rahmen selbst eine CSP per `<meta http-equiv>` mit? Die Sandbox schützt unsere Daten, sie unterbindet keine ausgehenden Verbindungen des Fremdcodes. Am selben Aufruf abzulesen wie G6. **Erstes Indiz vom 2026-09-22:** Im Quelltext steht **keine** CSP als `<meta http-equiv>`, wohl aber ein leeres `nonce=""` an einem Inline-Skript – die Vorrichtung ist da, scharf geschaltet ist sie offenbar nicht. Beweisen kann das nur der Antwort-Header; der Quelltext allein zeigt ihn nicht.
 
 **G16 – Kennt die Instanz ein Rate-Limit?** Der Player wertet `429` und `Retry-After` ohnehin aus, aber die Zahl dahinter ist unbekannt – sie bemisst, wie oft mehrere Pis plus Designer gleichzeitig fragen dürfen.
 
@@ -260,22 +310,26 @@ Die frühere Annahme, es brauche eine Version über 3.136.2, ist damit **widerle
 
 ## Entwicklungs- und Testumgebung
 
-**Eine offizielle Sandbox gibt es bei ChurchTools nicht.** Im Forum heißt es dazu unmissverständlich „Ein solches Testsystem gibt es derzeit nicht"; eine Datenbank-Kopie der Produktivinstanz ist kostenpflichtig und brächte echte Personendaten in eine Entwicklungsumgebung – genau das, was dort nicht hingehört. Wir sind bei ChurchTools gehostet (`hostingservice: "1"`), Self-Hosting steht also ohnehin nicht zur Wahl.
+**Seit dem 2026-09-22 gibt es eine eigene Testinstanz: `https://test-cg-ks.church.tools`** („Testsystem - CG-KS"). Anonym gegengeprüft: **Version 3.136.2, Build 32882** – Ziffer für Ziffer derselbe Stand wie die Produktivinstanz, dazu dieselbe Upload-Grenze (128 MB) und dieselbe Zeitzone. Was dort gemessen wird, gilt hier. Sie ist **leer** angelegt und enthält keine echten Personendaten; Kalender, Termine, Gruppen und Bilder müssen von Hand entstehen.
 
-Daraus folgt eine Staffelung in drei Stufen statt einer einzigen Testumgebung:
+**Und sie hat eine Frist: 30 Tage Lizenz**, also bis etwa **2026-10-22**. Ob sich das verlängern lässt, ist ungeklärt – und damit die dringlichste Frage an den Support, dringlicher als G8 und G16, weil ihre Antwort die Reihenfolge der Arbeit bestimmt.
 
-**Stufe 1 – lokal, ohne ChurchTools.** Designer-Oberfläche, Blockrendering, Bühnenskalierung, Slide-Rotation, Offline-Verhalten, Undo/Redo: Für den größten Teil der Arbeit braucht es keine Instanz. Ein Mock aus der OpenAPI-Spezifikation der eigenen Instanz plus aufgezeichnete, anonymisierte Antworten als Fixtures. Das läuft offline, ist reproduzierbar, schont die Instanz und ist zugleich die Grundlage der automatisierten Tests. Diese Stufe wird gebaut, unabhängig davon, welche Instanz sonst zur Verfügung steht.
+**Die Frist ist der Taktgeber, nicht die Phasenfolge.** Daraus folgt eine Regel, die dem Plan vorgeht: **Was nur eine Instanz beantworten kann, wird zuerst gemessen; was lokal geht, geht auch im November noch.** In dieser Reihenfolge:
 
-**Stufe 2 – eine eigene Instanz für die Integrationsfragen.** Nur eine echte Instanz beantwortet die offenen Punkte 1, 2, 4 und 5 aus G. Zwei Wege: die kostenlose 30-Tage-Testinstanz, oder – sauberer, weil wir bereits Kunde sind und länger als 30 Tage brauchen – eine Anfrage an `support@churchtools.de` nach einer Instanz für die Entwicklung einer Extension. ChurchTools betreibt den Extension Store selbst und richtet für Schulungen nachweislich Demo-Installationen ein. Eine Testinstanz unter erfundenem Gemeindenamen anzulegen verbietet sich. Zu beachten: Eine frische Instanz ist **leer**; Kalender, Termine und Gruppen müssen angelegt werden – was etwa einen Abend kostet und dabei die Fixtures für Stufe 1 erzeugt.
+1. **Zuerst prüfen, ob die Testinstanz überhaupt trägt** – angemeldet, nicht anonym: `feature_custommodule` in `GET /api/config`, `GET /api/custommodules` mit **200**. Der Lizenzumfang einer Testinstanz muss dem der Produktivinstanz nicht gleichen, die anonyme Antwort verrät das Flag nicht, und ein anonymer 404 beweist nichts (G1). Ohne diesen Befund ist der Rest dieses Abschnitts hinfällig, und es bleibt beim kontrollierten Vorgehen auf der Produktivinstanz.
+2. **Dann alles Instanzgebundene aus Abschnitt G**: Upload-Weg und Datei-Adressen (G8, G14), Login-Token unter `/ccm/` (G9), Service Worker (G10), die Speicher-Feinheiten am eigenen Modul (G11, G12, G13), der CSP-Header (G15). Das sind die Fragen, für die es nach Ablauf keinen Ersatz gibt.
+3. **Dabei mitschreiben, was die Instanz überlebt**: aufgezeichnete Antworten als **Fixtures im Repo** und der **Typ-Snapshot** (`ct-types.d.ts`). Ein Abend Termine und Gruppen anzulegen ist auf einer befristeten Instanz nur dann keine verlorene Zeit, wenn die Antworten im Repo landen. Das ist der eigentliche Ertrag dieser 30 Tage: Danach bleibt ein Mock, der sich wie die echte Instanz verhält.
+4. **Zuletzt, unbefristet und lokal**: Designer, Blockrendering, Bühnenskalierung, Rotation, Offline-Verhalten, Undo/Redo gegen genau diesen Mock. Dafür braucht es nie wieder eine Instanz.
 
-**Stufe 3 – kontrolliert auf der Produktivinstanz, früher als es sich anfühlt.** Ein Custom Module ist weniger invasiv als der Name nahelegt: Es liegt unter seinem eigenen Key-Pfad, schreibt ausschließlich in seine eigenen KV-Kategorien und liest über die API nur das, was der angemeldete Anwender ohnehin sehen darf. Mit einem eigenen Key (`infoscreen-cgks-test`) steht eine Testinstallation neben einer späteren produktiven, ohne sie zu berühren – dass mit `ctpassstore` bereits ein fremdes Modul dort läuft, zeigt, dass mehrere nebeneinander kein Problem sind.
+**Was die Testinstanz an Vorsicht erspart.** Drei Bremsen dieses Plans sind dort gegenstandslos:
 
-Wirklich aufpassen muss man an drei Stellen, und alle drei sind vermeidbar:
+- **Testdaten und Uploads müssen nicht aufgeräumt werden.** Wiki-Kategorien, Dateien, verwaiste Datenwerte dürfen stehen bleiben. Die Aufräumregel gilt weiter, sobald etwas auf der Produktivinstanz entsteht – dort aber auch unverändert streng.
+- **Der Login-Token ist kein Dauerpasswort auf einer echten Gemeinde.** Infoscreen-Benutzer, Token und Rückzugsweg (`DELETE …/logintoken`) lassen sich üben, bevor es darauf ankommt. Die Prüfungen des E-Blocks müssen deshalb **nicht mehr auf Phase 2 warten** – sie gehören in die ersten Tage, weil sie instanzgebunden sind.
+- **Rechte dürfen zerschossen werden.** Rollen, Gruppen, Kategorie-Rechte: Ausprobieren ist billig, und G13 (`securityLevelId`) braucht genau das. Dass ein frisch installiertes Modul zunächst für niemanden sichtbar ist (G4), lässt sich dort gefahrlos durchspielen.
 
-- **Medien-Uploads** erzeugen echte Inhalte (Wiki-Seiten, Dateien) → eigene, versteckte Kategorie „Infoscreen-Test", am Ende aufgeräumt.
-- **Der Infoscreen-Benutzer mit Login-Token** ist ein Dauerpasswort → erst anlegen, wenn Phase 2 steht, mit minimalen Rechten, und den Rückzugsweg (`DELETE /api/persons/{id}/logintoken`) vorher einmal geübt.
-- **Rechtekonfiguration** am Custom Module → eigene Testgruppe, nicht an bestehenden Rollen schrauben.
+**Die Produktivinstanz bleibt an zwei Stellen im Spiel.** Sie hat die echten Kalender, Gruppen und Terminbilder, an denen sich die Datenquellen der Blocktabelle im Ernstfall bewähren müssen – und sie ist am Ende das Ziel. Lesende Stichproben dort sind unbedenklich; alles Schreibende gehört auf die Testinstanz.
 
+**Der frühere Befund bleibt richtig, ist aber überholt.** Eine kostenlose Dauer-Sandbox gibt es bei ChurchTools nicht („Ein solches Testsystem gibt es derzeit nicht"), eine Instanz unter erfundenem Gemeindenamen verbietet sich, und eine Datenbank-Kopie der Produktivinstanz brächte echte Personendaten in eine Entwicklungsumgebung – genau das, was dort nicht hingehört. Die leere Testinstanz umgeht all das. Unverändert gilt: Wir sind bei ChurchTools gehostet (`hostingservice: "1"`), Self-Hosting steht nicht zur Wahl.
 
 ## Datenquellen für Inhaltsblöcke
 
@@ -290,7 +344,7 @@ Geprüft gegen die OpenAPI-Spezifikation 3.136.2 (497 Pfade):
 | Raumbelegung „wer ist wo" | `/resource/masterdata`, `/bookings` (`resource_ids[]` ist Pflicht) |
 | Dienste / Gottesdienst | `/events`, `/events/{id}/agenda`, `/services`, `/event/masterdata` |
 | Geburtstage | `/persons/birthdays` (`start_date`, `end_date`, `campus_ids[]`, `group_ids[]`) – **nur mit Einwilligung** |
-| Bilder | `/files/{domainType}/{domainIdentifier}` mit `appointment_image`, `groupimage`, `logo`, `post` |
+| Bilder | `/files/{domainType}/{domainIdentifier}` mit `appointment_image`, `groupimage`, `logo`, `post`. Zum **Anzeigen** `imageUrl` (`/images/{fileId}/{hash}`, skalierbar über `w`/`h`/`fit`) statt `fileUrl` – siehe G14 |
 | Filter mehrerer Standorte | `/campuses`, `/departments`, `/tags/{domainType}` |
 | Freie Texte | `/wiki/pages`, `/wiki/categories/{id}/pages/{identifier}` |
 
@@ -306,17 +360,23 @@ ChurchTools kann Dateien annehmen: `POST /files/{domainType}/{domainIdentifier}`
 
 Der Haken ist `domainType`. Die Spezifikation führt eine feste Liste: `avatar`, `groupimage`, `appointment_image`, `logo`, `attachments`, `bulkletter_template`, `service`, `song_arrangement`, `importtable`, `person`, `familyavatar`, `post`, `wiki_.?`. **Ein eigener Typ für Custom Modules ist nicht darunter.** Das deckt sich damit, dass der Publisher eigene Bild-Uploads „bis zu einem offiziellen ChurchTools-Speicherpfad bewusst deaktiviert" hat.
 
+**Wo die Dateien liegen, ist dabei keine Frage der Ablage, sondern des Besitzers.** ChurchTools hat keinen freien Dateispeicher; jede Datei hängt an einem Domänenobjekt. Physisch liegen sie unter der `files_url` der Instanz (`https://cg-ks.church.tools/sites/default`), erreichbar aber nur über die Datei-API und die Adressen, die das jeweilige Objekt mitführt – einen Ordner, den man ansteuern könnte, gibt es nicht.
+
+**Wie ChurchTools vorhandene Bilder ausliefert**, ist belegt (G14): Ein Bild am Termin trägt zwei Adressen – `fileUrl` (Dateidownload, cookie-authentifiziert) und `imageUrl` (`/images/{fileId}/{hash}`, der Bilddienst League Glide mit `w`, `h`, `fit`). Für den Player heißt das zweierlei. Erstens trägt ein `<img>` unter `/ccm/` die Anmeldung von selbst, weil es dieselbe Domain ist; der 401, an dem das WordPress-Plugin scheiterte, trifft ihn nicht. Zweitens – und wertvoller – kann er die Zielgröße **anfordern**, statt ein Vollformat zu laden und im Browser zu verkleinern: `?w=1920&h=1080&fit=max` liefert genau das, was die Bühne braucht. Auf einer Leitung, an deren Ende ein Raspberry Pi hängt, ist das der Unterschied zwischen einem Bild und einem Megabyte.
+
+**Die entscheidende Frage an Phase 0 lautet deshalb nicht „nimmt `wiki_<kategorie>` den Upload an" – das wird sie tun –, sondern: Bekommt eine selbst hochgeladene Datei ebenfalls eine `imageUrl` am Bilddienst?** Fällt die Antwort ja aus, sind serverseitige Skalierung, Cachefähigkeit und G14 in einem Zug erledigt. Fällt sie nein aus, bleibt der Dateidownload mit Session-Cookie: tragfähig für den Player, aber ohne Skalierung und mit der offenen Frage, ob ein Service Worker die Antwort behalten darf.
+
 Kandidaten, in Phase 0 in dieser Reihenfolge zu prüfen:
 
 1. **Wiki-Kategorie als Mediathek** (`wiki_<kategorie>`). Eine eigene Kategorie „Infoscreen-Medien", Uploads hängen an Wiki-Seiten. Vorteile: echte ChurchTools-Dateien mit URL, ChurchTools-Rechten und einer Oberfläche, in der Anwender sie auch ohne unser Modul verwalten und löschen können. Der wahrscheinlichste Weg – zuerst testen.
 2. **`attachments`** – wenn sich klären lässt, woran `domainIdentifier` hier bindet und ob wir frei wählen dürfen.
-3. **Bestehende ChurchTools-Bilder ohne eigenen Upload**: Termin-, Gruppen-, Beitrags- und Logobilder. Das funktioniert sicher, reicht aber für „Bild hochladen" nicht aus – es ist der Rückfallplan, nicht das Ziel.
+3. **Bestehende ChurchTools-Bilder ohne eigenen Upload**: Termin-, Gruppen-, Beitrags- und Logobilder. Das funktioniert nicht nur sicher, sondern nachweislich, mitsamt Bilddienst (G14). Für „Bild hochladen" reicht es trotzdem nicht – es ist der Rückfallplan, nicht das Ziel. Umgekehrt gilt: `appointment_image` als **Ablage** für eigene Medien zu missbrauchen ist geprüft und verworfen; Begründung bei G8.
 4. ~~**Data-URI im KV-Store**~~ – **ausgeschieden.** Ein Datenwert fasst 10.000 Zeichen, also rund sieben Kilobyte. Das reicht nicht einmal für ein Icon, für Videos erst recht nicht.
 5. **Externe URL** als Notausgang: Der Anwender hinterlegt eine Adresse, wir speichern nur den Link. Interessant dabei: ChurchTools kennt dafür einen eigenen Endpunkt, `POST /files/{domainType}/{domainIdentifier}/link` („Adds the given external link to the specified domain object"). Ein verlinktes Bild wäre damit kein Fremdkörper, sondern eine reguläre ChurchTools-Datei. Kostet nichts, verlagert aber das Problem auf den Anwender und bricht, sobald die Quelle verschwindet.
 
 **Löschen braucht eine Referenzzählung.** Die Mediathek erlaubt Löschen, und die Slides verweisen auf Dateien. Wer ein noch benutztes Bild entfernt, erzeugt einen kaputten Rahmen auf einem TV, den er nicht sieht. Der Designer zählt deshalb vor dem Löschen die Verwendungen und benennt sie – und der Player zeigt für eine fehlende Datei einen ruhigen Platzhalter statt eines Bruchsymbols.
 
-Unabhängig vom Ergebnis: Uploads werden vor dem Speichern im Browser auf die Zielauflösung des Screens herunterskaliert. Ein 8-Megapixel-Handyfoto auf einem 1080p-Screen ist verschwendete Bandbreite auf einer Leitung, an deren Ende ein Raspberry Pi hängt.
+Solange für eigene Uploads kein Bilddienst belegt ist, gilt unabhängig vom Ergebnis: Uploads werden vor dem Speichern im Browser auf die Zielauflösung des Screens herunterskaliert. Ein 8-Megapixel-Handyfoto auf einem 1080p-Screen ist verschwendete Bandbreite auf einer Leitung, an deren Ende ein Raspberry Pi hängt.
 
 Videos sind der Sonderfall: groß, und ein Pi der älteren Generationen spielt sie im Browser nicht zuverlässig ab. Sie kommen erst nach dem MVP und erst, nachdem sie auf der echten Hardware gemessen wurden.
 
@@ -378,7 +438,7 @@ Weitere Regeln, die ins Datenmodell und nicht in ein späteres Review gehören:
 
 | Phase | Inhalt | Ergebnis |
 | --- | --- | --- |
-| **0 – Machbarkeit** | **Teilweise erledigt** (G1–G5). Offen: G6–G16. Die billigen zuerst – Einbettung, CSP und SPA-Fallback an `ctpassstore` ablesen (G6, G7, G15), dann Upload-Weg und Datei-URLs klären (G8, G14), Login-Token unter `/ccm/` und Service Worker prüfen (G9, G10), zuletzt die Speicher-Feinheiten am eigenen Modul testen (G11, G12, G13). Dann Boilerplate aufsetzen, leere Extension bauen, hochladen, aufrufen | Ein „Hallo <Vorname>" aus `/whoami` läuft im echten ChurchTools, und es steht fest, wohin ein hochgeladenes Bild geht. Befunde stehen in diesem Plan. |
+| **0 – Machbarkeit** | **Teilweise erledigt** (G1–G7, G14 zur Hälfte). Offen: G8–G13, G15–G17. **Reihenfolge nach der Frist der Testinstanz**, nicht nach Bequemlichkeit: zuerst prüfen, ob sie Custom Modules trägt, dann alles Instanzgebundene. Der CSP-Header fällt am nächsten Aufruf ab (G15), dann Upload-Weg und der Rest der Datei-Frage (G8, G14), Login-Token unter `/ccm/` und Service Worker prüfen (G9, G10), zuletzt die Speicher-Feinheiten am eigenen Modul testen (G11, G12, G13). Dann Boilerplate aufsetzen, leere Extension bauen, hochladen, aufrufen | Ein „Hallo <Vorname>" aus `/whoami` läuft im echten ChurchTools, und es steht fest, wohin ein hochgeladenes Bild geht. Befunde stehen in diesem Plan. |
 | **1 – Datenmodell** | Screen-Schema mit Slides und Blöcken (versioniert, migrierbar, **in beide Richtungen duldsam**), aufgeteilt nach der 10.000-Zeichen-Grenze; Slug als Adresse; KV-Repository mit den Kategorien aus E; Medienreferenzen mit Referenzzählung; Konflikterkennung über `revision`; Export/Import; Mock und Fixtures für die Entwicklung ohne Instanz. Undo/Redo ist hier zu entscheiden, nicht später – es bestimmt, ob Änderungen als Zustand oder als Befehle geführt werden | Screens lassen sich speichern, laden und exportieren, ohne Oberfläche. |
 | **2 – Player** | Rendering der Blöcke, Slide-Rotation, Kiosk-Modus, Token-Anmeldung, Offline-Cache, gesandboxter Web-Code-Block | Ein von Hand geschriebener Screen läuft auf dem Pi am Foyer-TV. |
 | **3 – Designer** | Editor, Slide-Verwaltung, Blockpalette, Inspektor, Vorschau, Vorlagen, **Mediathek mit Upload**, URL-Generator | Ein Anwender gestaltet einen Screen mit eigenen Bildern ohne Entwicklerhilfe. |
@@ -408,7 +468,7 @@ Phase 2 vor Phase 3 – bewusst. Ein Designer für ein Ausgabeformat, das noch n
 2. **Kein eigener Speicherort für hochgeladene Medien.** Die Datei-API nimmt Uploads an, aber nur in feste Domain-Typen; einer für Custom Modules fehlt. Bilderupload ist ausdrücklich gewünscht und für einen Infoscreen der meistgenannte Wunsch überhaupt – er hängt damit an einem Weg, der erst gefunden werden muss (Wiki-Mediathek, `attachments`, ersatzweise externe URLs). Das Ergebnis entscheidet über den Zuschnitt des MVP und gehört deshalb in Phase 0.
 3. **Login-Token in der URL.** Bekannt, praxiserprobt, aber ein Dauerpasswort auf einer SD-Karte. Minimale Rechte und ein dokumentierter Rückzugsweg sind Pflicht, kein Feinschliff.
 4. **Der Pi läuft unbeaufsichtigt.** Speicherlecks über Wochen, abgelaufene Sitzungen, Netzausfälle, Stromausfälle. Der Player muss von sich aus wieder hochkommen; ein weißer Bildschirm im Foyer ist der Regelfall schlechter Signage-Software.
-5. **Einbettung in die ChurchTools-Oberfläche.** Wenn sich die Host-Chrome nicht sauber ausblenden lässt, wird der Player unansehnlich. Indiz und Fallbacks siehe G6.
+5. **Einbettung in die ChurchTools-Oberfläche.** ~~Wenn sich die Host-Chrome nicht sauber ausblenden lässt, wird der Player unansehnlich.~~ **Entschärft** (G6, 2026-09-22): Kein iframe, gemeinsames Dokument – `position: fixed; inset: 0` deckt die Host-Chrome zu, ohne sie anfassen zu müssen. Was bleibt, ist die Stilgrenze in beide Richtungen.
 6. **Eigener Web-Code ist ausführbarer Fremdcode auf der ChurchTools-Domain.** Ohne Sandbox liefe er in der Sitzung eines angemeldeten Benutzers und hätte Zugriff auf dessen ChurchTools-Daten – aus einem Gestaltungsmodul würde ein Einfallstor. Die Regel aus dem Abschnitt „Eigener Web-Code" ist deshalb nicht verhandelbar und wird durch einen Test abgesichert, der `allow-same-origin` in den erzeugten Rahmen verbietet.
 7. **ChurchTools ändert die Extension-Schnittstelle.** Sie ist jung und gering dokumentiert. Die Abhängigkeit auf wenige Stellen bündeln (`src/utils/kv-store.ts`, ein Repository), damit eine Änderung nicht durch die halbe Anwendung geht.
 8. **Stilles gegenseitiges Überschreiben.** Belegt, nicht vermutet: Am Datenwert gibt es weder Version noch ETag (G3). Ein Screen besteht aus mehreren Werten, gespeichert wird ohne Transaktion. Ohne `revision`-Prüfung und ohne die Regel „Index zuletzt schreiben" verliert der zweite Gestalter die Arbeit des ersten, ohne dass es jemandem auffällt. Und selbst mit beidem bleibt ein Fenster zwischen Lesen und Schreiben – erkannt, nicht verhindert.
@@ -437,12 +497,12 @@ Nicht technisch offen, sondern unentschieden – und jede dieser Antworten verä
 
 Die Reihenfolge folgt dem Preis: erst was nichts kostet, dann was etwas kostet. Zum Abhaken steht dasselbe mit Handgriffen und Abbruchkriterien in [`Preparation.md`](Preparation.md).
 
-1. **Ein einziger Seitenaufruf, drei Antworten.** `https://<instanz>/ccm/ctpassstore/` öffnen, Entwicklerwerkzeuge daneben: Steht die ChurchTools-Navigation drumherum, hängt das Modul in einem iframe, wird `window.settings.base_url` injiziert (G6)? Welche Content-Security-Policy liefert die Antwort (G15)? Woher kommen die Assets? Fünf Minuten, ohne etwas zu bauen.
-2. **Einen erfundenen Unterpfad aufrufen** (`/ccm/ctpassstore/irgendwas`) – Modulseite oder 404? Beantwortet G7 und damit, ob der Player eine echte Route bekommt oder bei der Hash-Route bleibt. Wichtiger für uns als für andere, weil sich der Player nachts neu lädt.
+1. ~~**Ein einziger Seitenaufruf, drei Antworten.**~~ **Erledigt am 2026-09-22** – der Quelltext von `/ccm/ctpassstore/` beantwortet G6 vollständig und G4 nebenbei. **Offen bleibt daran nur der Netzwerk-Reiter**: Welche Content-Security-Policy steht im Antwort-Header (G15)? Zwei Minuten, beim nächsten Aufruf.
+2. ~~**Einen erfundenen Unterpfad aufrufen.**~~ **Erledigt am 2026-09-22**: `/ccm/ctpassstore/pasword` liefert die Modulseite, G7 ist beantwortet, der Player bekommt eine echte Route. Mitzunehmen beim nächsten Mal: der Statuscode dahinter.
 3. **Boilerplate klonen**, `.env` anlegen, Vite-Proxy einrichten statt CORS zu öffnen, `npm run dev` bis zum „Hallo <Vorname>". Dabei einmal in Safari öffnen, nicht nur in Chrome.
 4. **Die Speicher-Feinheiten am eigenen Testmodul messen**, sobald es steht: Nimmt `GET …/customdatavalues` einen Filter auf `domainType`/`domainId` an (G11)? Wird ein hinterlegtes JSON Schema serverseitig durchgesetzt (G12)? Was ändert `securityLevelId` (G13)? Drei Aufrufe, die den Zuschnitt aus Abschnitt E entweder bestätigen oder vereinfachen.
-5. **Ein Bild über `POST /files/wiki_<kategorie>/<id>` hochladen**, wieder auslesen und **in einem `<img>`-Tag anzeigen** – letzteres ist der eigentliche Test, denn er beantwortet zugleich G14 (wie sind Datei-URLs authentifiziert) und damit, ob ein Cache sie halten kann. Der Versuch, der über den Bilderupload entscheidet.
-6. **Support anschreiben**: Instanz für die Entwicklung einer Extension (siehe „Entwicklungs- und Testumgebung", Stufe 2). Gleich mitfragen, ob ein Rate-Limit dokumentiert ist (G16) und ob ein Speicherziel für Custom-Module-Dateien geplant ist (G8) – das ist die Frage, die nur ChurchTools beantworten kann.
+5. **Ein Bild über `POST /files/wiki_<kategorie>/<id>` hochladen**, wieder auslesen und **in einem `<img>`-Tag anzeigen**. Seit G14 ist die Frage schärfer gefasst: Trägt die hochgeladene Datei neben `fileUrl` auch eine `imageUrl` am Bilddienst? Davon hängen serverseitige Skalierung und Cachefähigkeit ab. Der Versuch, der über den Bilderupload entscheidet.
+6. **Support anschreiben – und zwar zuerst wegen der Frist.** Die Testinstanz läuft nach 30 Tagen ab (etwa 2026-10-22); ob sich das für die Entwicklung einer Extension verlängern lässt, bestimmt, wie eng die Messungen getaktet werden müssen. Im selben Schreiben: ob ein Rate-Limit dokumentiert ist (G16) und ob ein Speicherziel für Custom-Module-Dateien geplant ist (G8) – die Frage, die nur ChurchTools beantworten kann.
 7. **`bensteUEM/ct-events-load` lesen**, insbesondere `src/persistance.ts` und die Terminbehandlung – vor der ersten eigenen Zeile Bindungscode in Phase 4, und bevor das Screen-Schema festgezurrt wird.
 8. **Testweise einen Infoscreen-Benutzer anlegen**, Login-Token ziehen, die URL am Pi aufrufen (G9); dabei den Rückzugsweg (`DELETE /api/persons/{id}/logintoken`) einmal üben. Erst wenn Phase 2 steht.
 9. **Lukas Block (`lubl`) im Forum ansprechen** – nicht, um Fragen zu stellen, die der Code beantwortet, sondern zu G8, G10 und der Idee einer gemeinsamen `ct-utils`-Bibliothek (Offene Entscheidung 10). Er betreibt dieselbe Schnittstelle produktiv und sucht ausdrücklich nach einem Ort für wiederverwendbaren Setup-Code.
