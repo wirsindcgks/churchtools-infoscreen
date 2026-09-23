@@ -1,8 +1,8 @@
 # Phase 0 – Vorbereitungs-Checkliste
 
 Abzuarbeiten vor der ersten Zeile Anwendungscode. Jeder Punkt nennt, **was zu tun ist**, **woran man das
-Ergebnis erkennt** und **welche Frage aus `Plan.md`, Abschnitt G** er beantwortet. Befunde gehören danach in
-`Plan.md` – diese Datei ist die Arbeitsliste, der Plan ist das Gedächtnis.
+Ergebnis erkennt** und **welche Frage aus [`Befunde.md`](Befunde.md)** er beantwortet. Befunde gehören danach in
+[`Befunde.md`](Befunde.md). Diese Datei ist die **Arbeitsliste**, `Befunde.md` das **Messprotokoll**, [`Plan.md`](Plan.md) das **Gedächtnis**.
 
 Die Reihenfolge folgte bisher dem Preis: erst was nichts kostet, dann was Zeit kostet, zuletzt was Daten
 anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
@@ -30,6 +30,17 @@ anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
 > **Entschieden am 2026-09-23:** Die Fixtures liegen unter `fixtures/` und werden **nicht versioniert**
 > (`.gitignore` erfasst das Verzeichnis). Der Ertrag hängt damit an einem Arbeitsplatz – eine Sicherung
 > außerhalb des Repos ist der Ersatz, den dieser Zuschnitt braucht.
+
+> **🎯 Fokuswechsel am 2026-09-23**
+>
+> Phase 0 ist überwiegend abgeschlossen, und der Plan hatte sich dabei vom Pitch entfernt – 63 % Plattformarchäologie
+> gegen 20 % Produkt. **Ab jetzt ist der Pitch der Taktgeber**, nicht mehr die Frist der Testinstanz.
+>
+> Diese Liste bleibt gültig, ändert aber ihren Rang: Sie ist **Zuarbeit**, keine Voraussetzung mehr. Offen und
+> wirklich dringlich sind daraus nur noch **B1–B4** (Entwicklungsumgebung, unblockiert) und **T3** (das echte
+> Ablaufdatum). C, E1, E4 und B5/B6 warten auf die Freischaltung und halten nichts auf.
+>
+> Der Bauplan steht in [`Plan.md`](Plan.md), „Nächste Schritte" – am Pitch entlang, nicht am Preis der Messungen.
 
 **Grundregel:** Ein `404` der ChurchTools-API ist kein Beweis für eine fehlende Route. Jede Prüfung läuft
 angemeldet und mit ausreichenden Rechten, sonst ist ihr Ergebnis wertlos (Lehre aus G1).
@@ -318,7 +329,7 @@ bevor das Screen-Schema steht.
 
 ## Abschluss
 
-- [x] **Alle Befunde in `Plan.md` eingetragen** *(Stand 2026-09-23)*, Abschnitt G: beantwortete Punkte nach
+- [x] **Alle Befunde in [`Befunde.md`](Befunde.md) eingetragen** *(Stand 2026-09-23)*: beantwortete Punkte nach
       oben, mit Datum und Quelle (Instanz, Spezifikation oder fremder Code).
       Beantwortet: **G1–G8, G11, G14, G15, G18, G19, G20**; **G16** und **G21** zur Hälfte.
       **G21** ist seit dem 2026-09-23 gebaut und gemessen – offen bleiben daran nur noch `authId` 306 gegen 403, die Sichtbarkeit von Beiträgen und das Archivieren als zweite Notbremse.
