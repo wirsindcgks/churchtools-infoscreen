@@ -64,7 +64,7 @@ Das ist der Teil, der vor der ersten Zeile Code steht. Belegt ist alles unter A�
 | Voraussetzung | Details |
 | --- | --- |
 | **Custom Modules verfügbar** | **Erledigt am 2026-09-22.** `feature_custommodule` steht auf `"1"`, `GET /api/custommodules` antwortet mit 200. Siehe G. |
-| **Administrationsrecht** | Zum Hochladen/Anlegen des Custom Modules und zum Erzeugen eines Login-Tokens für einen anderen Benutzer braucht es Adminrechte. |
+| **Administrationsrecht** | Zum Hochladen und Anlegen des Custom Modules. **Nicht** zum direkten Erzeugen eines fremden Login-Tokens – den gibt die API auch Administratoren nicht heraus (G18); der Weg führt über das Setzen des Passworts und `POST /api/login/token`. |
 | **CORS-Freigabe (nur Entwicklung)** | System-Einstellungen → Integrationen → API → Cross-Origin Resource Sharing. Auf unserer Instanz steht heute `access_control_allow_origins: "[]"` und `access_control_allow_credentials: false`. Der Origin allein genügt nicht: ohne `allow_credentials` fährt in der Entwicklung kein Session-Cookie mit. **Bevorzugter Weg ist deshalb der Vite-Proxy** (`/api` → Instanz), der ohnehin für den Safari-Fall gebraucht wird und CORS ganz vermeidet. Im Produktivbetrieb liegt die Extension auf derselben Domain, dann entfällt beides. |
 | **Dedizierter Infoscreen-Benutzer** | Eigene Person/Benutzer, ohne Zweifaktor (Login-Tokens werden an 2FA-Konten nicht ausgegeben), mit genau den Leserechten, die die Screens brauchen – nicht mehr. |
 | **Leserechte** | Für die genutzten Kalender, Gruppen, Beiträge und ggf. Ressourcen. Der Player sieht exakt das, was sein Benutzer sehen darf; das ist die Rechteprüfung, die wir nicht selbst bauen müssen. |
@@ -112,7 +112,9 @@ Drei Wege, für drei Situationen:
 
    **Der Token ist ein Dauerpasswort.** Er steht in der URL, im Browserverlauf des Pi und in der `fullpageos.txt` auf der SD-Karte. Konsequenz für den Plan: eigener Benutzer mit minimalen Rechten, ein dokumentierter Weg zum Zurückziehen, und im Designer ein Dialog, der die fertige URL erzeugt und dabei erklärt, was sie enthält.
 
-   **⚠ Der Weg zum Zurückziehen ist offen.** Die frühere Annahme, ein Administrator rufe dafür `DELETE /api/persons/{id}/logintoken` auf, ist am 2026-09-23 **widerlegt**: Der Endpunkt antwortet für fremde Personen mit **403**, und es gibt kein Recht, das das ändert (**G18**). Solange kein belegter Widerrufsweg existiert, ist ein produktiv laufender Pi ein Dauerpasswort ohne Notbremse. **Das ist ein Ausschlusskriterium für den produktiven Einsatz**, nicht eine offene Frage unter vielen.
+   **Der Weg zum Zurückziehen ist der Passwortwechsel, nicht der Token-Endpunkt** *(2026-09-23 gemessen, **G18**)*. Die frühere Annahme, ein Administrator rufe `DELETE /api/persons/{id}/logintoken` auf, ist widerlegt – der Endpunkt antwortet für fremde Personen mit 403, und die Oberfläche gibt den Token ebenso wenig heraus. Der Grund ist einleuchtend: Der Token wird aus den Zugangsdaten abgeleitet (`POST /api/login/token`), gehört also der Person und nicht der Verwaltung.
+
+   Die Notbremse ist damit **das Passwort des Geräte-Benutzers zu ändern**; ein bestehender Token ist danach sofort ungültig (401, gemessen). Das kann ein Administrator jederzeit, und es gehört genau so in die Einrichtungsdoku: einrichten über Passwort setzen und `POST /api/login/token`, zurücknehmen über Passwort ändern.
 
 ### E. Datenspeicherung
 
@@ -216,7 +218,7 @@ In der Entwicklung legt `getOrCreateModule()` das Modul selbst an, im Produktivb
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G19 und G20 sind beantwortet, G16 und G18 zur Hälfte, der Rest offen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18, G19 und G20 sind beantwortet, G16 zur Hälfte, der Rest offen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
 #### Beantwortet
 
@@ -366,9 +368,9 @@ Damit entfällt **C1 aus `Preparation.md` ersatzlos**: Es gibt nichts zu filtern
 
 **Aus derselben Quelle mitbelegt**, jetzt gegen unsere Instanz statt gegen fremden Code: `value` max. **10.000** Zeichen (bestätigt G2), Kategorie-`data` max. **2.000**, `name` 100, `shorty` 2–50, `description` 300 und Pflicht. `CustomModulePermission` fordert **alle neun Schlüssel** – G4 gilt damit nicht nur empirisch, sondern spezifiziert.
 
-#### Teilweise beantwortet
+**G18 – Ein Login-Token gehört seiner Person, und die Notbremse ist der Passwortwechsel.** *(2026-09-23, Testinstanz)* Die Frage entstand aus einem Irrtum des Plans und hat ihn korrigiert.
 
-**G18 – Ein Login-Token gehört nur seiner eigenen Person. Der Widerrufsweg des Plans funktioniert nicht.** *(2026-09-23, Testinstanz)* Geprüft mit vollen Administratorrechten (`administer settings`, `administer persons`):
+**Erster Befund – der Weg, den der Plan annahm, gibt es nicht.** Mit vollen Administratorrechten (`administer settings`, `administer persons`) geprüft:
 
 | Aufruf | Antwort |
 | --- | --- |
@@ -377,21 +379,33 @@ Damit entfällt **C1 aus `Preparation.md` ersatzlos**: Es gibt nichts zu filtern
 | `GET /persons/19/loginstring` | **403** |
 | `DELETE /persons/19/logintoken` | **403** |
 
-Im gesamten `churchcore`-Rechtesatz gibt es **kein Recht für fremde Login-Tokens** – alle fünfzehn Einträge durchgesehen. Der Endpunkt gilt ausschließlich für einen selbst.
+Im gesamten `churchcore`-Rechtesatz gibt es **kein Recht für fremde Login-Tokens** – alle fünfzehn Einträge durchgesehen. **Auch die Administrationsoberfläche gibt ihn nicht heraus**, von Tobias am 2026-09-23 gegengeprüft. Damit ist E3 aus `Preparation.md` in seiner bisherigen Form widerlegt: „`DELETE /api/persons/{id}/logintoken` einmal ausführen" kann ein Administrator nicht.
 
-**Damit ist E3 aus `Preparation.md` in seiner bisherigen Form widerlegt.** Dort stand: „`DELETE /api/persons/{id}/logintoken` einmal ausführen und prüfen, dass der Token wirklich ungültig ist." Ein Administrator kann das nicht. Das wiegt schwer, weil es nicht irgendein Endpunkt ist, sondern **der Notfallpfad**: Der Token ist ein Dauerpasswort auf einer SD-Karte, und der Weg zurück war ausdrücklich als „vor dem produktiven Einsatz zu üben" eingeplant.
+**Zweiter Befund – die 403 sind kein Loch, sondern Logik.** `POST /api/login/token` ist **anonym erreichbar** und nimmt `username` und `password` (mit falschen Daten: 400 „Login failed"). Der Token wird also **aus den Zugangsdaten abgeleitet**, nicht von einem Administrator ausgegeben. Wer den Token bekommt, muss das Passwort haben – deshalb verweigert die API ihn für fremde Personen. Der Administrator kommt an den Token des Geräts, indem er dessen Passwort setzt (`PUT /persons/{id}/password`) und sich damit den Token selbst erzeugt.
 
-**Der Weg, den ChurchTools offenbar vorsieht, ist die Simulation.** `POST /api/simulate` mit `{"personId": 19}` antwortet **204**; `whoami` liefert danach `id: 19` und `meta.simulatingUserId: 16`. In dieser Session ist der Token-Endpunkt der „eigene". `DELETE /api/simulate` beendet den Zustand sauber. Zwei Dinge sind daran bemerkenswert: Die Simulation ist **an der Antwort erkennbar** (`simulatingUserId`), und sie ist der einzige gefundene Hebel.
+**Dritter Befund – die Notbremse, gemessen.** Am 2026-09-23 wurde das Passwort der Person 16 geändert, deren Login-Token in Gebrauch war. Derselbe Token danach:
 
-**Offen bleibt der entscheidende Teil:** ob **Ausgabe und Widerruf innerhalb der Simulation** tatsächlich funktionieren. Das wurde bewusst nicht ausgeführt – über eine Administratorsimulation das Dauerpasswort eines fremden Kontos zu ziehen, ist eine Handlung, die eine ausdrückliche Entscheidung verlangt und nicht nebenbei in einer Messreihe passieren sollte.
+| Prüfung | Vorher | Nachher |
+| --- | --- | --- |
+| `GET /api/whoami` mit `Authorization: Login <token>` | 200, `id: 16` | **401 „No valid token"** |
+| `GET /api/calendars` mit demselben Token | 200, 5 Kalender | **401** |
+| `GET /api/info` (Gegenprobe Instanz) | 200 | 200 |
+| `GET /api/whoami` anonym (Gegenprobe) | 200, `id: -1` | 200, `id: -1` |
 
-**Drei Folgen, schon jetzt:**
+**Ein Passwortwechsel macht den Login-Token derselben Person ungültig.** Die Instanz war dabei gesund und das anonyme Verhalten unverändert – es lag am Token, nicht an der Umgebung. Geändert wurde ausschließlich das Passwort, nichts sonst.
 
-1. **Die Einrichtungsdoku kann nicht sagen „der Administrator holt den Token über die API".** Sie muss den tatsächlichen Weg nennen – Simulation oder die ChurchTools-Oberfläche.
-2. **Der Notfallpfad braucht eine belegte Antwort, bevor ein Pi produktiv läuft.** Ein Dauerpasswort ohne geübten Widerruf ist die Lage, die Abschnitt F ausdrücklich vermeiden wollte.
-3. **Das gehört in die Support-Anfrage (F1):** *Wie widerruft ein Administrator den Login-Token eines Geräts, wenn `DELETE /persons/{id}/logintoken` für fremde Personen 403 liefert?*
+**Damit ist der Betriebsweg vollständig** und das frühere Ausschlusskriterium fällt:
 
-Für **G9** ändert das nichts an der eigentlichen Frage – wie sich `login_token` in der URL unter `/ccm/` verhält –, aber es benennt die Voraussetzung: Ohne geklärte Ausgabe gibt es keinen Token, mit dem sich G9 prüfen ließe.
+1. **Einrichten:** Administrator legt den Geräte-Benutzer an und setzt ihm ein Passwort.
+2. **Token erzeugen:** `POST /api/login/token` mit dessen Zugangsdaten.
+3. **Verwenden:** Token in die Player-URL (G9 prüft den `/ccm/`-Teil, sobald ein Modul existiert).
+4. **Notbremse:** Passwort des Geräte-Benutzers ändern – der Token ist sofort tot.
+
+**Was daran noch nicht gemessen ist**, und deshalb nicht als gemessen behauptet wird: Schritt 2 ist nur negativ geprüft (falsche Zugangsdaten → 400). Dass der Endpunkt für gültige Zugangsdaten einen brauchbaren Token liefert, ist naheliegend, aber offen. Ebenfalls offen, weil nicht nötig: ob `POST /persons/{id}/archive` denselben Effekt hat – als zweite Notbremse plausibel, als Befund nicht vorhanden.
+
+**Die Spur über `POST /api/simulate` erübrigt sich.** Sie funktionierte technisch – `whoami` lieferte die simulierte Person samt `meta.simulatingUserId` –, war aber der Umweg um ein Problem, das es nicht gab. Festzuhalten bleibt, dass eine Simulation an der Antwort erkennbar ist.
+
+#### Teilweise beantwortet
 
 **G16 – Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.
 
@@ -594,7 +608,7 @@ Die Termin-Regel ist für dieses Projekt die bessere Antwort und seit **G19** au
 
 | Phase | Inhalt | Ergebnis |
 | --- | --- | --- |
-| **0 – Machbarkeit** | **Überwiegend erledigt** (G1–G8, G11, G14, G15, G19, G20; G16 und G18 zur Hälfte). Offen und **an der Freischaltung der Testinstanz hängend**: G9, G10, G12, G13. Dazu G17 als Entscheidung. Der Medienweg steht (Wiki-Kategorie, Bilddienst), die CSP ist gemessen, die Fixtures sind aufgezeichnet (lokal, nicht versioniert). Was bleibt: Boilerplate aufsetzen, leere Extension bauen, hochladen, aufrufen – sobald Custom Modules freigeschaltet sind | Ein „Hallo <Vorname>" aus `/whoami` läuft im echten ChurchTools. **Erreicht:** Es steht fest, wohin ein hochgeladenes Bild geht. Befunde stehen in diesem Plan, Belege lokal unter `fixtures/`. |
+| **0 – Machbarkeit** | **Überwiegend erledigt** (G1–G8, G11, G14, G15, G18, G19, G20; G16 zur Hälfte). Offen und **an der Freischaltung der Testinstanz hängend**: G9, G10, G12, G13. Dazu G17 als Entscheidung. Der Medienweg steht (Wiki-Kategorie, Bilddienst), die CSP ist gemessen, die Fixtures sind aufgezeichnet (lokal, nicht versioniert). Was bleibt: Boilerplate aufsetzen, leere Extension bauen, hochladen, aufrufen – sobald Custom Modules freigeschaltet sind | Ein „Hallo <Vorname>" aus `/whoami` läuft im echten ChurchTools. **Erreicht:** Es steht fest, wohin ein hochgeladenes Bild geht. Befunde stehen in diesem Plan, Belege lokal unter `fixtures/`. |
 | **1 – Datenmodell** | Screen-Schema mit **Playlists**, Slides und Blöcken (Ebene Screen → Playlist → Slides, siehe „Playlists und Zeitpläne“) (versioniert, migrierbar, **in beide Richtungen duldsam**), aufgeteilt nach der 10.000-Zeichen-Grenze; Slug als Adresse; KV-Repository mit den Kategorien aus E; Medienreferenzen mit Referenzzählung; Konflikterkennung über `revision`; Export/Import; Mock und Fixtures für die Entwicklung ohne Instanz. Undo/Redo ist hier zu entscheiden, nicht später – es bestimmt, ob Änderungen als Zustand oder als Befehle geführt werden | Screens lassen sich speichern, laden und exportieren, ohne Oberfläche. |
 | **2 – Player** | Rendering der Blöcke, Slide-Rotation, Kiosk-Modus, Token-Anmeldung, Offline-Cache, gesandboxter Web-Code-Block | Ein von Hand geschriebener Screen läuft auf dem Pi am Foyer-TV. |
 | **3 – Designer** | Editor, Slide-Verwaltung, Blockpalette, Inspektor, Vorschau, Vorlagen, **Mediathek mit Upload**, URL-Generator | Ein Anwender gestaltet einen Screen mit eigenen Bildern ohne Entwicklerhilfe. |
@@ -624,7 +638,7 @@ Phase 2 vor Phase 3 – bewusst. Ein Designer für ein Ausgabeformat, das noch n
 
 1. ~~**Custom Modules sind auf der Instanz nicht verfügbar**~~ – **entfallen am 2026-09-22.** Feature freigeschaltet, Route antwortet, ein fremdes Modul läuft bereits. Der Ausweichweg über einen eigenen Renderer-Dienst wird nicht gebraucht und ist damit vom Tisch.
 2. **Kein eigener Speicherort für hochgeladene Medien.** Die Datei-API nimmt Uploads an, aber nur in feste Domain-Typen; einer für Custom Modules fehlt. Bilderupload ist ausdrücklich gewünscht und für einen Infoscreen der meistgenannte Wunsch überhaupt – er hängt damit an einem Weg, der erst gefunden werden muss (Wiki-Mediathek, `attachments`, ersatzweise externe URLs). Das Ergebnis entscheidet über den Zuschnitt des MVP und gehört deshalb in Phase 0.
-3. **Login-Token in der URL.** Bekannt, praxiserprobt, aber ein Dauerpasswort auf einer SD-Karte. Minimale Rechte und ein dokumentierter Rückzugsweg sind Pflicht, kein Feinschliff.
+3. **Login-Token in der URL.** Bekannt, praxiserprobt, aber ein Dauerpasswort auf einer SD-Karte. Minimale Rechte bleiben Pflicht. Der Rückzugsweg ist seit dem 2026-09-23 bekannt und gemessen: **Passwort des Geräte-Benutzers ändern, der Token ist sofort tot** (G18). Er gehört in die Betriebsdoku, nicht in eine Fußnote – und er ist der Grund, warum das Risiko tragbar ist.
 4. **Der Pi läuft unbeaufsichtigt.** Speicherlecks über Wochen, abgelaufene Sitzungen, Netzausfälle, Stromausfälle. Der Player muss von sich aus wieder hochkommen; ein weißer Bildschirm im Foyer ist der Regelfall schlechter Signage-Software.
 5. **Einbettung in die ChurchTools-Oberfläche.** ~~Wenn sich die Host-Chrome nicht sauber ausblenden lässt, wird der Player unansehnlich.~~ **Entschärft** (G6, 2026-09-22): Kein iframe, gemeinsames Dokument – `position: fixed; inset: 0` deckt die Host-Chrome zu, ohne sie anfassen zu müssen. Was bleibt, ist die Stilgrenze in beide Richtungen.
 6. **Eigener Web-Code ist ausführbarer Fremdcode auf der ChurchTools-Domain.** Ohne Sandbox liefe er in der Sitzung eines angemeldeten Benutzers und hätte Zugriff auf dessen ChurchTools-Daten – aus einem Gestaltungsmodul würde ein Einfallstor. Die Regel aus dem Abschnitt „Eigener Web-Code" ist deshalb nicht verhandelbar und wird durch einen Test abgesichert, der `allow-same-origin` in den erzeugten Rahmen verbietet.
@@ -662,9 +676,9 @@ Die Reihenfolge folgt dem Preis: erst was nichts kostet, dann was etwas kostet. 
 3. **Boilerplate klonen**, `.env` anlegen, Vite-Proxy einrichten statt CORS zu öffnen, `npm run dev` bis zum „Hallo <Vorname>". Dabei einmal in Safari öffnen, nicht nur in Chrome.
 4. **Die Speicher-Feinheiten am eigenen Testmodul messen**, sobald es steht: Nimmt `GET …/customdatavalues` einen Filter auf `domainType`/`domainId` an (G11)? Wird ein hinterlegtes JSON Schema serverseitig durchgesetzt (G12)? Was ändert `securityLevelId` (G13)? Drei Aufrufe, die den Zuschnitt aus Abschnitt E entweder bestätigen oder vereinfachen.
 5. **Ein Bild über `POST /files/wiki_<kategorie>/<id>` hochladen**, wieder auslesen und **in einem `<img>`-Tag anzeigen**. Seit G14 ist die Frage schärfer gefasst: Trägt die hochgeladene Datei neben `fileUrl` auch eine `imageUrl` am Bilddienst? Davon hängen serverseitige Skalierung und Cachefähigkeit ab. Der Versuch, der über den Bilderupload entscheidet.
-6. **Support anschreiben – und zwar zuerst wegen der Frist.** Die Testinstanz läuft nach 30 Tagen ab (etwa 2026-10-22); ob sich das für die Entwicklung einer Extension verlängern lässt, bestimmt, wie eng die Messungen getaktet werden müssen. **Seit dem 2026-09-23 steht eine zweite, dringendere Frage daneben:** die **Freischaltung der Custom Modules** für diese Instanz – ohne sie sind B5, B6, der C-Block, E1 und E4 blockiert (angefragt, Antwort steht aus). Im selben Schreiben: **wie ein Administrator den Login-Token eines Geräts widerruft**, nachdem `DELETE /persons/{id}/logintoken` für fremde Personen 403 liefert (**G18** – das betrifft den Notfallpfad und wiegt schwerer als die übrigen Fragen); dazu die Frage nach einem dokumentierten Rate-Limit (G16); **entfallen** ist dagegen die Frage nach einem Speicherziel für Custom-Module-Dateien – die Wiki-Kategorie samt Bilddienst beantwortet sie (G8).
+6. **Support anschreiben – und zwar zuerst wegen der Frist.** Die Testinstanz läuft nach 30 Tagen ab (etwa 2026-10-22); ob sich das für die Entwicklung einer Extension verlängern lässt, bestimmt, wie eng die Messungen getaktet werden müssen. **Seit dem 2026-09-23 steht eine zweite, dringendere Frage daneben:** die **Freischaltung der Custom Modules** für diese Instanz – ohne sie sind B5, B6, der C-Block, E1 und E4 blockiert (angefragt, Antwort steht aus). Im selben Schreiben die Frage nach einem dokumentierten Rate-Limit (G16); **entfallen** ist dagegen die Frage nach einem Speicherziel für Custom-Module-Dateien – die Wiki-Kategorie samt Bilddienst beantwortet sie (G8).
 7. **`bensteUEM/ct-events-load` lesen**, insbesondere `src/persistance.ts` und die Terminbehandlung – vor der ersten eigenen Zeile Bindungscode in Phase 4, und bevor das Screen-Schema festgezurrt wird.
-8. **Den Rückzugsweg für den Login-Token klären** – vorgezogen, weil er sich als Lücke erwiesen hat (**G18**). Der Benutzer ist angelegt (Person 19); offen ist, ob Ausgabe und Widerruf über `POST /api/simulate` funktionieren, ob die ChurchTools-Oberfläche einen Weg bietet, oder ob der Support einen nennt. Erst danach die URL am Pi aufrufen (G9) – und das erst, wenn Phase 2 steht.
+8. **Den Geräte-Benutzer einrichten und die URL am Pi aufrufen** (G9). Der Rückzugsweg ist geklärt (**G18**): Passwort setzen erzeugt den Token über `POST /api/login/token`, Passwort ändern nimmt ihn zurück. Der Benutzer ist angelegt (Person 19). Erst wenn Phase 2 steht.
 9. **Lukas Block (`lubl`) im Forum ansprechen** – nicht, um Fragen zu stellen, die der Code beantwortet, sondern zu G8, G10 und der Idee einer gemeinsamen `ct-utils`-Bibliothek (Offene Entscheidung 10). Er betreibt dieselbe Schnittstelle produktiv und sucht ausdrücklich nach einem Ort für wiederverwendbaren Setup-Code.
 10. **Befunde hier eintragen**, erst danach das Screen-Schema festlegen.
 

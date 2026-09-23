@@ -228,21 +228,23 @@ Hardware, nicht an der Instanz, und kann warten.
       ChurchTools legt auch einen Maschinenbenutzer nicht ohne diese Angaben an.
       **Rechte sind noch nicht vergeben** – das bleibt zu tun, sobald klar ist, was der Player lesen muss.
 
-- [ ] **E3 · Rückzugsweg üben** – **vor** dem produktiven Einsatz
-      **⚠ Die bisherige Anleitung ist widerlegt** *(2026-09-23, siehe `Plan.md`, G18)*. `DELETE
-      /api/persons/{id}/logintoken` liefert für eine **fremde** Person **403**, auch als Administrator –
-      ebenso `GET …/logintoken` und `GET …/loginstring`. Im ganzen `churchcore`-Rechtesatz gibt es kein
-      Recht dafür; der Endpunkt gilt nur für die eigene Person.
-      Der Token ist ein Dauerpasswort auf einer SD-Karte; der Weg zurück muss geübt sein, bevor er gebraucht wird –
-      **und derzeit ist nicht belegt, dass es ihn über die API gibt.**
-      **Was noch zu prüfen ist, in dieser Reihenfolge:**
-      1. `POST /api/simulate` mit `{"personId": <id>}` (antwortet 204, `whoami` zeigt dann die simulierte
-         Person und `meta.simulatingUserId`). **Funktionieren Ausgabe und Widerruf des Tokens in diesem Zustand?**
-         Bewusst noch nicht ausgeführt: Über eine Administratorsimulation das Dauerpasswort eines fremden
-         Kontos zu ziehen, ist eine ausdrückliche Entscheidung und kein Nebenschritt einer Messreihe.
-      2. Falls nein: Gibt es den Weg in der ChurchTools-Oberfläche? Dann gehört er so in die Einrichtungsdoku.
-      3. Parallel als Frage an den Support (**F1**).
-      **Kein Pi geht produktiv, bevor dieser Punkt eine belegte Antwort hat.**
+- [x] **E3 · Rückzugsweg** → **beantwortet** *(2026-09-23, siehe `Plan.md`, G18)*
+      **Die ursprüngliche Anleitung war falsch.** `DELETE /api/persons/{id}/logintoken` liefert für eine
+      **fremde** Person **403**, auch als Administrator – ebenso `GET …/logintoken` und `GET …/loginstring`.
+      Im ganzen `churchcore`-Rechtesatz gibt es kein Recht dafür, und die Administrationsoberfläche gibt
+      den Token ebenso wenig heraus (gegengeprüft).
+      **Der Grund ist einleuchtend:** Der Token wird über `POST /api/login/token` aus **Benutzername und
+      Passwort** abgeleitet. Er gehört der Person, nicht der Verwaltung.
+      **Gemessen:** Nach einem Wechsel des Passworts von Person 16 antwortete deren bis dahin gültiger
+      Token auf zwei Endpunkten mit **401**, bei gesunder Instanz und unverändertem anonymem Verhalten.
+      **Der Betriebsweg lautet damit:**
+      1. Administrator setzt dem Geräte-Benutzer ein Passwort (`PUT /persons/{id}/password`).
+      2. `POST /api/login/token` mit dessen Zugangsdaten erzeugt den Token.
+      3. Token in die Player-URL (der `/ccm/`-Teil bleibt E4/G9).
+      4. **Notbremse: Passwort ändern** – der Token ist sofort tot.
+      **Noch nicht gemessen:** Schritt 2 ist nur negativ geprüft (falsche Daten → 400). Dass gültige Daten
+      einen brauchbaren Token liefern, ist naheliegend, aber offen – und mit einem eigenen Konto in zwei
+      Minuten nachzuholen. Ob `POST /persons/{id}/archive` als zweite Notbremse wirkt, ist ungeprüft.
 
 - [ ] **E4 · `login_token` in der URL am `/ccm/`-Pfad** → beantwortet **G9** – **doppelt blockiert**
       Es fehlt das Custom Module (T1) **und** ein Token, an den ein Administrator regulär herankommt (E3/G18).
@@ -259,6 +261,8 @@ Hardware, nicht an der Instanz, und kann warten.
 Früh anstoßen, weil die Antwort nicht von uns abhängt.
 
 - [ ] **F1 · Support anschreiben** – `support@churchtools.de`
+      - ~~Wie widerruft ein Administrator den Login-Token eines Geräts?~~ **Entfällt** – über den
+        Passwortwechsel des Geräte-Benutzers (E3/G18), am 2026-09-23 gemessen.
       - **Zuerst: Custom Modules für die Testinstanz freischalten.** *(angefragt am 2026-09-23, Antwort steht aus)*
         Ohne sie sind B5, B6, C1–C4, E1 und E4 blockiert – siehe T1.
       - **Lässt sich die Testinstanz über die 30 Tage hinaus verlängern?** Wir sind Kunde und
@@ -302,9 +306,9 @@ bevor das Screen-Schema steht.
 
 - [x] **Alle Befunde in `Plan.md` eingetragen** *(Stand 2026-09-23)*, Abschnitt G: beantwortete Punkte nach
       oben, mit Datum und Quelle (Instanz, Spezifikation oder fremder Code).
-      Beantwortet: **G1–G8, G11, G14, G15, G19, G20**; **G16** und **G18** zur Hälfte.
+      Beantwortet: **G1–G8, G11, G14, G15, G18, G19, G20**; **G16** zur Hälfte.
       Offen und an der Freischaltung hängend: **G9, G10, G12, G13**. Dazu **G17** als Entscheidung.
-      **G18 ist der Punkt mit den größten Folgen** – er widerlegt den Notfallpfad aus E3.
+      **G18 hat den Notfallpfad aus E3 erst widerlegt und dann ersetzt** – die Notbremse ist der Passwortwechsel.
       Belege liegen lokal unter `fixtures/` – **nicht im Repo**, siehe `fixtures/README.md`.
 - [ ] **Erst danach das Screen-Schema festlegen.**
 
