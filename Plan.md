@@ -628,7 +628,20 @@ Phase 2 vor Phase 3 – bewusst. Ein Designer für ein Ausgabeformat, das noch n
 - **Persistierte Daten sind versioniert** und werden beim Lesen auf das aktuelle Schema migriert.
 - **Zeiten kommen in UTC und werden nach `Europe/Berlin` umgerechnet – immer über eine Zeitzonen-Bibliothek, nie über einen festen Offset.** ChurchTools hält die Ortszeit konstant und verschiebt die UTC-Darstellung über die Zeitumstellung (G19). Ein fester Offset zeigt ab Ende Oktober jeden Termin eine Stunde falsch, auf einem Gerät, das niemand kontrolliert.
 - **Der Player belegt jede Anfrage mit `only_allow_authenticated=true` und prüft die Identität aus `whoami`.** Leere Daten ohne bestätigte Identität sind ein Fehlerzustand mit sichtbarer Meldung, kein leerer Kalender (G20).
-- **Tests laufen nie gegen die Live-Instanz.** Grundlage sind aufgezeichnete, anonymisierte API-Antworten unter `fixtures/`, gegen einen Mock gespielt. Ein Test, der eine Instanz und ein Passwort braucht, ist kein Test, sondern ein Handgriff. **Das Verzeichnis ist nicht versioniert** (Entscheidung vom 2026-09-23, siehe Abschnitt „Entwicklungs- und Testumgebung“) – ein frisch geklonter Arbeitsplatz hat die Fixtures also nicht und muss sie sich beschaffen, bevor die Tests laufen.
+- **Tests laufen nie gegen die Live-Instanz.** Grundlage sind aufgezeichnete API-Antworten unter `fixtures/`, gegen einen Mock gespielt. Ein Test, der eine Instanz und ein Passwort braucht, ist kein Test, sondern ein Handgriff. **Das Verzeichnis ist nicht versioniert** (Entscheidung vom 2026-09-23) – ein frisch geklonter Arbeitsplatz hat die Fixtures nicht und muss sie sich beschaffen, bevor die Tests laufen. Ein Generator für einen einzucheckenden, synthetischen Satz wurde erwogen und **verworfen**, solange die Fixtures nur lokal gebraucht werden.
+
+- **Aufgezeichnet wird nur von der Testinstanz, nie von der Produktivinstanz** – und vor dem Ablegen wird bereinigt. Das ist keine Vorsichtsregel, sondern eine Lehre: Der erste Durchgang am 2026-09-23 war sorgfältig gemacht und übersah trotzdem zwei Klassen. **Zu entfernen sind mindestens:**
+
+  | Klasse | Beispiel | Warum |
+  | --- | --- | --- |
+  | Personenbezogene Felder | E-Mail, Telefon, Anschrift, Geburtstag | Datenschutz |
+  | Instanz-URL | `site_url`, `fileUrl`, `apiUrl` | Grundregel des Repos |
+  | Schlüssel und Geheimnisse | **`site_licensekey`**, `*_apikey`, `*_token`, `*_secret` | Beim ersten Durchgang übersehen |
+  | Datei- und Bild-Hashes | `/images/{id}/{hash}`, `filename=<hash>` | **Sind Zugangsschlüssel, keine Kennungen** – die `imageUrl` liefert anonym 200 (G14) |
+
+  Der gefährlichste Fall steht nicht in der Tabelle: In `GET /api/config` sind `churchdb_mailchimp_apikey`, `churchservice_ccli_token` und `churchservice_ccli_token_secret` auf **unserer Testinstanz leer** – auf einer produktiven Instanz müssen sie das nicht sein. Eine Bereinigung, die auf die vorliegenden Daten zugeschnitten ist, ist keine Regel. Deshalb die erste Hälfte dieses Punktes.
+
+  Nicht zu bereinigen sind dagegen Gruppen-, Kalender- und Dienstnamen. Sie sind organisatorisch und für eine Gemeinde weitgehend öffentlich – und realistische Namen sind als Testdaten wertvoll: Umlaute, Längen, Sonderzeichen, Namensgleichheiten. Wer sie wegkürzt, testet gegen eine Welt, die es nicht gibt.
 - **Ein Test sichert die Sandbox.** Er verbietet `allow-same-origin` in jedem erzeugten `<iframe>`. Siehe Risiko 6.
 - **Ein Test sichert die Duldsamkeit des Players.** Ein Screen mit einem erfundenen Blocktyp und einem unbekannten Feld muss rendern, nicht scheitern. Siehe Abschnitt E.
 - **Der Player-Build hat keine nachzuladenden Chunks.** Eine Prüfung im CI schlägt an, wenn der Build für den Player mehr als ein JavaScript-Bündel erzeugt.
