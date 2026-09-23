@@ -220,23 +220,24 @@ Hardware, nicht an der Instanz, und kann warten.
       Scheitert das, bleibt die Offline-Festigkeit halb – ein Pi, der während eines Netzausfalls neu startet,
       hat nichts zu laden. Dann ausdrücklich benennen, nicht übergehen.
 
-- [ ] **E2 · Betriebsbenutzer mit Minimalrechten** → **G21**, und weiter offen als gedacht
-      **Person 19 taugt nicht dafür** – aber nicht wegen zu vieler Rechte: `GET /api/permissions/internal/persons/19`
-      zeigt zwei Bereiche, **alle Werte leer**. Sie ist ein unbeschriebenes Blatt. Untauglich ist sie, weil sie
-      als Messobjekt für den Token-Weg entstand: Wegwerfname, `.invalid`-Adresse, **kein Passwort**.
-      **Beim Anlegen zu wissen:** `POST /api/persons` verlangt `departmentIds` (nicht leer), `campusId`
-      und **eine vollständige Datenschutz-Einwilligung** (`privacyPolicyAgreementTypeId`, `-WhoId`, `-Date`).
-      ChurchTools legt auch einen Maschinenbenutzer nicht ohne diese Angaben an. Personen werden mit
-      **`PATCH`** geändert, nicht mit `PUT` (405) – bei Terminen ist es umgekehrt.
-      **Was noch fehlt:** Eine Person ohne Zweifaktor mit dem Zuschnitt aus `Plan.md`, F – dort steht die
-      Rechteliste jetzt ausgeschrieben, die ChurchTools-seitige Hälfte als Tabelle.
-      **Anlegen in der Oberfläche**, nicht über die API: Rechte werden dort über Gruppen und Rollen vergeben,
-      und `PUT /permissions/person/{id}` nimmt nur numerische `authId`s ohne dokumentierte Bedeutung.
-      Passwort ebenfalls über die Oberfläche (E3/G18).
-      **Danach `GET /api/permissions/person` auslesen** – das liefert die `authId`s zu genau diesen Rechten
-      und damit eine gemessene Zuordnung Zahl → Recht für die Einrichtungsdoku.
-      Erst mit dem fertigen Konto lassen sich die drei Fragen aus **G21** beantworten, darunter: Sieht ein
-      gering berechtigter Benutzer den `site_licensekey` in `/api/config`?
+- [x] **E2 · Betriebsbenutzer mit Minimalrechten** → **weitgehend beantwortet** *(2026-09-23, siehe `Plan.md`, G21)*
+      **Gebaut und gemessen.** Person 22 „Minimal User" (`statusId: 0`, Benutzername `muser`), Mitglied der Gruppe 16
+      „Infoscreen-Geraete" (Gruppentyp **Dienst**, Status aktiv) in der Rolle Mitarbeiter. Eine Sitzung als dieses Konto
+      ist geführt und gegen das Administratorkonto gestellt.
+      **Drei Befunde, die den Zuschnitt ändern:**
+      - **`view` ist kein API-Recht.** Mit `churchcal.view = false` liefert `/api/calendars` trotzdem die berechtigten
+        Kalender und `/api/calendars/appointments` dieselben Termine wie dem Administrator. Der Modulschalter regelt die
+        Oberfläche, nicht die API – ein Recht weniger auf der SD-Karte.
+      - **`site_licensekey` fährt nicht mit.** `/api/config` gibt diesem Konto **74** Schlüssel – exakt dieselben wie einem
+        anonymen Aufruf, gegenüber 154 für den Administrator.
+      - **Der Sockel trägt mehr als gedacht.** Ohne jede Gruppenberechtigung: 3 Kalender, 10 Termine (9 davon mit Bild
+        samt `imageUrl`), 1 Event, 8 Dienste. Ein Terminblock mit Bildern liefe heute schon.
+      **Beim Anlegen zu wissen:** Die Person braucht einen **Benutzernamen** (`cmsUserId`), nicht nur ein Passwort –
+      sonst scheitert `POST /api/login/token` unabhängig vom Passwort. `POST /api/persons` verlangt außerdem
+      `departmentIds` (nicht leer), `campusId` und eine vollständige Datenschutz-Einwilligung; Personen werden mit
+      **`PATCH`** geändert, nicht mit `PUT` (405).
+      **Offener Rest**, alles klein: die Haken an Rolle 124 in der Oberfläche setzen (trennt endlich `authId` 306 von 403),
+      ein Testbeitrag für den Newsblock, Archivieren als zweite Notbremse. Die Modulrechte bleiben an T1 gebunden.
 
 - [x] **E3 · Rückzugsweg** → **beantwortet** *(2026-09-23, siehe `Plan.md`, G18)*
       **Die ursprüngliche Anleitung war falsch.** `DELETE /api/persons/{id}/logintoken` liefert für eine
@@ -319,8 +320,8 @@ bevor das Screen-Schema steht.
 
 - [x] **Alle Befunde in `Plan.md` eingetragen** *(Stand 2026-09-23)*, Abschnitt G: beantwortete Punkte nach
       oben, mit Datum und Quelle (Instanz, Spezifikation oder fremder Code).
-      Beantwortet: **G1–G8, G11, G14, G15, G18, G19, G20**; **G16** zur Hälfte.
-      Neu offen: **G21** – der Betriebsbenutzer mit Minimalrechten ist nie gebaut worden.
+      Beantwortet: **G1–G8, G11, G14, G15, G18, G19, G20**; **G16** und **G21** zur Hälfte.
+      **G21** ist seit dem 2026-09-23 gebaut und gemessen – offen bleiben daran nur noch `authId` 306 gegen 403, die Sichtbarkeit von Beiträgen und das Archivieren als zweite Notbremse.
       Offen und an der Freischaltung hängend: **G9, G10, G12, G13**. Dazu **G17** als Entscheidung.
       **G18 hat den Notfallpfad aus E3 erst widerlegt und dann ersetzt** – die Notbremse ist der Passwortwechsel.
       Belege liegen lokal unter `fixtures/` – **nicht im Repo**, siehe `fixtures/README.md`.

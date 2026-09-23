@@ -209,10 +209,10 @@ In der Entwicklung legt `getOrCreateModule()` das Modul selbst an, im Produktivb
   | Lesen auf | Wofür | Anmerkung |
   | --- | --- | --- |
   | **Kalender** – genau die, die ein Screen zeigt | Terminblöcke | `/calendars/appointments` verlangt `calendar_ids[]`; ohne Leserecht auf diese Kalender kommt nichts zurück |
-  | **Beiträge** | Newsblock | |
+  | **Beiträge** | Newsblock | **Ein Leserecht gibt es nicht** – `post` kennt allein `moderate posts`. Woran die Sichtbarkeit hängt, ist offen (G21) |
   | **Gruppen** | Gruppen- und Anmeldeblock | |
   | **Wiki-Kategorie „Infoscreen-Medien“ samt Dateien** | Mediathek | Der Wiki-Weg hat gewonnen (G8) |
-  | **Ressourcen und Buchungen** | Raumbelegung | nur bei diesem Block |
+  | **Ressourcen und Buchungen** | Raumbelegung | nur bei diesem Block. **Ein Leserecht für Buchungen gibt es nicht** – `churchresource` kennt nur `view resource`, `create bookings` und `administer bookings`; ob Lesen an `view resource` hängt, ist ungeprüft |
   | **Events und Dienste** | Gottesdienstblock | nur bei diesem Block |
 
   **Ausdrücklich nicht:** Personendaten, Schreibrechte irgendwo außer `status`, Administrationsrechte, Zweifaktor-Anmeldung (an 2FA-Konten werden keine Login-Tokens ausgegeben).
@@ -238,36 +238,67 @@ In der Entwicklung legt `getOrCreateModule()` das Modul selbst an, im Produktivb
 
   **Die Einrichtung:**
 
-  1. Eigene Gruppe anlegen, etwa „Infoscreen-Geräte". Als Gruppentyp bietet sich **Merkmal** an – es ist kein Dienst und keine Kleingruppe, und der Typ trägt nur zwei Rollen.
+  1. Eigene Gruppe anlegen, etwa „Infoscreen-Geräte". Als Gruppentyp **Dienst** – so schreibt es die ChurchTools-Dokumentation für eine reine Berechtigungsgruppe vor: *„Als Gruppentyp wählst du Dienst aus."* *(Korrektur vom 2026-09-23: Hier stand zuvor **Merkmal**, aus eigener Überlegung statt aus der Doku. Die zuerst so angelegte Gruppe wurde gelöscht und als Dienst neu angelegt.)* **Was der Typ mitbringt, ist gemessen:** Gruppe 16 trägt über `group_type_role` bereits **170** Zuweisungen. Auf die Rolle **Mitarbeiter** entfallen davon **8** – die wenigsten der fünf Rollen (Leiter und Co-Leiter tragen je 62) – und alle acht sind **gruppeninterne** Rechte (`+see group`, `+view service` …), keine globalen. Der Typ Dienst schleppt also nichts Globales ein, und Mitarbeiter ist belegt die schmalste Rolle.
   2. **Die Gruppe auf Status „Aktiv" setzen.** Solange sie im **Entwurf** steht, sind die Rechte *nicht* wirksam: *„Permissions are not yet active as long as the group has the status Draft."* Wer das übersieht, sucht den Fehler beim Player.
-  3. Den Geräte-Benutzer als Mitglied aufnehmen.
-  4. Die Rechte **an der Rolle in dieser Gruppe** vergeben.
-  5. Anschließend `GET /api/permissions/group_role` auslesen und die vergebenen `authId`s notieren – die gemessene Zuordnung für die Einrichtungsdoku.
+  3. Den Geräte-Benutzer als Mitglied aufnehmen – und ihm **einen Benutzernamen** (`cmsUserId`) geben, nicht nur ein Passwort. Ohne Benutzernamen scheitert `POST /api/login/token` unabhängig vom Passwort (G21).
+  4. Die Rechte **an der Rolle in dieser Gruppe** vergeben. Der Klickweg laut ChurchTools-Dokumentation:
+     Rechteverwaltung → Reiter **Gruppen** → Gruppennamen anklicken → mit der Maus über die **Rolle** fahren →
+     **Bearbeiten** → Berechtigungsbaum ausklappen → Haken setzen → Speichern.
+
+     **Die Falle, die zwanzig Minuten kostet:** Der Reiter kennt eine Checkbox *„Nur Einträge mit Berechtigungen
+     anzeigen"*. Ist sie aktiv, erscheinen nur Gruppen, *„denen mindestens eine Berechtigung gegeben wurde"* – die
+     frisch angelegte Berechtigungsgruppe hat naturgemäß keine und **fehlt in der Liste, in der man sie gerade
+     berechtigen will**. Daneben filtern Gruppentyp und Standort.
+
+  5. Anschließend `GET /api/permissions/group_role/{rolle}` auslesen und die vergebenen `authId`s notieren – die gemessene
+     Zuordnung für die Einrichtungsdoku. Der Endpunkt gibt es auch je Rolle, das grenzt die Antwort eng ein.
+     **Wer die Zuordnung Zahl → Recht gewinnen will, setzt jeweils ein einzelnes Recht und liest zwischendurch zurück** –
+     werden mehrere auf einmal gesetzt, ist die Zuordnung wieder Auslegungssache.
 
   **Was die Rolle bekommt** – jeweils so eng wie möglich, nicht „alle":
 
-  | Recht | Umfang | Nur wenn |
+  | Recht – Name in der Oberfläche (API-Schlüssel) | Umfang | Nur wenn |
   | --- | --- | --- |
-  | Kalender: einzelnen Kalender sehen | genau die Kalender, die ein Screen zeigt | Terminblock |
-  | Events: Events einzelner Kalender sehen | dieselben Kalender | Gottesdienst-/Dienstblock |
-  | Gruppen: Gruppe sehen | genau die Gruppen, die ein Screen zeigt | Gruppenblock |
-  | Wiki: Kategorie sehen | allein „Infoscreen-Medien" | Mediathek |
-  | Beiträge sehen | – | Newsblock |
-  | Ressourcen sehen, Buchungen lesen | die gezeigten Ressourcen | Raumbelegung |
+  | Kalender: *Einzelnen Kalender sehen* (`view category`) | genau die Kalender, die ein Screen zeigt | Terminblock |
+  | Events: *Events von einzelnen Kalendern sehen* (`view events`) | dieselben **Kalender** – das Recht nimmt Kalender-IDs, keine Event-IDs | Gottesdienstblock |
+  | Events: *Dienste einzelner Dienstkategorien sehen* (`view servicegroup`) | die gezeigten Dienstkategorien | Dienstplanblock |
+  | Gruppen: *Gruppe inkl. ihrer Gruppenmitglieder sehen* (`view group`) | genau die Gruppen, die ein Screen zeigt | Gruppenblock |
+  | Wiki: *Einzelne Wiki-Kategorien sehen* (`view category`) | allein „Infoscreen-Medien" | Mediathek |
+  | Ressourcen: *Ressource sehen* (`view resource`) | die gezeigten Ressourcen | Raumbelegung |
   | Custom Module | siehe Rollentabelle oben | sobald freigeschaltet (T1) |
+
+  **Der Modulschalter fehlt in dieser Tabelle mit Absicht.** Die ChurchTools-Dokumentation verlangt zu jedem Kategorierecht
+  zusätzlich das modulweite *„Kalender" sehen* (`view`) – und für Menschen, die klicken, stimmt das auch. **Für einen Player,
+  der liest, nicht:** Mit `churchcal.view = false` liefert `/api/calendars` trotzdem die berechtigten Kalender und
+  `/api/calendars/appointments` dieselben Termine wie dem Administrator (gemessen 2026-09-23, G21). `view` steuert die
+  Sichtbarkeit des Moduls in der Oberfläche, nicht den API-Zugriff. Der Betriebsbenutzer bekommt es deshalb **nicht** –
+  es wäre ein Recht mehr auf der SD-Karte ohne Gegenwert.
+
+  **Ein weiteres Recht braucht er ebenfalls nicht:** Die eigene Gruppenmitgliedschaft macht die Berechtigungsgruppe für ihn
+  sichtbar, ohne dass `view group` vergeben wäre. Für **andere** Gruppen gilt das nicht.
 
   **Und eine zweite Notbremse, die dabei abfällt:** *„[Permissions] lose their effectiveness once the group has the status Archived."* Wird die Berechtigungsgruppe archiviert, verliert das Gerät **sofort alle** darüber vergebenen Rechte – unabhängig davon, ob sein Login-Token noch gültig ist. Zusammen mit dem Passwortwechsel (G18) gibt es damit zwei voneinander unabhängige Wege, ein Gerät stillzulegen: einen, der die **Anmeldung** beendet, und einen, der die **Sichtbarkeit** beendet. Der Sockel aus dem Personenstatus bleibt von beidem unberührt.
 
-  **Die gemessenen `authId`s** – der Anfang der Zuordnung, die die Spezifikation nicht liefert:
+  **Der Rechtekatalog ist seit dem 2026-09-23 vollständig bekannt** – nicht aus der Spezifikation, sondern aus der
+  Rechteverwaltung selbst: Sie führt jedes Recht mit **Klarnamen und API-Schlüssel in Klammern**, und die Schlüssel decken
+  sich Zeichen für Zeichen mit denen, die `GET /permissions/global` zurückgibt. Damit ist die Zuordnung **Name → Schlüssel**
+  erledigt. Was fehlt, ist allein die Zuordnung **Schlüssel → Zahl**.
 
-  | `authId` | `dataId` | Bedeutung laut Oberfläche |
-  | --- | --- | --- |
-  | 131 | Sicherheitsstufe | Personen: eigene Personendaten **sehen** |
-  | 132 | Sicherheitsstufe | Personen: eigene Personendaten **bearbeiten** |
-  | 306 | Kalender-IDs | „Events einzelner Kalender sehen" **oder** „einzelnen Kalender sehen" |
-  | 403 | Kalender-IDs | die jeweils andere der beiden |
+  **Die gemessenen `authId`s** – der Anfang dieser letzten Zuordnung:
 
-  Dass 306 und 403 die beiden Kalenderrechte sind, ist belegt: Beide tragen `dataId: [1, 2, 3]`, und die Oberfläche nennt für denselben Status genau die Kalender 1, 2 und 3. **Welches welches ist, ist offen** – das entscheidet ein einziger Aufruf von `GET /permissions/global` in einer Sitzung dieses Kontos, weil die Antwort dort die Rechte benannt führt.
+  | `authId` | `dataId` | Bedeutung | Beleg |
+  | --- | --- | --- | --- |
+  | 131 | Sicherheitsstufe | Personen: eigene Personendaten **sehen** (`security level view own data`) | Status 0 trägt 131 mit `dataId 2`; die Sitzung zeigt `= [2]` |
+  | 132 | Sicherheitsstufe | Personen: eigene Personendaten **bearbeiten** (`security level edit own data`) | ebenso |
+  | 306 | Kalender-IDs | `view category` **oder** `view events` | siehe unten |
+  | 403 | Kalender-IDs | die jeweils andere der beiden | siehe unten |
+
+  **Warum 306 und 403 weiterhin nicht getrennt sind.** Dass es die beiden Kalenderrechte sind, ist doppelt belegt: Am
+  Personenstatus 0 tragen beide `dataId [1, 2, 3]`, und die Sitzung dieses Kontos zeigt `churchcal.view category = [1,2,3]`
+  und `churchservice.view events = [1,2,3]`. An der Gruppe 11 „Gemeindeleitung" tragen alle fünf Rollen beide authIds mit
+  `dataId 4` – und Kalender 4 heißt „Gemeindeleitung". **Die Zahlen laufen aber immer im Doppel**, deshalb trennt sie keine
+  Messung an bestehenden Zuweisungen. Es hilft nur, **genau eines** der beiden Rechte an einer Rolle zu setzen und
+  anschließend `GET /api/permissions/group_role/{rolle}` zu lesen. Ein Haken, ein Aufruf.
 
 - **Kategorien haben eine `securityLevelId`.** `ct-pass-store` setzt sie auf `1`. Was die Stufen im Zusammenspiel mit den Kategorie-Rechten bewirken, ist ungeklärt (G13) – für `status`, die einzige Kategorie mit Schreibrecht für ein unbeaufsichtigtes Gerät, lohnt der Blick.
 - **Ein frisch installiertes Modul ist für alle unsichtbar – auch für Administratoren.** Belegt am zweiten Modul der Instanz: `ctradius` steht mit `view: false` und durchweg leeren Listen im Rechteobjekt eines Admin-Kontos (G4). Die Rechtevergabe ist damit **der erste Schritt nach dem Hochladen**, nicht der letzte vor der Übergabe; in der Einrichtungsdoku steht sie an erster Stelle, und wer in Phase 0 sein Testmodul aufruft und nichts sieht, sucht den Fehler zuerst hier.
@@ -423,10 +454,22 @@ ChurchTools hält die **Ortszeit** konstant und verschiebt die UTC-Darstellung. 
 
 **Das ist schlimmer als ein 401.** Die meisten Quellen antworten *erfolgreich* mit nichts. Ein Screen, dessen Anmeldung scheitert, zeigt eine leere Bühne – nicht von einem Sonntag ohne Termine zu unterscheiden. Nur die Terminabfrage selbst fällt mit 403 auf.
 
+**Nachtrag vom 2026-09-23, und er macht die Sache schlimmer.** Mit einem **angemeldeten, aber gering berechtigten** Konto (G21) treten **drei** Verhaltensweisen nebeneinander auf, und sie sind von außen nicht zu unterscheiden:
+
+| Verhalten | Beispiel | Erkennbar? |
+| --- | --- | --- |
+| **403 mit Klartext** | `/wiki/categories/1/pages` → „Forbidden to see WikiCategory[1]" | ja |
+| **200, still gefiltert** | `/calendars` → 3 statt 5 | nein |
+| **200, leere Liste** | `/files/wiki_1/<Mediathek>` → 0 statt 2 Dateien | nein |
+
+Der dritte Fall trifft ausgerechnet die **Mediathek**. Ein Player ohne Wiki-Recht zeigt Schwarz und meldet nichts – und `only_allow_authenticated` hilft hier gar nicht, denn die Anmeldung ist ja gelungen. Daraus folgt eine dritte Festlegung, unten als Punkt 3.
+
 Zwei Festlegungen folgen daraus, beide gehören ins Datenmodell und nicht in ein späteres Review:
 
 1. **Der Player hängt `only_allow_authenticated=true` an jede Anfrage.** Gemessen: Damit liefert `/api/whoami` anonym sauber **401** statt 200. Das ist der Schalter, der den stillen Fehler in einen lauten verwandelt.
 2. **Der Player prüft nach dem Start die Identität**, nicht nur den Statuscode: Ist `whoami.data.id` die erwartete Person? Leere Daten ohne bestätigte Identität sind ein **Fehlerzustand mit sichtbarer Meldung**, kein leerer Kalender.
+3. **Der Player prüft beim Start seine Rechte, statt auf Fehler zu warten.** Er liest `GET /permissions/global` und gleicht ab, ob er für jeden Block seines Screens das nötige Recht trägt. Fehlt eines, ist das eine **benannte Meldung** – nicht ein Block, der still leer bleibt.
+
 
 **G11 – Beantwortet, und damit hinfällig: Die Felder gibt es nicht.** *(2026-09-23, Spezifikation unserer eigenen Instanz, Build 32882 – aufgezeichnet unter `fixtures/schema/custommodule-schemas.json` – **lokal, nicht versioniert**)* `CustomModuleDataValue` führt **nur** `id`, `dataCategoryId` und `value`. **Weder `domainId` noch `domainType`.** Der Typ-Snapshot aus `ct-pass-store` (2025-09-02) ist an dieser Stelle überholt – er hat die Frage überhaupt erst aufgeworfen.
 
@@ -479,6 +522,42 @@ Auch die **Administrationsoberfläche gibt einen fremden Token nicht heraus** (2
 **G16 – Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.
 
 Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit darunter, und der Player wertet `429` und `Retry-After` weiterhin aus – nur ist jetzt belegt, dass er sie im Normalbetrieb nicht zu sehen bekommt. Nach einer **dokumentierten** Grenze bleibt die Frage an den Support (F1) offen.
+**G21 – Der Betriebsbenutzer, erstmals gegen ein echtes Konto gemessen.** *(2026-09-23, Testinstanz)* Abschnitt F beschrieb seinen Zuschnitt seit Beginn – aber als Absichtserklärung, nie geprüft. Seit dem 2026-09-23 gibt es Zahlen: Person 22 „Minimal User" (`statusId: 0`, Benutzername `muser`) ist angelegt, Mitglied der Gruppe 16 „Infoscreen-Geraete" in der Rolle Mitarbeiter, und es wurde **eine vollständige Sitzung als dieses Konto** geführt.
+
+**Beim Anlegen: Ein Passwort allein genügt nicht.** Die Person braucht einen **Benutzernamen** (`cmsUserId`). Fehlt er, hat `POST /api/login/token` nichts, wogegen es prüfen könnte – jeder Versuch endet mit „Login fehlgeschlagen: Überprüfe Benutzername und Passwort", unabhängig davon, welches Passwort gesetzt wurde. `POST /api/persons` legt das Feld nicht mit an, und ohne hinterlegtes Postfach scheidet auch `POST /persons/{id}/invite` aus. Das gehört an den Anfang der Einrichtungsdoku, weil der Fehler sonst beim Passwort gesucht wird, wo er nicht liegt.
+
+**Frage 1 – reicht der Zuschnitt? Die Nulllinie steht.** Gemessen **ohne eine einzige Gruppenberechtigung**, also allein aus dem Sockel des Personenstatus:
+
+| Quelle | Administrator | Person 22 | Verhalten |
+| --- | --- | --- | --- |
+| `/calendars` | 5 | **3** | still gefiltert nach `view category` |
+| `/calendars/appointments` Kal. 1–3 | 10 | **10** | identisch |
+| `/calendars/appointments` Kal. 4 | 1 | **403** | ehrlicher Fehler |
+| `/events` | 1 | **1** | identisch |
+| `/services` | 8 | **8** | Stammdaten, ungeschützt |
+| `/groups` | 8 | **1** | nur die eigene, über die Mitgliedschaft |
+| `/persons` | 4 | **1** | nur sie selbst |
+| `/wiki/categories` | 2 | **0** | |
+| `/wiki/categories/1/pages` | 200 | **403** „Forbidden to see WikiCategory[1]" | |
+| `/files/wiki_1/<Mediathek>` | 2 Dateien | **200 – 0 Dateien** | **stille Leere** |
+| `/resources` | 7 | **0** | |
+| `/posts` | 0 | 0 | unentscheidbar – die Instanz hat keine Beiträge |
+
+**Der Sockel trägt mehr, als er sollte – und genug für einen ersten Block.** Ohne dass jemand etwas vergeben hätte, liest das Gerätekonto drei Kalender, zehn Termine, ein Event und acht Dienste. **Neun der zehn Termine tragen ein Bild mit `imageUrl`, für dieses Konto lesbar.** Ein Terminblock mit Bildern liefe heute schon. Das ist bequem und zugleich der Beleg für die additive Falle: Die drei Kalender hat niemand für den Screen bestimmt, und abstellen ließen sie sich nur über den Status **für alle**.
+
+**Der wichtigste Einzelbefund: `view` ist kein API-Recht.** `churchcal.view` steht für dieses Konto auf `false` – und trotzdem liefert `/api/calendars` drei Kalender und `/api/calendars/appointments` dieselben zehn Termine wie dem Administrator. Ebenso `churchservice.view = false` bei identischem `/api/events`. Der Modulschalter „Kalender" sehen (`view`) steuert die **Sichtbarkeit des Moduls in der Oberfläche**, nicht den Zugriff über die API. Die Regel der ChurchTools-Dokumentation, man brauche stets beide Rechte, gilt für Menschen, die klicken – **nicht für einen Player, der liest**. Für den Betriebsbenutzer ist das ein Recht weniger auf der SD-Karte. *(Gemessen auf Build 32882; ob ChurchTools das als Zusage versteht, ist offen – der Player sollte ohne `view` auskommen, aber nicht daran zerbrechen, wenn es später anders wäre.)*
+
+**Frage 2 – `site_licensekey`: Entwarnung.** `GET /api/config` liefert dem Administrator **154** Schlüssel, Person 22 aber nur **74** – und das sind **exakt dieselben 74, die auch ein anonymer Aufruf bekommt**. Dem Administrator vorbehalten bleiben unter anderem `site_licensekey`, `admin_mail`, `admin_ids`, `emailServer`, `access_control_allow_origins`, `churchdb_mailchimp_apikey` und `churchservice_ccli_token*`. **Der Lizenzschlüssel fährt nicht auf der SD-Karte mit.** Umgekehrt heißt das: Der Player kann sich an `/api/config` nicht von einem anonymen Aufrufer unterscheiden – die Identitätsprüfung aus G20 bleibt Pflicht.
+
+**Frage 3 – die Reste aus G18.** `POST /api/login/token` **trägt für gültige Zugangsdaten**: Der so erzeugte Token beantwortet `/api/whoami` mit `id: 22`, also nicht mit dem anonymen Benutzer. Damit ist der Betriebsweg aus G18 durchgehend gemessen, mit Ausnahme des Archivierens als zweiter Notbremse – das steht noch aus und ist ein Schreibzugriff.
+
+**Was offen bleibt:**
+
+- **Welche `authId` welches Kalenderrecht ist** (306 gegen 403). Die Sitzung trennt sie nicht: Beide tragen `dataId [1, 2, 3]`, und `churchcal.view category` wie `churchservice.view events` stehen beide auf `[1, 2, 3]`. Es hilft nur, **ein einzelnes** Recht an Rolle 124 zu setzen und zurückzulesen.
+- **Woran die Sichtbarkeit von Beiträgen hängt.** Ein Leserecht gibt es nicht (siehe Abschnitt F), und die Instanz hat keinen einzigen Beitrag – die Frage ist ohne Testbeitrag nicht zu beantworten.
+- **Ob Archivieren der Gruppe als zweite Notbremse wirkt.**
+- **Die Modulrechte selbst**, solange Custom Modules nicht freigeschaltet sind (T1). Die ChurchTools-seitige Hälfte ist aber die größere: Sie bemisst, was der Token auf der SD-Karte wirklich darf.
+
 
 #### Offen
 
@@ -489,30 +568,6 @@ Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit
 **G12 – Wird das JSON Schema einer Kategorie serverseitig durchgesetzt?** Entscheidet, ob wir ein vollständiges Schema hinterlegen müssen (und dann an 2.000 Zeichen scheitern) oder ein permissives genügt. Siehe Abschnitt E.
 
 **G13 – Was bewirkt `securityLevelId` an einer Kategorie?** Besonders für `status`, die einzige Kategorie, auf die ein unbeaufsichtigtes Gerät schreibt.
-
-**G21 – Der Betriebsbenutzer mit Minimalrechten ist nie gebaut worden.** Abschnitt F beschreibt seinen Zuschnitt seit Beginn – die Modulrechte und, wichtiger, die Leserechte in ChurchTools selbst. **Gegen eine echte Person geprüft wurde das nie.** Es ist eine Absichtserklärung, kein Befund.
-
-**Stand 2026-09-23:** Person 22 „Minimal User" ist angelegt (`statusId: 0`), hat aber **keine Gruppenmitgliedschaft und keine direkte Zuweisung**. Ihre Rechte stammen allein aus dem Personenstatus – und die sind Vorgabe der Instanzeinrichtung, nicht bewusst gewählt. Der Zuschnitt aus Abschnitt F ist damit noch nicht gebaut.
-
-**Person 19 auf der Testinstanz taugt dafür nicht** – aber nicht, weil sie zu viele Rechte hätte. *(Korrektur vom 2026-09-23: Die frühere Behauptung, sie trage „Vorgaberechte, die niemand bewusst gewählt hat", ist falsch.)* `GET /api/permissions/internal/persons/19` liefert zwei Bereiche, `churchdb` und `churchservice`, **alle Werte leer**. Sie ist ein unbeschriebenes Blatt. Untauglich ist sie, weil sie als Messobjekt für den Token-Weg entstanden ist: Wegwerfname, `.invalid`-Adresse, kein Passwort.
-
-**Wie Rechte in ChurchTools tatsächlich vergeben werden** *(2026-09-23 gemessen)*:
-
-- `GET /permissions/internal/persons/{id}` zeigt **nur direkte Zuweisungen an der Person**, nicht die wirksamen. Für das eigene Administratorkonto (Person 16) stehen dort **dieselben zwei leeren Bereiche** – die Adminrechte tauchen gar nicht auf. Sie kommen über **Gruppen und Rollen**. Rechte an der Person sind damit der Ausnahmeweg, nicht der Normalfall.
-- `PUT /permissions/{domainType}/{domainId}` existiert („Save a raw permission assignment"), `domainType` aus `group, group_role, group_type, group_type_role, person, status`. Der Körper trägt `authId` und optional `dataId`.
-- **Die `authId` ist eine Zahl ohne Namen.** Die Spezifikation liefert keine Zuordnung, und einen Katalog-Endpunkt gibt es nicht. `GET /permissions/person` listet nur die vorhandenen Zuweisungen (302 auf dieser Instanz, authIds von 1 bis 10801).
-
-**Daraus der Weg, und er dreht den Nachteil um:** Der Benutzer wird **in der Oberfläche** eingerichtet, wo die Rechte Namen tragen. Anschließend liest man über `GET /api/permissions/group_role` aus, **welche `authId`s dabei gesetzt wurden** – eine belegte Zuordnung Zahl → Recht statt einer geratenen. Der vollständige Zuschnitt samt Fallstricken steht in **Abschnitt F**, „Wie der Betriebsbenutzer eingerichtet wird – und wie nicht".
-
-**Am 2026-09-23 gegen die ChurchTools-Dokumentation gelesen**, mit zwei Folgen, die keine Messung gezeigt hätte: Berechtigungen sind **rein additiv** – was der Personenstatus gibt, nimmt keine Gruppenkonfiguration zurück. Und die Rechte einer Gruppe wirken erst, wenn die Gruppe den Status **„Aktiv"** hat; im Entwurf sind sie unwirksam, beim Archivieren verfallen sie. Letzteres ist zugleich eine **zweite Notbremse** neben dem Passwortwechsel aus G18.
-
-**Drei Fragen hängen an dem fertigen Konto**, und alle drei brauchen eine **Anmeldung als dieses Konto**:
-
-1. **Reicht der Zuschnitt aus Abschnitt F**, damit der Player alles sieht, was er rendern muss – und nicht mehr? Nach **G20** ist das nicht durch Hinsehen zu beantworten: Fehlende Rechte sehen wie leere Listen aus, nicht wie Fehler.
-2. **Was sieht ein gering berechtigter Benutzer in `GET /api/config`?** Als Administrator steht dort `site_licensekey` im Klartext. Liest der Infoscreen-Benutzer ihn mit, fährt der Lizenzschlüssel auf jeder SD-Karte im Foyer mit.
-3. **Die beiden Reste aus G18**: ob `POST /login/token` für gültige Zugangsdaten trägt, und ob Archivieren als zweite Notbremse wirkt.
-
-**Die Modulrechte selbst sind davon ausgenommen**, solange Custom Modules nicht freigeschaltet sind (T1) – prüfbar ist zunächst nur die ChurchTools-seitige Hälfte. Die ist aber die größere: Sie bemisst, was der Token auf der SD-Karte wirklich darf.
 
 **G17 – Extension Store**: Aufnahmekriterien, Einreichungsweg, ob eine Veröffentlichung überhaupt angestrebt wird. Der Publisher hält seinen Store-Text in einer eigenen `EXTENSION_STORE.md` – ein Muster, das sich übernehmen lässt.
 
@@ -784,7 +839,7 @@ Die Reihenfolge folgt dem Preis: erst was nichts kostet, dann was etwas kostet. 
 5. **Ein Bild über `POST /files/wiki_<kategorie>/<id>` hochladen**, wieder auslesen und **in einem `<img>`-Tag anzeigen**. Seit G14 ist die Frage schärfer gefasst: Trägt die hochgeladene Datei neben `fileUrl` auch eine `imageUrl` am Bilddienst? Davon hängen serverseitige Skalierung und Cachefähigkeit ab. Der Versuch, der über den Bilderupload entscheidet.
 6. **Support anschreiben – und zwar zuerst wegen der Frist.** Die Testinstanz läuft nach 30 Tagen ab (etwa 2026-10-22); ob sich das für die Entwicklung einer Extension verlängern lässt, bestimmt, wie eng die Messungen getaktet werden müssen. **Seit dem 2026-09-23 steht eine zweite, dringendere Frage daneben:** die **Freischaltung der Custom Modules** für diese Instanz – ohne sie sind B5, B6, der C-Block, E1 und E4 blockiert (angefragt, Antwort steht aus). Im selben Schreiben die Frage nach einem dokumentierten Rate-Limit (G16); **entfallen** ist dagegen die Frage nach einem Speicherziel für Custom-Module-Dateien – die Wiki-Kategorie samt Bilddienst beantwortet sie (G8).
 7. **`bensteUEM/ct-events-load` lesen**, insbesondere `src/persistance.ts` und die Terminbehandlung – vor der ersten eigenen Zeile Bindungscode in Phase 4, und bevor das Screen-Schema festgezurrt wird.
-8. **Einen Betriebsbenutzer mit Minimalrechten bauen und prüfen** (**G21**) – vorgezogen, weil er ohne Custom Modules weiterkommt und drei offene Fragen auf einmal schließt. Er braucht ein Passwort, und das geht nur über die Oberfläche (**G18**). Person 19 auf der Testinstanz taugt dafür nicht – sie hat gar keine Rechte, ist aber als Messobjekt entstanden und hat kein Passwort. Anlegen **in der Oberfläche**, danach die vergebenen `authId`s über `GET /api/permissions/person` auslesen. Danach die URL am Pi aufrufen (G9), sobald Phase 2 steht.
+8. ~~**Einen Betriebsbenutzer mit Minimalrechten bauen und prüfen**~~ – **weitgehend erledigt am 2026-09-23** (G21). Person 22 „Minimal User" existiert mit Benutzername `muser`, ist Mitglied der Gruppe 16 „Infoscreen-Geraete" (Typ Dienst, aktiv) in der Rolle Mitarbeiter, und eine Sitzung als dieses Konto ist gemessen. **Der Lizenzschlüssel fährt nicht mit**, der Sockel des Personenstatus trägt bereits drei Kalender samt Terminbildern, und `view` ist kein API-Recht. **Rest:** die Haken an Rolle 124 setzen (Oberfläche), damit 306/403 trennbar werden; ein Testbeitrag für den Newsblock; Archivieren als zweite Notbremse.
 9. **Lukas Block (`lubl`) im Forum ansprechen** – nicht, um Fragen zu stellen, die der Code beantwortet, sondern zu G8, G10 und der Idee einer gemeinsamen `ct-utils`-Bibliothek (Offene Entscheidung 10). Er betreibt dieselbe Schnittstelle produktiv und sucht ausdrücklich nach einem Ort für wiederverwendbaren Setup-Code.
 10. **Befunde hier eintragen**, erst danach das Screen-Schema festlegen.
 
@@ -801,6 +856,15 @@ Die Reihenfolge folgt dem Preis: erst was nichts kostet, dann was etwas kostet. 
 - Infoscreen mit eigenen Inhalten (Wünsche der Anwender): <https://forum.church.tools/topic/6252>
 - Login-Token für den Infoscreen-Benutzer: <https://forum.church.tools/topic/11910>
 - CORS in ChurchTools: <https://churchtools.academy/help/system-einstellungen/api/0-cors/>
+- **ChurchTools Academy, Rechteverwaltung** – am 2026-09-23 gelesen und dem Plan gegenübergestellt:
+  [Rechteverwaltung verstehen](https://churchtools.academy/de/help/rechteverwaltung/rechteverwaltung-verstehen/),
+  [Wie vergebe ich eine globale Berechtigung?](https://churchtools.academy/de/help/rechteverwaltung/berechtigungen-vergeben/wie-vergebe-ich-eine-globale-berechtigung/)
+  (Klickweg zur Gruppenrolle),
+  [Filtermöglichkeiten in der Rechteverwaltung](https://churchtools.academy/de/help/rechteverwaltung/grundlagen-rechteverwaltung-verstehen/28-filtermoglichkeiten-in-der-rechteverwaltung/)
+  (die Checkbox „Nur Einträge mit Berechtigungen anzeigen"),
+  [Unterschied globale/gruppeninterne Berechtigungen](https://churchtools.academy/de/help/rechteverwaltung/berechtigungen/unterschied-zwischen-globalen-und-gruppeninternen-berechtigungen/).
+  **Arbeitsregel seit dem 2026-09-23:** Zu ChurchTools-Verhalten wird **vorab** dort recherchiert, nicht erst, wenn eine
+  Messung unklar bleibt – die API zeigt Zustände, die Doku zeigt Regeln.
 
 - Kein offizielles Testsystem, Datenbank-Kopie kostenpflichtig: <https://forum.church.tools/topic/6264/testsystem>
 - 30-Tage-Testinstanz: <https://church.tools/de/test-churchtools/> · Support: <support@churchtools.de>
