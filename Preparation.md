@@ -13,12 +13,23 @@ anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
 > Eine Verlängerung ist ungeklärt (**F1**, zuerst zu fragen).
 >
 > **Regel, die dieser Liste vorgeht: Was nur eine Instanz beantworten kann, wird zuerst gemessen.
-> Was lokal geht, geht auch im November noch.** Damit ändert sich die Reihenfolge:
-> **T** → **B** → **C**, **D**, **E** (alle instanzgebunden, alle auf der Testinstanz) → erst danach die
-> Oberfläche gegen den Mock. **F1 geht heute raus**, nicht am Ende.
+> Was lokal geht, geht auch im November noch.**
 >
-> **Und alles, was die Instanz überlebt, wird mitgeschrieben**: Fixtures ins Repo, Typ-Snapshot einchecken.
+> **Stand 2026-09-23 – zweite Bremse.** Auf der Testinstanz sind **Custom Modules nicht freigeschaltet**
+> (T1, negativ). Eine Freischaltung ist angefragt, die Antwort steht aus. Damit zerfällt die Liste
+> nicht mehr nach Preis, sondern danach, **ob ein Punkt ein eigenes Modul braucht**:
+>
+> - **Ohne Modul, also jetzt machbar:** T2, T3, D1–D3, E2, E3 – und alles Lesende.
+>   **D1/D2 und A2 sind damit erledigt.**
+> - **Blockiert bis zur Freischaltung:** B5, B6, C1–C4, E1, E4.
+> - **Unbefristet und lokal:** die Oberfläche gegen den Mock. Dafür braucht es nie wieder eine Instanz.
+>
+> **Und alles, was die Instanz überlebt, wird mitgeschrieben**: Fixtures aufzeichnen, Typ-Snapshot ziehen.
 > Das ist der Ertrag dieser 30 Tage.
+>
+> **Entschieden am 2026-09-23:** Die Fixtures liegen unter `fixtures/` und werden **nicht versioniert**
+> (`.gitignore` erfasst das Verzeichnis). Der Ertrag hängt damit an einem Arbeitsplatz – eine Sicherung
+> außerhalb des Repos ist der Ersatz, den dieser Zuschnitt braucht.
 
 **Grundregel:** Ein `404` der ChurchTools-API ist kein Beweis für eine fehlende Route. Jede Prüfung läuft
 angemeldet und mit ausreichenden Rechten, sonst ist ihr Ergebnis wertlos (Lehre aus G1).
@@ -30,17 +41,21 @@ angemeldet und mit ausreichenden Rechten, sonst ist ihr Ergebnis wertlos (Lehre 
 Ohne diesen Befund ist jede Planung auf die Testinstanz hin wertlos – der Lizenzumfang einer Testinstanz
 muss dem der Produktivinstanz nicht gleichen.
 
-- [ ] **T1 · Custom Modules auf der Testinstanz** – **angemeldet**, nicht anonym
-      `GET /api/config` → `feature_custommodule`, `GET /api/custommodules` → **200**.
-      Anonym geprüft ist das wertlos: Die anonyme `config`-Antwort führt das Flag gar nicht, und
-      `/api/custommodules` antwortet anonym mit 404 – gemessen am 2026-09-22, und genau die Falle aus **G1**.
-      - Trägt → alles Instanzgebundene wandert dorthin, die Produktivinstanz bleibt unberührt.
-      - Trägt nicht → zurück zum kontrollierten Vorgehen auf der Produktivinstanz, und F1 wird dringend.
+- [x] **T1 · Custom Modules auf der Testinstanz** → **beantwortet, negativ** *(2026-09-23)*
+      Geprüft **angemeldet als Administrator** (`administer settings: true`) – die Falle aus **G1** greift also nicht.
+      **Ergebnis: Sie trägt nicht.** `feature_custommodule` fehlt unter 154 `config`-Schlüsseln,
+      `/api/custommodules` antwortet **404**, und die gefilterte Spezifikation führt **alle neun
+      `CustomModule*`-Schemas, aber keinen einzigen Pfad** – dasselbe Muster wie auf der Demo (G1),
+      diesmal mit `administer settings: true` geprüft. Freischaltung bei ChurchTools angefragt, Antwort steht aus.
+      Damit blockiert: **B5, B6, C1–C4, E1, E4.** Offen nutzbar: **D1/D2, E2/E3** – siehe unten.
 
-- [ ] **T2 · Zugang einrichten**
-      Eigener Administrator-Benutzer, Zugangsdaten in die lokale `.env` (**nicht ins Repo**).
-      Die Instanz ist leer – ein Kalender, ein paar Termine mit Bild und zwei Gruppen sind die Grundlage
-      für alles Weitere und liefern zugleich die Fixtures.
+- [x] **T2 · Zugang einrichten** – *(2026-09-23, weitgehend erledigt)*
+      Administrator-Benutzer vorhanden, Login-Token in der lokalen `.env` (**nicht im Repo**, `.gitignore` greift).
+      Die Instanz ist **nicht leer**: 5 Kalender, 7 Gruppen, 2 Termine, 1 Event, 8 Dienste stehen bereits.
+      Aufgezeichnet als Fixtures unter `fixtures/api/` (**lokal, nicht versioniert**), personenbezogene
+      Felder und Instanz-URL maskiert.
+      **Rest:** Es fehlt ein Termin **mit Bild** – die Bindung „Terminbild über den Bilddienst" ist damit
+      noch nicht gegen echte Daten geprüft, nur gegen einen eigenen Upload.
 
 - [ ] **T3 · Ablaufdatum notieren**
       In ChurchTools nachsehen, wann die Lizenz tatsächlich endet, und das Datum hier und in `Plan.md`
@@ -51,8 +66,8 @@ muss dem der Produktivinstanz nicht gleichen.
 Alles an `ctpassstore`, dem fremden Modul, das auf unserer Instanz bereits läuft. Nichts wird gebaut,
 nichts verändert.
 
-**Stand 2026-09-22: A1, A3 und A4 sind erledigt**, sie haben G6, G7 und G4 beantwortet. Offen ist allein A2 –
-der Antwort-Header. Ein Aufruf, zwei Minuten.
+**Der A-Block ist abgeschlossen** – A1, A3, A4 am 2026-09-22 (G6, G7, G4), A2 am 2026-09-23 (G15).
+Ein Rest bleibt: der Statuscode eines unbekannten `/ccm/`-Pfades als sauberer Gegentest zu G7, siehe A2.
 
 - [x] **A1 · Einbettung ansehen** → **beantwortet G6** *(2026-09-22)*
       **Kein iframe.** ChurchTools hängt die Extension in den eigenen Dokumentkopf
@@ -62,13 +77,14 @@ der Antwort-Header. Ein Aufruf, zwei Minuten.
       (`<script type="application/json" id="ct-settings-json">`) mit `base_url`, `files_url`, `csrfToken`,
       `modules` und dem vollständigen `auth`-Objekt. Folgen stehen in `Plan.md`, G6.
 
-- [ ] **A2 · Content-Security-Policy ablesen** → beantwortet **G15** – **der letzte offene Punkt im A-Block**
-      Im Netzwerk-Reiter die Antwort der Modulseite anklicken, Antwort-Header lesen:
-      `Content-Security-Policy`, `X-Frame-Options`.
-      Im Quelltext steht keine CSP als `<meta http-equiv>`, aber ein leeres `nonce=""` an einem Inline-Skript –
-      die Vorrichtung ist da, über den scharfen Zustand sagt sie nichts. Nur der Header entscheidet.
-      Gleich mitnehmen: der **Statuscode** von `/ccm/ctpassstore/pasword` (200 oder 404 mit Rumpf?) – offener Rest von A3.
-      Entscheidet, ob `srcdoc`-Rahmen, Inline-Styles und eingebettete Fremdseiten überhaupt erlaubt sind.
+- [x] **A2 · Content-Security-Policy ablesen** → **beantwortet G15** *(2026-09-23, an der Testinstanz)*
+      **Es gibt eine scharfe CSP**, ausgeliefert als Antwort-Header – auch auf `/ccm/`-Pfaden. Das leere
+      `nonce=""` im Quelltext war ein Fehlschluss. Kernpunkte: `script-src` **ohne** `'unsafe-inline'`
+      (der Vite-Build darf kein Inline-Skript ausliefern), `style-src` **mit** `'unsafe-inline'`,
+      `img-src *`, `child-src *`, **kein `media-src`** – externe Videos sind damit blockiert.
+      Ein `srcdoc`-Rahmen **erbt** diese Policy. Vollständig in `Plan.md`, G15.
+      **Offen bleibt** der Statuscode von `/ccm/<unbekannt>/` als sauberer Gegentest zu G7: Auf der
+      Testinstanz kam **500**, aber bei abgeschaltetem Feature – das zählt nicht.
 
 - [x] **A3 · SPA-Fallback prüfen** → **beantwortet G7** *(2026-09-22)*
       `/ccm/ctpassstore/pasword` liefert die Modulseite, keinen ChurchTools-404.
@@ -111,9 +127,15 @@ der Antwort-Header. Ein Aufruf, zwei Minuten.
 - [ ] **B5 · Typ-Snapshot holen**
       `ct-types.d.ts` aus der generierten Typdatei **unserer** Instanz übernehmen, nicht von Hand pflegen und
       nicht aus der Demo. Als versionierten Snapshot einchecken.
-      Die Testinstanz taugt dafür (Build 32882, derselbe Stand) – **und sie ist der Grund, es jetzt zu tun**:
-      Die Spezifikation wird pro Benutzer und Rechten gefiltert ausgeliefert (G1), nach Ablauf der Lizenz
-      gibt es sie dort nicht mehr. Mit einem Administrator-Konto holen, einchecken, fertig.
+      **⚠ Blockiert – und eine Falle.** Die Spezifikation wird pro Benutzer und Rechten gefiltert
+      ausgeliefert (G1). Solange Custom Modules auf der Testinstanz abgeschaltet sind, kommt sie **ohne
+      die `CustomModule`-Pfade** zurück. Ein so gezogener Snapshot wäre **schlimmer als keiner**, weil der
+      Fehler erst in Phase 1 aufflöge. Also: nach der Freischaltung wiederholen – oder von der
+      Produktivinstanz holen.
+      Zu finden ist sie unter `/system/runtime/swagger/openapi.json` (26 MB, 497 Pfade, 587 Schemas);
+      der Abruf braucht ein Session-Cookie, der `Authorization: Login`-Header allein genügt nicht.
+      **Teilweise vorweggenommen:** Die neun `CustomModule*`-**Schemas** sind auch jetzt schon enthalten und
+      liegen lokal als `fixtures/schema/custommodule-schemas.json` (nicht versioniert).
 
 - [ ] **B6 · Testmodul anlegen**
       **Auf der Testinstanz** – und dort gleich unter dem echten Key `infoscreen-cgks`, weil damit auch der
@@ -129,11 +151,12 @@ der Antwort-Header. Ein Aufruf, zwei Minuten.
 
 Setzt B6 voraus. Diese vier Punkte entscheiden über den Zuschnitt des Datenmodells in Phase 1.
 
-- [ ] **C1 · Lässt sich über `domainType`/`domainId` filtern?** → beantwortet **G11**
-      Zwei Datenwerte mit unterschiedlichem `domainType` anlegen, dann
-      `GET …/customdatavalues?domainType=…` versuchen.
-      - Filter greift → das Lesen ganzer Kategorien entfällt, Datenmodell wird einfacher.
-      - Filter greift nicht → es bleibt bei „ganze Kategorie holen, im Client filtern".
+- [x] ~~**C1 · Lässt sich über `domainType`/`domainId` filtern?**~~ → **entfällt** *(2026-09-23)*
+      **Die Felder gibt es nicht.** `CustomModuleDataValue` führt auf Build 32882 nur `id`,
+      `dataCategoryId` und `value` – der Snapshot aus `ct-pass-store` (2025-09-02) ist überholt.
+      Es bleibt bei „ganze Kategorie holen, im Client filtern"; der Slug-im-JSON-Ansatz ist damit
+      nicht mehr die bessere, sondern die einzige Wahl.
+      Beleg: `fixtures/schema/custommodule-schemas.json` (lokal, nicht versioniert).
 
 - [ ] **C2 · Wird das JSON Schema durchgesetzt?** → beantwortet **G12**
       Kategorie mit engem Schema anlegen, dann einen Wert schreiben, der es verletzt.
@@ -150,20 +173,22 @@ Setzt B6 voraus. Diese vier Punkte entscheiden über den Zuschnitt des Datenmode
 
 ## D. Medien – der teuerste offene Punkt (ca. eine Stunde)
 
-- [ ] **D1 · Wiki-Kategorie als Mediathek** → beantwortet **G8**
-      Kategorie „Infoscreen-Medien" anlegen, Bild über `POST /files/wiki_<kategorie>/<id>` hochladen,
-      über `GET` wiederfinden. **Die Antwort des `GET` vollständig ansehen:** Trägt die Datei neben `fileUrl`
-      auch eine **`imageUrl`** (`/images/{fileId}/{hash}`)? Das ist die eigentliche Frage, nicht der Upload –
-      siehe `Plan.md`, G14.
+- [x] **D1 · Wiki-Kategorie als Mediathek** → **beantwortet G8** *(2026-09-23)*
+      **Der Weg trägt.** Kategorie „Infoscreen-Medien" (id 1) angelegt, Trägerseite „Mediathek", Bild über
+      `POST /api/files/wiki_1/<guid>` hochgeladen. **Die Datei trägt `fileUrl` *und* `imageUrl`.**
+      Zwei Feinheiten: Die Trägerseite wird über ihre **GUID** adressiert, nicht über eine numerische id,
+      und die Kategorie verlangt `inMenu` und `fileAccessWithoutPermission` als ausdrückliche Boolesche
+      Werte, sonst 400. Beleg: `fixtures/api/files-wiki_1.json` (lokal, nicht versioniert).
 
-- [ ] **D2 · Das Bild tatsächlich anzeigen** → beantwortet **G14**
-      Beide Adressen in ein `<img src="…">` setzen – angemeldet **und** in einem zweiten, abgemeldeten Fenster.
-      - **`imageUrl` vorhanden und anonym 200** → mit `?w=1920&h=1080&fit=max` gegenprüfen. Damit sind
-        serverseitige Skalierung, Cachefähigkeit und G14 in einem Zug erledigt. Zu notieren bleibt, dass diese
-        Adressen nur ein Hash schützt – das gehört in die Betriebsdoku, nicht in eine Fußnote.
-      - **Nur `fileUrl`** → abgemeldet ein 401 zu erwarten, angemeldet 200 über das Session-Cookie. Für den
-        Player tragfähig, weil er auf derselben Domain läuft – aber ohne Skalierung, und die Frage an den
-        Service Worker (E1) bleibt offen.
+- [x] **D2 · Das Bild tatsächlich anzeigen** → **beantwortet G14** *(2026-09-23)*
+      `fileUrl`: abgemeldet **401**, angemeldet 302 → Cookie → 200. `imageUrl`: **anonym 200**.
+      **Achtung, neuer Fallstrick:** Der Bilddienst hat eine Vorgabe von **150×150**; `w` und `h`
+      überschreiben jeweils nur eine Seite (`?w=1920` ergibt 1920×150). **Beide Parameter sind Pflicht.**
+      `fit`-Modi getrennt gemessen: `max`/`contain` passen ohne Beschnitt ein, `crop` schneidet mittig,
+      `fill` füllt mit Rand, `stretch` verzerrt, ohne `fit` wird beschnitten.
+      Cache `max-age=604800, public`, **kein ETag**.
+      **Und ein Sicherheitsbefund:** `fileAccessWithoutPermission: false` schützt die `imageUrl` **nicht** –
+      sie schützt allein der Hash. Gehört in die Betriebsdoku.
 
 - [ ] **D3 · Fallweise Ausweichpfade prüfen**
       Nur falls D1 scheitert: `attachments` (woran bindet `domainIdentifier`?), dann
@@ -211,10 +236,15 @@ Hardware, nicht an der Instanz, und kann warten.
 Früh anstoßen, weil die Antwort nicht von uns abhängt.
 
 - [ ] **F1 · Support anschreiben** – `support@churchtools.de`
-      - **Zuerst: Lässt sich die Testinstanz über die 30 Tage hinaus verlängern?** Wir sind Kunde und
-        entwickeln eine Extension; 30 Tage reichen dafür nicht. Diese Antwort taktet die gesamte Phase 0.
-      - Ist ein Rate-Limit dokumentiert? (**G16**)
-      - Ist ein Speicherziel für Dateien aus Custom Modules geplant? (**G8** – das kann nur ChurchTools beantworten)
+      - **Zuerst: Custom Modules für die Testinstanz freischalten.** *(angefragt am 2026-09-23, Antwort steht aus)*
+        Ohne sie sind B5, B6, C1–C4, E1 und E4 blockiert – siehe T1.
+      - **Lässt sich die Testinstanz über die 30 Tage hinaus verlängern?** Wir sind Kunde und
+        entwickeln eine Extension; 30 Tage reichen dafür nicht – erst recht nicht, wenn ein Teil davon
+        auf die Freischaltung verstreicht.
+      - Ist ein Rate-Limit dokumentiert? (**G16** – gemessen wurde keines bei 60 Anfragen je Sekunde,
+        aber gemessen ist nicht zugesagt.)
+      - ~~Ist ein Speicherziel für Dateien aus Custom Modules geplant?~~ **Entfällt** – die Wiki-Kategorie
+        samt Bilddienst beantwortet G8.
 
 - [ ] **F2 · Lukas Block (`lubl`) im Forum ansprechen**
       Nicht zu Fragen, die sein Code beantwortet, sondern zu G8, G10 und zur Idee einer gemeinsamen
@@ -242,8 +272,11 @@ bevor das Screen-Schema steht.
 
 ## Abschluss
 
-- [ ] **Alle Befunde in `Plan.md` eingetragen**, Abschnitt G: beantwortete Punkte nach oben, mit Datum und
-      Quelle (Instanz, Spezifikation oder fremder Code).
+- [x] **Alle Befunde in `Plan.md` eingetragen** *(Stand 2026-09-23)*, Abschnitt G: beantwortete Punkte nach
+      oben, mit Datum und Quelle (Instanz, Spezifikation oder fremder Code).
+      Beantwortet: **G1–G8, G11, G14, G15**; **G16** zur Hälfte. Offen und an der Freischaltung hängend:
+      **G9, G10, G12, G13**. Dazu **G17** als Entscheidung.
+      Belege liegen lokal unter `fixtures/` – **nicht im Repo**, siehe `fixtures/README.md`.
 - [ ] **Erst danach das Screen-Schema festlegen.**
 
 ## Was dabei nicht passieren darf
@@ -253,5 +286,10 @@ bevor das Screen-Schema steht.
 - Keine Tests gegen die Produktivinstanz, die Daten verändern – dafür gibt es jetzt die Testinstanz.
   Muss doch produktiv gearbeitet werden, hat das Testmodul einen eigenen Key und schreibt nur in eigene Kategorien.
 - Keine Testinstanz unter erfundenem Gemeindenamen anlegen – die vorhandene läuft auf den echten Namen.
-- Die Frist nicht verstreichen lassen, ohne die Fixtures und den Typ-Snapshot im Repo zu haben.
+- Die Frist nicht verstreichen lassen, ohne die Fixtures und den Typ-Snapshot gesichert zu haben.
+  **Die Fixtures sind seit dem 2026-09-23 aufgezeichnet, der Typ-Snapshot fehlt noch** (hängt an der Freischaltung, B5).
+  Da `fixtures/` nicht versioniert ist, ersetzt **keine** Sicherung im Repo den Verlust dieses Arbeitsplatzes –
+  eine Kopie außerhalb gehört dazu, solange die Instanz noch läuft.
+- Die aufgezeichneten Antworten nicht roh weitergeben: Instanz-URL, `admin_mail` und personenbezogene Felder
+  werden vorher ersetzt. Wie, steht in `fixtures/README.md`.
 - An bestehenden Rollen der Rechteverwaltung nichts ändern – eigene Testgruppe verwenden.

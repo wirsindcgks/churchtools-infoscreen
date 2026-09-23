@@ -215,7 +215,7 @@ In der Entwicklung legt `getOrCreateModule()` das Modul selbst an, im Produktivb
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G7 sind beantwortet, G14 zur Hälfte, der Rest offen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14 und G15 sind beantwortet, G16 zur Hälfte, der Rest offen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
 #### Beantwortet
 
@@ -228,6 +228,8 @@ Die frühere Annahme, es brauche eine Version über 3.136.2, ist damit **widerle
 **G2 – Die Grenzen des KV-Stores stehen.** *(2026-09-22, Spezifikation)* 10.000 Zeichen je Datenwert, 2.000 je Kategorie. Nicht gemessen, sondern dokumentiert. Zuschnitt und Folgen stehen in Abschnitt E. Mitentschieden ist damit: Bilddaten als Data-URI im KV-Store scheiden aus.
 
 **G3 – Ein Datenwert hat keinen Schlüssel und keine Version.** *(2026-09-22, Typ-Snapshot und zwei Implementierungen in `ct-pass-store`)* `CustomModuleDataValue` kennt nur `id`, `dataCategoryId`, `domainId?`, `domainType?`, `value?`. Kein Name, kein `updatedAt`, kein ETag. Beide Implementierungen holen ganze Kategorien und filtern im Client. **Damit ist auch die frühere Frage nach einer Konfliktprüfung beim `PUT` beantwortet – es gibt keine.** Folgen: Slug statt `id` als Adresse, Revision im JSON, Index zuletzt schreiben. Siehe Abschnitt E.
+
+**Korrektur vom 2026-09-23.** Die Aufzählung oben stammt aus dem `ct-pass-store`-Snapshot und nennt `domainId?` und `domainType?`. **Beide gibt es auf Build 32882 nicht**; die Spezifikation unserer eigenen Instanz führt ausschließlich `id`, `dataCategoryId` und `value`. Siehe G11. Am Schluss – kein Name, keine Version, keine Konfliktprüfung – ändert das nichts, er wird nur deutlicher.
 
 **G4 – Rechtemodell und der Endpunkt dazu.** *(2026-09-22, `ct-pass-store` – und an der eigenen Instanz gemessen)* `GET /permissions/global` → `data[<extensionkey>]`; Datenrechte als Kategorie-ID-Listen, `view` und `create custom category` als Schalter. Vollständiger Typ und Rollenzuschnitt in Abschnitt F.
 
@@ -271,40 +273,79 @@ Zwei Dinge gehören zur Antwort dazu. Erstens ist der leere Inhaltsbereich die S
 
 **Nebenbefunde der Instanz** (in A und B eingearbeitet): CORS ist unkonfiguriert und `access_control_allow_credentials` steht auf `false`; die Upload-Grenze liegt bei 128 MB je Datei; Zeitzone `Europe/Berlin`; gehostet bei ChurchTools, also kein Self-Hosting; Wiki, Kalender, Gruppen, Beiträge, Ressourcen und Dienste sind aktiv – sämtliche Datenquellen der Blocktabelle stehen zur Verfügung. **Nachtrag vom Quelltext:** Die `modules`-Liste der Instanz nennt **zwei** fremde Module, `ctpassstore` und `ctradius`. Custom Modules sind hier also kein Einzelfall, und mit `ctradius` steht eine zweite Lesequelle bereit, falls eine Frage an `ct-pass-store` unbeantwortet bleibt.
 
+**G14 – Datei-Adressen, Bilddienst und die 150-Pixel-Falle.** *(2026-09-15 im Nachbarprojekt `churchtools-plugin`; **am 2026-09-23 an der Testinstanz vervollständigt** – aufgezeichnet unter `fixtures/api/files-wiki_1.json` – **lokal, nicht versioniert**)*
+
+**Der offene Teil ist beantwortet: ja.** Eine **selbst hochgeladene** Datei bekommt ebenfalls eine `imageUrl`. Ein Bild, über `POST /api/files/wiki_<kategorie>/<guid>` in eine Wiki-Kategorie geladen, trägt in der Antwort beide Adressen. Damit ist die Wiki-Kategorie als Mediathek tragfähig und **G8 verliert seine Schärfe**.
+
+| Feld | Form | Ohne Anmeldung | Angemeldet |
+| --- | --- | --- | --- |
+| `fileUrl` | `?q=public/filedownload&id=…&filename=<hash>` | **401** | 302 → Cookie → 200 |
+| `imageUrl` | `/images/{fileId}/{hash}` | **200** | 200 |
+
+**Die 150-Pixel-Falle.** Der Bilddienst (League Glide) hat eine fest eingebackene Vorgabe von 150×150, und `w` bzw. `h` überschreiben jeweils **nur eine Seite**. Gemessen an einem Original von 1920×1080:
+
+| Aufruf | Ergebnis |
+| --- | --- |
+| ohne Parameter | **150×150** |
+| `?w=1920` | **1920×150** |
+| `?w=1920&fit=max` | **267×150** |
+| `?w=1920&h=1080&fit=max` | 1920×1080 |
+
+Ein schlichtes `<img src={imageUrl}>` zeigt auf dem Foyer-TV also einen Daumennagel. **Beide Parameter sind Pflicht** – das gehört in den Renderer, nicht in eine Fußnote. Die frühere Notiz „`?w=1600` skaliert auf die Breite" war zu großzügig gelesen; sie galt für ein Terminbild mit hinterlegtem Ausschnitt, nicht allgemein.
+
+**Die `fit`-Modi, gegen ein abweichendes Seitenverhältnis getrennt** (Quelle 1920×1080, angefragt 1200×600): `max` und `contain` passen ohne Beschnitt ein (1067×600), `crop` schneidet mittig, `fill` füllt mit Rand auf, `stretch` verzerrt – und **ohne `fit` wird beschnitten**. Das bildet die Block-Optionen des Designers eins zu eins auf Server-Parameter ab: Skalieren kostet den Pi nichts.
+
+**Cache:** `cache-control: max-age=604800, public` – aber **kein ETag und kein `Last-Modified`**. Für den Player günstig; für einen Service Worker (G10) heißt es, dass Gültigkeit allein über die Laufzeit läuft und es keine billige Revalidierung gibt.
+
+**Ein Sicherheitsbefund, der in die Betriebsdoku gehört.** Die Testkategorie wurde mit `fileAccessWithoutPermission: false` angelegt – der strengen Einstellung. Die `imageUrl` liefert **trotzdem anonym 200**. Der Bilddienst umgeht die Kategorieberechtigung; es schützt allein der Hash im Pfad. Wer ein Bild in die Mediathek lädt, veröffentlicht es praktisch: unter einer nicht zu erratenden Adresse, aber ohne Anmeldung abrufbar. Das ist zu sagen, bevor jemand dort etwas ablegt, das nicht ins Foyer gehört.
+
+**G15 – Es gibt eine scharfe CSP, und sie gilt auch unter `/ccm/`.** *(2026-09-23, Antwort-Header der Testinstanz)* Das frühere Indiz – keine CSP als `<meta http-equiv>`, aber ein leeres `nonce=""` – war irreführend. Der **Header** trägt sie, auf der Hauptseite, auf `/api` und auf `/ccm/`-Pfaden gleichermaßen:
+
+```
+default-src 'self'; script-src 'self' js.stripe.com 'nonce-…' 'unsafe-eval';
+style-src 'self' 'unsafe-inline' *.dev.churchtools.website;
+font-src 'self' *.dev.churchtools.website data:;
+img-src * data: blob: *.church.tools; child-src * data; connect-src *;
+object-src 'self' www.youtube.com; frame-ancestors 'self'
+```
+
+Fünf Folgen, zwei davon Vorgaben und keine Hinweise:
+
+1. **`script-src` kennt kein `'unsafe-inline'`.** Inline-Skripte brauchen den Nonce, den ChurchTools vergibt und den unser Build nicht kennt. **Der Vite-Build darf deshalb kein Inline-Skript ausliefern** – der Modulepreload-Polyfill ist eines. Das ist eine harte Build-Vorgabe und gehört neben „kein Code-Splitting" (G6) in die Konventionen.
+2. **`style-src` erlaubt `'unsafe-inline'`.** Die dynamischen Block-Stile des Designers und die des Vite-Builds laufen. Der heikle Teil war ohnehin die Schichtung (G6), nicht die CSP.
+3. **`img-src *`** – externe Bilder sind erlaubt. Das stützt die Rückfallposition aus **Offene Entscheidung 6**.
+4. **Kein `media-src`** – es fällt auf `default-src 'self'` zurück: **Externe Videos sind blockiert.** Bilder von überall, Videos nur von der eigenen Domain. Diese Asymmetrie trifft Offene Entscheidung 6 und 9 unmittelbar: „nur externe URLs" trägt für Bilder, für Videos nicht.
+5. **`child-src *`** – Sandbox-`iframe`s und eingebettete Fremdseiten sind erlaubt. Aber ein `srcdoc`-Rahmen **erbt die CSP des Elterndokuments**. Fremdcode mit Inline-Skript läuft darin also nicht, gleichgültig wie die Sandbox gesetzt ist. Für den Web-Code-Block heißt das: entweder er lädt aus einer Datei gleicher Herkunft, oder er beschränkt sich auf das, was ohne Inline-Skript auskommt.
+
+Die Nebenfrage – ob wir dem Sandbox-Rahmen selbst eine CSP per `<meta http-equiv>` mitgeben – bleibt eine Entscheidung, ist aber entschärft: Die geerbte Policy ist bereits enger als das, was wir vermutlich gesetzt hätten.
+
+**G8 – Beantwortet: die Wiki-Kategorie trägt.** *(2026-09-23, Testinstanz)* Der Umweg ist gefunden. Eine eigene Wiki-Kategorie nimmt Uploads über `POST /api/files/wiki_<kategorie>/<guid>` an, und die Datei bekommt eine `imageUrl` am Bilddienst (G14). Dass die `domainType`-Liste **kein Ziel für Custom Modules** kennt, bleibt richtig – es spielt nur keine Rolle mehr.
+
+Drei Dinge bringt der Zuschnitt mit. Die Trägerseite wird über ihre **GUID** adressiert, nicht über eine numerische id. Die Kategorie verlangt bei der Anlage `inMenu` und `fileAccessWithoutPermission` als ausdrückliche Boolesche Werte, sonst 400. Und `fileAccessWithoutPermission: false` schützt die `imageUrl` **nicht** – siehe G14.
+
+**Videos bleiben offen.** Die CSP erlaubt Bilder von überall, Videos nur von der eigenen Domain (G15). Ob eine Videodatei denselben Weg nimmt und wie sie ausgeliefert wird, ist ungeprüft; die Upload-Grenze von 128 MB je Datei steht.
+
+**G11 – Beantwortet, und damit hinfällig: Die Felder gibt es nicht.** *(2026-09-23, Spezifikation unserer eigenen Instanz, Build 32882 – aufgezeichnet unter `fixtures/schema/custommodule-schemas.json` – **lokal, nicht versioniert**)* `CustomModuleDataValue` führt **nur** `id`, `dataCategoryId` und `value`. **Weder `domainId` noch `domainType`.** Der Typ-Snapshot aus `ct-pass-store` (2025-09-02) ist an dieser Stelle überholt – er hat die Frage überhaupt erst aufgeworfen.
+
+Damit entfällt **C1 aus `Preparation.md` ersatzlos**: Es gibt nichts zu filtern. Der Slug-im-JSON-Ansatz aus G3 ist nicht mehr die bessere, sondern die einzige Wahl, und das Lesen ganzer Kategorien bleibt der Normalfall.
+
+**Aus derselben Quelle mitbelegt**, jetzt gegen unsere Instanz statt gegen fremden Code: `value` max. **10.000** Zeichen (bestätigt G2), Kategorie-`data` max. **2.000**, `name` 100, `shorty` 2–50, `description` 300 und Pflicht. `CustomModulePermission` fordert **alle neun Schlüssel** – G4 gilt damit nicht nur empirisch, sondern spezifiziert.
+
 #### Teilweise beantwortet
 
-**G14 – Datei-Adressen sind cookie-authentifiziert, und daneben steht ein Bilddienst.** *(2026-09-15, gemessen im Nachbarprojekt `churchtools-plugin` gegen dieselbe Instanz; dort `plan.md`, Abschnitt „Terminbilder über den Bilddienst")* Ein Bild am Termin trägt zwei Adressen:
+**G16 – Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.
 
-| Feld | Form | Ohne Anmeldung |
-| --- | --- | --- |
-| `fileUrl` | `?q=public/filedownload&id=…&filename=<hash>` | **401** „Die Berechtigung appointment_image ist notwendig" |
-| `imageUrl` | `/images/{fileId}/{hash}` | **200** |
-
-Mit `Authorization: Login` antwortet der Download 302 auf dieselbe Adresse plus Session-Cookie, mit dem Cookie dann 200. **Der Dateidownload ist also cookie-authentifiziert** – für den Player die günstige Antwort: Er läuft unter `/ccm/` auf derselben Domain, das Cookie geht bei einem `<img src="/…">` von selbst mit. Was das WordPress-Plugin ausschloss – es lädt von einem fremden Server –, trifft ihn nicht.
-
-Hinter `imageUrl` steht **League Glide**, ein Bilddienst mit `w`, `h` und `fit`: `?w=1600` skaliert auf die Breite, `?w=…&h=…` schneidet mittig auf das Format, `?w=…&h=…&fit=max` behält das Seitenverhältnis und vergrößert nicht (`w=5000&h=5000` lieferte das Original mit 1620×1080). Der in ChurchTools gespeicherte Ausschnitt gilt weiter; `crop=original` würde ihn umgehen. Dass diese Adressform nicht auf Termine beschränkt ist, zeigt der Quelltext aus G6: Auch das Profilbild des angemeldeten Benutzers steht dort als `/images/{id}/{hash}`.
-
-**Offen bleibt der Teil, der über die Mediathek entscheidet:** ob eine **selbst hochgeladene** Datei ebenfalls eine `imageUrl` am Bilddienst bekommt. Das ist die eigentliche Frage an D1/D2 – nicht der Upload. Falls ja, ist mitzuschreiben: Diese Adressen sind **ohne Anmeldung** abrufbar, geschützt nur durch den Hash im Pfad. Für Foyer-Bilder meist unerheblich, aber eine Entscheidung, keine Nebensache.
+Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit darunter, und der Player wertet `429` und `Retry-After` weiterhin aus – nur ist jetzt belegt, dass er sie im Normalbetrieb nicht zu sehen bekommt. Nach einer **dokumentierten** Grenze bleibt die Frage an den Support (F1) offen.
 
 #### Offen
-
-**G8 – Wohin gehen hochgeladene Bilder und Videos?** Unverändert der teuerste offene Punkt. Der Typ-Snapshot von `ct-pass-store` (2025-09-02) führt dieselbe `domainType`-Liste wie unsere Spezifikation – **kein Ziel für Custom Modules**, das Problem ist also nicht nur eine Frage unserer Version. Siehe „Medien und eigener Web-Code".
-
-**Ausgeschieden ist seit dem 2026-09-22 `appointment_image` als Ablage.** Naheliegend ist der Gedanke, weil der Typ nachweislich Bilder annimmt und ausliefert – er scheitert aber am `domainIdentifier`: Der ist die **Basis** eines Termins, ein eigener Speicher hieße also Trägertermine. Die stünden dann im Kalender, in der App, im nativen Infoscreen und in der WordPress-Synchronisation der Gemeindeseite; wer einen davon löscht, nimmt die Bilder still mit; und Bilder hochladen setzte Schreibrechte auf einem Kalender voraus – für jemanden, der nur Screens gestalten soll. Als **Datenquelle** für vorhandene Terminbilder bleibt der Typ richtig; als Mediathek nicht.
 
 **G9 – Wie verhält sich `login_token` in der URL bei einem Custom Module?** Beim nativen Infoscreen erprobt, für `/ccm/`-Pfade ungeprüft. `ct-pass-store` hilft hier nicht: Es benutzt Tokens gegenüber seinem eigenen Backend, nicht zur Anmeldung einer Seite.
 
 **G10 – Darf unter `/ccm/<key>/` ein Service Worker registriert werden?** Entscheidet, ob Offline-Festigkeit vollständig erreichbar ist oder nur halb: IndexedDB sichert die Daten, aber nicht die eigenen Assets und nicht die Bilder. Ohne Service Worker zeigt ein Pi, der während eines Netzausfalls neu startet, einen weißen Bildschirm – genau der Fall aus Risiko 4. Zu prüfen sind Scope, MIME-Typ und ob ChurchTools den Pfad umschreibt.
 
-**G11 – Taugen `domainType`/`domainId` als Schlüssel, und lässt sich darüber filtern?** Beide Felder sind optional und werden von den bekannten Implementierungen uneinheitlich benutzt. Wenn `GET …/customdatavalues` sie als Filter annimmt, entfällt das Lesen ganzer Kategorien. Ein Testaufruf.
-
 **G12 – Wird das JSON Schema einer Kategorie serverseitig durchgesetzt?** Entscheidet, ob wir ein vollständiges Schema hinterlegen müssen (und dann an 2.000 Zeichen scheitern) oder ein permissives genügt. Siehe Abschnitt E.
 
 **G13 – Was bewirkt `securityLevelId` an einer Kategorie?** Besonders für `status`, die einzige Kategorie, auf die ein unbeaufsichtigtes Gerät schreibt.
-
-**G15 – Liefert ChurchTools auf `/ccm/`-Seiten eine Content-Security-Policy?** Sie könnte `srcdoc`-Rahmen, Inline-Styles des Vite-Builds oder das Einbetten fremder Seiten einschränken. Zugleich zu entscheiden: Geben wir dem Sandbox-Rahmen selbst eine CSP per `<meta http-equiv>` mit? Die Sandbox schützt unsere Daten, sie unterbindet keine ausgehenden Verbindungen des Fremdcodes. Am selben Aufruf abzulesen wie G6. **Erstes Indiz vom 2026-09-22:** Im Quelltext steht **keine** CSP als `<meta http-equiv>`, wohl aber ein leeres `nonce=""` an einem Inline-Skript – die Vorrichtung ist da, scharf geschaltet ist sie offenbar nicht. Beweisen kann das nur der Antwort-Header; der Quelltext allein zeigt ihn nicht.
-
-**G16 – Kennt die Instanz ein Rate-Limit?** Der Player wertet `429` und `Retry-After` ohnehin aus, aber die Zahl dahinter ist unbekannt – sie bemisst, wie oft mehrere Pis plus Designer gleichzeitig fragen dürfen.
 
 **G17 – Extension Store**: Aufnahmekriterien, Einreichungsweg, ob eine Veröffentlichung überhaupt angestrebt wird. Der Publisher hält seinen Store-Text in einer eigenen `EXTENSION_STORE.md` – ein Muster, das sich übernehmen lässt.
 
@@ -312,13 +353,32 @@ Hinter `imageUrl` steht **League Glide**, ein Bilddienst mit `w`, `h` und `fit`:
 
 **Seit dem 2026-09-22 gibt es eine eigene Testinstanz: `https://test-cg-ks.church.tools`** („Testsystem - CG-KS"). Anonym gegengeprüft: **Version 3.136.2, Build 32882** – Ziffer für Ziffer derselbe Stand wie die Produktivinstanz, dazu dieselbe Upload-Grenze (128 MB) und dieselbe Zeitzone. Was dort gemessen wird, gilt hier. Sie ist **leer** angelegt und enthält keine echten Personendaten; Kalender, Termine, Gruppen und Bilder müssen von Hand entstehen.
 
-**Und sie hat eine Frist: 30 Tage Lizenz**, also bis etwa **2026-10-22**. Ob sich das verlängern lässt, ist ungeklärt – und damit die dringlichste Frage an den Support, dringlicher als G8 und G16, weil ihre Antwort die Reihenfolge der Arbeit bestimmt.
+**Und sie hat eine Frist: 30 Tage Lizenz**, also bis etwa **2026-10-22**. Ob sich das verlängern lässt, ist ungeklärt – und damit eine der dringlichsten Fragen an den Support, weil ihre Antwort die Reihenfolge der Arbeit bestimmt.
+
+> **⚠ Befund vom 2026-09-23: Custom Modules sind auf der Testinstanz nicht freigeschaltet.**
+>
+> Angemeldet als Administrator (`administer settings: true`) gemessen, dreifach belegt:
+> `feature_custommodule` **fehlt** unter den 154 Schlüsseln von `GET /api/config`; `GET /api/custommodules`
+> antwortet mit **404**; und die pro Benutzer gefilterte Spezifikation enthält **alle neun `CustomModule*`-Schemas,
+> aber keinen einzigen zugehörigen Pfad**. Das ist Zeichen für Zeichen dasselbe Muster wie seinerzeit auf
+> `demo.church.tools` (G1) – diesmal aber mit ausreichenden Rechten geprüft, der 404 zählt also.
+>
+> Die Lehre aus dem T-Block hat sich damit bewahrheitet: **Gleicher Build, anderer Lizenzumfang.** Eine
+> Freischaltung ist bei ChurchTools angefragt (Stand 2026-09-23 unbeantwortet). Bis dahin sind **B5, B6,
+> der gesamte C-Block, E1 und E4 blockiert**; was ohne Custom Modules geht – D1/D2, E2/E3 und die
+> Datenquellen der Blocktabelle – ist gemessen und liegt als Fixture im Repo.
+>
+> **Ein Fallstrick für B5:** Die Spezifikation dieser Instanz ist **kein** tauglicher Typ-Snapshot. Sie kommt
+> gefiltert und damit ohne die `CustomModule`-Pfade. Ein solcher Snapshot wäre schlimmer als keiner, weil der
+> Fehler erst in Phase 1 aufflöge. B5 wird nach der Freischaltung wiederholt oder kommt von der Produktivinstanz.
 
 **Die Frist ist der Taktgeber, nicht die Phasenfolge.** Daraus folgt eine Regel, die dem Plan vorgeht: **Was nur eine Instanz beantworten kann, wird zuerst gemessen; was lokal geht, geht auch im November noch.** In dieser Reihenfolge:
 
-1. **Zuerst prüfen, ob die Testinstanz überhaupt trägt** – angemeldet, nicht anonym: `feature_custommodule` in `GET /api/config`, `GET /api/custommodules` mit **200**. Der Lizenzumfang einer Testinstanz muss dem der Produktivinstanz nicht gleichen, die anonyme Antwort verrät das Flag nicht, und ein anonymer 404 beweist nichts (G1). Ohne diesen Befund ist der Rest dieses Abschnitts hinfällig, und es bleibt beim kontrollierten Vorgehen auf der Produktivinstanz.
-2. **Dann alles Instanzgebundene aus Abschnitt G**: Upload-Weg und Datei-Adressen (G8, G14), Login-Token unter `/ccm/` (G9), Service Worker (G10), die Speicher-Feinheiten am eigenen Modul (G11, G12, G13), der CSP-Header (G15). Das sind die Fragen, für die es nach Ablauf keinen Ersatz gibt.
-3. **Dabei mitschreiben, was die Instanz überlebt**: aufgezeichnete Antworten als **Fixtures im Repo** und der **Typ-Snapshot** (`ct-types.d.ts`). Ein Abend Termine und Gruppen anzulegen ist auf einer befristeten Instanz nur dann keine verlorene Zeit, wenn die Antworten im Repo landen. Das ist der eigentliche Ertrag dieser 30 Tage: Danach bleibt ein Mock, der sich wie die echte Instanz verhält.
+1. ~~**Zuerst prüfen, ob die Testinstanz überhaupt trägt**~~ – **erledigt am 2026-09-23, und zwar negativ.** Siehe den Befund oben. Die Begründung war richtig: Der Lizenzumfang einer Testinstanz muss dem der Produktivinstanz nicht gleichen. Genau das ist eingetreten.
+2. **Dann alles Instanzgebundene aus Abschnitt G.** Stand 2026-09-23: **erledigt**, soweit ohne Custom Modules erreichbar – Upload-Weg und Datei-Adressen (G8, G14) und der CSP-Header (G15). **Blockiert** bis zur Freischaltung: Login-Token unter `/ccm/` (G9), Service Worker (G10), die Speicher-Feinheiten am eigenen Modul (G12, G13). **Entfallen:** G11 – die Felder gibt es nicht.
+3. **Dabei mitschreiben, was die Instanz überlebt**: aufgezeichnete Antworten als Fixtures und der **Typ-Snapshot** (`ct-types.d.ts`). Ein Abend Termine und Gruppen anzulegen ist auf einer befristeten Instanz nur dann keine verlorene Zeit, wenn die Antworten erhalten bleiben. Das ist der eigentliche Ertrag dieser 30 Tage: Danach bleibt ein Mock, der sich wie die echte Instanz verhält.
+
+   **Entschieden am 2026-09-23: Die Fixtures werden *nicht* versioniert.** Sie liegen unter `fixtures/`, und `.gitignore` erfasst das Verzeichnis. Das hat einen Preis, der hier stehen soll, damit er nicht überrascht: Der Ertrag der 30 Tage hängt damit an **einem** Arbeitsplatz. Geht er verloren, sind die Antworten nach Ablauf der Lizenz nicht wiederherstellbar – die Instanz gibt es dann nicht mehr. Wer diesen Zuschnitt beibehält, braucht dafür einen Ersatz: eine Sicherung außerhalb des Repos oder ein Aufzeichnungsskript, das gegen eine dann noch laufende Instanz erneut ziehen kann.
 4. **Zuletzt, unbefristet und lokal**: Designer, Blockrendering, Bühnenskalierung, Rotation, Offline-Verhalten, Undo/Redo gegen genau diesen Mock. Dafür braucht es nie wieder eine Instanz.
 
 **Was die Testinstanz an Vorsicht erspart.** Drei Bremsen dieses Plans sind dort gegenstandslos:
@@ -364,11 +424,13 @@ Der Haken ist `domainType`. Die Spezifikation führt eine feste Liste: `avatar`,
 
 **Wie ChurchTools vorhandene Bilder ausliefert**, ist belegt (G14): Ein Bild am Termin trägt zwei Adressen – `fileUrl` (Dateidownload, cookie-authentifiziert) und `imageUrl` (`/images/{fileId}/{hash}`, der Bilddienst League Glide mit `w`, `h`, `fit`). Für den Player heißt das zweierlei. Erstens trägt ein `<img>` unter `/ccm/` die Anmeldung von selbst, weil es dieselbe Domain ist; der 401, an dem das WordPress-Plugin scheiterte, trifft ihn nicht. Zweitens – und wertvoller – kann er die Zielgröße **anfordern**, statt ein Vollformat zu laden und im Browser zu verkleinern: `?w=1920&h=1080&fit=max` liefert genau das, was die Bühne braucht. Auf einer Leitung, an deren Ende ein Raspberry Pi hängt, ist das der Unterschied zwischen einem Bild und einem Megabyte.
 
-**Die entscheidende Frage an Phase 0 lautet deshalb nicht „nimmt `wiki_<kategorie>` den Upload an" – das wird sie tun –, sondern: Bekommt eine selbst hochgeladene Datei ebenfalls eine `imageUrl` am Bilddienst?** Fällt die Antwort ja aus, sind serverseitige Skalierung, Cachefähigkeit und G14 in einem Zug erledigt. Fällt sie nein aus, bleibt der Dateidownload mit Session-Cookie: tragfähig für den Player, aber ohne Skalierung und mit der offenen Frage, ob ein Service Worker die Antwort behalten darf.
+**Diese Frage ist am 2026-09-23 beantwortet – mit ja.** Sie lautete: Bekommt eine **selbst hochgeladene** Datei ebenfalls eine `imageUrl` am Bilddienst? Ein Bild, über `POST /api/files/wiki_<kategorie>/<guid>` in eine eigene Wiki-Kategorie geladen, trägt beide Adressen. Serverseitige Skalierung, Cachefähigkeit und G14 sind damit in einem Zug erledigt, und die Mediathek steht auf tragfähigem Grund.
+
+**Zwei Bedingungen hängen daran.** Erstens die **150-Pixel-Falle**: Ohne Parameter liefert der Bilddienst 150×150, und `w` allein setzt nur die Breite – `?w=1920` ergibt 1920×150. **Der Renderer muss immer beide Werte setzen.** Zweitens: `fileAccessWithoutPermission: false` an der Kategorie schützt die `imageUrl` **nicht**; sie ist anonym abrufbar, geschützt allein durch den Hash. Beides steht ausführlich bei G14.
 
 Kandidaten, in Phase 0 in dieser Reihenfolge zu prüfen:
 
-1. **Wiki-Kategorie als Mediathek** (`wiki_<kategorie>`). Eine eigene Kategorie „Infoscreen-Medien", Uploads hängen an Wiki-Seiten. Vorteile: echte ChurchTools-Dateien mit URL, ChurchTools-Rechten und einer Oberfläche, in der Anwender sie auch ohne unser Modul verwalten und löschen können. Der wahrscheinlichste Weg – zuerst testen.
+1. **Wiki-Kategorie als Mediathek** (`wiki_<kategorie>`) – **geprüft und bestätigt** *(2026-09-23)*. Eine eigene Kategorie „Infoscreen-Medien", Uploads hängen an Wiki-Seiten, adressiert über deren **GUID**. Vorteile wie erwartet: echte ChurchTools-Dateien mit URL, ChurchTools-Rechten und einer Oberfläche, in der Anwender sie auch ohne unser Modul verwalten und löschen können – **und** der Bilddienst. Das ist der Weg; die folgenden Kandidaten sind damit Rückfallpositionen und keine Prüfaufträge mehr.
 2. **`attachments`** – wenn sich klären lässt, woran `domainIdentifier` hier bindet und ob wir frei wählen dürfen.
 3. **Bestehende ChurchTools-Bilder ohne eigenen Upload**: Termin-, Gruppen-, Beitrags- und Logobilder. Das funktioniert nicht nur sicher, sondern nachweislich, mitsamt Bilddienst (G14). Für „Bild hochladen" reicht es trotzdem nicht – es ist der Rückfallplan, nicht das Ziel. Umgekehrt gilt: `appointment_image` als **Ablage** für eigene Medien zu missbrauchen ist geprüft und verworfen; Begründung bei G8.
 4. ~~**Data-URI im KV-Store**~~ – **ausgeschieden.** Ein Datenwert fasst 10.000 Zeichen, also rund sieben Kilobyte. Das reicht nicht einmal für ein Icon, für Videos erst recht nicht.
@@ -376,9 +438,9 @@ Kandidaten, in Phase 0 in dieser Reihenfolge zu prüfen:
 
 **Löschen braucht eine Referenzzählung.** Die Mediathek erlaubt Löschen, und die Slides verweisen auf Dateien. Wer ein noch benutztes Bild entfernt, erzeugt einen kaputten Rahmen auf einem TV, den er nicht sieht. Der Designer zählt deshalb vor dem Löschen die Verwendungen und benennt sie – und der Player zeigt für eine fehlende Datei einen ruhigen Platzhalter statt eines Bruchsymbols.
 
-Solange für eigene Uploads kein Bilddienst belegt ist, gilt unabhängig vom Ergebnis: Uploads werden vor dem Speichern im Browser auf die Zielauflösung des Screens herunterskaliert. Ein 8-Megapixel-Handyfoto auf einem 1080p-Screen ist verschwendete Bandbreite auf einer Leitung, an deren Ende ein Raspberry Pi hängt.
+**Der Bilddienst ist jetzt belegt** – die Regel ändert sich dadurch, statt zu entfallen. Für die **Anzeige** skaliert ChurchTools serverseitig, der Player fordert mit `?w=…&h=…&fit=max` genau die Bühnengröße an und muss nichts mehr im Browser verkleinern. Für den **Upload** bleibt es beim Herunterskalieren im Browser auf eine vernünftige Obergrenze: Ein 8-Megapixel-Handyfoto belegt sonst dauerhaft Speicher der Instanz, den niemand je ausliefert – und die 128 MB je Datei sind eine Grenze, kein Ziel.
 
-Videos sind der Sonderfall: groß, und ein Pi der älteren Generationen spielt sie im Browser nicht zuverlässig ab. Sie kommen erst nach dem MVP und erst, nachdem sie auf der echten Hardware gemessen wurden.
+Videos sind der Sonderfall: groß, und ein Pi der älteren Generationen spielt sie im Browser nicht zuverlässig ab. **Dazu kommt seit G15 eine harte Schranke:** Die CSP der Instanz kennt kein `media-src` und fällt damit auf `default-src 'self'` zurück – **externe Videoadressen sind blockiert.** Bilder von überall, Videos nur von der eigenen Domain. Der Notausgang „externe URL" (Kandidat 5) trägt also für Bilder, für Videos nicht. Sie kommen erst nach dem MVP und erst, nachdem sie auf der echten Hardware gemessen wurden.
 
 ### Eigener Web-Code
 
@@ -394,6 +456,7 @@ Weitere Regeln, die ins Datenmodell und nicht in ein späteres Review gehören:
 - Gespeichert wird der Code unverändert. Bereinigen würde funktionierende Widgets zerstören und falsche Sicherheit vortäuschen – die Sandbox ist die Grenze, nicht ein Filter.
 - Im Designer läuft die Vorschau unter denselben Bedingungen wie im Player. Ein Block, der nur in der Vorschau funktioniert, ist ein Fehler.
 - **Die 10.000-Zeichen-Grenze trifft diesen Block als ersten.** Ein eingebettetes Widget mit etwas CSS überschreitet sie allein. Ein HTML-Block bekommt deshalb seinen eigenen Datenwert in der Kategorie `snippets`; die Slide verweist nur darauf. Reicht auch das nicht, wird über mehrere Werte gestückelt, mit der Reihenfolge im Block. Der Designer sagt die Grenze an, bevor gespeichert wird – nicht danach.
+- **Der `srcdoc`-Rahmen erbt die CSP der Hostseite** *(G15, gemessen 2026-09-23)*. Das ist der unangenehmste Befund für diesen Block: `script-src` erlaubt kein `'unsafe-inline'`, und ein Rahmen mit undurchsichtiger Herkunft bekommt keinen Nonce. **Ein eingebettetes Widget mit `<script>`-Tag läuft darin nicht** – gleichgültig, wie die Sandbox gesetzt ist. Was bleibt: HTML und CSS laufen (`style-src` erlaubt `'unsafe-inline'`), und **fremde Seiten über `src` laufen ebenfalls**, weil `child-src *` sie zulässt und sie ihre eigene Policy mitbringen. Die Folge für den MVP ist eine Zuspitzung, keine Absage: Die Variante „fremde Seite einbetten" trägt, die Variante „eigener JS-Schnipsel" trägt nicht. Das gehört in die Blockbeschreibung im Designer, nicht in eine Fehlermeldung zur Laufzeit – und es verschiebt das Gewicht von **Offene Entscheidung 4** (Web-Code-Block jetzt oder später?).
 
 ## Funktionsumfang
 
@@ -438,7 +501,7 @@ Weitere Regeln, die ins Datenmodell und nicht in ein späteres Review gehören:
 
 | Phase | Inhalt | Ergebnis |
 | --- | --- | --- |
-| **0 – Machbarkeit** | **Teilweise erledigt** (G1–G7, G14 zur Hälfte). Offen: G8–G13, G15–G17. **Reihenfolge nach der Frist der Testinstanz**, nicht nach Bequemlichkeit: zuerst prüfen, ob sie Custom Modules trägt, dann alles Instanzgebundene. Der CSP-Header fällt am nächsten Aufruf ab (G15), dann Upload-Weg und der Rest der Datei-Frage (G8, G14), Login-Token unter `/ccm/` und Service Worker prüfen (G9, G10), zuletzt die Speicher-Feinheiten am eigenen Modul testen (G11, G12, G13). Dann Boilerplate aufsetzen, leere Extension bauen, hochladen, aufrufen | Ein „Hallo <Vorname>" aus `/whoami` läuft im echten ChurchTools, und es steht fest, wohin ein hochgeladenes Bild geht. Befunde stehen in diesem Plan. |
+| **0 – Machbarkeit** | **Überwiegend erledigt** (G1–G8, G11, G14, G15; G16 zur Hälfte). Offen und **an der Freischaltung der Testinstanz hängend**: G9, G10, G12, G13. Dazu G17 als Entscheidung. Der Medienweg steht (Wiki-Kategorie, Bilddienst), die CSP ist gemessen, die Fixtures sind aufgezeichnet (lokal, nicht versioniert). Was bleibt: Boilerplate aufsetzen, leere Extension bauen, hochladen, aufrufen – sobald Custom Modules freigeschaltet sind | Ein „Hallo <Vorname>" aus `/whoami` läuft im echten ChurchTools. **Erreicht:** Es steht fest, wohin ein hochgeladenes Bild geht. Befunde stehen in diesem Plan, Belege lokal unter `fixtures/`. |
 | **1 – Datenmodell** | Screen-Schema mit Slides und Blöcken (versioniert, migrierbar, **in beide Richtungen duldsam**), aufgeteilt nach der 10.000-Zeichen-Grenze; Slug als Adresse; KV-Repository mit den Kategorien aus E; Medienreferenzen mit Referenzzählung; Konflikterkennung über `revision`; Export/Import; Mock und Fixtures für die Entwicklung ohne Instanz. Undo/Redo ist hier zu entscheiden, nicht später – es bestimmt, ob Änderungen als Zustand oder als Befehle geführt werden | Screens lassen sich speichern, laden und exportieren, ohne Oberfläche. |
 | **2 – Player** | Rendering der Blöcke, Slide-Rotation, Kiosk-Modus, Token-Anmeldung, Offline-Cache, gesandboxter Web-Code-Block | Ein von Hand geschriebener Screen läuft auf dem Pi am Foyer-TV. |
 | **3 – Designer** | Editor, Slide-Verwaltung, Blockpalette, Inspektor, Vorschau, Vorlagen, **Mediathek mit Upload**, URL-Generator | Ein Anwender gestaltet einen Screen mit eigenen Bildern ohne Entwicklerhilfe. |
@@ -456,7 +519,7 @@ Phase 2 vor Phase 3 – bewusst. Ein Designer für ein Ausgabeformat, das noch n
 - **Versionierung**: Tag `vx.y.z` löst den Release-Workflow aus, der das ZIP baut und als Release-Asset anhängt. Version in `package.json`, `package-lock.json` und `CHANGELOG.md` gemeinsam ziehen.
 - **Keine Geheimnisse im Repo**: `.env` bleibt ignoriert, der Release-Build setzt Zugangsdaten und Instanz-URL ausdrücklich zurück.
 - **Persistierte Daten sind versioniert** und werden beim Lesen auf das aktuelle Schema migriert.
-- **Tests laufen nie gegen die Live-Instanz.** Grundlage sind aufgezeichnete, anonymisierte API-Antworten unter `fixtures/`, gegen einen Mock gespielt. Ein Test, der eine Instanz und ein Passwort braucht, ist kein Test, sondern ein Handgriff.
+- **Tests laufen nie gegen die Live-Instanz.** Grundlage sind aufgezeichnete, anonymisierte API-Antworten unter `fixtures/`, gegen einen Mock gespielt. Ein Test, der eine Instanz und ein Passwort braucht, ist kein Test, sondern ein Handgriff. **Das Verzeichnis ist nicht versioniert** (Entscheidung vom 2026-09-23, siehe Abschnitt „Entwicklungs- und Testumgebung“) – ein frisch geklonter Arbeitsplatz hat die Fixtures also nicht und muss sie sich beschaffen, bevor die Tests laufen.
 - **Ein Test sichert die Sandbox.** Er verbietet `allow-same-origin` in jedem erzeugten `<iframe>`. Siehe Risiko 6.
 - **Ein Test sichert die Duldsamkeit des Players.** Ein Screen mit einem erfundenen Blocktyp und einem unbekannten Feld muss rendern, nicht scheitern. Siehe Abschnitt E.
 - **Der Player-Build hat keine nachzuladenden Chunks.** Eine Prüfung im CI schlägt an, wenn der Build für den Player mehr als ein JavaScript-Bündel erzeugt.
@@ -502,7 +565,7 @@ Die Reihenfolge folgt dem Preis: erst was nichts kostet, dann was etwas kostet. 
 3. **Boilerplate klonen**, `.env` anlegen, Vite-Proxy einrichten statt CORS zu öffnen, `npm run dev` bis zum „Hallo <Vorname>". Dabei einmal in Safari öffnen, nicht nur in Chrome.
 4. **Die Speicher-Feinheiten am eigenen Testmodul messen**, sobald es steht: Nimmt `GET …/customdatavalues` einen Filter auf `domainType`/`domainId` an (G11)? Wird ein hinterlegtes JSON Schema serverseitig durchgesetzt (G12)? Was ändert `securityLevelId` (G13)? Drei Aufrufe, die den Zuschnitt aus Abschnitt E entweder bestätigen oder vereinfachen.
 5. **Ein Bild über `POST /files/wiki_<kategorie>/<id>` hochladen**, wieder auslesen und **in einem `<img>`-Tag anzeigen**. Seit G14 ist die Frage schärfer gefasst: Trägt die hochgeladene Datei neben `fileUrl` auch eine `imageUrl` am Bilddienst? Davon hängen serverseitige Skalierung und Cachefähigkeit ab. Der Versuch, der über den Bilderupload entscheidet.
-6. **Support anschreiben – und zwar zuerst wegen der Frist.** Die Testinstanz läuft nach 30 Tagen ab (etwa 2026-10-22); ob sich das für die Entwicklung einer Extension verlängern lässt, bestimmt, wie eng die Messungen getaktet werden müssen. Im selben Schreiben: ob ein Rate-Limit dokumentiert ist (G16) und ob ein Speicherziel für Custom-Module-Dateien geplant ist (G8) – die Frage, die nur ChurchTools beantworten kann.
+6. **Support anschreiben – und zwar zuerst wegen der Frist.** Die Testinstanz läuft nach 30 Tagen ab (etwa 2026-10-22); ob sich das für die Entwicklung einer Extension verlängern lässt, bestimmt, wie eng die Messungen getaktet werden müssen. **Seit dem 2026-09-23 steht eine zweite, dringendere Frage daneben:** die **Freischaltung der Custom Modules** für diese Instanz – ohne sie sind B5, B6, der C-Block, E1 und E4 blockiert (angefragt, Antwort steht aus). Im selben Schreiben bleibt die Frage nach einem dokumentierten Rate-Limit (G16); **entfallen** ist dagegen die Frage nach einem Speicherziel für Custom-Module-Dateien – die Wiki-Kategorie samt Bilddienst beantwortet sie (G8).
 7. **`bensteUEM/ct-events-load` lesen**, insbesondere `src/persistance.ts` und die Terminbehandlung – vor der ersten eigenen Zeile Bindungscode in Phase 4, und bevor das Screen-Schema festgezurrt wird.
 8. **Testweise einen Infoscreen-Benutzer anlegen**, Login-Token ziehen, die URL am Pi aufrufen (G9); dabei den Rückzugsweg (`DELETE /api/persons/{id}/logintoken`) einmal üben. Erst wenn Phase 2 steht.
 9. **Lukas Block (`lubl`) im Forum ansprechen** – nicht, um Fragen zu stellen, die der Code beantwortet, sondern zu G8, G10 und der Idee einer gemeinsamen `ct-utils`-Bibliothek (Offene Entscheidung 10). Er betreibt dieselbe Schnittstelle produktiv und sucht ausdrücklich nach einem Ort für wiederverwendbaren Setup-Code.
