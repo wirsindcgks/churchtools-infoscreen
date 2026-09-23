@@ -114,7 +114,7 @@ Drei Wege, für drei Situationen:
 
    **Der Weg zum Zurückziehen ist der Passwortwechsel, nicht der Token-Endpunkt** *(2026-09-23 gemessen, **G18**)*. Die frühere Annahme, ein Administrator rufe `DELETE /api/persons/{id}/logintoken` auf, ist widerlegt – der Endpunkt antwortet für fremde Personen mit 403, und die Oberfläche gibt den Token ebenso wenig heraus. Der Grund ist einleuchtend: Der Token wird aus den Zugangsdaten abgeleitet (`POST /api/login/token`), gehört also der Person und nicht der Verwaltung.
 
-   Die Notbremse ist damit **das Passwort des Geräte-Benutzers zu ändern**; ein bestehender Token ist danach sofort ungültig (401, gemessen). Das kann ein Administrator jederzeit, und es gehört genau so in die Einrichtungsdoku: einrichten über Passwort setzen und `POST /api/login/token`, zurücknehmen über Passwort ändern.
+   Die Notbremse ist damit **das Passwort des Geräte-Benutzers zu ändern**; ein bestehender Token ist danach sofort ungültig (401, gemessen). **Das geschieht in der ChurchTools-Oberfläche, nicht über die API** – `PUT /persons/{id}/password` verlangt das alte Passwort und taugt nicht als Admin-Reset. Die Einrichtungsdoku beschreibt hier also Klickwege: Passwort in der Oberfläche setzen, Token über `POST /api/login/token` erzeugen, im Notfall das Passwort in der Oberfläche ändern.
 
 ### E. Datenspeicherung
 
@@ -218,7 +218,9 @@ In der Entwicklung legt `getOrCreateModule()` das Modul selbst an, im Produktivb
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18, G19 und G20 sind beantwortet, G16 zur Hälfte, der Rest offen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18, G19 und G20 sind beantwortet, G16 zur Hälfte, der Rest offen.
+
+**Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
 #### Beantwortet
 
@@ -368,42 +370,45 @@ Damit entfällt **C1 aus `Preparation.md` ersatzlos**: Es gibt nichts zu filtern
 
 **Aus derselben Quelle mitbelegt**, jetzt gegen unsere Instanz statt gegen fremden Code: `value` max. **10.000** Zeichen (bestätigt G2), Kategorie-`data` max. **2.000**, `name` 100, `shorty` 2–50, `description` 300 und Pflicht. `CustomModulePermission` fordert **alle neun Schlüssel** – G4 gilt damit nicht nur empirisch, sondern spezifiziert.
 
-**G18 – Ein Login-Token gehört seiner Person, und die Notbremse ist der Passwortwechsel.** *(2026-09-23, Testinstanz)* Die Frage entstand aus einem Irrtum des Plans und hat ihn korrigiert.
+**G18 – Das Geräte-Login wird in der Oberfläche verwaltet, nicht über die API.** *(2026-09-23, Testinstanz)* Der Punkt hat den Plan zweimal korrigiert und dabei drei Sackgassen erzeugt, die hier bewusst kurz stehen, damit sie niemand erneut geht.
 
-**Erster Befund – der Weg, den der Plan annahm, gibt es nicht.** Mit vollen Administratorrechten (`administer settings`, `administer persons`) geprüft:
+**Was ein Administrator nicht kann.** Geprüft mit `administer settings` und `administer persons`:
 
-| Aufruf | Antwort |
-| --- | --- |
-| `GET /persons/16/logintoken` – die eigene Person | **200** |
-| `GET /persons/1/logintoken` – eine fremde Person | **403** |
-| `GET /persons/19/loginstring` | **403** |
-| `DELETE /persons/19/logintoken` | **403** |
+| Aufruf | Antwort | Bedeutung |
+| --- | --- | --- |
+| `GET /persons/16/logintoken` – eigene Person | 200 | Der Endpunkt gilt nur für einen selbst |
+| `GET /persons/1/logintoken` – fremde Person | **403** | Kein Recht im `churchcore`-Satz ändert das |
+| `GET /persons/{id}/loginstring` | **403** | Dieselbe Sperre |
+| `DELETE /persons/{id}/logintoken` | **403** | Der Widerruf aus dem alten E3 ist unmöglich |
+| `PUT /persons/{id}/password` | **verlangt `oldPassword`** | Selbstbedienung, kein Admin-Reset. Dazu `newPasswordConfirm`; der Endpunkt ist als `Hidden`/`TODO 200` geführt |
 
-Im gesamten `churchcore`-Rechtesatz gibt es **kein Recht für fremde Login-Tokens** – alle fünfzehn Einträge durchgesehen. **Auch die Administrationsoberfläche gibt ihn nicht heraus**, von Tobias am 2026-09-23 gegengeprüft. Damit ist E3 aus `Preparation.md` in seiner bisherigen Form widerlegt: „`DELETE /api/persons/{id}/logintoken` einmal ausführen" kann ein Administrator nicht.
+Auch die **Administrationsoberfläche gibt einen fremden Token nicht heraus** (2026-09-23 gegengeprüft). Es gibt also keinen Weg – weder API noch Oberfläche –, sich den Token eines anderen Kontos anzusehen.
 
-**Zweiter Befund – die 403 sind kein Loch, sondern Logik.** `POST /api/login/token` ist **anonym erreichbar** und nimmt `username` und `password` (mit falschen Daten: 400 „Login failed"). Der Token wird also **aus den Zugangsdaten abgeleitet**, nicht von einem Administrator ausgegeben. Wer den Token bekommt, muss das Passwort haben – deshalb verweigert die API ihn für fremde Personen. Der Administrator kommt an den Token des Geräts, indem er dessen Passwort setzt (`PUT /persons/{id}/password`) und sich damit den Token selbst erzeugt.
+**Das ist kein Loch, sondern Logik.** `POST /api/login/token` ist anonym erreichbar und nimmt `username` und `password` (falsche Daten: 400 „Login failed"). Der Token wird **aus den Zugangsdaten abgeleitet**; er gehört der Person, nicht der Verwaltung. Wer ihn haben will, muss das Passwort haben – deshalb die 403.
 
-**Dritter Befund – die Notbremse, gemessen.** Am 2026-09-23 wurde das Passwort der Person 16 geändert, deren Login-Token in Gebrauch war. Derselbe Token danach:
+**Die Notbremse wirkt, und sie ist gemessen.** Am 2026-09-23 wurde das Passwort der Person 16 **in der ChurchTools-Oberfläche** geändert. Deren bis dahin gültiger Token danach:
 
 | Prüfung | Vorher | Nachher |
 | --- | --- | --- |
-| `GET /api/whoami` mit `Authorization: Login <token>` | 200, `id: 16` | **401 „No valid token"** |
+| `GET /api/whoami` mit dem Token | 200, `id: 16` | **401 „No valid token"** |
 | `GET /api/calendars` mit demselben Token | 200, 5 Kalender | **401** |
-| `GET /api/info` (Gegenprobe Instanz) | 200 | 200 |
-| `GET /api/whoami` anonym (Gegenprobe) | 200, `id: -1` | 200, `id: -1` |
+| `GET /api/info` – Gegenprobe Instanz | 200 | 200 |
+| `GET /api/whoami` anonym – Gegenprobe | 200, `id: -1` | 200, `id: -1` |
 
-**Ein Passwortwechsel macht den Login-Token derselben Person ungültig.** Die Instanz war dabei gesund und das anonyme Verhalten unverändert – es lag am Token, nicht an der Umgebung. Geändert wurde ausschließlich das Passwort, nichts sonst.
+**Ein Passwortwechsel macht den Login-Token derselben Person ungültig.** Instanz gesund, anonymes Verhalten unverändert – es lag am Token.
 
-**Damit ist der Betriebsweg vollständig** und das frühere Ausschlusskriterium fällt:
+**Der Betriebsweg, wie er in die Einrichtungsdoku gehört:**
 
-1. **Einrichten:** Administrator legt den Geräte-Benutzer an und setzt ihm ein Passwort.
+1. **Einrichten:** Geräte-Benutzer anlegen und ihm **in der Oberfläche** ein Passwort geben. Als API-Alternative bliebe `POST /persons/{id}/invite`, wobei die Person ihr Passwort selbst setzt – das braucht ein erreichbares Postfach.
 2. **Token erzeugen:** `POST /api/login/token` mit dessen Zugangsdaten.
-3. **Verwenden:** Token in die Player-URL (G9 prüft den `/ccm/`-Teil, sobald ein Modul existiert).
-4. **Notbremse:** Passwort des Geräte-Benutzers ändern – der Token ist sofort tot.
+3. **Verwenden:** Token in die Player-URL. Der `/ccm/`-Teil ist G9 und braucht ein Modul.
+4. **Notbremse:** Passwort **in der Oberfläche** ändern – der Token ist sofort tot.
 
-**Was daran noch nicht gemessen ist**, und deshalb nicht als gemessen behauptet wird: Schritt 2 ist nur negativ geprüft (falsche Zugangsdaten → 400). Dass der Endpunkt für gültige Zugangsdaten einen brauchbaren Token liefert, ist naheliegend, aber offen. Ebenfalls offen, weil nicht nötig: ob `POST /persons/{id}/archive` denselben Effekt hat – als zweite Notbremse plausibel, als Befund nicht vorhanden.
+**Die Doku beschreibt hier also Klickwege, keine curl-Aufrufe.** Das ist kein Schönheitsfehler: Wer sie als API-Anleitung schreibt, schreibt etwas auf, das nicht funktioniert.
 
-**Die Spur über `POST /api/simulate` erübrigt sich.** Sie funktionierte technisch – `whoami` lieferte die simulierte Person samt `meta.simulatingUserId` –, war aber der Umweg um ein Problem, das es nicht gab. Festzuhalten bleibt, dass eine Simulation an der Antwort erkennbar ist.
+**Nicht gemessen, und deshalb nicht behauptet:** dass `POST /login/token` für *gültige* Zugangsdaten einen brauchbaren Token liefert (nur negativ geprüft), und ob `POST /persons/{id}/archive` als zweite Notbremse wirkt. Beides braucht ein Gerätekonto mit gesetztem Passwort – siehe **G21**.
+
+**Drei Sackgassen, damit sie niemand erneut geht:** `DELETE …/logintoken` als Widerruf (403). `GET …/loginstring` als Ausweg (dieselbe Sperre). Und `POST /api/simulate`, das technisch funktioniert – `whoami` liefert die simulierte Person samt `meta.simulatingUserId`, der Zustand endet mit `DELETE /api/simulate` – aber ein Umweg um ein Problem war, das es nicht gab. Festzuhalten bleibt allein, dass eine Simulation an der Antwort erkennbar ist.
 
 #### Teilweise beantwortet
 
@@ -420,6 +425,16 @@ Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit
 **G12 – Wird das JSON Schema einer Kategorie serverseitig durchgesetzt?** Entscheidet, ob wir ein vollständiges Schema hinterlegen müssen (und dann an 2.000 Zeichen scheitern) oder ein permissives genügt. Siehe Abschnitt E.
 
 **G13 – Was bewirkt `securityLevelId` an einer Kategorie?** Besonders für `status`, die einzige Kategorie, auf die ein unbeaufsichtigtes Gerät schreibt.
+
+**G21 – Der Betriebsbenutzer mit Minimalrechten ist nie gebaut worden.** Abschnitt F beschreibt seinen Zuschnitt – Modulrechte plus Lesen auf Kalender, Beiträge, Gruppen und gegebenenfalls Wiki –, aber **gegen eine echte Person geprüft wurde das nie**. Die Person 19 auf der Testinstanz taugt dafür nicht: Sie ist über `POST /api/persons` mit `departmentIds: [1]` entstanden und trägt Vorgaberechte, die niemand bewusst gewählt hat.
+
+Drei Fragen hängen daran, und alle drei brauchen eine **Anmeldung als dieses Konto**, nicht als Administrator:
+
+1. **Reicht der Zuschnitt aus Abschnitt F**, damit der Player alles sieht, was er rendern muss – und nicht mehr?
+2. **Was sieht ein gering berechtigter Benutzer in `GET /api/config`?** Als Administrator steht dort unter anderem `site_licensekey` im Klartext. Ob der Infoscreen-Benutzer das mitliest, ist ungeprüft und entscheidet, ob der Lizenzschlüssel ein Verwaltungsdetail ist oder auf jeder SD-Karte im Foyer mitfährt.
+3. **Die beiden Reste aus G18**: ob `POST /login/token` für gültige Zugangsdaten trägt, und ob Archivieren als zweite Notbremse wirkt.
+
+Voraussetzung für alle drei ist ein Gerätekonto **mit gesetztem Passwort** – und das geht nur über die Oberfläche (G18). Es ist damit der erste Punkt, der ohne Custom Modules weiterkommt, aber einen Handgriff außerhalb der API braucht.
 
 **G17 – Extension Store**: Aufnahmekriterien, Einreichungsweg, ob eine Veröffentlichung überhaupt angestrebt wird. Der Publisher hält seinen Store-Text in einer eigenen `EXTENSION_STORE.md` – ein Muster, das sich übernehmen lässt.
 
@@ -502,10 +517,10 @@ Der Haken ist `domainType`. Die Spezifikation führt eine feste Liste: `avatar`,
 
 **Zwei Bedingungen hängen daran.** Erstens die **150-Pixel-Falle**: Ohne Parameter liefert der Bilddienst 150×150, und `w` allein setzt nur die Breite – `?w=1920` ergibt 1920×150. **Der Renderer muss immer beide Werte setzen.** Zweitens: `fileAccessWithoutPermission: false` an der Kategorie schützt die `imageUrl` **nicht**; sie ist anonym abrufbar, geschützt allein durch den Hash. Beides steht ausführlich bei G14.
 
-Kandidaten, in Phase 0 in dieser Reihenfolge zu prüfen:
+**Der Weg steht seit dem 2026-09-23** – die folgende Liste ist deshalb keine Prüfreihenfolge mehr, sondern eine Rangfolge mit einem Gewinner und drei Rückfallpositionen:
 
 1. **Wiki-Kategorie als Mediathek** (`wiki_<kategorie>`) – **geprüft und bestätigt** *(2026-09-23)*. Eine eigene Kategorie „Infoscreen-Medien", Uploads hängen an Wiki-Seiten, adressiert über deren **GUID**. Vorteile wie erwartet: echte ChurchTools-Dateien mit URL, ChurchTools-Rechten und einer Oberfläche, in der Anwender sie auch ohne unser Modul verwalten und löschen können – **und** der Bilddienst. Das ist der Weg; die folgenden Kandidaten sind damit Rückfallpositionen und keine Prüfaufträge mehr.
-2. **`attachments`** – wenn sich klären lässt, woran `domainIdentifier` hier bindet und ob wir frei wählen dürfen.
+2. ~~**`attachments`**~~ – **nicht geprüft und nicht mehr nötig.** Stand hier als zweiter Anlauf, falls die Wiki-Kategorie scheitert. Sie ist nicht gescheitert. Bleibt als Notiz stehen, damit niemand die Frage nach `domainIdentifier` erneut aufwirft.
 3. **Bestehende ChurchTools-Bilder ohne eigenen Upload**: Termin-, Gruppen-, Beitrags- und Logobilder. Das funktioniert nicht nur sicher, sondern nachweislich, mitsamt Bilddienst (G14). Für „Bild hochladen" reicht es trotzdem nicht – es ist der Rückfallplan, nicht das Ziel. Umgekehrt gilt: `appointment_image` als **Ablage** für eigene Medien zu missbrauchen ist geprüft und verworfen; Begründung bei G8.
 4. ~~**Data-URI im KV-Store**~~ – **ausgeschieden.** Ein Datenwert fasst 10.000 Zeichen, also rund sieben Kilobyte. Das reicht nicht einmal für ein Icon, für Videos erst recht nicht.
 5. **Externe URL** als Notausgang – **geprüft am 2026-09-23.** `POST /files/{domainType}/{domainIdentifier}/link` nimmt `url`, `name` und optional `securityLevelId`, antwortet **201** und legt einen regulären Dateisatz an: `type: "link"`, gleicher `domainType`/`domainId` wie ein Upload. Ein verlinktes Bild steht damit in derselben Liste wie eine hochgeladene Datei – für die Mediathek ein sauberes, einheitliches Datenmodell.
@@ -691,7 +706,7 @@ Die Reihenfolge folgt dem Preis: erst was nichts kostet, dann was etwas kostet. 
 5. **Ein Bild über `POST /files/wiki_<kategorie>/<id>` hochladen**, wieder auslesen und **in einem `<img>`-Tag anzeigen**. Seit G14 ist die Frage schärfer gefasst: Trägt die hochgeladene Datei neben `fileUrl` auch eine `imageUrl` am Bilddienst? Davon hängen serverseitige Skalierung und Cachefähigkeit ab. Der Versuch, der über den Bilderupload entscheidet.
 6. **Support anschreiben – und zwar zuerst wegen der Frist.** Die Testinstanz läuft nach 30 Tagen ab (etwa 2026-10-22); ob sich das für die Entwicklung einer Extension verlängern lässt, bestimmt, wie eng die Messungen getaktet werden müssen. **Seit dem 2026-09-23 steht eine zweite, dringendere Frage daneben:** die **Freischaltung der Custom Modules** für diese Instanz – ohne sie sind B5, B6, der C-Block, E1 und E4 blockiert (angefragt, Antwort steht aus). Im selben Schreiben die Frage nach einem dokumentierten Rate-Limit (G16); **entfallen** ist dagegen die Frage nach einem Speicherziel für Custom-Module-Dateien – die Wiki-Kategorie samt Bilddienst beantwortet sie (G8).
 7. **`bensteUEM/ct-events-load` lesen**, insbesondere `src/persistance.ts` und die Terminbehandlung – vor der ersten eigenen Zeile Bindungscode in Phase 4, und bevor das Screen-Schema festgezurrt wird.
-8. **Den Geräte-Benutzer einrichten und die URL am Pi aufrufen** (G9). Der Rückzugsweg ist geklärt (**G18**): Passwort setzen erzeugt den Token über `POST /api/login/token`, Passwort ändern nimmt ihn zurück. Der Benutzer ist angelegt (Person 19). Erst wenn Phase 2 steht.
+8. **Einen Betriebsbenutzer mit Minimalrechten bauen und prüfen** (**G21**) – vorgezogen, weil er ohne Custom Modules weiterkommt und drei offene Fragen auf einmal schließt. Er braucht ein Passwort, und das geht nur über die Oberfläche (**G18**). Person 19 auf der Testinstanz taugt dafür nicht, sie trägt unbedachte Vorgaberechte. Danach die URL am Pi aufrufen (G9), sobald Phase 2 steht.
 9. **Lukas Block (`lubl`) im Forum ansprechen** – nicht, um Fragen zu stellen, die der Code beantwortet, sondern zu G8, G10 und der Idee einer gemeinsamen `ct-utils`-Bibliothek (Offene Entscheidung 10). Er betreibt dieselbe Schnittstelle produktiv und sucht ausdrücklich nach einem Ort für wiederverwendbaren Setup-Code.
 10. **Befunde hier eintragen**, erst danach das Screen-Schema festlegen.
 

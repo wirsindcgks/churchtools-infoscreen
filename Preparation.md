@@ -220,13 +220,18 @@ Hardware, nicht an der Instanz, und kann warten.
       Scheitert das, bleibt die Offline-Festigkeit halb – ein Pi, der während eines Netzausfalls neu startet,
       hat nichts zu laden. Dann ausdrücklich benennen, nicht übergehen.
 
-- [x] **E2 · Infoscreen-Benutzer anlegen** *(2026-09-23, angelegt: Person 19 „Infoscreen Player")*
-      Eigene Person ohne Zweifaktor, mit **minimalen Rechten**. Die tatsächliche Reichweite umfasst neben
-      den Modulrechten auch Lesen auf Kalender, Beiträge, Gruppen und ggf. Wiki – siehe `Plan.md`, F.
-      **Beim Anlegen zu wissen:** `POST /api/persons` verlangt `departmentIds` (nicht leer), `campusId`,
+- [ ] **E2 · Betriebsbenutzer mit Minimalrechten** → **G21**, und weiter offen als gedacht
+      **Person 19 taugt nicht dafür.** Sie ist am 2026-09-23 als Wegwerfkonto entstanden
+      (`POST /api/persons`, `departmentIds: [1]`, E-Mail `infoscreen-test@example.invalid`, **kein Passwort**)
+      und trägt Vorgaberechte, die niemand bewusst gewählt hat. Sie ist ein Messobjekt, kein Betriebsbenutzer.
+      **Beim Anlegen zu wissen:** `POST /api/persons` verlangt `departmentIds` (nicht leer), `campusId`
       und **eine vollständige Datenschutz-Einwilligung** (`privacyPolicyAgreementTypeId`, `-WhoId`, `-Date`).
-      ChurchTools legt auch einen Maschinenbenutzer nicht ohne diese Angaben an.
-      **Rechte sind noch nicht vergeben** – das bleibt zu tun, sobald klar ist, was der Player lesen muss.
+      ChurchTools legt auch einen Maschinenbenutzer nicht ohne diese Angaben an. Personen werden mit
+      **`PATCH`** geändert, nicht mit `PUT` (405) – bei Terminen ist es umgekehrt.
+      **Was noch fehlt:** Eine Person ohne Zweifaktor, mit dem Zuschnitt aus `Plan.md`, F – Modulrechte plus
+      Lesen auf Kalender, Beiträge, Gruppen und ggf. Wiki. Passwort **über die Oberfläche** (E3/G18).
+      Erst damit lassen sich die drei Fragen aus **G21** beantworten, darunter: Sieht ein gering
+      berechtigter Benutzer den `site_licensekey` in `/api/config`?
 
 - [x] **E3 · Rückzugsweg** → **beantwortet** *(2026-09-23, siehe `Plan.md`, G18)*
       **Die ursprüngliche Anleitung war falsch.** `DELETE /api/persons/{id}/logintoken` liefert für eine
@@ -238,13 +243,16 @@ Hardware, nicht an der Instanz, und kann warten.
       **Gemessen:** Nach einem Wechsel des Passworts von Person 16 antwortete deren bis dahin gültiger
       Token auf zwei Endpunkten mit **401**, bei gesunder Instanz und unverändertem anonymem Verhalten.
       **Der Betriebsweg lautet damit:**
-      1. Administrator setzt dem Geräte-Benutzer ein Passwort (`PUT /persons/{id}/password`).
+      1. Geräte-Benutzer anlegen und ihm **in der ChurchTools-Oberfläche** ein Passwort geben.
+         **Nicht über die API:** `PUT /persons/{id}/password` verlangt `oldPassword` und ist Selbstbedienung,
+         kein Admin-Reset. Als API-Alternative bliebe `POST /persons/{id}/invite` – braucht ein Postfach.
       2. `POST /api/login/token` mit dessen Zugangsdaten erzeugt den Token.
       3. Token in die Player-URL (der `/ccm/`-Teil bleibt E4/G9).
-      4. **Notbremse: Passwort ändern** – der Token ist sofort tot.
-      **Noch nicht gemessen:** Schritt 2 ist nur negativ geprüft (falsche Daten → 400). Dass gültige Daten
-      einen brauchbaren Token liefern, ist naheliegend, aber offen – und mit einem eigenen Konto in zwei
-      Minuten nachzuholen. Ob `POST /persons/{id}/archive` als zweite Notbremse wirkt, ist ungeprüft.
+      4. **Notbremse: Passwort in der Oberfläche ändern** – der Token ist sofort tot.
+      **Die Doku beschreibt hier Klickwege, keine curl-Aufrufe.** Wer sie als API-Anleitung schreibt,
+      schreibt etwas auf, das nicht funktioniert.
+      **Noch nicht gemessen:** Schritt 2 ist nur negativ geprüft (falsche Daten → 400); ob `archive` als
+      zweite Notbremse wirkt, ebenso. Beides hängt an einem Konto mit gesetztem Passwort → **G21**.
 
 - [ ] **E4 · `login_token` in der URL am `/ccm/`-Pfad** → beantwortet **G9** – **doppelt blockiert**
       Es fehlt das Custom Module (T1) **und** ein Token, an den ein Administrator regulär herankommt (E3/G18).
@@ -307,6 +315,7 @@ bevor das Screen-Schema steht.
 - [x] **Alle Befunde in `Plan.md` eingetragen** *(Stand 2026-09-23)*, Abschnitt G: beantwortete Punkte nach
       oben, mit Datum und Quelle (Instanz, Spezifikation oder fremder Code).
       Beantwortet: **G1–G8, G11, G14, G15, G18, G19, G20**; **G16** zur Hälfte.
+      Neu offen: **G21** – der Betriebsbenutzer mit Minimalrechten ist nie gebaut worden.
       Offen und an der Freischaltung hängend: **G9, G10, G12, G13**. Dazu **G17** als Entscheidung.
       **G18 hat den Notfallpfad aus E3 erst widerlegt und dann ersetzt** – die Notbremse ist der Passwortwechsel.
       Belege liegen lokal unter `fixtures/` – **nicht im Repo**, siehe `fixtures/README.md`.
