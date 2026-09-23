@@ -282,6 +282,11 @@ Die offenen Entscheidungen aus `Plan.md` – keine Recherche, sondern Festlegung
 bevor das Screen-Schema steht.
 
 - [ ] **G-E1 · Undo/Redo** – architekturrelevant, muss **vor Phase 1** fallen (Zustand oder Befehle?)
+- [x] **G-E11 · Playlists und Zeitpläne** – **entschieden am 2026-09-23**, die zweite architekturrelevante
+      Frage dieser Art. Die Ebene **Screen → Playlist → Slides** kommt in Phase 1 ins Schema, die
+      Zeitplan-Oberfläche später; Slides werden referenziert und dürfen in mehreren Playlists vorkommen.
+      Regeln nach **Termin** (dank G19 billig) und nach Uhrzeit. Standard-Playlist ist Pflicht, und der
+      Player wechselt nicht, solange seine Uhr unbestätigt ist. Siehe `Plan.md`, „Playlists und Zeitpläne".
 - [ ] **G-E2 · Hardware** – wie viele Geräte, welche Generation, Auflösung, Ausrichtung
 - [ ] **G-E3 · Zielgruppe** – nur wir, oder von Anfang an Extension Store (**G17**)
 - [ ] **G-E4 · MVP-Zuschnitt** – Web-Code-Block jetzt oder später? Geburtstage mit Einwilligung oder gar nicht?

@@ -43,7 +43,7 @@ ChurchTools-Instanz
 
 **Warum kein eigener Server.** Ein eigener Renderer-Dienst würde eine öffentliche URL ohne ChurchTools-Anmeldung erlauben, bräuchte aber Hosting, einen dauerhaft gültigen API-Key mit Leserechten auf Gemeindedaten und eine eigene Update-Strecke. Der CCM-Weg kommt ohne all das aus: Die Instanz ist zugleich Speicher, Auslieferung und Rechteverwaltung. Der Preis dafür ist, dass der Pi sich anmelden muss – das löst der Login-Token (siehe Abschnitt D), und genau so läuft der native Infoscreen heute schon.
 
-**Designer und Player teilen sich den Code.** Ein Screen ist ein JSON-Dokument (Seiten, Blöcke, Bindungen). Der Designer schreibt es, der Player liest es und rendert dieselben Blockkomponenten ohne Bedienelemente. Damit ist die Vorschau im Designer definitionsgemäß das, was auf dem TV steht.
+**Designer und Player teilen sich den Code.** Ein Screen ist eine Sammlung von JSON-Dokumenten – Screen, Playlists, Slides mit ihren Blöcken und Bindungen (siehe „Playlists und Zeitpläne“ und Abschnitt E; ein einzelner Datenwert fasst nur 10.000 Zeichen). Der Designer schreibt es, der Player liest es und rendert dieselben Blockkomponenten ohne Bedienelemente. Damit ist die Vorschau im Designer definitionsgemäß das, was auf dem TV steht.
 
 **DOM statt Canvas.** Der Publisher rendert mit Konva, weil er PNG/JPEG exportieren muss. Ein Infoscreen exportiert nichts, er läuft – und braucht dafür Videos, Web-Fonts, Laufschrift und weiche Übergänge. Das ist mit absolut positionierten DOM-Blöcken auf einer per `transform: scale()` skalierten 1920×1080-Bühne einfacher und robuster als mit einem Szenengraphen.
 
@@ -129,10 +129,8 @@ GET…DELETE /custommodules/{moduleId}/customdatacategories/{id}/customdatavalue
 
 ```ts
 export type CustomModuleDataValueCreate = {
-    dataCategoryId: number;
-    domainId?: number;
-    domainType?: string;
-    value?: string;
+    dataCategoryId: number;   // Pflicht
+    value: string;            // Pflicht, max. 10.000 Zeichen
 };
 ```
 
@@ -140,7 +138,7 @@ Kein Schlüssel, kein Name, kein `updatedAt`, keine Version – nur eine servers
 
 1. **Adressiert wird über die `id`**, und die kennt nur, wer zuvor den Index gelesen hat. Jeder Zugriff auf eine Slide ist damit zweistufig.
 2. **`GET …/customdatavalues` ist eine Volltabelle.** Bei zehn Screens zu je acht Slides zieht der Player achtzig Werte, um acht zu brauchen. Für den Anfang tragbar – aber es ist der Grund, Slides nicht noch feiner zu zerlegen, und der Grund, die Blöcke einer Slide in deren Wert zu lassen statt sie einzeln abzulegen.
-3. **`domainType` und `domainId` sind optional und offenbar ungeprüft**: Die TypeScript-Seite von `ct-pass-store` setzt fest `'status'` und `1`, die PHP-Seite lässt beide weg. Sie sind damit der einzige Kandidat für einen echten Schlüssel am Wert. Ob sich darüber serverseitig filtern lässt, kostet einen Testaufruf und würde Punkt 2 erledigen (G11).
+3. **Es gibt keinen Schlüssel am Wert.** Der frühere Kandidat – `domainType`/`domainId`, von `ct-pass-store` uneinheitlich benutzt – **existiert auf Build 32882 nicht** (G11, an der Spezifikation unserer eigenen Instanz gemessen). Der Snapshot, aus dem die Felder stammten, ist vom 2025-09-02 und überholt. Punkt 2 bleibt damit bestehen: Volltabelle lesen, im Client filtern. Das ist keine Zwischenlösung mehr, sondern der Zuschnitt.
 
 **Der Slug ist die Adresse, nicht die `id`.** Weil die `id` vom Server kommt, zeigt eine Player-URL mit `?screen=7` auf einen Datenbankschlüssel. Wird ein Screen gelöscht und neu angelegt – der normale Weg, wenn etwas gründlich schiefging –, zeigt die SD-Karte im Foyer ins Leere, und niemand verbindet die Ursache mit der Wirkung. Deshalb bekommt jeder Screen einen vom Gestalter vergebenen, stabilen Slug (`foyer-links`), die URL nennt den Slug, und der Index bildet Slug → `id` ab. Der Designer wacht über die Eindeutigkeit.
 
@@ -159,8 +157,9 @@ Kein Schlüssel, kein Name, kein `updatedAt`, keine Version – nur eine servers
 
 **Zuschnitt, der daraus folgt.** Ein Screen ist keine Ablage, sondern eine Sammlung von Werten:
 
-- `screens` – je Screen **ein Index-Wert**: Slug, Name, Auflösung, Schema-Version, Revision, `updatedAt`, `updatedBy`, Reihenfolge der Slide-IDs. Klein und stabil.
-- `slides` – je Slide **ein Wert** mit ihren Blöcken. Ein bis vier Kilobyte sind realistisch; für eine gut gefüllte Slide reicht das Limit, für einen ganzen Screen nicht.
+- `screens` – je Screen **ein Index-Wert**: Slug, Name, Auflösung, Schema-Version, Revision, `updatedAt`, `updatedBy`, die **Standard-Playlist** und der **Zeitplan**. Klein und stabil. Der Screen führt seit dem 2026-09-23 **keine Slide-Liste mehr** – die steht in der Playlist.
+- `playlists` – je Playlist **ein Wert**: Name, Slug und die Reihenfolge der Slide-IDs. Siehe „Playlists und Zeitpläne".
+- `slides` – je Slide **ein Wert** mit ihren Blöcken. Ein bis vier Kilobyte sind realistisch; für eine gut gefüllte Slide reicht das Limit, für einen ganzen Screen nicht. **Eine Slide gehört keiner Playlist**, sie wird von Playlists über ihre ID referenziert und darf in mehreren vorkommen.
 - `snippets` – eigener Wert je HTML-Block, siehe „Eigener Web-Code".
 - `media` – Verweise auf ChurchTools-Dateien, nie die Dateien selbst.
 - `templates`, `settings` – wie geplant.
@@ -521,12 +520,42 @@ Weitere Regeln, die ins Datenmodell und nicht in ein späteres Review gehören:
 - **Die 10.000-Zeichen-Grenze trifft diesen Block als ersten.** Ein eingebettetes Widget mit etwas CSS überschreitet sie allein. Ein HTML-Block bekommt deshalb seinen eigenen Datenwert in der Kategorie `snippets`; die Slide verweist nur darauf. Reicht auch das nicht, wird über mehrere Werte gestückelt, mit der Reihenfolge im Block. Der Designer sagt die Grenze an, bevor gespeichert wird – nicht danach.
 - **Der `srcdoc`-Rahmen erbt die CSP der Hostseite** *(G15, gemessen 2026-09-23)*. Das ist der unangenehmste Befund für diesen Block: `script-src` erlaubt kein `'unsafe-inline'`, und ein Rahmen mit undurchsichtiger Herkunft bekommt keinen Nonce. **Ein eingebettetes Widget mit `<script>`-Tag läuft darin nicht** – gleichgültig, wie die Sandbox gesetzt ist. Was bleibt: HTML und CSS laufen (`style-src` erlaubt `'unsafe-inline'`), und **fremde Seiten über `src` laufen ebenfalls**, weil `child-src *` sie zulässt und sie ihre eigene Policy mitbringen. Die Folge für den MVP ist eine Zuspitzung, keine Absage: Die Variante „fremde Seite einbetten" trägt, die Variante „eigener JS-Schnipsel" trägt nicht. Das gehört in die Blockbeschreibung im Designer, nicht in eine Fehlermeldung zur Laufzeit – und es verschiebt das Gewicht von **Offene Entscheidung 4** (Web-Code-Block jetzt oder später?).
 
+## Playlists und Zeitpläne
+
+**Entschieden am 2026-09-23.** Anlass war der Betriebsfall, um den es eigentlich geht: Im Foyer stehen mehrere Fernseher, und vor dem Gottesdienst soll anderes laufen als danach.
+
+**Mehrere Geräte sind bereits gelöst** – jeder Screen hat einen stabilen Slug, jedes Gerät seine eigene Player-URL. Dafür braucht es kein neues Konzept, wohl aber mehr Gewicht auf der `status`-Kategorie: Bei einem TV sieht man selbst, ob er läuft; bei fünfen will man im Designer ablesen, welches Gerät wann zuletzt gemeldet hat und welche Konfigurationsrevision es zeigt.
+
+**Der Zeitplan dagegen ist keine Ergänzung, sondern eine Ebene.** Bisher lautete das Modell Screen → Slides; mit Zeitplänen lautet es **Screen → Playlist → Slides**. Der Screen wird damit zu „Geräteadresse plus Zeitplan", die Playlist zu „geordnete Menge von Slides". Diese Ebene nachträglich einzuziehen, wenn bereits Screens im Foyer laufen, hieße Bestandsdaten migrieren und ein zweites Mal die Schema-Hauptversion heben.
+
+**Festlegung: Die Ebene kommt in Phase 1 ins Schema, die Oberfläche dazu kommt später.** Ein Screen ohne Zeitplan hat genau eine Playlist; im Designer ist davon zunächst nichts zu sehen, der Player wertet den Zeitplan aber schon aus. Das kostet in Phase 1 wenig und hält die Tür offen. Damit gehört der Punkt in dieselbe Kategorie wie Undo/Redo: architekturrelevant, vor Phase 1 zu entscheiden – und entschieden.
+
+**Zwei Arten von Regel, beide vorgesehen:**
+
+| Art | Beispiel | Wann sinnvoll |
+| --- | --- | --- |
+| **Nach Termin** | von 30 Minuten vor bis zum Beginn eines Termins im Kalender „Gottesdienst" | Der eigentlich gemeinte Fall |
+| **Nach Uhrzeit** | sonntags 11:30–13:00 | Einfacher Rückfall, wenn kein Termin taugt |
+
+Die Termin-Regel ist für dieses Projekt die bessere Antwort und seit **G19** auch die billigere: Die API löst Serien selbst auf, samt Ausnahmen, Zusatzterminen und Zeitumstellung, und der Player fragt Termine ohnehin ab. Fällt ein Gottesdienst aus, folgt das Foyer von selbst – niemand muss daran denken, den Zeitplan nachzuziehen. Die Uhrzeit-Regel ist vorhersagbarer, geht aber an Weihnachten und bei jedem Sondergottesdienst fehl.
+
+**Drei Regeln, die der Zeitplan mitbringt:**
+
+1. **Eine Standard-Playlist ist Pflicht.** Kein Treffer im Zeitplan darf nie „schwarzer Bildschirm" heißen. Dazu eine feste Vorrangregel bei Überschneidungen – sonst hängt das Verhalten von der Reihenfolge im JSON ab, und das ist keine Festlegung, sondern ein Zufall.
+2. **Der Player wechselt die Playlist nicht, solange seine Uhr unbestätigt ist.** Bisher hieß eine falsche Uhr auf einem Pi ohne gepufferte Echtzeituhr: falsche Uhrzeit im Bild. Mit Zeitplänen heißt sie **falscher Inhalt**. Bis die Gerätezeit gegen die Zeit einer API-Antwort bestätigt ist, bleibt er auf der Standard-Playlist.
+3. **Der Player hält alle Playlists vor, nicht nur die laufende.** Sonst steht er nach einem Netzausfall um 9:55 Uhr ohne die 10-Uhr-Playlist da. Das vergrößert den Offline-Vorrat und ist beim Zuschnitt in Abschnitt E mitzudenken.
+
+**Slides gehören keiner Playlist.** Playlists verweisen auf Slide-IDs, dieselbe Slide darf in mehreren vorkommen – gemeinsame Inhalte wie Begrüßung oder Spendenhinweis werden einmal gepflegt. Der Preis ist die Fernwirkung: Wer eine Slide ändert, ändert sie überall. Der Designer weist deshalb beim Bearbeiten aus, in wie vielen Playlists eine Slide steckt, und bietet „nur hier ändern" als Kopie an. Die Referenzzählung beim Löschen, die es für Medien ohnehin braucht, gilt damit auch für Slides.
+
+**Der Designer braucht einen Zeitregler in der Vorschau** – „was liefe jetzt?", „was liefe Sonntag 10:30?". Ohne ihn lässt sich ein Zeitplan erst am Sonntag prüfen, und dann steht man im Foyer. Der Regler gehört zur Zeitplan-Oberfläche, also in denselben späteren Schritt.
+
 ## Funktionsumfang
 
 ### Designer – MVP
 
 - Screen-Verwaltung: anlegen, duplizieren, umbenennen, löschen; je Screen ein **stabiler Slug** als Adresse der Player-URL und eine Auflösung (Voreinstellung 1920×1080, quer und hoch). Ein Wechsel der Auflösung rechnet die Blöcke um, mit Vorschau und Rückgängig – siehe Abschnitt E.
-- **Slides**: beliebig viele je Screen, mit eigener Anzeigedauer und Übergang, Reihenfolge per Drag-and-drop, einzeln deaktivierbar.
+- **Playlists**: je Screen im MVP genau **eine**, ohne Zeitplan-Oberfläche – die Ebene liegt aber im Schema und der Player wertet sie aus (siehe „Playlists und Zeitpläne"). Der Gestalter merkt davon nichts; nachgerüstet wird später nur die Oberfläche, nicht das Datenmodell.
+- **Slides**: beliebig viele je Playlist, mit eigener Anzeigedauer und Übergang, Reihenfolge per Drag-and-drop, einzeln deaktivierbar. Eine Slide kann in mehreren Playlists vorkommen; der Designer weist das beim Bearbeiten aus und bietet „nur hier ändern" als Kopie an.
 - **Blöcke** frei auf der Slide platzierbar:
   - *Daten aus ChurchTools*: Terminliste, Einzeltermin, Gruppen/Anmeldungen, Beiträge, Raumbelegung
   - *Medien*: Bild (hochgeladen oder aus ChurchTools), später Video
@@ -543,9 +572,10 @@ Weitere Regeln, die ins Datenmodell und nicht in ein späteres Review gehören:
 
 ### Player
 
-- Ein Einstiegspunkt, gesteuert über `?screen=<slug>&kiosk=1` – der Slug aus Abschnitt E, nicht die Datenbank-ID.
+- Ein Einstiegspunkt, gesteuert über `?screen=<slug>&kiosk=1` – der Slug aus Abschnitt E, nicht die Datenbank-ID. Mehrere Fernseher sind mehrere Screens mit je eigenem Slug; ein neues Konzept braucht es dafür nicht.
+- **Zeitplan auswerten**: Der Player entscheidet selbst, welche Playlist gerade gilt – er muss das offline können. Er hält deshalb **alle** Playlists eines Screens vor, nicht nur die laufende. Greift keine Regel, läuft die Standard-Playlist; sie ist Pflicht, damit „kein Treffer" nie „schwarzer Bildschirm" heißt.
 - Seitenrotation nach hinterlegter Dauer. **Drei getrennte Intervalle**, weil sie verschiedene Fragen beantworten: die Rotation der Slides (Sekunden), die Aktualisierung der ChurchTools-Daten (Minuten) und die Aktualisierung der **Screen-Konfiguration** selbst (wenige Minuten). Das dritte fehlte bisher – ohne es merkt der TV nicht, dass jemand gerade eine Slide geändert hat. Wer im Designer speichert, will das Ergebnis sehen, bevor er das Haus verlässt; die Konfiguration ist klein genug, um sie häufig zu holen.
-- **Die Uhr des Pi ist nicht selbstverständlich richtig.** Ein Raspberry Pi hat keine gepufferte Echtzeituhr. Nach einem Stromausfall startet er mit dem Zeitstempel des letzten Herunterfahrens, und bevor NTP greift, filtert der Player Termine gegen ein falsches Datum und zeigt eine falsche Uhrzeit. Der Player prüft deshalb die Gerätezeit gegen die Zeit der API-Antwort und zeigt lieber gar keine Uhr als eine falsche.
+- **Die Uhr des Pi ist nicht selbstverständlich richtig – und mit Zeitplänen wird sie tragend.** Ein Raspberry Pi hat keine gepufferte Echtzeituhr. Nach einem Stromausfall startet er mit dem Zeitstempel des letzten Herunterfahrens, und bevor NTP greift, filtert der Player Termine gegen ein falsches Datum und zeigt eine falsche Uhrzeit. Bisher hieß das: falsche Uhrzeit im Bild. **Seit der Zeitplan dazukommt, heißt es: falscher Inhalt.** Der Player prüft deshalb die Gerätezeit gegen die Zeit der API-Antwort, zeigt lieber gar keine Uhr als eine falsche – und **wechselt die Playlist nicht, solange die Zeit unbestätigt ist**, sondern bleibt auf der Standard-Playlist.
 - **Offline-Festigkeit auf drei Ebenen**: die Daten im IndexedDB (letzter erfolgreicher Stand, mit dezenter Alterskennzeichnung), die eigenen Assets und die Bilder über einen Service Worker – sofern `/ccm/` einen zulässt (G10). Ohne ihn bleibt eine Lücke: Ein Pi, der während eines Netzausfalls neu startet, hat nichts zu laden. Das ist dann ausdrücklich zu benennen, nicht zu übergehen.
 - **Rücksicht auf die API**: Datenaktualisierung mit Backoff, Auswertung von `429` und `Retry-After`, und ein zufälliger Versatz auf dem Intervall – sonst fragen nach einem Stromausfall alle Screens in derselben Sekunde.
 - Selbstheilung: Neuanmeldung über den Login-Token, Neuladen nach wiederholten Fehlern, nächtlicher Neustart der Seite – und ein Neuladen bei Modul-Ladefehlern nach einem Extension-Update.
@@ -556,16 +586,16 @@ Weitere Regeln, die ins Datenmodell und nicht in ein späteres Review gehören:
 ### Später
 
 - Videos, gemessen auf der echten Pi-Hardware, und Bildstrecken.
-- Zeit- und regelgesteuerte Einblendungen („nur sonntags", „nur bis zum Termin").
+- **Die Zeitplan-Oberfläche**: Regeln nach Termin und Uhrzeit anlegen, dazu der Zeitregler in der Vorschau („was liefe Sonntag 10:30?"). **Das Datenmodell dafür steht bereits in Phase 1** – nachgerüstet wird nur die Bedienung, nicht der Speicher.
+- Zeit- und regelgesteuerte Einblendungen einzelner Blöcke („nur bis zum Termin") – feiner als die Playlist-Ebene und davon unabhängig.
 - Mehrere Screens mit gemeinsamer Vorlage und Standortfilter.
-- Wechselnde Screens je Tageszeit.
 
 ## Phasen
 
 | Phase | Inhalt | Ergebnis |
 | --- | --- | --- |
 | **0 – Machbarkeit** | **Überwiegend erledigt** (G1–G8, G11, G14, G15, G19, G20; G16 und G18 zur Hälfte). Offen und **an der Freischaltung der Testinstanz hängend**: G9, G10, G12, G13. Dazu G17 als Entscheidung. Der Medienweg steht (Wiki-Kategorie, Bilddienst), die CSP ist gemessen, die Fixtures sind aufgezeichnet (lokal, nicht versioniert). Was bleibt: Boilerplate aufsetzen, leere Extension bauen, hochladen, aufrufen – sobald Custom Modules freigeschaltet sind | Ein „Hallo <Vorname>" aus `/whoami` läuft im echten ChurchTools. **Erreicht:** Es steht fest, wohin ein hochgeladenes Bild geht. Befunde stehen in diesem Plan, Belege lokal unter `fixtures/`. |
-| **1 – Datenmodell** | Screen-Schema mit Slides und Blöcken (versioniert, migrierbar, **in beide Richtungen duldsam**), aufgeteilt nach der 10.000-Zeichen-Grenze; Slug als Adresse; KV-Repository mit den Kategorien aus E; Medienreferenzen mit Referenzzählung; Konflikterkennung über `revision`; Export/Import; Mock und Fixtures für die Entwicklung ohne Instanz. Undo/Redo ist hier zu entscheiden, nicht später – es bestimmt, ob Änderungen als Zustand oder als Befehle geführt werden | Screens lassen sich speichern, laden und exportieren, ohne Oberfläche. |
+| **1 – Datenmodell** | Screen-Schema mit **Playlists**, Slides und Blöcken (Ebene Screen → Playlist → Slides, siehe „Playlists und Zeitpläne“) (versioniert, migrierbar, **in beide Richtungen duldsam**), aufgeteilt nach der 10.000-Zeichen-Grenze; Slug als Adresse; KV-Repository mit den Kategorien aus E; Medienreferenzen mit Referenzzählung; Konflikterkennung über `revision`; Export/Import; Mock und Fixtures für die Entwicklung ohne Instanz. Undo/Redo ist hier zu entscheiden, nicht später – es bestimmt, ob Änderungen als Zustand oder als Befehle geführt werden | Screens lassen sich speichern, laden und exportieren, ohne Oberfläche. |
 | **2 – Player** | Rendering der Blöcke, Slide-Rotation, Kiosk-Modus, Token-Anmeldung, Offline-Cache, gesandboxter Web-Code-Block | Ein von Hand geschriebener Screen läuft auf dem Pi am Foyer-TV. |
 | **3 – Designer** | Editor, Slide-Verwaltung, Blockpalette, Inspektor, Vorschau, Vorlagen, **Mediathek mit Upload**, URL-Generator | Ein Anwender gestaltet einen Screen mit eigenen Bildern ohne Entwicklerhilfe. |
 | **4 – Datenbindungen** | Alle Datenblöcke aus der Tabelle oben, Filter, Formatierungen, Fallbacks bei leeren Daten. Zuerst die **Normalisierung der Termine**: Serien, Ausnahmen, Zusatztermine, ganztägige und mehrtägige Einträge, Zeitzone `Europe/Berlin` – eine eigene Schicht mit eigenen Tests, nicht in jedem Block einzeln | Ein Screen bleibt ansehnlich, auch wenn diese Woche kein Termin ansteht. |
@@ -614,6 +644,8 @@ Nicht technisch offen, sondern unentschieden – und jede dieser Antworten verä
 5. **Rückfallposition bei den Medien.** Wenn der Wiki-Weg scheitert: Ist „nur externe URLs" ein tragfähiger MVP, oder ist der Upload ein Muss?
 6. **Zeitbudget.** Der Plan nennt sieben Phasen und keine einzige Aufwandsschätzung. Für ein Feierabendprojekt entscheidet genau das über den Zuschnitt.
 7. **Editor-Umfang.** Rasterfang, Mehrfachauswahl, Kopieren zwischen Slides, Tastaturkürzel, Undo/Redo. Undo/Redo ist architekturrelevant und muss vor Phase 1 entschieden sein, der Rest nicht.
+
+   **Erledigt am 2026-09-23 – die zweite architekturrelevante Frage dieser Art:** Ob Screens Playlists und Zeitpläne bekommen, ist entschieden. Die Ebene **Screen → Playlist → Slides** kommt in Phase 1 ins Schema, die Zeitplan-Oberfläche später; Slides werden von Playlists referenziert und dürfen mehrfach vorkommen. Begründung und Folgen stehen unter „Playlists und Zeitpläne".
 8. **Wie schnell muss eine Änderung auf dem TV sein?** Zwei Minuten sind bequem und kosten API-Last mal Anzahl Screens; zehn Minuten sind sparsam und fühlen sich beim Gestalten falsch an. Die Antwort setzt das Konfigurationsintervall des Players.
 9. **Ton im Foyer.** Läuft dort je etwas mit Ton, oder bleibt alles stumm? Entscheidet, ob der Videoblock überhaupt einen Lautstärkeregler bekommt – und ob die Autoplay-Regel von Chromium je zum Thema wird.
 10. **Eigene Extension oder Beitrag zum Bestehenden?** `ct-pass-store` bringt mit `ct-utils` und `ct-extension-utils` genau die Schichten mit, die wir ebenfalls brauchen, und dessen Autor sucht ausdrücklich nach einem Ort für wiederverwendbaren Setup-Code. Eine gemeinsame Bibliothek statt einer dritten Kopie wäre für beide Seiten günstiger – kostet aber Abstimmung und Fremdabhängigkeit.
