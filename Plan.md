@@ -11,7 +11,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 - **Arbeitsname Produkt**: ChurchTools Infoscreen Designer
 - **Extension-Key (Vorschlag)**: `infoscreen-cgks` → Auslieferungspfad `/ccm/infoscreen-cgks/`
 - **Stack (Vorschlag)**: Vue 3 + TypeScript + Vite + Pinia, `@churchtools/churchtools-client`, Vitest, Playwright. Damit identisch zu dem, was ChurchTools selbst im Boilerplate vorgibt und was die bekannten produktiven Fremd-Extensions einsetzen: `aschojz/churchtools-extension-publisher`, `lub90/ct-pass-store` (Vue 3, Vite 7, Vuetify) und `bensteUEM/ct-events-load`.
-- **Dokumente**: `Plan.md` ist das Gedächtnis – *was gebaut wird und warum*. [`Preparation.md`](Preparation.md) ist die Arbeitsliste – *was als Nächstes zu tun ist*. [`Befunde.md`](Befunde.md) ist das Messprotokoll – *worauf sich beides stützt*; **alle Verweise der Form „G1" bis „G21" zeigen dorthin**. Dazu `CHANGELOG.md` als knappe versionierte Historie und `AGENTS.md` als Repo-Konventionen für Agenten.
+- **Dokumente**: `Plan.md` ist das Gedächtnis – *was gebaut wird und warum*. [`Preparation.md`](Preparation.md) ist die Arbeitsliste – *was als Nächstes zu tun ist*. [`Befunde.md`](Befunde.md) ist das Messprotokoll – *worauf sich beides stützt*; **alle Verweise der Form „G1" bis „G21" zeigen dorthin**. Dazu `CHANGELOG.md` als knappe versionierte Historie und [`AGENTS.md`](AGENTS.md) als Arbeitsregeln für Mitwirkende und Agenten ([`CLAUDE.md`](CLAUDE.md) verweist darauf, damit die Regeln nicht in zwei Fassungen auseinanderlaufen).
 
 ## Abgrenzung zu den bestehenden Modulen
 

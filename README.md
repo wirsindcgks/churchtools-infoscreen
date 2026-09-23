@@ -6,7 +6,8 @@ Webseite, die ein Raspberry Pi im Kioskmodus aufruft und auf den Foyer-TVs anzei
 
 Das Projekt steht am Anfang. Stand, Architektur, Voraussetzungen der ChurchTools-Integration und
 die Reihenfolge der Arbeiten stehen in [`Plan.md`](Plan.md); die abzuhakende Vorbereitungsliste für
-Phase 0 in [`Preparation.md`](Preparation.md).
+Phase 0 in [`Preparation.md`](Preparation.md). Die Messungen, auf die sich beides stützt, stehen in
+[`Befunde.md`](Befunde.md); die Arbeitsregeln für Mitwirkende und Agenten in [`AGENTS.md`](AGENTS.md).
 
 ## Abgrenzung
 
