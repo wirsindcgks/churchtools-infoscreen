@@ -221,17 +221,22 @@ Hardware, nicht an der Instanz, und kann warten.
       hat nichts zu laden. Dann ausdrücklich benennen, nicht übergehen.
 
 - [ ] **E2 · Betriebsbenutzer mit Minimalrechten** → **G21**, und weiter offen als gedacht
-      **Person 19 taugt nicht dafür.** Sie ist am 2026-09-23 als Wegwerfkonto entstanden
-      (`POST /api/persons`, `departmentIds: [1]`, E-Mail `infoscreen-test@example.invalid`, **kein Passwort**)
-      und trägt Vorgaberechte, die niemand bewusst gewählt hat. Sie ist ein Messobjekt, kein Betriebsbenutzer.
+      **Person 19 taugt nicht dafür** – aber nicht wegen zu vieler Rechte: `GET /api/permissions/internal/persons/19`
+      zeigt zwei Bereiche, **alle Werte leer**. Sie ist ein unbeschriebenes Blatt. Untauglich ist sie, weil sie
+      als Messobjekt für den Token-Weg entstand: Wegwerfname, `.invalid`-Adresse, **kein Passwort**.
       **Beim Anlegen zu wissen:** `POST /api/persons` verlangt `departmentIds` (nicht leer), `campusId`
       und **eine vollständige Datenschutz-Einwilligung** (`privacyPolicyAgreementTypeId`, `-WhoId`, `-Date`).
       ChurchTools legt auch einen Maschinenbenutzer nicht ohne diese Angaben an. Personen werden mit
       **`PATCH`** geändert, nicht mit `PUT` (405) – bei Terminen ist es umgekehrt.
-      **Was noch fehlt:** Eine Person ohne Zweifaktor, mit dem Zuschnitt aus `Plan.md`, F – Modulrechte plus
-      Lesen auf Kalender, Beiträge, Gruppen und ggf. Wiki. Passwort **über die Oberfläche** (E3/G18).
-      Erst damit lassen sich die drei Fragen aus **G21** beantworten, darunter: Sieht ein gering
-      berechtigter Benutzer den `site_licensekey` in `/api/config`?
+      **Was noch fehlt:** Eine Person ohne Zweifaktor mit dem Zuschnitt aus `Plan.md`, F – dort steht die
+      Rechteliste jetzt ausgeschrieben, die ChurchTools-seitige Hälfte als Tabelle.
+      **Anlegen in der Oberfläche**, nicht über die API: Rechte werden dort über Gruppen und Rollen vergeben,
+      und `PUT /permissions/person/{id}` nimmt nur numerische `authId`s ohne dokumentierte Bedeutung.
+      Passwort ebenfalls über die Oberfläche (E3/G18).
+      **Danach `GET /api/permissions/person` auslesen** – das liefert die `authId`s zu genau diesen Rechten
+      und damit eine gemessene Zuordnung Zahl → Recht für die Einrichtungsdoku.
+      Erst mit dem fertigen Konto lassen sich die drei Fragen aus **G21** beantworten, darunter: Sieht ein
+      gering berechtigter Benutzer den `site_licensekey` in `/api/config`?
 
 - [x] **E3 · Rückzugsweg** → **beantwortet** *(2026-09-23, siehe `Plan.md`, G18)*
       **Die ursprüngliche Anleitung war falsch.** `DELETE /api/persons/{id}/logintoken` liefert für eine

@@ -199,12 +199,25 @@ In der Entwicklung legt `getOrCreateModule()` das Modul selbst an, im Produktivb
 
   | Rolle | Rechte am Custom Module |
   | --- | --- |
-  | Gestalter | `view`; `view custom category` und `view/edit/create custom data` auf `screens`, `slides`, `media`, `templates` |
+  | Gestalter | `view`; `view custom category` und `view/edit/create custom data` auf `screens`, `playlists`, `slides`, `media`, `templates` |
   | Web-Code | zusätzlich `edit custom data` auf `snippets` – ein eigenes Recht, im Gestalten **nicht** enthalten |
-  | Player-Benutzer | `view`, `view custom data` auf die lesenden Kategorien, `edit custom data` **allein** auf `status` |
+  | Player-Benutzer | `view`; `view custom data` auf `screens`, `playlists`, `slides`, `snippets`, `media`, `settings`; `create` **und** `edit custom data` **allein** auf `status` (der erste Heartbeat legt an, alle weiteren überschreiben) |
   | Administration | zusätzlich `settings`, `create custom category` und die Kategorie-Rechte |
 
-- **Der Player braucht mehr als Modulrechte.** Die Tabelle oben regelt nur den Zugriff auf unseren eigenen Speicher. Zum Rendern braucht derselbe Benutzer Leserechte auf **Kalender, Beiträge, Gruppen** und – falls der Wiki-Weg für Medien gewinnt – auf die **Wiki-Kategorie samt Dateien**. Das ist die tatsächliche Reichweite des Tokens auf der SD-Karte, und sie gehört so in die Betriebsdoku. Der Grundsatz „minimale Rechte" bemisst sich an dieser Liste, nicht an der kurzen darüber.
+- **Der Player braucht mehr als Modulrechte.** Die Tabelle oben regelt nur den Zugriff auf unseren eigenen Speicher. Das ist die tatsächliche Reichweite des Tokens auf der SD-Karte, und der Grundsatz der minimalen Rechte bemisst sich an **dieser** Liste, nicht an der kurzen darüber:
+
+  | Lesen auf | Wofür | Anmerkung |
+  | --- | --- | --- |
+  | **Kalender** – genau die, die ein Screen zeigt | Terminblöcke | `/calendars/appointments` verlangt `calendar_ids[]`; ohne Leserecht auf diese Kalender kommt nichts zurück |
+  | **Beiträge** | Newsblock | |
+  | **Gruppen** | Gruppen- und Anmeldeblock | |
+  | **Wiki-Kategorie „Infoscreen-Medien“ samt Dateien** | Mediathek | Der Wiki-Weg hat gewonnen (G8) |
+  | **Ressourcen und Buchungen** | Raumbelegung | nur bei diesem Block |
+  | **Events und Dienste** | Gottesdienstblock | nur bei diesem Block |
+
+  **Ausdrücklich nicht:** Personendaten, Schreibrechte irgendwo außer `status`, Administrationsrechte, Zweifaktor-Anmeldung (an 2FA-Konten werden keine Login-Tokens ausgegeben).
+
+  **Warum das geprüft und nicht angenommen werden muss:** Fehlende Leserechte sehen nach **G20** nicht wie Fehler aus, sondern wie leere Listen. Ein zu knapp berechtigter Player zeigt eine leere Bühne, keine Meldung – der Fehler fällt erst im Foyer auf, und dort niemandem.
 - **Kategorien haben eine `securityLevelId`.** `ct-pass-store` setzt sie auf `1`. Was die Stufen im Zusammenspiel mit den Kategorie-Rechten bewirken, ist ungeklärt (G13) – für `status`, die einzige Kategorie mit Schreibrecht für ein unbeaufsichtigtes Gerät, lohnt der Blick.
 - **Ein frisch installiertes Modul ist für alle unsichtbar – auch für Administratoren.** Belegt am zweiten Modul der Instanz: `ctradius` steht mit `view: false` und durchweg leeren Listen im Rechteobjekt eines Admin-Kontos (G4). Die Rechtevergabe ist damit **der erste Schritt nach dem Hochladen**, nicht der letzte vor der Übergabe; in der Einrichtungsdoku steht sie an erster Stelle, und wer in Phase 0 sein Testmodul aufruft und nichts sieht, sucht den Fehler zuerst hier.
 - **Die Rechte heißen in der Oberfläche anders als in der API.** In der ChurchTools-Rechteverwaltung stehen sie als „Extension ansehen", „Custom Category ansehen", „Custom Data ansehen/anlegen/bearbeiten/löschen", jeweils mit Auswahl der Kategorien. Die `README` von `ct-pass-store` führt die Zuordnung je Rolle vor – eine brauchbare Vorlage für unsere eigene Einrichtungsdoku in Phase 5.
@@ -426,15 +439,25 @@ Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit
 
 **G13 – Was bewirkt `securityLevelId` an einer Kategorie?** Besonders für `status`, die einzige Kategorie, auf die ein unbeaufsichtigtes Gerät schreibt.
 
-**G21 – Der Betriebsbenutzer mit Minimalrechten ist nie gebaut worden.** Abschnitt F beschreibt seinen Zuschnitt – Modulrechte plus Lesen auf Kalender, Beiträge, Gruppen und gegebenenfalls Wiki –, aber **gegen eine echte Person geprüft wurde das nie**. Die Person 19 auf der Testinstanz taugt dafür nicht: Sie ist über `POST /api/persons` mit `departmentIds: [1]` entstanden und trägt Vorgaberechte, die niemand bewusst gewählt hat.
+**G21 – Der Betriebsbenutzer mit Minimalrechten ist nie gebaut worden.** Abschnitt F beschreibt seinen Zuschnitt seit Beginn – die Modulrechte und, wichtiger, die Leserechte in ChurchTools selbst. **Gegen eine echte Person geprüft wurde das nie.** Es ist eine Absichtserklärung, kein Befund.
 
-Drei Fragen hängen daran, und alle drei brauchen eine **Anmeldung als dieses Konto**, nicht als Administrator:
+**Person 19 auf der Testinstanz taugt dafür nicht** – aber nicht, weil sie zu viele Rechte hätte. *(Korrektur vom 2026-09-23: Die frühere Behauptung, sie trage „Vorgaberechte, die niemand bewusst gewählt hat", ist falsch.)* `GET /api/permissions/internal/persons/19` liefert zwei Bereiche, `churchdb` und `churchservice`, **alle Werte leer**. Sie ist ein unbeschriebenes Blatt. Untauglich ist sie, weil sie als Messobjekt für den Token-Weg entstanden ist: Wegwerfname, `.invalid`-Adresse, kein Passwort.
 
-1. **Reicht der Zuschnitt aus Abschnitt F**, damit der Player alles sieht, was er rendern muss – und nicht mehr?
-2. **Was sieht ein gering berechtigter Benutzer in `GET /api/config`?** Als Administrator steht dort unter anderem `site_licensekey` im Klartext. Ob der Infoscreen-Benutzer das mitliest, ist ungeprüft und entscheidet, ob der Lizenzschlüssel ein Verwaltungsdetail ist oder auf jeder SD-Karte im Foyer mitfährt.
+**Wie Rechte in ChurchTools tatsächlich vergeben werden** *(2026-09-23 gemessen)*:
+
+- `GET /permissions/internal/persons/{id}` zeigt **nur direkte Zuweisungen an der Person**, nicht die wirksamen. Für das eigene Administratorkonto (Person 16) stehen dort **dieselben zwei leeren Bereiche** – die Adminrechte tauchen gar nicht auf. Sie kommen über **Gruppen und Rollen**. Rechte an der Person sind damit der Ausnahmeweg, nicht der Normalfall.
+- `PUT /permissions/{domainType}/{domainId}` existiert („Save a raw permission assignment"), `domainType` aus `group, group_role, group_type, group_type_role, person, status`. Der Körper trägt `authId` und optional `dataId`.
+- **Die `authId` ist eine Zahl ohne Namen.** Die Spezifikation liefert keine Zuordnung, und einen Katalog-Endpunkt gibt es nicht. `GET /permissions/person` listet nur die vorhandenen Zuweisungen (302 auf dieser Instanz, authIds von 1 bis 10801).
+
+**Daraus der Weg, und er dreht den Nachteil um:** Der Benutzer wird **in der Oberfläche** angelegt, wo die Rechte Namen tragen. Anschließend liest `GET /api/permissions/person` aus, **welche `authId`s dabei gesetzt wurden**. Aus dem Handgriff entsteht so eine belegte Zuordnung Zahl → Recht für genau die Rechte, die dieses Modul braucht – und damit die Grundlage, die Einrichtung später zu automatisieren, auf gemessenen statt geratenen Zahlen. Diese Tabelle gehört in die Einrichtungsdoku.
+
+**Drei Fragen hängen an dem fertigen Konto**, und alle drei brauchen eine **Anmeldung als dieses Konto**:
+
+1. **Reicht der Zuschnitt aus Abschnitt F**, damit der Player alles sieht, was er rendern muss – und nicht mehr? Nach **G20** ist das nicht durch Hinsehen zu beantworten: Fehlende Rechte sehen wie leere Listen aus, nicht wie Fehler.
+2. **Was sieht ein gering berechtigter Benutzer in `GET /api/config`?** Als Administrator steht dort `site_licensekey` im Klartext. Liest der Infoscreen-Benutzer ihn mit, fährt der Lizenzschlüssel auf jeder SD-Karte im Foyer mit.
 3. **Die beiden Reste aus G18**: ob `POST /login/token` für gültige Zugangsdaten trägt, und ob Archivieren als zweite Notbremse wirkt.
 
-Voraussetzung für alle drei ist ein Gerätekonto **mit gesetztem Passwort** – und das geht nur über die Oberfläche (G18). Es ist damit der erste Punkt, der ohne Custom Modules weiterkommt, aber einen Handgriff außerhalb der API braucht.
+**Die Modulrechte selbst sind davon ausgenommen**, solange Custom Modules nicht freigeschaltet sind (T1) – prüfbar ist zunächst nur die ChurchTools-seitige Hälfte. Die ist aber die größere: Sie bemisst, was der Token auf der SD-Karte wirklich darf.
 
 **G17 – Extension Store**: Aufnahmekriterien, Einreichungsweg, ob eine Veröffentlichung überhaupt angestrebt wird. Der Publisher hält seinen Store-Text in einer eigenen `EXTENSION_STORE.md` – ein Muster, das sich übernehmen lässt.
 
@@ -706,7 +729,7 @@ Die Reihenfolge folgt dem Preis: erst was nichts kostet, dann was etwas kostet. 
 5. **Ein Bild über `POST /files/wiki_<kategorie>/<id>` hochladen**, wieder auslesen und **in einem `<img>`-Tag anzeigen**. Seit G14 ist die Frage schärfer gefasst: Trägt die hochgeladene Datei neben `fileUrl` auch eine `imageUrl` am Bilddienst? Davon hängen serverseitige Skalierung und Cachefähigkeit ab. Der Versuch, der über den Bilderupload entscheidet.
 6. **Support anschreiben – und zwar zuerst wegen der Frist.** Die Testinstanz läuft nach 30 Tagen ab (etwa 2026-10-22); ob sich das für die Entwicklung einer Extension verlängern lässt, bestimmt, wie eng die Messungen getaktet werden müssen. **Seit dem 2026-09-23 steht eine zweite, dringendere Frage daneben:** die **Freischaltung der Custom Modules** für diese Instanz – ohne sie sind B5, B6, der C-Block, E1 und E4 blockiert (angefragt, Antwort steht aus). Im selben Schreiben die Frage nach einem dokumentierten Rate-Limit (G16); **entfallen** ist dagegen die Frage nach einem Speicherziel für Custom-Module-Dateien – die Wiki-Kategorie samt Bilddienst beantwortet sie (G8).
 7. **`bensteUEM/ct-events-load` lesen**, insbesondere `src/persistance.ts` und die Terminbehandlung – vor der ersten eigenen Zeile Bindungscode in Phase 4, und bevor das Screen-Schema festgezurrt wird.
-8. **Einen Betriebsbenutzer mit Minimalrechten bauen und prüfen** (**G21**) – vorgezogen, weil er ohne Custom Modules weiterkommt und drei offene Fragen auf einmal schließt. Er braucht ein Passwort, und das geht nur über die Oberfläche (**G18**). Person 19 auf der Testinstanz taugt dafür nicht, sie trägt unbedachte Vorgaberechte. Danach die URL am Pi aufrufen (G9), sobald Phase 2 steht.
+8. **Einen Betriebsbenutzer mit Minimalrechten bauen und prüfen** (**G21**) – vorgezogen, weil er ohne Custom Modules weiterkommt und drei offene Fragen auf einmal schließt. Er braucht ein Passwort, und das geht nur über die Oberfläche (**G18**). Person 19 auf der Testinstanz taugt dafür nicht – sie hat gar keine Rechte, ist aber als Messobjekt entstanden und hat kein Passwort. Anlegen **in der Oberfläche**, danach die vergebenen `authId`s über `GET /api/permissions/person` auslesen. Danach die URL am Pi aufrufen (G9), sobald Phase 2 steht.
 9. **Lukas Block (`lubl`) im Forum ansprechen** – nicht, um Fragen zu stellen, die der Code beantwortet, sondern zu G8, G10 und der Idee einer gemeinsamen `ct-utils`-Bibliothek (Offene Entscheidung 10). Er betreibt dieselbe Schnittstelle produktiv und sucht ausdrücklich nach einem Ort für wiederverwendbaren Setup-Code.
 10. **Befunde hier eintragen**, erst danach das Screen-Schema festlegen.
 
