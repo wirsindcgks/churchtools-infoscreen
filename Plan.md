@@ -110,7 +110,9 @@ Drei Wege, für drei Situationen:
    Der Pfad `/player` statt eines Parameters am Wurzelpfad ist seit G7 gedeckt: ChurchTools liefert für unbekannte Unterpfade die Modulseite aus, ein nächtliches Neuladen auf dieser Adresse fällt also nicht ins Leere. Der Screen wird über seinen **Slug** benannt, nicht über die `id` – siehe Abschnitt E.
    Der Token wird über `GET /api/persons/<id>/logintoken` geholt (legt ihn bei Bedarf an; an 2FA-Konten wird keiner ausgegeben). **Adminrecht braucht nur, wer den Token einer fremden Person zieht** – `ct-pass-store` ruft denselben Endpunkt aus der Extension heraus für die eigene Benutzer-ID auf, ohne besondere Rechte. Für den URL-Generator im Designer heißt das: Wer sich als Infoscreen-Benutzer anmeldet, kann sich seinen Token selbst holen; für den bequemen Weg über ein Adminkonto bleibt es beim Adminrecht. Alternativ liefert `POST /api/login/token` mit Benutzername und Passwort `{personId, token}`, ohne eine Sitzung zu eröffnen. Gegen die API lässt sich ein solcher Token auch als Kopfzeile einsetzen – `Authorization: Login <token>`, so macht es das PHP-Backend von `ct-pass-store`. Für den Pi hilft das nicht (er ruft eine URL auf und kann keine Kopfzeilen setzen), wohl aber für Werkzeuge und Testskripte, die ohne Sitzung arbeiten sollen. Der `churchtools-client` nutzt den Token außerdem, um nach Sitzungsablauf selbsttätig neu anzumelden – für ein Gerät, das monatelang durchläuft, ist genau das der entscheidende Punkt.
 
-   **Der Token ist ein Dauerpasswort.** Er steht in der URL, im Browserverlauf des Pi und in der `fullpageos.txt` auf der SD-Karte. Konsequenz für den Plan: eigener Benutzer mit minimalen Rechten, dokumentierter Weg zum Zurückziehen (`DELETE /api/persons/{id}/logintoken`), und im Designer ein Dialog, der die fertige URL erzeugt und dabei erklärt, was sie enthält.
+   **Der Token ist ein Dauerpasswort.** Er steht in der URL, im Browserverlauf des Pi und in der `fullpageos.txt` auf der SD-Karte. Konsequenz für den Plan: eigener Benutzer mit minimalen Rechten, ein dokumentierter Weg zum Zurückziehen, und im Designer ein Dialog, der die fertige URL erzeugt und dabei erklärt, was sie enthält.
+
+   **⚠ Der Weg zum Zurückziehen ist offen.** Die frühere Annahme, ein Administrator rufe dafür `DELETE /api/persons/{id}/logintoken` auf, ist am 2026-09-23 **widerlegt**: Der Endpunkt antwortet für fremde Personen mit **403**, und es gibt kein Recht, das das ändert (**G18**). Solange kein belegter Widerrufsweg existiert, ist ein produktiv laufender Pi ein Dauerpasswort ohne Notbremse. **Das ist ein Ausschlusskriterium für den produktiven Einsatz**, nicht eine offene Frage unter vielen.
 
 ### E. Datenspeicherung
 
@@ -215,7 +217,7 @@ In der Entwicklung legt `getOrCreateModule()` das Modul selbst an, im Produktivb
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14 und G15 sind beantwortet, G16 zur Hälfte, der Rest offen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G19 und G20 sind beantwortet, G16 und G18 zur Hälfte, der Rest offen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
 #### Beantwortet
 
@@ -295,6 +297,8 @@ Ein schlichtes `<img src={imageUrl}>` zeigt auf dem Foyer-TV also einen Daumenna
 
 **Die `fit`-Modi, gegen ein abweichendes Seitenverhältnis getrennt** (Quelle 1920×1080, angefragt 1200×600): `max` und `contain` passen ohne Beschnitt ein (1067×600), `crop` schneidet mittig, `fill` füllt mit Rand auf, `stretch` verzerrt – und **ohne `fit` wird beschnitten**. Das bildet die Block-Optionen des Designers eins zu eins auf Server-Parameter ab: Skalieren kostet den Pi nichts.
 
+**Am 2026-09-23 auch für Terminbilder bestätigt.** Ein über `POST /api/files/appointment_image/<id>` angehängtes Bild trägt dieselbe `imageUrl` und unterliegt derselben 150-Pixel-Regel. Es hängt am `base`-Termin und erscheint damit an **allen** Vorkommen einer Serie – bei neun aufgelösten Sonntagen an allen neun (G19). Für den Terminblock heißt das: ein Bild je Serie, nicht je Vorkommen.
+
 **Cache:** `cache-control: max-age=604800, public` – aber **kein ETag und kein `Last-Modified`**. Für den Player günstig; für einen Service Worker (G10) heißt es, dass Gültigkeit allein über die Laufzeit läuft und es keine billige Revalidierung gibt.
 
 **Ein Sicherheitsbefund, der in die Betriebsdoku gehört.** Die Testkategorie wurde mit `fileAccessWithoutPermission: false` angelegt – der strengen Einstellung. Die `imageUrl` liefert **trotzdem anonym 200**. Der Bilddienst umgeht die Kategorieberechtigung; es schützt allein der Hash im Pfad. Wer ein Bild in die Mediathek lädt, veröffentlicht es praktisch: unter einer nicht zu erratenden Adresse, aber ohne Anmeldung abrufbar. Das ist zu sagen, bevor jemand dort etwas ablegt, das nicht ins Foyer gehört.
@@ -325,6 +329,38 @@ Drei Dinge bringt der Zuschnitt mit. Die Trägerseite wird über ihre **GUID** a
 
 **Videos bleiben offen.** Die CSP erlaubt Bilder von überall, Videos nur von der eigenen Domain (G15). Ob eine Videodatei denselben Weg nimmt und wie sie ausgeliefert wird, ist ungeprüft; die Upload-Grenze von 128 MB je Datei steht.
 
+**G19 – Serientermine löst die API selbst auf, samt Zeitumstellung.** *(2026-09-23, Testinstanz – eigens angelegte Serie)* Die vorhandenen Termine waren alle einmalig, also wurde eine wöchentliche Serie über neun Sonntage angelegt, dazu eine **Ausnahme** und ein **Zusatztermin**. `GET /calendars/appointments` liefert daraufhin **neun einzelne Einträge**, alle mit demselben `base.id`, jeder mit eigenem `calculated.startDate`. Die Ausnahme fehlt in der Liste, der Zusatztermin steht darin.
+
+**Der Client braucht also keine Wiederholungslogik.** Er liest `calculated`; `base` ist nur die Seriendefinition. Das nimmt dem Terminblock den aufwendigsten Teil – RRULE-Auflösung, Ausnahmen, Zusatztermine – vollständig ab. `exceptions` und `additionals` sind am `base`-Satz sichtbar, falls der Designer sie je anzeigen will (`additions` ist deprecated).
+
+**Und die Zeitumstellung ist mitgemessen.** Die Serie läuft über den 25. Oktober 2026, das Ende der Sommerzeit:
+
+| Vorkommen | `calculated.startDate` | Ortszeit |
+| --- | --- | --- |
+| 04.10., 11.10. | `09:00:00Z` | 11:00 |
+| 25.10. und später | `10:00:00Z` | 11:00 |
+
+ChurchTools hält die **Ortszeit** konstant und verschiebt die UTC-Darstellung. Für den Player heißt das unmissverständlich: **Er rechnet jeden Zeitstempel nach `Europe/Berlin` um und rechnet nie mit einem festen Offset.** Ein Player, der einmalig „UTC+2" annimmt, zeigt ab dem 25. Oktober jeden Gottesdienst eine Stunde falsch – auf einem Gerät, das niemand kontrolliert, ein Fehler, der wochenlang stehen bleibt.
+
+**Nebenbefund zum Anlegen:** `repeatUntil` verlangt `Y-m-d`, `startDate` und `endDate` verlangen ISO-8601 mit `Z`. Zwei Datumsformate in derselben Nutzlast. Betrifft uns nur, falls der Designer je Termine schreibt – aber es kostet sonst einen Nachmittag.
+
+**G20 – Ein fehlgeschlagener Login sieht aus wie ein leerer Kalender.** *(2026-09-23, Testinstanz)* Der Plan warnte davor; hier sind die Zahlen. Anonym, also genau im Zustand eines Players, dessen Anmeldung gescheitert ist:
+
+| Aufruf | Anonym | Angemeldet |
+| --- | --- | --- |
+| `/api/whoami` | **200**, `id: -1`, `lastName: "Anonymous"` | 200 |
+| `/api/calendars` | **200, leere Liste** | 5 |
+| `/api/groups` | **200, leere Liste** | 7 |
+| `/api/events`, `/api/wiki/pages` | **200, leere Liste** | 1 bzw. 3 |
+| `/api/calendars/appointments` | **403** | 200 |
+
+**Das ist schlimmer als ein 401.** Die meisten Quellen antworten *erfolgreich* mit nichts. Ein Screen, dessen Anmeldung scheitert, zeigt eine leere Bühne – nicht von einem Sonntag ohne Termine zu unterscheiden. Nur die Terminabfrage selbst fällt mit 403 auf.
+
+Zwei Festlegungen folgen daraus, beide gehören ins Datenmodell und nicht in ein späteres Review:
+
+1. **Der Player hängt `only_allow_authenticated=true` an jede Anfrage.** Gemessen: Damit liefert `/api/whoami` anonym sauber **401** statt 200. Das ist der Schalter, der den stillen Fehler in einen lauten verwandelt.
+2. **Der Player prüft nach dem Start die Identität**, nicht nur den Statuscode: Ist `whoami.data.id` die erwartete Person? Leere Daten ohne bestätigte Identität sind ein **Fehlerzustand mit sichtbarer Meldung**, kein leerer Kalender.
+
 **G11 – Beantwortet, und damit hinfällig: Die Felder gibt es nicht.** *(2026-09-23, Spezifikation unserer eigenen Instanz, Build 32882 – aufgezeichnet unter `fixtures/schema/custommodule-schemas.json` – **lokal, nicht versioniert**)* `CustomModuleDataValue` führt **nur** `id`, `dataCategoryId` und `value`. **Weder `domainId` noch `domainType`.** Der Typ-Snapshot aus `ct-pass-store` (2025-09-02) ist an dieser Stelle überholt – er hat die Frage überhaupt erst aufgeworfen.
 
 Damit entfällt **C1 aus `Preparation.md` ersatzlos**: Es gibt nichts zu filtern. Der Slug-im-JSON-Ansatz aus G3 ist nicht mehr die bessere, sondern die einzige Wahl, und das Lesen ganzer Kategorien bleibt der Normalfall.
@@ -333,13 +369,38 @@ Damit entfällt **C1 aus `Preparation.md` ersatzlos**: Es gibt nichts zu filtern
 
 #### Teilweise beantwortet
 
+**G18 – Ein Login-Token gehört nur seiner eigenen Person. Der Widerrufsweg des Plans funktioniert nicht.** *(2026-09-23, Testinstanz)* Geprüft mit vollen Administratorrechten (`administer settings`, `administer persons`):
+
+| Aufruf | Antwort |
+| --- | --- |
+| `GET /persons/16/logintoken` – die eigene Person | **200** |
+| `GET /persons/1/logintoken` – eine fremde Person | **403** |
+| `GET /persons/19/loginstring` | **403** |
+| `DELETE /persons/19/logintoken` | **403** |
+
+Im gesamten `churchcore`-Rechtesatz gibt es **kein Recht für fremde Login-Tokens** – alle fünfzehn Einträge durchgesehen. Der Endpunkt gilt ausschließlich für einen selbst.
+
+**Damit ist E3 aus `Preparation.md` in seiner bisherigen Form widerlegt.** Dort stand: „`DELETE /api/persons/{id}/logintoken` einmal ausführen und prüfen, dass der Token wirklich ungültig ist." Ein Administrator kann das nicht. Das wiegt schwer, weil es nicht irgendein Endpunkt ist, sondern **der Notfallpfad**: Der Token ist ein Dauerpasswort auf einer SD-Karte, und der Weg zurück war ausdrücklich als „vor dem produktiven Einsatz zu üben" eingeplant.
+
+**Der Weg, den ChurchTools offenbar vorsieht, ist die Simulation.** `POST /api/simulate` mit `{"personId": 19}` antwortet **204**; `whoami` liefert danach `id: 19` und `meta.simulatingUserId: 16`. In dieser Session ist der Token-Endpunkt der „eigene". `DELETE /api/simulate` beendet den Zustand sauber. Zwei Dinge sind daran bemerkenswert: Die Simulation ist **an der Antwort erkennbar** (`simulatingUserId`), und sie ist der einzige gefundene Hebel.
+
+**Offen bleibt der entscheidende Teil:** ob **Ausgabe und Widerruf innerhalb der Simulation** tatsächlich funktionieren. Das wurde bewusst nicht ausgeführt – über eine Administratorsimulation das Dauerpasswort eines fremden Kontos zu ziehen, ist eine Handlung, die eine ausdrückliche Entscheidung verlangt und nicht nebenbei in einer Messreihe passieren sollte.
+
+**Drei Folgen, schon jetzt:**
+
+1. **Die Einrichtungsdoku kann nicht sagen „der Administrator holt den Token über die API".** Sie muss den tatsächlichen Weg nennen – Simulation oder die ChurchTools-Oberfläche.
+2. **Der Notfallpfad braucht eine belegte Antwort, bevor ein Pi produktiv läuft.** Ein Dauerpasswort ohne geübten Widerruf ist die Lage, die Abschnitt F ausdrücklich vermeiden wollte.
+3. **Das gehört in die Support-Anfrage (F1):** *Wie widerruft ein Administrator den Login-Token eines Geräts, wenn `DELETE /persons/{id}/logintoken` für fremde Personen 403 liefert?*
+
+Für **G9** ändert das nichts an der eigentlichen Frage – wie sich `login_token` in der URL unter `/ccm/` verhält –, aber es benennt die Voraussetzung: Ohne geklärte Ausgabe gibt es keinen Token, mit dem sich G9 prüfen ließe.
+
 **G16 – Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.
 
 Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit darunter, und der Player wertet `429` und `Retry-After` weiterhin aus – nur ist jetzt belegt, dass er sie im Normalbetrieb nicht zu sehen bekommt. Nach einer **dokumentierten** Grenze bleibt die Frage an den Support (F1) offen.
 
 #### Offen
 
-**G9 – Wie verhält sich `login_token` in der URL bei einem Custom Module?** Beim nativen Infoscreen erprobt, für `/ccm/`-Pfade ungeprüft. `ct-pass-store` hilft hier nicht: Es benutzt Tokens gegenüber seinem eigenen Backend, nicht zur Anmeldung einer Seite.
+**G9 – Wie verhält sich `login_token` in der URL bei einem Custom Module?** Beim nativen Infoscreen erprobt, für `/ccm/`-Pfade ungeprüft. `ct-pass-store` hilft hier nicht: Es benutzt Tokens gegenüber seinem eigenen Backend, nicht zur Anmeldung einer Seite. **Doppelt blockiert seit dem 2026-09-23:** Es fehlt das Custom Module (T1) *und* ein Token, an den ein Administrator regulär herankommt (**G18**).
 
 **G10 – Darf unter `/ccm/<key>/` ein Service Worker registriert werden?** Entscheidet, ob Offline-Festigkeit vollständig erreichbar ist oder nur halb: IndexedDB sichert die Daten, aber nicht die eigenen Assets und nicht die Bilder. Ohne Service Worker zeigt ein Pi, der während eines Netzausfalls neu startet, einen weißen Bildschirm – genau der Fall aus Risiko 4. Zu prüfen sind Scope, MIME-Typ und ob ChurchTools den Pfad umschreibt.
 
@@ -397,7 +458,7 @@ Geprüft gegen die OpenAPI-Spezifikation 3.136.2 (497 Pfade):
 
 | Block | Endpunkte |
 | --- | --- |
-| Termine | `/calendars`, `/calendars/appointments` (`calendar_ids[]`, `from`, `to`), `/calendars/{id}/appointments/{id}/{startDate}` für Einzeltermin samt Bild |
+| Termine | `/calendars`, `/calendars/appointments` (**`calendar_ids[]` ist Pflicht**, sonst 400; dazu `from`, `to`), `/calendars/{id}/appointments/{id}/{startDate}` für Einzeltermin samt Bild. **Serien löst der Server auf** – ein Eintrag je Vorkommen, Ausnahmen und Zusatztermine berücksichtigt, Zeiten in UTC und über die Zeitumstellung hinweg ortszeitstabil (G19) |
 | Gemeindekopf | `/info` (Name, Anschrift), `/files/logo/{id}` |
 | Beiträge / News | `/posts`, `/post/groups` |
 | Gruppen & Anmeldungen | `/groups`, `/groups/grouped`, `/grouphomepages`, `/publicgroups/{id}` (Kapazität, Warteliste) |
@@ -408,7 +469,7 @@ Geprüft gegen die OpenAPI-Spezifikation 3.136.2 (497 Pfade):
 | Filter mehrerer Standorte | `/campuses`, `/departments`, `/tags/{domainType}` |
 | Freie Texte | `/wiki/pages`, `/wiki/categories/{id}/pages/{identifier}` |
 
-Dass `/api/whoami` auf der Demo anonym 200 liefert, ist bekannt und im `churchtools-plugin` bereits dokumentiert: ohne Anmeldung antwortet ChurchTools als öffentlicher Benutzer. Für den Player heißt das – ein fehlgeschlagener Login fällt nicht von selbst auf. Der Player muss `only_allow_authenticated=true` verwenden und einen leeren Screen als Fehler behandeln, nicht als leeren Kalender.
+Dass `/api/whoami` anonym 200 liefert, ist nicht mehr nur bekannt, sondern **an unserer Instanz gemessen** (G20): `id: -1`, `lastName: "Anonymous"` – und die Datenquellen antworten anonym ebenfalls mit **200 und leeren Listen**, nicht mit 401. Ein fehlgeschlagener Login fällt also nicht von selbst auf, sondern sieht aus wie ein ereignisloser Tag. Der Player verwendet deshalb `only_allow_authenticated=true` (anonym dann sauber 401) **und** prüft die Identität aus `whoami`, statt sich auf Statuscodes zu verlassen. Einen leeren Screen behandelt er als Fehler, nicht als leeren Kalender.
 
 ## Medien und eigener Web-Code
 
@@ -434,7 +495,9 @@ Kandidaten, in Phase 0 in dieser Reihenfolge zu prüfen:
 2. **`attachments`** – wenn sich klären lässt, woran `domainIdentifier` hier bindet und ob wir frei wählen dürfen.
 3. **Bestehende ChurchTools-Bilder ohne eigenen Upload**: Termin-, Gruppen-, Beitrags- und Logobilder. Das funktioniert nicht nur sicher, sondern nachweislich, mitsamt Bilddienst (G14). Für „Bild hochladen" reicht es trotzdem nicht – es ist der Rückfallplan, nicht das Ziel. Umgekehrt gilt: `appointment_image` als **Ablage** für eigene Medien zu missbrauchen ist geprüft und verworfen; Begründung bei G8.
 4. ~~**Data-URI im KV-Store**~~ – **ausgeschieden.** Ein Datenwert fasst 10.000 Zeichen, also rund sieben Kilobyte. Das reicht nicht einmal für ein Icon, für Videos erst recht nicht.
-5. **Externe URL** als Notausgang: Der Anwender hinterlegt eine Adresse, wir speichern nur den Link. Interessant dabei: ChurchTools kennt dafür einen eigenen Endpunkt, `POST /files/{domainType}/{domainIdentifier}/link` („Adds the given external link to the specified domain object"). Ein verlinktes Bild wäre damit kein Fremdkörper, sondern eine reguläre ChurchTools-Datei. Kostet nichts, verlagert aber das Problem auf den Anwender und bricht, sobald die Quelle verschwindet.
+5. **Externe URL** als Notausgang – **geprüft am 2026-09-23.** `POST /files/{domainType}/{domainIdentifier}/link` nimmt `url`, `name` und optional `securityLevelId`, antwortet **201** und legt einen regulären Dateisatz an: `type: "link"`, gleicher `domainType`/`domainId` wie ein Upload. Ein verlinktes Bild steht damit in derselben Liste wie eine hochgeladene Datei – für die Mediathek ein sauberes, einheitliches Datenmodell.
+
+   **Aber `imageUrl` ist `null`.** `fileUrl` reicht nur die fremde Adresse durch. Der Bilddienst entfällt also: keine serverseitige Skalierung, kein Cache über ChurchTools, und der Player lädt von einem fremden Server. Die CSP erlaubt das für **Bilder** (`img-src *`), für **Videos nicht** (G15). Der Notausgang trägt – er kostet aber genau die Vorteile, die G14 gebracht hat.
 
 **Löschen braucht eine Referenzzählung.** Die Mediathek erlaubt Löschen, und die Slides verweisen auf Dateien. Wer ein noch benutztes Bild entfernt, erzeugt einen kaputten Rahmen auf einem TV, den er nicht sieht. Der Designer zählt deshalb vor dem Löschen die Verwendungen und benennt sie – und der Player zeigt für eine fehlende Datei einen ruhigen Platzhalter statt eines Bruchsymbols.
 
@@ -501,7 +564,7 @@ Weitere Regeln, die ins Datenmodell und nicht in ein späteres Review gehören:
 
 | Phase | Inhalt | Ergebnis |
 | --- | --- | --- |
-| **0 – Machbarkeit** | **Überwiegend erledigt** (G1–G8, G11, G14, G15; G16 zur Hälfte). Offen und **an der Freischaltung der Testinstanz hängend**: G9, G10, G12, G13. Dazu G17 als Entscheidung. Der Medienweg steht (Wiki-Kategorie, Bilddienst), die CSP ist gemessen, die Fixtures sind aufgezeichnet (lokal, nicht versioniert). Was bleibt: Boilerplate aufsetzen, leere Extension bauen, hochladen, aufrufen – sobald Custom Modules freigeschaltet sind | Ein „Hallo <Vorname>" aus `/whoami` läuft im echten ChurchTools. **Erreicht:** Es steht fest, wohin ein hochgeladenes Bild geht. Befunde stehen in diesem Plan, Belege lokal unter `fixtures/`. |
+| **0 – Machbarkeit** | **Überwiegend erledigt** (G1–G8, G11, G14, G15, G19, G20; G16 und G18 zur Hälfte). Offen und **an der Freischaltung der Testinstanz hängend**: G9, G10, G12, G13. Dazu G17 als Entscheidung. Der Medienweg steht (Wiki-Kategorie, Bilddienst), die CSP ist gemessen, die Fixtures sind aufgezeichnet (lokal, nicht versioniert). Was bleibt: Boilerplate aufsetzen, leere Extension bauen, hochladen, aufrufen – sobald Custom Modules freigeschaltet sind | Ein „Hallo <Vorname>" aus `/whoami` läuft im echten ChurchTools. **Erreicht:** Es steht fest, wohin ein hochgeladenes Bild geht. Befunde stehen in diesem Plan, Belege lokal unter `fixtures/`. |
 | **1 – Datenmodell** | Screen-Schema mit Slides und Blöcken (versioniert, migrierbar, **in beide Richtungen duldsam**), aufgeteilt nach der 10.000-Zeichen-Grenze; Slug als Adresse; KV-Repository mit den Kategorien aus E; Medienreferenzen mit Referenzzählung; Konflikterkennung über `revision`; Export/Import; Mock und Fixtures für die Entwicklung ohne Instanz. Undo/Redo ist hier zu entscheiden, nicht später – es bestimmt, ob Änderungen als Zustand oder als Befehle geführt werden | Screens lassen sich speichern, laden und exportieren, ohne Oberfläche. |
 | **2 – Player** | Rendering der Blöcke, Slide-Rotation, Kiosk-Modus, Token-Anmeldung, Offline-Cache, gesandboxter Web-Code-Block | Ein von Hand geschriebener Screen läuft auf dem Pi am Foyer-TV. |
 | **3 – Designer** | Editor, Slide-Verwaltung, Blockpalette, Inspektor, Vorschau, Vorlagen, **Mediathek mit Upload**, URL-Generator | Ein Anwender gestaltet einen Screen mit eigenen Bildern ohne Entwicklerhilfe. |
@@ -519,6 +582,8 @@ Phase 2 vor Phase 3 – bewusst. Ein Designer für ein Ausgabeformat, das noch n
 - **Versionierung**: Tag `vx.y.z` löst den Release-Workflow aus, der das ZIP baut und als Release-Asset anhängt. Version in `package.json`, `package-lock.json` und `CHANGELOG.md` gemeinsam ziehen.
 - **Keine Geheimnisse im Repo**: `.env` bleibt ignoriert, der Release-Build setzt Zugangsdaten und Instanz-URL ausdrücklich zurück.
 - **Persistierte Daten sind versioniert** und werden beim Lesen auf das aktuelle Schema migriert.
+- **Zeiten kommen in UTC und werden nach `Europe/Berlin` umgerechnet – immer über eine Zeitzonen-Bibliothek, nie über einen festen Offset.** ChurchTools hält die Ortszeit konstant und verschiebt die UTC-Darstellung über die Zeitumstellung (G19). Ein fester Offset zeigt ab Ende Oktober jeden Termin eine Stunde falsch, auf einem Gerät, das niemand kontrolliert.
+- **Der Player belegt jede Anfrage mit `only_allow_authenticated=true` und prüft die Identität aus `whoami`.** Leere Daten ohne bestätigte Identität sind ein Fehlerzustand mit sichtbarer Meldung, kein leerer Kalender (G20).
 - **Tests laufen nie gegen die Live-Instanz.** Grundlage sind aufgezeichnete, anonymisierte API-Antworten unter `fixtures/`, gegen einen Mock gespielt. Ein Test, der eine Instanz und ein Passwort braucht, ist kein Test, sondern ein Handgriff. **Das Verzeichnis ist nicht versioniert** (Entscheidung vom 2026-09-23, siehe Abschnitt „Entwicklungs- und Testumgebung“) – ein frisch geklonter Arbeitsplatz hat die Fixtures also nicht und muss sie sich beschaffen, bevor die Tests laufen.
 - **Ein Test sichert die Sandbox.** Er verbietet `allow-same-origin` in jedem erzeugten `<iframe>`. Siehe Risiko 6.
 - **Ein Test sichert die Duldsamkeit des Players.** Ein Screen mit einem erfundenen Blocktyp und einem unbekannten Feld muss rendern, nicht scheitern. Siehe Abschnitt E.
@@ -565,9 +630,9 @@ Die Reihenfolge folgt dem Preis: erst was nichts kostet, dann was etwas kostet. 
 3. **Boilerplate klonen**, `.env` anlegen, Vite-Proxy einrichten statt CORS zu öffnen, `npm run dev` bis zum „Hallo <Vorname>". Dabei einmal in Safari öffnen, nicht nur in Chrome.
 4. **Die Speicher-Feinheiten am eigenen Testmodul messen**, sobald es steht: Nimmt `GET …/customdatavalues` einen Filter auf `domainType`/`domainId` an (G11)? Wird ein hinterlegtes JSON Schema serverseitig durchgesetzt (G12)? Was ändert `securityLevelId` (G13)? Drei Aufrufe, die den Zuschnitt aus Abschnitt E entweder bestätigen oder vereinfachen.
 5. **Ein Bild über `POST /files/wiki_<kategorie>/<id>` hochladen**, wieder auslesen und **in einem `<img>`-Tag anzeigen**. Seit G14 ist die Frage schärfer gefasst: Trägt die hochgeladene Datei neben `fileUrl` auch eine `imageUrl` am Bilddienst? Davon hängen serverseitige Skalierung und Cachefähigkeit ab. Der Versuch, der über den Bilderupload entscheidet.
-6. **Support anschreiben – und zwar zuerst wegen der Frist.** Die Testinstanz läuft nach 30 Tagen ab (etwa 2026-10-22); ob sich das für die Entwicklung einer Extension verlängern lässt, bestimmt, wie eng die Messungen getaktet werden müssen. **Seit dem 2026-09-23 steht eine zweite, dringendere Frage daneben:** die **Freischaltung der Custom Modules** für diese Instanz – ohne sie sind B5, B6, der C-Block, E1 und E4 blockiert (angefragt, Antwort steht aus). Im selben Schreiben bleibt die Frage nach einem dokumentierten Rate-Limit (G16); **entfallen** ist dagegen die Frage nach einem Speicherziel für Custom-Module-Dateien – die Wiki-Kategorie samt Bilddienst beantwortet sie (G8).
+6. **Support anschreiben – und zwar zuerst wegen der Frist.** Die Testinstanz läuft nach 30 Tagen ab (etwa 2026-10-22); ob sich das für die Entwicklung einer Extension verlängern lässt, bestimmt, wie eng die Messungen getaktet werden müssen. **Seit dem 2026-09-23 steht eine zweite, dringendere Frage daneben:** die **Freischaltung der Custom Modules** für diese Instanz – ohne sie sind B5, B6, der C-Block, E1 und E4 blockiert (angefragt, Antwort steht aus). Im selben Schreiben: **wie ein Administrator den Login-Token eines Geräts widerruft**, nachdem `DELETE /persons/{id}/logintoken` für fremde Personen 403 liefert (**G18** – das betrifft den Notfallpfad und wiegt schwerer als die übrigen Fragen); dazu die Frage nach einem dokumentierten Rate-Limit (G16); **entfallen** ist dagegen die Frage nach einem Speicherziel für Custom-Module-Dateien – die Wiki-Kategorie samt Bilddienst beantwortet sie (G8).
 7. **`bensteUEM/ct-events-load` lesen**, insbesondere `src/persistance.ts` und die Terminbehandlung – vor der ersten eigenen Zeile Bindungscode in Phase 4, und bevor das Screen-Schema festgezurrt wird.
-8. **Testweise einen Infoscreen-Benutzer anlegen**, Login-Token ziehen, die URL am Pi aufrufen (G9); dabei den Rückzugsweg (`DELETE /api/persons/{id}/logintoken`) einmal üben. Erst wenn Phase 2 steht.
+8. **Den Rückzugsweg für den Login-Token klären** – vorgezogen, weil er sich als Lücke erwiesen hat (**G18**). Der Benutzer ist angelegt (Person 19); offen ist, ob Ausgabe und Widerruf über `POST /api/simulate` funktionieren, ob die ChurchTools-Oberfläche einen Weg bietet, oder ob der Support einen nennt. Erst danach die URL am Pi aufrufen (G9) – und das erst, wenn Phase 2 steht.
 9. **Lukas Block (`lubl`) im Forum ansprechen** – nicht, um Fragen zu stellen, die der Code beantwortet, sondern zu G8, G10 und der Idee einer gemeinsamen `ct-utils`-Bibliothek (Offene Entscheidung 10). Er betreibt dieselbe Schnittstelle produktiv und sucht ausdrücklich nach einem Ort für wiederverwendbaren Setup-Code.
 10. **Befunde hier eintragen**, erst danach das Screen-Schema festlegen.
 

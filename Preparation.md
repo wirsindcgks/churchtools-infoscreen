@@ -54,8 +54,9 @@ muss dem der Produktivinstanz nicht gleichen.
       Die Instanz ist **nicht leer**: 5 Kalender, 7 Gruppen, 2 Termine, 1 Event, 8 Dienste stehen bereits.
       Aufgezeichnet als Fixtures unter `fixtures/api/` (**lokal, nicht versioniert**), personenbezogene
       Felder und Instanz-URL maskiert.
-      **Rest:** Es fehlt ein Termin **mit Bild** – die Bindung „Terminbild über den Bilddienst" ist damit
-      noch nicht gegen echte Daten geprüft, nur gegen einen eigenen Upload.
+      **Nachgetragen am 2026-09-23:** Ein **Serientermin** (id 4, wöchentlich, mit Ausnahme und Zusatztermin)
+      und ein **Terminbild** daran (Datei 46) – beides fehlte und beides war nötig, weil alle vorhandenen
+      Termine einmalig und bildlos waren. Befunde in `Plan.md`, G19 und G14.
 
 - [ ] **T3 · Ablaufdatum notieren**
       In ChurchTools nachsehen, wann die Lizenz tatsächlich endet, und das Datum hier und in `Plan.md`
@@ -190,8 +191,14 @@ Setzt B6 voraus. Diese vier Punkte entscheiden über den Zuschnitt des Datenmode
       **Und ein Sicherheitsbefund:** `fileAccessWithoutPermission: false` schützt die `imageUrl` **nicht** –
       sie schützt allein der Hash. Gehört in die Betriebsdoku.
 
-- [ ] **D3 · Fallweise Ausweichpfade prüfen**
-      Nur falls D1 scheitert: `attachments` (woran bindet `domainIdentifier`?), dann
+- [x] **D3 · Ausweichpfade** – *(teilweise, 2026-09-23)*
+      **Externe Adressen geprüft:** `POST /api/files/wiki_1/<guid>/link` antwortet **201** und legt einen
+      regulären Dateisatz an (`type: "link"`, gleicher `domainType`/`domainId` wie ein Upload) –
+      **aber ohne `imageUrl`**. Der Bilddienst entfällt damit, `fileUrl` reicht nur die fremde Adresse durch.
+      Für **G-E6** heißt das: Der Notausgang trägt, kostet aber serverseitige Skalierung und Cachefähigkeit;
+      für Videos scheitert er zusätzlich an der CSP (G15). Da D1 **nicht** gescheitert ist, bleibt das die
+      Rückfallposition und nicht der Weg.
+      `attachments` ist weiterhin ungeprüft – wird nicht mehr gebraucht. Ursprünglicher Auftrag, nur falls D1 scheitert: `attachments` (woran bindet `domainIdentifier`?), dann
       `POST /files/{domainType}/{domainIdentifier}/link` für externe Adressen.
       **Nicht zu prüfen: `appointment_image` als Ablage.** Geprüft und verworfen – es bräuchte Trägertermine,
       die im Kalender, in der App und auf der Gemeindeseite auftauchen (Begründung in `Plan.md`, G8).
@@ -213,16 +220,32 @@ Hardware, nicht an der Instanz, und kann warten.
       Scheitert das, bleibt die Offline-Festigkeit halb – ein Pi, der während eines Netzausfalls neu startet,
       hat nichts zu laden. Dann ausdrücklich benennen, nicht übergehen.
 
-- [ ] **E2 · Infoscreen-Benutzer anlegen** → Voraussetzung für G9
+- [x] **E2 · Infoscreen-Benutzer anlegen** *(2026-09-23, angelegt: Person 19 „Infoscreen Player")*
       Eigene Person ohne Zweifaktor, mit **minimalen Rechten**. Die tatsächliche Reichweite umfasst neben
       den Modulrechten auch Lesen auf Kalender, Beiträge, Gruppen und ggf. Wiki – siehe `Plan.md`, F.
+      **Beim Anlegen zu wissen:** `POST /api/persons` verlangt `departmentIds` (nicht leer), `campusId`,
+      und **eine vollständige Datenschutz-Einwilligung** (`privacyPolicyAgreementTypeId`, `-WhoId`, `-Date`).
+      ChurchTools legt auch einen Maschinenbenutzer nicht ohne diese Angaben an.
+      **Rechte sind noch nicht vergeben** – das bleibt zu tun, sobald klar ist, was der Player lesen muss.
 
 - [ ] **E3 · Rückzugsweg üben** – **vor** dem produktiven Einsatz
-      `DELETE /api/persons/{id}/logintoken` einmal ausführen und prüfen, dass der Token wirklich ungültig ist.
-      Der Token ist ein Dauerpasswort auf einer SD-Karte; der Weg zurück muss geübt sein, bevor er gebraucht wird.
-      Auf der Testinstanz kostet dieses Üben nichts – genau deshalb wird es dort gemacht und nicht produktiv.
+      **⚠ Die bisherige Anleitung ist widerlegt** *(2026-09-23, siehe `Plan.md`, G18)*. `DELETE
+      /api/persons/{id}/logintoken` liefert für eine **fremde** Person **403**, auch als Administrator –
+      ebenso `GET …/logintoken` und `GET …/loginstring`. Im ganzen `churchcore`-Rechtesatz gibt es kein
+      Recht dafür; der Endpunkt gilt nur für die eigene Person.
+      Der Token ist ein Dauerpasswort auf einer SD-Karte; der Weg zurück muss geübt sein, bevor er gebraucht wird –
+      **und derzeit ist nicht belegt, dass es ihn über die API gibt.**
+      **Was noch zu prüfen ist, in dieser Reihenfolge:**
+      1. `POST /api/simulate` mit `{"personId": <id>}` (antwortet 204, `whoami` zeigt dann die simulierte
+         Person und `meta.simulatingUserId`). **Funktionieren Ausgabe und Widerruf des Tokens in diesem Zustand?**
+         Bewusst noch nicht ausgeführt: Über eine Administratorsimulation das Dauerpasswort eines fremden
+         Kontos zu ziehen, ist eine ausdrückliche Entscheidung und kein Nebenschritt einer Messreihe.
+      2. Falls nein: Gibt es den Weg in der ChurchTools-Oberfläche? Dann gehört er so in die Einrichtungsdoku.
+      3. Parallel als Frage an den Support (**F1**).
+      **Kein Pi geht produktiv, bevor dieser Punkt eine belegte Antwort hat.**
 
-- [ ] **E4 · `login_token` in der URL am `/ccm/`-Pfad** → beantwortet **G9**
+- [ ] **E4 · `login_token` in der URL am `/ccm/`-Pfad** → beantwortet **G9** – **doppelt blockiert**
+      Es fehlt das Custom Module (T1) **und** ein Token, an den ein Administrator regulär herankommt (E3/G18).
       `…/ccm/infoscreen-cgks/player?screen=…&login_token=<TOKEN>&user_id=<ID>&no_url_rewrite=true` in einem
       privaten Fenster aufrufen. **Prüfen, dass wirklich der Infoscreen-Benutzer angemeldet ist** – ChurchTools
       antwortet anonym als öffentlicher Benutzer, ein fehlgeschlagener Login fällt sonst nicht auf.
@@ -274,8 +297,9 @@ bevor das Screen-Schema steht.
 
 - [x] **Alle Befunde in `Plan.md` eingetragen** *(Stand 2026-09-23)*, Abschnitt G: beantwortete Punkte nach
       oben, mit Datum und Quelle (Instanz, Spezifikation oder fremder Code).
-      Beantwortet: **G1–G8, G11, G14, G15**; **G16** zur Hälfte. Offen und an der Freischaltung hängend:
-      **G9, G10, G12, G13**. Dazu **G17** als Entscheidung.
+      Beantwortet: **G1–G8, G11, G14, G15, G19, G20**; **G16** und **G18** zur Hälfte.
+      Offen und an der Freischaltung hängend: **G9, G10, G12, G13**. Dazu **G17** als Entscheidung.
+      **G18 ist der Punkt mit den größten Folgen** – er widerlegt den Notfallpfad aus E3.
       Belege liegen lokal unter `fixtures/` – **nicht im Repo**, siehe `fixtures/README.md`.
 - [ ] **Erst danach das Screen-Schema festlegen.**
 
