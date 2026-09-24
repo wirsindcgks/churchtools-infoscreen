@@ -9,7 +9,7 @@ anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
 
 > **⏱ Die Testinstanz läuft ab**
 >
-> `https://test-cg-ks.church.tools` – leer, Build 32882 wie produktiv, **30 Tage Lizenz, bis 2026-10-22, 21:53** (T3).
+> Die Testinstanz (Adresse nur in der `.env`) – leer, Build 32882 wie produktiv, **30 Tage Lizenz, bis 2026-10-22, 21:53** (T3).
 > Eine Verlängerung ist ungeklärt (**F1**, zuerst zu fragen).
 >
 > **Regel, die dieser Liste vorgeht: Was nur eine Instanz beantworten kann, wird zuerst gemessen.
@@ -150,10 +150,10 @@ Ein Rest bleibt: der Statuscode eines unbekannten `/ccm/`-Pfades als sauberer Ge
       liegen lokal als `fixtures/schema/custommodule-schemas.json` (nicht versioniert).
 
 - [ ] **B6 · Testmodul anlegen**
-      **Auf der Testinstanz** – und dort gleich unter dem echten Key `infoscreen-cgks`, weil damit auch der
-      spätere Pfad `/ccm/infoscreen-cgks/` mitgetestet wird. Der Ausweichkey `infoscreen-cgks-test` bleibt für
+      **Auf der Testinstanz** – und dort gleich unter dem echten Key `infoscreen-designer`, weil damit auch der
+      spätere Pfad `/ccm/infoscreen-designer/` mitgetestet wird. Der Ausweichkey `infoscreen-designer-test` bleibt für
       den Fall, dass doch auf der Produktivinstanz gearbeitet werden muss.
-      Bauen mit `VITE_KEY=infoscreen-cgks npm run release`, hochladen über
+      Bauen mit `VITE_KEY=infoscreen-designer npm run release`, hochladen über
       System-Einstellungen → Extensions → Extension hinzufügen. **Kurzbezeichner muss exakt zum Build passen,
       Ordnernamen sind case-sensitiv.**
       **Direkt danach die Rechte vergeben** – sonst ist das Modul auch für den Administrator unsichtbar
@@ -170,12 +170,14 @@ Setzt B6 voraus. Diese vier Punkte entscheiden über den Zuschnitt des Datenmode
       nicht mehr die bessere, sondern die einzige Wahl.
       Beleg: `fixtures/schema/custommodule-schemas.json` (lokal, nicht versioniert).
 
-- [ ] **C2 · Wird das JSON Schema durchgesetzt?** → beantwortet **G12**
+- [x] ~~**C2 · Wird das JSON Schema durchgesetzt?**~~ → **entfällt** *(2026-09-24)*: Kategorien haben kein Schema-Feld (G22).
+      Ursprünglich → beantwortet **G12**
       Kategorie mit engem Schema anlegen, dann einen Wert schreiben, der es verletzt.
       - Abgelehnt → wir brauchen ein vollständiges Schema und stoßen an 2.000 Zeichen.
       - Angenommen → **permissives Schema in ChurchTools, Validierung im Client** (Vorgabe).
 
-- [ ] **C3 · Was bewirkt `securityLevelId`?** → beantwortet **G13**
+- [x] ~~**C3 · Was bewirkt `securityLevelId`?**~~ → **entfällt** *(2026-09-24)*: Kategorien haben keine Sicherheitsstufe (G22).
+      Ursprünglich → beantwortet **G13**
       Zwei Kategorien mit unterschiedlicher Stufe, Zugriff mit einem gering berechtigten Benutzer.
       Wichtig für `status` – die einzige Kategorie, auf die ein unbeaufsichtigtes Gerät schreiben darf.
 
@@ -273,7 +275,7 @@ Hardware, nicht an der Instanz, und kann warten.
 
 - [ ] **E4 · `login_token` in der URL am `/ccm/`-Pfad** → beantwortet **G9** – **doppelt blockiert**
       Es fehlt das Custom Module (T1) **und** ein Token, an den ein Administrator regulär herankommt (E3/G18).
-      `…/ccm/infoscreen-cgks/player?screen=…&login_token=<TOKEN>&user_id=<ID>&no_url_rewrite=true` in einem
+      `…/ccm/infoscreen-designer/player?screen=…&login_token=<TOKEN>&user_id=<ID>&no_url_rewrite=true` in einem
       privaten Fenster aufrufen. **Prüfen, dass wirklich der Infoscreen-Benutzer angemeldet ist** – ChurchTools
       antwortet anonym als öffentlicher Benutzer, ein fehlgeschlagener Login fällt sonst nicht auf.
 
@@ -335,7 +337,7 @@ bevor das Screen-Schema steht.
       oben, mit Datum und Quelle (Instanz, Spezifikation oder fremder Code).
       Beantwortet: **G1–G8, G11, G14, G15, G18, G19, G20**; **G16** und **G21** zur Hälfte.
       **G21** ist seit dem 2026-09-23 gebaut und gemessen – offen bleiben daran nur noch `authId` 306 gegen 403, die Sichtbarkeit von Beiträgen und das Archivieren als zweite Notbremse.
-      Offen und an der Freischaltung hängend: **G9, G10, G12, G13**. Dazu **G17** als Entscheidung.
+      Offen und an der Freischaltung hängend: **G9, G10**; **G12, G13** sind seit G22 hinfällig. Dazu **G17** als Entscheidung.
       **G18 hat den Notfallpfad aus E3 erst widerlegt und dann ersetzt** – die Notbremse ist der Passwortwechsel.
       Belege liegen lokal unter `fixtures/` – **nicht im Repo**, siehe `fixtures/README.md`.
 - [ ] **Erst danach das Screen-Schema festlegen.**

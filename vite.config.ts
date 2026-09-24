@@ -2,7 +2,7 @@
 import { defineConfig, loadEnv, type ProxyOptions } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
-const EXTENSION_KEY = 'infoscreen-cgks';
+const EXTENSION_KEY = 'infoscreen-designer';
 
 export default defineConfig(({ mode }) => {
     // Loaded without prefix filter: CT_* values stay in the Node process and

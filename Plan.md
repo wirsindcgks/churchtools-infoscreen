@@ -14,14 +14,15 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 4. **Nach der Freischaltung genau drei Punkte**: Testmodul hochladen (B6), Typ-Snapshot ziehen (B5), Login-Token am `/ccm/`-Pfad prüfen (G9). Alles andere aus dem blockierten Rest ist verzichtbar oder hat eine Vorgabe.
 5. ~~**Die Fixtures außerhalb des Repos sichern**~~ – **erledigt am 2026-09-24.** Was danach noch aufgezeichnet wird, muss vor Ablauf der Testinstanz (2026-10-22, 21:53) nachgesichert werden.
 
-**Bewusst geparkt** – nicht falsch, aber nicht jetzt: alles Weitere am Betriebsbenutzer (G21-Reste), `securityLevelId` (G13), Schema-Durchsetzung (G12), Rate-Limit (G16), Heartbeat und Statusanzeige, eine gemeinsame Bibliothek mit `ct-pass-store`, Rollenmodell für mehrere Gestalter.
+**Bewusst geparkt** – nicht falsch, aber nicht jetzt: alles Weitere am Betriebsbenutzer (G21-Reste), Rate-Limit (G16), Heartbeat und Statusanzeige, eine gemeinsame Bibliothek mit `ct-pass-store`, Rollenmodell für mehrere Gestalter.
 
 ## Rahmendaten
 
-- **Testinstanz**: `https://test-cg-ks.church.tools`, Build 32882 wie produktiv, **Lizenz bis 2026-10-22, 21:53** (30 Tage ab Anlage am 2026-09-22, 21:53; T3). Custom Modules dort **nicht freigeschaltet** (T1), angefragt am 2026-09-23. Freigeschaltet wird nach Auskunft vom 2026-09-24 über die Entwickler von ChurchTools, nicht über das Paket; Rückmeldung steht aus. Ein Paketwechsel (etwa auf Combo) ist im Gespräch, dann werden Kalender und Personen der Testinstanz entsprechend reduziert. Die **Produktivinstanz** hat sie (G1).
+- **Testinstanz**: Adresse nur in der `.env`, Build 32882 wie produktiv, **Lizenz bis 2026-10-22, 21:53** (30 Tage ab Anlage am 2026-09-22, 21:53; T3). Custom Modules dort **nicht freigeschaltet** (T1), angefragt am 2026-09-23. Freigeschaltet wird nach Auskunft vom 2026-09-24 über die Entwickler von ChurchTools, nicht über das Paket; Rückmeldung steht aus. Ein Paketwechsel (etwa auf Combo) ist im Gespräch, dann werden Kalender und Personen der Testinstanz entsprechend reduziert. Die **Produktivinstanz** hat sie (G1).
 - **Autor / Repo**: `wirsindcgks <media@cg-ks.de>`, geplant unter `github.com/wirsindcgks/churchtools-infoscreen`
 - **Lizenz**: GPL-2.0-or-later
-- **Extension-Key**: `infoscreen-cgks` → Auslieferungspfad `/ccm/infoscreen-cgks/`
+- **Ziel**: Das Modul geht am Ende an die ChurchTools-Community – daher **kein Gemeinde-Branding** (seit 2026-09-24; der Key hieß vorher `infoscreen-cgks`).
+- **Extension-Key**: `infoscreen-designer` → Auslieferungspfad `/ccm/infoscreen-designer/`
 - **Stack**: Vue 3 + TypeScript + Vite + Pinia, `@churchtools/churchtools-client`, Vitest, Playwright – wie das [Boilerplate](https://github.com/churchtools/extension-boilerplate) und die bekannten Fremd-Extensions.
 - **Dokumente**: `Plan.md` ist das Gedächtnis, [`Preparation.md`](Preparation.md) die Arbeitsliste, [`Befunde.md`](Befunde.md) das Messprotokoll (**alle Verweise „G1"–„G21" zeigen dorthin**), [`AGENTS.md`](AGENTS.md) die Arbeitsregeln.
 - **Abgrenzung**: Eigenständiges Projekt, kein Teil des WordPress-Plugins `churchtools-plugin` und keine gemeinsame Codebasis damit.
@@ -40,14 +41,14 @@ Zwei Oberflächen, ein Paket, kein eigener Server.
 
 ```
 ChurchTools-Instanz
-├── /ccm/infoscreen-cgks/            (das ausgelieferte dist/ der Extension)
+├── /ccm/infoscreen-designer/            (das ausgelieferte dist/ der Extension)
 │   ├── Designer   – angemeldeter Anwender gestaltet Screens
 │   └── Player     – derselbe Code, Route /player?screen=<slug>
 ├── /api/custommodules/…             Screens + Einstellungen (KV-Store)
 └── /api/…                           Termine, Dateien, Gemeindekopf
                      ▲
                      │ Raspberry Pi (FullPageOS / Chromium Kiosk)
-                     │ ruft /ccm/infoscreen-cgks/player?screen=foyer-links&login_token=…&user_id=…
+                     │ ruft /ccm/infoscreen-designer/player?screen=foyer-links&login_token=…&user_id=…
 ```
 
 - **Kein eigener Server.** Die Instanz ist Speicher, Auslieferung und Rechteverwaltung zugleich. Der Preis: Der Pi meldet sich per Login-Token an (D) – so läuft der native Infoscreen heute schon.
@@ -72,7 +73,7 @@ ChurchTools-Instanz
 - **Node.js** (aktuelle LTS) mit npm, plus `zip` für die Paketierung.
 - **Steht seit dem 2026-09-24** (B1–B4). Nach dem Muster des Boilerplates, aber an einer Stelle bewusst anders: **Der Dev-Login läuft im Vite-Proxy, nicht im Browser.** Der Proxy leitet `/api` an die Testinstanz und setzt dort `Authorization: Login <token>`; Set-Cookie-Kopfzeilen verwirft er. Damit gibt es kein `VITE_USERNAME`/`VITE_PASSWORD`, das ins Bündel geraten könnte, und der Safari-Fall (`Secure; SameSite=None` auf `localhost`) tritt gar nicht erst auf – belegt mit Playwright in WebKit.
 - **`.env`** aus `.env-example`, nicht im Repo: `CT_BASE_URL`, `CT_LOGIN_TOKEN`, optional `VITE_KEY`. Die Anwendung nimmt `window.settings.base_url` der Hostseite, in der Entwicklung den eigenen Ursprung.
-- **Befehle**: `npm run dev` (unter `/ccm/infoscreen-cgks/`), `npm test` (ohne Instanz), `npm run smoke` (Playwright in Chromium und WebKit gegen die Testinstanz, nicht im CI), `npm run build` (inklusive `scripts/check-dist.js`), `npm run release` (ZIP).
+- **Befehle**: `npm run dev` (unter `/ccm/infoscreen-designer/`), `npm test` (ohne Instanz), `npm run smoke` (Playwright in Chromium und WebKit gegen die Testinstanz, nicht im CI), `npm run build` (inklusive `scripts/check-dist.js`), `npm run release` (ZIP).
 - **Typ-Snapshot** `ct-types.d.ts` aus der Spezifikation **einer Instanz mit freigeschalteten Custom Modules** – die Spezifikation wird pro Benutzer gefiltert, ein Snapshot ohne `CustomModule`-Pfade ist schlimmer als keiner (B5).
 - **Vorlage mit offenem Quellcode**: [`lub90/ct-pass-store`](https://github.com/lub90/ct-pass-store) (MIT) läuft auf unserer Produktivinstanz. `ct-utils/lib/ExtensionData.ts` (KV-Zugriff) und der Setup-Assistent für Kategorien sind übernehmbar, mit Urheberrechtsvermerk.
 
@@ -88,7 +89,7 @@ ChurchTools-Instanz
 2. **Entwicklung** – `POST /login` mit den Zugangsdaten aus der `.env`, nur im Modus `development`.
 3. **Raspberry Pi** – Login-Token des Geräte-Benutzers in der Player-URL:
    ```
-   https://<instanz>/ccm/infoscreen-cgks/player?screen=foyer-links&login_token=<TOKEN>&user_id=<ID>&no_url_rewrite=true
+   https://<instanz>/ccm/infoscreen-designer/player?screen=foyer-links&login_token=<TOKEN>&user_id=<ID>&no_url_rewrite=true
    ```
    Echte Unterpfade wie `/player` sind gedeckt (G7). Der Token entsteht über `POST /api/login/token` mit Benutzername und Passwort des Geräte-Benutzers; der `churchtools-client` meldet sich damit nach Sitzungsablauf selbst neu an. **Ob das unter `/ccm/` trägt, ist die wichtigste offene Messung (G9).**
 
@@ -112,10 +113,10 @@ Später hinzu: `templates`, `snippets` (Web-Code), `status` (Heartbeat).
 
 - **Gelesen wird eine Kategorie immer ganz**, gefiltert im Client – eine Abfrage nach Feldern gibt es nicht.
 - **Die Adresse eines Screens ist sein Slug** (`foyer-links`), nicht die Server-`id`. Sonst zeigt die SD-Karte nach „löschen und neu anlegen" ins Leere.
-- **Speichern schreibt mehrere Werte ohne Transaktion – der Index-Wert zuletzt.** Ein halb geschriebener Screen ist dann unsichtbar statt kaputt.
+- **Speichern schreibt mehrere Werte ohne Transaktion – Slides, dann Playlists, der Index zuletzt.** Neues bleibt bis zum Index unsichtbar, und kein Verweis zeigt ins Leere. Eine geänderte bestehende Slide ist allerdings sofort sichtbar (G22) – hingenommen.
 - **Konflikte werden erkannt, nicht verhindert**: `revision` im JSON, vor dem Schreiben lesen und vergleichen, bei Abweichung ein Dialog statt stillen Überschreibens.
 - **Die 10.000-Zeichen-Grenze prüft der Designer vor dem Speichern.** Damit ist es gleichgültig, ob der Server sauber ablehnt oder still kürzt (C4).
-- **Schema in ChurchTools permissiv, Validierung im Client.** Das Schema im Repo ist die Wahrheit. Damit ist G12 für den Bau gleichgültig.
+- **Validiert wird allein im Client**, gegen `src/model/schema.ts`. Kategorien haben auf unserem Build weder Schema noch Sicherheitsstufe (G22).
 - **Persistierte Daten sind versioniert** und werden beim Lesen migriert. **Der Player ist duldsam gegenüber neueren Daten**: unbekannter Blocktyp wird übersprungen, unbekanntes Feld ignoriert, höhere Schema-Hauptversion führt zum Neuladen – nie zu einer leeren Slide. Das ist ein Test in Phase 1.
 - **Die Kategorien legt die Extension beim ersten Aufruf selbst an**, wie der Setup-Assistent von `ct-pass-store`.
 - **Der KV-Zugriff liegt hinter genau einer Naht** (Repository). Dahinter zuerst der Mock aus `fixtures/`, später der echte Store.
@@ -145,9 +146,10 @@ Das Messprotokoll steht in [`Befunde.md`](Befunde.md). Stand:
 
 | | Punkte |
 | --- | --- |
-| **Beantwortet** | G1–G8, G11, G14, G15, G18, G19, G20; G21 für den Bau ausreichend |
+| **Beantwortet** | G1–G8, G11, G14, G15, G18, G19, G20, G22; G21 für den Bau ausreichend |
 | **Blockiert und zwingend** | **G9** (Login-Token unter `/ccm/`) |
-| **Blockiert, aber verzichtbar** | G10 (Service Worker – ohne ihn bleibt Offline-Festigkeit halb, siehe Risiko 2) · G12, G13 (durch Vorgaben in E ersetzt) |
+| **Blockiert, aber verzichtbar** | G10 (Service Worker – ohne ihn bleibt Offline-Festigkeit halb, siehe Risiko 2) |
+| **Hinfällig** | G12, G13 – die Felder gibt es nicht (G22) |
 | **Geparkt** | G16 (Rate-Limit) · G17 (Extension Store) · G21-Reste |
 
 **Die Testinstanz** ist leer angelegt, Build und Upload-Grenze wie produktiv. Dort darf ausprobiert, liegengelassen und zerschossen werden; gegen die Produktivinstanz wird nur gelesen. **Ihr Ertrag sind die Fixtures unter `fixtures/`** (nicht versioniert) – gegen sie läuft die gesamte Entwicklung, und sie sind **seit dem 2026-09-24 außerhalb des Repos gesichert**. Neu Aufgezeichnetes wird vor Ablauf der Lizenz nachgesichert.
@@ -254,13 +256,14 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 
 - **Tests laufen nie gegen eine Live-Instanz**, sondern gegen aufgezeichnete Antworten unter `fixtures/`. Das Verzeichnis ist nicht versioniert; ein frisch geklonter Arbeitsplatz muss sie sich beschaffen.
 - **Ohne Fixtures überspringen sich die Tests, die sie brauchen** – sichtbar als übersprungen, nicht still grün (entschieden am 2026-09-24). Das CI auf GitHub hat keine Fixtures und prüft deshalb nur, was ohne sie geht. **Die Form der Antworten wird dafür dokumentiert statt eingecheckt**: als Typen im Code, die nur die tatsächlich gelesenen Felder beschreiben, ohne Daten. Tests ohne Fixtures bauen ihre Eingaben aus diesen Typen selbst.
-- **Aufgezeichnet wird nur von der Testinstanz – und vor dem Ablegen bereinigt.** Zu entfernen sind mindestens:
+- **Aufgezeichnet wird nur von der Testinstanz – und vor dem Ablegen bereinigt**, mit `scripts/sanitize-fixture.js`. Zu entfernen sind mindestens:
 
   | Klasse | Beispiel | Warum |
   | --- | --- | --- |
   | Personenbezogene Felder | E-Mail, Telefon, Anschrift, Geburtstag | Datenschutz |
   | Instanz-URL | `site_url`, `fileUrl`, `apiUrl` | Grundregel des Repos |
   | Schlüssel und Geheimnisse | `site_licensekey`, `*_apikey`, `*_token`, `*_secret` | Beim ersten Durchgang übersehen |
+  | Geheime Abo-Adressen | `randomUrl` am Kalender, `iCalUid` | Die iCal-Adresse ist ein Zugangsschlüssel (G22) |
   | Datei- und Bild-Hashes | `/images/{id}/{hash}`, `filename=<hash>` | Zugangsschlüssel, keine Kennungen (G14) |
 
   Die Regel gilt auch für Felder, die auf der Testinstanz leer sind – auf einer produktiven Instanz sind sie es nicht unbedingt. **Nicht** bereinigt werden Gruppen-, Kalender- und Dienstnamen: Umlaute, Längen und Namensgleichheiten sind wertvolle Testdaten.
@@ -269,7 +272,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 
 ## Risiken
 
-1. **Die Freischaltung kommt nicht rechtzeitig.** Die Lizenz der Testinstanz läuft am 2026-10-22 um 21:53 ab, die Anfrage ist unbeantwortet. Bis Phase 2 hält das nichts auf – dann aber muss ein Modul irgendwo laufen. Rückfall ist ein Testmodul unter eigenem Key (`infoscreen-cgks-test`) auf der **Produktivinstanz**, das nur in eigene Kategorien schreibt. **Das ist eine Entscheidung, keine Automatik** – nach den Arbeitsregeln wird dort bisher nichts geschrieben.
+1. **Die Freischaltung kommt nicht rechtzeitig.** Die Lizenz der Testinstanz läuft am 2026-10-22 um 21:53 ab, die Anfrage ist unbeantwortet. Bis Phase 2 hält das nichts auf – dann aber muss ein Modul irgendwo laufen. Rückfall ist ein Testmodul unter eigenem Key (`infoscreen-designer-test`) auf der **Produktivinstanz**, das nur in eigene Kategorien schreibt. **Das ist eine Entscheidung, keine Automatik** – nach den Arbeitsregeln wird dort bisher nichts geschrieben.
 2. **Der Pi läuft unbeaufsichtigt.** Speicherlecks, abgelaufene Sitzungen, Netz- und Stromausfälle. Der Player muss von selbst wieder hochkommen. Ohne Service Worker (G10) zeigt ein Pi, der während eines Netzausfalls neu startet, nichts – das ist dann zu benennen, nicht zu übergehen.
 3. **Login-Token auf der SD-Karte.** Tragbar, weil der Rückzugsweg gemessen ist (Passwortwechsel, G18) und das Konto nur liest.
 4. **Stilgrenze zur Hostseite.** Ohne sie hängt das Aussehen der Bühne von ChurchTools-Updates ab – und unsere Stile beschädigen fremde Oberflächen.
@@ -309,14 +312,14 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 1. ~~**Fixtures außerhalb des Repos sichern**~~ – **erledigt am 2026-09-24.**
 2. ~~**Ablaufdatum der Testinstanz nachsehen**~~ (T3) – **2026-10-22, 21:53.** Das ist der Stichtag für Risiko 1.
 3. ~~**Entwicklungsumgebung**~~ (`Preparation.md` B1–B4) – **erledigt am 2026-09-24**, „Hallo &lt;Vorname&gt;" läuft in Chromium und WebKit.
-4. **Phase 1** – Datenmodell, Repository mit Mock, Terminnormalisierung.
+4. **Phase 1** – **Kern steht seit dem 2026-09-24**: Schema mit duldsamem Lesen, Repository mit Mock und Revisionsprüfung, Terminnormalisierung samt Zeitzone. Offen: ganztägige Termine messen (G23, braucht einen schreibenden Zugriff) und die echte KV-Anbindung gegen eine Instanz prüfen (nach T1).
 5. **Phase 2** – Player gegen den Mock.
 
 **Nebenher, fremdbestimmt:** Rückmeldung der ChurchTools-Entwickler zur Freischaltung abwarten, dazu die Laufzeit der Testinstanz klären. Kommt bis zum Stichtag nichts, Risiko 1 entscheiden.
 
-**Sobald freigeschaltet ist, genau drei Punkte:** Testmodul unter `infoscreen-cgks` hochladen und Rechte vergeben (B6), Typ-Snapshot ziehen (B5), Login-Token am `/ccm/`-Pfad prüfen (G9). G10 nur, wenn es nebenbei geht.
+**Sobald freigeschaltet ist, genau drei Punkte:** Testmodul unter `infoscreen-designer` hochladen und Rechte vergeben (B6), Typ-Snapshot ziehen (B5), Login-Token am `/ccm/`-Pfad prüfen (G9). G10 nur, wenn es nebenbei geht.
 
-**Nicht anfassen, bis ein Produktschritt es braucht:** G12, G13, G16, C4, die G21-Reste, `attachments`, `ct-events-load`, das Gespräch mit dem Autor von `ct-pass-store`.
+**Nicht anfassen, bis ein Produktschritt es braucht:** G16, C4, die G21-Reste, `attachments`, `ct-events-load`, das Gespräch mit dem Autor von `ct-pass-store`.
 
 ## Quellen
 

@@ -60,12 +60,15 @@ Wer eine Messung in den Plan schreibt, bläht ihn auf – genau das ist am 2026-
   Antworten nicht und muss sie sich beschaffen, bevor Tests laufen.
 - **Aufgezeichnet wird nur von der Testinstanz** – und vor dem Ablegen bereinigt. Zu entfernen sind mindestens:
   personenbezogene Felder, die Instanz-URL, Schlüssel und Geheimnisse (`site_licensekey`, `*_apikey`, `*_token`,
-  `*_secret`) **und Datei- bzw. Bild-Hashes** – letztere sind Zugangsschlüssel, keine Kennungen: Die `imageUrl`
+  `*_secret`), die geheime iCal-Adresse `randomUrl` **und Datei- bzw. Bild-Hashes** – letztere sind Zugangsschlüssel, keine Kennungen: Die `imageUrl`
   liefert damit anonym `200`. Die vollständige Regel samt Begründung steht in `Plan.md`, „Konventionen".
   **Nicht** zu bereinigen sind Gruppen-, Kalender- und Dienstnamen: Umlaute, Längen und Namensgleichheiten sind
   als Testdaten wertvoll.
 
 ## Sprache und Form
+
+- **Kein Gemeinde-Branding.** Das Modul geht am Ende an die ChurchTools-Community: kein Gemeindename, kein
+  Kürzel, keine Instanzadresse in Key, Code, Oberfläche oder Beispieldaten. Beispiele verwenden `<instanz>`.
 
 - **Oberfläche und Dokumentation deutsch, Code und Bezeichner englisch.**
 - **Commit-Nachrichten deutsch, im Betreff ohne Umlaute.** Der Betreff sagt, was sich geändert hat, der Rumpf warum.
@@ -76,7 +79,7 @@ Wer eine Messung in den Plan schreibt, bläht ihn auf – genau das ist am 2026-
 
 Vue 3 + TypeScript + Vite + Pinia, `@churchtools/churchtools-client`, Vitest, Playwright – wie im
 [Extension-Boilerplate](https://github.com/churchtools/extension-boilerplate) von ChurchTools.
-Extension-Key `infoscreen-cgks`, Auslieferungspfad `/ccm/infoscreen-cgks/`. Lizenz GPL-2.0-or-later.
+Extension-Key `infoscreen-designer`, Auslieferungspfad `/ccm/infoscreen-designer/`. Lizenz GPL-2.0-or-later.
 
 **Drei Bauregeln, die aus gemessenen Grenzen folgen** – Herleitung jeweils in `Befunde.md`:
 

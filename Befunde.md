@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18, G19 und G20 sind beantwortet, G16 zur Hälfte, der Rest offen.
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20 und G22 sind beantwortet, G16 und G21 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -58,7 +58,7 @@ Drei Dinge stehen damit fest, die der Plan bisher nur annahm:
 
 **G5 – Paketierung, Installation und Kategorieanlage.** *(2026-09-22, `ct-pass-store`)* `npm run deploy` baut `dist/` und packt es mit `zip -r … dist/ -x "*.map"` nach `releases/<name>-v<version>-<commit>.zip`; im ZIP liegt der Ordner `dist/` auf oberster Ebene. In ChurchTools: System-Einstellungen → Extensions → Extension hinzufügen, dort **Name, Kurzbezeichner, Beschreibung und Sortierindex** setzen und das ZIP ablegen. Der Kurzbezeichner ist der Extension-Key aus dem Build. Die **Kategorien legt die Extension anschließend selbst an**, über einen Setup-Assistenten beim ersten Aufruf.
 
-**G6 – Kein iframe: Die Extension läuft im Dokument der Hostseite.** *(2026-09-22, Quelltext von `/ccm/ctpassstore/`)* ChurchTools liefert seine eigene Seite aus – `<base href="https://cg-ks.church.tools/">`, die vollständige Hauptnavigation, der eigene Vue-Build unter `system/dist/assets/…` – und hängt die Extension in **denselben Dokumentkopf**:
+**G6 – Kein iframe: Die Extension läuft im Dokument der Hostseite.** *(2026-09-22, Quelltext von `/ccm/ctpassstore/`)* ChurchTools liefert seine eigene Seite aus – `<base href="https://<instanz>/">`, die vollständige Hauptnavigation, der eigene Vue-Build unter `system/dist/assets/…` – und hängt die Extension in **denselben Dokumentkopf**:
 
 ```html
 <script src="/ccm/ctpassstore/assets/index-BtWd1lCL.js" type="module"></script>
@@ -74,7 +74,7 @@ Vier Folgen, bisher vorgesehen, jetzt belegt:
 3. **Die Asset-Namen tragen einen Build-Hash** (`index-BtWd1lCL.js`). Risiko 7 in `Plan.md` ist damit keine Theorie: Nach einem Upload zeigt ein wochenlang offener Kiosk-Tab auf Dateien, die es nicht mehr gibt. Ein Bündel ohne Code-Splitting bleibt Vorgabe.
 4. **Die Einstellungen liegen im Dokument**, als JSON in `<script type="application/json" id="ct-settings-json">`: `base_url`, `files_url`, `csrfToken`, `version`/`jsversion`, die `modules`-Liste, das vollständige `auth`-Objekt (siehe G4) und der angemeldete Benutzer. Der Player kann das lesen, statt zu fragen – aber nur, solange ChurchTools die Seite baut, und **nicht für die Rechte**: Die Kopie im Dokument ist beschnitten und anders kodiert als die API-Antwort (siehe G4). Die Anmeldung des Pi (G9) ersetzt sie ohnehin nicht.
 
-**G7 – Unbekannte Unterpfade fallen auf die Modulseite zurück.** *(2026-09-22, `/ccm/ctpassstore/pasword` – ein Pfad, den das Modul nicht kennt)* Die Seite kommt: ChurchTools-Navigation, Modul-Seitenleiste, leerer Inhaltsbereich. ChurchTools liefert für den unbekannten Pfad also die `index.html` der Extension aus, statt einen eigenen 404 zu zeigen. **Echte History-Routen sind damit möglich** – der Player darf auf `…/ccm/infoscreen-cgks/player?screen=foyer-links` neu laden.
+**G7 – Unbekannte Unterpfade fallen auf die Modulseite zurück.** *(2026-09-22, `/ccm/ctpassstore/pasword` – ein Pfad, den das Modul nicht kennt)* Die Seite kommt: ChurchTools-Navigation, Modul-Seitenleiste, leerer Inhaltsbereich. ChurchTools liefert für den unbekannten Pfad also die `index.html` der Extension aus, statt einen eigenen 404 zu zeigen. **Echte History-Routen sind damit möglich** – der Player darf auf `…/ccm/infoscreen-designer/player?screen=foyer-links` neu laden.
 
 Zwei Dinge gehören zur Antwort dazu. Erstens ist der leere Inhaltsbereich die Sache des Moduls, nicht des Servers: `ct-pass-store` hat für die unbekannte Route keinen Treffer und zeigt nichts. Unser Router braucht deshalb eine **Catch-all-Route**, die statt Leere eine benennbare Fehlerseite zeigt – auf einem Foyer-TV ist ein leerer Inhaltsbereich nicht von einem Absturz zu unterscheiden. Zweitens ist der **HTTP-Statuscode nicht abgelesen**; möglich bleibt ein 404 mit ausgelieferter Seite im Rumpf. Für den Kiosk-Browser ändert das nichts, für einen Service Worker (G10) schon – beim nächsten Aufruf im Netzwerk-Reiter mitnehmen.
 
@@ -224,6 +224,15 @@ Auch die **Administrationsoberfläche gibt einen fremden Token nicht heraus** (2
 
 **Drei Sackgassen, damit sie niemand erneut geht:** `DELETE …/logintoken` als Widerruf (403). `GET …/loginstring` als Ausweg (dieselbe Sperre). Und `POST /api/simulate`, das technisch funktioniert – `whoami` liefert die simulierte Person samt `meta.simulatingUserId`, der Zustand endet mit `DELETE /api/simulate` – aber ein Umweg um ein Problem war, das es nicht gab. Festzuhalten bleibt allein, dass eine Simulation an der Antwort erkennbar ist.
 
+**G22 – Nachträge aus Phase 1: zwei Fragen hinfällig, ein Geheimnis, eine Grenze.** *(2026-09-24, Spezifikation der Testinstanz aus `fixtures/schema/`, Testinstanz lesend, Code in `src/`)*
+
+- **Kategorien haben weder Schema noch Sicherheitsstufe.** `CustomModuleDataCategory` führt auf Build 32882 nur `customModuleId`, `name`, `shorty`, `description` und `data` (max. 2.000 Zeichen). Die Felder `schema` und `securityLevelId` stammen – wie `domainType` bei G11 – aus dem überholten Snapshot von `ct-pass-store`. **G12 und G13 sind damit hinfällig**, nicht nur geparkt: Es gibt nichts durchzusetzen und keine Stufe zu setzen. Validiert wird allein im Client; die Schemas liegen in `src/model/schema.ts`.
+- **`randomUrl` am Kalender ist ein Zugangsschlüssel.** Sie ist die geheime Adresse des iCal-Abonnements und stand unbereinigt in `fixtures/api/calendars.json` und `appointments.json`. Beide Dateien sind lokal nachbereinigt; **die externe Sicherung vom 2026-09-24 enthält sie noch.** Die Bereinigungsregel ist seitdem Code: `scripts/sanitize-fixture.js`, dort auch `iCalUid` und Hashes ab 32 Zeichen.
+- **„Index zuletzt" schützt Neues, nicht Geändertes.** Neue Slides und Playlists sind unsichtbar, bis der Index geschrieben ist. Eine *bestehende* Slide wird dagegen an Ort und Stelle überschrieben: Bricht das Speichern danach ab, zeigt der Screen die neue Slide in der alten Reihenfolge. Verweise zeigen trotzdem nie ins Leere (Reihenfolge Slides → Playlists → Index), und jede Slide ist für sich vollständig. Für die Handvoll Gestalter hingenommen; die Abhilfe wäre Copy-on-write mit neuen IDs bei jedem Speichern.
+- **Die Serie aus G19 ist jetzt aufgezeichnet** (`fixtures/api/appointments-series.json`) und durch Tests gesichert: neun Vorkommen, durchgehend 11:00 Ortszeit, Ausnahme 18.10. fehlt, Zusatztermin 04.11. enthalten.
+- **`calendar_ids[]` kodiert der Client richtig.** Der `churchtools-client` nutzt axios ohne eigenen Serializer; axios schreibt Arrays als `calendar_ids[]=2&calendar_ids[]=4`, gegengeprüft mit `curl` an der Testinstanz.
+- **Die Zeitzone steht in `/api/config`** als `timezone`, auch anonym (74 Schlüssel) – also für den Geräte-Benutzer lesbar. `Intl` genügt zum Rechnen; eine Zeitzonen-Bibliothek ist nicht nötig.
+
 ## Teilweise beantwortet
 
 **G16 – Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.
@@ -272,9 +281,11 @@ Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit
 
 **G10 – Darf unter `/ccm/<key>/` ein Service Worker registriert werden?** Entscheidet, ob Offline-Festigkeit vollständig erreichbar ist oder nur halb: IndexedDB sichert die Daten, aber nicht die eigenen Assets und nicht die Bilder. Ohne Service Worker zeigt ein Pi, der während eines Netzausfalls neu startet, einen weißen Bildschirm – genau der Fall aus Risiko 2 in `Plan.md`. Zu prüfen sind Scope, MIME-Typ und ob ChurchTools den Pfad umschreibt.
 
-**G12 – Wird das JSON Schema einer Kategorie serverseitig durchgesetzt?** Entscheidet, ob wir ein vollständiges Schema hinterlegen müssen (und dann an 2.000 Zeichen scheitern) oder ein permissives genügt. Siehe Abschnitt E.
+~~**G12 – Wird das JSON Schema einer Kategorie serverseitig durchgesetzt?**~~ **Hinfällig seit G22** – das Feld gibt es auf Build 32882 nicht.
 
-**G13 – Was bewirkt `securityLevelId` an einer Kategorie?** Besonders für `status`, die einzige Kategorie, auf die ein unbeaufsichtigtes Gerät schreibt.
+~~**G13 – Was bewirkt `securityLevelId` an einer Kategorie?**~~ **Hinfällig seit G22** – das Feld gibt es auf Build 32882 nicht.
+
+**G23 – Wie kodiert ChurchTools ganztägige und mehrtägige Termine?** Auf der Testinstanz gibt es keinen; `src/appointments/normalize.ts` nimmt an, dass ein Ende um Mitternacht Ortszeit exklusiv ist, und liest reine Datumswerte als inklusiv. **Zu messen mit je einem ganztägigen und einem mehrtägigen Termin – ein schreibender Zugriff auf die Testinstanz, also vorher abzustimmen.**
 
 **G17 – Extension Store**: Aufnahmekriterien, Einreichungsweg, ob eine Veröffentlichung überhaupt angestrebt wird. Der Publisher hält seinen Store-Text in einer eigenen `EXTENSION_STORE.md` – ein Muster, das sich übernehmen lässt.
 
