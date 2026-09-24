@@ -18,7 +18,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 
 ## Rahmendaten
 
-- **Testinstanz**: `https://test-cg-ks.church.tools`, Build 32882 wie produktiv, **Lizenz bis 2026-10-22, 21:53** (30 Tage ab Anlage am 2026-09-22, 21:53; T3). Custom Modules dort **nicht freigeschaltet** (T1), angefragt am 2026-09-23. Die **Produktivinstanz** hat sie (G1).
+- **Testinstanz**: `https://test-cg-ks.church.tools`, Build 32882 wie produktiv, **Lizenz bis 2026-10-22, 21:53** (30 Tage ab Anlage am 2026-09-22, 21:53; T3). Custom Modules dort **nicht freigeschaltet** (T1), angefragt am 2026-09-23. Freigeschaltet wird nach Auskunft vom 2026-09-24 über die Entwickler von ChurchTools, nicht über das Paket; Rückmeldung steht aus. Ein Paketwechsel (etwa auf Combo) ist im Gespräch, dann werden Kalender und Personen der Testinstanz entsprechend reduziert. Die **Produktivinstanz** hat sie (G1).
 - **Autor / Repo**: `wirsindcgks <media@cg-ks.de>`, geplant unter `github.com/wirsindcgks/churchtools-infoscreen`
 - **Lizenz**: GPL-2.0-or-later
 - **Extension-Key**: `infoscreen-cgks` → Auslieferungspfad `/ccm/infoscreen-cgks/`
@@ -311,7 +311,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 4. **Phase 1** – Datenmodell, Repository mit Mock, Terminnormalisierung.
 5. **Phase 2** – Player gegen den Mock.
 
-**Nebenher, fremdbestimmt:** Support-Anfrage nachfassen – Freischaltung der Custom Modules und Verlängerung der Testinstanz. Kommt bis zum Stichtag nichts, Risiko 1 entscheiden.
+**Nebenher, fremdbestimmt:** Rückmeldung der ChurchTools-Entwickler zur Freischaltung abwarten, dazu die Laufzeit der Testinstanz klären. Kommt bis zum Stichtag nichts, Risiko 1 entscheiden.
 
 **Sobald freigeschaltet ist, genau drei Punkte:** Testmodul unter `infoscreen-cgks` hochladen und Rechte vergeben (B6), Typ-Snapshot ziehen (B5), Login-Token am `/ccm/`-Pfad prüfen (G9). G10 nur, wenn es nebenbei geht.
 

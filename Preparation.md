@@ -287,7 +287,7 @@ Früh anstoßen, weil die Antwort nicht von uns abhängt.
 - [ ] **F1 · Support anschreiben** – `support@churchtools.de`
       - ~~Wie widerruft ein Administrator den Login-Token eines Geräts?~~ **Entfällt** – über den
         Passwortwechsel des Geräte-Benutzers (E3/G18), am 2026-09-23 gemessen.
-      - **Zuerst: Custom Modules für die Testinstanz freischalten.** *(angefragt am 2026-09-23, Antwort steht aus)*
+      - **Zuerst: Custom Modules für die Testinstanz freischalten.** *(angefragt am 2026-09-23; laut Auskunft vom 2026-09-24 schalten die Entwickler frei, nicht das Paket – Rückmeldung steht aus)*
         Ohne sie sind B5, B6, C1–C4, E1 und E4 blockiert – siehe T1.
       - **Lässt sich die Testinstanz über die 30 Tage hinaus verlängern?** Wir sind Kunde und
         entwickeln eine Extension; 30 Tage reichen dafür nicht – erst recht nicht, wenn ein Teil davon
