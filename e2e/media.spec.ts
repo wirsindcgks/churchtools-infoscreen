@@ -32,6 +32,21 @@ test('upload an image, place it, and get warned before deleting it', async ({ pa
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
 
+    // The player keeps the image on the device: after the first run it no longer needs the image service.
+    // Chromium only: Playwright's WebKit context is ephemeral like a private window and keeps Cache
+    // Storage in memory; with a persistent profile, as on a kiosk device, WebKit keeps it too (checked by hand).
+    if (info.project.name === 'chromium') {
+        const player = await page.context().newPage();
+        await player.goto('./player?screen=demo');
+        await expect(player.locator('.player img[src^="blob:"]')).toBeVisible({ timeout: 20_000 });
+        await player.route('**/images/**', (route) => route.abort());
+        await player.reload();
+        const cached = player.locator('.player img[src^="blob:"]');
+        await expect(cached).toBeVisible({ timeout: 20_000 });
+        expect(await cached.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+        await player.close();
+    }
+
     // Delete it again: the usage warning appears (accepted above), then the image is gone.
     await page.getByTestId('pick-image').click();
     const mine = page.getByTestId('media-item').filter({ hasText: name });

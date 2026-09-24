@@ -10,6 +10,13 @@ export interface StageContext {
     churchName: string;
     appointments: Appointment[];
     media: Map<string, MediaDoc>;
+    /** Image addresses already on the device (original → blob URL); the player fills it, the designer does not. */
+    images?: Map<string, string>;
+}
+
+/** The local copy of an image if there is one, else its address in ChurchTools. */
+export function imageSource(context: StageContext, url: string): string {
+    return context.images?.get(url) ?? url;
 }
 
 const KEY: InjectionKey<StageContext> = Symbol('stage-context');

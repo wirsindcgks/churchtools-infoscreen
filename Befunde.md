@@ -259,6 +259,11 @@ Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt �
 - **Die Seitenliste hat keine Seitenaufteilung.** `churchtoolsClient.getAllPages` scheitert an `/wiki/categories/{id}/pages`, weil die Antwort keine Paginierungsdaten trägt; ein einfaches `get` liefert alle Seiten.
 - **Der Geräte-Benutzer braucht kein Wiki-Recht.** Die Bilder erreicht er über die `imageUrl`, die ohne Anmeldung trägt (G14). Rechte auf den Wiki-Bereich brauchen nur die Gestalter.
 
+**G28 – Cache Storage trägt Bilder über Neustarts, aber nur mit dauerhaftem Profil.** *(2026-09-24, Playwright mit Chromium und WebKit am Entwicklungsserver, dazu eine Mediathek-Datei der Testinstanz)* Der Player legt jedes Bild beim ersten Durchlauf in Cache Storage ab und zeigt es als `blob:`-Adresse, was die CSP erlaubt (G15). Ein Service Worker ist dafür nicht nötig. In Chromium lädt die Seite nach einem Neuladen mit gesperrtem Bilddienst alle Bilder aus dem Cache. Zwei Einschränkungen gehören dazu:
+
+- **Ein flüchtiger Browserkontext behält nichts.** Der Standardkontext von Playwright-WebKit verhält sich wie ein privates Fenster: Cache Storage lebt nur im Arbeitsspeicher und ist nach dem Neuladen leer, und IndexedDB lehnt Blobs ganz ab. Mit dauerhaftem Profil (`launchPersistentContext`) übersteht der Cache in WebKit Neuladen und Browser-Neustart. **Kiosk-Geräte brauchen ein dauerhaftes Profil**; das gehört in die Einrichtungsdoku, ein Inkognito-Kiosk verliert den Vorteil.
+- **Cache Storage gibt es nur im sicheren Kontext.** Unter `https://` ist das gegeben, im Betrieb also immer. Wo es fehlt, lädt der Player die Bilder wie bisher über das Netz.
+
 ## Teilweise beantwortet
 
 **G16 – Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.

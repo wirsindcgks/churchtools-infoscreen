@@ -19,7 +19,13 @@ export default defineConfig(({ mode }) => {
             sourcemap: false,
         },
         server: {
-            proxy: env.CT_BASE_URL ? { '/api': devProxy(env.CT_BASE_URL, env.CT_LOGIN_TOKEN) } : undefined,
+            proxy: env.CT_BASE_URL
+                ? {
+                      '/api': devProxy(env.CT_BASE_URL, env.CT_LOGIN_TOKEN),
+                      // The image service is anonymous (G14); proxied only because the instance sends no CORS headers.
+                      '/images': devProxy(env.CT_BASE_URL, undefined),
+                  }
+                : undefined,
         },
         test: {
             environment: 'jsdom',

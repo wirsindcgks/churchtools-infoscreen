@@ -1,6 +1,6 @@
 # ChurchTools Infoscreen Designer – Projektplan
 
-Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender Infoscreens gestalten. Das Ergebnis ist eine Webseite, die ein Raspberry Pi im Kioskmodus aufruft und auf den Foyer-TVs anzeigt.
+Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender Infoscreens gestalten. Das Ergebnis ist eine Webseite, die ein Kiosk-Browser aufruft und auf den Foyer-TVs anzeigt – auf einem Raspberry Pi, einem Mini-PC oder in einer VM.
 
 ## Auf einen Blick
 
@@ -47,7 +47,7 @@ ChurchTools-Instanz
 ├── /api/custommodules/…             Screens + Einstellungen (KV-Store)
 └── /api/…                           Termine, Dateien, Gemeindekopf
                      ▲
-                     │ Raspberry Pi (FullPageOS / Chromium Kiosk)
+                     │ Kiosk-Gerät (Raspberry Pi, Mini-PC, VM – Chromium im Kioskmodus)
                      │ ruft /ccm/infoscreen-designer/player?screen=foyer-links&login_token=…&user_id=…
 ```
 
@@ -218,7 +218,7 @@ Für den späteren Zeitplan liegen die Regeln fest, damit das Schema sie tragen 
 - Slide-Rotation; **drei getrennte Intervalle**: Slides (Sekunden), ChurchTools-Daten (Minuten), Screen-Konfiguration (wenige Minuten – sonst sieht niemand seine Änderung, bevor er das Haus verlässt).
 - Anmeldung per Token, `whoami`-Prüfung, leerer Screen = Fehler mit sichtbarer Meldung (F).
 - **Uhrprüfung**: Gerätezeit gegen die Zeit einer API-Antwort; unbestätigt lieber keine Uhr als eine falsche.
-- Letzter erfolgreicher Stand in IndexedDB; Backoff bei Fehlern, `429`/`Retry-After` beachten, zufälliger Versatz im Intervall.
+- Letzter erfolgreicher Stand in IndexedDB, **Bilder in Cache Storage** (nach dem ersten Durchlauf lädt das Gerät sie von der eigenen Platte, G28), Bilder der nächsten Slide vorab dekodiert; Backoff bei Fehlern, `429`/`Retry-After` beachten, zufälliger Versatz im Intervall.
 - Selbstheilung: Neuanmeldung, Neuladen nach wiederholten Fehlern und bei Modul-Ladefehlern, nächtlicher Neustart der Seite.
 - Duldsam gegenüber neueren Daten (E).
 
@@ -244,7 +244,7 @@ In ungefährer Reihenfolge des Nutzens:
 | --- | --- | --- |
 | **0 – Machbarkeit** | Abgeschlossen bis auf G9 und das Hochladen eines leeren Moduls – beides wartet auf die Freischaltung | „Hallo &lt;Vorname&gt;" läuft im echten ChurchTools |
 | **1 – Datenmodell** | Schema Screen → Playlist → Slides → Blöcke, versioniert und duldsam; Slug; KV-Repository mit Mock; Revisionsprüfung. **Dazu die Terminnormalisierung** als eigene Schicht mit Tests gegen die Fixtures (ganztägig, mehrtägig, Zeitzone der Instanz) | Screens lassen sich ohne Oberfläche speichern und laden |
-| **2 – Player** | Blockrendering, Bühne, Rotation, Intervalle, Token-Anmeldung, Uhrprüfung, Offline-Stand | Ein von Hand geschriebener Screen läuft auf dem Pi am Foyer-TV |
+| **2 – Player** | Blockrendering, Bühne, Rotation, Intervalle, Token-Anmeldung, Uhrprüfung, Offline-Stand | Ein von Hand geschriebener Screen läuft auf einem Kiosk-Gerät am Foyer-TV |
 | **3 – Designer** | Editor, Slide-Verwaltung, Blockpalette, Inspektor, Vorschau, Mediathek | Ein Screen mit eigenen Bildern entsteht ohne Entwicklerhilfe |
 | **4 – Betrieb** | Einrichtungsdoku für Geräte-Benutzer und FullPageOS, Release-Workflow | Ein zweiter Screen geht ohne uns in Betrieb |
 
@@ -273,7 +273,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 ## Risiken
 
 1. **Die Freischaltung kommt nicht rechtzeitig.** Die Lizenz der Testinstanz läuft am 2026-10-22 um 21:53 ab, die Anfrage ist unbeantwortet. Bis Phase 2 hält das nichts auf – dann aber muss ein Modul irgendwo laufen. Rückfall ist ein Testmodul unter eigenem Key (`infoscreen-designer-test`) auf der **Produktivinstanz**, das nur in eigene Kategorien schreibt. **Das ist eine Entscheidung, keine Automatik** – nach den Arbeitsregeln wird dort bisher nichts geschrieben.
-2. **Der Pi läuft unbeaufsichtigt.** Speicherlecks, abgelaufene Sitzungen, Netz- und Stromausfälle. Der Player muss von selbst wieder hochkommen. Ohne Service Worker (G10) zeigt ein Pi, der während eines Netzausfalls neu startet, nichts – das ist dann zu benennen, nicht zu übergehen.
+2. **Das Gerät läuft unbeaufsichtigt.** Speicherlecks, abgelaufene Sitzungen, Netz- und Stromausfälle, schwache Hardware. Der Player muss von selbst wieder hochkommen. Daten und Bilder liegen nach dem ersten Durchlauf auf dem Gerät (G28); die Seite selbst aber nicht – ohne Service Worker (G10) zeigt ein Gerät, das während eines Netzausfalls neu startet, nichts. Das ist dann zu benennen, nicht zu übergehen.
 3. **Login-Token auf der SD-Karte.** Tragbar, weil der Rückzugsweg gemessen ist (Passwortwechsel, G18) und das Konto nur liest.
 4. **Stilgrenze zur Hostseite.** Ohne sie hängt das Aussehen der Bühne von ChurchTools-Updates ab – und unsere Stile beschädigen fremde Oberflächen.
 5. **ChurchTools ändert die Extension-Schnittstelle.** Deshalb eine Naht (Repository), nicht KV-Zugriffe quer durch die Anwendung.
@@ -288,9 +288,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 1. ~~**Undo/Redo: Zustand oder Befehle?**~~ – **entschieden am 2026-09-24 für V1: Zustand.** Der Designer führt einen Verlauf von Schnappschüssen der betroffenen Slide, keine umkehrbaren Befehle. Die Werte sind klein (höchstens 10.000 Zeichen), und Schnappschüsse sind mit Pinia einfacher und robuster. Reicht das später nicht mehr, wird neu entschieden.
 2. ~~**MVP-Zuschnitt**~~ – **entschieden am 2026-09-24: wie unter „Funktionsumfang – MVP"**. V1 hat Termine, Bilder, Text, Gemeindekopf und Uhr, eine Playlist je Screen; kein Web-Code-Block, keine Geburtstage, keine Videos. Alles unter „Später" ist ausdrücklich nicht V1.
 
-**Zwingend vor Phase 2 auf dem Pi:**
-
-3. **Hardware.** Wie viele Fernseher, welche Pi-Generation, Auflösung, Ausrichtung, läuft FullPageOS schon?
+3. ~~**Hardware**~~ – **entschieden am 2026-09-24: keine Zielhardware.** Die Extension geht an die Community; dort laufen Raspberry Pis, Mini-PCs und VMs nebeneinander. Der Player setzt deshalb nur einen aktuellen Browser mit **dauerhaftem Profil** voraus und holt nach dem ersten Durchlauf alles Schwere vom Gerät selbst: Konfiguration und Termine aus IndexedDB, Bilder aus Cache Storage, die Bilder der nächsten Slide vorab dekodiert. Ein Test auf schwacher Hardware (ein älterer Pi) bleibt sinnvoll, entscheidet aber nichts mehr vorab.
 
 **Nicht blockierend, aber offen:**
 
@@ -313,7 +311,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 2. ~~**Ablaufdatum der Testinstanz nachsehen**~~ (T3) – **2026-10-22, 21:53.** Das ist der Stichtag für Risiko 1.
 3. ~~**Entwicklungsumgebung**~~ (`Preparation.md` B1–B4) – **erledigt am 2026-09-24**, „Hallo &lt;Vorname&gt;" läuft in Chromium und WebKit.
 4. **Phase 1** – **Kern steht seit dem 2026-09-24**: Schema mit duldsamem Lesen, Repository mit Mock und Revisionsprüfung, Terminnormalisierung samt Zeitzone. Ganztägige Termine sind seit G23 gemessen. Offen: die echte KV-Anbindung gegen eine Instanz prüfen (nach T1).
-5. **Phase 2** – **Player läuft seit dem 2026-09-24 gegen den Mock**, mit echten Terminen der Testinstanz: Bühne mit Letterbox und Overscan, Rotation, Zeitplan-Auswertung, drei Intervalle mit Versatz und Backoff, Zeitlimit je Anfrage, Uhrprüfung über den `Date`-Kopf, letzter Stand in IndexedDB, Neuladen bei neuerem Schema und nachts. Im Designer eine Screen-Liste mit Link in den Player; ohne Custom Modules steht dort in der Entwicklung ein Demo-Screen aus dem Arbeitsspeicher, im Release-Bündel fehlt er. **Offen:** Anmeldung per Token unter `/ccm/` (G9), das Logo im Kopfblock, mitgelieferte Schriften statt Systemschriften, Service Worker (G10) und der Test auf echter Pi-Hardware (Offene Entscheidung 3).
+5. **Phase 2** – **Player läuft seit dem 2026-09-24 gegen den Mock**, mit echten Terminen der Testinstanz: Bühne mit Letterbox und Overscan, Rotation, Zeitplan-Auswertung, drei Intervalle mit Versatz und Backoff, Zeitlimit je Anfrage, Uhrprüfung über den `Date`-Kopf, letzter Stand in IndexedDB, Bilder in Cache Storage mit Vorab-Dekodierung der nächsten Slide, Neuladen bei neuerem Schema und nachts. Im Designer eine Screen-Liste mit Link in den Player; ohne Custom Modules steht dort in der Entwicklung ein Demo-Screen aus dem Arbeitsspeicher, im Release-Bündel fehlt er. **Offen:** Anmeldung per Token unter `/ccm/` (G9), das Logo im Kopfblock, mitgelieferte Schriften statt Systemschriften, Service Worker (G10) und ein Test auf schwacher Hardware (Offene Entscheidung 3).
 6. **Phase 3** – **Editor steht seit dem 2026-09-24**: Screens anlegen (Name, feste Adresse, quer oder hochkant) und löschen; Slides hinzufügen, duplizieren, entfernen, per Ziehen ordnen, Dauer und Hintergrund setzen, abschalten; alle sieben Blocktypen einfügen, auf der Bühne ziehen und an acht Griffen skalieren – mit einblendbarem Raster (10–60 px) zum Einrasten und Hilfslinien an Bühnenmitte, Bühnenrändern und anderen Blöcken, aussetzbar mit der Alt-Taste – im Inspektor gestalten, Kalender wählen, Ebenen ordnen. Rückgängig/Wiederholen als Schnappschüsse des ganzen Screens – ein Ziehen oder ein Feld ist ein Schritt. Speichern mit Revisionsprüfung und Dialog bei Konflikt, Warnung beim Verlassen mit ungespeicherten Änderungen. Die Vorschau nutzt die Komponenten des Players mit Live-Daten. **Im Demo-Modus** (Entwicklung ohne Custom Modules) teilen sich Designer- und Player-Tabs eines Browsers denselben Speicher, und ein offener Player übernimmt Gespeichertes sofort; im Betrieb findet er Änderungen beim nächsten Konfigurationsabruf (Vorgabe 2 Minuten). Nach einer Änderung bleibt der Player auf der gezeigten Slide, statt von vorn zu beginnen. Aussehen nach den Tokens der Hostseite (G25). Die **Mediathek** steht seit demselben Tag: Upload in den Wiki-Bereich „Infoscreen", Bild für Bildblock und Slide-Hintergrund, Löschschutz mit Nennung der Verwendungen. **Offen:** Lesbarkeitswarnung, Vorlagen.
 
 **Nebenher, fremdbestimmt:** Rückmeldung der ChurchTools-Entwickler zur Freischaltung abwarten, dazu die Laufzeit der Testinstanz klären. Kommt bis zum Stichtag nichts, Risiko 1 entscheiden.

@@ -3,9 +3,12 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router';
 import { enableTokenLogin } from '../ct/client';
 import type { MediaDoc, SlideDoc } from '../model/schema';
-import { provideStageContext, type StageContext } from '../player/context';
+import { imageSource, provideStageContext, type StageContext } from '../player/context';
 import { createPlayer } from '../player/controller';
 import { churchToolsPlayerData } from '../player/data';
+import { screenImageUrls, slideImageUrls } from '../player/images';
+import { createMediaCache } from '../player/media-cache';
+import { createPreloader } from '../player/preload';
 import { activePlaylistId } from '../player/schedule';
 import { fitStage } from '../player/stage';
 import SlideView from '../player/SlideView.vue';
@@ -29,8 +32,21 @@ const context = reactive<StageContext>({
     churchName: '',
     appointments: [],
     media: new Map<string, MediaDoc>(),
+    images: new Map<string, string>(),
 });
 provideStageContext(context);
+
+// Every loaded configuration – from the offline copy or fresh – brings its images onto the device.
+const mediaCache = createMediaCache();
+watch(
+    () => state?.screen,
+    async (loaded) => {
+        if (!loaded) return;
+        const stage = loaded.screen.stage;
+        context.images = await mediaCache.sync(screenImageUrls(loaded.slides, loaded.media, stage));
+    },
+    { immediate: true },
+);
 
 watch(
     () => state && [state.timeZone, state.clockConfirmed, state.churchName, state.appointments, state.screen] as const,
@@ -63,6 +79,17 @@ const slides = computed<SlideDoc[]>(() => {
 
 const index = ref(0);
 const current = computed(() => (slides.value.length ? slides.value[index.value % slides.value.length] : null));
+
+const preload = createPreloader();
+watch(
+    [current, () => context.images],
+    () => {
+        const list = slides.value;
+        if (list.length < 2) return;
+        const next = list[(index.value + 1) % list.length];
+        if (next) preload(slideImageUrls(next, context.media, stage.value).map((url) => imageSource(context, url)));
+    },
+);
 
 let rotation: ReturnType<typeof setTimeout> | undefined;
 function scheduleNext(): void {

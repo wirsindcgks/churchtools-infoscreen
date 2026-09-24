@@ -2,9 +2,9 @@
 import { computed } from 'vue';
 import type { SlideDoc } from '../model/schema';
 import BlockView from './blocks/BlockView.vue';
-import { useStageContext } from './context';
+import { imageSource, useStageContext } from './context';
 import { fillStyle } from './fill';
-import { sizedImageUrl } from './format';
+import { backgroundImageUrl } from './images';
 
 const props = defineProps<{ slide: SlideDoc; width: number; height: number }>();
 const context = useStageContext();
@@ -15,7 +15,7 @@ const background = computed(() => {
     const media = context.media.get(bg.mediaId);
     return media
         ? {
-              backgroundImage: `url("${sizedImageUrl(media.imageUrl, props.width, props.height, 'crop')}")`,
+              backgroundImage: `url("${imageSource(context, backgroundImageUrl(media, props))}")`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
           }

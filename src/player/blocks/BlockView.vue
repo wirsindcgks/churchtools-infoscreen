@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Block } from '../../model/schema';
-import { useStageContext } from '../context';
+import { imageSource, useStageContext } from '../context';
 import { fillStyle } from '../fill';
-import { sizedImageUrl, textStyle } from '../format';
+import { textStyle } from '../format';
+import { blockImageUrl } from '../images';
 import AppointmentListView from './AppointmentListView.vue';
 import ClockView from './ClockView.vue';
 import NextAppointmentView from './NextAppointmentView.vue';
@@ -21,7 +22,7 @@ const frame = computed(() => ({
 const imageUrl = computed(() => {
     if (props.block.type !== 'image') return null;
     const media = context.media.get(props.block.mediaId);
-    return media ? sizedImageUrl(media.imageUrl, props.block.width, props.block.height) : null;
+    return media ? imageSource(context, blockImageUrl(media, props.block)) : null;
 });
 </script>
 
