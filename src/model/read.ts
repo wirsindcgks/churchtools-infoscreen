@@ -10,6 +10,7 @@
 import * as v from 'valibot';
 import {
     Block,
+    MediaDoc,
     PlaylistDoc,
     SCHEMA_VERSION,
     ScreenDoc,
@@ -81,6 +82,11 @@ export function readScreen(raw: unknown): ScreenDoc {
     return parseStrict(ScreenDoc, raw, 'screen');
 }
 
+export function readMedia(raw: unknown): MediaDoc {
+    checkVersion(raw);
+    return parseStrict(MediaDoc, raw, 'media');
+}
+
 export function readPlaylist(raw: unknown): PlaylistDoc {
     checkVersion(raw);
     return parseStrict(PlaylistDoc, raw, 'playlist');
@@ -117,7 +123,8 @@ export function readSlide(raw: unknown): ReadResult<SlideDoc> {
  * never matters whether the server would reject or silently truncate (C4).
  */
 export function serialize(doc: AnyDoc): string {
-    const schema = doc.kind === 'screen' ? ScreenDoc : doc.kind === 'playlist' ? PlaylistDoc : SlideDoc;
+    const schemas = { screen: ScreenDoc, playlist: PlaylistDoc, slide: SlideDoc, media: MediaDoc } as const;
+    const schema = schemas[doc.kind];
     const valid = parseStrict(schema, doc, doc.kind);
     const text = JSON.stringify(valid);
     if (text.length > MAX_VALUE_LENGTH) throw new ValueTooLargeError(doc.id, text.length);

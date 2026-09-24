@@ -42,3 +42,19 @@ export async function fetchCurrentPerson(): Promise<Person> {
     const person = await churchtoolsClient.get<Person>('/whoami', { only_allow_authenticated: 'true' });
     return assertAuthenticated(person);
 }
+
+/** HTTP status of a failed client call, if the error carries one. */
+export function httpStatus(error: unknown): number | null {
+    const e = error as { response?: { status?: unknown }; status?: unknown } | null;
+    const status = e?.response?.status ?? e?.status;
+    return typeof status === 'number' ? status : null;
+}
+
+/**
+ * The device logs in with its login token (Plan.md, D). The client signs in
+ * again by itself whenever the session has expired – for a device that runs
+ * for months, that is the point.
+ */
+export function enableTokenLogin(loginToken: string, personId: number): void {
+    churchtoolsClient.setUnauthorizedInterceptor(loginToken, personId);
+}

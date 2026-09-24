@@ -11,6 +11,7 @@
  * not prevented: between reading and writing a window remains (Risiko 6).
  */
 import {
+    readMedia,
     readPlaylist,
     readScreen,
     readSlide,
@@ -18,7 +19,7 @@ import {
     serialize,
     type ReadIssue,
 } from '../model/read';
-import type { AnyDoc, PlaylistDoc, ScreenBundle, ScreenDoc, SlideDoc } from '../model/schema';
+import type { AnyDoc, MediaDoc, PlaylistDoc, ScreenBundle, ScreenDoc, SlideDoc } from '../model/schema';
 import type { KvBackend, KvCategory, KvValue } from './kv';
 
 export const CATEGORIES = {
@@ -60,6 +61,8 @@ export class ConflictError extends Error {
 }
 
 export interface LoadedScreen extends ScreenBundle {
+    /** Media referenced by the slides, for the player to resolve image blocks. */
+    media: MediaDoc[];
     issues: ReadIssue[];
 }
 
@@ -115,7 +118,15 @@ export class ScreenRepository {
             if (!slides.some((s) => s.id === id)) issues.push({ documentId: id, message: 'Slide fehlt.' });
         }
 
-        return { screen, playlists, slides, issues };
+        const mediaIds = new Set(slides.flatMap(referencedMedia));
+        const mediaRead = mediaIds.size ? await this.readAll('media', readMedia) : { docs: [], issues: [] };
+        issues.push(...mediaRead.issues);
+        const media = mediaRead.docs.map((m) => m.doc).filter((m) => mediaIds.has(m.id));
+        for (const id of mediaIds) {
+            if (!media.some((m) => m.id === id)) issues.push({ documentId: id, message: 'Medium fehlt.' });
+        }
+
+        return { screen, playlists, slides, media, issues };
     }
 
     /**
@@ -159,6 +170,17 @@ export class ScreenRepository {
         // Last: until this write succeeds, the old index stays authoritative.
         await this.upsert(ids.screens, existing?.valueId, serialized.screen);
         return screen;
+    }
+
+    async listMedia(): Promise<MediaDoc[]> {
+        return (await this.readAll('media', readMedia)).docs.map((m) => m.doc);
+    }
+
+    async saveMedia(doc: MediaDoc): Promise<void> {
+        const ids = await this.ensureCategories();
+        const text = serialize(doc);
+        const stored = await this.valueIdsById('media');
+        await this.upsert(ids.media, stored.get(doc.id), text);
     }
 
     /** Removes only the index; playlists and slides become orphans for {@link collectOrphans}. */
@@ -211,7 +233,7 @@ export class ScreenRepository {
         else await this.kv.updateValue(categoryId, valueId, text);
     }
 
-    private async valueIdsById(key: 'slides' | 'playlists'): Promise<Map<string, number>> {
+    private async valueIdsById(key: 'slides' | 'playlists' | 'media'): Promise<Map<string, number>> {
         const ids = await this.ensureCategories();
         const values = await this.kv.listValues(ids[key]);
         const map = new Map<string, number>();
@@ -269,6 +291,12 @@ export class ScreenRepository {
         }
         return result;
     }
+}
+
+function referencedMedia(slide: SlideDoc): string[] {
+    const ids = slide.blocks.flatMap((b) => (b.type === 'image' ? [b.mediaId] : []));
+    if (slide.background.kind === 'media') ids.push(slide.background.mediaId);
+    return ids;
 }
 
 function parseId(value: KvValue): string | null {

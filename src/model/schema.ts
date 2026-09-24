@@ -178,6 +178,18 @@ export const ScreenDoc = v.object({
     updatedBy: v.optional(v.string()),
 });
 
+/** A reference to a ChurchTools file – never the file itself (Plan.md, Medien). */
+export const MediaDoc = v.object({
+    ...DocumentBase,
+    kind: v.literal('media'),
+    name: v.pipe(v.string(), v.maxLength(200)),
+    fileId: v.pipe(v.number(), v.integer()),
+    /** Image service address; always requested with both `w` and `h` (G14). */
+    imageUrl: v.pipe(v.string(), v.maxLength(1000)),
+    width: v.optional(PositivePx),
+    height: v.optional(PositivePx),
+});
+
 export type Fill = v.InferOutput<typeof Fill>;
 export type TextStyle = v.InferOutput<typeof TextStyle>;
 export type Block = v.InferOutput<typeof Block>;
@@ -186,7 +198,8 @@ export type SlideDoc = v.InferOutput<typeof SlideDoc>;
 export type PlaylistDoc = v.InferOutput<typeof PlaylistDoc>;
 export type ScreenDoc = v.InferOutput<typeof ScreenDoc>;
 export type ScheduleRule = v.InferOutput<typeof ScheduleRule>;
-export type AnyDoc = ScreenDoc | PlaylistDoc | SlideDoc;
+export type MediaDoc = v.InferOutput<typeof MediaDoc>;
+export type AnyDoc = ScreenDoc | PlaylistDoc | SlideDoc | MediaDoc;
 
 /** Everything that makes up one screen, as the player needs it. */
 export interface ScreenBundle {
