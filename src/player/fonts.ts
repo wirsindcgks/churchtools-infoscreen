@@ -10,30 +10,20 @@
  * Latin and Latin Extended only; and weights 400, 600 and 700 only – the
  * weights the schema allows. A font is downloaded when text first uses it.
  */
-import atkinsonLatin from '@fontsource-variable/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-wght-normal.woff2?url';
-import atkinsonLatinExt from '@fontsource-variable/atkinson-hyperlegible-next/files/atkinson-hyperlegible-next-latin-ext-wght-normal.woff2?url';
 import interLatin from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import interLatinExt from '@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2?url';
 import merriweatherLatin from '@fontsource-variable/merriweather/files/merriweather-latin-wght-normal.woff2?url';
 import merriweatherLatinExt from '@fontsource-variable/merriweather/files/merriweather-latin-ext-wght-normal.woff2?url';
 import montserratLatin from '@fontsource-variable/montserrat/files/montserrat-latin-wght-normal.woff2?url';
 import montserratLatinExt from '@fontsource-variable/montserrat/files/montserrat-latin-ext-wght-normal.woff2?url';
+import openSansLatin from '@fontsource-variable/open-sans/files/open-sans-latin-wght-normal.woff2?url';
+import openSansLatinExt from '@fontsource-variable/open-sans/files/open-sans-latin-ext-wght-normal.woff2?url';
+import oswaldLatin from '@fontsource-variable/oswald/files/oswald-latin-wght-normal.woff2?url';
+import oswaldLatinExt from '@fontsource-variable/oswald/files/oswald-latin-ext-wght-normal.woff2?url';
+import robotoLatin from '@fontsource-variable/roboto/files/roboto-latin-wght-normal.woff2?url';
+import robotoLatinExt from '@fontsource-variable/roboto/files/roboto-latin-ext-wght-normal.woff2?url';
 import sourceSansLatin from '@fontsource-variable/source-sans-3/files/source-sans-3-latin-wght-normal.woff2?url';
 import sourceSansLatinExt from '@fontsource-variable/source-sans-3/files/source-sans-3-latin-ext-wght-normal.woff2?url';
-import sourceSerifLatin from '@fontsource-variable/source-serif-4/files/source-serif-4-latin-wght-normal.woff2?url';
-import sourceSerifLatinExt from '@fontsource-variable/source-serif-4/files/source-serif-4-latin-ext-wght-normal.woff2?url';
-import barlowLatin400 from '@fontsource/barlow/files/barlow-latin-400-normal.woff2?url';
-import barlowLatin600 from '@fontsource/barlow/files/barlow-latin-600-normal.woff2?url';
-import barlowLatin700 from '@fontsource/barlow/files/barlow-latin-700-normal.woff2?url';
-import barlowLatinExt400 from '@fontsource/barlow/files/barlow-latin-ext-400-normal.woff2?url';
-import barlowLatinExt600 from '@fontsource/barlow/files/barlow-latin-ext-600-normal.woff2?url';
-import barlowLatinExt700 from '@fontsource/barlow/files/barlow-latin-ext-700-normal.woff2?url';
-import barlowCondLatin400 from '@fontsource/barlow-condensed/files/barlow-condensed-latin-400-normal.woff2?url';
-import barlowCondLatin600 from '@fontsource/barlow-condensed/files/barlow-condensed-latin-600-normal.woff2?url';
-import barlowCondLatin700 from '@fontsource/barlow-condensed/files/barlow-condensed-latin-700-normal.woff2?url';
-import barlowCondLatinExt400 from '@fontsource/barlow-condensed/files/barlow-condensed-latin-ext-400-normal.woff2?url';
-import barlowCondLatinExt600 from '@fontsource/barlow-condensed/files/barlow-condensed-latin-ext-600-normal.woff2?url';
-import barlowCondLatinExt700 from '@fontsource/barlow-condensed/files/barlow-condensed-latin-ext-700-normal.woff2?url';
 import barlowSemiLatin400 from '@fontsource/barlow-semi-condensed/files/barlow-semi-condensed-latin-400-normal.woff2?url';
 import barlowSemiLatin600 from '@fontsource/barlow-semi-condensed/files/barlow-semi-condensed-latin-600-normal.woff2?url';
 import barlowSemiLatin700 from '@fontsource/barlow-semi-condensed/files/barlow-semi-condensed-latin-700-normal.woff2?url';
@@ -44,6 +34,12 @@ import latoLatin400 from '@fontsource/lato/files/lato-latin-400-normal.woff2?url
 import latoLatin700 from '@fontsource/lato/files/lato-latin-700-normal.woff2?url';
 import latoLatinExt400 from '@fontsource/lato/files/lato-latin-ext-400-normal.woff2?url';
 import latoLatinExt700 from '@fontsource/lato/files/lato-latin-ext-700-normal.woff2?url';
+import poppinsLatin400 from '@fontsource/poppins/files/poppins-latin-400-normal.woff2?url';
+import poppinsLatin600 from '@fontsource/poppins/files/poppins-latin-600-normal.woff2?url';
+import poppinsLatin700 from '@fontsource/poppins/files/poppins-latin-700-normal.woff2?url';
+import poppinsLatinExt400 from '@fontsource/poppins/files/poppins-latin-ext-400-normal.woff2?url';
+import poppinsLatinExt600 from '@fontsource/poppins/files/poppins-latin-ext-600-normal.woff2?url';
+import poppinsLatinExt700 from '@fontsource/poppins/files/poppins-latin-ext-700-normal.woff2?url';
 
 /** Unicode ranges of the two subsets, as Fontsource and Google Fonts cut them. */
 const RANGES = {
@@ -80,7 +76,11 @@ const statics = (files: Record<string, [latin: string, latinExt: string]>): Face
         { url: latinExt, weight, subset: 'latin-ext' as const },
     ]);
 
-/** In the order the designer offers them. */
+/**
+ * Chosen on 2026-09-24: the most used open fonts of the Web Almanac 2024
+ * (Latin, without icon fonts), plus Barlow Semi Condensed and one serif font.
+ * Lato first as the default, then alphabetical.
+ */
 export const FONTS: FontDef[] = [
     {
         key: 'lato',
@@ -89,27 +89,6 @@ export const FONTS: FontDef[] = [
         generic: 'sans-serif',
         // No semibold: 600 renders as 700, as in ChurchTools itself.
         faces: statics({ 400: [latoLatin400, latoLatinExt400], 700: [latoLatin700, latoLatinExt700] }),
-    },
-    {
-        key: 'atkinson-hyperlegible-next',
-        label: 'Atkinson Hyperlegible Next',
-        family: 'ISD Atkinson Hyperlegible Next',
-        generic: 'sans-serif',
-        faces: variable('200 800', atkinsonLatin, atkinsonLatinExt),
-    },
-    {
-        key: 'inter',
-        label: 'Inter',
-        family: 'ISD Inter',
-        generic: 'sans-serif',
-        faces: variable('100 900', interLatin, interLatinExt),
-    },
-    {
-        key: 'source-sans-3',
-        label: 'Source Sans 3',
-        family: 'ISD Source Sans 3',
-        generic: 'sans-serif',
-        faces: variable('200 900', sourceSansLatin, sourceSansLatinExt),
     },
     {
         key: 'barlow-semi-condensed',
@@ -123,26 +102,18 @@ export const FONTS: FontDef[] = [
         }),
     },
     {
-        key: 'barlow',
-        label: 'Barlow',
-        family: 'ISD Barlow',
+        key: 'inter',
+        label: 'Inter',
+        family: 'ISD Inter',
         generic: 'sans-serif',
-        faces: statics({
-            400: [barlowLatin400, barlowLatinExt400],
-            600: [barlowLatin600, barlowLatinExt600],
-            700: [barlowLatin700, barlowLatinExt700],
-        }),
+        faces: variable('100 900', interLatin, interLatinExt),
     },
     {
-        key: 'barlow-condensed',
-        label: 'Barlow Condensed',
-        family: 'ISD Barlow Condensed',
-        generic: 'sans-serif',
-        faces: statics({
-            400: [barlowCondLatin400, barlowCondLatinExt400],
-            600: [barlowCondLatin600, barlowCondLatinExt600],
-            700: [barlowCondLatin700, barlowCondLatinExt700],
-        }),
+        key: 'merriweather',
+        label: 'Merriweather',
+        family: 'ISD Merriweather',
+        generic: 'serif',
+        faces: variable('300 900', merriweatherLatin, merriweatherLatinExt),
     },
     {
         key: 'montserrat',
@@ -152,18 +123,43 @@ export const FONTS: FontDef[] = [
         faces: variable('100 900', montserratLatin, montserratLatinExt),
     },
     {
-        key: 'source-serif-4',
-        label: 'Source Serif 4',
-        family: 'ISD Source Serif 4',
-        generic: 'serif',
-        faces: variable('200 900', sourceSerifLatin, sourceSerifLatinExt),
+        key: 'open-sans',
+        label: 'Open Sans',
+        family: 'ISD Open Sans',
+        generic: 'sans-serif',
+        faces: variable('300 800', openSansLatin, openSansLatinExt),
     },
     {
-        key: 'merriweather',
-        label: 'Merriweather',
-        family: 'ISD Merriweather',
-        generic: 'serif',
-        faces: variable('300 900', merriweatherLatin, merriweatherLatinExt),
+        key: 'oswald',
+        label: 'Oswald',
+        family: 'ISD Oswald',
+        generic: 'sans-serif',
+        faces: variable('200 700', oswaldLatin, oswaldLatinExt),
+    },
+    {
+        key: 'poppins',
+        label: 'Poppins',
+        family: 'ISD Poppins',
+        generic: 'sans-serif',
+        faces: statics({
+            400: [poppinsLatin400, poppinsLatinExt400],
+            600: [poppinsLatin600, poppinsLatinExt600],
+            700: [poppinsLatin700, poppinsLatinExt700],
+        }),
+    },
+    {
+        key: 'roboto',
+        label: 'Roboto',
+        family: 'ISD Roboto',
+        generic: 'sans-serif',
+        faces: variable('100 900', robotoLatin, robotoLatinExt),
+    },
+    {
+        key: 'source-sans-3',
+        label: 'Source Sans 3',
+        family: 'ISD Source Sans 3',
+        generic: 'sans-serif',
+        faces: variable('200 900', sourceSansLatin, sourceSansLatinExt),
     },
 ];
 
@@ -171,7 +167,7 @@ export const FONTS: FontDef[] = [
 export const DEFAULT_FONT = 'lato';
 
 /** Keys of schema 1.0, when the stage still used system fonts. Saved screens keep working. */
-const ALIASES: Record<string, string> = { sans: 'lato', serif: 'source-serif-4', mono: 'lato' };
+const ALIASES: Record<string, string> = { sans: 'lato', serif: 'merriweather', mono: 'lato' };
 
 export function fontDef(key: string): FontDef {
     const resolved = ALIASES[key] ?? key;

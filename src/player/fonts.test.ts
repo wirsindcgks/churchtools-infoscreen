@@ -11,11 +11,17 @@ describe('fonts', () => {
 
     it('uses the ChurchTools font for new blocks, as the built-in info screen does', () => {
         expect(fontDef(DEFAULT_FONT).label).toBe('Lato');
+        expect(FONTS[0]?.key).toBe(DEFAULT_FONT);
+    });
+
+    it('lists the others alphabetically after the default', () => {
+        const rest = FONTS.slice(1).map((f) => f.label);
+        expect(rest).toEqual([...rest].sort((a, b) => a.localeCompare(b, 'de')));
     });
 
     it('keeps screens of schema 1.0 readable: the old keys point to bundled fonts', () => {
         expect(fontDef('sans').key).toBe('lato');
-        expect(fontDef('serif').key).toBe('source-serif-4');
+        expect(fontDef('serif').key).toBe('merriweather');
         expect(fontDef('mono').key).toBe('lato');
     });
 
