@@ -292,12 +292,12 @@ Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt �
 
 ## Teilweise beantwortet
 
-**G34 – Gruppen lassen sich per API anlegen und restlos entfernen; das Setzen von Rechten ist ungemessen.** *(2026-09-24, Testinstanz, Schreibzugriffe mit Freigabe des Nutzers: Testgruppe „ISD-Test" angelegt und wieder gelöscht)*
+**G34 – Gruppen und Rollenrechte lassen sich per API anlegen und restlos entfernen.** *(2026-09-24, Testinstanz, Schreibzugriffe mit Freigabe des Nutzers: Testgruppe „ISD-Test" angelegt und wieder gelöscht)*
 
 - **`POST /api/groups`** mit `{"name", "groupTypeId", "groupStatusId": 1}` antwortet `201`; die Rollen legt ChurchTools nach dem Gruppentyp selbst an – beim Typ „Merkmal" (hier id 4) „Teilnehmer" (Standardrolle) und „Leiter". Gruppentypen und ihre Namen sind je Instanz anpassbar; ein Assistent sucht sie über `GET /api/group/grouptypes`, nicht über eine feste id.
 - **`PUT /api/groups/{id}/members/{personId}`** mit `{"groupTypeRoleId", "groupMemberStatus": "active"}` nimmt auf (`200`), `DELETE` entfernt (`204`).
 - **`DELETE /api/groups/{id}?dry_run=true`** listet Verweise und `deletionBlockers`, ohne zu löschen; ohne den Parameter löscht es (`204`, danach `404`). Ein Rückweg für einen Assistenten ist damit gemessen.
-- **Nicht gemessen: `PUT /api/permissions/group_role/{id}`.** Der Versuch, einer Rolle der Testgruppe ein Recht zu geben, wurde in der Agenten-Sitzung von deren Sicherheitsprüfung blockiert („Permission Grant") – es wurde kein Recht gesetzt. Offen bleiben damit: ob ein weggelassenes `dataId` wirklich „alle Kategorien" bedeutet (so die Spezifikation) und ob das Recht beim Mitglied ankommt.
+- **`PUT /api/permissions/group_role/{id}` trägt – gemessen am 2026-09-24 durch den Einrichtungsassistenten, ausgelöst vom Nutzer auf der Testinstanz.** Beide Gruppen („Infoscreen-Designer" 25, „Infoscreen-Devices" 28) tragen danach an beiden Rollen genau die geplanten Rechte; ein `dataId`-Array wird zu je einem Eintrag pro id, ein Recht ohne `dataId` steht mit `dataId: null`. Ob ein weggelassenes `dataId` bei Datenrechten „alle Kategorien" bedeutet, bleibt ungeprüft – der Assistent vergibt die Kategorien einzeln. Ebenfalls noch offen: ob die Rechte beim Mitglied ankommen (die Designer-Gruppe war beim Nachsehen leer). Ein Versuch des Agenten selbst war zuvor von der Sicherheitsprüfung seiner Sitzung blockiert worden.
 
 
 **G33 – Installiert, aber ohne Modulrecht unsichtbar – auch für den Administrator.** *(2026-09-24, Testinstanz direkt nach dem Hochladen der Extension durch den Nutzer, nur lesend)*
