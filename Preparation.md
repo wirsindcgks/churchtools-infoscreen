@@ -213,7 +213,7 @@ Setzt B6 voraus. Diese vier Punkte entscheiden über den Zuschnitt des Datenmode
       `POST /files/{domainType}/{domainIdentifier}/link` für externe Adressen.
       **Nicht zu prüfen: `appointment_image` als Ablage.** Geprüft und verworfen – es bräuchte Trägertermine,
       die im Kalender, in der App und auf der Gemeindeseite auftauchen (Begründung in `Plan.md`, G8).
-      Ergebnis entscheidet über **Offene Entscheidung 5** – ob „nur externe URLs" ein tragfähiger MVP ist.
+      Die Frage, ob „nur externe URLs" ein tragfähiger MVP wäre, ist damit **gestrichen** (2026-09-24).
 
 - [ ] **D4 · Aufräumen** – **nur auf der Produktivinstanz**
       Dort entfernen Testdateien und Test-Wiki-Kategorie wieder; Uploads erzeugen echte Inhalte.
@@ -247,7 +247,7 @@ Hardware, nicht an der Instanz, und kann warten.
       sonst scheitert `POST /api/login/token` unabhängig vom Passwort. `POST /api/persons` verlangt außerdem
       `departmentIds` (nicht leer), `campusId` und eine vollständige Datenschutz-Einwilligung; Personen werden mit
       **`PATCH`** geändert, nicht mit `PUT` (405).
-      **Offener Rest**, alles klein: die Haken an Rolle 124 in der Oberfläche setzen (trennt endlich `authId` 306 von 403),
+      **Offener Rest – geparkt am 2026-09-24**, gehört in die Einrichtungsdoku (Phase 4), nicht vor den Bau: die Haken an Rolle 124 in der Oberfläche setzen (trennt endlich `authId` 306 von 403),
       ein Testbeitrag für den Newsblock, Archivieren als zweite Notbremse. Die Modulrechte bleiben an T1 gebunden.
 
 - [x] **E3 · Rückzugsweg** → **beantwortet** *(2026-09-23, siehe `Plan.md`, G18)*
@@ -279,7 +279,7 @@ Hardware, nicht an der Instanz, und kann warten.
 
 - [ ] **E5 · Auf der echten Hardware ansehen**
       Pi-Generation, Auflösung, Ausrichtung, Overscan, FullPageOS-Stand. Entscheidet über
-      **Offene Entscheidung 1** und darüber, ob Videos überhaupt in Frage kommen.
+      **Offene Entscheidung 3** (Hardware) und darüber, ob Videos überhaupt in Frage kommen.
 
 ## F. Auskünfte einholen (Laufzeit: Tage)
 
@@ -300,7 +300,7 @@ Früh anstoßen, weil die Antwort nicht von uns abhängt.
 
 - [ ] **F2 · Lukas Block (`lubl`) im Forum ansprechen**
       Nicht zu Fragen, die sein Code beantwortet, sondern zu G8, G10 und zur Idee einer gemeinsamen
-      `ct-utils`-Bibliothek (**Offene Entscheidung 10**).
+      `ct-utils`-Bibliothek. **Geparkt am 2026-09-24** – die gemeinsame Bibliothek ist aus dem Plan gestrichen.
 
 - [ ] **F3 · `bensteUEM/ct-events-load` lesen**
       Besonders `src/persistance.ts` und die Terminbehandlung – vor der ersten Zeile Bindungscode in Phase 4.

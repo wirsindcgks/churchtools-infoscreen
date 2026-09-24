@@ -69,9 +69,9 @@ Kein `iframe`, kein eigenes Dokument, kein eigener Ursprung. Das Modul erscheint
 
 Vier Folgen, bisher vorgesehen, jetzt belegt:
 
-1. **Die Stile gehen in beide Richtungen** – siehe Abschnitt C. Die Hostseite deklariert `@layer theme, base, oldcss, components, utilities`; ungeschichtetes CSS schlägt geschichtetes, die Bühne gewinnt also ohne `!important`. ChurchTools legt zudem ein globales Vuetify-Theme als `:root`-Variablensatz an – Variablennamen, die wir nicht benutzen dürfen.
+1. **Die Stile gehen in beide Richtungen** – siehe `Plan.md`, „Architektur“. Die Hostseite deklariert `@layer theme, base, oldcss, components, utilities`; ungeschichtetes CSS schlägt geschichtetes, die Bühne gewinnt also ohne `!important`. ChurchTools legt zudem ein globales Vuetify-Theme als `:root`-Variablensatz an – Variablennamen, die wir nicht benutzen dürfen.
 2. **Der Player bekommt die Fläche nicht geschenkt.** Er rendert im Inhaltsbereich unterhalb der Navigation; der Kiosk-Modus wird damit Fallback (a), `position: fixed; inset: 0` über den gesamten Viewport.
-3. **Die Asset-Namen tragen einen Build-Hash** (`index-BtWd1lCL.js`). Risiko 9 ist damit keine Theorie: Nach einem Upload zeigt ein wochenlang offener Kiosk-Tab auf Dateien, die es nicht mehr gibt. Ein Bündel ohne Code-Splitting bleibt Vorgabe.
+3. **Die Asset-Namen tragen einen Build-Hash** (`index-BtWd1lCL.js`). Risiko 7 in `Plan.md` ist damit keine Theorie: Nach einem Upload zeigt ein wochenlang offener Kiosk-Tab auf Dateien, die es nicht mehr gibt. Ein Bündel ohne Code-Splitting bleibt Vorgabe.
 4. **Die Einstellungen liegen im Dokument**, als JSON in `<script type="application/json" id="ct-settings-json">`: `base_url`, `files_url`, `csrfToken`, `version`/`jsversion`, die `modules`-Liste, das vollständige `auth`-Objekt (siehe G4) und der angemeldete Benutzer. Der Player kann das lesen, statt zu fragen – aber nur, solange ChurchTools die Seite baut, und **nicht für die Rechte**: Die Kopie im Dokument ist beschnitten und anders kodiert als die API-Antwort (siehe G4). Die Anmeldung des Pi (G9) ersetzt sie ohnehin nicht.
 
 **G7 – Unbekannte Unterpfade fallen auf die Modulseite zurück.** *(2026-09-22, `/ccm/ctpassstore/pasword` – ein Pfad, den das Modul nicht kennt)* Die Seite kommt: ChurchTools-Navigation, Modul-Seitenleiste, leerer Inhaltsbereich. ChurchTools liefert für den unbekannten Pfad also die `index.html` der Extension aus, statt einen eigenen 404 zu zeigen. **Echte History-Routen sind damit möglich** – der Player darf auf `…/ccm/infoscreen-cgks/player?screen=foyer-links` neu laden.
@@ -122,8 +122,8 @@ Fünf Folgen, zwei davon Vorgaben und keine Hinweise:
 
 1. **`script-src` kennt kein `'unsafe-inline'`.** Inline-Skripte brauchen den Nonce, den ChurchTools vergibt und den unser Build nicht kennt. **Der Vite-Build darf deshalb kein Inline-Skript ausliefern** – der Modulepreload-Polyfill ist eines. Das ist eine harte Build-Vorgabe und gehört neben „kein Code-Splitting" (G6) in die Konventionen.
 2. **`style-src` erlaubt `'unsafe-inline'`.** Die dynamischen Block-Stile des Designers und die des Vite-Builds laufen. Der heikle Teil war ohnehin die Schichtung (G6), nicht die CSP.
-3. **`img-src *`** – externe Bilder sind erlaubt. Das stützt die Rückfallposition aus **Offene Entscheidung 6**.
-4. **Kein `media-src`** – es fällt auf `default-src 'self'` zurück: **Externe Videos sind blockiert.** Bilder von überall, Videos nur von der eigenen Domain. Diese Asymmetrie trifft Offene Entscheidung 6 und 9 unmittelbar: „nur externe URLs" trägt für Bilder, für Videos nicht.
+3. **`img-src *`** – externe Bilder sind erlaubt. Das stützt die Rückfallposition „externe URL“ (`Plan.md`, „Medien“).
+4. **Kein `media-src`** – es fällt auf `default-src 'self'` zurück: **Externe Videos sind blockiert.** Bilder von überall, Videos nur von der eigenen Domain. Diese Asymmetrie trifft die Rückfallposition und die Videofrage unmittelbar: „nur externe URLs" trägt für Bilder, für Videos nicht.
 5. **`child-src *`** – Sandbox-`iframe`s und eingebettete Fremdseiten sind erlaubt. Aber ein `srcdoc`-Rahmen **erbt die CSP des Elterndokuments**. Fremdcode mit Inline-Skript läuft darin also nicht, gleichgültig wie die Sandbox gesetzt ist. Für den Web-Code-Block heißt das: entweder er lädt aus einer Datei gleicher Herkunft, oder er beschränkt sich auf das, was ohne Inline-Skript auskommt.
 
 Die Nebenfrage – ob wir dem Sandbox-Rahmen selbst eine CSP per `<meta http-equiv>` mitgeben – bleibt eine Entscheidung, ist aber entschärft: Die geerbte Policy ist bereits enger als das, was wir vermutlich gesetzt hätten.
@@ -270,7 +270,7 @@ Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit
 
 **G9 – Wie verhält sich `login_token` in der URL bei einem Custom Module?** Beim nativen Infoscreen erprobt, für `/ccm/`-Pfade ungeprüft. `ct-pass-store` hilft hier nicht: Es benutzt Tokens gegenüber seinem eigenen Backend, nicht zur Anmeldung einer Seite. **Doppelt blockiert seit dem 2026-09-23:** Es fehlt das Custom Module (T1) *und* ein Token, an den ein Administrator regulär herankommt (**G18**).
 
-**G10 – Darf unter `/ccm/<key>/` ein Service Worker registriert werden?** Entscheidet, ob Offline-Festigkeit vollständig erreichbar ist oder nur halb: IndexedDB sichert die Daten, aber nicht die eigenen Assets und nicht die Bilder. Ohne Service Worker zeigt ein Pi, der während eines Netzausfalls neu startet, einen weißen Bildschirm – genau der Fall aus Risiko 4. Zu prüfen sind Scope, MIME-Typ und ob ChurchTools den Pfad umschreibt.
+**G10 – Darf unter `/ccm/<key>/` ein Service Worker registriert werden?** Entscheidet, ob Offline-Festigkeit vollständig erreichbar ist oder nur halb: IndexedDB sichert die Daten, aber nicht die eigenen Assets und nicht die Bilder. Ohne Service Worker zeigt ein Pi, der während eines Netzausfalls neu startet, einen weißen Bildschirm – genau der Fall aus Risiko 2 in `Plan.md`. Zu prüfen sind Scope, MIME-Typ und ob ChurchTools den Pfad umschreibt.
 
 **G12 – Wird das JSON Schema einer Kategorie serverseitig durchgesetzt?** Entscheidet, ob wir ein vollständiges Schema hinterlegen müssen (und dann an 2.000 Zeichen scheitern) oder ein permissives genügt. Siehe Abschnitt E.
 
