@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G31 sind beantwortet, G16, G21, G32 und G33 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G31 sind beantwortet, G16, G21, G32, G33 und G34 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -291,6 +291,14 @@ Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt �
 - **Die Spezifikation enthält als Administrator weiterhin keinen `/custommodules`-Pfad** (497 Pfade, wie vor der Freischaltung), obwohl die Route selbst antwortet. Sie ist also nicht allein nach dem Feature gefiltert. Der Typ-Snapshot (B5) wartet deshalb weiter – vermutlich bis ein Modul installiert ist; das ist zu prüfen.
 
 ## Teilweise beantwortet
+
+**G34 – Gruppen lassen sich per API anlegen und restlos entfernen; das Setzen von Rechten ist ungemessen.** *(2026-09-24, Testinstanz, Schreibzugriffe mit Freigabe des Nutzers: Testgruppe „ISD-Test" angelegt und wieder gelöscht)*
+
+- **`POST /api/groups`** mit `{"name", "groupTypeId", "groupStatusId": 1}` antwortet `201`; die Rollen legt ChurchTools nach dem Gruppentyp selbst an – beim Typ „Merkmal" (hier id 4) „Teilnehmer" (Standardrolle) und „Leiter". Gruppentypen und ihre Namen sind je Instanz anpassbar; ein Assistent sucht sie über `GET /api/group/grouptypes`, nicht über eine feste id.
+- **`PUT /api/groups/{id}/members/{personId}`** mit `{"groupTypeRoleId", "groupMemberStatus": "active"}` nimmt auf (`200`), `DELETE` entfernt (`204`).
+- **`DELETE /api/groups/{id}?dry_run=true`** listet Verweise und `deletionBlockers`, ohne zu löschen; ohne den Parameter löscht es (`204`, danach `404`). Ein Rückweg für einen Assistenten ist damit gemessen.
+- **Nicht gemessen: `PUT /api/permissions/group_role/{id}`.** Der Versuch, einer Rolle der Testgruppe ein Recht zu geben, wurde in der Agenten-Sitzung von deren Sicherheitsprüfung blockiert („Permission Grant") – es wurde kein Recht gesetzt. Offen bleiben damit: ob ein weggelassenes `dataId` wirklich „alle Kategorien" bedeutet (so die Spezifikation) und ob das Recht beim Mitglied ankommt.
+
 
 **G33 – Installiert, aber ohne Modulrecht unsichtbar – auch für den Administrator.** *(2026-09-24, Testinstanz direkt nach dem Hochladen der Extension durch den Nutzer, nur lesend)*
 
