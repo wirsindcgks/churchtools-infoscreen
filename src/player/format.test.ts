@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fontStack, formatDate, formatShortDate, formatTime, sizedImageUrl } from './format';
+import { formatDate, formatShortDate, formatTime, sizedImageUrl } from './format';
 
 describe('sizedImageUrl', () => {
     it('always sets both dimensions, because w alone yields a 150 px high image (G14)', () => {
@@ -21,9 +21,5 @@ describe('German formatting in the instance time zone', () => {
         expect(formatTime(service, 'Europe/Berlin')).toBe('11:00');
         expect(formatDate(service, 'Europe/Berlin')).toBe('Sonntag, 25. Oktober');
         expect(formatShortDate(service, 'Europe/Berlin')).toBe('So., 25.10.');
-    });
-
-    it('falls back to the default font for unknown keys', () => {
-        expect(fontStack('comic')).toBe(fontStack('sans'));
     });
 });

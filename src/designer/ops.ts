@@ -8,6 +8,7 @@ import {
     type SlideDoc,
     type TextStyle,
 } from '../model/schema';
+import { DEFAULT_FONT } from '../player/fonts';
 
 /** Deep copy of plain JSON data; unlike structuredClone it also accepts Vue proxies. */
 export function cloneJson<T>(value: T): T {
@@ -84,7 +85,7 @@ export function duplicateSlide(slide: SlideDoc): SlideDoc {
 }
 
 const style = (fontSize: number, extra: Partial<TextStyle> = {}): TextStyle => ({
-    fontFamily: 'sans',
+    fontFamily: DEFAULT_FONT,
     fontSize,
     fontWeight: 400,
     color: '#ffffff',

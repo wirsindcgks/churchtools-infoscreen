@@ -89,3 +89,26 @@ test('the header block shows the church logo in the size of the block (G29)', as
     await expect.poll(() => logo.evaluate((img: HTMLImageElement) => img.naturalHeight)).toBe(90);
     await page.screenshot({ path: 'test-results/editor-logo.png' });
 });
+
+test('a chosen font comes from the own server, and nothing else is asked for (data protection)', async ({ page }) => {
+    const foreign: string[] = [];
+    const fonts: string[] = [];
+    page.on('request', (request) => {
+        const url = new URL(request.url());
+        if (url.hostname !== 'localhost') foreign.push(url.hostname);
+        if (url.pathname.endsWith('.woff2')) fonts.push(url.pathname);
+    });
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await page.getByTestId('frame-text').first().click();
+    await expect(page.getByTestId('text-input')).toHaveValue('Herzlich willkommen!');
+    await page.getByTestId('font-family').selectOption('barlow-semi-condensed');
+    const title = page.locator('.editor-stage .block--text').filter({ hasText: 'Herzlich willkommen!' });
+    // WebKit reports the name without quotes.
+    await expect(title.locator('.text')).toHaveCSS('font-family', /^"?ISD Barlow Semi Condensed"?, sans-serif$/);
+    await expect.poll(() => page.evaluate(() => document.fonts.check('700 64px "ISD Barlow Semi Condensed"'))).toBe(true);
+    expect(fonts.some((f) => f.includes('barlow-semi-condensed'))).toBe(true);
+    expect(foreign).toEqual([]);
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: 'test-results/editor-font.png' });
+});

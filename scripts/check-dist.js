@@ -40,7 +40,20 @@ for (const file of files.filter((f) => /\.(js|css|html)$/.test(f))) {
     }
 }
 
-// 4. No demo mode: it exists for development without Custom Modules only.
+// 4. Fonts only from the own bundle: a font service would learn of every device and designer (data protection).
+const fontServices = /fonts\.(googleapis|gstatic)\.com|use\.typekit\.net|fonts\.bunny\.net/i;
+const remoteFontFace = /@font-face\s*{[^}]*url\(\s*['"]?(https?:)?\/\//i;
+for (const file of files.filter((f) => /\.(js|css|html)$/.test(f))) {
+    const content = fs.readFileSync(file, 'utf8');
+    const hit = content.match(fontServices)?.[0] ?? (remoteFontFace.test(content) && '@font-face with a remote url');
+    if (hit) failures.push(`external font source "${hit}" in ${path.relative(dist, file)}`);
+}
+const fontFiles = files.filter((f) => /\.(woff2?|ttf|otf)$/.test(f));
+if (fontFiles.length && !files.some((f) => f.includes(`${path.sep}licenses${path.sep}`))) {
+    failures.push(`${fontFiles.length} font files but no licence texts (SIL OFL)`);
+}
+
+// 5. No demo mode: it exists for development without Custom Modules only.
 for (const file of scripts) {
     if (fs.readFileSync(file, 'utf8').includes('infoscreen-designer.demo')) {
         failures.push(`demo store code in ${path.relative(dist, file)}`);
@@ -51,4 +64,7 @@ if (failures.length) {
     console.error('dist check failed:\n  - ' + failures.join('\n  - '));
     process.exit(1);
 }
-console.log(`dist check passed (${files.length} files, one bundle, no inline script, no instance address, no demo)`);
+console.log(
+    `dist check passed (${files.length} files, one bundle, no inline script, no instance address, ` +
+        `${fontFiles.length} local font files with licences, no demo)`,
+);

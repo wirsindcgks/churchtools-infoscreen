@@ -4,12 +4,13 @@
  * instance through the dev proxy.
  */
 import { SCHEMA_VERSION, type Block, type ScreenBundle, type TextStyle } from '../model/schema';
+import { DEFAULT_FONT } from '../player/fonts';
 import type { ScreenRepository } from '../store/screen-repository';
 
 const schema = { ...SCHEMA_VERSION };
 
 const white = (fontSize: number, extra: Partial<TextStyle> = {}): TextStyle => ({
-    fontFamily: 'sans',
+    fontFamily: DEFAULT_FONT,
     fontSize,
     fontWeight: 400,
     color: '#ffffff',

@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import type { Calendar } from '../ct/api';
 import type { Block, Fill, TextStyle } from '../model/schema';
+import { fontDef, FONTS } from '../player/fonts';
 import { sizedImageUrl } from '../player/format';
 import { useEditorStore } from './editor-store';
 import FillEditor from './FillEditor.vue';
@@ -55,11 +56,6 @@ const slideFill = computed<Fill>(() =>
     slide.value && slide.value.background.kind !== 'media' ? slide.value.background : { kind: 'solid', color: '#000000' },
 );
 
-const FONTS = [
-    { key: 'sans', label: 'Serifenlos' },
-    { key: 'serif', label: 'Serif' },
-    { key: 'mono', label: 'Festbreite' },
-];
 </script>
 
 <template>
@@ -225,13 +221,16 @@ const FONTS = [
             <fieldset v-if="'style' in block">
                 <legend>Schrift</legend>
                 <div class="grid2">
-                    <label class="d-field">
+                    <label class="d-field wide">
                         Schriftart
                         <select
-                            :value="block.style.fontFamily"
+                            data-testid="font-family"
+                            :value="fontDef(block.style.fontFamily).key"
                             @change="setStyle({ fontFamily: ($event.target as HTMLSelectElement).value })"
                         >
-                            <option v-for="f in FONTS" :key="f.key" :value="f.key">{{ f.label }}</option>
+                            <option v-for="f in FONTS" :key="f.key" :value="f.key" :style="{ fontFamily: `'${f.family}'` }">
+                                {{ f.label }}
+                            </option>
                         </select>
                     </label>
                     <label class="d-field">
@@ -434,6 +433,9 @@ legend {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     align-items: end;
+}
+.grid2 .wide {
+    grid-column: 1 / -1;
 }
 .grid4 {
     display: grid;

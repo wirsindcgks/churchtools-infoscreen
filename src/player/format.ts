@@ -1,19 +1,6 @@
 /** Display helpers for the stage: fonts, image addresses, German dates. */
 import type { TextStyle } from '../model/schema';
-
-/**
- * Closed list of font keys (Plan.md, Architektur). System stacks for now;
- * bundled free fonts replace them before release – never a web font URL.
- */
-const FONT_STACKS: Record<string, string> = {
-    sans: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-    serif: 'Georgia, "Times New Roman", serif',
-    mono: 'ui-monospace, "SF Mono", Menlo, Consolas, monospace',
-};
-
-export function fontStack(key: string): string {
-    return FONT_STACKS[key] ?? FONT_STACKS.sans!;
-}
+import { fontStack } from './fonts';
 
 export function textStyle(style: TextStyle): Record<string, string> {
     return {

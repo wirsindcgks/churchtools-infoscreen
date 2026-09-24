@@ -1,5 +1,6 @@
 /// <reference types="vitest/config" />
-import { defineConfig, loadEnv, type ProxyOptions } from 'vite';
+import fs from 'node:fs';
+import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
 const EXTENSION_KEY = 'infoscreen-designer';
@@ -12,7 +13,7 @@ export default defineConfig(({ mode }) => {
 
     return {
         base: `/ccm/${key}/`,
-        plugins: [vue()],
+        plugins: [vue(), fontLicenses()],
         build: {
             // The ChurchTools CSP forbids inline scripts (G15); the polyfill is one.
             modulePreload: { polyfill: false },
@@ -35,6 +36,29 @@ export default defineConfig(({ mode }) => {
         },
     };
 });
+
+/**
+ * The SIL Open Font License asks for its text to travel with the fonts:
+ * every bundled font package leaves its LICENSE under licenses/ in dist.
+ */
+function fontLicenses(): Plugin {
+    return {
+        name: 'font-licenses',
+        apply: 'build',
+        generateBundle() {
+            const { dependencies } = JSON.parse(fs.readFileSync('package.json', 'utf8')) as {
+                dependencies: Record<string, string>;
+            };
+            for (const name of Object.keys(dependencies).filter((d) => d.startsWith('@fontsource'))) {
+                this.emitFile({
+                    type: 'asset',
+                    fileName: `licenses/${name.slice(1).replace('/', '-')}.txt`,
+                    source: fs.readFileSync(`node_modules/${name}/LICENSE`, 'utf8'),
+                });
+            }
+        },
+    };
+}
 
 /**
  * Forwards /api to the test instance and authenticates there with the login
