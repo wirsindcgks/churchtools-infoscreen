@@ -318,7 +318,8 @@ bevor das Screen-Schema steht.
       Player wechselt nicht, solange seine Uhr unbestätigt ist. Siehe `Plan.md`, „Playlists und Zeitpläne".
 - [ ] **G-E2 · Hardware** – wie viele Geräte, welche Generation, Auflösung, Ausrichtung
 - [ ] **G-E3 · Zielgruppe** – nur wir, oder von Anfang an Extension Store (**G17**)
-- [ ] **G-E4 · MVP-Zuschnitt** – Web-Code-Block jetzt oder später? Geburtstage mit Einwilligung oder gar nicht?
+- [x] **G-E4 · MVP-Zuschnitt** – **entschieden am 2026-09-24**: wie in `Plan.md`, „Funktionsumfang – MVP".
+      Kein Web-Code-Block, keine Geburtstage, keine Videos in V1.
 - [ ] **G-E5 · Wer gestaltet** – nur wir, oder nicht-technische Ehrenamtliche
 - [ ] **G-E6 · Rückfallposition Medien** – ist „nur externe URLs" ein tragfähiger MVP?
 - [ ] **G-E7 · Zeitbudget** – der Plan nennt sieben Phasen und keine Schätzung

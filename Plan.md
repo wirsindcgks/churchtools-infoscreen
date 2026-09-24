@@ -8,7 +8,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 
 **Zwingend – ohne das gibt es kein Produkt:**
 
-1. **Zwei Entscheidungen vor Phase 1**: Undo/Redo als Zustand oder als Befehle, und der MVP-Zuschnitt (siehe „Offene Entscheidungen").
+1. **Eine Entscheidung vor Phase 1**: Undo/Redo als Zustand oder als Befehle (siehe „Offene Entscheidungen"). Der MVP-Zuschnitt steht seit dem 2026-09-24.
 2. **Entwicklungsumgebung** bis zum „Hallo &lt;Vorname&gt;" – unblockiert.
 3. **Datenmodell, Player, Designer gegen den Mock** – unblockiert.
 4. **Nach der Freischaltung genau drei Punkte**: Testmodul hochladen (B6), Typ-Snapshot ziehen (B5), Login-Token am `/ccm/`-Pfad prüfen (G9). Alles andere aus dem blockierten Rest ist verzichtbar oder hat eine Vorgabe.
@@ -180,7 +180,7 @@ Geprüft gegen die OpenAPI-Spezifikation 3.136.2. **Fett = MVP.**
 
 ## Eigener Web-Code – nach dem MVP
 
-Ein HTML-Block führt fremden Code auf der ChurchTools-Domain aus, in der Sitzung eines angemeldeten Benutzers. Er ist das riskanteste Stück des Moduls, und seit G15 ist er zusätzlich beschnitten: **Ein `srcdoc`-Rahmen erbt die CSP, eigene `<script>`-Schnipsel laufen darin nicht.** Was trägt, ist „fremde Seite per `src` einbetten" sowie reines HTML/CSS. Vorschlag deshalb: **nicht im MVP** (siehe Offene Entscheidung 2).
+Ein HTML-Block führt fremden Code auf der ChurchTools-Domain aus, in der Sitzung eines angemeldeten Benutzers. Er ist das riskanteste Stück des Moduls, und seit G15 ist er zusätzlich beschnitten: **Ein `srcdoc`-Rahmen erbt die CSP, eigene `<script>`-Schnipsel laufen darin nicht.** Was trägt, ist „fremde Seite per `src` einbetten" sowie reines HTML/CSS. Deshalb **nicht im MVP** (entschieden am 2026-09-24, siehe Offene Entscheidung 2).
 
 **Wenn er kommt, gilt ohne Ausnahme:** `<iframe sandbox="allow-scripts">` **ohne** `allow-same-origin`, abgesichert durch einen Test; eigenes Recht, getrennt vom Gestalten; eigener Datenwert in `snippets`; Code wird unverändert gespeichert – die Sandbox ist die Grenze, kein Filter.
 
@@ -282,7 +282,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 **Zwingend vor Phase 1:**
 
 1. **Undo/Redo: Zustand oder Befehle?** Entscheidet, wie der Designer Änderungen führt; nachträglich ist das eine Neuschrift. **Empfehlung: Zustand** – Schnappschüsse der betroffenen Slide. Die Werte sind klein (höchstens 10.000 Zeichen), und Schnappschüsse sind mit Pinia einfacher und robuster als ein Satz umkehrbarer Befehle.
-2. **MVP-Zuschnitt.** **Vorschlag: wie unter „Funktionsumfang – MVP"**, also ohne Web-Code-Block, ohne Geburtstage, ohne Videos, mit Terminen, Bildern, Text und Gemeindekopf. Bestätigen oder korrigieren.
+2. ~~**MVP-Zuschnitt**~~ – **entschieden am 2026-09-24: wie unter „Funktionsumfang – MVP"**. V1 hat Termine, Bilder, Text, Gemeindekopf und Uhr, eine Playlist je Screen; kein Web-Code-Block, keine Geburtstage, keine Videos. Alles unter „Später" ist ausdrücklich nicht V1.
 
 **Zwingend vor Phase 2 auf dem Pi:**
 
@@ -307,7 +307,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 
 1. **Fixtures außerhalb des Repos sichern** – fünf Minuten, und nach dem 2026-10-22 unmöglich.
 2. **Ablaufdatum der Testinstanz nachsehen** (T3) – setzt den Stichtag für Risiko 1.
-3. **Die beiden Entscheidungen** vor Phase 1 treffen.
+3. **Undo/Redo entscheiden** – die letzte offene Festlegung vor Phase 1.
 4. **Entwicklungsumgebung** (`Preparation.md` B1–B4) bis zum „Hallo &lt;Vorname&gt;" gegen die Testinstanz, einmal in Safari.
 5. **Phase 1** – Datenmodell, Repository mit Mock, Terminnormalisierung.
 6. **Phase 2** – Player gegen den Mock.
