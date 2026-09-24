@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { catalogFrom } from './catalog';
 import { AUTH } from './checks';
-import { GROUP_NAMES, MissingAuthError, planProvisioning, provision, type ProvisionApi } from './provision';
+import { GROUP_NAMES, MissingAuthError, planProvisioning, provision, refreshGrants, type ProvisionApi } from './provision';
 
 /** The module rights as the test instance numbered them (G33). */
 const catalog = catalogFrom({
@@ -20,7 +20,7 @@ const catalog = catalogFrom({
     ),
 });
 const categories = { screens: 1, playlists: 4, slides: 7, media: 10, settings: 13 };
-const input = { catalog, moduleKey: 'infoscreen-designer', categories, wikiCategoryId: 1, privateCalendarIds: [4] };
+const input = { catalog, moduleKey: 'infoscreen-designer', categories, wikiCategoryId: 1, calendarIds: [4, 5] };
 
 describe('planProvisioning', () => {
     const [designer, device] = planProvisioning(input);
@@ -39,9 +39,9 @@ describe('planProvisioning', () => {
         expect(designer!.grants.find((g) => g.authId === AUTH.wikiCategoryEdit)?.dataId).toEqual([1]);
     });
 
-    it('lets devices only read: the module, its data and the private calendars of the screens', () => {
+    it('lets devices only read: the module, its data and every calendar of the screens, public ones too (G35)', () => {
         expect(device!.grants.map((g) => g.authId).sort((a, b) => a - b)).toEqual([403, 2010, 2011, 2015]);
-        expect(device!.grants.find((g) => g.authId === AUTH.calendarView)?.dataId).toEqual([4]);
+        expect(device!.grants.find((g) => g.authId === AUTH.calendarView)?.dataId).toEqual([4, 5]);
     });
 
     it('gives nobody the right to create, edit or delete categories', () => {
@@ -51,8 +51,8 @@ describe('planProvisioning', () => {
         expect(ids).not.toContain(2014);
     });
 
-    it('asks for no calendar right when all calendars are public, and no wiki category before it exists', () => {
-        const [d, v] = planProvisioning({ ...input, wikiCategoryId: null, privateCalendarIds: [] });
+    it('asks for no calendar right before a screen shows appointments, and no wiki category before it exists', () => {
+        const [d, v] = planProvisioning({ ...input, wikiCategoryId: null, calendarIds: [] });
         expect(d!.grants.some((g) => g.authId === AUTH.wikiCategoryEdit)).toBe(false);
         expect(v!.grants.some((g) => g.authId === AUTH.calendarView)).toBe(false);
     });
@@ -98,5 +98,24 @@ describe('provision', () => {
         expect(result.error).toBe('Forbidden');
         expect(result.groupIds).toEqual({ designer: 30 });
         expect(result.log.at(-1)).toContain('Abgebrochen');
+    });
+});
+
+describe('refreshGrants', () => {
+    it('grants the current plan again to the groups the assistant created, and only to those', async () => {
+        const calls: string[] = [];
+        const api: ProvisionApi = {
+            createGroup: async () => {
+                throw new Error('must not create');
+            },
+            roleIds: async (groupId) => [groupId * 10],
+            grant: async (roleId, authId, dataId) => {
+                calls.push(`${roleId}:${authId}:${dataId?.join(',') ?? ''}`);
+            },
+        };
+        const result = await refreshGrants(planProvisioning(input), { device: 28 }, api);
+        expect(result.error).toBeNull();
+        expect(calls).toContain('280:403:4,5');
+        expect(calls.every((c) => c.startsWith('280:'))).toBe(true);
     });
 });

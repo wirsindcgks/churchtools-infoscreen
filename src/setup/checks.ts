@@ -195,10 +195,6 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
             checks.push({ level: 'warn', text: `Kalender ${id} wird verwendet, ist aber nicht (mehr) zu finden.` });
             continue;
         }
-        if (calendar.isPublic) {
-            checks.push({ level: 'ok', text: `„${calendar.name}" ist öffentlich.` });
-            continue;
-        }
         const blind = input.members.filter((m) => !has(m.grants, AUTH.calendarView, id)).map((m) => m.label);
         checks.push(
             blind.length

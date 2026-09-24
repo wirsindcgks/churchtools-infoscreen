@@ -140,6 +140,8 @@ Ein Rest bleibt: der Statuscode eines unbekannten `/ccm/`-Pfades als sauberer Ge
       (2026-09-24): „Hallo <Vorname>" erscheint.
 
 - [ ] **B5 · Typ-Snapshot holen**
+      **Ergebnis 2026-09-24:** Auch mit installiertem Modul und Modulrechten führt die Spezifikation keinen Modul-Pfad (G31).
+      Für die Modul-Routen gibt es also keinen Snapshot; die Typen bleiben handgeschrieben nach den neun Schemas.
       **Stand 2026-09-24, nach der Freischaltung:** Die Spezifikation enthält als Administrator **weiterhin keinen**
       `/custommodules`-Pfad (497 Pfade wie zuvor). Also noch nicht ziehen – erst mit installiertem Modul erneut prüfen (G31).
       `ct-types.d.ts` aus der generierten Typdatei **unserer** Instanz übernehmen, nicht von Hand pflegen und

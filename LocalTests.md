@@ -17,8 +17,10 @@ Browser ──► Vite-Dev-Server (localhost:5173) ──► Testinstanz <instan
   die Instanz (`/ccm/infoscreen-designer/`) und reicht alle Anfragen an die Testinstanz weiter.
 - **Angemeldet wird im Proxy, nicht im Browser.** Der Login-Token steht nur in der `.env` und im
   Node-Prozess; der Browser sieht weder Token noch Cookie. Deshalb klappt das auch in Safari.
-- **Demo-Modus.** Custom Modules sind auf der Testinstanz nicht freigeschaltet (T1). Die Screens liegen deshalb
-  im **Speicher des Browsers**, nicht in ChurchTools. Beim ersten Öffnen legt die App den Screen
+- **Demo-Modus – die Vorgabe in der Entwicklung.** Die Screens liegen im **Speicher des Browsers**, nicht in
+  ChurchTools – auch seit die Extension auf der Testinstanz installiert ist. Sonst schrieben Dev-Server und
+  e2e-Tests unbemerkt in deren echte Daten. Wer bewusst mit den echten Daten arbeiten will, setzt in der `.env`
+  `VITE_USE_MODULE=true` (schreibende Zugriffe vorher besprechen, `AGENTS.md`). Beim ersten Öffnen legt die App den Screen
   „Demo – Foyer" an. Alles andere ist echt:
 
   | Echt, von der Testinstanz | Nur im Browser |

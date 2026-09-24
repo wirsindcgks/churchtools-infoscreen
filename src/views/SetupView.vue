@@ -18,7 +18,7 @@ import {
     loadPersonGrants,
     type GroupSummary,
 } from '../setup/load';
-import { GROUP_NAMES, GROUP_TYPE_NAME, planProvisioning, provision, type GroupSpec } from '../setup/provision';
+import { GROUP_NAMES, GROUP_TYPE_NAME, planProvisioning, provision, refreshGrants, type GroupSpec } from '../setup/provision';
 import { getRepository } from '../store/backend';
 import { CATEGORIES, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
 
@@ -101,14 +101,13 @@ function computePlan(): void {
         planProblem.value = 'Die Datenkategorien des Moduls fehlen noch – einmal die Startseite des Designers öffnen.';
         return;
     }
-    const privateCalendarIds = usedCalendarIds.filter((id) => calendars.some((c) => c.id === id && !c.isPublic));
     try {
         plan.value = planProvisioning({
             catalog,
             moduleKey: EXTENSION_KEY,
             categories: categories as Record<CategoryKey, number>,
             wikiCategoryId,
-            privateCalendarIds,
+            calendarIds: usedCalendarIds,
         });
     } catch (e) {
         planProblem.value = explain(e);
@@ -154,6 +153,25 @@ async function runAssistant(): Promise<void> {
     } catch (e) {
         assistant.error = explain(e);
         assistant.log.push(`Abgebrochen: ${assistant.error}`);
+    } finally {
+        assistant.running = false;
+    }
+}
+
+/** Grants the current plan again to the groups the assistant created – e.g. for a calendar a screen now shows. */
+async function updateRights(): Promise<void> {
+    if (!plan.value) return;
+    const groupIds = {
+        designer: createdGroupIds.value.includes(selected.designer ?? -1) ? selected.designer! : undefined,
+        device: createdGroupIds.value.includes(selected.device ?? -1) ? selected.device! : undefined,
+    };
+    assistant.running = true;
+    assistant.error = null;
+    try {
+        const result = await refreshGrants(plan.value, groupIds, churchToolsProvisionApi);
+        assistant.log = result.log;
+        assistant.error = result.error;
+        await Promise.all([check('designer'), check('device')]);
     } finally {
         assistant.running = false;
     }
@@ -321,7 +339,19 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     Die Gruppen des Infoscreens sind eingerichtet. Wer gestalten soll, wird Mitglied in „{{ GROUP_NAMES.designer }}",
                     die Konten der Fernseher in „{{ GROUP_NAMES.device }}" – mehr ist nicht zu tun.
                 </p>
+                <p class="muted small">
+                    Zeigt ein Screen einen weiteren Kalender, bringt „Rechte aktualisieren" die Gruppen auf den Stand.
+                </p>
                 <div class="actions">
+                    <button
+                        class="d-btn d-btn--primary"
+                        type="button"
+                        :disabled="!assistant.allowed || !plan || assistant.running"
+                        data-testid="update-rights"
+                        @click="updateRights"
+                    >
+                        Rechte aktualisieren
+                    </button>
                     <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running" data-testid="remove-setup" @click="removeSetup">
                         Einrichtung entfernen
                     </button>

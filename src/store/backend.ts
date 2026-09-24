@@ -27,7 +27,11 @@ export function getRepository(): Promise<RepositoryHandle> {
 }
 
 async function create(): Promise<RepositoryHandle> {
-    if (await moduleExists()) {
+    // In development the demo is the default, also once the module exists: dev server and e2e
+    // tests would otherwise write into the real data of the test instance without anyone noticing.
+    // VITE_USE_MODULE=true in .env opts in (LocalTests.md).
+    const demoFirst = import.meta.env.DEV && import.meta.env.VITE_USE_MODULE !== 'true';
+    if (!demoFirst && (await moduleExists())) {
         return { repository: new ScreenRepository(new ChurchToolsKv(EXTENSION_KEY)), demo: false };
     }
     // Written as a positive branch so that the release build drops the demo entirely.

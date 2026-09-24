@@ -153,6 +153,9 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         const screen = await data.loadScreen(slug);
         if (screen.issues.length) console.warn('Beim Lesen übersprungen:', screen.issues);
         state.screen = screen;
+        // The screen is there: show it, even if the calendar data fails afterwards –
+        // a black TV with "Lade …" helps nobody (seen on the test instance, 2026-09-24).
+        if (state.phase === 'loading') state.phase = 'running';
     }
 
     async function refreshData(): Promise<void> {

@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G31 sind beantwortet, G16, G21, G32, G33 und G34 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G31 und G35 sind beantwortet, G16, G21, G32, G33 und G34 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -288,7 +288,14 @@ Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt �
 **G31 – Nach der Freischaltung: Module nur über ihre id, Spezifikation noch ohne Modul-Pfade.** *(2026-09-24, Testinstanz, nur lesend, unmittelbar nach der Freischaltung durch ChurchTools)*
 
 - **`GET /api/custommodules/{id}` nimmt nur die numerische id.** Mit dem Schlüssel (`/custommodules/infoscreen-designer`) antwortet ChurchTools `400` „validation.integer" – nicht `404`. Eine unbekannte id antwortet `404` „CustomModule [999] not found". Das Modul einer Extension findet man über die Liste `GET /api/custommodules` und deren `shorty`. Unser Code fragte bis dahin mit dem Schlüssel; ungeprüft war er ausdrücklich markiert.
+- **Nachtrag vom 2026-09-24:** Auch mit installiertem Modul und allen Modulrechten enthält die Spezifikation **keinen einzigen** `/custommodules`-Pfad (497 Pfade) – nur die neun Schemas. Der Typ-Snapshot für die Modul-Routen ist auf diesem Build nicht zu haben; die Typen bleiben handgeschrieben nach den Schemas.
 - **Die Spezifikation enthält als Administrator weiterhin keinen `/custommodules`-Pfad** (497 Pfade, wie vor der Freischaltung), obwohl die Route selbst antwortet. Sie ist also nicht allein nach dem Feature gefiltert. Der Typ-Snapshot (B5) wartet deshalb weiter – vermutlich bis ein Modul installiert ist; das ist zu prüfen.
+
+**G35 – Öffentliche Kalender brauchen für angemeldete Konten trotzdem das Leserecht, und ein fehlendes kippt die ganze Anfrage.** *(2026-09-24, Testinstanz: Player im Browser des Nutzers, angemeldet als Geräte-Benutzer `muser`; Screen „foyer" und Rechte danach gelesen)*
+
+- Der Slide „Willkommen" zeigt die Kalender 1–5. `muser` darf 1–3 über seinen Personenstatus (G21) und 4 über die Gruppe „Infoscreen-Devices". **Kalender 5 „Bandproben" ist öffentlich** (`isPublic: true`), `muser` hat darauf kein Recht – und `GET /api/calendars/appointments?calendar_ids[]=1…5` antwortet mit **`403` für die ganze Anfrage**, nicht mit einer gefilterten Liste.
+- **Folgen, umgesetzt:** Der Einrichtungsassistent vergibt „Einzelnen Kalender sehen" für jeden genutzten Kalender, die Ampel verlangt es; der Player fragt nach einem `403` die Kalender einzeln ab und lässt nur die verbotenen weg. Und er zeigt den Screen, sobald er geladen ist – bis dahin blieb er bei einem Datenfehler auf „Lade …" stehen.
+- **Nebenbei gemessen:** Die Rechte, die der Assistent an eine Rolle gibt, kommen beim Mitglied an – „Claude Code" hatte als Leiter von „Infoscreen-Designer" in `/permissions/global` genau diese Rechte (G34).
 
 ## Teilweise beantwortet
 

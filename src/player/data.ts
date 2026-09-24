@@ -6,7 +6,7 @@ import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
 import { startOfZonedDay } from '../appointments/zoned';
 import { fetchAppointments, fetchChurchLogoUrl, fetchTimeZone } from '../ct/api';
-import { ensureSignedIn, instanceBaseUrl, type TokenLogin } from '../ct/client';
+import { ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
 import type { ScreenDoc, SlideDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
 import type { LoadedScreen } from '../store/screen-repository';
@@ -56,10 +56,39 @@ export const churchToolsPlayerData: PlayerData = {
         return response.headers?.date ?? null;
     },
     async appointments(calendarIds, from, to, timeZone) {
-        const raw = await withTimeout(fetchAppointments(calendarIds, from, to, timeZone));
+        const raw = await readableAppointments(calendarIds, (ids) =>
+            withTimeout(fetchAppointments(ids, from, to, timeZone)),
+        );
         return normalizeAppointments(raw, timeZone);
     },
 };
+
+/**
+ * ChurchTools refuses the whole appointment request with 403 as soon as one
+ * of the calendars is not readable (G35). Then each calendar is asked alone,
+ * and only the forbidden ones are left out – one wrong calendar must not
+ * blank a screen. The setup page names the missing right.
+ */
+export async function readableAppointments<T>(
+    calendarIds: number[],
+    fetch: (ids: number[]) => Promise<T[]>,
+): Promise<T[]> {
+    try {
+        return await fetch(calendarIds);
+    } catch (error) {
+        if (httpStatus(error) !== 403 || calendarIds.length < 2) throw error;
+    }
+    const parts = await Promise.all(
+        calendarIds.map((id) =>
+            fetch([id]).catch((error: unknown) => {
+                if (httpStatus(error) !== 403) throw error;
+                console.warn(`Kalender ${id}: keine Leserechte (403) – übersprungen.`);
+                return [] as T[];
+            }),
+        ),
+    );
+    return parts.flat();
+}
 
 /** Calendars and the time window a screen needs, over all its blocks and rules. */
 export function appointmentNeeds(screen: ScreenDoc, slides: SlideDoc[]): { calendarIds: number[]; days: number } {

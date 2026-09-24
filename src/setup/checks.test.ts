@@ -82,16 +82,16 @@ describe('checkDeviceGroup', () => {
         expect(checks.at(-1)).toMatchObject({ level: 'fail' });
     });
 
-    it('accepts public calendars and names who cannot see a private one', () => {
+    it('asks for the right on public calendars too – without it ChurchTools refuses with 403 (G35)', () => {
         const checks = checkDeviceGroup({
             statusId: 1,
-            members: [{ label: 'Minimal User', grants: [grant(AUTH.calendarView, 1)] }],
+            members: [{ label: 'Minimal User', grants: [grant(AUTH.calendarView, 4)] }],
             calendars,
             usedCalendarIds: [2, 4],
             wikiCategoryId: WIKI,
         });
-        expect(checks.find((c) => c.text.includes('Gottesdienst'))?.level).toBe('ok');
-        const fail = checks.find((c) => c.text.includes('Gemeindeleitung'));
+        expect(checks.find((c) => c.text.includes('Gemeindeleitung'))?.level).toBe('ok');
+        const fail = checks.find((c) => c.text.includes('Gottesdienst'));
         expect(fail?.level).toBe('fail');
         expect(fail?.text).toContain('Minimal User');
     });

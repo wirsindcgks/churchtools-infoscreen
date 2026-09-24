@@ -261,3 +261,18 @@ describe('player controller', () => {
         player.stop();
     });
 });
+
+describe('a screen whose calendar data fails', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    it('is shown anyway, marked as stale – not left on "Lade …" (seen on the test instance)', async () => {
+        const forbidden = Object.assign(new Error('Request failed with status code 403'), { response: { status: 403 } });
+        const player = createPlayer('demo', fakeData({ appointments: () => Promise.reject(forbidden) }), fakeDeps());
+        await player.start();
+        expect(player.state.phase).toBe('running');
+        expect(player.state.screen).not.toBeNull();
+        expect(player.state.staleSince).not.toBeNull();
+        player.stop();
+    });
+});

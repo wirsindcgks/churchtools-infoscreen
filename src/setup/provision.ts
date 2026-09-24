@@ -40,8 +40,11 @@ export interface PlanInput {
     /** Ids of the module's data categories, as they exist after the first start. */
     categories: Record<CategoryKey, number>;
     wikiCategoryId: number | null;
-    /** Calendars the screens use that are not public – what a device must be allowed to read. */
-    privateCalendarIds: number[];
+    /**
+     * Every calendar the screens use. Public ones too: a signed-in account
+     * without the right gets 403 for the whole request (G35).
+     */
+    calendarIds: number[];
 }
 
 export class MissingAuthError extends Error {
@@ -82,8 +85,8 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     }
 
     const device: GrantSpec[] = [...readModule];
-    if (input.privateCalendarIds.length) {
-        device.push({ authId: AUTH.calendarView, dataId: input.privateCalendarIds, label: 'Einzelnen Kalender sehen' });
+    if (input.calendarIds.length) {
+        device.push({ authId: AUTH.calendarView, dataId: input.calendarIds, label: 'Einzelnen Kalender sehen' });
     }
 
     return [
@@ -123,6 +126,35 @@ export async function provision(plan: GroupSpec[], groupTypeId: number, api: Pro
                 for (const g of spec.grants) await api.grant(roleId, g.authId, g.dataId);
             }
             result.log.push(`${spec.grants.length} Rechte an ${roles.length} Rollen von „${spec.name}" vergeben.`);
+        }
+    } catch (e) {
+        result.error = e instanceof Error ? e.message : String(e);
+        result.log.push(`Abgebrochen: ${result.error}`);
+    }
+    return result;
+}
+
+/**
+ * Brings the rights of groups the assistant created up to the current plan,
+ * e.g. after a screen started to show another calendar. A grant is a PUT that
+ * creates or updates, so granting again what exists changes nothing.
+ * Rights that are no longer planned stay – removing is left to people.
+ */
+export async function refreshGrants(
+    plan: GroupSpec[],
+    groupIds: Partial<Record<GroupKey, number>>,
+    api: ProvisionApi,
+): Promise<ProvisionResult> {
+    const result: ProvisionResult = { groupIds, log: [], error: null };
+    try {
+        for (const spec of plan) {
+            const groupId = groupIds[spec.key];
+            if (groupId === undefined) continue;
+            const roles = await api.roleIds(groupId);
+            for (const roleId of roles) {
+                for (const g of spec.grants) await api.grant(roleId, g.authId, g.dataId);
+            }
+            result.log.push(`Rechte von „${spec.name}" auf den aktuellen Stand gebracht.`);
         }
     } catch (e) {
         result.error = e instanceof Error ? e.message : String(e);
