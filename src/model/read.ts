@@ -14,6 +14,7 @@ import {
     PlaylistDoc,
     SCHEMA_VERSION,
     ScreenDoc,
+    SettingsDoc,
     SlideDoc,
     type AnyDoc,
     type Block as BlockValue,
@@ -87,6 +88,11 @@ export function readMedia(raw: unknown): MediaDoc {
     return parseStrict(MediaDoc, raw, 'media');
 }
 
+export function readSettings(raw: unknown): SettingsDoc {
+    checkVersion(raw);
+    return parseStrict(SettingsDoc, raw, 'settings');
+}
+
 export function readPlaylist(raw: unknown): PlaylistDoc {
     checkVersion(raw);
     return parseStrict(PlaylistDoc, raw, 'playlist');
@@ -123,7 +129,7 @@ export function readSlide(raw: unknown): ReadResult<SlideDoc> {
  * never matters whether the server would reject or silently truncate (C4).
  */
 export function serialize(doc: AnyDoc): string {
-    const schemas = { screen: ScreenDoc, playlist: PlaylistDoc, slide: SlideDoc, media: MediaDoc } as const;
+    const schemas = { screen: ScreenDoc, playlist: PlaylistDoc, slide: SlideDoc, media: MediaDoc, settings: SettingsDoc } as const;
     const schema = schemas[doc.kind];
     const valid = parseStrict(schema, doc, doc.kind);
     const text = JSON.stringify(valid);

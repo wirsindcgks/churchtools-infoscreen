@@ -196,6 +196,18 @@ export const MediaDoc = v.object({
     height: v.optional(PositivePx),
 });
 
+/**
+ * Module-wide settings, one document in the category `settings`. Written by
+ * whoever sets the module up, read by the setup page. The group ids point to
+ * ChurchTools groups whose roles carry the rights (Plan.md, F).
+ */
+export const SettingsDoc = v.object({
+    ...DocumentBase,
+    kind: v.literal('settings'),
+    designerGroupId: v.optional(v.pipe(v.number(), v.integer())),
+    deviceGroupId: v.optional(v.pipe(v.number(), v.integer())),
+});
+
 export type Fill = v.InferOutput<typeof Fill>;
 export type TextStyle = v.InferOutput<typeof TextStyle>;
 export type Block = v.InferOutput<typeof Block>;
@@ -205,7 +217,8 @@ export type PlaylistDoc = v.InferOutput<typeof PlaylistDoc>;
 export type ScreenDoc = v.InferOutput<typeof ScreenDoc>;
 export type ScheduleRule = v.InferOutput<typeof ScheduleRule>;
 export type MediaDoc = v.InferOutput<typeof MediaDoc>;
-export type AnyDoc = ScreenDoc | PlaylistDoc | SlideDoc | MediaDoc;
+export type SettingsDoc = v.InferOutput<typeof SettingsDoc>;
+export type AnyDoc = ScreenDoc | PlaylistDoc | SlideDoc | MediaDoc | SettingsDoc;
 
 /** Everything that makes up one screen, as the player needs it. */
 export interface ScreenBundle {

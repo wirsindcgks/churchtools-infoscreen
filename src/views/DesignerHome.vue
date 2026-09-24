@@ -92,7 +92,10 @@ async function remove(screen: ScreenDoc): Promise<void> {
     <main class="infoscreen-designer home">
         <p v-if="error" role="alert">{{ error }}</p>
         <template v-else-if="person">
-            <h1 data-testid="greeting">Hallo {{ person.firstName }}</h1>
+            <div class="title-row">
+                <h1 data-testid="greeting">Hallo {{ person.firstName }}</h1>
+                <RouterLink class="d-link" :to="{ name: 'setup' }" data-testid="open-setup">Einrichtung</RouterLink>
+            </div>
             <p v-if="demo" class="notice" data-testid="demo-notice">
                 Custom Modules sind auf dieser Instanz nicht freigeschaltet. Angezeigt wird ein Demo-Screen aus dem
                 Browser; seine Termine kommen live aus ChurchTools. Designer und Player in anderen Tabs dieses Browsers
@@ -110,6 +113,7 @@ async function remove(screen: ScreenDoc): Promise<void> {
                     </li>
                 </ul>
                 <p class="muted">
+                    Was eine Gruppe noch braucht, zeigt die <RouterLink :to="{ name: 'setup' }">Einrichtung</RouterLink>.
                     Rechte vergibt ein Administrator in der Rechteverwaltung von ChurchTools – am einfachsten an eine
                     Rolle einer eigenen Gruppe für alle, die Infoscreens gestalten. Rechte einer Gruppe wirken erst, wenn
                     sie den Status „aktiv" hat.
@@ -196,7 +200,14 @@ async function remove(screen: ScreenDoc): Promise<void> {
     padding: 24px 16px 48px;
 }
 h1 {
-    margin-top: 0;
+    margin: 0;
+}
+.title-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
 }
 h2 {
     margin-top: 28px;

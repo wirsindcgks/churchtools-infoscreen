@@ -14,12 +14,13 @@ import {
     readMedia,
     readPlaylist,
     readScreen,
+    readSettings,
     readSlide,
     SchemaTooNewError,
     serialize,
     type ReadIssue,
 } from '../model/read';
-import type { AnyDoc, MediaDoc, PlaylistDoc, ScreenBundle, ScreenDoc, SlideDoc } from '../model/schema';
+import type { AnyDoc, MediaDoc, PlaylistDoc, ScreenBundle, ScreenDoc, SettingsDoc, SlideDoc } from '../model/schema';
 import type { KvBackend, KvCategory, KvValue } from './kv';
 
 export const CATEGORIES = {
@@ -31,6 +32,9 @@ export const CATEGORIES = {
 } as const;
 
 export type CategoryKey = keyof typeof CATEGORIES;
+
+/** The one settings document of a module. */
+const SETTINGS_ID = 'settings';
 
 /** Orphans younger than this may belong to a save in progress and are kept. */
 export const ORPHAN_GRACE_MS = 60 * 60 * 1000;
@@ -190,6 +194,32 @@ export class ScreenRepository {
         return (await this.readAll('media', readMedia)).docs.map((m) => m.doc);
     }
 
+    /** The module settings; none yet is not an error, it is the state before the setup. */
+    async loadSettings(): Promise<SettingsDoc | null> {
+        const { docs } = await this.readAll('settings', readSettings);
+        return docs.find((d) => d.doc.id === SETTINGS_ID)?.doc ?? null;
+    }
+
+    async saveSettings(doc: Omit<SettingsDoc, 'id' | 'kind'>): Promise<void> {
+        const ids = await this.ensureCategories();
+        const text = serialize({ ...doc, id: SETTINGS_ID, kind: 'settings' });
+        const stored = await this.valueIdsById('settings');
+        await this.upsert(ids.settings, stored.get(SETTINGS_ID), text);
+    }
+
+    /** Every calendar a screen shows or switches on – what a device must be able to read. */
+    async calendarIdsInUse(): Promise<number[]> {
+        const [screens, slides] = await Promise.all([this.readScreens(), this.readSlides()]);
+        const ids = new Set<number>();
+        for (const block of slides.docs.flatMap((s) => s.doc.blocks)) {
+            if (block.type === 'appointment-list' || block.type === 'next-appointment') block.calendarIds.forEach((id) => ids.add(id));
+        }
+        for (const rule of screens.docs.flatMap((s) => s.doc.schedule)) {
+            if (rule.kind === 'appointment') rule.calendarIds.forEach((id) => ids.add(id));
+        }
+        return [...ids].sort((a, b) => a - b);
+    }
+
     async saveMedia(doc: MediaDoc): Promise<void> {
         const ids = await this.ensureCategories();
         const text = serialize(doc);
@@ -273,7 +303,7 @@ export class ScreenRepository {
         else await this.kv.updateValue(categoryId, valueId, text);
     }
 
-    private async valueIdsById(key: 'slides' | 'playlists' | 'media'): Promise<Map<string, number>> {
+    private async valueIdsById(key: 'slides' | 'playlists' | 'media' | 'settings'): Promise<Map<string, number>> {
         const ids = await this.ensureCategories();
         const values = await this.kv.listValues(ids[key]);
         const map = new Map<string, number>();
