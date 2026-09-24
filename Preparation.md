@@ -29,7 +29,7 @@ anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
 >
 > **Entschieden am 2026-09-23:** Die Fixtures liegen unter `fixtures/` und werden **nicht versioniert**
 > (`.gitignore` erfasst das Verzeichnis). Der Ertrag hängt damit an einem Arbeitsplatz – eine Sicherung
-> außerhalb des Repos ist der Ersatz, den dieser Zuschnitt braucht.
+> außerhalb des Repos ist der Ersatz, den dieser Zuschnitt braucht. **Angelegt am 2026-09-24.**
 
 > **🎯 Fokuswechsel am 2026-09-23**
 >
@@ -350,7 +350,8 @@ bevor das Screen-Schema steht.
 - Die Frist nicht verstreichen lassen, ohne die Fixtures und den Typ-Snapshot gesichert zu haben.
   **Die Fixtures sind seit dem 2026-09-23 aufgezeichnet, der Typ-Snapshot fehlt noch** (hängt an der Freischaltung, B5).
   Da `fixtures/` nicht versioniert ist, ersetzt **keine** Sicherung im Repo den Verlust dieses Arbeitsplatzes –
-  eine Kopie außerhalb gehört dazu, solange die Instanz noch läuft.
+  eine Kopie außerhalb gehört dazu. **Seit dem 2026-09-24 gesichert**; was danach noch aufgezeichnet wird,
+  vor Ablauf der Instanz nachsichern.
 - Die aufgezeichneten Antworten nicht roh weitergeben: Instanz-URL, `admin_mail` und personenbezogene Felder
   werden vorher ersetzt. Wie, steht in `fixtures/README.md`.
 - An bestehenden Rollen der Rechteverwaltung nichts ändern – eigene Testgruppe verwenden.

@@ -12,7 +12,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 2. **Entwicklungsumgebung** bis zum „Hallo &lt;Vorname&gt;" – unblockiert.
 3. **Datenmodell, Player, Designer gegen den Mock** – unblockiert.
 4. **Nach der Freischaltung genau drei Punkte**: Testmodul hochladen (B6), Typ-Snapshot ziehen (B5), Login-Token am `/ccm/`-Pfad prüfen (G9). Alles andere aus dem blockierten Rest ist verzichtbar oder hat eine Vorgabe.
-5. **Die Fixtures außerhalb des Repos sichern**, solange die Testinstanz lebt (bis etwa 2026-10-22). Danach sind sie nicht wiederherstellbar.
+5. ~~**Die Fixtures außerhalb des Repos sichern**~~ – **erledigt am 2026-09-24.** Was danach noch aufgezeichnet wird, muss vor Ablauf der Testinstanz (etwa 2026-10-22) nachgesichert werden.
 
 **Bewusst geparkt** – nicht falsch, aber nicht jetzt: alles Weitere am Betriebsbenutzer (G21-Reste), `securityLevelId` (G13), Schema-Durchsetzung (G12), Rate-Limit (G16), Heartbeat und Statusanzeige, eine gemeinsame Bibliothek mit `ct-pass-store`, Rollenmodell für mehrere Gestalter.
 
@@ -150,7 +150,7 @@ Das Messprotokoll steht in [`Befunde.md`](Befunde.md). Stand:
 | **Blockiert, aber verzichtbar** | G10 (Service Worker – ohne ihn bleibt Offline-Festigkeit halb, siehe Risiko 2) · G12, G13 (durch Vorgaben in E ersetzt) |
 | **Geparkt** | G16 (Rate-Limit) · G17 (Extension Store) · G21-Reste |
 
-**Die Testinstanz** ist leer angelegt, Build und Upload-Grenze wie produktiv. Dort darf ausprobiert, liegengelassen und zerschossen werden; gegen die Produktivinstanz wird nur gelesen. **Ihr Ertrag sind die Fixtures unter `fixtures/`** (nicht versioniert) – gegen sie läuft die gesamte Entwicklung, und sie müssen **vor Ablauf der Lizenz außerhalb des Repos gesichert** sein.
+**Die Testinstanz** ist leer angelegt, Build und Upload-Grenze wie produktiv. Dort darf ausprobiert, liegengelassen und zerschossen werden; gegen die Produktivinstanz wird nur gelesen. **Ihr Ertrag sind die Fixtures unter `fixtures/`** (nicht versioniert) – gegen sie läuft die gesamte Entwicklung, und sie sind **seit dem 2026-09-24 außerhalb des Repos gesichert**. Neu Aufgezeichnetes wird vor Ablauf der Lizenz nachgesichert.
 
 ## Datenquellen für Inhaltsblöcke
 
@@ -305,7 +305,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 
 **Zwingend, in dieser Reihenfolge:**
 
-1. **Fixtures außerhalb des Repos sichern** – fünf Minuten, und nach dem 2026-10-22 unmöglich.
+1. ~~**Fixtures außerhalb des Repos sichern**~~ – **erledigt am 2026-09-24.**
 2. **Ablaufdatum der Testinstanz nachsehen** (T3) – setzt den Stichtag für Risiko 1.
 3. **Entwicklungsumgebung** (`Preparation.md` B1–B4) bis zum „Hallo &lt;Vorname&gt;" gegen die Testinstanz, einmal in Safari.
 4. **Phase 1** – Datenmodell, Repository mit Mock, Terminnormalisierung.
