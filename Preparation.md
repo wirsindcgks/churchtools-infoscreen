@@ -120,20 +120,21 @@ Ein Rest bleibt: der Statuscode eines unbekannten `/ccm/`-Pfades als sauberer Ge
 
 ## B. Entwicklungsumgebung (ca. ein halber Abend)
 
-- [ ] **B1 · Boilerplate aufsetzen**
-      <https://github.com/churchtools/extension-boilerplate> klonen, `.env` aus `.env-example` anlegen.
-      **`.env` gehört nicht ins Repo** – vor dem ersten Commit prüfen, dass `.gitignore` sie erfasst.
+- [x] **B1 · Boilerplate aufsetzen** *(2026-09-24)*
+      Nach dem Muster des Boilerplates aufgebaut, nicht kopiert (es trägt keine Lizenzdatei): Vue 3, Vite, Pinia,
+      Router, Vitest, Playwright, ESLint, CI. `.env` bleibt ignoriert.
 
-- [ ] **B2 · Vite-Proxy statt CORS**
-      `/api` → **Testinstanz** im Vite-Dev-Server proxen. Das vermeidet CORS vollständig und löst zugleich den
-      Safari-Fall. **Nicht** `access_control_allow_origins` der Instanz öffnen.
+- [x] **B2 · Vite-Proxy statt CORS** *(2026-09-24)*
+      `/api` → Testinstanz, **mit `Authorization: Login <token>` im Proxy** statt einer Anmeldung im Browser.
+      Set-Cookie wird verworfen. CORS der Instanz bleibt zu.
 
-- [ ] **B3 · „Hallo <Vorname>" aus `/whoami`**
-      `npm run dev`, Anmeldung über die Dev-Zugangsdaten, Name des angemeldeten Anwenders anzeigen.
+- [x] **B3 · „Hallo <Vorname>" aus `/whoami`** *(2026-09-24)*
+      Mit `only_allow_authenticated=true` und Ablehnung der anonymen Pseudoperson (G20), als Unit-Test gesichert.
 
-- [ ] **B4 · Einmal in Safari öffnen**
-      Nicht nur in Chrome. Safari blockt `Secure; SameSite=None` auf `http://localhost`; wenn etwas bricht,
-      dann hier. Gegebenenfalls HTTPS im Dev-Server über mkcert.
+- [x] **B4 · Einmal in Safari öffnen** *(2026-09-24)*
+      `npm run smoke` läuft in Chromium **und WebKit** grün – Begrüßung, Fehlerseite für unbekannte Pfade, Player
+      ohne Parameter. mkcert ist unnötig, weil keine Cookies im Spiel sind. WebKit ist Safaris Engine, nicht Safari
+      selbst; ein Blick im echten Safari bleibt billig.
 
 - [ ] **B5 · Typ-Snapshot holen**
       `ct-types.d.ts` aus der generierten Typdatei **unserer** Instanz übernehmen, nicht von Hand pflegen und
@@ -341,8 +342,8 @@ bevor das Screen-Schema steht.
 
 ## Was dabei nicht passieren darf
 
-- Keine Zugangsdaten und keine Instanz-URL ins Repo – `.env` bleibt ignoriert, der Release-Build setzt
-  `VITE_BASE_URL`, `VITE_USERNAME` und `VITE_PASSWORD` ausdrücklich leer.
+- Keine Zugangsdaten und keine Instanz-URL ins Repo – `.env` bleibt ignoriert, Instanz-URL und Token tragen
+  kein `VITE_`-Präfix, und `scripts/check-dist.js` prüft das `dist/`.
 - Keine Tests gegen die Produktivinstanz, die Daten verändern – dafür gibt es jetzt die Testinstanz.
   Muss doch produktiv gearbeitet werden, hat das Testmodul einen eigenen Key und schreibt nur in eigene Kategorien.
 - Keine Testinstanz unter erfundenem Gemeindenamen anlegen – die vorhandene läuft auf den echten Namen.

@@ -1,0 +1,44 @@
+import { churchtoolsClient } from '@churchtools/churchtools-client';
+import type { Person } from './types';
+
+declare global {
+    interface Window {
+        settings?: { base_url?: string };
+    }
+}
+
+/**
+ * Inside ChurchTools the host page provides `window.settings.base_url`.
+ * In development the app talks to its own origin and the Vite proxy forwards
+ * /api to the instance, so no instance URL is ever compiled into the bundle.
+ */
+export function configureClient(): void {
+    churchtoolsClient.setBaseUrl(window.settings?.base_url ?? window.location.origin);
+}
+
+/** ChurchTools answers anonymous requests as this pseudo person (G20). */
+export const ANONYMOUS_PERSON_ID = -1;
+
+export class NotAuthenticatedError extends Error {
+    constructor() {
+        super('Nicht bei ChurchTools angemeldet.');
+        this.name = 'NotAuthenticatedError';
+    }
+}
+
+/**
+ * A failed login does not look like an error: ChurchTools returns 200 with
+ * empty data (G20). Every identity check therefore rejects the anonymous
+ * pseudo person instead of trusting the status code.
+ */
+export function assertAuthenticated(person: Person | null | undefined): Person {
+    if (!person || person.id === ANONYMOUS_PERSON_ID || person.id <= 0) {
+        throw new NotAuthenticatedError();
+    }
+    return person;
+}
+
+export async function fetchCurrentPerson(): Promise<Person> {
+    const person = await churchtoolsClient.get<Person>('/whoami', { only_allow_authenticated: 'true' });
+    return assertAuthenticated(person);
+}

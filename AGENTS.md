@@ -1,8 +1,9 @@
 # Arbeitsregeln für Agenten
 
 Dieses Repository entwickelt den **ChurchTools Infoscreen Designer**, ein ChurchTools Custom Module (CCM).
-**Stand 2026-09-23: Es gibt noch keinen Anwendungscode**, nur Planung und Messungen. Wer hier anfängt, baut
-die Entwicklungsumgebung auf – er pflegt keine bestehende Anwendung.
+**Stand 2026-09-24: Die Entwicklungsumgebung steht** (Vue 3, Vite, Vitest, Playwright, CI), Produktcode gibt es
+noch kaum. `npm run dev` läuft gegen die Testinstanz über den Vite-Proxy; `npm test` braucht keine Instanz,
+`npm run smoke` schon.
 
 ## Die vier Dokumente
 
@@ -51,9 +52,10 @@ Wer eine Messung in den Plan schreibt, bläht ihn auf – genau das ist am 2026-
 
 ## Geheimnisse und Fixtures
 
-- **Keine Zugangsdaten und keine Instanz-URL ins Repo.** `.env` ist ignoriert, der Release-Build setzt
-  `VITE_BASE_URL`, `VITE_USERNAME` und `VITE_PASSWORD` ausdrücklich leer, und ein CI-Test sucht im gebauten
-  `dist/` nach der eigenen Instanzadresse.
+- **Keine Zugangsdaten und keine Instanz-URL ins Repo.** `.env` ist ignoriert. Instanz-URL und Login-Token
+  heißen dort `CT_BASE_URL` und `CT_LOGIN_TOKEN` – **ohne `VITE_`-Präfix**, damit Vite sie nie ins Bündel
+  schreibt; sie leben nur im Dev-Proxy. Die Anwendung selbst nimmt `window.settings.base_url` oder den eigenen
+  Ursprung. `scripts/check-dist.js` bricht den Build ab, wenn im `dist/` eine `*.church.tools`-Adresse steht.
 - **`fixtures/` ist bewusst nicht versioniert.** Ein frisch geklonter Arbeitsplatz hat die aufgezeichneten
   Antworten nicht und muss sie sich beschaffen, bevor Tests laufen.
 - **Aufgezeichnet wird nur von der Testinstanz** – und vor dem Ablegen bereinigt. Zu entfernen sind mindestens:

@@ -6,3 +6,5 @@ releases/
 .DS_Store
 *.log
 fixtures/
+test-results/
+playwright-report/

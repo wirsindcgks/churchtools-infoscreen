@@ -70,9 +70,9 @@ ChurchTools-Instanz
 ### B. Entwicklungsumgebung
 
 - **Node.js** (aktuelle LTS) mit npm, plus `zip` für die Paketierung.
-- **Boilerplate** als Ausgangspunkt: bringt `vite.config.ts` mit `base: '/ccm/${VITE_KEY}/'`, `scripts/package.js` und `src/utils/kv-store.ts` mit.
-- **`.env`** aus `.env-example`, nicht im Repo: `VITE_KEY`, `VITE_BASE_URL`, `VITE_USERNAME`, `VITE_PASSWORD`. Der Release-Build setzt die letzten drei ausdrücklich leer und nimmt `window.settings.base_url` der Hostseite.
-- **Vite-Proxy** (`/api` → Testinstanz) statt CORS – löst zugleich den Safari-Fall (`Secure; SameSite=None` auf `localhost`). Früh einmal in Safari öffnen; notfalls HTTPS über mkcert.
+- **Steht seit dem 2026-09-24** (B1–B4). Nach dem Muster des Boilerplates, aber an einer Stelle bewusst anders: **Der Dev-Login läuft im Vite-Proxy, nicht im Browser.** Der Proxy leitet `/api` an die Testinstanz und setzt dort `Authorization: Login <token>`; Set-Cookie-Kopfzeilen verwirft er. Damit gibt es kein `VITE_USERNAME`/`VITE_PASSWORD`, das ins Bündel geraten könnte, und der Safari-Fall (`Secure; SameSite=None` auf `localhost`) tritt gar nicht erst auf – belegt mit Playwright in WebKit.
+- **`.env`** aus `.env-example`, nicht im Repo: `CT_BASE_URL`, `CT_LOGIN_TOKEN`, optional `VITE_KEY`. Die Anwendung nimmt `window.settings.base_url` der Hostseite, in der Entwicklung den eigenen Ursprung.
+- **Befehle**: `npm run dev` (unter `/ccm/infoscreen-cgks/`), `npm test` (ohne Instanz), `npm run smoke` (Playwright in Chromium und WebKit gegen die Testinstanz, nicht im CI), `npm run build` (inklusive `scripts/check-dist.js`), `npm run release` (ZIP).
 - **Typ-Snapshot** `ct-types.d.ts` aus der Spezifikation **einer Instanz mit freigeschalteten Custom Modules** – die Spezifikation wird pro Benutzer gefiltert, ein Snapshot ohne `CustomModule`-Pfade ist schlimmer als keiner (B5).
 - **Vorlage mit offenem Quellcode**: [`lub90/ct-pass-store`](https://github.com/lub90/ct-pass-store) (MIT) läuft auf unserer Produktivinstanz. `ct-utils/lib/ExtensionData.ts` (KV-Zugriff) und der Setup-Assistent für Kategorien sind übernehmbar, mit Urheberrechtsvermerk.
 
@@ -263,7 +263,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
   | Datei- und Bild-Hashes | `/images/{id}/{hash}`, `filename=<hash>` | Zugangsschlüssel, keine Kennungen (G14) |
 
   Die Regel gilt auch für Felder, die auf der Testinstanz leer sind – auf einer produktiven Instanz sind sie es nicht unbedingt. **Nicht** bereinigt werden Gruppen-, Kalender- und Dienstnamen: Umlaute, Längen und Namensgleichheiten sind wertvolle Testdaten.
-- **Tests, die Vorgaben sichern**: Duldsamkeit des Players (erfundener Blocktyp, unbekanntes Feld), genau ein JS-Bündel im Player-Build, keine eigene Instanzadresse im gebauten `dist/`.
+- **Tests, die Vorgaben sichern**: Duldsamkeit des Players (erfundener Blocktyp, unbekanntes Feld). Genau ein JS-Bündel, kein Inline-Skript und keine `*.church.tools`-Adresse im `dist/` prüft `scripts/check-dist.js` bei jedem Build.
 - **CI bei jedem Push**: Lint, Typecheck, Tests, Build. Tag `vx.y.z` baut das Release; Version in `package.json`, `package-lock.json` und `CHANGELOG.md` gemeinsam ziehen.
 
 ## Risiken
@@ -275,7 +275,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 5. **ChurchTools ändert die Extension-Schnittstelle.** Deshalb eine Naht (Repository), nicht KV-Zugriffe quer durch die Anwendung.
 6. **Stilles gegenseitiges Überschreiben.** Kein ETag, keine Transaktion (G3). Revisionsprüfung und „Index zuletzt" erkennen den Konflikt, verhindern ihn nicht.
 7. **Ein Update der Extension bricht laufende Player.** Neue Asset-Namen, alter Kiosk-Tab, `404` auf einen Chunk. Deshalb ein Bündel und Neuladen bei Modul-Ladefehlern, im CI geprüft.
-8. **Die Instanz-URL landet im Release-Build.** Vite ersetzt `import.meta.env.*` zur Bauzeit. Der Release-Build setzt die Werte leer, ein CI-Test sucht die Adresse im `dist/`.
+8. **Die Instanz-URL landet im Release-Build.** Vite ersetzt `import.meta.env.*` zur Bauzeit. Deshalb tragen Instanz-URL und Token kein `VITE_`-Präfix und leben nur im Dev-Proxy; `scripts/check-dist.js` sucht bei jedem Build nach `*.church.tools` im `dist/`.
 
 ## Offene Entscheidungen
 
@@ -307,7 +307,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 
 1. ~~**Fixtures außerhalb des Repos sichern**~~ – **erledigt am 2026-09-24.**
 2. ~~**Ablaufdatum der Testinstanz nachsehen**~~ (T3) – **2026-10-22, 21:53.** Das ist der Stichtag für Risiko 1.
-3. **Entwicklungsumgebung** (`Preparation.md` B1–B4) bis zum „Hallo &lt;Vorname&gt;" gegen die Testinstanz, einmal in Safari.
+3. ~~**Entwicklungsumgebung**~~ (`Preparation.md` B1–B4) – **erledigt am 2026-09-24**, „Hallo &lt;Vorname&gt;" läuft in Chromium und WebKit.
 4. **Phase 1** – Datenmodell, Repository mit Mock, Terminnormalisierung.
 5. **Phase 2** – Player gegen den Mock.
 
