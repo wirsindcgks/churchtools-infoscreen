@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G27 sind beantwortet, G16 und G21 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G28 sind beantwortet, G16, G21 und G29 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -304,6 +304,15 @@ Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit
 - **Woran die Sichtbarkeit von Beiträgen hängt.** Ein Leserecht gibt es nicht (siehe Abschnitt F), und die Instanz hat keinen einzigen Beitrag – die Frage ist ohne Testbeitrag nicht zu beantworten.
 - **Ob Archivieren der Gruppe als zweite Notbremse wirkt.**
 - **Die Modulrechte selbst**, solange Custom Modules nicht freigeschaltet sind (T1). Die ChurchTools-seitige Hälfte ist aber die größere: Sie bemisst, was der Token auf der SD-Karte wirklich darf.
+
+**G29 – Das Gemeindelogo steht im Kirchenprofil, das Bild selbst ist anonym abrufbar.** *(2026-09-24, Testinstanz: Logo vom Nutzer in den Gemeindeinfos hinterlegt, dann gelesen; dazu die Spezifikation und die [Academy](https://churchtools.academy/de/kurse/system-einstellungen-berblick/lektionen/gemeindeinfos/))* Die Academy führt das Logo unter den „Gemeindeinfos" der Systemeinstellungen, getrennt von den beiden Website-Logos für hellen und dunklen Grund. `/info` kennt es nicht, und `site_logo` fehlt unter den 154 `config`-Schlüsseln des Administrators, obwohl das `Config`-Schema es führt.
+
+- **Die Quelle ist `GET /api/profiles/church` → `data.logo`**, ein Dateiobjekt mit `imageUrl`, `apiUrl` und `frontendUrl`. Die Datei liegt unter `domainType` **`profile_logo`**, `domainId` = id des Kirchenprofils (hier 1), und ist auch über `GET /api/files/profile_logo/1` zu finden. Vor dem Hinterlegen war `logo` schlicht `null`.
+- **Sackgasse:** `GET /api/files/logo/{id}` antwortet mit `200` und leerer Liste, für jede id – falscher `domainType`, kein Beleg für „kein Logo" (G20). Der Verweis auf `/files/logo/{id}` in `Plan.md` war eine Vermutung.
+- **Die Bildadresse verhält sich wie jede andere (G14):** anonym `200`, Vorgabe 150×150, `w` allein ergibt 400×150, `cache-control: max-age=604800, public`, kein ETag. `apiUrl` und `frontendUrl` antworten anonym mit `401`.
+- **Das Profil selbst ist geschützt:** anonym `403` auf `/profiles/church`; `GET /api/profiles` anonym `200` mit **leerer** Liste, als Administrator zwei Profile (Kirche und Standort, beide unveröffentlicht). Ob ein veröffentlichtes Profil anonym erscheint, ist ungeprüft.
+
+**Was offen bleibt:** ob der **Geräte-Benutzer** `/profiles/church` lesen darf. Davon hängt ab, ob der Kopfblock das Logo selbst findet oder die Adresse im Designer mitgespeichert werden muss – das Bild lädt ja anonym. Gemessen werden kann das erst mit einer Sitzung dieses Kontos (G21).
 
 
 ## Offen

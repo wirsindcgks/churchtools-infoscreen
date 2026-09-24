@@ -4,7 +4,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 
 ## Auf einen Blick
 
-**Stand 2026-09-24.** Phase 0 ist abgeschlossen, soweit sie ohne Custom Modules auf der Testinstanz geht; Code gibt es noch keinen. Am 2026-09-24 ist der Plan gekürzt worden: Er war ins Rechtemodell abgetaucht, und das Rechtemodell ist für den MVP **ein Satz** (siehe F), keine Baustelle.
+**Stand 2026-09-24.** Phase 0 ist abgeschlossen, soweit sie ohne Custom Modules auf der Testinstanz geht. Datenmodell, Player und Designer samt Mediathek laufen gegen den Mock (Phasen 1–3); was bis zum MVP fehlt, steht priorisiert unter „Nächste Schritte". Am 2026-09-24 ist der Plan gekürzt worden: Er war ins Rechtemodell abgetaucht, und das Rechtemodell ist für den MVP **ein Satz** (siehe F), keine Baustelle.
 
 **Zwingend – ohne das gibt es kein Produkt:**
 
@@ -135,7 +135,7 @@ Später hinzu: `templates`, `snippets` (Web-Code), `status` (Heartbeat).
 **Zwei Befunde, die den Bau betreffen – der Rest steht in [`Befunde.md`](Befunde.md), „Der Betriebsbenutzer":**
 
 - **Fehlende Rechte sehen nicht wie Fehler aus**, sondern wie leere Listen (G20). Der Player belegt jede Anfrage mit `only_allow_authenticated=true`, prüft die Identität über `whoami` und **behandelt einen leeren Screen als Fehler**, nicht als leeren Kalender.
-- **Wie das Konto eingerichtet wird, ist gemessen** (G21): Rechte über eine eigene Gruppe, Status „Aktiv", Rolle „Mitarbeiter"; die Person braucht einen Benutzernamen. Das reicht für den Bau. Die offenen Reste daran sind Stoff für die Einrichtungsdoku in Phase 5.
+- **Wie das Konto eingerichtet wird, ist gemessen** (G21): Rechte über eine eigene Gruppe, Status „Aktiv", Rolle „Mitarbeiter"; die Person braucht einen Benutzernamen. Das reicht für den Bau. Die offenen Reste daran sind Stoff für die Einrichtungsdoku in Phase 4.
 
 **Die Datenschutzfrage ist nicht die API, sondern das Foyer**: Was ein angemeldeter Gestalter in einen Screen legt, sieht jeder. Geburtstage, Dienstpläne mit Namen und Gruppenkontakte kommen deshalb nicht in den MVP.
 
@@ -160,7 +160,7 @@ Geprüft gegen die OpenAPI-Spezifikation 3.136.2. **Fett = MVP.**
 | Block | Endpunkte |
 | --- | --- |
 | **Termine** | `/calendars`, `/calendars/appointments` (**`calendar_ids[]` Pflicht**, dazu `from`, `to`). Serien löst der Server auf, samt Ausnahmen und Zeitumstellung; Zeiten in UTC (G19) |
-| **Gemeindekopf** | `/info` (Name, Anschrift), `/files/logo/{id}` |
+| **Gemeindekopf** | `/info` (Name, Anschrift), Logo aus `/profiles/church` → `logo.imageUrl` (G29) |
 | **Bilder** | `imageUrl` (`/images/{fileId}/{hash}`) am Bilddienst, **immer mit `w` und `h`** (G14) |
 | Beiträge / News | `/posts` – woran die Sichtbarkeit hängt, ist offen |
 | Gruppen & Anmeldungen | `/groups`, `/publicgroups/{id}` |
@@ -312,13 +312,27 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 3. ~~**Entwicklungsumgebung**~~ (`Preparation.md` B1–B4) – **erledigt am 2026-09-24**, „Hallo &lt;Vorname&gt;" läuft in Chromium und WebKit.
 4. **Phase 1** – **Kern steht seit dem 2026-09-24**: Schema mit duldsamem Lesen, Repository mit Mock und Revisionsprüfung, Terminnormalisierung samt Zeitzone. Ganztägige Termine sind seit G23 gemessen. Offen: die echte KV-Anbindung gegen eine Instanz prüfen (nach T1).
 5. **Phase 2** – **Player läuft seit dem 2026-09-24 gegen den Mock**, mit echten Terminen der Testinstanz: Bühne mit Letterbox und Overscan, Rotation, Zeitplan-Auswertung, drei Intervalle mit Versatz und Backoff, Zeitlimit je Anfrage, Uhrprüfung über den `Date`-Kopf, letzter Stand in IndexedDB, Bilder in Cache Storage mit Vorab-Dekodierung der nächsten Slide, Neuladen bei neuerem Schema und nachts. Im Designer eine Screen-Liste mit Link in den Player; ohne Custom Modules steht dort in der Entwicklung ein Demo-Screen aus dem Arbeitsspeicher, im Release-Bündel fehlt er. **Offen:** Anmeldung per Token unter `/ccm/` (G9), das Logo im Kopfblock, mitgelieferte Schriften statt Systemschriften, Service Worker (G10) und ein Test auf schwacher Hardware (Offene Entscheidung 3).
-6. **Phase 3** – **Editor steht seit dem 2026-09-24**: Screens anlegen (Name, feste Adresse, quer oder hochkant) und löschen; Slides hinzufügen, duplizieren, entfernen, per Ziehen ordnen, Dauer und Hintergrund setzen, abschalten; alle sieben Blocktypen einfügen, auf der Bühne ziehen und an acht Griffen skalieren – mit einblendbarem Raster (10–60 px) zum Einrasten und Hilfslinien an Bühnenmitte, Bühnenrändern und anderen Blöcken, aussetzbar mit der Alt-Taste – im Inspektor gestalten, Kalender wählen, Ebenen ordnen. Rückgängig/Wiederholen als Schnappschüsse des ganzen Screens – ein Ziehen oder ein Feld ist ein Schritt. Speichern mit Revisionsprüfung und Dialog bei Konflikt, Warnung beim Verlassen mit ungespeicherten Änderungen. Die Vorschau nutzt die Komponenten des Players mit Live-Daten. **Im Demo-Modus** (Entwicklung ohne Custom Modules) teilen sich Designer- und Player-Tabs eines Browsers denselben Speicher, und ein offener Player übernimmt Gespeichertes sofort; im Betrieb findet er Änderungen beim nächsten Konfigurationsabruf (Vorgabe 2 Minuten). Nach einer Änderung bleibt der Player auf der gezeigten Slide, statt von vorn zu beginnen. Aussehen nach den Tokens der Hostseite (G25). Die **Mediathek** steht seit demselben Tag: Upload in den Wiki-Bereich „Infoscreen", Bild für Bildblock und Slide-Hintergrund, Löschschutz mit Nennung der Verwendungen. **Offen:** Lesbarkeitswarnung, Vorlagen.
+6. **Phase 3** – **Editor steht seit dem 2026-09-24**: Screens anlegen (Name, feste Adresse, quer oder hochkant) und löschen; Slides hinzufügen, duplizieren, entfernen, per Ziehen ordnen, Dauer und Hintergrund setzen, abschalten; alle sieben Blocktypen einfügen, auf der Bühne ziehen und an acht Griffen skalieren – mit einblendbarem Raster (10–60 px) zum Einrasten und Hilfslinien an Bühnenmitte, Bühnenrändern und anderen Blöcken, aussetzbar mit der Alt-Taste – im Inspektor gestalten, Kalender wählen, Ebenen ordnen. Rückgängig/Wiederholen als Schnappschüsse des ganzen Screens – ein Ziehen oder ein Feld ist ein Schritt. Speichern mit Revisionsprüfung und Dialog bei Konflikt, Warnung beim Verlassen mit ungespeicherten Änderungen. Die Vorschau nutzt die Komponenten des Players mit Live-Daten. **Im Demo-Modus** (Entwicklung ohne Custom Modules) teilen sich Designer- und Player-Tabs eines Browsers denselben Speicher, und ein offener Player übernimmt Gespeichertes sofort; im Betrieb findet er Änderungen beim nächsten Konfigurationsabruf (Vorgabe 2 Minuten). Nach einer Änderung bleibt der Player auf der gezeigten Slide, statt von vorn zu beginnen. Aussehen nach den Tokens der Hostseite (G25). Die **Mediathek** steht seit demselben Tag: Upload in den Wiki-Bereich „Infoscreen", Bild für Bildblock und Slide-Hintergrund, Löschschutz mit Nennung der Verwendungen. Lesbarkeitswarnung und Vorlagen stehen unter „Später", nicht im MVP.
 
-**Nebenher, fremdbestimmt:** Rückmeldung der ChurchTools-Entwickler zur Freischaltung abwarten, dazu die Laufzeit der Testinstanz klären. Kommt bis zum Stichtag nichts, Risiko 1 entscheiden.
+**Bis zum MVP, nach Priorität** *(festgelegt am 2026-09-24)*:
 
-**Sobald freigeschaltet ist, genau drei Punkte:** Testmodul unter `infoscreen-designer` hochladen und Rechte vergeben (B6), Typ-Snapshot ziehen (B5), Login-Token am `/ccm/`-Pfad prüfen (G9). G10 nur, wenn es nebenbei geht.
+1. ~~**Player an den Geräte-Benutzer binden.**~~ **Erledigt am 2026-09-24.** Hat der Kiosk-Browser noch die Sitzung eines Menschen, liefe der Player mit dessen Rechten, und der Token würde nie benutzt. Weicht `whoami` von `user_id` ab, meldet er sich jetzt mit dem Token neu an; gelingt das nicht, zeigt er einen Fehler mit beiden Personennummern, ohne Namen. Ein solcher Fehler sperrt auch die Datenabrufe, bis die Anmeldung wieder stimmt – sonst hätte der nächste Datenabruf ihn überdeckt, wo ein gespeicherter Stand vorlag. **Ungemessen:** ob `login_token` eine bestehende fremde Sitzung tatsächlich ersetzt (G9).
+2. ~~**Neuladen nach anhaltenden Fehlern**~~ **Erledigt am 2026-09-24:** nach 30 Minuten ununterbrochener Fehler eines Abrufs – aber nur, wenn die Seite selbst erreichbar ist. Ohne Service Worker (G10) ersetzte ein Neuladen im Netzausfall den alten Stand durch die Fehlerseite des Browsers. Scheitert schon das Laden des Bündels, hilft kein eigener Code; das gehört als Kiosk-Einstellung in die Einrichtungsdoku.
+3. **Fehlende Rechte im Designer benennen**: Modulrechte über `/permissions/global` lesen, statt „keine Screens" zu zeigen (G20).
+4. **Risiko 1 entscheiden** – fremdbestimmt, läuft nebenher: bei ChurchTools nach Freischaltung und Verlängerung fragen. Stichtag **2026-10-08**; kommt bis dahin nichts, den Rückfall unter `infoscreen-designer-test` auf der Produktivinstanz entscheiden.
+5. **Logo im Gemeindekopf** aus `/profiles/church` (G29), mit optionalem Mediathek-Bild als Ersatz – für dunklen Grund und für den Fall, dass das Gerät das Profil nicht lesen darf. Offen: Messung als Geräte-Benutzer.
+6. **Mitgelieferte Schriften** unter den bestehenden Schlüsseln, mit eigenem Namenspräfix gegen die Hostseite. Offen: die Schriftwahl.
+7. **Umbenennen abrunden**: kein leerer Name, e2e-Test.
+8. **Einrichtungsseite, Stufe 1** – nur lesend: Gruppen „Infoscreen-Gestalter" und „Infoscreen-Geräte" wählen, Status und Rechte als Ampel prüfen, fehlende Klickwege nennen. Die Kategorie-IDs der Datenrechte gibt es erst nach dem ersten Start – genau diese Lücke schließt die Seite. Braucht die Trennung von `authId` 306 und 403 (G21). **Vorschlag, noch nicht entschieden** – ersetzt „Wer gestaltet: zuerst wir".
+9. **Release-Workflow** auf Tags `v*.*.*`, Versionsabgleich mit `CHANGELOG.md`, ZIP als GitHub-Release.
+10. **Einrichtungsdoku** `docs/Einrichtung.md`: Klickwege, Kiosk-Browser, Notbremse (G18), Öffentlichkeit von Bildern und Logo (G14, G29).
+11. **Freischaltung vorbereiten**: Skript für den Typ-Snapshot, das ohne `/custommodules`-Pfade abbricht; Checklisten für B6 und G9.
 
-**Nicht anfassen, bis ein Produktschritt es braucht:** G16, C4, die G21-Reste, `attachments`, `ct-events-load`, das Gespräch mit dem Autor von `ct-pass-store`.
+**Sobald freigeschaltet ist:** Testmodul unter `infoscreen-designer` hochladen und Rechte vergeben (B6), Typ-Snapshot ziehen (B5), Login-Token am `/ccm/`-Pfad prüfen (G9), die numerischen Rechte-IDs der Extension ablesen, das Speichern einmal gegen die echte KV-Anbindung durchspielen, Fixtures nachsichern. G10 nur, wenn es nebenbei geht.
+
+**Später:** Rechte aus der Einrichtungsseite selbst setzen (Stufe 2, `POST /groups` und `PUT /permissions/group_role/{id}`, nur an neu angelegten Gruppen).
+
+**Nicht anfassen, bis ein Produktschritt es braucht:** G16, C4, `attachments`, `ct-events-load`, das Gespräch mit dem Autor von `ct-pass-store`. Von den G21-Resten wird nur 306/403 gebraucht (Punkt 8).
 
 ## Quellen
 

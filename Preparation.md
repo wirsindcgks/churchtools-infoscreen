@@ -306,6 +306,8 @@ Früh anstoßen, weil die Antwort nicht von uns abhängt.
 
 - [ ] **F3 · `bensteUEM/ct-events-load` lesen**
       Besonders `src/persistance.ts` und die Terminbehandlung – vor der ersten Zeile Bindungscode in Phase 4.
+      **Überholt am 2026-09-24:** Die Terminnormalisierung steht und ist gegen die Fixtures getestet (G19, G23).
+      Nur noch lesen, wenn ein Terminfall auftaucht, den sie nicht abdeckt.
 
 ## G. Entscheidungen, die niemand für uns trifft
 
