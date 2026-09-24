@@ -173,6 +173,23 @@ describe('ScreenRepository', () => {
         expect((await repo.loadScreen('foyer-links')).media.map((m) => m.id)).toEqual(['logo-weiss']);
     });
 
+    it('lists each screen with its first enabled slide and the number of slides', async () => {
+        const slides = [
+            makeSlide({ id: 'slide-1', enabled: false }),
+            makeSlide({ id: 'slide-2', name: 'Termine' }),
+        ];
+        await repo.saveScreen(bundle({ slides }), { ...save, expectedRevision: null });
+        const [overview] = await repo.listScreenOverviews();
+        expect(overview?.screen.slug).toBe('foyer-links');
+        expect(overview?.firstSlide?.id).toBe('slide-2');
+        expect(overview?.slideCount).toBe(2);
+        expect(overview?.media).toEqual([]);
+    });
+
+    it('lists no overviews and reads nothing more when there is no screen', async () => {
+        expect(await repo.listScreenOverviews()).toEqual([]);
+    });
+
     it('throws for an unknown slug', async () => {
         await expect(repo.loadScreen('gibt-es-nicht')).rejects.toBeInstanceOf(ScreenNotFoundError);
     });

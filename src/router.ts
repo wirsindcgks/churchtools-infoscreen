@@ -13,7 +13,9 @@ export const router = createRouter({
         { path: '/', name: 'designer', component: DesignerHome },
         { path: '/screens/:slug', name: 'editor', component: ScreenEditor },
         { path: '/player', name: 'player', component: PlayerView },
-        { path: '/einrichtung', name: 'setup', component: SetupView },
+        { path: '/einstellungen', name: 'setup', component: SetupView },
+        // The first name of the page (until 2026-09-24); links to it keep working.
+        { path: '/einrichtung', redirect: (to) => ({ name: 'setup', hash: to.hash }) },
         // On a foyer TV an empty page is indistinguishable from a crash (G7).
         { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundView },
     ],

@@ -4,14 +4,15 @@ test.use({ viewport: { width: 1280, height: 720 } });
 
 test('designer lists the demo screen and opens it in the player', async ({ page }) => {
     await page.goto('./');
-    await expect(page.getByTestId('greeting')).toBeVisible();
+    await expect(page.getByTestId('screens-heading')).toBeVisible();
     await expect(page.getByTestId('demo-notice')).toBeVisible();
     await page.screenshot({ path: 'test-results/designer.png' });
 
-    await page.getByTestId('open-player').click();
-    await expect(page.getByTestId('player')).toBeVisible();
-    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
-    await page.screenshot({ path: 'test-results/player-welcome.png' });
+    await page.getByTestId('screen-menu').first().click();
+    const [player] = await Promise.all([page.waitForEvent('popup'), page.getByTestId('open-player').click()]);
+    await expect(player.getByTestId('player')).toBeVisible();
+    await expect(player.getByText('Herzlich willkommen!')).toBeVisible();
+    await player.screenshot({ path: 'test-results/player-welcome.png' });
 });
 
 test('player shows real appointments from the instance', async ({ page }) => {

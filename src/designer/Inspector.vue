@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { Calendar } from '../ct/api';
 import type { Block, Fill, TextStyle } from '../model/schema';
 import { fontDef, FONTS } from '../player/fonts';
@@ -7,6 +7,7 @@ import { sizedImageUrl } from '../player/format';
 import { useEditorStore } from './editor-store';
 import FillEditor from './FillEditor.vue';
 import { BLOCK_LABELS } from './ops';
+import { copyPlayerUrl, playerUrl } from './player-url';
 
 defineProps<{ calendars: Calendar[] }>();
 const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo'] }>();
@@ -14,6 +15,15 @@ const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo'] }>();
 const editor = useEditorStore();
 const block = computed(() => editor.block);
 const slide = computed(() => editor.slide);
+
+/** The address for the TV (way A) belongs to its screen, not to the settings (2026-09-24). */
+const tvUrl = computed(() => (editor.draft ? playerUrl(editor.draft.screen.slug) : ''));
+const copied = ref(false);
+async function copyTvUrl(): Promise<void> {
+    if (!editor.draft) return;
+    copied.value = await copyPlayerUrl(editor.draft.screen.slug);
+    if (copied.value) setTimeout(() => (copied.value = false), 2000);
+}
 
 /** Field edits are gestures: all keystrokes in one field are one undo step. */
 const edit = { onFocus: () => editor.beginGesture(), onBlur: () => editor.endGesture() };
@@ -369,9 +379,18 @@ const slideFill = computed<Fill>(() =>
                     >
                     <small v-if="!editor.draft.screen.name.trim()" class="invalid">Ohne Namen lässt sich nicht speichern.</small>
                 </label>
+                <div class="tv-address" data-testid="player-address">
+                    <span class="label">Adresse für den Fernseher</span>
+                    <code class="url">{{ tvUrl }}</code>
+                    <button class="d-btn" type="button" data-testid="copy-player-address" @click="copyTvUrl">
+                        {{ copied ? 'Kopiert' : 'Kopieren' }}
+                    </button>
+                    <p class="hint">
+                        Im Browser des Fernsehers einmal mit dem Geräte-Benutzer bei ChurchTools anmelden und „Angemeldet
+                        bleiben" wählen. Dann diese Adresse öffnen. In der Adresse steht kein Passwort.
+                    </p>
+                </div>
                 <dl>
-                    <dt>Adresse</dt>
-                    <dd><code>{{ editor.draft.screen.slug }}</code></dd>
                     <dt>Bühne</dt>
                     <dd>{{ editor.draft.screen.stage.width }} × {{ editor.draft.screen.stage.height }} px</dd>
                 </dl>
@@ -403,6 +422,14 @@ const slideFill = computed<Fill>(() =>
     padding: 12px 14px 24px;
     border-left: 1px solid var(--d-divider);
     background: var(--d-surface);
+}
+/* Phone: below the stage, as long as it needs to be (Plan.md, 10). */
+@media (max-width: 48rem) {
+    .inspector {
+        overflow-y: visible;
+        border-top: 1px solid var(--d-divider);
+        border-left: 0;
+    }
 }
 section + section {
     margin-top: 20px;
@@ -486,6 +513,25 @@ legend {
 .invalid {
     color: var(--d-danger);
     font-size: var(--d-size-sm);
+}
+.tv-address {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 8px;
+    align-items: center;
+    margin-top: 12px;
+}
+.tv-address .label {
+    grid-column: 1 / -1;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+.tv-address .url {
+    overflow-wrap: anywhere;
+    font-size: var(--d-size-sm);
+}
+.tv-address .hint {
+    grid-column: 1 / -1;
 }
 .hint {
     margin: 0;

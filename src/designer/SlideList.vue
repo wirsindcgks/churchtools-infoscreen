@@ -155,4 +155,23 @@ li.disabled .thumb {
     padding: 0.2em 0.6em;
     font-size: var(--d-size-sm);
 }
+/* Phone: the slides become a row to swipe above the stage (Plan.md, 10). */
+@media (max-width: 48rem) {
+    .slide-list {
+        border-right: 0;
+        border-bottom: 1px solid var(--d-divider);
+    }
+    ol {
+        display: flex;
+        gap: 6px;
+        overflow-x: auto;
+        overflow-y: hidden;
+    }
+    li {
+        flex: none;
+    }
+    li + li {
+        margin-top: 0;
+    }
+}
 </style>

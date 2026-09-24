@@ -37,16 +37,17 @@ test('an open player follows what the designer saves, without reloading', async 
     await expect(player.getByText('Neue Slide 4')).toBeVisible({ timeout: 40_000 });
 });
 
-test('the new-screen form lines up', async ({ page }) => {
+test('the new-screen dialog lines up', async ({ page }) => {
     await page.setViewportSize({ width: 1100, height: 800 });
     await page.goto('./');
-    await expect(page.getByTestId('new-name')).toBeVisible();
-    const boxes = await Promise.all(
-        [page.getByTestId('new-name'), page.getByTestId('new-slug'), page.locator('form.create select')].map((l) =>
-            l.boundingBox(),
-        ),
-    );
-    const tops = boxes.map((b) => Math.round(b!.y));
-    expect(new Set(tops).size).toBe(1); // all three fields on one line
-    await page.locator('form.create').screenshot({ path: 'test-results/new-screen-form.png' });
+    await page.getByTestId('new-screen').click();
+    const dialog = page.getByTestId('create-dialog');
+    await expect(page.getByTestId('new-name')).toBeFocused();
+    const [name, slug] = await Promise.all([page.getByTestId('new-name').boundingBox(), page.getByTestId('new-slug').boundingBox()]);
+    expect(Math.round(name!.height)).toBe(Math.round(slug!.height)); // fields of one height
+    const choices = await dialog.locator('.choice').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
+    expect(new Set(choices.map(Math.round)).size).toBe(1); // both formats side by side
+    await dialog.screenshot({ path: 'test-results/new-screen-dialog.png' });
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
 });

@@ -22,6 +22,25 @@ test('a designer without upload rights is told which right is missing', async ({
 
 test('a designer with all rights sees no notice', async ({ page }) => {
     await page.goto('./');
-    await expect(page.getByTestId('greeting')).toBeVisible();
+    await expect(page.getByTestId('screens-heading')).toBeVisible();
     await expect(page.getByTestId('missing-rights')).toHaveCount(0);
+});
+
+test('only administrators see the setup; everyone else is told whose job it is', async ({ page }) => {
+    // The real answer of the instance, minus the right to manage persons and permissions.
+    await page.route('**/api/permissions/global', async (route) => {
+        const response = await route.fetch();
+        const body = (await response.json()) as { data: { churchcore?: Record<string, unknown> } };
+        body.data.churchcore = { ...body.data.churchcore, 'administer persons': false };
+        await route.fulfill({ response, json: body });
+    });
+    await page.goto('./');
+    await expect(page.getByTestId('screens-heading')).toBeVisible();
+    await expect(page.getByTestId('open-setup')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: 'Adressen für die Fernseher' })).toHaveCount(0);
+
+    await page.goto('./einrichtung'); // the old address leads to the settings
+    await expect(page).toHaveURL(/\/einstellungen$/);
+    await expect(page.getByTestId('setup-admins-only')).toBeVisible();
+    await expect(page.getByTestId('assistant')).toHaveCount(0);
 });

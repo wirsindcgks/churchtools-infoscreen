@@ -2,10 +2,12 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { EXTENSION_KEY } from '../config';
+import Icon from '../designer/Icon.vue';
+import ModulePage from '../designer/ModulePage.vue';
 import { fetchCalendars, type Calendar } from '../ct/api';
 import { httpStatus } from '../ct/client';
 import { findOrCreateCategory, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
-import { SCHEMA_VERSION, type ScreenDoc } from '../model/schema';
+import { SCHEMA_VERSION } from '../model/schema';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
 import { AUTH, checkDesignerGroup, checkDeviceGroup, type Check, type RequiredRight } from '../setup/checks';
 import {
@@ -24,34 +26,13 @@ import { CATEGORIES, type CategoryKey, type ScreenRepository } from '../store/sc
 
 type Side = 'designer' | 'device';
 
+
 const groups = ref<GroupSummary[]>([]);
 const selected = reactive<Record<Side, number | null>>({ designer: null, device: null });
 const checks = reactive<Record<Side, Check[] | null>>({ designer: null, device: null });
 const busy = reactive<Record<Side, boolean>>({ designer: false, device: false });
 const error = ref<string | null>(null);
 const saveState = ref<'idle' | 'saving' | 'saved' | 'failed'>('idle');
-const screens = ref<ScreenDoc[]>([]);
-const copied = ref<string | null>(null);
-
-/**
- * The address a TV opens (way A, decided 2026-09-24): no secret in it, the
- * browser of the TV signs in once as the device account – like the built-in
- * info screen. It lives where the designer lives, so the origin is right in
- * ChurchTools and in development alike.
- */
-function playerUrl(slug: string): string {
-    return new URL(`player?screen=${encodeURIComponent(slug)}`, window.location.origin + import.meta.env.BASE_URL).toString();
-}
-
-async function copy(slug: string): Promise<void> {
-    try {
-        await navigator.clipboard.writeText(playerUrl(slug));
-        copied.value = slug;
-    } catch {
-        // Without clipboard access the address stays visible for copying by hand.
-        copied.value = null;
-    }
-}
 
 let repository: ScreenRepository | null = null;
 let wikiCategoryId: number | null = null;
@@ -270,20 +251,27 @@ async function save(): Promise<void> {
     }
 }
 
+/**
+ * Role concept (2026-09-24): the setup belongs to ChurchTools administrators –
+ * they install the extension and hand out the rights. Designers change
+ * content, devices only read. Who may manage permissions counts as admin.
+ */
+const admin = ref<boolean | null>(null);
+
 onMounted(async () => {
     try {
+        admin.value = await canManagePermissions().catch(() => false);
+        if (!admin.value) return;
         const handle = await getRepository();
         repository = handle.repository;
         demo.value = handle.demo;
-        const [list, settings, wikiCategories, calendarList, used, screenList] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, used] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
             fetchCalendars(),
             repository.calendarIdsInUse(),
-            repository.listScreens(),
         ]);
-        screens.value = screenList;
         groups.value = list;
         wikiCategoryId = wikiCategories.find((c) => c.name === WIKI_CATEGORY_NAME)?.id ?? null;
         wikiCategoryIdKnown.value = wikiCategoryId !== null;
@@ -294,11 +282,11 @@ onMounted(async () => {
         createdGroupIds.value = settings?.createdGroupIds ?? [];
         if (!demo.value) {
             // Without these the assistant only explains; the page itself still works.
-            [categories, catalog, assistant.allowed] = await Promise.all([
+            [categories, catalog] = await Promise.all([
                 repository.visibleCategories(),
                 loadAuthCatalog().catch(() => null),
-                canManagePermissions().catch(() => false),
             ]);
+            assistant.allowed = true;
         }
         computePlan();
         await Promise.all([check('designer'), check('device')]);
@@ -323,163 +311,169 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 </script>
 
 <template>
-    <main class="infoscreen-designer setup">
-        <RouterLink class="d-link back" :to="{ name: 'designer' }">← Screens</RouterLink>
-        <h1>Einrichtung</h1>
-        <p class="lead">
-            Rechte vergibt ChurchTools an Rollen in Gruppen. Am einfachsten legt der Assistent die beiden Gruppen samt
-            Rechten an. Wer eigene Gruppen nutzt, wählt sie unten aus – die Prüfung sagt, was fehlt, und ändert nichts.
-        </p>
-        <p v-if="error" class="error" role="alert">{{ error }}</p>
-
-        <section class="card assistant" data-testid="assistant">
-            <h2>Automatisch einrichten</h2>
-            <template v-if="createdGroupIds.length">
+    <ModulePage current="setup" :admin="admin === true">
+        <div class="setup">
+            <div class="page-title">
+                <span class="title-icon"><Icon name="settings" :size="22" /></span>
+                <h1>Einstellungen für Infoscreens</h1>
+            </div>
+            <p v-if="admin === null" class="muted">Lade …</p>
+            <section v-else-if="!admin" class="d-banner d-banner--warning" data-testid="setup-admins-only">
+                <strong>Die Einstellungen sind Sache der ChurchTools-Administratoren.</strong>
                 <p>
-                    Die Gruppen des Infoscreens sind eingerichtet. Wer gestalten soll, wird Mitglied in „{{ GROUP_NAMES.designer }}",
-                    die Konten der Fernseher in „{{ GROUP_NAMES.device }}" – mehr ist nicht zu tun.
+                    Sie legen die Gruppen für Gestalter und Geräte an und vergeben deren Rechte. Wer Infoscreens gestaltet,
+                    braucht diese Seite nicht – fehlt dir ein Recht, wende dich an einen Administrator deiner Gemeinde.
                 </p>
-                <p class="muted small">
-                    Zeigt ein Screen einen weiteren Kalender, bringt „Rechte aktualisieren" die Gruppen auf den Stand.
-                </p>
-                <div class="actions">
-                    <button
-                        class="d-btn d-btn--primary"
-                        type="button"
-                        :disabled="!assistant.allowed || !plan || assistant.running"
-                        data-testid="update-rights"
-                        @click="updateRights"
-                    >
-                        Rechte aktualisieren
-                    </button>
-                    <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running" data-testid="remove-setup" @click="removeSetup">
-                        Einrichtung entfernen
-                    </button>
-                </div>
-            </template>
-            <template v-else>
-                <p>
-                    Legt zwei leere Gruppen vom Typ „{{ GROUP_TYPE_NAME }}" an und gibt ihren Rollen die nötigen Rechte. Danach
-                    müssen nur noch Personen in die Gruppen aufgenommen werden.
-                </p>
-                <p v-if="planProblem" class="muted">{{ planProblem }}</p>
-                <p v-else-if="foreignGroups.length" class="warn">
-                    Es gibt schon {{ foreignGroups.map((g) => `„${g.name}"`).join(' und ') }}. Der Assistent übernimmt keine
-                    fremden Gruppen – wähle sie unten aus und prüfe ihre Rechte.
-                </p>
-                <details v-if="plan" class="plan">
-                    <summary>Was genau passiert</summary>
-                    <div v-for="group in plan" :key="group.key">
-                        <strong>{{ group.name }}</strong> – an allen Rollen:
-                        <ul>
-                            <li v-for="grant in group.grants" :key="`${grant.authId}`">{{ grant.label }}</li>
-                        </ul>
-                    </div>
-                    <p v-if="wikiMissing" class="muted small">Dazu wird der Wiki-Bereich „Infoscreen" für die Mediathek angelegt.</p>
-                </details>
-                <div class="actions">
-                    <button
-                        class="d-btn d-btn--primary"
-                        type="button"
-                        data-testid="run-assistant"
-                        :disabled="!assistant.allowed || !plan || foreignGroups.length > 0 || assistant.running"
-                        @click="runAssistant"
-                    >
-                        Gruppen und Rechte anlegen
-                    </button>
-                    <span v-if="assistant.running" class="muted">Arbeitet …</span>
-                </div>
-                <p v-if="plan && !assistant.allowed" class="muted small">
-                    Nur wer in ChurchTools Berechtigungen verwalten darf, kann das auslösen.
-                </p>
-            </template>
-            <ul v-if="assistant.log.length" class="log" data-testid="assistant-log">
-                <li v-for="(line, i) in assistant.log" :key="i">{{ line }}</li>
-            </ul>
-            <p v-if="assistant.error" class="error" role="alert">{{ assistant.error }}</p>
-        </section>
-
-        <div class="sides">
-            <section v-for="{ side, title, purpose } in SIDES" :key="side" class="card" :data-testid="`setup-${side}`">
-                <h2>{{ title }}</h2>
-                <p class="muted">{{ purpose }}</p>
-                <label class="d-field">
-                    Gruppe
-                    <select
-                        :value="selected[side] ?? ''"
-                        :data-testid="`group-${side}`"
-                        @change="choose(side, ($event.target as HTMLSelectElement).value)"
-                    >
-                        <option value="">– keine gewählt –</option>
-                        <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
-                    </select>
-                </label>
-                <p v-if="!groups.length && !error" class="muted">Lade Gruppen …</p>
-                <p class="muted small">
-                    Keine passende Gruppe? In ChurchTools unter „Gruppen" eine anlegen, auf „aktiv" stellen und hier wählen.
-                </p>
-
-                <p v-if="busy[side]" class="muted">Prüfe …</p>
-                <ul v-else-if="checks[side]" class="checks">
-                    <li v-for="(c, i) in checks[side]" :key="i" :class="`check--${c.level}`">
-                        <span class="symbol" aria-hidden="true">{{ SYMBOL[c.level] }}</span>
-                        <span>
-                            {{ c.text }}
-                            <small v-if="c.detail" class="muted">{{ c.detail }}</small>
-                        </span>
-                    </li>
-                </ul>
-
-                <div v-if="side === 'device'" class="addresses" data-testid="player-addresses">
-                    <h3>Adressen für die Fernseher</h3>
-                    <p class="muted small">
-                        Im Browser des Fernsehers einmal mit dem Geräte-Benutzer bei ChurchTools anmelden und „Angemeldet
-                        bleiben" wählen. Dann die Adresse des Screens öffnen. In der Adresse steht kein Passwort.
-                    </p>
-                    <p v-if="!screens.length" class="muted small">Noch keine Screens angelegt.</p>
-                    <ul>
-                        <li v-for="screen in screens" :key="screen.id">
-                            <strong>{{ screen.name }}</strong>
-                            <code class="url">{{ playerUrl(screen.slug) }}</code>
-                            <button class="d-btn" type="button" :data-testid="`copy-${screen.slug}`" @click="copy(screen.slug)">
-                                {{ copied === screen.slug ? 'Kopiert' : 'Kopieren' }}
-                            </button>
-                        </li>
-                    </ul>
-                </div>
             </section>
-        </div>
+            <template v-else>
+                <p class="lead">
+                    Rechte vergibt ChurchTools an Rollen in Gruppen. Am einfachsten legt der Assistent die beiden Gruppen samt
+                    Rechten an. Wer eigene Gruppen nutzt, wählt sie unten aus – die Prüfung sagt, was fehlt, und ändert nichts.
+                </p>
+                <p v-if="error" class="error" role="alert">{{ error }}</p>
 
-        <div class="actions">
-            <button class="d-btn d-btn--primary" type="button" data-testid="save-setup" @click="save">Auswahl speichern</button>
-            <span v-if="saveState === 'saved'" class="muted" data-testid="setup-saved">Gespeichert.</span>
-            <span v-else-if="saveState === 'saving'" class="muted">Speichert …</span>
+                <section class="d-card card assistant" data-testid="assistant">
+                    <h2>Automatisch einrichten</h2>
+                    <template v-if="createdGroupIds.length">
+                        <p>
+                            Die Gruppen des Infoscreens sind eingerichtet. Wer gestalten soll, wird Mitglied in „{{ GROUP_NAMES.designer }}",
+                            die Konten der Fernseher in „{{ GROUP_NAMES.device }}" – mehr ist nicht zu tun.
+                        </p>
+                        <p class="muted small">
+                            Zeigt ein Screen einen weiteren Kalender, bringt „Rechte aktualisieren" die Gruppen auf den Stand.
+                        </p>
+                        <div class="actions">
+                            <button
+                                class="d-btn d-btn--primary"
+                                type="button"
+                                :disabled="!assistant.allowed || !plan || assistant.running"
+                                data-testid="update-rights"
+                                @click="updateRights"
+                            >
+                                Rechte aktualisieren
+                            </button>
+                            <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running" data-testid="remove-setup" @click="removeSetup">
+                                Einrichtung entfernen
+                            </button>
+                        </div>
+                    </template>
+                    <template v-else>
+                        <p>
+                            Legt zwei leere Gruppen vom Typ „{{ GROUP_TYPE_NAME }}" an und gibt ihren Rollen die nötigen Rechte. Danach
+                            müssen nur noch Personen in die Gruppen aufgenommen werden.
+                        </p>
+                        <p v-if="planProblem" class="muted">{{ planProblem }}</p>
+                        <p v-else-if="foreignGroups.length" class="warn">
+                            Es gibt schon {{ foreignGroups.map((g) => `„${g.name}"`).join(' und ') }}. Der Assistent übernimmt keine
+                            fremden Gruppen – wähle sie unten aus und prüfe ihre Rechte.
+                        </p>
+                        <details v-if="plan" class="plan">
+                            <summary>Was genau passiert</summary>
+                            <div v-for="group in plan" :key="group.key">
+                                <strong>{{ group.name }}</strong> – an allen Rollen:
+                                <ul>
+                                    <li v-for="grant in group.grants" :key="`${grant.authId}`">{{ grant.label }}</li>
+                                </ul>
+                            </div>
+                            <p v-if="wikiMissing" class="muted small">Dazu wird der Wiki-Bereich „Infoscreen" für die Mediathek angelegt.</p>
+                        </details>
+                        <div class="actions">
+                            <button
+                                class="d-btn d-btn--primary"
+                                type="button"
+                                data-testid="run-assistant"
+                                :disabled="!assistant.allowed || !plan || foreignGroups.length > 0 || assistant.running"
+                                @click="runAssistant"
+                            >
+                                Gruppen und Rechte anlegen
+                            </button>
+                            <span v-if="assistant.running" class="muted">Arbeitet …</span>
+                        </div>
+                    </template>
+                    <ul v-if="assistant.log.length" class="log" data-testid="assistant-log">
+                        <li v-for="(line, i) in assistant.log" :key="i">{{ line }}</li>
+                    </ul>
+                    <p v-if="assistant.error" class="error" role="alert">{{ assistant.error }}</p>
+                </section>
+
+                <div class="sides">
+                    <section v-for="{ side, title, purpose } in SIDES" :key="side" class="d-card card" :data-testid="`setup-${side}`">
+                        <h2>{{ title }}</h2>
+                        <p class="muted">{{ purpose }}</p>
+                        <label class="d-field">
+                            Gruppe
+                            <select
+                                :value="selected[side] ?? ''"
+                                :data-testid="`group-${side}`"
+                                @change="choose(side, ($event.target as HTMLSelectElement).value)"
+                            >
+                                <option value="">– keine gewählt –</option>
+                                <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+                            </select>
+                        </label>
+                        <p v-if="!groups.length && !error" class="muted">Lade Gruppen …</p>
+                        <p class="muted small">
+                            Keine passende Gruppe? In ChurchTools unter „Gruppen" eine anlegen, auf „aktiv" stellen und hier wählen.
+                        </p>
+
+                        <p v-if="busy[side]" class="muted">Prüfe …</p>
+                        <ul v-else-if="checks[side]" class="checks">
+                            <li v-for="(c, i) in checks[side]" :key="i" :class="`check--${c.level}`">
+                                <span class="symbol" aria-hidden="true">{{ SYMBOL[c.level] }}</span>
+                                <span>
+                                    {{ c.text }}
+                                    <small v-if="c.detail" class="muted">{{ c.detail }}</small>
+                                </span>
+                            </li>
+                        </ul>
+                    </section>
+                </div>
+
+                <div class="actions">
+                    <button class="d-btn d-btn--primary" type="button" data-testid="save-setup" @click="save">Auswahl speichern</button>
+                    <span v-if="saveState === 'saved'" class="muted" data-testid="setup-saved">Gespeichert.</span>
+                    <span v-else-if="saveState === 'saving'" class="muted">Speichert …</span>
+                </div>
+                <p class="muted small">
+                    Geprüft werden die Rechte der Gruppenrollen und ihrer Gruppentyp-Rollen, bei Geräten dazu Personenstatus und
+                    direkt vergebene Rechte. Rechte aus anderen Gruppen zählen nicht mit.
+                </p>
+            </template>
         </div>
-        <p class="muted small">
-            Geprüft werden die Rechte der Gruppenrollen und ihrer Gruppentyp-Rollen, bei Geräten dazu Personenstatus und
-            direkt vergebene Rechte. Rechte aus anderen Gruppen zählen nicht mit.
-        </p>
-    </main>
+    </ModulePage>
 </template>
 
 <style scoped>
 .setup {
+    width: 100%;
     max-width: 1100px;
     margin: 0 auto;
-    padding: 24px 16px 48px;
 }
-.back {
-    color: var(--d-accent-strong);
+.page-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
 }
-h1 {
-    margin: 8px 0 4px;
+.page-title h1 {
+    margin: 0;
+    font-size: 1.8em;
+}
+.title-icon {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--d-radius-lg);
+    background: var(--d-accent-pale);
+    color: var(--d-accent);
 }
 .lead {
     max-width: 70ch;
 }
 .sides {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
     gap: 16px;
     margin-top: 16px;
 }
@@ -488,9 +482,7 @@ h1 {
     align-content: start;
     gap: 10px;
     padding: 16px;
-    border: 1px solid var(--d-divider);
-    border-radius: var(--d-radius-lg);
-    background: var(--d-panel);
+    scroll-margin-top: 16px;
 }
 .card h2 {
     margin: 0;
@@ -551,38 +543,6 @@ h1 {
 .warn {
     color: var(--d-text);
 }
-.addresses {
-    display: grid;
-    gap: 6px;
-    padding-top: 10px;
-    border-top: 1px solid var(--d-divider);
-}
-.addresses h3 {
-    margin: 0;
-    font-size: 1em;
-}
-.addresses ul {
-    display: grid;
-    gap: 8px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-.addresses li {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 2px 8px;
-    align-items: center;
-}
-.addresses .url {
-    grid-column: 1;
-    overflow-wrap: anywhere;
-    font-size: var(--d-size-sm);
-}
-.addresses .d-btn {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-}
 .actions {
     display: flex;
     align-items: center;
@@ -597,5 +557,16 @@ h1 {
 }
 .error {
     color: var(--d-danger);
+}
+.actions {
+    flex-wrap: wrap;
+}
+@media (max-width: 48rem) {
+    .page-title h1 {
+        font-size: 1.4em;
+    }
+    .title-icon {
+        display: none;
+    }
 }
 </style>

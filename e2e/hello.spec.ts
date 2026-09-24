@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-test('greets the signed-in user by first name', async ({ page }) => {
+test('the start page opens for the signed-in user', async ({ page }) => {
     await page.goto('./');
-    await expect(page.getByTestId('greeting')).toHaveText(/^Hallo \S+/);
+    await expect(page.getByTestId('screens-heading')).toHaveText('Screens');
 });
 
 test('unknown paths show an explanation instead of an empty page', async ({ page }) => {

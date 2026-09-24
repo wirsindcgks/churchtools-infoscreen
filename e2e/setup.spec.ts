@@ -6,7 +6,7 @@ test.use({ viewport: { width: 1280, height: 900 } });
 test('the setup page checks the chosen groups and keeps the choice', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-setup').click();
-    await expect(page.getByRole('heading', { name: 'Einrichtung' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Einstellungen für Infoscreens' })).toBeVisible();
 
     await page.getByTestId('group-device').selectOption({ label: 'Infoscreen-Geraete' });
     const device = page.getByTestId('setup-device');
@@ -15,11 +15,6 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
 
     await page.getByTestId('group-designer').selectOption({ label: 'Gemeindeleitung' });
     await expect(page.getByTestId('setup-designer').locator('.checks')).toContainText('Rolle');
-
-    // Way A: the address carries no secret, only the screen.
-    const addresses = page.getByTestId('player-addresses');
-    await expect(addresses).toContainText('/ccm/infoscreen-designer/player?screen=demo');
-    await expect(addresses).not.toContainText('login_token');
 
     await page.getByTestId('save-setup').click();
     await expect(page.getByTestId('setup-saved')).toBeVisible();
@@ -31,7 +26,7 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
 });
 
 test('the assistant explains itself in demo mode instead of offering to write', async ({ page }) => {
-    await page.goto('./einrichtung');
+    await page.goto('./einstellungen');
     const assistant = page.getByTestId('assistant');
     await expect(assistant).toContainText('Im Demo-Modus nicht verfügbar');
     await expect(page.getByTestId('run-assistant')).toBeDisabled();

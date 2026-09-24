@@ -70,6 +70,16 @@ export interface LoadedScreen extends ScreenBundle {
     issues: ReadIssue[];
 }
 
+/** A screen as the start page shows it (Plan.md, Nächste Schritte 10). */
+export interface ScreenOverview {
+    screen: ScreenDoc;
+    /** The first enabled slide of the default playlist; null for a screen without slides. */
+    firstSlide: SlideDoc | null;
+    slideCount: number;
+    /** Media the first slide shows. */
+    media: MediaDoc[];
+}
+
 interface Stored<T> {
     valueId: number;
     doc: T;
@@ -113,6 +123,36 @@ export class ScreenRepository {
     async listScreens(): Promise<ScreenDoc[]> {
         const { docs } = await this.readScreens();
         return docs.map((s) => s.doc).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+    }
+
+    /**
+     * Every screen with what the start page shows of it: the first slide the
+     * TV would show and how many there are. Reads each category once, however
+     * many screens there are – `loadScreen` per screen would read them all again.
+     */
+    async listScreenOverviews(): Promise<ScreenOverview[]> {
+        const screens = await this.listScreens();
+        if (!screens.length) return [];
+        const playlists = new Map((await this.readAll('playlists', readPlaylist)).docs.map((p) => [p.doc.id, p.doc]));
+        const slides = new Map((await this.readSlides()).docs.map((s) => [s.doc.id, s.doc]));
+
+        const overviews = screens.map((screen) => {
+            const own = (playlists.get(screen.defaultPlaylistId)?.slideIds ?? [])
+                .map((id) => slides.get(id))
+                .filter((s): s is SlideDoc => s !== undefined);
+            const firstSlide = own.find((s) => s.enabled) ?? own[0] ?? null;
+            return { screen, firstSlide, slideCount: own.length, media: [] as MediaDoc[] };
+        });
+
+        const mediaIds = new Set(overviews.flatMap((o) => (o.firstSlide ? referencedMedia(o.firstSlide) : [])));
+        if (mediaIds.size) {
+            const media = (await this.readAll('media', readMedia)).docs.map((m) => m.doc);
+            for (const o of overviews) {
+                const ids = o.firstSlide ? referencedMedia(o.firstSlide) : [];
+                o.media = media.filter((m) => ids.includes(m.id));
+            }
+        }
+        return overviews;
     }
 
     async loadScreen(slug: string): Promise<LoadedScreen> {

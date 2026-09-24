@@ -38,9 +38,11 @@ test('edit a slide: add text, type, drag, undo, save', async ({ page }) => {
 
 test('create a new portrait screen', async ({ page }) => {
     await page.goto('./');
+    await page.getByTestId('new-screen').click();
     await page.getByTestId('new-name').fill('Foyer Hochkant');
     await expect(page.getByTestId('new-slug')).toHaveValue('foyer-hochkant');
-    await page.locator('select').last().selectOption('portrait');
+    await page.getByTestId('create-dialog').getByText('Hochkant').click();
+    await expect(page.getByTestId('new-portrait')).toBeChecked();
     await page.getByTestId('create').click();
     await expect(page).toHaveURL(/screens\/foyer-hochkant/);
     await expect(page.getByTestId('slide-item')).toHaveCount(1);
@@ -129,7 +131,18 @@ test('rename a screen: the new name shows in the list, an empty one is refused',
     await name.fill('Foyer rechts ');
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
-    await page.getByRole('link', { name: '← Screens' }).click();
-    await expect(page.locator('.screens')).toContainText('Foyer rechts');
-    await expect(page.locator('.screens')).not.toContainText('Demo – Foyer');
+    await page.getByRole('link', { name: 'Screens', exact: true }).click();
+    await expect(page.getByTestId('screen-card')).toContainText('Foyer rechts');
+    await expect(page.getByTestId('screen-card')).not.toContainText('Demo – Foyer');
+});
+
+test('the screen settings carry the address for the TV, without a secret (way A)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await page.keyboard.press('Escape');
+    const address = page.getByTestId('player-address');
+    await expect(address).toContainText('/ccm/infoscreen-designer/player?screen=demo');
+    await expect(address).toContainText('Angemeldet bleiben');
+    await expect(address).not.toContainText('login_token');
 });
