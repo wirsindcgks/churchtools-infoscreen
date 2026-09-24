@@ -3,8 +3,15 @@ import { expect, test } from '@playwright/test';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
+/**
+ * The image lies on the first demo slide (8 s of a 30 s rotation). If it is not
+ * on the device yet while that slide shows, it appears only in the next round.
+ */
+const ONE_ROTATION_AND_MORE = 40_000;
+
 // Writes to the wiki category "Infoscreen" of the test instance and cleans up after itself.
 test('upload an image, place it, and get warned before deleting it', async ({ page }, info) => {
+    test.setTimeout(150_000);
     // A unique name per run: browsers run in parallel against the same wiki page.
     const name = `e2e-${info.project.name}-${Date.now()}.png`;
     page.on('dialog', (dialog) => void dialog.accept());
@@ -38,11 +45,11 @@ test('upload an image, place it, and get warned before deleting it', async ({ pa
     if (info.project.name === 'chromium') {
         const player = await page.context().newPage();
         await player.goto('./player?screen=demo');
-        await expect(player.locator('.player img[src^="blob:"]')).toBeVisible({ timeout: 20_000 });
+        await expect(player.locator('.player img[src^="blob:"]')).toBeVisible({ timeout: ONE_ROTATION_AND_MORE });
         await player.route('**/images/**', (route) => route.abort());
         await player.reload();
         const cached = player.locator('.player img[src^="blob:"]');
-        await expect(cached).toBeVisible({ timeout: 20_000 });
+        await expect(cached).toBeVisible({ timeout: ONE_ROTATION_AND_MORE });
         expect(await cached.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
         await player.close();
     }
