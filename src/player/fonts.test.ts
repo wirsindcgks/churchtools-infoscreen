@@ -10,7 +10,7 @@ describe('fonts', () => {
     });
 
     it('uses the ChurchTools font for new blocks, as the built-in info screen does', () => {
-        expect(fontDef(DEFAULT_FONT).label).toContain('Lato');
+        expect(fontDef(DEFAULT_FONT).label).toBe('Lato');
     });
 
     it('keeps screens of schema 1.0 readable: the old keys point to bundled fonts', () => {

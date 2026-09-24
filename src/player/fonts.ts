@@ -84,7 +84,7 @@ const statics = (files: Record<string, [latin: string, latinExt: string]>): Face
 export const FONTS: FontDef[] = [
     {
         key: 'lato',
-        label: 'Lato – wie ChurchTools',
+        label: 'Lato',
         family: 'ISD Lato',
         generic: 'sans-serif',
         // No semibold: 600 renders as 700, as in ChurchTools itself.
@@ -92,7 +92,7 @@ export const FONTS: FontDef[] = [
     },
     {
         key: 'atkinson-hyperlegible-next',
-        label: 'Atkinson Hyperlegible Next – besonders gut lesbar',
+        label: 'Atkinson Hyperlegible Next',
         family: 'ISD Atkinson Hyperlegible Next',
         generic: 'sans-serif',
         faces: variable('200 800', atkinsonLatin, atkinsonLatinExt),
@@ -135,7 +135,7 @@ export const FONTS: FontDef[] = [
     },
     {
         key: 'barlow-condensed',
-        label: 'Barlow Condensed – schmal, für Überschriften',
+        label: 'Barlow Condensed',
         family: 'ISD Barlow Condensed',
         generic: 'sans-serif',
         faces: statics({
@@ -146,21 +146,21 @@ export const FONTS: FontDef[] = [
     },
     {
         key: 'montserrat',
-        label: 'Montserrat – breit, für Überschriften',
+        label: 'Montserrat',
         family: 'ISD Montserrat',
         generic: 'sans-serif',
         faces: variable('100 900', montserratLatin, montserratLatinExt),
     },
     {
         key: 'source-serif-4',
-        label: 'Source Serif 4 – mit Serifen',
+        label: 'Source Serif 4',
         family: 'ISD Source Serif 4',
         generic: 'serif',
         faces: variable('200 900', sourceSerifLatin, sourceSerifLatinExt),
     },
     {
         key: 'merriweather',
-        label: 'Merriweather – mit Serifen',
+        label: 'Merriweather',
         family: 'ISD Merriweather',
         generic: 'serif',
         faces: variable('300 900', merriweatherLatin, merriweatherLatinExt),
