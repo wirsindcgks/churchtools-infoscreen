@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G29 sind beantwortet, G16 und G21 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G30 sind beantwortet, G16 und G21 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -276,6 +276,15 @@ Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt �
 
 **Ungemessen:** was `/logo` liefert, wenn **kein** Logo hinterlegt ist. Der Player behandelt alles außer einem Bild als „kein Logo" und zeigt dann nur den Namen.
 
+**G30 – Rollenrechte kommen als Nummern; den Katalog dazu hat nur die alte Schnittstelle.** *(2026-09-24, Testinstanz, nur lesend: `GET /api/permissions/group_role/{id}`, `GET /api/groups/{id}/roles`, dazu `POST ?q=churchauth/ajax` und `POST ?q=churchdb/ajax` mit `func=getMasterData`)*
+
+- **`GET /api/permissions/group_role/{rolle}`** liefert je Recht `authId`, `dataId` (eine Zahl je Eintrag, etwa eine Kalender-id), `type: "grant"` und `isInherited` – **ohne Namen**. Eine Rolle ohne Rechte antwortet mit leerer Liste (Rolle 124 der Gruppe 16). Die Rollen einer Gruppe liefert `GET /api/groups/{id}/roles` (id, Name, `isDefault`).
+- **Eine Route, die `authId` in Namen übersetzt, hat die neue API nicht.** Die alte Schnittstelle hat sie: `churchauth` → `getMasterData` → `auth_table`, je Modul jedes Recht mit id, API-Namen und der Bezeichnung aus der Oberfläche. Sie verlangt eine **Sitzung mit CSRF-Token**; mit `Authorization: Login` allein antwortet sie mit `302`. Custom Modules fehlen darin, solange sie abgeschaltet sind (T1).
+- **Damit ist die offene Frage aus G21 beantwortet:** `306` ist `churchservice` → „Events von einzelnen Kalendern sehen", **`403` ist `churchcal` → „Einzelnen Kalender sehen"**. Für die Termine eines Screens braucht das Gerät 403; 306 gehört zum Dienstmodul. Dazu `churchwiki`: 501 „Wiki" sehen, 502 einzelne Kategorien sehen, 503 einzelne Kategorien bearbeiten, 599 Stammdaten bearbeiten.
+- **Gruppenstatus** steht in `information.groupStatusId` von `GET /api/groups/{id}`; die Namen nur in `churchdb` → `getMasterData` → `groupstatus`: **1 aktiv, 2 Entwurf, 3 archiviert, 4 beendet**. Laut [Academy](https://churchtools.academy/de/help/rechteverwaltung/gruppen-berechtigen/28-wann-sind-rechte-von-gruppenmitgliedern-wirksam/) wirken Rechte bei „aktiv" und „beendet", nicht im Entwurf, und gehen mit dem Archivieren verloren.
+
+**Für die Einrichtungsseite folgt:** Die wenigen Kernrechte, die sie prüft (403, 501–503), stehen als Konstanten im Code – die alte Schnittstelle zur Laufzeit zu brauchen, hieße, an einer Sitzung und einem Altsystem zu hängen. Die Rechte-Nummern der Extension selbst sind erst nach der Freischaltung zu lesen; ob sie je Instanz verschieden sind, ist offen.
+
 ## Teilweise beantwortet
 
 **G16 – Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.
@@ -312,7 +321,7 @@ Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit
 
 **Was offen bleibt:**
 
-- **Welche `authId` welches Kalenderrecht ist** (306 gegen 403). Die Sitzung trennt sie nicht: Beide tragen `dataId [1, 2, 3]`, und `churchcal.view category` wie `churchservice.view events` stehen beide auf `[1, 2, 3]`. Es hilft nur, **ein einzelnes** Recht an Rolle 124 zu setzen und zurückzulesen.
+- ~~**Welche `authId` welches Kalenderrecht ist** (306 gegen 403).~~ **Beantwortet durch G30**, ohne Schreibzugriff: 306 ist „Events von einzelnen Kalendern sehen" (Dienstmodul), 403 „Einzelnen Kalender sehen".
 - **Woran die Sichtbarkeit von Beiträgen hängt.** Ein Leserecht gibt es nicht (siehe Abschnitt F), und die Instanz hat keinen einzigen Beitrag – die Frage ist ohne Testbeitrag nicht zu beantworten.
 - **Ob Archivieren der Gruppe als zweite Notbremse wirkt.**
 - **Die Modulrechte selbst**, solange Custom Modules nicht freigeschaltet sind (T1). Die ChurchTools-seitige Hälfte ist aber die größere: Sie bemisst, was der Token auf der SD-Karte wirklich darf.

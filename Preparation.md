@@ -338,7 +338,7 @@ bevor das Screen-Schema steht.
 - [x] **Alle Befunde in [`Befunde.md`](Befunde.md) eingetragen** *(Stand 2026-09-23)*: beantwortete Punkte nach
       oben, mit Datum und Quelle (Instanz, Spezifikation oder fremder Code).
       Beantwortet: **G1–G8, G11, G14, G15, G18, G19, G20**; **G16** und **G21** zur Hälfte.
-      **G21** ist seit dem 2026-09-23 gebaut und gemessen – offen bleiben daran nur noch `authId` 306 gegen 403, die Sichtbarkeit von Beiträgen und das Archivieren als zweite Notbremse.
+      **G21** ist seit dem 2026-09-23 gebaut und gemessen – offen bleiben daran nur noch die Sichtbarkeit von Beiträgen und das Archivieren als zweite Notbremse.
       Offen und an der Freischaltung hängend: **G9, G10**; **G12, G13** sind seit G22 hinfällig. Dazu **G17** als Entscheidung.
       **G18 hat den Notfallpfad aus E3 erst widerlegt und dann ersetzt** – die Notbremse ist der Passwortwechsel.
       Belege liegen lokal unter `fixtures/` – **nicht im Repo**, siehe `fixtures/README.md`.
