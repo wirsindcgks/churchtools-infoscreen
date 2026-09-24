@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { enableTokenLogin } from '../ct/client';
+import { enableTokenLogin, type TokenLogin } from '../ct/client';
 import type { MediaDoc, SlideDoc } from '../model/schema';
 import { imageSource, provideStageContext, type StageContext } from '../player/context';
 import { createPlayer } from '../player/controller';
-import { churchToolsPlayerData } from '../player/data';
+import { createChurchToolsPlayerData } from '../player/data';
 import { screenImageUrls, slideImageUrls } from '../player/images';
 import { createMediaCache } from '../player/media-cache';
 import { createPreloader } from '../player/preload';
@@ -20,9 +20,11 @@ const slug = typeof route.query.screen === 'string' ? route.query.screen : null;
 
 const token = route.query.login_token;
 const personId = Number(route.query.user_id);
-if (typeof token === 'string' && Number.isInteger(personId)) enableTokenLogin(token, personId);
+const login: TokenLogin | undefined =
+    typeof token === 'string' && Number.isInteger(personId) ? { loginToken: token, personId } : undefined;
+if (login) enableTokenLogin(login);
 
-const player = slug ? createPlayer(slug, churchToolsPlayerData) : null;
+const player = slug ? createPlayer(slug, createChurchToolsPlayerData(login)) : null;
 const state = player?.state;
 
 const context = reactive<StageContext>({

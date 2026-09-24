@@ -12,6 +12,8 @@ export const INTERVALS = {
     dataMs: 10 * 60_000,
     requestTimeoutMs: 20_000,
     maxBackoffMs: 30 * 60_000,
+    /** Failing this long without a break, the player starts afresh – if the page itself can load. */
+    reloadAfterFailingMs: 30 * 60_000,
 } as const;
 
 /** Spreads an interval by ±`spread` so that many devices drift apart. */

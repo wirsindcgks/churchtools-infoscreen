@@ -25,6 +25,20 @@ test('player shows real appointments from the instance', async ({ page }) => {
     await page.screenshot({ path: 'test-results/player-list.png' });
 });
 
+test('a human session left in the kiosk browser is not taken for the device account', async ({ page }) => {
+    const logins: string[] = [];
+    // Person 1 stays signed in whatever the token says – as with a session the token cannot replace.
+    await page.route('**/api/whoami**', async (route) => {
+        const url = new URL(route.request().url());
+        if (url.searchParams.has('login_token')) logins.push(url.searchParams.get('user_id') ?? '');
+        await route.fulfill({ json: { data: { id: 1, firstName: 'Mensch', lastName: 'Vorort' } } });
+    });
+    await page.goto('./player?screen=demo&login_token=geraet&user_id=22');
+    await expect(page.getByRole('alert')).toContainText('nicht der Geräte-Benutzer (Person 22)');
+    await expect(page.getByRole('alert')).not.toContainText('Mensch');
+    expect(logins).toContain('22');
+});
+
 test('an unknown screen is named, not shown as a black page', async ({ page }) => {
     await page.goto('./player?screen=gibt-es-nicht');
     await expect(page.getByRole('alert')).toContainText('gibt-es-nicht');

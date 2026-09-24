@@ -65,11 +65,67 @@ export function httpStatus(error: unknown): number | null {
     return typeof status === 'number' ? status : null;
 }
 
+/** The device account from the player address: `login_token` and `user_id`. */
+export interface TokenLogin {
+    loginToken: string;
+    personId: number;
+}
+
+/**
+ * Someone else is signed in than the device account the address names. Only
+ * ids in the message: it appears on a TV in the foyer.
+ */
+export class WrongPersonError extends Error {
+    constructor(
+        readonly signedInId: number,
+        readonly expectedId: number,
+    ) {
+        super(
+            `Angemeldet ist Person ${signedInId}, nicht der Geräte-Benutzer (Person ${expectedId}). ` +
+                'Die Anmeldung mit dem Token aus der Adresse ist gescheitert – login_token und user_id prüfen.',
+        );
+        this.name = 'WrongPersonError';
+    }
+}
+
 /**
  * The device logs in with its login token (Plan.md, D). The client signs in
  * again by itself whenever the session has expired – for a device that runs
  * for months, that is the point.
  */
-export function enableTokenLogin(loginToken: string, personId: number): void {
-    churchtoolsClient.setUnauthorizedInterceptor(loginToken, personId);
+export function enableTokenLogin(login: TokenLogin): void {
+    churchtoolsClient.setUnauthorizedInterceptor(login.loginToken, login.personId);
+}
+
+export interface SignInApi {
+    whoami: () => Promise<Person>;
+    loginWithToken: (loginToken: string, personId: number) => Promise<unknown>;
+}
+
+const clientSignInApi: SignInApi = {
+    whoami: fetchCurrentPerson,
+    loginWithToken: (loginToken, personId) => churchtoolsClient.loginWithToken(loginToken, personId),
+};
+
+/**
+ * Checks who is signed in. With a device account, that person and nobody
+ * else: a kiosk browser that still holds a human's session would otherwise
+ * show the screen with that human's rights and never use its token – until
+ * the session runs out on a Sunday. A mismatch triggers one login with the
+ * token; if that does not help, it is an error.
+ */
+export async function ensureSignedIn(login?: TokenLogin, api: SignInApi = clientSignInApi): Promise<Person> {
+    if (!login) return api.whoami();
+    let person: Person | null = null;
+    try {
+        person = await api.whoami();
+    } catch (error) {
+        if (!(error instanceof NotAuthenticatedError)) throw error;
+    }
+    if (person?.id === login.personId) return person;
+
+    await api.loginWithToken(login.loginToken, login.personId);
+    person = await api.whoami();
+    if (person.id !== login.personId) throw new WrongPersonError(person.id, login.personId);
+    return person;
 }

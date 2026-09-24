@@ -6,14 +6,14 @@ import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
 import { startOfZonedDay } from '../appointments/zoned';
 import { fetchAppointments, fetchTimeZone } from '../ct/api';
-import { fetchCurrentPerson } from '../ct/client';
+import { ensureSignedIn, type TokenLogin } from '../ct/client';
 import type { ScreenDoc, SlideDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
 import type { LoadedScreen } from '../store/screen-repository';
 import { withTimeout } from './timing';
 
 export interface PlayerData {
-    /** Fails unless a real person is signed in (G20). */
+    /** Fails unless a real person – with a device account, exactly that one – is signed in (G20). */
     assertSignedIn(): Promise<void>;
     loadScreen(slug: string): Promise<LoadedScreen>;
     timeZone(): Promise<string>;
@@ -23,9 +23,19 @@ export interface PlayerData {
     appointments(calendarIds: number[], from: Date, to: Date, timeZone: string): Promise<Appointment[]>;
 }
 
+/** Data from ChurchTools; with `login`, only for that device account. */
+export function createChurchToolsPlayerData(login?: TokenLogin): PlayerData {
+    return {
+        ...churchToolsPlayerData,
+        async assertSignedIn() {
+            await withTimeout(ensureSignedIn(login));
+        },
+    };
+}
+
 export const churchToolsPlayerData: PlayerData = {
     async assertSignedIn() {
-        await withTimeout(fetchCurrentPerson());
+        await withTimeout(ensureSignedIn());
     },
     async loadScreen(slug) {
         const { repository } = await withTimeout(getRepository());

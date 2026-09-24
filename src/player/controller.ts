@@ -2,17 +2,18 @@
  * Keeps a player alive on a device nobody watches (Plan.md, Risiko 2):
  * shows the last good state first, refreshes configuration and data on
  * separate jittered intervals, backs off on errors, reloads itself for newer
- * data and once a night, and keeps showing old content rather than nothing.
+ * data, once a night and after half an hour of errors, and keeps showing old
+ * content rather than nothing.
  */
 import { reactive } from 'vue';
 import type { Appointment } from '../appointments/normalize';
-import { NotAuthenticatedError } from '../ct/client';
+import { NotAuthenticatedError, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import { ScreenNotFoundError, type LoadedScreen } from '../store/screen-repository';
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
 import { appointmentNeeds, appointmentWindow, type PlayerData } from './data';
-import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter } from './timing';
+import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
 
 export interface PlayerState {
     phase: 'loading' | 'running' | 'error';
@@ -29,6 +30,12 @@ export interface PlayerState {
 export interface PlayerDeps {
     now: () => Date;
     reload: () => void;
+    /**
+     * Whether the page itself would load again. Without a service worker (G10)
+     * a reload during a network outage leaves the browser's error page – worse
+     * than the old content it replaces.
+     */
+    canReload: () => Promise<boolean>;
     loadCached: (slug: string) => Promise<CachedState | null>;
     saveCached: (slug: string, state: CachedState) => Promise<void>;
 }
@@ -36,6 +43,14 @@ export interface PlayerDeps {
 const browserDeps: PlayerDeps = {
     now: () => new Date(),
     reload: () => window.location.reload(),
+    async canReload() {
+        try {
+            const response = await withTimeout(fetch(window.location.href, { method: 'HEAD', cache: 'no-store' }));
+            return response.ok;
+        } catch {
+            return false;
+        }
+    },
     loadCached,
     saveCached,
 };
@@ -55,6 +70,30 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
     let configFailures = 0;
     let dataFailures = 0;
     let stopped = false;
+    /**
+     * Set by a fatal error. Data refreshes would otherwise switch the player
+     * back to "running" – under a human's session they succeed – and hide
+     * the error. Only a successful configuration refresh lifts it.
+     */
+    let blocked = false;
+    /** Start of the current run of failures, per cycle; null while it succeeds. */
+    const failingSince: Record<'config' | 'data', Date | null> = { config: null, data: null };
+
+    /**
+     * The last self-healing step (Plan.md, MVP): after half an hour of nothing
+     * but errors, start afresh – a stuck session or a broken state in memory
+     * is gone after a reload. The counter lives in memory, so a reload that
+     * does not help comes at most every half hour.
+     */
+    async function noteFailure(cycle: 'config' | 'data'): Promise<void> {
+        const now = deps.now();
+        const since = (failingSince[cycle] ??= now);
+        if (now.getTime() - since.getTime() < INTERVALS.reloadAfterFailingMs) return;
+        if (await deps.canReload()) {
+            console.warn(`Infoscreen „${slug}": seit ${since.toISOString()} nur Fehler – lade neu.`);
+            deps.reload();
+        }
+    }
 
     function later(ms: number, action: () => void): ReturnType<typeof setTimeout> | undefined {
         if (stopped) return undefined;
@@ -82,7 +121,11 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             return;
         }
         const message = error instanceof Error ? error.message : String(error);
-        const fatal = error instanceof ScreenNotFoundError || error instanceof NotAuthenticatedError;
+        const fatal =
+            error instanceof ScreenNotFoundError ||
+            error instanceof NotAuthenticatedError ||
+            error instanceof WrongPersonError;
+        if (fatal) blocked = true;
         if (fatal || !state.screen) {
             state.phase = 'error';
             state.error = message;
@@ -100,7 +143,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
     }
 
     async function refreshData(): Promise<void> {
-        if (!state.screen) return;
+        if (!state.screen || blocked) return;
         const [timeZone, churchName, serverDate] = await Promise.all([
             data.timeZone(),
             data.churchName(),
@@ -136,13 +179,17 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             const before = state.screen?.screen.revision;
             await refreshConfig();
             configFailures = 0;
-            // A new revision may reference other calendars: fetch data right away.
-            if (state.screen?.screen.revision !== before) await refreshData();
+            failingSince.config = null;
+            const recovered = blocked;
+            blocked = false;
+            // A new revision may reference other calendars, and a lifted block shows content again: fetch data now.
+            if (recovered || state.screen?.screen.revision !== before) await refreshData();
             scheduleConfig(withJitter(INTERVALS.configMs));
         } catch (error) {
             configFailures++;
             fail(error);
             scheduleConfig(backoffDelay(30_000, configFailures));
+            await noteFailure('config');
         }
     }
 
@@ -150,11 +197,13 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         try {
             await refreshData();
             dataFailures = 0;
+            failingSince.data = null;
             later(withJitter(INTERVALS.dataMs), dataCycle);
         } catch (error) {
             dataFailures++;
             fail(error);
             later(backoffDelay(30_000, dataFailures), dataCycle);
+            await noteFailure('data');
         }
     }
 

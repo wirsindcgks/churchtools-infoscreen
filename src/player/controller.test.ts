@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { NotAuthenticatedError } from '../ct/client';
+import { NotAuthenticatedError, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import { DEMO_BUNDLE } from '../dev/demo';
 import { ScreenNotFoundError, type LoadedScreen } from '../store/screen-repository';
@@ -31,6 +31,7 @@ function fakeDeps(cached: CachedState | null = null) {
     const deps: PlayerDeps & { saved: CachedState[] } = {
         now: () => NOW,
         reload: vi.fn(),
+        canReload: vi.fn(async () => true),
         loadCached: async () => cached,
         saveCached: async (_slug, state) => {
             deps.saved.push(state);
@@ -94,6 +95,86 @@ describe('player controller', () => {
         expect(player.state.phase).toBe('error');
         expect(player.state.error).toContain('angemeldet');
         player.stop();
+    });
+
+    it('refuses to run under someone else than the device account, even with a cached state', async () => {
+        const cached: CachedState = {
+            screen: loaded(),
+            appointments: [],
+            timeZone: 'Europe/Berlin',
+            churchName: 'Gemeinde',
+            savedAt: '2026-10-03T20:00:00Z',
+        };
+        const player = createPlayer(
+            'demo',
+            fakeData({ assertSignedIn: () => Promise.reject(new WrongPersonError(5, 22)) }),
+            fakeDeps(cached),
+        );
+        await player.start();
+        expect(player.state.phase).toBe('error');
+        expect(player.state.error).toContain('Person 22');
+        player.stop();
+    });
+
+    it('shows content again once the device account is signed in', async () => {
+        const assertSignedIn = vi
+            .fn<PlayerData['assertSignedIn']>()
+            .mockRejectedValueOnce(new WrongPersonError(5, 22))
+            .mockResolvedValue(undefined);
+        const player = createPlayer('demo', fakeData({ assertSignedIn }), fakeDeps());
+        await player.start();
+        expect(player.state.phase).toBe('error');
+        await vi.advanceTimersByTimeAsync(30_000);
+        expect(player.state.phase).toBe('running');
+        expect(player.state.error).toBeNull();
+        player.stop();
+    });
+
+    describe('after half an hour of nothing but errors', () => {
+        const offline = () => Promise.reject(new Error('Network Error'));
+        /** A clock that moves with the fake timers. */
+        function movingDeps(canReload: boolean) {
+            vi.setSystemTime(NOW);
+            return { ...fakeDeps(), now: () => new Date(), canReload: vi.fn(async () => canReload) };
+        }
+
+        it('reloads when the page itself would load', async () => {
+            const deps = movingDeps(true);
+            const player = createPlayer('demo', fakeData({ loadScreen: offline }), deps);
+            await player.start();
+            await vi.advanceTimersByTimeAsync(29 * 60_000);
+            expect(deps.reload).not.toHaveBeenCalled();
+            await vi.advanceTimersByTimeAsync(40 * 60_000);
+            expect(deps.reload).toHaveBeenCalled();
+            player.stop();
+        });
+
+        it('keeps the old content instead of reloading into a network outage (G10)', async () => {
+            const deps = movingDeps(false);
+            const player = createPlayer('demo', fakeData({ loadScreen: offline }), deps);
+            await player.start();
+            await vi.advanceTimersByTimeAsync(90 * 60_000);
+            expect(deps.canReload).toHaveBeenCalled();
+            expect(deps.reload).not.toHaveBeenCalled();
+            player.stop();
+        });
+
+        it('starts counting anew after a success', async () => {
+            const deps = movingDeps(true);
+            let calls = 0;
+            // Fails, except for one success after about twenty minutes.
+            const loadScreen = vi.fn(async () => {
+                calls++;
+                if (calls === 6) return loaded();
+                throw new Error('Network Error');
+            });
+            const player = createPlayer('demo', fakeData({ loadScreen }), deps);
+            await player.start();
+            await vi.advanceTimersByTimeAsync(40 * 60_000);
+            expect(calls).toBeGreaterThan(6);
+            expect(deps.reload).not.toHaveBeenCalled();
+            player.stop();
+        });
     });
 
     it('names an unknown slug', async () => {
