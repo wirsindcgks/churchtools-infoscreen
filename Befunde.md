@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20 und G22 sind beantwortet, G16 und G21 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22 und G23 sind beantwortet, G16 und G21 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -237,6 +237,14 @@ Auch die **Administrationsoberfläche gibt einen fremden Token nicht heraus** (2
 
 **Nebenfund: [`churchtools/churchtools-extension-points`](https://github.com/churchtools/churchtools-extension-points)** (MIT, Version 0.0.1, Stand 2025-11) beschreibt einen neueren Einhängemechanismus: Einstiegspunkte `main` (eigener Menüpunkt) und `admin` (Einstellungsseite unter Admin → Extensions), dazu Reiter und Detailbereiche in fremden Modulen. Eine Extension bekommt dort `{ data, on, emit, element }` statt eines `#app`-Elements. Ob Build 32882 ihn schon nutzt, ist offen – `ct-pass-store` hängt sich klassisch an `#app`. **Nach der Freischaltung mitzuprüfen**, weil es entscheidet, wie `main.ts` einhängt.
 
+**G23 – Ganztägige Termine kommen als reine Daten mit einschließlichem Ende.** *(2026-09-24, Testinstanz – drei eigens angelegte Termine in „Sonstige Veranstaltung": id 7, 10, 13)* `GET /calendars/appointments` liefert bei `allDay: true` in `base` **und** `calculated` reine Daten: ein Tag als `2026-10-03 → 2026-10-03`, eine Freizeit als `2026-10-16 → 2026-10-18` – das Ende ist der letzte Tag, nicht der Tag danach. Termine mit Uhrzeit bleiben ISO mit `Z`, auch über mehrere Tage (`2026-11-06T17:00:00Z → 2026-11-08T13:00:00Z`, Ortszeit Fr 18:00 bis So 14:00). Aufgezeichnet unter `fixtures/api/appointments-allday.json`.
+
+**Ein Fehler, den erst die Messung zeigte:** Die Normalisierung setzte das Ende eines reinen Datums auf den *Beginn* des letzten Tages – eine Freizeit wäre am letzten Morgen um 0 Uhr vom Bildschirm verschwunden. Jetzt endet sie mit dem letzten Tag, per Test gesichert.
+
+**Beim Anlegen zu wissen:** `POST /calendars/{id}/appointments` verlangt `isInternal` als ausdrücklichen Wahrheitswert, sonst 400 – dasselbe Muster wie `inMenu` bei Wiki-Kategorien (G8).
+
+**G25 – Das Design der Hostseite ist über semantische CSS-Variablen erreichbar.** *(2026-09-24, Stylesheet `system/dist/assets/index-*.css` der Testinstanz, anonym gelesen)* ChurchTools setzt Tailwind v4 ein und legt 761 Variablen auf `:root`. Brauchbar sind nicht die Paletten (`--color-blue-600`), sondern die **semantischen Tokens** `--color-{basic|accent|info|success|warning|critical|error|destructive|constructive|magic}-{primary|secondary|tertiary|bright|b-pale|b-bright|b-contrast|divider|interactive|inverted|disabled}`; `.dark` belegt 250 davon neu, der Dunkelmodus kommt also mit. Dazu `--font-sans` (Lato, von ChurchTools selbst ausgeliefert), `--text-base` = 14 px und `--radius-*`. Der Designer nutzt eine Handvoll davon mit Ersatzwerten (`src/designer/theme.css`); die Bühne keine – sonst hinge das Foyer an einem Update der Hostseite.
+
 ## Teilweise beantwortet
 
 **G16 – Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.
@@ -289,7 +297,7 @@ Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit
 
 ~~**G13 – Was bewirkt `securityLevelId` an einer Kategorie?**~~ **Hinfällig seit G22** – das Feld gibt es auf Build 32882 nicht.
 
-**G23 – Wie kodiert ChurchTools ganztägige und mehrtägige Termine?** Auf der Testinstanz gibt es keinen; `src/appointments/normalize.ts` nimmt an, dass ein Ende um Mitternacht Ortszeit exklusiv ist, und liest reine Datumswerte als inklusiv. **Zu messen mit je einem ganztägigen und einem mehrtägigen Termin – ein schreibender Zugriff auf die Testinstanz, also vorher abzustimmen.**
+
 
 **G17 – Extension Store**: Aufnahmekriterien, Einreichungsweg, ob eine Veröffentlichung überhaupt angestrebt wird. Der Publisher hält seinen Store-Text in einer eigenen `EXTENSION_STORE.md` – ein Muster, das sich übernehmen lässt.
 

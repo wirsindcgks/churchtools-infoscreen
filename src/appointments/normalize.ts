@@ -67,13 +67,14 @@ export function normalizeAppointments(responses: AppointmentResponse[], timeZone
 function normalizeOne(response: AppointmentResponse, timeZone: string): Appointment | null {
     const { base, calculated } = response.appointment;
     const start = parseInstant(calculated.startDate, timeZone);
-    const end = parseInstant(calculated.endDate, timeZone);
-    if (!start || !end) return null;
+    const endRaw = parseInstant(calculated.endDate, timeZone);
+    if (!start || !endRaw) return null;
 
     const startDate = zonedDateKey(start, timeZone);
-    // All-day: how ChurchTools encodes the end is unmeasured (Befunde.md, G22).
-    // An end at local midnight is read as exclusive, a date-only end as inclusive.
-    const endDate = base.allDay ? allDayEndDate(calculated.endDate, end, timeZone) : zonedDateKey(end, timeZone);
+    // All-day entries come as pure dates with an inclusive end (G23): the entry
+    // lasts until the end of that local day, not until its first minute.
+    const endDate = base.allDay ? allDayEndDate(calculated.endDate, endRaw, timeZone) : zonedDateKey(endRaw, timeZone);
+    const end = DATE_ONLY.test(calculated.endDate) ? startOfZonedDay(endRaw, timeZone, 1) : endRaw;
 
     return {
         key: `${base.id}@${start.toISOString()}`,
@@ -104,6 +105,7 @@ function parseInstant(value: string, timeZone: string): Date | null {
     return Number.isNaN(instant.getTime()) ? null : instant;
 }
 
+/** Pure dates are measured (G23); an end at local midnight is only a fallback reading. */
 function allDayEndDate(raw: string, end: Date, timeZone: string): string {
     if (DATE_ONLY.test(raw)) return raw;
     const isLocalMidnight = zonedTimeKey(end, timeZone) === '00:00';

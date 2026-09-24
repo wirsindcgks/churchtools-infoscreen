@@ -120,6 +120,41 @@ describe('selectUpcoming', () => {
     });
 });
 
+describe('all-day entries as ChurchTools sends them (G23)', () => {
+    const [freizeit] = normalizeAppointments([response(10, '2026-10-16', '2026-10-18', { allDay: true })], BERLIN);
+
+    it('stay on screen through the whole last day', () => {
+        const lastEvening = new Date('2026-10-18T20:00:00Z'); // 22:00 local
+        const options = { timeZone: BERLIN, horizonDays: 1, limit: 5 };
+        expect(selectUpcoming([freizeit!], { ...options, now: lastEvening })).toHaveLength(1);
+        expect(selectUpcoming([freizeit!], { ...options, now: new Date('2026-10-18T22:00:00Z') })).toHaveLength(0);
+    });
+});
+
+describe.skipIf(!hasFixture('api/appointments-allday.json'))('recorded all-day and multi-day entries (G23)', () => {
+    const recorded = () =>
+        normalizeAppointments(loadFixture<{ data: AppointmentResponse[] }>('api/appointments-allday.json').data, BERLIN);
+    const byId = (id: number) => recorded().find((a) => a.baseId === id)!;
+
+    it('reads a single all-day date', () => {
+        expect(byId(7)).toMatchObject({ startDate: '2026-10-03', endDate: '2026-10-03', multiDay: false, startTime: null });
+    });
+
+    it('reads an all-day range with an inclusive end', () => {
+        expect(byId(10)).toMatchObject({ startDate: '2026-10-16', endDate: '2026-10-18', multiDay: true });
+    });
+
+    it('reads a timed weekend in local time', () => {
+        expect(byId(13)).toMatchObject({
+            startDate: '2026-11-06',
+            startTime: '18:00',
+            endDate: '2026-11-08',
+            endTime: '14:00',
+            multiDay: true,
+        });
+    });
+});
+
 describe.skipIf(!hasFixture('api/appointments-series.json'))('recorded series from the test instance (G19)', () => {
     const recorded = () =>
         normalizeAppointments(
