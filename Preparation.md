@@ -9,7 +9,7 @@ anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
 
 > **⏱ Die Testinstanz läuft ab**
 >
-> `https://test-cg-ks.church.tools` – leer, Build 32882 wie produktiv, **30 Tage Lizenz, bis etwa 2026-10-22**.
+> `https://test-cg-ks.church.tools` – leer, Build 32882 wie produktiv, **30 Tage Lizenz, bis 2026-10-22, 21:53** (T3).
 > Eine Verlängerung ist ungeklärt (**F1**, zuerst zu fragen).
 >
 > **Regel, die dieser Liste vorgeht: Was nur eine Instanz beantworten kann, wird zuerst gemessen.
@@ -37,8 +37,8 @@ anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
 > gegen 20 % Produkt. **Ab jetzt ist der Pitch der Taktgeber**, nicht mehr die Frist der Testinstanz.
 >
 > Diese Liste bleibt gültig, ändert aber ihren Rang: Sie ist **Zuarbeit**, keine Voraussetzung mehr. Offen und
-> wirklich dringlich sind daraus nur noch **B1–B4** (Entwicklungsumgebung, unblockiert) und **T3** (das echte
-> Ablaufdatum). C, E1, E4 und B5/B6 warten auf die Freischaltung und halten nichts auf.
+> wirklich dringlich ist daraus nur noch **B1–B4** (Entwicklungsumgebung, unblockiert); T3 ist seit dem
+> 2026-09-24 erledigt. C, E1, E4 und B5/B6 warten auf die Freischaltung und halten nichts auf.
 >
 > Der Bauplan steht in [`Plan.md`](Plan.md), „Nächste Schritte" – am Pitch entlang, nicht am Preis der Messungen.
 
@@ -69,9 +69,8 @@ muss dem der Produktivinstanz nicht gleichen.
       und ein **Terminbild** daran (Datei 46) – beides fehlte und beides war nötig, weil alle vorhandenen
       Termine einmalig und bildlos waren. Befunde in `Plan.md`, G19 und G14.
 
-- [ ] **T3 · Ablaufdatum notieren**
-      In ChurchTools nachsehen, wann die Lizenz tatsächlich endet, und das Datum hier und in `Plan.md`
-      eintragen. Ein geschätztes Datum taugt nicht als Taktgeber.
+- [x] **T3 · Ablaufdatum notieren** → **2026-10-22, 21:53** *(2026-09-24)*
+      30 Tage ab Anlage der Instanz am 2026-09-22 um 21:53. Eingetragen auch in `Plan.md`.
 
 ## A. Kostenlos – nur hinsehen (ca. 30 Minuten)
 

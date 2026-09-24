@@ -12,13 +12,13 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 2. **Entwicklungsumgebung** bis zum „Hallo &lt;Vorname&gt;" – unblockiert.
 3. **Datenmodell, Player, Designer gegen den Mock** – unblockiert.
 4. **Nach der Freischaltung genau drei Punkte**: Testmodul hochladen (B6), Typ-Snapshot ziehen (B5), Login-Token am `/ccm/`-Pfad prüfen (G9). Alles andere aus dem blockierten Rest ist verzichtbar oder hat eine Vorgabe.
-5. ~~**Die Fixtures außerhalb des Repos sichern**~~ – **erledigt am 2026-09-24.** Was danach noch aufgezeichnet wird, muss vor Ablauf der Testinstanz (etwa 2026-10-22) nachgesichert werden.
+5. ~~**Die Fixtures außerhalb des Repos sichern**~~ – **erledigt am 2026-09-24.** Was danach noch aufgezeichnet wird, muss vor Ablauf der Testinstanz (2026-10-22, 21:53) nachgesichert werden.
 
 **Bewusst geparkt** – nicht falsch, aber nicht jetzt: alles Weitere am Betriebsbenutzer (G21-Reste), `securityLevelId` (G13), Schema-Durchsetzung (G12), Rate-Limit (G16), Heartbeat und Statusanzeige, eine gemeinsame Bibliothek mit `ct-pass-store`, Rollenmodell für mehrere Gestalter.
 
 ## Rahmendaten
 
-- **Testinstanz**: `https://test-cg-ks.church.tools`, Build 32882 wie produktiv, **Lizenz bis etwa 2026-10-22** (echtes Datum: T3). Custom Modules dort **nicht freigeschaltet** (T1), angefragt am 2026-09-23. Die **Produktivinstanz** hat sie (G1).
+- **Testinstanz**: `https://test-cg-ks.church.tools`, Build 32882 wie produktiv, **Lizenz bis 2026-10-22, 21:53** (30 Tage ab Anlage am 2026-09-22, 21:53; T3). Custom Modules dort **nicht freigeschaltet** (T1), angefragt am 2026-09-23. Die **Produktivinstanz** hat sie (G1).
 - **Autor / Repo**: `wirsindcgks <media@cg-ks.de>`, geplant unter `github.com/wirsindcgks/churchtools-infoscreen`
 - **Lizenz**: GPL-2.0-or-later
 - **Extension-Key**: `infoscreen-cgks` → Auslieferungspfad `/ccm/infoscreen-cgks/`
@@ -268,7 +268,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 
 ## Risiken
 
-1. **Die Freischaltung kommt nicht rechtzeitig.** Die Lizenz der Testinstanz läuft um den 2026-10-22 ab, die Anfrage ist unbeantwortet. Bis Phase 2 hält das nichts auf – dann aber muss ein Modul irgendwo laufen. Rückfall ist ein Testmodul unter eigenem Key (`infoscreen-cgks-test`) auf der **Produktivinstanz**, das nur in eigene Kategorien schreibt. **Das ist eine Entscheidung, keine Automatik** – nach den Arbeitsregeln wird dort bisher nichts geschrieben.
+1. **Die Freischaltung kommt nicht rechtzeitig.** Die Lizenz der Testinstanz läuft am 2026-10-22 um 21:53 ab, die Anfrage ist unbeantwortet. Bis Phase 2 hält das nichts auf – dann aber muss ein Modul irgendwo laufen. Rückfall ist ein Testmodul unter eigenem Key (`infoscreen-cgks-test`) auf der **Produktivinstanz**, das nur in eigene Kategorien schreibt. **Das ist eine Entscheidung, keine Automatik** – nach den Arbeitsregeln wird dort bisher nichts geschrieben.
 2. **Der Pi läuft unbeaufsichtigt.** Speicherlecks, abgelaufene Sitzungen, Netz- und Stromausfälle. Der Player muss von selbst wieder hochkommen. Ohne Service Worker (G10) zeigt ein Pi, der während eines Netzausfalls neu startet, nichts – das ist dann zu benennen, nicht zu übergehen.
 3. **Login-Token auf der SD-Karte.** Tragbar, weil der Rückzugsweg gemessen ist (Passwortwechsel, G18) und das Konto nur liest.
 4. **Stilgrenze zur Hostseite.** Ohne sie hängt das Aussehen der Bühne von ChurchTools-Updates ab – und unsere Stile beschädigen fremde Oberflächen.
@@ -306,7 +306,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 **Zwingend, in dieser Reihenfolge:**
 
 1. ~~**Fixtures außerhalb des Repos sichern**~~ – **erledigt am 2026-09-24.**
-2. **Ablaufdatum der Testinstanz nachsehen** (T3) – setzt den Stichtag für Risiko 1.
+2. ~~**Ablaufdatum der Testinstanz nachsehen**~~ (T3) – **2026-10-22, 21:53.** Das ist der Stichtag für Risiko 1.
 3. **Entwicklungsumgebung** (`Preparation.md` B1–B4) bis zum „Hallo &lt;Vorname&gt;" gegen die Testinstanz, einmal in Safari.
 4. **Phase 1** – Datenmodell, Repository mit Mock, Terminnormalisierung.
 5. **Phase 2** – Player gegen den Mock.
