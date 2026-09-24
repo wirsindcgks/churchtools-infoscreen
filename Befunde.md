@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G31 sind beantwortet, G16 und G21 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G31 sind beantwortet, G16, G21 und G32 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -291,6 +291,11 @@ Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt �
 - **Die Spezifikation enthält als Administrator weiterhin keinen `/custommodules`-Pfad** (497 Pfade, wie vor der Freischaltung), obwohl die Route selbst antwortet. Sie ist also nicht allein nach dem Feature gefiltert. Der Typ-Snapshot (B5) wartet deshalb weiter – vermutlich bis ein Modul installiert ist; das ist zu prüfen.
 
 ## Teilweise beantwortet
+
+**G32 – Eine Sitzung aus dem Login-Token hält 24 Stunden, fest.** *(2026-09-24, Testinstanz, nur lesend: `GET /api/whoami?login_token=…`, danach zwei Anfragen mit dem erhaltenen Cookie)* Die Anmeldung setzt `ChurchToolsV2_<instanz>` mit `Max-Age=86400`. Folgeanfragen senden das Cookie mit **demselben Ablaufdatum** zurück, `Max-Age` zählt nur herunter (86397, 86396) – die Sitzung verlängert sich durch Benutzung **nicht**. Wer sich einmal anmeldet und dann nur abfragt, ist nach 24 Stunden abgemeldet.
+
+**Für Weg A** (Anmeldung im Browser des Fernsehers, entschieden am 2026-09-24) ist damit die entscheidende Frage offen: Hält eine Anmeldung über das Formular mit „Angemeldet bleiben" (`show_remember_me: true`) länger? Die [Academy](https://churchtools.academy/en/help/my-churchtools/register-and-log-in-en/register-and-log-in-on-the-web/) sagt nur „für die Dauer der aktuellen Browsersitzung". Zu messen mit den Zugangsdaten eines Geräte-Kontos. Hält sie nicht, braucht der Dauerbetrieb Weg B – der Player meldet sich mit dem Token selbst neu an (Plan.md, D).
+
 
 **G16 – Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.
 

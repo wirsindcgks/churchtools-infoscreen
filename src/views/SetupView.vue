@@ -4,7 +4,7 @@ import { onMounted, reactive, ref } from 'vue';
 import { fetchCalendars, type Calendar } from '../ct/api';
 import { httpStatus } from '../ct/client';
 import { WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
-import { SCHEMA_VERSION } from '../model/schema';
+import { SCHEMA_VERSION, type ScreenDoc } from '../model/schema';
 import { checkDesignerGroup, checkDeviceGroup, type Check } from '../setup/checks';
 import { loadGroupRights, loadGroups, loadPersonGrants, type GroupSummary } from '../setup/load';
 import { getRepository } from '../store/backend';
@@ -18,6 +18,28 @@ const checks = reactive<Record<Side, Check[] | null>>({ designer: null, device: 
 const busy = reactive<Record<Side, boolean>>({ designer: false, device: false });
 const error = ref<string | null>(null);
 const saveState = ref<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+const screens = ref<ScreenDoc[]>([]);
+const copied = ref<string | null>(null);
+
+/**
+ * The address a TV opens (way A, decided 2026-09-24): no secret in it, the
+ * browser of the TV signs in once as the device account – like the built-in
+ * info screen. It lives where the designer lives, so the origin is right in
+ * ChurchTools and in development alike.
+ */
+function playerUrl(slug: string): string {
+    return new URL(`player?screen=${encodeURIComponent(slug)}`, window.location.origin + import.meta.env.BASE_URL).toString();
+}
+
+async function copy(slug: string): Promise<void> {
+    try {
+        await navigator.clipboard.writeText(playerUrl(slug));
+        copied.value = slug;
+    } catch {
+        // Without clipboard access the address stays visible for copying by hand.
+        copied.value = null;
+    }
+}
 
 let repository: ScreenRepository | null = null;
 let wikiCategoryId: number | null = null;
@@ -94,13 +116,15 @@ async function save(): Promise<void> {
 onMounted(async () => {
     try {
         ({ repository } = await getRepository());
-        const [list, settings, wikiCategories, calendarList, used] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, used, screenList] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
             fetchCalendars(),
             repository.calendarIdsInUse(),
+            repository.listScreens(),
         ]);
+        screens.value = screenList;
         groups.value = list;
         wikiCategoryId = wikiCategories.find((c) => c.name === WIKI_CATEGORY_NAME)?.id ?? null;
         calendars = calendarList;
@@ -168,6 +192,24 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         </span>
                     </li>
                 </ul>
+
+                <div v-if="side === 'device'" class="addresses" data-testid="player-addresses">
+                    <h3>Adressen für die Fernseher</h3>
+                    <p class="muted small">
+                        Im Browser des Fernsehers einmal mit dem Geräte-Benutzer bei ChurchTools anmelden und „Angemeldet
+                        bleiben" wählen. Dann die Adresse des Screens öffnen. In der Adresse steht kein Passwort.
+                    </p>
+                    <p v-if="!screens.length" class="muted small">Noch keine Screens angelegt.</p>
+                    <ul>
+                        <li v-for="screen in screens" :key="screen.id">
+                            <strong>{{ screen.name }}</strong>
+                            <code class="url">{{ playerUrl(screen.slug) }}</code>
+                            <button class="d-btn" type="button" :data-testid="`copy-${screen.slug}`" @click="copy(screen.slug)">
+                                {{ copied === screen.slug ? 'Kopiert' : 'Kopieren' }}
+                            </button>
+                        </li>
+                    </ul>
+                </div>
             </section>
         </div>
 
@@ -257,6 +299,38 @@ h1 {
 }
 .check--info .symbol {
     background: var(--d-text-muted);
+}
+.addresses {
+    display: grid;
+    gap: 6px;
+    padding-top: 10px;
+    border-top: 1px solid var(--d-divider);
+}
+.addresses h3 {
+    margin: 0;
+    font-size: 1em;
+}
+.addresses ul {
+    display: grid;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.addresses li {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2px 8px;
+    align-items: center;
+}
+.addresses .url {
+    grid-column: 1;
+    overflow-wrap: anywhere;
+    font-size: var(--d-size-sm);
+}
+.addresses .d-btn {
+    grid-column: 2;
+    grid-row: 1 / span 2;
 }
 .actions {
     display: flex;

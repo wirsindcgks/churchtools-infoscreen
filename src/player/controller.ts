@@ -15,6 +15,11 @@ import { checkClock } from './clock';
 import { appointmentNeeds, appointmentWindow, type PlayerData } from './data';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
 
+/** Shown when the browser of a TV is not signed in (way A: the device signs in once in its browser). */
+export const SIGN_IN_MESSAGE =
+    'Dieser Browser ist nicht bei ChurchTools angemeldet. Bitte hier einmal mit dem Geräte-Benutzer anmelden ' +
+    '(„Angemeldet bleiben" wählen) – danach erscheint der Infoscreen von selbst.';
+
 export interface PlayerState {
     phase: 'loading' | 'running' | 'error';
     screen: LoadedScreen | null;
@@ -122,7 +127,13 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             deps.reload(); // newer data needs newer code
             return;
         }
-        const message = error instanceof Error ? error.message : String(error);
+        // On a TV the one who reads this can fix it: say how, not only what (G32: sessions end).
+        const message =
+            error instanceof NotAuthenticatedError
+                ? SIGN_IN_MESSAGE
+                : error instanceof Error
+                  ? error.message
+                  : String(error);
         const fatal =
             error instanceof ScreenNotFoundError ||
             error instanceof NotAuthenticatedError ||

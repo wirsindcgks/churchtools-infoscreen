@@ -110,6 +110,7 @@ describe('player controller', () => {
         await player.start();
         expect(player.state.phase).toBe('error');
         expect(player.state.error).toContain('angemeldet');
+        expect(player.state.error).toContain('Geräte-Benutzer');
         player.stop();
     });
 

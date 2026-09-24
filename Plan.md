@@ -87,13 +87,18 @@ ChurchTools-Instanz
 
 1. **Designer im Betrieb** – keine eigene Anmeldung; die Extension läuft in der ChurchTools-Sitzung, `GET /whoami` liefert den Anwender.
 2. **Entwicklung** – `POST /login` mit den Zugangsdaten aus der `.env`, nur im Modus `development`.
-3. **Raspberry Pi** – Login-Token des Geräte-Benutzers in der Player-URL:
+3. **Fernseher – Weg A, entschieden am 2026-09-24:** wie beim eingebauten Infoscreen meldet sich der Browser des Geräts **einmal** mit dem Geräte-Benutzer an („Angemeldet bleiben"); die Adresse trägt nur den Screen:
+   ```
+   https://<instanz>/ccm/infoscreen-designer/player?screen=foyer-links
+   ```
+   Kein Geheimnis in der Adresse, im Verlauf oder auf der SD-Karte. Die Einrichtungsseite zeigt die Adressen mit Kopier-Knopf; fehlt die Anmeldung, sagt der Player am Fernseher, was zu tun ist. **Die Schwachstelle:** Eine Sitzung aus dem Token hält fest 24 Stunden und verlängert sich durch Benutzung nicht (G32). Ob „Angemeldet bleiben" länger hält, ist die wichtigste offene Messung für Weg A.
+4. **Fernseher – Weg B, später:** Login-Token des Geräte-Benutzers in der Player-URL – der Player kann das heute schon und meldet sich damit selbst neu an:
    ```
    https://<instanz>/ccm/infoscreen-designer/player?screen=foyer-links&login_token=<TOKEN>&user_id=<ID>&no_url_rewrite=true
    ```
    Echte Unterpfade wie `/player` sind gedeckt (G7). Der Token entsteht über `POST /api/login/token` mit Benutzername und Passwort des Geräte-Benutzers; der `churchtools-client` meldet sich damit nach Sitzungsablauf selbst neu an. **Ob das unter `/ccm/` trägt, ist die wichtigste offene Messung (G9).**
 
-**Der Token ist ein Dauerpasswort** – in der URL, im Browserverlauf, auf der SD-Karte. **Die Notbremse ist der Passwortwechsel des Geräte-Benutzers in der Oberfläche**; der Token ist danach sofort ungültig (G18). Einen Admin-Endpunkt zum Widerrufen gibt es nicht.
+**Für Weg B gilt: Der Token ist ein Dauerpasswort** – in der URL, im Browserverlauf, auf der SD-Karte. **Die Notbremse ist der Passwortwechsel des Geräte-Benutzers in der Oberfläche**; der Token ist danach sofort ungültig (G18). Einen Admin-Endpunkt zum Widerrufen gibt es nicht.
 
 ### E. Datenspeicherung
 
@@ -227,7 +232,7 @@ Für den späteren Zeitplan liegen die Regeln fest, damit das Schema sie tragen 
 In ungefährer Reihenfolge des Nutzens:
 
 - Zeitplan-Oberfläche samt Zeitregler in der Vorschau („was liefe Sonntag 10:30?") – das Datenmodell steht bereits.
-- Player-URL-Generator im Designer mit Erklärung zum Token. Bis dahin wird die URL einmal von Hand gebaut.
+- Weg B im Adress-Generator: Token aus Benutzername und Passwort des Geräte-Kontos erzeugen (`POST /login/token`) und anhängen, ohne das Passwort zu speichern. Die Adressen für Weg A zeigt die Einrichtungsseite schon.
 - Heartbeat und Statusanzeige je Screen („zuletzt gesehen") – braucht die Kategorie `status` und damit das einzige Schreibrecht des Geräts.
 - Export/Import eines Screens als JSON, Vorlagen, Duplizieren.
 - Weitere Datenblöcke: Beiträge, Gruppen/Anmeldungen, Raumbelegung, Dienste. QR-Code, Laufschrift.
@@ -323,7 +328,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 5. ~~**Logo im Gemeindekopf**~~ **Erledigt am 2026-09-24.** Player und Vorschau lösen `<instanz>/logo` bei jedem Datenabruf auf und fordern das Ziel in der Größe des Blocks an (G29); das Logo liegt wie alle Bilder im Gerätespeicher, ein neues Logo kommt über die neue Adresse von selbst. Scheitert der Abruf, bleibt das letzte Logo. Im Inspektor „Logo zeigen" und ein eigenes Logo aus der Mediathek als Ersatz, etwa für ein dunkles Logo auf dunklem Grund – als optionales Feld, Schema 1.1; der Löschschutz der Mediathek kennt es. Neue Kopfblöcke zeigen das Logo von Anfang an. **Ungemessen:** was `/logo` ohne hinterlegtes Logo liefert – alles außer einem Bild gilt als „kein Logo".
 6. ~~**Mitgelieferte Schriften**~~ **Erledigt am 2026-09-24:** zehn freie Schriften unter der SIL Open Font License, alle von der eigenen Instanz ausgeliefert, nie von einem Schriftendienst – das wäre ein Datenschutzproblem, weil jeder Aufruf Gerät und Gestalter einem Dritten verriete. Ausgewählt nach Verbreitung (Web Almanac 2024, lateinische Schriften ohne Icon-Schriften): Roboto, Open Sans, Poppins, Montserrat, Lato, Source Sans 3, Inter, Oswald; dazu Barlow Semi Condensed und als Serifenschrift Merriweather statt Raleway, deren Mediävalziffern Uhrzeiten unruhig machen. Lato ist Standard, wie im eingebauten Infoscreen (G25). Registriert unter eigenen Namen („ISD …"), nur Latin und Latin-ext, nur 400/600/700; geladen wird eine Schrift erst, wenn Text sie braucht. Ziffern sind auf der ganzen Bühne gleich breit (`tabular-nums`), damit die Uhr beim Minutenwechsel nicht zuckt – gemessen wirkt das in acht der zehn Schriften, Oswald und Poppins bringen keine gleich breiten Ziffern mit. Die alten Schlüssel `sans`, `serif`, `mono` zeigen auf Lato und Merriweather, unbekannte auf Lato. `check-dist.js` bricht ab bei einer fremden Schriftquelle und bei Schriftdateien ohne Lizenztexte. **Offen:** eine Hausschrift als Modul-Einstellung (mit Punkt 8), eine eigene hochgeladene Schrift (Später – das Gerät bräuchte Wiki-Rechte).
 7. ~~**Umbenennen abrunden**~~ **Erledigt am 2026-09-24:** Der Name steht im Inspektor unter „Screen" (kein Block gewählt); beim Speichern wird er getrimmt, ein leerer wird mit Hinweis abgelehnt. Im Schema bleibt ein leerer Name lesbar, damit ältere Werte nicht verloren gehen.
-8. ~~**Einrichtungsseite, Stufe 1**~~ **Erledigt am 2026-09-24** (`/einrichtung`, verlinkt von der Startseite): je eine Gruppe für Gestalter und Geräte wählen, gespeichert in `settings`; die Seite prüft Status, Mitglieder und Rechte und nennt, was fehlt – sie ändert selbst keine Rechte. Gestalter: Wiki-Rechte am Bereich „Infoscreen" je Rolle mit Mitgliedern. Geräte: je Mitglied alle Quellen zusammen (Gruppenrolle, Gruppentyp-Rolle, Personenstatus, direkte Rechte), Kalender der Screens sichtbar oder öffentlich, keine überflüssigen Wiki-Rechte. Kernrechte als Konstanten aus G30. **Offen:** die Rechte am Modul selbst (sobald die Extension installiert ist), Rechte aus anderen Gruppen zählen nicht mit, die Hausschrift.
+8. ~~**Einrichtungsseite, Stufe 1**~~ **Erledigt am 2026-09-24** (`/einrichtung`, verlinkt von der Startseite): je eine Gruppe für Gestalter und Geräte wählen, gespeichert in `settings`; die Seite prüft Status, Mitglieder und Rechte und nennt, was fehlt – sie ändert selbst keine Rechte. Gestalter: Wiki-Rechte am Bereich „Infoscreen" je Rolle mit Mitgliedern. Geräte: je Mitglied alle Quellen zusammen (Gruppenrolle, Gruppentyp-Rolle, Personenstatus, direkte Rechte), Kalender der Screens sichtbar oder öffentlich, keine überflüssigen Wiki-Rechte. Kernrechte als Konstanten aus G30. **Offen:** die Rechte am Modul selbst (sobald die Extension installiert ist), Rechte aus anderen Gruppen zählen nicht mit, die Hausschrift. Dazu die **Adressen für die Fernseher** (Weg A, D) mit Kopier-Knopf.
 9. **Startseite überarbeiten** *(gewünscht am 2026-09-24)*: je Screen ein Vorschaubild seiner ersten Slide, damit man Screens auf einen Blick erkennt; ein Symbol für Hoch- oder Querformat; die Formularfelder einheitlich – das Auswahlfeld „Ausrichtung" ist niedriger als die Textfelder daneben.
 10. **Designer leichter bedienbar** *(gewünscht am 2026-09-24)*: Farben auch als Hex-Wert eingeben, nicht nur über den Farbwähler des Browsers; unter der Slide-Liste ein „+" für eine neue Slide; die Bausteine sichtbarer machen – heute stehen sie als Knopfreihe in der Kopfzeile und gehen dort unter.
 11. **Release-Workflow** auf Tags `v*.*.*`, Versionsabgleich mit `CHANGELOG.md`, ZIP als GitHub-Release.

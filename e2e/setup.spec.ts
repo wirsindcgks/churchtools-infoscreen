@@ -16,6 +16,11 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
     await page.getByTestId('group-designer').selectOption({ label: 'Gemeindeleitung' });
     await expect(page.getByTestId('setup-designer').locator('.checks')).toContainText('Rolle');
 
+    // Way A: the address carries no secret, only the screen.
+    const addresses = page.getByTestId('player-addresses');
+    await expect(addresses).toContainText('/ccm/infoscreen-designer/player?screen=demo');
+    await expect(addresses).not.toContainText('login_token');
+
     await page.getByTestId('save-setup').click();
     await expect(page.getByTestId('setup-saved')).toBeVisible();
     await page.screenshot({ path: 'test-results/setup.png', fullPage: true });
