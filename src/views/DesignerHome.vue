@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { currentPerson, displayName, NotAuthenticatedError } from '../ct/client';
 import type { Person } from '../ct/types';
 import { createScreenBundle, slugify } from '../designer/ops';
+import { checkDesignerRights, type MissingRight } from '../designer/rights';
 import { Slug, type ScreenDoc } from '../model/schema';
 import { getRepository, resetDemoStore } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
@@ -14,6 +15,7 @@ const person = ref<Person | null>(null);
 const screens = ref<ScreenDoc[]>([]);
 const demo = ref(false);
 const error = ref<string | null>(null);
+const missingRights = ref<MissingRight[]>([]);
 let repository: ScreenRepository | null = null;
 
 const name = ref('');
@@ -38,7 +40,17 @@ onMounted(async () => {
         const [signedIn, handle] = await Promise.all([currentPerson(), getRepository()]);
         repository = handle.repository;
         demo.value = handle.demo;
-        await refresh();
+        // A failed check must not lock anyone out; it only means no hint.
+        missingRights.value = await checkDesignerRights(handle.repository, handle.demo).catch((e: unknown) => {
+            console.warn('Rechteprüfung nicht möglich:', e);
+            return [];
+        });
+        try {
+            await refresh();
+        } catch (e) {
+            // Without rights, reading fails too – the list of missing rights says more than a 403.
+            if (!missingRights.value.length) throw e;
+        }
         person.value = signedIn;
     } catch (e) {
         error.value =
@@ -87,6 +99,22 @@ async function remove(screen: ScreenDoc): Promise<void> {
                 sehen dieselben Screens.
                 <button class="link" type="button" data-testid="reset-demo" @click="resetDemoAndReload">Demo zurücksetzen</button>
             </p>
+
+            <section v-if="missingRights.length" class="notice notice--warning" role="status" data-testid="missing-rights">
+                <strong>Dir fehlen Rechte, um hier alles zu nutzen:</strong>
+                <ul>
+                    <li v-for="right in missingRights" :key="`${right.area}-${right.key ?? right.text}`">
+                        {{ right.text }}
+                        <code v-if="right.key">{{ right.key }}</code>
+                        <span v-if="right.detail" class="muted"> – {{ right.detail }}</span>
+                    </li>
+                </ul>
+                <p class="muted">
+                    Rechte vergibt ein Administrator in der Rechteverwaltung von ChurchTools – am einfachsten an eine
+                    Rolle einer eigenen Gruppe für alle, die Infoscreens gestalten. Rechte einer Gruppe wirken erst, wenn
+                    sie den Status „aktiv" hat.
+                </p>
+            </section>
 
             <h2>Screens</h2>
             <ul v-if="screens.length" class="screens">
@@ -179,6 +207,17 @@ h2 {
     border-left: 4px solid var(--d-accent);
     border-radius: var(--d-radius);
     background: var(--d-accent-pale);
+}
+.notice--warning {
+    border-left-color: var(--d-warning);
+    background: var(--d-warning-pale);
+}
+.notice ul {
+    margin: 6px 0;
+    padding-left: 20px;
+}
+.notice p {
+    margin: 0;
 }
 .screens {
     margin: 0;

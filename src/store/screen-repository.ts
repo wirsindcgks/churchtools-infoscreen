@@ -92,6 +92,20 @@ export class ScreenRepository {
         return this.categoryIds;
     }
 
+    /**
+     * The categories this person can see, without creating any. A missing one
+     * either does not exist yet or is hidden by missing rights (G20).
+     */
+    async visibleCategories(): Promise<Partial<Record<CategoryKey, number>>> {
+        const existing = await this.kv.listCategories();
+        const result: Partial<Record<CategoryKey, number>> = {};
+        for (const key of Object.keys(CATEGORIES) as CategoryKey[]) {
+            const found = existing.find((c) => c.shorty === key);
+            if (found) result[key] = found.id;
+        }
+        return result;
+    }
+
     async listScreens(): Promise<ScreenDoc[]> {
         const { docs } = await this.readScreens();
         return docs.map((s) => s.doc).sort((a, b) => a.name.localeCompare(b.name, 'de'));
