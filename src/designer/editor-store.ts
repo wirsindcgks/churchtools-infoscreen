@@ -5,7 +5,7 @@
  */
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
-import type { Block, BlockType, ScreenBundle, ScreenDoc, SlideDoc } from '../model/schema';
+import type { Block, BlockType, MediaDoc, ScreenBundle, ScreenDoc, SlideDoc } from '../model/schema';
 import { ConflictError, type ScreenRepository } from '../store/screen-repository';
 import { History } from './history';
 import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, move, reorder, type Layer } from './ops';
@@ -22,6 +22,8 @@ export const useEditorStore = defineStore('editor', () => {
     const status = ref<SaveStatus>('idle');
     const conflict = ref<ScreenDoc | null>(null);
     const error = ref<string | null>(null);
+    /** Media documents known to the store, for the preview and the pickers. */
+    const media = ref<MediaDoc[]>([]);
     const history = new History<ScreenBundle>();
     const historyVersion = ref(0); // makes canUndo/canRedo reactive
     let gestureOpen = false;
@@ -53,6 +55,10 @@ export const useEditorStore = defineStore('editor', () => {
 
     function attach(repo: ScreenRepository): void {
         repository.value = repo;
+    }
+
+    async function refreshMedia(): Promise<void> {
+        if (repository.value) media.value = await repository.value.listMedia();
     }
 
     function reset(bundle: ScreenBundle): void {
@@ -258,6 +264,8 @@ export const useEditorStore = defineStore('editor', () => {
 
     return {
         draft,
+        media,
+        refreshMedia,
         dirty,
         revision,
         stage,

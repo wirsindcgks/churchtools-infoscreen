@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Calendar } from '../ct/api';
-import type { Block, Fill, MediaDoc, TextStyle } from '../model/schema';
+import type { Block, Fill, TextStyle } from '../model/schema';
+import { sizedImageUrl } from '../player/format';
 import { useEditorStore } from './editor-store';
 import FillEditor from './FillEditor.vue';
 import { BLOCK_LABELS } from './ops';
 
-defineProps<{ calendars: Calendar[]; media: MediaDoc[] }>();
+defineProps<{ calendars: Calendar[] }>();
+const emit = defineEmits<{ 'pick-image': ['block' | 'background'] }>();
 
 const editor = useEditorStore();
 const block = computed(() => editor.block);
@@ -37,6 +39,16 @@ function toggleCalendar(id: number, on: boolean): void {
 function setSlideNumber(value: string): void {
     const n = Number(value);
     if (n >= 1 && n <= 3600) editor.updateSlide({ durationSeconds: n });
+}
+
+function mediaUrl(id: string | undefined): string | null {
+    const media = id ? editor.media.find((m) => m.id === id) : undefined;
+    return media ? sizedImageUrl(media.imageUrl, 272, 153, 'crop') : null;
+}
+
+function setBackgroundKind(kind: string): void {
+    if (kind === 'media') emit('pick-image', 'background');
+    else editor.updateSlide({ background: slideFill.value });
 }
 
 const slideFill = computed<Fill>(() =>
@@ -99,14 +111,13 @@ const FONTS = [
             </template>
 
             <template v-if="block.type === 'image'">
-                <label class="d-field">
-                    Bild
-                    <select :value="block.mediaId" @change="setBlock({ mediaId: ($event.target as HTMLSelectElement).value })">
-                        <option value="">– kein Bild –</option>
-                        <option v-for="m in media" :key="m.id" :value="m.id">{{ m.name }}</option>
-                    </select>
-                </label>
-                <p v-if="!media.length" class="hint">Die Mediathek zum Hochladen folgt im nächsten Schritt.</p>
+                <div class="media-pick">
+                    <img v-if="mediaUrl(block.mediaId)" :src="mediaUrl(block.mediaId)!" alt="">
+                    <p v-else class="hint">Noch kein Bild gewählt.</p>
+                    <button class="d-btn" type="button" data-testid="pick-image" @click="emit('pick-image', 'block')">
+                        Bild wählen …
+                    </button>
+                </div>
                 <label class="d-field">
                     Einpassen
                     <select :value="block.fit" @change="setBlock({ fit: ($event.target as HTMLSelectElement).value })">
@@ -291,7 +302,23 @@ const FONTS = [
                 </div>
                 <fieldset>
                     <legend>Hintergrund</legend>
+                    <label class="d-field">
+                        Hintergrund aus
+                        <select
+                            :value="slide.background.kind === 'media' ? 'media' : 'fill'"
+                            data-testid="background-kind"
+                            @change="setBackgroundKind(($event.target as HTMLSelectElement).value)"
+                        >
+                            <option value="fill">Farbe oder Verlauf</option>
+                            <option value="media">Bild</option>
+                        </select>
+                    </label>
+                    <div v-if="slide.background.kind === 'media'" class="media-pick">
+                        <img v-if="mediaUrl(slide.background.mediaId)" :src="mediaUrl(slide.background.mediaId)!" alt="">
+                        <button class="d-btn" type="button" @click="emit('pick-image', 'background')">Anderes Bild …</button>
+                    </div>
                     <FillEditor
+                        v-else
                         :model-value="slideFill"
                         @focus="edit.onFocus"
                         @blur="edit.onBlur"
@@ -406,6 +433,17 @@ legend {
 .buttons .d-btn {
     justify-content: center;
     font-size: var(--d-size-sm);
+}
+.media-pick {
+    display: grid;
+    gap: 6px;
+}
+.media-pick img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: var(--d-radius);
+    background: var(--d-panel);
 }
 .hint {
     margin: 0;

@@ -128,10 +128,9 @@ Später hinzu: `templates`, `snippets` (Web-Code), `status` (Heartbeat).
 | Lesen auf | Wofür |
 | --- | --- |
 | Die Kalender, die ein Screen zeigt | Terminblöcke |
-| Die Wiki-Kategorie „Infoscreen-Medien" | Bilder |
 | `view custom data` auf `screens`, `playlists`, `slides`, `media`, `settings` | Screen-Konfiguration |
 
-**Ausdrücklich nicht:** Personendaten, Schreibrechte, Administrationsrechte, Zweifaktor. **Die Gestalter sind im MVP wir selbst**, mit vollen Modulrechten; ein Rollenmodell entsteht erst, wenn jemand anderes gestaltet.
+**Ausdrücklich nicht:** Personendaten, Schreibrechte, Administrationsrechte, Zweifaktor – **und auch kein Wiki-Recht**: Bilder kommen über die Adresse des Bilddienstes, die ohne Anmeldung trägt (G14, G27). **Die Gestalter sind im MVP wir selbst**, mit vollen Modulrechten und Ansehen/Bearbeiten auf der Wiki-Kategorie „Infoscreen"; ein Rollenmodell entsteht erst, wenn jemand anderes gestaltet.
 
 **Zwei Befunde, die den Bau betreffen – der Rest steht in [`Befunde.md`](Befunde.md), „Der Betriebsbenutzer":**
 
@@ -171,13 +170,14 @@ Geprüft gegen die OpenAPI-Spezifikation 3.136.2. **Fett = MVP.**
 
 ## Medien
 
-**Der Weg steht (G8, G14):** Eine Wiki-Kategorie „Infoscreen-Medien" ist die Mediathek; Uploads hängen an einer Trägerseite, adressiert über deren GUID (`POST /api/files/wiki_<kategorie>/<guid>`). Jede hochgeladene Datei trägt eine `imageUrl` am Bilddienst – der Player fordert damit genau die Bühnengröße an (`?w=1920&h=1080&fit=max`).
+**Gebaut am 2026-09-24 (G8, G14, G26, G27):** Das Modul hat einen eigenen Wiki-Bereich **„Infoscreen"**. Seine Startseite `main` erklärt Designer und Einrichtung und wird vom Modul geschrieben, solange sie niemand ändert. **Jeder Screen hat eine Seite, benannt nach seiner Adresse**; an ihr hängen die für ihn hochgeladenen Bilder, verwendbar sind sie in jedem Screen. Seite und Bereich legt der Designer bei Bedarf selbst an. Jede Datei trägt eine `imageUrl` am Bilddienst – der Player fordert damit genau die Blockgröße an. Ohne Wiki gibt es keinen sauberen Weg (G26).
+
+Die Mediathek im Designer lädt hoch (Knopf oder Ziehen), zeigt alle Bilder aller Screen-Seiten und übernimmt auch Bilder, die jemand direkt im Wiki hochgeladen hat. **Vor dem Löschen nennt sie jede Stelle, an der ein Bild gezeigt wird.**
 
 - **Beide Maße sind Pflicht**: Ohne Parameter liefert der Bilddienst 150×150, `w` allein ergibt 1920×150.
 - **Die `imageUrl` ist anonym abrufbar**, geschützt allein durch den Hash – gehört in die Betriebsdoku.
-- **Beim Upload im Browser herunterskalieren** auf eine vernünftige Obergrenze.
+- **Beim Upload im Browser herunterskalieren**, auf 3840 px an der langen Kante – ChurchTools verkleinert selbst nichts, `max_width` bleibt ohne Wirkung (G27).
 - **Eine fehlende Datei zeigt der Player als ruhigen Platzhalter**, nicht als Bruchsymbol.
-- **Rückfall für Bilder**: externe URL über `POST …/link` – funktioniert, aber ohne Bilddienst.
 - **Videos kommen nach dem MVP**: Externe Videos blockiert die CSP (kein `media-src`, G15), und ein Pi spielt sie nicht zuverlässig ab. Erst auf der echten Hardware messen.
 
 ## Eigener Web-Code – nach dem MVP
@@ -314,7 +314,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 3. ~~**Entwicklungsumgebung**~~ (`Preparation.md` B1–B4) – **erledigt am 2026-09-24**, „Hallo &lt;Vorname&gt;" läuft in Chromium und WebKit.
 4. **Phase 1** – **Kern steht seit dem 2026-09-24**: Schema mit duldsamem Lesen, Repository mit Mock und Revisionsprüfung, Terminnormalisierung samt Zeitzone. Ganztägige Termine sind seit G23 gemessen. Offen: die echte KV-Anbindung gegen eine Instanz prüfen (nach T1).
 5. **Phase 2** – **Player läuft seit dem 2026-09-24 gegen den Mock**, mit echten Terminen der Testinstanz: Bühne mit Letterbox und Overscan, Rotation, Zeitplan-Auswertung, drei Intervalle mit Versatz und Backoff, Zeitlimit je Anfrage, Uhrprüfung über den `Date`-Kopf, letzter Stand in IndexedDB, Neuladen bei neuerem Schema und nachts. Im Designer eine Screen-Liste mit Link in den Player; ohne Custom Modules steht dort in der Entwicklung ein Demo-Screen aus dem Arbeitsspeicher, im Release-Bündel fehlt er. **Offen:** Anmeldung per Token unter `/ccm/` (G9), das Logo im Kopfblock, mitgelieferte Schriften statt Systemschriften, Service Worker (G10) und der Test auf echter Pi-Hardware (Offene Entscheidung 3).
-6. **Phase 3** – **Editor steht seit dem 2026-09-24**: Screens anlegen (Name, feste Adresse, quer oder hochkant) und löschen; Slides hinzufügen, duplizieren, entfernen, per Ziehen ordnen, Dauer und Hintergrund setzen, abschalten; alle sieben Blocktypen einfügen, auf der Bühne ziehen und an acht Griffen skalieren, im Inspektor gestalten, Kalender wählen, Ebenen ordnen. Rückgängig/Wiederholen als Schnappschüsse des ganzen Screens – ein Ziehen oder ein Feld ist ein Schritt. Speichern mit Revisionsprüfung und Dialog bei Konflikt, Warnung beim Verlassen mit ungespeicherten Änderungen. Die Vorschau nutzt die Komponenten des Players mit Live-Daten. Aussehen nach den Tokens der Hostseite (G25). **Offen:** die Mediathek mit Upload in die Wiki-Kategorie (Bildblock und Hintergrundbild sind vorbereitet), Lesbarkeitswarnung, Vorlagen.
+6. **Phase 3** – **Editor steht seit dem 2026-09-24**: Screens anlegen (Name, feste Adresse, quer oder hochkant) und löschen; Slides hinzufügen, duplizieren, entfernen, per Ziehen ordnen, Dauer und Hintergrund setzen, abschalten; alle sieben Blocktypen einfügen, auf der Bühne ziehen und an acht Griffen skalieren, im Inspektor gestalten, Kalender wählen, Ebenen ordnen. Rückgängig/Wiederholen als Schnappschüsse des ganzen Screens – ein Ziehen oder ein Feld ist ein Schritt. Speichern mit Revisionsprüfung und Dialog bei Konflikt, Warnung beim Verlassen mit ungespeicherten Änderungen. Die Vorschau nutzt die Komponenten des Players mit Live-Daten. Aussehen nach den Tokens der Hostseite (G25). Die **Mediathek** steht seit demselben Tag: Upload in den Wiki-Bereich „Infoscreen", Bild für Bildblock und Slide-Hintergrund, Löschschutz mit Nennung der Verwendungen. **Offen:** Lesbarkeitswarnung, Vorlagen.
 
 **Nebenher, fremdbestimmt:** Rückmeldung der ChurchTools-Entwickler zur Freischaltung abwarten, dazu die Laufzeit der Testinstanz klären. Kommt bis zum Stichtag nichts, Risiko 1 entscheiden.
 

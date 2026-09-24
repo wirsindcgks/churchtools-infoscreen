@@ -183,6 +183,32 @@ export class ScreenRepository {
         await this.upsert(ids.media, stored.get(doc.id), text);
     }
 
+    async deleteMedia(id: string): Promise<void> {
+        const ids = await this.ensureCategories();
+        const valueId = (await this.valueIdsById('media')).get(id);
+        if (valueId !== undefined) await this.kv.deleteValue(ids.media, valueId);
+    }
+
+    /** Where a medium is shown – asked before deleting it, so nobody deletes blind. */
+    async mediaUsage(mediaId: string): Promise<{ screen: string; slide: string }[]> {
+        const { docs: screens } = await this.readScreens();
+        const playlists = (await this.readAll('playlists', readPlaylist)).docs.map((p) => p.doc);
+        const slides = (await this.readSlides()).docs.map((s) => s.doc);
+        const usedIn = slides.filter((slide) => referencedMedia(slide).includes(mediaId));
+        const result: { screen: string; slide: string }[] = [];
+        for (const slide of usedIn) {
+            const owners = screens.filter((screen) =>
+                playlists.some(
+                    (p) =>
+                        p.slideIds.includes(slide.id) &&
+                        [screen.doc.defaultPlaylistId, ...screen.doc.schedule.map((r) => r.playlistId)].includes(p.id),
+                ),
+            );
+            for (const screen of owners) result.push({ screen: screen.doc.name, slide: slide.name });
+        }
+        return result;
+    }
+
     /** Removes only the index; playlists and slides become orphans for {@link collectOrphans}. */
     async deleteScreen(slug: string): Promise<void> {
         const ids = await this.ensureCategories();

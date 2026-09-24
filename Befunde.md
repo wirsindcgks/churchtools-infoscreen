@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22 und G23 sind beantwortet, G16 und G21 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G27 sind beantwortet, G16 und G21 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -244,6 +244,20 @@ Auch die **Administrationsoberfläche gibt einen fremden Token nicht heraus** (2
 **Beim Anlegen zu wissen:** `POST /calendars/{id}/appointments` verlangt `isInternal` als ausdrücklichen Wahrheitswert, sonst 400 – dasselbe Muster wie `inMenu` bei Wiki-Kategorien (G8).
 
 **G25 – Das Design der Hostseite ist über semantische CSS-Variablen erreichbar.** *(2026-09-24, Stylesheet `system/dist/assets/index-*.css` der Testinstanz, anonym gelesen)* ChurchTools setzt Tailwind v4 ein und legt 761 Variablen auf `:root`. Brauchbar sind nicht die Paletten (`--color-blue-600`), sondern die **semantischen Tokens** `--color-{basic|accent|info|success|warning|critical|error|destructive|constructive|magic}-{primary|secondary|tertiary|bright|b-pale|b-bright|b-contrast|divider|interactive|inverted|disabled}`; `.dark` belegt 250 davon neu, der Dunkelmodus kommt also mit. Dazu `--font-sans` (Lato, von ChurchTools selbst ausgeliefert), `--text-base` = 14 px und `--radius-*`. Der Designer nutzt eine Handvoll davon mit Ersatzwerten (`src/designer/theme.css`); die Bühne keine – sonst hinge das Foyer an einem Update der Hostseite.
+
+**G26 – Ohne Wiki gibt es keinen sauberen Bildspeicher.** *(2026-09-24, vollständige Spezifikation der Testinstanz über eine Sitzung, dazu drei Versuche an der Testinstanz)* Die `domainType`-Liste ist auf Build 32882 unverändert (`avatar` … `post`, `wiki_.?`); einen Speicherort für Extensions gibt es nicht. Zwei Kandidaten sind geprüft:
+
+- **`attachments` ist ein Zwischenlager.** `POST /files/attachments/<beliebig>` antwortet 200 – mit `id: null`, ohne `imageUrl`, Ersteller „Person −5". Danach ist die Datei unter keiner Adresse zu finden. Vermutlich der Zwischenspeicher für E-Mail-Anhänge. Sackgasse.
+- **Bild-Assets einer E-Mail-Vorlage tragen, sind aber ein Missbrauch.** `POST /htmltemplates/{id}/uploadassets` legt das Bild in den Bilddienst (`/images/{id}/{hash}`, anonym abrufbar, `w`/`h` wirken). Dagegen spricht: Eine private Vorlage gehört ihrem Ersteller und verschwindet mit ihm, sie erscheint im E-Mail-Dialog, wo sie jemand arglos löscht, und die API listet die Assets einer Vorlage nicht. Die Testvorlage ist wieder gelöscht.
+
+Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt „ChurchTools Website" und fällt für eine Community-Extension aus. **Festlegung: eigene Wiki-Kategorie, je Screen eine Seite als Bildträger, dazu eine Übersichtsseite mit Anleitung.**
+
+**G27 – Vier Eigenheiten des Wiki-Wegs.** *(2026-09-24, Testinstanz: Kategorie 1 in „Infoscreen" umbenannt, Seite `demo` angelegt, Testbilder hoch- und wieder heruntergeladen)*
+
+- **Hochladen verkleinert nichts.** `max_width`/`max_height` am Upload bleiben ohne Wirkung: Ein 320 px breites Bild mit `max_width=100` kommt mit unveränderten 95 335 Byte an. Verkleinert wird deshalb im Browser, auf 3840 px an der langen Kante.
+- **Lesen per Titel, Ändern nur per GUID.** `GET /wiki/categories/{id}/pages/main` findet die Seite über ihren Titel; `PATCH` auf denselben Pfad antwortet 400 („keine gültige GUID"). Geändert wird über `page.guid`.
+- **Die Seitenliste hat keine Seitenaufteilung.** `churchtoolsClient.getAllPages` scheitert an `/wiki/categories/{id}/pages`, weil die Antwort keine Paginierungsdaten trägt; ein einfaches `get` liefert alle Seiten.
+- **Der Geräte-Benutzer braucht kein Wiki-Recht.** Die Bilder erreicht er über die `imageUrl`, die ohne Anmeldung trägt (G14). Rechte auf den Wiki-Bereich brauchen nur die Gestalter.
 
 ## Teilweise beantwortet
 

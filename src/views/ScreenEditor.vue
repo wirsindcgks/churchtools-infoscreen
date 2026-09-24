@@ -6,6 +6,7 @@ import EditorStage from '../designer/EditorStage.vue';
 import { useEditorStore } from '../designer/editor-store';
 import Inspector from '../designer/Inspector.vue';
 import { BLOCK_LABELS } from '../designer/ops';
+import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
 import SlideList from '../designer/SlideList.vue';
 import { usePreview } from '../designer/usePreview';
 import type { BlockType, MediaDoc } from '../model/schema';
@@ -16,13 +17,40 @@ const slug = String(route.params.slug);
 const editor = useEditorStore();
 const loadError = ref<string | null>(null);
 const demo = ref(false);
-const media = ref<MediaDoc[]>([]);
 const author = ref('');
 const root = ref<HTMLElement | null>(null);
 const top = ref(0);
 
 const calendarIds = computed(() => editor.calendarIds);
-const { calendars, problem } = usePreview(calendarIds, media);
+const { calendars, problem } = usePreview(
+    calendarIds,
+    computed(() => editor.media),
+);
+
+/** Which picker the media library was opened for. */
+const libraryFor = ref<'block' | 'background' | null>(null);
+const libraryTarget = ref<string | null>(null);
+
+function openLibrary(kind: 'block' | 'background'): void {
+    libraryTarget.value = kind === 'block' ? (editor.block?.id ?? null) : null;
+    libraryFor.value = kind;
+}
+
+async function chosen(media: MediaDoc): Promise<void> {
+    await editor.refreshMedia();
+    if (libraryFor.value === 'block' && libraryTarget.value) {
+        editor.updateBlock(libraryTarget.value, { mediaId: media.id });
+    } else if (libraryFor.value === 'background') {
+        editor.updateSlide({ background: { kind: 'media', mediaId: media.id } });
+    }
+    libraryFor.value = null;
+}
+
+const currentMediaId = computed(() => {
+    if (libraryFor.value === 'block' && editor.block?.type === 'image') return editor.block.mediaId;
+    const bg = editor.slide?.background;
+    return bg?.kind === 'media' ? bg.mediaId : undefined;
+});
 
 const statusText = computed(() => {
     switch (editor.status) {
@@ -49,7 +77,7 @@ onMounted(async () => {
         demo.value = handle.demo;
         editor.attach(handle.repository);
         await editor.open(slug);
-        media.value = await handle.repository.listMedia();
+        await editor.refreshMedia();
     } catch (e) {
         loadError.value = e instanceof Error ? e.message : String(e);
     }
@@ -71,6 +99,11 @@ function save(): void {
 }
 
 function onKey(event: KeyboardEvent): void {
+    // With a dialog open, keys belong to the dialog – Delete must not hit the block behind it.
+    if (libraryFor.value) {
+        if (event.key === 'Escape') libraryFor.value = null;
+        return;
+    }
     const mod = event.metaKey || event.ctrlKey;
     const typing = (event.target as HTMLElement | null)?.closest('input, textarea, select');
     if (mod && event.key.toLowerCase() === 's') {
@@ -151,8 +184,16 @@ const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
         <div v-else-if="editor.draft" class="columns">
             <SlideList />
             <EditorStage />
-            <Inspector :calendars="calendars" :media="media" />
+            <Inspector :calendars="calendars" @pick-image="openLibrary" />
         </div>
+
+        <MediaLibraryDialog
+            v-if="libraryFor && editor.draft"
+            :screen="{ slug: editor.draft.screen.slug, name: editor.draft.screen.name }"
+            :selected-media-id="currentMediaId"
+            @choose="chosen"
+            @close="libraryFor = null"
+        />
 
         <div v-if="editor.status === 'conflict' && editor.conflict" class="dialog-backdrop" role="dialog" aria-modal="true">
             <div class="dialog" data-testid="conflict-dialog">
