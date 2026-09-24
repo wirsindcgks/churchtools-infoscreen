@@ -29,3 +29,11 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
     await expect(page.getByTestId('group-device')).toHaveValue(/\d+/);
     await expect(device.locator('.checks')).toContainText('Die Gruppe ist aktiv.');
 });
+
+test('the assistant explains itself in demo mode instead of offering to write', async ({ page }) => {
+    await page.goto('./einrichtung');
+    const assistant = page.getByTestId('assistant');
+    await expect(assistant).toContainText('Im Demo-Modus nicht verfügbar');
+    await expect(page.getByTestId('run-assistant')).toBeDisabled();
+    await page.screenshot({ path: 'test-results/setup-assistant.png', fullPage: true });
+});

@@ -6,6 +6,7 @@
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import type { Grant, RoleRights } from './checks';
+import type { ProvisionApi } from './provision';
 
 export interface GroupSummary {
     id: number;
@@ -100,3 +101,33 @@ export async function loadPersonGrants(personId: number): Promise<{ label: strin
     const [byStatus, direct] = await Promise.all([permissions('status', person.statusId), permissions('person', personId)]);
     return { label: `${person.firstName} ${person.lastName}`.trim(), grants: [...byStatus, ...direct] };
 }
+
+/** The group type of the module's groups, by name – ids and names differ per instance. */
+export async function findGroupTypeId(name: string): Promise<number | null> {
+    const types = await churchtoolsClient.get<{ id: number; name: string; nameTranslated?: string }[]>('/group/grouptypes');
+    return types.find((t) => t.name === name || t.nameTranslated === name)?.id ?? null;
+}
+
+/** Only for groups the assistant created itself (Plan.md, 9). Their roles and rights go with them. */
+export async function deleteGroup(groupId: number): Promise<void> {
+    await churchtoolsClient.deleteApi(`/groups/${groupId}`);
+}
+
+/** Whether the signed-in person may manage permissions – what the assistant needs besides creating groups. */
+export async function canManagePermissions(): Promise<boolean> {
+    const global = await churchtoolsClient.get<{ churchcore?: Record<string, unknown> }>('/permissions/global');
+    return global.churchcore?.['administer persons'] === true;
+}
+
+export const churchToolsProvisionApi: ProvisionApi = {
+    async createGroup(name, groupTypeId) {
+        const group = await churchtoolsClient.post<{ id: number }>('/groups', { name, groupTypeId, groupStatusId: 1 });
+        return group.id;
+    },
+    async roleIds(groupId) {
+        return (await churchtoolsClient.get<RoleResponse[]>(`/groups/${groupId}/roles`)).map((r) => r.id);
+    },
+    async grant(roleId, authId, dataId) {
+        await churchtoolsClient.put(`/permissions/group_role/${roleId}`, dataId ? { authId, dataId } : { authId });
+    },
+};

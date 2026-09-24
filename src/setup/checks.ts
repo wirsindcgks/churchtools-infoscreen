@@ -75,11 +75,35 @@ function relevantRoles(roles: RoleRights[]): RoleRights[] {
     return withMembers.length ? withMembers : roles.filter((r) => r.isDefault);
 }
 
+/** A right the module needs, with the data it must cover – as the setup assistant grants it. */
+export interface RequiredRight {
+    authId: number;
+    dataId?: number[];
+    label: string;
+}
+
+/** Labels of the required rights these grants do not cover. */
+export function lacking(grants: Grant[], required: RequiredRight[]): string[] {
+    return required
+        .filter((r) => !(r.dataId ?? [undefined]).every((d) => has(grants, r.authId, d)))
+        .map((r) => r.label);
+}
+
+/** `null`: the rights of the module cannot be named here (no catalogue, e.g. in local development). */
+type ModuleRights = RequiredRight[] | null;
+
+const MODULE_RIGHTS_UNKNOWN: Check = {
+    level: 'info',
+    text: 'Rechte am Modul lassen sich hier nicht prüfen.',
+    detail: 'Der Rechtekatalog ist nur innerhalb von ChurchTools lesbar, nicht in der lokalen Entwicklung.',
+};
+
 export interface DesignerGroupInput {
     statusId: number | null;
     roles: RoleRights[];
     /** `null`: the wiki category does not exist yet or is not visible. */
     wikiCategoryId: number | null;
+    moduleRights?: ModuleRights;
 }
 
 export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
@@ -113,10 +137,18 @@ export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
         }
     }
 
-    checks.push({
-        level: 'info',
-        text: 'Rechte am Modul selbst lassen sich prüfen, sobald die Extension installiert ist.',
-    });
+    if (!input.moduleRights) {
+        checks.push(MODULE_RIGHTS_UNKNOWN);
+    } else {
+        for (const role of relevantRoles(input.roles)) {
+            const missing = lacking(role.grants, input.moduleRights);
+            checks.push(
+                missing.length
+                    ? { level: 'fail', text: `Rolle „${role.name}": am Modul fehlt ${missing.join(', ')}.` }
+                    : { level: 'ok', text: `Rolle „${role.name}" darf Screens gestalten.` },
+            );
+        }
+    }
     return checks;
 }
 
@@ -138,6 +170,7 @@ export interface DeviceGroupInput {
     calendars: CalendarInfo[];
     usedCalendarIds: number[];
     wikiCategoryId: number | null;
+    moduleRights?: ModuleRights;
 }
 
 export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
@@ -176,6 +209,19 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                   }
                 : { level: 'ok', text: `„${calendar.name}" ist sichtbar.` },
         );
+    }
+
+    if (!input.moduleRights) {
+        checks.push(MODULE_RIGHTS_UNKNOWN);
+    } else {
+        for (const member of input.members) {
+            const missing = lacking(member.grants, input.moduleRights);
+            checks.push(
+                missing.length
+                    ? { level: 'fail', text: `${member.label}: am Modul fehlt ${missing.join(', ')}.` }
+                    : { level: 'ok', text: `${member.label} darf die Screens lesen.` },
+            );
+        }
     }
 
     // Least privilege (Plan.md, F): images come through the image service without sign-in (G14).

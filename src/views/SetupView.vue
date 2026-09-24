@@ -1,14 +1,26 @@
 <script setup lang="ts">
 import { churchtoolsClient } from '@churchtools/churchtools-client';
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
+import { EXTENSION_KEY } from '../config';
 import { fetchCalendars, type Calendar } from '../ct/api';
 import { httpStatus } from '../ct/client';
-import { WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
+import { findOrCreateCategory, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
 import { SCHEMA_VERSION, type ScreenDoc } from '../model/schema';
-import { checkDesignerGroup, checkDeviceGroup, type Check } from '../setup/checks';
-import { loadGroupRights, loadGroups, loadPersonGrants, type GroupSummary } from '../setup/load';
+import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
+import { AUTH, checkDesignerGroup, checkDeviceGroup, type Check, type RequiredRight } from '../setup/checks';
+import {
+    canManagePermissions,
+    churchToolsProvisionApi,
+    deleteGroup,
+    findGroupTypeId,
+    loadGroupRights,
+    loadGroups,
+    loadPersonGrants,
+    type GroupSummary,
+} from '../setup/load';
+import { GROUP_NAMES, GROUP_TYPE_NAME, planProvisioning, provision, type GroupSpec } from '../setup/provision';
 import { getRepository } from '../store/backend';
-import type { ScreenRepository } from '../store/screen-repository';
+import { CATEGORIES, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
 
 type Side = 'designer' | 'device';
 
@@ -45,6 +57,131 @@ let repository: ScreenRepository | null = null;
 let wikiCategoryId: number | null = null;
 let calendars: Calendar[] = [];
 let usedCalendarIds: number[] = [];
+let catalog: AuthCatalog | null = null;
+let categories: Partial<Record<CategoryKey, number>> = {};
+
+/** The setup assistant (Plan.md, 9): what it would do, and what it did. */
+const demo = ref(false);
+const plan = ref<GroupSpec[] | null>(null);
+const planProblem = ref<string | null>(null);
+const createdGroupIds = ref<number[]>([]);
+const assistant = reactive({ allowed: false, running: false, log: [] as string[], error: null as string | null });
+
+/** Groups under the assistant's names that it did not create: it never takes them over. */
+const wikiMissing = computed(() => plan.value !== null && wikiCategoryIdKnown.value === false);
+const wikiCategoryIdKnown = ref(true);
+
+const foreignGroups = computed(() =>
+    groups.value.filter(
+        (g) => Object.values(GROUP_NAMES).includes(g.name as never) && !createdGroupIds.value.includes(g.id),
+    ),
+);
+
+const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit];
+
+/** The module rights a side needs – exactly what the assistant grants, so both agree. */
+function moduleRights(side: Side): RequiredRight[] | null {
+    const spec = plan.value?.find((g) => g.key === side);
+    return spec ? spec.grants.filter((g) => !NOT_MODULE.includes(g.authId)) : null;
+}
+
+function computePlan(): void {
+    plan.value = null;
+    planProblem.value = null;
+    if (demo.value) {
+        planProblem.value = 'Im Demo-Modus nicht verfügbar: Die Screens liegen hier nur im Browser, nicht in ChurchTools.';
+        return;
+    }
+    if (!catalog) {
+        planProblem.value = 'Der Rechtekatalog von ChurchTools ist nicht lesbar.';
+        return;
+    }
+    const keys = Object.keys(CATEGORIES) as CategoryKey[];
+    if (keys.some((k) => categories[k] === undefined)) {
+        planProblem.value = 'Die Datenkategorien des Moduls fehlen noch – einmal die Startseite des Designers öffnen.';
+        return;
+    }
+    const privateCalendarIds = usedCalendarIds.filter((id) => calendars.some((c) => c.id === id && !c.isPublic));
+    try {
+        plan.value = planProvisioning({
+            catalog,
+            moduleKey: EXTENSION_KEY,
+            categories: categories as Record<CategoryKey, number>,
+            wikiCategoryId,
+            privateCalendarIds,
+        });
+    } catch (e) {
+        planProblem.value = explain(e);
+    }
+}
+
+async function persistSettings(): Promise<void> {
+    await repository!.saveSettings({
+        schema: { ...SCHEMA_VERSION },
+        designerGroupId: selected.designer ?? undefined,
+        deviceGroupId: selected.device ?? undefined,
+        createdGroupIds: createdGroupIds.value.length ? createdGroupIds.value : undefined,
+    });
+}
+
+async function runAssistant(): Promise<void> {
+    const question =
+        `Zwei Gruppen anlegen – „${GROUP_NAMES.designer}" und „${GROUP_NAMES.device}" – und ihren Rollen die Rechte geben?\n\n` +
+        'Bestehende Gruppen und Rollen bleiben unberührt. „Einrichtung entfernen" macht es rückgängig.';
+    if (!repository || !window.confirm(question)) return;
+    assistant.running = true;
+    assistant.error = null;
+    assistant.log = [];
+    try {
+        const groupTypeId = await findGroupTypeId(GROUP_TYPE_NAME);
+        if (groupTypeId === null) throw new Error(`Den Gruppentyp „${GROUP_TYPE_NAME}" gibt es auf dieser Instanz nicht.`);
+        if (wikiCategoryId === null) {
+            wikiCategoryId = (await findOrCreateCategory()).id;
+            assistant.log.push(`Wiki-Bereich „${WIKI_CATEGORY_NAME}" angelegt.`);
+        }
+        computePlan();
+        if (!plan.value) throw new Error(planProblem.value ?? 'Kein Plan.');
+        const result = await provision(plan.value, groupTypeId, churchToolsProvisionApi);
+        assistant.log.push(...result.log);
+        assistant.error = result.error;
+        createdGroupIds.value = [...createdGroupIds.value, ...Object.values(result.groupIds)];
+        selected.designer = result.groupIds.designer ?? selected.designer;
+        selected.device = result.groupIds.device ?? selected.device;
+        // Saved even after a failure: what was created must stay removable.
+        await persistSettings();
+        groups.value = await loadGroups();
+        await Promise.all([check('designer'), check('device')]);
+    } catch (e) {
+        assistant.error = explain(e);
+        assistant.log.push(`Abgebrochen: ${assistant.error}`);
+    } finally {
+        assistant.running = false;
+    }
+}
+
+async function removeSetup(): Promise<void> {
+    const names = groups.value.filter((g) => createdGroupIds.value.includes(g.id)).map((g) => `„${g.name}"`);
+    const question = `Die vom Assistenten angelegten Gruppen ${names.join(' und ')} samt ihrer Rechte löschen?\n\nIhre Mitglieder verlieren damit den Zugang.`;
+    if (!repository || !window.confirm(question)) return;
+    assistant.running = true;
+    assistant.error = null;
+    try {
+        for (const id of createdGroupIds.value) {
+            await deleteGroup(id);
+            if (selected.designer === id) selected.designer = null;
+            if (selected.device === id) selected.device = null;
+        }
+        assistant.log = [`${createdGroupIds.value.length} Gruppen gelöscht.`];
+        createdGroupIds.value = [];
+        await persistSettings();
+        groups.value = await loadGroups();
+        await Promise.all([check('designer'), check('device')]);
+    } catch (e) {
+        assistant.error = explain(e);
+    } finally {
+        assistant.running = false;
+    }
+}
 
 function explain(e: unknown): string {
     if (httpStatus(e) === 403) {
@@ -61,7 +198,12 @@ async function check(side: Side): Promise<void> {
     try {
         const rights = await loadGroupRights(groupId);
         if (side === 'designer') {
-            checks.designer = checkDesignerGroup({ statusId: rights.group.statusId, roles: rights.roles, wikiCategoryId });
+            checks.designer = checkDesignerGroup({
+                statusId: rights.group.statusId,
+                roles: rights.roles,
+                wikiCategoryId,
+                moduleRights: moduleRights('designer'),
+            });
         } else {
             const members = await Promise.all(
                 rights.members.map(async (m) => {
@@ -75,6 +217,7 @@ async function check(side: Side): Promise<void> {
                 calendars,
                 usedCalendarIds,
                 wikiCategoryId,
+                moduleRights: moduleRights('device'),
             });
         }
         if (selected.designer !== null && selected.designer === selected.device) {
@@ -101,11 +244,7 @@ async function save(): Promise<void> {
     if (!repository) return;
     saveState.value = 'saving';
     try {
-        await repository.saveSettings({
-            schema: { ...SCHEMA_VERSION },
-            designerGroupId: selected.designer ?? undefined,
-            deviceGroupId: selected.device ?? undefined,
-        });
+        await persistSettings();
         saveState.value = 'saved';
     } catch (e) {
         saveState.value = 'failed';
@@ -115,7 +254,9 @@ async function save(): Promise<void> {
 
 onMounted(async () => {
     try {
-        ({ repository } = await getRepository());
+        const handle = await getRepository();
+        repository = handle.repository;
+        demo.value = handle.demo;
         const [list, settings, wikiCategories, calendarList, used, screenList] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
@@ -127,10 +268,21 @@ onMounted(async () => {
         screens.value = screenList;
         groups.value = list;
         wikiCategoryId = wikiCategories.find((c) => c.name === WIKI_CATEGORY_NAME)?.id ?? null;
+        wikiCategoryIdKnown.value = wikiCategoryId !== null;
         calendars = calendarList;
         usedCalendarIds = used;
         selected.designer = settings?.designerGroupId ?? null;
         selected.device = settings?.deviceGroupId ?? null;
+        createdGroupIds.value = settings?.createdGroupIds ?? [];
+        if (!demo.value) {
+            // Without these the assistant only explains; the page itself still works.
+            [categories, catalog, assistant.allowed] = await Promise.all([
+                repository.visibleCategories(),
+                loadAuthCatalog().catch(() => null),
+                canManagePermissions().catch(() => false),
+            ]);
+        }
+        computePlan();
         await Promise.all([check('designer'), check('device')]);
     } catch (e) {
         error.value = explain(e);
@@ -157,10 +309,65 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
         <RouterLink class="d-link back" :to="{ name: 'designer' }">← Screens</RouterLink>
         <h1>Einrichtung</h1>
         <p class="lead">
-            Rechte vergibt ChurchTools an Rollen in Gruppen. Wähle je eine Gruppe für die Gestalter und für die Geräte –
-            diese Seite prüft, ob ihre Rechte reichen, und sagt, was fehlt. Sie ändert selbst keine Rechte.
+            Rechte vergibt ChurchTools an Rollen in Gruppen. Am einfachsten legt der Assistent die beiden Gruppen samt
+            Rechten an. Wer eigene Gruppen nutzt, wählt sie unten aus – die Prüfung sagt, was fehlt, und ändert nichts.
         </p>
         <p v-if="error" class="error" role="alert">{{ error }}</p>
+
+        <section class="card assistant" data-testid="assistant">
+            <h2>Automatisch einrichten</h2>
+            <template v-if="createdGroupIds.length">
+                <p>
+                    Die Gruppen des Infoscreens sind eingerichtet. Wer gestalten soll, wird Mitglied in „{{ GROUP_NAMES.designer }}",
+                    die Konten der Fernseher in „{{ GROUP_NAMES.device }}" – mehr ist nicht zu tun.
+                </p>
+                <div class="actions">
+                    <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running" data-testid="remove-setup" @click="removeSetup">
+                        Einrichtung entfernen
+                    </button>
+                </div>
+            </template>
+            <template v-else>
+                <p>
+                    Legt zwei leere Gruppen vom Typ „{{ GROUP_TYPE_NAME }}" an und gibt ihren Rollen die nötigen Rechte. Danach
+                    müssen nur noch Personen in die Gruppen aufgenommen werden.
+                </p>
+                <p v-if="planProblem" class="muted">{{ planProblem }}</p>
+                <p v-else-if="foreignGroups.length" class="warn">
+                    Es gibt schon {{ foreignGroups.map((g) => `„${g.name}"`).join(' und ') }}. Der Assistent übernimmt keine
+                    fremden Gruppen – wähle sie unten aus und prüfe ihre Rechte.
+                </p>
+                <details v-if="plan" class="plan">
+                    <summary>Was genau passiert</summary>
+                    <div v-for="group in plan" :key="group.key">
+                        <strong>{{ group.name }}</strong> – an allen Rollen:
+                        <ul>
+                            <li v-for="grant in group.grants" :key="`${grant.authId}`">{{ grant.label }}</li>
+                        </ul>
+                    </div>
+                    <p v-if="wikiMissing" class="muted small">Dazu wird der Wiki-Bereich „Infoscreen" für die Mediathek angelegt.</p>
+                </details>
+                <div class="actions">
+                    <button
+                        class="d-btn d-btn--primary"
+                        type="button"
+                        data-testid="run-assistant"
+                        :disabled="!assistant.allowed || !plan || foreignGroups.length > 0 || assistant.running"
+                        @click="runAssistant"
+                    >
+                        Gruppen und Rechte anlegen
+                    </button>
+                    <span v-if="assistant.running" class="muted">Arbeitet …</span>
+                </div>
+                <p v-if="plan && !assistant.allowed" class="muted small">
+                    Nur wer in ChurchTools Berechtigungen verwalten darf, kann das auslösen.
+                </p>
+            </template>
+            <ul v-if="assistant.log.length" class="log" data-testid="assistant-log">
+                <li v-for="(line, i) in assistant.log" :key="i">{{ line }}</li>
+            </ul>
+            <p v-if="assistant.error" class="error" role="alert">{{ assistant.error }}</p>
+        </section>
 
         <div class="sides">
             <section v-for="{ side, title, purpose } in SIDES" :key="side" class="card" :data-testid="`setup-${side}`">
@@ -299,6 +506,20 @@ h1 {
 }
 .check--info .symbol {
     background: var(--d-text-muted);
+}
+.assistant {
+    margin-top: 16px;
+}
+.assistant .actions {
+    margin: 0;
+}
+.plan ul,
+.log {
+    margin: 4px 0 8px;
+    padding-left: 20px;
+}
+.warn {
+    color: var(--d-text);
 }
 .addresses {
     display: grid;

@@ -206,6 +206,8 @@ export const SettingsDoc = v.object({
     kind: v.literal('settings'),
     designerGroupId: v.optional(v.pipe(v.number(), v.integer())),
     deviceGroupId: v.optional(v.pipe(v.number(), v.integer())),
+    /** Groups the setup assistant created – the only ones it may change or delete. */
+    createdGroupIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
 });
 
 export type Fill = v.InferOutput<typeof Fill>;

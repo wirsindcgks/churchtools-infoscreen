@@ -129,3 +129,32 @@ describe('checkDeviceGroup', () => {
         expect(checks.find((c) => c.text.includes('99'))?.level).toBe('warn');
     });
 });
+
+describe('module rights, as the assistant grants them', () => {
+    const required = [
+        { authId: 2010, label: '„Infoscreen Designer" sehen' },
+        { authId: 2017, dataId: [1, 4], label: 'Daten in Kategorie bearbeiten' },
+    ];
+
+    it('names what a designer role lacks – every category must be covered', () => {
+        const checks = checkDesignerGroup({
+            statusId: 1,
+            roles: [role({ grants: [...designerGrants, grant(2010), grant(2017, 1)] })],
+            wikiCategoryId: WIKI,
+            moduleRights: required,
+        });
+        expect(checks.find((c) => c.text.includes('am Modul fehlt'))?.text).toContain('Daten in Kategorie bearbeiten');
+    });
+
+    it('accepts a device account that holds the module rights from any source', () => {
+        const checks = checkDeviceGroup({
+            statusId: 1,
+            members: [{ label: 'Gerät', grants: [grant(2010), grant(2017, -1)] }],
+            calendars: [],
+            usedCalendarIds: [],
+            wikiCategoryId: WIKI,
+            moduleRights: required,
+        });
+        expect(checks.find((c) => c.text.includes('Gerät darf'))?.level).toBe('ok');
+    });
+});
