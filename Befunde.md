@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G30 sind beantwortet, G16 und G21 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G31 sind beantwortet, G16 und G21 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -284,6 +284,11 @@ Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt �
 - **Gruppenstatus** steht in `information.groupStatusId` von `GET /api/groups/{id}`; die Namen nur in `churchdb` → `getMasterData` → `groupstatus`: **1 aktiv, 2 Entwurf, 3 archiviert, 4 beendet**. Laut [Academy](https://churchtools.academy/de/help/rechteverwaltung/gruppen-berechtigen/28-wann-sind-rechte-von-gruppenmitgliedern-wirksam/) wirken Rechte bei „aktiv" und „beendet", nicht im Entwurf, und gehen mit dem Archivieren verloren.
 
 **Für die Einrichtungsseite folgt:** Die wenigen Kernrechte, die sie prüft (403, 501–503), stehen als Konstanten im Code – die alte Schnittstelle zur Laufzeit zu brauchen, hieße, an einer Sitzung und einem Altsystem zu hängen. Die Rechte-Nummern der Extension selbst sind erst nach der Freischaltung zu lesen; ob sie je Instanz verschieden sind, ist offen.
+
+**G31 – Nach der Freischaltung: Module nur über ihre id, Spezifikation noch ohne Modul-Pfade.** *(2026-09-24, Testinstanz, nur lesend, unmittelbar nach der Freischaltung durch ChurchTools)*
+
+- **`GET /api/custommodules/{id}` nimmt nur die numerische id.** Mit dem Schlüssel (`/custommodules/infoscreen-designer`) antwortet ChurchTools `400` „validation.integer" – nicht `404`. Eine unbekannte id antwortet `404` „CustomModule [999] not found". Das Modul einer Extension findet man über die Liste `GET /api/custommodules` und deren `shorty`. Unser Code fragte bis dahin mit dem Schlüssel; ungeprüft war er ausdrücklich markiert.
+- **Die Spezifikation enthält als Administrator weiterhin keinen `/custommodules`-Pfad** (497 Pfade, wie vor der Freischaltung), obwohl die Route selbst antwortet. Sie ist also nicht allein nach dem Feature gefiltert. Der Typ-Snapshot (B5) wartet deshalb weiter – vermutlich bis ein Modul installiert ist; das ist zu prüfen.
 
 ## Teilweise beantwortet
 

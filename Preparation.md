@@ -52,7 +52,10 @@ angemeldet und mit ausreichenden Rechten, sonst ist ihr Ergebnis wertlos (Lehre 
 Ohne diesen Befund ist jede Planung auf die Testinstanz hin wertlos – der Lizenzumfang einer Testinstanz
 muss dem der Produktivinstanz nicht gleichen.
 
-- [x] **T1 · Custom Modules auf der Testinstanz** → **beantwortet, negativ** *(2026-09-23)*
+- [x] **T1 · Custom Modules auf der Testinstanz** → **freigeschaltet am 2026-09-24** (zuvor negativ, 2026-09-23)
+      `/api/custommodules` antwortet `200` mit leerer Liste, `feature_custommodule: 1`, `config` hat 156 statt 154 Schlüssel.
+      Hochladen einer Extension als ZIP über die Oberfläche: `<instanz>/custom/modules/overview`.
+      Zwei Befunde dazu in `Befunde.md`, G31. **Ursprünglicher Eintrag:**
       Geprüft **angemeldet als Administrator** (`administer settings: true`) – die Falle aus **G1** greift also nicht.
       **Ergebnis: Sie trägt nicht.** `feature_custommodule` fehlt unter 154 `config`-Schlüsseln,
       `/api/custommodules` antwortet **404**, und die gefilterte Spezifikation führt **alle neun
@@ -137,6 +140,8 @@ Ein Rest bleibt: der Statuscode eines unbekannten `/ccm/`-Pfades als sauberer Ge
       (2026-09-24): „Hallo <Vorname>" erscheint.
 
 - [ ] **B5 · Typ-Snapshot holen**
+      **Stand 2026-09-24, nach der Freischaltung:** Die Spezifikation enthält als Administrator **weiterhin keinen**
+      `/custommodules`-Pfad (497 Pfade wie zuvor). Also noch nicht ziehen – erst mit installiertem Modul erneut prüfen (G31).
       `ct-types.d.ts` aus der generierten Typdatei **unserer** Instanz übernehmen, nicht von Hand pflegen und
       nicht aus der Demo. Als versionierten Snapshot einchecken.
       **⚠ Blockiert – und eine Falle.** Die Spezifikation wird pro Benutzer und Rechten gefiltert
