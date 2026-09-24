@@ -8,6 +8,7 @@ import { computed, ref, shallowRef } from 'vue';
 import type { Block, BlockType, MediaDoc, ScreenBundle, ScreenDoc, SlideDoc } from '../model/schema';
 import { ConflictError, type ScreenRepository } from '../store/screen-repository';
 import { History } from './history';
+import { GRID_SIZES } from './snap';
 import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, move, reorder, type Layer } from './ops';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'conflict' | 'error';
@@ -22,6 +23,8 @@ export const useEditorStore = defineStore('editor', () => {
     const status = ref<SaveStatus>('idle');
     const conflict = ref<ScreenDoc | null>(null);
     const error = ref<string | null>(null);
+    /** Grid size in stage pixels, 0 = off. A preference of this browser, not part of the screen. */
+    const gridSize = ref<number>(loadGridSize());
     /** Media documents known to the store, for the preview and the pickers. */
     const media = ref<MediaDoc[]>([]);
     const history = new History<ScreenBundle>();
@@ -55,6 +58,15 @@ export const useEditorStore = defineStore('editor', () => {
 
     function attach(repo: ScreenRepository): void {
         repository.value = repo;
+    }
+
+    function setGridSize(size: number): void {
+        gridSize.value = size;
+        try {
+            localStorage.setItem(GRID_KEY, String(size));
+        } catch {
+            // Private windows may refuse storage; the choice then lasts for this page only.
+        }
     }
 
     async function refreshMedia(): Promise<void> {
@@ -264,6 +276,8 @@ export const useEditorStore = defineStore('editor', () => {
 
     return {
         draft,
+        gridSize,
+        setGridSize,
         media,
         refreshMedia,
         dirty,
@@ -303,3 +317,15 @@ export const useEditorStore = defineStore('editor', () => {
         discardAndReload,
     };
 });
+
+const GRID_KEY = 'infoscreen-designer.grid';
+
+function loadGridSize(): number {
+    try {
+        const stored = Number(localStorage.getItem(GRID_KEY));
+        if ((GRID_SIZES as readonly number[]).includes(stored) && localStorage.getItem(GRID_KEY) !== null) return stored;
+    } catch {
+        // No storage: fall back to the default.
+    }
+    return 20;
+}

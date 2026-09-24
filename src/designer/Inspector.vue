@@ -74,6 +74,7 @@ const FONTS = [
                     <input
                         type="number"
                         :value="block[key]"
+                        :data-testid="`inspector-${key}`"
                         v-on="edit"
                         @input="setNumber(key, ($event.target as HTMLInputElement).value)"
                     >

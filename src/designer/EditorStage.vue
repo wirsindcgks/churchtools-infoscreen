@@ -6,6 +6,7 @@ import StageView from '../player/StageView.vue';
 import { fitStage } from '../player/stage';
 import { useEditorStore } from './editor-store';
 import { BLOCK_LABELS } from './ops';
+import { snapMove, snapResize, type Guide, type Handle } from './snap';
 
 const editor = useEditorStore();
 const host = ref<HTMLElement | null>(null);
@@ -23,7 +24,6 @@ onMounted(() => {
 });
 onBeforeUnmount(() => observer?.disconnect());
 
-type Handle = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
 const HANDLES: Handle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
 interface Drag {
@@ -34,6 +34,10 @@ interface Drag {
     frame: { x: number; y: number; width: number; height: number };
 }
 let drag: Drag | null = null;
+const guides = ref<Guide[]>([]);
+
+/** Snap targets come closer than 8 screen pixels – independent of the zoom. */
+const SNAP_SCREEN_PX = 8;
 
 function start(event: PointerEvent, block: Block, handle: Handle | 'move'): void {
     if (event.button !== 0) return;
@@ -73,13 +77,40 @@ function moveTo(event: PointerEvent): void {
             f.height -= dy;
         }
     }
-    editor.updateBlock(drag.id, f);
+    // Alt/Option suspends snapping for fine placement.
+    if (event.altKey) {
+        guides.value = [];
+        editor.updateBlock(drag.id, f);
+        return;
+    }
+    const id = drag.id;
+    const options = {
+        grid: editor.gridSize,
+        threshold: SNAP_SCREEN_PX / fit.value.scale,
+        stage: editor.stage,
+        others: blocks.value.filter((b) => b.id !== id),
+    };
+    const snapped = h === 'move' ? snapMove(f, options) : snapResize(f, h, options);
+    guides.value = snapped.guides;
+    editor.updateBlock(id, snapped.frame);
 }
 
 function end(): void {
     drag = null;
+    guides.value = [];
     editor.endGesture();
 }
+
+const gridStyle = computed(() => {
+    const size = editor.gridSize;
+    if (!size) return {};
+    const line = `${1 / fit.value.scale}px`;
+    const color = 'rgba(148, 163, 184, 0.28)';
+    return {
+        backgroundImage: `linear-gradient(to right, ${color} ${line}, transparent ${line}), linear-gradient(to bottom, ${color} ${line}, transparent ${line})`,
+        backgroundSize: `${size}px ${size}px`,
+    };
+});
 
 const blocks = computed(() => editor.slide?.blocks ?? []);
 </script>
@@ -88,7 +119,18 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
     <div ref="host" class="editor-stage" @pointerdown="editor.selectBlock(null)">
         <StageView v-if="editor.slide" :width="editor.stage.width" :height="editor.stage.height" :fit="fit">
             <SlideView :slide="editor.slide" :width="editor.stage.width" :height="editor.stage.height" />
-            <div class="overlay">
+            <div class="overlay" :style="gridStyle" data-testid="grid">
+                <div
+                    v-for="(guide, i) in guides"
+                    :key="i"
+                    class="guide"
+                    :class="`guide--${guide.axis}`"
+                    :style="{
+                        [guide.axis === 'x' ? 'left' : 'top']: `${guide.at}px`,
+                        '--line': `${1 / fit.scale}px`,
+                    }"
+                    data-testid="guide"
+                />
                 <div
                     v-for="block in blocks"
                     :key="block.id"
@@ -140,6 +182,22 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
 .overlay {
     position: absolute;
     inset: 0;
+}
+.guide {
+    position: absolute;
+    z-index: 1;
+    pointer-events: none;
+    background: rgb(236, 72, 153);
+}
+.guide--x {
+    top: 0;
+    bottom: 0;
+    width: var(--line);
+}
+.guide--y {
+    left: 0;
+    right: 0;
+    height: var(--line);
 }
 .frame {
     position: absolute;

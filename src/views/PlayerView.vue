@@ -9,6 +9,7 @@ import { churchToolsPlayerData } from '../player/data';
 import { activePlaylistId } from '../player/schedule';
 import { fitStage } from '../player/stage';
 import SlideView from '../player/SlideView.vue';
+import { onStoreChanged } from '../store/backend';
 import StageView from '../player/StageView.vue';
 
 const route = useRoute();
@@ -72,11 +73,23 @@ function scheduleNext(): void {
         scheduleNext();
     }, seconds * 1000);
 }
-// A new playlist starts from its first slide.
+// A changed duration applies at once, not only after the current slide has run out.
 watch(
-    () => slides.value.map((s) => s.id).join(),
-    () => {
-        index.value = 0;
+    () => current.value?.durationSeconds,
+    () => scheduleNext(),
+);
+// After a change the player stays on the slide it shows; only if that slide is gone
+// (or another playlist took over) does it start from the beginning.
+// Compared as a string: the list is recomputed every second (it depends on the clock),
+// and a new array each time must not count as a change – that would stall the rotation.
+watch(
+    () => slides.value.map((s) => s.id).join(','),
+    (joined, previousJoined) => {
+        const ids = joined ? joined.split(',') : [];
+        const previous = previousJoined ? previousJoined.split(',') : [];
+        const shown = previous[index.value % Math.max(previous.length, 1)];
+        const position = shown ? ids.indexOf(shown) : -1;
+        index.value = position >= 0 ? position : 0;
         scheduleNext();
     },
 );
@@ -90,17 +103,20 @@ function onResize(): void {
 }
 
 let ticker: ReturnType<typeof setInterval> | undefined;
+let unsubscribe: () => void = () => {};
 onMounted(() => {
     window.addEventListener('resize', onResize);
     ticker = setInterval(() => (context.now = new Date()), 1000);
     scheduleNext();
     void player?.start();
+    if (player) unsubscribe = onStoreChanged(player.refreshNow);
 });
 onBeforeUnmount(() => {
     window.removeEventListener('resize', onResize);
     clearInterval(ticker);
     clearTimeout(rotation);
     player?.stop();
+    unsubscribe();
 });
 </script>
 

@@ -4,6 +4,8 @@ import { defineConfig, devices } from '@playwright/test';
 // Not part of CI: it needs a .env with a login token (Plan.md, Konventionen).
 export default defineConfig({
     testDir: 'e2e',
+    // One shared, real instance: parallel runs would race each other (uploads, counts).
+    workers: 1,
     use: { baseURL: 'http://localhost:5173/ccm/infoscreen-designer/' },
     webServer: {
         command: 'npm run dev -- --port 5173 --strictPort',

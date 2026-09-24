@@ -56,13 +56,24 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
     let dataFailures = 0;
     let stopped = false;
 
-    function later(ms: number, action: () => void): void {
-        if (stopped) return;
+    function later(ms: number, action: () => void): ReturnType<typeof setTimeout> | undefined {
+        if (stopped) return undefined;
         const timer = setTimeout(() => {
             timers.delete(timer);
             action();
         }, ms);
         timers.add(timer);
+        return timer;
+    }
+
+    let configTimer: ReturnType<typeof setTimeout> | undefined;
+    /** One pending configuration refresh at a time, however it was triggered. */
+    function scheduleConfig(ms: number): void {
+        if (configTimer) {
+            clearTimeout(configTimer);
+            timers.delete(configTimer);
+        }
+        configTimer = later(ms, configCycle);
     }
 
     function fail(error: unknown): void {
@@ -127,11 +138,11 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             configFailures = 0;
             // A new revision may reference other calendars: fetch data right away.
             if (state.screen?.screen.revision !== before) await refreshData();
-            later(withJitter(INTERVALS.configMs), configCycle);
+            scheduleConfig(withJitter(INTERVALS.configMs));
         } catch (error) {
             configFailures++;
             fail(error);
-            later(backoffDelay(30_000, configFailures), configCycle);
+            scheduleConfig(backoffDelay(30_000, configFailures));
         }
     }
 
@@ -166,11 +177,16 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         else later(withJitter(INTERVALS.dataMs), dataCycle);
     }
 
+    /** Someone saved: look at the configuration now instead of at the next interval. */
+    function refreshNow(): void {
+        if (!stopped) scheduleConfig(0);
+    }
+
     function stop(): void {
         stopped = true;
         timers.forEach(clearTimeout);
         timers.clear();
     }
 
-    return { state, start, stop };
+    return { state, start, stop, refreshNow };
 }

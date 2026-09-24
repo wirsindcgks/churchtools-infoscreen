@@ -146,4 +146,20 @@ describe('player controller', () => {
         expect(player.state.clockConfirmed).toBe(false);
         player.stop();
     });
+
+    it('looks again right away when told that something was saved', async () => {
+        let revision = 1;
+        const loadScreen = vi.fn(async () => loaded(revision));
+        const player = createPlayer('demo', fakeData({ loadScreen }), fakeDeps());
+        await player.start();
+        revision = 2;
+        player.refreshNow();
+        await vi.advanceTimersByTimeAsync(10);
+        expect(player.state.screen?.screen.revision).toBe(2);
+        // Still one refresh chain, not two: within the next interval only one more load.
+        const calls = loadScreen.mock.calls.length;
+        await vi.advanceTimersByTimeAsync(2.5 * 60_000);
+        expect(loadScreen.mock.calls.length).toBe(calls + 1);
+        player.stop();
+    });
 });

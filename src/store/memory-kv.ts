@@ -1,6 +1,12 @@
 import { MAX_VALUE_LENGTH } from '../model/read';
 import type { KvBackend, KvCategory, KvValue } from './kv';
 
+export interface MemoryKvState {
+    nextId: number;
+    categories: KvCategory[];
+    values: [number, KvValue[]][];
+}
+
 export type KvOperation =
     | { op: 'createCategory'; shorty: string }
     | { op: 'createValue' | 'updateValue' | 'deleteValue'; categoryId: number; valueId?: number };
@@ -16,6 +22,18 @@ export class MemoryKv implements KvBackend {
     private values = new Map<number, KvValue[]>();
 
     readonly writes: KvOperation[] = [];
+
+    /** Plain copy of the stored state, e.g. to keep it across page loads. */
+    snapshot(): MemoryKvState {
+        return { nextId: this.nextId, categories: this.categories, values: [...this.values.entries()] };
+    }
+
+    restore(state: MemoryKvState): void {
+        this.nextId = state.nextId;
+        this.categories = state.categories.map((c) => ({ ...c }));
+        this.values = new Map(state.values.map(([id, list]) => [id, list.map((v) => ({ ...v }))]));
+    }
+
     /** Throw on the write with this index (0-based) and every one after it. */
     failFromWrite: number | null = null;
 

@@ -2,9 +2,8 @@ import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { EXTENSION_KEY } from '../config';
 import { httpStatus } from '../ct/client';
 import { seedDemo } from '../dev/demo';
+import { createDemoKv, onDemoChange, resetDemo } from '../dev/demo-kv';
 import { ChurchToolsKv } from './churchtools-kv';
-import type { KvBackend } from './kv';
-import { MemoryKv } from './memory-kv';
 import { ScreenRepository } from './screen-repository';
 
 export interface RepositoryHandle {
@@ -32,13 +31,14 @@ async function create(): Promise<RepositoryHandle> {
     if (await moduleExists()) {
         return { repository: new ScreenRepository(new ChurchToolsKv(EXTENSION_KEY)), demo: false };
     }
-    if (!import.meta.env.DEV) {
-        throw new Error('Das Custom Module ist auf dieser Instanz nicht verfügbar.');
+    // Written as a positive branch so that the release build drops the demo entirely.
+    if (import.meta.env.DEV) {
+        const { kv, restored } = createDemoKv();
+        const repository = new ScreenRepository(kv);
+        if (!restored) await seedDemo(repository);
+        return { repository, demo: true };
     }
-    const kv: KvBackend = new MemoryKv();
-    const repository = new ScreenRepository(kv);
-    await seedDemo(repository);
-    return { repository, demo: true };
+    throw new Error('Das Custom Module ist auf dieser Instanz nicht verfügbar.');
 }
 
 async function moduleExists(): Promise<boolean> {
@@ -50,4 +50,18 @@ async function moduleExists(): Promise<boolean> {
         if (httpStatus(error) === 404) return false;
         throw error;
     }
+}
+
+/**
+ * Calls back when screens were saved elsewhere and a player should look again
+ * right away. Only demo mode can tell; with ChurchTools as the store, players
+ * find changes on their regular configuration refresh.
+ */
+export function onStoreChanged(callback: () => void): () => void {
+    return import.meta.env.DEV ? onDemoChange(callback) : () => {};
+}
+
+/** Drops the demo screens of this browser; does nothing outside development. */
+export function resetDemoStore(): void {
+    if (import.meta.env.DEV) resetDemo();
 }

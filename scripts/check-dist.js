@@ -40,8 +40,15 @@ for (const file of files.filter((f) => /\.(js|css|html)$/.test(f))) {
     }
 }
 
+// 4. No demo mode: it exists for development without Custom Modules only.
+for (const file of scripts) {
+    if (fs.readFileSync(file, 'utf8').includes('infoscreen-designer.demo')) {
+        failures.push(`demo store code in ${path.relative(dist, file)}`);
+    }
+}
+
 if (failures.length) {
     console.error('dist check failed:\n  - ' + failures.join('\n  - '));
     process.exit(1);
 }
-console.log(`dist check passed (${files.length} files, one bundle, no inline script, no instance address)`);
+console.log(`dist check passed (${files.length} files, one bundle, no inline script, no instance address, no demo)`);

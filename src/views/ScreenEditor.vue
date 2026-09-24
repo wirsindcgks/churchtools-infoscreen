@@ -8,6 +8,7 @@ import Inspector from '../designer/Inspector.vue';
 import { BLOCK_LABELS } from '../designer/ops';
 import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
 import SlideList from '../designer/SlideList.vue';
+import { GRID_SIZES } from '../designer/snap';
 import { usePreview } from '../designer/usePreview';
 import type { BlockType, MediaDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
@@ -156,6 +157,16 @@ const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
                     + {{ label }}
                 </button>
             </div>
+            <label class="grid-select" title="Blöcke rasten am Raster ein; mit gedrückter Alt-Taste frei platzieren">
+                Raster
+                <select
+                    :value="editor.gridSize"
+                    data-testid="grid-size"
+                    @change="editor.setGridSize(Number(($event.target as HTMLSelectElement).value))"
+                >
+                    <option v-for="size in GRID_SIZES" :key="size" :value="size">{{ size ? `${size} px` : 'aus' }}</option>
+                </select>
+            </label>
             <button class="d-btn" type="button" title="Rückgängig (⌘Z)" :disabled="!editor.canUndo" @click="editor.undo()">
                 ↶
             </button>
@@ -175,7 +186,7 @@ const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
         </header>
 
         <p v-if="demo" class="banner">
-            Demo-Modus: Custom Modules sind nicht freigeschaltet, gespeichert wird nur im Arbeitsspeicher dieses Tabs.
+            Demo-Modus: Custom Modules sind nicht freigeschaltet. Gespeichert wird in diesem Browser; ein offener Player übernimmt Änderungen sofort.
         </p>
         <p v-if="editor.error" class="banner banner--error" role="alert">{{ editor.error }}</p>
         <p v-if="problem" class="banner banner--error" role="alert">Vorschaudaten: {{ problem }}</p>
@@ -257,6 +268,16 @@ const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
 }
 .spacer {
     flex: 1;
+}
+.grid-select {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+.grid-select select {
+    width: auto;
 }
 .palette {
     display: flex;
