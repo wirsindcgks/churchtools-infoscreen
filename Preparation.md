@@ -133,8 +133,8 @@ Ein Rest bleibt: der Statuscode eines unbekannten `/ccm/`-Pfades als sauberer Ge
 
 - [x] **B4 · Einmal in Safari öffnen** *(2026-09-24)*
       `npm run smoke` läuft in Chromium **und WebKit** grün – Begrüßung, Fehlerseite für unbekannte Pfade, Player
-      ohne Parameter. mkcert ist unnötig, weil keine Cookies im Spiel sind. WebKit ist Safaris Engine, nicht Safari
-      selbst; ein Blick im echten Safari bleibt billig.
+      ohne Parameter. mkcert ist unnötig, weil keine Cookies im Spiel sind. **Im echten Safari gegengeprüft**
+      (2026-09-24): „Hallo <Vorname>" erscheint.
 
 - [ ] **B5 · Typ-Snapshot holen**
       `ct-types.d.ts` aus der generierten Typdatei **unserer** Instanz übernehmen, nicht von Hand pflegen und
