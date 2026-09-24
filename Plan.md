@@ -4,7 +4,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 
 ## Auf einen Blick
 
-**Stand 2026-09-24.** Phase 0 ist abgeschlossen, soweit sie ohne Custom Modules auf der Testinstanz geht. Datenmodell, Player und Designer samt Mediathek laufen gegen den Mock (Phasen 1–3); was bis zum MVP fehlt, steht priorisiert unter „Nächste Schritte". Am 2026-09-24 ist der Plan gekürzt worden: Er war ins Rechtemodell abgetaucht, und das Rechtemodell ist für den MVP **ein Satz** (siehe F), keine Baustelle.
+**Stand 2026-09-24.** Phase 0 ist abgeschlossen, soweit sie ohne Custom Modules auf der Testinstanz geht. Datenmodell, Player und Designer samt Mediathek sind gebaut (Phasen 1–3). **Seit dem 2026-09-24 läuft die Extension im echten ChurchTools der Testinstanz**: hochgeladen, Rechte über den Einrichtungsassistenten, ein Screen im Designer gespeichert und im Browser als Geräte-Benutzer (Weg A, D) mit Logo und echten Terminen angezeigt. Was bis zum MVP fehlt, steht priorisiert unter „Nächste Schritte". Am 2026-09-24 ist der Plan gekürzt worden: Er war ins Rechtemodell abgetaucht, und das Rechtemodell ist für den MVP **ein Satz** (siehe F), keine Baustelle.
 
 **Zwingend – ohne das gibt es kein Produkt:**
 
@@ -248,7 +248,7 @@ In ungefährer Reihenfolge des Nutzens:
 
 | Phase | Inhalt | Ergebnis |
 | --- | --- | --- |
-| **0 – Machbarkeit** | Abgeschlossen bis auf G9 und das Hochladen eines leeren Moduls – beides wartet auf die Freischaltung | „Hallo &lt;Vorname&gt;" läuft im echten ChurchTools |
+| **0 – Machbarkeit** | **Abgeschlossen am 2026-09-24:** Extension hochgeladen, läuft im echten ChurchTools; G9 wird nur für Weg B gebraucht | „Hallo &lt;Vorname&gt;" läuft im echten ChurchTools ✓ |
 | **1 – Datenmodell** | Schema Screen → Playlist → Slides → Blöcke, versioniert und duldsam; Slug; KV-Repository mit Mock; Revisionsprüfung. **Dazu die Terminnormalisierung** als eigene Schicht mit Tests gegen die Fixtures (ganztägig, mehrtägig, Zeitzone der Instanz) | Screens lassen sich ohne Oberfläche speichern und laden |
 | **2 – Player** | Blockrendering, Bühne, Rotation, Intervalle, Token-Anmeldung, Uhrprüfung, Offline-Stand | Ein von Hand geschriebener Screen läuft auf einem Kiosk-Gerät am Foyer-TV |
 | **3 – Designer** | Editor, Slide-Verwaltung, Blockpalette, Inspektor, Vorschau, Mediathek | Ein Screen mit eigenen Bildern entsteht ohne Entwicklerhilfe |
@@ -337,7 +337,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 13. **Einrichtungsdoku** `docs/Einrichtung.md`: Klickwege, Kiosk-Browser, Notbremse (G18), Öffentlichkeit von Bildern und Logo (G14, G29).
 14. **Freischaltung vorbereiten**: Skript für den Typ-Snapshot, das ohne `/custommodules`-Pfade abbricht; Checklisten für B6 und G9.
 
-**Sobald freigeschaltet ist:** Testmodul unter `infoscreen-designer` hochladen und Rechte vergeben (B6), Typ-Snapshot ziehen (B5), Login-Token am `/ccm/`-Pfad prüfen (G9), die numerischen Rechte-IDs der Extension ablesen, das Speichern einmal gegen die echte KV-Anbindung durchspielen, Fixtures nachsichern. G10 nur, wenn es nebenbei geht.
+**Seit der Freischaltung (2026-09-24) erledigt:** Extension unter `infoscreen-designer` hochgeladen (B6), Rechte-Nummern abgelesen (G33), Speichern und Laden über den echten Speicher der Extension (ein Screen im Designer gespeichert, vom Player gelesen), Player im Browser eines Geräte-Benutzers (G35). **Nicht möglich:** der Typ-Snapshot (B5) – die Spezifikation führt keine Modul-Pfade (G31). **Nur für Weg B:** Login-Token am `/ccm/`-Pfad (G9). **Offen:** Fixtures der Modul-Antworten aufzeichnen und vor dem 2026-10-22 sichern; der Test auf einem echten Fernseher mit Kiosk-Browser; ob „Angemeldet bleiben" länger als 24 Stunden hält (G32). G10 nur, wenn es nebenbei geht.
 
 
 
