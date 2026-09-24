@@ -33,5 +33,10 @@ const background = computed(() => {
 .slide {
     position: absolute;
     inset: 0;
+    /*
+     * Digits of equal width: a clock does not twitch when a minute turns, and times in a list line up.
+     * Works where the font has tabular figures (or has only those); Oswald and Poppins have neither.
+     */
+    font-variant-numeric: tabular-nums;
 }
 </style>

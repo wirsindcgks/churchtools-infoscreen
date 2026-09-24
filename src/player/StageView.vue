@@ -28,7 +28,8 @@ const style = computed(() => ({
     overflow: hidden;
     transform-origin: 0 0;
     background: #000;
-    font-family: system-ui, sans-serif;
+    /* Only for messages on the stage; blocks set their own font. */
+    font-family: 'ISD Lato', sans-serif;
     line-height: 1.2;
 }
 </style>

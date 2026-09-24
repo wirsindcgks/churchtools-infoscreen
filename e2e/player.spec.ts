@@ -43,3 +43,25 @@ test('an unknown screen is named, not shown as a black page', async ({ page }) =
     await page.goto('./player?screen=gibt-es-nicht');
     await expect(page.getByRole('alert')).toContainText('gibt-es-nicht');
 });
+
+test('digits on the stage have equal width, so a clock does not twitch', async ({ page }) => {
+    await page.goto('./player?screen=demo');
+    const slide = page.locator('.player .slide').first();
+    await expect(slide).toHaveCSS('font-variant-numeric', 'tabular-nums');
+    // Inter has proportional digits by default: without tabular figures "1111" is narrower than "0000".
+    const widths = await slide.evaluate(async (element) => {
+        await document.fonts.load('400 100px "ISD Inter"');
+        const measure = (text: string) => {
+            const span = document.createElement('span');
+            // Longhands only: the `font` shorthand would reset font-variant-numeric.
+            span.style.cssText = 'font-family: "ISD Inter"; font-size: 100px; position: absolute; white-space: nowrap';
+            span.textContent = text;
+            element.append(span);
+            const width = span.getBoundingClientRect().width;
+            span.remove();
+            return width;
+        };
+        return [measure('1111'), measure('0000')];
+    });
+    expect(Math.abs(widths[0]! - widths[1]!)).toBeLessThan(1);
+});
