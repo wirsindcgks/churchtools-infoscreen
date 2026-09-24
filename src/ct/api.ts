@@ -34,6 +34,23 @@ export function fetchAppointments(
     });
 }
 
+/**
+ * The church logo as an image service address without size, or null without
+ * a logo. `/logo` is anonymous but always answers 150×150, whatever `w` and
+ * `h` say; it redirects to the image service, which honours them (G29). So
+ * the redirect target is what counts – and it changes with the logo, which
+ * makes it a cache key that needs no expiry rule of its own.
+ */
+export async function fetchChurchLogoUrl(baseUrl: string, fetcher: typeof fetch = fetch): Promise<string | null> {
+    const response = await fetcher(`${baseUrl}/logo`, { cache: 'no-store', credentials: 'omit' });
+    // What /logo answers without a logo is unmeasured: anything but an image means "none".
+    if (!response.ok || !response.headers.get('content-type')?.startsWith('image/')) return null;
+    const target = new URL(response.url);
+    if (!/\/images\/\d+\//.test(target.pathname)) return null;
+    target.search = '';
+    return target.toString();
+}
+
 export interface Calendar {
     id: number;
     name: string;

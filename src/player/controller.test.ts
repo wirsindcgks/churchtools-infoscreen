@@ -21,6 +21,7 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
         loadScreen: vi.fn(async () => loaded()),
         timeZone: vi.fn(async () => 'Europe/Berlin'),
         churchName: vi.fn(async () => 'Gemeinde'),
+        churchLogo: vi.fn(async () => null),
         serverDate: vi.fn(async () => NOW.toUTCString()),
         appointments: vi.fn(async () => []),
         ...overrides,
@@ -53,6 +54,21 @@ describe('player controller', () => {
         expect(player.state.churchName).toBe('Gemeinde');
         expect(player.state.clockConfirmed).toBe(true);
         expect(deps.saved).toHaveLength(1);
+        player.stop();
+    });
+
+    it('keeps the last logo when the logo cannot be fetched, and fails nothing else', async () => {
+        const churchLogo = vi
+            .fn<PlayerData['churchLogo']>()
+            .mockResolvedValueOnce('https://gemeinde.example/images/109/abc')
+            .mockRejectedValue(new Error('Network Error'));
+        const player = createPlayer('demo', fakeData({ churchLogo }), fakeDeps());
+        await player.start();
+        expect(player.state.churchLogo).toBe('https://gemeinde.example/images/109/abc');
+        await vi.advanceTimersByTimeAsync(15 * 60_000);
+        expect(churchLogo.mock.calls.length).toBeGreaterThan(1);
+        expect(player.state.churchLogo).toBe('https://gemeinde.example/images/109/abc');
+        expect(player.state.staleSince).toBeNull();
         player.stop();
     });
 

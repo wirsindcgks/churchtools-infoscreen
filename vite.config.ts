@@ -24,6 +24,8 @@ export default defineConfig(({ mode }) => {
                       '/api': devProxy(env.CT_BASE_URL, env.CT_LOGIN_TOKEN),
                       // The image service is anonymous (G14); proxied only because the instance sends no CORS headers.
                       '/images': devProxy(env.CT_BASE_URL, undefined),
+                      // The church logo, anonymous as well; it redirects to /images (G29).
+                      '/logo': devProxy(env.CT_BASE_URL, undefined),
                   }
                 : undefined,
         },
@@ -47,6 +49,9 @@ function devProxy(target: string, loginToken: string | undefined): ProxyOptions 
         configure(proxy) {
             proxy.on('proxyRes', (res) => {
                 delete res.headers['set-cookie'];
+                // Keep redirects on the proxy: the instance itself would refuse the browser (no CORS).
+                const location = res.headers.location;
+                if (location?.startsWith(target)) res.headers.location = location.slice(target.replace(/\/+$/, '').length);
             });
         },
     };

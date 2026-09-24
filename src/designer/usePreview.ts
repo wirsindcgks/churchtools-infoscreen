@@ -16,6 +16,7 @@ export function usePreview(calendarIds: Ref<number[]>, media: Ref<MediaDoc[]>) {
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         clockConfirmed: true,
         churchName: '',
+        churchLogo: null,
         appointments: [],
         media: new Map(),
     });
@@ -26,12 +27,13 @@ export function usePreview(calendarIds: Ref<number[]>, media: Ref<MediaDoc[]>) {
 
     async function loadBasics(): Promise<void> {
         try {
-            const [timeZone, churchName, list] = await Promise.all([
+            const [timeZone, churchName, list, churchLogo] = await Promise.all([
                 churchToolsPlayerData.timeZone(),
                 churchToolsPlayerData.churchName(),
                 fetchCalendars(),
+                churchToolsPlayerData.churchLogo().catch(() => null),
             ]);
-            Object.assign(context, { timeZone, churchName });
+            Object.assign(context, { timeZone, churchName, churchLogo });
             calendars.value = list;
         } catch (error) {
             problem.value = error instanceof Error ? error.message : String(error);

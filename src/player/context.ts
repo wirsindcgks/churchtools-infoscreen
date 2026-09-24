@@ -8,6 +8,8 @@ export interface StageContext {
     timeZone: string;
     clockConfirmed: boolean;
     churchName: string;
+    /** Image service address of the church logo without size (G29); null without one. */
+    churchLogo?: string | null;
     appointments: Appointment[];
     media: Map<string, MediaDoc>;
     /** Image addresses already on the device (original → blob URL); the player fills it, the designer does not. */

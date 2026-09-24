@@ -8,7 +8,7 @@ import FillEditor from './FillEditor.vue';
 import { BLOCK_LABELS } from './ops';
 
 defineProps<{ calendars: Calendar[] }>();
-const emit = defineEmits<{ 'pick-image': ['block' | 'background'] }>();
+const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo'] }>();
 
 const editor = useEditorStore();
 const block = computed(() => editor.block);
@@ -41,9 +41,9 @@ function setSlideNumber(value: string): void {
     if (n >= 1 && n <= 3600) editor.updateSlide({ durationSeconds: n });
 }
 
-function mediaUrl(id: string | undefined): string | null {
+function mediaUrl(id: string | undefined, fit: 'crop' | 'max' = 'crop'): string | null {
     const media = id ? editor.media.find((m) => m.id === id) : undefined;
-    return media ? sizedImageUrl(media.imageUrl, 272, 153, 'crop') : null;
+    return media ? sizedImageUrl(media.imageUrl, 272, 153, fit) : null;
 }
 
 function setBackgroundKind(kind: string): void {
@@ -185,14 +185,42 @@ const FONTS = [
                 </label>
             </template>
 
-            <label v-if="block.type === 'church-header'" class="check">
-                <input
-                    type="checkbox"
-                    :checked="block.showName"
-                    @change="setBlock({ showName: ($event.target as HTMLInputElement).checked })"
-                >
-                Gemeindenamen zeigen
-            </label>
+            <template v-if="block.type === 'church-header'">
+                <label class="check">
+                    <input
+                        type="checkbox"
+                        :checked="block.showName"
+                        @change="setBlock({ showName: ($event.target as HTMLInputElement).checked })"
+                    >
+                    Gemeindenamen zeigen
+                </label>
+                <label class="check">
+                    <input
+                        type="checkbox"
+                        data-testid="show-logo"
+                        :checked="block.showLogo"
+                        @change="setBlock({ showLogo: ($event.target as HTMLInputElement).checked })"
+                    >
+                    Logo zeigen
+                </label>
+                <div v-if="block.showLogo" class="media-pick">
+                    <img v-if="mediaUrl(block.logoMediaId, 'max')" class="logo-preview" :src="mediaUrl(block.logoMediaId, 'max')!" alt="">
+                    <p v-else class="hint">Das Logo aus den Gemeindeinfos von ChurchTools.</p>
+                    <button class="d-btn" type="button" data-testid="pick-logo" @click="emit('pick-image', 'logo')">
+                        Eigenes Logo wählen …
+                    </button>
+                    <button
+                        v-if="block.logoMediaId"
+                        class="d-btn"
+                        type="button"
+                        data-testid="reset-logo"
+                        @click="setBlock({ logoMediaId: undefined })"
+                    >
+                        Logo aus ChurchTools verwenden
+                    </button>
+                    <p class="hint">Ein eigenes Logo hilft, wenn das aus ChurchTools auf dem Hintergrund nicht zu sehen ist.</p>
+                </div>
+            </template>
 
             <fieldset v-if="'style' in block">
                 <legend>Schrift</legend>
@@ -445,6 +473,11 @@ legend {
     object-fit: cover;
     border-radius: var(--d-radius);
     background: var(--d-panel);
+}
+/* A logo is shown whole; the checkerboard makes white and black logos visible alike. */
+.media-pick img.logo-preview {
+    object-fit: contain;
+    background: repeating-conic-gradient(var(--d-panel) 0 25%, var(--d-interactive) 0 50%) 0 0 / 16px 16px;
 }
 .hint {
     margin: 0;

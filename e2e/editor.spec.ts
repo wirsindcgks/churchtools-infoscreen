@@ -76,3 +76,16 @@ test('blocks snap to the grid and to the stage centre with a guide line', async 
     const y = Number(await page.getByTestId('inspector-y').inputValue());
     expect(y % 20 === 0 || y === 390).toBe(true); // grid, or centred vertically
 });
+
+test('the header block shows the church logo in the size of the block (G29)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await page.getByTestId('frame-church-header').first().click();
+    await page.getByTestId('show-logo').check();
+    const logo = page.locator('.editor-stage .block--church-header img');
+    await expect(logo).toBeVisible();
+    // Not the 150×150 of /logo: the image service answers in the height of the block.
+    expect(await logo.getAttribute('src')).toMatch(/\/images\/\d+\/.+w=1300&h=90&fit=max/);
+    await expect.poll(() => logo.evaluate((img: HTMLImageElement) => img.naturalHeight)).toBe(90);
+    await page.screenshot({ path: 'test-results/editor-logo.png' });
+});

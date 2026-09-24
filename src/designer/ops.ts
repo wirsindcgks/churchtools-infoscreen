@@ -137,7 +137,7 @@ export function createBlock(type: BlockType, stage: { width: number; height: num
         case 'next-appointment':
             return { ...frame, type, calendarIds: calendars, showImage: true, style: style(64, { fontWeight: 600 }) };
         case 'church-header':
-            return { ...frame, type, showLogo: false, showName: true, style: style(48, { fontWeight: 600 }) };
+            return { ...frame, type, showLogo: true, showName: true, style: style(48, { fontWeight: 600 }) };
     }
 }
 

@@ -144,6 +144,35 @@ describe('ScreenRepository', () => {
         expect(loaded.issues.map((i) => i.message)).toEqual(['Slide fehlt.']);
     });
 
+    it('counts an own header logo as a use of that image, so deleting it warns (schema 1.1)', async () => {
+        const header = {
+            id: 'h',
+            type: 'church-header' as const,
+            x: 0,
+            y: 0,
+            width: 800,
+            height: 100,
+            showLogo: true,
+            showName: true,
+            logoMediaId: 'logo-weiss',
+            style: { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const },
+        };
+        await repo.saveMedia({
+            schema: { major: 1, minor: 1 },
+            kind: 'media',
+            id: 'logo-weiss',
+            name: 'Logo weiß',
+            fileId: 7,
+            imageUrl: 'https://gemeinde.example/images/7/abc',
+        });
+        await repo.saveScreen(bundle({ slides: [makeSlide({ id: 'slide-1', blocks: [header] }), makeSlide({ id: 'slide-2' })] }), {
+            ...save,
+            expectedRevision: null,
+        });
+        expect(await repo.mediaUsage('logo-weiss')).toHaveLength(1);
+        expect((await repo.loadScreen('foyer-links')).media.map((m) => m.id)).toEqual(['logo-weiss']);
+    });
+
     it('throws for an unknown slug', async () => {
         await expect(repo.loadScreen('gibt-es-nicht')).rejects.toBeInstanceOf(ScreenNotFoundError);
     });

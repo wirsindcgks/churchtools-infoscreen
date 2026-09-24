@@ -13,7 +13,11 @@ declare global {
  * /api to the instance, so no instance URL is ever compiled into the bundle.
  */
 export function configureClient(): void {
-    churchtoolsClient.setBaseUrl(window.settings?.base_url ?? window.location.origin);
+    churchtoolsClient.setBaseUrl(instanceBaseUrl());
+}
+
+export function instanceBaseUrl(): string {
+    return (window.settings?.base_url ?? window.location.origin).replace(/\/+$/, '');
 }
 
 /** ChurchTools answers anonymous requests as this pseudo person (G20). */

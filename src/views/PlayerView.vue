@@ -32,31 +32,37 @@ const context = reactive<StageContext>({
     timeZone: 'UTC',
     clockConfirmed: false,
     churchName: '',
+    churchLogo: null,
     appointments: [],
     media: new Map<string, MediaDoc>(),
     images: new Map<string, string>(),
 });
 provideStageContext(context);
 
-// Every loaded configuration – from the offline copy or fresh – brings its images onto the device.
+// Every loaded configuration – from the offline copy or fresh – brings its images onto the device,
+// the church logo included: a new logo is a new address (G29).
 const mediaCache = createMediaCache();
 watch(
-    () => state?.screen,
-    async (loaded) => {
+    () => state && ([state.screen, state.churchLogo] as const),
+    async (current) => {
+        const [loaded, churchLogo] = current ?? [];
         if (!loaded) return;
         const stage = loaded.screen.stage;
-        context.images = await mediaCache.sync(screenImageUrls(loaded.slides, loaded.media, stage));
+        context.images = await mediaCache.sync(screenImageUrls(loaded.slides, loaded.media, stage, churchLogo ?? null));
     },
     { immediate: true },
 );
 
 watch(
-    () => state && [state.timeZone, state.clockConfirmed, state.churchName, state.appointments, state.screen] as const,
+    () =>
+        state &&
+        ([state.timeZone, state.clockConfirmed, state.churchName, state.churchLogo, state.appointments, state.screen] as const),
     () => {
         if (!state) return;
         context.timeZone = state.timeZone;
         context.clockConfirmed = state.clockConfirmed;
         context.churchName = state.churchName;
+        context.churchLogo = state.churchLogo;
         context.appointments = state.appointments;
         context.media = new Map((state.screen?.media ?? []).map((m) => [m.id, m]));
     },
@@ -89,7 +95,10 @@ watch(
         const list = slides.value;
         if (list.length < 2) return;
         const next = list[(index.value + 1) % list.length];
-        if (next) preload(slideImageUrls(next, context.media, stage.value).map((url) => imageSource(context, url)));
+        if (next) {
+            const urls = slideImageUrls(next, context.media, stage.value, context.churchLogo ?? null);
+            preload(urls.map((url) => imageSource(context, url)));
+        }
     },
 );
 

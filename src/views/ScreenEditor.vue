@@ -29,11 +29,11 @@ const { calendars, problem } = usePreview(
 );
 
 /** Which picker the media library was opened for. */
-const libraryFor = ref<'block' | 'background' | null>(null);
+const libraryFor = ref<'block' | 'background' | 'logo' | null>(null);
 const libraryTarget = ref<string | null>(null);
 
-function openLibrary(kind: 'block' | 'background'): void {
-    libraryTarget.value = kind === 'block' ? (editor.block?.id ?? null) : null;
+function openLibrary(kind: 'block' | 'background' | 'logo'): void {
+    libraryTarget.value = kind === 'background' ? null : (editor.block?.id ?? null);
     libraryFor.value = kind;
 }
 
@@ -41,6 +41,8 @@ async function chosen(media: MediaDoc): Promise<void> {
     await editor.refreshMedia();
     if (libraryFor.value === 'block' && libraryTarget.value) {
         editor.updateBlock(libraryTarget.value, { mediaId: media.id });
+    } else if (libraryFor.value === 'logo' && libraryTarget.value) {
+        editor.updateBlock(libraryTarget.value, { logoMediaId: media.id });
     } else if (libraryFor.value === 'background') {
         editor.updateSlide({ background: { kind: 'media', mediaId: media.id } });
     }
@@ -49,6 +51,7 @@ async function chosen(media: MediaDoc): Promise<void> {
 
 const currentMediaId = computed(() => {
     if (libraryFor.value === 'block' && editor.block?.type === 'image') return editor.block.mediaId;
+    if (libraryFor.value === 'logo' && editor.block?.type === 'church-header') return editor.block.logoMediaId;
     const bg = editor.slide?.background;
     return bg?.kind === 'media' ? bg.mediaId : undefined;
 });

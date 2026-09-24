@@ -56,6 +56,24 @@ describe('rendering a slide', () => {
         expect(render(makeSlide({ blocks: [header] })).text()).toContain('Gemeinde am Markt');
     });
 
+    it('shows the church logo beside the name, from the device copy when there is one', () => {
+        const header: Block = { id: 'h', type: 'church-header', x: 0, y: 0, width: 800, height: 80, showLogo: true, showName: true, style };
+        const logo = 'https://gemeinde.example/images/109/abc';
+        const sized = `${logo}?w=800&h=80&fit=max`;
+        const online = render(makeSlide({ blocks: [header] }), { churchLogo: logo });
+        expect(online.find('.logo').attributes('src')).toBe(sized);
+        expect(online.text()).toContain('Gemeinde am Markt');
+        const offline = render(makeSlide({ blocks: [header] }), { churchLogo: logo, images: new Map([[sized, 'blob:x']]) });
+        expect(offline.find('.logo').attributes('src')).toBe('blob:x');
+    });
+
+    it('shows the name alone when there is no logo, without an empty image', () => {
+        const header: Block = { id: 'h', type: 'church-header', x: 0, y: 0, width: 800, height: 80, showLogo: true, showName: true, style };
+        const wrapper = render(makeSlide({ blocks: [header] }), { churchLogo: null });
+        expect(wrapper.find('img').exists()).toBe(false);
+        expect(wrapper.text()).toContain('Gemeinde am Markt');
+    });
+
     it('shows no clock rather than a wrong one while the device time is unconfirmed', () => {
         const clock: Block = { id: 'c', type: 'clock', x: 0, y: 0, width: 400, height: 80, format: 'time', style };
         expect(render(makeSlide({ blocks: [clock] })).find('.clock').text()).toBe('10:00');

@@ -11,6 +11,8 @@ export interface CachedState {
     appointments: Appointment[];
     timeZone: string;
     churchName: string;
+    /** Missing in states saved before the logo came. */
+    churchLogo?: string | null;
     savedAt: string;
 }
 

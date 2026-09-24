@@ -21,6 +21,7 @@ export interface PlayerState {
     appointments: Appointment[];
     timeZone: string;
     churchName: string;
+    churchLogo: string | null;
     clockConfirmed: boolean;
     /** Set while the shown content is older than the last failed refresh. */
     staleSince: Date | null;
@@ -62,6 +63,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         appointments: [],
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         churchName: '',
+        churchLogo: null,
         clockConfirmed: false,
         staleSince: null,
         error: null,
@@ -144,10 +146,12 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
 
     async function refreshData(): Promise<void> {
         if (!state.screen || blocked) return;
-        const [timeZone, churchName, serverDate] = await Promise.all([
+        const [timeZone, churchName, serverDate, churchLogo] = await Promise.all([
             data.timeZone(),
             data.churchName(),
             data.serverDate(),
+            // A logo is decoration: its failure keeps the last one and fails nothing else.
+            data.churchLogo().catch(() => state.churchLogo),
         ]);
         const now = deps.now();
         const needs = appointmentNeeds(state.screen.screen, state.screen.slides);
@@ -159,6 +163,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         Object.assign(state, {
             timeZone,
             churchName,
+            churchLogo,
             appointments,
             clockConfirmed: checkClock(serverDate, now).confirmed,
             phase: 'running',
@@ -170,6 +175,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             appointments,
             timeZone,
             churchName,
+            churchLogo,
             savedAt: now.toISOString(),
         });
     }
@@ -215,6 +221,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                 appointments: reviveAppointments(cached.appointments),
                 timeZone: cached.timeZone,
                 churchName: cached.churchName,
+                churchLogo: cached.churchLogo ?? null,
                 phase: 'running',
                 staleSince: new Date(cached.savedAt),
             } satisfies Partial<PlayerState>);

@@ -5,8 +5,8 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
 import { startOfZonedDay } from '../appointments/zoned';
-import { fetchAppointments, fetchTimeZone } from '../ct/api';
-import { ensureSignedIn, type TokenLogin } from '../ct/client';
+import { fetchAppointments, fetchChurchLogoUrl, fetchTimeZone } from '../ct/api';
+import { ensureSignedIn, instanceBaseUrl, type TokenLogin } from '../ct/client';
 import type { ScreenDoc, SlideDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
 import type { LoadedScreen } from '../store/screen-repository';
@@ -18,6 +18,8 @@ export interface PlayerData {
     loadScreen(slug: string): Promise<LoadedScreen>;
     timeZone(): Promise<string>;
     churchName(): Promise<string>;
+    /** Image service address of the church logo, without size (G29). */
+    churchLogo(): Promise<string | null>;
     /** `Date` header of a server response, for the clock check. */
     serverDate(): Promise<string | null>;
     appointments(calendarIds: number[], from: Date, to: Date, timeZone: string): Promise<Appointment[]>;
@@ -46,6 +48,7 @@ export const churchToolsPlayerData: PlayerData = {
         const info = await withTimeout(churchtoolsClient.get<{ siteName?: string }>('/info'));
         return info.siteName ?? '';
     },
+    churchLogo: () => withTimeout(fetchChurchLogoUrl(instanceBaseUrl())),
     async serverDate() {
         const response = await withTimeout(
             churchtoolsClient.get<{ headers?: Record<string, string> }>('/info', {}, true),

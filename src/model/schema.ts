@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 0 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 1 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -95,11 +95,16 @@ export const NextAppointmentBlock = v.object({
     style: TextStyle,
 });
 
-/** The switchable header from the pitch: congregation name and logo from /info. */
+/** The switchable header from the pitch: congregation name from /info, logo from /logo (G29). */
 export const ChurchHeaderBlock = v.object({
     ...BlockFrame,
     type: v.literal('church-header'),
     showLogo: v.optional(v.boolean(), true),
+    /**
+     * A library image instead of the church logo – for a dark logo on a dark
+     * stage. Since schema 1.1; older players drop it and show the church logo.
+     */
+    logoMediaId: v.optional(v.pipe(v.string(), v.maxLength(64))),
     showName: v.optional(v.boolean(), true),
     style: TextStyle,
 });

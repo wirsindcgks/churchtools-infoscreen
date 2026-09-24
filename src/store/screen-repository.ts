@@ -334,7 +334,11 @@ export class ScreenRepository {
 }
 
 function referencedMedia(slide: SlideDoc): string[] {
-    const ids = slide.blocks.flatMap((b) => (b.type === 'image' && b.mediaId ? [b.mediaId] : []));
+    const ids = slide.blocks.flatMap((b) => {
+        if (b.type === 'image' && b.mediaId) return [b.mediaId];
+        if (b.type === 'church-header' && b.logoMediaId) return [b.logoMediaId];
+        return [];
+    });
     if (slide.background.kind === 'media') ids.push(slide.background.mediaId);
     return ids;
 }

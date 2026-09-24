@@ -4,7 +4,7 @@ import type { Block } from '../../model/schema';
 import { imageSource, useStageContext } from '../context';
 import { fillStyle } from '../fill';
 import { textStyle } from '../format';
-import { blockImageUrl } from '../images';
+import { blockImageUrl, headerLogoUrl } from '../images';
 import AppointmentListView from './AppointmentListView.vue';
 import ClockView from './ClockView.vue';
 import NextAppointmentView from './NextAppointmentView.vue';
@@ -18,6 +18,15 @@ const frame = computed(() => ({
     width: `${props.block.width}px`,
     height: `${props.block.height}px`,
 }));
+
+const logoUrl = computed(() => {
+    if (props.block.type !== 'church-header') return null;
+    const url = headerLogoUrl(props.block, context.media, context.churchLogo ?? null);
+    return url ? imageSource(context, url) : null;
+});
+
+/** Logo and name sit side by side; the block's alignment places the pair. */
+const JUSTIFY = { left: 'flex-start', center: 'center', right: 'flex-end' } as const;
 
 const imageUrl = computed(() => {
     if (props.block.type !== 'image') return null;
@@ -42,8 +51,13 @@ const imageUrl = computed(() => {
             <div v-else class="placeholder" />
         </template>
 
-        <div v-else-if="block.type === 'church-header'" class="text" :style="textStyle(block.style)">
-            <template v-if="block.showName">{{ context.churchName }}</template>
+        <div
+            v-else-if="block.type === 'church-header'"
+            class="header"
+            :style="{ ...textStyle(block.style), justifyContent: JUSTIFY[block.style.align] }"
+        >
+            <img v-if="logoUrl" class="logo" :class="{ 'logo--beside-name': block.showName }" :src="logoUrl" alt="">
+            <span v-if="block.showName" class="name">{{ context.churchName }}</span>
         </div>
 
         <ClockView v-else-if="block.type === 'clock'" :block="block" />
@@ -61,6 +75,27 @@ const imageUrl = computed(() => {
     width: 100%;
     height: 100%;
     white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+.header {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    width: 100%;
+    height: 100%;
+}
+.logo {
+    flex: none;
+    height: 100%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+}
+.logo--beside-name {
+    max-width: 50%;
+}
+.name {
+    min-width: 0;
     overflow-wrap: break-word;
 }
 .fill,
