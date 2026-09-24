@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import DesignerHome from './views/DesignerHome.vue';
+import ScreenEditor from './views/ScreenEditor.vue';
 import PlayerView from './views/PlayerView.vue';
 import NotFoundView from './views/NotFoundView.vue';
 
@@ -9,6 +10,7 @@ export const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
         { path: '/', name: 'designer', component: DesignerHome },
+        { path: '/screens/:slug', name: 'editor', component: ScreenEditor },
         { path: '/player', name: 'player', component: PlayerView },
         // On a foyer TV an empty page is indistinguishable from a crash (G7).
         { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundView },

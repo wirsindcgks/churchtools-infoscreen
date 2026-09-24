@@ -294,7 +294,7 @@ export class ScreenRepository {
 }
 
 function referencedMedia(slide: SlideDoc): string[] {
-    const ids = slide.blocks.flatMap((b) => (b.type === 'image' ? [b.mediaId] : []));
+    const ids = slide.blocks.flatMap((b) => (b.type === 'image' && b.mediaId ? [b.mediaId] : []));
     if (slide.background.kind === 'media') ids.push(slide.background.mediaId);
     return ids;
 }

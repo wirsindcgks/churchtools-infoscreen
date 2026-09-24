@@ -33,3 +33,15 @@ export function fetchAppointments(
         only_allow_authenticated: 'true',
     });
 }
+
+export interface Calendar {
+    id: number;
+    name: string;
+    color?: string | null;
+    isPublic?: boolean;
+}
+
+/** Calendars the signed-in person may see; the device user sees what its group grants (G21). */
+export function fetchCalendars(): Promise<Calendar[]> {
+    return churchtoolsClient.get<Calendar[]>('/calendars');
+}

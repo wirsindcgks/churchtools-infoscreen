@@ -59,7 +59,8 @@ export const TextBlock = v.object({
 export const ImageBlock = v.object({
     ...BlockFrame,
     type: v.literal('image'),
-    mediaId: Id,
+    /** Empty until a medium is chosen; the player then shows a calm placeholder. */
+    mediaId: v.pipe(v.string(), v.maxLength(64)),
     fit: v.optional(v.picklist(['contain', 'cover']), 'contain'),
 });
 

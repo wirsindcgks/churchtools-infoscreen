@@ -43,6 +43,21 @@ export async function fetchCurrentPerson(): Promise<Person> {
     return assertAuthenticated(person);
 }
 
+let current: Promise<Person> | null = null;
+
+/** The signed-in person, fetched once per page. */
+export function currentPerson(): Promise<Person> {
+    current ??= fetchCurrentPerson().catch((error: unknown) => {
+        current = null;
+        throw error;
+    });
+    return current;
+}
+
+export function displayName(person: Person): string {
+    return [person.firstName, person.lastName].filter(Boolean).join(' ');
+}
+
 /** HTTP status of a failed client call, if the error carries one. */
 export function httpStatus(error: unknown): number | null {
     const e = error as { response?: { status?: unknown }; status?: unknown } | null;
