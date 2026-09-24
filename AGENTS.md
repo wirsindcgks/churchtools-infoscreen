@@ -4,6 +4,7 @@ Dieses Repository entwickelt den **ChurchTools Infoscreen Designer**, ein Church
 **Stand 2026-09-24: Datenmodell, Player und Designer laufen gegen den Mock** (Vue 3, Vite, Vitest, Playwright, CI);
 was bis zum MVP fehlt, steht priorisiert in `Plan.md`, „Nächste Schritte". `npm run dev` läuft gegen die Testinstanz über den Vite-Proxy; `npm test` braucht keine Instanz,
 `npm run smoke` schon.
+Einrichten, Starten, Beenden und Testen beschreibt [`LocalTests.md`](LocalTests.md).
 
 ## Die vier Dokumente
 
