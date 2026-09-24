@@ -84,5 +84,6 @@ Extension-Key `infoscreen-cgks`, Auslieferungspfad `/ccm/infoscreen-cgks/`. Lize
   `'unsafe-inline'`, auch auf `/ccm/`-Pfaden (G15). Externe Videos sind mangels `media-src` blockiert.
 - Der **Player-Build hat keine nachzuladenden Chunks**. Ein Update würde sonst laufende Kiosk-Tabs mit einem
   `404` auf einen alten Chunk-Namen zerlegen – bemerkt sonntags, ausgelöst vormittags.
-- **Zeiten kommen in UTC und werden über eine Zeitzonen-Bibliothek nach `Europe/Berlin` gerechnet, nie über einen
+- **Zeiten kommen in UTC und werden in die Zeitzone der Instanz gerechnet – `timezone` aus `/api/config`, auch anonym
+  und für den Geräte-Benutzer lesbar, bei uns `Europe/Berlin`. Gerechnet wird über `Intl` bzw. eine Zeitzonen-Bibliothek, nie über einen
   festen Offset.** ChurchTools hält die Ortszeit über die Zeitumstellung konstant (G19).

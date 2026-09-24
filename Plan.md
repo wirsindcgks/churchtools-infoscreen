@@ -241,7 +241,7 @@ In ungefährer Reihenfolge des Nutzens:
 | Phase | Inhalt | Ergebnis |
 | --- | --- | --- |
 | **0 – Machbarkeit** | Abgeschlossen bis auf G9 und das Hochladen eines leeren Moduls – beides wartet auf die Freischaltung | „Hallo &lt;Vorname&gt;" läuft im echten ChurchTools |
-| **1 – Datenmodell** | Schema Screen → Playlist → Slides → Blöcke, versioniert und duldsam; Slug; KV-Repository mit Mock; Revisionsprüfung. **Dazu die Terminnormalisierung** als eigene Schicht mit Tests gegen die Fixtures (ganztägig, mehrtägig, `Europe/Berlin`) | Screens lassen sich ohne Oberfläche speichern und laden |
+| **1 – Datenmodell** | Schema Screen → Playlist → Slides → Blöcke, versioniert und duldsam; Slug; KV-Repository mit Mock; Revisionsprüfung. **Dazu die Terminnormalisierung** als eigene Schicht mit Tests gegen die Fixtures (ganztägig, mehrtägig, Zeitzone der Instanz) | Screens lassen sich ohne Oberfläche speichern und laden |
 | **2 – Player** | Blockrendering, Bühne, Rotation, Intervalle, Token-Anmeldung, Uhrprüfung, Offline-Stand | Ein von Hand geschriebener Screen läuft auf dem Pi am Foyer-TV |
 | **3 – Designer** | Editor, Slide-Verwaltung, Blockpalette, Inspektor, Vorschau, Mediathek | Ein Screen mit eigenen Bildern entsteht ohne Entwicklerhilfe |
 | **4 – Betrieb** | Einrichtungsdoku für Geräte-Benutzer und FullPageOS, Release-Workflow | Ein zweiter Screen geht ohne uns in Betrieb |
@@ -253,6 +253,7 @@ Phase 2 vor Phase 3 – ein Designer für ein Ausgabeformat, das noch nie auf ei
 Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`](AGENTS.md). Hier nur, was dort fehlt:
 
 - **Tests laufen nie gegen eine Live-Instanz**, sondern gegen aufgezeichnete Antworten unter `fixtures/`. Das Verzeichnis ist nicht versioniert; ein frisch geklonter Arbeitsplatz muss sie sich beschaffen.
+- **Ohne Fixtures überspringen sich die Tests, die sie brauchen** – sichtbar als übersprungen, nicht still grün (entschieden am 2026-09-24). Das CI auf GitHub hat keine Fixtures und prüft deshalb nur, was ohne sie geht. **Die Form der Antworten wird dafür dokumentiert statt eingecheckt**: als Typen im Code, die nur die tatsächlich gelesenen Felder beschreiben, ohne Daten. Tests ohne Fixtures bauen ihre Eingaben aus diesen Typen selbst.
 - **Aufgezeichnet wird nur von der Testinstanz – und vor dem Ablegen bereinigt.** Zu entfernen sind mindestens:
 
   | Klasse | Beispiel | Warum |
