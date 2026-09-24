@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G31 sind beantwortet, G16, G21 und G32 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G31 sind beantwortet, G16, G21, G32 und G33 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -291,6 +291,13 @@ Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt �
 - **Die Spezifikation enthält als Administrator weiterhin keinen `/custommodules`-Pfad** (497 Pfade, wie vor der Freischaltung), obwohl die Route selbst antwortet. Sie ist also nicht allein nach dem Feature gefiltert. Der Typ-Snapshot (B5) wartet deshalb weiter – vermutlich bis ein Modul installiert ist; das ist zu prüfen.
 
 ## Teilweise beantwortet
+
+**G33 – Installiert, aber ohne Modulrecht unsichtbar – auch für den Administrator.** *(2026-09-24, Testinstanz direkt nach dem Hochladen der Extension durch den Nutzer, nur lesend)*
+
+- **`GET /api/custommodules` antwortet mit leerer Liste**, obwohl die Extension installiert ist. `GET /api/permissions/global` führt `infoscreen-designer` aber bereits mit allen neun Schlüsseln – alle auf „nein" (`view: false`). Eine leere Liste heißt hier also „nicht freigegeben", nicht „nicht da" (G20, A4).
+- **Die Rechte des Moduls** stehen im Katalog der alten Schnittstelle (G30) unter dem Modul `infoscreen-designer`: **2010** „Infoscreen Designer" sehen; **2011–2014** Kategorien sehen, erstellen, bearbeiten, löschen; **2015–2018** Daten in Kategorie sehen, erstellen, bearbeiten, löschen. Die Datenrechte beziehen sich auf `ccm_data_category`. Ob die Nummern auf jeder Instanz gleich sind, ist offen – sie sehen nach laufender Vergabe beim Installieren aus.
+- **`/ccm/infoscreen-designer/` antwortet anonym wie angemeldet mit `200`** – mit der ChurchTools-Seite, aber **ohne unser Skript**; `settings.modules` nennt das Modul. Vermutlich hängt ChurchTools das Skript ohne Recht 2010 nicht ein (anders als in G6, wo das Recht bestand). Zu prüfen, sobald Rechte vergeben sind – ebenso, ob die Spezifikation dann Modul-Pfade enthält (weiterhin 497 Pfade, keiner davon für Custom Modules).
+
 
 **G32 – Eine Sitzung aus dem Login-Token hält 24 Stunden, fest.** *(2026-09-24, Testinstanz, nur lesend: `GET /api/whoami?login_token=…`, danach zwei Anfragen mit dem erhaltenen Cookie)* Die Anmeldung setzt `ChurchToolsV2_<instanz>` mit `Max-Age=86400`. Folgeanfragen senden das Cookie mit **demselben Ablaufdatum** zurück, `Max-Age` zählt nur herunter (86397, 86396) – die Sitzung verlängert sich durch Benutzung **nicht**. Wer sich einmal anmeldet und dann nur abfragt, ist nach 24 Stunden abgemeldet.
 
