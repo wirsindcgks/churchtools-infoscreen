@@ -8,9 +8,19 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import type { KvBackend, KvCategory, KvValue } from './kv';
 
-interface CustomModule {
+export interface CustomModule {
     id: number;
     shorty: string;
+}
+
+/**
+ * The module of this extension, looked up by its key. `GET /custommodules/{id}`
+ * takes the numeric id only – a key answers 400 "validation.integer", measured
+ * on build 32882 right after Custom Modules were enabled. So: list, then match.
+ */
+export async function findCustomModule(extensionKey: string): Promise<CustomModule | null> {
+    const modules = await churchtoolsClient.get<CustomModule[]>('/custommodules');
+    return modules.find((m) => m.shorty === extensionKey) ?? null;
 }
 
 export class ChurchToolsKv implements KvBackend {
@@ -58,9 +68,11 @@ export class ChurchToolsKv implements KvBackend {
     }
 
     private resolveModuleId(): Promise<number> {
-        this.moduleId ??= churchtoolsClient
-            .get<CustomModule>(`/custommodules/${this.extensionKey}`)
-            .then((module) => module.id)
+        this.moduleId ??= findCustomModule(this.extensionKey)
+            .then((module) => {
+                if (!module) throw new Error(`Das Custom Module „${this.extensionKey}" ist nicht installiert.`);
+                return module.id;
+            })
             .catch((error: unknown) => {
                 this.moduleId = null;
                 throw error;

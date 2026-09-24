@@ -1,9 +1,8 @@
-import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { EXTENSION_KEY } from '../config';
 import { httpStatus } from '../ct/client';
 import { seedDemo } from '../dev/demo';
 import { createDemoKv, onDemoChange, resetDemo } from '../dev/demo-kv';
-import { ChurchToolsKv } from './churchtools-kv';
+import { ChurchToolsKv, findCustomModule } from './churchtools-kv';
 import { ScreenRepository } from './screen-repository';
 
 export interface RepositoryHandle {
@@ -43,10 +42,9 @@ async function create(): Promise<RepositoryHandle> {
 
 async function moduleExists(): Promise<boolean> {
     try {
-        await churchtoolsClient.get(`/custommodules/${EXTENSION_KEY}`);
-        return true;
+        return (await findCustomModule(EXTENSION_KEY)) !== null;
     } catch (error) {
-        // Only a 404 means "no module"; an unreachable instance must not look like one.
+        // Only a 404 means "no Custom Modules at all" (T1); an unreachable instance must not look like one.
         if (httpStatus(error) === 404) return false;
         throw error;
     }
