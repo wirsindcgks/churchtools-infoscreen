@@ -160,7 +160,7 @@ Geprüft gegen die OpenAPI-Spezifikation 3.136.2. **Fett = MVP.**
 | Block | Endpunkte |
 | --- | --- |
 | **Termine** | `/calendars`, `/calendars/appointments` (**`calendar_ids[]` Pflicht**, dazu `from`, `to`). Serien löst der Server auf, samt Ausnahmen und Zeitumstellung; Zeiten in UTC (G19) |
-| **Gemeindekopf** | `/info` (Name, Anschrift), Logo aus `/profiles/church` → `logo.imageUrl` (G29) |
+| **Gemeindekopf** | `/info` (Name, Anschrift), Logo über `<instanz>/logo`, anonym; Ziel der Weiterleitung mit `w`/`h` (G29) |
 | **Bilder** | `imageUrl` (`/images/{fileId}/{hash}`) am Bilddienst, **immer mit `w` und `h`** (G14) |
 | Beiträge / News | `/posts` – woran die Sichtbarkeit hängt, ist offen |
 | Gruppen & Anmeldungen | `/groups`, `/publicgroups/{id}` |
@@ -320,7 +320,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 2. ~~**Neuladen nach anhaltenden Fehlern**~~ **Erledigt am 2026-09-24:** nach 30 Minuten ununterbrochener Fehler eines Abrufs – aber nur, wenn die Seite selbst erreichbar ist. Ohne Service Worker (G10) ersetzte ein Neuladen im Netzausfall den alten Stand durch die Fehlerseite des Browsers. Scheitert schon das Laden des Bündels, hilft kein eigener Code; das gehört als Kiosk-Einstellung in die Einrichtungsdoku.
 3. **Fehlende Rechte im Designer benennen**: Modulrechte über `/permissions/global` lesen, statt „keine Screens" zu zeigen (G20).
 4. **Risiko 1 entscheiden** – fremdbestimmt, läuft nebenher: bei ChurchTools nach Freischaltung und Verlängerung fragen. Stichtag **2026-10-08**; kommt bis dahin nichts, den Rückfall unter `infoscreen-designer-test` auf der Produktivinstanz entscheiden.
-5. **Logo im Gemeindekopf** aus `/profiles/church` (G29), mit optionalem Mediathek-Bild als Ersatz – für dunklen Grund und für den Fall, dass das Gerät das Profil nicht lesen darf. Offen: Messung als Geräte-Benutzer.
+5. **Logo im Gemeindekopf** über `<instanz>/logo` (G29): anonym, der Weiterleitung folgen und die Zieladresse mit `w`/`h` anfordern, sonst bleibt es bei 150×150. Das Ziel ist zugleich der Schlüssel im Gerätespeicher – ein neues Logo kommt so von selbst. Dazu ein optionales Mediathek-Bild als Ersatz, für ein dunkles Logo auf dunklem Grund. Keine Rechte des Geräte-Benutzers nötig.
 6. **Mitgelieferte Schriften** unter den bestehenden Schlüsseln, mit eigenem Namenspräfix gegen die Hostseite. Offen: die Schriftwahl.
 7. **Umbenennen abrunden**: kein leerer Name, e2e-Test.
 8. **Einrichtungsseite, Stufe 1** – nur lesend: Gruppen „Infoscreen-Gestalter" und „Infoscreen-Geräte" wählen, Status und Rechte als Ampel prüfen, fehlende Klickwege nennen. Die Kategorie-IDs der Datenrechte gibt es erst nach dem ersten Start – genau diese Lücke schließt die Seite. Braucht die Trennung von `authId` 306 und 403 (G21). **Vorschlag, noch nicht entschieden** – ersetzt „Wer gestaltet: zuerst wir".

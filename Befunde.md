@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G28 sind beantwortet, G16, G21 und G29 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
+**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G29 sind beantwortet, G16 und G21 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen.
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -220,7 +220,7 @@ Auch die **Administrationsoberfläche gibt einen fremden Token nicht heraus** (2
 
 **Die Doku beschreibt hier also Klickwege, keine curl-Aufrufe.** Das ist kein Schönheitsfehler: Wer sie als API-Anleitung schreibt, schreibt etwas auf, das nicht funktioniert.
 
-**Nicht gemessen, und deshalb nicht behauptet:** dass `POST /login/token` für *gültige* Zugangsdaten einen brauchbaren Token liefert (nur negativ geprüft), und ob `POST /persons/{id}/archive` als zweite Notbremse wirkt. Beides braucht ein Gerätekonto mit gesetztem Passwort – siehe **G21**.
+**Nicht gemessen, und deshalb nicht behauptet:** ob `POST /persons/{id}/archive` als zweite Notbremse wirkt – siehe **G21**. Dass `POST /login/token` für *gültige* Zugangsdaten einen brauchbaren Token liefert, stand hier zuerst als ungemessen; **G21, Frage 3** hat es seither bestätigt (`whoami` antwortet mit `id: 22`).
 
 **Drei Sackgassen, damit sie niemand erneut geht:** `DELETE …/logintoken` als Widerruf (403). `GET …/loginstring` als Ausweg (dieselbe Sperre). Und `POST /api/simulate`, das technisch funktioniert – `whoami` liefert die simulierte Person samt `meta.simulatingUserId`, der Zustand endet mit `DELETE /api/simulate` – aber ein Umweg um ein Problem war, das es nicht gab. Festzuhalten bleibt allein, dass eine Simulation an der Antwort erkennbar ist.
 
@@ -264,6 +264,16 @@ Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt �
 - **Ein flüchtiger Browserkontext behält nichts.** Der Standardkontext von Playwright-WebKit verhält sich wie ein privates Fenster: Cache Storage lebt nur im Arbeitsspeicher und ist nach dem Neuladen leer, und IndexedDB lehnt Blobs ganz ab. Mit dauerhaftem Profil (`launchPersistentContext`) übersteht der Cache in WebKit Neuladen und Browser-Neustart. **Kiosk-Geräte brauchen ein dauerhaftes Profil**; das gehört in die Einrichtungsdoku, ein Inkognito-Kiosk verliert den Vorteil.
 - **Cache Storage gibt es nur im sicheren Kontext.** Unter `https://` ist das gegeben, im Betrieb also immer. Wo es fehlt, lädt der Player die Bilder wie bisher über das Netz.
 
+**G29 – Das Gemeindelogo liegt anonym unter `/logo`, aber nur in 150×150.** *(2026-09-24, Testinstanz: Logo vom Nutzer in den Gemeindeinfos hinterlegt; Anmeldeseite anonym in Chromium mitgeschnitten, dazu die Spezifikation und die [Academy](https://churchtools.academy/de/kurse/system-einstellungen-berblick/lektionen/gemeindeinfos/))* Die Academy führt das Logo unter den „Gemeindeinfos" der Systemeinstellungen, getrennt von den beiden Website-Logos für hellen und dunklen Grund. Den Hinweis auf den anonymen Weg gab der Nutzer: Die Anmeldeseite zeigt das Logo.
+
+- **Der Weg für den Player ist `<instanz>/logo`** – keine API-Route, anonym, ohne Hash in der Adresse. Die Anmeldeseite lädt `/logo?fit=true`. Die Antwort ist ein `302` ohne `cache-control` auf die Adresse des Bilddienstes, `/images/<id>/<hash>?fit=contain`.
+- **`/logo` verwirft `w`, `h` und `fit`**: Das Ziel ist immer dasselbe und liefert die Vorgabe von 150×150 (G14). Für einen Kopfblock auf einer 1920 Pixel breiten Bühne ist das zu klein. Also der Weiterleitung folgen, das Ziel ablesen und `w` und `h` selbst setzen – der Bilddienst selbst hält sich daran (anonym 400×400 auf Anfrage), `max-age=604800, public`, kein ETag.
+- **Wechselt das Logo, wechselt das Ziel** (neue Datei-id, neuer Hash). Wer das Ziel bei jedem Datenabruf neu auflöst und als Schlüssel für Cache Storage nimmt (G28), bekommt ein neues Logo ohne eigene Gültigkeitsregel.
+- **Die API-Route braucht Rechte:** `GET /api/profiles/church` → `data.logo` trägt dieselbe `imageUrl`, antwortet anonym aber mit `403`; `GET /api/profiles` anonym mit `200` und **leerer** Liste, als Administrator mit zwei unveröffentlichten Profilen (G20). Die Datei liegt unter `domainType` **`profile_logo`**, `domainId` = id des Kirchenprofils. `/info` kennt kein Logo, und `site_logo` fehlt unter den 154 `config`-Schlüsseln des Administrators, obwohl das `Config`-Schema es führt.
+- **Sackgasse:** `GET /api/files/logo/{id}` antwortet für jede id mit `200` und leerer Liste – falscher `domainType`, kein Beleg für „kein Logo".
+
+**Ungemessen:** was `/logo` liefert, wenn **kein** Logo hinterlegt ist. Der Player behandelt alles außer einem Bild als „kein Logo" und zeigt dann nur den Namen.
+
 ## Teilweise beantwortet
 
 **G16 – Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.
@@ -304,16 +314,6 @@ Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit
 - **Woran die Sichtbarkeit von Beiträgen hängt.** Ein Leserecht gibt es nicht (siehe Abschnitt F), und die Instanz hat keinen einzigen Beitrag – die Frage ist ohne Testbeitrag nicht zu beantworten.
 - **Ob Archivieren der Gruppe als zweite Notbremse wirkt.**
 - **Die Modulrechte selbst**, solange Custom Modules nicht freigeschaltet sind (T1). Die ChurchTools-seitige Hälfte ist aber die größere: Sie bemisst, was der Token auf der SD-Karte wirklich darf.
-
-**G29 – Das Gemeindelogo steht im Kirchenprofil, das Bild selbst ist anonym abrufbar.** *(2026-09-24, Testinstanz: Logo vom Nutzer in den Gemeindeinfos hinterlegt, dann gelesen; dazu die Spezifikation und die [Academy](https://churchtools.academy/de/kurse/system-einstellungen-berblick/lektionen/gemeindeinfos/))* Die Academy führt das Logo unter den „Gemeindeinfos" der Systemeinstellungen, getrennt von den beiden Website-Logos für hellen und dunklen Grund. `/info` kennt es nicht, und `site_logo` fehlt unter den 154 `config`-Schlüsseln des Administrators, obwohl das `Config`-Schema es führt.
-
-- **Die Quelle ist `GET /api/profiles/church` → `data.logo`**, ein Dateiobjekt mit `imageUrl`, `apiUrl` und `frontendUrl`. Die Datei liegt unter `domainType` **`profile_logo`**, `domainId` = id des Kirchenprofils (hier 1), und ist auch über `GET /api/files/profile_logo/1` zu finden. Vor dem Hinterlegen war `logo` schlicht `null`.
-- **Sackgasse:** `GET /api/files/logo/{id}` antwortet mit `200` und leerer Liste, für jede id – falscher `domainType`, kein Beleg für „kein Logo" (G20). Der Verweis auf `/files/logo/{id}` in `Plan.md` war eine Vermutung.
-- **Die Bildadresse verhält sich wie jede andere (G14):** anonym `200`, Vorgabe 150×150, `w` allein ergibt 400×150, `cache-control: max-age=604800, public`, kein ETag. `apiUrl` und `frontendUrl` antworten anonym mit `401`.
-- **Das Profil selbst ist geschützt:** anonym `403` auf `/profiles/church`; `GET /api/profiles` anonym `200` mit **leerer** Liste, als Administrator zwei Profile (Kirche und Standort, beide unveröffentlicht). Ob ein veröffentlichtes Profil anonym erscheint, ist ungeprüft.
-
-**Was offen bleibt:** ob der **Geräte-Benutzer** `/profiles/church` lesen darf. Davon hängt ab, ob der Kopfblock das Logo selbst findet oder die Adresse im Designer mitgespeichert werden muss – das Bild lädt ja anonym. Gemessen werden kann das erst mit einer Sitzung dieses Kontos (G21).
-
 
 ## Offen
 
