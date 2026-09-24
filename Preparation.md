@@ -310,7 +310,8 @@ Früh anstoßen, weil die Antwort nicht von uns abhängt.
 Die offenen Entscheidungen aus `Plan.md` – keine Recherche, sondern Festlegungen. Sie gehören beantwortet,
 bevor das Screen-Schema steht.
 
-- [ ] **G-E1 · Undo/Redo** – architekturrelevant, muss **vor Phase 1** fallen (Zustand oder Befehle?)
+- [x] **G-E1 · Undo/Redo** – **entschieden am 2026-09-24 für V1: Zustand**, als Verlauf von Schnappschüssen der Slide.
+      Siehe `Plan.md`, „Offene Entscheidungen".
 - [x] **G-E11 · Playlists und Zeitpläne** – **entschieden am 2026-09-23**, die zweite architekturrelevante
       Frage dieser Art. Die Ebene **Screen → Playlist → Slides** kommt in Phase 1 ins Schema, die
       Zeitplan-Oberfläche später; Slides werden referenziert und dürfen in mehreren Playlists vorkommen.
