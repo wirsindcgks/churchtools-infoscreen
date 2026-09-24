@@ -72,6 +72,24 @@ describe('editor store', () => {
         expect(editor.slides.map((s) => s.name)).toEqual(['Willkommen', 'Termine']);
     });
 
+    it('renames a screen and trims the name on saving', async () => {
+        const { editor, repository } = await setup();
+        editor.updateScreen({ name: '  Foyer rechts  ' });
+        expect(await editor.save('Anna')).toBe(true);
+        expect((await repository.loadScreen('foyer')).screen.name).toBe('Foyer rechts');
+        expect(editor.dirty).toBe(false);
+    });
+
+    it('refuses to save a screen without a name, and keeps the change to fix it', async () => {
+        const { editor, repository } = await setup();
+        editor.updateScreen({ name: '   ' });
+        expect(await editor.save('Anna')).toBe(false);
+        expect(editor.status).toBe('error');
+        expect(editor.error).toContain('Namen');
+        expect(editor.dirty).toBe(true);
+        expect((await repository.loadScreen('foyer')).screen.name).toBe('Foyer');
+    });
+
     it('saves and reloads the same state', async () => {
         const { editor, repository } = await setup();
         editor.addBlock('clock');

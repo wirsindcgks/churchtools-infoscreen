@@ -112,3 +112,24 @@ test('a chosen font comes from the own server, and nothing else is asked for (da
     await page.waitForTimeout(500);
     await page.screenshot({ path: 'test-results/editor-font.png' });
 });
+
+test('rename a screen: the new name shows in the list, an empty one is refused', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await page.keyboard.press('Escape');
+    const name = page.getByTestId('screen-name');
+
+    await name.fill('   ');
+    await expect(page.getByText('Ohne Namen lässt sich nicht speichern.')).toBeVisible();
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('save-status')).toHaveText('Nicht gespeichert');
+    await expect(page.getByRole('alert')).toContainText('braucht einen Namen');
+
+    await name.fill('Foyer rechts ');
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await page.getByRole('link', { name: '← Screens' }).click();
+    await expect(page.locator('.screens')).toContainText('Foyer rechts');
+    await expect(page.locator('.screens')).not.toContainText('Demo – Foyer');
+});

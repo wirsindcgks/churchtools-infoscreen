@@ -362,10 +362,12 @@ const slideFill = computed<Fill>(() =>
                     <input
                         type="text"
                         maxlength="100"
+                        data-testid="screen-name"
                         :value="editor.draft.screen.name"
                         v-on="edit"
                         @input="editor.updateScreen({ name: ($event.target as HTMLInputElement).value })"
                     >
+                    <small v-if="!editor.draft.screen.name.trim()" class="invalid">Ohne Namen lässt sich nicht speichern.</small>
                 </label>
                 <dl>
                     <dt>Adresse</dt>
@@ -480,6 +482,10 @@ legend {
 .media-pick img.logo-preview {
     object-fit: contain;
     background: repeating-conic-gradient(var(--d-panel) 0 25%, var(--d-interactive) 0 50%) 0 0 / 16px 16px;
+}
+.invalid {
+    color: var(--d-danger);
+    font-size: var(--d-size-sm);
 }
 .hint {
     margin: 0;

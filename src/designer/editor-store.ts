@@ -237,6 +237,14 @@ export const useEditorStore = defineStore('editor', () => {
 
     async function save(updatedBy: string): Promise<boolean> {
         if (!repository.value || !draft.value) return false;
+        // The name is how people find a screen in the list: without one there is nothing to click on.
+        const name = draft.value.screen.name.trim();
+        if (!name) {
+            error.value = 'Der Screen braucht einen Namen – unter „Screen", wenn kein Block gewählt ist.';
+            status.value = 'error';
+            return false;
+        }
+        draft.value.screen.name = name;
         status.value = 'saving';
         error.value = null;
         try {
