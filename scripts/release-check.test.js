@@ -15,6 +15,9 @@ const changelog = `# Changelog
 ## [0.1.0] - 2026-09-25
 
 - Erste Fassung.
+
+[0.2.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.0
+[0.1.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.1.0
 `;
 
 describe('versionOfTag', () => {
@@ -34,6 +37,12 @@ describe('changelogSection', () => {
 
     it('does not take a version for another one that merely starts alike', () => {
         expect(changelogSection('## [0.1.00] – 2026-09-25\n- x', '0.1.0')).toBeNull();
+    });
+
+    it('drops link definitions from the file end, which fall into the oldest section', () => {
+        const section = changelogSection(changelog, '0.1.0');
+        expect(section).not.toContain('[0.1.0]:');
+        expect(section).toContain('- Erste Fassung.');
     });
 });
 

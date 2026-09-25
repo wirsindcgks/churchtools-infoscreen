@@ -15,6 +15,9 @@ Einleitung, die nicht zu den Versionen gehört.
 
 ## [0.1.0] – 2026-09-25
 
+Die erste **Version** mit
+Infoscreens für die Gemeinde.
+
 ### Neu
 
 - Erste Fassung, siehe [Einrichtung](docs/Einrichtung.md) und \`/ccm/infoscreen-designer/\`.
@@ -24,6 +27,8 @@ Einleitung, die nicht zu den Versionen gehört.
 - Ein Fehler.
 
 ## [0.0.1] – 2026-09-01
+
+[0.1.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.1.0
 `;
 
 describe('the changelog on the about page', () => {
@@ -38,6 +43,24 @@ describe('the changelog on the about page', () => {
             { kind: 'strong', text: 'Mediathek' },
             { kind: 'text', text: ' mit „Verwendet in": Suche nach Screen und Playlist.' },
         ]);
+    });
+
+    it('reads the paragraph between a version heading and its first group as intro, joined and inline-parsed', () => {
+        const versions = parseChangelog(SAMPLE);
+        expect(versions[0]!.intro).toEqual([]); // [Unreleased] has no introducing text
+        expect(versions[1]!.intro).toEqual([
+            [
+                { kind: 'text', text: 'Die erste ' },
+                { kind: 'strong', text: 'Version' },
+                { kind: 'text', text: ' mit Infoscreens für die Gemeinde.' },
+            ],
+        ]);
+    });
+
+    it('never reads a link definition as changelog text', () => {
+        const versions = parseChangelog(SAMPLE);
+        const allText = JSON.stringify(versions);
+        expect(allText).not.toContain('[0.1.0]:');
     });
 
     it('opens documents of the repository on GitHub and keeps code as code', () => {
@@ -55,6 +78,8 @@ describe('the changelog on the about page', () => {
         const versions = parseChangelog(fs.readFileSync('CHANGELOG.md', 'utf8'));
         expect(versions.length).toBeGreaterThan(0);
         expect(versions.flatMap((v) => v.groups.flatMap((g) => g.items)).length).toBeGreaterThan(5);
+        const first = versions.find((v) => v.version === '0.1.0');
+        expect(first!.intro[0]![0]).toMatchObject({ kind: 'text', text: expect.stringMatching(/^Die erste Version/) });
     });
 
     it('counts a build between releases as the release before, and writes dates in German', () => {

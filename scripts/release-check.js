@@ -29,7 +29,10 @@ export function changelogSection(changelog, version) {
     const start = lines.findIndex((l) => new RegExp(`^## \\[${escaped}\\] [–-] \\d{4}-\\d{2}-\\d{2}\\s*$`).test(l));
     if (start < 0) return null;
     const end = lines.findIndex((l, i) => i > start && l.startsWith('## '));
-    return lines.slice(start + 1, end < 0 ? undefined : end).join('\n').trim();
+    const section = lines.slice(start + 1, end < 0 ? undefined : end);
+    // Link definitions at the file's end (`[1.2.3]: https://…`) are not section text – the oldest
+    // version's section runs to the end of the file and would carry them into its release notes.
+    return section.filter((l) => !/^\[[^\]]+\]:\s*\S/.test(l)).join('\n').trim();
 }
 
 /** Every reason this tag cannot be released; empty when it can. */

@@ -7,6 +7,7 @@
 import { onMounted } from 'vue';
 import changelogText from '../../CHANGELOG.md?raw';
 import { formatReleaseDate, parseChangelog, releaseOf, REPOSITORY_URL } from '../about/changelog';
+import ChangelogInline from '../about/ChangelogInline.vue';
 import { markReleaseSeen } from '../about/seen';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
@@ -61,16 +62,14 @@ onMounted(markReleaseSeen);
             <p v-if="v.version === null" class="muted">
                 Schon gebaut, aber noch in keiner Version – kommt mit dem nächsten Update.
             </p>
+            <p v-for="(paragraph, i) in v.intro" :key="i" class="intro">
+                <ChangelogInline :parts="paragraph" />
+            </p>
             <div v-for="g in v.groups" :key="g.heading" class="group">
                 <h3 v-if="g.heading">{{ g.heading }}</h3>
                 <ul class="items">
                     <li v-for="(item, i) in g.items" :key="i">
-                        <template v-for="(part, j) in item" :key="j">
-                            <strong v-if="part.kind === 'strong'">{{ part.text }}</strong>
-                            <code v-else-if="part.kind === 'code'">{{ part.text }}</code>
-                            <a v-else-if="part.kind === 'link'" :href="part.href" target="_blank" rel="noopener">{{ part.text }}</a>
-                            <template v-else>{{ part.text }}</template>
-                        </template>
+                        <ChangelogInline :parts="item" />
                     </li>
                 </ul>
             </div>
