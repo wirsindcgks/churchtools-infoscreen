@@ -2,8 +2,8 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { computed, onMounted, reactive, ref } from 'vue';
 import { EXTENSION_KEY } from '../config';
-import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
+import PageHeader from '../designer/PageHeader.vue';
 import { fetchCalendars, type Calendar } from '../ct/api';
 import { httpStatus, instanceBaseUrl } from '../ct/client';
 import { playerUrl } from '../designer/player-url';
@@ -390,11 +390,11 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 <template>
     <ModulePage current="setup">
         <div class="setup">
-            <div class="page-title">
-                <span class="title-icon"><Icon name="settings" :size="22" /></span>
-                <h1>Einstellungen für Infoscreens</h1>
-            </div>
-            <p v-if="admin === null" class="muted">Lade …</p>
+            <PageHeader icon="settings" title="Einstellungen" testid="setup-heading">
+                Gruppen und Rechte für Gestalter und Geräte, die Adressen der Fernseher und die Mediathek im Wiki – Sache der
+                ChurchTools-Administratoren.
+            </PageHeader>
+            <p v-if="admin === null" class="empty">Lade …</p>
             <section v-else-if="!admin" class="d-banner d-banner--warning" data-testid="setup-admins-only">
                 <strong>Die Einstellungen sind Sache der ChurchTools-Administratoren.</strong>
                 <p>
@@ -605,43 +605,19 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 
 <style scoped>
 .setup {
-    width: 100%;
-    max-width: 1100px;
-    margin: 0 auto;
-}
-.page-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 8px;
-}
-.page-title h1 {
-    margin: 0;
-    font-size: 1.8em;
-}
-.title-icon {
     display: grid;
-    place-items: center;
-    width: 44px;
-    height: 44px;
-    border-radius: var(--d-radius-lg);
-    background: var(--d-accent-pale);
-    color: var(--d-accent);
-}
-.lead {
-    max-width: 70ch;
+    gap: 16px;
 }
 .sides {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
     gap: 16px;
-    margin-top: 16px;
 }
 .card {
     display: grid;
     align-content: start;
     gap: 10px;
-    padding: 16px;
+    padding: 16px 20px 20px;
     scroll-margin-top: 16px;
 }
 .card h2 {
@@ -689,9 +665,6 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 .check--info .symbol {
     background: var(--d-text-muted);
 }
-.assistant {
-    margin-top: 16px;
-}
 .assistant .actions {
     margin: 0;
 }
@@ -709,8 +682,18 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
     gap: 12px;
     margin: 20px 0 8px;
 }
+/* In the grid, margins add to the gap instead of collapsing: its gap alone spaces the page. */
+.setup > .actions,
+.setup > p {
+    margin: 0;
+}
 .muted {
     color: var(--d-text-muted);
+}
+.empty {
+    margin: 0;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
 }
 .small {
     font-size: var(--d-size-sm);
@@ -723,9 +706,6 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 }
 .version {
     margin-top: 24px;
-}
-.tv {
-    margin-top: 16px;
 }
 .tv-form {
     display: grid;
@@ -749,13 +729,5 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 }
 .tv-result .d-banner {
     grid-column: 1 / -1;
-}
-@media (max-width: 48rem) {
-    .page-title h1 {
-        font-size: 1.4em;
-    }
-    .title-icon {
-        display: none;
-    }
 }
 </style>

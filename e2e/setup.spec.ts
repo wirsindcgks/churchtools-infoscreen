@@ -6,7 +6,7 @@ test.use({ viewport: { width: 1280, height: 900 } });
 test('the setup page checks the chosen groups and keeps the choice', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-setup').click();
-    await expect(page.getByRole('heading', { name: 'Einstellungen für Infoscreens' })).toBeVisible();
+    await expect(page.getByTestId('setup-heading')).toHaveText('Einstellungen');
     // Which build is installed, to compare with the releases on GitHub (Plan.md 12).
     await expect(page.getByTestId('app-version')).toContainText(/Infoscreen Designer \d+\.\d+\.\d+/);
 
