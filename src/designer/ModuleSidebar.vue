@@ -34,6 +34,19 @@ const active = computed(() => (route.name === 'designer' ? formatFilter(route.qu
                 </RouterLink>
             </li>
         </ul>
+        <ul class="library">
+            <li>
+                <RouterLink
+                    :to="{ name: 'media' }"
+                    :class="{ active: route.name === 'media' }"
+                    :aria-current="route.name === 'media' ? 'page' : undefined"
+                    data-testid="sidebar-media"
+                >
+                    <span class="nav-icon"><Icon name="image" :size="16" /></span>
+                    Mediathek
+                </RouterLink>
+            </li>
+        </ul>
         <div v-if="admin" class="admin">
             <h2>Verwaltung</h2>
             <ul>
@@ -57,6 +70,11 @@ const active = computed(() => (route.name === 'designer' ? formatFilter(route.qu
     position: sticky;
     top: 0;
     padding: 16px 10px;
+}
+ul.library {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--d-divider);
 }
 ul {
     display: grid;
@@ -126,6 +144,27 @@ a.active {
     .admin,
     .elsewhere {
         display: none;
+    }
+    /* Phone: the media library joins the row of filters. */
+    .module-sidebar:not(.elsewhere) {
+        display: flex;
+        gap: 6px;
+    }
+    ul.library {
+        margin: 0;
+        padding: 0;
+        border: 0;
+    }
+    ul.library a {
+        width: auto;
+        border: 1px solid var(--d-divider);
+        border-radius: 999px;
+        background: var(--d-surface);
+        white-space: nowrap;
+    }
+    ul.library a.active {
+        border-color: var(--d-accent);
+        background: var(--d-accent-pale);
     }
     .nav-icon {
         width: 20px;

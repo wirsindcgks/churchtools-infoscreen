@@ -203,3 +203,19 @@ test.describe('with a finger', () => {
         await expect(page.getByTestId('frame-text').first()).toHaveCSS('touch-action', 'none');
     });
 });
+
+test('the media library in the editor lists pictures to choose from and closes again (reads only)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await page.getByTestId('add-image').click();
+    await page.getByTestId('pick-image').click();
+    const library = page.getByTestId('media-library');
+    await expect(library).toBeVisible();
+    await expect(library.getByText('Lade Bilder …')).toHaveCount(0);
+    await expect(library).toContainText('Seite');
+    const items = await library.getByTestId('media-item').count();
+    // In the editor a picture is chosen by clicking it.
+    await expect(library.locator('button.pick')).toHaveCount(items);
+    await library.getByRole('button', { name: 'Schließen' }).click();
+    await expect(library).toBeHidden();
+});

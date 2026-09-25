@@ -98,3 +98,23 @@ test.describe('on a phone', () => {
         await page.screenshot({ path: 'test-results/editor-phone.png', fullPage: true });
     });
 });
+
+test.describe('media library as a section of its own (Plan.md 16)', () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test('opens from the sidebar, lists the pictures and offers upload – without a screen', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('sidebar-media').click();
+        await expect(page).toHaveURL(/\/mediathek$/);
+        await expect(page.getByTestId('media-heading')).toHaveText('Mediathek');
+        const library = page.getByTestId('media-library');
+        await expect(library.getByRole('button', { name: 'Bilder hochladen' })).toBeEnabled();
+        await expect(library.getByText('Lade Bilder …')).toHaveCount(0);
+        // Pictures here are managed, not chosen: no "verwenden" button.
+        await expect(library.getByTestId('media-item').first()).toBeVisible();
+        await expect(library.locator('button.pick')).toHaveCount(0);
+        await expect(page.getByTestId('sidebar-media')).toHaveAttribute('aria-current', 'page');
+        await expect(library.locator('img').first()).toHaveJSProperty('complete', true);
+        await page.screenshot({ path: 'test-results/media-page.png' });
+    });
+});

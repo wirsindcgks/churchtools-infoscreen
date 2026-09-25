@@ -13,7 +13,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 - **Editor**: Slides anlegen, ordnen, abschalten; sieben Bausteine (Text, Bild, Fläche, Uhr, Terminliste, Nächster
   Termin, Gemeindekopf) auf der Bühne ziehen und skalieren, mit Raster und Hilfslinien; Farben als Hex-Wert;
   Rückgängig/Wiederholen; Speichern mit Konflikterkennung.
-- **Mediathek**: Bilder in den Wiki-Bereich „Infoscreen", mit Löschschutz.
+- **Mediathek** als eigener Bereich in der Seitenleiste und als Auswahl im Editor: Bilder in den Wiki-Bereich
+  „Infoscreen" hochladen, mit Warnung vor dem Löschen, solange ein Bild gezeigt wird.
 - **Player** für Fernseher: meldet sich über seine Adresse bei jedem Start selbst als Geräte-Benutzer an und erneuert
   die Anmeldung täglich; zeigt Termine live, hält Daten und Bilder auf dem Gerät, lädt nach anhaltenden Fehlern und
   nachts neu.

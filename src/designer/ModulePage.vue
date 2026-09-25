@@ -8,7 +8,7 @@ import AppBar from './AppBar.vue';
 import type { FormatFilter } from './format-filter';
 import ModuleSidebar from './ModuleSidebar.vue';
 
-defineProps<{ current: 'screens' | 'setup'; admin: boolean; counts?: Record<FormatFilter, number> }>();
+defineProps<{ current: 'screens' | 'media' | 'setup'; admin: boolean; counts?: Record<FormatFilter, number> }>();
 </script>
 
 <template>
