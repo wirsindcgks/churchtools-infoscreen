@@ -18,6 +18,12 @@ test('a new notice: empty text blocks saving, the preview shows it once typed, p
 
     await dialog.getByTestId('banner-text').fill('Heute Parkplatz gesperrt – bitte in der Schulstraße parken');
     await expect(dialog.getByTestId('notice-preview').getByTestId('banner')).toContainText('Parkplatz gesperrt');
+    // A font of its own, bundled like the blocks' fonts, reaches the preview.
+    await dialog.getByTestId('banner-font').selectOption('oswald');
+    await dialog.getByTestId('banner-weight').selectOption('700');
+    const text = dialog.getByTestId('notice-preview').getByTestId('banner').getByText('Parkplatz gesperrt');
+    await expect(text).toHaveCSS('font-family', /Oswald/);
+    await expect(text).toHaveCSS('font-weight', '700');
     // The demo screen shows the demo playlist – it starts checked.
     await expect(dialog.getByTestId('notice-playlist-demo-playlist')).toBeChecked();
     await expect(dialog.getByTestId('notice-save')).toBeEnabled();

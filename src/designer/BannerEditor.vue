@@ -8,6 +8,7 @@
 import { computed } from 'vue';
 import type { Banner } from '../model/schema';
 import { wallTime } from '../player/banner';
+import { fontDef, FONTS } from '../player/fonts';
 import ColorField from './ColorField.vue';
 
 const props = withDefaults(defineProps<{ modelValue: Banner; timeZone: string; now?: Date }>(), {
@@ -106,6 +107,35 @@ function setFontSize(value: string): void {
                     :value="modelValue.style.fontSize"
                     @input="setFontSize(($event.target as HTMLInputElement).value)"
                 >
+            </label>
+            <!-- The fonts the blocks offer: bundled with the module, never from a foreign server. -->
+            <label class="d-field">
+                Schriftart
+                <select
+                    data-testid="banner-font"
+                    :value="fontDef(modelValue.style.fontFamily).key"
+                    @change="update({ style: { ...modelValue.style, fontFamily: ($event.target as HTMLSelectElement).value } })"
+                >
+                    <option v-for="f in FONTS" :key="f.key" :value="f.key" :style="{ fontFamily: `'${f.family}'` }">
+                        {{ f.label }}
+                    </option>
+                </select>
+            </label>
+            <label class="d-field">
+                Stärke
+                <select
+                    data-testid="banner-weight"
+                    :value="modelValue.style.fontWeight"
+                    @change="
+                        update({
+                            style: { ...modelValue.style, fontWeight: Number(($event.target as HTMLSelectElement).value) as 400 | 600 | 700 },
+                        })
+                    "
+                >
+                    <option :value="400">Normal</option>
+                    <option :value="600">Halbfett</option>
+                    <option :value="700">Fett</option>
+                </select>
             </label>
         </div>
         <div class="grid2">
