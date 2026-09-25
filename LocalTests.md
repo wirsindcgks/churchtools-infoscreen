@@ -163,31 +163,33 @@ Ein Tag `vX.Y.Z` auf GitHub baut das Release von selbst (`.github/workflows/rele
 Updates nicht selbst holen; ein Administrator lädt das ZIP unter „Releases" herunter und in der Extension-Verwaltung
 hoch.
 
-1. **`CHANGELOG.md`**: die Einträge unter `## [Unreleased]` in einen neuen Abschnitt `## [0.1.0] – 2026-09-25`
-   verschieben, `[Unreleased]` leer stehen lassen.
+1. **`CHANGELOG.md`**: über der letzten Version einen neuen Abschnitt `## [X.Y.Z] – JJJJ-MM-TT` mit den
+   Änderungen als Anwendertext einfügen – einen Abschnitt „Unreleased" gibt es nicht, Einträge entstehen erst
+   beim Versionssprung. Ans Dateiende die Link-Definition
+   `[X.Y.Z]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/vX.Y.Z` setzen.
 2. **Version setzen** – schreibt `package.json` und `package-lock.json`, ohne Commit und Tag:
 
    ```sh
-   npm version 0.1.0 --no-git-tag-version
+   npm version X.Y.Z --no-git-tag-version
    ```
 
 3. **Prüfen**, dass alles zusammenpasst – dieselbe Prüfung macht der Workflow als Erstes:
 
    ```sh
-   npm run release:check -- v0.1.0
+   npm run release:check -- vX.Y.Z
    ```
 
 4. **Committen, taggen, pushen** – mit dem Konto `wirsindcgks`:
 
    ```sh
-   git commit -am "Version 0.1.0"
-   git tag v0.1.0
-   git push origin main v0.1.0
+   git commit -am "Version X.Y.Z"
+   git tag vX.Y.Z
+   git push origin main vX.Y.Z
    ```
 
-5. Der Workflow prüft, testet, baut und veröffentlicht `churchtools-infoscreen-v0.1.0.zip` mit dem
+5. Der Workflow prüft, testet, baut und veröffentlicht `churchtools-infoscreen-vX.Y.Z.zip` mit dem
    CHANGELOG-Abschnitt als Beschreibung. Passt eine Version nicht, bricht er vor dem Bauen ab; dann den Tag löschen
-   (`git push origin :v0.1.0`, `git tag -d v0.1.0`), korrigieren und neu taggen.
+   (`git push origin :vX.Y.Z`, `git tag -d vX.Y.Z`), korrigieren und neu taggen.
 
 ## Stolpersteine
 
