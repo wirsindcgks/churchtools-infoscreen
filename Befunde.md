@@ -320,6 +320,8 @@ Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt �
 
 **Für Weg A** (Anmeldung im Browser des Fernsehers, entschieden am 2026-09-24) ist damit die entscheidende Frage offen: Hält eine Anmeldung über das Formular mit „Angemeldet bleiben" (`show_remember_me: true`) länger? Die [Academy](https://churchtools.academy/en/help/my-churchtools/register-and-log-in-en/register-and-log-in-on-the-web/) sagt nur „für die Dauer der aktuellen Browsersitzung". Zu messen mit den Zugangsdaten eines Geräte-Kontos. Hält sie nicht, braucht der Dauerbetrieb Weg B – der Player meldet sich mit dem Token selbst neu an (Plan.md, D).
 
+**Zwischenstand 2026-09-25, 08:47 (vom Nutzer beobachtet):** Der Geräte-Benutzer hatte sich am 2026-09-24 gegen 22:28 im Browser (Chrome) über das Formular angemeldet, Player-Tab offen. Rund zehn Stunden später zeigt der Player noch Daten, auch nach einem Neuladen von Hand; das nächtliche Neuladen (03–04 Uhr) hat die Anmeldung ebenfalls nicht verloren. **Das beantwortet die Frage nicht** – eine feste 24-Stunden-Sitzung wäre ebenso noch gültig. Entscheidend ist das Ablaufdatum des Cookies `ChurchToolsV2_…` in den Entwicklerwerkzeugen oder ein Blick nach 2026-09-25, 22:30.
+
 
 **G16 – Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.
 
