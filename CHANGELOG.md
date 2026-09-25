@@ -4,6 +4,27 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.2.0] – 2026-09-26
+
+Beiträge aus ChurchTools auf dem Fernseher, und Hinweise an einem eigenen Ort.
+
+### Gestalten
+
+- **Beiträge:** Der neue Baustein zeigt die neuesten Beiträge gewählter Gruppen – hervorgehoben wie ein Beitrag in
+  ChurchTools, mit Gruppe, Titel, Text und Bild, einer nach dem anderen; oder als Liste. Der Fernseher zeigt nur
+  Beiträge öffentlicher Gruppen, und der Baustein warnt, wenn eine gewählte Gruppe nicht öffentlich ist. Den Namen
+  der Autorin oder des Autors zeigt er nur, wenn man es einschaltet.
+- **Hinweise haben einen eigenen Bereich:** „Hinweise" in der Seitenleiste zeigt, was gerade läuft und bis wann.
+  Ein Hinweis läuft auf allen gewählten Playlists – vorausgewählt alle, die ein Fernseher zeigt –, mit Vorschau,
+  eigener Schriftart und Stärke. Im Editor steht nur noch, ob einer läuft.
+- **„Modern"** heißt jetzt die Darstellung der Termine mit Karten und Datumskachel (bisher „Groß").
+
+### Behoben
+
+- Fenster wie der Zeitplan-Dialog rutschten auf kleinen Bildschirmen mit ihrem oberen Teil hinter die Menüleiste
+  von ChurchTools.
+- Auf „Über & Neuigkeiten" fehlte der einleitende Satz einer Version.
+
 ## [0.1.0] – 2026-09-25
 
 Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt in ChurchTools.
@@ -66,4 +87,5 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.2.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.0
 [0.1.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.1.0

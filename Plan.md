@@ -8,7 +8,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 
 **Als Nächstes:**
 
-1. ~~**`v0.1.0`**~~ **veröffentlicht am 2026-09-25** als erstes Release, nachdem Weg B im Testsystem 24 Stunden ohne Auffälligkeiten durchgelaufen ist (Nutzer). Jetzt: **der Test im Haus mit dem Release-ZIP** (Nutzer).
+1. ~~**`v0.2.0`**~~ **veröffentlicht am 2026-09-26** mit Beiträgen (33) und Hinweisen (34). ~~**`v0.1.0`**~~ **veröffentlicht am 2026-09-25** als erstes Release, nachdem Weg B im Testsystem 24 Stunden ohne Auffälligkeiten durchgelaufen ist (Nutzer). Jetzt: **der Test im Haus mit dem Release-ZIP** (Nutzer).
 2. **Ein Raspberry im Foyer über mehrere Tage** – der eigentliche Praxistest, dabei die Laufschrift beobachten.
 3. **Beiträge aus ChurchTools** (Punkt 33) – gebaut; jetzt im Player testen (Test-ZIP, Gruppe „ISD-Beitragstest").
 4. **Planen mit Opus, Umsetzen mit Sonnet** (AGENTS.md) über einige Aufträge beobachten: spart es, ohne dass die Qualität leidet?
