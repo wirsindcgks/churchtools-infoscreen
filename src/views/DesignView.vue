@@ -140,27 +140,50 @@ function observe(el: unknown): void {
 
 <template>
     <ModulePage current="design">
+        <template #actions>
+            <span v-if="status === 'saved' && !dirty" class="ok" data-testid="theme-saved">
+                Gespeichert – die Fernseher zeigen es in etwa 20 s.
+            </span>
+            <button class="d-btn" type="button" :disabled="!dirty" @click="look = { ...saved }">Verwerfen</button>
+            <button
+                class="d-btn d-btn--primary"
+                type="button"
+                :disabled="!dirty || status === 'saving'"
+                data-testid="theme-save"
+                @click="save"
+            >
+                {{ status === 'saving' ? 'Speichere …' : 'Speichern' }}
+            </button>
+        </template>
+
         <PageHeader icon="palette" title="Design" testid="design-heading">
             Das Erscheinungsbild aller Screens. Ecken, Akzentfarbe, Darstellung der Termine und Bildformat gelten
             sofort überall; ein Baustein mit eigener Darstellung behält sie. Text- und Hintergrundfarbe bekommen
             neue Slides und Bausteine.
         </PageHeader>
 
+        <p v-if="message" class="d-banner d-banner--error" role="alert">
+            {{ message }}
+            <button v-if="status === 'conflict'" class="d-btn" type="button" @click="reload">Neu laden</button>
+        </p>
         <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
         <p v-else-if="author === null || !repository" class="empty">Lade …</p>
         <div v-else class="layout">
-            <section class="d-card settings" aria-label="Einstellungen">
-                <fieldset class="choice">
-                    <legend>Ecken</legend>
-                    <label v-for="c in (['round', 'square'] as const)" :key="c" class="option" :class="{ on: look.corners === c }">
-                        <input v-model="look.corners" type="radio" name="corners" :value="c" :data-testid="`corners-${c}`">
-                        <span class="corner-sample" :class="`corner-sample--${c}`" aria-hidden="true" />
-                        {{ c === 'round' ? 'Rund' : 'Eckig' }}
-                    </label>
-                </fieldset>
+            <div class="boxes">
+                <section class="d-card box" aria-labelledby="box-corners">
+                    <h2 id="box-corners">Ecken</h2>
+                    <div class="choice" role="radiogroup" aria-labelledby="box-corners">
+                        <label v-for="c in (['round', 'square'] as const)" :key="c" class="option" :class="{ on: look.corners === c }">
+                            <input v-model="look.corners" type="radio" name="corners" :value="c" :data-testid="`corners-${c}`">
+                            <span class="corner-sample" :class="`corner-sample--${c}`" aria-hidden="true" />
+                            {{ c === 'round' ? 'Rund' : 'Eckig' }}
+                        </label>
+                    </div>
+                    <p class="hint">Für Kacheln, Etiketten, Bilder und den Seitenbalken der Terminliste.</p>
+                </section>
 
-                <fieldset>
-                    <legend>Farben</legend>
+                <section class="d-card box" aria-labelledby="box-colours">
+                    <h2 id="box-colours">Farben</h2>
                     <ColorField v-model="look.accent" label="Akzent" testid="theme-accent" />
                     <p class="hint">Für Kalender ohne eigene Farbe, für Kacheln und den Seitenbalken.</p>
                     <div class="grid2">
@@ -168,55 +191,42 @@ function observe(el: unknown): void {
                         <ColorField v-model="look.background" label="Hintergrund" testid="theme-background" />
                     </div>
                     <p class="hint">Text und Hintergrund gelten für neue Slides und Bausteine; bestehende bleiben, wie sie sind.</p>
-                </fieldset>
+                </section>
 
-                <fieldset class="choice">
-                    <legend>Termine</legend>
-                    <label class="option option--wide" :class="{ on: look.appointments === 'native' }">
-                        <input v-model="look.appointments" type="radio" name="appointments" value="native" data-testid="appointments-native">
-                        <span><strong>Nativ</strong><br><small>Schlichte Zeilen, der nächste Termin mit Bild daneben.</small></span>
+                <section class="d-card box" aria-labelledby="box-appointments">
+                    <h2 id="box-appointments">Termine</h2>
+                    <div class="choice" role="radiogroup" aria-labelledby="box-appointments">
+                        <label class="option option--wide" :class="{ on: look.appointments === 'native' }">
+                            <input v-model="look.appointments" type="radio" name="appointments" value="native" data-testid="appointments-native">
+                            <span><strong>Nativ</strong><br><small>Schlichte Zeilen, der nächste Termin mit Bild daneben.</small></span>
+                        </label>
+                        <label class="option option--wide" :class="{ on: look.appointments === 'large' }">
+                            <input v-model="look.appointments" type="radio" name="appointments" value="large" data-testid="appointments-large">
+                            <span><strong>Groß</strong><br><small>Karten wie im WordPress-Plugin mit Datumskachel und Kalender; der nächste Termin hervorgehoben.</small></span>
+                        </label>
+                    </div>
+                </section>
+
+                <section class="d-card box" aria-labelledby="box-images">
+                    <h2 id="box-images">Terminbilder</h2>
+                    <label class="d-field">
+                        Format
+                        <select v-model="look.imageRatio" data-testid="theme-image-ratio">
+                            <option v-for="r in RATIOS" :key="r.value" :value="r.value">{{ r.label }}</option>
+                        </select>
                     </label>
-                    <label class="option option--wide" :class="{ on: look.appointments === 'large' }">
-                        <input v-model="look.appointments" type="radio" name="appointments" value="large" data-testid="appointments-large">
-                        <span><strong>Groß</strong><br><small>Karten wie im WordPress-Plugin mit Datumskachel und Kalender; der nächste Termin hervorgehoben.</small></span>
-                    </label>
-                </fieldset>
+                    <p class="hint">Das Bild eines Termins wird auf dieses Format zugeschnitten; „Frei" zeigt es, wie es ist.</p>
+                </section>
+            </div>
 
-                <label class="d-field">
-                    Format der Terminbilder
-                    <select v-model="look.imageRatio" data-testid="theme-image-ratio">
-                        <option v-for="r in RATIOS" :key="r.value" :value="r.value">{{ r.label }}</option>
-                    </select>
-                </label>
-
-                <div class="actions">
-                    <button
-                        class="d-btn d-btn--primary"
-                        type="button"
-                        :disabled="!dirty || status === 'saving'"
-                        data-testid="theme-save"
-                        @click="save"
-                    >
-                        {{ status === 'saving' ? 'Speichere …' : 'Speichern' }}
-                    </button>
-                    <button class="d-btn" type="button" :disabled="!dirty" @click="look = { ...saved }">Verwerfen</button>
-                    <span v-if="status === 'saved' && !dirty" class="ok" data-testid="theme-saved">
-                        Gespeichert – die Fernseher zeigen es in etwa 20 s.
-                    </span>
-                </div>
-                <p v-if="message" class="d-banner d-banner--error" role="alert">
-                    {{ message }}
-                    <button v-if="status === 'conflict'" class="d-btn" type="button" @click="reload">Neu laden</button>
-                </p>
-            </section>
-
-            <section class="preview" aria-label="Vorschau">
+            <section class="d-card preview" aria-labelledby="box-preview">
+                <h2 id="box-preview">Vorschau</h2>
                 <div :ref="observe" class="preview-box" data-testid="theme-preview">
                     <StageView v-if="previewWidth" :width="STAGE.width" :height="STAGE.height" :fit="fit">
                         <SlideView :slide="previewSlide" :width="STAGE.width" :height="STAGE.height" />
                     </StageView>
                 </div>
-                <p class="hint">Vorschau mit echten Terminen der ersten Kalender.</p>
+                <p class="hint">Mit echten Terminen der ersten Kalender, so wie ein Fernseher im Querformat sie zeigt.</p>
             </section>
         </div>
     </ModulePage>
@@ -228,33 +238,37 @@ function observe(el: unknown): void {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
+/*
+ * The settings as cards that fill the width, the preview beside them at a
+ * size where the stage is still readable – wider only makes it bigger, not
+ * clearer (2026-09-25).
+ */
 .layout {
     display: grid;
-    grid-template-columns: minmax(280px, 360px) 1fr;
-    gap: 20px;
+    grid-template-columns: minmax(0, 1fr) minmax(340px, 560px);
+    gap: 16px;
     align-items: start;
 }
-.settings {
+.boxes {
     display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
     gap: 16px;
+}
+.box,
+.preview {
+    display: grid;
+    align-content: start;
+    gap: 10px;
     padding: 16px 18px;
 }
-fieldset {
-    display: grid;
-    gap: 8px;
+h2 {
     margin: 0;
-    padding: 0;
-    border: 0;
-}
-legend {
-    margin-bottom: 6px;
-    font-weight: 700;
+    font-size: 1.05em;
 }
 .choice {
+    display: grid;
     grid-template-columns: 1fr 1fr;
-}
-.choice legend {
-    grid-column: 1 / -1;
+    gap: 8px;
 }
 .option {
     display: flex;
@@ -300,19 +314,11 @@ legend {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
-.actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-}
 .ok {
     color: var(--d-success);
     font-size: var(--d-size-sm);
 }
 .preview {
-    display: grid;
-    gap: 6px;
     position: sticky;
     top: 12px;
 }
@@ -321,16 +327,20 @@ legend {
     overflow: hidden;
     width: 100%;
     aspect-ratio: 16 / 9;
-    border-radius: var(--d-radius-lg);
+    border-radius: var(--d-radius);
     background: var(--d-text);
 }
+/* Narrow: the preview on top, no wider than beside the cards. */
 @media (max-width: 60rem) {
     .layout {
-        grid-template-columns: 1fr;
+        grid-template-columns: minmax(0, 1fr);
     }
     .preview {
         position: static;
         order: -1;
+        width: 100%;
+        max-width: 560px;
+        box-sizing: border-box;
     }
 }
 </style>
