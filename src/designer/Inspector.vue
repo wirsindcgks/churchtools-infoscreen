@@ -90,7 +90,7 @@ function setLayout(value: string): void {
 }
 
 /** The theme's layout in words, for the option that follows it. */
-const themeLayout = computed(() => (themeOf(stage).appointments === 'large' ? 'groß' : 'nativ'));
+const themeLayout = computed(() => (themeOf(stage).appointments === 'large' ? 'modern' : 'nativ'));
 
 /** Why an address is not shown – or null when it is. */
 function webProblem(url: string): string | null {

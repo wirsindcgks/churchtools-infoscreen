@@ -75,7 +75,8 @@ async function picked(): Promise<void> {
 .backdrop {
     position: fixed;
     inset: 0;
-    z-index: 1000;
+    /* Above ChurchTools' own top bar (z-index 1040), like every dialog. */
+    z-index: 1100;
     display: grid;
     place-items: center;
     padding: 24px;

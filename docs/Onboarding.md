@@ -99,7 +99,7 @@ hochladen** – Bilder sind über ihre Adresse ohne Anmeldung abrufbar.
 ### 6. Design
 
 Einmal für alle Screens: Ecken rund oder eckig, Akzentfarbe, Farben für neue Slides, Termine **„Nativ"** (schlichte
-Zeilen) oder **„Groß"** (Karten mit Datumskachel) und das Format der Terminbilder – mit Vorschau. Ein Baustein, der
+Zeilen) oder **„Modern"** (Karten mit Datumskachel) und das Format der Terminbilder – mit Vorschau. Ein Baustein, der
 eine eigene Darstellung gewählt hat, behält sie.
 
 ![Design: Einstellungen links, Vorschau rechts](bilder/design.png)

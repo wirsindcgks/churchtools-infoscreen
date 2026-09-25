@@ -203,7 +203,7 @@ function observe(el: unknown): void {
                         </label>
                         <label class="option option--wide" :class="{ on: look.appointments === 'large' }">
                             <input v-model="look.appointments" type="radio" name="appointments" value="large" data-testid="appointments-large">
-                            <span><strong>Groß</strong><br><small>Karten wie im WordPress-Plugin mit Datumskachel und Kalender; der nächste Termin hervorgehoben.</small></span>
+                            <span><strong>Modern</strong><br><small>Karten mit Datumskachel und Kalender; der nächste Termin hervorgehoben.</small></span>
                         </label>
                     </div>
                 </section>

@@ -147,7 +147,8 @@
 .infoscreen-designer :where(.d-dialog-backdrop) {
     position: fixed;
     inset: 0;
-    z-index: 1000;
+    /* Above ChurchTools' own top bar (sticky, z-index 1040): a tall dialog slid behind it. */
+    z-index: 1100;
     display: grid;
     place-items: center;
     padding: 16px;
