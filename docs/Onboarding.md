@@ -49,14 +49,20 @@ Du brauchst nur die Mitgliedschaft in „Infoscreen-Designer"; alles Weitere kom
    - über der Bühne die **Bausteine**: Text, Bild, Fläche, Uhr, Terminliste, Nächster Termin, Gemeindekopf;
    - auf der **Bühne** ziehen und an den Griffen skalieren; rechts im **Inspektor** Schrift, Farben (auch als
      Hex-Wert), Kalender und Hintergrund.
-4. **Bilder:** über den Baustein „Bild" oder in der **Mediathek** (Seitenleiste). Ein Bild lässt sich beliebig oft
+4. **Zeitplan** (oben im Editor), wenn der Screen zu verschiedenen Zeiten anderes zeigen soll: weitere **Playlists**
+   anlegen und **Regeln** festlegen – nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten vor dem
+   Gottesdienst bis 15 Minuten danach"). Passt keine Regel, läuft die Standard-Playlist; passen mehrere, die obere.
+   Die Vorschau zeigt für jeden Tag, was wann läuft. Oben in der Slide-Liste wählst du, welche Playlist du bearbeitest.
+5. **Bilder:** über den Baustein „Bild" oder in der **Mediathek** (Seitenleiste). Ein Bild lässt sich beliebig oft
    verwenden. Nichts Vertrauliches hochladen – Bilder sind über ihre Adresse ohne Anmeldung abrufbar.
-5. **Speichern** (oder ⌘S / Strg+S). Die Fernseher übernehmen die Änderung nach wenigen Minuten von selbst.
+6. **Speichern** (oder ⌘S / Strg+S). Die Fernseher übernehmen die Änderung nach wenigen Minuten von selbst.
 
 **Gut zu wissen:**
 
 - **Rückgängig** mit ⌘Z / Strg+Z; ein Ziehen ist ein Schritt.
 - **Speichert jemand anderes gleichzeitig denselben Screen**, fragt der Editor, welche Fassung gelten soll.
+- **Neuer Kalender auf einem Screen** – in einer Terminliste oder einer Termin-Regel? Dann einem Administrator
+  Bescheid geben: Er klickt einmal „Rechte aktualisieren", damit die Fernseher den Kalender lesen dürfen.
 - **Sagt die Startseite „Dir fehlen Rechte"**, nennt sie das Recht – gib die Meldung an einen Administrator weiter.
 - **Alles auf einem Screen sieht jeder im Foyer.** Personenbezogenes gehört nicht darauf.
 

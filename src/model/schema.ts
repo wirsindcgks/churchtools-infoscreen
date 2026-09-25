@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 2 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 3 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -148,7 +148,7 @@ export const PlaylistDoc = v.object({
     slideIds: v.array(Id),
 });
 
-/** A schedule rule; the editor for it comes after the MVP (Plan.md, Playlists und Zeitpläne). */
+/** A schedule rule (Plan.md, Playlists und Zeitpläne; edited in the editor's schedule dialog). */
 export const ScheduleRule = v.variant('kind', [
     v.object({
         kind: v.literal('appointment'),
@@ -198,6 +198,11 @@ export const ScheduleDoc = v.object({
     defaultPlaylistId: Id,
     /** Earlier rules win on overlap. */
     rules: v.array(ScheduleRule),
+    /**
+     * All playlists of the screen in the editor's order, including those no
+     * rule uses yet – without this they would count as orphans (schema 1.3).
+     */
+    playlistIds: v.optional(v.array(Id)),
     revision: v.pipe(v.number(), v.integer(), v.minValue(0)),
     updatedBy: v.optional(v.string()),
 });
@@ -244,6 +249,20 @@ export type AnyDoc = ScreenDoc | PlaylistDoc | ScheduleDoc | SlideDoc | MediaDoc
 /** The schedule document's id for a screen: one per screen, found without a search. */
 export function scheduleIdFor(screenId: string): string {
     return `schedule-${screenId}`;
+}
+
+/**
+ * Every playlist a screen owns: the default, those the rules switch to and
+ * those the schedule document lists – in that document's order where given.
+ */
+export function playlistIdsOf(screen: ScreenDoc, schedule?: ScheduleDoc | null): string[] {
+    return [
+        ...new Set([
+            ...(schedule?.playlistIds ?? []),
+            screen.defaultPlaylistId,
+            ...screen.schedule.map((r) => r.playlistId),
+        ]),
+    ];
 }
 
 /**

@@ -10,7 +10,7 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
     // Which build is installed, to compare with the releases on GitHub (Plan.md 12).
     await expect(page.getByTestId('app-version')).toContainText(/Infoscreen Designer \d+\.\d+\.\d+/);
 
-    await page.getByTestId('group-device').selectOption({ label: 'Infoscreen-Geraete' });
+    await page.getByTestId('group-device').selectOption({ label: 'Infoscreen-Devices' });
     const device = page.getByTestId('setup-device');
     await expect(device.locator('.checks')).toContainText('Die Gruppe ist aktiv.');
     await expect(device.locator('.checks')).toContainText('1 Geräte-Benutzer.');

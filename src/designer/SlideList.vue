@@ -23,14 +23,35 @@ function drop(index: number): void {
 }
 
 function remove(id: string, name: string): void {
-    if (window.confirm(`Slide „${name}" aus diesem Screen entfernen?`)) editor.removeSlide(id);
+    const shared = editor.alsoIn(id).length > 0;
+    const where = shared ? 'aus dieser Playlist' : 'aus diesem Screen';
+    if (window.confirm(`Slide „${name}" ${where} entfernen?`)) editor.removeSlide(id);
+}
+
+function link(event: Event): void {
+    const select = event.target as HTMLSelectElement;
+    if (select.value) editor.linkSlide(select.value);
+    select.value = '';
 }
 </script>
 
 <template>
     <aside class="slide-list">
         <header>
-            <strong>Slides</strong>
+            <!-- One playlist – the designer notices nothing of them (Plan.md, Playlists und Zeitpläne). -->
+            <strong v-if="editor.playlists.length <= 1">Slides</strong>
+            <label v-else class="playlist-pick">
+                <span class="visually-hidden">Playlist</span>
+                <select
+                    :value="editor.playlist?.id"
+                    data-testid="playlist-select"
+                    @change="editor.selectPlaylist(($event.target as HTMLSelectElement).value)"
+                >
+                    <option v-for="p in editor.playlists" :key="p.id" :value="p.id">
+                        {{ p.name }}{{ p.id === editor.draft?.screen.defaultPlaylistId && !p.name.includes('Standard') ? ' (Standard)' : '' }}
+                    </option>
+                </select>
+            </label>
             <span class="count">{{ editor.slides.length }}</span>
         </header>
         <ol>
@@ -60,6 +81,9 @@ function remove(id: string, name: string): void {
                     <span class="name">{{ index + 1 }}. {{ slide.name }}</span>
                     <span class="duration">{{ slide.durationSeconds }} s{{ slide.enabled ? '' : ' · aus' }}</span>
                 </div>
+                <p v-if="editor.alsoIn(slide.id).length" class="shared" data-testid="slide-shared">
+                    Auch in {{ editor.alsoIn(slide.id).join(', ') }}
+                </p>
                 <div v-if="slide.id === editor.slide?.id" class="actions" @click.stop>
                     <button class="d-btn" type="button" title="Duplizieren" @click="editor.duplicateCurrentSlide()">
                         Duplizieren
@@ -87,6 +111,16 @@ function remove(id: string, name: string): void {
                     <Icon name="plus" :size="22" />
                     Neue Slide
                 </button>
+                <select
+                    v-if="editor.otherSlides.length"
+                    class="link"
+                    data-testid="link-slide"
+                    aria-label="Vorhandene Slide dieses Screens einfügen"
+                    @change="link"
+                >
+                    <option value="">Vorhandene Slide einfügen …</option>
+                    <option v-for="s in editor.otherSlides" :key="s.id" :value="s.id">{{ s.name }}</option>
+                </select>
             </li>
         </ol>
     </aside>
@@ -191,6 +225,30 @@ li.disabled .thumb {
 .duration {
     color: var(--d-text-muted);
     white-space: nowrap;
+}
+.shared {
+    margin: 4px 0 0;
+    color: var(--d-accent-strong);
+    font-size: var(--d-size-sm);
+}
+.playlist-pick {
+    flex: 1;
+    min-width: 0;
+    margin-right: 8px;
+}
+.playlist-pick select {
+    font-weight: 700;
+}
+.link {
+    margin-top: 8px;
+    font-size: var(--d-size-sm);
+}
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
 }
 .actions {
     display: flex;

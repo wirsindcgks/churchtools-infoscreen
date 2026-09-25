@@ -136,6 +136,72 @@ describe('editor store', () => {
     });
 });
 
+describe('editor store playlists and schedule (Plan.md, Nächste Schritte 17)', () => {
+    beforeEach(() => setActivePinia(createPinia()));
+
+    it('adds a playlist with one slide and edits its slides separately', async () => {
+        const { editor } = await setup();
+        const defaultId = editor.playlist!.id;
+        const id = editor.addPlaylist('Gottesdienst');
+        expect(editor.playlist?.id).toBe(id);
+        expect(editor.slides).toHaveLength(1);
+        editor.addSlide();
+        expect(editor.slides).toHaveLength(2);
+        editor.selectPlaylist(defaultId);
+        expect(editor.slides.map((s) => s.name)).toEqual(['Willkommen']);
+    });
+
+    it('links a slide into a second playlist and keeps it while another playlist shows it', async () => {
+        const { editor } = await setup();
+        const welcome = editor.slide!.id;
+        editor.addPlaylist('Abend');
+        expect(editor.otherSlides.map((s) => s.id)).toEqual([welcome]);
+        editor.linkSlide(welcome);
+        expect(editor.alsoIn(welcome)).toEqual(['Standard']);
+        editor.removeSlide(welcome);
+        expect(editor.draft!.slides.some((s) => s.id === welcome)).toBe(true); // still in "Standard"
+    });
+
+    it('removes a playlist with its rules and the slides only it showed, but never the default', async () => {
+        const { editor } = await setup();
+        const defaultId = editor.playlist!.id;
+        const id = editor.addPlaylist('Abend');
+        const onlyThere = editor.slide!.id;
+        editor.addRule({ kind: 'time', playlistId: id, weekdays: [5], from: '18:00', to: '22:00' });
+        editor.removePlaylist(defaultId);
+        expect(editor.playlists).toHaveLength(2);
+        editor.removePlaylist(id);
+        expect(editor.playlists.map((p) => p.id)).toEqual([defaultId]);
+        expect(editor.rules).toHaveLength(0);
+        expect(editor.draft!.slides.some((s) => s.id === onlyThere)).toBe(false);
+        expect(editor.playlist?.id).toBe(defaultId);
+    });
+
+    it('orders rules, refuses to save an impossible one and stores a valid schedule', async () => {
+        const { editor, repository } = await setup();
+        const id = editor.addPlaylist('Gottesdienst');
+        editor.addRule({ kind: 'time', playlistId: id, weekdays: [7], from: '12:00', to: '09:00' });
+        editor.addRule({ kind: 'time', playlistId: id, weekdays: [1], from: '08:00', to: '10:00' });
+        editor.moveRule(1, 0);
+        expect(editor.rules.map((r) => (r.kind === 'time' ? r.weekdays[0] : 0))).toEqual([1, 7]);
+        expect(await editor.save('Anna')).toBe(false);
+        expect(editor.error).toMatch(/Regel 2/);
+        editor.updateRule(1, { from: '09:00', to: '12:00' });
+        expect(await editor.save('Anna')).toBe(true);
+        const loaded = await repository.loadScreen('foyer');
+        expect(loaded.screen.schedule).toHaveLength(2);
+        expect(loaded.playlists.map((p) => p.name)).toEqual(['Standard', 'Gottesdienst']);
+    });
+
+    it('undoes a new playlist in one step', async () => {
+        const { editor } = await setup();
+        editor.addPlaylist('Abend');
+        editor.undo();
+        expect(editor.playlists).toHaveLength(1);
+        expect(editor.slides.map((s) => s.name)).toEqual(['Willkommen']);
+    });
+});
+
 describe('editor store gestures', () => {
     it('does not record an undo step for a field that was focused but not changed', async () => {
         const { editor } = await setup();

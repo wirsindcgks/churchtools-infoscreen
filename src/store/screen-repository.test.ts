@@ -236,6 +236,27 @@ describe('ScreenRepository', () => {
             expect(again.playlists.map((p) => p.id).sort()).toEqual(['abend', makePlaylist().id].sort());
         });
 
+        it('keeps a playlist no rule uses yet, in the order the editor saved (schema 1.3)', async () => {
+            const { loaded } = await created();
+            const spare = makePlaylist({ id: 'reserve', name: 'Reserve', slideIds: ['slide-2'] });
+            await repo.saveContent({ ...loaded, playlists: [spare, ...loaded.playlists] }, { expectedRevision: null, updatedBy: 'Gestalterin' });
+            const again = await repo.loadScreen('foyer-links');
+            expect(again.playlists.map((p) => p.id)).toEqual(['reserve', makePlaylist().id]);
+            await repo.collectOrphans(new Date(Date.now() + ORPHAN_GRACE_MS + 1000));
+            expect((await repo.loadScreen('foyer-links')).playlists.map((p) => p.id)).toContain('reserve');
+        });
+
+        it('collects a playlist the designers removed', async () => {
+            const { loaded } = await created();
+            const spare = makePlaylist({ id: 'reserve', name: 'Reserve', slideIds: ['slide-2'] });
+            await repo.saveContent({ ...loaded, playlists: [...loaded.playlists, spare] }, { expectedRevision: null, updatedBy: 'Gestalterin' });
+            await repo.saveContent(loaded, { expectedRevision: 1, updatedBy: 'Gestalterin' });
+            await repo.collectOrphans(new Date(Date.now() + ORPHAN_GRACE_MS + 1000));
+            const ids = await repo.ensureCategories();
+            const stored = (await kv.listValues(ids.playlists)).map((v) => JSON.parse(v.value) as { id: string });
+            expect(stored.map((d) => d.id)).not.toContain('reserve');
+        });
+
         it('detects two designers saving the same screen', async () => {
             const { loaded } = await created();
             await repo.saveContent(loaded, { expectedRevision: null, updatedBy: 'Ben' });

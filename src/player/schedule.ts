@@ -15,13 +15,19 @@ export interface ScheduleContext {
 }
 
 export function activePlaylistId(screen: ScreenDoc, context: ScheduleContext): string {
-    if (!context.clockConfirmed) return screen.defaultPlaylistId;
+    const index = matchingRuleIndex(screen, context);
+    return index < 0 ? screen.defaultPlaylistId : screen.schedule[index]!.playlistId;
+}
+
+/** The rule that decides now, or -1 when the default playlist runs. */
+export function matchingRuleIndex(screen: ScreenDoc, context: ScheduleContext): number {
+    if (!context.clockConfirmed) return -1;
     // Earlier rules win on overlap – a fixed order, not the accident of JSON order.
-    for (const rule of screen.schedule) {
-        if (rule.kind === 'time' && matchesTimeRule(rule, context)) return rule.playlistId;
-        if (rule.kind === 'appointment' && matchesAppointmentRule(rule, context)) return rule.playlistId;
-    }
-    return screen.defaultPlaylistId;
+    return screen.schedule.findIndex(
+        (rule) =>
+            (rule.kind === 'time' && matchesTimeRule(rule, context)) ||
+            (rule.kind === 'appointment' && matchesAppointmentRule(rule, context)),
+    );
 }
 
 type TimeRule = Extract<ScreenDoc['schedule'][number], { kind: 'time' }>;

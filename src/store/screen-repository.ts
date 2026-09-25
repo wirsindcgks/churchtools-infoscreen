@@ -21,6 +21,7 @@ import {
     type ReadIssue,
 } from '../model/read';
 import {
+    playlistIdsOf,
     SCHEMA_VERSION,
     scheduleIdFor,
     withSchedule,
@@ -193,10 +194,11 @@ export class ScreenRepository {
         const slidesRead = await this.readSlides();
         issues.push(...slidesRead.issues);
 
-        const playlistIds = new Set([screen.defaultPlaylistId, ...screen.schedule.map((r) => r.playlistId)]);
-        const playlists = running.playlists.map((p) => p.doc).filter((p) => playlistIds.has(p.id));
+        const playlistIds = playlistIdsOf(screen, schedule);
+        const byId = new Map(running.playlists.map((p) => [p.doc.id, p.doc]));
+        const playlists = playlistIds.map((id) => byId.get(id)).filter((p): p is PlaylistDoc => !!p);
         for (const id of playlistIds) {
-            if (!playlists.some((p) => p.id === id)) issues.push({ documentId: id, message: 'Playlist fehlt.' });
+            if (!byId.has(id)) issues.push({ documentId: id, message: 'Playlist fehlt.' });
         }
 
         const slideIds = new Set(playlists.flatMap((p) => p.slideIds));
@@ -297,6 +299,7 @@ export class ScreenRepository {
             screenId: bundle.screen.id,
             defaultPlaylistId: bundle.screen.defaultPlaylistId,
             rules: bundle.screen.schedule,
+            playlistIds: playlists.map((p) => p.id),
             revision: (existing?.revision ?? 0) + 1,
             updatedBy: options.updatedBy,
             updatedAt: now,
@@ -400,8 +403,7 @@ export class ScreenRepository {
             const owners = screens.filter((screen) =>
                 playlists.some(
                     (p) =>
-                        p.slideIds.includes(slide.id) &&
-                        [screen.doc.defaultPlaylistId, ...screen.doc.schedule.map((r) => r.playlistId)].includes(p.id),
+                        p.slideIds.includes(slide.id) && playlistIdsOf(screen.doc, screen.schedule).includes(p.id),
                 ),
             );
             for (const screen of owners) result.push({ screen: screen.doc.name, slide: slide.name });
@@ -433,9 +435,7 @@ export class ScreenRepository {
         const slides = await this.readSlides();
 
         const isOld = (doc: AnyDoc) => !doc.updatedAt || now.getTime() - Date.parse(doc.updatedAt) > ORPHAN_GRACE_MS;
-        const usedPlaylists = new Set(
-            screens.flatMap((s) => [s.doc.defaultPlaylistId, ...s.doc.schedule.map((r) => r.playlistId)]),
-        );
+        const usedPlaylists = new Set(screens.flatMap((s) => playlistIdsOf(s.doc, s.schedule)));
         const deadPlaylists = playlists.docs.filter((p) => !usedPlaylists.has(p.doc.id) && isOld(p.doc));
         const livePlaylists = playlists.docs.filter((p) => !deadPlaylists.includes(p));
         const usedSlides = new Set(livePlaylists.flatMap((p) => p.doc.slideIds));
