@@ -17,5 +17,6 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 - **Player** für Fernseher: meldet sich einmal als Geräte-Benutzer an (Weg A), zeigt Termine live, hält Daten und
   Bilder auf dem Gerät, lädt nach anhaltenden Fehlern und nachts neu.
 - **Zehn Schriften** unter der SIL Open Font License, von der eigenen Instanz ausgeliefert; Lato als Standard.
+- **Einrichtungsanleitung** für ChurchTools-Administratoren: `docs/Einrichtung.md`.
 - **Einstellungen** für Administratoren: Der Assistent legt die Gruppen „Infoscreen-Designer" und
   „Infoscreen-Devices" samt Rechten an und prüft sie.

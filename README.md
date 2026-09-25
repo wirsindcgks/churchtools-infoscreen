@@ -1,26 +1,53 @@
 # ChurchTools Infoscreen Designer
 
-Ein ChurchTools Custom Module, mit dem angemeldete ChurchTools-Anwender Infoscreens gestalten:
-Slides aus Termindaten, eigenen Bildern, Texten und eigenem Web-Code. Das Ergebnis ist eine
-Webseite, die ein Raspberry Pi im Kioskmodus aufruft und auf den Foyer-TVs anzeigt.
+Eine Extension für [ChurchTools](https://church.tools), mit der eine Gemeinde die Bildschirme in ihrem Foyer selbst
+gestaltet – im Browser, ohne Programmierkenntnisse. Termine kommen live aus ChurchTools, Bilder aus der eigenen
+Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
 
-Das Projekt steht am Anfang. Stand, Architektur, Voraussetzungen der ChurchTools-Integration und
-die Reihenfolge der Arbeiten stehen in [`Plan.md`](Plan.md); die abzuhakende Vorbereitungsliste für
-Phase 0 in [`Preparation.md`](Preparation.md). Die Messungen, auf die sich beides stützt, stehen in
-[`Befunde.md`](Befunde.md); die Arbeitsregeln für Mitwirkende und Agenten in [`AGENTS.md`](AGENTS.md).
+## Was es kann
 
-## Abgrenzung
+- **Gestalten wie in einem Folien-Editor:** Slides mit Text, Bild, Fläche, Uhr, Terminliste, nächstem Termin und
+  Gemeindekopf mit Logo; ziehen, skalieren, am Raster ausrichten, Farben als Hex-Wert; Rückgängig/Wiederholen.
+  Die Vorschau ist genau das, was der Fernseher zeigt.
+- **Termine live aus den Kalendern von ChurchTools** – was dort eingetragen wird, erscheint von selbst im Foyer.
+- **Mehrere Screens**, quer oder hochkant, jeder unter einer festen Adresse; handytaugliche Übersicht.
+- **Fernseher, die sich selbst helfen:** Sie holen Änderungen nach wenigen Minuten, halten Daten und Bilder auf dem
+  Gerät, überstehen Netzausfälle und laden nach Fehlern und jede Nacht neu.
+- **Rechte mit einem Knopf:** Ein Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an.
+- **Datensparsam:** Zehn freie Schriften kommen von der eigenen Instanz, kein Aufruf an Dritte; das Gerät hat ein
+  eigenes Konto, das nur lesen darf, und in seiner Adresse steht kein Passwort.
 
-Eigenständiges Projekt, kein Bestandteil des WordPress-Plugins `churchtools-plugin`.
+## Installieren
 
-**Kein Bezug zum Hersteller.** Dieses Projekt ist eine unabhängige Entwicklung von Anwendern und
-steht in keiner Verbindung zur ChurchTools Innovation GmbH. Es wird von ihr weder herausgegeben
-noch betrieben, unterstützt, geprüft oder freigegeben. „ChurchTools" und zugehörige Namen und
-Zeichen gehören ihren jeweiligen Inhabern und werden hier allein zur Beschreibung der Schnittstelle
-verwendet, mit der dieses Modul arbeitet. Für Fragen zu diesem Modul ist der Hersteller-Support
+**[Einrichtungsanleitung für ChurchTools-Administratoren](docs/Einrichtung.md)** – Installation, Rechte,
+Geräte-Benutzer, Kiosk-Browser, Updates und Datenschutz.
+
+Das Paket zum Hochladen liegt unter [Releases](https://github.com/wirsindcgks/churchtools-infoscreen/releases).
+Voraussetzung ist eine ChurchTools-Instanz, auf der Extensions (Custom Modules) freigeschaltet sind.
+
+## Stand
+
+Die erste Fassung läuft seit September 2026 auf einer Testinstanz (ChurchTools 3.136, Build 32882), der erste
+Fernseher im Foyer steht aus. Offen ist vor allem, wie lange die Anmeldung des Fernsehers ohne neues Anmelden hält.
+Was als Nächstes kommt, steht in [`Plan.md`](Plan.md); Änderungen je Version in [`CHANGELOG.md`](CHANGELOG.md).
+
+## Mitentwickeln
+
+Vue 3, TypeScript, Vite, Vitest, Playwright. Wie die lokale Umgebung eingerichtet, gestartet und getestet wird,
+steht in [`LocalTests.md`](LocalTests.md); die Arbeitsregeln für Mitwirkende und KI-Agenten in
+[`AGENTS.md`](AGENTS.md). Die Messungen an ChurchTools, auf die sich der Bau stützt, stehen in
+[`Befunde.md`](Befunde.md).
+
+## Kein Bezug zum Hersteller
+
+Dieses Projekt ist eine unabhängige Entwicklung von Anwendern und steht in keiner Verbindung zur ChurchTools
+Innovation GmbH. Es wird von ihr weder herausgegeben noch betrieben, unterstützt, geprüft oder freigegeben.
+„ChurchTools" und zugehörige Namen und Zeichen gehören ihren jeweiligen Inhabern und werden hier allein zur
+Beschreibung der Schnittstelle verwendet, mit der diese Extension arbeitet. Für Fragen ist der Hersteller-Support
 nicht zuständig; sie gehören in den [Issue-Tracker](https://github.com/wirsindcgks/churchtools-infoscreen/issues)
 dieses Repositorys.
 
 ## Lizenz
 
-GPL-2.0-or-later
+[GPL-2.0-or-later](LICENSE). Die mitgelieferten Schriften stehen unter der SIL Open Font License; ihre Lizenztexte
+liegen dem Paket bei.
