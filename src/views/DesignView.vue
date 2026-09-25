@@ -239,21 +239,25 @@ function observe(el: unknown): void {
     font-size: var(--d-size-sm);
 }
 /*
- * Two boxes: the settings, whose parts spread over the width they get, and
- * the preview at a size where the stage is still readable – wider only makes
- * it bigger, not clearer (2026-09-25).
+ * Two boxes side by side: the settings one below the other, and the
+ * preview. Both stop at a width where fields and stage are still easy to
+ * take in – wider only makes them bigger, not clearer (2026-09-25).
  */
 .layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(340px, 560px);
+    grid-template-columns: minmax(320px, 640px) minmax(340px, 640px);
     gap: 16px;
     align-items: start;
 }
 .settings {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 20px 28px;
+    gap: 16px;
     padding: 16px 20px 20px;
+}
+/* The settings one below the other, a line between them. */
+.settings .box + .box {
+    padding-top: 16px;
+    border-top: 1px solid var(--d-divider);
 }
 .box,
 .preview {
@@ -342,7 +346,7 @@ h2 {
         position: static;
         order: -1;
         width: 100%;
-        max-width: 560px;
+        max-width: 640px;
         box-sizing: border-box;
     }
 }
