@@ -22,7 +22,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   Ein Screen mit Regeln zeigt nach dem Start sofort die richtige Playlist, nicht erst kurz die Standard-Playlist.
 - **Terminliste mit allen Terminen** der nächsten Tage: was nicht in die Box passt, blättert seitenweise (10 s je
   Seite, einstellbar); ein Balken zeigt je Seite die verbleibende Zeit; die Slide bleibt, bis alle Seiten gezeigt
-  sind.
+  sind – die Slide-Liste zeigt die längere Laufzeit („12 → 30 s").
 - **Vorschau im Editor:** spielt die Playlist mit allen ungespeicherten Änderungen im Vollbild ab, wie der
   Fernseher – mit vor/zurück und Anhalten.
 - **Player** zeigt beim Laden eine drehende Sanduhr.

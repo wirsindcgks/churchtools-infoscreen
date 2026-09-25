@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
+import type { SlideDoc } from '../model/schema';
+import { useStageContext } from '../player/context';
+import { slideSeconds } from '../player/paging';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
 import { fitStage } from '../player/stage';
@@ -7,7 +10,15 @@ import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
 
 const editor = useEditorStore();
+/** The preview's stage context: paged lists report their pages there (Plan.md, 23). */
+const stage = useStageContext();
 const THUMB_WIDTH = 176;
+
+/** How long the slide really runs: longer than set when a paged list needs the time. */
+function runs(slide: SlideDoc): { seconds: number; longer: boolean } {
+    const seconds = slideSeconds(slide, stage.pages ?? {});
+    return { seconds, longer: seconds > slide.durationSeconds };
+}
 const thumb = computed(() => {
     const height = Math.round((THUMB_WIDTH * editor.stage.height) / editor.stage.width);
     return { width: THUMB_WIDTH, height, fit: fitStage({ width: THUMB_WIDTH, height }, editor.stage) };
@@ -58,7 +69,14 @@ function remove(id: string, name: string): void {
                 </div>
                 <div class="meta">
                     <span class="name">{{ index + 1 }}. {{ slide.name }}</span>
-                    <span class="duration">{{ slide.durationSeconds }} s{{ slide.enabled ? '' : ' · aus' }}</span>
+                    <span
+                        class="duration"
+                        :class="{ longer: runs(slide).longer }"
+                        :title="runs(slide).longer ? `Eingestellt ${slide.durationSeconds} s – die Terminliste braucht ${runs(slide).seconds} s für alle Seiten` : undefined"
+                        data-testid="slide-duration"
+                    >
+                        <template v-if="runs(slide).longer">{{ slide.durationSeconds }} → </template>{{ runs(slide).seconds }} s{{ slide.enabled ? '' : ' · aus' }}
+                    </span>
                 </div>
                 <div v-if="slide.id === editor.slide?.id" class="actions" @click.stop>
                     <button class="d-btn" type="button" title="Duplizieren" @click="editor.duplicateCurrentSlide()">
@@ -187,6 +205,9 @@ li.disabled .thumb {
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
+}
+.duration.longer {
+    color: var(--d-accent-strong);
 }
 .duration {
     color: var(--d-text-muted);

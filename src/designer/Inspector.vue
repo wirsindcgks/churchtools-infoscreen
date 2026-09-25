@@ -5,7 +5,7 @@ import type { Block, Fill, TextStyle } from '../model/schema';
 import { useStageContext } from '../player/context';
 import { fontDef, FONTS } from '../player/fonts';
 import { sizedImageUrl } from '../player/format';
-import { PAGE_SECONDS } from '../player/paging';
+import { PAGE_SECONDS, slideSeconds } from '../player/paging';
 import { useEditorStore } from './editor-store';
 import ColorField from './ColorField.vue';
 import FillEditor from './FillEditor.vue';
@@ -41,6 +41,13 @@ function toggleCalendar(id: number, on: boolean): void {
     const next = on ? [...block.value.calendarIds, id] : block.value.calendarIds.filter((c) => c !== id);
     if (next.length) setBlock({ calendarIds: [...new Set(next)].sort((a, b) => a - b) });
 }
+
+/** Seconds the slide really runs when a paged list needs longer than its duration; else 0. */
+const runsLonger = computed(() => {
+    if (!slide.value) return 0;
+    const seconds = slideSeconds(slide.value, stage.pages ?? {});
+    return seconds > slide.value.durationSeconds ? seconds : 0;
+});
 
 /** Between 3 and 120 seconds; anything else waits until the value is sensible, like the duration field. */
 function setPageSeconds(value: string): void {
@@ -375,6 +382,9 @@ const slideFill = computed<Fill>(() =>
                         Wird gezeigt
                     </label>
                 </div>
+                <p v-if="runsLonger" class="hint" data-testid="duration-hint">
+                    Läuft {{ runsLonger }} s – so lange braucht die Terminliste für alle Seiten.
+                </p>
                 <fieldset>
                     <legend>Hintergrund</legend>
                     <label class="d-field">

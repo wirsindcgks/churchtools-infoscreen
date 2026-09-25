@@ -486,9 +486,18 @@ test('in the preview a long appointment list turns its pages, with a bar filling
     await page.getByTestId('slide-item').nth(2).click();
     await page.getByTestId('frame-appointment-list').first().click();
     await page.getByTestId('show-all').check();
+    // 3 pages × 10 s outlast the slide's 12 s: the slide list and the duration field say so.
+    await expect(page.getByTestId('page-hint')).toContainText('Ergibt 3 Seiten à 10 s – die Slide läuft dafür 30 s statt 12 s');
+    await expect(page.getByTestId('slide-duration').nth(2)).toHaveText('12 → 30 s');
+    await page.getByTestId('show-all').blur(); // Esc is the editor's only outside a field
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('duration-hint')).toContainText('Läuft 30 s');
+    await page.screenshot({ path: 'test-results/editor-longer-slide.png' });
+    await page.getByTestId('frame-appointment-list').first().click();
     await page.getByTestId('page-seconds').fill('4');
     await page.getByTestId('page-seconds').blur();
     await expect(page.getByTestId('page-hint')).toContainText(/Ergibt \d+ Seiten/);
+    await expect(page.getByTestId('slide-duration').nth(2)).toHaveText('12 s'); // 3 × 4 s fit into 12 s
     // While designing the list holds page 1, without a bar.
     await expect(page.locator('.editor-stage [data-testid="list-page"]')).toHaveText(/^1\//);
     await expect(page.locator('.editor-stage [data-testid="list-progress"]')).toHaveCount(0);
