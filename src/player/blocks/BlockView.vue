@@ -9,7 +9,8 @@ import AppointmentListView from './AppointmentListView.vue';
 import ClockView from './ClockView.vue';
 import NextAppointmentView from './NextAppointmentView.vue';
 
-const props = defineProps<{ block: Block }>();
+/** `slideSeconds`: how long the slide shows – a paged list shares it out among its pages. */
+const props = defineProps<{ block: Block; slideSeconds?: number }>();
 const context = useStageContext();
 
 const frame = computed(() => ({
@@ -61,7 +62,7 @@ const imageUrl = computed(() => {
         </div>
 
         <ClockView v-else-if="block.type === 'clock'" :block="block" />
-        <AppointmentListView v-else-if="block.type === 'appointment-list'" :block="block" />
+        <AppointmentListView v-else-if="block.type === 'appointment-list'" :block="block" :slide-seconds="slideSeconds" />
         <NextAppointmentView v-else-if="block.type === 'next-appointment'" :block="block" />
     </div>
 </template>

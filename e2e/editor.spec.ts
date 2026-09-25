@@ -415,3 +415,19 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await expect(page.getByTestId('playlist-name-input')).toHaveValue('Gottesdienst');
     await expect(page.getByTestId('open-schedule')).toHaveCount(0); // the editor is for slides only
 });
+
+test('an appointment list shows every appointment page by page; the inspector says how it will run (Plan.md 23)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await page.getByTestId('slide-item').nth(2).click();
+    await page.getByTestId('frame-appointment-list').first().click();
+    await expect(page.getByTestId('page-seconds')).toHaveCount(0);
+    await page.getByTestId('show-all').check();
+    await expect(page.getByTestId('page-seconds')).toHaveValue('10');
+    await expect(page.getByTestId('page-hint')).toContainText(/Alle Termine passen auf eine Seite|Ergibt \d+ Seiten/);
+    await page.getByTestId('page-seconds').fill('12');
+    await page.getByTestId('page-seconds').blur();
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await page.screenshot({ path: 'test-results/editor-paged-list.png' });
+});

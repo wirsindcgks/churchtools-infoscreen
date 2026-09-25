@@ -2,8 +2,10 @@
 import { computed } from 'vue';
 import type { Calendar } from '../ct/api';
 import type { Block, Fill, TextStyle } from '../model/schema';
+import { useStageContext } from '../player/context';
 import { fontDef, FONTS } from '../player/fonts';
 import { sizedImageUrl } from '../player/format';
+import { PAGE_SECONDS } from '../player/paging';
 import { useEditorStore } from './editor-store';
 import ColorField from './ColorField.vue';
 import FillEditor from './FillEditor.vue';
@@ -13,6 +15,8 @@ defineProps<{ calendars: Calendar[] }>();
 const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo'] }>();
 
 const editor = useEditorStore();
+/** The preview's stage context: paged lists report their page count there. */
+const stage = useStageContext();
 const block = computed(() => editor.block);
 const slide = computed(() => editor.slide);
 
@@ -36,6 +40,24 @@ function toggleCalendar(id: number, on: boolean): void {
     if (!block.value || !('calendarIds' in block.value)) return;
     const next = on ? [...block.value.calendarIds, id] : block.value.calendarIds.filter((c) => c !== id);
     if (next.length) setBlock({ calendarIds: [...new Set(next)].sort((a, b) => a - b) });
+}
+
+/** Between 3 and 120 seconds; anything else waits until the value is sensible, like the duration field. */
+function setPageSeconds(value: string): void {
+    const n = Number(value);
+    if (Number.isInteger(n) && n >= 3 && n <= 120) setBlock({ pageSeconds: n });
+}
+
+/** How a paged list will run – with the page count the stage preview measured. */
+function pageHint(list: Extract<Block, { type: 'appointment-list' }>): string {
+    const pages = stage.pages?.[list.id] ?? 1;
+    if (pages < 2) return 'Alle Termine passen auf eine Seite.';
+    const perPage = list.pageSeconds ?? PAGE_SECONDS;
+    const needed = pages * perPage;
+    const duration = slide.value?.durationSeconds ?? 0;
+    return needed > duration
+        ? `Ergibt ${pages} Seiten à ${perPage} s – die Slide läuft dafür ${needed} s statt ${duration} s.`
+        : `Ergibt ${pages} Seiten, je ${Math.round(duration / pages)} s.`;
 }
 
 function setSlideNumber(value: string): void {
@@ -148,30 +170,55 @@ const slideFill = computed<Fill>(() =>
                     </label>
                     <p v-if="!calendars.length" class="hint">Keine Kalender sichtbar.</p>
                 </fieldset>
-                <div v-if="block.type === 'appointment-list'" class="grid2">
-                    <label class="d-field">
-                        Tage voraus
+                <template v-if="block.type === 'appointment-list'">
+                    <div class="grid2">
+                        <label class="d-field">
+                            Tage voraus
+                            <input
+                                type="number"
+                                min="1"
+                                max="366"
+                                :value="block.horizonDays"
+                                v-on="edit"
+                                @input="setNumber('horizonDays', ($event.target as HTMLInputElement).value)"
+                            >
+                        </label>
+                        <label v-if="!block.showAll" class="d-field">
+                            Höchstens
+                            <input
+                                type="number"
+                                min="1"
+                                max="50"
+                                :value="block.limit"
+                                v-on="edit"
+                                @input="setNumber('limit', ($event.target as HTMLInputElement).value)"
+                            >
+                        </label>
+                        <label v-else class="d-field">
+                            Sekunden je Seite
+                            <input
+                                type="number"
+                                min="3"
+                                max="120"
+                                :value="block.pageSeconds ?? PAGE_SECONDS"
+                                data-testid="page-seconds"
+                                v-on="edit"
+                                @input="setPageSeconds(($event.target as HTMLInputElement).value)"
+                            >
+                        </label>
+                    </div>
+                    <!-- Plan.md, 23: every appointment of the horizon, page by page. -->
+                    <label class="check">
                         <input
-                            type="number"
-                            min="1"
-                            max="366"
-                            :value="block.horizonDays"
-                            v-on="edit"
-                            @input="setNumber('horizonDays', ($event.target as HTMLInputElement).value)"
+                            type="checkbox"
+                            :checked="block.showAll ?? false"
+                            data-testid="show-all"
+                            @change="setBlock({ showAll: ($event.target as HTMLInputElement).checked })"
                         >
+                        Alle Termine zeigen, seitenweise
                     </label>
-                    <label class="d-field">
-                        Höchstens
-                        <input
-                            type="number"
-                            min="1"
-                            max="50"
-                            :value="block.limit"
-                            v-on="edit"
-                            @input="setNumber('limit', ($event.target as HTMLInputElement).value)"
-                        >
-                    </label>
-                </div>
+                    <p v-if="block.showAll" class="hint" data-testid="page-hint">{{ pageHint(block) }}</p>
+                </template>
                 <label v-else class="check">
                     <input
                         type="checkbox"

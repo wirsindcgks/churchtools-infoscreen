@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 5 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 6 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -83,7 +83,16 @@ export const AppointmentListBlock = v.object({
     type: v.literal('appointment-list'),
     calendarIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.minLength(1)),
     horizonDays: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(366)),
+    /** At most this many – unless `showAll`; then only for players older than schema 1.6. */
     limit: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(50)),
+    /**
+     * Since 1.6: every appointment of the horizon; what does not fit the block
+     * is shown page by page, and the slide stays until every page has run
+     * (Plan.md, Nächste Schritte 23).
+     */
+    showAll: v.optional(v.boolean()),
+    /** Seconds per page, at least; default 10. */
+    pageSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(3), v.maxValue(120))),
     style: TextStyle,
 });
 

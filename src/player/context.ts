@@ -14,6 +14,10 @@ export interface StageContext {
     media: Map<string, MediaDoc>;
     /** Image addresses already on the device (original → blob URL); the player fills it, the designer does not. */
     images?: Map<string, string>;
+    /** Page counts of paged appointment lists, by block id – the rotation keeps a slide until all have run (Plan.md, 23). */
+    pages?: Record<string, number>;
+    /** Whether paged lists turn their pages; the designer preview holds page 1. */
+    paging?: boolean;
 }
 
 /** The local copy of an image if there is one, else its address in ChurchTools. */

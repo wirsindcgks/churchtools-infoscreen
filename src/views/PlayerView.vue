@@ -15,6 +15,7 @@ import {
 } from '../player/device-login';
 import { screenImageUrls, slideImageUrls } from '../player/images';
 import { createMediaCache } from '../player/media-cache';
+import { slideSeconds } from '../player/paging';
 import { createPreloader } from '../player/preload';
 import { activePlaylistId } from '../player/schedule';
 import { fitStage } from '../player/stage';
@@ -54,6 +55,8 @@ const context = reactive<StageContext>({
     appointments: [],
     media: new Map<string, MediaDoc>(),
     images: new Map<string, string>(),
+    pages: {},
+    paging: true,
 });
 provideStageContext(context);
 
@@ -121,13 +124,25 @@ watch(
 );
 
 let rotation: ReturnType<typeof setTimeout> | undefined;
+/**
+ * Shows the current slide for its duration – or longer, when a paged list
+ * on it needs more time for all its pages (Plan.md, 23). The page count is
+ * known only once the list has measured itself, so the time is checked
+ * again when it runs out rather than fixed at the start.
+ */
 function scheduleNext(): void {
     clearTimeout(rotation);
-    const seconds = current.value?.durationSeconds ?? 10;
-    rotation = setTimeout(() => {
-        index.value = slides.value.length ? (index.value + 1) % slides.value.length : 0;
-        scheduleNext();
-    }, seconds * 1000);
+    const startedAt = Date.now();
+    const wait = (ms: number) => {
+        rotation = setTimeout(() => {
+            const needed = (current.value ? slideSeconds(current.value, context.pages ?? {}) : 10) * 1000;
+            const left = needed - (Date.now() - startedAt);
+            if (left > 100) return wait(left);
+            index.value = slides.value.length ? (index.value + 1) % slides.value.length : 0;
+            scheduleNext();
+        }, ms);
+    };
+    wait((current.value?.durationSeconds ?? 10) * 1000);
 }
 // A changed duration applies at once, not only after the current slide has run out.
 watch(

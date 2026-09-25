@@ -25,7 +25,12 @@ const background = computed(() => {
 
 <template>
     <div class="slide" :style="background">
-        <BlockView v-for="block in slide.blocks" :key="block.id" :block="block" />
+        <BlockView
+            v-for="block in slide.blocks"
+            :key="block.id"
+            :block="block"
+            :slide-seconds="slide.durationSeconds"
+        />
     </div>
 </template>
 

@@ -19,6 +19,9 @@ export function usePreview(calendarIds: Ref<number[]>, media: Ref<MediaDoc[]>) {
         churchLogo: null,
         appointments: [],
         media: new Map(),
+        // Paged lists report their pages (the inspector names them) but hold page 1 while designing.
+        pages: {},
+        paging: false,
     });
     provideStageContext(context);
 
