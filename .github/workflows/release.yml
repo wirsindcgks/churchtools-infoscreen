@@ -1,0 +1,42 @@
+name: Release
+
+# A tag vX.Y.Z publishes the extension as ZIP on GitHub (Plan.md, Nächste Schritte 12).
+# ChurchTools has no update from a URL (Build 32882): an administrator downloads the
+# ZIP here and uploads it in the extension management.
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # With tags: the ZIP name and the version in the settings depend on the tag at HEAD.
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          cache: npm
+      - run: npm ci
+      # Before anything is built: tag, package.json, package-lock.json and CHANGELOG.md agree.
+      - run: node scripts/release-check.js "$GITHUB_REF_NAME"
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      # Build, dist check and ZIP; on the tagged commit the ZIP is named by the version alone.
+      - run: npm run release
+      - run: node scripts/release-check.js "$GITHUB_REF_NAME" --notes > release-notes.md
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME"
+          "releases/churchtools-infoscreen-${GITHUB_REF_NAME}.zip"
+          --title "Infoscreen Designer ${GITHUB_REF_NAME#v}"
+          --notes-file release-notes.md
+          --verify-tag

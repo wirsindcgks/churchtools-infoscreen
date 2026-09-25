@@ -1,4 +1,5 @@
 /// <reference types="vitest/config" />
+import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from 'vite';
 import vue from '@vitejs/plugin-vue';
@@ -14,6 +15,8 @@ export default defineConfig(({ mode }) => {
     return {
         base: `/ccm/${key}/`,
         plugins: [vue(), fontLicenses()],
+        // Which build is installed – shown in the settings, compared with the GitHub releases (Plan.md, 12).
+        define: { __APP_VERSION__: JSON.stringify(appVersion()) },
         build: {
             // The ChurchTools CSP forbids inline scripts (G15); the polyfill is one.
             modulePreload: { polyfill: false },
@@ -32,10 +35,22 @@ export default defineConfig(({ mode }) => {
         },
         test: {
             environment: 'jsdom',
-            include: ['src/**/*.test.ts'],
+            include: ['src/**/*.test.ts', 'scripts/**/*.test.js'],
         },
     };
 });
+
+/** `0.1.0` for a tagged release, `0.1.0+abc1234` for any other build. */
+function appVersion(): string {
+    const { version } = JSON.parse(fs.readFileSync('package.json', 'utf8')) as { version: string };
+    try {
+        const git = (...args: string[]) => execFileSync('git', args, { encoding: 'utf8' }).trim();
+        if (git('tag', '--points-at', 'HEAD').split('\n').includes(`v${version}`)) return version;
+        return `${version}+${git('rev-parse', '--short', 'HEAD')}`;
+    } catch {
+        return version;
+    }
+}
 
 /**
  * The SIL Open Font License asks for its text to travel with the fonts:

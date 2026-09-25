@@ -295,6 +295,9 @@ onMounted(async () => {
     }
 });
 
+/** Which build is installed (Plan.md, 12). */
+const APP_VERSION = __APP_VERSION__;
+
 const SYMBOL = { ok: '✓', warn: '!', fail: '✗', info: 'i' } as const;
 const SIDES: { side: Side; title: string; purpose: string }[] = [
     {
@@ -439,6 +442,10 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     direkt vergebene Rechte. Rechte aus anderen Gruppen zählen nicht mit.
                 </p>
             </template>
+            <p class="muted small version" data-testid="app-version">
+                Infoscreen Designer {{ APP_VERSION }} – neuere Fassungen stehen unter „Releases" auf GitHub und werden in
+                der Extension-Verwaltung von ChurchTools als ZIP hochgeladen.
+            </p>
         </div>
     </ModulePage>
 </template>
@@ -560,6 +567,9 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 }
 .actions {
     flex-wrap: wrap;
+}
+.version {
+    margin-top: 24px;
 }
 @media (max-width: 48rem) {
     .page-title h1 {

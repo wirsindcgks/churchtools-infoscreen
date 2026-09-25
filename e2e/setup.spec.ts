@@ -7,6 +7,8 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
     await page.goto('./');
     await page.getByTestId('open-setup').click();
     await expect(page.getByRole('heading', { name: 'Einstellungen für Infoscreens' })).toBeVisible();
+    // Which build is installed, to compare with the releases on GitHub (Plan.md 12).
+    await expect(page.getByTestId('app-version')).toContainText(/Infoscreen Designer \d+\.\d+\.\d+/);
 
     await page.getByTestId('group-device').selectOption({ label: 'Infoscreen-Geraete' });
     const device = page.getByTestId('setup-device');

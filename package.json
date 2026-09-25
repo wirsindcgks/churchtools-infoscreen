@@ -8,6 +8,7 @@
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build && node scripts/check-dist.js",
     "release": "npm run build && node scripts/package.js",
+    "release:check": "node scripts/release-check.js",
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",

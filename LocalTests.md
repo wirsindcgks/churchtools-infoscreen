@@ -140,8 +140,42 @@ npx playwright test --grep-invert "upload an image"   # ohne den schreibenden Te
 npm run release
 ```
 
-Baut `dist/` und packt es als ZIP nach `releases/` (nicht versioniert). Hochladen lässt es sich erst, wenn
-Custom Modules auf der Instanz freigeschaltet sind (`Preparation.md`, B6).
+Baut `dist/` und packt es als ZIP nach `releases/` (nicht versioniert), benannt nach Version und Commit, etwa
+`churchtools-infoscreen-v0.1.0-8c241d9.zip`. Das ZIP lässt sich zum Ausprobieren direkt in ChurchTools hochladen:
+**Extension-Verwaltung → Infoscreen Designer → Bearbeiten → ZIP wählen**. Welche Fassung installiert ist, steht unten
+auf der Seite „Einstellungen" des Designers.
+
+## Release veröffentlichen
+
+Ein Tag `vX.Y.Z` auf GitHub baut das Release von selbst (`.github/workflows/release.yml`). ChurchTools kann sich
+Updates nicht selbst holen; ein Administrator lädt das ZIP unter „Releases" herunter und in der Extension-Verwaltung
+hoch.
+
+1. **`CHANGELOG.md`**: die Einträge unter `## [Unreleased]` in einen neuen Abschnitt `## [0.1.0] – 2026-09-25`
+   verschieben, `[Unreleased]` leer stehen lassen.
+2. **Version setzen** – schreibt `package.json` und `package-lock.json`, ohne Commit und Tag:
+
+   ```sh
+   npm version 0.1.0 --no-git-tag-version
+   ```
+
+3. **Prüfen**, dass alles zusammenpasst – dieselbe Prüfung macht der Workflow als Erstes:
+
+   ```sh
+   npm run release:check -- v0.1.0
+   ```
+
+4. **Committen, taggen, pushen** – mit dem Konto `wirsindcgks`:
+
+   ```sh
+   git commit -am "Version 0.1.0"
+   git tag v0.1.0
+   git push origin main v0.1.0
+   ```
+
+5. Der Workflow prüft, testet, baut und veröffentlicht `churchtools-infoscreen-v0.1.0.zip` mit dem
+   CHANGELOG-Abschnitt als Beschreibung. Passt eine Version nicht, bricht er vor dem Bauen ab; dann den Tag löschen
+   (`git push origin :v0.1.0`, `git tag -d v0.1.0`), korrigieren und neu taggen.
 
 ## Stolpersteine
 
