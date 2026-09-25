@@ -32,6 +32,7 @@ import {
     withPlaylistDefaults,
     withSchedule,
     type AnyDoc,
+    type Banner,
     type MediaDoc,
     type PlaylistBundle,
     type PlaylistDoc,
@@ -576,6 +577,51 @@ export class ScreenRepository {
         for (const [i, doc] of bundle.slides.entries()) await this.upsert(ids.slides, storedSlides.get(doc.id), slides[i]!);
         await this.kv.updateValue(ids.playlists, stored.valueId, text);
         return playlist;
+    }
+
+    /**
+     * Sets or clears the band on several playlists at once, for "Hinweise"
+     * (Plan.md, Nächste Schritte 34): only the playlist documents, never
+     * their slides. Every revision is checked before anything is written, so
+     * a conflict on one playlist does not leave the others half-saved.
+     */
+    async saveBanners(
+        changes: { playlistId: string; expectedRevision: number; banner: Banner | null }[],
+        options: { updatedBy: string; now?: Date },
+    ): Promise<StagedPlaylist[]> {
+        const now = (options.now ?? new Date()).toISOString();
+        const running = await this.readRunningScreens();
+        const targets = changes.map((change) => {
+            const stored = running.playlists.find((p) => p.doc.id === change.playlistId);
+            if (!stored) throw new PlaylistNotFoundError(change.playlistId);
+            const current = stored.doc.revision ?? 0;
+            if (current !== change.expectedRevision) {
+                throw new ConflictError({
+                    name: withPlaylistDefaults(stored.doc, running.screens.map((s) => s.doc)).name,
+                    revision: current,
+                    updatedBy: stored.doc.updatedBy,
+                    updatedAt: stored.doc.updatedAt,
+                });
+            }
+            return { change, stored };
+        });
+
+        const ids = await this.ensureCategories();
+        const saved: StagedPlaylist[] = [];
+        for (const { change, stored } of targets) {
+            const playlist: StagedPlaylist = {
+                ...withPlaylistDefaults(stored.doc, running.screens.map((s) => s.doc)),
+                schema: { ...SCHEMA_VERSION },
+                revision: (stored.doc.revision ?? 0) + 1,
+                updatedBy: options.updatedBy,
+                updatedAt: now,
+            };
+            if (change.banner) playlist.banner = change.banner;
+            else delete playlist.banner;
+            await this.kv.updateValue(ids.playlists, stored.valueId, serialize(playlist));
+            saved.push(playlist);
+        }
+        return saved;
     }
 
     /** Deletes a playlist no screen shows; its slides go with the next tidy-up unless another playlist shows them. */

@@ -7,11 +7,11 @@
  */
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
-import { blockCalendarIds, DEFAULT_THEME, type Banner, type Block, type BlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type ThemeDoc } from '../model/schema';
+import { blockCalendarIds, DEFAULT_THEME, type Block, type BlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type ThemeDoc } from '../model/schema';
 import { ConflictError, copySlide, type ConflictInfo, type ScreenRef, type ScreenRepository } from '../store/screen-repository';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
-import { clampFrame, cloneJson, createBanner, createBlock, createSlide, duplicateSlide, move, reorder, type Layer } from './ops';
+import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, move, reorder, type Layer } from './ops';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'conflict' | 'error';
 
@@ -153,20 +153,6 @@ export const useEditorStore = defineStore('editor', () => {
 
     function renamePlaylist(name: string): void {
         change((b) => (b.playlist.name = name));
-    }
-
-    /** The band over every slide (Plan.md 32): switched on with the theme's defaults, or off. */
-    function setBanner(on: boolean): void {
-        change((b) => {
-            if (on) b.playlist.banner ??= createBanner(theme.value);
-            else delete b.playlist.banner;
-        });
-    }
-
-    function updateBanner(patch: Partial<Banner>): void {
-        change((b) => {
-            if (b.playlist.banner) b.playlist.banner = { ...b.playlist.banner, ...patch };
-        });
     }
 
     function addSlide(): void {
@@ -361,8 +347,6 @@ export const useEditorStore = defineStore('editor', () => {
         selectSlide,
         selectBlock,
         renamePlaylist,
-        setBanner,
-        updateBanner,
         addSlide,
         duplicateCurrentSlide,
         insertSlides,

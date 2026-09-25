@@ -6,6 +6,8 @@
  * shows it.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { bannerShown } from '../player/banner';
+import { useStageContext } from '../player/context';
 import type { PlaylistOverview } from '../store/screen-repository';
 import Icon from './Icon.vue';
 import SlideThumb from './SlideThumb.vue';
@@ -13,9 +15,12 @@ import SlideThumb from './SlideThumb.vue';
 const props = defineProps<{ overview: PlaylistOverview }>();
 const emit = defineEmits<{ remove: []; duplicate: [] }>();
 
+const context = useStageContext();
 const playlist = computed(() => props.overview.playlist);
 const portrait = computed(() => playlist.value.stage.height > playlist.value.stage.width);
 const inUse = computed(() => props.overview.screens.length > 0);
+/** A band is running (Plan.md, Nächste Schritte 34) – not one that only sits there, expired. */
+const hasBanner = computed(() => bannerShown(playlist.value.banner, context.now, context.timeZone));
 
 const menuOpen = ref(false);
 const root = ref<HTMLElement | null>(null);
@@ -57,6 +62,14 @@ function duplicate(): void {
                         {{ playlist.name || 'Ohne Namen' }}
                     </RouterLink>
                 </h3>
+                <span
+                    v-if="hasBanner"
+                    class="banner-flag"
+                    :title="`Hinweisband: „${playlist.banner!.text}“`"
+                    data-testid="playlist-banner"
+                >
+                    <Icon name="megaphone" :size="14" /> Hinweis
+                </span>
                 <div class="menu">
                     <button
                         class="d-btn d-btn--icon menu-button"
@@ -167,6 +180,18 @@ function duplicate(): void {
 }
 .facts code {
     overflow-wrap: anywhere;
+}
+.banner-flag {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--d-accent-pale);
+    color: var(--d-accent);
+    font-size: var(--d-size-sm);
+    font-weight: 600;
 }
 .menu {
     position: relative;

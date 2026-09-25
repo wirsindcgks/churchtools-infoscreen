@@ -9,7 +9,6 @@ import { PAGE_SECONDS, POST_SECONDS, slideSeconds } from '../player/paging';
 import { qrShape } from '../player/qr';
 import { webFrame, withScheme } from '../player/web';
 import { useEditorStore } from './editor-store';
-import BannerEditor from './BannerEditor.vue';
 import ColorField from './ColorField.vue';
 import FillEditor from './FillEditor.vue';
 import Icon from './Icon.vue';
@@ -702,7 +701,13 @@ const slideFill = computed<Fill>(() =>
                     Auf welchem Screen sie wann läuft, legt der Zeitplan des Screens fest – unter „Zeitpläne" oder an der
                     Kachel des Screens. Speichern ändert alle Screens, die sie zeigen.
                 </p>
-                <BannerEditor />
+                <p v-if="editor.draft.playlist.banner" class="hint" data-testid="banner-status">
+                    Hinweisband: „{{ editor.draft.playlist.banner.text }}" – bearbeiten unter
+                    <RouterLink :to="{ name: 'notices' }">Hinweise</RouterLink>
+                </p>
+                <p v-else class="hint" data-testid="banner-status">
+                    Kein Hinweisband – anlegen unter <RouterLink :to="{ name: 'notices' }">Hinweise</RouterLink>
+                </p>
             </section>
         </template>
     </aside>

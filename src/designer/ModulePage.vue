@@ -12,7 +12,7 @@ import AppBar from './AppBar.vue';
 import type { FormatFilter } from './format-filter';
 import ModuleSidebar from './ModuleSidebar.vue';
 
-defineProps<{ current: 'screens' | 'schedules' | 'playlists' | 'media' | 'design' | 'about' | 'setup'; counts?: Record<FormatFilter, number> }>();
+defineProps<{ current: 'screens' | 'schedules' | 'notices' | 'playlists' | 'media' | 'design' | 'about' | 'setup'; counts?: Record<FormatFilter, number> }>();
 
 const admin = computed(() => administrator.value === true);
 

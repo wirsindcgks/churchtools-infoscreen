@@ -50,6 +50,17 @@ const active = computed(() => (route.name === 'designer' ? formatFilter(route.qu
             </li>
             <li>
                 <RouterLink
+                    :to="{ name: 'notices' }"
+                    :class="{ active: route.name === 'notices' }"
+                    :aria-current="route.name === 'notices' ? 'page' : undefined"
+                    data-testid="sidebar-notices"
+                >
+                    <span class="nav-icon"><Icon name="megaphone" :size="16" /></span>
+                    Hinweise
+                </RouterLink>
+            </li>
+            <li>
+                <RouterLink
                     :to="{ name: 'playlists' }"
                     :class="{ active: route.name === 'playlists' }"
                     :aria-current="route.name === 'playlists' ? 'page' : undefined"

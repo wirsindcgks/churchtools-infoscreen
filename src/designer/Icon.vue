@@ -45,6 +45,8 @@ const PATHS = {
     // Countdown and banner (Plan.md, Nächste Schritte 32)
     timer: [circle(12, 13.5, 7.5), 'M12 13.5V10', 'M10 2.5h4', 'M18.5 6.5l1.2-1.2'],
     banner: ['M3 14h18v5H3z', 'M6 16.5h8', 'M3 5h18', 'M3 9h12'],
+    // "Hinweise" (Plan.md, Nächste Schritte 34): a megaphone with sound waves.
+    megaphone: ['M3 10v4h3l7 4V6l-7 4H3z', 'M6 14v3a1 1 0 0 0 1 1h1v-4', 'M15 9.5a3 3 0 0 1 0 5', 'M18 7a6.5 6.5 0 0 1 0 10'],
     // "Über & Neuigkeiten"
     info: [circle(12, 12, 8.5), 'M12 11v5', 'M12 7.8v.2'],
     // Posts (Plan.md, Nächste Schritte 33): a page with a picture and lines of text.

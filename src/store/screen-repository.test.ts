@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ValueTooLargeError } from '../model/read';
 import { makePlaylist, makeScreen, makeSlide, textBlock } from '../model/testing';
-import type { ScreenBundle } from '../model/schema';
+import type { Banner, ScreenBundle } from '../model/schema';
 import { MemoryKv } from './memory-kv';
 import {
     ConflictError,
@@ -23,6 +23,19 @@ function bundle(overrides: Partial<ScreenBundle> = {}): ScreenBundle {
 }
 
 const save = { updatedBy: 'Anna' };
+
+function banner(overrides: Partial<Banner> = {}): Banner {
+    return {
+        text: 'Heute Parkplatz gesperrt',
+        mode: 'scroll',
+        position: 'bottom',
+        height: 90,
+        speed: 140,
+        background: '#1e293b',
+        style: { fontFamily: 'lato', fontSize: 32, fontWeight: 600, color: '#ffffff', align: 'left' },
+        ...overrides,
+    };
+}
 
 describe('ScreenRepository', () => {
     let kv: MemoryKv;
@@ -251,6 +264,62 @@ describe('ScreenRepository', () => {
                 current: { revision: 1, updatedBy: 'Ben' },
             });
             await expect(repo.savePlaylist(loaded, { expectedRevision: 1, updatedBy: 'Anna' })).resolves.toMatchObject({ revision: 2 });
+        });
+
+        describe('saveBanners – the band of "Hinweise" (Plan.md, Nächste Schritte 34)', () => {
+            async function twoPlaylists() {
+                await created();
+                const second = await repo.createPlaylist({ name: 'Zweite', stage: LANDSCAPE }, 'Anna');
+                return { first: makePlaylist().id, second: second.id };
+            }
+
+            it('sets the band on several playlists at once, without touching their slides', async () => {
+                const { first, second } = await twoPlaylists();
+                const before = await repo.loadPlaylist(first);
+                const saved = await repo.saveBanners(
+                    [
+                        { playlistId: first, expectedRevision: 0, banner: banner() },
+                        { playlistId: second, expectedRevision: 1, banner: banner() },
+                    ],
+                    { updatedBy: 'Anna' },
+                );
+                expect(saved.map((p) => p.revision)).toEqual([1, 2]);
+                expect(saved.every((p) => p.banner?.text === 'Heute Parkplatz gesperrt')).toBe(true);
+                const again = await repo.loadPlaylist(first);
+                expect(again.slides).toEqual(before.slides);
+            });
+
+            it('removes the band from one playlist, keeping it on another', async () => {
+                const { first, second } = await twoPlaylists();
+                await repo.saveBanners(
+                    [
+                        { playlistId: first, expectedRevision: 0, banner: banner() },
+                        { playlistId: second, expectedRevision: 1, banner: banner() },
+                    ],
+                    { updatedBy: 'Anna' },
+                );
+                await repo.saveBanners([{ playlistId: first, expectedRevision: 1, banner: null }], { updatedBy: 'Anna' });
+                const [loadedFirst, loadedSecond] = await Promise.all([repo.loadPlaylist(first), repo.loadPlaylist(second)]);
+                expect(loadedFirst.playlist.banner).toBeUndefined();
+                expect(loadedSecond.playlist.banner?.text).toBe('Heute Parkplatz gesperrt');
+            });
+
+            it('writes nothing when one of several revisions is stale', async () => {
+                const { first, second } = await twoPlaylists();
+                // Someone else saved the second playlist in between – its revision is now 2, not the assumed 1.
+                await repo.savePlaylist(await repo.loadPlaylist(second), { expectedRevision: 1, updatedBy: 'Ben' });
+
+                await expect(
+                    repo.saveBanners(
+                        [
+                            { playlistId: first, expectedRevision: 0, banner: banner() },
+                            { playlistId: second, expectedRevision: 1, banner: banner() },
+                        ],
+                        { updatedBy: 'Anna' },
+                    ),
+                ).rejects.toBeInstanceOf(ConflictError);
+                expect((await repo.loadPlaylist(first)).playlist.banner).toBeUndefined();
+            });
         });
 
         it('lets several screens show one playlist, chosen in their schedules', async () => {

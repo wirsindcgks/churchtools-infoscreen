@@ -601,7 +601,7 @@ test('duplicate a playlist and take slides over from another one, as copies (Pla
     await expect(page.getByTestId('playlist-card')).toHaveCount(before + 1);
 });
 
-test('a countdown to the next appointment and a band over every slide (Plan.md 32)', async ({ page }) => {
+test('a countdown to the next appointment, and the band moved to "Hinweise" (Plan.md 32, 34)', async ({ page }) => {
     await mockAppointments(page);
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
@@ -617,28 +617,10 @@ test('a countdown to the next appointment and a band over every slide (Plan.md 3
     await page.waitForTimeout(500);
     await page.screenshot({ path: 'test-results/editor-countdown.png' });
 
-    // The band belongs to the playlist: choose no block, then switch it on.
-    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
-    await page.getByTestId('banner-toggle').check();
-    await page.getByTestId('banner-text').fill('Heute Parkplatz gesperrt – bitte in der Schulstraße parken');
-    await expect(stage.getByTestId('banner')).toContainText('Parkplatz gesperrt');
-    // It lies over every slide, not only this one.
-    await page.getByTestId('slide-item').first().click();
-    await expect(stage.getByTestId('banner')).toBeVisible();
-    await page.getByTestId('banner-mode').selectOption('static');
-    await page.waitForTimeout(300);
-    await page.screenshot({ path: 'test-results/editor-banner.png' });
-
-    // Its time is up: the editor says so, the preview – like the TV – no longer shows it.
-    await page.getByTestId('banner-until').fill('2020-01-01T12:00');
-    await expect(page.getByTestId('banner-expired')).toBeVisible();
-    await page.getByTestId('open-preview').click();
-    await expect(page.getByTestId('playlist-preview').getByTestId('banner')).toHaveCount(0);
-    await page.keyboard.press('Escape');
-    await page.getByTestId('banner-until').fill('');
-    await page.getByTestId('open-preview').click();
-    await expect(page.getByTestId('playlist-preview').getByTestId('banner')).toBeVisible();
-    await page.keyboard.press('Escape');
+    // The band moved out of the inspector (Plan.md 34): it only links to "Hinweise" now.
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } }); // choose no block
+    await expect(page.getByTestId('banner-status')).toContainText('Kein Hinweisband');
+    await expect(page.getByTestId('banner-status').getByRole('link', { name: 'Hinweise' })).toHaveAttribute('href', /\/hinweise$/);
 
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
@@ -769,15 +751,10 @@ test('a website and a QR code (Plan.md 28)', async ({ page }) => {
     await page.getByTestId('web-url').press('Enter');
     await page.getByTestId('web-url').blur();
     await expect(page.getByTestId('web-url')).toHaveValue('https://www.gemeinde.example/wochenblatt/');
-// A fresh, empty slide keeps the card free of anything from the demo slides underneath it.
-const SCRATCHPAD = '/private/tmp/claude-501/-Users-tobiasnikola-Documents-Git-churchtools-infoscreen/dc9de791-16ba-47d5-92a4-c5a2cc5bdae1/scratchpad';
-
     const frame = stage.getByTestId('web-frame');
     await expect(frame).toHaveAttribute('src', 'https://www.gemeinde.example/wochenblatt/');
     await expect(frame).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
     await expect(page.frameLocator('.editor-stage [data-testid="web-frame"]').locator('h1')).toHaveText('Wochenblatt');
-    await page.getByTestId('add-slide').click();
-    await expect(page.getByTestId('slide-item')).toHaveCount(4);
     await page.getByTestId('web-zoom').selectOption('2');
     await expect(frame).toHaveAttribute('style', /scale\(2\)/);
 
@@ -791,6 +768,29 @@ const SCRATCHPAD = '/private/tmp/claude-501/-Users-tobiasnikola-Documents-Git-ch
 });
 
 // Reads the real test instance (nur lesend, Plan.md 33): the group "ISD-Beitragstest" is public,
+// posts are switched on, and it has posts – among them "Biete Akkuschrauber" with an image (Befunde G37).
+// A fresh, empty slide keeps the card free of anything from the demo slides underneath it.
+const SCRATCHPAD = '/private/tmp/claude-501/-Users-tobiasnikola-Documents-Git-churchtools-infoscreen/dc9de791-16ba-47d5-92a4-c5a2cc5bdae1/scratchpad';
+
+test('a posts block shows a public group\'s posts, as a card and as a list (Plan.md 33)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await page.getByTestId('add-slide').click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(4);
+
+    await page.getByTestId('add-posts').click();
+    const inspector = page.getByTestId('block-inspector');
+    const group = inspector.locator('label.check', { hasText: 'ISD-Beitragstest' });
+    await expect(group).toBeVisible({ timeout: 15_000 }); // the group list comes from ChurchTools
+    await group.locator('input[type="checkbox"]').check();
+
+    const stage = page.locator('.editor-stage');
+    const card = stage.getByTestId('posts-card');
+    await expect(card).toBeVisible({ timeout: 15_000 }); // the posts themselves too
+    await expect(card).not.toContainText('Keine aktuellen Beiträge');
+    await page.waitForTimeout(300);
+    await stage.screenshot({ path: 'test-results/editor-posts-card.png' });
     await expect(card).toHaveClass(/hero--landscape/); // default size, 1400 × 700
     await card.screenshot({ path: `${SCRATCHPAD}/posts-card-landscape.png` });
 
@@ -812,24 +812,6 @@ const SCRATCHPAD = '/private/tmp/claude-501/-Users-tobiasnikola-Documents-Git-ch
     await page.waitForTimeout(300);
     await card.screenshot({ path: `${SCRATCHPAD}/posts-card-text.png` });
     await showImage.locator('input[type="checkbox"]').check();
-// posts are switched on, and it has posts – among them "Biete Akkuschrauber" with an image (Befunde G37).
-test('a posts block shows a public group\'s posts, as a card and as a list (Plan.md 33)', async ({ page }) => {
-    await page.goto('./');
-    await page.getByTestId('open-editor').first().click();
-    await expect(page.getByTestId('slide-item')).toHaveCount(3);
-
-    await page.getByTestId('add-posts').click();
-    const inspector = page.getByTestId('block-inspector');
-    const group = inspector.locator('label.check', { hasText: 'ISD-Beitragstest' });
-    await expect(group).toBeVisible({ timeout: 15_000 }); // the group list comes from ChurchTools
-    await group.locator('input[type="checkbox"]').check();
-
-    const stage = page.locator('.editor-stage');
-    const card = stage.getByTestId('posts-card');
-    await expect(card).toBeVisible({ timeout: 15_000 }); // the posts themselves too
-    await expect(card).not.toContainText('Keine aktuellen Beiträge');
-    await page.waitForTimeout(300);
-    await stage.screenshot({ path: 'test-results/editor-posts-card.png' });
 
     await inspector.getByTestId('posts-layout').selectOption('list');
     await expect(stage.getByTestId('posts-list')).toBeVisible();
