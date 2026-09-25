@@ -50,6 +50,8 @@ describe('mergePosts', () => {
         groupId: 31,
         groupName: 'ISD-Beitragstest',
         color: null,
+        groupInitials: 'I',
+        groupImageUrl: null,
         title: `Beitrag ${id}`,
         content: '',
         publishedAt: new Date('2026-09-25T08:00:00Z'),

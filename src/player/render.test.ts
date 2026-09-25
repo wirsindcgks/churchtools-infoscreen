@@ -134,6 +134,8 @@ describe('rendering posts (Plan.md 33)', () => {
         groupId: 31,
         groupName: 'ISD-Beitragstest',
         color: '#14b8a6',
+        groupInitials: 'I',
+        groupImageUrl: null,
         title: 'Biete Akkuschrauber',
         content: 'Kann gern ausgeliehen werden.',
         publishedAt: new Date('2026-09-25T08:00:00Z'),
@@ -168,6 +170,34 @@ describe('rendering posts (Plan.md 33)', () => {
         expect(wrapper.get('[data-testid="posts-card"]').text()).toContain('Kann gern ausgeliehen werden.');
     });
 
+    it('shows the group\'s age in the head, "heute" and "vor N Tagen" (Plan.md, "Nachgezogen…")', () => {
+        const now = new Date('2026-09-27T08:00:00Z');
+        const today = render(makeSlide({ blocks: [postsBlock()] }), {
+            now,
+            posts: [post({ publishedAt: new Date('2026-09-27T06:00:00Z') })],
+        });
+        expect(today.get('[data-testid="posts-card"]').text()).toContain('heute');
+
+        const twoDaysAgo = render(makeSlide({ blocks: [postsBlock()] }), {
+            now,
+            posts: [post({ publishedAt: new Date('2026-09-25T06:00:00Z') })],
+        });
+        expect(twoDaysAgo.get('[data-testid="posts-card"]').text()).toContain('vor 2 Tagen');
+    });
+
+    it('shows the group\'s initials without a picture, an image with one', () => {
+        const initials = render(makeSlide({ blocks: [postsBlock()] }), { posts: [post()] });
+        expect(initials.get('.hero-avatar').text()).toBe('I');
+        expect(initials.find('.hero-avatar img').exists()).toBe(false);
+
+        const withPicture = render(makeSlide({ blocks: [postsBlock()] }), {
+            posts: [post({ groupImageUrl: 'https://example.church.tools/images/3/hash' })],
+        });
+        const avatar = withPicture.get('.hero-avatar img');
+        expect(avatar.attributes('src')).toContain('w=');
+        expect(avatar.attributes('src')).toContain('h=');
+    });
+
     it('requests the image at block size with both dimensions', () => {
         const wrapper = render(makeSlide({ blocks: [postsBlock()] }), {
             posts: [post({ imageUrl: 'https://example.church.tools/images/9/hash', imageRatio: 1 })],
@@ -182,6 +212,41 @@ describe('rendering posts (Plan.md 33)', () => {
         expect(off.find('[data-testid="post-author"]').exists()).toBe(false);
         const on = render(makeSlide({ blocks: [postsBlock({ showAuthor: true })] }), { posts: [post()] });
         expect(on.get('[data-testid="post-author"]').text()).toContain('Erika Beispiel');
+    });
+
+    it('puts the image before the text column, at most 60 % of the width, for a landscape block', () => {
+        const wrapper = render(makeSlide({ blocks: [postsBlock({ width: 1400, height: 700 })] }), {
+            posts: [post({ imageUrl: 'https://example.church.tools/images/9/hash', imageRatio: 1 })],
+        });
+        const card = wrapper.get('[data-testid="posts-card"]');
+        expect(card.classes()).toContain('hero--landscape');
+        const children = card.element.children;
+        expect(children[0]?.getAttribute('data-testid')).toBe('post-image');
+        const width = Number(/width:\s*([\d.]+)px/.exec(children[0]?.getAttribute('style') ?? '')?.[1]);
+        expect(width).toBeLessThanOrEqual(1400 * 0.6);
+    });
+
+    it('puts the image above the text column for a portrait block', () => {
+        const wrapper = render(makeSlide({ blocks: [postsBlock({ width: 700, height: 1000 })] }), {
+            posts: [post({ imageUrl: 'https://example.church.tools/images/9/hash', imageRatio: 1 })],
+        });
+        const card = wrapper.get('[data-testid="posts-card"]');
+        expect(card.classes()).toContain('hero--portrait');
+        expect(card.element.children[0]?.getAttribute('data-testid')).toBe('post-image');
+    });
+
+    it('shows no image without one, or with showImage off', () => {
+        const withoutUrl = render(makeSlide({ blocks: [postsBlock()] }), { posts: [post()] });
+        expect(withoutUrl.find('[data-testid="post-image"]').exists()).toBe(false);
+        const switchedOff = render(makeSlide({ blocks: [postsBlock({ showImage: false })] }), {
+            posts: [post({ imageUrl: 'https://example.church.tools/images/9/hash', imageRatio: 1 })],
+        });
+        expect(switchedOff.find('[data-testid="post-image"]').exists()).toBe(false);
+    });
+
+    it('never renders a <p>, whose font size a ChurchTools host page would otherwise override', () => {
+        const wrapper = render(makeSlide({ blocks: [postsBlock()] }), { posts: [post()] });
+        expect(wrapper.findAll('p')).toHaveLength(0);
     });
 
     it('shows rows in the list layout', () => {

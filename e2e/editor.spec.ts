@@ -769,10 +769,15 @@ test('a website and a QR code (Plan.md 28)', async ({ page }) => {
     await page.getByTestId('web-url').press('Enter');
     await page.getByTestId('web-url').blur();
     await expect(page.getByTestId('web-url')).toHaveValue('https://www.gemeinde.example/wochenblatt/');
+// A fresh, empty slide keeps the card free of anything from the demo slides underneath it.
+const SCRATCHPAD = '/private/tmp/claude-501/-Users-tobiasnikola-Documents-Git-churchtools-infoscreen/dc9de791-16ba-47d5-92a4-c5a2cc5bdae1/scratchpad';
+
     const frame = stage.getByTestId('web-frame');
     await expect(frame).toHaveAttribute('src', 'https://www.gemeinde.example/wochenblatt/');
     await expect(frame).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
     await expect(page.frameLocator('.editor-stage [data-testid="web-frame"]').locator('h1')).toHaveText('Wochenblatt');
+    await page.getByTestId('add-slide').click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(4);
     await page.getByTestId('web-zoom').selectOption('2');
     await expect(frame).toHaveAttribute('style', /scale\(2\)/);
 
@@ -786,6 +791,27 @@ test('a website and a QR code (Plan.md 28)', async ({ page }) => {
 });
 
 // Reads the real test instance (nur lesend, Plan.md 33): the group "ISD-Beitragstest" is public,
+    await expect(card).toHaveClass(/hero--landscape/); // default size, 1400 × 700
+    await card.screenshot({ path: `${SCRATCHPAD}/posts-card-landscape.png` });
+
+    // Hochkant: the same post, now with its image above the text instead of beside it.
+    await inspector.getByTestId('inspector-width').fill('700');
+    await inspector.getByTestId('inspector-height').fill('1000');
+    await inspector.getByTestId('inspector-height').blur();
+    await expect(card).toHaveClass(/hero--portrait/);
+    await page.waitForTimeout(300);
+    await card.screenshot({ path: `${SCRATCHPAD}/posts-card-portrait.png` });
+
+    // Ohne Bild: back to the default size, with "Bild zeigen" switched off.
+    await inspector.getByTestId('inspector-width').fill('1400');
+    await inspector.getByTestId('inspector-height').fill('700');
+    await inspector.getByTestId('inspector-height').blur();
+    const showImage = inspector.locator('label.check', { hasText: 'Bild zeigen' });
+    await showImage.locator('input[type="checkbox"]').uncheck();
+    await expect(card.getByTestId('post-image')).toHaveCount(0);
+    await page.waitForTimeout(300);
+    await card.screenshot({ path: `${SCRATCHPAD}/posts-card-text.png` });
+    await showImage.locator('input[type="checkbox"]').check();
 // posts are switched on, and it has posts – among them "Biete Akkuschrauber" with an image (Befunde G37).
 test('a posts block shows a public group\'s posts, as a card and as a list (Plan.md 33)', async ({ page }) => {
     await page.goto('./');
@@ -799,8 +825,9 @@ test('a posts block shows a public group\'s posts, as a card and as a list (Plan
     await group.locator('input[type="checkbox"]').check();
 
     const stage = page.locator('.editor-stage');
-    await expect(stage.getByTestId('posts-card')).toBeVisible({ timeout: 15_000 }); // the posts themselves too
-    await expect(stage.getByTestId('posts-card')).not.toContainText('Keine aktuellen Beiträge');
+    const card = stage.getByTestId('posts-card');
+    await expect(card).toBeVisible({ timeout: 15_000 }); // the posts themselves too
+    await expect(card).not.toContainText('Keine aktuellen Beiträge');
     await page.waitForTimeout(300);
     await stage.screenshot({ path: 'test-results/editor-posts-card.png' });
 

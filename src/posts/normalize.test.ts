@@ -33,6 +33,17 @@ describe('normalizePosts', () => {
         expect(withoutImage).toMatchObject({ id: 5, imageUrl: null, imageRatio: null });
     });
 
+    it('reads the group avatar: its own initials and image, else the first letter of its name', () => {
+        const [withInitials, withImage, withNeither] = normalizePosts([
+            raw(20, { group: { domainIdentifier: '31', title: 'ISD-Beitragstest', initials: 'IB' } }),
+            raw(21, { group: { domainIdentifier: '31', title: 'ISD-Beitragstest', imageUrl: 'https://example.church.tools/images/2/hash' } }),
+            raw(22, { group: { domainIdentifier: '31', title: 'isd-beitragstest' } }),
+        ]);
+        expect(withInitials).toMatchObject({ groupInitials: 'IB', groupImageUrl: null });
+        expect(withImage).toMatchObject({ groupInitials: 'I', groupImageUrl: 'https://example.church.tools/images/2/hash' });
+        expect(withNeither).toMatchObject({ groupInitials: 'I', groupImageUrl: null });
+    });
+
     it('skips a banned post', () => {
         expect(normalizePosts([raw(6, { isBanned: true })])).toEqual([]);
     });
@@ -83,6 +94,8 @@ describe('selectPosts', () => {
         groupId: 31,
         groupName: 'ISD-Beitragstest',
         color: null,
+        groupInitials: 'I',
+        groupImageUrl: null,
         title: `Beitrag ${id}`,
         content: 'Text',
         publishedAt: now,
@@ -134,6 +147,8 @@ describe('revivePosts', () => {
                 groupId: 31,
                 groupName: 'ISD-Beitragstest',
                 color: null,
+                groupInitials: 'I',
+                groupImageUrl: null,
                 title: 'Beitrag',
                 content: 'Text',
                 publishedAt: new Date('2026-09-25T20:53:50Z'),
@@ -156,6 +171,8 @@ describe('revivePosts', () => {
                 groupId: 31,
                 groupName: 'ISD-Beitragstest',
                 color: null,
+                groupInitials: 'I',
+                groupImageUrl: null,
                 title: 'Beitrag',
                 content: 'Text',
                 publishedAt: new Date('2026-09-25T20:53:50Z'),

@@ -18,6 +18,8 @@ export interface PostResponse {
         domainIdentifier?: string | null;
         title?: string | null;
         color?: { key?: string | null } | null;
+        initials?: string | null;
+        imageUrl?: string | null;
     } | null;
     imagesMeta?: { imageUrl?: string | null; aspectRatio?: number | null }[] | null;
 }
@@ -27,6 +29,9 @@ export interface Post {
     groupId: number;
     groupName: string;
     color: string | null;
+    /** The group's initials for its avatar, as ChurchTools shows them, else the upper-cased first letter of its name. */
+    groupInitials: string;
+    groupImageUrl: string | null;
     title: string;
     content: string;
     publishedAt: Date;
@@ -75,6 +80,14 @@ export function groupColor(color: { key?: string | null } | null | undefined): s
     return key ? (GROUP_COLORS[key] ?? null) : null;
 }
 
+/** The group's own initials, else the upper-cased first letter of its name; empty without either. */
+function groupInitials(group: PostResponse['group']): string {
+    const initials = group?.initials?.trim();
+    if (initials) return initials;
+    const title = group?.title?.trim();
+    return title ? title[0]!.toUpperCase() : '';
+}
+
 /** Skips banned posts, posts without a readable `publishedDate` and posts without a numeric group id. */
 export function normalizePosts(raw: unknown[]): Post[] {
     return (raw as PostResponse[])
@@ -95,6 +108,8 @@ function normalizeOne(post: PostResponse): Post | null {
         groupId,
         groupName: post.group?.title ?? '',
         color: groupColor(post.group?.color),
+        groupInitials: groupInitials(post.group),
+        groupImageUrl: post.group?.imageUrl ?? null,
         title: post.title ?? '',
         content: post.content ?? '',
         publishedAt,

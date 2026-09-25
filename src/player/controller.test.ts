@@ -45,6 +45,8 @@ const samplePost: Post = {
     groupId: 31,
     groupName: 'ISD-Beitragstest',
     color: '#14b8a6',
+    groupInitials: 'I',
+    groupImageUrl: null,
     title: 'Biete Akkuschrauber',
     content: 'Text',
     publishedAt: NOW,
