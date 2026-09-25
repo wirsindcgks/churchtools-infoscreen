@@ -24,6 +24,7 @@ import {
     type ReadIssue,
 } from '../model/read';
 import {
+    blockCalendarIds,
     playlistIdsOf,
     sameStage,
     SCHEMA_VERSION,
@@ -175,8 +176,22 @@ export interface ScreenOverview {
     slideCount: number;
     /** Media the first slide shows. */
     media: MediaDoc[];
-    /** Name of the default playlist, which the tile opens. */
+    /** Name of the default playlist. */
     playlistName: string | null;
+    /**
+     * Every playlist the screen may show – the default and those of its rules
+     * – by id, so the tile can show the one that runs now (Plan.md 17).
+     */
+    playlists: Record<string, ScreenPlaylist>;
+}
+
+/** A playlist of a screen, as its tile shows it. */
+export interface ScreenPlaylist {
+    id: string;
+    name: string;
+    /** The first enabled slide; null for a playlist without slides. */
+    firstSlide: SlideDoc | null;
+    slideCount: number;
 }
 
 interface Stored<T> {
@@ -238,21 +253,36 @@ export class ScreenRepository {
         const slides = new Map((await this.readSlides()).docs.map((s) => [s.doc.id, s.doc]));
 
         const overviews = screens.map((screen) => {
-            const own = (playlists.get(screen.defaultPlaylistId)?.slideIds ?? [])
-                .map((id) => slides.get(id))
-                .filter((s): s is SlideDoc => s !== undefined);
-            const firstSlide = own.find((s) => s.enabled) ?? own[0] ?? null;
-            const playlist = playlists.get(screen.defaultPlaylistId);
-            const playlistName = playlist ? withPlaylistDefaults(playlist, screens).name : null;
-            return { screen, firstSlide, slideCount: own.length, media: [] as MediaDoc[], playlistName };
+            const own: Record<string, ScreenPlaylist> = {};
+            for (const id of playlistIdsOf(screen)) {
+                const playlist = playlists.get(id);
+                if (!playlist) continue;
+                const shown = playlist.slideIds.map((s) => slides.get(s)).filter((s): s is SlideDoc => s !== undefined);
+                own[id] = {
+                    id,
+                    name: withPlaylistDefaults(playlist, screens).name,
+                    firstSlide: shown.find((s) => s.enabled) ?? shown[0] ?? null,
+                    slideCount: shown.length,
+                };
+            }
+            const standard = own[screen.defaultPlaylistId];
+            return {
+                screen,
+                firstSlide: standard?.firstSlide ?? null,
+                slideCount: standard?.slideCount ?? 0,
+                media: [] as MediaDoc[],
+                playlistName: standard?.name ?? null,
+                playlists: own,
+            };
         });
 
-        const mediaIds = new Set(overviews.flatMap((o) => (o.firstSlide ? referencedMedia(o.firstSlide) : [])));
+        const shownSlides = (o: ScreenOverview) => Object.values(o.playlists).flatMap((p) => (p.firstSlide ? [p.firstSlide] : []));
+        const mediaIds = new Set(overviews.flatMap((o) => shownSlides(o).flatMap(referencedMedia)));
         if (mediaIds.size) {
             const media = (await this.readAll('media', readMedia)).docs.map((m) => m.doc);
             for (const o of overviews) {
-                const ids = o.firstSlide ? referencedMedia(o.firstSlide) : [];
-                o.media = media.filter((m) => ids.includes(m.id));
+                const ids = new Set(shownSlides(o).flatMap(referencedMedia));
+                o.media = media.filter((m) => ids.has(m.id));
             }
         }
         return overviews;
@@ -479,6 +509,36 @@ export class ScreenRepository {
     }
 
     /**
+     * A copy of a playlist with copies of its slides – changing the copy never
+     * changes the original. Screens are not told: the copy runs nowhere until
+     * a schedule chooses it.
+     */
+    async duplicatePlaylist(id: string, updatedBy: string, now = new Date()): Promise<StagedPlaylist> {
+        const source = await this.loadPlaylist(id);
+        const time = now.toISOString();
+        const byId = new Map(source.slides.map((s) => [s.id, s]));
+        const slides = source.playlist.slideIds.flatMap((slideId) => {
+            const slide = byId.get(slideId);
+            return slide ? [copySlide(slide, time)] : [];
+        });
+        const playlist: StagedPlaylist = {
+            schema: { ...SCHEMA_VERSION },
+            kind: 'playlist',
+            id: crypto.randomUUID(),
+            name: `${source.playlist.name} (Kopie)`,
+            slideIds: slides.map((s) => s.id),
+            stage: { ...source.playlist.stage },
+            revision: 1,
+            updatedBy,
+            updatedAt: time,
+        };
+        const ids = await this.ensureCategories();
+        for (const slide of slides) await this.kv.createValue(ids.slides, serialize(slide));
+        await this.kv.createValue(ids.playlists, serialize(playlist));
+        return playlist;
+    }
+
+    /**
      * The designers' save (Plan.md, F): one playlist and its slides. Slides
      * first, the playlist last and with the revision – a save that breaks off
      * halfway leaves the old order visible, and two designers saving the same
@@ -627,7 +687,7 @@ export class ScreenRepository {
         const [{ screens }, slides] = await Promise.all([this.readRunningScreens(), this.readSlides()]);
         const ids = new Set<number>();
         for (const block of slides.docs.flatMap((s) => s.doc.blocks)) {
-            if (block.type === 'appointment-list' || block.type === 'next-appointment') block.calendarIds.forEach((id) => ids.add(id));
+            blockCalendarIds(block).forEach((id) => ids.add(id));
         }
         for (const rule of screens.flatMap((s) => s.doc.schedule)) {
             if (rule.kind === 'appointment') rule.calendarIds.forEach((id) => ids.add(id));
@@ -844,6 +904,18 @@ function rethrowIfTooNew(error: unknown): void {
 
 function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
+}
+
+/** A slide with fresh ids for itself and its blocks, under its own name. */
+export function copySlide(slide: SlideDoc, updatedAt?: string): SlideDoc {
+    const copy = JSON.parse(JSON.stringify(slide)) as SlideDoc;
+    return {
+        ...copy,
+        schema: { ...SCHEMA_VERSION },
+        id: crypto.randomUUID(),
+        blocks: copy.blocks.map((b) => ({ ...b, id: crypto.randomUUID() })),
+        ...(updatedAt ? { updatedAt } : {}),
+    };
 }
 
 function screensShowing(playlistId: string, screens: readonly ScreenDoc[]): ScreenRef[] {

@@ -18,7 +18,7 @@ import PageHeader from '../designer/PageHeader.vue';
 import PlaylistCard from '../designer/PlaylistCard.vue';
 import SearchField from '../designer/SearchField.vue';
 import { usePreview } from '../designer/usePreview';
-import type { ThemeDoc } from '../model/schema';
+import { blockCalendarIds, type ThemeDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 
@@ -51,13 +51,7 @@ const theme = ref<ThemeDoc | null>(null);
 // The tiles are the player's components: they need the same live data as the editor preview.
 usePreview(
     computed(() => [
-        ...new Set(
-            overviews.value.flatMap((o) =>
-                (o.firstSlide?.blocks ?? []).flatMap((b) =>
-                    b.type === 'appointment-list' || b.type === 'next-appointment' ? b.calendarIds : [],
-                ),
-            ),
-        ),
+        ...new Set(overviews.value.flatMap((o) => (o.firstSlide?.blocks ?? []).flatMap(blockCalendarIds))),
     ]),
     computed(() => overviews.value.flatMap((o) => o.media)),
     theme,
@@ -88,6 +82,17 @@ onMounted(async () => {
 async function created(id: string): Promise<void> {
     creating.value = false;
     await router.push({ name: 'editor', params: { id } });
+}
+
+/** A copy with copies of the slides; it opens in the editor, since one duplicates to change something. */
+async function duplicate(overview: PlaylistOverview): Promise<void> {
+    if (!repository.value || author.value === null) return;
+    try {
+        const copy = await repository.value.duplicatePlaylist(overview.playlist.id, author.value);
+        await router.push({ name: 'editor', params: { id: copy.id } });
+    } catch (e) {
+        window.alert(e instanceof Error ? e.message : String(e));
+    }
 }
 
 async function remove(overview: PlaylistOverview): Promise<void> {
@@ -142,7 +147,13 @@ async function remove(overview: PlaylistOverview): Promise<void> {
                     <FilterChips v-model="format" :options="FORMATS" label="Format" testid="playlist-filter" />
                 </template>
                 <div v-if="shown.length" class="tiles">
-                    <PlaylistCard v-for="o in shown" :key="o.playlist.id" :overview="o" @remove="remove(o)" />
+                    <PlaylistCard
+                        v-for="o in shown"
+                        :key="o.playlist.id"
+                        :overview="o"
+                        @remove="remove(o)"
+                        @duplicate="duplicate(o)"
+                    />
                 </div>
                 <div v-else-if="!overviews.length" class="empty">
                     <p>Noch keine Playlists.</p>

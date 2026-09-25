@@ -10,20 +10,27 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 
 ### Gestalten
 
-- **Screens auf einen Blick:** Jeder Fernseher ist eine Kachel mit einem Bild dessen, was er zeigt. Filter nach
-  Quer- und Hochformat und eine Suche helfen, wenn es mehr werden. Klappt auch am Handy.
+- **Screens auf einen Blick:** Jeder Fernseher ist eine Kachel mit einem Bild dessen, was er gerade zeigt – auch
+  wenn der Zeitplan gerade eine andere Playlist gewählt hat. Filter nach Quer- und Hochformat und eine Suche helfen,
+  wenn es mehr werden. Klappt auch am Handy.
 - **Slides gestalten:** Texte, Bilder, Flächen, Uhr, Terminliste, nächster Termin, Gemeindekopf mit Name und Logo,
   Webseiten und QR-Codes auf die Fläche ziehen, verschieben und in der Größe ändern. Ein Raster und Hilfslinien
   helfen beim Ausrichten, Rückgängig und Wiederholen beim Ausprobieren.
-- **Bausteine sperren**, damit ein Hintergrund oder Logo beim Gestalten nicht aus Versehen verrutscht.
+- **Bausteine sperren**, damit ein Hintergrund oder Logo beim Gestalten nicht aus Versehen verrutscht. Ein Klick
+  auf einen gesperrten Baustein erreicht den darunter; mit Alt wählt er den gesperrten selbst.
 - **Vorschau:** spielt die Playlist im Vollbild ab, wie der Fernseher sie zeigt – auch mit Änderungen, die noch
   nicht gespeichert sind.
 - **Termine aus dem Kalender**, immer aktuell: als schlichte Liste oder als große Karten mit Datumskachel, Uhrzeit,
   Ort und Kalender, dazu „Nächster Termin" mit Bild. Passen nicht alle Termine auf die Fläche, blättert die Liste
   weiter, und ein Balken zeigt, wann die nächste Seite kommt.
+- **Countdown:** „Gottesdienst beginnt in 12:34" – zählt bis zum nächsten Termin gewählter Kalender und zeigt
+  während des Termins einen eigenen Text, etwa „Läuft gerade".
+- **Hinweisband:** eine Laufschrift oder ein stehender Hinweis über allen Slides einer Playlist, etwa „Heute
+  Parkplatz gesperrt" – mit Ablaufzeit, danach verschwindet es von selbst.
 - **Webseite und QR-Code:** eine Seite der Gemeinde-Website auf dem Fernseher zeigen; einen QR-Code zur Anmeldung
   oder zum Wochenblatt, der ohne fremden Dienst entsteht.
-- **Playlists:** Slides zu Playlists bündeln. Eine Playlist kann auf mehreren Fernsehern laufen.
+- **Playlists:** Slides zu Playlists bündeln. Eine Playlist kann auf mehreren Fernsehern laufen. Eine Playlist
+  lässt sich duplizieren, und Slides aus einer anderen Playlist lassen sich als Kopie übernehmen.
 - **Zeitpläne:** zu bestimmten Zeiten eine andere Playlist zeigen – etwa sonntags von 9 bis 12 Uhr den
   Gottesdienst, oder rund um die Termine eines Kalenders, z. B. „30 Minuten vor Beginn bis 10 Minuten danach". Die
   Seite „Zeitpläne" zeigt für jeden Fernseher, was gerade läuft, mit Vorschau.

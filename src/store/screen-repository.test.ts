@@ -288,6 +288,11 @@ describe('ScreenRepository', () => {
             expect(again.screen.schedule).toEqual(rules);
             expect(again.playlists.map((p) => p.id)).toEqual([makePlaylist().id, evening.id]);
             expect(again.screen.revision).toBe(screen.revision); // the administrators' document is untouched
+            // The tile knows every playlist the screen may show, to show the one that runs now (Plan.md 17).
+            const [overview] = await repo.listScreenOverviews();
+            expect(Object.keys(overview!.playlists).sort()).toEqual([makePlaylist().id, evening.id].sort());
+            expect(overview!.playlists[evening.id]).toMatchObject({ name: 'Abend', slideCount: 1 });
+            expect(overview!.playlists[evening.id]!.firstSlide).not.toBeNull();
 
             await expect(
                 repo.saveSchedule(screen.id, { defaultPlaylistId: tall.id, rules: [] }, { expectedRevision: 1, updatedBy: 'X' }),

@@ -3,6 +3,7 @@ import {
     DEFAULT_THEME,
     SCHEMA_VERSION,
     STAGE_PRESETS,
+    type Banner,
     type Block,
     type BlockType,
     type ScreenBundle,
@@ -117,6 +118,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     'church-header': 'Gemeindekopf',
     web: 'Webseite',
     qr: 'QR-Code',
+    countdown: 'Countdown',
 };
 
 /** A new block with sensible defaults, centred on the stage. */
@@ -136,6 +138,7 @@ export function createBlock(
         'church-header': [1200, 100],
         web: [1100, 800],
         qr: [360, 360],
+        countdown: [1100, 360],
     }[type];
     const width = Math.min(size[0]!, stage.width - 80);
     const height = Math.min(size[1]!, stage.height - 80);
@@ -168,7 +171,29 @@ export function createBlock(
         case 'qr':
             // Dark on light: that is what every phone camera reads, whatever the slide looks like.
             return { ...frame, type, data: '', color: '#111111', background: '#ffffff' };
+        case 'countdown':
+            return {
+                ...frame,
+                type,
+                calendarIds: calendars,
+                showTitle: true,
+                runningText: 'Läuft gerade',
+                style: style(120, ink, { fontWeight: 700, align: 'center' }),
+            };
     }
+}
+
+/** A band for a playlist that has none (Plan.md 32): in the accent colour, at the bottom, running. */
+export function createBanner(theme: ThemeDoc = DEFAULT_THEME): Banner {
+    return {
+        text: '',
+        mode: 'scroll',
+        position: 'bottom',
+        height: 90,
+        speed: 140,
+        background: theme.accent,
+        style: style(48, '#ffffff', { fontWeight: 600 }),
+    };
 }
 
 export const MIN_BLOCK_SIZE = 20;
@@ -215,4 +240,18 @@ export function move<T>(items: T[], from: number, to: number): T[] {
     if (item === undefined) return items;
     result.splice(Math.max(0, Math.min(to, result.length)), 0, item);
     return result;
+}
+
+/**
+ * The block a click on a locked one reaches through to (Plan.md 25): the
+ * topmost unlocked block below it at that point of the stage – so a locked
+ * picture over others does not block choosing them. Null if there is none.
+ */
+export function blockBelow(blocks: readonly Block[], clicked: Block, point: { x: number; y: number }): Block | null {
+    const index = blocks.findIndex((b) => b.id === clicked.id);
+    for (let i = index - 1; i >= 0; i--) {
+        const b = blocks[i]!;
+        if (!b.locked && point.x >= b.x && point.x <= b.x + b.width && point.y >= b.y && point.y <= b.y + b.height) return b;
+    }
+    return null;
 }

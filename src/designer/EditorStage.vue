@@ -1,16 +1,18 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import type { Block } from '../model/schema';
+import BannerView from '../player/BannerView.vue';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
 import { fitStage } from '../player/stage';
 import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
-import { BLOCK_LABELS } from './ops';
+import { BLOCK_LABELS, blockBelow } from './ops';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 
 const editor = useEditorStore();
 const host = ref<HTMLElement | null>(null);
+const overlay = ref<HTMLElement | null>(null);
 const size = reactive({ width: 800, height: 450 });
 const fit = computed(() => fitStage(size, editor.stage));
 
@@ -40,9 +42,19 @@ const guides = ref<Guide[]>([]);
 /** Snap targets come closer than 8 screen pixels – independent of the zoom. */
 const SNAP_SCREEN_PX = 8;
 
-function start(event: PointerEvent, block: Block, handle: Handle | 'move'): void {
+/** Where on the stage a pointer is, in stage pixels. */
+function stagePoint(event: PointerEvent): { x: number; y: number } | null {
+    const rect = overlay.value?.getBoundingClientRect();
+    if (!rect || !fit.value.scale) return null;
+    return { x: (event.clientX - rect.left) / fit.value.scale, y: (event.clientY - rect.top) / fit.value.scale };
+}
+
+function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): void {
     if (event.button !== 0) return;
     event.stopPropagation();
+    // A locked block lets a click through to an unlocked one below it; with Alt it takes the click itself.
+    const point = handle === 'move' && clicked.locked && !event.altKey ? stagePoint(event) : null;
+    const block = (point && blockBelow(blocks.value, clicked, point)) || clicked;
     editor.selectBlock(block.id);
     // Locked (Plan.md, 25): it can be chosen – to unlock it in the inspector – but not moved.
     if (block.locked) return;
@@ -122,7 +134,14 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
     <div ref="host" class="editor-stage" @pointerdown="editor.selectBlock(null)">
         <StageView v-if="editor.slide" :width="editor.stage.width" :height="editor.stage.height" :fit="fit">
             <SlideView :slide="editor.slide" :width="editor.stage.width" :height="editor.stage.height" />
-            <div class="overlay" :style="gridStyle" data-testid="grid">
+            <!-- The playlist's band lies over every slide (Plan.md 32); clicks go through to the blocks. -->
+            <BannerView
+                v-if="editor.draft?.playlist.banner?.text.trim()"
+                class="stage-banner"
+                :banner="editor.draft.playlist.banner"
+                :stage-width="editor.stage.width"
+            />
+            <div ref="overlay" class="overlay" :style="gridStyle" data-testid="grid">
                 <div
                     v-for="(guide, i) in guides"
                     :key="i"
@@ -147,7 +166,7 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
                         '--handle': `${12 / fit.scale}px`,
                         '--line': `${1.5 / fit.scale}px`,
                     }"
-                    :title="BLOCK_LABELS[block.type]"
+                    :title="block.locked ? `${BLOCK_LABELS[block.type]} – gesperrt: ein Klick greift auf Bausteine darunter durch, Alt-Klick wählt ihn` : BLOCK_LABELS[block.type]"
                     :data-testid="`frame-${block.type}`"
                     @pointerdown="start($event, block, 'move')"
                     @pointermove="moveTo"
@@ -190,6 +209,9 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
     background: var(--d-panel);
     /* A finger on the empty stage scrolls the page (phone, Plan.md 11); on a block it moves the block. */
     touch-action: pan-x pan-y;
+}
+.stage-banner {
+    pointer-events: none;
 }
 .overlay {
     position: absolute;

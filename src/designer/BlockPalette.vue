@@ -22,6 +22,7 @@ const ICONS: Record<BlockType, IconName> = {
     'church-header': 'header',
     web: 'web',
     qr: 'qr',
+    countdown: 'timer',
 };
 const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
 </script>

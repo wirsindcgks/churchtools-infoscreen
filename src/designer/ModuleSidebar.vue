@@ -82,22 +82,6 @@ const active = computed(() => (route.name === 'designer' ? formatFilter(route.qu
                 </RouterLink>
             </li>
         </ul>
-        <ul class="library about">
-            <li>
-                <RouterLink
-                    :to="{ name: 'about' }"
-                    :class="{ active: route.name === 'about' }"
-                    :aria-current="route.name === 'about' ? 'page' : undefined"
-                    data-testid="sidebar-about"
-                >
-                    <span class="nav-icon"><Icon name="info" :size="16" /></span>
-                    Über &amp; Neuigkeiten
-                    <span v-if="unseenRelease" class="new" title="Neue Version – noch nicht angesehen" data-testid="about-new">
-                        <span class="visually-hidden">Neu</span>
-                    </span>
-                </RouterLink>
-            </li>
-        </ul>
         <div v-if="admin" class="admin">
             <h2>Verwaltung</h2>
             <ul>
@@ -113,6 +97,27 @@ const active = computed(() => (route.name === 'designer' ? formatFilter(route.qu
                 </li>
             </ul>
         </div>
+        <ul class="library about">
+            <li>
+                <RouterLink
+                    :to="{ name: 'about' }"
+                    :class="{ active: route.name === 'about' }"
+                    :aria-current="route.name === 'about' ? 'page' : undefined"
+                    data-testid="sidebar-about"
+                >
+                    <span class="nav-icon"><Icon name="info" :size="16" /></span>
+                    Über &amp; Neuigkeiten
+                    <span
+                        v-if="unseenRelease"
+                        class="new"
+                        role="img"
+                        aria-label="Neu"
+                        title="Neue Version – noch nicht angesehen"
+                        data-testid="about-new"
+                    />
+                </RouterLink>
+            </li>
+        </ul>
     </nav>
 </template>
 
@@ -166,19 +171,12 @@ a.active {
     color: var(--d-accent);
 }
 .new {
+    flex: none;
     width: 8px;
     height: 8px;
     margin-left: auto;
     border-radius: 50%;
     background: var(--d-accent);
-}
-.visually-hidden {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
 }
 .count {
     margin-left: auto;

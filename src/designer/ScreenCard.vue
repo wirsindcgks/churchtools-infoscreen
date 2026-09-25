@@ -1,21 +1,33 @@
 <script setup lang="ts">
 /**
  * A screen on the start page, built after the group tiles of ChurchTools:
- * picture on top – here the first slide as the TV shows it – name and a line
- * of facts below. The tile opens the editor; the rest is in the "…" menu.
+ * picture on top – the first slide of the playlist that runs now, as the TV
+ * shows it – name and a line of facts below. The tile opens that playlist in
+ * the editor; the rest is in the "…" menu.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { ScreenOverview } from '../store/screen-repository';
 import Icon from './Icon.vue';
+import type { Running } from './running';
 import { copyPlayerUrl } from './player-url';
 import SlideThumb from './SlideThumb.vue';
 
-/** `admin`: configure and delete are the administrators' (Plan.md, F). */
-const props = defineProps<{ overview: ScreenOverview; admin?: boolean }>();
+/**
+ * `admin`: configure and delete are the administrators' (Plan.md, F).
+ * `running`: what the schedule shows now (Plan.md 17); without it, the default playlist.
+ */
+const props = defineProps<{ overview: ScreenOverview; admin?: boolean; running?: Running }>();
 const emit = defineEmits<{ remove: []; settings: []; schedule: [] }>();
 
 const screen = computed(() => props.overview.screen);
 const portrait = computed(() => screen.value.stage.height > screen.value.stage.width);
+/** The playlist the tile shows and opens. */
+const shown = computed(() => {
+    const id = props.running?.playlistId ?? screen.value.defaultPlaylistId;
+    return props.overview.playlists[id] ?? props.overview.playlists[screen.value.defaultPlaylistId] ?? null;
+});
+/** A rule decides right now – the tile says so, since it shows another playlist than the default. */
+const byRule = computed(() => (props.running?.ruleIndex ?? -1) >= 0);
 
 const menuOpen = ref(false);
 const copied = ref(false);
@@ -61,16 +73,16 @@ function settings(): void {
     <article ref="root" class="d-card screen-card" data-testid="screen-card" @keydown.esc="menuOpen = false">
         <RouterLink
             class="open"
-            :to="{ name: 'editor', params: { id: screen.defaultPlaylistId } }"
-            :aria-label="`${overview.playlistName ?? screen.name} bearbeiten`"
+            :to="{ name: 'editor', params: { id: shown?.id ?? screen.defaultPlaylistId } }"
+            :aria-label="`${shown?.name ?? screen.name} bearbeiten`"
             data-testid="open-editor"
         >
-            <SlideThumb :slide="overview.firstSlide" :stage="screen.stage" />
+            <SlideThumb :slide="shown?.firstSlide ?? null" :stage="screen.stage" />
         </RouterLink>
         <div class="body">
             <div class="title-row">
                 <h3 class="name">
-                    <RouterLink :to="{ name: 'editor', params: { id: screen.defaultPlaylistId } }" tabindex="-1">
+                    <RouterLink :to="{ name: 'editor', params: { id: shown?.id ?? screen.defaultPlaylistId } }" tabindex="-1">
                         {{ screen.name || 'Ohne Namen' }}
                     </RouterLink>
                 </h3>
@@ -120,9 +132,14 @@ function settings(): void {
                 <code :title="`Adresse für das Gerät: ${screen.slug}`">{{ screen.slug }}</code>
             </p>
             <p class="facts muted">
-                <span :title="`Standard-Playlist – ${overview.slideCount} Slides`" data-testid="screen-playlist">
+                <span
+                    :title="byRule ? `Läuft jetzt nach Zeitplan – ${shown?.slideCount ?? 0} Slides` : `Standard-Playlist – ${shown?.slideCount ?? 0} Slides`"
+                    :class="{ 'by-rule': byRule }"
+                    data-testid="screen-playlist"
+                >
                     <Icon name="list" :size="16" />
-                    {{ overview.playlistName ?? 'Playlist fehlt' }}
+                    {{ shown?.name ?? 'Playlist fehlt' }}
+                    <span v-if="byRule" class="now-tag" data-testid="screen-running">jetzt</span>
                 </span>
                 <button
                     class="schedule-link"
@@ -199,6 +216,18 @@ function settings(): void {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+}
+.by-rule {
+    color: var(--d-text);
+    font-weight: 700;
+}
+.now-tag {
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--d-success);
+    color: var(--d-accent-text);
+    font-size: 0.85em;
+    font-weight: 700;
 }
 .facts code {
     overflow-wrap: anywhere;

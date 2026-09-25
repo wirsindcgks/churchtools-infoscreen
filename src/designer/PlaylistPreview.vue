@@ -6,7 +6,9 @@
  * Unlike a TV it can hold a slide and step through them.
  */
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import type { SlideDoc } from '../model/schema';
+import type { Banner, SlideDoc } from '../model/schema';
+import { bannerShown } from '../player/banner';
+import BannerView from '../player/BannerView.vue';
 import { provideStageContext, useStageContext, type StageContext } from '../player/context';
 import { slideSeconds } from '../player/paging';
 import { useRotation } from '../player/rotation';
@@ -15,7 +17,13 @@ import { fitStage } from '../player/stage';
 import StageView from '../player/StageView.vue';
 import Icon from './Icon.vue';
 
-const props = defineProps<{ slides: SlideDoc[]; stage: { width: number; height: number }; startSlideId?: string }>();
+const props = defineProps<{
+    slides: SlideDoc[];
+    stage: { width: number; height: number };
+    startSlideId?: string;
+    /** The playlist's band, as the TV shows it over every slide (Plan.md 32). */
+    banner?: Banner | null;
+}>();
 const emit = defineEmits<{ close: [] }>();
 
 /** The editor's live data – time, appointments, media – with pages that really turn. */
@@ -120,6 +128,7 @@ onBeforeUnmount(() => {
                 <SlideView v-if="current" :key="current.id" :slide="current" :width="stage.width" :height="stage.height" />
             </Transition>
             <p v-if="!current" class="stage-message">Diese Playlist enthält keine aktive Slide.</p>
+            <BannerView v-if="bannerShown(banner, parent.now, parent.timeZone)" :banner="banner!" :stage-width="stage.width" />
         </StageView>
 
         <div class="controls" data-testid="preview-controls">

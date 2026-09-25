@@ -257,6 +257,7 @@ function onKey(event: KeyboardEvent): void {
             v-if="previewing && editor.draft"
             :slides="editor.slides"
             :stage="editor.stage"
+            :banner="editor.draft.playlist.banner"
             :start-slide-id="editor.slide?.id"
             @close="previewing = false"
         />

@@ -19,6 +19,8 @@ import { createPreloader } from '../player/preload';
 import { useRotation } from '../player/rotation';
 import { activePlaylistId } from '../player/schedule';
 import { fitStage } from '../player/stage';
+import { bannerShown } from '../player/banner';
+import BannerView from '../player/BannerView.vue';
 import SlideView from '../player/SlideView.vue';
 import { onStoreChanged } from '../store/backend';
 import StageView from '../player/StageView.vue';
@@ -91,20 +93,33 @@ watch(
     { immediate: true },
 );
 
-const slides = computed<SlideDoc[]>(() => {
+const playlist = computed(() => {
     const loaded = state?.screen;
-    if (!loaded) return [];
+    if (!loaded) return null;
     const playlistId = activePlaylistId(loaded.screen, {
         now: context.now,
         timeZone: context.timeZone,
         clockConfirmed: context.clockConfirmed,
         appointments: context.appointments,
     });
-    const playlist =
+    return (
         loaded.playlists.find((p) => p.id === playlistId) ??
-        loaded.playlists.find((p) => p.id === loaded.screen.defaultPlaylistId);
+        loaded.playlists.find((p) => p.id === loaded.screen.defaultPlaylistId) ??
+        null
+    );
+});
+
+const slides = computed<SlideDoc[]>(() => {
+    const loaded = state?.screen;
+    if (!loaded || !playlist.value) return [];
     const byId = new Map(loaded.slides.map((s) => [s.id, s]));
-    return (playlist?.slideIds ?? []).map((id) => byId.get(id)).filter((s): s is SlideDoc => !!s && s.enabled);
+    return playlist.value.slideIds.map((id) => byId.get(id)).filter((s): s is SlideDoc => !!s && s.enabled);
+});
+
+/** The playlist's band (Plan.md 32), until its time is up. */
+const banner = computed(() => {
+    const band = playlist.value?.banner;
+    return bannerShown(band, context.now, context.timeZone) ? band : null;
 });
 
 const { index, current, scheduleNext } = useRotation(slides, () => context.pages ?? {});
@@ -178,6 +193,7 @@ onBeforeUnmount(() => {
                     />
                 </Transition>
                 <p v-if="!current" class="stage-message">Diese Playlist enthält keine aktive Slide.</p>
+                <BannerView v-if="banner" :banner="banner" :stage-width="stage.width" />
             </StageView>
             <!-- Old content with a discreet marker beats a black screen. -->
             <span v-if="state.staleSince" class="stale" data-testid="stale" title="Keine Verbindung zu ChurchTools" />

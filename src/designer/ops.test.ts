@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { serialize } from '../model/read';
 import { textBlock, makeSlide } from '../model/testing';
-import { BLOCK_LABELS, clampFrame, createBlock, createScreenBundle, duplicateSlide, move, reorder, slugify } from './ops';
+import { BLOCK_LABELS, blockBelow as below, clampFrame, createBlock, createScreenBundle, duplicateSlide, move, reorder, slugify } from './ops';
 import { History } from './history';
-import type { BlockType } from '../model/schema';
+import type { Block, BlockType } from '../model/schema';
 
 const stage = { width: 1920, height: 1080 };
 
@@ -92,5 +92,22 @@ describe('History', () => {
         expect(history.undo(4)).toBe(3);
         expect(history.undo(3)).toBe(2);
         expect(history.undo(2)).toBeNull();
+    });
+});
+
+describe('a click on a locked block (Plan.md 25)', () => {
+    const at = (id: string, x: number, locked = false) =>
+        ({ id, type: 'shape', x, y: 0, width: 100, height: 100, fill: { kind: 'solid', color: '#000' }, locked }) as unknown as Block;
+    const back = at('back', 0);
+    const lockedBelow = at('locked-below', 0, true);
+    const cover = at('cover', 0, true);
+
+    it('reaches the topmost unlocked block below it at that point', () => {
+        expect(below([back, lockedBelow, cover], cover, { x: 50, y: 50 })?.id).toBe('back');
+    });
+
+    it('reaches nothing where no unlocked block lies below', () => {
+        expect(below([back, cover], cover, { x: 150, y: 50 })).toBeNull();
+        expect(below([cover, back], cover, { x: 50, y: 50 })).toBeNull(); // above it, not below
     });
 });

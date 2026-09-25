@@ -20,7 +20,8 @@ import SearchField from '../designer/SearchField.vue';
 import ScreenCard from '../designer/ScreenCard.vue';
 import ScheduleDialog from '../designer/ScheduleDialog.vue';
 import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
-import type { ScreenDoc, ThemeDoc } from '../model/schema';
+import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema';
+import { ruleCalendarIds, runningNow } from '../designer/running';
 import { usePreview } from '../designer/usePreview';
 import { getRepository, resetDemoStore } from '../store/backend';
 import type { ScreenOverview, ScreenRepository } from '../store/screen-repository';
@@ -70,16 +71,16 @@ const current = computed(() => FILTERS.find((f) => f.key === filter.value)!);
 
 const theme = ref<ThemeDoc | null>(null);
 
-// The tiles are the player's components: they need the same live data as the editor preview.
-usePreview(
+// The tiles are the player's components: they need the same live data as the editor preview –
+// and the appointments of the rule calendars, to know which playlist runs now (Plan.md 17).
+const { context } = usePreview(
     computed(() => [
-        ...new Set(
-            overviews.value.flatMap((o) =>
-                (o.firstSlide?.blocks ?? []).flatMap((b) =>
-                    b.type === 'appointment-list' || b.type === 'next-appointment' ? b.calendarIds : [],
-                ),
+        ...new Set([
+            ...ruleCalendarIds(overviews.value.map((o) => o.screen)),
+            ...overviews.value.flatMap((o) =>
+                Object.values(o.playlists).flatMap((p) => (p.firstSlide?.blocks ?? []).flatMap(blockCalendarIds)),
             ),
-        ),
+        ]),
     ]),
     computed(() => overviews.value.flatMap((o) => o.media)),
     theme,
@@ -227,6 +228,7 @@ async function remove(overview: ScreenOverview): Promise<void> {
                         :key="o.screen.id"
                         :overview="o"
                         :admin="screensAdmin"
+                        :running="runningNow(o.screen, context)"
                         @remove="remove(o)"
                         @settings="configuring = o.screen"
                         @schedule="scheduling = o.screen.slug"

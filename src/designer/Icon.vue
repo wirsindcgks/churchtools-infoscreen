@@ -42,6 +42,9 @@ const PATHS = {
     header: ['M3 5h18v5H3z', 'M3 14h11', 'M3 18h7'],
     web: [circle(12, 12, 8.5), 'M3.5 12h17', 'M12 3.5c2.6 2.4 3.8 5.2 3.8 8.5s-1.2 6.1-3.8 8.5c-2.6-2.4-3.8-5.2-3.8-8.5S9.4 5.9 12 3.5z'],
     qr: ['M4 4h6v6H4z', 'M14 4h6v6h-6z', 'M4 14h6v6H4z', 'M14 14h2v2h-2z', 'M18 18h2v2h-2z', 'M14 18h2', 'M18 14h2'],
+    // Countdown and banner (Plan.md, Nächste Schritte 32)
+    timer: [circle(12, 13.5, 7.5), 'M12 13.5V10', 'M10 2.5h4', 'M18.5 6.5l1.2-1.2'],
+    banner: ['M3 14h18v5H3z', 'M6 16.5h8', 'M3 5h18', 'M3 9h12'],
     // "Über & Neuigkeiten"
     info: [circle(12, 12, 8.5), 'M12 11v5', 'M12 7.8v.2'],
     // The design page (Plan.md, Nächste Schritte 27)

@@ -105,7 +105,7 @@ export function appointmentNeeds(screen: ScreenDoc, slides: SlideDoc[]): { calen
             block.calendarIds.forEach((id) => ids.add(id));
             days = Math.max(days, block.horizonDays);
         }
-        if (block.type === 'next-appointment') {
+        if (block.type === 'next-appointment' || block.type === 'countdown') {
             block.calendarIds.forEach((id) => ids.add(id));
             days = Math.max(days, 60);
         }

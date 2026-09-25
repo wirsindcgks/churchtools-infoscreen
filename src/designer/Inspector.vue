@@ -9,6 +9,7 @@ import { PAGE_SECONDS, slideSeconds } from '../player/paging';
 import { qrShape } from '../player/qr';
 import { webFrame, withScheme } from '../player/web';
 import { useEditorStore } from './editor-store';
+import BannerEditor from './BannerEditor.vue';
 import ColorField from './ColorField.vue';
 import FillEditor from './FillEditor.vue';
 import Icon from './Icon.vue';
@@ -199,20 +200,50 @@ const slideFill = computed<Fill>(() =>
                     </select>
                 </label>
 
+                <fieldset v-if="'calendarIds' in block">
+                    <legend>Kalender</legend>
+                    <label v-for="c in calendars" :key="c.id" class="check">
+                        <input
+                            type="checkbox"
+                            :checked="block.calendarIds.includes(c.id)"
+                            @change="toggleCalendar(c.id, ($event.target as HTMLInputElement).checked)"
+                        >
+                        <span class="swatch" :style="{ background: c.color ?? 'transparent' }" />
+                        {{ c.name }}
+                    </label>
+                    <p v-if="!calendars.length" class="hint">Keine Kalender sichtbar.</p>
+                </fieldset>
+
+                <!-- Plan.md, 32: the time until the next appointment of these calendars. -->
+                <template v-if="block.type === 'countdown'">
+                    <label class="check">
+                        <input
+                            type="checkbox"
+                            :checked="block.showTitle"
+                            data-testid="countdown-title"
+                            @change="setBlock({ showTitle: ($event.target as HTMLInputElement).checked })"
+                        >
+                        Titel des Termins zeigen
+                    </label>
+                    <label class="d-field">
+                        Während des Termins
+                        <input
+                            type="text"
+                            maxlength="200"
+                            :value="block.runningText"
+                            placeholder="leer: zum nächsten Termin zählen"
+                            data-testid="countdown-running-text"
+                            v-on="edit"
+                            @input="setBlock({ runningText: ($event.target as HTMLInputElement).value })"
+                        >
+                    </label>
+                    <p class="hint">
+                        Zählt bis zum Beginn des nächsten Termins dieser Kalender; ganztägige Termine zählen nicht mit.
+                        Passt gut auf eine Playlist, die ein Zeitplan „30 Minuten vor Beginn“ einschaltet.
+                    </p>
+                </template>
+
                 <template v-if="block.type === 'appointment-list' || block.type === 'next-appointment'">
-                    <fieldset>
-                        <legend>Kalender</legend>
-                        <label v-for="c in calendars" :key="c.id" class="check">
-                            <input
-                                type="checkbox"
-                                :checked="block.calendarIds.includes(c.id)"
-                                @change="toggleCalendar(c.id, ($event.target as HTMLInputElement).checked)"
-                            >
-                            <span class="swatch" :style="{ background: c.color ?? 'transparent' }" />
-                            {{ c.name }}
-                        </label>
-                        <p v-if="!calendars.length" class="hint">Keine Kalender sichtbar.</p>
-                    </fieldset>
                     <!-- Plan.md, 20: the look of the WordPress plugin's list and highlighted event. -->
                     <label class="d-field">
                         Darstellung
@@ -565,9 +596,10 @@ const slideFill = computed<Fill>(() =>
                     </dd>
                 </dl>
                 <p class="hint">
-                    Auf welchem Screen sie wann läuft, legt der Zeitplan des Screens fest – auf der Startseite an der
-                    Kachel. Speichern ändert alle Screens, die sie zeigen.
+                    Auf welchem Screen sie wann läuft, legt der Zeitplan des Screens fest – unter „Zeitpläne" oder an der
+                    Kachel des Screens. Speichern ändert alle Screens, die sie zeigen.
                 </p>
+                <BannerEditor />
             </section>
         </template>
     </aside>

@@ -526,12 +526,16 @@ test('a locked block stays put: no drag, no keys, no fields, no delete – until
     await expect(page.getByTestId('text-input')).toBeDisabled();
     await page.screenshot({ path: 'test-results/editor-locked.png' });
 
-    // Dragging and the arrow and delete keys change nothing.
+    // Dragging and the arrow and delete keys change nothing. With Alt the pointer takes the locked
+    // block itself – a plain click would reach through to one below it (Plan.md 25).
     const box = (await frame.boundingBox())!;
+    await page.keyboard.down('Alt');
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
     await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2, { steps: 5 });
     await page.mouse.up();
+    await page.keyboard.up('Alt');
+    await expect(frame).toHaveClass(/frame--selected/);
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('Delete');
     expect(Math.round((await frame.boundingBox())!.x)).toBe(Math.round(box.x));
@@ -541,6 +545,103 @@ test('a locked block stays put: no drag, no keys, no fields, no delete – until
     await expect(page.getByTestId('text-input')).toBeEnabled();
     await page.keyboard.press('Delete');
     await expect(frames).toHaveCount(count - 1);
+});
+
+test('a click on a locked block reaches the one below; Alt-click takes the locked one (Plan.md 25)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    // Two texts in the same place: the second lies on top and gets locked.
+    await page.getByTestId('add-text').click();
+    await page.getByTestId('add-text').click();
+    const frames = page.getByTestId('frame-text');
+    const below = frames.nth((await frames.count()) - 2);
+    const top = frames.last();
+    await page.getByTestId('lock-toggle').click();
+    await expect(top).toHaveClass(/frame--locked/);
+
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } }); // choose nothing
+    const box = (await top.boundingBox())!;
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await expect(below).toHaveClass(/frame--selected/);
+    await expect(page.getByTestId('lock-toggle')).toHaveAttribute('aria-pressed', 'false');
+
+    await page.keyboard.down('Alt');
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+    await page.keyboard.up('Alt');
+    await expect(top).toHaveClass(/frame--selected/);
+    await expect(page.getByTestId('frame-lock')).toBeVisible();
+});
+
+test('duplicate a playlist and take slides over from another one, as copies (Plan.md 31)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('sidebar-playlists').click();
+    const cards = page.getByTestId('playlist-card');
+    await expect(cards.first()).toBeVisible();
+    const before = await cards.count();
+    await cards.first().getByTestId('playlist-menu').click();
+    await page.getByTestId('duplicate-playlist').click();
+    // The copy opens in the editor, with copies of all slides.
+    await expect(page).toHaveURL(/playlists\/[\w-]+$/);
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await expect(page.getByTestId('playlist-name-input')).toHaveValue(/\(Kopie\)$/);
+
+    // Take one slide over from the original.
+    await page.getByTestId('import-slides').click();
+    const dialog = page.getByTestId('slide-import');
+    await expect(dialog.getByTestId('slide-import-item')).toHaveCount(3);
+    await dialog.getByTestId('slide-import-item').first().click();
+    await dialog.getByTestId('slide-import-take').click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByTestId('slide-item')).toHaveCount(4);
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+
+    await page.goto('playlists');
+    await expect(page.getByTestId('playlist-card')).toHaveCount(before + 1);
+});
+
+test('a countdown to the next appointment and a band over every slide (Plan.md 32)', async ({ page }) => {
+    await mockAppointments(page);
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    const stage = page.locator('.editor-stage');
+
+    await page.getByTestId('add-countdown').click();
+    // The mocked appointments start tomorrow at the earliest: days and hours.
+    await expect(stage.getByTestId('countdown-time')).toHaveText(/^\d+ Tag(e)? \d+ Std\.$|^\d+:\d{2}:\d{2}$/);
+    await expect(stage.getByTestId('countdown')).toContainText('beginnt in');
+    await page.getByTestId('countdown-title').uncheck();
+    await expect(stage.getByTestId('countdown')).toContainText('Beginnt in');
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: 'test-results/editor-countdown.png' });
+
+    // The band belongs to the playlist: choose no block, then switch it on.
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
+    await page.getByTestId('banner-toggle').check();
+    await page.getByTestId('banner-text').fill('Heute Parkplatz gesperrt – bitte in der Schulstraße parken');
+    await expect(stage.getByTestId('banner')).toContainText('Parkplatz gesperrt');
+    // It lies over every slide, not only this one.
+    await page.getByTestId('slide-item').first().click();
+    await expect(stage.getByTestId('banner')).toBeVisible();
+    await page.getByTestId('banner-mode').selectOption('static');
+    await page.waitForTimeout(300);
+    await page.screenshot({ path: 'test-results/editor-banner.png' });
+
+    // Its time is up: the editor says so, the preview – like the TV – no longer shows it.
+    await page.getByTestId('banner-until').fill('2020-01-01T12:00');
+    await expect(page.getByTestId('banner-expired')).toBeVisible();
+    await page.getByTestId('open-preview').click();
+    await expect(page.getByTestId('playlist-preview').getByTestId('banner')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await page.getByTestId('banner-until').fill('');
+    await page.getByTestId('open-preview').click();
+    await expect(page.getByTestId('playlist-preview').getByTestId('banner')).toBeVisible();
+    await page.keyboard.press('Escape');
+
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
 });
 
 /** At least one card on the stage, and every one inside the frame of its list. */

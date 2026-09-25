@@ -13,12 +13,12 @@ import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import ScheduleDialog from '../designer/ScheduleDialog.vue';
+import { ruleCalendarIds, runningNow } from '../designer/running';
 import { ruleSummary } from '../designer/schedule-ops';
 import SearchField from '../designer/SearchField.vue';
 import SlideThumb from '../designer/SlideThumb.vue';
 import { usePreview } from '../designer/usePreview';
-import type { ScreenDoc, ThemeDoc } from '../model/schema';
-import { matchingRuleIndex } from '../player/schedule';
+import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 
@@ -39,12 +39,8 @@ const chosen = reactive(new Map<string, string>());
 const { context, calendars } = usePreview(
     computed(() => [
         ...new Set([
-            ...screens.value.flatMap((s) => s.schedule.flatMap((r) => (r.kind === 'appointment' ? r.calendarIds : []))),
-            ...[...playlists.value.values()].flatMap((o) =>
-                (o.firstSlide?.blocks ?? []).flatMap((b) =>
-                    b.type === 'appointment-list' || b.type === 'next-appointment' ? b.calendarIds : [],
-                ),
-            ),
+            ...ruleCalendarIds(screens.value),
+            ...[...playlists.value.values()].flatMap((o) => (o.firstSlide?.blocks ?? []).flatMap(blockCalendarIds)),
         ]),
     ]),
     computed(() => [...playlists.value.values()].flatMap((o) => o.media)),
@@ -71,20 +67,14 @@ function calendarName(id: number): string {
 }
 
 /** What runs now: the rule that decides, -1 for the default playlist. */
-function runningNow(screen: ScreenDoc): { ruleIndex: number; playlistId: string } {
-    const ruleIndex = matchingRuleIndex(screen, {
-        now: context.now,
-        timeZone: context.timeZone,
-        clockConfirmed: true,
-        appointments: context.appointments,
-    });
-    return { ruleIndex, playlistId: ruleIndex < 0 ? screen.defaultPlaylistId : screen.schedule[ruleIndex]!.playlistId };
+function running(screen: ScreenDoc) {
+    return runningNow(screen, context);
 }
 
 /** The line whose playlist the preview shows: the clicked one, else the one that runs now. */
 function previewIndex(screen: ScreenDoc): number {
     const id = chosen.get(screen.id);
-    if (id === undefined) return runningNow(screen).ruleIndex;
+    if (id === undefined) return running(screen).ruleIndex;
     return id === 'default' ? -1 : Number(id);
 }
 
@@ -161,7 +151,7 @@ onMounted(async () => {
                             </RouterLink>
                             <SlideThumb v-else :slide="null" :stage="screen.stage" />
                             <figcaption>
-                                {{ previewIndex(screen) === runningNow(screen).ruleIndex ? 'Läuft jetzt' : 'Vorschau' }}:
+                                {{ previewIndex(screen) === running(screen).ruleIndex ? 'Läuft jetzt' : 'Vorschau' }}:
                                 <strong>{{ previewed(screen)?.playlist.name ?? 'Playlist fehlt' }}</strong>
                             </figcaption>
                         </figure>
@@ -174,7 +164,7 @@ onMounted(async () => {
                                 />
                                 <h3>{{ screen.name }}</h3>
                                 <span class="now" data-testid="schedule-now">
-                                    Jetzt: <strong>{{ playlistName(runningNow(screen).playlistId) }}</strong>
+                                    Jetzt: <strong>{{ playlistName(running(screen).playlistId) }}</strong>
                                 </span>
                                 <button class="d-btn" type="button" data-testid="schedule-edit" @click="editing = screen.slug">
                                     Bearbeiten
@@ -184,7 +174,7 @@ onMounted(async () => {
                                 <li
                                     v-for="(rule, index) in screen.schedule"
                                     :key="index"
-                                    :class="{ active: runningNow(screen).ruleIndex === index, previewed: previewIndex(screen) === index }"
+                                    :class="{ active: running(screen).ruleIndex === index, previewed: previewIndex(screen) === index }"
                                     data-testid="schedule-rule-line"
                                 >
                                     <button type="button" class="line" :aria-pressed="previewIndex(screen) === index" @click="choose(screen, index)">
@@ -195,7 +185,7 @@ onMounted(async () => {
                                     </button>
                                 </li>
                                 <li
-                                    :class="{ active: runningNow(screen).ruleIndex < 0, previewed: previewIndex(screen) < 0 }"
+                                    :class="{ active: running(screen).ruleIndex < 0, previewed: previewIndex(screen) < 0 }"
                                     data-testid="schedule-default-line"
                                 >
                                     <button type="button" class="line" :aria-pressed="previewIndex(screen) < 0" @click="choose(screen, -1)">

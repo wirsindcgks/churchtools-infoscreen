@@ -7,11 +7,11 @@
  */
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
-import { DEFAULT_THEME, type Block, type BlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type ThemeDoc } from '../model/schema';
-import { ConflictError, type ConflictInfo, type ScreenRef, type ScreenRepository } from '../store/screen-repository';
+import { blockCalendarIds, DEFAULT_THEME, type Banner, type Block, type BlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type ThemeDoc } from '../model/schema';
+import { ConflictError, copySlide, type ConflictInfo, type ScreenRef, type ScreenRepository } from '../store/screen-repository';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
-import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, move, reorder, type Layer } from './ops';
+import { clampFrame, cloneJson, createBanner, createBlock, createSlide, duplicateSlide, move, reorder, type Layer } from './ops';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'conflict' | 'error';
 
@@ -52,13 +52,7 @@ export const useEditorStore = defineStore('editor', () => {
     const slide = computed(() => slides.value.find((s) => s.id === selectedSlideId.value) ?? slides.value[0] ?? null);
     const block = computed(() => slide.value?.blocks.find((b) => b.id === selectedBlockId.value) ?? null);
     const calendarIds = computed(() => [
-        ...new Set(
-            draft.value?.slides.flatMap((s) =>
-                s.blocks.flatMap((b) =>
-                    b.type === 'appointment-list' || b.type === 'next-appointment' ? b.calendarIds : [],
-                ),
-            ) ?? [],
-        ),
+        ...new Set(draft.value?.slides.flatMap((s) => s.blocks.flatMap(blockCalendarIds)) ?? []),
     ]);
 
     function attach(repo: ScreenRepository): void {
@@ -161,6 +155,20 @@ export const useEditorStore = defineStore('editor', () => {
         change((b) => (b.playlist.name = name));
     }
 
+    /** The band over every slide (Plan.md 32): switched on with the theme's defaults, or off. */
+    function setBanner(on: boolean): void {
+        change((b) => {
+            if (on) b.playlist.banner ??= createBanner(theme.value);
+            else delete b.playlist.banner;
+        });
+    }
+
+    function updateBanner(patch: Partial<Banner>): void {
+        change((b) => {
+            if (b.playlist.banner) b.playlist.banner = { ...b.playlist.banner, ...patch };
+        });
+    }
+
     function addSlide(): void {
         const created = createSlide('Neue Slide', theme.value);
         change((b) => {
@@ -180,6 +188,21 @@ export const useEditorStore = defineStore('editor', () => {
             b.playlist.slideIds.splice(b.playlist.slideIds.indexOf(originalId) + 1, 0, copy.id);
         });
         selectSlide(copy.id);
+    }
+
+    /**
+     * Copies of slides from another playlist, after the current one – copies,
+     * so that editing them here never changes the other playlist.
+     */
+    function insertSlides(sources: SlideDoc[]): void {
+        if (!sources.length) return;
+        const copies = sources.map((source) => copySlide(source));
+        change((b) => {
+            b.slides.push(...copies);
+            const at = b.playlist.slideIds.indexOf(slide.value?.id ?? '') + 1;
+            b.playlist.slideIds.splice(at > 0 ? at : b.playlist.slideIds.length, 0, ...copies.map((c) => c.id));
+        });
+        selectSlide(copies[0]!.id);
     }
 
     function removeSlide(id: string): void {
@@ -338,8 +361,11 @@ export const useEditorStore = defineStore('editor', () => {
         selectSlide,
         selectBlock,
         renamePlaylist,
+        setBanner,
+        updateBanner,
         addSlide,
         duplicateCurrentSlide,
+        insertSlides,
         removeSlide,
         moveSlide,
         updateSlide,

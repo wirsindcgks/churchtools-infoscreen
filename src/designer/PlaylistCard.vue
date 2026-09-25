@@ -2,7 +2,8 @@
 /**
  * A playlist on the playlists page (Plan.md, Nächste Schritte 19): its first
  * slide, name, format, and on which screens it runs. The tile opens the
- * editor; deleting waits until no screen shows it.
+ * editor; duplicating copies its slides too; deleting waits until no screen
+ * shows it.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { PlaylistOverview } from '../store/screen-repository';
@@ -10,7 +11,7 @@ import Icon from './Icon.vue';
 import SlideThumb from './SlideThumb.vue';
 
 const props = defineProps<{ overview: PlaylistOverview }>();
-const emit = defineEmits<{ remove: [] }>();
+const emit = defineEmits<{ remove: []; duplicate: [] }>();
 
 const playlist = computed(() => props.overview.playlist);
 const portrait = computed(() => playlist.value.stage.height > playlist.value.stage.width);
@@ -31,6 +32,11 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
 function remove(): void {
     menuOpen.value = false;
     emit('remove');
+}
+
+function duplicate(): void {
+    menuOpen.value = false;
+    emit('duplicate');
 }
 </script>
 
@@ -65,6 +71,9 @@ function remove(): void {
                         <Icon name="more" />
                     </button>
                     <div v-if="menuOpen" class="menu-list" role="menu">
+                        <button role="menuitem" type="button" data-testid="duplicate-playlist" @click="duplicate">
+                            <Icon name="copy" :size="16" /> Duplizieren
+                        </button>
                         <button
                             role="menuitem"
                             type="button"

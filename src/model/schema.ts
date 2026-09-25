@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 9 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 10 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -158,6 +158,20 @@ export const QrBlock = v.object({
     background: Color,
 });
 
+/**
+ * Since 1.10: the time until the next appointment of some calendars – "Gottesdienst
+ * beginnt in 12:34" (Plan.md, Nächste Schritte 32). While one runs, `runningText`
+ * stands instead; left empty, the block counts down to the next one.
+ */
+export const CountdownBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('countdown'),
+    calendarIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.minLength(1)),
+    showTitle: v.optional(v.boolean(), true),
+    runningText: v.optional(v.pipe(v.string(), v.maxLength(200)), 'Läuft gerade'),
+    style: TextStyle,
+});
+
 export const Block = v.variant('type', [
     TextBlock,
     ImageBlock,
@@ -168,7 +182,39 @@ export const Block = v.variant('type', [
     ChurchHeaderBlock,
     WebBlock,
     QrBlock,
+    CountdownBlock,
 ]);
+
+/** The calendars whose appointments a block shows or counts down to. */
+export function blockCalendarIds(block: Block): number[] {
+    return block.type === 'appointment-list' || block.type === 'next-appointment' || block.type === 'countdown'
+        ? block.calendarIds
+        : [];
+}
+
+/**
+ * Since 1.10: a band over every slide of a playlist – running text or a
+ * standing notice, "Parkplatz heute gesperrt" (Plan.md, Nächste Schritte 32).
+ * It lies on the stage, not on a slide, so it runs on when the slide changes.
+ * From `until` on it is gone by itself; older players do not show it.
+ */
+export const Banner = v.object({
+    text: v.pipe(v.string(), v.maxLength(500)),
+    mode: v.optional(v.picklist(['scroll', 'static']), 'scroll'),
+    position: v.optional(v.picklist(['bottom', 'top']), 'bottom'),
+    /** Height in stage pixels. */
+    height: v.optional(v.pipe(v.number(), v.minValue(30), v.maxValue(400)), 90),
+    /** Stage pixels per second while it scrolls. */
+    speed: v.optional(v.pipe(v.number(), v.minValue(20), v.maxValue(800)), 140),
+    background: Color,
+    style: TextStyle,
+    /**
+     * The church's wall time from which it is gone, `YYYY-MM-DDTHH:mm` – as a
+     * date field gives it, compared in the church's time zone, not the
+     * device's. Empty or missing: until someone removes it.
+     */
+    until: v.optional(v.pipe(v.string(), v.maxLength(40))),
+});
 
 const Background = v.variant('kind', [
     ...Fill.options,
@@ -206,6 +252,8 @@ export const PlaylistDoc = v.object({
     name: v.pipe(v.string(), v.maxLength(100)),
     slideIds: v.array(Id),
     stage: v.optional(Stage),
+    /** Since 1.10: running text or a notice over every slide. */
+    banner: v.optional(Banner),
     /** The designers save against it; missing counts as 0. */
     revision: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
     updatedBy: v.optional(v.string()),
@@ -335,6 +383,7 @@ export type Block = v.InferOutput<typeof Block>;
 export type BlockType = Block['type'];
 export type SlideDoc = v.InferOutput<typeof SlideDoc>;
 export type PlaylistDoc = v.InferOutput<typeof PlaylistDoc>;
+export type Banner = v.InferOutput<typeof Banner>;
 export type ScreenDoc = v.InferOutput<typeof ScreenDoc>;
 export type ScheduleDoc = v.InferOutput<typeof ScheduleDoc>;
 export type ScheduleRule = v.InferOutput<typeof ScheduleRule>;

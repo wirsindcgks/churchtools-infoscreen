@@ -8,6 +8,7 @@ import StageView from '../player/StageView.vue';
 import { fitStage } from '../player/stage';
 import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
+import SlideImportDialog from './SlideImportDialog.vue';
 
 const editor = useEditorStore();
 /** The preview's stage context: paged lists report their pages there (Plan.md, 23). */
@@ -24,6 +25,7 @@ const thumb = computed(() => {
     return { width: THUMB_WIDTH, height, fit: fitStage({ width: THUMB_WIDTH, height }, editor.stage) };
 });
 
+const importing = ref(false);
 const dragging = ref<number | null>(null);
 const over = ref<number | null>(null);
 
@@ -105,8 +107,13 @@ function remove(id: string, name: string): void {
                     <Icon name="plus" :size="22" />
                     Neue Slide
                 </button>
+                <button class="import" type="button" data-testid="import-slides" @click="importing = true">
+                    <Icon name="copy" :size="16" />
+                    Aus anderer Playlist …
+                </button>
             </li>
         </ol>
+        <SlideImportDialog v-if="importing" @close="importing = false" />
     </aside>
 </template>
 
@@ -180,6 +187,26 @@ li.add-item:hover {
     background: var(--d-accent-pale);
     color: var(--d-accent-strong);
 }
+/* The smaller way to a new slide: copies from another playlist. */
+.import {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 6px;
+    padding: 6px;
+    border: 0;
+    border-radius: var(--d-radius);
+    background: none;
+    color: var(--d-accent-strong);
+    font: inherit;
+    font-size: var(--d-size-sm);
+    cursor: pointer;
+}
+.import:hover {
+    background: var(--d-accent-pale);
+}
 li.over {
     border-style: dashed;
     border-color: var(--d-accent);
@@ -237,7 +264,8 @@ li.disabled .thumb {
     li {
         flex: none;
     }
-    .add {
+    .add,
+    .import {
         width: 176px;
     }
     li + li {
