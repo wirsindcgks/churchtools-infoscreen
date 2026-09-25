@@ -7,7 +7,7 @@ import ModulePage from '../designer/ModulePage.vue';
 import { fetchCalendars, type Calendar } from '../ct/api';
 import { httpStatus, instanceBaseUrl } from '../ct/client';
 import { playerUrl } from '../designer/player-url';
-import { findOrCreateCategory, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
+import { findOrCreateCategory, setCategoryInMenu, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
 import { SCHEMA_VERSION, type ScreenDoc } from '../model/schema';
 import { withDeviceLogin } from '../player/device-login';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
@@ -39,6 +39,23 @@ const saveState = ref<'idle' | 'saving' | 'saved' | 'failed'>('idle');
 
 let repository: ScreenRepository | null = null;
 let wikiCategoryId: number | null = null;
+/** The media library's wiki area, for „im Wiki ausblenden" (G36). */
+const wikiCategory = ref<WikiCategory | null>(null);
+const wikiBusy = ref(false);
+const wikiError = ref<string | null>(null);
+
+async function toggleWikiMenu(): Promise<void> {
+    if (!wikiCategory.value) return;
+    wikiBusy.value = true;
+    wikiError.value = null;
+    try {
+        wikiCategory.value = await setCategoryInMenu(wikiCategory.value, !(wikiCategory.value.inMenu ?? true));
+    } catch (e) {
+        wikiError.value = e instanceof Error ? e.message : String(e);
+    } finally {
+        wikiBusy.value = false;
+    }
+}
 let calendars: Calendar[] = [];
 let usedCalendarIds: number[] = [];
 let catalog: AuthCatalog | null = null;
@@ -124,7 +141,8 @@ async function runAssistant(): Promise<void> {
         const groupTypeId = await findGroupTypeId(GROUP_TYPE_NAME);
         if (groupTypeId === null) throw new Error(`Den Gruppentyp „${GROUP_TYPE_NAME}" gibt es auf dieser Instanz nicht.`);
         if (wikiCategoryId === null) {
-            wikiCategoryId = (await findOrCreateCategory()).id;
+            wikiCategory.value = await findOrCreateCategory();
+            wikiCategoryId = wikiCategory.value.id;
             assistant.log.push(`Wiki-Bereich „${WIKI_CATEGORY_NAME}" angelegt.`);
         }
         computePlan();
@@ -285,7 +303,8 @@ onMounted(async () => {
         screens.value = screenList;
         device.slug = screenList[0]?.slug ?? '';
         groups.value = list;
-        wikiCategoryId = wikiCategories.find((c) => c.name === WIKI_CATEGORY_NAME)?.id ?? null;
+        wikiCategory.value = wikiCategories.find((c) => c.name === WIKI_CATEGORY_NAME) ?? null;
+        wikiCategoryId = wikiCategory.value?.id ?? null;
         wikiCategoryIdKnown.value = wikiCategoryId !== null;
         calendars = calendarList;
         usedCalendarIds = used;
@@ -496,6 +515,25 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     Geprüft werden die Rechte der Gruppenrollen und ihrer Gruppentyp-Rollen, bei Geräten dazu Personenstatus und
                     direkt vergebene Rechte. Rechte aus anderen Gruppen zählen nicht mit.
                 </p>
+
+                <section v-if="wikiCategory && !demo" class="d-card card" data-testid="wiki-menu">
+                    <h2>Mediathek im Wiki</h2>
+                    <p class="muted">
+                        Die Bilder der Mediathek liegen im Wiki-Bereich „{{ WIKI_CATEGORY_NAME }}". Gepflegt werden sie im
+                        Designer; im Wiki lässt sich der Bereich unter „Ausgeblendet" aus dem Blick räumen. Er bleibt dort
+                        erreichbar – verborgen im strengen Sinn wird er nicht.
+                    </p>
+                    <p data-testid="wiki-menu-state">
+                        Im Wiki steht er zurzeit
+                        <strong>{{ wikiCategory.inMenu === false ? 'unter „Ausgeblendet"' : 'unter „Kategorien"' }}</strong>.
+                    </p>
+                    <div class="actions">
+                        <button class="d-btn" type="button" :disabled="wikiBusy" data-testid="wiki-menu-toggle" @click="toggleWikiMenu">
+                            {{ wikiCategory.inMenu === false ? 'Wieder unter „Kategorien" zeigen' : 'Unter „Ausgeblendet" führen' }}
+                        </button>
+                    </div>
+                    <p v-if="wikiError" class="error" role="alert">{{ wikiError }}</p>
+                </section>
 
                 <section id="fernseher" class="d-card card tv" data-testid="tv-address">
                     <h2>Adresse für einen Fernseher</h2>

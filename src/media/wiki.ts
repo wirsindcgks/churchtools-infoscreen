@@ -18,6 +18,11 @@ const MARKER = '<!-- infoscreen-designer -->';
 export interface WikiCategory {
     id: number;
     name: string;
+    sortKey?: number;
+    campusId?: number | null;
+    /** „Im Menü anzeigen": off, the wiki lists it under „Ausgeblendet" – it does not vanish (G36). */
+    inMenu?: boolean;
+    fileAccessWithoutPermission?: boolean;
 }
 
 export interface WikiPage {
@@ -35,6 +40,21 @@ export interface WikiFile {
     meta?: { createdDate?: string };
 }
 
+/**
+ * Shows the area among the wiki's categories or moves it under
+ * „Ausgeblendet" (G36). `PUT` takes the whole category, so the other
+ * fields are sent as they are.
+ */
+export async function setCategoryInMenu(category: WikiCategory, inMenu: boolean): Promise<WikiCategory> {
+    return churchtoolsClient.put<WikiCategory>(`/wiki/categories/${category.id}`, {
+        name: category.name,
+        sortKey: category.sortKey ?? 99,
+        campusId: category.campusId ?? null,
+        inMenu,
+        fileAccessWithoutPermission: category.fileAccessWithoutPermission ?? false,
+    });
+}
+
 export async function findOrCreateCategory(): Promise<WikiCategory> {
     const categories = await churchtoolsClient.get<WikiCategory[]>('/wiki/categories');
     const found = categories.find((c) => c.name === WIKI_CATEGORY_NAME);
@@ -42,7 +62,8 @@ export async function findOrCreateCategory(): Promise<WikiCategory> {
     return churchtoolsClient.post<WikiCategory>('/wiki/categories', {
         name: WIKI_CATEGORY_NAME,
         sortKey: 99,
-        inMenu: true,
+        // The media library lives in the designer; the wiki keeps it out of sight under „Ausgeblendet" (G36).
+        inMenu: false,
         // Explicit booleans: without them ChurchTools answers 400 (G8).
         fileAccessWithoutPermission: false,
     });

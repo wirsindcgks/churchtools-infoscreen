@@ -224,6 +224,8 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 - **Die Bilder liegen im Wiki-Bereich „Infoscreen".** Wer dort ein Bild löscht, löscht es auch auf den Screens –
   der Fernseher zeigt dann einen Platzhalter. Bilder am besten nur in der **Mediathek** des Designers verwalten
   (Seitenleiste): Sie warnt vor dem Löschen, wenn ein Bild noch gezeigt wird.
+  Im Wiki steht der Bereich unter **„Ausgeblendet"** aus dem Blick (bei älteren Installationen: Einstellungen →
+  „Mediathek im Wiki"); erreichbar bleibt er dort trotzdem.
 
 ## Wenn etwas nicht klappt
 
