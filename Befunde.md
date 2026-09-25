@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G9, G11, G14, G15, G18–G20, G22–G32 und G35 sind beantwortet, G16, G21, G33, G34 und G36 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G36).
+**Eine durchgehende Nummerierung.** G1–G9, G11, G14, G15, G18–G20, G22–G32 und G35 sind beantwortet, G16, G21, G33, G34, G36 und G37 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G37).
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -301,6 +301,26 @@ Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt �
 
 ## Teilweise beantwortet
 
+**G37 – Zur Hälfte beantwortet: Öffentliche Beiträge öffentlicher Gruppen liest jeder, auch ohne Anmeldung; die API liefert Markdown.** *(2026-09-25, Testinstanz, Schreibzugriffe mit Freigabe des Nutzers: zwei Testbeiträge, eine öffentliche Testgruppe)* **Academy vorab:** Eingebettet wird über `/posts/feeds/main?embedded=true`; ohne Anmeldung sichtbar ist ein Beitrag nur, wenn **Gruppe und Beitrag** öffentlich sind ([Beiträge einbetten](https://churchtools.academy/en/help/app-en/administration-posts/24-how-to-embed-posts-on-my-website/)). Ein Beitrag ist entweder `group_intern` (nur Mitglieder) oder `group_visible` (so sichtbar wie die Gruppe); **wer die Sichtbarkeit einer Gruppe erhöht, setzt alle ihre Beiträge auf „nur Mitglieder" zurück** ([Beiträge für Gruppen](https://churchtools.academy/en/help/churchtools-modules/administration-posts/24-how-to-set-up-posts-for-my-groups/)). „Eingeschränkt" heißt: sichtbar nur mit einem Recht wie „Gruppen eines Gruppentyps sehen" oder über die Mitgliedschaft ([Gruppensichtbarkeiten](https://churchtools.academy/de/help/app/gruppen-berechtigen/0-gruppensichtbarkeiten/)). **Gemessen:** Alle neun Gruppen der Testinstanz stehen auf `restricted`, bei allen ist `postsEnabled: true` mit `defaultPostVisibility: group_visible`. `GET /api/post/groups` nennt dem Entwicklungskonto (Person 16) nur Gruppe 25 „Infoscreen-Designer" (Rolle Leiter). `POST /api/posts` mit `{groupId: 25, title, content, visibility: "group_visible", commentsActive: false, expirationDate: "2026-10-22T19:53:00Z"}` → `200`, Beitrag **id 1**, läuft mit der Testinstanz ab.
+
+| Aufruf | Antwort |
+| --- | --- |
+| angemeldet (Person 16), `GET /api/posts` | 1 Beitrag; `content` **als Markdown-Text, unverändert** (`\n\n`, `**fett**`), dazu `publishedDate`, `images`/`imagesMeta` (Bilder vorher separat hochzuladen, höchstens 8), `group` mit `visibility`, `actor` |
+| ohne Anmeldung, `GET /api/posts` | `200`, **leere Liste** – still gefiltert (G20) |
+| ohne Anmeldung, `GET /api/posts/1` | `403` „Forbidden to see post[1]" – belegt, dass die leere Liste nichts beweist |
+| ohne Anmeldung, `/posts/feeds/main?embedded=true` | `200`, darf eingebettet werden (weder `X-Frame-Options` noch `frame-ancestors`); die Seite baut sich per JavaScript auf und hätte hier nichts zu zeigen |
+
+**Zweite Messung, mit öffentlicher Gruppe.** `POST /api/groups` mit `{name: "ISD-Beitragstest", groupTypeId: 4, groupStatusId: 1, visibility: "public"}` → `201`, **Gruppe 31**; die Sichtbarkeit steht danach unter `settings.visibility` (nicht unter `information`), Beiträge sind eingeschaltet wie überall. Neu angelegt, nicht hochgestuft – die Warnung der Academy trifft so nicht. **Aufnehmen als Leiter:** `PUT /api/groups/31/members/16` mit der Rollen-id **des Gruppentyps** (`groupTypeRoleId: 30`) → `200`; die id der Rolle in der Gruppe aus `GET /groups/31/roles` (280) lehnt ChurchTools mit `400` ab und nennt die erlaubten Werte (`[30, 29]`). Erst danach nennt `/post/groups` die Gruppe, vorher antwortete `POST /api/posts` mit `403`. Beitrag **id 4**, `group_visible`, läuft am 2026-10-22 ab.
+
+| Ohne Anmeldung | Antwort |
+| --- | --- |
+| `GET /api/posts` | `200`, **genau der öffentliche Beitrag** (id 4), der aus Gruppe 25 fehlt |
+| `GET /api/posts/4` | `200` |
+| `GET /api/posts/1` | weiter `403` |
+| `/posts/feeds/main?embedded=true` im Browser (Playwright, ohne Cookies) | zeigt den öffentlichen Beitrag mit Gruppe, Autor, Zeit, Reaktionen und „Teilen" – eine Seite zum Bedienen, nicht für den Fernseher gestaltet |
+
+**Folgen:** Der Player muss Markdown selbst darstellen (wie der CHANGELOG: als Daten, nie als HTML). Ohne Anmeldung trägt nur eine **öffentliche Gruppe**; dann liefert die API aber **auch den Namen des Autors** (`actor.title`) an jeden – ein Baustein sollte ihn nur auf Wunsch zeigen. Die Einbettungsseite taugt für den Fernseher wenig; ein eigener Baustein über `/api/posts?group_ids[]=…` passt besser zum Design. **Offen:** ob das **Geräte-Konto** (Person 22) Beiträge einer **nicht öffentlichen** Gruppe über `/api/posts` sieht – für den Player entscheidend, weil er seit Weg B angemeldet läuft; gemessen werden kann es erst mit einem Zugang dieses Kontos. Gruppe 31 bleibt bis dahin stehen und wird danach gelöscht.
+
 **G34 – Gruppen und Rollenrechte lassen sich per API anlegen und restlos entfernen.** *(2026-09-24, Testinstanz, Schreibzugriffe mit Freigabe des Nutzers: Testgruppe „ISD-Test" angelegt und wieder gelöscht)*
 
 - **`POST /api/groups`** mit `{"name", "groupTypeId", "groupStatusId": 1}` antwortet `201`; die Rollen legt ChurchTools nach dem Gruppentyp selbst an – beim Typ „Merkmal" (hier id 4) „Teilnehmer" (Standardrolle) und „Leiter". Gruppentypen und ihre Namen sind je Instanz anpassbar; ein Assistent sucht sie über `GET /api/group/grouptypes`, nicht über eine feste id.
@@ -348,7 +368,7 @@ Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit
 | `/wiki/categories/1/pages` | 200 | **403** „Forbidden to see WikiCategory[1]" | |
 | `/files/wiki_1/<Mediathek>` | 2 Dateien | **200 – 0 Dateien** | **stille Leere** |
 | `/resources` | 7 | **0** | |
-| `/posts` | 0 | 0 | unentscheidbar – die Instanz hat keine Beiträge |
+| `/posts` | 0 | 0 | unentscheidbar – die Instanz hat keine Beiträge (Nachtrag: G37) |
 
 **Der Sockel trägt mehr, als er sollte – und genug für einen ersten Block.** Ohne dass jemand etwas vergeben hätte, liest das Gerätekonto drei Kalender, zehn Termine, ein Event und acht Dienste. **Neun der zehn Termine tragen ein Bild mit `imageUrl`, für dieses Konto lesbar.** Ein Terminblock mit Bildern liefe heute schon. Das ist bequem und zugleich der Beleg für die additive Falle: Die drei Kalender hat niemand für den Screen bestimmt, und abstellen ließen sie sich nur über den Status **für alle**.
 
