@@ -78,13 +78,7 @@ export const useEditorStore = defineStore('editor', () => {
             ) ?? [],
         ),
     ]);
-    /** Calendars the preview needs: those of the blocks and those the rules switch on. */
-    const previewCalendarIds = computed(() => [
-        ...new Set([
-            ...calendarIds.value,
-            ...rules.value.flatMap((r) => (r.kind === 'appointment' ? r.calendarIds : [])),
-        ]),
-    ]);
+
 
     function attach(repo: ScreenRepository): void {
         repository.value = repo;
@@ -421,7 +415,6 @@ export const useEditorStore = defineStore('editor', () => {
         playlist,
         rules,
         problems,
-        previewCalendarIds,
         otherSlides,
         alsoIn,
         selectPlaylist,

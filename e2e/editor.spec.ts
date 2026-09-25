@@ -231,16 +231,14 @@ test('the media library in the editor lists pictures to choose from and closes a
     await expect(library).toBeHidden();
 });
 
-test('a designer adds a playlist, switches it on Sundays and sees the day in the preview (Plan.md 17)', async ({ page }) => {
+test('a designer plans from the start page: playlist, Sunday rule, day preview (Plan.md 17)', async ({ page }) => {
     await page.goto('./');
-    await page.getByTestId('open-editor').first().click();
-    await expect(page.getByTestId('slide-item')).toHaveCount(3);
-    await expect(page.getByTestId('playlist-select')).toHaveCount(0); // one playlist: nothing to choose
-
-    await page.getByTestId('open-schedule').click();
+    const card = page.getByTestId('screen-card').first();
+    await expect(card.getByTestId('open-schedule')).toHaveText('Zeitplan');
+    await card.getByTestId('open-schedule').click();
     const dialog = page.getByTestId('schedule-dialog');
-    await expect(dialog).toBeVisible();
     await expect(dialog.getByTestId('schedule-playlist')).toHaveCount(1);
+    await expect(dialog.getByTestId('schedule-save')).toBeDisabled(); // nothing changed yet
     await dialog.getByTestId('add-playlist').click();
     await dialog.getByTestId('playlist-name').last().fill('Gottesdienst');
 
@@ -249,10 +247,11 @@ test('a designer adds a playlist, switches it on Sundays and sees the day in the
     await expect(rule).toHaveCount(1);
     await expect(rule.getByTestId('rule-playlist').locator('option:checked')).toHaveText('Gottesdienst');
 
-    // An impossible time is named, not silently saved.
+    // An impossible time is named and keeps the schedule from being saved.
     await rule.getByTestId('rule-to').fill('08:00');
     await rule.getByTestId('rule-to').dispatchEvent('change');
     await expect(dialog.getByTestId('schedule-problems')).toContainText('Regel 1');
+    await expect(dialog.getByTestId('schedule-save')).toBeDisabled();
     await rule.getByTestId('rule-to').fill('12:00');
     await rule.getByTestId('rule-to').dispatchEvent('change');
     await expect(dialog.getByTestId('schedule-problems')).toHaveCount(0);
@@ -268,18 +267,18 @@ test('a designer adds a playlist, switches it on Sundays and sees the day in the
     await dialog.getByTestId('preview-time').fill('780');
     await expect(dialog.getByTestId('preview-result')).toContainText('Standard');
     await expect(dialog.getByTestId('preview-timeline').locator('.segment')).toHaveCount(3);
-    await page.screenshot({ path: 'test-results/editor-schedule.png' });
+    await page.screenshot({ path: 'test-results/home-schedule.png' });
 
-    // "Slides bearbeiten" takes the new playlist into the slide list.
-    await dialog.getByTestId('playlist-edit').last().click();
+    await dialog.getByTestId('schedule-save').click();
     await expect(dialog).toBeHidden();
-    await expect(page.getByTestId('playlist-select').locator('option:checked')).toHaveText('Gottesdienst');
-    await expect(page.getByTestId('slide-item')).toHaveCount(1);
-    await expect(page.getByTestId('open-schedule')).toContainText('1');
+    await expect(card.getByTestId('open-schedule')).toHaveText('1 Regel');
 
-    await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
-    await page.reload();
-    await expect(page.getByTestId('playlist-select')).toBeVisible();
-    await expect(page.getByTestId('playlist-select').locator('option')).toHaveText(['Standard', 'Gottesdienst']);
+    // "Slides bearbeiten" saves pending changes first and opens the editor on that playlist.
+    await card.getByTestId('open-schedule').click();
+    await dialog.getByTestId('playlist-name').last().fill('Sonntag');
+    await dialog.getByTestId('playlist-edit').last().click();
+    await expect(page.getByTestId('playlist-select').locator('option:checked')).toHaveText('Sonntag');
+    await expect(page.getByTestId('slide-item')).toHaveCount(1);
+    await expect(page.getByTestId('save-status')).toHaveText('Alles gespeichert');
+    await expect(page.getByTestId('open-schedule')).toHaveCount(0); // the editor is for slides only
 });

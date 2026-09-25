@@ -9,7 +9,6 @@ import { useEditorStore } from '../designer/editor-store';
 import Icon from '../designer/Icon.vue';
 import Inspector from '../designer/Inspector.vue';
 import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
-import ScheduleDialog from '../designer/ScheduleDialog.vue';
 import SlideList from '../designer/SlideList.vue';
 import { usePreview } from '../designer/usePreview';
 import type { MediaDoc } from '../model/schema';
@@ -24,20 +23,11 @@ const author = ref('');
 const root = ref<HTMLElement | null>(null);
 const top = ref(0);
 
-// Rule calendars too: the schedule preview needs their appointments.
-const calendarIds = computed(() => editor.previewCalendarIds);
-const { context, calendars, problem } = usePreview(
+const calendarIds = computed(() => editor.calendarIds);
+const { calendars, problem } = usePreview(
     calendarIds,
     computed(() => editor.media),
 );
-
-/** The schedule dialog (Plan.md, Nächste Schritte 17). */
-const scheduleOpen = ref(false);
-
-function editPlaylist(id: string): void {
-    editor.selectPlaylist(id);
-    scheduleOpen.value = false;
-}
 
 /** Which picker the media library was opened for. */
 const libraryFor = ref<'block' | 'background' | 'logo' | null>(null);
@@ -92,6 +82,8 @@ onMounted(async () => {
         demo.value = handle.demo;
         editor.attach(handle.repository);
         await editor.open(slug);
+        // From the schedule on the start page: "Slides bearbeiten" of one playlist.
+        if (typeof route.query.playlist === 'string') editor.selectPlaylist(route.query.playlist);
         await editor.refreshMedia();
     } catch (e) {
         loadError.value = e instanceof Error ? e.message : String(e);
@@ -117,16 +109,6 @@ function onKey(event: KeyboardEvent): void {
     // With a dialog open, keys belong to the dialog – Delete must not hit the block behind it.
     if (libraryFor.value) {
         if (event.key === 'Escape') libraryFor.value = null;
-        return;
-    }
-    if (scheduleOpen.value) {
-        // Undo stays reachable while the dialog is open; everything else is the dialog's.
-        const typingInDialog = (event.target as HTMLElement | null)?.closest('input, textarea, select');
-        if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z' && !typingInDialog) {
-            event.preventDefault();
-            if (event.shiftKey) editor.redo();
-            else editor.undo();
-        }
         return;
     }
     const mod = event.metaKey || event.ctrlKey;
@@ -193,16 +175,6 @@ function onKey(event: KeyboardEvent): void {
                 >
                     <Icon name="redo" />
                 </button>
-                <button
-                    class="d-btn schedule-btn"
-                    type="button"
-                    title="Zeitplan: welche Playlist wann läuft"
-                    data-testid="open-schedule"
-                    @click="scheduleOpen = true"
-                >
-                    <Icon name="calendar" :size="16" />
-                    Zeitplan<span v-if="editor.rules.length" class="badge">{{ editor.rules.length }}</span>
-                </button>
                 <RouterLink class="d-link player-link" :to="{ name: 'player', query: { screen: slug } }" target="_blank">
                     <Icon name="play" :size="16" /> Player
                 </RouterLink>
@@ -240,15 +212,6 @@ function onKey(event: KeyboardEvent): void {
             :selected-media-id="currentMediaId"
             @choose="chosen"
             @close="libraryFor = null"
-        />
-
-        <ScheduleDialog
-            v-if="scheduleOpen && editor.draft"
-            :calendars="calendars"
-            :time-zone="context.timeZone"
-            :appointments="context.appointments"
-            @edit="editPlaylist"
-            @close="scheduleOpen = false"
         />
 
         <div v-if="editor.status === 'conflict' && editor.conflict" class="d-dialog-backdrop" role="dialog" aria-modal="true">
@@ -318,19 +281,6 @@ function onKey(event: KeyboardEvent): void {
     font-size: 1.1em;
     white-space: nowrap;
     text-overflow: ellipsis;
-}
-.schedule-btn {
-    gap: 6px;
-}
-.badge {
-    min-width: 1.4em;
-    padding: 0 0.35em;
-    border-radius: 999px;
-    background: var(--d-accent);
-    color: var(--d-accent-text);
-    font-size: var(--d-size-sm);
-    font-weight: 700;
-    text-align: center;
 }
 .status {
     color: var(--d-text-muted);

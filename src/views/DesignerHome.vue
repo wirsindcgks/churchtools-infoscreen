@@ -15,6 +15,7 @@ import ModulePage from '../designer/ModulePage.vue';
 import { checkDesignerRights, type MissingRight } from '../designer/rights';
 import { canManagePermissions } from '../setup/load';
 import ScreenCard from '../designer/ScreenCard.vue';
+import ScheduleDialog from '../designer/ScheduleDialog.vue';
 import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
 import type { ScreenDoc } from '../model/schema';
 import { usePreview } from '../designer/usePreview';
@@ -37,6 +38,8 @@ const creating = ref(false);
 const screensAdmin = ref(false);
 /** The screen whose settings dialog is open – administrators only. */
 const configuring = ref<ScreenDoc | null>(null);
+/** The screen whose schedule dialog is open – the designers' part (Plan.md, Nächste Schritte 17). */
+const scheduling = ref<string | null>(null);
 /** Administrators set the module up (role concept, Plan.md F); everyone else does not see the way there. */
 const admin = ref(false);
 const filter = computed(() => formatFilter(route.query.format));
@@ -216,6 +219,7 @@ async function remove(overview: ScreenOverview): Promise<void> {
                             :admin="screensAdmin"
                             @remove="remove(o)"
                             @settings="configuring = o.screen"
+                            @schedule="scheduling = o.screen.slug"
                         />
                     </div>
                     <div v-else-if="!overviews.length" class="empty">
@@ -236,6 +240,14 @@ async function remove(overview: ScreenOverview): Promise<void> {
                 :author="author"
                 @close="configuring = null"
                 @saved="configuring = null; refresh()"
+            />
+            <ScheduleDialog
+                v-if="scheduling"
+                :slug="scheduling"
+                :repository="repository"
+                :author="author"
+                @close="scheduling = null"
+                @saved="scheduling = null; refresh()"
             />
             <CreateScreenDialog
                 v-if="creating && screensAdmin"

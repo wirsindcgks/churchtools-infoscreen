@@ -12,7 +12,7 @@ import SlideThumb from './SlideThumb.vue';
 
 /** `admin`: configure and delete are the administrators' (Plan.md, F). */
 const props = defineProps<{ overview: ScreenOverview; admin?: boolean }>();
-const emit = defineEmits<{ remove: []; settings: [] }>();
+const emit = defineEmits<{ remove: []; settings: []; schedule: [] }>();
 
 const screen = computed(() => props.overview.screen);
 const portrait = computed(() => screen.value.stage.height > screen.value.stage.width);
@@ -38,6 +38,17 @@ async function copy(): Promise<void> {
 function remove(): void {
     menuOpen.value = false;
     emit('remove');
+}
+
+/** What the tile says about the schedule; the designers' part (Plan.md, Nächste Schritte 17). */
+const scheduleLabel = computed(() => {
+    const rules = screen.value.schedule.length;
+    return rules ? `${rules} ${rules === 1 ? 'Regel' : 'Regeln'}` : 'Zeitplan';
+});
+
+function schedule(): void {
+    menuOpen.value = false;
+    emit('schedule');
 }
 
 function settings(): void {
@@ -89,6 +100,9 @@ function settings(): void {
                         <button role="menuitem" type="button" data-testid="copy-address" @click="copy">
                             <Icon name="copy" :size="16" /> {{ copied ? 'Adresse kopiert' : 'Adresse kopieren' }}
                         </button>
+                        <button role="menuitem" type="button" data-testid="screen-schedule-open" @click="schedule">
+                            <Icon name="calendar" :size="16" /> Zeitplan
+                        </button>
                         <button v-if="admin" role="menuitem" type="button" data-testid="screen-settings-open" @click="settings">
                             <Icon name="settings" :size="16" /> Einstellungen
                         </button>
@@ -110,6 +124,16 @@ function settings(): void {
                     <Icon name="slides" :size="16" />
                     {{ overview.slideCount }}
                 </span>
+                <button
+                    class="schedule-link"
+                    type="button"
+                    :title="screen.schedule.length ? 'Zeitplan: welche Playlist wann läuft' : 'Zeitplan anlegen: zu bestimmten Zeiten andere Slides zeigen'"
+                    data-testid="open-schedule"
+                    @click="schedule"
+                >
+                    <Icon name="calendar" :size="16" />
+                    {{ scheduleLabel }}
+                </button>
                 <span v-if="screen.updatedBy" :title="`Zuletzt gespeichert von ${screen.updatedBy}`">
                     <Icon name="person" :size="16" />
                     {{ screen.updatedBy }}
@@ -178,6 +202,24 @@ function settings(): void {
 }
 .facts code {
     overflow-wrap: anywhere;
+}
+.schedule-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: 2em;
+    margin: -0.3em -0.4em;
+    padding: 0 0.4em;
+    border: 0;
+    border-radius: var(--d-radius);
+    background: none;
+    color: var(--d-accent-strong);
+    font: inherit;
+    cursor: pointer;
+}
+.schedule-link:hover {
+    background: var(--d-accent-pale);
+    text-decoration: underline;
 }
 .menu {
     position: relative;

@@ -15,7 +15,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   Rückgängig/Wiederholen; Speichern mit Konflikterkennung.
 - **Zeitpläne:** mehrere Playlists je Screen; Regeln nach Uhrzeit (Wochentage, von–bis) und rund um Termine
   ausgewählter Kalender entscheiden, welche läuft, die obere Regel gewinnt; eine Tagesvorschau zeigt, was wann
-  läuft. Slides lassen sich in mehreren Playlists zeigen, ohne sie zu kopieren.
+  läuft. Gesteuert von der Startseite (Kachel → „Zeitplan"); im Editor wählt man, welche Playlist man gestaltet.
+  Slides lassen sich in mehreren Playlists zeigen, ohne sie zu kopieren.
 - **Mediathek** als eigener Bereich in der Seitenleiste und als Auswahl im Editor: Bilder in den Wiki-Bereich
   „Infoscreen" hochladen, mit Warnung vor dem Löschen, solange ein Bild gezeigt wird.
 - **Player** für Fernseher: meldet sich über seine Adresse bei jedem Start selbst als Geräte-Benutzer an und erneuert

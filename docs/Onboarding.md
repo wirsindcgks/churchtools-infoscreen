@@ -49,10 +49,11 @@ Du brauchst nur die Mitgliedschaft in „Infoscreen-Designer"; alles Weitere kom
    - über der Bühne die **Bausteine**: Text, Bild, Fläche, Uhr, Terminliste, Nächster Termin, Gemeindekopf;
    - auf der **Bühne** ziehen und an den Griffen skalieren; rechts im **Inspektor** Schrift, Farben (auch als
      Hex-Wert), Kalender und Hintergrund.
-4. **Zeitplan** (oben im Editor), wenn der Screen zu verschiedenen Zeiten anderes zeigen soll: weitere **Playlists**
-   anlegen und **Regeln** festlegen – nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten vor dem
-   Gottesdienst bis 15 Minuten danach"). Passt keine Regel, läuft die Standard-Playlist; passen mehrere, die obere.
-   Die Vorschau zeigt für jeden Tag, was wann läuft. Oben in der Slide-Liste wählst du, welche Playlist du bearbeitest.
+4. **Zeitplan** – auf der Startseite an der Kachel („Zeitplan"), wenn der Screen zu verschiedenen Zeiten anderes
+   zeigen soll: weitere **Playlists** anlegen und **Regeln** festlegen – nach Uhrzeit („sonntags 9–12 Uhr") oder rund
+   um Termine („30 Minuten vor dem Gottesdienst bis 15 Minuten danach"). Passt keine Regel, läuft die
+   Standard-Playlist; passen mehrere, die obere. Die Vorschau zeigt für jeden Tag, was wann läuft. „Slides bearbeiten"
+   öffnet den Editor auf dieser Playlist; dort wählst du oben in der Slide-Liste, welche Playlist du gestaltest.
 5. **Bilder:** über den Baustein „Bild" oder in der **Mediathek** (Seitenleiste). Ein Bild lässt sich beliebig oft
    verwenden. Nichts Vertrauliches hochladen – Bilder sind über ihre Adresse ohne Anmeldung abrufbar.
 6. **Speichern** (oder ⌘S / Strg+S). Die Fernseher übernehmen die Änderung nach wenigen Minuten von selbst.

@@ -44,6 +44,7 @@ function link(event: Event): void {
                 <span class="visually-hidden">Playlist</span>
                 <select
                     :value="editor.playlist?.id"
+                    title="Welche Playlist du bearbeitest – Playlists und Zeitplan stehen auf der Startseite im Menü der Kachel"
                     data-testid="playlist-select"
                     @change="editor.selectPlaylist(($event.target as HTMLSelectElement).value)"
                 >
