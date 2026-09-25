@@ -6,6 +6,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 
 ## [Unreleased]
 
+## [0.1.0] – 2026-09-25
+
 Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt in ChurchTools.
 
 ### Gestalten

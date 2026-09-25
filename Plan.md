@@ -8,10 +8,10 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 
 **Als Nächstes:**
 
-1. **Weg B im Testsystem über 24 Stunden** (Nutzer), dann **`v0.1.0`** als erstes Release.
-2. **Ein Raspberry im Foyer über mehrere Tage** – der eigentliche Praxistest.
-3. **Playlists und Zeitpläne im Testsystem ausprobieren** (Nutzer) – Punkte 17 und 19 sind gebaut: Playlists stehen für sich (Seitenleiste „Playlists"), ein Screen wählt sie im Zeitplan an seiner Kachel.
-4. **„Verwendet in" in der Mediathek** (Punkt 18).
+1. ~~**`v0.1.0`**~~ **veröffentlicht am 2026-09-25** als erstes Release. Jetzt: **der Test im Haus mit dem Release-ZIP** (Nutzer).
+2. **Ein Raspberry im Foyer über mehrere Tage** – der eigentliche Praxistest, dabei die Laufschrift beobachten.
+3. **Beiträge aus ChurchTools** (Punkt 28) – zuerst ein Testbeitrag, dann messen.
+4. **Planen mit Opus, Umsetzen mit Sonnet** (AGENTS.md) über einige Aufträge beobachten: spart es, ohne dass die Qualität leidet?
 5. **Vor dem 2026-10-22:** die Fixtures sichern (Modul-Antworten aufgezeichnet am 2026-09-25) und klären, wo nach Ablauf der Testinstanz getestet wird (F1).
 
 **Bewusst geparkt** – nicht falsch, aber nicht jetzt: alles Weitere am Betriebsbenutzer (G21-Reste), Rate-Limit (G16), Heartbeat und Statusanzeige (widerspricht „Geräte nur lesend"), eine gemeinsame Bibliothek mit `ct-pass-store`, Koppeln am Fernseher.

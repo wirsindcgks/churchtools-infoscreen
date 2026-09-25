@@ -42,8 +42,8 @@ Voraussetzung ist eine ChurchTools-Instanz, auf der Extensions (Custom Modules) 
 
 ## Stand
 
-Die erste Fassung läuft seit September 2026 auf einer Testinstanz (ChurchTools 3.136, Build 32882), der erste
-Fernseher im Foyer steht aus.
+Version 0.1.0 ist das erste Release (25. September 2026). Sie läuft auf einer Testinstanz (ChurchTools 3.136,
+Build 32882); der erste Fernseher im Foyer steht aus.
 Was als Nächstes kommt, steht in [`Plan.md`](Plan.md); Änderungen je Version in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Mitentwickeln
