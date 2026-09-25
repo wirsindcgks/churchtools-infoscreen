@@ -3,16 +3,15 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { onBeforeRouteLeave, useRoute } from 'vue-router';
 import { currentPerson, displayName } from '../ct/client';
 import AppBar from '../designer/AppBar.vue';
+import BlockPalette from '../designer/BlockPalette.vue';
 import EditorStage from '../designer/EditorStage.vue';
 import { useEditorStore } from '../designer/editor-store';
 import Icon from '../designer/Icon.vue';
 import Inspector from '../designer/Inspector.vue';
-import { BLOCK_LABELS } from '../designer/ops';
 import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
 import SlideList from '../designer/SlideList.vue';
-import { GRID_SIZES } from '../designer/snap';
 import { usePreview } from '../designer/usePreview';
-import type { BlockType, MediaDoc } from '../model/schema';
+import type { MediaDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
 
 const route = useRoute();
@@ -139,7 +138,6 @@ function onKey(event: KeyboardEvent): void {
     }
 }
 
-const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
 </script>
 
 <template>
@@ -149,35 +147,12 @@ const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
         :style="{ height: `calc(100vh - ${top}px)`, '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}` }"
     >
         <AppBar>
-            <RouterLink class="back" to="/" title="Zur Übersicht der Screens">
-                <Icon name="back" :size="16" /><span>Screens</span>
+            <RouterLink class="back" to="/" title="Editor verlassen, zur Übersicht der Screens" data-testid="leave-editor">
+                <Icon name="back" :size="18" /><span>Screens</span>
             </RouterLink>
             <strong class="title">{{ editor.draft?.screen.name ?? slug }}</strong>
             <span class="status" :class="`status--${editor.status}`" data-testid="save-status">{{ statusText }}</span>
             <template #actions>
-                <div class="palette" role="group" aria-label="Block einfügen">
-                    <button
-                        v-for="[type, label] in palette"
-                        :key="type"
-                        class="d-btn"
-                        type="button"
-                        :data-testid="`add-${type}`"
-                        :disabled="!editor.slide"
-                        @click="editor.addBlock(type)"
-                    >
-                        + {{ label }}
-                    </button>
-                </div>
-                <label class="grid-select" title="Blöcke rasten am Raster ein; mit gedrückter Alt-Taste frei platzieren">
-                    Raster
-                    <select
-                        :value="editor.gridSize"
-                        data-testid="grid-size"
-                        @change="editor.setGridSize(Number(($event.target as HTMLSelectElement).value))"
-                    >
-                        <option v-for="size in GRID_SIZES" :key="size" :value="size">{{ size ? `${size} px` : 'aus' }}</option>
-                    </select>
-                </label>
                 <button
                     class="d-btn d-btn--icon"
                     type="button"
@@ -222,7 +197,10 @@ const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
         <p v-if="loadError" class="d-banner d-banner--error banner" role="alert">{{ loadError }}</p>
         <div v-else-if="editor.draft" class="columns">
             <SlideList />
-            <EditorStage />
+            <div class="stage-column">
+                <BlockPalette />
+                <EditorStage />
+            </div>
             <Inspector :calendars="calendars" @pick-image="openLibrary" />
         </div>
 
@@ -263,7 +241,28 @@ const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
     min-height: 480px;
     background: var(--d-surface);
 }
-.back,
+.back {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    min-height: 2.3em;
+    padding: 0 12px 0 8px;
+    border: 1px solid var(--d-divider);
+    border-radius: var(--d-radius);
+    background: var(--d-panel);
+    color: var(--d-text);
+    font-weight: 700;
+    text-decoration: none;
+}
+.back:hover {
+    border-color: var(--d-interactive);
+    background: var(--d-accent-pale);
+}
+.back:focus-visible {
+    outline: 2px solid var(--d-accent);
+    outline-offset: 1px;
+}
 .d-link {
     display: inline-flex;
     align-items: center;
@@ -272,7 +271,6 @@ const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
     text-decoration: none;
     white-space: nowrap;
 }
-.back:hover,
 .d-link:hover {
     text-decoration: underline;
 }
@@ -294,30 +292,18 @@ const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
 .status--saved {
     color: var(--d-success);
 }
-.grid-select {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
-}
-.grid-select select {
-    width: auto;
-}
-.palette {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-}
-.palette .d-btn {
-    flex: none;
-    padding: 0.3em 0.6em;
-    font-size: var(--d-size-sm);
-    white-space: nowrap;
-}
 .banner {
     border-radius: 0;
     font-size: var(--d-size-sm);
+}
+.stage-column {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+}
+.stage-column > :last-child {
+    flex: 1;
 }
 .columns {
     flex: 1;
@@ -339,15 +325,11 @@ const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
     .columns {
         grid-template-columns: minmax(0, 1fr);
     }
-    .columns > :nth-child(2) {
+    .stage-column > :last-child {
+        flex: none;
         height: auto;
         aspect-ratio: var(--stage-aspect);
         max-height: 70vh;
-    }
-    .palette {
-        flex: 1 1 100%;
-        flex-wrap: nowrap;
-        overflow-x: auto;
     }
 }
 </style>

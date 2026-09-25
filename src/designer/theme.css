@@ -97,7 +97,7 @@
     outline: 2px solid var(--d-accent);
     outline-offset: 1px;
 }
-.infoscreen-designer :where(label.d-field) {
+.infoscreen-designer :where(.d-field) {
     display: grid;
     gap: 0.2em;
     color: var(--d-text-muted);

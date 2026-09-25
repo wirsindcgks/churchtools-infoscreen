@@ -146,3 +146,62 @@ test('the screen settings carry the address for the TV, without a secret (way A)
     await expect(address).toContainText('Angemeldet bleiben');
     await expect(address).not.toContainText('login_token');
 });
+
+test('colours take a hex value; a half-typed one is marked and not taken over (Plan.md 11)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await page.getByTestId('add-text').click();
+    await page.getByTestId('text-input').fill('Farbprobe');
+    const text = page.locator('.editor-stage').getByText('Farbprobe');
+    const hex = page.getByTestId('text-color');
+
+    await hex.fill('#1E3A5F');
+    await expect(text).toHaveCSS('color', 'rgb(30, 58, 95)');
+    await expect(page.getByTestId('text-color-picker')).toHaveValue('#1e3a5f');
+
+    await hex.fill('#12');
+    await expect(hex).toHaveAttribute('aria-invalid', 'true');
+    await expect(text).toHaveCSS('color', 'rgb(30, 58, 95)'); // unchanged
+    await hex.blur();
+    await expect(hex).toHaveValue('#1e3a5f'); // leaving shows the colour that counts
+
+    await hex.fill('fa0');
+    await expect(text).toHaveCSS('color', 'rgb(255, 170, 0)');
+    await page.getByTestId('block-inspector').screenshot({ path: 'test-results/color-field.png' });
+});
+
+test('a new slide comes from the tile below the last one, blocks from the bar above the stage', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    const [last, add] = await Promise.all([
+        page.getByTestId('slide-item').last().boundingBox(),
+        page.getByTestId('add-slide').boundingBox(),
+    ]);
+    expect(add!.y).toBeGreaterThan(last!.y); // below the list, where one looks for it
+    await page.getByTestId('add-slide').click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(4);
+
+    const [palette, stage] = await Promise.all([
+        page.getByTestId('add-clock').boundingBox(),
+        page.locator('.editor-stage').boundingBox(),
+    ]);
+    expect(palette!.y + palette!.height).toBeLessThanOrEqual(stage!.y + 1); // right above the stage
+    await expect(page.getByTestId('leave-editor')).toBeVisible();
+    await page.screenshot({ path: 'test-results/editor-layout.png' });
+});
+
+test.describe('with a finger', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+    test('grips are big enough for a fingertip, and the empty stage lets the page scroll', async ({ page, browserName }) => {
+        test.skip(browserName === 'webkit', 'Playwright emulates isMobile only in Chromium');
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await page.getByTestId('frame-text').first().tap();
+        const grip = await page.locator('.handle').first().boundingBox();
+        expect(grip!.width).toBeGreaterThanOrEqual(20);
+        await expect(page.locator('.editor-stage')).toHaveCSS('touch-action', 'pan-x pan-y');
+        await expect(page.getByTestId('frame-text').first()).toHaveCSS('touch-action', 'none');
+    });
+});

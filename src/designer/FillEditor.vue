@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Fill } from '../model/schema';
+import ColorField from './ColorField.vue';
 
 const props = defineProps<{ modelValue: Fill }>();
 const emit = defineEmits<{ 'update:modelValue': [Fill]; focus: []; blur: [] }>();
@@ -30,28 +31,27 @@ function setStop(index: number, color: string): void {
                 <option value="linear-gradient">Verlauf</option>
             </select>
         </label>
-        <label v-if="modelValue.kind === 'solid'" class="d-field">
-            Farbe
-            <input
-                type="color"
-                :value="modelValue.color"
-                @focus="emit('focus')"
-                @blur="emit('blur')"
-                @input="emit('update:modelValue', { kind: 'solid', color: ($event.target as HTMLInputElement).value })"
-            >
-        </label>
+        <ColorField
+            v-if="modelValue.kind === 'solid'"
+            label="Farbe"
+            testid="fill-color"
+            :model-value="modelValue.color"
+            @focus="emit('focus')"
+            @blur="emit('blur')"
+            @update:model-value="emit('update:modelValue', { kind: 'solid', color: $event })"
+        />
         <template v-else>
             <div class="row">
-                <label v-for="(stop, i) in modelValue.stops" :key="i" class="d-field">
-                    {{ i === 0 ? 'Von' : 'Nach' }}
-                    <input
-                        type="color"
-                        :value="stop.color"
-                        @focus="emit('focus')"
-                        @blur="emit('blur')"
-                        @input="setStop(i, ($event.target as HTMLInputElement).value)"
-                    >
-                </label>
+                <ColorField
+                    v-for="(stop, i) in modelValue.stops"
+                    :key="i"
+                    :label="i === 0 ? 'Von' : 'Nach'"
+                    :testid="`fill-stop-${i}`"
+                    :model-value="stop.color"
+                    @focus="emit('focus')"
+                    @blur="emit('blur')"
+                    @update:model-value="setStop(i, $event)"
+                />
                 <label class="d-field">
                     Winkel
                     <input
@@ -82,8 +82,12 @@ function setStop(index: number, color: string): void {
 }
 .row {
     display: grid;
-    grid-template-columns: auto auto 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 8px;
     align-items: end;
+}
+/* The angle gets its own line: two colour fields with hex values fill the width. */
+.row > :last-child {
+    grid-column: 1 / -1;
 }
 </style>

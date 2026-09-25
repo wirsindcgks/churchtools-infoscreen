@@ -5,6 +5,7 @@ import type { Block, Fill, TextStyle } from '../model/schema';
 import { fontDef, FONTS } from '../player/fonts';
 import { sizedImageUrl } from '../player/format';
 import { useEditorStore } from './editor-store';
+import ColorField from './ColorField.vue';
 import FillEditor from './FillEditor.vue';
 import { BLOCK_LABELS } from './ops';
 import { copyPlayerUrl, playerUrl } from './player-url';
@@ -267,15 +268,14 @@ const slideFill = computed<Fill>(() =>
                             <option :value="700">Fett</option>
                         </select>
                     </label>
-                    <label class="d-field">
-                        Farbe
-                        <input
-                            type="color"
-                            :value="block.style.color"
-                            v-on="edit"
-                            @input="setStyle({ color: ($event.target as HTMLInputElement).value })"
-                        >
-                    </label>
+                    <ColorField
+                        label="Farbe"
+                        testid="text-color"
+                        :model-value="block.style.color"
+                        @focus="edit.onFocus"
+                        @blur="edit.onBlur"
+                        @update:model-value="setStyle({ color: $event })"
+                    />
                 </div>
                 <label class="d-field">
                     Ausrichtung

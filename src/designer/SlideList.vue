@@ -4,6 +4,7 @@ import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
 import { fitStage } from '../player/stage';
 import { useEditorStore } from './editor-store';
+import Icon from './Icon.vue';
 
 const editor = useEditorStore();
 const THUMB_WIDTH = 176;
@@ -30,7 +31,7 @@ function remove(id: string, name: string): void {
     <aside class="slide-list">
         <header>
             <strong>Slides</strong>
-            <button class="d-btn" type="button" data-testid="add-slide" @click="editor.addSlide()">+ Slide</button>
+            <span class="count">{{ editor.slides.length }}</span>
         </header>
         <ol>
             <li
@@ -74,6 +75,19 @@ function remove(id: string, name: string): void {
                     </button>
                 </div>
             </li>
+            <!-- Where one looks for the next slide: below the last (Plan.md, Nächste Schritte 11). -->
+            <li class="add-item">
+                <button
+                    class="add"
+                    type="button"
+                    data-testid="add-slide"
+                    :style="{ minHeight: `${thumb.height}px` }"
+                    @click="editor.addSlide()"
+                >
+                    <Icon name="plus" :size="22" />
+                    Neue Slide
+                </button>
+            </li>
         </ol>
     </aside>
 </template>
@@ -115,6 +129,38 @@ li:hover {
 li.active {
     border-color: var(--d-accent);
     background: var(--d-accent-pale);
+}
+.count {
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+li.add-item {
+    padding: 8px;
+    border: 0;
+    cursor: default;
+}
+li.add-item:hover {
+    background: none;
+}
+.add {
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    border: 2px dashed var(--d-interactive);
+    border-radius: var(--d-radius);
+    background: none;
+    color: var(--d-text-muted);
+    font: inherit;
+    cursor: pointer;
+}
+.add:hover {
+    border-color: var(--d-accent);
+    background: var(--d-accent-pale);
+    color: var(--d-accent-strong);
 }
 li.over {
     border-style: dashed;
@@ -169,6 +215,9 @@ li.disabled .thumb {
     }
     li {
         flex: none;
+    }
+    .add {
+        width: 176px;
     }
     li + li {
         margin-top: 0;

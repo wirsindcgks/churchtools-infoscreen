@@ -27,6 +27,14 @@ const PATHS = {
     redo: ['M15 14l5-5-5-5', 'M20 9H9a5 5 0 0 0 0 10h3'],
     external: ['M14 4h6v6', 'M20 4l-9 9', 'M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5'],
     close: ['M6 6l12 12', 'M18 6L6 18'],
+    // Block types (Plan.md, Nächste Schritte 11)
+    text: ['M5 7V5h14v2', 'M12 5v14', 'M9 19h6'],
+    image: ['M4 5h16v14H4z', circle(9, 10, 1.5), 'M4 17l5-5 4 4 3-3 4 4'],
+    shape: ['M6 5h12a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z'],
+    clock: [circle(12, 12, 8), 'M12 8v4l3 2'],
+    list: ['M9 7h11', 'M9 12h11', 'M9 17h11', 'M4.5 7h.5', 'M4.5 12h.5', 'M4.5 17h.5'],
+    calendar: ['M4 6h16v14H4z', 'M4 10h16', 'M8 3v4', 'M16 3v4'],
+    header: ['M3 5h18v5H3z', 'M3 14h11', 'M3 18h7'],
 } as const;
 
 export type IconName = keyof typeof PATHS;

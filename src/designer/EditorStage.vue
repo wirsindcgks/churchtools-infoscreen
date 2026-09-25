@@ -177,7 +177,8 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
     height: 100%;
     overflow: hidden;
     background: var(--d-panel);
-    touch-action: none;
+    /* A finger on the empty stage scrolls the page (phone, Plan.md 11); on a block it moves the block. */
+    touch-action: pan-x pan-y;
 }
 .overlay {
     position: absolute;
@@ -202,6 +203,7 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
 .frame {
     position: absolute;
     box-sizing: border-box;
+    touch-action: none;
     cursor: move;
     outline: var(--line) dashed rgba(148, 163, 184, 0.55);
 }
@@ -229,6 +231,14 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
 .handle--s { left: 50%; top: 100%; cursor: ns-resize; }
 .handle--sw { left: 0; top: 100%; cursor: nesw-resize; }
 .handle--w { left: 0; top: 50%; cursor: ew-resize; }
+/* A fingertip needs a bigger grip than a mouse pointer. */
+@media (pointer: coarse) {
+    .handle {
+        width: calc(var(--handle) * 2);
+        height: calc(var(--handle) * 2);
+        margin: calc(var(--handle) * -1);
+    }
+}
 .empty {
     display: grid;
     place-items: center;
