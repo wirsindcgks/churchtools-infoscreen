@@ -114,3 +114,15 @@ test('digits on the stage have equal width, so a clock does not twitch', async (
     });
     expect(Math.abs(widths[0]! - widths[1]!)).toBeLessThan(1);
 });
+
+test('while loading, an hourglass turns – and stands still for those who asked for less motion', async ({ page }) => {
+    // ChurchTools does not answer yet: the player stays in its loading state.
+    await page.route('**/api/whoami**', () => new Promise(() => {}));
+    await page.goto('./player?screen=demo');
+    const loading = page.getByTestId('player-loading');
+    await expect(loading).toContainText('Lade „demo“');
+    await expect(loading.locator('svg.hourglass')).toHaveCSS('animation-name', /^hourglass-turn/);
+    await page.screenshot({ path: 'test-results/player-loading.png' });
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await expect(loading.locator('svg.hourglass')).toHaveCSS('animation-name', 'none');
+});
