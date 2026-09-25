@@ -1,7 +1,9 @@
 # Infoscreen Designer einrichten
 
 Diese Anleitung führt dich als **ChurchTools-Administrator** durch die Einrichtung: von der Installation über die
-Rechte bis zum Fernseher im Foyer. Rechne mit etwa einer halben Stunde, den Fernseher nicht mitgezählt.
+Rechte bis zum Fernseher im Foyer. Rechne mit etwa einer halben Stunde, den Fernseher nicht mitgezählt. Die
+Kurzfassung je Rolle steht im [Onboarding](Onboarding.md), alle Rechte als Tabelle in der
+[Rechte-Übersicht](Rechte.md).
 
 > **Kein Produkt der ChurchTools Innovation GmbH.** Der Infoscreen Designer ist eine unabhängige Entwicklung von
 > Anwendern. Fragen gehören in den [Issue-Tracker](https://github.com/wirsindcgks/churchtools-infoscreen/issues),

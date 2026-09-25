@@ -24,6 +24,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 - **Ziel**: Das Modul geht am Ende an die ChurchTools-Community – daher **kein Gemeinde-Branding** (seit 2026-09-24).
 - **Extension-Key**: `infoscreen-designer` → Auslieferungspfad `/ccm/infoscreen-designer/`
 - **Stack**: Vue 3 + TypeScript + Vite + Pinia, `@churchtools/churchtools-client`, Vitest, Playwright – wie das [Boilerplate](https://github.com/churchtools/extension-boilerplate) und die bekannten Fremd-Extensions.
+- **Für Anwender** *(seit 2026-09-25)*: [`docs/Onboarding.md`](docs/Onboarding.md) – Einstieg je Rolle; [`docs/Einrichtung.md`](docs/Einrichtung.md) – die Anleitung für Administratoren; [`docs/Rechte.md`](docs/Rechte.md) – wer welche Rechte braucht, als Tabelle. **`docs/Rechte.md` wird mitgepflegt:** `src/setup/rights-doc.test.ts` bricht ab, sobald der Assistent ein Recht vergibt oder zurücknimmt, das dort nicht steht.
 - **Dokumente**: `Plan.md` ist das Gedächtnis, [`Preparation.md`](Preparation.md) die Arbeitsliste, [`Befunde.md`](Befunde.md) das Messprotokoll (**alle Verweise „G…" zeigen dorthin**), [`AGENTS.md`](AGENTS.md) die Arbeitsregeln.
 - **Abgrenzung**: Eigenständiges Projekt, kein Teil des WordPress-Plugins `churchtools-plugin` und keine gemeinsame Codebasis damit.
 

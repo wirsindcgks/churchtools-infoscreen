@@ -21,7 +21,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 - **Adresse für einen Fernseher** in den Einstellungen: aus Benutzername und Passwort des Geräte-Kontos, ohne das
   Passwort zu speichern.
 - **Zehn Schriften** unter der SIL Open Font License, von der eigenen Instanz ausgeliefert; Lato als Standard.
-- **Einrichtungsanleitung** für ChurchTools-Administratoren: `docs/Einrichtung.md`.
+- **Einrichtungsanleitung** für ChurchTools-Administratoren: `docs/Einrichtung.md`; dazu das **Onboarding** je Rolle
+  (`docs/Onboarding.md`) und die **Rechte-Übersicht** als Tabelle (`docs/Rechte.md`), die ein Test mit dem
+  Einrichtungsassistenten abgleicht.
 - **Rollen:** Screens anlegen, einstellen und löschen nur Administratoren (Menü „…" der Kachel → „Einstellungen");
   Gestalter gestalten Slides, Playlists und Bilder. Nach dem Update einmal „Rechte aktualisieren".
 - **Einstellungen** für Administratoren: Der Assistent legt die Gruppen „Infoscreen-Designer" und

@@ -20,8 +20,10 @@ Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
 
 ## Installieren
 
-**[Einrichtungsanleitung für ChurchTools-Administratoren](docs/Einrichtung.md)** – Installation, Rechte,
-Geräte-Benutzer, Kiosk-Browser, Updates und Datenschutz.
+- **[Onboarding](docs/Onboarding.md)** – der Einstieg je Rolle: Administrator, Gestalter, Gerät.
+- **[Einrichtungsanleitung für ChurchTools-Administratoren](docs/Einrichtung.md)** – Installation, Rechte,
+  Geräte-Benutzer, Kiosk-Browser, Updates und Datenschutz.
+- **[Rechte-Übersicht](docs/Rechte.md)** – wer welche Rechte braucht, als Tabelle.
 
 Das Paket zum Hochladen liegt unter [Releases](https://github.com/wirsindcgks/churchtools-infoscreen/releases).
 Voraussetzung ist eine ChurchTools-Instanz, auf der Extensions (Custom Modules) freigeschaltet sind.
