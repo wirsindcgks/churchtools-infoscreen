@@ -21,6 +21,7 @@ import ScreenCard from '../designer/ScreenCard.vue';
 import ScheduleDialog from '../designer/ScheduleDialog.vue';
 import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
 import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema';
+import { postNeeds } from '../player/data';
 import { ruleCalendarIds, runningNow } from '../designer/running';
 import { usePreview } from '../designer/usePreview';
 import { getRepository, resetDemoStore } from '../store/backend';
@@ -84,6 +85,9 @@ const { context } = usePreview(
     ]),
     computed(() => overviews.value.flatMap((o) => o.media)),
     theme,
+    computed(() =>
+        postNeeds(overviews.value.flatMap((o) => Object.values(o.playlists).flatMap((p) => (p.firstSlide ? [p.firstSlide] : [])))),
+    ),
 );
 
 async function refresh(): Promise<void> {

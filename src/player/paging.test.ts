@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
-import { pageInterval, paginateByHeight, slideSeconds } from './paging';
+import { pageInterval, paginateByHeight, POST_SECONDS, slideSeconds } from './paging';
 
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
 const list = (overrides: Partial<Extract<Block, { type: 'appointment-list' }>> = {}): Block => ({
@@ -15,6 +15,22 @@ const list = (overrides: Partial<Extract<Block, { type: 'appointment-list' }>> =
     horizonDays: 14,
     limit: 5,
     showAll: true,
+    style,
+    ...overrides,
+});
+const posts = (overrides: Partial<Extract<Block, { type: 'posts' }>> = {}): Block => ({
+    id: 'beitraege',
+    type: 'posts',
+    x: 0,
+    y: 0,
+    width: 1400,
+    height: 700,
+    groupIds: [31],
+    limit: 3,
+    maxAgeDays: 30,
+    layout: 'card',
+    showImage: true,
+    showAuthor: false,
     style,
     ...overrides,
 });
@@ -43,5 +59,14 @@ describe('paging an appointment list', () => {
         expect(slideSeconds({ ...slide, durationSeconds: 45 }, { liste: 3 })).toBe(45);
         expect(slideSeconds(makeSlide({ durationSeconds: 8, blocks: [list({ showAll: false })] }), { liste: 3 })).toBe(8);
         expect(slideSeconds(makeSlide({ durationSeconds: 8, blocks: [list({ pageSeconds: 5 })] }), { liste: 3 })).toBe(15);
+    });
+
+    it('keeps the slide until a card-layout posts block has shown every post', () => {
+        const slide = makeSlide({ durationSeconds: 8, blocks: [posts()] });
+        expect(slideSeconds(slide, { beitraege: 3 })).toBe(3 * POST_SECONDS);
+        expect(slideSeconds(slide, { beitraege: 1 })).toBe(8); // one post: the slide's own duration
+        expect(slideSeconds(slide, {})).toBe(8); // not yet measured
+        expect(slideSeconds(makeSlide({ durationSeconds: 8, blocks: [posts({ layout: 'list' })] }), { beitraege: 3 })).toBe(8);
+        expect(slideSeconds(makeSlide({ durationSeconds: 8, blocks: [posts({ pageSeconds: 5 })] }), { beitraege: 3 })).toBe(15);
     });
 });

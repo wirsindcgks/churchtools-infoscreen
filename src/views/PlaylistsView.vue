@@ -19,6 +19,7 @@ import PlaylistCard from '../designer/PlaylistCard.vue';
 import SearchField from '../designer/SearchField.vue';
 import { usePreview } from '../designer/usePreview';
 import { blockCalendarIds, type ThemeDoc } from '../model/schema';
+import { postNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 
@@ -55,6 +56,7 @@ usePreview(
     ]),
     computed(() => overviews.value.flatMap((o) => o.media)),
     theme,
+    computed(() => postNeeds(overviews.value.flatMap((o) => (o.firstSlide ? [o.firstSlide] : [])))),
 );
 
 async function refresh(): Promise<void> {

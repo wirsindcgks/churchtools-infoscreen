@@ -1,6 +1,7 @@
 import { inject, provide, type InjectionKey } from 'vue';
 import type { Appointment } from '../appointments/normalize';
 import { DEFAULT_THEME, type MediaDoc, type ThemeDoc } from '../model/schema';
+import type { Post } from '../posts/normalize';
 
 /** What blocks read while rendering; the player provides it, the designer preview will too. */
 export interface StageContext {
@@ -11,6 +12,8 @@ export interface StageContext {
     /** Image service address of the church logo without size (G29); null without one. */
     churchLogo?: string | null;
     appointments: Appointment[];
+    /** Posts of the groups the `posts` blocks need (schema 1.11); missing counts as none. */
+    posts?: Post[];
     media: Map<string, MediaDoc>;
     /** Image addresses already on the device (original → blob URL); the player fills it, the designer does not. */
     images?: Map<string, string>;

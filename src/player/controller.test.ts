@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotAuthenticatedError, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import { DEMO_BUNDLE } from '../dev/demo';
-import { DEFAULT_THEME } from '../model/schema';
+import { DEFAULT_THEME, type Block } from '../model/schema';
+import type { Post } from '../posts/normalize';
 import { ScreenNotFoundError, type LoadedScreen } from '../store/screen-repository';
 import type { CachedState } from './cache';
 import { contentChanged, createPlayer, type PlayerDeps } from './controller';
@@ -17,6 +18,42 @@ const loaded = (revision = 1): LoadedScreen => ({
     issues: [],
 });
 
+/** The demo screen with a `posts` block on its first slide, needing group 31. */
+const postsBlock: Block = {
+    id: 'posts',
+    type: 'posts',
+    x: 0,
+    y: 0,
+    width: 1400,
+    height: 700,
+    groupIds: [31],
+    limit: 3,
+    maxAgeDays: 30,
+    layout: 'card',
+    showImage: true,
+    showAuthor: false,
+    style: { fontFamily: 'sans', fontSize: 56, fontWeight: 400, color: '#fff', align: 'left' },
+};
+const withPosts = (): LoadedScreen => {
+    const base = loaded();
+    const [first, ...rest] = base.slides;
+    if (!first) return base;
+    return { ...base, slides: [{ ...first, blocks: [...first.blocks, postsBlock] }, ...rest] };
+};
+const samplePost: Post = {
+    id: 4,
+    groupId: 31,
+    groupName: 'ISD-Beitragstest',
+    color: '#14b8a6',
+    title: 'Biete Akkuschrauber',
+    content: 'Text',
+    publishedAt: NOW,
+    expiresAt: null,
+    author: 'Erika Beispiel',
+    imageUrl: null,
+    imageRatio: null,
+};
+
 function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
     return {
         assertSignedIn: vi.fn(async () => {}),
@@ -28,6 +65,7 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
         churchLogo: vi.fn(async () => null),
         serverDate: vi.fn(async () => NOW.toUTCString()),
         appointments: vi.fn(async () => []),
+        posts: vi.fn(async () => []),
         ...overrides,
     };
 }
@@ -194,6 +232,32 @@ describe('player controller', () => {
         const player = createPlayer('demo', data, fakeDeps());
         await player.start();
         expect(vi.mocked(data.appointments).mock.calls[0]?.[0]).toEqual([1, 2, 3]);
+        player.stop();
+    });
+
+    it('fetches the posts a posts block needs, a few more than its limit, and saves them offline', async () => {
+        const posts = vi.fn<PlayerData['posts']>(async () => [samplePost]);
+        const deps = fakeDeps();
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withPosts(), posts }), deps);
+        await player.start();
+        expect(posts).toHaveBeenCalledWith([31], 8); // Math.min(20, 3 + 5)
+        expect(player.state.posts).toEqual([samplePost]);
+        expect(deps.saved[0]?.posts).toEqual([samplePost]);
+        player.stop();
+    });
+
+    it('keeps the last posts when they cannot be fetched, and lets the data cycle succeed anyway', async () => {
+        const posts = vi
+            .fn<PlayerData['posts']>()
+            .mockResolvedValueOnce([samplePost])
+            .mockRejectedValue(new Error('Network Error'));
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withPosts(), posts }), fakeDeps());
+        await player.start();
+        expect(player.state.posts).toEqual([samplePost]);
+        await vi.advanceTimersByTimeAsync(15 * 60_000);
+        expect(player.state.posts).toEqual([samplePost]); // kept, not cleared
+        expect(player.state.phase).toBe('running');
+        expect(player.state.staleSince).toBeNull();
         player.stop();
     });
 

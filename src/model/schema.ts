@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 10 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 11 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -172,6 +172,28 @@ export const CountdownBlock = v.object({
     style: TextStyle,
 });
 
+/**
+ * Since 1.11: posts of ChurchTools groups – title, text, image, published and
+ * expiry date (Plan.md, Nächste Schritte 33). `groupIds` starts empty until
+ * chosen; the player then shows nothing. Posts older than `maxAgeDays`,
+ * banned or not yet published never show (Plan.md, Befunde G37).
+ */
+export const PostsBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('posts'),
+    groupIds: v.array(v.pipe(v.number(), v.integer())),
+    limit: v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(10)),
+    maxAgeDays: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(365)), 30),
+    /** `card` – one post at a time, after the highlighted appointment; `list` – as many rows as fit. */
+    layout: v.optional(v.picklist(['card', 'list']), 'card'),
+    showImage: v.optional(v.boolean(), true),
+    /** Off until switched on: the API hands the author's real name to anyone (G37). */
+    showAuthor: v.optional(v.boolean(), false),
+    /** Seconds per post while `card` pages through them; default POST_SECONDS. */
+    pageSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(120))),
+    style: TextStyle,
+});
+
 export const Block = v.variant('type', [
     TextBlock,
     ImageBlock,
@@ -183,6 +205,7 @@ export const Block = v.variant('type', [
     WebBlock,
     QrBlock,
     CountdownBlock,
+    PostsBlock,
 ]);
 
 /** The calendars whose appointments a block shows or counts down to. */

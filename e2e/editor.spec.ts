@@ -784,3 +784,29 @@ test('a website and a QR code (Plan.md 28)', async ({ page }) => {
     await page.waitForTimeout(500);
     await stage.screenshot({ path: 'test-results/web-and-qr.png' });
 });
+
+// Reads the real test instance (nur lesend, Plan.md 33): the group "ISD-Beitragstest" is public,
+// posts are switched on, and it has posts – among them "Biete Akkuschrauber" with an image (Befunde G37).
+test('a posts block shows a public group\'s posts, as a card and as a list (Plan.md 33)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+
+    await page.getByTestId('add-posts').click();
+    const inspector = page.getByTestId('block-inspector');
+    const group = inspector.locator('label.check', { hasText: 'ISD-Beitragstest' });
+    await expect(group).toBeVisible({ timeout: 15_000 }); // the group list comes from ChurchTools
+    await group.locator('input[type="checkbox"]').check();
+
+    const stage = page.locator('.editor-stage');
+    await expect(stage.getByTestId('posts-card')).toBeVisible({ timeout: 15_000 }); // the posts themselves too
+    await expect(stage.getByTestId('posts-card')).not.toContainText('Keine aktuellen Beiträge');
+    await page.waitForTimeout(300);
+    await stage.screenshot({ path: 'test-results/editor-posts-card.png' });
+
+    await inspector.getByTestId('posts-layout').selectOption('list');
+    await expect(stage.getByTestId('posts-list')).toBeVisible();
+    await expect(stage.getByTestId('post-row').first()).toBeVisible();
+    await page.waitForTimeout(300);
+    await stage.screenshot({ path: 'test-results/editor-posts-list.png' });
+});

@@ -47,6 +47,8 @@ const PATHS = {
     banner: ['M3 14h18v5H3z', 'M6 16.5h8', 'M3 5h18', 'M3 9h12'],
     // "Über & Neuigkeiten"
     info: [circle(12, 12, 8.5), 'M12 11v5', 'M12 7.8v.2'],
+    // Posts (Plan.md, Nächste Schritte 33): a page with a picture and lines of text.
+    news: ['M4 4h16v16H4z', 'M7 7h6v5H7z', 'M15 8h2', 'M15 11h2', 'M7 14.5h11', 'M7 17h8'],
     // The design page (Plan.md, Nächste Schritte 27)
     palette: ['M12 3.5a8.5 8.5 0 1 0 0 17c1.2 0 1.8-.8 1.8-1.7 0-1.3-1-1.6-1-2.6 0-.9.7-1.6 1.7-1.6h2.2a3.8 3.8 0 0 0 3.8-3.8c0-4.2-3.8-7.3-8.5-7.3z', circle(7.5, 11.5, 1), circle(10, 7.5, 1), circle(14.5, 7.5, 1)],
 } as const;

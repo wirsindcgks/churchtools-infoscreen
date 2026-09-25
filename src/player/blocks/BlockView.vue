@@ -11,6 +11,7 @@ import AppointmentListView from './AppointmentListView.vue';
 import ClockView from './ClockView.vue';
 import CountdownView from './CountdownView.vue';
 import NextAppointmentView from './NextAppointmentView.vue';
+import PostsView from './PostsView.vue';
 
 /** `slideSeconds`: how long the slide shows – a paged list shares it out among its pages. */
 const props = defineProps<{ block: Block; slideSeconds?: number }>();
@@ -110,6 +111,7 @@ const imageUrl = computed(() => {
         <AppointmentListView v-else-if="block.type === 'appointment-list'" :block="block" :slide-seconds="slideSeconds" />
         <NextAppointmentView v-else-if="block.type === 'next-appointment'" :block="block" />
         <CountdownView v-else-if="block.type === 'countdown'" :block="block" />
+        <PostsView v-else-if="block.type === 'posts'" :block="block" :slide-seconds="slideSeconds" />
     </div>
 </template>
 

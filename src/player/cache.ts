@@ -4,6 +4,7 @@
  * here are never fatal: without storage the player just has no fallback.
  */
 import type { Appointment } from '../appointments/normalize';
+import type { Post } from '../posts/normalize';
 import type { LoadedScreen } from '../store/screen-repository';
 
 export interface CachedState {
@@ -13,6 +14,8 @@ export interface CachedState {
     churchName: string;
     /** Missing in states saved before the logo came. */
     churchLogo?: string | null;
+    /** Missing in states saved before posts came (schema 1.11). */
+    posts?: Post[];
     savedAt: string;
 }
 

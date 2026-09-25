@@ -5,6 +5,7 @@ import { normalizeAppointments } from '../appointments/normalize';
 import { readSlide } from '../model/read';
 import { makeSlide, textBlock } from '../model/testing';
 import type { Block, MediaDoc, SlideDoc } from '../model/schema';
+import type { Post } from '../posts/normalize';
 import { provideStageContext, type StageContext } from './context';
 import SlideView from './SlideView.vue';
 
@@ -124,5 +125,79 @@ describe('rendering a slide', () => {
         const missing = render(makeSlide({ blocks: [image] }));
         expect(missing.find('img').exists()).toBe(false);
         expect(missing.find('.placeholder').exists()).toBe(true);
+    });
+});
+
+describe('rendering posts (Plan.md 33)', () => {
+    const post = (overrides: Partial<Post> = {}): Post => ({
+        id: 4,
+        groupId: 31,
+        groupName: 'ISD-Beitragstest',
+        color: '#14b8a6',
+        title: 'Biete Akkuschrauber',
+        content: 'Kann gern ausgeliehen werden.',
+        publishedAt: new Date('2026-09-25T08:00:00Z'),
+        expiresAt: null,
+        author: 'Erika Beispiel',
+        imageUrl: null,
+        imageRatio: null,
+        ...overrides,
+    });
+    const style = { fontFamily: 'sans', fontSize: 56, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
+    const postsBlock = (overrides: Partial<Extract<Block, { type: 'posts' }>> = {}): Block => ({
+        id: 'p',
+        type: 'posts',
+        x: 0,
+        y: 0,
+        width: 1400,
+        height: 700,
+        groupIds: [31],
+        limit: 3,
+        maxAgeDays: 30,
+        layout: 'card',
+        showImage: true,
+        showAuthor: false,
+        style,
+        ...overrides,
+    });
+
+    it('shows the title, the group label and the text of the card', () => {
+        const wrapper = render(makeSlide({ blocks: [postsBlock()] }), { posts: [post()] });
+        expect(wrapper.get('[data-testid="posts-card"]').text()).toContain('Biete Akkuschrauber');
+        expect(wrapper.get('[data-testid="posts-card"]').text()).toContain('ISD-Beitragstest');
+        expect(wrapper.get('[data-testid="posts-card"]').text()).toContain('Kann gern ausgeliehen werden.');
+    });
+
+    it('requests the image at block size with both dimensions', () => {
+        const wrapper = render(makeSlide({ blocks: [postsBlock()] }), {
+            posts: [post({ imageUrl: 'https://example.church.tools/images/9/hash', imageRatio: 1 })],
+        });
+        const src = wrapper.get('[data-testid="post-image"]').attributes('src');
+        expect(src).toContain('w=');
+        expect(src).toContain('h=');
+    });
+
+    it('shows the author only when showAuthor is set – the API hands the real name to anyone (G37)', () => {
+        const off = render(makeSlide({ blocks: [postsBlock({ showAuthor: false })] }), { posts: [post()] });
+        expect(off.find('[data-testid="post-author"]').exists()).toBe(false);
+        const on = render(makeSlide({ blocks: [postsBlock({ showAuthor: true })] }), { posts: [post()] });
+        expect(on.get('[data-testid="post-author"]').text()).toContain('Erika Beispiel');
+    });
+
+    it('shows rows in the list layout', () => {
+        const wrapper = render(makeSlide({ blocks: [postsBlock({ layout: 'list' })] }), {
+            posts: [post(), post({ id: 5, title: 'Zweiter Beitrag' })],
+        });
+        expect(wrapper.findAll('[data-testid="post-row"]')).toHaveLength(2);
+        expect(wrapper.get('[data-testid="posts-list"]').text()).toContain('Zweiter Beitrag');
+    });
+
+    it('shows a calm message without posts, in both layouts', () => {
+        expect(render(makeSlide({ blocks: [postsBlock()] })).get('[data-testid="posts-empty"]').text()).toBe(
+            'Keine aktuellen Beiträge',
+        );
+        expect(
+            render(makeSlide({ blocks: [postsBlock({ layout: 'list' })] })).get('[data-testid="posts-empty"]').text(),
+        ).toBe('Keine aktuellen Beiträge');
     });
 });

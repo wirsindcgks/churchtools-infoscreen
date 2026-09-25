@@ -9,10 +9,11 @@ import { reactive } from 'vue';
 import type { Appointment } from '../appointments/normalize';
 import { NotAuthenticatedError, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
+import { revivePosts, type Post } from '../posts/normalize';
 import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '../store/screen-repository';
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
-import { appointmentNeeds, appointmentWindow, type PlayerData } from './data';
+import { appointmentNeeds, appointmentWindow, mergePosts, postNeeds, type PlayerData } from './data';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
 
 /**
@@ -27,6 +28,7 @@ export interface PlayerState {
     phase: 'loading' | 'running' | 'error';
     screen: LoadedScreen | null;
     appointments: Appointment[];
+    posts: Post[];
     timeZone: string;
     churchName: string;
     churchLogo: string | null;
@@ -91,6 +93,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         phase: 'loading',
         screen: null,
         appointments: [],
+        posts: [],
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         churchName: '',
         churchLogo: null,
@@ -229,12 +232,23 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         const appointments = needs.calendarIds.length
             ? await data.appointments(needs.calendarIds, window.from, window.to, timeZone)
             : [];
+        const postGroups = postNeeds(state.screen.slides);
+        // A post fetch is decoration, like the logo: its failure keeps the last posts and fails nothing else.
+        const posts = postGroups.length
+            ? await Promise.all(postGroups.map((n) => data.posts(n.groupIds, Math.min(20, n.limit + 5))))
+                  .then(mergePosts)
+                  .catch((error: unknown) => {
+                      console.warn('Beiträge konnten nicht geladen werden:', error);
+                      return state.posts;
+                  })
+            : [];
 
         Object.assign(state, {
             timeZone,
             churchName,
             churchLogo,
             appointments,
+            posts,
             clockConfirmed: checkClock(serverDate, now).confirmed,
             phase: 'running',
             staleSince: null,
@@ -243,6 +257,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         await deps.saveCached(slug, {
             screen: state.screen,
             appointments,
+            posts,
             timeZone,
             churchName,
             churchLogo,
@@ -289,6 +304,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             Object.assign(state, {
                 screen: cached.screen,
                 appointments: reviveAppointments(cached.appointments),
+                posts: cached.posts ? revivePosts(cached.posts) : [],
                 timeZone: cached.timeZone,
                 churchName: cached.churchName,
                 churchLogo: cached.churchLogo ?? null,

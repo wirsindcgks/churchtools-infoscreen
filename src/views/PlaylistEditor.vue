@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName } from '../ct/client';
+import { fetchPostGroups, type PostGroup } from '../ct/api';
 import AppBar from '../designer/AppBar.vue';
 import BlockPalette from '../designer/BlockPalette.vue';
 import EditorStage from '../designer/EditorStage.vue';
@@ -14,6 +15,7 @@ import SlideList from '../designer/SlideList.vue';
 import { usePreview } from '../designer/usePreview';
 import type { MediaDoc } from '../model/schema';
 import { MEDIA_PAGE } from '../media/library';
+import { postNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 
 const route = useRoute();
@@ -40,7 +42,11 @@ const { calendars, problem } = usePreview(
     calendarIds,
     computed(() => editor.media),
     computed(() => editor.theme),
+    computed(() => postNeeds(editor.slides)),
 );
+
+/** Groups with posts switched on, for the „Beiträge"-Baustein; loaded once. Unreadable → an empty list, the inspector says so. */
+const groups = ref<PostGroup[]>([]);
 
 /** The preview of the unsaved draft, as the TV would show it. */
 const previewing = ref(false);
@@ -101,6 +107,12 @@ onMounted(async () => {
         await editor.refreshMedia();
     } catch (e) {
         loadError.value = e instanceof Error ? e.message : String(e);
+    }
+    // After the playlist itself: a slower or failed groups fetch must not delay the editor.
+    try {
+        groups.value = await fetchPostGroups();
+    } catch {
+        groups.value = [];
     }
 });
 
@@ -250,7 +262,7 @@ function onKey(event: KeyboardEvent): void {
                 <BlockPalette />
                 <EditorStage />
             </div>
-            <Inspector :calendars="calendars" @pick-image="openLibrary" />
+            <Inspector :calendars="calendars" :groups="groups" @pick-image="openLibrary" />
         </div>
 
         <PlaylistPreview

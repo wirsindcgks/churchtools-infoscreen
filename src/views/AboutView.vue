@@ -35,7 +35,7 @@ onMounted(markReleaseSeen);
             <h2 id="about-title">Infoscreen Designer <span class="version" data-testid="about-version">{{ APP_VERSION }}</span></h2>
             <p>
                 Gestaltet Infoscreens für die Fernseher der Gemeinde direkt in ChurchTools: Slides mit Texten, Bildern,
-                Terminen aus dem Kalender, Countdowns, Webseiten und QR-Codes, dazu Laufschrift über allen Slides; Playlists, die nach Zeitplan laufen; ein Design für
+                Terminen aus dem Kalender, Countdowns, Beiträgen aus ChurchTools, Webseiten und QR-Codes, dazu Laufschrift über allen Slides; Playlists, die nach Zeitplan laufen; ein Design für
                 alle Screens. Die Fernseher zeigen Änderungen nach etwa 20 Sekunden.
             </p>
             <ul class="links">

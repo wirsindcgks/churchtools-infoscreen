@@ -5,9 +5,10 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
 import { startOfZonedDay } from '../appointments/zoned';
-import { fetchAppointments, fetchChurchLogoUrl, fetchTimeZone } from '../ct/api';
+import { fetchAppointments, fetchChurchLogoUrl, fetchPosts, fetchTimeZone } from '../ct/api';
 import { ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
 import type { ScreenDoc, SlideDoc } from '../model/schema';
+import { normalizePosts, type Post } from '../posts/normalize';
 import { getRepository } from '../store/backend';
 import type { ContentRevisions, LoadedScreen } from '../store/screen-repository';
 import { withTimeout } from './timing';
@@ -25,6 +26,7 @@ export interface PlayerData {
     /** `Date` header of a server response, for the clock check. */
     serverDate(): Promise<string | null>;
     appointments(calendarIds: number[], from: Date, to: Date, timeZone: string): Promise<Appointment[]>;
+    posts(groupIds: number[], limit: number): Promise<Post[]>;
 }
 
 /** Data from ChurchTools; with `login`, only for that device account. */
@@ -66,6 +68,10 @@ export const churchToolsPlayerData: PlayerData = {
             withTimeout(fetchAppointments(ids, from, to, timeZone)),
         );
         return normalizeAppointments(raw, timeZone);
+    },
+    async posts(groupIds, limit) {
+        const raw = await withTimeout(fetchPosts(groupIds, limit));
+        return normalizePosts(raw);
     },
 };
 
@@ -118,4 +124,30 @@ export function appointmentNeeds(screen: ScreenDoc, slides: SlideDoc[]): { calen
 
 export function appointmentWindow(now: Date, timeZone: string, days: number): { from: Date; to: Date } {
     return { from: startOfZonedDay(now, timeZone), to: startOfZonedDay(now, timeZone, days) };
+}
+
+/**
+ * Groups and limit a screen's `posts` blocks need: one entry per distinct,
+ * sorted set of chosen groups, with the largest limit among the blocks that
+ * share it. Blocks without a group do not count. The caller fetches a few
+ * more than `limit` – `Math.min(20, limit + 5)` – so that filtering (age,
+ * expiry) still leaves enough to show.
+ */
+export function postNeeds(slides: SlideDoc[]): { groupIds: number[]; limit: number }[] {
+    const byKey = new Map<string, { groupIds: number[]; limit: number }>();
+    for (const block of slides.flatMap((s) => s.blocks)) {
+        if (block.type !== 'posts' || block.groupIds.length === 0) continue;
+        const groupIds = [...block.groupIds].sort((a, b) => a - b);
+        const key = groupIds.join(',');
+        const need = byKey.get(key);
+        byKey.set(key, { groupIds, limit: Math.max(need?.limit ?? 0, block.limit) });
+    }
+    return [...byKey.values()];
+}
+
+/** Every post once; where two group sets share a post, the later fetch wins. */
+export function mergePosts(lists: Post[][]): Post[] {
+    const byId = new Map<number, Post>();
+    for (const list of lists) for (const post of list) byId.set(post.id, post);
+    return [...byId.values()];
 }

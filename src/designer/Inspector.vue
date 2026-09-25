@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Calendar } from '../ct/api';
+import type { Calendar, PostGroup } from '../ct/api';
 import type { Block, Fill, TextStyle } from '../model/schema';
 import { themeOf, useStageContext } from '../player/context';
 import { fontDef, FONTS } from '../player/fonts';
 import { sizedImageUrl } from '../player/format';
-import { PAGE_SECONDS, slideSeconds } from '../player/paging';
+import { PAGE_SECONDS, POST_SECONDS, slideSeconds } from '../player/paging';
 import { qrShape } from '../player/qr';
 import { webFrame, withScheme } from '../player/web';
 import { useEditorStore } from './editor-store';
@@ -15,7 +15,7 @@ import FillEditor from './FillEditor.vue';
 import Icon from './Icon.vue';
 import { BLOCK_LABELS } from './ops';
 
-defineProps<{ calendars: Calendar[] }>();
+defineProps<{ calendars: Calendar[]; groups: PostGroup[] }>();
 const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo'] }>();
 
 const editor = useEditorStore();
@@ -44,6 +44,19 @@ function toggleCalendar(id: number, on: boolean): void {
     if (!block.value || !('calendarIds' in block.value)) return;
     const next = on ? [...block.value.calendarIds, id] : block.value.calendarIds.filter((c) => c !== id);
     if (next.length) setBlock({ calendarIds: [...new Set(next)].sort((a, b) => a - b) });
+}
+
+/** Empty is allowed here (Plan.md 33): a fresh block starts without a group until one is chosen. */
+function togglePostGroup(id: number, on: boolean): void {
+    if (!block.value || block.value.type !== 'posts') return;
+    const next = on ? [...block.value.groupIds, id] : block.value.groupIds.filter((g) => g !== id);
+    setBlock({ groupIds: [...new Set(next)].sort((a, b) => a - b) });
+}
+
+/** Between 5 and 120 seconds; anything else waits until the value is sensible. */
+function setPostSeconds(value: string): void {
+    const n = Number(value);
+    if (Number.isInteger(n) && n >= 5 && n <= 120) setBlock({ pageSeconds: n });
 }
 
 /** Seconds the slide really runs when a paged list needs longer than its duration; else 0. */
@@ -325,6 +338,96 @@ const slideFill = computed<Fill>(() =>
                         >
                         Terminbild zeigen
                     </label>
+                </template>
+
+                <!-- Plan.md, 33: posts of ChurchTools groups, after the terminlists' cards. -->
+                <template v-if="block.type === 'posts'">
+                    <fieldset>
+                        <legend>Gruppen</legend>
+                        <label v-for="g in groups" :key="g.id" class="check">
+                            <input
+                                type="checkbox"
+                                :checked="block.groupIds.includes(g.id)"
+                                :data-testid="`post-group-${g.id}`"
+                                @change="togglePostGroup(g.id, ($event.target as HTMLInputElement).checked)"
+                            >
+                            {{ g.name }}
+                            <span v-if="g.visibility !== 'public'" class="dimmed">nicht öffentlich</span>
+                        </label>
+                        <p v-if="!groups.length" class="hint">Keine Gruppe mit Beiträgen sichtbar.</p>
+                    </fieldset>
+                    <p
+                        v-if="block.groupIds.some((id) => groups.find((g) => g.id === id)?.visibility !== 'public')"
+                        class="hint"
+                        data-testid="posts-not-public"
+                    >
+                        Der Fernseher zeigt nur Beiträge öffentlicher Gruppen. Die Vorschau hier zeigt mehr, weil sie mit
+                        deinen Rechten liest.
+                    </p>
+                    <label class="d-field">
+                        Darstellung
+                        <select
+                            :value="block.layout"
+                            data-testid="posts-layout"
+                            @change="setBlock({ layout: ($event.target as HTMLSelectElement).value })"
+                        >
+                            <option value="card">Hervorgehoben – ein Beitrag nach dem anderen</option>
+                            <option value="list">Liste – mehrere untereinander</option>
+                        </select>
+                    </label>
+                    <div class="grid2">
+                        <label class="d-field">
+                            Anzahl
+                            <input
+                                type="number"
+                                min="1"
+                                max="10"
+                                :value="block.limit"
+                                v-on="edit"
+                                @input="setNumber('limit', ($event.target as HTMLInputElement).value)"
+                            >
+                        </label>
+                        <label class="d-field">
+                            Nur der letzten … Tage
+                            <input
+                                type="number"
+                                min="1"
+                                max="365"
+                                :value="block.maxAgeDays"
+                                v-on="edit"
+                                @input="setNumber('maxAgeDays', ($event.target as HTMLInputElement).value)"
+                            >
+                        </label>
+                    </div>
+                    <label v-if="block.layout === 'card'" class="d-field">
+                        Sekunden je Beitrag
+                        <input
+                            type="number"
+                            min="5"
+                            max="120"
+                            :value="block.pageSeconds ?? POST_SECONDS"
+                            data-testid="post-seconds"
+                            v-on="edit"
+                            @input="setPostSeconds(($event.target as HTMLInputElement).value)"
+                        >
+                    </label>
+                    <label class="check">
+                        <input
+                            type="checkbox"
+                            :checked="block.showImage"
+                            @change="setBlock({ showImage: ($event.target as HTMLInputElement).checked })"
+                        >
+                        Bild zeigen
+                    </label>
+                    <label class="check">
+                        <input
+                            type="checkbox"
+                            :checked="block.showAuthor"
+                            @change="setBlock({ showAuthor: ($event.target as HTMLInputElement).checked })"
+                        >
+                        Namen der Autorin oder des Autors zeigen
+                    </label>
+                    <p class="hint">Zeigt die neuesten Beiträge der gewählten Gruppen; abgelaufene nie.</p>
                 </template>
 
                 <template v-if="block.type === 'church-header'">
@@ -733,6 +836,11 @@ legend {
 }
 .hint {
     margin: 0;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+.dimmed {
+    margin-left: 4px;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }

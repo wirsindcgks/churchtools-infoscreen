@@ -9,6 +9,8 @@ import type { SlideDoc } from '../model/schema';
 export const PAGE_SECONDS = 10;
 /** "All" appointments, but not without end – a horizon of a year could hold thousands. */
 export const SHOW_ALL_CAP = 200;
+/** Seconds per post while a `posts` block of layout `card` pages through them, unless set otherwise. */
+export const POST_SECONDS = 15;
 
 /**
  * Splits rows into pages by their measured heights – rows of the card layout
@@ -57,10 +59,15 @@ export function pageInterval(pageSeconds: number, slideSeconds: number, pages: n
 export function slideSeconds(slide: SlideDoc, pages: Readonly<Record<string, number>>): number {
     let seconds = slide.durationSeconds;
     for (const block of slide.blocks) {
-        if (block.type !== 'appointment-list' || !block.showAll) continue;
-        const count = pages[block.id] ?? 1;
-        // One page needs no more time than the slide has.
-        if (count > 1) seconds = Math.max(seconds, count * (block.pageSeconds ?? PAGE_SECONDS));
+        if (block.type === 'appointment-list' && block.showAll) {
+            const count = pages[block.id] ?? 1;
+            // One page needs no more time than the slide has.
+            if (count > 1) seconds = Math.max(seconds, count * (block.pageSeconds ?? PAGE_SECONDS));
+        }
+        if (block.type === 'posts' && block.layout === 'card') {
+            const count = pages[block.id] ?? 1;
+            if (count > 1) seconds = Math.max(seconds, count * (block.pageSeconds ?? POST_SECONDS));
+        }
     }
     return seconds;
 }

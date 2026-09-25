@@ -119,6 +119,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     web: 'Webseite',
     qr: 'QR-Code',
     countdown: 'Countdown',
+    posts: 'Beiträge',
 };
 
 /** A new block with sensible defaults, centred on the stage. */
@@ -139,6 +140,7 @@ export function createBlock(
         web: [1100, 800],
         qr: [360, 360],
         countdown: [1100, 360],
+        posts: [1400, 700],
     }[type];
     const width = Math.min(size[0]!, stage.width - 80);
     const height = Math.min(size[1]!, stage.height - 80);
@@ -179,6 +181,18 @@ export function createBlock(
                 showTitle: true,
                 runningText: 'Läuft gerade',
                 style: style(120, ink, { fontWeight: 700, align: 'center' }),
+            };
+        case 'posts':
+            return {
+                ...frame,
+                type,
+                groupIds: [],
+                limit: 3,
+                maxAgeDays: 30,
+                layout: 'card',
+                showImage: true,
+                showAuthor: false,
+                style: style(56, ink),
             };
     }
 }

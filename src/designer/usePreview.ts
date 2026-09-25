@@ -8,9 +8,14 @@ import { onBeforeUnmount, reactive, ref, watch, type Ref } from 'vue';
 import { fetchCalendars, type Calendar } from '../ct/api';
 import type { MediaDoc, ThemeDoc } from '../model/schema';
 import { provideStageContext, type StageContext } from '../player/context';
-import { appointmentWindow, churchToolsPlayerData } from '../player/data';
+import { appointmentWindow, churchToolsPlayerData, mergePosts } from '../player/data';
 
-export function usePreview(calendarIds: Ref<number[]>, media: Ref<MediaDoc[]>, theme: Ref<ThemeDoc | null> = ref(null)) {
+export function usePreview(
+    calendarIds: Ref<number[]>,
+    media: Ref<MediaDoc[]>,
+    theme: Ref<ThemeDoc | null> = ref(null),
+    posts: Ref<{ groupIds: number[]; limit: number }[]> = ref([]),
+) {
     const context = reactive<StageContext>({
         now: new Date(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -18,6 +23,7 @@ export function usePreview(calendarIds: Ref<number[]>, media: Ref<MediaDoc[]>, t
         churchName: '',
         churchLogo: null,
         appointments: [],
+        posts: [],
         media: new Map(),
         // Paged lists report their pages (the inspector names them) but hold page 1 while designing.
         pages: {},
@@ -60,10 +66,30 @@ export function usePreview(calendarIds: Ref<number[]>, media: Ref<MediaDoc[]>, t
         }
     }
 
+    let postsRequest = 0;
+    async function loadPosts(): Promise<void> {
+        const needs = posts.value;
+        const mine = ++postsRequest;
+        if (!needs.length) {
+            context.posts = [];
+            return;
+        }
+        try {
+            const lists = await Promise.all(
+                needs.map((n) => churchToolsPlayerData.posts(n.groupIds, Math.min(20, n.limit + 5))),
+            );
+            if (mine === postsRequest) context.posts = mergePosts(lists);
+        } catch (error) {
+            problem.value = error instanceof Error ? error.message : String(error);
+        }
+    }
+
     watch(media, (list) => (context.media = new Map(list.map((m) => [m.id, m]))), { immediate: true });
     watch(theme, (value) => (context.theme = value), { immediate: true });
     watch(() => calendarIds.value.join(), () => void loadAppointments());
+    watch(() => JSON.stringify(posts.value), () => void loadPosts());
     void loadBasics().then(loadAppointments);
+    void loadPosts();
 
     const ticker = setInterval(() => (context.now = new Date()), 30_000);
     onBeforeUnmount(() => clearInterval(ticker));

@@ -1,6 +1,7 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import type { AppointmentResponse } from '../appointments/normalize';
 import { zonedDateKey } from '../appointments/zoned';
+import type { PostResponse } from '../posts/normalize';
 
 /**
  * The instance time zone. Readable anonymously and therefore by the device
@@ -61,4 +62,35 @@ export interface Calendar {
 /** Calendars the signed-in person may see; the device user sees what its group grants (G21). */
 export function fetchCalendars(): Promise<Calendar[]> {
     return churchtoolsClient.get<Calendar[]>('/calendars');
+}
+
+/**
+ * Posts of the given groups, newest first. Anonymous callers and the device
+ * account see the same as anyone: public posts of public groups, nothing
+ * from restricted ones (G37) – exactly what the player shows.
+ */
+export function fetchPosts(groupIds: number[], limit: number): Promise<PostResponse[]> {
+    if (groupIds.length === 0) return Promise.resolve([]);
+    return churchtoolsClient.get<PostResponse[]>('/posts', { group_ids: groupIds, limit });
+}
+
+export interface PostGroup {
+    id: number;
+    name: string;
+    visibility: string;
+}
+
+interface GroupResponse {
+    id: number;
+    name: string;
+    settings?: { postsEnabled?: boolean; visibility?: string } | null;
+}
+
+/** Groups with posts switched on, for the inspector's group picker – sorted by name. */
+export async function fetchPostGroups(): Promise<PostGroup[]> {
+    const groups = await churchtoolsClient.getAllPages<GroupResponse>('/groups');
+    return groups
+        .filter((g) => g.settings?.postsEnabled)
+        .map((g) => ({ id: g.id, name: g.name, visibility: g.settings?.visibility ?? 'restricted' }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 }

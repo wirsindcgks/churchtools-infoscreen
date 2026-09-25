@@ -49,6 +49,28 @@ describe('readSlide – tolerant towards newer data', () => {
         delete (raw as { enabled?: boolean }).enabled;
         expect(readSlide(raw).doc.enabled).toBe(true);
     });
+
+    it('reads a minimal posts block with its defaults (schema 1.11, Plan.md 33)', () => {
+        const block = {
+            id: 'p',
+            type: 'posts',
+            x: 0,
+            y: 0,
+            width: 1400,
+            height: 700,
+            groupIds: [],
+            limit: 3,
+            style: { fontFamily: 'sans', fontSize: 56, fontWeight: 400, color: '#fff', align: 'left' },
+        };
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [block] });
+        expect(issues).toEqual([]);
+        expect(doc.blocks[0]).toMatchObject({
+            maxAgeDays: 30,
+            layout: 'card',
+            showImage: true,
+            showAuthor: false,
+        });
+    });
 });
 
 describe('serialize – strict towards what we write', () => {
