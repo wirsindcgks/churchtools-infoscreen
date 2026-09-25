@@ -173,6 +173,14 @@ function onKey(event: KeyboardEvent): void {
             </RouterLink>
             <strong class="title">{{ editor.draft?.playlist.name || 'Playlist' }}</strong>
             <span class="status" :class="`status--${editor.status}`" data-testid="save-status">{{ statusText }}</span>
+            <!-- The TVs check every 20 s for what was saved (Plan.md, 26); in demo mode an open player takes it at once. -->
+            <span
+                v-if="editor.status === 'saved' && editor.screens.length && !demo"
+                class="status status-hint"
+                data-testid="save-hint"
+            >
+                – {{ editor.screens.length === 1 ? 'der Fernseher zeigt' : 'die Fernseher zeigen' }} es in etwa 20 s
+            </span>
             <template #actions>
                 <button
                     class="d-btn d-btn--icon"

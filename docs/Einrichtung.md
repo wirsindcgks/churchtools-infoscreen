@@ -177,8 +177,9 @@ die Bühne rückt dann um so viel Prozent nach innen.
 
 ### Was der Fernseher von selbst tut
 
-- Er holt **Änderungen am Screen alle zwei Minuten** und **Termine alle zehn Minuten** – ein Gestalter muss nichts
-  anstoßen.
+- Er sieht **alle 20 Sekunden** mit einer kleinen Anfrage nach, ob ein Gestalter gespeichert hat, und lädt dann
+  den Screen neu; alles andere am Screen holt er **alle zwei Minuten**, **Termine alle zehn Minuten** – ein Gestalter
+  muss nichts anstoßen.
 - Er **hält den letzten Stand und die Bilder auf dem Gerät.** Fällt das Netz aus, zeigt er weiter, was er hatte.
 - Er **lädt jede Nacht zwischen 3 und 4 Uhr neu** und nach **30 Minuten ununterbrochener Fehler** – aber nur, wenn
   die Seite erreichbar ist. Dabei meldet er sich jedes Mal frisch an; läuft die Anmeldung zwischendurch ab, erneuert

@@ -62,8 +62,8 @@ Du brauchst nur die Mitgliedschaft in „Infoscreen-Designer"; alles Weitere kom
    verwenden. Nichts Vertrauliches hochladen – Bilder sind über ihre Adresse ohne Anmeldung abrufbar.
 6. **Vorschau** (oben im Editor): spielt die Playlist mit deinen Änderungen im Vollbild ab, wie der Fernseher –
    ohne zu speichern. Esc schließt sie.
-7. **Speichern** (oder ⌘S / Strg+S). Alle Fernseher, die diese Playlist zeigen, übernehmen die Änderung nach wenigen
-   Minuten von selbst.
+7. **Speichern** (oder ⌘S / Strg+S). Alle Fernseher, die diese Playlist zeigen, übernehmen die Änderung in etwa
+   20 Sekunden von selbst – ohne neu zu laden, auf der Slide, die sie gerade zeigen.
 
 **Gut zu wissen:**
 
@@ -83,6 +83,6 @@ Das Gerät tut nichts selbst; es braucht nur einmal die richtige Adresse.
       `fullpageos.txt`. Tastatur und Maus braucht es nicht.
 - [ ] **Bildschirmschoner und Energiesparen aus.**
 
-Danach meldet sich der Fernseher bei jedem Start selbst an, holt Änderungen alle paar Minuten, zeigt bei Netzausfall
+Danach meldet sich der Fernseher bei jedem Start selbst an, holt Änderungen in etwa 20 Sekunden, zeigt bei Netzausfall
 den letzten Stand und lädt jede Nacht neu. Zeigt er „nicht angemeldet", eine neue Adresse erzeugen – meist wurde das
 Passwort des Geräte-Kontos geändert.

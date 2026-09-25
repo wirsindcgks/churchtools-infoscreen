@@ -329,6 +329,18 @@ describe('ScreenRepository', () => {
             expect(await kv.listValues(ids.playlists)).toHaveLength(1);
         });
 
+        it('tells the player cheaply what was last saved: one read of the playlists (Plan.md 26)', async () => {
+            const { screen } = await created();
+            const ids = await repo.ensureCategories();
+            expect(await repo.contentRevisions(screen.id)).toEqual({ schedule: null, playlists: { [makePlaylist().id]: 0 } });
+            const loaded = await repo.loadPlaylist(makePlaylist().id);
+            await repo.savePlaylist(loaded, { expectedRevision: 0, updatedBy: 'Anna' });
+            await repo.saveSchedule(screen.id, { defaultPlaylistId: makePlaylist().id, rules: [] }, { expectedRevision: null, updatedBy: 'Anna' });
+            kv.reads.length = 0;
+            expect(await repo.contentRevisions(screen.id)).toEqual({ schedule: 1, playlists: { [makePlaylist().id]: 1 } });
+            expect(kv.reads).toEqual([ids.playlists]);
+        });
+
         it('counts a calendar that only a schedule rule uses (for the device rights)', async () => {
             const { screen } = await created();
             const rules = [

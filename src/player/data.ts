@@ -9,13 +9,15 @@ import { fetchAppointments, fetchChurchLogoUrl, fetchTimeZone } from '../ct/api'
 import { ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
 import type { ScreenDoc, SlideDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
-import type { LoadedScreen } from '../store/screen-repository';
+import type { ContentRevisions, LoadedScreen } from '../store/screen-repository';
 import { withTimeout } from './timing';
 
 export interface PlayerData {
     /** Fails unless a real person – with a device account, exactly that one – is signed in (G20). */
     assertSignedIn(): Promise<void>;
     loadScreen(slug: string): Promise<LoadedScreen>;
+    /** The revisions of schedule and playlists – cheap, to decide whether `loadScreen` is needed. */
+    contentRevisions(screenId: string): Promise<ContentRevisions>;
     timeZone(): Promise<string>;
     churchName(): Promise<string>;
     /** Image service address of the church logo, without size (G29). */
@@ -42,6 +44,10 @@ export const churchToolsPlayerData: PlayerData = {
     async loadScreen(slug) {
         const { repository } = await withTimeout(getRepository());
         return withTimeout(repository.loadScreen(slug));
+    },
+    async contentRevisions(screenId) {
+        const { repository } = await withTimeout(getRepository());
+        return withTimeout(repository.contentRevisions(screenId));
     },
     timeZone: () => withTimeout(fetchTimeZone()),
     async churchName() {

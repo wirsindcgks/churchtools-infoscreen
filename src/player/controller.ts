@@ -9,7 +9,7 @@ import { reactive } from 'vue';
 import type { Appointment } from '../appointments/normalize';
 import { NotAuthenticatedError, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
-import { ScreenNotFoundError, type LoadedScreen } from '../store/screen-repository';
+import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '../store/screen-repository';
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
 import { appointmentNeeds, appointmentWindow, type PlayerData } from './data';
@@ -69,6 +69,12 @@ export const browserDeps: PlayerDeps = {
  * the designers' schedule revision (schema 1.2) and the revisions of the
  * playlists it shows (1.4) – a save of content touches only those.
  */
+/** Whether designers saved something the loaded screen does not show yet. */
+export function contentChanged(loaded: LoadedScreen, revisions: ContentRevisions): boolean {
+    if ((loaded.schedule?.revision ?? null) !== revisions.schedule) return true;
+    return loaded.playlists.some((p) => (revisions.playlists[p.id] ?? -1) !== (p.revision ?? 0));
+}
+
 function configVersion(loaded: LoadedScreen | null): string | undefined {
     if (!loaded) return undefined;
     const playlists = loaded.playlists.map((p) => `${p.id}:${p.revision ?? 0}`).join(',');
@@ -144,6 +150,24 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
      */
     function waitsForClock(loaded: LoadedScreen): boolean {
         return loaded.screen.schedule.length > 0 && !state.clockConfirmed;
+    }
+
+    /**
+     * The quick check (Plan.md, 26): every 20 seconds only the revisions of
+     * schedule and playlists; the whole screen is loaded at once when one of
+     * them moved. Its failures are left to the full refresh, which reports
+     * them – the quick check only waits longer.
+     */
+    async function quickCycle(): Promise<void> {
+        try {
+            if (state.screen && !blocked && state.phase === 'running') {
+                const revisions = await data.contentRevisions(state.screen.screen.id);
+                if (contentChanged(state.screen, revisions)) scheduleConfig(0);
+            }
+            later(withJitter(INTERVALS.quickCheckMs), quickCycle);
+        } catch {
+            later(withJitter(INTERVALS.configMs), quickCycle);
+        }
     }
 
     function fail(error: unknown): void {
@@ -268,6 +292,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             } satisfies Partial<PlayerState>);
         }
         later(msUntilNightlyReload(deps.now()), deps.reload);
+        later(withJitter(INTERVALS.quickCheckMs), quickCycle);
         await configCycle();
         // Cached content or a failed first load: fetch data now, not in ten minutes.
         if (state.staleSince !== null || state.phase !== 'running') await dataCycle();

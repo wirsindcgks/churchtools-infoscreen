@@ -22,6 +22,8 @@ export class MemoryKv implements KvBackend {
     private values = new Map<number, KvValue[]>();
 
     readonly writes: KvOperation[] = [];
+    /** Categories whose values were listed, in order – for tests that count reads. */
+    readonly reads: number[] = [];
 
     /** Plain copy of the stored state, e.g. to keep it across page loads. */
     snapshot(): MemoryKvState {
@@ -50,6 +52,7 @@ export class MemoryKv implements KvBackend {
     }
 
     async listValues(categoryId: number): Promise<KvValue[]> {
+        this.reads.push(categoryId);
         return this.category(categoryId).map((v) => ({ ...v }));
     }
 

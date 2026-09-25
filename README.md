@@ -11,7 +11,7 @@ Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
   Die Vorschau ist genau das, was der Fernseher zeigt.
 - **Termine live aus den Kalendern von ChurchTools** – was dort eingetragen wird, erscheint von selbst im Foyer.
 - **Mehrere Screens**, quer oder hochkant, jeder unter einer festen Adresse; handytaugliche Übersicht.
-- **Fernseher, die sich selbst helfen:** Sie melden sich selbst an, holen Änderungen nach wenigen Minuten, halten
+- **Fernseher, die sich selbst helfen:** Sie melden sich selbst an, holen Änderungen in etwa 20 Sekunden, halten
   Daten und Bilder auf dem Gerät, überstehen Netzausfälle und laden nach Fehlern und jede Nacht neu.
 - **Rechte mit einem Knopf:** Ein Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an.
 - **Datensparsam:** Zehn freie Schriften kommen von der eigenen Instanz, kein Aufruf an Dritte; das Gerät hat ein

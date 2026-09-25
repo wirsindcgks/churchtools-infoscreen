@@ -8,6 +8,11 @@
 export const INTERVALS = {
     /** Screen configuration: short, so a designer sees the change before leaving. */
     configMs: 2 * 60_000,
+    /**
+     * The quick check of what designers saved (Plan.md, 26): one small request,
+     * so a saved change is on the TV within about 20 seconds.
+     */
+    quickCheckMs: 20_000,
     /** ChurchTools data. */
     dataMs: 10 * 60_000,
     requestTimeoutMs: 20_000,

@@ -25,7 +25,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   sind – die Slide-Liste zeigt die längere Laufzeit („12 → 30 s").
 - **Vorschau im Editor:** spielt die Playlist mit allen ungespeicherten Änderungen im Vollbild ab, wie der
   Fernseher – mit vor/zurück und Anhalten.
-- **Player** zeigt beim Laden eine drehende Sanduhr.
+- **Player** zeigt beim Laden eine drehende Sanduhr und übernimmt Gespeichertes in etwa 20 Sekunden: ein
+  Schnellcheck mit einer kleinen Anfrage, erst bei einer Änderung lädt er den Screen.
 - **Mediathek** als eigener Bereich in der Seitenleiste und als Auswahl im Editor: Bilder in den Wiki-Bereich
   „Infoscreen" hochladen, mit Warnung vor dem Löschen, solange ein Bild gezeigt wird.
 - **Player** für Fernseher: meldet sich über seine Adresse bei jedem Start selbst als Geräte-Benutzer an und erneuert

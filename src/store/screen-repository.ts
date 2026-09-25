@@ -133,6 +133,14 @@ export interface LoadedPlaylist extends PlaylistBundle {
     issues: ReadIssue[];
 }
 
+/** What the designers last saved, by revision – the player's quick check (Plan.md, Nächste Schritte 26). */
+export interface ContentRevisions {
+    /** Revision of the screen's schedule document; null while it has none. */
+    schedule: number | null;
+    /** Revision of every playlist, by id; 0 for playlists from before schema 1.4. */
+    playlists: Record<string, number>;
+}
+
 export interface LoadedScreen extends ScreenBundle {
     /**
      * The designers' part (schema 1.2), already applied to `screen`; null
@@ -313,6 +321,20 @@ export class ScreenRepository {
         // Last: until this write succeeds, the old index stays authoritative.
         await this.upsert(ids.screens, existing?.valueId, serialized.screen);
         return screen;
+    }
+
+    /**
+     * The player's quick check (Plan.md, Nächste Schritte 26): one read of
+     * the category `playlists` – where every designer save leaves a new
+     * revision – instead of screens, playlists, slides and media. Only when
+     * something changed does the player load the whole screen.
+     */
+    async contentRevisions(screenId: string): Promise<ContentRevisions> {
+        const { playlists, schedules } = await this.readPlaylistCategory();
+        return {
+            schedule: schedules.find((s) => s.doc.screenId === screenId)?.doc.revision ?? null,
+            playlists: Object.fromEntries(playlists.map((p) => [p.doc.id, p.doc.revision ?? 0])),
+        };
     }
 
     /** Every playlist with what the playlists page shows of it, sorted by name. */

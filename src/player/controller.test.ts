@@ -20,6 +20,8 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
     return {
         assertSignedIn: vi.fn(async () => {}),
         loadScreen: vi.fn(async () => loaded()),
+        // Nothing new: the demo playlist at revision 1, no schedule document.
+        contentRevisions: vi.fn(async () => ({ schedule: null, playlists: { 'demo-playlist': 1 } })),
         timeZone: vi.fn(async () => 'Europe/Berlin'),
         churchName: vi.fn(async () => 'Gemeinde'),
         churchLogo: vi.fn(async () => null),
@@ -59,6 +61,46 @@ function deferred<T>() {
 describe('player controller', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
+
+    it('checks every 20 s whether designers saved, and loads the screen only when they did (Plan.md 26)', async () => {
+        const revisions = { schedule: null as number | null, playlists: { 'demo-playlist': 1 } };
+        const data = fakeData({ contentRevisions: vi.fn(async () => revisions) });
+        const player = createPlayer('demo', data, fakeDeps());
+        await player.start();
+        const loads = () => vi.mocked(data.loadScreen).mock.calls.length;
+        expect(loads()).toBe(1);
+
+        await vi.advanceTimersByTimeAsync(60_000);
+        expect(vi.mocked(data.contentRevisions).mock.calls.length).toBeGreaterThanOrEqual(2);
+        expect(loads()).toBe(1); // nothing changed: no full load before the 2-minute refresh
+
+        // A designer saves the playlist: within one quick check the screen is loaded again.
+        revisions.playlists = { 'demo-playlist': 2 };
+        vi.mocked(data.loadScreen).mockResolvedValue({
+            ...loaded(),
+            playlists: loaded().playlists.map((p) => ({ ...p, revision: 2 })),
+        });
+        await vi.advanceTimersByTimeAsync(25_000);
+        expect(loads()).toBe(2);
+        await vi.advanceTimersByTimeAsync(25_000);
+        expect(loads()).toBe(2); // and then rests again
+        player.stop();
+    });
+
+    it('notices a new schedule the same way, and a failing quick check fails nothing', async () => {
+        const contentRevisions = vi
+            .fn<PlayerData['contentRevisions']>()
+            .mockRejectedValueOnce(new Error('Network Error'))
+            .mockResolvedValue({ schedule: 1, playlists: { 'demo-playlist': 1 } });
+        const data = fakeData({ contentRevisions });
+        const player = createPlayer('demo', data, fakeDeps());
+        await player.start();
+        await vi.advanceTimersByTimeAsync(25_000);
+        expect(player.state.staleSince).toBeNull(); // the quick check reports nothing itself
+        await vi.advanceTimersByTimeAsync(2 * 60_000 + 30_000);
+        expect(vi.mocked(data.loadScreen).mock.calls.length).toBeGreaterThanOrEqual(2);
+        player.stop();
+    });
 
     it('shows a screen with rules only after the first clock check, not the default playlist first', async () => {
         const clock = deferred<string>();
