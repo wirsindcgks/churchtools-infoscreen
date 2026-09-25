@@ -229,6 +229,7 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | Kein Menüpunkt „Infoscreen Designer", auch nicht als Administrator | Modulrecht „sehen" fehlt | Schritt 2; Gruppe muss „aktiv" sein |
 | Startseite des Designers: „Dir fehlen Rechte …" | Person ist nicht (aktiv) in „Infoscreen-Designer" | Schritt 5; die Liste nennt das fehlende Recht |
 | Kein Menüpunkt „Einstellungen" im Designer | Du bist kein Administrator | Einstellungen sind Administratoren vorbehalten |
+| Kein „+ Screen erstellen", kein „Einstellungen" im Menü der Kachel | Dir fehlt das Recht, Screens anzulegen, zu bearbeiten und zu löschen – auch Administratoren brauchen es | Schritt 2: die drei „Daten in Kategorie …"-Rechte für alle Kategorien |
 | „Adresse erzeugen" meldet „Anmeldung fehlgeschlagen" | meist fehlt dem Geräte-Konto der **Benutzername** | Schritt 6, Punkt 2 |
 | Fernseher: „Dieser Fernseher ist nicht bei ChurchTools angemeldet" | Adresse ohne Anmeldung, oder das Passwort des Geräte-Kontos wurde geändert | in den Einstellungen eine neue Adresse erzeugen |
 | Fernseher: „Es gibt keinen Screen „…"" | Adresse vertippt oder Screen gelöscht | Adresse neu kopieren |

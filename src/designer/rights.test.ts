@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { missingDesignerRights, type ModulePermissions, type RightsInput } from './rights';
+import { mayConfigureScreens, missingDesignerRights, type ModulePermissions, type RightsInput } from './rights';
 
 const categories = { screens: 11, playlists: 12, slides: 13, media: 14, settings: 15 };
 const all = [11, 12, 13, 14, 15];
@@ -89,3 +89,23 @@ describe('missingDesignerRights', () => {
         expect(missing[0]?.detail).toContain('ersten Bild-Upload');
     });
 });
+
+describe('mayConfigureScreens', () => {
+    const write = (ids: number[]) => ({ 'create custom data': ids, 'edit custom data': ids, 'delete custom data': ids });
+
+    it('needs all three write rights on the category screens (Plan.md, F)', () => {
+        expect(mayConfigureScreens(write([11, 12]), 11)).toBe(true);
+        expect(mayConfigureScreens({ ...write([11]), 'delete custom data': [] }, 11)).toBe(false);
+    });
+
+    it('says no to a designer who writes content only – whatever ChurchTools admin rights they hold', () => {
+        expect(mayConfigureScreens(write([12, 13, 14]), 11)).toBe(false);
+    });
+
+    it('accepts "all categories" and refuses without module rights or a visible category', () => {
+        expect(mayConfigureScreens(write([-1]), 11)).toBe(true);
+        expect(mayConfigureScreens(null, 11)).toBe(false);
+        expect(mayConfigureScreens(write([11]), undefined)).toBe(false);
+    });
+});
+

@@ -30,6 +30,11 @@ const error = ref<string | null>(null);
 const missingRights = ref<MissingRight[]>([]);
 const repository = shallowRef<ScreenRepository | null>(null);
 const creating = ref(false);
+/**
+ * May create, configure and delete screens – the module right on `screens`
+ * (Plan.md, F), not the ChurchTools admin right that opens the settings page.
+ */
+const screensAdmin = ref(false);
 /** The screen whose settings dialog is open – administrators only. */
 const configuring = ref<ScreenDoc | null>(null);
 /** Administrators set the module up (role concept, Plan.md F); everyone else does not see the way there. */
@@ -84,10 +89,13 @@ onMounted(async () => {
         admin.value = isAdmin;
         demo.value = handle.demo;
         // A failed check must not lock anyone out; it only means no hint.
-        missingRights.value = await checkDesignerRights(handle.repository, handle.demo).catch((e: unknown) => {
+        const rights = await checkDesignerRights(handle.repository, handle.demo).catch((e: unknown) => {
             console.warn('Rechteprüfung nicht möglich:', e);
-            return [];
+            return { missing: [], configureScreens: isAdmin };
         });
+        missingRights.value = rights.missing;
+        // Demo mode has no module rights: there the ChurchTools admin right stands in, so the roles can be tried out.
+        screensAdmin.value = rights.configureScreens ?? isAdmin;
         repository.value = handle.repository;
         try {
             await refresh();
@@ -132,7 +140,7 @@ async function remove(overview: ScreenOverview): Promise<void> {
             <ModulePage current="screens" :admin="admin" :counts="counts">
                 <template #actions>
                     <button
-                        v-if="admin"
+                        v-if="screensAdmin"
                         class="d-btn d-btn--create"
                         type="button"
                         aria-label="Screen erstellen"
@@ -205,15 +213,15 @@ async function remove(overview: ScreenOverview): Promise<void> {
                             v-for="o in shown"
                             :key="o.screen.id"
                             :overview="o"
-                            :admin="admin"
+                            :admin="screensAdmin"
                             @remove="remove(o)"
                             @settings="configuring = o.screen"
                         />
                     </div>
                     <div v-else-if="!overviews.length" class="empty">
                         <p>Noch keine Screens angelegt.</p>
-                        <p v-if="!admin" class="muted">Screens legt ein Administrator an – danach gestaltest du sie hier.</p>
-                        <button v-if="admin" class="d-btn d-btn--create" type="button" @click="creating = true">
+                        <p v-if="!screensAdmin" class="muted">Screens legt ein Administrator an – danach gestaltest du sie hier.</p>
+                        <button v-if="screensAdmin" class="d-btn d-btn--create" type="button" @click="creating = true">
                             <Icon name="plus" /> Ersten Screen erstellen
                         </button>
                     </div>
@@ -230,7 +238,7 @@ async function remove(overview: ScreenOverview): Promise<void> {
                 @saved="configuring = null; refresh()"
             />
             <CreateScreenDialog
-                v-if="creating && admin"
+                v-if="creating && screensAdmin"
                 :repository="repository"
                 :author="author"
                 @close="creating = false"

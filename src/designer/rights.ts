@@ -120,16 +120,39 @@ function missingWikiRights({ wiki, wikiCategoryId }: RightsInput): MissingRight[
 }
 
 /** Reads everything the check needs. In demo mode the module part is skipped: there is no module. */
-export async function checkDesignerRights(repository: ScreenRepository, demo: boolean): Promise<MissingRight[]> {
+/**
+ * Whether this person may configure screens – create, change and delete them
+ * (Plan.md, F: the administrators' part). Asked of the module rights on the
+ * category `screens`, not of a ChurchTools admin right: the buttons follow
+ * what the server allows, or they would end in a 403 (seen 2026-09-25 with an
+ * account that may administer persons but no longer write screens).
+ */
+export function mayConfigureScreens(module: Partial<ModulePermissions> | null | undefined, screensCategoryId: number | undefined): boolean {
+    if (!module || screensCategoryId === undefined) return false;
+    const covers = (ids: number[] | undefined) => !!ids && (ids.includes(screensCategoryId) || ids.includes(-1));
+    return covers(module['create custom data']) && covers(module['edit custom data']) && covers(module['delete custom data']);
+}
+
+export interface DesignerRights {
+    missing: MissingRight[];
+    /** See {@link mayConfigureScreens}; null in demo mode, which has no module rights to ask. */
+    configureScreens: boolean | null;
+}
+
+export async function checkDesignerRights(repository: ScreenRepository, demo: boolean): Promise<DesignerRights> {
     const [permissions, categories, wikiCategories] = await Promise.all([
         churchtoolsClient.get<Record<string, unknown>>('/permissions/global'),
         demo ? Promise.resolve({}) : repository.visibleCategories(),
         churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
     ]);
-    return missingDesignerRights({
-        module: demo ? undefined : ((permissions[EXTENSION_KEY] as Partial<ModulePermissions> | undefined) ?? null),
-        categories,
-        wiki: (permissions.churchwiki as Partial<WikiPermissions> | undefined) ?? null,
-        wikiCategoryId: wikiCategories.find((c) => c.name === WIKI_CATEGORY_NAME)?.id ?? null,
-    });
+    const module = demo ? undefined : ((permissions[EXTENSION_KEY] as Partial<ModulePermissions> | undefined) ?? null);
+    return {
+        missing: missingDesignerRights({
+            module,
+            categories,
+            wiki: (permissions.churchwiki as Partial<WikiPermissions> | undefined) ?? null,
+            wikiCategoryId: wikiCategories.find((c) => c.name === WIKI_CATEGORY_NAME)?.id ?? null,
+        }),
+        configureScreens: demo ? null : mayConfigureScreens(module, (categories as Partial<Record<CategoryKey, number>>).screens),
+    };
 }
