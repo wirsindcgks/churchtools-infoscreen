@@ -14,6 +14,7 @@ import { matchingRuleIndex } from '../player/schedule';
 import { ConflictError, type ConflictInfo, type ScreenRepository, type StagedPlaylist } from '../store/screen-repository';
 import { cloneJson } from './ops';
 import Icon from './Icon.vue';
+import PlaylistPicker from './PlaylistPicker.vue';
 import { usePreview } from './usePreview';
 import {
     createAppointmentRule,
@@ -44,7 +45,8 @@ const allPlaylists = ref<StagedPlaylist[]>([]);
 const defaultPlaylistId = ref('');
 const rules = ref<ScheduleRule[]>([]);
 const savedJson = ref('');
-const newName = ref('');
+/** A rule added while there was no second playlist: its picker opens with the name field. */
+const createFor = ref<number | null>(null);
 
 const dirty = computed(() => JSON.stringify([defaultPlaylistId.value, rules.value]) !== savedJson.value);
 /** The screen as it would run with this schedule. */
@@ -138,18 +140,16 @@ async function editSlides(playlistId: string): Promise<void> {
     await router.push({ name: 'editor', params: { id: playlistId } });
 }
 
-/** A new playlist in the screen's format – written at once, so the rules can choose it. */
-async function createPlaylist(): Promise<void> {
-    if (!screen.value || !newName.value.trim()) return;
+/** A new playlist in the screen's format – written at once, so the schedule can choose it. */
+async function createPlaylist(name: string): Promise<StagedPlaylist | null> {
+    if (!screen.value) return null;
     try {
-        const created = await props.repository.createPlaylist(
-            { name: newName.value, stage: screen.value.stage },
-            props.author,
-        );
+        const created = await props.repository.createPlaylist({ name, stage: screen.value.stage }, props.author);
         allPlaylists.value = [...allPlaylists.value, created];
-        newName.value = '';
+        return created;
     } catch (e) {
         saveError.value = e instanceof Error ? e.message : String(e);
+        return null;
     }
 }
 
@@ -169,13 +169,21 @@ function ruleTarget(): string {
     return choices.value.find((p) => p.id !== defaultPlaylistId.value)?.id ?? defaultPlaylistId.value;
 }
 
+/** Without a second playlist a rule would change nothing: its picker asks for a new one right away. */
+function added(): void {
+    createFor.value = choices.value.some((p) => p.id !== defaultPlaylistId.value) ? null : rules.value.length - 1;
+}
+
 function addTimeRule(): void {
     rules.value.push(createTimeRule(ruleTarget()));
+    added();
 }
 
 function addAppointmentRule(): void {
     const first = calendars.value[0];
-    if (first) rules.value.push(createAppointmentRule(ruleTarget(), [first.id]));
+    if (!first) return;
+    rules.value.push(createAppointmentRule(ruleTarget(), [first.id]));
+    added();
 }
 
 function setRule(index: number, patch: Partial<ScheduleRule>): void {
@@ -191,6 +199,7 @@ function moveRule(from: number, to: number): void {
 
 function removeRule(index: number): void {
     rules.value.splice(index, 1);
+    createFor.value = null;
 }
 
 function toggleDay(index: number, rule: TimeRule, day: number): void {
@@ -284,245 +293,236 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
             <p v-else-if="loadError" class="d-banner d-banner--error" role="alert">{{ loadError }}</p>
             <template v-else-if="screen">
                 <p class="muted intro">
-                    Welche Playlist wann läuft. Passt keine Regel, läuft die <strong>Standard-Playlist</strong>; passen
-                    mehrere, gilt die <strong>obere</strong>. Zur Wahl stehen alle Playlists im Format des Screens –
-                    dieselbe Playlist darf auf mehreren Screens laufen.
+                    Ein Screen zeigt seine <strong>Standard-Playlist</strong> – außer eine Regel sagt, dass zu bestimmten
+                    Zeiten etwas anderes laufen soll. Zur Wahl stehen alle Playlists im Format des Screens; dieselbe
+                    Playlist darf auf mehreren Screens laufen.
                 </p>
 
-                <label class="inline default-pick">
-                    <strong>Standard-Playlist</strong>
-                    <select v-model="defaultPlaylistId" data-testid="default-playlist">
-                        <option v-for="p in choices" :key="p.id" :value="p.id">{{ p.name }}</option>
-                    </select>
-                </label>
+                <section class="step">
+                    <h3>Normalerweise zeigt dieser Screen</h3>
+                    <PlaylistPicker
+                        v-model="defaultPlaylistId"
+                        :choices="choices"
+                        :create="createPlaylist"
+                        label="Standard-Playlist"
+                        testid="default-playlist"
+                        @edit="editSlides"
+                    />
+                </section>
 
-                <h3>Diese Playlists laufen hier</h3>
-                <ul class="playlists">
-                    <li v-for="p in shown" :key="p.id" data-testid="schedule-playlist">
-                        <span class="swatch" :style="{ background: colorOf(p.id) }" aria-hidden="true" />
-                        <span class="name">{{ p.name }}</span>
-                        <span class="count">{{ p.slideIds.length }} {{ p.slideIds.length === 1 ? 'Slide' : 'Slides' }}</span>
+                <section class="step">
+                    <h3>Zu bestimmten Zeiten etwas anderes zeigen</h3>
+                    <p v-if="!rules.length" class="muted small">
+                        Noch keine Regel – es läuft immer „{{ nameOf(defaultPlaylistId) }}". Soll zum Beispiel sonntags
+                        vormittags oder rund um den Gottesdienst eine andere Playlist laufen, lege eine Regel an.
+                    </p>
+                    <p v-else-if="rules.length > 1" class="muted small">Passen mehrere Regeln, gilt die obere.</p>
+                    <ol class="rules">
+                        <li
+                            v-for="(rule, index) in rules"
+                            :key="index"
+                            class="rule"
+                            :style="{ '--rule-color': colorOf(rule.playlistId) }"
+                            data-testid="schedule-rule"
+                        >
+                            <div class="rule-head">
+                                <span class="rank">{{ index + 1 }}</span>
+                                <strong>{{ rule.kind === 'time' ? 'Zu bestimmten Uhrzeiten' : 'Rund um Termine' }}</strong>
+                                <span class="spacer" />
+                                <button
+                                    class="d-btn d-btn--icon"
+                                    type="button"
+                                    aria-label="Nach oben – hat Vorrang"
+                                    title="Nach oben – hat Vorrang"
+                                    :disabled="index === 0"
+                                    data-testid="rule-up"
+                                    @click="moveRule(index, index - 1)"
+                                >
+                                    ↑
+                                </button>
+                                <button
+                                    class="d-btn d-btn--icon"
+                                    type="button"
+                                    aria-label="Nach unten"
+                                    title="Nach unten"
+                                    :disabled="index === rules.length - 1"
+                                    @click="moveRule(index, index + 1)"
+                                >
+                                    ↓
+                                </button>
+                                <button
+                                    class="d-btn d-btn--icon d-btn--danger"
+                                    type="button"
+                                    aria-label="Regel entfernen"
+                                    title="Regel entfernen"
+                                    data-testid="rule-remove"
+                                    @click="removeRule(index)"
+                                >
+                                    <Icon name="trash" />
+                                </button>
+                            </div>
+
+                            <div v-if="rule.kind === 'time'" class="rule-body">
+                                <div class="days" role="group" aria-label="Wochentage">
+                                    <button
+                                        v-for="d in WEEKDAYS"
+                                        :key="d.day"
+                                        type="button"
+                                        class="day"
+                                        :class="{ on: rule.weekdays.includes(d.day) }"
+                                        :aria-pressed="rule.weekdays.includes(d.day)"
+                                        :title="d.long"
+                                        data-testid="rule-day"
+                                        @click="toggleDay(index, rule, d.day)"
+                                    >
+                                        {{ d.short }}
+                                    </button>
+                                </div>
+                                <label class="inline">
+                                    von
+                                    <input
+                                        type="time"
+                                        step="300"
+                                        :value="rule.from"
+                                        data-testid="rule-from"
+                                        @change="setTime(index, 'from', ($event.target as HTMLInputElement).value)"
+                                    >
+                                </label>
+                                <label class="inline">
+                                    bis
+                                    <input
+                                        type="time"
+                                        step="300"
+                                        :value="rule.to"
+                                        data-testid="rule-to"
+                                        @change="setTime(index, 'to', ($event.target as HTMLInputElement).value)"
+                                    >
+                                </label>
+                            </div>
+
+                            <div v-else class="rule-body appointment">
+                                <label class="inline">
+                                    <input
+                                        class="minutes"
+                                        type="number"
+                                        min="0"
+                                        max="1440"
+                                        :value="rule.minutesBefore"
+                                        data-testid="rule-before"
+                                        @input="setMinutes(index, 'minutesBefore', ($event.target as HTMLInputElement).value)"
+                                    >
+                                    Min. vor Beginn bis
+                                </label>
+                                <label class="inline">
+                                    <input
+                                        class="minutes"
+                                        type="number"
+                                        min="0"
+                                        max="1440"
+                                        :value="rule.minutesAfter"
+                                        data-testid="rule-after"
+                                        @input="setMinutes(index, 'minutesAfter', ($event.target as HTMLInputElement).value)"
+                                    >
+                                    Min. nach Ende eines Termins in
+                                </label>
+                                <div class="calendars">
+                                    <label v-for="c in calendars" :key="c.id" class="check">
+                                        <input
+                                            type="checkbox"
+                                            :checked="rule.calendarIds.includes(c.id)"
+                                            @change="toggleCalendar(index, rule, c.id, ($event.target as HTMLInputElement).checked)"
+                                        >
+                                        {{ c.name }}
+                                    </label>
+                                    <span v-for="id in rule.calendarIds.filter((i) => !calendars.some((c) => c.id === i))" :key="id" class="muted small">
+                                        {{ calendarName(id) }} (nicht sichtbar)
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="rule-body shows">
+                                <span class="arrow" aria-hidden="true">→</span>
+                                <span>zeigt</span>
+                                <PlaylistPicker
+                                    :model-value="rule.playlistId"
+                                    :choices="choices"
+                                    :create="createPlaylist"
+                                    :start-creating="createFor === index"
+                                    hint="Dafür braucht es eine zweite Playlist: lege sie hier an – oder wähle oben in der Liste eine vorhandene."
+                                    :label="`Playlist der Regel ${index + 1}`"
+                                    testid="rule-playlist"
+                                    @update:model-value="setRule(index, { playlistId: $event })"
+                                    @edit="editSlides"
+                                />
+                            </div>
+                        </li>
+                    </ol>
+                    <div class="adders">
+                        <button class="d-btn" type="button" data-testid="add-time-rule" @click="addTimeRule">
+                            <Icon name="clock" :size="16" /> Zu bestimmten Uhrzeiten
+                        </button>
                         <button
                             class="d-btn"
                             type="button"
-                            :title="dirty ? 'Speichert den Zeitplan und öffnet den Editor' : 'Öffnet den Editor'"
-                            data-testid="playlist-edit"
-                            @click="editSlides(p.id)"
+                            data-testid="add-appointment-rule"
+                            :disabled="!calendars.length"
+                            :title="calendars.length ? 'Vor, während und nach Terminen ausgewählter Kalender' : 'Keine Kalender sichtbar'"
+                            @click="addAppointmentRule"
                         >
-                            Slides bearbeiten
+                            <Icon name="calendar" :size="16" /> Rund um Termine
                         </button>
-                    </li>
-                </ul>
-                <form class="adders" @submit.prevent="createPlaylist">
-                    <input
-                        v-model="newName"
-                        class="new-name"
-                        type="text"
-                        maxlength="100"
-                        placeholder="Name einer neuen Playlist"
-                        aria-label="Name einer neuen Playlist"
-                        data-testid="new-playlist-name"
-                    >
-                    <button class="d-btn" type="submit" :disabled="!newName.trim()" data-testid="add-playlist">
-                        <Icon name="plus" :size="16" /> Playlist anlegen
-                    </button>
-                </form>
+                    </div>
+                </section>
 
-                <h3>Regeln <span class="muted small">– die obere gewinnt</span></h3>
-                <p v-if="!rules.length" class="muted small">
-                    Noch keine Regel: Es läuft immer „{{ nameOf(defaultPlaylistId) }}".
-                </p>
-                <ol class="rules">
-                    <li
-                        v-for="(rule, index) in rules"
-                        :key="index"
-                        class="rule"
-                        :style="{ '--rule-color': colorOf(rule.playlistId) }"
-                        data-testid="schedule-rule"
-                    >
-                        <div class="rule-head">
-                            <span class="rank">{{ index + 1 }}</span>
-                            <strong>{{ rule.kind === 'time' ? 'Nach Uhrzeit' : 'Nach Termin' }}</strong>
-                            <label class="inline">
-                                zeigt
-                                <select
-                                    :value="rule.playlistId"
-                                    data-testid="rule-playlist"
-                                    @change="setRule(index, { playlistId: ($event.target as HTMLSelectElement).value })"
-                                >
-                                    <option v-for="p in choices" :key="p.id" :value="p.id">{{ p.name }}</option>
-                                </select>
-                            </label>
-                            <span class="spacer" />
-                            <button
-                                class="d-btn d-btn--icon"
-                                type="button"
-                                aria-label="Nach oben – hat Vorrang"
-                                title="Nach oben – hat Vorrang"
-                                :disabled="index === 0"
-                                data-testid="rule-up"
-                                @click="moveRule(index, index - 1)"
-                            >
-                                ↑
-                            </button>
-                            <button
-                                class="d-btn d-btn--icon"
-                                type="button"
-                                aria-label="Nach unten"
-                                title="Nach unten"
-                                :disabled="index === rules.length - 1"
-                                @click="moveRule(index, index + 1)"
-                            >
-                                ↓
-                            </button>
-                            <button
-                                class="d-btn d-btn--icon d-btn--danger"
-                                type="button"
-                                aria-label="Regel entfernen"
-                                title="Regel entfernen"
-                                data-testid="rule-remove"
-                                @click="removeRule(index)"
-                            >
-                                <Icon name="trash" />
-                            </button>
-                        </div>
-
-                        <div v-if="rule.kind === 'time'" class="rule-body">
-                            <div class="days" role="group" aria-label="Wochentage">
-                                <button
-                                    v-for="d in WEEKDAYS"
-                                    :key="d.day"
-                                    type="button"
-                                    class="day"
-                                    :class="{ on: rule.weekdays.includes(d.day) }"
-                                    :aria-pressed="rule.weekdays.includes(d.day)"
-                                    :title="d.long"
-                                    data-testid="rule-day"
-                                    @click="toggleDay(index, rule, d.day)"
-                                >
-                                    {{ d.short }}
-                                </button>
-                            </div>
-                            <label class="inline">
-                                von
-                                <input
-                                    type="time"
-                                    step="300"
-                                    :value="rule.from"
-                                    data-testid="rule-from"
-                                    @change="setTime(index, 'from', ($event.target as HTMLInputElement).value)"
-                                >
-                            </label>
-                            <label class="inline">
-                                bis
-                                <input
-                                    type="time"
-                                    step="300"
-                                    :value="rule.to"
-                                    data-testid="rule-to"
-                                    @change="setTime(index, 'to', ($event.target as HTMLInputElement).value)"
-                                >
-                            </label>
-                        </div>
-
-                        <div v-else class="rule-body appointment">
-                            <label class="inline">
-                                <input
-                                    class="minutes"
-                                    type="number"
-                                    min="0"
-                                    max="1440"
-                                    :value="rule.minutesBefore"
-                                    data-testid="rule-before"
-                                    @input="setMinutes(index, 'minutesBefore', ($event.target as HTMLInputElement).value)"
-                                >
-                                Min. vor Beginn bis
-                            </label>
-                            <label class="inline">
-                                <input
-                                    class="minutes"
-                                    type="number"
-                                    min="0"
-                                    max="1440"
-                                    :value="rule.minutesAfter"
-                                    data-testid="rule-after"
-                                    @input="setMinutes(index, 'minutesAfter', ($event.target as HTMLInputElement).value)"
-                                >
-                                Min. nach Ende eines Termins in
-                            </label>
-                            <div class="calendars">
-                                <label v-for="c in calendars" :key="c.id" class="check">
-                                    <input
-                                        type="checkbox"
-                                        :checked="rule.calendarIds.includes(c.id)"
-                                        @change="toggleCalendar(index, rule, c.id, ($event.target as HTMLInputElement).checked)"
-                                    >
-                                    {{ c.name }}
-                                </label>
-                                <span v-for="id in rule.calendarIds.filter((i) => !calendars.some((c) => c.id === i))" :key="id" class="muted small">
-                                    {{ calendarName(id) }} (nicht sichtbar)
-                                </span>
-                            </div>
-                        </div>
-                    </li>
-                </ol>
-                <div class="adders">
-                    <button class="d-btn" type="button" data-testid="add-time-rule" @click="addTimeRule">
-                        <Icon name="clock" :size="16" /> Nach Uhrzeit
-                    </button>
-                    <button
-                        class="d-btn"
-                        type="button"
-                        data-testid="add-appointment-rule"
-                        :disabled="!calendars.length"
-                        :title="calendars.length ? 'Um Termine ausgewählter Kalender herum' : 'Keine Kalender sichtbar'"
-                        @click="addAppointmentRule"
-                    >
-                        <Icon name="calendar" :size="16" /> Nach Termin
-                    </button>
-                </div>
-
-                <h3>Vorschau</h3>
-                <div class="preview-controls">
-                    <label class="inline">
-                        Tag
-                        <input v-model="previewDate" type="date" :min="today" :max="lastDay" data-testid="preview-date">
+                <section class="step">
+                    <h3>Vorschau: Was läuft wann?</h3>
+                    <div class="preview-controls">
+                        <label class="inline">
+                            Tag
+                            <input v-model="previewDate" type="date" :min="today" :max="lastDay" data-testid="preview-date">
+                        </label>
+                        <span class="muted small">{{ weekdayName }}</span>
+                    </div>
+                    <div class="timeline" data-testid="preview-timeline">
+                        <button
+                            v-for="segment in timeline"
+                            :key="segment.start"
+                            type="button"
+                            class="segment"
+                            :style="{
+                                flexGrow: segment.end - segment.start,
+                                background: colorOf(segment.playlistId),
+                            }"
+                            :title="`${fromMinutes(segment.start)}–${fromMinutes(segment.end === 1440 ? 1439 : segment.end)}: ${nameOf(segment.playlistId)}`"
+                            @click="previewMinute = segment.start"
+                        />
+                        <span class="needle" :style="{ left: `${(previewMinute / 1440) * 100}%` }" aria-hidden="true" />
+                    </div>
+                    <div class="scale muted small" aria-hidden="true">
+                        <span>0</span><span>6</span><span>12</span><span>18</span><span>24 Uhr</span>
+                    </div>
+                    <ul class="legend">
+                        <li v-for="p in shown" :key="p.id" data-testid="schedule-playlist">
+                            <span class="swatch" :style="{ background: colorOf(p.id) }" aria-hidden="true" />
+                            {{ p.name }}
+                            <span class="muted">· {{ p.slideIds.length }} {{ p.slideIds.length === 1 ? 'Slide' : 'Slides' }}</span>
+                        </li>
+                    </ul>
+                    <label class="slider">
+                        <span class="visually-hidden">Uhrzeit</span>
+                        <input v-model.number="previewMinute" type="range" min="0" max="1425" step="15" data-testid="preview-time">
                     </label>
-                    <span class="muted small">{{ weekdayName }}</span>
-                </div>
-                <div class="timeline" data-testid="preview-timeline">
-                    <button
-                        v-for="segment in timeline"
-                        :key="segment.start"
-                        type="button"
-                        class="segment"
-                        :style="{
-                            flexGrow: segment.end - segment.start,
-                            background: colorOf(segment.playlistId),
-                        }"
-                        :title="`${fromMinutes(segment.start)}–${fromMinutes(segment.end === 1440 ? 1439 : segment.end)}: ${nameOf(segment.playlistId)}`"
-                        @click="previewMinute = segment.start"
-                    />
-                    <span class="needle" :style="{ left: `${(previewMinute / 1440) * 100}%` }" aria-hidden="true" />
-                </div>
-                <div class="scale muted small" aria-hidden="true">
-                    <span>0</span><span>6</span><span>12</span><span>18</span><span>24 Uhr</span>
-                </div>
-                <label class="slider">
-                    <span class="visually-hidden">Uhrzeit</span>
-                    <input v-model.number="previewMinute" type="range" min="0" max="1425" step="15" data-testid="preview-time">
-                </label>
-                <p v-if="decision" class="decision" data-testid="preview-result">
-                    {{ weekdayName }}, {{ fromMinutes(previewMinute) }} Uhr: läuft
-                    <strong :style="{ color: colorOf(decision.playlistId) }">„{{ nameOf(decision.playlistId) }}"</strong>
-                    {{ ' ' }}<span class="muted">
-                        {{ decision.ruleIndex < 0 ? '– keine Regel passt, Standard' : `– Regel ${decision.ruleIndex + 1}` }}
-                    </span>
-                </p>
-                <p v-if="hasAppointmentRules" class="muted small">
-                    Termin-Regeln rechnen mit den Terminen der nächsten {{ PREVIEW_DAYS }} Tage. Der Fernseher wechselt erst,
-                    wenn seine Uhr bestätigt ist.
-                </p>
+                    <p v-if="decision" class="decision" data-testid="preview-result">
+                        {{ weekdayName }}, {{ fromMinutes(previewMinute) }} Uhr: läuft
+                        <strong :style="{ color: colorOf(decision.playlistId) }">„{{ nameOf(decision.playlistId) }}"</strong>
+                        {{ ' ' }}<span class="muted">
+                            {{ decision.ruleIndex < 0 ? '– keine Regel passt, Standard' : `– Regel ${decision.ruleIndex + 1}` }}
+                        </span>
+                    </p>
+                    <p v-if="hasAppointmentRules" class="muted small">
+                        Termin-Regeln rechnen mit den Terminen der nächsten {{ PREVIEW_DAYS }} Tage. Der Fernseher wechselt erst,
+                        wenn seine Uhr bestätigt ist.
+                    </p>
+                </section>
 
                 <ul v-if="problems.length" class="problems" role="alert" data-testid="schedule-problems">
                     <li v-for="p in problems" :key="p">{{ p }}</li>
@@ -553,8 +553,7 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
     overflow-y: auto;
 }
 .inline input,
-.inline select,
-.default input {
+.inline select {
     width: auto;
 }
 .head {
@@ -586,38 +585,12 @@ ol {
     padding: 0;
     list-style: none;
 }
-.playlists li {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 0;
-    border-bottom: 1px solid var(--d-divider);
-}
 .swatch {
     flex: none;
     width: 12px;
     height: 12px;
     border-radius: 3px;
 }
-.name {
-    flex: 1 1 10em;
-    min-width: 0;
-    font-weight: 600;
-}
-.new-name {
-    flex: 1 1 14em;
-    width: auto;
-}
-.default-pick select {
-    min-width: 14em;
-}
-.count {
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
-    white-space: nowrap;
-}
-.default,
 .inline,
 .check {
     display: inline-flex;
@@ -629,6 +602,37 @@ ol {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
+}
+.step {
+    display: grid;
+    gap: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--d-divider);
+    border-radius: var(--d-radius-lg);
+}
+.step h3 {
+    margin: 0;
+}
+.step p {
+    margin: 0;
+}
+.shows {
+    padding-top: 6px;
+    border-top: 1px dashed var(--d-divider);
+}
+.arrow {
+    color: var(--d-text-muted);
+}
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    font-size: var(--d-size-sm);
+}
+.legend li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 .rules {
     display: grid;

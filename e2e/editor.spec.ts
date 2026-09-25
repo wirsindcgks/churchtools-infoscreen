@@ -235,6 +235,34 @@ test('the media library in the editor lists pictures to choose from and closes a
     await expect(library).toBeHidden();
 });
 
+test('a rule without a second playlist asks for one on the spot, and the new one is chosen (Plan.md 17)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('screen-card').first().getByTestId('open-schedule').click();
+    const dialog = page.getByTestId('schedule-dialog');
+    await expect(dialog).toContainText('Normalerweise zeigt dieser Screen');
+    await expect(dialog).toContainText('Noch keine Regel');
+
+    await dialog.getByTestId('add-time-rule').click();
+    const rule = dialog.getByTestId('schedule-rule');
+    await expect(rule.getByTestId('inline-create')).toBeVisible(); // only one playlist so far
+    await expect(rule.getByTestId('inline-create-name')).toBeFocused();
+    await rule.getByTestId('inline-create-name').fill('Sonntag');
+    await rule.getByTestId('inline-create-save').click();
+    await expect(rule.getByTestId('inline-create')).toHaveCount(0);
+    await expect(rule.getByTestId('rule-playlist').locator('option:checked')).toHaveText('Sonntag');
+    await expect(dialog.getByTestId('schedule-playlist')).toHaveCount(2); // the legend below the day
+
+    // The default can take a new one the same way: the last entry of the list.
+    await dialog.getByTestId('default-playlist').selectOption({ label: '＋ Neue Playlist anlegen …' });
+    await expect(dialog.getByTestId('default-playlist')).toHaveValue(/.+/);
+    await expect(dialog.getByTestId('inline-create')).toHaveCount(1);
+    await page.screenshot({ path: 'test-results/schedule-inline.png' });
+
+    await dialog.getByTestId('schedule-save').click();
+    await expect(dialog).toBeHidden();
+    await expect(page.getByTestId('screen-card').first().getByTestId('open-schedule')).toHaveText('1 Regel');
+});
+
 test('playlists stand on their own: create one, choose it in a screen\'s schedule, see where it runs (Plan.md 17, 19)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('sidebar-playlists').click();
