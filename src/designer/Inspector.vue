@@ -7,7 +7,7 @@ import { fontDef, FONTS } from '../player/fonts';
 import { sizedImageUrl } from '../player/format';
 import { PAGE_SECONDS, slideSeconds } from '../player/paging';
 import { qrShape } from '../player/qr';
-import { instagramEmbedUrl, webFrame } from '../player/web';
+import { webFrame } from '../player/web';
 import { useEditorStore } from './editor-store';
 import ColorField from './ColorField.vue';
 import FillEditor from './FillEditor.vue';
@@ -82,12 +82,6 @@ const themeLayout = computed(() => (themeOf(stage).appointments === 'large' ? 'g
 function webProblem(url: string): string | null {
     if (!url.trim()) return 'Noch keine Adresse – der Baustein bleibt leer.';
     return webFrame(url, window.location.origin) ? null : 'Nur Adressen mit https:// werden gezeigt.';
-}
-
-/** An Instagram name or profile address becomes the embed page, which Instagram lets into a frame. */
-function setWebUrl(value: string): void {
-    const instagram = /instagram\.com/i.test(value) ? instagramEmbedUrl(value) : null;
-    setBlock({ url: instagram ?? value.trim() });
 }
 
 function setSlideNumber(value: string): void {
@@ -230,7 +224,7 @@ const slideFill = computed<Fill>(() =>
                         >
                             <option value="">Wie im Design ({{ themeLayout }})</option>
                             <option value="rows">Zeilen – Datum, Uhrzeit, Titel</option>
-                            <option value="cards">Karten – Kalender und Uhrzeit links, Titel und Ort rechts</option>
+                            <option value="cards">Karten – Datumskachel, Kalender, Datum, Uhrzeit und Ort untereinander</option>
                         </select>
                         <select
                             v-else
@@ -339,17 +333,17 @@ const slideFill = computed<Fill>(() =>
                     </div>
                 </template>
 
-                <!-- Plan.md, 28: another website in a frame – an Instagram profile, a widget. -->
+                <!-- Plan.md, 28: another website in a frame – a page of the church website, a widget. -->
                 <template v-if="block.type === 'web'">
                     <label class="d-field">
                         Adresse
                         <input
                             type="url"
-                            placeholder="https://… oder instagram.com/name"
+                            placeholder="https://…"
                             :value="block.url"
                             data-testid="web-url"
                             v-on="edit"
-                            @change="setWebUrl(($event.target as HTMLInputElement).value)"
+                            @change="setBlock({ url: ($event.target as HTMLInputElement).value.trim() })"
                         >
                     </label>
                     <p v-if="webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
@@ -365,8 +359,8 @@ const slideFill = computed<Fill>(() =>
                         </select>
                     </label>
                     <p class="hint">
-                        Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer. Für Instagram genügt der
-                        Profilname, etwa <code>instagram.com/name</code>.
+                        Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer. Manche Seiten verbieten
+                        das Einbetten – dann bleibt der Rahmen ebenfalls leer.
                     </p>
                 </template>
 

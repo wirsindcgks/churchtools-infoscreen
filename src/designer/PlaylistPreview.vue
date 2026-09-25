@@ -41,6 +41,10 @@ const context = reactive<StageContext>({
     get media() {
         return parent.media;
     },
+    // The theme too: accent, corners and layouts as on the TV (Plan.md, 27).
+    get theme() {
+        return parent.theme;
+    },
     pages: {},
     get paging() {
         return !paused.value;

@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -543,6 +543,17 @@ test('a locked block stays put: no drag, no keys, no fields, no delete – until
     await expect(frames).toHaveCount(count - 1);
 });
 
+/** At least one card on the stage, and every one inside the frame of its list. */
+async function expectWholeCards(stage: Locator): Promise<void> {
+    const cards = stage.getByTestId('list-card');
+    await expect(cards.first()).toBeVisible();
+    const frame = (await stage.getByTestId('frame-appointment-list').first().boundingBox())!;
+    for (const card of await cards.all()) {
+        const box = (await card.boundingBox())!;
+        expect(box.y + box.height).toBeLessThanOrEqual(frame.y + frame.height + 1);
+    }
+}
+
 /** Four appointments in three calendars, with place and description – for the card layouts. */
 async function mockAppointments(page: Page): Promise<void> {
     const services = [
@@ -575,7 +586,7 @@ async function mockAppointments(page: Page): Promise<void> {
     });
 }
 
-test('list and next appointment in the look of the WordPress plugin: category and time in a fixed block, place (Plan.md 20)', async ({ page }) => {
+test('list and next appointment in the look of the WordPress plugin: tile, label, day, time and place below each other (Plan.md 20)', async ({ page }) => {
     await mockAppointments(page);
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
@@ -584,7 +595,8 @@ test('list and next appointment in the look of the WordPress plugin: category an
     await page.getByTestId('frame-appointment-list').first().click();
     await page.getByTestId('list-layout').selectOption('cards');
     const stage = page.locator('.editor-stage');
-    await expect(stage.getByTestId('list-card')).toHaveCount(4);
+    // Rows as tall as the plugin's: only those that fit whole – none cut off at the bottom.
+    await expectWholeCards(stage);
     await expect(stage.getByTestId('list-card').first()).toContainText('Gemeindezentrum, Saal');
     await expect(stage.getByTestId('list-card').first()).toContainText(/Uhr/);
     await page.waitForTimeout(500);
@@ -616,6 +628,8 @@ test('the design page sets the look of all screens: corners, large appointments,
     await expect(preview.getByTestId('next-card')).toBeVisible();
     await expect(preview.locator('.slide')).toHaveAttribute('style', /--isd-radius: 0/);
     await page.getByTestId('theme-image-ratio').selectOption('1:1');
+    await page.getByTestId('theme-accent').fill('#e11d48');
+    await page.getByTestId('theme-accent').blur();
     await page.getByTestId('theme-save').click();
     await expect(page.getByTestId('theme-saved')).toBeVisible();
     await page.waitForTimeout(500);
@@ -626,17 +640,22 @@ test('the design page sets the look of all screens: corners, large appointments,
     await page.getByTestId('playlist-card').first().getByTestId('open-playlist').click();
     await page.getByTestId('slide-item').nth(2).click();
     const stage = page.locator('.editor-stage');
-    await expect(stage.getByTestId('list-card')).toHaveCount(4);
+    // Rows as tall as the plugin's: only those that fit whole – none cut off at the bottom.
+    await expectWholeCards(stage);
     await page.getByTestId('frame-appointment-list').first().click();
     await expect(page.getByTestId('list-layout')).toHaveValue('');
     await page.getByTestId('list-layout').selectOption('rows');
     await expect(stage.getByTestId('list-card')).toHaveCount(0);
+
+    // The preview plays in the theme too – its page bar in the accent colour (seen missing, 2026-09-25).
+    await page.getByTestId('open-preview').click();
+    await expect(page.getByTestId('playlist-preview').locator('.slide').first()).toHaveAttribute('style', /--isd-accent: #e11d48/);
 });
 
-test('a website and a QR code instead of the old HTML snippet (Plan.md 28)', async ({ page }) => {
-    // No network in the test: Instagram's embed page is answered here.
-    await page.route('https://www.instagram.com/**', (route) =>
-        route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Profil</title><h1>wirsindcgks</h1>' }),
+test('a website and a QR code (Plan.md 28)', async ({ page }) => {
+    // No network in the test: the foreign page is answered here.
+    await page.route('https://www.gemeinde.example/**', (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Wochenblatt</title><h1>Wochenblatt</h1>' }),
     );
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
@@ -644,19 +663,18 @@ test('a website and a QR code instead of the old HTML snippet (Plan.md 28)', asy
 
     await page.getByTestId('add-web').click();
     await expect(page.getByTestId('web-problem')).toContainText('Noch keine Adresse');
-    await page.getByTestId('web-url').fill('instagram.com/wirsindcgks');
+    await page.getByTestId('web-url').fill('https://www.gemeinde.example/wochenblatt/');
     await page.getByTestId('web-url').press('Enter');
     await page.getByTestId('web-url').blur();
-    await expect(page.getByTestId('web-url')).toHaveValue('https://www.instagram.com/wirsindcgks/embed/');
     const frame = stage.getByTestId('web-frame');
-    await expect(frame).toHaveAttribute('src', 'https://www.instagram.com/wirsindcgks/embed/');
+    await expect(frame).toHaveAttribute('src', 'https://www.gemeinde.example/wochenblatt/');
     await expect(frame).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
-    await expect(page.frameLocator('.editor-stage [data-testid="web-frame"]').locator('h1')).toHaveText('wirsindcgks');
+    await expect(page.frameLocator('.editor-stage [data-testid="web-frame"]').locator('h1')).toHaveText('Wochenblatt');
     await page.getByTestId('web-zoom').selectOption('2');
     await expect(frame).toHaveAttribute('style', /scale\(2\)/);
 
     await page.getByTestId('add-qr').click();
-    await page.getByTestId('qr-data').fill('https://www.instagram.com/wirsindcgks/');
+    await page.getByTestId('qr-data').fill('https://www.gemeinde.example/anmeldung/');
     await expect(stage.getByTestId('qr-code')).toBeVisible();
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');

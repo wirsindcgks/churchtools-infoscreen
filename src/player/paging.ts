@@ -11,21 +11,38 @@ export const PAGE_SECONDS = 10;
 export const SHOW_ALL_CAP = 200;
 
 /**
- * Rows that fit the block. When the rows need more than one page, the last
- * row's worth of height is kept free for the page number.
+ * Splits rows into pages by their measured heights – rows of the card layout
+ * differ, with or without subtitle and place. When they need more than one
+ * page, `reserve` stays free at the bottom for the page bar. Every page has
+ * at least one row. Not measured yet (a height of 0): everything on one page,
+ * the block clips.
  */
-export function rowsPerPage(blockHeight: number, rowHeight: number, rows: number): number {
-    if (!(rowHeight > 0)) return Math.max(1, rows);
-    const all = Math.floor(blockHeight / rowHeight);
-    if (rows <= all) return Math.max(1, all);
-    return Math.max(1, Math.floor((blockHeight - rowHeight * 0.75) / rowHeight));
-}
-
-export function paginate<T>(items: readonly T[], perPage: number): T[][] {
-    const size = Math.max(1, Math.floor(perPage));
+export function paginateByHeight<T>(
+    items: readonly T[],
+    heights: readonly number[],
+    blockHeight: number,
+    reserve: number,
+): T[][] {
+    if (!items.length) return [[]];
+    const measured = items.map((_, i) => heights[i] ?? 0);
+    if (measured.some((h) => !(h > 0))) return [[...items]];
+    if (measured.reduce((sum, h) => sum + h, 0) <= blockHeight) return [[...items]];
+    const room = blockHeight - reserve;
     const pages: T[][] = [];
-    for (let i = 0; i < items.length; i += size) pages.push(items.slice(i, i + size));
-    return pages.length ? pages : [[]];
+    let page: T[] = [];
+    let used = 0;
+    items.forEach((item, i) => {
+        const height = measured[i]!;
+        if (page.length && used + height > room) {
+            pages.push(page);
+            page = [];
+            used = 0;
+        }
+        page.push(item);
+        used += height;
+    });
+    pages.push(page);
+    return pages;
 }
 
 /** How long one page shows: its own time, or longer when the slide lasts longer anyway. */

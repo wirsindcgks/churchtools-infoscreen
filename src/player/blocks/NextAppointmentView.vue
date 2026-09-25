@@ -57,7 +57,7 @@ const imageStyle = computed(() =>
                     </div>
                 </div>
                 <p v-if="next.description" class="hero-description">{{ next.description }}</p>
-                <div class="hero-meta">
+                <div class="hero-meta" data-testid="next-meta">
                     <span>
                         <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="15" rx="2" /><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" /></svg>
                         {{ formatDate(next.start, context.timeZone) }}
@@ -172,10 +172,11 @@ const imageStyle = computed(() =>
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
 }
+/* Day and date, time, place – one below the other, as in the WordPress plugin. */
 .hero-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.3em 1.4em;
+    display: grid;
+    justify-items: start;
+    gap: 0.3em;
     font-size: 0.7em;
     font-weight: 600;
 }

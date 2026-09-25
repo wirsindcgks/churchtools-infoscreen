@@ -8,7 +8,7 @@ import { provideStageContext, type StageContext } from './context';
 import { qrShape } from './qr';
 import SlideView from './SlideView.vue';
 import { imageBox, listLayout, themeVars } from './theme';
-import { instagramEmbedUrl, webFrame } from './web';
+import { webFrame } from './web';
 
 const BERLIN = 'Europe/Berlin';
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
@@ -59,24 +59,16 @@ describe('the website block (Plan.md 28)', () => {
         expect(webFrame('http://example.org', own)).toBeNull();
         expect(webFrame('javascript:alert(1)', own)).toBeNull();
         expect(webFrame('kein Link', own)).toBeNull();
-        expect(webFrame(' https://www.instagram.com/name/embed/ ', own)).toEqual({
-            src: 'https://www.instagram.com/name/embed/',
+        expect(webFrame(' https://www.gemeinde.example/wochenblatt/ ', own)).toEqual({
+            src: 'https://www.gemeinde.example/wochenblatt/',
             sandbox: 'allow-scripts allow-same-origin',
         });
         // Same origin with allow-same-origin would run with the device's session.
         expect(webFrame(`${own}/ccm/anything`, own)?.sandbox).toBe('allow-scripts');
     });
 
-    it('turns an Instagram name or profile address into the embed page', () => {
-        const embed = 'https://www.instagram.com/wirsindcgks/embed/';
-        for (const input of ['wirsindcgks', '@wirsindcgks', 'instagram.com/wirsindcgks', 'https://www.instagram.com/wirsindcgks/', 'https://www.instagram.com/wirsindcgks/?hl=de', embed]) {
-            expect(instagramEmbedUrl(input), input).toBe(embed);
-        }
-        expect(instagramEmbedUrl('https://example.org/wirsindcgks')).toBeNull();
-    });
-
     it('renders a sandboxed frame, scaled by its zoom, and a placeholder without an address', () => {
-        const web: Block = { ...frame, id: 'w', type: 'web', url: 'https://www.instagram.com/name/embed/', zoom: 2 };
+        const web: Block = { ...frame, id: 'w', type: 'web', url: 'https://www.gemeinde.example/wochenblatt/', zoom: 2 };
         const iframe = render(makeSlide({ blocks: [web] })).find('iframe');
         expect(iframe.attributes('sandbox')).toBe('allow-scripts allow-same-origin');
         expect(iframe.attributes('referrerpolicy')).toBe('no-referrer');
@@ -90,7 +82,7 @@ describe('the website block (Plan.md 28)', () => {
 
 describe('the QR block', () => {
     it('makes the code on the device, umlauts included, and refuses what does not fit', () => {
-        const shape = qrShape('https://www.instagram.com/wirsindcgks/')!;
+        const shape = qrShape('https://www.gemeinde.example/anmeldung/')!;
         expect(shape.size).toBeGreaterThanOrEqual(21 + 4);
         expect(shape.path).toMatch(/^M\d+ \d+h1v1h-1z/);
         expect(qrShape('Grüße aus der Gemeinde')).not.toBeNull();
@@ -125,9 +117,11 @@ describe('the theme on the stage (Plan.md 27)', () => {
         const large = { ...DEFAULT_THEME, appointments: 'large' as const };
         const cards = render(makeSlide({ blocks: [list] }), { appointments, theme: large });
         const card = cards.find('[data-testid="list-card"]');
-        // Category, day and time in the block on the left; title, subtitle and place on the right.
-        expect(card.find('[data-testid="list-card-when"]').text()).toMatch(/Gottesdienste\s*So\., 04\.10\.\s*11:00–12:30 Uhr/);
-        expect(card.find('.card-body').text()).toMatch(/Gottesdienst\s*mit Abendmahl\s*Gemeindezentrum, Saal/);
+        // As in the WordPress plugin: tile, then label, title, subtitle, and day, time and place one below the other.
+        expect(card.find('.tile').text()).toMatch(/4\s*OKT/);
+        expect(card.find('.card-body').text()).toMatch(
+            /Gottesdienste\s*Gottesdienst\s*mit Abendmahl\s*Sonntag, 4\. Oktober\s*11:00–12:30 Uhr\s*Gemeindezentrum, Saal/,
+        );
         // A block that chose rows keeps them.
         const rows = render(makeSlide({ blocks: [{ ...list, layout: 'rows' } as Block] }), { appointments, theme: large });
         expect(rows.find('[data-testid="list-card"]').exists()).toBe(false);

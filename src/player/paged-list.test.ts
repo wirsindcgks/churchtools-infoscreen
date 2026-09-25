@@ -80,8 +80,8 @@ describe('an appointment list with every appointment, page by page (Plan.md, 23)
         // The player's clock ticks every second – that must not start the pages over (seen on the TV, 2026-09-25).
         setInterval(() => (context.now = new Date(context.now.getTime() + 1000)), 1000);
         await flushPromises();
-        // 600 px, rows of 70, room for the page number: 7 rows a page, 3 pages for 20.
-        expect(wrapper.findAll('.row')).toHaveLength(7);
+        // 600 px, rows of 70, room for the page bar: 8 rows a page, 3 pages for 20.
+        expect(wrapper.findAll('.list:not(.measure) > .row')).toHaveLength(8); // 600 - 36 for the bar leaves 564: 8 rows of 70
         expect(wrapper.find('[data-testid="list-page"]').text()).toBe('1/3');
         expect(context.pages).toEqual({ liste: 3 });
         expect(wrapper.text()).toContain('Termin 1');
@@ -122,9 +122,15 @@ describe('an appointment list with every appointment, page by page (Plan.md, 23)
 
         const limited = render(list({ showAll: false }), 8);
         await flushPromises();
-        expect(limited.wrapper.findAll('.row')).toHaveLength(5);
+        expect(limited.wrapper.findAll('.list:not(.measure) > .row')).toHaveLength(5);
         expect(limited.wrapper.find('[data-testid="list-page"]').exists()).toBe(false);
         expect(limited.context.pages).toEqual({});
         limited.wrapper.unmount();
+
+        // More than fit, without pages: whole rows only, none cut off at the bottom.
+        const crowded = render(list({ showAll: false, limit: 12 }), 8);
+        await flushPromises();
+        expect(crowded.wrapper.findAll('.list:not(.measure) > .row')).toHaveLength(8); // 8 × 70 = 560 of 600
+        crowded.wrapper.unmount();
     });
 });

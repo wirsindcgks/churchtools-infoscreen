@@ -136,7 +136,7 @@ export const ChurchHeaderBlock = v.object({
 });
 
 /**
- * Since 1.9: another website in a frame – an Instagram profile, a widget
+ * Since 1.9: another website in a frame – a page of the church website, a widget
  * (Plan.md, Nächste Schritte 28). https only; ChurchTools allows foreign
  * frames (`child-src *`, G15). Empty until set; the player then shows a calm
  * placeholder, offline the frame shows nothing.
