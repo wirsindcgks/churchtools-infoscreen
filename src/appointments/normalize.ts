@@ -20,6 +20,8 @@ export interface AppointmentResponse {
             allDay: boolean;
             calendar: { id: number; name: string; color?: string | null };
             image?: { imageUrl?: string | null } | null;
+            /** The place; ChurchTools composes the line itself, from separate fields. */
+            address?: { name?: string | null; addition?: string | null } | null;
         };
         calculated: { startDate: string; endDate: string };
     };
@@ -46,6 +48,13 @@ export interface Appointment {
     multiDay: boolean;
     /** Image service address; request it with both `w` and `h` (G14). */
     imageUrl: string | null;
+    /**
+     * Where, as needed on site: the place's name and its addition ("Gemeindezentrum, Saal") –
+     * as the WordPress plugin shows it; street and city say little in the own foyer.
+     */
+    location: string | null;
+    /** The description as plain text, markup removed. */
+    description: string;
 }
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
@@ -93,7 +102,23 @@ function normalizeOne(response: AppointmentResponse, timeZone: string): Appointm
         endTime: base.allDay ? null : zonedTimeKey(end, timeZone),
         multiDay: endDate > startDate,
         imageUrl: base.image?.imageUrl ?? null,
+        location: [base.address?.name, base.address?.addition].map((part) => part?.trim()).filter(Boolean).join(', ') || null,
+        description: plainText(base.description ?? ''),
     };
+}
+
+/** Text without tags and entities, on one line – enough for three lines on a TV. */
+export function plainText(value: string): string {
+    return value
+        .replace(/<br\s*\/?>|<\/p>/gi, ' ')
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/\s+/g, ' ')
+        .trim();
 }
 
 function parseInstant(value: string, timeZone: string): Date | null {

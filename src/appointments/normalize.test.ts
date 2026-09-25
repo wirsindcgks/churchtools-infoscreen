@@ -177,4 +177,27 @@ describe.skipIf(!hasFixture('api/appointments-series.json'))('recorded series fr
     it('carries the image service address of the series', () => {
         expect(recorded().every((a) => a.imageUrl?.includes('/images/'))).toBe(true);
     });
+
+    it('reads place and description as the foyer needs them', () => {
+        const [a] = normalizeAppointments(
+            [
+                {
+                    appointment: {
+                        base: {
+                            id: 9,
+                            title: 'Gottesdienst',
+                            allDay: false,
+                            calendar: { id: 2, name: 'Gottesdienst' },
+                            address: { name: 'Gemeindezentrum', addition: ' Saal ' },
+                            description: '<p>Mit <b>Kinder</b>programm &amp; Kirchencafé.</p><p>Alle sind willkommen.</p>',
+                        },
+                        calculated: { startDate: '2026-10-04T08:00:00Z', endDate: '2026-10-04T09:30:00Z' },
+                    },
+                },
+            ],
+            BERLIN,
+        );
+        expect(a?.location).toBe('Gemeindezentrum, Saal');
+        expect(a?.description).toBe('Mit Kinderprogramm & Kirchencafé. Alle sind willkommen.');
+    });
 });

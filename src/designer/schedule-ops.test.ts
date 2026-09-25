@@ -35,6 +35,8 @@ function appointment(start: Date, end: Date, calendarId = 3): Appointment {
         endTime: null,
         multiDay: false,
         imageUrl: null,
+        location: null,
+        description: '',
     };
 }
 

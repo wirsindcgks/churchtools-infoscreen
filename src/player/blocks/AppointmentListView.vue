@@ -9,8 +9,10 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { selectUpcoming } from '../../appointments/normalize';
 import type { Block } from '../../model/schema';
 import { useStageContext } from '../context';
-import { formatShortDate, textStyle } from '../format';
+import { formatShortDate, formatWeekday, textStyle, timeRange } from '../format';
 import { PAGE_SECONDS, pageInterval, paginate, rowsPerPage, SHOW_ALL_CAP } from '../paging';
+import CalendarBadge from './CalendarBadge.vue';
+import DateTile from './DateTile.vue';
 
 const props = defineProps<{ block: Extract<Block, { type: 'appointment-list' }>; slideSeconds?: number }>();
 const context = useStageContext();
@@ -87,12 +89,37 @@ onBeforeUnmount(() => clearInterval(timer));
 <template>
     <div ref="root" class="paged" :style="textStyle(block.style)">
         <Transition name="page" mode="out-in">
-            <ul :key="page" class="list">
-                <li v-for="a in shown" :key="a.key" class="row">
-                    <span class="when">{{ formatShortDate(a.start, context.timeZone) }}</span>
-                    <span class="time">{{ a.allDay ? 'ganztägig' : a.startTime }}</span>
-                    <span class="title">{{ a.title }}</span>
-                </li>
+            <ul :key="page" class="list" :class="{ 'list--cards': block.layout === 'cards' }">
+                <template v-if="block.layout === 'cards'">
+                    <!-- After the WordPress plugin's list; two fixed lines, so every row is as high as the measured one. -->
+                    <li v-for="a in shown" :key="a.key" class="row card" data-testid="list-card">
+                        <DateTile :start="a.start" :time-zone="context.timeZone" :color="a.color" />
+                        <span class="card-body">
+                            <span class="card-head">
+                                <CalendarBadge :name="a.calendarName" :color="a.color" />
+                                <span class="title">{{ a.title }}</span>
+                            </span>
+                            <span class="card-meta">
+                                <span class="meta-item">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
+                                    {{ formatWeekday(a.start, context.timeZone) }}, {{ timeRange(a) }}
+                                </span>
+                                <span v-if="a.location" class="meta-item">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></svg>
+                                    {{ a.location }}
+                                </span>
+                                <span v-else-if="a.subtitle" class="meta-item">{{ a.subtitle }}</span>
+                            </span>
+                        </span>
+                    </li>
+                </template>
+                <template v-else>
+                    <li v-for="a in shown" :key="a.key" class="row">
+                        <span class="when">{{ formatShortDate(a.start, context.timeZone) }}</span>
+                        <span class="time">{{ a.allDay ? 'ganztägig' : a.startTime }}</span>
+                        <span class="title">{{ a.title }}</span>
+                    </li>
+                </template>
                 <!-- An empty week is a normal state and must look like one, not like a failure. -->
                 <li v-if="items.length === 0" class="empty">Keine Termine in den nächsten {{ block.horizonDays }} Tagen.</li>
             </ul>
@@ -141,6 +168,53 @@ onBeforeUnmount(() => clearInterval(timer));
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+.card {
+    display: flex;
+    grid-template-columns: none;
+    align-items: center;
+    gap: 0.6em;
+    padding: 0.35em 0;
+}
+.card-body {
+    display: grid;
+    gap: 0.15em;
+    min-width: 0;
+}
+.card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    min-width: 0;
+}
+.card .title {
+    font-weight: 700;
+}
+.card-meta {
+    display: flex;
+    gap: 1.2em;
+    min-width: 0;
+    font-size: 0.7em;
+    opacity: 0.85;
+    white-space: nowrap;
+}
+.meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35em;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.meta-item svg {
+    flex: none;
+    width: 1em;
+    height: 1em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 .empty {
     opacity: 0.7;

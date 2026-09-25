@@ -542,3 +542,55 @@ test('a locked block stays put: no drag, no keys, no fields, no delete – until
     await page.keyboard.press('Delete');
     await expect(frames).toHaveCount(count - 1);
 });
+
+test('list and next appointment in the look of the WordPress plugin: tiles, badges, place (Plan.md 20)', async ({ page }) => {
+    const services = [
+        ['Gottesdienst', 'mit Kinderprogramm', 2, '#2e7d8c', 'Gemeindezentrum', 'Saal'],
+        ['Jugendtreff', '', 1, '#c0613f', 'Jugendraum', null],
+        ['Gemeindefrühstück', '', 3, '#4c9a5f', 'Foyer', null],
+        ['Konzertabend', 'Chor und Band', 1, '#5c6bc0', 'Kirchsaal', null],
+    ] as const;
+    await page.route(/\/api\/calendars\/appointments/, (route) => {
+        const data = services.map(([title, subtitle, calendar, color, name, addition], i) => {
+            const start = new Date();
+            start.setDate(start.getDate() + 1 + i * 3);
+            start.setHours(10 + i, 0, 0, 0);
+            return {
+                appointment: {
+                    base: {
+                        id: i + 1,
+                        title,
+                        subtitle,
+                        description: '<p>Der Gottesdienst am Sonntagmorgen mit Musik, Predigt und anschließendem Kirchencafé.</p>',
+                        allDay: false,
+                        calendar: { id: calendar, name: ['', 'Jugend', 'Gottesdienst', 'Gemeindeleben'][calendar], color },
+                        address: { name, addition },
+                    },
+                    calculated: { startDate: start.toISOString(), endDate: new Date(start.getTime() + 5_400_000).toISOString() },
+                },
+            };
+        });
+        return route.fulfill({ json: { data } });
+    });
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+
+    await page.getByTestId('slide-item').nth(2).click();
+    await page.getByTestId('frame-appointment-list').first().click();
+    await page.getByTestId('list-layout').selectOption('cards');
+    const stage = page.locator('.editor-stage');
+    await expect(stage.getByTestId('list-card')).toHaveCount(4);
+    await expect(stage.getByTestId('list-card').first()).toContainText('Gemeindezentrum, Saal');
+    await expect(stage.getByTestId('list-card').first()).toContainText(/Uhr/);
+    await page.waitForTimeout(500);
+    await stage.screenshot({ path: 'test-results/list-cards.png' });
+
+    await page.getByTestId('slide-item').nth(1).click();
+    await page.getByTestId('frame-next-appointment').first().click();
+    await page.getByTestId('next-layout').selectOption('card');
+    await expect(stage.getByTestId('next-card')).toContainText('Gottesdienst');
+    await expect(stage.getByTestId('next-card')).toContainText('Gemeindezentrum, Saal');
+    await expect(stage.getByTestId('next-card')).toContainText('anschließendem Kirchencafé');
+    await page.waitForTimeout(500);
+    await stage.screenshot({ path: 'test-results/next-card.png' });
+});

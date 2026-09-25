@@ -20,6 +20,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   ausgewählter Kalender, die obere gewinnt; eine Tagesvorschau zeigt, was wann läuft. Termin-Regeln mit frei
   gewähltem Zeitraum, z. B. „30 Min. vor Beginn bis 10 Min. nach Beginn" für eine Begrüßung.
   Ein Screen mit Regeln zeigt nach dem Start sofort die richtige Playlist, nicht erst kurz die Standard-Playlist.
+- **Neue Darstellungen** nach dem WordPress-Plugin: die Terminliste als Karten mit Datumskachel, Kalender-Etikett,
+  Uhrzeit und Ort; „Nächster Termin" hervorgehoben mit Beschreibung, Ort und Bild.
 - **Terminliste mit allen Terminen** der nächsten Tage: was nicht in die Box passt, blättert seitenweise (10 s je
   Seite, einstellbar); ein Balken zeigt je Seite die verbleibende Zeit; die Slide bleibt, bis alle Seiten gezeigt
   sind – die Slide-Liste zeigt die längere Laufzeit („12 → 30 s").

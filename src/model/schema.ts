@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 7 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 8 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -99,6 +99,11 @@ export const AppointmentListBlock = v.object({
     showAll: v.optional(v.boolean()),
     /** Seconds per page, at least; default 10. */
     pageSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(3), v.maxValue(120))),
+    /**
+     * Since 1.8: `cards` – date tile, calendar badge, title, time and place, after
+     * the list of the WordPress plugin (Plan.md, 20); `rows` is the plain list.
+     */
+    layout: v.optional(v.picklist(['rows', 'cards'])),
     style: TextStyle,
 });
 
@@ -107,6 +112,12 @@ export const NextAppointmentBlock = v.object({
     type: v.literal('next-appointment'),
     calendarIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.minLength(1)),
     showImage: v.optional(v.boolean(), true),
+    /**
+     * Since 1.8: `card` – the highlighted event of the WordPress plugin: date
+     * tile, badge, large title, description, time and place, the image beside it
+     * (Plan.md, 20); `classic` is the plain one.
+     */
+    layout: v.optional(v.picklist(['classic', 'card'])),
     style: TextStyle,
 });
 

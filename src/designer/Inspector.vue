@@ -197,6 +197,28 @@ const slideFill = computed<Fill>(() =>
                         </label>
                         <p v-if="!calendars.length" class="hint">Keine Kalender sichtbar.</p>
                     </fieldset>
+                    <!-- Plan.md, 20: the look of the WordPress plugin's list and highlighted event. -->
+                    <label class="d-field">
+                        Darstellung
+                        <select
+                            v-if="block.type === 'appointment-list'"
+                            :value="block.layout ?? 'rows'"
+                            data-testid="list-layout"
+                            @change="setBlock({ layout: ($event.target as HTMLSelectElement).value })"
+                        >
+                            <option value="rows">Zeilen – Datum, Uhrzeit, Titel</option>
+                            <option value="cards">Karten – Datumskachel, Kalender, Uhrzeit, Ort</option>
+                        </select>
+                        <select
+                            v-else
+                            :value="block.layout ?? 'classic'"
+                            data-testid="next-layout"
+                            @change="setBlock({ layout: ($event.target as HTMLSelectElement).value })"
+                        >
+                            <option value="classic">Schlicht</option>
+                            <option value="card">Hervorgehoben – Karte mit Beschreibung und Ort</option>
+                        </select>
+                    </label>
                     <template v-if="block.type === 'appointment-list'">
                         <div class="grid2">
                             <label class="d-field">
