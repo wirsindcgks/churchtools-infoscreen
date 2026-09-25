@@ -41,7 +41,13 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 - **Player** zeigt beim Laden eine drehende Sanduhr und übernimmt Gespeichertes in etwa 20 Sekunden: ein
   Schnellcheck mit einer kleinen Anfrage, erst bei einer Änderung lädt er den Screen.
 - **Mediathek** als eigener Bereich in der Seitenleiste und als Auswahl im Editor: Bilder in den Wiki-Bereich
-  „Infoscreen" hochladen, mit Warnung vor dem Löschen, solange ein Bild gezeigt wird.
+  „Infoscreen" hochladen, mit Warnung vor dem Löschen, solange ein Bild gezeigt wird. Unter jedem Bild steht, wo es
+  läuft („Foyer › Gottesdienst › Begrüßung"); Suche auch nach Screen und Playlist, Filter „Unbenutzt" zum Aufräumen.
+- **Zeitpläne mit Vorschau:** neben den Regeln jedes Screens die Playlist, die gerade läuft; ein Klick auf eine
+  Regel zeigt deren Playlist.
+- **Einheitliche Bereiche:** gleicher Kopf, gleiche Suche und Karten auf allen Seiten, Anlegen und Hochladen immer
+  oben rechts; der Rahmen bleibt beim Wechsel im Menü stehen, statt kurz „Lade …" zu zeigen, und der Hintergrund
+  reicht bis zum unteren Rand.
 - **Player** für Fernseher: meldet sich über seine Adresse bei jedem Start selbst als Geräte-Benutzer an und erneuert
   die Anmeldung täglich; zeigt Termine live, hält Daten und Bilder auf dem Gerät, lädt nach anhaltenden Fehlern und
   nachts neu.

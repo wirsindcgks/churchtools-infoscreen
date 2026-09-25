@@ -1,73 +1,115 @@
 <script setup lang="ts">
 /**
- * The media library as a section of its own (Plan.md, Nächste Schritte 16):
- * all pictures, upload and delete – without opening a playlist first.
- * Uploads go to the wiki page "Mediathek", from here as from the editor.
- * The wiki category stays the storage behind it (G8).
+ * The media library as a section of its own (Plan.md, Nächste Schritte 16
+ * and 18): all pictures with where they are shown, search, "Unbenutzt" to
+ * tidy up, upload and delete – without opening a playlist first. Uploads go
+ * to the wiki page "Mediathek"; the wiki category stays the storage behind
+ * it (G8).
  */
-import { onMounted, ref } from 'vue';
+import { computed, ref } from 'vue';
+import FilterChips from '../designer/FilterChips.vue';
+import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
-import MediaLibraryPanel from '../designer/MediaLibraryPanel.vue';
+import MediaGrid from '../designer/MediaGrid.vue';
 import ModulePage from '../designer/ModulePage.vue';
-import { MEDIA_PAGE as GENERAL } from '../media/library';
-import { canManagePermissions } from '../setup/load';
+import PageHeader from '../designer/PageHeader.vue';
+import SearchField from '../designer/SearchField.vue';
+import { useMediaLibrary } from '../designer/useMediaLibrary';
+import { filterMedia, MEDIA_PAGE as GENERAL, type MediaShow } from '../media/library';
 
-const admin = ref(false);
-onMounted(async () => {
-    admin.value = await canManagePermissions().catch(() => false);
-});
+const { items, loading, busy, problem, dragOver, dropZone, upload, remove } = useMediaLibrary(() => GENERAL);
+
+const query = ref('');
+const show = ref<MediaShow>('all');
+const shown = computed(() => filterMedia(items.value, query.value, show.value));
+
+const SHOW = [
+    { key: 'all', label: 'Alle', title: 'Alle Bilder' },
+    { key: 'used', label: 'Verwendet', title: 'Verwendete Bilder' },
+    { key: 'unused', label: 'Unbenutzt', title: 'Unbenutzte Bilder' },
+] as const;
+
+const input = ref<HTMLInputElement | null>(null);
+async function picked(): Promise<void> {
+    await upload(input.value?.files ?? null);
+    if (input.value) input.value.value = '';
+}
 </script>
 
 <template>
-    <ModulePage current="media" :admin="admin">
-        <div class="page-title">
-            <span class="title-icon"><Icon name="image" :size="20" /></span>
-            <h1 data-testid="media-heading">Mediathek</h1>
-        </div>
-        <p class="lead muted">
+    <ModulePage current="media">
+        <template #actions>
+            <button
+                class="d-btn d-btn--create"
+                type="button"
+                aria-label="Bilder hochladen"
+                :disabled="!!busy || loading"
+                data-testid="media-upload-button"
+                @click="input?.click()"
+            >
+                <Icon name="plus" />
+                <span class="create-label">Bilder hochladen</span>
+            </button>
+            <input
+                ref="input"
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                multiple
+                hidden
+                data-testid="media-upload"
+                @change="picked"
+            >
+        </template>
+
+        <PageHeader icon="image" title="Mediathek" testid="media-heading">
             Bilder für alle Screens. Sie liegen im Wiki-Bereich „Infoscreen" von ChurchTools – dort bitte nichts löschen,
             sonst fehlt das Bild auf den Fernsehern. Wer ein Bild kennt, kann es ohne Anmeldung abrufen; nichts
             Vertrauliches hochladen.
-        </p>
-        <MediaLibraryPanel class="d-card panel" :target="GENERAL" />
+        </PageHeader>
+
+        <SearchField
+            v-model="query"
+            placeholder="Suchen nach Bild, Screen, Playlist oder Slide …"
+            label="Bilder durchsuchen"
+            testid="media-search"
+        />
+
+        <GroupCard
+            icon="image"
+            :title="SHOW.find((s) => s.key === show)!.title"
+            :count="`${shown.length} ${shown.length === 1 ? 'Bild' : 'Bilder'}`"
+            heading-id="media-group"
+            class="library"
+            :class="{ 'library--drop': dragOver }"
+            data-testid="media-library"
+            v-on="dropZone"
+        >
+            <template #tools>
+                <FilterChips v-model="show" :options="SHOW" label="Verwendung" testid="media-filter" />
+            </template>
+            <p v-if="busy" class="d-banner">{{ busy }}</p>
+            <p v-if="problem" class="d-banner d-banner--error" role="alert">{{ problem }}</p>
+            <p v-if="loading" class="empty">Lade Bilder …</p>
+            <MediaGrid v-else-if="shown.length" :items="shown" @remove="remove" />
+            <p v-else-if="!items.length" class="empty">
+                Noch keine Bilder. Hochladen oben rechts oder einfach hierher ziehen.
+            </p>
+            <p v-else class="empty">Kein Bild passt zu Suche und Filter.</p>
+        </GroupCard>
     </ModulePage>
 </template>
 
 <style scoped>
-.page-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
+.library--drop {
+    outline: 2px dashed var(--d-accent);
+    outline-offset: -2px;
 }
-.page-title h1 {
+.library .d-banner {
+    margin-bottom: 12px;
+}
+.empty {
     margin: 0;
-    font-size: 1.8em;
-}
-.title-icon {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: var(--d-radius-lg);
-    background: var(--d-accent-pale);
-    color: var(--d-accent);
-}
-.lead {
-    max-width: 75ch;
-    margin: 0;
-}
-.muted {
     color: var(--d-text-muted);
-}
-.panel {
-    border-width: 1px;
-}
-@media (max-width: 48rem) {
-    .page-title h1 {
-        font-size: 1.4em;
-    }
-    .title-icon {
-        display: none;
-    }
+    font-size: var(--d-size-sm);
 }
 </style>

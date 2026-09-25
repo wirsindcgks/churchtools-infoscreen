@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createScreenBundle } from '../designer/ops';
 import { MemoryKv } from '../store/memory-kv';
 import { ScreenRepository } from '../store/screen-repository';
-import { MediaInUseError, MediaLibrary, type MediaBackend } from './library';
+import { filterMedia, MediaInUseError, MediaLibrary, usageLines, type MediaBackend, type MediaItem } from './library';
 import type { WikiFile, WikiPage } from './wiki';
 
 class FakeWiki implements MediaBackend {
@@ -92,6 +92,41 @@ describe('MediaLibrary', () => {
         await library.remove(item!, true);
         expect(wiki.removed).toEqual([item!.fileId]);
         expect(await repository.listMedia()).toEqual([]);
+    });
+
+    it('names where each image is shown – screen, playlist, slide – and finds the unused ones (Plan.md 18)', async () => {
+        const [shown, spare] = await library.upload([image('plakat.jpg'), image('reserve.jpg')], { slug: 'mediathek', name: 'Mediathek' });
+        const bundle = createScreenBundle({ name: 'Foyer', slug: 'foyer', orientation: 'landscape' });
+        const slide = bundle.slides[0]!;
+        slide.blocks.push({ id: 'a', type: 'image', x: 0, y: 0, width: 100, height: 100, mediaId: shown!.id, fit: 'contain' });
+        // Twice on one slide is still one place.
+        slide.blocks.push({ id: 'b', type: 'image', x: 0, y: 0, width: 100, height: 100, mediaId: shown!.id, fit: 'contain' });
+        await repository.saveScreen(bundle, { expectedRevision: null, updatedBy: 'Anna' });
+
+        const items = await library.list();
+        const byName = (name: string) => items.find((i) => i.name === name)!;
+        expect(usageLines(byName('plakat.jpg').uses)).toEqual(['Foyer › Foyer › Willkommen']);
+        expect(byName('reserve.jpg').uses).toEqual([]);
+        expect(byName('reserve.jpg').mediaId).toBe(spare!.id);
+
+        expect(filterMedia(items, '', 'unused').map((i) => i.name)).toEqual(['reserve.jpg']);
+        expect(filterMedia(items, '', 'used').map((i) => i.name)).toEqual(['plakat.jpg']);
+        // The search finds an image by where it is shown, too.
+        expect(filterMedia(items, 'willkommen', 'all').map((i) => i.name)).toEqual(['plakat.jpg']);
+        expect(filterMedia(items, 'RESERVE', 'all').map((i) => i.name)).toEqual(['reserve.jpg']);
+    });
+
+    it('names a playlist no screen shows without a screen, and one line per screen otherwise', () => {
+        const playlist = { id: 'p', name: 'Gottesdienst' };
+        const slide = { id: 's', name: 'Begrüßung' };
+        const screens = [
+            { id: '1', slug: 'foyer', name: 'Foyer' },
+            { id: '2', slug: 'saal', name: 'Saal' },
+        ];
+        expect(usageLines([{ playlist, slide, screens }])).toEqual(['Foyer › Gottesdienst › Begrüßung', 'Saal › Gottesdienst › Begrüßung']);
+        expect(usageLines([{ playlist, slide, screens: [] }])).toEqual(['Gottesdienst › Begrüßung']);
+        const item: MediaItem = { fileId: 1, name: 'x.jpg', imageUrl: '', page: 'mediathek', uses: [{ playlist, slide, screens }] };
+        expect(filterMedia([item], 'saal', 'all')).toHaveLength(1);
     });
 
     it('deletes an unused image without asking', async () => {

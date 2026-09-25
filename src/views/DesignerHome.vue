@@ -10,10 +10,13 @@ import { useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName, NotAuthenticatedError } from '../ct/client';
 import CreateScreenDialog from '../designer/CreateScreenDialog.vue';
 import { FILTERS, formatFilter, type FormatFilter } from '../designer/format-filter';
+import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
+import PageHeader from '../designer/PageHeader.vue';
 import { checkDesignerRights, type MissingRight } from '../designer/rights';
-import { canManagePermissions } from '../setup/load';
+import { isAdministrator } from '../designer/administrator';
+import SearchField from '../designer/SearchField.vue';
 import ScreenCard from '../designer/ScreenCard.vue';
 import ScheduleDialog from '../designer/ScheduleDialog.vue';
 import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
@@ -44,6 +47,8 @@ const scheduling = ref<string | null>(null);
 const admin = ref(false);
 const filter = computed(() => formatFilter(route.query.format));
 const query = ref('');
+/** Loaded: the page shows its frame before, and its content from then on. */
+const ready = computed(() => author.value !== null && repository.value !== null);
 
 const isPortrait = (o: ScreenOverview) => o.screen.stage.height > o.screen.stage.width;
 
@@ -97,7 +102,7 @@ onMounted(async () => {
         const [signedIn, handle, isAdmin] = await Promise.all([
             currentPerson(),
             getRepository(),
-            canManagePermissions().catch(() => false),
+            isAdministrator(),
         ]);
         admin.value = isAdmin;
         demo.value = handle.demo;
@@ -148,102 +153,97 @@ async function remove(overview: ScreenOverview): Promise<void> {
 </script>
 
 <template>
-    <div class="infoscreen-designer home">
-        <p v-if="error" class="d-banner d-banner--error page-message" role="alert">{{ error }}</p>
-        <template v-else-if="author !== null && repository">
-            <ModulePage current="screens" :admin="admin" :counts="counts">
-                <template #actions>
-                    <button
-                        v-if="screensAdmin"
-                        class="d-btn d-btn--create"
-                        type="button"
-                        aria-label="Screen erstellen"
-                        data-testid="new-screen"
-                        @click="creating = true"
-                    >
-                        <Icon name="plus" />
-                        <span class="create-label">Screen erstellen</span>
-                    </button>
-                </template>
-                <p v-if="demo" class="d-banner" data-testid="demo-notice">
-                    Demo-Modus: Die Screens liegen in diesem Browser, nicht in ChurchTools; Termine, Name und Logo
-                    kommen live. Designer und Player in anderen Tabs dieses Browsers sehen dieselben Screens.
-                    <button class="link" type="button" data-testid="reset-demo" @click="resetDemoAndReload">
-                        Demo zurücksetzen
-                    </button>
-                </p>
+    <ModulePage current="screens" :counts="ready ? counts : undefined">
+        <template #actions>
+            <button
+                v-if="screensAdmin"
+                class="d-btn d-btn--create"
+                type="button"
+                aria-label="Screen erstellen"
+                data-testid="new-screen"
+                @click="creating = true"
+            >
+                <Icon name="plus" />
+                <span class="create-label">Screen erstellen</span>
+            </button>
+        </template>
 
-                <section
-                    v-if="missingRights.length"
-                    class="d-banner d-banner--warning rights"
-                    role="status"
-                    data-testid="missing-rights"
-                >
-                    <strong>Dir fehlen Rechte, um hier alles zu nutzen:</strong>
-                    <ul>
-                        <li v-for="right in missingRights" :key="`${right.area}-${right.key ?? right.text}`">
-                            {{ right.text }}
-                            <code v-if="right.key">{{ right.key }}</code>
-                            <span v-if="right.detail" class="muted"> – {{ right.detail }}</span>
-                        </li>
-                    </ul>
-                    <p v-if="admin" class="muted">
-                        Was eine Gruppe noch braucht, zeigen die
-                        <RouterLink :to="{ name: 'setup' }">Einstellungen</RouterLink>; dort legt der Assistent die
-                        Gruppen samt Rechten an. Rechte einer Gruppe wirken erst, wenn sie den Status „aktiv" hat.
-                    </p>
-                    <p v-else class="muted">
-                        Rechte vergibt ein Administrator deiner Gemeinde: Er nimmt dich in die Gruppe
-                        „Infoscreen-Designer" auf.
-                    </p>
-                </section>
+        <p v-if="demo" class="d-banner" data-testid="demo-notice">
+            Demo-Modus: Die Screens liegen in diesem Browser, nicht in ChurchTools; Termine, Name und Logo kommen live.
+            Designer und Player in anderen Tabs dieses Browsers sehen dieselben Screens.
+            <button class="link" type="button" data-testid="reset-demo" @click="resetDemoAndReload">
+                Demo zurücksetzen
+            </button>
+        </p>
 
-                <div class="page-title">
-                    <span class="title-icon"><Icon name="grid" :size="20" /></span>
-                    <h1 data-testid="screens-heading">Screens</h1>
+        <section
+            v-if="missingRights.length"
+            class="d-banner d-banner--warning rights"
+            role="status"
+            data-testid="missing-rights"
+        >
+            <strong>Dir fehlen Rechte, um hier alles zu nutzen:</strong>
+            <ul>
+                <li v-for="right in missingRights" :key="`${right.area}-${right.key ?? right.text}`">
+                    {{ right.text }}
+                    <code v-if="right.key">{{ right.key }}</code>
+                    <span v-if="right.detail" class="muted"> – {{ right.detail }}</span>
+                </li>
+            </ul>
+            <p v-if="admin" class="muted">
+                Was eine Gruppe noch braucht, zeigen die
+                <RouterLink :to="{ name: 'setup' }">Einstellungen</RouterLink>; dort legt der Assistent die Gruppen samt
+                Rechten an. Rechte einer Gruppe wirken erst, wenn sie den Status „aktiv" hat.
+            </p>
+            <p v-else class="muted">
+                Rechte vergibt ein Administrator deiner Gemeinde: Er nimmt dich in die Gruppe „Infoscreen-Designer" auf.
+            </p>
+        </section>
+
+        <PageHeader icon="grid" title="Screens" testid="screens-heading">
+            Die Fernseher und was sie gerade zeigen. Ein Klick auf eine Kachel öffnet ihre Standard-Playlist im Editor;
+            Adresse, Zeitplan und Einstellungen stecken im Menü „…".
+        </PageHeader>
+
+        <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
+        <p v-else-if="!ready" class="empty">Lade …</p>
+        <template v-else>
+            <SearchField
+                v-model="query"
+                placeholder="Suchen nach Name oder Adresse …"
+                label="Screens durchsuchen"
+                testid="search"
+            />
+
+            <GroupCard
+                :icon="current.icon"
+                :title="current.label"
+                :count="`${shown.length} ${shown.length === 1 ? 'Screen' : 'Screens'}`"
+                :heading-id="`group-${current.key}`"
+            >
+                <div v-if="shown.length" class="tiles">
+                    <ScreenCard
+                        v-for="o in shown"
+                        :key="o.screen.id"
+                        :overview="o"
+                        :admin="screensAdmin"
+                        @remove="remove(o)"
+                        @settings="configuring = o.screen"
+                        @schedule="scheduling = o.screen.slug"
+                    />
                 </div>
+                <div v-else-if="!overviews.length" class="empty">
+                    <p>Noch keine Screens angelegt.</p>
+                    <p v-if="!screensAdmin">Screens legt ein Administrator an – danach gestaltest du sie hier.</p>
+                    <button v-if="screensAdmin" class="d-btn d-btn--create" type="button" @click="creating = true">
+                        <Icon name="plus" /> Ersten Screen erstellen
+                    </button>
+                </div>
+                <p v-else class="empty">Kein Screen passt zu diesem Filter.</p>
+            </GroupCard>
+        </template>
 
-                <label class="search">
-                    <Icon name="search" class="search-icon" />
-                    <input
-                        v-model="query"
-                        type="search"
-                        placeholder="Suchen nach Name oder Adresse …"
-                        aria-label="Screens durchsuchen"
-                        data-testid="search"
-                    >
-                </label>
-
-                <section class="d-card group" :aria-labelledby="`group-${current.key}`">
-                    <header>
-                        <span class="group-icon"><Icon :name="current.icon" /></span>
-                        <div>
-                            <h2 :id="`group-${current.key}`">{{ current.label }}</h2>
-                            <span class="muted">{{ shown.length }} {{ shown.length === 1 ? 'Screen' : 'Screens' }}</span>
-                        </div>
-                    </header>
-                    <div v-if="shown.length" class="tiles">
-                        <ScreenCard
-                            v-for="o in shown"
-                            :key="o.screen.id"
-                            :overview="o"
-                            :admin="screensAdmin"
-                            @remove="remove(o)"
-                            @settings="configuring = o.screen"
-                            @schedule="scheduling = o.screen.slug"
-                        />
-                    </div>
-                    <div v-else-if="!overviews.length" class="empty">
-                        <p>Noch keine Screens angelegt.</p>
-                        <p v-if="!screensAdmin" class="muted">Screens legt ein Administrator an – danach gestaltest du sie hier.</p>
-                        <button v-if="screensAdmin" class="d-btn d-btn--create" type="button" @click="creating = true">
-                            <Icon name="plus" /> Ersten Screen erstellen
-                        </button>
-                    </div>
-                    <p v-else class="empty muted">Kein Screen passt zu diesem Filter.</p>
-                </section>
-            </ModulePage>
-
+        <template v-if="repository && author !== null">
             <ScreenSettingsDialog
                 v-if="configuring"
                 :screen="configuring"
@@ -268,68 +268,10 @@ async function remove(overview: ScreenOverview): Promise<void> {
                 @created="created"
             />
         </template>
-        <p v-else class="page-message muted">Lade …</p>
-    </div>
+    </ModulePage>
 </template>
 
 <style scoped>
-.home {
-    min-height: 100%;
-}
-.page-message {
-    margin: 24px 16px;
-}
-.page-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.page-title h1 {
-    margin: 0;
-    font-size: 1.8em;
-}
-.title-icon,
-.group-icon {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: var(--d-radius-lg);
-    background: var(--d-accent-pale);
-    color: var(--d-accent);
-}
-.group-icon {
-    border-radius: 50%;
-}
-.search {
-    position: relative;
-    display: block;
-}
-.search-icon {
-    position: absolute;
-    top: 50%;
-    left: 12px;
-    color: var(--d-text-muted);
-    transform: translateY(-50%);
-}
-.search input {
-    min-height: 44px;
-    padding-left: 40px;
-    border-radius: var(--d-radius-lg);
-}
-.group {
-    padding: 16px 20px 20px;
-}
-.group header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 16px;
-}
-.group h2 {
-    margin: 0;
-    font-size: 1.15em;
-}
 .tiles {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -340,6 +282,8 @@ async function remove(overview: ScreenOverview): Promise<void> {
     justify-items: start;
     gap: 10px;
     margin: 0;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
 }
 .empty p {
     margin: 0;
@@ -367,23 +311,9 @@ async function remove(overview: ScreenOverview): Promise<void> {
 
 /* Phone: one or two columns of tiles. */
 @media (max-width: 48rem) {
-    .page-title h1 {
-        font-size: 1.4em;
-    }
-    .title-icon {
-        display: none;
-    }
-    .group {
-        padding: 12px;
-    }
     .tiles {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         gap: 10px;
-    }
-}
-@media (max-width: 40rem) {
-    .create-label {
-        display: none;
     }
 }
 </style>

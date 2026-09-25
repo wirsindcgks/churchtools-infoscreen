@@ -13,7 +13,6 @@ import { withDeviceLogin } from '../player/device-login';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
 import { AUTH, checkDesignerGroup, checkDeviceGroup, type Check, type RequiredRight } from '../setup/checks';
 import {
-    canManagePermissions,
     churchToolsProvisionApi,
     deleteGroup,
     findGroupTypeId,
@@ -24,6 +23,7 @@ import {
 } from '../setup/load';
 import { createDeviceLogin } from '../setup/device-token';
 import { GROUP_NAMES, GROUP_TYPE_NAME, planProvisioning, provision, refreshGrants, type GroupSpec } from '../setup/provision';
+import { isAdministrator } from '../designer/administrator';
 import { getRepository } from '../store/backend';
 import { CATEGORIES, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
 
@@ -287,7 +287,7 @@ const admin = ref<boolean | null>(null);
 
 onMounted(async () => {
     try {
-        admin.value = await canManagePermissions().catch(() => false);
+        admin.value = await isAdministrator();
         if (!admin.value) return;
         const handle = await getRepository();
         repository = handle.repository;
@@ -388,7 +388,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 </script>
 
 <template>
-    <ModulePage current="setup" :admin="admin === true">
+    <ModulePage current="setup">
         <div class="setup">
             <div class="page-title">
                 <span class="title-icon"><Icon name="settings" :size="22" /></span>

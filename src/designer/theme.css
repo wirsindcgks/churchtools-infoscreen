@@ -181,3 +181,10 @@
         min-height: 40px;
     }
 }
+
+/* "+ Screen erstellen" and its siblings keep only their symbol on a phone; the label stays in aria-label. */
+@media (max-width: 40rem) {
+    .infoscreen-designer :where(button.d-btn--create .create-label) {
+        display: none;
+    }
+}

@@ -118,6 +118,14 @@ export interface ScreenRef {
 
 export type StagedPlaylist = PlaylistDoc & { stage: { width: number; height: number }; revision: number };
 
+/** A place a medium is shown: a slide of a playlist, and the screens that run the playlist. */
+export interface MediaUse {
+    playlist: { id: string; name: string };
+    slide: { id: string; name: string };
+    /** Empty for a playlist no screen shows – the image is still in use there. */
+    screens: ScreenRef[];
+}
+
 /** A playlist as the playlists page shows it (Plan.md, Nächste Schritte 19). */
 export interface PlaylistOverview {
     playlist: StagedPlaylist;
@@ -640,18 +648,33 @@ export class ScreenRepository {
         if (valueId !== undefined) await this.kv.deleteValue(ids.media, valueId);
     }
 
-    /** Where a medium is shown – asked before deleting it, so nobody deletes blind. */
-    async mediaUsage(mediaId: string): Promise<{ playlist: string; slide: string }[]> {
+    /**
+     * Where every medium is shown, by media id (Plan.md, Nächste Schritte 18):
+     * one pass over screens, playlists and slides for the whole library, not
+     * one per image. Derived, never stored – so it cannot go stale.
+     */
+    async mediaUses(): Promise<Map<string, MediaUse[]>> {
         const running = await this.readRunningScreens();
         const screens = running.screens.map((s) => s.doc);
-        const slides = (await this.readSlides()).docs.map((s) => s.doc);
-        const usedIn = new Set(slides.filter((slide) => referencedMedia(slide).includes(mediaId)).map((s) => s.id));
-        const names = new Map(slides.map((s) => [s.id, s.name]));
-        return running.playlists.flatMap(({ doc }) =>
-            doc.slideIds
-                .filter((id) => usedIn.has(id))
-                .map((id) => ({ playlist: withPlaylistDefaults(doc, screens).name, slide: names.get(id) ?? id })),
-        );
+        const slides = new Map((await this.readSlides()).docs.map((s) => [s.doc.id, s.doc]));
+        const uses = new Map<string, MediaUse[]>();
+        for (const { doc } of running.playlists) {
+            const playlist = { id: doc.id, name: withPlaylistDefaults(doc, screens).name };
+            const showing = screensShowing(doc.id, screens);
+            for (const slide of doc.slideIds.map((id) => slides.get(id))) {
+                if (!slide) continue;
+                for (const mediaId of new Set(referencedMedia(slide))) {
+                    const use = { playlist, slide: { id: slide.id, name: slide.name }, screens: showing };
+                    uses.set(mediaId, [...(uses.get(mediaId) ?? []), use]);
+                }
+            }
+        }
+        return uses;
+    }
+
+    /** Where a medium is shown – asked before deleting it, so nobody deletes blind. */
+    async mediaUsage(mediaId: string): Promise<{ playlist: string; slide: string }[]> {
+        return ((await this.mediaUses()).get(mediaId) ?? []).map((u) => ({ playlist: u.playlist.name, slide: u.slide.name }));
     }
 
     /** Removes only the index; playlists and slides become orphans for {@link collectOrphans}. */

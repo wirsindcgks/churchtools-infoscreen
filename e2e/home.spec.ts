@@ -108,11 +108,17 @@ test.describe('media library as a section of its own (Plan.md 16)', () => {
         await expect(page).toHaveURL(/\/mediathek$/);
         await expect(page.getByTestId('media-heading')).toHaveText('Mediathek');
         const library = page.getByTestId('media-library');
-        await expect(library.getByRole('button', { name: 'Bilder hochladen' })).toBeEnabled();
+        // Upload sits where "Screen erstellen" and "Playlist erstellen" sit: top right in the bar.
+        await expect(page.locator('.d-appbar').getByTestId('media-upload-button')).toBeEnabled();
         await expect(library.getByText('Lade Bilder …')).toHaveCount(0);
         // Pictures here are managed, not chosen: no "verwenden" button.
         await expect(library.getByTestId('media-item').first()).toBeVisible();
         await expect(library.locator('button.pick')).toHaveCount(0);
+        // Each picture says where it is shown, or that it is unused (Plan.md 18).
+        const items = await library.getByTestId('media-item').count();
+        await expect(library.getByTestId('media-uses')).toHaveCount(items);
+        await page.getByTestId('media-filter-unused').click();
+        await expect(library.getByTestId('media-uses').filter({ hasNotText: 'Unbenutzt' })).toHaveCount(0);
         await expect(page.getByTestId('sidebar-media')).toHaveAttribute('aria-current', 'page');
         await expect(library.locator('img').first()).toHaveJSProperty('complete', true);
         await page.screenshot({ path: 'test-results/media-page.png' });
@@ -129,6 +135,8 @@ test.describe('sections on a phone', () => {
         await page.getByTestId('sidebar-schedules').click();
         await expect(page.getByTestId('schedules-heading')).toBeVisible();
         await expect(page.getByTestId('schedule-row')).toHaveCount(1);
+        // The first slide of what runs now, beside the rules.
+        await expect(page.getByTestId('schedule-preview')).toBeVisible();
         await page.getByTestId('sidebar-media').click();
         await expect(page.getByTestId('media-heading')).toBeVisible();
         await expectNoSidewaysScroll(page);

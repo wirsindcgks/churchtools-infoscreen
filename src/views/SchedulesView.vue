@@ -2,42 +2,68 @@
 /**
  * All schedules at a glance (Plan.md, Nächste Schritte 21): per screen the
  * default playlist, the rules in words, and what runs right now – evaluated
- * with the player's own rule matching. Editing opens the same dialog as the
- * screen's tile.
+ * with the player's own rule matching. Beside them the first slide of the
+ * playlist that runs now, or of the line one clicks. Editing opens the same
+ * dialog as the screen's tile.
  */
-import { computed, onMounted, ref, shallowRef } from 'vue';
+import { computed, onMounted, reactive, ref, shallowRef } from 'vue';
 import { currentPerson, displayName } from '../ct/client';
+import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
+import PageHeader from '../designer/PageHeader.vue';
 import ScheduleDialog from '../designer/ScheduleDialog.vue';
 import { ruleSummary } from '../designer/schedule-ops';
+import SearchField from '../designer/SearchField.vue';
+import SlideThumb from '../designer/SlideThumb.vue';
 import { usePreview } from '../designer/usePreview';
-import type { ScreenDoc } from '../model/schema';
+import type { ScreenDoc, ThemeDoc } from '../model/schema';
 import { matchingRuleIndex } from '../player/schedule';
-import { canManagePermissions } from '../setup/load';
 import { getRepository } from '../store/backend';
-import type { ScreenRepository } from '../store/screen-repository';
+import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 
 const repository = shallowRef<ScreenRepository | null>(null);
 const author = ref<string | null>(null);
 const screens = ref<ScreenDoc[]>([]);
-const playlistNames = ref(new Map<string, string>());
-const admin = ref(false);
+const playlists = ref(new Map<string, PlaylistOverview>());
+const theme = ref<ThemeDoc | null>(null);
 const error = ref<string | null>(null);
 const editing = ref<string | null>(null);
+const query = ref('');
+/** Loaded: the page shows its frame before, and its content from then on. */
+const ready = computed(() => author.value !== null && repository.value !== null);
+/** The playlist a screen's preview shows, by screen id, once someone clicked a line; else what runs now. */
+const chosen = reactive(new Map<string, string>());
 
-// Appointments of all rule calendars, for "läuft jetzt"; the calendars' names for the rules in words.
+// Appointments of the rule calendars, for "läuft jetzt", and of the previews' slides; the calendars' names for the rules in words.
 const { context, calendars } = usePreview(
     computed(() => [
-        ...new Set(
-            screens.value.flatMap((s) => s.schedule.flatMap((r) => (r.kind === 'appointment' ? r.calendarIds : []))),
-        ),
+        ...new Set([
+            ...screens.value.flatMap((s) => s.schedule.flatMap((r) => (r.kind === 'appointment' ? r.calendarIds : []))),
+            ...[...playlists.value.values()].flatMap((o) =>
+                (o.firstSlide?.blocks ?? []).flatMap((b) =>
+                    b.type === 'appointment-list' || b.type === 'next-appointment' ? b.calendarIds : [],
+                ),
+            ),
+        ]),
     ]),
-    computed(() => []),
+    computed(() => [...playlists.value.values()].flatMap((o) => o.media)),
+    theme,
 );
 
+const shown = computed(() => {
+    const needle = query.value.trim().toLocaleLowerCase('de');
+    if (!needle) return screens.value;
+    return screens.value.filter((s) =>
+        [s.name, ...[s.defaultPlaylistId, ...s.schedule.map((r) => r.playlistId)].map(playlistName)]
+            .join(' ')
+            .toLocaleLowerCase('de')
+            .includes(needle),
+    );
+});
+
 function playlistName(id: string): string {
-    return playlistNames.value.get(id) ?? 'Playlist fehlt';
+    return playlists.value.get(id)?.playlist.name ?? 'Playlist fehlt';
 }
 
 function calendarName(id: number): string {
@@ -55,21 +81,40 @@ function runningNow(screen: ScreenDoc): { ruleIndex: number; playlistId: string 
     return { ruleIndex, playlistId: ruleIndex < 0 ? screen.defaultPlaylistId : screen.schedule[ruleIndex]!.playlistId };
 }
 
+/** The line whose playlist the preview shows: the clicked one, else the one that runs now. */
+function previewIndex(screen: ScreenDoc): number {
+    const id = chosen.get(screen.id);
+    if (id === undefined) return runningNow(screen).ruleIndex;
+    return id === 'default' ? -1 : Number(id);
+}
+
+function previewed(screen: ScreenDoc): PlaylistOverview | null {
+    const index = previewIndex(screen);
+    const id = index < 0 ? screen.defaultPlaylistId : screen.schedule[index]?.playlistId;
+    return (id && playlists.value.get(id)) || null;
+}
+
+function choose(screen: ScreenDoc, index: number): void {
+    chosen.set(screen.id, index < 0 ? 'default' : String(index));
+}
+
 async function refresh(): Promise<void> {
     if (!repository.value) return;
-    const [list, playlists] = await Promise.all([repository.value.listScreens(), repository.value.listPlaylists()]);
+    const [list, overviews, stored] = await Promise.all([
+        repository.value.listScreens(),
+        repository.value.listPlaylists(),
+        repository.value.loadTheme().catch(() => null),
+    ]);
     screens.value = list;
-    playlistNames.value = new Map(playlists.map((o) => [o.playlist.id, o.playlist.name]));
+    playlists.value = new Map(overviews.map((o) => [o.playlist.id, o]));
+    theme.value = stored;
+    // A saved schedule may have fewer lines than the one clicked before.
+    chosen.clear();
 }
 
 onMounted(async () => {
     try {
-        const [person, handle, isAdmin] = await Promise.all([
-            currentPerson(),
-            getRepository(),
-            canManagePermissions().catch(() => false),
-        ]);
-        admin.value = isAdmin;
+        const [person, handle] = await Promise.all([currentPerson(), getRepository()]);
         repository.value = handle.repository;
         await refresh();
         author.value = displayName(person);
@@ -80,29 +125,47 @@ onMounted(async () => {
 </script>
 
 <template>
-    <div class="infoscreen-designer home">
-        <p v-if="error" class="d-banner d-banner--error page-message" role="alert">{{ error }}</p>
-        <template v-else-if="author !== null && repository">
-            <ModulePage current="schedules" :admin="admin">
-                <div class="page-title">
-                    <span class="title-icon"><Icon name="calendar" :size="20" /></span>
-                    <h1 data-testid="schedules-heading">Zeitpläne</h1>
-                </div>
-                <p class="muted intro">
-                    Welche Playlist auf welchem Screen wann läuft. Passt keine Regel, läuft die Standard-Playlist;
-                    passen mehrere, gilt die obere.
-                </p>
+    <ModulePage current="schedules">
+        <PageHeader icon="calendar" title="Zeitpläne" testid="schedules-heading">
+            Welche Playlist auf welchem Screen wann läuft. Passt keine Regel, läuft die Standard-Playlist; passen mehrere,
+            gilt die obere. Ein Klick auf eine Zeile zeigt ihre Playlist.
+        </PageHeader>
 
-                <section class="d-card group" aria-labelledby="schedules-group">
-                    <header>
-                        <span class="group-icon"><Icon name="calendar" /></span>
-                        <div>
-                            <h2 id="schedules-group">Alle Screens</h2>
-                            <span class="muted">{{ screens.length }} {{ screens.length === 1 ? 'Screen' : 'Screens' }}</span>
-                        </div>
-                    </header>
-                    <ul v-if="screens.length" class="schedules">
-                        <li v-for="screen in screens" :key="screen.id" class="schedule" data-testid="schedule-row">
+        <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
+        <p v-else-if="!ready" class="empty">Lade …</p>
+        <template v-else>
+            <SearchField
+                v-model="query"
+                placeholder="Suchen nach Screen oder Playlist …"
+                label="Zeitpläne durchsuchen"
+                testid="schedule-search"
+            />
+
+            <GroupCard
+                icon="calendar"
+                title="Alle Screens"
+                :count="`${shown.length} ${shown.length === 1 ? 'Screen' : 'Screens'}`"
+                heading-id="schedules-group"
+            >
+                <ul v-if="shown.length" class="schedules">
+                    <li v-for="screen in shown" :key="screen.id" class="schedule" data-testid="schedule-row">
+                        <figure class="preview">
+                            <RouterLink
+                                v-if="previewed(screen)"
+                                class="thumb"
+                                :to="{ name: 'editor', params: { id: previewed(screen)!.playlist.id } }"
+                                :aria-label="`${previewed(screen)!.playlist.name} bearbeiten`"
+                                data-testid="schedule-preview"
+                            >
+                                <SlideThumb :slide="previewed(screen)!.firstSlide" :stage="previewed(screen)!.playlist.stage" />
+                            </RouterLink>
+                            <SlideThumb v-else :slide="null" :stage="screen.stage" />
+                            <figcaption>
+                                {{ previewIndex(screen) === runningNow(screen).ruleIndex ? 'Läuft jetzt' : 'Vorschau' }}:
+                                <strong>{{ previewed(screen)?.playlist.name ?? 'Playlist fehlt' }}</strong>
+                            </figcaption>
+                        </figure>
+                        <div class="details">
                             <div class="row-head">
                                 <Icon
                                     :name="screen.stage.height > screen.stage.width ? 'portrait' : 'landscape'"
@@ -113,12 +176,7 @@ onMounted(async () => {
                                 <span class="now" data-testid="schedule-now">
                                     Jetzt: <strong>{{ playlistName(runningNow(screen).playlistId) }}</strong>
                                 </span>
-                                <button
-                                    class="d-btn"
-                                    type="button"
-                                    data-testid="schedule-edit"
-                                    @click="editing = screen.slug"
-                                >
+                                <button class="d-btn" type="button" data-testid="schedule-edit" @click="editing = screen.slug">
                                     Bearbeiten
                                 </button>
                             </div>
@@ -126,82 +184,49 @@ onMounted(async () => {
                                 <li
                                     v-for="(rule, index) in screen.schedule"
                                     :key="index"
-                                    :class="{ active: runningNow(screen).ruleIndex === index }"
+                                    :class="{ active: runningNow(screen).ruleIndex === index, previewed: previewIndex(screen) === index }"
                                     data-testid="schedule-rule-line"
                                 >
-                                    <span class="rank">{{ index + 1 }}</span>
-                                    <span>{{ ruleSummary(rule, calendarName) }}</span>
-                                    <span class="arrow" aria-hidden="true">→</span>
-                                    <strong>{{ playlistName(rule.playlistId) }}</strong>
+                                    <button type="button" class="line" :aria-pressed="previewIndex(screen) === index" @click="choose(screen, index)">
+                                        <span class="rank">{{ index + 1 }}</span>
+                                        <span>{{ ruleSummary(rule, calendarName) }}</span>
+                                        <span class="arrow" aria-hidden="true">→</span>
+                                        <strong>{{ playlistName(rule.playlistId) }}</strong>
+                                    </button>
                                 </li>
-                                <li :class="{ active: runningNow(screen).ruleIndex < 0 }" data-testid="schedule-default-line">
-                                    <span class="rank rank--default" aria-hidden="true">·</span>
-                                    <span>{{ screen.schedule.length ? 'sonst' : 'immer' }}</span>
-                                    <span class="arrow" aria-hidden="true">→</span>
-                                    <strong>{{ playlistName(screen.defaultPlaylistId) }}</strong>
-                                    <span class="muted">(Standard)</span>
+                                <li
+                                    :class="{ active: runningNow(screen).ruleIndex < 0, previewed: previewIndex(screen) < 0 }"
+                                    data-testid="schedule-default-line"
+                                >
+                                    <button type="button" class="line" :aria-pressed="previewIndex(screen) < 0" @click="choose(screen, -1)">
+                                        <span class="rank rank--default" aria-hidden="true">·</span>
+                                        <span>{{ screen.schedule.length ? 'sonst' : 'immer' }}</span>
+                                        <span class="arrow" aria-hidden="true">→</span>
+                                        <strong>{{ playlistName(screen.defaultPlaylistId) }}</strong>
+                                        <span class="muted">(Standard)</span>
+                                    </button>
                                 </li>
                             </ol>
-                        </li>
-                    </ul>
-                    <p v-else class="empty muted">Noch keine Screens – sie legt ein Administrator an.</p>
-                </section>
-            </ModulePage>
-
-            <ScheduleDialog
-                v-if="editing"
-                :slug="editing"
-                :repository="repository"
-                :author="author"
-                @close="editing = null"
-                @saved="editing = null; refresh()"
-            />
+                        </div>
+                    </li>
+                </ul>
+                <p v-else-if="!screens.length" class="empty">Noch keine Screens – sie legt ein Administrator an.</p>
+                <p v-else class="empty">Kein Screen passt zur Suche.</p>
+            </GroupCard>
         </template>
-        <p v-else class="page-message muted">Lade …</p>
-    </div>
+
+        <ScheduleDialog
+            v-if="editing && repository && author !== null"
+            :slug="editing"
+            :repository="repository"
+            :author="author"
+            @close="editing = null"
+            @saved="editing = null; refresh()"
+        />
+    </ModulePage>
 </template>
 
 <style scoped>
-.home {
-    min-height: 100%;
-}
-.page-message {
-    margin: 24px 16px;
-}
-.page-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.page-title h1 {
-    margin: 0;
-    font-size: 1.8em;
-}
-.title-icon,
-.group-icon {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: var(--d-radius-lg);
-    background: var(--d-accent-pale);
-    color: var(--d-accent);
-}
-.group-icon {
-    border-radius: 50%;
-}
-.group {
-    padding: 16px 20px 20px;
-}
-.group header {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 16px;
-}
-.intro {
-    margin: -8px 0 0;
-}
 .schedules {
     display: grid;
     gap: 12px;
@@ -210,10 +235,36 @@ onMounted(async () => {
     list-style: none;
 }
 .schedule {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
     padding: 12px 14px;
     border: 1px solid var(--d-divider);
     border-radius: var(--d-radius-lg);
     background: var(--d-surface);
+}
+.preview {
+    display: grid;
+    gap: 6px;
+    margin: 0;
+}
+.thumb,
+.preview > .slide-thumb {
+    display: block;
+    overflow: hidden;
+    border-radius: var(--d-radius);
+}
+.thumb:focus-visible {
+    outline: 2px solid var(--d-accent);
+    outline-offset: 2px;
+}
+figcaption {
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+figcaption strong {
+    color: var(--d-text);
 }
 .row-head {
     display: flex;
@@ -244,16 +295,28 @@ onMounted(async () => {
     list-style: none;
     font-size: var(--d-size-sm);
 }
-.rules li {
+.line {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 6px;
+    width: 100%;
     padding: 4px 8px;
+    border: 0;
     border-radius: var(--d-radius);
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
 }
-.rules li.active {
+.line:hover {
+    background: var(--d-panel);
+}
+.previewed .line {
     background: var(--d-accent-pale);
+}
+.active .line {
     box-shadow: inset 3px 0 0 var(--d-success);
 }
 .rank {
@@ -271,34 +334,19 @@ onMounted(async () => {
 .arrow {
     color: var(--d-text-muted);
 }
-.group h2 {
-    margin: 0;
-    font-size: 1.15em;
-}
 .empty {
-    display: grid;
-    justify-items: start;
-    gap: 10px;
     margin: 0;
-}
-.empty p {
-    margin: 0;
-}
-.muted {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
+.muted {
+    color: var(--d-text-muted);
+}
 
-/* Phone: "Jetzt" moves below the name. */
+/* Phone: the preview above the rules, "Jetzt" below the name. */
 @media (max-width: 48rem) {
-    .page-title h1 {
-        font-size: 1.4em;
-    }
-    .title-icon {
-        display: none;
-    }
-    .group {
-        padding: 12px;
+    .schedule {
+        grid-template-columns: minmax(0, 1fr);
     }
     .now {
         order: 3;

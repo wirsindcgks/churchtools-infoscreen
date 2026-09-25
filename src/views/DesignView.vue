@@ -9,15 +9,14 @@
 import { computed, onMounted, ref, shallowRef, watch } from 'vue';
 import { currentPerson, displayName } from '../ct/client';
 import ColorField from '../designer/ColorField.vue';
-import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
+import PageHeader from '../designer/PageHeader.vue';
 import { usePreview } from '../designer/usePreview';
 import { createBlock, createSlide } from '../designer/ops';
 import { DEFAULT_THEME, type SlideDoc, type ThemeDoc } from '../model/schema';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
 import { fitStage } from '../player/stage';
-import { canManagePermissions } from '../setup/load';
 import { getRepository } from '../store/backend';
 import { ConflictError, type ScreenRepository } from '../store/screen-repository';
 
@@ -25,7 +24,6 @@ type Look = Pick<ThemeDoc, 'corners' | 'accent' | 'text' | 'background' | 'appoi
 
 const repository = shallowRef<ScreenRepository | null>(null);
 const author = ref<string | null>(null);
-const admin = ref(false);
 const error = ref<string | null>(null);
 /** Revision the page started from; null while there is no theme yet. */
 const revision = ref<number | null>(null);
@@ -118,12 +116,7 @@ async function reload(): Promise<void> {
 let observer: ResizeObserver | null = null;
 onMounted(async () => {
     try {
-        const [person, handle, isAdmin] = await Promise.all([
-            currentPerson(),
-            getRepository(),
-            canManagePermissions().catch(() => false),
-        ]);
-        admin.value = isAdmin;
+        const [person, handle] = await Promise.all([currentPerson(), getRepository()]);
         repository.value = handle.repository;
         await load();
         author.value = displayName(person);
@@ -146,127 +139,92 @@ function observe(el: unknown): void {
 </script>
 
 <template>
-    <div class="infoscreen-designer home">
-        <p v-if="error" class="d-banner d-banner--error page-message" role="alert">{{ error }}</p>
-        <template v-else-if="author !== null && repository">
-            <ModulePage current="design" :admin="admin">
-                <div class="page-title">
-                    <span class="title-icon"><Icon name="palette" :size="20" /></span>
-                    <h1 data-testid="design-heading">Design</h1>
+    <ModulePage current="design">
+        <PageHeader icon="palette" title="Design" testid="design-heading">
+            Das Erscheinungsbild aller Screens. Ecken, Akzentfarbe, Darstellung der Termine und Bildformat gelten
+            sofort überall; ein Baustein mit eigener Darstellung behält sie. Text- und Hintergrundfarbe bekommen
+            neue Slides und Bausteine.
+        </PageHeader>
+
+        <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
+        <p v-else-if="author === null || !repository" class="empty">Lade …</p>
+        <div v-else class="layout">
+            <section class="d-card settings" aria-label="Einstellungen">
+                <fieldset class="choice">
+                    <legend>Ecken</legend>
+                    <label v-for="c in (['round', 'square'] as const)" :key="c" class="option" :class="{ on: look.corners === c }">
+                        <input v-model="look.corners" type="radio" name="corners" :value="c" :data-testid="`corners-${c}`">
+                        <span class="corner-sample" :class="`corner-sample--${c}`" aria-hidden="true" />
+                        {{ c === 'round' ? 'Rund' : 'Eckig' }}
+                    </label>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Farben</legend>
+                    <ColorField v-model="look.accent" label="Akzent" testid="theme-accent" />
+                    <p class="hint">Für Kalender ohne eigene Farbe, für Kacheln und den Seitenbalken.</p>
+                    <div class="grid2">
+                        <ColorField v-model="look.text" label="Text" testid="theme-text" />
+                        <ColorField v-model="look.background" label="Hintergrund" testid="theme-background" />
+                    </div>
+                    <p class="hint">Text und Hintergrund gelten für neue Slides und Bausteine; bestehende bleiben, wie sie sind.</p>
+                </fieldset>
+
+                <fieldset class="choice">
+                    <legend>Termine</legend>
+                    <label class="option option--wide" :class="{ on: look.appointments === 'native' }">
+                        <input v-model="look.appointments" type="radio" name="appointments" value="native" data-testid="appointments-native">
+                        <span><strong>Nativ</strong><br><small>Schlichte Zeilen, der nächste Termin mit Bild daneben.</small></span>
+                    </label>
+                    <label class="option option--wide" :class="{ on: look.appointments === 'large' }">
+                        <input v-model="look.appointments" type="radio" name="appointments" value="large" data-testid="appointments-large">
+                        <span><strong>Groß</strong><br><small>Karten wie im WordPress-Plugin mit Datumskachel und Kalender; der nächste Termin hervorgehoben.</small></span>
+                    </label>
+                </fieldset>
+
+                <label class="d-field">
+                    Format der Terminbilder
+                    <select v-model="look.imageRatio" data-testid="theme-image-ratio">
+                        <option v-for="r in RATIOS" :key="r.value" :value="r.value">{{ r.label }}</option>
+                    </select>
+                </label>
+
+                <div class="actions">
+                    <button
+                        class="d-btn d-btn--primary"
+                        type="button"
+                        :disabled="!dirty || status === 'saving'"
+                        data-testid="theme-save"
+                        @click="save"
+                    >
+                        {{ status === 'saving' ? 'Speichere …' : 'Speichern' }}
+                    </button>
+                    <button class="d-btn" type="button" :disabled="!dirty" @click="look = { ...saved }">Verwerfen</button>
+                    <span v-if="status === 'saved' && !dirty" class="ok" data-testid="theme-saved">
+                        Gespeichert – die Fernseher zeigen es in etwa 20 s.
+                    </span>
                 </div>
-                <p class="muted intro">
-                    Das Erscheinungsbild aller Screens. Ecken, Akzentfarbe, Darstellung der Termine und Bildformat gelten
-                    sofort überall; ein Baustein mit eigener Darstellung behält sie. Text- und Hintergrundfarbe bekommen
-                    neue Slides und Bausteine.
+                <p v-if="message" class="d-banner d-banner--error" role="alert">
+                    {{ message }}
+                    <button v-if="status === 'conflict'" class="d-btn" type="button" @click="reload">Neu laden</button>
                 </p>
+            </section>
 
-                <div class="layout">
-                    <section class="d-card settings" aria-label="Einstellungen">
-                        <fieldset class="choice">
-                            <legend>Ecken</legend>
-                            <label v-for="c in (['round', 'square'] as const)" :key="c" class="option" :class="{ on: look.corners === c }">
-                                <input v-model="look.corners" type="radio" name="corners" :value="c" :data-testid="`corners-${c}`">
-                                <span class="corner-sample" :class="`corner-sample--${c}`" aria-hidden="true" />
-                                {{ c === 'round' ? 'Rund' : 'Eckig' }}
-                            </label>
-                        </fieldset>
-
-                        <fieldset>
-                            <legend>Farben</legend>
-                            <ColorField v-model="look.accent" label="Akzent" testid="theme-accent" />
-                            <p class="hint">Für Kalender ohne eigene Farbe, für Kacheln und den Seitenbalken.</p>
-                            <div class="grid2">
-                                <ColorField v-model="look.text" label="Text" testid="theme-text" />
-                                <ColorField v-model="look.background" label="Hintergrund" testid="theme-background" />
-                            </div>
-                            <p class="hint">Text und Hintergrund gelten für neue Slides und Bausteine; bestehende bleiben, wie sie sind.</p>
-                        </fieldset>
-
-                        <fieldset class="choice">
-                            <legend>Termine</legend>
-                            <label class="option option--wide" :class="{ on: look.appointments === 'native' }">
-                                <input v-model="look.appointments" type="radio" name="appointments" value="native" data-testid="appointments-native">
-                                <span><strong>Nativ</strong><br><small>Schlichte Zeilen, der nächste Termin mit Bild daneben.</small></span>
-                            </label>
-                            <label class="option option--wide" :class="{ on: look.appointments === 'large' }">
-                                <input v-model="look.appointments" type="radio" name="appointments" value="large" data-testid="appointments-large">
-                                <span><strong>Groß</strong><br><small>Karten wie im WordPress-Plugin mit Datumskachel und Kalender; der nächste Termin hervorgehoben.</small></span>
-                            </label>
-                        </fieldset>
-
-                        <label class="d-field">
-                            Format der Terminbilder
-                            <select v-model="look.imageRatio" data-testid="theme-image-ratio">
-                                <option v-for="r in RATIOS" :key="r.value" :value="r.value">{{ r.label }}</option>
-                            </select>
-                        </label>
-
-                        <div class="actions">
-                            <button
-                                class="d-btn d-btn--primary"
-                                type="button"
-                                :disabled="!dirty || status === 'saving'"
-                                data-testid="theme-save"
-                                @click="save"
-                            >
-                                {{ status === 'saving' ? 'Speichere …' : 'Speichern' }}
-                            </button>
-                            <button class="d-btn" type="button" :disabled="!dirty" @click="look = { ...saved }">Verwerfen</button>
-                            <span v-if="status === 'saved' && !dirty" class="ok" data-testid="theme-saved">
-                                Gespeichert – die Fernseher zeigen es in etwa 20 s.
-                            </span>
-                        </div>
-                        <p v-if="message" class="d-banner d-banner--error" role="alert">
-                            {{ message }}
-                            <button v-if="status === 'conflict'" class="d-btn" type="button" @click="reload">Neu laden</button>
-                        </p>
-                    </section>
-
-                    <section class="preview" aria-label="Vorschau">
-                        <div :ref="observe" class="preview-box" data-testid="theme-preview">
-                            <StageView v-if="previewWidth" :width="STAGE.width" :height="STAGE.height" :fit="fit">
-                                <SlideView :slide="previewSlide" :width="STAGE.width" :height="STAGE.height" />
-                            </StageView>
-                        </div>
-                        <p class="hint">Vorschau mit echten Terminen der ersten Kalender.</p>
-                    </section>
+            <section class="preview" aria-label="Vorschau">
+                <div :ref="observe" class="preview-box" data-testid="theme-preview">
+                    <StageView v-if="previewWidth" :width="STAGE.width" :height="STAGE.height" :fit="fit">
+                        <SlideView :slide="previewSlide" :width="STAGE.width" :height="STAGE.height" />
+                    </StageView>
                 </div>
-            </ModulePage>
-        </template>
-        <p v-else class="page-message muted">Lade …</p>
-    </div>
+                <p class="hint">Vorschau mit echten Terminen der ersten Kalender.</p>
+            </section>
+        </div>
+    </ModulePage>
 </template>
 
 <style scoped>
-.home {
-    min-height: 100%;
-}
-.page-message {
-    margin: 24px 16px;
-}
-.page-title {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-.page-title h1 {
+.empty {
     margin: 0;
-    font-size: 1.8em;
-}
-.title-icon {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: var(--d-radius-lg);
-    background: var(--d-accent-pale);
-    color: var(--d-accent);
-}
-.intro {
-    max-width: 75ch;
-    margin: -8px 0 0;
-}
-.muted {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
@@ -373,14 +331,6 @@ legend {
     .preview {
         position: static;
         order: -1;
-    }
-}
-@media (max-width: 48rem) {
-    .page-title h1 {
-        font-size: 1.4em;
-    }
-    .title-icon {
-        display: none;
     }
 }
 </style>

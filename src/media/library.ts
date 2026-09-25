@@ -5,7 +5,7 @@
  * adopted the first time they are chosen.
  */
 import { SCHEMA_VERSION, type MediaDoc } from '../model/schema';
-import type { ScreenRepository } from '../store/screen-repository';
+import type { MediaUse, ScreenRepository } from '../store/screen-repository';
 import type { PreparedImage } from './scale';
 import * as wiki from './wiki';
 import type { WikiCategory, WikiFile, WikiPage } from './wiki';
@@ -21,6 +21,33 @@ export interface MediaItem {
     createdAt?: string;
     /** Set once the image has a media document in the module store. */
     mediaId?: string;
+    /** Where it is shown; empty for an image no slide uses (Plan.md, Nächste Schritte 18). */
+    uses: MediaUse[];
+}
+
+export type MediaShow = 'all' | 'used' | 'unused';
+
+/**
+ * Where an image is shown, one line per screen: "Foyer › Gottesdienst ›
+ * Begrüßung". A playlist no screen runs has no screen in front.
+ */
+export function usageLines(uses: readonly MediaUse[]): string[] {
+    const lines = uses.flatMap((u) =>
+        u.screens.length
+            ? u.screens.map((s) => `${s.name} › ${u.playlist.name} › ${u.slide.name}`)
+            : [`${u.playlist.name} › ${u.slide.name}`],
+    );
+    return [...new Set(lines)];
+}
+
+/** The images that match the search – in their name or where they are shown – and the chosen chip. */
+export function filterMedia(items: readonly MediaItem[], query: string, show: MediaShow): MediaItem[] {
+    const needle = query.trim().toLocaleLowerCase('de');
+    return items.filter(
+        (item) =>
+            (show === 'all' || (show === 'used') === item.uses.length > 0) &&
+            (!needle || [item.name, ...usageLines(item.uses)].join(' ').toLocaleLowerCase('de').includes(needle)),
+    );
 }
 
 /** The wiki calls, replaceable in tests. */
@@ -78,7 +105,7 @@ export class MediaLibrary {
     async list(): Promise<MediaItem[]> {
         const categoryId = await this.categoryId();
         const pages = (await this.backend.pages(categoryId)).filter((p) => p.title !== OVERVIEW_PAGE);
-        const docs = await this.repository.listMedia();
+        const [docs, uses] = await Promise.all([this.repository.listMedia(), this.repository.mediaUses()]);
         const byFile = new Map(docs.map((d) => [d.fileId, d]));
         const perPage = await Promise.all(
             pages.map(async (page) => (await this.backend.files(categoryId, page.guid)).map((f) => ({ f, page }))),
@@ -95,6 +122,7 @@ export class MediaLibrary {
                 height: f.imageMetadata?.height,
                 createdAt: f.meta?.createdDate,
                 mediaId: byFile.get(f.id)?.id,
+                uses: uses.get(byFile.get(f.id)?.id ?? '') ?? [],
             }))
             .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '') || b.fileId - a.fileId);
     }
@@ -131,6 +159,7 @@ export class MediaLibrary {
                     name: file.name,
                     imageUrl: file.imageUrl,
                     page: screen.slug,
+                    uses: [],
                     width: image.width || undefined,
                     height: image.height || undefined,
                 }),
