@@ -151,8 +151,9 @@ Mitglied, ob die Kalender der Screens lesbar sind.
 Ist der Browser nicht angemeldet, zeigt der Fernseher: *„Dieser Browser ist nicht bei ChurchTools angemeldet. Bitte
 hier einmal mit dem Geräte-Benutzer anmelden …"*.
 
-> **Noch nicht bestätigt:** wie lange „Angemeldet bleiben" hält. Zeigt der Fernseher nach einigen Tagen die Meldung
-> oben, genügt es, sich neu anzumelden. Wir messen das und passen die Anleitung an.
+> **Wichtig – die Anmeldung hält nur 24 Stunden.** Auch mit „Angemeldet bleiben" meldet ChurchTools den Browser nach
+> einem Tag ab (gemessen). Für den Dauerbetrieb bekommt der Fernseher deshalb eine Adresse, mit der er sich selbst
+> neu anmeldet; sie ist in Arbeit. Bis dahin musst du dich täglich neu anmelden – für einen ersten Test genügt das.
 
 ### Einstellungen des Kiosk-Browsers
 

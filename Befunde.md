@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G8, G11, G14, G15, G18–G20, G22–G31 und G35 sind beantwortet, G16, G21, G32, G33 und G34 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G36).
+**Eine durchgehende Nummerierung.** G1–G9, G11, G14, G15, G18–G20, G22–G32 und G35 sind beantwortet, G16, G21, G33 und G34 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G36).
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -322,6 +322,8 @@ Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt �
 
 **Zwischenstand 2026-09-25, 08:47 (vom Nutzer beobachtet):** Der Geräte-Benutzer hatte sich am 2026-09-24 gegen 22:28 im Browser (Chrome) über das Formular angemeldet, Player-Tab offen. Rund zehn Stunden später zeigt der Player noch Daten, auch nach einem Neuladen von Hand; das nächtliche Neuladen (03–04 Uhr) hat die Anmeldung ebenfalls nicht verloren. **Das beantwortet die Frage nicht** – eine feste 24-Stunden-Sitzung wäre ebenso noch gültig. Entscheidend ist das Ablaufdatum des Cookies `ChurchToolsV2_…` in den Entwicklerwerkzeugen oder ein Blick nach 2026-09-25, 22:30.
 
+**Beantwortet am 2026-09-25: Auch „Angemeldet bleiben" hält nur 24 Stunden.** Das Cookie `ChurchToolsV2_…` im Browser des Geräte-Benutzers läuft am **2026-09-25T20:27:39Z** ab – 24 Stunden nach der Anmeldung über das Formular, obwohl der Player die ganze Nacht alle paar Minuten abgefragt hat. Die Sitzung verlängert sich durch Benutzung nicht, genau wie beim Token (oben). **Weg A trägt damit keinen Dauerbetrieb:** Nach einem Tag ist der Fernseher abgemeldet, und nach dem nächsten Neuladen bindet ChurchTools unser Skript gar nicht mehr ein (G9, G33). Der Dauerbetrieb braucht Weg B.
+
 
 **G16 – Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.
 
@@ -364,7 +366,20 @@ Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit
 
 ## Offen
 
-**G9 – Wie verhält sich `login_token` in der URL bei einem Custom Module?** Beim nativen Infoscreen erprobt, für `/ccm/`-Pfade ungeprüft. `ct-pass-store` hilft hier nicht: Es benutzt Tokens gegenüber seinem eigenen Backend, nicht zur Anmeldung einer Seite. **Doppelt blockiert seit dem 2026-09-23:** Es fehlt das Custom Module (T1) *und* ein Token, an den ein Administrator regulär herankommt (**G18**).
+**G9 – Beantwortet: ChurchTools nimmt `login_token` in der Adresse einer Extension-Seite an – schon beim Laden, vor unserem Skript.** *(2026-09-25, Testinstanz, nur lesend: `curl` ohne Cookies auf `/ccm/infoscreen-designer/player?screen=foyer`, mit dem Token des Entwicklungskontos, Person 16)*
+
+| Aufruf | Antwort |
+| --- | --- |
+| ohne Anmeldung, ohne Token | `200`, die ChurchTools-Seite **ohne unser Skript** – bestätigt die Vermutung aus G33 |
+| ohne Anmeldung, mit `login_token=…&user_id=16` | `302`; setzt `ChurchToolsV2_…` mit `Max-Age=86400`, löscht das alte Cookie `ChurchTools_ct_…`; **`Location` ist dieselbe Adresse ohne `login_token`**, `user_id` bleibt |
+| der Weiterleitung gefolgt, mit dem neuen Cookie | `200`, **unser Skript ist eingebunden** |
+
+**Folgen für den Player (Weg B):**
+- Eine Kiosk-Startadresse mit `login_token` meldet das Gerät **bei jedem Laden** neu an – auch nach einem Neustart mit abgelaufener Sitzung. Das löst G32.
+- **Unser Skript sieht den Token nie:** ChurchTools hat ihn schon aus der Adresse genommen, bevor die Seite lädt. Die eingebaute Neuanmeldung des Players (`ensureSignedIn`, liest `login_token` aus der Adresse) greift deshalb nicht. Ein Neuladen des Players (nachts, nach Fehlern) lädt die Adresse **ohne** Token – nach Ablauf der 24 Stunden also die Seite ohne Skript.
+- **Der Ausweg, zu prüfen:** den Token zusätzlich hinter `#` mitgeben. Das Fragment geht nicht an den Server, und ein Browser hängt es bei einer Weiterleitung ohne eigenes Fragment wieder an. Der Player läse ihn dort und lüde sich selbst immer über die Adresse **mit** Token neu – dann erneuert schon das nächtliche Neuladen die Sitzung jeden Tag.
+
+*Die ursprüngliche Frage, zur Nachverfolgung:* Wie verhält sich `login_token` in der URL bei einem Custom Module?** Beim nativen Infoscreen erprobt, für `/ccm/`-Pfade ungeprüft. `ct-pass-store` hilft hier nicht: Es benutzt Tokens gegenüber seinem eigenen Backend, nicht zur Anmeldung einer Seite. **Doppelt blockiert seit dem 2026-09-23:** Es fehlt das Custom Module (T1) *und* ein Token, an den ein Administrator regulär herankommt (**G18**).
 
 **G10 – Darf unter `/ccm/<key>/` ein Service Worker registriert werden?** Entscheidet, ob Offline-Festigkeit vollständig erreichbar ist oder nur halb: IndexedDB sichert die Daten, aber nicht die eigenen Assets und nicht die Bilder. Ohne Service Worker zeigt ein Pi, der während eines Netzausfalls neu startet, einen weißen Bildschirm – genau der Fall aus Risiko 2 in `Plan.md`. Zu prüfen sind Scope, MIME-Typ und ob ChurchTools den Pfad umschreibt.
 
