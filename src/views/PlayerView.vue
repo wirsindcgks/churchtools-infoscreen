@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { enableTokenLogin } from '../ct/client';
 import type { MediaDoc, SlideDoc } from '../model/schema';
@@ -15,8 +15,8 @@ import {
 } from '../player/device-login';
 import { screenImageUrls, slideImageUrls } from '../player/images';
 import { createMediaCache } from '../player/media-cache';
-import { slideSeconds } from '../player/paging';
 import { createPreloader } from '../player/preload';
+import { useRotation } from '../player/rotation';
 import { activePlaylistId } from '../player/schedule';
 import { fitStage } from '../player/stage';
 import SlideView from '../player/SlideView.vue';
@@ -106,8 +106,7 @@ const slides = computed<SlideDoc[]>(() => {
     return (playlist?.slideIds ?? []).map((id) => byId.get(id)).filter((s): s is SlideDoc => !!s && s.enabled);
 });
 
-const index = ref(0);
-const current = computed(() => (slides.value.length ? slides.value[index.value % slides.value.length] : null));
+const { index, current, scheduleNext } = useRotation(slides, () => context.pages ?? {});
 
 const preload = createPreloader();
 watch(
@@ -120,48 +119,6 @@ watch(
             const urls = slideImageUrls(next, context.media, stage.value, context.churchLogo ?? null);
             preload(urls.map((url) => imageSource(context, url)));
         }
-    },
-);
-
-let rotation: ReturnType<typeof setTimeout> | undefined;
-/**
- * Shows the current slide for its duration – or longer, when a paged list
- * on it needs more time for all its pages (Plan.md, 23). The page count is
- * known only once the list has measured itself, so the time is checked
- * again when it runs out rather than fixed at the start.
- */
-function scheduleNext(): void {
-    clearTimeout(rotation);
-    const startedAt = Date.now();
-    const wait = (ms: number) => {
-        rotation = setTimeout(() => {
-            const needed = (current.value ? slideSeconds(current.value, context.pages ?? {}) : 10) * 1000;
-            const left = needed - (Date.now() - startedAt);
-            if (left > 100) return wait(left);
-            index.value = slides.value.length ? (index.value + 1) % slides.value.length : 0;
-            scheduleNext();
-        }, ms);
-    };
-    wait((current.value?.durationSeconds ?? 10) * 1000);
-}
-// A changed duration applies at once, not only after the current slide has run out.
-watch(
-    () => current.value?.durationSeconds,
-    () => scheduleNext(),
-);
-// After a change the player stays on the slide it shows; only if that slide is gone
-// (or another playlist took over) does it start from the beginning.
-// Compared as a string: the list is recomputed every second (it depends on the clock),
-// and a new array each time must not count as a change – that would stall the rotation.
-watch(
-    () => slides.value.map((s) => s.id).join(','),
-    (joined, previousJoined) => {
-        const ids = joined ? joined.split(',') : [];
-        const previous = previousJoined ? previousJoined.split(',') : [];
-        const shown = previous[index.value % Math.max(previous.length, 1)];
-        const position = shown ? ids.indexOf(shown) : -1;
-        index.value = position >= 0 ? position : 0;
-        scheduleNext();
     },
 );
 
@@ -185,7 +142,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
     window.removeEventListener('resize', onResize);
     clearInterval(ticker);
-    clearTimeout(rotation);
     player?.stop();
     unsubscribe();
 });

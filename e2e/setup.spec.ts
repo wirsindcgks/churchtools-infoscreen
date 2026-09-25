@@ -10,13 +10,15 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
     // Which build is installed, to compare with the releases on GitHub (Plan.md 12).
     await expect(page.getByTestId('app-version')).toContainText(/Infoscreen Designer \d+\.\d+\.\d+/);
 
+    // Group checks read live from the test instance, which can take longer than the default 5 s.
+    const LIVE = { timeout: 15_000 };
     await page.getByTestId('group-device').selectOption({ label: 'Infoscreen-Devices' });
     const device = page.getByTestId('setup-device');
-    await expect(device.locator('.checks')).toContainText('Die Gruppe ist aktiv.');
-    await expect(device.locator('.checks')).toContainText('1 Geräte-Benutzer.');
+    await expect(device.locator('.checks')).toContainText('Die Gruppe ist aktiv.', LIVE);
+    await expect(device.locator('.checks')).toContainText('1 Geräte-Benutzer.', LIVE);
 
     await page.getByTestId('group-designer').selectOption({ label: 'Gemeindeleitung' });
-    await expect(page.getByTestId('setup-designer').locator('.checks')).toContainText('Rolle');
+    await expect(page.getByTestId('setup-designer').locator('.checks')).toContainText('Rolle', LIVE);
 
     await page.getByTestId('save-setup').click();
     await expect(page.getByTestId('setup-saved')).toBeVisible();
@@ -24,7 +26,7 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
 
     await page.reload();
     await expect(page.getByTestId('group-device')).toHaveValue(/\d+/);
-    await expect(device.locator('.checks')).toContainText('Die Gruppe ist aktiv.');
+    await expect(device.locator('.checks')).toContainText('Die Gruppe ist aktiv.', LIVE);
 });
 
 test('the assistant explains itself in demo mode instead of offering to write', async ({ page }) => {

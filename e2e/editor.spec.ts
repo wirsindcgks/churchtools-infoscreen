@@ -431,3 +431,74 @@ test('an appointment list shows every appointment page by page; the inspector sa
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
     await page.screenshot({ path: 'test-results/editor-paged-list.png' });
 });
+
+test('the preview plays the unsaved draft like the TV, and saves nothing', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await page.getByTestId('add-text').click();
+    await page.getByTestId('text-input').fill('Nur in der Vorschau');
+    await page.getByTestId('text-input').blur();
+    await expect(page.getByTestId('save-status')).toHaveText('Ungespeicherte Änderungen');
+
+    await page.getByTestId('open-preview').click();
+    const preview = page.getByTestId('playlist-preview');
+    await expect(preview).toBeVisible();
+    await expect(preview).toContainText('Vorschau – nicht gespeichert');
+    await expect(preview.locator('.slide')).toContainText('Nur in der Vorschau'); // the selected slide, as edited
+    await expect(page.getByTestId('preview-where')).toContainText('1/3 · Willkommen');
+    await page.screenshot({ path: 'test-results/editor-preview.png' });
+
+    // Step on by button and by key; hold with the space bar – the editor's keys do not fire behind it.
+    await page.getByTestId('preview-next').click();
+    await expect(page.getByTestId('preview-where')).toContainText('2/3');
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByTestId('preview-where')).toContainText('3/3');
+    await page.keyboard.press(' ');
+    await expect(page.getByTestId('preview-where')).toContainText('angehalten');
+    await page.keyboard.press('Backspace'); // would delete a selected block in the editor
+    await page.keyboard.press('Escape');
+    await expect(preview).toHaveCount(0);
+
+    await expect(page.getByTestId('save-status')).toHaveText('Ungespeicherte Änderungen');
+    await expect(page.locator('.editor-stage')).toContainText('Nur in der Vorschau'); // the block is still there
+});
+
+test('in the preview a long appointment list turns its pages, with a bar filling up per page (Plan.md 23)', async ({ page }) => {
+    test.setTimeout(60_000);
+    // ChurchTools' answer is simulated: 20 appointments, one a day from tomorrow.
+    await page.route(/\/api\/calendars\/appointments/, (route) => {
+        const data = Array.from({ length: 20 }, (_, i) => {
+            const start = new Date();
+            start.setDate(start.getDate() + 1 + i);
+            start.setHours(10, 0, 0, 0);
+            return {
+                appointment: {
+                    base: { id: i + 1, title: `Termin ${i + 1}`, allDay: false, calendar: { id: 1, name: 'Gemeinde' } },
+                    calculated: { startDate: start.toISOString(), endDate: new Date(start.getTime() + 3_600_000).toISOString() },
+                },
+            };
+        });
+        return route.fulfill({ json: { data } });
+    });
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await page.getByTestId('slide-item').nth(2).click();
+    await page.getByTestId('frame-appointment-list').first().click();
+    await page.getByTestId('show-all').check();
+    await page.getByTestId('page-seconds').fill('4');
+    await page.getByTestId('page-seconds').blur();
+    await expect(page.getByTestId('page-hint')).toContainText(/Ergibt \d+ Seiten/);
+    // While designing the list holds page 1, without a bar.
+    await expect(page.locator('.editor-stage [data-testid="list-page"]')).toHaveText(/^1\//);
+    await expect(page.locator('.editor-stage [data-testid="list-progress"]')).toHaveCount(0);
+
+    await page.getByTestId('open-preview').click();
+    const preview = page.getByTestId('playlist-preview');
+    await expect(preview.getByTestId('list-progress')).toBeVisible();
+    await expect(preview.getByTestId('list-page')).toHaveText(/^1\//);
+    await page.waitForTimeout(2000);
+    await preview.screenshot({ path: 'test-results/preview-paged-list.png' });
+    await expect(preview.getByTestId('list-page')).toHaveText(/^2\//, { timeout: 6_000 });
+    await expect(preview.getByTestId('preview-where')).toContainText('3/3 · Termine');
+});

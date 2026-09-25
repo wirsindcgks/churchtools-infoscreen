@@ -53,22 +53,27 @@ watch(
 );
 
 let timer: ReturnType<typeof setInterval> | undefined;
+/** Seconds one page shows while the pages turn; 0 while they do not (one page, or the designer's preview). */
+const turnSeconds = ref(0);
 function turnPages(): void {
     clearInterval(timer);
     page.value = 0;
+    turnSeconds.value = 0;
     const count = pages.value.length;
     if (!props.block.showAll || count < 2 || context.paging === false) return;
-    const seconds = pageInterval(props.block.pageSeconds ?? PAGE_SECONDS, props.slideSeconds ?? 0, count);
-    timer = setInterval(() => (page.value = (page.value + 1) % count), seconds * 1000);
+    turnSeconds.value = pageInterval(props.block.pageSeconds ?? PAGE_SECONDS, props.slideSeconds ?? 0, count);
+    timer = setInterval(() => (page.value = (page.value + 1) % count), turnSeconds.value * 1000);
 }
 
+// Separate sources, each compared by value: one getter returning a fresh array would count
+// as changed on every tick of the clock and start the pages over each second.
 watch(
-    () => [pages.value.length, props.block.showAll, props.block.pageSeconds, props.slideSeconds],
+    [() => pages.value.length, () => props.block.showAll, () => props.block.pageSeconds, () => props.slideSeconds, () => context.paging],
     () => turnPages(),
 );
 // Rows change height with font, size and block – and once the fonts have loaded.
 watch(
-    () => [props.block.style.fontFamily, props.block.style.fontSize, props.block.height, items.value.length > 0],
+    [() => props.block.style.fontFamily, () => props.block.style.fontSize, () => props.block.height, () => items.value.length > 0],
     () => void nextTick(measure),
 );
 onMounted(() => {
@@ -92,7 +97,19 @@ onBeforeUnmount(() => clearInterval(timer));
                 <li v-if="items.length === 0" class="empty">Keine Termine in den nächsten {{ block.horizonDays }} Tagen.</li>
             </ul>
         </Transition>
-        <span v-if="pages.length > 1" class="page-number" data-testid="list-page">{{ page + 1 }}/{{ pages.length }}</span>
+        <div v-if="pages.length > 1" class="pager">
+            <!-- Fills up over the time of one page, anew on each page: how long until the next. -->
+            <span class="track">
+                <span
+                    v-if="turnSeconds"
+                    :key="page"
+                    class="progress"
+                    data-testid="list-progress"
+                    :style="{ animationDuration: `${turnSeconds}s` }"
+                />
+            </span>
+            <span class="page-number" data-testid="list-page">{{ page + 1 }}/{{ pages.length }}</span>
+        </div>
     </div>
 </template>
 
@@ -128,12 +145,52 @@ onBeforeUnmount(() => clearInterval(timer));
 .empty {
     opacity: 0.7;
 }
-.page-number {
+.pager {
     position: absolute;
     right: 0;
     bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
     font-size: 0.55em;
+}
+.track {
+    position: relative;
+    flex: 1;
+    height: 0.3em;
+    overflow: hidden;
+    border-radius: 999px;
+}
+/* The pale track as its own layer – an opacity on .track would pale the bar too. */
+.track::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0.25;
+}
+/* Its own layer, scaled from nothing to full: the compositor draws it, nothing is laid out again. */
+.progress {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: currentColor;
+    transform-origin: left;
+    animation: page-progress linear forwards;
+}
+@keyframes page-progress {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+.page-number {
     opacity: 0.6;
+    white-space: nowrap;
 }
 /* Pages cross-fade calmly; opacity alone, which the compositor handles. */
 .page-enter-active,

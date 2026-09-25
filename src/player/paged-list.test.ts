@@ -77,6 +77,8 @@ describe('an appointment list with every appointment, page by page (Plan.md, 23)
 
     it('shows as many as fit, turns the page every 10 s and reports the pages to the rotation', async () => {
         const { wrapper, context } = render(list(), 8);
+        // The player's clock ticks every second – that must not start the pages over (seen on the TV, 2026-09-25).
+        setInterval(() => (context.now = new Date(context.now.getTime() + 1000)), 1000);
         await flushPromises();
         // 600 px, rows of 70, room for the page number: 7 rows a page, 3 pages for 20.
         expect(wrapper.findAll('.row')).toHaveLength(7);
@@ -84,10 +86,18 @@ describe('an appointment list with every appointment, page by page (Plan.md, 23)
         expect(context.pages).toEqual({ liste: 3 });
         expect(wrapper.text()).toContain('Termin 1');
 
+        // A bar fills up over the 10 s of each page, anew on every page.
+        const bar = () => wrapper.find('[data-testid="list-progress"]');
+        expect(bar().attributes('style')).toContain('animation-duration: 10s');
+        const first = bar().element;
+
         await vi.advanceTimersByTimeAsync(10_000);
         expect(wrapper.find('[data-testid="list-page"]').text()).toBe('2/3');
         await vi.advanceTimersByTimeAsync(1_000); // after the cross-fade
         expect(wrapper.text()).toContain('Termin 8');
+        expect(bar().element).not.toBe(first);
+        await vi.advanceTimersByTimeAsync(9_000);
+        expect(wrapper.find('[data-testid="list-page"]').text()).toBe('3/3');
         wrapper.unmount();
     });
 
@@ -107,6 +117,7 @@ describe('an appointment list with every appointment, page by page (Plan.md, 23)
         await vi.advanceTimersByTimeAsync(30_000);
         expect(held.wrapper.find('[data-testid="list-page"]').text()).toBe('1/3');
         expect(held.context.pages).toEqual({ liste: 3 }); // the inspector names the pages
+        expect(held.wrapper.find('[data-testid="list-progress"]').exists()).toBe(false); // nothing runs while designing
         held.wrapper.unmount();
 
         const limited = render(list({ showAll: false }), 8);

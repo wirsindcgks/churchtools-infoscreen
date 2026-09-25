@@ -60,7 +60,9 @@ Du brauchst nur die Mitgliedschaft in „Infoscreen-Designer"; alles Weitere kom
    jeder Auswahl, „＋ Neue Playlist anlegen …". Die Vorschau zeigt für jeden Tag, was wann läuft.
 5. **Bilder:** über den Baustein „Bild" oder in der **Mediathek** (Seitenleiste). Ein Bild lässt sich beliebig oft
    verwenden. Nichts Vertrauliches hochladen – Bilder sind über ihre Adresse ohne Anmeldung abrufbar.
-6. **Speichern** (oder ⌘S / Strg+S). Alle Fernseher, die diese Playlist zeigen, übernehmen die Änderung nach wenigen
+6. **Vorschau** (oben im Editor): spielt die Playlist mit deinen Änderungen im Vollbild ab, wie der Fernseher –
+   ohne zu speichern. Esc schließt sie.
+7. **Speichern** (oder ⌘S / Strg+S). Alle Fernseher, die diese Playlist zeigen, übernehmen die Änderung nach wenigen
    Minuten von selbst.
 
 **Gut zu wissen:**

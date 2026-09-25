@@ -9,6 +9,7 @@ import { useEditorStore } from '../designer/editor-store';
 import Icon from '../designer/Icon.vue';
 import Inspector from '../designer/Inspector.vue';
 import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
+import PlaylistPreview from '../designer/PlaylistPreview.vue';
 import SlideList from '../designer/SlideList.vue';
 import { usePreview } from '../designer/usePreview';
 import type { MediaDoc } from '../model/schema';
@@ -39,6 +40,9 @@ const { calendars, problem } = usePreview(
     calendarIds,
     computed(() => editor.media),
 );
+
+/** The preview of the unsaved draft, as the TV would show it. */
+const previewing = ref(false);
 
 /** Which picker the media library was opened for. */
 const libraryFor = ref<'block' | 'background' | 'logo' | null>(null);
@@ -120,6 +124,7 @@ function onKey(event: KeyboardEvent): void {
         if (event.key === 'Escape') libraryFor.value = null;
         return;
     }
+    if (previewing.value) return; // the preview has its own keys
     const mod = event.metaKey || event.ctrlKey;
     const typing = (event.target as HTMLElement | null)?.closest('input, textarea, select');
     if (mod && event.key.toLowerCase() === 's') {
@@ -189,6 +194,16 @@ function onKey(event: KeyboardEvent): void {
                 >
                     <Icon name="redo" />
                 </button>
+                <button
+                    class="d-btn preview-btn"
+                    type="button"
+                    title="Die Playlist abspielen wie auf dem Fernseher – mit allen Änderungen, ohne zu speichern"
+                    data-testid="open-preview"
+                    :disabled="!editor.slides.length"
+                    @click="previewing = true"
+                >
+                    <Icon name="eye" :size="16" /> Vorschau
+                </button>
                 <!-- The player shows screens, not playlists: offer the screens this playlist runs on. -->
                 <RouterLink
                     v-for="s in editor.screens.slice(0, 1)"
@@ -228,6 +243,14 @@ function onKey(event: KeyboardEvent): void {
             </div>
             <Inspector :calendars="calendars" @pick-image="openLibrary" />
         </div>
+
+        <PlaylistPreview
+            v-if="previewing && editor.draft"
+            :slides="editor.slides"
+            :stage="editor.stage"
+            :start-slide-id="editor.slide?.id"
+            @close="previewing = false"
+        />
 
         <MediaLibraryDialog
             v-if="libraryFor && editor.draft"
@@ -304,6 +327,9 @@ function onKey(event: KeyboardEvent): void {
     font-size: 1.1em;
     white-space: nowrap;
     text-overflow: ellipsis;
+}
+.preview-btn {
+    gap: 6px;
 }
 .status {
     color: var(--d-text-muted);
