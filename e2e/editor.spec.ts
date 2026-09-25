@@ -663,9 +663,11 @@ test('a website and a QR code (Plan.md 28)', async ({ page }) => {
 
     await page.getByTestId('add-web').click();
     await expect(page.getByTestId('web-problem')).toContainText('Noch keine Adresse');
-    await page.getByTestId('web-url').fill('https://www.gemeinde.example/wochenblatt/');
+    // Typed without https://, as people do: the designer adds it.
+    await page.getByTestId('web-url').fill('www.gemeinde.example/wochenblatt/');
     await page.getByTestId('web-url').press('Enter');
     await page.getByTestId('web-url').blur();
+    await expect(page.getByTestId('web-url')).toHaveValue('https://www.gemeinde.example/wochenblatt/');
     const frame = stage.getByTestId('web-frame');
     await expect(frame).toHaveAttribute('src', 'https://www.gemeinde.example/wochenblatt/');
     await expect(frame).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');

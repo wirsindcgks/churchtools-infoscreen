@@ -27,3 +27,10 @@ export function webFrame(url: string, ownOrigin: string): WebFrame | null {
     const foreign = parsed.origin !== ownOrigin;
     return { src: parsed.href, sandbox: foreign ? 'allow-scripts allow-same-origin' : 'allow-scripts' };
 }
+
+/** "gemeinde.de/seite" → "https://gemeinde.de/seite": an address typed without a scheme is taken as https. */
+export function withScheme(input: string): string {
+    const text = input.trim();
+    if (!text || /^[a-z][a-z0-9+.-]*:\/\//i.test(text)) return text;
+    return `https://${text.replace(/^\/+/, '')}`;
+}

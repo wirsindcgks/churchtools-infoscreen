@@ -7,7 +7,7 @@ import { fontDef, FONTS } from '../player/fonts';
 import { sizedImageUrl } from '../player/format';
 import { PAGE_SECONDS, slideSeconds } from '../player/paging';
 import { qrShape } from '../player/qr';
-import { webFrame } from '../player/web';
+import { webFrame, withScheme } from '../player/web';
 import { useEditorStore } from './editor-store';
 import ColorField from './ColorField.vue';
 import FillEditor from './FillEditor.vue';
@@ -338,14 +338,15 @@ const slideFill = computed<Fill>(() =>
                     <label class="d-field">
                         Adresse
                         <input
-                            type="url"
-                            placeholder="https://…"
+                            type="text"
+                            inputmode="url"
                             :value="block.url"
                             data-testid="web-url"
                             v-on="edit"
-                            @change="setBlock({ url: ($event.target as HTMLInputElement).value.trim() })"
+                            @change="setBlock({ url: withScheme(($event.target as HTMLInputElement).value) })"
                         >
                     </label>
+                    <p class="hint" data-testid="web-enter-hint">Mit Enter übernehmen – erst dann lädt die Seite.</p>
                     <p v-if="webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
                     <label class="d-field">
                         Größe der Seite
@@ -359,8 +360,9 @@ const slideFill = computed<Fill>(() =>
                         </select>
                     </label>
                     <p class="hint">
-                        Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer. Manche Seiten verbieten
-                        das Einbetten – dann bleibt der Rahmen ebenfalls leer.
+                        Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer. Viele große Seiten wie
+                        Google verbieten das Einbetten – der Rahmen zeigt dann einen Fehler. Eigene Seiten, etwa die der
+                        Gemeinde-Website, gehen meist.
                     </p>
                 </template>
 

@@ -8,7 +8,7 @@ import { provideStageContext, type StageContext } from './context';
 import { qrShape } from './qr';
 import SlideView from './SlideView.vue';
 import { imageBox, listLayout, themeVars } from './theme';
-import { webFrame } from './web';
+import { webFrame, withScheme } from './web';
 
 const BERLIN = 'Europe/Berlin';
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
@@ -65,6 +65,13 @@ describe('the website block (Plan.md 28)', () => {
         });
         // Same origin with allow-same-origin would run with the device's session.
         expect(webFrame(`${own}/ccm/anything`, own)?.sandbox).toBe('allow-scripts');
+    });
+
+    it('takes an address typed without a scheme as https, and leaves others as they are', () => {
+        expect(withScheme(' gemeinde.de/wochenblatt ')).toBe('https://gemeinde.de/wochenblatt');
+        expect(withScheme('https://gemeinde.de')).toBe('https://gemeinde.de');
+        expect(withScheme('http://gemeinde.de')).toBe('http://gemeinde.de'); // still refused by webFrame
+        expect(withScheme('')).toBe('');
     });
 
     it('renders a sandboxed frame, scaled by its zoom, and a placeholder without an address', () => {
