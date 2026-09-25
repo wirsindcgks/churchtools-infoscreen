@@ -19,6 +19,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   was gerade läuft: Standard-Playlist wählen, Regeln nach Uhrzeit (Wochentage, von–bis) und rund um Termine
   ausgewählter Kalender, die obere gewinnt; eine Tagesvorschau zeigt, was wann läuft. Termin-Regeln mit frei
   gewähltem Zeitraum, z. B. „30 Min. vor Beginn bis 10 Min. nach Beginn" für eine Begrüßung.
+  Ein Screen mit Regeln zeigt nach dem Start sofort die richtige Playlist, nicht erst kurz die Standard-Playlist.
 - **Mediathek** als eigener Bereich in der Seitenleiste und als Auswahl im Editor: Bilder in den Wiki-Bereich
   „Infoscreen" hochladen, mit Warnung vor dem Löschen, solange ein Bild gezeigt wird.
 - **Player** für Fernseher: meldet sich über seine Adresse bei jedem Start selbst als Geräte-Benutzer an und erneuert

@@ -136,6 +136,16 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         configTimer = later(ms, configCycle);
     }
 
+    /**
+     * A screen with rules waits for the first clock check before it shows
+     * anything: until then only the default playlist may run, and the TV
+     * would switch to the scheduled one a moment later (seen after a reload,
+     * 2026-09-25). Without rules nothing depends on the clock.
+     */
+    function waitsForClock(loaded: LoadedScreen): boolean {
+        return loaded.screen.schedule.length > 0 && !state.clockConfirmed;
+    }
+
     function fail(error: unknown): void {
         if (error instanceof SchemaTooNewError) {
             deps.reload(); // newer data needs newer code
@@ -158,6 +168,8 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             state.error = message;
         } else {
             state.staleSince ??= deps.now();
+            // Still waiting for the clock, but the network fails: show what there is, with the default playlist.
+            if (state.phase === 'loading') state.phase = 'running';
         }
         console.warn(`Infoscreen „${slug}":`, message);
     }
@@ -169,7 +181,8 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         state.screen = screen;
         // The screen is there: show it, even if the calendar data fails afterwards –
         // a black TV with "Lade …" helps nobody (seen on the test instance, 2026-09-24).
-        if (state.phase === 'loading') state.phase = 'running';
+        // A screen with rules waits for the clock check of `refreshData`, which follows at once.
+        if (state.phase === 'loading' && !waitsForClock(screen)) state.phase = 'running';
     }
 
     async function refreshData(): Promise<void> {
@@ -250,7 +263,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                 timeZone: cached.timeZone,
                 churchName: cached.churchName,
                 churchLogo: cached.churchLogo ?? null,
-                phase: 'running',
+                phase: waitsForClock(cached.screen) ? 'loading' : 'running',
                 staleSince: new Date(cached.savedAt),
             } satisfies Partial<PlayerState>);
         }

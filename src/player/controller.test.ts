@@ -43,9 +43,72 @@ function fakeDeps(cached: CachedState | null = null) {
     return deps;
 }
 
+/** The demo screen with a rule – which playlist runs then depends on the clock. */
+const scheduled = (): LoadedScreen => {
+    const base = loaded();
+    const rule = { kind: 'time' as const, playlistId: 'demo-playlist', weekdays: [1, 2, 3, 4, 5, 6, 7], from: '00:00', to: '23:59' };
+    return { ...base, screen: { ...base.screen, schedule: [rule] } };
+};
+
+function deferred<T>() {
+    let resolve!: (value: T) => void;
+    const promise = new Promise<T>((r) => (resolve = r));
+    return { promise, resolve };
+}
+
 describe('player controller', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => vi.useRealTimers());
+
+    it('shows a screen with rules only after the first clock check, not the default playlist first', async () => {
+        const clock = deferred<string>();
+        const player = createPlayer(
+            'demo',
+            fakeData({ loadScreen: vi.fn(async () => scheduled()), serverDate: () => clock.promise }),
+            fakeDeps(),
+        );
+        const started = player.start();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(player.state.screen).not.toBeNull();
+        expect(player.state.phase).toBe('loading');
+        clock.resolve(NOW.toUTCString());
+        await started;
+        expect(player.state).toMatchObject({ phase: 'running', clockConfirmed: true });
+        player.stop();
+    });
+
+    it('waits with the cached state too, but shows it with the default playlist when the network fails', async () => {
+        const cached: CachedState = {
+            screen: scheduled(),
+            appointments: [],
+            timeZone: 'Europe/Berlin',
+            churchName: 'Gemeinde',
+            churchLogo: null,
+            savedAt: NOW.toISOString(),
+        };
+        const offline = () => Promise.reject(new Error('Network Error'));
+        const player = createPlayer(
+            'demo',
+            fakeData({ assertSignedIn: offline, timeZone: offline }),
+            fakeDeps(cached),
+        );
+        await player.start();
+        expect(player.state.phase).toBe('running');
+        expect(player.state.clockConfirmed).toBe(false); // so the default playlist runs
+        expect(player.state.staleSince).not.toBeNull();
+        player.stop();
+    });
+
+    it('shows a screen without rules at once, before its data', async () => {
+        const clock = deferred<string>();
+        const player = createPlayer('demo', fakeData({ serverDate: () => clock.promise }), fakeDeps());
+        const started = player.start();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(player.state.phase).toBe('running');
+        clock.resolve(NOW.toUTCString());
+        await started;
+        player.stop();
+    });
 
     it('loads screen and data and confirms the clock', async () => {
         const deps = fakeDeps();

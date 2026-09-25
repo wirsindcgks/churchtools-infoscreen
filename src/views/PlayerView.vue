@@ -180,9 +180,10 @@ onBeforeUnmount(() => {
     <!-- Covers the ChurchTools chrome without touching it (G6). -->
     <div class="player" data-testid="player">
         <p v-if="!slug" class="message" role="alert">Kein Screen angegeben (Parameter „screen" fehlt).</p>
-        <p v-else-if="state?.phase === 'loading'" class="message">Lade „{{ slug }}" …</p>
+        <p v-else-if="state?.phase === 'loading' && !state.screen" class="message">Lade „{{ slug }}" …</p>
         <p v-else-if="state?.phase === 'error'" class="message" role="alert">{{ state.error }}</p>
-        <template v-else-if="state">
+        <!-- A screen with rules waits a moment for the clock check: calm black instead of the wrong playlist. -->
+        <template v-else-if="state && state.phase !== 'loading'">
             <StageView :width="stage.width" :height="stage.height" :fit="fit">
                 <Transition name="fade">
                     <SlideView
