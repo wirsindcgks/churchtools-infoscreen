@@ -6,8 +6,8 @@
  */
 import type { Appointment } from '../appointments/normalize';
 import { zonedTimeToInstant } from '../appointments/zoned';
-import { sameStage, type PlaylistDoc, type ScheduleRule, type ScreenDoc } from '../model/schema';
-import { matchingRuleIndex } from '../player/schedule';
+import { sameStage, type AppointmentPoint, type PlaylistDoc, type ScheduleRule, type ScreenDoc } from '../model/schema';
+import { matchingRuleIndex, ruleWindow } from '../player/schedule';
 
 export type TimeRule = Extract<ScheduleRule, { kind: 'time' }>;
 export type AppointmentRule = Extract<ScheduleRule, { kind: 'appointment' }>;
@@ -28,7 +28,52 @@ export function createTimeRule(playlistId: string): TimeRule {
 }
 
 export function createAppointmentRule(playlistId: string, calendarIds: number[]): AppointmentRule {
-    return { kind: 'appointment', playlistId, calendarIds: [...calendarIds], minutesBefore: 30, minutesAfter: 15 };
+    return {
+        kind: 'appointment',
+        playlistId,
+        calendarIds: [...calendarIds],
+        // Around the appointment, as rules were before 1.5; the presets offer the others.
+        ...windowPatch(WINDOW_PRESETS[3].from, WINDOW_PRESETS[3].to),
+    };
+}
+
+/** Common windows around an appointment, as one click each (Plan.md, 22). */
+export const WINDOW_PRESETS = [
+    { key: 'before', label: 'Vor Beginn', from: { anchor: 'start', minutes: -30 }, to: { anchor: 'start', minutes: 0 } },
+    { key: 'during', label: 'Während', from: { anchor: 'start', minutes: 0 }, to: { anchor: 'end', minutes: 0 } },
+    { key: 'after', label: 'Nach dem Ende', from: { anchor: 'end', minutes: 0 }, to: { anchor: 'end', minutes: 30 } },
+    { key: 'around', label: 'Rundherum', from: { anchor: 'start', minutes: -30 }, to: { anchor: 'end', minutes: 15 } },
+] as const satisfies readonly { key: string; label: string; from: AppointmentPoint; to: AppointmentPoint }[];
+
+/**
+ * The fields of an appointment rule for a window: `from` and `to` (schema
+ * 1.5), and the nearest window a player older than 1.5 understands –
+ * before the start to after the end – until it reloads the new version.
+ */
+export function windowPatch(
+    from: AppointmentPoint,
+    to: AppointmentPoint,
+): Pick<AppointmentRule, 'from' | 'to' | 'minutesBefore' | 'minutesAfter'> {
+    return {
+        from: { ...from },
+        to: { ...to },
+        minutesBefore: from.anchor === 'start' ? Math.max(0, -from.minutes) : 0,
+        minutesAfter: to.anchor === 'end' ? Math.max(0, to.minutes) : 0,
+    };
+}
+
+/** "30 Min. vor Beginn", "Ende", "75 Min. nach Beginn". */
+export function pointLabel(point: AppointmentPoint): string {
+    const anchor = point.anchor === 'start' ? 'Beginn' : 'Ende';
+    if (point.minutes === 0) return anchor;
+    return `${Math.abs(point.minutes)} Min. ${point.minutes < 0 ? 'vor' : 'nach'} ${anchor}`;
+}
+
+/** Whether a window can never open: its end lies before its beginning for any appointment. */
+function windowEmpty(from: AppointmentPoint, to: AppointmentPoint): boolean {
+    if (from.anchor === to.anchor) return to.minutes <= from.minutes;
+    // From an end-relative point to a start-relative one: open only for appointments shorter than the gap.
+    return from.anchor === 'end' && to.anchor === 'start';
 }
 
 export function toMinutes(hhmm: string): number {
@@ -66,8 +111,10 @@ export function scheduleProblems(screen: ScreenDoc, playlists: PlaylistDoc[]): s
             } else if (toMinutes(rule.to) <= toMinutes(rule.from)) {
                 problems.push(`${label}: „bis" muss nach „von" liegen – über Mitternacht zwei Regeln anlegen.`);
             }
-        } else if (!rule.calendarIds.length) {
-            problems.push(`${label}: mindestens einen Kalender wählen.`);
+        } else {
+            if (!rule.calendarIds.length) problems.push(`${label}: mindestens einen Kalender wählen.`);
+            const { from, to } = ruleWindow(rule);
+            if (windowEmpty(from, to)) problems.push(`${label}: „bis" muss nach „von" liegen.`);
         }
     });
     return [...new Set(problems)];
@@ -123,9 +170,10 @@ export function weekdaysLabel(days: readonly number[]): string {
         .join(', ');
 }
 
-/** A rule in one line: "So 09:00–12:00" or "30 Min. vor bis 15 Min. nach Terminen in Gottesdienste". */
+/** A rule in one line: "So 09:00–12:00" or "30 Min. vor Beginn bis 10 Min. nach Beginn von Terminen in Gottesdienste". */
 export function ruleSummary(rule: ScheduleRule, calendarName: (id: number) => string): string {
     if (rule.kind === 'time') return `${weekdaysLabel(rule.weekdays)} ${rule.from}–${rule.to}`;
     const calendars = rule.calendarIds.map(calendarName).join(', ');
-    return `${rule.minutesBefore} Min. vor bis ${rule.minutesAfter} Min. nach Terminen in ${calendars}`;
+    const { from, to } = ruleWindow(rule);
+    return `${pointLabel(from)} bis ${pointLabel(to)} von Terminen in ${calendars}`;
 }

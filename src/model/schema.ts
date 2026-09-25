@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 4 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 5 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -160,14 +160,28 @@ export const PlaylistDoc = v.object({
     updatedBy: v.optional(v.string()),
 });
 
-/** A schedule rule (Plan.md, Playlists und Zeitpläne; edited in the editor's schedule dialog). */
+/**
+ * A point in time relative to an appointment: its start or end, shifted by
+ * signed minutes (negative = before). Since schema 1.5 (Plan.md, 22).
+ */
+export const AppointmentPoint = v.object({
+    anchor: v.picklist(['start', 'end']),
+    minutes: v.pipe(v.number(), v.integer(), v.minValue(-24 * 60), v.maxValue(24 * 60)),
+});
+
+/** A schedule rule (Plan.md, Playlists und Zeitpläne; edited in the schedule dialog). */
 export const ScheduleRule = v.variant('kind', [
     v.object({
         kind: v.literal('appointment'),
         playlistId: Id,
         calendarIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.minLength(1)),
+        /** The window before 1.5: from start minus these … */
         minutesBefore: v.pipe(v.number(), v.integer(), v.minValue(0)),
+        /** … to end plus these. Kept filled as the nearest such window, for players older than 1.5. */
         minutesAfter: v.pipe(v.number(), v.integer(), v.minValue(0)),
+        /** Since 1.5: where the window begins and ends – e.g. 30 min before start to 10 min after start. */
+        from: v.optional(AppointmentPoint),
+        to: v.optional(AppointmentPoint),
     }),
     v.object({
         kind: v.literal('time'),
@@ -251,6 +265,7 @@ export type PlaylistDoc = v.InferOutput<typeof PlaylistDoc>;
 export type ScreenDoc = v.InferOutput<typeof ScreenDoc>;
 export type ScheduleDoc = v.InferOutput<typeof ScheduleDoc>;
 export type ScheduleRule = v.InferOutput<typeof ScheduleRule>;
+export type AppointmentPoint = v.InferOutput<typeof AppointmentPoint>;
 export type MediaDoc = v.InferOutput<typeof MediaDoc>;
 export type SettingsDoc = v.InferOutput<typeof SettingsDoc>;
 export type AnyDoc = ScreenDoc | PlaylistDoc | ScheduleDoc | SlideDoc | MediaDoc | SettingsDoc;

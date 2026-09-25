@@ -4,7 +4,7 @@
  */
 import type { Appointment } from '../appointments/normalize';
 import { zonedParts } from '../appointments/zoned';
-import type { ScreenDoc } from '../model/schema';
+import type { AppointmentPoint, ScreenDoc } from '../model/schema';
 
 export interface ScheduleContext {
     now: Date;
@@ -40,13 +40,26 @@ function matchesTimeRule(rule: TimeRule, { now, timeZone }: ScheduleContext): bo
     return minute >= toMinutes(rule.from) && minute < toMinutes(rule.to);
 }
 
+/**
+ * Where an appointment rule's window begins and ends. Rules from before
+ * schema 1.5 run from `minutesBefore` the start to `minutesAfter` the end.
+ */
+export function ruleWindow(rule: AppointmentRule): { from: AppointmentPoint; to: AppointmentPoint } {
+    return {
+        from: rule.from ?? { anchor: 'start', minutes: -rule.minutesBefore },
+        to: rule.to ?? { anchor: 'end', minutes: rule.minutesAfter },
+    };
+}
+
+function instant(point: AppointmentPoint, appointment: { start: Date; end: Date }): number {
+    return (point.anchor === 'start' ? appointment.start : appointment.end).getTime() + point.minutes * 60_000;
+}
+
 function matchesAppointmentRule(rule: AppointmentRule, { now, appointments }: ScheduleContext): boolean {
     const calendars = new Set(rule.calendarIds);
+    const { from, to } = ruleWindow(rule);
     return appointments.some(
-        (a) =>
-            calendars.has(a.calendarId) &&
-            now.getTime() >= a.start.getTime() - rule.minutesBefore * 60_000 &&
-            now.getTime() < a.end.getTime() + rule.minutesAfter * 60_000,
+        (a) => calendars.has(a.calendarId) && now.getTime() >= instant(from, a) && now.getTime() < instant(to, a),
     );
 }
 

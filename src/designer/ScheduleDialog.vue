@@ -9,10 +9,11 @@
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { zonedDateKey, zonedParts, zonedTimeToInstant } from '../appointments/zoned';
-import { sameStage, type ScheduleRule, type ScreenDoc } from '../model/schema';
-import { matchingRuleIndex } from '../player/schedule';
+import { sameStage, type AppointmentPoint, type ScheduleRule, type ScreenDoc } from '../model/schema';
+import { matchingRuleIndex, ruleWindow } from '../player/schedule';
 import { ConflictError, type ConflictInfo, type ScreenRepository, type StagedPlaylist } from '../store/screen-repository';
 import { cloneJson } from './ops';
+import AppointmentPointField from './AppointmentPointField.vue';
 import Icon from './Icon.vue';
 import PlaylistPicker from './PlaylistPicker.vue';
 import { usePreview } from './usePreview';
@@ -23,6 +24,8 @@ import {
     fromMinutes,
     scheduleProblems,
     WEEKDAYS,
+    WINDOW_PRESETS,
+    windowPatch,
     type AppointmentRule,
     type TimeRule,
 } from './schedule-ops';
@@ -211,9 +214,14 @@ function setTime(index: number, key: 'from' | 'to', value: string): void {
     if (/^\d{2}:\d{2}$/.test(value)) setRule(index, { [key]: value });
 }
 
-function setMinutes(index: number, key: 'minutesBefore' | 'minutesAfter', value: string): void {
-    const n = Math.round(Number(value));
-    if (value !== '' && Number.isFinite(n) && n >= 0 && n <= 24 * 60) setRule(index, { [key]: n });
+/** A new window: `from` and `to`, and the nearest old-style window for players older than schema 1.5. */
+function setWindow(index: number, from: AppointmentPoint, to: AppointmentPoint): void {
+    setRule(index, windowPatch(from, to));
+}
+
+function isPreset(rule: AppointmentRule, preset: { from: AppointmentPoint; to: AppointmentPoint }): boolean {
+    const { from, to } = ruleWindow(rule);
+    return JSON.stringify([from, to]) === JSON.stringify([preset.from, preset.to]);
 }
 
 /** The last calendar stays: a rule without one could never switch. */
@@ -401,30 +409,37 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                             </div>
 
                             <div v-else class="rule-body appointment">
-                                <label class="inline">
-                                    <input
-                                        class="minutes"
-                                        type="number"
-                                        min="0"
-                                        max="1440"
-                                        :value="rule.minutesBefore"
-                                        data-testid="rule-before"
-                                        @input="setMinutes(index, 'minutesBefore', ($event.target as HTMLInputElement).value)"
+                                <div class="presets" role="group" aria-label="Vorlagen">
+                                    <button
+                                        v-for="preset in WINDOW_PRESETS"
+                                        :key="preset.key"
+                                        type="button"
+                                        class="preset"
+                                        :class="{ on: isPreset(rule, preset) }"
+                                        :aria-pressed="isPreset(rule, preset)"
+                                        :data-testid="`rule-preset-${preset.key}`"
+                                        @click="setWindow(index, preset.from, preset.to)"
                                     >
-                                    Min. vor Beginn bis
-                                </label>
-                                <label class="inline">
-                                    <input
-                                        class="minutes"
-                                        type="number"
-                                        min="0"
-                                        max="1440"
-                                        :value="rule.minutesAfter"
-                                        data-testid="rule-after"
-                                        @input="setMinutes(index, 'minutesAfter', ($event.target as HTMLInputElement).value)"
-                                    >
-                                    Min. nach Ende eines Termins in
-                                </label>
+                                        {{ preset.label }}
+                                    </button>
+                                </div>
+                                <div class="window">
+                                    von
+                                    <AppointmentPointField
+                                        :point="ruleWindow(rule).from"
+                                        label="Beginn des Zeitraums"
+                                        testid="rule-window-from"
+                                        @change="setWindow(index, $event, ruleWindow(rule).to)"
+                                    />
+                                    bis
+                                    <AppointmentPointField
+                                        :point="ruleWindow(rule).to"
+                                        label="Ende des Zeitraums"
+                                        testid="rule-window-to"
+                                        @change="setWindow(index, ruleWindow(rule).from, $event)"
+                                    />
+                                </div>
+                                <span class="muted small">eines Termins in</span>
                                 <div class="calendars">
                                     <label v-for="c in calendars" :key="c.id" class="check">
                                         <input
@@ -688,8 +703,34 @@ ol {
     color: #fff;
     font-weight: 700;
 }
-.minutes {
-    width: 5em;
+.appointment {
+    display: grid;
+    justify-items: start;
+    gap: 8px;
+}
+.presets,
+.window {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+.preset {
+    min-height: 2em;
+    padding: 0 0.8em;
+    border: 1px solid var(--d-divider);
+    border-radius: 999px;
+    background: var(--d-surface);
+    color: var(--d-text);
+    font: inherit;
+    font-size: var(--d-size-sm);
+    cursor: pointer;
+}
+.preset.on {
+    border-color: var(--rule-color);
+    background: var(--rule-color);
+    color: #fff;
+    font-weight: 700;
 }
 .calendars {
     display: flex;

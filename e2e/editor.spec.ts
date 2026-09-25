@@ -263,6 +263,72 @@ test('a rule without a second playlist asks for one on the spot, and the new one
     await expect(page.getByTestId('screen-card').first().getByTestId('open-schedule')).toHaveText('1 Regel');
 });
 
+test('greeting before the service: a window from 30 min before to 10 min after the start (Plan.md 22)', async ({ page }) => {
+    // ChurchTools' answers are simulated: one calendar, one service next Sunday 10:00–11:30 local time.
+    const sunday = new Date();
+    sunday.setDate(sunday.getDate() + ((7 - sunday.getDay()) % 7 || 7));
+    sunday.setHours(10, 0, 0, 0);
+    const end = new Date(sunday.getTime() + 90 * 60_000);
+    await page.route(/\/api\/calendars(\?|$)/, (route) =>
+        route.fulfill({ json: { data: [{ id: 901, name: 'Gottesdienste', isPublic: true }] } }),
+    );
+    await page.route(/\/api\/calendars\/appointments/, (route) =>
+        route.fulfill({
+            json: {
+                data: [
+                    {
+                        appointment: {
+                            base: { id: 1, title: 'Gottesdienst', allDay: false, calendar: { id: 901, name: 'Gottesdienste' } },
+                            calculated: { startDate: sunday.toISOString(), endDate: end.toISOString() },
+                        },
+                    },
+                ],
+            },
+        }),
+    );
+
+    await page.goto('./');
+    await page.getByTestId('screen-card').first().getByTestId('open-schedule').click();
+    const dialog = page.getByTestId('schedule-dialog');
+    await dialog.getByTestId('add-appointment-rule').click();
+    const rule = dialog.getByTestId('schedule-rule');
+    await rule.getByTestId('inline-create-name').fill('Begrüßung');
+    await rule.getByTestId('inline-create-save').click();
+    await expect(rule.getByTestId('rule-preset-around')).toHaveAttribute('aria-pressed', 'true'); // as before 1.5
+
+    await rule.getByTestId('rule-preset-before').click();
+    const to = rule.getByTestId('rule-window-to');
+    await to.getByTestId('point-minutes').fill('10');
+    await to.getByTestId('point-direction').selectOption('after');
+    await expect(to.getByTestId('point-anchor')).toHaveValue('start');
+    await expect(rule.getByTestId('rule-preset-before')).toHaveAttribute('aria-pressed', 'false');
+    await expect(dialog.getByTestId('schedule-problems')).toHaveCount(0);
+
+    const key = `${sunday.getFullYear()}-${String(sunday.getMonth() + 1).padStart(2, '0')}-${String(sunday.getDate()).padStart(2, '0')}`;
+    await dialog.getByTestId('preview-date').fill(key);
+    await dialog.getByTestId('preview-time').fill('585'); // 09:45
+    await expect(dialog.getByTestId('preview-result')).toContainText('„Begrüßung"');
+    await dialog.getByTestId('preview-time').fill('600'); // 10:00, the service begins
+    await expect(dialog.getByTestId('preview-result')).toContainText('„Begrüßung"');
+    await dialog.getByTestId('preview-time').fill('615'); // 10:15
+    await expect(dialog.getByTestId('preview-result')).toContainText('Standard');
+    await page.screenshot({ path: 'test-results/schedule-appointment.png' });
+
+    // "bis" before "von" is named, not saved.
+    await to.getByTestId('point-direction').selectOption('before');
+    await to.getByTestId('point-minutes').fill('45');
+    await expect(dialog.getByTestId('schedule-problems')).toContainText('„bis" muss nach „von" liegen');
+    await to.getByTestId('point-direction').selectOption('after');
+    await to.getByTestId('point-minutes').fill('10');
+
+    await dialog.getByTestId('schedule-save').click();
+    await expect(dialog).toBeHidden();
+    await page.getByTestId('sidebar-schedules').click();
+    await expect(page.getByTestId('schedule-rule-line').first()).toContainText(
+        '30 Min. vor Beginn bis 10 Min. nach Beginn von Terminen in Gottesdienste',
+    );
+});
+
 test('playlists stand on their own: create one, choose it in a screen\'s schedule, see where it runs (Plan.md 17, 19)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('sidebar-playlists').click();

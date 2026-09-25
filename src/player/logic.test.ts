@@ -78,6 +78,74 @@ describe('activePlaylistId', () => {
     });
 });
 
+describe('appointment rules with their own window (schema 1.5)', () => {
+    // Service 12:00–13:30 local (10:00–11:30 UTC); how long it really takes varies.
+    const service = normalizeAppointments(
+        [
+            {
+                appointment: {
+                    base: { id: 4, title: 'Gottesdienst', allDay: false, calendar: { id: 2, name: 'Gottesdienst' } },
+                    calculated: { startDate: '2026-10-25T10:00:00Z', endDate: '2026-10-25T11:30:00Z' },
+                },
+            },
+        ],
+        BERLIN,
+    );
+    const screen = makeScreen({
+        defaultPlaylistId: 'standard',
+        schedule: [
+            // Greeting: 30 min before the start until 10 min after it.
+            {
+                kind: 'appointment',
+                playlistId: 'begruessung',
+                calendarIds: [2],
+                minutesBefore: 30,
+                minutesAfter: 0,
+                from: { anchor: 'start', minutes: -30 },
+                to: { anchor: 'start', minutes: 10 },
+            },
+            // Farewell: from 75 min after the start – however long the service runs – for half an hour.
+            {
+                kind: 'appointment',
+                playlistId: 'abschied',
+                calendarIds: [2],
+                minutesBefore: 0,
+                minutesAfter: 0,
+                from: { anchor: 'start', minutes: 75 },
+                to: { anchor: 'start', minutes: 105 },
+            },
+        ],
+    });
+    const at = (iso: string) =>
+        activePlaylistId(screen, { now: new Date(iso), timeZone: BERLIN, clockConfirmed: true, appointments: service });
+
+    it('greets before the start and stops shortly after it', () => {
+        expect(at('2026-10-25T09:29:00Z')).toBe('standard');
+        expect(at('2026-10-25T09:30:00Z')).toBe('begruessung');
+        expect(at('2026-10-25T10:09:00Z')).toBe('begruessung');
+        expect(at('2026-10-25T10:10:00Z')).toBe('standard');
+    });
+
+    it('says goodbye a fixed time after the start, not at the end the calendar guesses', () => {
+        expect(at('2026-10-25T11:14:00Z')).toBe('standard');
+        expect(at('2026-10-25T11:15:00Z')).toBe('abschied');
+        expect(at('2026-10-25T11:44:00Z')).toBe('abschied');
+        expect(at('2026-10-25T11:45:00Z')).toBe('standard');
+    });
+
+    it('reads a rule from before 1.5 as before the start to after the end', () => {
+        const old = makeScreen({
+            defaultPlaylistId: 'standard',
+            schedule: [{ kind: 'appointment', playlistId: 'rund', calendarIds: [2], minutesBefore: 15, minutesAfter: 15 }],
+        });
+        const run = (iso: string) =>
+            activePlaylistId(old, { now: new Date(iso), timeZone: BERLIN, clockConfirmed: true, appointments: service });
+        expect(run('2026-10-25T09:45:00Z')).toBe('rund');
+        expect(run('2026-10-25T11:44:00Z')).toBe('rund');
+        expect(run('2026-10-25T11:45:00Z')).toBe('standard');
+    });
+});
+
 describe('timing', () => {
     it('spreads intervals by at most 20 percent', () => {
         expect(withJitter(1000, () => 0)).toBe(800);

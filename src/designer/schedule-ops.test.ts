@@ -2,7 +2,16 @@ import { describe, expect, it } from 'vitest';
 import type { Appointment } from '../appointments/normalize';
 import { zonedTimeToInstant } from '../appointments/zoned';
 import { makePlaylist, makeScreen } from '../model/testing';
-import { createTimeRule, dayTimeline, ruleSummary, scheduleProblems, weekdaysLabel } from './schedule-ops';
+import type { AppointmentPoint } from '../model/schema';
+import {
+    createAppointmentRule,
+    createTimeRule,
+    dayTimeline,
+    ruleSummary,
+    scheduleProblems,
+    weekdaysLabel,
+    windowPatch,
+} from './schedule-ops';
 
 const TZ = 'Europe/Berlin';
 // 2026-09-27 is a Sunday.
@@ -116,6 +125,36 @@ describe('rules in words', () => {
         expect(ruleSummary(createTimeRule('gd'), names)).toBe('So 09:00–12:00');
         expect(
             ruleSummary({ kind: 'appointment', playlistId: 'gd', calendarIds: [3, 4], minutesBefore: 30, minutesAfter: 15 }, names),
-        ).toBe('30 Min. vor bis 15 Min. nach Terminen in Gottesdienste, Jugend');
+        ).toBe('30 Min. vor Beginn bis 15 Min. nach Ende von Terminen in Gottesdienste, Jugend');
+        const farewell = { ...createAppointmentRule('gd', [3]), ...windowPatch({ anchor: 'start', minutes: 75 }, { anchor: 'end', minutes: 0 }) };
+        expect(ruleSummary(farewell, names)).toBe('75 Min. nach Beginn bis Ende von Terminen in Gottesdienste');
+    });
+
+    it('keeps the nearest old-style window for players older than 1.5', () => {
+        expect(windowPatch({ anchor: 'start', minutes: -30 }, { anchor: 'start', minutes: 10 })).toMatchObject({
+            minutesBefore: 30,
+            minutesAfter: 0,
+        });
+        expect(windowPatch({ anchor: 'end', minutes: -5 }, { anchor: 'end', minutes: 20 })).toMatchObject({
+            minutesBefore: 0,
+            minutesAfter: 20,
+        });
+    });
+
+    it('refuses a window that can never open', () => {
+        const playlists = [makePlaylist({ id: 'standard' }), makePlaylist({ id: 'gd' })];
+        const rule = (from: AppointmentPoint, to: AppointmentPoint) => ({ ...createAppointmentRule('gd', [3]), ...windowPatch(from, to) });
+        const screen = makeScreen({
+            defaultPlaylistId: 'standard',
+            schedule: [
+                rule({ anchor: 'start', minutes: 10 }, { anchor: 'start', minutes: -30 }),
+                rule({ anchor: 'end', minutes: 0 }, { anchor: 'start', minutes: 30 }),
+                rule({ anchor: 'start', minutes: 75 }, { anchor: 'end', minutes: 0 }),
+            ],
+        });
+        expect(scheduleProblems(screen, playlists)).toEqual([
+            'Regel 1: „bis" muss nach „von" liegen.',
+            'Regel 2: „bis" muss nach „von" liegen.',
+        ]);
     });
 });

@@ -53,10 +53,11 @@ Du brauchst nur die Mitgliedschaft in „Infoscreen-Designer"; alles Weitere kom
      Hex-Wert), Kalender und Hintergrund.
 4. **Zeitplan** – an der Kachel des Screens („Zeitplan") oder in der Seitenleiste unter **„Zeitpläne"**, wo alle
    Screens mit ihren Regeln und dem, was gerade läuft, untereinander stehen: welche Playlist ein Screen zeigt.
-   Eine neue Playlist legst du auch direkt dort an – letzter Eintrag jeder Auswahl, „＋ Neue Playlist anlegen …". Die **Standard-Playlist** läuft
-   immer, wenn keine **Regel** passt; Regeln schalten nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30
-   Minuten vor dem Gottesdienst bis 15 Minuten danach") auf eine andere Playlist, bei mehreren gewinnt die obere. Zur
-   Wahl stehen Playlists im Format des Screens. Die Vorschau zeigt für jeden Tag, was wann läuft.
+   Die **Standard-Playlist** läuft immer, wenn keine **Regel** passt. Regeln schalten auf eine andere Playlist –
+   nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten vor Beginn bis 10 Minuten nach Beginn"
+   für eine Begrüßung, „75 bis 105 Minuten nach Beginn" für eine Verabschiedung); passen mehrere, gewinnt die
+   obere. Zur Wahl stehen Playlists im Format des Screens; eine neue legst du direkt dort an – letzter Eintrag
+   jeder Auswahl, „＋ Neue Playlist anlegen …". Die Vorschau zeigt für jeden Tag, was wann läuft.
 5. **Bilder:** über den Baustein „Bild" oder in der **Mediathek** (Seitenleiste). Ein Bild lässt sich beliebig oft
    verwenden. Nichts Vertrauliches hochladen – Bilder sind über ihre Adresse ohne Anmeldung abrufbar.
 6. **Speichern** (oder ⌘S / Strg+S). Alle Fernseher, die diese Playlist zeigen, übernehmen die Änderung nach wenigen
