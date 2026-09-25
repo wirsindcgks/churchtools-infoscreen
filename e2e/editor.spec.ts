@@ -44,7 +44,9 @@ test('create a new portrait screen', async ({ page }) => {
     await page.getByTestId('create-dialog').getByText('Hochkant').click();
     await expect(page.getByTestId('new-portrait')).toBeChecked();
     await page.getByTestId('create').click();
-    await expect(page).toHaveURL(/screens\/foyer-hochkant/);
+    await expect(page).toHaveURL(/playlists\/[\w-]+$/); // the new screen's own playlist
+    await expect(page.getByTestId('playlist-info')).toContainText('Foyer Hochkant');
+    await expect(page.getByTestId('playlist-info')).toContainText('Hochkant, 1080 × 1920');
     await expect(page.getByTestId('slide-item')).toHaveCount(1);
     await page.getByTestId('add-clock').click();
     await page.waitForTimeout(500);
@@ -140,7 +142,9 @@ test('the editor saves content without touching the screen\'s settings', async (
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await page.keyboard.press('Escape');
     // Name and overscan are no longer edited here.
-    await expect(page.getByTestId('screen-info')).toContainText('Demo – Foyer');
+    // The editor edits the playlist; the screen's name and overscan are the administrators' business.
+    await expect(page.getByTestId('playlist-info')).toContainText('Demo – Foyer'); // where it runs
+    await expect(page.getByTestId('playlist-name-input')).toHaveValue('Wochenüberblick');
     await expect(page.getByTestId('screen-name')).toHaveCount(0);
     await page.getByTestId('add-clock').click();
     await page.getByTestId('save').click();
@@ -152,7 +156,7 @@ test('the editor carries no address for the TV – that is the administrators\' 
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await page.keyboard.press('Escape');
-    await expect(page.getByTestId('screen-info')).toBeVisible();
+    await expect(page.getByTestId('playlist-info')).toBeVisible();
     await expect(page.locator('.inspector')).not.toContainText('player?screen=');
 });
 
@@ -231,20 +235,35 @@ test('the media library in the editor lists pictures to choose from and closes a
     await expect(library).toBeHidden();
 });
 
-test('a designer plans from the start page: playlist, Sunday rule, day preview (Plan.md 17)', async ({ page }) => {
+test('playlists stand on their own: create one, choose it in a screen\'s schedule, see where it runs (Plan.md 17, 19)', async ({ page }) => {
     await page.goto('./');
+    await page.getByTestId('sidebar-playlists').click();
+    await expect(page.getByTestId('playlists-heading')).toBeVisible();
+    await expect(page.getByTestId('playlist-card')).toHaveCount(1);
+    await expect(page.getByTestId('playlist-card')).toContainText('Wochenüberblick');
+    await expect(page.getByTestId('playlist-card').getByTestId('playlist-screens')).toHaveText('Demo – Foyer');
+
+    // A new playlist runs nowhere yet; it opens straight in the editor.
+    await page.getByTestId('new-playlist').click();
+    await page.getByTestId('create-playlist-dialog').getByTestId('new-playlist-name').fill('Gottesdienst');
+    await page.getByTestId('create-playlist').click();
+    await expect(page).toHaveURL(/playlists\/[\w-]+$/);
+    await expect(page.getByTestId('slide-item')).toHaveCount(1);
+    await expect(page.getByTestId('playlist-screens')).toHaveText('noch keinem Screen');
+    await page.getByTestId('leave-editor').click();
+    await expect(page.getByTestId('playlist-card')).toHaveCount(2);
+
+    // The screen chooses it on Sundays 9–12.
+    await page.getByTestId('nav-screens').click();
     const card = page.getByTestId('screen-card').first();
+    await expect(card.getByTestId('screen-playlist')).toHaveText('Wochenüberblick');
     await expect(card.getByTestId('open-schedule')).toHaveText('Zeitplan');
     await card.getByTestId('open-schedule').click();
     const dialog = page.getByTestId('schedule-dialog');
-    await expect(dialog.getByTestId('schedule-playlist')).toHaveCount(1);
+    await expect(dialog.getByTestId('default-playlist').locator('option:checked')).toHaveText('Wochenüberblick');
     await expect(dialog.getByTestId('schedule-save')).toBeDisabled(); // nothing changed yet
-    await dialog.getByTestId('add-playlist').click();
-    await dialog.getByTestId('playlist-name').last().fill('Gottesdienst');
-
     await dialog.getByTestId('add-time-rule').click();
     const rule = dialog.getByTestId('schedule-rule');
-    await expect(rule).toHaveCount(1);
     await expect(rule.getByTestId('rule-playlist').locator('option:checked')).toHaveText('Gottesdienst');
 
     // An impossible time is named and keeps the schedule from being saved.
@@ -267,18 +286,24 @@ test('a designer plans from the start page: playlist, Sunday rule, day preview (
     await dialog.getByTestId('preview-time').fill('780');
     await expect(dialog.getByTestId('preview-result')).toContainText('Standard');
     await expect(dialog.getByTestId('preview-timeline').locator('.segment')).toHaveCount(3);
+    await expect(dialog.getByTestId('schedule-playlist')).toHaveCount(2);
     await page.screenshot({ path: 'test-results/home-schedule.png' });
 
     await dialog.getByTestId('schedule-save').click();
     await expect(dialog).toBeHidden();
     await expect(card.getByTestId('open-schedule')).toHaveText('1 Regel');
 
-    // "Slides bearbeiten" saves pending changes first and opens the editor on that playlist.
+    // Now it runs on the screen, and a playlist still shown cannot be deleted.
+    await page.getByTestId('sidebar-playlists').click();
+    const worship = page.getByTestId('playlist-card').filter({ hasText: 'Gottesdienst' });
+    await expect(worship.getByTestId('playlist-screens')).toHaveText('Demo – Foyer');
+    await worship.getByTestId('playlist-menu').click();
+    await expect(worship.getByTestId('delete-playlist')).toBeDisabled();
+
+    // "Slides bearbeiten" in the schedule opens the playlist's editor.
+    await page.getByTestId('nav-screens').click();
     await card.getByTestId('open-schedule').click();
-    await dialog.getByTestId('playlist-name').last().fill('Sonntag');
     await dialog.getByTestId('playlist-edit').last().click();
-    await expect(page.getByTestId('playlist-select').locator('option:checked')).toHaveText('Sonntag');
-    await expect(page.getByTestId('slide-item')).toHaveCount(1);
-    await expect(page.getByTestId('save-status')).toHaveText('Alles gespeichert');
+    await expect(page.getByTestId('playlist-name-input')).toHaveValue('Gottesdienst');
     await expect(page.getByTestId('open-schedule')).toHaveCount(0); // the editor is for slides only
 });

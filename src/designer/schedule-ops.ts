@@ -6,7 +6,7 @@
  */
 import type { Appointment } from '../appointments/normalize';
 import { zonedTimeToInstant } from '../appointments/zoned';
-import type { PlaylistDoc, ScheduleRule, ScreenDoc } from '../model/schema';
+import { sameStage, type PlaylistDoc, type ScheduleRule, type ScreenDoc } from '../model/schema';
 import { matchingRuleIndex } from '../player/schedule';
 
 export type TimeRule = Extract<ScheduleRule, { kind: 'time' }>;
@@ -41,14 +41,24 @@ export function fromMinutes(minutes: number): string {
     return `${String(h).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 }
 
-/** What keeps the schedule from being saved, in words a designer can act on. */
+/**
+ * What keeps the schedule from being saved, in words a designer can act on.
+ * A playlist designed for another format than the screen's would be cut or
+ * letterboxed, so it counts as a problem too.
+ */
 export function scheduleProblems(screen: ScreenDoc, playlists: PlaylistDoc[]): string[] {
-    const known = new Set(playlists.map((p) => p.id));
+    const known = new Map(playlists.map((p) => [p.id, p]));
+    const fits = (id: string) => {
+        const stage = known.get(id)?.stage;
+        return !stage || sameStage(stage, screen.stage);
+    };
     const problems: string[] = [];
     if (!known.has(screen.defaultPlaylistId)) problems.push('Die Standard-Playlist fehlt.');
+    else if (!fits(screen.defaultPlaylistId)) problems.push('Die Standard-Playlist hat ein anderes Format als der Screen.');
     screen.schedule.forEach((rule, index) => {
         const label = `Regel ${index + 1}`;
         if (!known.has(rule.playlistId)) problems.push(`${label}: Die Playlist gibt es nicht mehr.`);
+        else if (!fits(rule.playlistId)) problems.push(`${label}: Die Playlist hat ein anderes Format als der Screen.`);
         if (rule.kind === 'time') {
             if (!rule.weekdays.length) problems.push(`${label}: mindestens einen Wochentag wählen.`);
             if (!/^\d{2}:\d{2}$/.test(rule.from) || !/^\d{2}:\d{2}$/.test(rule.to)) {
@@ -60,9 +70,6 @@ export function scheduleProblems(screen: ScreenDoc, playlists: PlaylistDoc[]): s
             problems.push(`${label}: mindestens einen Kalender wählen.`);
         }
     });
-    for (const p of playlists) {
-        if (!p.name.trim()) problems.push('Jede Playlist braucht einen Namen.');
-    }
     return [...new Set(problems)];
 }
 

@@ -44,9 +44,16 @@ export const wikiBackend: MediaBackend = {
 
 const OVERVIEW_PAGE = 'main';
 
+/**
+ * The wiki page uploads go to. Since playlists stand on their own (schema
+ * 1.4) there is no screen to name a page after; the library is flat, and
+ * older uploads stay on the pages of their screens (Plan.md, 18).
+ */
+export const MEDIA_PAGE = { slug: 'mediathek', name: 'Mediathek' } as const;
+
 export class MediaInUseError extends Error {
-    constructor(readonly usage: { screen: string; slide: string }[]) {
-        super(`Das Bild wird noch verwendet: ${usage.map((u) => `${u.screen} › ${u.slide}`).join(', ')}.`);
+    constructor(readonly usage: { playlist: string; slide: string }[]) {
+        super(`Das Bild wird noch verwendet: ${usage.map((u) => `${u.playlist} › ${u.slide}`).join(', ')}.`);
         this.name = 'MediaInUseError';
     }
 }
@@ -132,7 +139,7 @@ export class MediaLibrary {
         return docs;
     }
 
-    async usage(item: MediaItem): Promise<{ screen: string; slide: string }[]> {
+    async usage(item: MediaItem): Promise<{ playlist: string; slide: string }[]> {
         return item.mediaId ? this.repository.mediaUsage(item.mediaId) : [];
     }
 

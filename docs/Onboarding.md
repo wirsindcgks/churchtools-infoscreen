@@ -43,20 +43,22 @@ Du brauchst nur die Mitgliedschaft in „Infoscreen-Designer"; alles Weitere kom
 
 1. **Öffnen:** In ChurchTools oben auf **„Infoscreen Designer"**. Die Startseite zeigt alle Screens als Kacheln mit
    ihrer ersten Slide.
-2. **Screen wählen:** Klick auf die Kachel öffnet den Editor. Neue Screens legt ein Administrator an.
+2. **Screen wählen:** Klick auf die Kachel öffnet den Editor mit der Playlist, die dort läuft (ihr Name steht auf
+   der Kachel). Neue Screens legt ein Administrator an. **Playlists** – der Inhalt – stehen in der Seitenleiste für
+   sich: Dort legst du neue an; eine Playlist kann auf mehreren Screens laufen.
 3. **Gestalten:**
    - links die **Slides** – „Neue Slide" unter der letzten, ziehen zum Umsortieren;
    - über der Bühne die **Bausteine**: Text, Bild, Fläche, Uhr, Terminliste, Nächster Termin, Gemeindekopf;
    - auf der **Bühne** ziehen und an den Griffen skalieren; rechts im **Inspektor** Schrift, Farben (auch als
      Hex-Wert), Kalender und Hintergrund.
-4. **Zeitplan** – auf der Startseite an der Kachel („Zeitplan"), wenn der Screen zu verschiedenen Zeiten anderes
-   zeigen soll: weitere **Playlists** anlegen und **Regeln** festlegen – nach Uhrzeit („sonntags 9–12 Uhr") oder rund
-   um Termine („30 Minuten vor dem Gottesdienst bis 15 Minuten danach"). Passt keine Regel, läuft die
-   Standard-Playlist; passen mehrere, die obere. Die Vorschau zeigt für jeden Tag, was wann läuft. „Slides bearbeiten"
-   öffnet den Editor auf dieser Playlist; dort wählst du oben in der Slide-Liste, welche Playlist du gestaltest.
+4. **Zeitplan** – an der Kachel des Screens („Zeitplan"): welche Playlist er zeigt. Die **Standard-Playlist** läuft
+   immer, wenn keine **Regel** passt; Regeln schalten nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30
+   Minuten vor dem Gottesdienst bis 15 Minuten danach") auf eine andere Playlist, bei mehreren gewinnt die obere. Zur
+   Wahl stehen Playlists im Format des Screens. Die Vorschau zeigt für jeden Tag, was wann läuft.
 5. **Bilder:** über den Baustein „Bild" oder in der **Mediathek** (Seitenleiste). Ein Bild lässt sich beliebig oft
    verwenden. Nichts Vertrauliches hochladen – Bilder sind über ihre Adresse ohne Anmeldung abrufbar.
-6. **Speichern** (oder ⌘S / Strg+S). Die Fernseher übernehmen die Änderung nach wenigen Minuten von selbst.
+6. **Speichern** (oder ⌘S / Strg+S). Alle Fernseher, die diese Playlist zeigen, übernehmen die Änderung nach wenigen
+   Minuten von selbst.
 
 **Gut zu wissen:**
 

@@ -70,8 +70,10 @@ export const DEMO_BUNDLE: ScreenBundle = {
             schema,
             kind: 'playlist',
             id: 'demo-playlist',
-            name: 'Standard',
+            name: 'Wochenüberblick',
             slideIds: ['demo-welcome', 'demo-next', 'demo-list'],
+            stage: { width: 1920, height: 1080 },
+            revision: 1,
         },
     ],
     slides: [

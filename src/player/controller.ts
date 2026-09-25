@@ -65,12 +65,14 @@ export const browserDeps: PlayerDeps = {
 };
 
 /**
- * Which stored state the player shows: the administrators' screen revision
- * and the designers' schedule revision (schema 1.2) – a save of content does
- * not touch the screen document any more (Plan.md, 15).
+ * Which stored state the player shows: the administrators' screen revision,
+ * the designers' schedule revision (schema 1.2) and the revisions of the
+ * playlists it shows (1.4) – a save of content touches only those.
  */
 function configVersion(loaded: LoadedScreen | null): string | undefined {
-    return loaded ? `${loaded.screen.revision}/${loaded.schedule?.revision ?? 0}` : undefined;
+    if (!loaded) return undefined;
+    const playlists = loaded.playlists.map((p) => `${p.id}:${p.revision ?? 0}`).join(',');
+    return `${loaded.screen.revision}/${loaded.schedule?.revision ?? 0}/${playlists}`;
 }
 
 export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = browserDeps) {

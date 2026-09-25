@@ -68,7 +68,18 @@ export function createScreenBundle(options: {
             schedule: [],
             revision: 0,
         },
-        playlists: [{ schema: { ...SCHEMA_VERSION }, kind: 'playlist', id: playlistId, name: 'Standard', slideIds: [slide.id] }],
+        // The new screen's own playlist, named after it; the schedule can later choose any other (schema 1.4).
+        playlists: [
+            {
+                schema: { ...SCHEMA_VERSION },
+                kind: 'playlist',
+                id: playlistId,
+                name: options.name,
+                slideIds: [slide.id],
+                stage: { ...STAGE_PRESETS[options.orientation] },
+                revision: 1,
+            },
+        ],
         slides: [slide],
     };
 }

@@ -1,18 +1,16 @@
 <script setup lang="ts">
 /**
  * The media library as a section of its own (Plan.md, Nächste Schritte 16):
- * all pictures, upload and delete – without opening a screen first. Uploads
- * from here go to the wiki page "Mediathek"; the editor puts its uploads on
- * the page of its screen. The wiki category stays the storage behind it (G8).
+ * all pictures, upload and delete – without opening a playlist first.
+ * Uploads go to the wiki page "Mediathek", from here as from the editor.
+ * The wiki category stays the storage behind it (G8).
  */
 import { onMounted, ref } from 'vue';
 import Icon from '../designer/Icon.vue';
 import MediaLibraryPanel from '../designer/MediaLibraryPanel.vue';
 import ModulePage from '../designer/ModulePage.vue';
+import { MEDIA_PAGE as GENERAL } from '../media/library';
 import { canManagePermissions } from '../setup/load';
-
-/** The wiki page for pictures that belong to no screen in particular. */
-const GENERAL = { slug: 'mediathek', name: 'Mediathek' };
 
 const admin = ref(false);
 onMounted(async () => {

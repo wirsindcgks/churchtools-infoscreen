@@ -115,9 +115,10 @@ onMounted(async () => {
     }
 });
 
-async function created(slug: string): Promise<void> {
+/** A new screen comes with its own playlist, named after it: straight into its editor. */
+async function created(playlistId: string): Promise<void> {
     creating.value = false;
-    await router.push({ name: 'editor', params: { slug } });
+    await router.push({ name: 'editor', params: { id: playlistId } });
 }
 
 function resetDemoAndReload(): void {

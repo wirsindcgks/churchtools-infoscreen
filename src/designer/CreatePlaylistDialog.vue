@@ -1,27 +1,23 @@
 <script setup lang="ts">
-import * as v from 'valibot';
-import { computed, onMounted, ref, watch } from 'vue';
-import { Slug } from '../model/schema';
+/**
+ * A new playlist (Plan.md, Nächste Schritte 19): a name and the format its
+ * slides are designed for. It starts with one empty slide and runs nowhere
+ * until a screen's schedule chooses it.
+ */
+import { computed, onMounted, ref } from 'vue';
+import { STAGE_PRESETS } from '../model/schema';
 import type { ScreenRepository } from '../store/screen-repository';
 import Icon from './Icon.vue';
-import { createScreenBundle, slugify } from './ops';
 
 const props = defineProps<{ repository: ScreenRepository; author: string }>();
-const emit = defineEmits<{ close: []; created: [playlistId: string] }>();
+const emit = defineEmits<{ close: []; created: [id: string] }>();
 
 const name = ref('');
-const slug = ref('');
-const slugTouched = ref(false);
 const orientation = ref<'landscape' | 'portrait'>('landscape');
 const error = ref<string | null>(null);
 const busy = ref(false);
 const nameInput = ref<HTMLInputElement | null>(null);
-
-watch(name, (value) => {
-    if (!slugTouched.value) slug.value = slugify(value);
-});
-const slugValid = computed(() => v.is(Slug, slug.value));
-const canCreate = computed(() => name.value.trim() !== '' && slugValid.value && !busy.value);
+const canCreate = computed(() => name.value.trim() !== '' && !busy.value);
 
 const ORIENTATIONS = [
     { value: 'landscape', icon: 'landscape', label: 'Quer', size: '1920 × 1080' },
@@ -35,9 +31,11 @@ async function create(): Promise<void> {
     error.value = null;
     busy.value = true;
     try {
-        const bundle = createScreenBundle({ name: name.value.trim(), slug: slug.value, orientation: orientation.value });
-        await props.repository.saveScreen(bundle, { expectedRevision: null, updatedBy: props.author });
-        emit('created', bundle.screen.defaultPlaylistId);
+        const created = await props.repository.createPlaylist(
+            { name: name.value, stage: STAGE_PRESETS[orientation.value] },
+            props.author,
+        );
+        emit('created', created.id);
     } catch (e) {
         error.value = e instanceof Error ? e.message : String(e);
     } finally {
@@ -52,11 +50,11 @@ async function create(): Promise<void> {
             class="d-dialog create"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="create-title"
-            data-testid="create-dialog"
+            aria-labelledby="create-playlist-title"
+            data-testid="create-playlist-dialog"
             @submit.prevent="create"
         >
-            <h2 id="create-title">Screen erstellen</h2>
+            <h2 id="create-playlist-title">Playlist erstellen</h2>
             <label class="d-field">
                 Name
                 <input
@@ -64,26 +62,10 @@ async function create(): Promise<void> {
                     v-model="name"
                     type="text"
                     maxlength="100"
-                    placeholder="z. B. Foyer links"
-                    data-testid="new-name"
+                    placeholder="z. B. Gottesdienst"
+                    data-testid="new-playlist-name"
                 >
-                <small>Erscheint im Designer, lässt sich später ändern.</small>
-            </label>
-            <label class="d-field">
-                Adresse für das Gerät
-                <input
-                    v-model="slug"
-                    type="text"
-                    maxlength="64"
-                    placeholder="z. B. foyer-links"
-                    autocapitalize="off"
-                    autocorrect="off"
-                    spellcheck="false"
-                    data-testid="new-slug"
-                    @input="slugTouched = true"
-                >
-                <small v-if="slug && !slugValid" class="invalid">Nur Kleinbuchstaben, Ziffern und Bindestriche.</small>
-                <small v-else>Steht in der Adresse des Fernsehers und bleibt fest.</small>
+                <small>Lässt sich im Editor ändern.</small>
             </label>
             <fieldset class="orientation">
                 <legend>Format</legend>
@@ -93,19 +75,19 @@ async function create(): Promise<void> {
                     class="choice"
                     :class="{ chosen: orientation === o.value }"
                 >
-                    <input v-model="orientation" type="radio" name="orientation" :value="o.value" :data-testid="`new-${o.value}`">
+                    <input v-model="orientation" type="radio" name="orientation" :value="o.value" :data-testid="`new-playlist-${o.value}`">
                     <Icon :name="o.icon" :size="28" />
                     <span>
                         <strong>{{ o.label }}</strong>
                         <small>{{ o.size }}</small>
                     </span>
                 </label>
-                <small>Lässt sich später nicht umstellen.</small>
+                <small>Sie läuft auf Screens desselben Formats. Welche das sind, wählt der Zeitplan eines Screens.</small>
             </fieldset>
             <p v-if="error" class="invalid" role="alert">{{ error }}</p>
             <div class="d-dialog-actions">
                 <button class="d-btn" type="button" @click="emit('close')">Abbrechen</button>
-                <button class="d-btn d-btn--create" type="submit" :disabled="!canCreate" data-testid="create">
+                <button class="d-btn d-btn--create" type="submit" :disabled="!canCreate" data-testid="create-playlist">
                     Erstellen
                 </button>
             </div>

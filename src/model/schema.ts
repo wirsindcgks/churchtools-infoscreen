@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 3 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 4 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -141,11 +141,23 @@ export const SlideDoc = v.object({
     blocks: v.array(Block),
 });
 
+const Stage = v.object({ width: PositivePx, height: PositivePx });
+
+/**
+ * The content: slides in order. Since schema 1.4 a playlist stands on its
+ * own and screens choose it – one playlist may run on several screens
+ * (Plan.md, Nächste Schritte 19). Its slides are designed for `stage`;
+ * older playlists get it from the screen that shows them (`withPlaylistDefaults`).
+ */
 export const PlaylistDoc = v.object({
     ...DocumentBase,
     kind: v.literal('playlist'),
     name: v.pipe(v.string(), v.maxLength(100)),
     slideIds: v.array(Id),
+    stage: v.optional(Stage),
+    /** The designers save against it; missing counts as 0. */
+    revision: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
+    updatedBy: v.optional(v.string()),
 });
 
 /** A schedule rule (Plan.md, Playlists und Zeitpläne; edited in the editor's schedule dialog). */
@@ -174,7 +186,7 @@ export const ScreenDoc = v.object({
     kind: v.literal('screen'),
     slug: Slug,
     name: v.pipe(v.string(), v.maxLength(100)),
-    stage: v.object({ width: PositivePx, height: PositivePx }),
+    stage: Stage,
     overscanPercent: v.optional(v.pipe(v.number(), v.minValue(0), v.maxValue(20)), 0),
     /** Mandatory: "no rule matches" must never mean a black screen. */
     defaultPlaylistId: Id,
@@ -198,10 +210,7 @@ export const ScheduleDoc = v.object({
     defaultPlaylistId: Id,
     /** Earlier rules win on overlap. */
     rules: v.array(ScheduleRule),
-    /**
-     * All playlists of the screen in the editor's order, including those no
-     * rule uses yet – without this they would count as orphans (schema 1.3).
-     */
+    /** Schema 1.3 only, when playlists belonged to one screen; ignored since 1.4. */
     playlistIds: v.optional(v.array(Id)),
     revision: v.pipe(v.number(), v.integer(), v.minValue(0)),
     updatedBy: v.optional(v.string()),
@@ -251,18 +260,32 @@ export function scheduleIdFor(screenId: string): string {
     return `schedule-${screenId}`;
 }
 
+/** The playlists a screen shows: the default and those the rules switch to. */
+export function playlistIdsOf(screen: ScreenDoc): string[] {
+    return [...new Set([screen.defaultPlaylistId, ...screen.schedule.map((r) => r.playlistId)])];
+}
+
+export function sameStage(a: { width: number; height: number }, b: { width: number; height: number }): boolean {
+    return a.width === b.width && a.height === b.height;
+}
+
 /**
- * Every playlist a screen owns: the default, those the rules switch to and
- * those the schedule document lists – in that document's order where given.
+ * A playlist as the designer handles it. Before schema 1.4 a playlist had
+ * no format and was usually called "Standard": it takes both from the
+ * screen that shows it, until the next save stores them.
  */
-export function playlistIdsOf(screen: ScreenDoc, schedule?: ScheduleDoc | null): string[] {
-    return [
-        ...new Set([
-            ...(schedule?.playlistIds ?? []),
-            screen.defaultPlaylistId,
-            ...screen.schedule.map((r) => r.playlistId),
-        ]),
-    ];
+export function withPlaylistDefaults(
+    playlist: PlaylistDoc,
+    screens: readonly ScreenDoc[],
+): PlaylistDoc & { stage: { width: number; height: number }; revision: number } {
+    const users = screens.filter((s) => playlistIdsOf(s).includes(playlist.id));
+    const legacyName = !playlist.stage && playlist.name === 'Standard' && users.length === 1;
+    return {
+        ...playlist,
+        name: legacyName ? users[0]!.name : playlist.name,
+        stage: playlist.stage ?? { ...(users[0]?.stage ?? STAGE_PRESETS.landscape) },
+        revision: playlist.revision ?? 0,
+    };
 }
 
 /**
@@ -279,6 +302,12 @@ export function withSchedule(screen: ScreenDoc, schedule: ScheduleDoc | null | u
         schedule: schedule.rules,
         ...(later ? { updatedAt: schedule.updatedAt, updatedBy: schedule.updatedBy } : {}),
     };
+}
+
+/** One playlist with its slides – what the editor edits and saves. */
+export interface PlaylistBundle {
+    playlist: PlaylistDoc & { stage: { width: number; height: number } };
+    slides: SlideDoc[];
 }
 
 /** Everything that makes up one screen, as the player needs it. */

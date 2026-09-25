@@ -7,15 +7,14 @@ import { createScreenBundle } from './ops';
 
 async function setup() {
     const repository = new ScreenRepository(new MemoryKv());
-    await repository.saveScreen(createScreenBundle({ name: 'Foyer', slug: 'foyer', orientation: 'landscape' }), {
-        expectedRevision: null,
-        updatedBy: 'Anna',
-    });
+    const bundle = createScreenBundle({ name: 'Foyer', slug: 'foyer', orientation: 'landscape' });
+    await repository.saveScreen(bundle, { expectedRevision: null, updatedBy: 'Anna' });
     setActivePinia(createPinia());
     const editor = useEditorStore();
     editor.attach(repository);
-    await editor.open('foyer');
-    return { editor, repository };
+    const playlistId = bundle.screen.defaultPlaylistId;
+    await editor.open(playlistId);
+    return { editor, repository, playlistId };
 }
 
 describe('editor store', () => {
@@ -72,21 +71,40 @@ describe('editor store', () => {
         expect(editor.slides.map((s) => s.name)).toEqual(['Willkommen', 'Termine']);
     });
 
+    it('opens a playlist of its own, named after the screen that came with it', async () => {
+        const { editor } = await setup();
+        expect(editor.playlist?.name).toBe('Foyer');
+        expect(editor.screens.map((s) => s.name)).toEqual(['Foyer']);
+        expect(editor.revision).toBe(1);
+    });
+
     it('saves and reloads the same state', async () => {
-        const { editor, repository } = await setup();
+        const { editor, repository, playlistId } = await setup();
         editor.addBlock('clock');
         expect(await editor.save('Anna')).toBe(true);
         expect(editor.dirty).toBe(false);
-        expect(editor.revision).toBe(1); // the first schedule document (schema 1.2)
-        const loaded = await repository.loadScreen('foyer');
+        expect(editor.revision).toBe(2);
+        const loaded = await repository.loadPlaylist(playlistId);
         expect(loaded.slides[0]?.blocks[0]?.type).toBe('clock');
+        expect(loaded.playlist).toMatchObject({ revision: 2, updatedBy: 'Anna' });
+        expect((await repository.loadScreen('foyer')).slides[0]?.blocks[0]?.type).toBe('clock'); // what the TV gets
+    });
+
+    it('renames the playlist and refuses to save it without a name', async () => {
+        const { editor, repository, playlistId } = await setup();
+        editor.renamePlaylist('');
+        expect(await editor.save('Anna')).toBe(false);
+        expect(editor.error).toMatch(/Namen/);
+        editor.renamePlaylist('Gottesdienst');
+        expect(await editor.save('Anna')).toBe(true);
+        expect((await repository.loadPlaylist(playlistId)).playlist.name).toBe('Gottesdienst');
     });
 
     it('stops at a conflict and lets the user decide', async () => {
-        const { editor, repository } = await setup();
+        const { editor, repository, playlistId } = await setup();
         // Another designer saves in between.
-        const other = await repository.loadScreen('foyer');
-        await repository.saveContent(other, { expectedRevision: null, updatedBy: 'Ben' });
+        const other = await repository.loadPlaylist(playlistId);
+        await repository.savePlaylist(other, { expectedRevision: 1, updatedBy: 'Ben' });
 
         editor.addBlock('text');
         expect(await editor.save('Anna')).toBe(false);
@@ -95,18 +113,18 @@ describe('editor store', () => {
         expect(editor.dirty).toBe(true);
 
         expect(await editor.overwrite('Anna')).toBe(true);
-        expect((await repository.loadScreen('foyer')).screen.updatedBy).toBe('Anna');
+        expect((await repository.loadPlaylist(playlistId)).playlist.updatedBy).toBe('Anna');
     });
 
     it('can drop its own changes after a conflict', async () => {
-        const { editor, repository } = await setup();
-        const other = await repository.loadScreen('foyer');
-        await repository.saveContent(other, { expectedRevision: null, updatedBy: 'Ben' });
+        const { editor, repository, playlistId } = await setup();
+        const other = await repository.loadPlaylist(playlistId);
+        await repository.savePlaylist(other, { expectedRevision: 1, updatedBy: 'Ben' });
         editor.addBlock('text');
         await editor.save('Anna');
         await editor.discardAndReload();
         expect(editor.slide?.blocks).toHaveLength(0);
-        expect(editor.revision).toBe(1);
+        expect(editor.revision).toBe(2);
     });
 
     it('saves content without touching the screen document, which belongs to the administrators (Plan.md, F)', async () => {
@@ -133,72 +151,6 @@ describe('editor store', () => {
         expect(editor.slide?.blocks.at(-1)?.id).toBe(shape);
         editor.removeBlock(shape);
         expect(editor.slide?.blocks).toHaveLength(1);
-    });
-});
-
-describe('editor store playlists and schedule (Plan.md, Nächste Schritte 17)', () => {
-    beforeEach(() => setActivePinia(createPinia()));
-
-    it('adds a playlist with one slide and edits its slides separately', async () => {
-        const { editor } = await setup();
-        const defaultId = editor.playlist!.id;
-        const id = editor.addPlaylist('Gottesdienst');
-        expect(editor.playlist?.id).toBe(id);
-        expect(editor.slides).toHaveLength(1);
-        editor.addSlide();
-        expect(editor.slides).toHaveLength(2);
-        editor.selectPlaylist(defaultId);
-        expect(editor.slides.map((s) => s.name)).toEqual(['Willkommen']);
-    });
-
-    it('links a slide into a second playlist and keeps it while another playlist shows it', async () => {
-        const { editor } = await setup();
-        const welcome = editor.slide!.id;
-        editor.addPlaylist('Abend');
-        expect(editor.otherSlides.map((s) => s.id)).toEqual([welcome]);
-        editor.linkSlide(welcome);
-        expect(editor.alsoIn(welcome)).toEqual(['Standard']);
-        editor.removeSlide(welcome);
-        expect(editor.draft!.slides.some((s) => s.id === welcome)).toBe(true); // still in "Standard"
-    });
-
-    it('removes a playlist with its rules and the slides only it showed, but never the default', async () => {
-        const { editor } = await setup();
-        const defaultId = editor.playlist!.id;
-        const id = editor.addPlaylist('Abend');
-        const onlyThere = editor.slide!.id;
-        editor.addRule({ kind: 'time', playlistId: id, weekdays: [5], from: '18:00', to: '22:00' });
-        editor.removePlaylist(defaultId);
-        expect(editor.playlists).toHaveLength(2);
-        editor.removePlaylist(id);
-        expect(editor.playlists.map((p) => p.id)).toEqual([defaultId]);
-        expect(editor.rules).toHaveLength(0);
-        expect(editor.draft!.slides.some((s) => s.id === onlyThere)).toBe(false);
-        expect(editor.playlist?.id).toBe(defaultId);
-    });
-
-    it('orders rules, refuses to save an impossible one and stores a valid schedule', async () => {
-        const { editor, repository } = await setup();
-        const id = editor.addPlaylist('Gottesdienst');
-        editor.addRule({ kind: 'time', playlistId: id, weekdays: [7], from: '12:00', to: '09:00' });
-        editor.addRule({ kind: 'time', playlistId: id, weekdays: [1], from: '08:00', to: '10:00' });
-        editor.moveRule(1, 0);
-        expect(editor.rules.map((r) => (r.kind === 'time' ? r.weekdays[0] : 0))).toEqual([1, 7]);
-        expect(await editor.save('Anna')).toBe(false);
-        expect(editor.error).toMatch(/Regel 2/);
-        editor.updateRule(1, { from: '09:00', to: '12:00' });
-        expect(await editor.save('Anna')).toBe(true);
-        const loaded = await repository.loadScreen('foyer');
-        expect(loaded.screen.schedule).toHaveLength(2);
-        expect(loaded.playlists.map((p) => p.name)).toEqual(['Standard', 'Gottesdienst']);
-    });
-
-    it('undoes a new playlist in one step', async () => {
-        const { editor } = await setup();
-        editor.addPlaylist('Abend');
-        editor.undo();
-        expect(editor.playlists).toHaveLength(1);
-        expect(editor.slides.map((s) => s.name)).toEqual(['Willkommen']);
     });
 });
 

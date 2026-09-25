@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { onBeforeRouteLeave, useRoute } from 'vue-router';
+import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName } from '../ct/client';
 import AppBar from '../designer/AppBar.vue';
 import BlockPalette from '../designer/BlockPalette.vue';
@@ -12,10 +12,21 @@ import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
 import SlideList from '../designer/SlideList.vue';
 import { usePreview } from '../designer/usePreview';
 import type { MediaDoc } from '../model/schema';
+import { MEDIA_PAGE } from '../media/library';
 import { getRepository } from '../store/backend';
 
 const route = useRoute();
-const slug = String(route.params.slug);
+const playlistId = String(route.params.id);
+
+/**
+ * Back to where one came from: the screens, whose tile opens the default
+ * playlist, or the playlists page (schema 1.4). The previous path is the
+ * router's, not the browser's – nothing outside the module.
+ */
+const cameFrom = String(useRouter().options.history.state.back ?? '');
+const back = cameFrom === '/' || cameFrom.startsWith('/?')
+    ? { to: { name: 'designer', query: useRouter().resolve(cameFrom).query }, label: 'Screens' }
+    : { to: { name: 'playlists' }, label: 'Playlists' };
 const editor = useEditorStore();
 const loadError = ref<string | null>(null);
 const demo = ref(false);
@@ -81,9 +92,7 @@ onMounted(async () => {
         author.value = displayName(person);
         demo.value = handle.demo;
         editor.attach(handle.repository);
-        await editor.open(slug);
-        // From the schedule on the start page: "Slides bearbeiten" of one playlist.
-        if (typeof route.query.playlist === 'string') editor.selectPlaylist(route.query.playlist);
+        await editor.open(playlistId);
         await editor.refreshMedia();
     } catch (e) {
         loadError.value = e instanceof Error ? e.message : String(e);
@@ -149,10 +158,15 @@ function onKey(event: KeyboardEvent): void {
         :style="{ height: `calc(100vh - ${top}px)`, '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}` }"
     >
         <AppBar>
-            <RouterLink class="back" to="/" title="Editor verlassen, zur Übersicht der Screens" data-testid="leave-editor">
-                <Icon name="back" :size="18" /><span>Screens</span>
+            <RouterLink
+                class="back"
+                :to="back.to"
+                :title="`Editor verlassen, zurück zu „${back.label}“`"
+                data-testid="leave-editor"
+            >
+                <Icon name="back" :size="18" /><span>{{ back.label }}</span>
             </RouterLink>
-            <strong class="title">{{ editor.draft?.screen.name ?? slug }}</strong>
+            <strong class="title">{{ editor.draft?.playlist.name || 'Playlist' }}</strong>
             <span class="status" :class="`status--${editor.status}`" data-testid="save-status">{{ statusText }}</span>
             <template #actions>
                 <button
@@ -175,8 +189,17 @@ function onKey(event: KeyboardEvent): void {
                 >
                     <Icon name="redo" />
                 </button>
-                <RouterLink class="d-link player-link" :to="{ name: 'player', query: { screen: slug } }" target="_blank">
-                    <Icon name="play" :size="16" /> Player
+                <!-- The player shows screens, not playlists: offer the screens this playlist runs on. -->
+                <RouterLink
+                    v-for="s in editor.screens.slice(0, 1)"
+                    :key="s.id"
+                    class="d-link player-link"
+                    :to="{ name: 'player', query: { screen: s.slug } }"
+                    target="_blank"
+                    :title="`Player von „${s.name}“ öffnen – zeigt den gespeicherten Stand`"
+                    data-testid="open-player"
+                >
+                    <Icon name="play" :size="16" /> Player<span v-if="editor.screens.length > 1" class="muted">: {{ s.name }}</span>
                 </RouterLink>
                 <button
                     class="d-btn d-btn--primary"
@@ -208,7 +231,7 @@ function onKey(event: KeyboardEvent): void {
 
         <MediaLibraryDialog
             v-if="libraryFor && editor.draft"
-            :screen="{ slug: editor.draft.screen.slug, name: editor.draft.screen.name }"
+            :screen="MEDIA_PAGE"
             :selected-media-id="currentMediaId"
             @choose="chosen"
             @close="libraryFor = null"

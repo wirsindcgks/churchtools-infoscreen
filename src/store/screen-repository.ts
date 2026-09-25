@@ -1,9 +1,12 @@
 /**
  * Stores screens as several KV values (Plan.md, E):
  *
- * - `screens`   one index value per screen (slug, stage, playlists, revision)
- * - `playlists` one value per playlist
+ * - `screens`   one index value per screen (slug, stage, revision) – the administrators'
+ * - `playlists` one value per playlist, and one schedule per screen – the designers'
  * - `slides`    one value per slide; slides are referenced, never owned
+ *
+ * Playlists stand on their own (schema 1.4): screens choose them through
+ * their schedule, and one playlist may run on several screens.
  *
  * Saving writes several values without a transaction. The index is written
  * last, so a save that breaks off halfway leaves the old screen visible
@@ -22,13 +25,17 @@ import {
 } from '../model/read';
 import {
     playlistIdsOf,
+    sameStage,
     SCHEMA_VERSION,
     scheduleIdFor,
+    withPlaylistDefaults,
     withSchedule,
     type AnyDoc,
     type MediaDoc,
+    type PlaylistBundle,
     type PlaylistDoc,
     type ScheduleDoc,
+    type ScheduleRule,
     type ScreenBundle,
     type ScreenDoc,
     type SettingsDoc,
@@ -85,6 +92,47 @@ export class ConflictError extends Error {
     }
 }
 
+export class PlaylistNotFoundError extends Error {
+    constructor(readonly id: string) {
+        super('Diese Playlist gibt es nicht (mehr).');
+        this.name = 'PlaylistNotFoundError';
+    }
+}
+
+/** A playlist that still runs somewhere is not deleted – a screen would lose its content. */
+export class PlaylistInUseError extends Error {
+    constructor(readonly screens: string[]) {
+        super(`Die Playlist läuft noch auf ${screens.map((s) => `„${s}"`).join(', ')}. Erst dort im Zeitplan eine andere wählen.`);
+        this.name = 'PlaylistInUseError';
+    }
+}
+
+/** A screen as the playlist pages name it. */
+export interface ScreenRef {
+    id: string;
+    slug: string;
+    name: string;
+}
+
+export type StagedPlaylist = PlaylistDoc & { stage: { width: number; height: number }; revision: number };
+
+/** A playlist as the playlists page shows it (Plan.md, Nächste Schritte 19). */
+export interface PlaylistOverview {
+    playlist: StagedPlaylist;
+    firstSlide: SlideDoc | null;
+    slideCount: number;
+    media: MediaDoc[];
+    /** Screens whose schedule shows it, as default or through a rule. */
+    screens: ScreenRef[];
+}
+
+export interface LoadedPlaylist extends PlaylistBundle {
+    playlist: StagedPlaylist;
+    media: MediaDoc[];
+    screens: ScreenRef[];
+    issues: ReadIssue[];
+}
+
 export interface LoadedScreen extends ScreenBundle {
     /**
      * The designers' part (schema 1.2), already applied to `screen`; null
@@ -105,6 +153,8 @@ export interface ScreenOverview {
     slideCount: number;
     /** Media the first slide shows. */
     media: MediaDoc[];
+    /** Name of the default playlist, which the tile opens. */
+    playlistName: string | null;
 }
 
 interface Stored<T> {
@@ -170,7 +220,9 @@ export class ScreenRepository {
                 .map((id) => slides.get(id))
                 .filter((s): s is SlideDoc => s !== undefined);
             const firstSlide = own.find((s) => s.enabled) ?? own[0] ?? null;
-            return { screen, firstSlide, slideCount: own.length, media: [] as MediaDoc[] };
+            const playlist = playlists.get(screen.defaultPlaylistId);
+            const playlistName = playlist ? withPlaylistDefaults(playlist, screens).name : null;
+            return { screen, firstSlide, slideCount: own.length, media: [] as MediaDoc[], playlistName };
         });
 
         const mediaIds = new Set(overviews.flatMap((o) => (o.firstSlide ? referencedMedia(o.firstSlide) : [])));
@@ -194,7 +246,7 @@ export class ScreenRepository {
         const slidesRead = await this.readSlides();
         issues.push(...slidesRead.issues);
 
-        const playlistIds = playlistIdsOf(screen, schedule);
+        const playlistIds = playlistIdsOf(screen);
         const byId = new Map(running.playlists.map((p) => [p.doc.id, p.doc]));
         const playlists = playlistIds.map((id) => byId.get(id)).filter((p): p is PlaylistDoc => !!p);
         for (const id of playlistIds) {
@@ -223,7 +275,7 @@ export class ScreenRepository {
      * and returns the stored index document with its new revision. Everything
      * is validated and size-checked before the first write. The index belongs
      * to the administrators (Plan.md, F): designers save through
-     * {@link saveContent}.
+     * {@link savePlaylist} and {@link saveSchedule}.
      */
     async saveScreen(bundle: ScreenBundle, options: SaveOptions): Promise<ScreenDoc> {
         const now = (options.now ?? new Date()).toISOString();
@@ -263,26 +315,159 @@ export class ScreenRepository {
         return screen;
     }
 
+    /** Every playlist with what the playlists page shows of it, sorted by name. */
+    async listPlaylists(): Promise<PlaylistOverview[]> {
+        const running = await this.readRunningScreens();
+        const screens = running.screens.map((s) => s.doc);
+        const slides = new Map((await this.readSlides()).docs.map((s) => [s.doc.id, s.doc]));
+        const overviews = running.playlists.map(({ doc }) => {
+            const own = doc.slideIds.map((id) => slides.get(id)).filter((s): s is SlideDoc => s !== undefined);
+            return {
+                playlist: withPlaylistDefaults(doc, screens),
+                firstSlide: own.find((s) => s.enabled) ?? own[0] ?? null,
+                slideCount: own.length,
+                media: [] as MediaDoc[],
+                screens: screensShowing(doc.id, screens),
+            };
+        });
+        const mediaIds = new Set(overviews.flatMap((o) => (o.firstSlide ? referencedMedia(o.firstSlide) : [])));
+        if (mediaIds.size) {
+            const media = (await this.readAll('media', readMedia)).docs.map((m) => m.doc);
+            for (const o of overviews) {
+                const ids = o.firstSlide ? referencedMedia(o.firstSlide) : [];
+                o.media = media.filter((m) => ids.includes(m.id));
+            }
+        }
+        return overviews.sort((a, b) => a.playlist.name.localeCompare(b.playlist.name, 'de'));
+    }
+
+    /** One playlist with its slides and media – what the editor opens. */
+    async loadPlaylist(id: string): Promise<LoadedPlaylist> {
+        const running = await this.readRunningScreens();
+        const stored = running.playlists.find((p) => p.doc.id === id);
+        if (!stored) throw new PlaylistNotFoundError(id);
+        const screens = running.screens.map((s) => s.doc);
+        const issues = [...running.issues];
+
+        const slidesRead = await this.readSlides();
+        issues.push(...slidesRead.issues);
+        const byId = new Map(slidesRead.docs.map((s) => [s.doc.id, s.doc]));
+        const slides = stored.doc.slideIds.map((sid) => byId.get(sid)).filter((s): s is SlideDoc => !!s);
+        for (const sid of stored.doc.slideIds) {
+            if (!byId.has(sid)) issues.push({ documentId: sid, message: 'Slide fehlt.' });
+        }
+
+        const mediaIds = new Set(slides.flatMap(referencedMedia));
+        const mediaRead = mediaIds.size ? await this.readAll('media', readMedia) : { docs: [], issues: [] };
+        const media = mediaRead.docs.map((m) => m.doc).filter((m) => mediaIds.has(m.id));
+        return {
+            playlist: withPlaylistDefaults(stored.doc, screens),
+            slides,
+            media,
+            screens: screensShowing(id, screens),
+            issues: [...issues, ...mediaRead.issues],
+        };
+    }
+
+    /** A new playlist with one empty slide – an empty playlist would show nothing. */
+    async createPlaylist(
+        options: { name: string; stage: { width: number; height: number } },
+        updatedBy: string,
+        now = new Date(),
+    ): Promise<StagedPlaylist> {
+        const slide: SlideDoc = {
+            schema: { ...SCHEMA_VERSION },
+            kind: 'slide',
+            id: crypto.randomUUID(),
+            name: 'Neue Slide',
+            durationSeconds: 10,
+            enabled: true,
+            background: { kind: 'solid', color: '#1e293b' },
+            blocks: [],
+            updatedAt: now.toISOString(),
+        };
+        const playlist: StagedPlaylist = {
+            schema: { ...SCHEMA_VERSION },
+            kind: 'playlist',
+            id: crypto.randomUUID(),
+            name: options.name.trim() || 'Neue Playlist',
+            slideIds: [slide.id],
+            stage: { ...options.stage },
+            revision: 1,
+            updatedBy,
+            updatedAt: now.toISOString(),
+        };
+        const texts = { slide: serialize(slide), playlist: serialize(playlist) };
+        const ids = await this.ensureCategories();
+        await this.kv.createValue(ids.slides, texts.slide);
+        await this.kv.createValue(ids.playlists, texts.playlist);
+        return playlist;
+    }
+
     /**
-     * The designers' save (Plan.md, F; Nächste Schritte 15): slides, playlists
-     * and the schedule document – never the screen's index, which belongs to
-     * the administrators. The schedule document is written last and carries
-     * the revision, so a save that breaks off halfway changes nothing visible
-     * and two designers saving the same screen notice each other.
-     *
-     * `expectedRevision` is the schedule document's revision the editor
-     * started from; null when there was none yet.
+     * The designers' save (Plan.md, F): one playlist and its slides. Slides
+     * first, the playlist last and with the revision – a save that breaks off
+     * halfway leaves the old order visible, and two designers saving the same
+     * playlist notice each other. Screens and schedules stay untouched.
      */
-    async saveContent(bundle: ScreenBundle, options: SaveOptions): Promise<ScheduleDoc> {
+    async savePlaylist(bundle: PlaylistBundle, options: SaveOptions): Promise<StagedPlaylist> {
         const now = (options.now ?? new Date()).toISOString();
-        const stamp = <T extends AnyDoc>(doc: T): T => ({ ...doc, updatedAt: now });
-        const slides = bundle.slides.map(stamp);
-        const playlists = bundle.playlists.map(stamp);
-        this.checkReferences(bundle.screen, playlists, slides);
+        const slideIds = new Set(bundle.slides.map((s) => s.id));
+        const missing = bundle.playlist.slideIds.find((id) => !slideIds.has(id));
+        if (missing) throw new Error(`Slide ${missing} fehlt im Speicherstand.`);
 
         const running = await this.readRunningScreens();
-        const current = running.screens.find((s) => s.doc.id === bundle.screen.id);
-        if (!current) throw new ScreenNotFoundError(bundle.screen.slug);
+        const stored = running.playlists.find((p) => p.doc.id === bundle.playlist.id);
+        if (!stored) throw new PlaylistNotFoundError(bundle.playlist.id);
+        const current = stored.doc.revision ?? 0;
+        if (current !== (options.expectedRevision ?? 0)) {
+            throw new ConflictError({
+                name: withPlaylistDefaults(stored.doc, running.screens.map((s) => s.doc)).name,
+                revision: current,
+                updatedBy: stored.doc.updatedBy,
+                updatedAt: stored.doc.updatedAt,
+            });
+        }
+        const playlist: StagedPlaylist = {
+            ...bundle.playlist,
+            revision: current + 1,
+            updatedBy: options.updatedBy,
+            updatedAt: now,
+        };
+        const slides = bundle.slides.map((doc) => serialize({ ...doc, updatedAt: now }));
+        const text = serialize(playlist);
+
+        const ids = await this.ensureCategories();
+        const storedSlides = await this.valueIdsById('slides');
+        for (const [i, doc] of bundle.slides.entries()) await this.upsert(ids.slides, storedSlides.get(doc.id), slides[i]!);
+        await this.kv.updateValue(ids.playlists, stored.valueId, text);
+        return playlist;
+    }
+
+    /** Deletes a playlist no screen shows; its slides go with the next tidy-up unless another playlist shows them. */
+    async deletePlaylist(id: string): Promise<void> {
+        const running = await this.readRunningScreens();
+        const stored = running.playlists.find((p) => p.doc.id === id);
+        if (!stored) return;
+        const users = screensShowing(id, running.screens.map((s) => s.doc));
+        if (users.length) throw new PlaylistInUseError(users.map((s) => s.name));
+        const ids = await this.ensureCategories();
+        await this.kv.deleteValue(ids.playlists, stored.valueId);
+    }
+
+    /**
+     * The designers' choice of what runs on a screen when (Plan.md, F;
+     * Nächste Schritte 17): only the schedule document, against its own
+     * revision. `expectedRevision` is null while the screen has none yet.
+     */
+    async saveSchedule(
+        screenId: string,
+        choice: { defaultPlaylistId: string; rules: ScheduleRule[] },
+        options: SaveOptions,
+    ): Promise<ScheduleDoc> {
+        const running = await this.readRunningScreens();
+        const current = running.screens.find((s) => s.doc.id === screenId);
+        if (!current) throw new ScreenNotFoundError(screenId);
         const existing = current.schedule;
         if (existing ? existing.revision !== options.expectedRevision : options.expectedRevision !== null) {
             throw new ConflictError({
@@ -292,33 +477,31 @@ export class ScreenRepository {
                 updatedAt: existing?.updatedAt,
             });
         }
+        const playlists = new Map(running.playlists.map((p) => [p.doc.id, p.doc]));
+        const screens = running.screens.map((s) => s.doc);
+        for (const id of [choice.defaultPlaylistId, ...choice.rules.map((r) => r.playlistId)]) {
+            const playlist = playlists.get(id);
+            if (!playlist) throw new PlaylistNotFoundError(id);
+            const staged = withPlaylistDefaults(playlist, screens);
+            if (!sameStage(staged.stage, current.doc.stage)) {
+                throw new Error(`„${staged.name}" ist für ein anderes Format gestaltet als „${current.doc.name}".`);
+            }
+        }
         const schedule: ScheduleDoc = {
             schema: { ...SCHEMA_VERSION },
             kind: 'schedule',
-            id: scheduleIdFor(bundle.screen.id),
-            screenId: bundle.screen.id,
-            defaultPlaylistId: bundle.screen.defaultPlaylistId,
-            rules: bundle.screen.schedule,
-            playlistIds: playlists.map((p) => p.id),
+            id: scheduleIdFor(screenId),
+            screenId,
+            defaultPlaylistId: choice.defaultPlaylistId,
+            rules: choice.rules,
             revision: (existing?.revision ?? 0) + 1,
             updatedBy: options.updatedBy,
-            updatedAt: now,
+            updatedAt: (options.now ?? new Date()).toISOString(),
         };
-        const serialized = {
-            slides: slides.map((doc) => ({ doc, text: serialize(doc) })),
-            playlists: playlists.map((doc) => ({ doc, text: serialize(doc) })),
-            schedule: serialize(schedule),
-        };
-
+        const text = serialize(schedule);
         const ids = await this.ensureCategories();
-        const storedSlides = await this.valueIdsById('slides');
-        for (const { doc, text } of serialized.slides) await this.upsert(ids.slides, storedSlides.get(doc.id), text);
-        const storedPlaylists = await this.valueIdsById('playlists');
-        for (const { doc, text } of serialized.playlists) {
-            await this.upsert(ids.playlists, storedPlaylists.get(doc.id), text);
-        }
-        // Last: until this write succeeds, the old schedule and its revision stay authoritative.
-        await this.upsert(ids.playlists, storedPlaylists.get(schedule.id), serialized.schedule);
+        const stored = running.schedules.find((s) => s.doc.screenId === screenId);
+        await this.upsert(ids.playlists, stored?.valueId, text);
         return schedule;
     }
 
@@ -392,23 +575,17 @@ export class ScreenRepository {
     }
 
     /** Where a medium is shown – asked before deleting it, so nobody deletes blind. */
-    async mediaUsage(mediaId: string): Promise<{ screen: string; slide: string }[]> {
+    async mediaUsage(mediaId: string): Promise<{ playlist: string; slide: string }[]> {
         const running = await this.readRunningScreens();
-        const screens = running.screens;
-        const playlists = running.playlists.map((p) => p.doc);
+        const screens = running.screens.map((s) => s.doc);
         const slides = (await this.readSlides()).docs.map((s) => s.doc);
-        const usedIn = slides.filter((slide) => referencedMedia(slide).includes(mediaId));
-        const result: { screen: string; slide: string }[] = [];
-        for (const slide of usedIn) {
-            const owners = screens.filter((screen) =>
-                playlists.some(
-                    (p) =>
-                        p.slideIds.includes(slide.id) && playlistIdsOf(screen.doc, screen.schedule).includes(p.id),
-                ),
-            );
-            for (const screen of owners) result.push({ screen: screen.doc.name, slide: slide.name });
-        }
-        return result;
+        const usedIn = new Set(slides.filter((slide) => referencedMedia(slide).includes(mediaId)).map((s) => s.id));
+        const names = new Map(slides.map((s) => [s.id, s.name]));
+        return running.playlists.flatMap(({ doc }) =>
+            doc.slideIds
+                .filter((id) => usedIn.has(id))
+                .map((id) => ({ playlist: withPlaylistDefaults(doc, screens).name, slide: names.get(id) ?? id })),
+        );
     }
 
     /** Removes only the index; playlists and slides become orphans for {@link collectOrphans}. */
@@ -421,9 +598,11 @@ export class ScreenRepository {
     }
 
     /**
-     * Deletes playlists no screen references and slides no playlist references.
-     * Orphans younger than the grace period are kept: they may have been written
-     * by a save whose index write has not happened yet.
+     * Deletes slides no playlist references and the schedules of deleted
+     * screens. Playlists stay even when no screen shows them (schema 1.4):
+     * they are content in their own right and go only when deleted.
+     * Orphans younger than the grace period are kept: they may have been
+     * written by a save whose last write has not happened yet.
      */
     async collectOrphans(now = new Date()): Promise<{ playlists: number; slides: number }> {
         const ids = await this.ensureCategories();
@@ -435,19 +614,15 @@ export class ScreenRepository {
         const slides = await this.readSlides();
 
         const isOld = (doc: AnyDoc) => !doc.updatedAt || now.getTime() - Date.parse(doc.updatedAt) > ORPHAN_GRACE_MS;
-        const usedPlaylists = new Set(screens.flatMap((s) => playlistIdsOf(s.doc, s.schedule)));
-        const deadPlaylists = playlists.docs.filter((p) => !usedPlaylists.has(p.doc.id) && isOld(p.doc));
-        const livePlaylists = playlists.docs.filter((p) => !deadPlaylists.includes(p));
-        const usedSlides = new Set(livePlaylists.flatMap((p) => p.doc.slideIds));
+        const usedSlides = new Set(playlists.docs.flatMap((p) => p.doc.slideIds));
         const deadSlides = slides.docs.filter((s) => !usedSlides.has(s.doc.id) && isOld(s.doc));
 
         // The schedule of a deleted screen goes with it; it counts as a playlist-category value.
         const screenIds = new Set(screens.map((s) => s.doc.id));
         const deadSchedules = running.schedules.filter((s) => !screenIds.has(s.doc.screenId) && isOld(s.doc));
         for (const s of deadSchedules) await this.kv.deleteValue(ids.playlists, s.valueId);
-        for (const p of deadPlaylists) await this.kv.deleteValue(ids.playlists, p.valueId);
         for (const s of deadSlides) await this.kv.deleteValue(ids.slides, s.valueId);
-        return { playlists: deadPlaylists.length, slides: deadSlides.length };
+        return { playlists: 0, slides: deadSlides.length };
     }
 
     private checkReferences(screen: ScreenDoc, playlists: PlaylistDoc[], slides: SlideDoc[]): void {
@@ -577,4 +752,11 @@ function rethrowIfTooNew(error: unknown): void {
 
 function errorMessage(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
+}
+
+function screensShowing(playlistId: string, screens: readonly ScreenDoc[]): ScreenRef[] {
+    return screens
+        .filter((s) => playlistIdsOf(s).includes(playlistId))
+        .map((s) => ({ id: s.id, slug: s.slug, name: s.name }))
+        .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 }

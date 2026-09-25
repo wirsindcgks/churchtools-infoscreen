@@ -6,6 +6,8 @@ import { MemoryKv } from './memory-kv';
 import {
     ConflictError,
     ORPHAN_GRACE_MS,
+    PlaylistInUseError,
+    PlaylistNotFoundError,
     ScreenNotFoundError,
     ScreenRepository,
     SlugTakenError,
@@ -190,11 +192,13 @@ describe('ScreenRepository', () => {
         expect(await repo.listScreenOverviews()).toEqual([]);
     });
 
-    describe('schedule documents (schema 1.2, Plan.md 15)', () => {
+    describe('playlists on their own and schedules (schema 1.4, Plan.md 17 and 19)', () => {
         async function created() {
             const screen = await repo.saveScreen(bundle(), { ...save, expectedRevision: null });
             return { screen, loaded: await repo.loadScreen('foyer-links') };
         }
+        const PORTRAIT = { width: 1080, height: 1920 };
+        const LANDSCAPE = { width: 1920, height: 1080 };
 
         it('keeps a screen without schedule document running on the values of its index', async () => {
             const { loaded } = await created();
@@ -202,74 +206,107 @@ describe('ScreenRepository', () => {
             expect(loaded.screen.defaultPlaylistId).toBe(makePlaylist().id);
         });
 
-        it('saves content as slides, playlists and a schedule document – the index stays as the administrator left it', async () => {
-            const { screen, loaded } = await created();
+        it('gives an old playlist the format and name of the screen that shows it, until it is saved', async () => {
+            await created();
+            const [overview] = await repo.listPlaylists();
+            expect(overview?.playlist).toMatchObject({ name: 'Foyer links', stage: LANDSCAPE, revision: 0 });
+            expect(overview?.screens.map((s) => s.slug)).toEqual(['foyer-links']);
+            expect(overview?.slideCount).toBe(2);
+        });
+
+        it('creates a playlist that runs nowhere yet and keeps it through a tidy-up', async () => {
+            const made = await repo.createPlaylist({ name: 'Gottesdienst', stage: LANDSCAPE }, 'Anna');
+            const loaded = await repo.loadPlaylist(made.id);
+            expect(loaded.playlist).toMatchObject({ name: 'Gottesdienst', revision: 1, updatedBy: 'Anna' });
+            expect(loaded.slides).toHaveLength(1);
+            expect(loaded.screens).toEqual([]);
+            await repo.collectOrphans(new Date(Date.now() + ORPHAN_GRACE_MS + 1000));
+            expect((await repo.loadPlaylist(made.id)).slides).toHaveLength(1);
+        });
+
+        it('saves a playlist with its slides – screens and schedules stay as they are', async () => {
+            const { screen } = await created();
+            const loaded = await repo.loadPlaylist(makePlaylist().id);
             const ids = await repo.ensureCategories();
             kv.writes.length = 0;
-            const saved = await repo.saveContent(loaded, { expectedRevision: null, updatedBy: 'Gestalterin' });
-            expect(saved).toMatchObject({ kind: 'schedule', screenId: screen.id, revision: 1, updatedBy: 'Gestalterin' });
+            const saved = await repo.savePlaylist(
+                { playlist: { ...loaded.playlist, name: 'Wochenüberblick' }, slides: loaded.slides },
+                { expectedRevision: 0, updatedBy: 'Gestalterin' },
+            );
+            expect(saved).toMatchObject({ revision: 1, updatedBy: 'Gestalterin', stage: LANDSCAPE });
             const category = (w: (typeof kv.writes)[number]) => ('categoryId' in w ? w.categoryId : null);
             expect(kv.writes.some((w) => category(w) === ids.screens)).toBe(false);
-            expect(category(kv.writes.at(-1)!)).toBe(ids.playlists); // the schedule last
+            expect(category(kv.writes.at(-1)!)).toBe(ids.playlists); // the playlist last
             const again = await repo.loadScreen('foyer-links');
-            expect(again.schedule?.revision).toBe(1);
             expect(again.screen.revision).toBe(screen.revision);
-            expect(again.screen.updatedBy).toBe('Gestalterin'); // who saved last, for the tiles
+            expect(again.playlists[0]).toMatchObject({ name: 'Wochenüberblick', revision: 1 });
         });
 
-        it('lets the schedule document decide which playlist runs', async () => {
-            const { loaded } = await created();
-            const extra = makePlaylist({ id: 'abend', name: 'Abend', slideIds: ['slide-2'] });
-            const content = {
-                ...loaded,
-                screen: {
-                    ...loaded.screen,
-                    defaultPlaylistId: 'abend',
-                    schedule: [{ kind: 'time' as const, playlistId: loaded.screen.defaultPlaylistId, weekdays: [7], from: '09:00', to: '12:00' }],
-                },
-                playlists: [...loaded.playlists, extra],
-            };
-            await repo.saveContent(content, { expectedRevision: null, updatedBy: 'Gestalterin' });
-            const again = await repo.loadScreen('foyer-links');
-            expect(again.screen.defaultPlaylistId).toBe('abend');
-            expect(again.screen.schedule).toHaveLength(1);
-            expect(again.playlists.map((p) => p.id).sort()).toEqual(['abend', makePlaylist().id].sort());
-        });
-
-        it('keeps a playlist no rule uses yet, in the order the editor saved (schema 1.3)', async () => {
-            const { loaded } = await created();
-            const spare = makePlaylist({ id: 'reserve', name: 'Reserve', slideIds: ['slide-2'] });
-            await repo.saveContent({ ...loaded, playlists: [spare, ...loaded.playlists] }, { expectedRevision: null, updatedBy: 'Gestalterin' });
-            const again = await repo.loadScreen('foyer-links');
-            expect(again.playlists.map((p) => p.id)).toEqual(['reserve', makePlaylist().id]);
-            await repo.collectOrphans(new Date(Date.now() + ORPHAN_GRACE_MS + 1000));
-            expect((await repo.loadScreen('foyer-links')).playlists.map((p) => p.id)).toContain('reserve');
-        });
-
-        it('collects a playlist the designers removed', async () => {
-            const { loaded } = await created();
-            const spare = makePlaylist({ id: 'reserve', name: 'Reserve', slideIds: ['slide-2'] });
-            await repo.saveContent({ ...loaded, playlists: [...loaded.playlists, spare] }, { expectedRevision: null, updatedBy: 'Gestalterin' });
-            await repo.saveContent(loaded, { expectedRevision: 1, updatedBy: 'Gestalterin' });
-            await repo.collectOrphans(new Date(Date.now() + ORPHAN_GRACE_MS + 1000));
-            const ids = await repo.ensureCategories();
-            const stored = (await kv.listValues(ids.playlists)).map((v) => JSON.parse(v.value) as { id: string });
-            expect(stored.map((d) => d.id)).not.toContain('reserve');
-        });
-
-        it('detects two designers saving the same screen', async () => {
-            const { loaded } = await created();
-            await repo.saveContent(loaded, { expectedRevision: null, updatedBy: 'Ben' });
-            await expect(repo.saveContent(loaded, { expectedRevision: null, updatedBy: 'Anna' })).rejects.toMatchObject({
+        it('detects two designers saving the same playlist', async () => {
+            await created();
+            const loaded = await repo.loadPlaylist(makePlaylist().id);
+            await repo.savePlaylist(loaded, { expectedRevision: 0, updatedBy: 'Ben' });
+            await expect(repo.savePlaylist(loaded, { expectedRevision: 0, updatedBy: 'Anna' })).rejects.toMatchObject({
                 name: 'ConflictError',
                 current: { revision: 1, updatedBy: 'Ben' },
             });
-            await expect(repo.saveContent(loaded, { expectedRevision: 1, updatedBy: 'Anna' })).resolves.toMatchObject({ revision: 2 });
+            await expect(repo.savePlaylist(loaded, { expectedRevision: 1, updatedBy: 'Anna' })).resolves.toMatchObject({ revision: 2 });
+        });
+
+        it('lets several screens show one playlist, chosen in their schedules', async () => {
+            const { screen } = await created();
+            const other = await repo.saveScreen(
+                bundle({
+                    screen: makeScreen({ id: 'screen-2', slug: 'cafe', name: 'Café', defaultPlaylistId: 'eigene' }),
+                    playlists: [makePlaylist({ id: 'eigene', slideIds: ['slide-2'] })],
+                    slides: [makeSlide({ id: 'slide-2' })],
+                }),
+                { ...save, expectedRevision: null },
+            );
+            const shared = await repo.createPlaylist({ name: 'Gottesdienst', stage: LANDSCAPE }, 'Anna');
+            for (const s of [screen, other]) {
+                await repo.saveSchedule(s.id, { defaultPlaylistId: shared.id, rules: [] }, { expectedRevision: null, updatedBy: 'Anna' });
+            }
+            const overview = (await repo.listPlaylists()).find((o) => o.playlist.id === shared.id);
+            expect(overview?.screens.map((s) => s.name)).toEqual(['Café', 'Foyer links']);
+            expect((await repo.loadScreen('cafe')).playlists.map((p) => p.id)).toEqual([shared.id]);
+            await expect(repo.deletePlaylist(shared.id)).rejects.toBeInstanceOf(PlaylistInUseError);
+        });
+
+        it('saves a schedule against its own revision and refuses a playlist of another format', async () => {
+            const { screen } = await created();
+            const evening = await repo.createPlaylist({ name: 'Abend', stage: LANDSCAPE }, 'Anna');
+            const tall = await repo.createPlaylist({ name: 'Hochkant', stage: PORTRAIT }, 'Anna');
+            const rules = [{ kind: 'time' as const, playlistId: evening.id, weekdays: [5], from: '18:00', to: '22:00' }];
+            const saved = await repo.saveSchedule(
+                screen.id,
+                { defaultPlaylistId: makePlaylist().id, rules },
+                { expectedRevision: null, updatedBy: 'Gestalterin' },
+            );
+            expect(saved).toMatchObject({ kind: 'schedule', revision: 1, rules });
+            const again = await repo.loadScreen('foyer-links');
+            expect(again.screen.schedule).toEqual(rules);
+            expect(again.playlists.map((p) => p.id)).toEqual([makePlaylist().id, evening.id]);
+            expect(again.screen.revision).toBe(screen.revision); // the administrators' document is untouched
+
+            await expect(
+                repo.saveSchedule(screen.id, { defaultPlaylistId: tall.id, rules: [] }, { expectedRevision: 1, updatedBy: 'X' }),
+            ).rejects.toThrow(/anderes Format/);
+            await expect(
+                repo.saveSchedule(screen.id, { defaultPlaylistId: evening.id, rules: [] }, { expectedRevision: null, updatedBy: 'X' }),
+            ).rejects.toBeInstanceOf(ConflictError);
+        });
+
+        it('deletes a playlist no screen shows; its slides go with the next tidy-up', async () => {
+            const made = await repo.createPlaylist({ name: 'Entwurf', stage: LANDSCAPE }, 'Anna');
+            await repo.deletePlaylist(made.id);
+            await expect(repo.loadPlaylist(made.id)).rejects.toBeInstanceOf(PlaylistNotFoundError);
+            expect(await repo.collectOrphans(new Date(Date.now() + ORPHAN_GRACE_MS + 1000))).toEqual({ playlists: 0, slides: 1 });
         });
 
         it('saves screen settings against the index revision only', async () => {
-            const { screen, loaded } = await created();
-            await repo.saveContent(loaded, { expectedRevision: null, updatedBy: 'Gestalterin' });
+            const { screen } = await created();
+            await repo.saveSchedule(screen.id, { defaultPlaylistId: makePlaylist().id, rules: [] }, { expectedRevision: null, updatedBy: 'Gestalterin' });
             const renamed = await repo.saveScreenSettings(
                 screen.id,
                 { name: 'Foyer rechts', overscanPercent: 3 },
@@ -279,37 +316,25 @@ describe('ScreenRepository', () => {
             await expect(
                 repo.saveScreenSettings(screen.id, { name: 'Alt' }, { expectedRevision: screen.revision, updatedBy: 'Admin' }),
             ).rejects.toBeInstanceOf(ConflictError);
-            expect((await repo.loadScreen('foyer-links')).schedule?.revision).toBe(1); // content untouched
+            expect((await repo.loadScreen('foyer-links')).schedule?.revision).toBe(1); // schedule untouched
         });
 
-        it('collects the schedule of a deleted screen with its playlists', async () => {
-            const { loaded } = await created();
-            await repo.saveContent(loaded, { expectedRevision: null, updatedBy: 'Gestalterin' });
+        it('collects the schedule of a deleted screen, but keeps its playlists', async () => {
+            const { screen } = await created();
+            await repo.saveSchedule(screen.id, { defaultPlaylistId: makePlaylist().id, rules: [] }, { expectedRevision: null, updatedBy: 'Gestalterin' });
             await repo.deleteScreen('foyer-links');
-            const later = new Date(Date.now() + ORPHAN_GRACE_MS + 1000);
-            await repo.collectOrphans(later);
+            await repo.collectOrphans(new Date(Date.now() + ORPHAN_GRACE_MS + 1000));
+            expect((await repo.listPlaylists()).map((o) => o.playlist.id)).toEqual([makePlaylist().id]);
             const ids = await repo.ensureCategories();
-            expect(await kv.listValues(ids.playlists)).toHaveLength(0);
+            expect(await kv.listValues(ids.playlists)).toHaveLength(1);
         });
 
         it('counts a calendar that only a schedule rule uses (for the device rights)', async () => {
-            const { loaded } = await created();
-            const content = {
-                ...loaded,
-                screen: {
-                    ...loaded.screen,
-                    schedule: [
-                        {
-                            kind: 'appointment' as const,
-                            playlistId: loaded.screen.defaultPlaylistId,
-                            calendarIds: [9],
-                            minutesBefore: 30,
-                            minutesAfter: 60,
-                        },
-                    ],
-                },
-            };
-            await repo.saveContent(content, { expectedRevision: null, updatedBy: 'Gestalterin' });
+            const { screen } = await created();
+            const rules = [
+                { kind: 'appointment' as const, playlistId: makePlaylist().id, calendarIds: [9], minutesBefore: 30, minutesAfter: 60 },
+            ];
+            await repo.saveSchedule(screen.id, { defaultPlaylistId: makePlaylist().id, rules }, { expectedRevision: null, updatedBy: 'Gestalterin' });
             expect(await repo.calendarIdsInUse()).toContain(9);
         });
     });
@@ -326,7 +351,8 @@ describe('ScreenRepository', () => {
         const soon = new Date(savedAt.getTime() + ORPHAN_GRACE_MS / 2);
         expect(await repo.collectOrphans(soon)).toEqual({ playlists: 0, slides: 0 });
 
+        // The playlist stays – it is content of its own (schema 1.4); its slides are still in it.
         const later = new Date(savedAt.getTime() + ORPHAN_GRACE_MS * 2);
-        expect(await repo.collectOrphans(later)).toEqual({ playlists: 1, slides: 2 });
+        expect(await repo.collectOrphans(later)).toEqual({ playlists: 0, slides: 0 });
     });
 });

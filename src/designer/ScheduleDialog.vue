@@ -1,18 +1,18 @@
 <script setup lang="ts">
 /**
- * The designers' schedule (Plan.md, Nächste Schritte 17), opened from the
- * screen's tile on the start page: the screen's playlists, the rules that
- * switch between them in order of precedence, and a preview of any day. It
- * loads and saves on its own – through the editor store, so saving is the
- * editor's: against the schedule revision, slides and playlists included.
+ * What runs on a screen when (Plan.md, Nächste Schritte 17 and 19), opened
+ * from the screen's tile: the default playlist, the rules that switch to
+ * other playlists in order of precedence, and a preview of any day.
+ * Playlists stand on their own (schema 1.4); the screen only chooses among
+ * those of its format. Saves the schedule document alone, against its revision.
  */
 import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { zonedDateKey, zonedParts, zonedTimeToInstant } from '../appointments/zoned';
-import type { ScheduleRule } from '../model/schema';
+import { sameStage, type ScheduleRule, type ScreenDoc } from '../model/schema';
 import { matchingRuleIndex } from '../player/schedule';
-import type { ScreenRepository } from '../store/screen-repository';
-import { useEditorStore } from './editor-store';
+import { ConflictError, type ConflictInfo, type ScreenRepository, type StagedPlaylist } from '../store/screen-repository';
+import { cloneJson } from './ops';
 import Icon from './Icon.vue';
 import { usePreview } from './usePreview';
 import {
@@ -20,6 +20,7 @@ import {
     createTimeRule,
     dayTimeline,
     fromMinutes,
+    scheduleProblems,
     WEEKDAYS,
     type AppointmentRule,
     type TimeRule,
@@ -29,97 +30,167 @@ const props = defineProps<{ slug: string; repository: ScreenRepository; author: 
 const emit = defineEmits<{ close: []; saved: [] }>();
 
 const router = useRouter();
-const editor = useEditorStore();
 const dialog = ref<HTMLElement | null>(null);
 const loading = ref(true);
 const loadError = ref<string | null>(null);
+const saving = ref(false);
+const saveError = ref<string | null>(null);
+const conflict = ref<ConflictInfo | null>(null);
+
+const screen = ref<ScreenDoc | null>(null);
+/** Revision of the schedule document; null while the screen has none yet. */
+const scheduleRevision = ref<number | null>(null);
+const allPlaylists = ref<StagedPlaylist[]>([]);
+const defaultPlaylistId = ref('');
+const rules = ref<ScheduleRule[]>([]);
+const savedJson = ref('');
+const newName = ref('');
+
+const dirty = computed(() => JSON.stringify([defaultPlaylistId.value, rules.value]) !== savedJson.value);
+/** The screen as it would run with this schedule. */
+const planned = computed<ScreenDoc | null>(() =>
+    screen.value ? { ...screen.value, defaultPlaylistId: defaultPlaylistId.value, schedule: rules.value } : null,
+);
+/** What a screen may choose: playlists designed for its format. */
+const choices = computed(() =>
+    screen.value ? allPlaylists.value.filter((p) => sameStage(p.stage, screen.value!.stage)) : [],
+);
+/** The playlists this schedule shows, in the order they appear. */
+const shown = computed(() =>
+    [...new Set([defaultPlaylistId.value, ...rules.value.map((r) => r.playlistId)])]
+        .map((id) => allPlaylists.value.find((p) => p.id === id))
+        .filter((p): p is StagedPlaylist => !!p),
+);
+const problems = computed(() => (planned.value ? scheduleProblems(planned.value, allPlaylists.value) : []));
+const canSave = computed(() => dirty.value && !problems.value.length && !saving.value);
 
 // Appointments of the rule calendars, for the preview; the next 90 days, like the editor preview.
 const ruleCalendarIds = computed(() => [
-    ...new Set(editor.rules.flatMap((r) => (r.kind === 'appointment' ? r.calendarIds : []))),
+    ...new Set(rules.value.flatMap((r) => (r.kind === 'appointment' ? r.calendarIds : []))),
 ]);
 const { context, calendars } = usePreview(
     ruleCalendarIds,
     computed(() => []),
 );
 
-onMounted(async () => {
-    dialog.value?.focus();
+async function load(): Promise<void> {
+    loading.value = true;
+    loadError.value = null;
+    conflict.value = null;
     try {
-        editor.attach(props.repository);
-        await editor.open(props.slug);
+        const [loaded, overviews] = await Promise.all([
+            props.repository.loadScreen(props.slug),
+            props.repository.listPlaylists(),
+        ]);
+        screen.value = loaded.screen;
+        scheduleRevision.value = loaded.schedule?.revision ?? null;
+        allPlaylists.value = overviews.map((o) => o.playlist);
+        defaultPlaylistId.value = loaded.screen.defaultPlaylistId;
+        rules.value = cloneJson(loaded.screen.schedule);
+        savedJson.value = JSON.stringify([defaultPlaylistId.value, rules.value]);
     } catch (e) {
         loadError.value = e instanceof Error ? e.message : String(e);
     } finally {
         loading.value = false;
     }
+}
+
+onMounted(() => {
+    dialog.value?.focus();
+    void load();
 });
 
-const canSave = computed(() => editor.dirty && !editor.problems.length && editor.status !== 'saving');
+async function save(expectedRevision = scheduleRevision.value): Promise<boolean> {
+    if (!screen.value || problems.value.length) return false;
+    saving.value = true;
+    saveError.value = null;
+    try {
+        const saved = await props.repository.saveSchedule(
+            screen.value.id,
+            { defaultPlaylistId: defaultPlaylistId.value, rules: rules.value },
+            { expectedRevision, updatedBy: props.author },
+        );
+        scheduleRevision.value = saved.revision;
+        savedJson.value = JSON.stringify([defaultPlaylistId.value, rules.value]);
+        conflict.value = null;
+        return true;
+    } catch (e) {
+        if (e instanceof ConflictError) conflict.value = e.current;
+        else saveError.value = e instanceof Error ? e.message : String(e);
+        return false;
+    } finally {
+        saving.value = false;
+    }
+}
 
-async function save(): Promise<boolean> {
-    const ok = await editor.save(props.author);
-    if (ok) emit('saved');
-    return ok;
+async function saveAndClose(expectedRevision = scheduleRevision.value): Promise<void> {
+    if (await save(expectedRevision)) emit('saved');
 }
 
 function close(): void {
-    if (editor.dirty && !window.confirm('Änderungen am Zeitplan verwerfen?')) return;
+    if (dirty.value && !window.confirm('Änderungen am Zeitplan verwerfen?')) return;
     emit('close');
 }
 
-/** Slides are edited in the editor; unsaved schedule changes are saved first, not lost. */
+/** Slides are edited in the editor of the playlist; unsaved schedule changes are saved first, not lost. */
 async function editSlides(playlistId: string): Promise<void> {
-    if (editor.dirty && !(await editor.save(props.author))) return;
-    await router.push({ name: 'editor', params: { slug: props.slug }, query: { playlist: playlistId } });
+    if (dirty.value && !(await save())) return;
+    await router.push({ name: 'editor', params: { id: playlistId } });
+}
+
+/** A new playlist in the screen's format – written at once, so the rules can choose it. */
+async function createPlaylist(): Promise<void> {
+    if (!screen.value || !newName.value.trim()) return;
+    try {
+        const created = await props.repository.createPlaylist(
+            { name: newName.value, stage: screen.value.stage },
+            props.author,
+        );
+        allPlaylists.value = [...allPlaylists.value, created];
+        newName.value = '';
+    } catch (e) {
+        saveError.value = e instanceof Error ? e.message : String(e);
+    }
 }
 
 const PALETTE = ['#2563eb', '#16a34a', '#d97706', '#9333ea', '#db2777', '#0891b2', '#65a30d', '#dc2626'];
 function colorOf(playlistId: string): string {
-    const index = editor.playlists.findIndex((p) => p.id === playlistId);
+    const index = shown.value.findIndex((p) => p.id === playlistId);
     return PALETTE[(index < 0 ? 0 : index) % PALETTE.length]!;
 }
 function nameOf(playlistId: string): string {
-    return editor.playlists.find((p) => p.id === playlistId)?.name || 'Playlist fehlt';
-}
-const defaultId = computed(() => editor.draft?.screen.defaultPlaylistId ?? '');
-
-// Playlists
-
-function addPlaylist(): void {
-    editor.addPlaylist(`Playlist ${editor.playlists.length + 1}`);
-}
-
-function removePlaylist(id: string): void {
-    const ruleCount = editor.rules.filter((r) => r.playlistId === id).length;
-    const extra = ruleCount ? ` und ${ruleCount === 1 ? 'die Regel, die sie schaltet' : `die ${ruleCount} Regeln, die sie schalten`}` : '';
-    if (window.confirm(`Playlist „${nameOf(id)}"${extra} entfernen? Slides, die nur hier stehen, gehen mit.`)) {
-        editor.removePlaylist(id);
-    }
+    return allPlaylists.value.find((p) => p.id === playlistId)?.name || 'Playlist fehlt';
 }
 
 // Rules
 
 /** A new rule switches to a playlist other than the default – otherwise it would change nothing. */
 function ruleTarget(): string {
-    return (
-        editor.playlists.find((p) => p.id !== defaultId.value && p.id === editor.playlist?.id)?.id ??
-        editor.playlists.find((p) => p.id !== defaultId.value)?.id ??
-        defaultId.value
-    );
+    return choices.value.find((p) => p.id !== defaultPlaylistId.value)?.id ?? defaultPlaylistId.value;
 }
 
 function addTimeRule(): void {
-    editor.addRule(createTimeRule(ruleTarget()));
+    rules.value.push(createTimeRule(ruleTarget()));
 }
 
 function addAppointmentRule(): void {
     const first = calendars.value[0];
-    if (first) editor.addRule(createAppointmentRule(ruleTarget(), [first.id]));
+    if (first) rules.value.push(createAppointmentRule(ruleTarget(), [first.id]));
 }
 
 function setRule(index: number, patch: Partial<ScheduleRule>): void {
-    editor.updateRule(index, patch);
+    const target = rules.value[index];
+    if (target) Object.assign(target, patch);
+}
+
+function moveRule(from: number, to: number): void {
+    if (to < 0 || to >= rules.value.length) return;
+    const [rule] = rules.value.splice(from, 1);
+    rules.value.splice(to, 0, rule!);
+}
+
+function removeRule(index: number): void {
+    rules.value.splice(index, 1);
 }
 
 function toggleDay(index: number, rule: TimeRule, day: number): void {
@@ -169,26 +240,26 @@ const weekdayName = computed(() => {
 });
 
 const timeline = computed(() =>
-    editor.draft ? dayTimeline(editor.draft.screen, day.value, timeZone.value, context.appointments) : [],
+    planned.value ? dayTimeline(planned.value, day.value, timeZone.value, context.appointments) : [],
 );
 
 const decision = computed(() => {
-    if (!editor.draft) return null;
+    if (!planned.value) return null;
     const instant = zonedTimeToInstant(
         { ...day.value, hour: Math.floor(previewMinute.value / 60), minute: previewMinute.value % 60 },
         timeZone.value,
     );
-    const ruleIndex = matchingRuleIndex(editor.draft.screen, {
+    const ruleIndex = matchingRuleIndex(planned.value, {
         now: instant,
         timeZone: timeZone.value,
         clockConfirmed: true,
         appointments: context.appointments,
     });
-    const playlistId = ruleIndex < 0 ? defaultId.value : editor.rules[ruleIndex]!.playlistId;
+    const playlistId = ruleIndex < 0 ? defaultPlaylistId.value : rules.value[ruleIndex]!.playlistId;
     return { ruleIndex, playlistId };
 });
 
-const hasAppointmentRules = computed(() => editor.rules.some((r) => r.kind === 'appointment'));
+const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'appointment'));
 </script>
 
 <template>
@@ -204,78 +275,66 @@ const hasAppointmentRules = computed(() => editor.rules.some((r) => r.kind === '
             @keydown.esc="close"
         >
             <header class="head">
-                <h2 id="schedule-title">Zeitplan{{ editor.draft ? ` – ${editor.draft.screen.name}` : '' }}</h2>
+                <h2 id="schedule-title">Zeitplan{{ screen ? ` – ${screen.name}` : '' }}</h2>
                 <button class="d-btn d-btn--icon" type="button" aria-label="Schließen" @click="close">
                     <Icon name="close" />
                 </button>
             </header>
             <p v-if="loading" class="muted">Lade …</p>
             <p v-else-if="loadError" class="d-banner d-banner--error" role="alert">{{ loadError }}</p>
-            <template v-else-if="editor.draft">
+            <template v-else-if="screen">
                 <p class="muted intro">
                     Welche Playlist wann läuft. Passt keine Regel, läuft die <strong>Standard-Playlist</strong>; passen
-                    mehrere, gilt die <strong>obere</strong>. Die Slides einer Playlist gestaltest du im Editor.
+                    mehrere, gilt die <strong>obere</strong>. Zur Wahl stehen alle Playlists im Format des Screens –
+                    dieselbe Playlist darf auf mehreren Screens laufen.
                 </p>
 
-                <h3>Playlists</h3>
+                <label class="inline default-pick">
+                    <strong>Standard-Playlist</strong>
+                    <select v-model="defaultPlaylistId" data-testid="default-playlist">
+                        <option v-for="p in choices" :key="p.id" :value="p.id">{{ p.name }}</option>
+                    </select>
+                </label>
+
+                <h3>Diese Playlists laufen hier</h3>
                 <ul class="playlists">
-                    <li v-for="p in editor.playlists" :key="p.id" data-testid="schedule-playlist">
+                    <li v-for="p in shown" :key="p.id" data-testid="schedule-playlist">
                         <span class="swatch" :style="{ background: colorOf(p.id) }" aria-hidden="true" />
-                        <input
-                            class="name"
-                            type="text"
-                            maxlength="100"
-                            :value="p.name"
-                            :aria-label="`Name der Playlist ${p.name}`"
-                            data-testid="playlist-name"
-                            @input="editor.renamePlaylist(p.id, ($event.target as HTMLInputElement).value)"
-                        >
+                        <span class="name">{{ p.name }}</span>
                         <span class="count">{{ p.slideIds.length }} {{ p.slideIds.length === 1 ? 'Slide' : 'Slides' }}</span>
-                        <label class="default" :title="p.id === defaultId ? 'Läuft, wenn keine Regel passt' : 'Zur Standard-Playlist machen'">
-                            <input
-                                type="radio"
-                                name="default-playlist"
-                                :checked="p.id === defaultId"
-                                data-testid="playlist-default"
-                                @change="editor.setDefaultPlaylist(p.id)"
-                            >
-                            Standard
-                        </label>
                         <button
                             class="d-btn"
                             type="button"
-                            :title="editor.dirty ? 'Speichert den Zeitplan und öffnet den Editor' : 'Öffnet den Editor'"
+                            :title="dirty ? 'Speichert den Zeitplan und öffnet den Editor' : 'Öffnet den Editor'"
                             data-testid="playlist-edit"
                             @click="editSlides(p.id)"
                         >
                             Slides bearbeiten
                         </button>
-                        <button
-                            class="d-btn d-btn--icon d-btn--danger"
-                            type="button"
-                            :aria-label="`Playlist ${p.name} entfernen`"
-                            :title="p.id === defaultId ? 'Die Standard-Playlist bleibt' : 'Entfernen'"
-                            :disabled="p.id === defaultId"
-                            data-testid="playlist-remove"
-                            @click="removePlaylist(p.id)"
-                        >
-                            <Icon name="trash" />
-                        </button>
                     </li>
                 </ul>
-                <div class="adders">
-                    <button class="d-btn" type="button" data-testid="add-playlist" @click="addPlaylist">
-                        <Icon name="plus" :size="16" /> Playlist
+                <form class="adders" @submit.prevent="createPlaylist">
+                    <input
+                        v-model="newName"
+                        class="new-name"
+                        type="text"
+                        maxlength="100"
+                        placeholder="Name einer neuen Playlist"
+                        aria-label="Name einer neuen Playlist"
+                        data-testid="new-playlist-name"
+                    >
+                    <button class="d-btn" type="submit" :disabled="!newName.trim()" data-testid="add-playlist">
+                        <Icon name="plus" :size="16" /> Playlist anlegen
                     </button>
-                </div>
+                </form>
 
                 <h3>Regeln <span class="muted small">– die obere gewinnt</span></h3>
-                <p v-if="!editor.rules.length" class="muted small">
-                    Noch keine Regel: Es läuft immer „{{ nameOf(defaultId) }}".
+                <p v-if="!rules.length" class="muted small">
+                    Noch keine Regel: Es läuft immer „{{ nameOf(defaultPlaylistId) }}".
                 </p>
                 <ol class="rules">
                     <li
-                        v-for="(rule, index) in editor.rules"
+                        v-for="(rule, index) in rules"
                         :key="index"
                         class="rule"
                         :style="{ '--rule-color': colorOf(rule.playlistId) }"
@@ -291,7 +350,7 @@ const hasAppointmentRules = computed(() => editor.rules.some((r) => r.kind === '
                                     data-testid="rule-playlist"
                                     @change="setRule(index, { playlistId: ($event.target as HTMLSelectElement).value })"
                                 >
-                                    <option v-for="p in editor.playlists" :key="p.id" :value="p.id">{{ p.name }}</option>
+                                    <option v-for="p in choices" :key="p.id" :value="p.id">{{ p.name }}</option>
                                 </select>
                             </label>
                             <span class="spacer" />
@@ -302,7 +361,7 @@ const hasAppointmentRules = computed(() => editor.rules.some((r) => r.kind === '
                                 title="Nach oben – hat Vorrang"
                                 :disabled="index === 0"
                                 data-testid="rule-up"
-                                @click="editor.moveRule(index, index - 1)"
+                                @click="moveRule(index, index - 1)"
                             >
                                 ↑
                             </button>
@@ -311,8 +370,8 @@ const hasAppointmentRules = computed(() => editor.rules.some((r) => r.kind === '
                                 type="button"
                                 aria-label="Nach unten"
                                 title="Nach unten"
-                                :disabled="index === editor.rules.length - 1"
-                                @click="editor.moveRule(index, index + 1)"
+                                :disabled="index === rules.length - 1"
+                                @click="moveRule(index, index + 1)"
                             >
                                 ↓
                             </button>
@@ -322,7 +381,7 @@ const hasAppointmentRules = computed(() => editor.rules.some((r) => r.kind === '
                                 aria-label="Regel entfernen"
                                 title="Regel entfernen"
                                 data-testid="rule-remove"
-                                @click="editor.removeRule(index)"
+                                @click="removeRule(index)"
                             >
                                 <Icon name="trash" />
                             </button>
@@ -465,25 +524,21 @@ const hasAppointmentRules = computed(() => editor.rules.some((r) => r.kind === '
                     wenn seine Uhr bestätigt ist.
                 </p>
 
-                <ul v-if="editor.problems.length" class="problems" role="alert" data-testid="schedule-problems">
-                    <li v-for="p in editor.problems" :key="p">{{ p }}</li>
+                <ul v-if="problems.length" class="problems" role="alert" data-testid="schedule-problems">
+                    <li v-for="p in problems" :key="p">{{ p }}</li>
                 </ul>
-                <p v-if="editor.status === 'conflict' && editor.conflict" class="d-banner d-banner--error" role="alert">
-                    {{ editor.conflict.updatedBy ?? 'Jemand' }} hat „{{ editor.conflict.name }}" inzwischen gespeichert.
-                    <button class="d-btn" type="button" @click="editor.discardAndReload()">Neu laden</button>
-                    <button class="d-btn" type="button" @click="editor.overwrite(author).then((ok) => ok && emit('saved'))">
-                        Meine Fassung speichern
-                    </button>
+                <p v-if="conflict" class="d-banner d-banner--error" role="alert">
+                    {{ conflict.updatedBy ?? 'Jemand' }} hat den Zeitplan von „{{ conflict.name }}" inzwischen gespeichert.
+                    <button class="d-btn" type="button" @click="load">Neu laden</button>
+                    <button class="d-btn" type="button" @click="saveAndClose(conflict.revision)">Meine Fassung speichern</button>
                 </p>
-                <p v-else-if="editor.status === 'error' && editor.error && !editor.problems.length" class="d-banner d-banner--error" role="alert">
-                    {{ editor.error }}
-                </p>
+                <p v-if="saveError" class="d-banner d-banner--error" role="alert">{{ saveError }}</p>
             </template>
 
             <div class="d-dialog-actions">
                 <button class="d-btn" type="button" data-testid="schedule-cancel" @click="close">Abbrechen</button>
-                <button class="d-btn d-btn--primary" type="button" :disabled="!canSave" data-testid="schedule-save" @click="save">
-                    {{ editor.status === 'saving' ? 'Speichert …' : 'Speichern' }}
+                <button class="d-btn d-btn--primary" type="button" :disabled="!canSave" data-testid="schedule-save" @click="saveAndClose()">
+                    {{ saving ? 'Speichert …' : 'Speichern' }}
                 </button>
             </div>
         </section>
@@ -548,6 +603,14 @@ ol {
 .name {
     flex: 1 1 10em;
     min-width: 0;
+    font-weight: 600;
+}
+.new-name {
+    flex: 1 1 14em;
+    width: auto;
+}
+.default-pick select {
+    min-width: 14em;
 }
 .count {
     color: var(--d-text-muted);

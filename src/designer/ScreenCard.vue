@@ -61,8 +61,8 @@ function settings(): void {
     <article ref="root" class="d-card screen-card" data-testid="screen-card" @keydown.esc="menuOpen = false">
         <RouterLink
             class="open"
-            :to="{ name: 'editor', params: { slug: screen.slug } }"
-            :aria-label="`${screen.name} bearbeiten`"
+            :to="{ name: 'editor', params: { id: screen.defaultPlaylistId } }"
+            :aria-label="`${overview.playlistName ?? screen.name} bearbeiten`"
             data-testid="open-editor"
         >
             <SlideThumb :slide="overview.firstSlide" :stage="screen.stage" />
@@ -70,7 +70,7 @@ function settings(): void {
         <div class="body">
             <div class="title-row">
                 <h3 class="name">
-                    <RouterLink :to="{ name: 'editor', params: { slug: screen.slug } }" tabindex="-1">
+                    <RouterLink :to="{ name: 'editor', params: { id: screen.defaultPlaylistId } }" tabindex="-1">
                         {{ screen.name || 'Ohne Namen' }}
                     </RouterLink>
                 </h3>
@@ -120,9 +120,9 @@ function settings(): void {
                 <code :title="`Adresse für das Gerät: ${screen.slug}`">{{ screen.slug }}</code>
             </p>
             <p class="facts muted">
-                <span title="Slides">
-                    <Icon name="slides" :size="16" />
-                    {{ overview.slideCount }}
+                <span :title="`Standard-Playlist – ${overview.slideCount} Slides`" data-testid="screen-playlist">
+                    <Icon name="list" :size="16" />
+                    {{ overview.playlistName ?? 'Playlist fehlt' }}
                 </span>
                 <button
                     class="schedule-link"

@@ -96,7 +96,7 @@ async function remove(item: MediaItem): Promise<void> {
             problem.value = message(e);
             return;
         }
-        const where = e.usage.map((u) => `• ${u.screen} › ${u.slide}`).join('\n');
+        const where = e.usage.map((u) => `• ${u.playlist} › ${u.slide}`).join('\n');
         if (!window.confirm(`Das Bild wird noch gezeigt:\n\n${where}\n\nDort bleibt eine leere Fläche. Trotzdem löschen?`)) return;
         await library.remove(item, true);
     }

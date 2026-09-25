@@ -355,17 +355,34 @@ const slideFill = computed<Fill>(() =>
                 </fieldset>
             </section>
 
-            <section v-if="editor.draft" data-testid="screen-info">
-                <h3>Screen</h3>
+            <!-- The playlist is the designers' own (schema 1.4); where it runs, the screens' schedules decide. -->
+            <section v-if="editor.draft" data-testid="playlist-info">
+                <h3>Playlist</h3>
+                <label class="d-field">
+                    Name
+                    <input
+                        type="text"
+                        maxlength="100"
+                        :value="editor.draft.playlist.name"
+                        data-testid="playlist-name-input"
+                        v-on="edit"
+                        @input="editor.renamePlaylist(($event.target as HTMLInputElement).value)"
+                    >
+                </label>
                 <dl>
-                    <dt>Name</dt>
-                    <dd>{{ editor.draft.screen.name }}</dd>
-                    <dt>Bühne</dt>
-                    <dd>{{ editor.draft.screen.stage.width }} × {{ editor.draft.screen.stage.height }} px</dd>
+                    <dt>Format</dt>
+                    <dd>
+                        {{ editor.stage.height > editor.stage.width ? 'Hochkant' : 'Quer' }},
+                        {{ editor.stage.width }} × {{ editor.stage.height }} px
+                    </dd>
+                    <dt>Läuft auf</dt>
+                    <dd data-testid="playlist-screens">
+                        {{ editor.screens.length ? editor.screens.map((s) => s.name).join(', ') : 'noch keinem Screen' }}
+                    </dd>
                 </dl>
                 <p class="hint">
-                    Name, Format und Overscan stellt ein Administrator auf der Startseite ein – im Menü „…" der Kachel unter
-                    „Einstellungen".
+                    Auf welchem Screen sie wann läuft, legt der Zeitplan des Screens fest – auf der Startseite an der
+                    Kachel. Speichern ändert alle Screens, die sie zeigen.
                 </p>
             </section>
         </template>

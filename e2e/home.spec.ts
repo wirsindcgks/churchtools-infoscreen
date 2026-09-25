@@ -11,7 +11,7 @@ async function createScreen(page: Page, name: string, format: 'Quer' | 'Hochkant
     await page.getByTestId('new-name').fill(name);
     await page.getByTestId('create-dialog').getByText(format).click();
     await page.getByTestId('create').click();
-    await expect(page).toHaveURL(/screens\//);
+    await expect(page).toHaveURL(/playlists\//);
     await page.getByRole('link', { name: 'Screens', exact: true }).click();
     await expect(page.getByTestId('screens-heading')).toBeVisible();
 }

@@ -56,6 +56,21 @@ describe('scheduleProblems', () => {
     });
 });
 
+describe('scheduleProblems and formats (schema 1.4)', () => {
+    it('refuses a playlist designed for another format than the screen', () => {
+        const playlists = [
+            makePlaylist({ id: 'quer', stage: { width: 1920, height: 1080 } }),
+            makePlaylist({ id: 'hoch', stage: { width: 1080, height: 1920 } }),
+        ];
+        const screen = makeScreen({ defaultPlaylistId: 'hoch', schedule: [createTimeRule('hoch')] });
+        expect(scheduleProblems(screen, playlists)).toEqual([
+            'Die Standard-Playlist hat ein anderes Format als der Screen.',
+            'Regel 1: Die Playlist hat ein anderes Format als der Screen.',
+        ]);
+        expect(scheduleProblems({ ...screen, defaultPlaylistId: 'quer', schedule: [] }, playlists)).toEqual([]);
+    });
+});
+
 describe('dayTimeline', () => {
     it('shows a time rule as its own stretch of the day', () => {
         const screen = makeScreen({ defaultPlaylistId: 'standard', schedule: [createTimeRule('gd')] });

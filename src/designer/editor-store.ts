@@ -1,50 +1,38 @@
 /**
- * The screen being edited: a draft of the whole bundle, its history, the
- * selection and the save state. Every change goes through `change()`, which
- * records a snapshot first; a drag records once at its start (`beginGesture`).
+ * The playlist being edited (schema 1.4: the editor hangs on the playlist,
+ * not on a screen – Plan.md, Nächste Schritte 19): a draft of the playlist
+ * with its slides, its history, the selection and the save state. Every
+ * change goes through `change()`, which records a snapshot first; a drag
+ * records once at its start (`beginGesture`).
  */
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
-import {
-    SCHEMA_VERSION,
-    type Block,
-    type BlockType,
-    type MediaDoc,
-    type PlaylistDoc,
-    type ScheduleRule,
-    type ScreenBundle,
-    type SlideDoc,
-} from '../model/schema';
-import { ConflictError, type ConflictInfo, type ScreenRepository } from '../store/screen-repository';
+import type { Block, BlockType, MediaDoc, PlaylistBundle, SlideDoc } from '../model/schema';
+import { ConflictError, type ConflictInfo, type ScreenRef, type ScreenRepository } from '../store/screen-repository';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
-import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, move, newId, reorder, type Layer } from './ops';
-import { scheduleProblems } from './schedule-ops';
+import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, move, reorder, type Layer } from './ops';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'conflict' | 'error';
 
 export const useEditorStore = defineStore('editor', () => {
     const repository = shallowRef<ScreenRepository | null>(null);
-    const draft = ref<ScreenBundle | null>(null);
+    const draft = ref<PlaylistBundle | null>(null);
     const savedJson = ref('');
-    /**
-     * Revision of the screen's schedule document the draft started from – what
-     * the designers save against (Plan.md, 15); null before the first save of
-     * content since schema 1.2.
-     */
-    const revision = ref<number | null>(null);
-    /** The playlist the slide list shows and edits (Plan.md, Nächste Schritte 17). */
-    const selectedPlaylistId = ref<string | null>(null);
+    /** Revision of the playlist the draft started from – what the save is checked against. */
+    const revision = ref(0);
+    /** Screens that show this playlist; saving changes all of them. */
+    const screens = ref<ScreenRef[]>([]);
     const selectedSlideId = ref<string | null>(null);
     const selectedBlockId = ref<string | null>(null);
     const status = ref<SaveStatus>('idle');
     const conflict = ref<ConflictInfo | null>(null);
     const error = ref<string | null>(null);
-    /** Grid size in stage pixels, 0 = off. A preference of this browser, not part of the screen. */
+    /** Grid size in stage pixels, 0 = off. A preference of this browser, not part of the playlist. */
     const gridSize = ref<number>(loadGridSize());
     /** Media documents known to the store, for the preview and the pickers. */
     const media = ref<MediaDoc[]>([]);
-    const history = new History<ScreenBundle>();
+    const history = new History<PlaylistBundle>();
     const historyVersion = ref(0); // makes canUndo/canRedo reactive
     let gestureOpen = false;
     let gestureRecorded = false;
@@ -52,16 +40,8 @@ export const useEditorStore = defineStore('editor', () => {
     const dirty = computed(() => !!draft.value && JSON.stringify(draft.value) !== savedJson.value);
     const canUndo = computed(() => historyVersion.value >= 0 && history.canUndo);
     const canRedo = computed(() => historyVersion.value >= 0 && history.canRedo);
-    const stage = computed(() => draft.value?.screen.stage ?? { width: 1920, height: 1080 });
-    const playlists = computed<PlaylistDoc[]>(() => draft.value?.playlists ?? []);
-    const playlist = computed(
-        () =>
-            playlists.value.find((p) => p.id === selectedPlaylistId.value) ??
-            playlists.value.find((p) => p.id === draft.value?.screen.defaultPlaylistId) ??
-            null,
-    );
-    const rules = computed<ScheduleRule[]>(() => draft.value?.screen.schedule ?? []);
-    const problems = computed(() => (draft.value ? scheduleProblems(draft.value.screen, draft.value.playlists) : []));
+    const stage = computed(() => draft.value?.playlist.stage ?? { width: 1920, height: 1080 });
+    const playlist = computed(() => draft.value?.playlist ?? null);
     /** Slides in playlist order. */
     const slides = computed<SlideDoc[]>(() => {
         const byId = new Map(draft.value?.slides.map((s) => [s.id, s]));
@@ -78,7 +58,6 @@ export const useEditorStore = defineStore('editor', () => {
             ) ?? [],
         ),
     ]);
-
 
     function attach(repo: ScreenRepository): void {
         repository.value = repo;
@@ -97,28 +76,26 @@ export const useEditorStore = defineStore('editor', () => {
         if (repository.value) media.value = await repository.value.listMedia();
     }
 
-    function reset(bundle: ScreenBundle, contentRevision: number | null = null): void {
+    function reset(bundle: PlaylistBundle, playlistRevision = bundle.playlist.revision ?? 0): void {
         draft.value = cloneJson(bundle);
         savedJson.value = JSON.stringify(draft.value);
-        revision.value = contentRevision;
+        revision.value = playlistRevision;
         history.clear();
         historyVersion.value++;
         status.value = 'idle';
         conflict.value = null;
         error.value = null;
-        if (!bundle.playlists.some((p) => p.id === selectedPlaylistId.value)) {
-            selectedPlaylistId.value = bundle.screen.defaultPlaylistId;
-        }
         if (!slides.value.some((s) => s.id === selectedSlideId.value)) {
             selectedSlideId.value = slides.value[0]?.id ?? null;
             selectedBlockId.value = null;
         }
     }
 
-    async function open(slug: string): Promise<void> {
+    async function open(playlistId: string): Promise<void> {
         if (!repository.value) throw new Error('Kein Speicher angebunden.');
-        const loaded = await repository.value.loadScreen(slug);
-        reset({ screen: loaded.screen, playlists: loaded.playlists, slides: loaded.slides }, loaded.schedule?.revision ?? null);
+        const loaded = await repository.value.loadPlaylist(playlistId);
+        screens.value = loaded.screens;
+        reset({ playlist: loaded.playlist, slides: loaded.slides }, loaded.playlist.revision);
     }
 
     /**
@@ -126,7 +103,7 @@ export const useEditorStore = defineStore('editor', () => {
      * drag, or typing in one field – only the first change records, so the
      * whole gesture is one undo step.
      */
-    function change(mutate: (bundle: ScreenBundle) => void): void {
+    function change(mutate: (bundle: PlaylistBundle) => void): void {
         if (!draft.value) return;
         if (!gestureOpen || !gestureRecorded) {
             history.record(draft.value);
@@ -160,108 +137,8 @@ export const useEditorStore = defineStore('editor', () => {
         historyVersion.value++;
     }
 
-    function slideIn(bundle: ScreenBundle, id: string | undefined): SlideDoc | undefined {
+    function slideIn(bundle: PlaylistBundle, id: string | undefined): SlideDoc | undefined {
         return bundle.slides.find((s) => s.id === id);
-    }
-
-    /** The playlist being edited, inside the bundle a change mutates. */
-    function listIn(bundle: ScreenBundle): PlaylistDoc | undefined {
-        return bundle.playlists.find((p) => p.id === playlist.value?.id);
-    }
-
-    /** Other playlists of this screen that show the slide too – shown, so nobody edits blind. */
-    function alsoIn(slideId: string): string[] {
-        return playlists.value.filter((p) => p.id !== playlist.value?.id && p.slideIds.includes(slideId)).map((p) => p.name);
-    }
-
-    /** Slides of this screen the current playlist does not show yet, to link them in. */
-    const otherSlides = computed<SlideDoc[]>(() => {
-        const shown = new Set(playlist.value?.slideIds ?? []);
-        return (draft.value?.slides ?? []).filter((s) => !shown.has(s.id));
-    });
-
-    function selectPlaylist(id: string): void {
-        if (!playlists.value.some((p) => p.id === id)) return;
-        selectedPlaylistId.value = id;
-        selectedSlideId.value = playlist.value?.slideIds[0] ?? null;
-        selectedBlockId.value = null;
-    }
-
-    /** A new playlist starts with one empty slide: an empty playlist would show nothing. */
-    function addPlaylist(name: string): string {
-        const slideDoc = createSlide();
-        const created: PlaylistDoc = {
-            schema: { ...SCHEMA_VERSION },
-            kind: 'playlist',
-            id: newId(),
-            name: name.trim() || 'Neue Playlist',
-            slideIds: [slideDoc.id],
-        };
-        change((b) => {
-            b.slides.push(slideDoc);
-            b.playlists.push(created);
-        });
-        selectPlaylist(created.id);
-        return created.id;
-    }
-
-    function renamePlaylist(id: string, name: string): void {
-        change((b) => {
-            const target = b.playlists.find((p) => p.id === id);
-            if (target) target.name = name;
-        });
-    }
-
-    /**
-     * Removes a playlist, the rules that switch to it and the slides no other
-     * playlist shows. The default playlist stays: without it the screen would be black.
-     */
-    function removePlaylist(id: string): void {
-        if (!draft.value || id === draft.value.screen.defaultPlaylistId) return;
-        change((b) => {
-            b.playlists = b.playlists.filter((p) => p.id !== id);
-            b.screen.schedule = b.screen.schedule.filter((r) => r.playlistId !== id);
-            const shown = new Set(b.playlists.flatMap((p) => p.slideIds));
-            b.slides = b.slides.filter((s) => shown.has(s.id));
-        });
-        if (selectedPlaylistId.value === id) selectPlaylist(draft.value.screen.defaultPlaylistId);
-    }
-
-    function setDefaultPlaylist(id: string): void {
-        change((b) => {
-            if (b.playlists.some((p) => p.id === id)) b.screen.defaultPlaylistId = id;
-        });
-    }
-
-    function addRule(rule: ScheduleRule): void {
-        change((b) => b.screen.schedule.push(cloneJson(rule)));
-    }
-
-    function updateRule(index: number, patch: Partial<ScheduleRule>): void {
-        change((b) => {
-            const target = b.screen.schedule[index];
-            if (target) Object.assign(target, patch);
-        });
-    }
-
-    function removeRule(index: number): void {
-        change((b) => b.screen.schedule.splice(index, 1));
-    }
-
-    /** Order is precedence: the upper rule wins where two overlap. */
-    function moveRule(from: number, to: number): void {
-        if (from === to || to < 0 || to >= rules.value.length) return;
-        change((b) => (b.screen.schedule = move(b.screen.schedule, from, to)));
-    }
-
-    /** Shows an existing slide in the current playlist too – the same slide, not a copy. */
-    function linkSlide(id: string): void {
-        if (!draft.value?.slides.some((s) => s.id === id)) return;
-        change((b) => {
-            const list = listIn(b);
-            if (list && !list.slideIds.includes(id)) list.slideIds.push(id);
-        });
-        selectSlide(id);
     }
 
     function selectSlide(id: string): void {
@@ -273,13 +150,16 @@ export const useEditorStore = defineStore('editor', () => {
         selectedBlockId.value = id;
     }
 
+    function renamePlaylist(name: string): void {
+        change((b) => (b.playlist.name = name));
+    }
+
     function addSlide(): void {
         const created = createSlide();
         change((b) => {
             b.slides.push(created);
-            const list = listIn(b);
-            const at = list ? list.slideIds.indexOf(slide.value?.id ?? '') + 1 : 0;
-            list?.slideIds.splice(at > 0 ? at : list.slideIds.length, 0, created.id);
+            const at = b.playlist.slideIds.indexOf(slide.value?.id ?? '') + 1;
+            b.playlist.slideIds.splice(at > 0 ? at : b.playlist.slideIds.length, 0, created.id);
         });
         selectSlide(created.id);
     }
@@ -290,19 +170,16 @@ export const useEditorStore = defineStore('editor', () => {
         const originalId = slide.value.id;
         change((b) => {
             b.slides.push(copy);
-            const list = listIn(b);
-            list?.slideIds.splice(list.slideIds.indexOf(originalId) + 1, 0, copy.id);
+            b.playlist.slideIds.splice(b.playlist.slideIds.indexOf(originalId) + 1, 0, copy.id);
         });
         selectSlide(copy.id);
     }
 
-    /** Takes the slide out of the current playlist; it is deleted only when no other playlist shows it. */
     function removeSlide(id: string): void {
         const index = slides.value.findIndex((s) => s.id === id);
         change((b) => {
-            const list = listIn(b);
-            if (list) list.slideIds = list.slideIds.filter((s) => s !== id);
-            if (!b.playlists.some((p) => p.slideIds.includes(id))) b.slides = b.slides.filter((s) => s.id !== id);
+            b.playlist.slideIds = b.playlist.slideIds.filter((s) => s !== id);
+            b.slides = b.slides.filter((s) => s.id !== id);
         });
         const next = slides.value[Math.min(index, slides.value.length - 1)];
         selectedSlideId.value = next?.id ?? null;
@@ -311,10 +188,7 @@ export const useEditorStore = defineStore('editor', () => {
 
     function moveSlide(from: number, to: number): void {
         if (from === to) return;
-        change((b) => {
-            const list = listIn(b);
-            if (list) list.slideIds = move(list.slideIds, from, to);
-        });
+        change((b) => (b.playlist.slideIds = move(b.playlist.slideIds, from, to)));
     }
 
     function updateSlide(patch: Partial<Omit<SlideDoc, 'id' | 'kind' | 'schema' | 'blocks'>>): void {
@@ -337,7 +211,7 @@ export const useEditorStore = defineStore('editor', () => {
             const target = slideIn(b, slideId)?.blocks.find((x) => x.id === id);
             if (!target) return;
             Object.assign(target, patch);
-            Object.assign(target, clampFrame(target, b.screen.stage));
+            Object.assign(target, clampFrame(target, b.playlist.stage));
         });
     }
 
@@ -362,20 +236,23 @@ export const useEditorStore = defineStore('editor', () => {
 
     async function save(updatedBy: string): Promise<boolean> {
         if (!repository.value || !draft.value) return false;
-        if (problems.value.length) {
-            error.value = `Zeitplan: ${problems.value.join(' ')}`;
+        if (!draft.value.playlist.name.trim()) {
+            error.value = 'Die Playlist braucht einen Namen.';
             status.value = 'error';
             return false;
         }
         status.value = 'saving';
         error.value = null;
         try {
-            // Slides, playlists and schedule – the screen itself belongs to the administrators (Plan.md, F).
-            const saved = await repository.value.saveContent(draft.value, {
+            // The playlist and its slides – screens and schedules stay as they are (Plan.md, F).
+            const saved = await repository.value.savePlaylist(draft.value, {
                 expectedRevision: revision.value,
                 updatedBy,
             });
             revision.value = saved.revision;
+            draft.value.playlist.revision = saved.revision;
+            draft.value.playlist.updatedBy = saved.updatedBy;
+            draft.value.playlist.updatedAt = saved.updatedAt;
             savedJson.value = JSON.stringify(draft.value);
             status.value = 'saved';
             return true;
@@ -401,7 +278,7 @@ export const useEditorStore = defineStore('editor', () => {
 
     /** Conflict: drop my changes and load what is stored now. */
     async function discardAndReload(): Promise<void> {
-        if (draft.value) await open(draft.value.screen.slug);
+        if (draft.value) await open(draft.value.playlist.id);
     }
 
     return {
@@ -411,24 +288,10 @@ export const useEditorStore = defineStore('editor', () => {
         media,
         refreshMedia,
         dirty,
-        playlists,
-        playlist,
-        rules,
-        problems,
-        otherSlides,
-        alsoIn,
-        selectPlaylist,
-        addPlaylist,
-        renamePlaylist,
-        removePlaylist,
-        setDefaultPlaylist,
-        addRule,
-        updateRule,
-        removeRule,
-        moveRule,
-        linkSlide,
         revision,
+        screens,
         stage,
+        playlist,
         slides,
         slide,
         block,
@@ -448,6 +311,7 @@ export const useEditorStore = defineStore('editor', () => {
         redo,
         selectSlide,
         selectBlock,
+        renamePlaylist,
         addSlide,
         duplicateCurrentSlide,
         removeSlide,

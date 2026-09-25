@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import DesignerHome from './views/DesignerHome.vue';
-import ScreenEditor from './views/ScreenEditor.vue';
+import PlaylistEditor from './views/PlaylistEditor.vue';
+import PlaylistsView from './views/PlaylistsView.vue';
 import PlayerView from './views/PlayerView.vue';
 import NotFoundView from './views/NotFoundView.vue';
 import SetupView from './views/SetupView.vue';
@@ -12,7 +13,9 @@ export const router = createRouter({
     history: createWebHistory(import.meta.env.BASE_URL),
     routes: [
         { path: '/', name: 'designer', component: DesignerHome },
-        { path: '/screens/:slug', name: 'editor', component: ScreenEditor },
+        // The editor hangs on a playlist, which screens choose (schema 1.4, Plan.md 19).
+        { path: '/playlists', name: 'playlists', component: PlaylistsView },
+        { path: '/playlists/:id', name: 'editor', component: PlaylistEditor },
         { path: '/player', name: 'player', component: PlayerView },
         { path: '/mediathek', name: 'media', component: MediaView },
         { path: '/einstellungen', name: 'setup', component: SetupView },
