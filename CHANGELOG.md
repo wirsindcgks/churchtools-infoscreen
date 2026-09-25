@@ -20,9 +20,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   ausgewählter Kalender, die obere gewinnt; eine Tagesvorschau zeigt, was wann läuft. Termin-Regeln mit frei
   gewähltem Zeitraum, z. B. „30 Min. vor Beginn bis 10 Min. nach Beginn" für eine Begrüßung.
   Ein Screen mit Regeln zeigt nach dem Start sofort die richtige Playlist, nicht erst kurz die Standard-Playlist.
-- **Neue Darstellungen** nach dem WordPress-Plugin: die Terminliste als Karten wie dessen Listenansicht –
-  Datumskachel, Kalender-Etikett, Titel, Untertitel, darunter Wochentag mit Datum, Uhrzeit und Ort untereinander;
-  „Nächster Termin" hervorgehoben mit Beschreibung, Bild und denselben Angaben untereinander. Die Liste zeigt nur
+- **Neue Darstellungen** nach dem WordPress-Plugin: die Terminliste als Karten aus dessen Bausteinen, in einer
+  Reihe – Datumskachel, Wochentag mit Datum über der Uhrzeit, Titel mit Untertitel und Ort, das Kalender-Etikett
+  rechtsbündig am Ende; „Nächster Termin" hervorgehoben mit Beschreibung, Bild und denselben Angaben untereinander. Die Liste zeigt nur
   Einträge, die ganz in die Box passen, und blättert nach deren tatsächlicher Höhe.
 - **Design** als eigener Bereich: für alle Screens Ecken rund oder eckig, Akzentfarbe, Text- und Hintergrundfarbe
   für neue Slides, Termine „Nativ" oder „Groß" und das Format der Terminbilder (16:9 voreingestellt) – mit

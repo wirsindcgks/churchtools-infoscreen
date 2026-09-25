@@ -224,7 +224,7 @@ const slideFill = computed<Fill>(() =>
                         >
                             <option value="">Wie im Design ({{ themeLayout }})</option>
                             <option value="rows">Zeilen – Datum, Uhrzeit, Titel</option>
-                            <option value="cards">Karten – Datumskachel, Kalender, Datum, Uhrzeit und Ort untereinander</option>
+                            <option value="cards">Karten – Datumskachel, Datum über Uhrzeit, Titel, Kategorie rechts</option>
                         </select>
                         <select
                             v-else
