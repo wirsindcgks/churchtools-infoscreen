@@ -20,6 +20,8 @@ const ICONS: Record<BlockType, IconName> = {
     'appointment-list': 'list',
     'next-appointment': 'calendar',
     'church-header': 'header',
+    web: 'web',
+    qr: 'qr',
 };
 const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
 </script>

@@ -1,5 +1,6 @@
 /** Pure editing operations on the data model; the store wires them to history and storage. */
 import {
+    DEFAULT_THEME,
     SCHEMA_VERSION,
     STAGE_PRESETS,
     type Block,
@@ -7,6 +8,7 @@ import {
     type ScreenBundle,
     type SlideDoc,
     type TextStyle,
+    type ThemeDoc,
 } from '../model/schema';
 import { DEFAULT_FONT } from '../player/fonts';
 
@@ -35,7 +37,8 @@ export function slugify(name: string): string {
         .replace(/-+$/g, '');
 }
 
-export function createSlide(name = 'Neue Slide'): SlideDoc {
+/** New slides and blocks start in the theme's colours (Plan.md, 27). */
+export function createSlide(name = 'Neue Slide', theme: ThemeDoc = DEFAULT_THEME): SlideDoc {
     return {
         schema: { ...SCHEMA_VERSION },
         kind: 'slide',
@@ -43,7 +46,7 @@ export function createSlide(name = 'Neue Slide'): SlideDoc {
         name,
         durationSeconds: 10,
         enabled: true,
-        background: { kind: 'solid', color: '#1e293b' },
+        background: { kind: 'solid', color: theme.background },
         blocks: [],
     };
 }
@@ -95,11 +98,11 @@ export function duplicateSlide(slide: SlideDoc): SlideDoc {
     };
 }
 
-const style = (fontSize: number, extra: Partial<TextStyle> = {}): TextStyle => ({
+const style = (fontSize: number, color: string, extra: Partial<TextStyle> = {}): TextStyle => ({
     fontFamily: DEFAULT_FONT,
     fontSize,
     fontWeight: 400,
-    color: '#ffffff',
+    color,
     align: 'left',
     ...extra,
 });
@@ -112,10 +115,17 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     'appointment-list': 'Terminliste',
     'next-appointment': 'Nächster Termin',
     'church-header': 'Gemeindekopf',
+    web: 'Webseite',
+    qr: 'QR-Code',
 };
 
 /** A new block with sensible defaults, centred on the stage. */
-export function createBlock(type: BlockType, stage: { width: number; height: number }, calendarIds: number[] = []): Block {
+export function createBlock(
+    type: BlockType,
+    stage: { width: number; height: number },
+    calendarIds: number[] = [],
+    theme: ThemeDoc = DEFAULT_THEME,
+): Block {
     const size = {
         text: [1200, 200],
         image: [800, 450],
@@ -124,6 +134,8 @@ export function createBlock(type: BlockType, stage: { width: number; height: num
         'appointment-list': [1400, 600],
         'next-appointment': [1400, 600],
         'church-header': [1200, 100],
+        web: [1100, 800],
+        qr: [360, 360],
     }[type];
     const width = Math.min(size[0]!, stage.width - 80);
     const height = Math.min(size[1]!, stage.height - 80);
@@ -135,21 +147,27 @@ export function createBlock(type: BlockType, stage: { width: number; height: num
         height,
     };
     const calendars = calendarIds.length ? calendarIds.slice(0, 3) : [1];
+    const ink = theme.text;
     switch (type) {
         case 'text':
-            return { ...frame, type, text: 'Text', style: style(72) };
+            return { ...frame, type, text: 'Text', style: style(72, ink) };
         case 'image':
             return { ...frame, type, mediaId: '', fit: 'contain' };
         case 'shape':
             return { ...frame, type, fill: { kind: 'solid', color: '#334155' }, cornerRadius: 0 };
         case 'clock':
-            return { ...frame, type, format: 'time', style: style(64, { fontWeight: 600, align: 'right' }) };
+            return { ...frame, type, format: 'time', style: style(64, ink, { fontWeight: 600, align: 'right' }) };
         case 'appointment-list':
-            return { ...frame, type, calendarIds: calendars, horizonDays: 14, limit: 6, style: style(44) };
+            return { ...frame, type, calendarIds: calendars, horizonDays: 14, limit: 6, style: style(44, ink) };
         case 'next-appointment':
-            return { ...frame, type, calendarIds: calendars, showImage: true, style: style(64, { fontWeight: 600 }) };
+            return { ...frame, type, calendarIds: calendars, showImage: true, style: style(64, ink, { fontWeight: 600 }) };
         case 'church-header':
-            return { ...frame, type, showLogo: true, showName: true, style: style(48, { fontWeight: 600 }) };
+            return { ...frame, type, showLogo: true, showName: true, style: style(48, ink, { fontWeight: 600 }) };
+        case 'web':
+            return { ...frame, type, url: '', zoom: 1 };
+        case 'qr':
+            // Dark on light: that is what every phone camera reads, whatever the slide looks like.
+            return { ...frame, type, data: '', color: '#111111', background: '#ffffff' };
     }
 }
 

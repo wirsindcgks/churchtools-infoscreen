@@ -8,14 +8,24 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { selectUpcoming } from '../../appointments/normalize';
 import type { Block } from '../../model/schema';
-import { useStageContext } from '../context';
-import { formatShortDate, formatWeekday, textStyle, timeRange } from '../format';
+import { themeOf, useStageContext } from '../context';
+import { formatShortDate, textOn, textStyle, timeRange, withAlpha } from '../format';
 import { PAGE_SECONDS, pageInterval, paginate, rowsPerPage, SHOW_ALL_CAP } from '../paging';
-import CalendarBadge from './CalendarBadge.vue';
-import DateTile from './DateTile.vue';
+import { listLayout } from '../theme';
 
 const props = defineProps<{ block: Extract<Block, { type: 'appointment-list' }>; slideSeconds?: number }>();
 const context = useStageContext();
+const layout = computed(() => listLayout(props.block, themeOf(context)));
+
+/** The calendar's colour, or the theme's accent for a calendar without one. */
+function tint(color: string | null): string {
+    return withAlpha(color ?? themeOf(context).accent, 0.22) ?? 'rgba(255, 255, 255, 0.1)';
+}
+
+function label(color: string | null): Record<string, string> {
+    const base = color ?? themeOf(context).accent;
+    return { background: withAlpha(base, 0.9) ?? 'rgba(255, 255, 255, 0.2)', color: textOn(base) };
+}
 
 const items = computed(() =>
     selectUpcoming(context.appointments, {
@@ -75,7 +85,7 @@ watch(
 );
 // Rows change height with font, size and block – and once the fonts have loaded.
 watch(
-    [() => props.block.style.fontFamily, () => props.block.style.fontSize, () => props.block.height, () => items.value.length > 0],
+    [() => props.block.style.fontFamily, () => props.block.style.fontSize, () => props.block.height, () => items.value.length > 0, layout],
     () => void nextTick(measure),
 );
 onMounted(() => {
@@ -89,26 +99,28 @@ onBeforeUnmount(() => clearInterval(timer));
 <template>
     <div ref="root" class="paged" :style="textStyle(block.style)">
         <Transition name="page" mode="out-in">
-            <ul :key="page" class="list" :class="{ 'list--cards': block.layout === 'cards' }">
-                <template v-if="block.layout === 'cards'">
-                    <!-- After the WordPress plugin's list; two fixed lines, so every row is as high as the measured one. -->
+            <ul :key="page" class="list" :class="{ 'list--cards': layout === 'cards' }">
+                <template v-if="layout === 'cards'">
+                    <!--
+                        After the WordPress plugin's list, reordered (2026-09-25): category, day and time in a block
+                        of fixed width on the left, title, subtitle and place on the right. Every line is always there,
+                        so every row is as high as the measured one.
+                    -->
                     <li v-for="a in shown" :key="a.key" class="row card" data-testid="list-card">
-                        <DateTile :start="a.start" :time-zone="context.timeZone" :color="a.color" />
+                        <span class="card-when" :style="{ background: tint(a.color) }" data-testid="list-card-when">
+                            <span class="card-category" :style="label(a.color)">{{ a.calendarName || '\u00a0' }}</span>
+                            <span class="card-date">{{ formatShortDate(a.start, context.timeZone) }}</span>
+                            <span class="card-time">{{ timeRange(a) }}</span>
+                        </span>
                         <span class="card-body">
-                            <span class="card-head">
-                                <CalendarBadge :name="a.calendarName" :color="a.color" />
-                                <span class="title">{{ a.title }}</span>
-                            </span>
+                            <span class="title">{{ a.title }}</span>
                             <span class="card-meta">
-                                <span class="meta-item">
-                                    <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
-                                    {{ formatWeekday(a.start, context.timeZone) }}, {{ timeRange(a) }}
-                                </span>
+                                <span v-if="a.subtitle" class="meta-item">{{ a.subtitle }}</span>
                                 <span v-if="a.location" class="meta-item">
                                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></svg>
                                     {{ a.location }}
                                 </span>
-                                <span v-else-if="a.subtitle" class="meta-item">{{ a.subtitle }}</span>
+                                <span v-if="!a.subtitle && !a.location" class="meta-item">&nbsp;</span>
                             </span>
                         </span>
                     </li>
@@ -173,18 +185,44 @@ onBeforeUnmount(() => clearInterval(timer));
     display: flex;
     grid-template-columns: none;
     align-items: center;
-    gap: 0.6em;
-    padding: 0.35em 0;
+    gap: 0.7em;
+    padding: 0.3em 0;
+}
+/* Always the same width, whatever the category or the time: the titles line up. */
+.card-when {
+    display: grid;
+    flex: none;
+    width: 7.2em;
+    overflow: hidden;
+    border-radius: var(--isd-radius, 0.3em);
+    font-size: 0.8em;
+    line-height: 1.25;
+    text-align: center;
+}
+.card-category {
+    overflow: hidden;
+    padding: 0.2em 0.5em;
+    font-size: 0.62em;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.card-date {
+    padding-top: 0.2em;
+    font-weight: 700;
+}
+.card-time {
+    padding-bottom: 0.25em;
+    font-size: 0.85em;
+    opacity: 0.9;
+    white-space: nowrap;
 }
 .card-body {
     display: grid;
+    flex: 1;
     gap: 0.15em;
-    min-width: 0;
-}
-.card-head {
-    display: flex;
-    align-items: center;
-    gap: 0.5em;
     min-width: 0;
 }
 .card .title {
@@ -234,7 +272,7 @@ onBeforeUnmount(() => clearInterval(timer));
     flex: 1;
     height: 0.3em;
     overflow: hidden;
-    border-radius: 999px;
+    border-radius: var(--isd-pill, 999px);
 }
 /* The pale track as its own layer – an opacity on .track would pale the bar too. */
 .track::before {
@@ -250,7 +288,7 @@ onBeforeUnmount(() => clearInterval(timer));
     display: block;
     width: 100%;
     height: 100%;
-    background: currentColor;
+    background: var(--isd-accent, currentColor);
     transform-origin: left;
     animation: page-progress linear forwards;
 }

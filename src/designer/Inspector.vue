@@ -2,10 +2,12 @@
 import { computed } from 'vue';
 import type { Calendar } from '../ct/api';
 import type { Block, Fill, TextStyle } from '../model/schema';
-import { useStageContext } from '../player/context';
+import { themeOf, useStageContext } from '../player/context';
 import { fontDef, FONTS } from '../player/fonts';
 import { sizedImageUrl } from '../player/format';
 import { PAGE_SECONDS, slideSeconds } from '../player/paging';
+import { qrShape } from '../player/qr';
+import { instagramEmbedUrl, webFrame } from '../player/web';
 import { useEditorStore } from './editor-store';
 import ColorField from './ColorField.vue';
 import FillEditor from './FillEditor.vue';
@@ -66,6 +68,26 @@ function pageHint(list: Extract<Block, { type: 'appointment-list' }>): string {
     return needed > duration
         ? `Ergibt ${pages} Seiten à ${perPage} s – die Slide läuft dafür ${needed} s statt ${duration} s.`
         : `Ergibt ${pages} Seiten, je ${Math.round(duration / pages)} s.`;
+}
+
+/** '' follows the theme (Plan.md, 27): the block then changes with it. */
+function setLayout(value: string): void {
+    setBlock({ layout: value || undefined });
+}
+
+/** The theme's layout in words, for the option that follows it. */
+const themeLayout = computed(() => (themeOf(stage).appointments === 'large' ? 'groß' : 'nativ'));
+
+/** Why an address is not shown – or null when it is. */
+function webProblem(url: string): string | null {
+    if (!url.trim()) return 'Noch keine Adresse – der Baustein bleibt leer.';
+    return webFrame(url, window.location.origin) ? null : 'Nur Adressen mit https:// werden gezeigt.';
+}
+
+/** An Instagram name or profile address becomes the embed page, which Instagram lets into a frame. */
+function setWebUrl(value: string): void {
+    const instagram = /instagram\.com/i.test(value) ? instagramEmbedUrl(value) : null;
+    setBlock({ url: instagram ?? value.trim() });
 }
 
 function setSlideNumber(value: string): void {
@@ -202,19 +224,21 @@ const slideFill = computed<Fill>(() =>
                         Darstellung
                         <select
                             v-if="block.type === 'appointment-list'"
-                            :value="block.layout ?? 'rows'"
+                            :value="block.layout ?? ''"
                             data-testid="list-layout"
-                            @change="setBlock({ layout: ($event.target as HTMLSelectElement).value })"
+                            @change="setLayout(($event.target as HTMLSelectElement).value)"
                         >
+                            <option value="">Wie im Design ({{ themeLayout }})</option>
                             <option value="rows">Zeilen – Datum, Uhrzeit, Titel</option>
-                            <option value="cards">Karten – Datumskachel, Kalender, Uhrzeit, Ort</option>
+                            <option value="cards">Karten – Kalender und Uhrzeit links, Titel und Ort rechts</option>
                         </select>
                         <select
                             v-else
-                            :value="block.layout ?? 'classic'"
+                            :value="block.layout ?? ''"
                             data-testid="next-layout"
-                            @change="setBlock({ layout: ($event.target as HTMLSelectElement).value })"
+                            @change="setLayout(($event.target as HTMLSelectElement).value)"
                         >
+                            <option value="">Wie im Design ({{ themeLayout }})</option>
                             <option value="classic">Schlicht</option>
                             <option value="card">Hervorgehoben – Karte mit Beschreibung und Ort</option>
                         </select>
@@ -313,6 +337,70 @@ const slideFill = computed<Fill>(() =>
                         </button>
                         <p class="hint">Ein eigenes Logo hilft, wenn das aus ChurchTools auf dem Hintergrund nicht zu sehen ist.</p>
                     </div>
+                </template>
+
+                <!-- Plan.md, 28: another website in a frame – an Instagram profile, a widget. -->
+                <template v-if="block.type === 'web'">
+                    <label class="d-field">
+                        Adresse
+                        <input
+                            type="url"
+                            placeholder="https://… oder instagram.com/name"
+                            :value="block.url"
+                            data-testid="web-url"
+                            v-on="edit"
+                            @change="setWebUrl(($event.target as HTMLInputElement).value)"
+                        >
+                    </label>
+                    <p v-if="webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
+                    <label class="d-field">
+                        Größe der Seite
+                        <select :value="block.zoom" data-testid="web-zoom" @change="setNumber('zoom', ($event.target as HTMLSelectElement).value)">
+                            <option :value="0.5">50 % – mehr passt hinein</option>
+                            <option :value="0.75">75 %</option>
+                            <option :value="1">100 %</option>
+                            <option :value="1.5">150 %</option>
+                            <option :value="2">200 % – für Seiten, die fürs Handy gemacht sind</option>
+                            <option :value="3">300 %</option>
+                        </select>
+                    </label>
+                    <p class="hint">
+                        Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer. Für Instagram genügt der
+                        Profilname, etwa <code>instagram.com/name</code>.
+                    </p>
+                </template>
+
+                <template v-if="block.type === 'qr'">
+                    <label class="d-field">
+                        Inhalt – meist eine Adresse
+                        <input
+                            type="text"
+                            placeholder="https://…"
+                            maxlength="1000"
+                            :value="block.data"
+                            data-testid="qr-data"
+                            v-on="edit"
+                            @input="setBlock({ data: ($event.target as HTMLInputElement).value })"
+                        >
+                    </label>
+                    <p v-if="block.data.trim() && !qrShape(block.data)" class="hint">Zu lang für einen QR-Code.</p>
+                    <div class="grid2">
+                        <ColorField
+                            label="Farbe"
+                            :model-value="block.color"
+                            @focus="edit.onFocus"
+                            @blur="edit.onBlur"
+                            @update:model-value="setBlock({ color: $event })"
+                        />
+                        <ColorField
+                            label="Hintergrund"
+                            :model-value="block.background"
+                            @focus="edit.onFocus"
+                            @blur="edit.onBlur"
+                            @update:model-value="setBlock({ background: $event })"
+                        />
+                    </div>
+                    <p class="hint">Dunkel auf hell lesen alle Handykameras am sichersten.</p>
                 </template>
 
                 <fieldset v-if="'style' in block">

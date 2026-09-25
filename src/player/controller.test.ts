@@ -2,9 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotAuthenticatedError, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import { DEMO_BUNDLE } from '../dev/demo';
+import { DEFAULT_THEME } from '../model/schema';
 import { ScreenNotFoundError, type LoadedScreen } from '../store/screen-repository';
 import type { CachedState } from './cache';
-import { createPlayer, type PlayerDeps } from './controller';
+import { contentChanged, createPlayer, type PlayerDeps } from './controller';
 import type { PlayerData } from './data';
 
 const NOW = new Date('2026-10-04T08:00:00Z');
@@ -100,6 +101,16 @@ describe('player controller', () => {
         await vi.advanceTimersByTimeAsync(2 * 60_000 + 30_000);
         expect(vi.mocked(data.loadScreen).mock.calls.length).toBeGreaterThanOrEqual(2);
         player.stop();
+    });
+
+    it('notices a changed theme the same way (Plan.md 27), and ignores data from before themes', async () => {
+        const base = loaded();
+        expect(contentChanged(base, { schedule: null, playlists: { 'demo-playlist': 1 } })).toBe(false);
+        expect(contentChanged(base, { schedule: null, playlists: { 'demo-playlist': 1 }, theme: null })).toBe(false);
+        expect(contentChanged(base, { schedule: null, playlists: { 'demo-playlist': 1 }, theme: 1 })).toBe(true);
+        const themed = { ...base, theme: { ...DEFAULT_THEME, revision: 1 } };
+        expect(contentChanged(themed, { schedule: null, playlists: { 'demo-playlist': 1 }, theme: 1 })).toBe(false);
+        expect(contentChanged(themed, { schedule: null, playlists: { 'demo-playlist': 1 }, theme: 2 })).toBe(true);
     });
 
     it('shows a screen with rules only after the first clock check, not the default playlist first', async () => {

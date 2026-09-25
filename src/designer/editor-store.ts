@@ -7,7 +7,7 @@
  */
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
-import type { Block, BlockType, MediaDoc, PlaylistBundle, SlideDoc } from '../model/schema';
+import { DEFAULT_THEME, type Block, type BlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type ThemeDoc } from '../model/schema';
 import { ConflictError, type ConflictInfo, type ScreenRef, type ScreenRepository } from '../store/screen-repository';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
@@ -32,6 +32,8 @@ export const useEditorStore = defineStore('editor', () => {
     const gridSize = ref<number>(loadGridSize());
     /** Media documents known to the store, for the preview and the pickers. */
     const media = ref<MediaDoc[]>([]);
+    /** The look of all screens (Plan.md, 27): new slides and blocks start in its colours, the preview shows it. */
+    const theme = ref<ThemeDoc>(DEFAULT_THEME);
     const history = new History<PlaylistBundle>();
     const historyVersion = ref(0); // makes canUndo/canRedo reactive
     let gestureOpen = false;
@@ -93,7 +95,12 @@ export const useEditorStore = defineStore('editor', () => {
 
     async function open(playlistId: string): Promise<void> {
         if (!repository.value) throw new Error('Kein Speicher angebunden.');
-        const loaded = await repository.value.loadPlaylist(playlistId);
+        const [loaded, stored] = await Promise.all([
+            repository.value.loadPlaylist(playlistId),
+            // A theme that cannot be read leaves the defaults; it must not keep the playlist closed.
+            repository.value.loadTheme().catch(() => null),
+        ]);
+        theme.value = stored ?? DEFAULT_THEME;
         screens.value = loaded.screens;
         reset({ playlist: loaded.playlist, slides: loaded.slides }, loaded.playlist.revision);
     }
@@ -155,7 +162,7 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     function addSlide(): void {
-        const created = createSlide();
+        const created = createSlide('Neue Slide', theme.value);
         change((b) => {
             b.slides.push(created);
             const at = b.playlist.slideIds.indexOf(slide.value?.id ?? '') + 1;
@@ -198,7 +205,7 @@ export const useEditorStore = defineStore('editor', () => {
 
     function addBlock(type: BlockType): void {
         if (!slide.value) return;
-        const created = createBlock(type, stage.value, calendarIds.value);
+        const created = createBlock(type, stage.value, calendarIds.value, theme.value);
         const id = slide.value.id;
         change((b) => slideIn(b, id)?.blocks.push(created));
         selectedBlockId.value = created.id;
@@ -304,6 +311,7 @@ export const useEditorStore = defineStore('editor', () => {
         gridSize,
         setGridSize,
         media,
+        theme,
         refreshMedia,
         dirty,
         revision,

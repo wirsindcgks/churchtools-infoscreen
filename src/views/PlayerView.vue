@@ -86,6 +86,7 @@ watch(
         context.churchLogo = state.churchLogo;
         context.appointments = state.appointments;
         context.media = new Map((state.screen?.media ?? []).map((m) => [m.id, m]));
+        context.theme = state.screen?.theme ?? null;
     },
     { immediate: true },
 );

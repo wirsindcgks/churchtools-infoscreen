@@ -17,6 +17,7 @@ import {
     ScreenDoc,
     SettingsDoc,
     SlideDoc,
+    ThemeDoc,
     type AnyDoc,
     type Block as BlockValue,
 } from './schema';
@@ -104,9 +105,17 @@ export function readSchedule(raw: unknown): ScheduleDoc {
     return parseStrict(ScheduleDoc, raw, 'schedule');
 }
 
-/** The category `playlists` holds playlists and, since schema 1.2, schedule documents. */
-export function readPlaylistOrSchedule(raw: unknown): PlaylistDoc | ScheduleDoc {
-    return (raw as { kind?: unknown } | null)?.kind === 'schedule' ? readSchedule(raw) : readPlaylist(raw);
+export function readTheme(raw: unknown): ThemeDoc {
+    checkVersion(raw);
+    return parseStrict(ThemeDoc, raw, 'theme');
+}
+
+/** The category `playlists` holds playlists, since schema 1.2 schedule documents and since 1.9 the theme. */
+export function readPlaylistOrSchedule(raw: unknown): PlaylistDoc | ScheduleDoc | ThemeDoc {
+    const kind = (raw as { kind?: unknown } | null)?.kind;
+    if (kind === 'schedule') return readSchedule(raw);
+    if (kind === 'theme') return readTheme(raw);
+    return readPlaylist(raw);
 }
 
 /** Blocks are parsed one by one so that one unknown block cannot take the slide down. */
@@ -147,6 +156,7 @@ export function serialize(doc: AnyDoc): string {
         slide: SlideDoc,
         media: MediaDoc,
         settings: SettingsDoc,
+        theme: ThemeDoc,
     } as const;
     const schema = schemas[doc.kind];
     const valid = parseStrict(schema, doc, doc.kind);

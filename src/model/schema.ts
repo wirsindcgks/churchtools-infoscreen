@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 8 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 9 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -135,6 +135,29 @@ export const ChurchHeaderBlock = v.object({
     style: TextStyle,
 });
 
+/**
+ * Since 1.9: another website in a frame – an Instagram profile, a widget
+ * (Plan.md, Nächste Schritte 28). https only; ChurchTools allows foreign
+ * frames (`child-src *`, G15). Empty until set; the player then shows a calm
+ * placeholder, offline the frame shows nothing.
+ */
+export const WebBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('web'),
+    url: v.pipe(v.string(), v.maxLength(2000)),
+    /** Size of the page in the block: 2 = twice as large, for pages made for a phone. */
+    zoom: v.optional(v.pipe(v.number(), v.minValue(0.25), v.maxValue(4)), 1),
+});
+
+/** Since 1.9: a QR code, made on the device – for a link the congregation should open on the phone. */
+export const QrBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('qr'),
+    data: v.pipe(v.string(), v.maxLength(1000)),
+    color: Color,
+    background: Color,
+});
+
 export const Block = v.variant('type', [
     TextBlock,
     ImageBlock,
@@ -143,6 +166,8 @@ export const Block = v.variant('type', [
     AppointmentListBlock,
     NextAppointmentBlock,
     ChurchHeaderBlock,
+    WebBlock,
+    QrBlock,
 ]);
 
 const Background = v.variant('kind', [
@@ -256,6 +281,28 @@ export const ScheduleDoc = v.object({
     updatedBy: v.optional(v.string()),
 });
 
+/**
+ * The look of all screens (schema 1.9, Plan.md, Nächste Schritte 27): one
+ * document in the category `playlists`, which designers write and devices
+ * read – no new rights. Blocks that set their own layout keep it; the colours
+ * for text and background are what new slides and blocks start with.
+ */
+export const ThemeDoc = v.object({
+    ...DocumentBase,
+    kind: v.literal('theme'),
+    corners: v.optional(v.picklist(['round', 'square']), 'round'),
+    /** Tiles, labels and bars where a calendar has no colour of its own. */
+    accent: v.optional(Color, '#3b82f6'),
+    text: v.optional(Color, '#ffffff'),
+    background: v.optional(Color, '#1e293b'),
+    /** `native`: the plain list and next appointment; `large`: the cards after the WordPress plugin. */
+    appointments: v.optional(v.picklist(['native', 'large']), 'native'),
+    /** Shape of appointment images; `free` shows them as they are. */
+    imageRatio: v.optional(v.picklist(['16:9', '4:3', '3:2', '1:1', 'free']), '16:9'),
+    revision: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
+    updatedBy: v.optional(v.string()),
+});
+
 /** A reference to a ChurchTools file – never the file itself (Plan.md, Medien). */
 export const MediaDoc = v.object({
     ...DocumentBase,
@@ -294,7 +341,21 @@ export type ScheduleRule = v.InferOutput<typeof ScheduleRule>;
 export type AppointmentPoint = v.InferOutput<typeof AppointmentPoint>;
 export type MediaDoc = v.InferOutput<typeof MediaDoc>;
 export type SettingsDoc = v.InferOutput<typeof SettingsDoc>;
-export type AnyDoc = ScreenDoc | PlaylistDoc | ScheduleDoc | SlideDoc | MediaDoc | SettingsDoc;
+export type ThemeDoc = v.InferOutput<typeof ThemeDoc>;
+export type AnyDoc = ScreenDoc | PlaylistDoc | ScheduleDoc | SlideDoc | MediaDoc | SettingsDoc | ThemeDoc;
+
+/** The one theme document; every screen shares it. */
+export const THEME_ID = 'theme';
+
+/** The look without a theme document – what every screen had before 1.9. */
+export const DEFAULT_THEME: ThemeDoc = v.parse(ThemeDoc, { schema: { ...SCHEMA_VERSION }, kind: 'theme', id: THEME_ID });
+
+export const IMAGE_RATIOS: Record<Exclude<ThemeDoc['imageRatio'], 'free'>, number> = {
+    '16:9': 16 / 9,
+    '4:3': 4 / 3,
+    '3:2': 3 / 2,
+    '1:1': 1,
+};
 
 /** The schedule document's id for a screen: one per screen, found without a search. */
 export function scheduleIdFor(screenId: string): string {

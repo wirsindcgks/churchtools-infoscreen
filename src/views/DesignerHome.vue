@@ -17,7 +17,7 @@ import { canManagePermissions } from '../setup/load';
 import ScreenCard from '../designer/ScreenCard.vue';
 import ScheduleDialog from '../designer/ScheduleDialog.vue';
 import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
-import type { ScreenDoc } from '../model/schema';
+import type { ScreenDoc, ThemeDoc } from '../model/schema';
 import { usePreview } from '../designer/usePreview';
 import { getRepository, resetDemoStore } from '../store/backend';
 import type { ScreenOverview, ScreenRepository } from '../store/screen-repository';
@@ -63,6 +63,8 @@ const shown = computed(() => {
 
 const current = computed(() => FILTERS.find((f) => f.key === filter.value)!);
 
+const theme = ref<ThemeDoc | null>(null);
+
 // The tiles are the player's components: they need the same live data as the editor preview.
 usePreview(
     computed(() => [
@@ -75,10 +77,18 @@ usePreview(
         ),
     ]),
     computed(() => overviews.value.flatMap((o) => o.media)),
+    theme,
 );
 
 async function refresh(): Promise<void> {
-    if (repository.value) overviews.value = await repository.value.listScreenOverviews();
+    if (!repository.value) return;
+    const [list, stored] = await Promise.all([
+        repository.value.listScreenOverviews(),
+        // The tiles show the theme; without it they show the defaults.
+        repository.value.loadTheme().catch(() => null),
+    ]);
+    overviews.value = list;
+    theme.value = stored;
 }
 
 onMounted(async () => {

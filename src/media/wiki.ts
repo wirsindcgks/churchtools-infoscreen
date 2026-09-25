@@ -1,7 +1,8 @@
 /**
  * Where images live (G26): ChurchTools has no free file storage, so the module
- * keeps its own wiki category. Its start page `main` explains the infoscreen,
- * and every screen gets a page titled with its slug that carries its images.
+ * keeps its own wiki category. Its start page `main` explains why the area
+ * exists; uploads go to the page "Mediathek", older ones hang on a page per
+ * screen, titled with its slug.
  * Page titles cannot be changed later (Academy) – the slug is fixed anyway.
  *
  * The device needs no wiki rights: images are served through the image
@@ -113,21 +114,22 @@ export function overviewText(extensionUrl: string): string {
     return `${MARKER}
 # Infoscreen
 
-Diese Kategorie gehört zum **Infoscreen Designer**. Gestaltet werden die Screens dort: [Infoscreen Designer öffnen](${extensionUrl})
+Diese Kategorie gehört zum **Infoscreen Designer**, mit dem die Gemeinde ihre Fernseher im Foyer und in den Räumen gestaltet: [Infoscreen Designer öffnen](${extensionUrl})
+
+## Warum es diesen Bereich gibt
+
+Die Fernseher zeigen Bilder – Plakate, Logos, Hintergründe. ChurchTools bietet einer Erweiterung keinen eigenen Dateispeicher; Bilder kann sie nur an eine Seite im Wiki hängen. Deshalb legt der Designer diesen Bereich an und speichert hier, was in seiner **Mediathek** hochgeladen wird. Das Wiki ist nur der Ablageort: Hochgeladen, ausgewählt und gelöscht wird im Designer.
+
+Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers unter „Ausgeblendet" verschieben – neu angelegt steht er schon dort.
 
 ## Was hier liegt
 
-Jeder Screen hat eine eigene Seite, benannt nach seiner Adresse. An ihr hängen die Bilder, die für diesen Screen hochgeladen wurden. Ein Bild lässt sich trotzdem in jedem Screen verwenden.
-
-## So kommt ein Screen auf den Fernseher
-
-1. Im Designer einen Screen anlegen und gestalten.
-2. Einen eigenen Benutzer für die Geräte einrichten, ohne Zwei-Faktor-Anmeldung und nur mit Leserechten.
-3. Am Raspberry Pi die Player-Adresse des Screens mit dem Anmelde-Token dieses Benutzers öffnen.
+- **Mediathek**: die Bilder, die im Designer hochgeladen wurden.
+- Seiten, die nach der Adresse eines Screens benannt sind: Bilder aus der Zeit, als jeder Screen seine eigenen hatte. Sie lassen sich weiter in jedem Screen verwenden.
 
 ## Gut zu wissen
 
-- Bilder hier zu löschen entfernt sie auch von den Screens, die sie zeigen – im Designer wird vorher angezeigt, wo ein Bild verwendet wird.
+- Bilder hier zu löschen entfernt sie auch von den Fernsehern, die sie zeigen. Im Designer wird vorher angezeigt, wo ein Bild verwendet wird – dort löschen ist sicherer.
 - Bildadressen sind ohne Anmeldung abrufbar, geschützt nur durch eine lange Zufallskennung. Bitte keine vertraulichen Bilder hochladen.
 - Diese Seite schreibt der Designer selbst, solange sie niemand ändert. Wer sie bearbeitet, übernimmt sie.
 `;

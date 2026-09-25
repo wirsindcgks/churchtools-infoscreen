@@ -6,11 +6,11 @@
  */
 import { onBeforeUnmount, reactive, ref, watch, type Ref } from 'vue';
 import { fetchCalendars, type Calendar } from '../ct/api';
-import type { MediaDoc } from '../model/schema';
+import type { MediaDoc, ThemeDoc } from '../model/schema';
 import { provideStageContext, type StageContext } from '../player/context';
 import { appointmentWindow, churchToolsPlayerData } from '../player/data';
 
-export function usePreview(calendarIds: Ref<number[]>, media: Ref<MediaDoc[]>) {
+export function usePreview(calendarIds: Ref<number[]>, media: Ref<MediaDoc[]>, theme: Ref<ThemeDoc | null> = ref(null)) {
     const context = reactive<StageContext>({
         now: new Date(),
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -61,6 +61,7 @@ export function usePreview(calendarIds: Ref<number[]>, media: Ref<MediaDoc[]>) {
     }
 
     watch(media, (list) => (context.media = new Map(list.map((m) => [m.id, m]))), { immediate: true });
+    watch(theme, (value) => (context.theme = value), { immediate: true });
     watch(() => calendarIds.value.join(), () => void loadAppointments());
     void loadBasics().then(loadAppointments);
 

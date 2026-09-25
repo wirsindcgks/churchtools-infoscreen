@@ -69,6 +69,17 @@ const active = computed(() => (route.name === 'designer' ? formatFilter(route.qu
                     Mediathek
                 </RouterLink>
             </li>
+            <li>
+                <RouterLink
+                    :to="{ name: 'design' }"
+                    :class="{ active: route.name === 'design' }"
+                    :aria-current="route.name === 'design' ? 'page' : undefined"
+                    data-testid="sidebar-design"
+                >
+                    <span class="nav-icon"><Icon name="palette" :size="16" /></span>
+                    Design
+                </RouterLink>
+            </li>
         </ul>
         <div v-if="admin" class="admin">
             <h2>Verwaltung</h2>

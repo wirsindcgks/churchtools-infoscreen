@@ -40,6 +40,10 @@ const PATHS = {
     list: ['M9 7h11', 'M9 12h11', 'M9 17h11', 'M4.5 7h.5', 'M4.5 12h.5', 'M4.5 17h.5'],
     calendar: ['M4 6h16v14H4z', 'M4 10h16', 'M8 3v4', 'M16 3v4'],
     header: ['M3 5h18v5H3z', 'M3 14h11', 'M3 18h7'],
+    web: [circle(12, 12, 8.5), 'M3.5 12h17', 'M12 3.5c2.6 2.4 3.8 5.2 3.8 8.5s-1.2 6.1-3.8 8.5c-2.6-2.4-3.8-5.2-3.8-8.5S9.4 5.9 12 3.5z'],
+    qr: ['M4 4h6v6H4z', 'M14 4h6v6h-6z', 'M4 14h6v6H4z', 'M14 14h2v2h-2z', 'M18 18h2v2h-2z', 'M14 18h2', 'M18 14h2'],
+    // The design page (Plan.md, Nächste Schritte 27)
+    palette: ['M12 3.5a8.5 8.5 0 1 0 0 17c1.2 0 1.8-.8 1.8-1.7 0-1.3-1-1.6-1-2.6 0-.9.7-1.6 1.7-1.6h2.2a3.8 3.8 0 0 0 3.8-3.8c0-4.2-3.8-7.3-8.5-7.3z', circle(7.5, 11.5, 1), circle(10, 7.5, 1), circle(14.5, 7.5, 1)],
 } as const;
 
 export type IconName = keyof typeof PATHS;

@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -543,7 +543,8 @@ test('a locked block stays put: no drag, no keys, no fields, no delete – until
     await expect(frames).toHaveCount(count - 1);
 });
 
-test('list and next appointment in the look of the WordPress plugin: tiles, badges, place (Plan.md 20)', async ({ page }) => {
+/** Four appointments in three calendars, with place and description – for the card layouts. */
+async function mockAppointments(page: Page): Promise<void> {
     const services = [
         ['Gottesdienst', 'mit Kinderprogramm', 2, '#2e7d8c', 'Gemeindezentrum', 'Saal'],
         ['Jugendtreff', '', 1, '#c0613f', 'Jugendraum', null],
@@ -572,6 +573,10 @@ test('list and next appointment in the look of the WordPress plugin: tiles, badg
         });
         return route.fulfill({ json: { data } });
     });
+}
+
+test('list and next appointment in the look of the WordPress plugin: category and time in a fixed block, place (Plan.md 20)', async ({ page }) => {
+    await mockAppointments(page);
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
 
@@ -593,4 +598,68 @@ test('list and next appointment in the look of the WordPress plugin: tiles, badg
     await expect(stage.getByTestId('next-card')).toContainText('anschließendem Kirchencafé');
     await page.waitForTimeout(500);
     await stage.screenshot({ path: 'test-results/next-card.png' });
+});
+
+test('the design page sets the look of all screens: corners, large appointments, image shape (Plan.md 27)', async ({ page }) => {
+    await mockAppointments(page);
+    await page.goto('./');
+    await page.getByTestId('sidebar-design').click();
+    await expect(page.getByTestId('design-heading')).toBeVisible();
+    const preview = page.getByTestId('theme-preview');
+    await expect(preview.getByTestId('list-card')).toHaveCount(0); // native: plain rows
+    await expect(page.getByTestId('theme-save')).toBeDisabled();
+
+    await page.getByTestId('appointments-large').check();
+    await page.getByTestId('corners-square').check();
+    // The preview shows the first calendars of the instance: which of the four appointments that is, is theirs to say.
+    await expect(preview.getByTestId('list-card').first()).toBeVisible();
+    await expect(preview.getByTestId('next-card')).toBeVisible();
+    await expect(preview.locator('.slide')).toHaveAttribute('style', /--isd-radius: 0/);
+    await page.getByTestId('theme-image-ratio').selectOption('1:1');
+    await page.getByTestId('theme-save').click();
+    await expect(page.getByTestId('theme-saved')).toBeVisible();
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: 'test-results/design-page.png' });
+
+    // In the editor a list without a layout of its own follows the theme; one that chose keeps its choice.
+    await page.getByTestId('sidebar-playlists').click();
+    await page.getByTestId('playlist-card').first().getByTestId('open-playlist').click();
+    await page.getByTestId('slide-item').nth(2).click();
+    const stage = page.locator('.editor-stage');
+    await expect(stage.getByTestId('list-card')).toHaveCount(4);
+    await page.getByTestId('frame-appointment-list').first().click();
+    await expect(page.getByTestId('list-layout')).toHaveValue('');
+    await page.getByTestId('list-layout').selectOption('rows');
+    await expect(stage.getByTestId('list-card')).toHaveCount(0);
+});
+
+test('a website and a QR code instead of the old HTML snippet (Plan.md 28)', async ({ page }) => {
+    // No network in the test: Instagram's embed page is answered here.
+    await page.route('https://www.instagram.com/**', (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<!doctype html><title>Profil</title><h1>wirsindcgks</h1>' }),
+    );
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    const stage = page.locator('.editor-stage');
+
+    await page.getByTestId('add-web').click();
+    await expect(page.getByTestId('web-problem')).toContainText('Noch keine Adresse');
+    await page.getByTestId('web-url').fill('instagram.com/wirsindcgks');
+    await page.getByTestId('web-url').press('Enter');
+    await page.getByTestId('web-url').blur();
+    await expect(page.getByTestId('web-url')).toHaveValue('https://www.instagram.com/wirsindcgks/embed/');
+    const frame = stage.getByTestId('web-frame');
+    await expect(frame).toHaveAttribute('src', 'https://www.instagram.com/wirsindcgks/embed/');
+    await expect(frame).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
+    await expect(page.frameLocator('.editor-stage [data-testid="web-frame"]').locator('h1')).toHaveText('wirsindcgks');
+    await page.getByTestId('web-zoom').selectOption('2');
+    await expect(frame).toHaveAttribute('style', /scale\(2\)/);
+
+    await page.getByTestId('add-qr').click();
+    await page.getByTestId('qr-data').fill('https://www.instagram.com/wirsindcgks/');
+    await expect(stage.getByTestId('qr-code')).toBeVisible();
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await page.waitForTimeout(500);
+    await stage.screenshot({ path: 'test-results/web-and-qr.png' });
 });

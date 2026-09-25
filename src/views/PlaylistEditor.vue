@@ -39,6 +39,7 @@ const calendarIds = computed(() => editor.calendarIds);
 const { calendars, problem } = usePreview(
     calendarIds,
     computed(() => editor.media),
+    computed(() => editor.theme),
 );
 
 /** The preview of the unsaved draft, as the TV would show it. */

@@ -14,6 +14,7 @@ import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PlaylistCard from '../designer/PlaylistCard.vue';
 import { usePreview } from '../designer/usePreview';
+import type { ThemeDoc } from '../model/schema';
 import { canManagePermissions } from '../setup/load';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
@@ -40,6 +41,8 @@ const shown = computed(() => {
     );
 });
 
+const theme = ref<ThemeDoc | null>(null);
+
 // The tiles are the player's components: they need the same live data as the editor preview.
 usePreview(
     computed(() => [
@@ -52,10 +55,18 @@ usePreview(
         ),
     ]),
     computed(() => overviews.value.flatMap((o) => o.media)),
+    theme,
 );
 
 async function refresh(): Promise<void> {
-    if (repository.value) overviews.value = await repository.value.listPlaylists();
+    if (!repository.value) return;
+    const [list, stored] = await Promise.all([
+        repository.value.listPlaylists(),
+        // The tiles show the theme; without it they show the defaults.
+        repository.value.loadTheme().catch(() => null),
+    ]);
+    overviews.value = list;
+    theme.value = stored;
 }
 
 onMounted(async () => {

@@ -2,7 +2,7 @@
  * Stores screens as several KV values (Plan.md, E):
  *
  * - `screens`   one index value per screen (slug, stage, revision) – the administrators'
- * - `playlists` one value per playlist, and one schedule per screen – the designers'
+ * - `playlists` one value per playlist, one schedule per screen and the theme – the designers'
  * - `slides`    one value per slide; slides are referenced, never owned
  *
  * Playlists stand on their own (schema 1.4): screens choose them through
@@ -40,6 +40,8 @@ import {
     type ScreenDoc,
     type SettingsDoc,
     type SlideDoc,
+    THEME_ID,
+    type ThemeDoc,
 } from '../model/schema';
 import type { KvBackend, KvCategory, KvValue } from './kv';
 
@@ -139,6 +141,8 @@ export interface ContentRevisions {
     schedule: number | null;
     /** Revision of every playlist, by id; 0 for playlists from before schema 1.4. */
     playlists: Record<string, number>;
+    /** Revision of the theme (schema 1.9); null while there is none. Missing from older designers' data. */
+    theme?: number | null;
 }
 
 export interface LoadedScreen extends ScreenBundle {
@@ -150,6 +154,8 @@ export interface LoadedScreen extends ScreenBundle {
     schedule: ScheduleDoc | null;
     /** Media referenced by the slides, for the player to resolve image blocks. */
     media: MediaDoc[];
+    /** The look of all screens (schema 1.9); null while nobody set one – then the defaults apply. */
+    theme?: ThemeDoc | null;
     issues: ReadIssue[];
 }
 
@@ -275,7 +281,7 @@ export class ScreenRepository {
             if (!media.some((m) => m.id === id)) issues.push({ documentId: id, message: 'Medium fehlt.' });
         }
 
-        return { screen, schedule, playlists, slides, media, issues };
+        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, issues };
     }
 
     /**
@@ -330,11 +336,48 @@ export class ScreenRepository {
      * something changed does the player load the whole screen.
      */
     async contentRevisions(screenId: string): Promise<ContentRevisions> {
-        const { playlists, schedules } = await this.readPlaylistCategory();
+        const { playlists, schedules, theme } = await this.readPlaylistCategory();
         return {
             schedule: schedules.find((s) => s.doc.screenId === screenId)?.doc.revision ?? null,
             playlists: Object.fromEntries(playlists.map((p) => [p.doc.id, p.doc.revision ?? 0])),
+            theme: theme ? (theme.doc.revision ?? 0) : null,
         };
+    }
+
+    /** The look of all screens; null while nobody set one (Plan.md, Nächste Schritte 27). */
+    async loadTheme(): Promise<ThemeDoc | null> {
+        return (await this.readPlaylistCategory()).theme?.doc ?? null;
+    }
+
+    /**
+     * The designers' save of the look (Plan.md, 27), against its revision like
+     * a playlist: two designers changing it at once notice each other.
+     * `expectedRevision` is null while there is none yet.
+     */
+    async saveTheme(theme: Omit<ThemeDoc, 'id' | 'kind' | 'schema'>, options: SaveOptions): Promise<ThemeDoc> {
+        const { theme: stored } = await this.readPlaylistCategory();
+        const current = stored ? (stored.doc.revision ?? 0) : null;
+        if (current !== options.expectedRevision) {
+            throw new ConflictError({
+                name: 'Design',
+                revision: current ?? 0,
+                updatedBy: stored?.doc.updatedBy,
+                updatedAt: stored?.doc.updatedAt,
+            });
+        }
+        const doc: ThemeDoc = {
+            ...theme,
+            schema: { ...SCHEMA_VERSION },
+            kind: 'theme',
+            id: THEME_ID,
+            revision: (current ?? 0) + 1,
+            updatedBy: options.updatedBy,
+            updatedAt: (options.now ?? new Date()).toISOString(),
+        };
+        const text = serialize(doc);
+        const ids = await this.ensureCategories();
+        await this.upsert(ids.playlists, stored?.valueId, text);
+        return doc;
     }
 
     /** Every playlist with what the playlists page shows of it, sorted by name. */
@@ -404,7 +447,8 @@ export class ScreenRepository {
             name: 'Neue Slide',
             durationSeconds: 10,
             enabled: true,
-            background: { kind: 'solid', color: '#1e293b' },
+            // In the theme's colour (Plan.md, 27), like every slide added in the editor.
+            background: { kind: 'solid', color: (await this.loadTheme().catch(() => null))?.background ?? '#1e293b' },
             blocks: [],
             updatedAt: now.toISOString(),
         };
@@ -677,16 +721,18 @@ export class ScreenRepository {
         return this.readAll('screens', readScreen);
     }
 
-    /** The category `playlists`, split into playlists and schedule documents (schema 1.2). */
+    /** The category `playlists`, split into playlists, schedule documents (schema 1.2) and the theme (1.9). */
     private async readPlaylistCategory() {
         const read = await this.readAll('playlists', readPlaylistOrSchedule);
         const playlists: Stored<PlaylistDoc>[] = [];
         const schedules: Stored<ScheduleDoc>[] = [];
+        let theme: Stored<ThemeDoc> | null = null;
         for (const stored of read.docs) {
             if (stored.doc.kind === 'schedule') schedules.push(stored as Stored<ScheduleDoc>);
+            else if (stored.doc.kind === 'theme') theme = stored as Stored<ThemeDoc>;
             else playlists.push(stored as Stored<PlaylistDoc>);
         }
-        return { playlists, schedules, issues: read.issues };
+        return { playlists, schedules, theme, issues: read.issues };
     }
 
     /** The screens with their schedule documents applied – what devices show and designers edit. */
@@ -700,6 +746,7 @@ export class ScreenRepository {
             }),
             playlists: category.playlists,
             schedules: category.schedules,
+            theme: category.theme,
             issues: [...screens.issues, ...category.issues],
         };
     }

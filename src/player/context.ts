@@ -1,6 +1,6 @@
 import { inject, provide, type InjectionKey } from 'vue';
 import type { Appointment } from '../appointments/normalize';
-import type { MediaDoc } from '../model/schema';
+import { DEFAULT_THEME, type MediaDoc, type ThemeDoc } from '../model/schema';
 
 /** What blocks read while rendering; the player provides it, the designer preview will too. */
 export interface StageContext {
@@ -18,6 +18,12 @@ export interface StageContext {
     pages?: Record<string, number>;
     /** Whether paged lists turn their pages; the designer preview holds page 1. */
     paging?: boolean;
+    /** The look of all screens (schema 1.9); missing or null means the defaults. */
+    theme?: ThemeDoc | null;
+}
+
+export function themeOf(context: StageContext): ThemeDoc {
+    return context.theme ?? DEFAULT_THEME;
 }
 
 /** The local copy of an image if there is one, else its address in ChurchTools. */

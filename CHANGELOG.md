@@ -10,8 +10,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 
 - **Designer** in ChurchTools unter `/ccm/infoscreen-designer/`: Startseite nach dem Muster der Gruppen-Übersicht
   mit Kacheln, Vorschau der ersten Slide, Filtern nach Format und Suche; handytauglich.
-- **Editor**: Slides anlegen, ordnen, abschalten; sieben Bausteine (Text, Bild, Fläche, Uhr, Terminliste, Nächster
-  Termin, Gemeindekopf) auf der Bühne ziehen und skalieren, mit Raster und Hilfslinien; Farben als Hex-Wert;
+- **Editor**: Slides anlegen, ordnen, abschalten; neun Bausteine (Text, Bild, Fläche, Uhr, Terminliste, Nächster
+  Termin, Gemeindekopf, Webseite, QR-Code) auf der Bühne ziehen und skalieren, mit Raster und Hilfslinien; Farben als Hex-Wert;
   Rückgängig/Wiederholen; Speichern mit Konflikterkennung.
 - **Playlists** als eigener Bereich: unabhängig von einem Screen anlegen, gestalten und löschen; dieselbe Playlist
   kann auf mehreren Screens laufen, die Kachel sagt, auf welchen. Der Editor gestaltet eine Playlist.
@@ -20,8 +20,15 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   ausgewählter Kalender, die obere gewinnt; eine Tagesvorschau zeigt, was wann läuft. Termin-Regeln mit frei
   gewähltem Zeitraum, z. B. „30 Min. vor Beginn bis 10 Min. nach Beginn" für eine Begrüßung.
   Ein Screen mit Regeln zeigt nach dem Start sofort die richtige Playlist, nicht erst kurz die Standard-Playlist.
-- **Neue Darstellungen** nach dem WordPress-Plugin: die Terminliste als Karten mit Datumskachel, Kalender-Etikett,
-  Uhrzeit und Ort; „Nächster Termin" hervorgehoben mit Beschreibung, Ort und Bild.
+- **Neue Darstellungen** nach dem WordPress-Plugin: die Terminliste als Karten – links ein gleich breiter Block mit
+  Kalender, Tag und Uhrzeit, rechts Titel, Untertitel und Ort; „Nächster Termin" hervorgehoben mit Beschreibung,
+  Ort und Bild.
+- **Design** als eigener Bereich: für alle Screens Ecken rund oder eckig, Akzentfarbe, Text- und Hintergrundfarbe
+  für neue Slides, Termine „Nativ" oder „Groß" und das Format der Terminbilder (16:9 voreingestellt) – mit
+  Live-Vorschau; ein Baustein mit eigener Darstellung behält sie.
+- **Bausteine „Webseite" und „QR-Code"**: eine fremde Seite per https-Adresse im abgesicherten Rahmen, etwa das
+  Instagram-Profil der Gemeinde (der Profilname genügt), in wählbarer Größe; ein QR-Code, der auf dem Gerät
+  entsteht, ohne fremden Dienst.
 - **Terminliste mit allen Terminen** der nächsten Tage: was nicht in die Box passt, blättert seitenweise (10 s je
   Seite, einstellbar); ein Balken zeigt je Seite die verbleibende Zeit; die Slide bleibt, bis alle Seiten gezeigt
   sind – die Slide-Liste zeigt die längere Laufzeit („12 → 30 s").

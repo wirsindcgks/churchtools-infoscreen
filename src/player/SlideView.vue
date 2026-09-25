@@ -2,9 +2,10 @@
 import { computed } from 'vue';
 import type { SlideDoc } from '../model/schema';
 import BlockView from './blocks/BlockView.vue';
-import { imageSource, useStageContext } from './context';
+import { imageSource, themeOf, useStageContext } from './context';
 import { fillStyle } from './fill';
 import { backgroundImageUrl } from './images';
+import { themeVars } from './theme';
 
 const props = defineProps<{ slide: SlideDoc; width: number; height: number }>();
 const context = useStageContext();
@@ -21,10 +22,11 @@ const background = computed(() => {
           }
         : { background: '#000' };
 });
+const look = computed(() => ({ ...background.value, ...themeVars(themeOf(context)) }));
 </script>
 
 <template>
-    <div class="slide" :style="background">
+    <div class="slide" :style="look">
         <BlockView
             v-for="block in slide.blocks"
             :key="block.id"

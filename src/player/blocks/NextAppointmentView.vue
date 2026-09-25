@@ -2,8 +2,9 @@
 import { computed } from 'vue';
 import { selectUpcoming } from '../../appointments/normalize';
 import type { Block } from '../../model/schema';
-import { useStageContext } from '../context';
+import { themeOf, useStageContext } from '../context';
 import { formatDate, sizedImageUrl, textStyle, timeRange } from '../format';
+import { imageBox, nextLayout } from '../theme';
 import CalendarBadge from './CalendarBadge.vue';
 import DateTile from './DateTile.vue';
 
@@ -21,11 +22,24 @@ const next = computed(
         })[0] ?? null,
 );
 
-const card = computed(() => props.block.layout === 'card');
-const image = computed(() =>
-    props.block.showImage && next.value?.imageUrl
-        ? sizedImageUrl(next.value.imageUrl, props.block.width * (card.value ? 0.42 : 0.55), props.block.height)
-        : null,
+const card = computed(() => nextLayout(props.block, themeOf(context)) === 'card');
+
+/** Room for the image: beside the text, inside the card's padding (0.8em). */
+const room = computed(() => ({
+    width: props.block.width * (card.value ? 0.42 : 0.55),
+    height: props.block.height - (card.value ? 1.6 * props.block.style.fontSize : 0),
+}));
+/** The theme's image shape (Plan.md, 27) – 16:9 unless chosen otherwise; null keeps the image's own. */
+const box = computed(() => imageBox(themeOf(context).imageRatio, room.value.width, room.value.height));
+const image = computed(() => {
+    const url = props.block.showImage ? next.value?.imageUrl : null;
+    if (!url) return null;
+    return box.value
+        ? sizedImageUrl(url, box.value.width, box.value.height, 'crop')
+        : sizedImageUrl(url, room.value.width, props.block.height);
+});
+const imageStyle = computed(() =>
+    box.value ? { width: `${box.value.width}px`, height: `${box.value.height}px`, flex: 'none', objectFit: 'cover' as const } : {},
 );
 </script>
 
@@ -58,12 +72,12 @@ const image = computed(() =>
                     </span>
                 </div>
             </div>
-            <img v-if="image" class="hero-image" :src="image" alt="">
+            <img v-if="image" class="hero-image" :src="image" :style="imageStyle" alt="" data-testid="next-image">
         </template>
         <div v-else class="hero-text hero-subtitle">Derzeit ist kein Termin geplant.</div>
     </div>
     <div v-else class="next" :class="{ 'next--image': image }" :style="textStyle(block.style)">
-        <img v-if="image" class="image" :src="image" alt="">
+        <img v-if="image" class="image" :src="image" :style="imageStyle" alt="" data-testid="next-image">
         <div v-if="next" class="text">
             <div class="label">Nächster Termin</div>
             <div class="title">{{ next.title }}</div>
@@ -87,7 +101,7 @@ const image = computed(() =>
     flex: 0 0 55%;
     max-height: 100%;
     object-fit: contain;
-    border-radius: 12px;
+    border-radius: var(--isd-radius, 0.3em);
 }
 .text {
     flex: 1;
@@ -116,7 +130,7 @@ const image = computed(() =>
     width: 100%;
     height: 100%;
     padding: 0.8em;
-    border-radius: 0.4em;
+    border-radius: var(--isd-radius, 0.4em);
     background: rgba(255, 255, 255, 0.07);
 }
 .hero-text {
@@ -189,7 +203,8 @@ const image = computed(() =>
     flex: 0 0 42%;
     min-width: 0;
     max-height: 100%;
+    align-self: center;
     object-fit: cover;
-    border-radius: 0.3em;
+    border-radius: var(--isd-radius, 0.3em);
 }
 </style>

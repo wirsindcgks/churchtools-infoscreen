@@ -332,13 +332,34 @@ describe('ScreenRepository', () => {
         it('tells the player cheaply what was last saved: one read of the playlists (Plan.md 26)', async () => {
             const { screen } = await created();
             const ids = await repo.ensureCategories();
-            expect(await repo.contentRevisions(screen.id)).toEqual({ schedule: null, playlists: { [makePlaylist().id]: 0 } });
+            expect(await repo.contentRevisions(screen.id)).toEqual({ schedule: null, playlists: { [makePlaylist().id]: 0 }, theme: null });
             const loaded = await repo.loadPlaylist(makePlaylist().id);
             await repo.savePlaylist(loaded, { expectedRevision: 0, updatedBy: 'Anna' });
             await repo.saveSchedule(screen.id, { defaultPlaylistId: makePlaylist().id, rules: [] }, { expectedRevision: null, updatedBy: 'Anna' });
             kv.reads.length = 0;
-            expect(await repo.contentRevisions(screen.id)).toEqual({ schedule: 1, playlists: { [makePlaylist().id]: 1 } });
+            expect(await repo.contentRevisions(screen.id)).toEqual({ schedule: 1, playlists: { [makePlaylist().id]: 1 }, theme: null });
             expect(kv.reads).toEqual([ids.playlists]);
+        });
+
+        it('keeps one theme for all screens beside the playlists, checked against its revision (Plan.md 27)', async () => {
+            const { screen } = await created();
+            expect(await repo.loadTheme()).toBeNull();
+            const look = { corners: 'square' as const, accent: '#e11d48', text: '#111111', background: '#f8fafc', appointments: 'large' as const, imageRatio: '4:3' as const };
+            const first = await repo.saveTheme(look, { expectedRevision: null, updatedBy: 'Anna' });
+            expect(first).toMatchObject({ ...look, id: 'theme', kind: 'theme', revision: 1, updatedBy: 'Anna' });
+            await expect(repo.saveTheme(look, { expectedRevision: null, updatedBy: 'Ben' })).rejects.toBeInstanceOf(ConflictError);
+            await repo.saveTheme({ ...look, corners: 'round' }, { expectedRevision: 1, updatedBy: 'Ben' });
+
+            // One document, not a playlist; the screen brings it along, the quick check sees its revision.
+            expect((await repo.listPlaylists()).map((o) => o.playlist.id)).toEqual([makePlaylist().id]);
+            const ids = await repo.ensureCategories();
+            expect(await kv.listValues(ids.playlists)).toHaveLength(2);
+            expect((await repo.loadScreen(screen.slug)).theme).toMatchObject({ corners: 'round', revision: 2 });
+            expect((await repo.contentRevisions(screen.id)).theme).toBe(2);
+            // A new playlist's first slide starts in the theme's background.
+            const made = await repo.createPlaylist({ name: 'Neu', stage: { width: 1920, height: 1080 } }, 'Anna');
+            const slide = (await repo.loadPlaylist(made.id)).slides[0]!;
+            expect(slide.background).toEqual({ kind: 'solid', color: '#f8fafc' });
         });
 
         it('counts a calendar that only a schedule rule uses (for the device rights)', async () => {
