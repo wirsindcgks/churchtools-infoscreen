@@ -6,7 +6,13 @@ import type { MediaDoc, SlideDoc } from '../model/schema';
 import { imageSource, provideStageContext, type StageContext } from '../player/context';
 import { browserDeps, createPlayer } from '../player/controller';
 import { createChurchToolsPlayerData } from '../player/data';
-import { readDeviceLogin, withDeviceLogin } from '../player/device-login';
+import {
+    readDeviceLogin,
+    rememberDeviceLogin,
+    rememberedDeviceLogin,
+    withDeviceLogin,
+    withoutDeviceLogin,
+} from '../player/device-login';
 import { screenImageUrls, slideImageUrls } from '../player/images';
 import { createMediaCache } from '../player/media-cache';
 import { createPreloader } from '../player/preload';
@@ -19,9 +25,15 @@ import StageView from '../player/StageView.vue';
 const route = useRoute();
 const slug = typeof route.query.screen === 'string' ? route.query.screen : null;
 
-// Way B: the token sits in the fragment, ChurchTools has already taken it out of the query (G9).
-const login = readDeviceLogin(new URL(window.location.href));
-if (login) enableTokenLogin(login);
+// Way B: the token sits in the fragment – ChurchTools has taken it out of the query, if it signed in (G9) –
+// or, after the player has tidied the address, in the tab's session storage.
+const login = readDeviceLogin(new URL(window.location.href)) ?? rememberedDeviceLogin();
+if (login) {
+    enableTokenLogin(login);
+    rememberDeviceLogin(login);
+    // Off the address bar, off photos and screenshots. It stays in the kiosk configuration and the history.
+    window.history.replaceState(window.history.state, '', withoutDeviceLogin(window.location.href));
+}
 
 const player = slug
     ? createPlayer(slug, createChurchToolsPlayerData(login), {

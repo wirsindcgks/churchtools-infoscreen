@@ -53,6 +53,24 @@ test('way B: the player takes the token from the fragment, where it survives the
     expect(logins).toContain('geraet');
 });
 
+test('way B: the player takes the token off the address bar, and still knows it after a manual reload', async ({ page }) => {
+    const logins: string[] = [];
+    await page.route('**/api/whoami**', async (route) => {
+        const url = new URL(route.request().url());
+        if (url.searchParams.has('login_token')) logins.push(url.searchParams.get('login_token') ?? '');
+        await route.fulfill({ json: { data: { id: 1, firstName: 'Mensch', lastName: 'Vorort' } } });
+    });
+    // As in a browser that was already signed in: ChurchTools left the token in the query (no redirect).
+    await page.goto('./player?screen=demo&login_token=geraet&user_id=22#login_token=geraet&user_id=22');
+    await expect(page.getByRole('alert')).toContainText('Person 22');
+    expect(page.url()).not.toContain('geraet');
+    expect(page.url()).toContain('screen=demo');
+
+    await page.reload();
+    await expect(page.getByRole('alert')).toContainText('Person 22');
+    expect(logins.filter((t) => t === 'geraet').length).toBeGreaterThanOrEqual(2);
+});
+
 test('way B: the nightly reload goes through the address with the token, so the session is renewed daily (G32)', async ({
     page,
 }) => {
