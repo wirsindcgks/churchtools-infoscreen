@@ -4,12 +4,22 @@ Eine Extension für [ChurchTools](https://church.tools), mit der eine Gemeinde d
 gestaltet – im Browser, ohne Programmierkenntnisse. Termine kommen live aus ChurchTools, Bilder aus der eigenen
 Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
 
+![Der Editor: Slides, Bausteine, Bühne und Inspektor](docs/bilder/editor.png)
+
 ## Was es kann
 
-- **Gestalten wie in einem Folien-Editor:** Slides mit Text, Bild, Fläche, Uhr, Terminliste, nächstem Termin und
-  Gemeindekopf mit Logo; ziehen, skalieren, am Raster ausrichten, Farben als Hex-Wert; Rückgängig/Wiederholen.
-  Die Vorschau ist genau das, was der Fernseher zeigt.
-- **Termine live aus den Kalendern von ChurchTools** – was dort eingetragen wird, erscheint von selbst im Foyer.
+- **Gestalten wie in einem Folien-Editor:** Slides mit Text, Bild, Fläche, Uhr, Terminliste, nächstem Termin,
+  Countdown, Gemeindekopf mit Logo, Webseite und QR-Code; ziehen, skalieren, am Raster ausrichten, sperren;
+  Rückgängig/Wiederholen. Die Vorschau ist genau das, was der Fernseher zeigt.
+- **Termine live aus den Kalendern von ChurchTools** – was dort eingetragen wird, erscheint von selbst im Foyer, als
+  schlichte Liste oder als Karten mit Datumskachel.
+- **Playlists und Zeitpläne:** Eine Playlist kann auf mehreren Screens laufen; Regeln nach Uhrzeit oder rund um
+  Termine schalten um, etwa „30 Minuten vor dem Gottesdienst die Begrüßung". Die Startseite zeigt, was jeder
+  Fernseher gerade zeigt.
+- **Hinweisband:** eine Laufschrift oder ein stehender Hinweis über allen Slides, der zur eingestellten Zeit von
+  selbst verschwindet.
+- **Mediathek und Design:** Bilder einmal hochladen und überall verwenden, mit der Angabe, wo sie laufen; Ecken,
+  Farben und Darstellung der Termine einmal für alle Screens festlegen.
 - **Mehrere Screens**, quer oder hochkant, jeder unter einer festen Adresse; handytaugliche Übersicht.
 - **Fernseher, die sich selbst helfen:** Sie melden sich selbst an, holen Änderungen in etwa 20 Sekunden, halten
   Daten und Bilder auf dem Gerät, überstehen Netzausfälle und laden nach Fehlern und jede Nacht neu.
@@ -17,6 +27,8 @@ Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
 - **Datensparsam:** Zehn freie Schriften kommen von der eigenen Instanz, kein Aufruf an Dritte; das Gerät hat ein
   eigenes Konto, das nur lesen darf; seine Adresse trägt statt eines Passworts einen Login-Token, den ein
   Passwortwechsel ungültig macht.
+
+Mehr Bilder – Startseite, Zeitpläne, Mediathek, Design – zeigt das [Onboarding](docs/Onboarding.md#gestalter--inhalte-gestalten).
 
 ## Installieren
 

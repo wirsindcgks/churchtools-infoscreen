@@ -51,6 +51,19 @@ Wer eine Messung in den Plan schreibt, bläht ihn auf – genau das ist am 2026-
   Ordnung.
 - **An bestehenden Rollen der Rechteverwaltung wird nichts geändert** – dafür gibt es eine eigene Testgruppe.
 
+## Planen und Umsetzen
+
+*Versuch seit 2026-09-25: Spart die Aufteilung Token, ohne dass die Qualität leidet?*
+
+- **Geplant und entschieden wird mit Opus 5.5, umgesetzt mit Sonnet 5** – über den Agenten
+  [`umsetzer`](.claude/agents/umsetzer.md) oder von Hand mit `/model`.
+- **Vor der Umsetzung steht der Plan fest,** in `Plan.md` oder im Auftrag selbst: welche Dateien, welche
+  Entscheidungen, welche Tests, woran „fertig" zu erkennen ist. Der Umsetzer kennt das Gespräch nicht – was nicht
+  dasteht, weiß er nicht.
+- **Bei Opus bleibt,** was Urteil braucht: Messungen an ChurchTools samt Academy-Recherche, Schemaänderungen,
+  Rechte, alles, was die Testinstanz berührt, und die Durchsicht des Ergebnisses.
+- **Wer beim Umsetzen auf eine offene Frage stößt, gibt sie zurück,** statt zu raten.
+
 ## Geheimnisse und Fixtures
 
 - **Keine Zugangsdaten und keine Instanz-URL ins Repo.** `.env` ist ignoriert. Instanz-URL und Login-Token

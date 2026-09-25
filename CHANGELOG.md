@@ -63,5 +63,5 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Rollen:** Screens anlegen, einstellen und löschen Administratoren; Gestalter kümmern sich um Slides, Playlists,
   Bilder und Design.
 - **Die Bilder** liegen im Wiki-Bereich „Infoscreen" und können dort unter „Ausgeblendet" aus dem Blick rücken.
-- **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) und eine
-  [Übersicht der Rechte](docs/Rechte.md).
+- **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
+  Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).

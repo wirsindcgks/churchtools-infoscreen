@@ -237,7 +237,7 @@ function onKey(event: KeyboardEvent): void {
             </template>
         </AppBar>
 
-        <p v-if="demo" class="d-banner d-banner--warning banner">
+        <p v-if="demo" class="d-banner d-banner--warning banner" data-testid="demo-notice-editor">
             Demo-Modus: Gespeichert wird in diesem Browser, nicht in ChurchTools; ein offener Player übernimmt Änderungen sofort.
         </p>
         <p v-if="editor.error" class="d-banner d-banner--error banner" role="alert">{{ editor.error }}</p>

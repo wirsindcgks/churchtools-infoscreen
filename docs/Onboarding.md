@@ -39,39 +39,81 @@ Etwa eine halbe Stunde, den Fernseher nicht mitgezählt.
 
 ## Gestalter – Inhalte gestalten
 
-Du brauchst nur die Mitgliedschaft in „Infoscreen-Designer"; alles Weitere kommt von dort.
+Du brauchst nur die Mitgliedschaft in „Infoscreen-Designer"; alles Weitere kommt von dort. Die Bilder hier zeigen
+eine erfundene Gemeinde.
 
-1. **Öffnen:** In ChurchTools oben auf **„Infoscreen Designer"**. Die Startseite zeigt alle Screens als Kacheln mit
-   ihrer ersten Slide.
-2. **Screen wählen:** Klick auf die Kachel öffnet den Editor mit der Playlist, die dort läuft (ihr Name steht auf
-   der Kachel). Neue Screens legt ein Administrator an. **Playlists** – der Inhalt – stehen in der Seitenleiste für
-   sich: Dort legst du neue an; eine Playlist kann auf mehreren Screens laufen.
-3. **Gestalten:**
-   - links die **Slides** – „Neue Slide" unter der letzten, ziehen zum Umsortieren;
-   - über der Bühne die **Bausteine**: Text, Bild, Fläche, Uhr, Terminliste, Nächster Termin, Gemeindekopf;
-   - auf der **Bühne** ziehen und an den Griffen skalieren; rechts im **Inspektor** Schrift, Farben (auch als
-     Hex-Wert), Kalender und Hintergrund.
-4. **Zeitplan** – an der Kachel des Screens („Zeitplan") oder in der Seitenleiste unter **„Zeitpläne"**, wo alle
-   Screens mit ihren Regeln und dem, was gerade läuft, untereinander stehen: welche Playlist ein Screen zeigt.
-   Die **Standard-Playlist** läuft immer, wenn keine **Regel** passt. Regeln schalten auf eine andere Playlist –
-   nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten vor Beginn bis 10 Minuten nach Beginn"
-   für eine Begrüßung, „75 bis 105 Minuten nach Beginn" für eine Verabschiedung); passen mehrere, gewinnt die
-   obere. Zur Wahl stehen Playlists im Format des Screens; eine neue legst du direkt dort an – letzter Eintrag
-   jeder Auswahl, „＋ Neue Playlist anlegen …". Die Vorschau zeigt für jeden Tag, was wann läuft.
-5. **Bilder:** über den Baustein „Bild" oder in der **Mediathek** (Seitenleiste). Ein Bild lässt sich beliebig oft
-   verwenden. Nichts Vertrauliches hochladen – Bilder sind über ihre Adresse ohne Anmeldung abrufbar.
-6. **Vorschau** (oben im Editor): spielt die Playlist mit deinen Änderungen im Vollbild ab, wie der Fernseher –
-   ohne zu speichern. Esc schließt sie.
-7. **Speichern** (oder ⌘S / Strg+S). Alle Fernseher, die diese Playlist zeigen, übernehmen die Änderung in etwa
-   20 Sekunden von selbst – ohne neu zu laden, auf der Slide, die sie gerade zeigen.
+### 1. Die Screens
 
-**Gut zu wissen:**
+In ChurchTools oben auf **„Infoscreen Designer"**. Die Startseite zeigt jeden Fernseher als Kachel – mit dem, was er
+**gerade** zeigt. Ein Klick auf die Kachel öffnet diese Playlist im Editor; Adresse, Zeitplan und Player stecken im
+Menü „…". Neue Screens legt ein Administrator an.
+
+![Startseite mit zwei Screens als Kacheln](bilder/startseite.png)
+
+### 2. Slides gestalten
+
+![Editor: links die Slides, oben die Bausteine, in der Mitte die Bühne, rechts der Inspektor](bilder/editor.png)
+
+- **Links die Slides** – „Neue Slide" unter der letzten, ziehen zum Umsortieren, darunter **„Aus anderer Playlist
+  …"**, um Slides einer anderen Playlist als Kopie zu übernehmen.
+- **Oben die Bausteine:** Text, Bild, Fläche, Uhr, Terminliste, Nächster Termin, Gemeindekopf, Webseite, QR-Code und
+  **Countdown** („Gottesdienst beginnt in 12:34").
+- **In der Mitte die Bühne:** ziehen, an den Griffen skalieren, am Raster ausrichten.
+- **Rechts der Inspektor:** Schrift, Farben (auch als Hex-Wert), Kalender, Hintergrund. Oben **„Sperren"**, damit
+  ein Logo oder Hintergrund nicht verrutscht – ein Klick darauf erreicht dann den Baustein darunter, mit gedrückter
+  Alt-Taste (Mac: Option) den gesperrten selbst.
+- **Hinweisband:** Ist kein Baustein gewählt, zeigt der Inspektor die Playlist. Dort lässt sich ein Band über alle
+  Slides legen – als Laufschrift oder stehend, etwa „Heute Parkplatz gesperrt", mit **„Zeigen bis"**, danach
+  verschwindet es von selbst.
+- **Vorschau** (oben): spielt die Playlist mit deinen Änderungen im Vollbild ab, wie der Fernseher – ohne zu
+  speichern. Esc schließt sie.
+- **Speichern** (oder ⌘S / Strg+S). Alle Fernseher, die diese Playlist zeigen, übernehmen die Änderung in etwa
+  20 Sekunden von selbst.
+
+### 3. Playlists
+
+Eine **Playlist** ist der Inhalt, den ein Screen zeigt; sie kann auf mehreren Screens laufen. Unter **„Playlists"**
+legst du neue an (oben rechts) und **duplizierst** bestehende (Menü „…") – die Kopie hat eigene Slides, Änderungen
+daran berühren das Original nicht.
+
+![Playlists als Kacheln mit Format, Zahl der Slides und den Screens, die sie zeigen](bilder/playlists.png)
+
+### 4. Zeitpläne
+
+Welche Playlist ein Screen wann zeigt. Die **Standard-Playlist** läuft, wenn keine **Regel** passt. Regeln schalten auf
+eine andere – nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten vor Beginn bis 10 Minuten nach
+Beginn" für eine Begrüßung); passen mehrere, gewinnt die obere. Die Seite **„Zeitpläne"** zeigt alle Screens mit
+ihren Regeln und daneben die Playlist, die gerade läuft; ein Klick auf eine Regel zeigt deren Playlist.
+„Bearbeiten" öffnet denselben Dialog wie „Zeitplan" an der Kachel.
+
+![Zeitpläne: je Screen die Regeln und eine Vorschau der laufenden Playlist](bilder/zeitplaene.png)
+
+### 5. Bilder
+
+Über den Baustein „Bild" oder in der **Mediathek**. Unter jedem Bild steht, wo es läuft („Foyer › Gottesdienst ›
+Begrüßung"); „Unbenutzt" hilft beim Aufräumen. Ein Bild lässt sich beliebig oft verwenden. **Nichts Vertrauliches
+hochladen** – Bilder sind über ihre Adresse ohne Anmeldung abrufbar.
+
+![Mediathek mit Suche, Filtern und der Angabe, wo ein Bild verwendet wird](bilder/mediathek.png)
+
+### 6. Design
+
+Einmal für alle Screens: Ecken rund oder eckig, Akzentfarbe, Farben für neue Slides, Termine **„Nativ"** (schlichte
+Zeilen) oder **„Groß"** (Karten mit Datumskachel) und das Format der Terminbilder – mit Vorschau. Ein Baustein, der
+eine eigene Darstellung gewählt hat, behält sie.
+
+![Design: Einstellungen links, Vorschau rechts](bilder/design.png)
+
+### Gut zu wissen
 
 - **Rückgängig** mit ⌘Z / Strg+Z; ein Ziehen ist ein Schritt.
-- **Speichert jemand anderes gleichzeitig denselben Screen**, fragt der Editor, welche Fassung gelten soll.
-- **Neuer Kalender auf einem Screen** – in einer Terminliste oder einer Termin-Regel? Dann einem Administrator
-  Bescheid geben: Er klickt einmal „Rechte aktualisieren", damit die Fernseher den Kalender lesen dürfen.
+- **Speichert jemand anderes gleichzeitig dieselbe Playlist**, fragt der Editor, welche Fassung gelten soll.
+- **Neuer Kalender auf einem Screen** – in einer Terminliste, einem Countdown oder einer Termin-Regel? Dann einem
+  Administrator Bescheid geben: Er klickt einmal „Rechte aktualisieren", damit die Fernseher den Kalender lesen
+  dürfen.
 - **Sagt die Startseite „Dir fehlen Rechte"**, nennt sie das Recht – gib die Meldung an einen Administrator weiter.
+- **Was neu ist**, steht unter **„Über & Neuigkeiten"** unten in der Seitenleiste; ein blauer Punkt zeigt eine neue
+  Version an.
 - **Alles auf einem Screen sieht jeder im Foyer.** Personenbezogenes gehört nicht darauf.
 
 ## Gerät – der Fernseher

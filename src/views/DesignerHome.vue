@@ -202,7 +202,7 @@ async function remove(overview: ScreenOverview): Promise<void> {
         </section>
 
         <PageHeader icon="grid" title="Screens" testid="screens-heading">
-            Die Fernseher und was sie gerade zeigen. Ein Klick auf eine Kachel öffnet ihre Standard-Playlist im Editor;
+            Die Fernseher und was sie gerade zeigen. Ein Klick auf eine Kachel öffnet die Playlist, die dort gerade läuft;
             Adresse, Zeitplan und Einstellungen stecken im Menü „…".
         </PageHeader>
 

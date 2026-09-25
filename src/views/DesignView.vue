@@ -53,8 +53,9 @@ const previewSlide = computed<SlideDoc>(() => {
     const list = createBlock('appointment-list', STAGE, ids, theme.value);
     slide.blocks = [
         // Fixed ids: the blocks stay mounted while the look changes.
-        { ...next, id: 'preview-next', x: 80, y: 60, width: 1760, height: 440 },
-        { ...list, id: 'preview-list', x: 80, y: 560, width: 1760, height: 460, limit: 4 } as typeof list,
+        // The highlighted card needs its height: title, text, time and place below each other.
+        { ...next, id: 'preview-next', x: 80, y: 40, width: 1760, height: 540 },
+        { ...list, id: 'preview-list', x: 80, y: 620, width: 1760, height: 420, limit: 4 } as typeof list,
     ];
     return slide;
 });

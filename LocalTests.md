@@ -134,6 +134,18 @@ npx playwright test --grep-invert "upload an image"   # ohne den schreibenden Te
 - Alle anderen e2e-Tests lesen nur. Wo sie Rechte oder Anmeldungen durchspielen, verändern sie die Antwort
   im Browser, nicht die Instanz.
 
+### Bilder für die Anleitungen
+
+```sh
+npm run docs:screenshots
+```
+
+Schreibt die Bilder in `docs/bilder/`, die [Onboarding](docs/Onboarding.md) und README zeigen – nach einer
+sichtbaren Änderung am Designer neu erzeugen und mit einchecken. Alles, was ChurchTools antworten würde, ist dabei
+erfunden (die „Gemeinde am Markt" mit Kalendern, Terminen, Logo und Bildern), und jede schreibende Anfrage wird im
+Browser beantwortet: **Kein Name, Termin oder Bild der Testinstanz landet im Repository, und nichts wird dorthin
+geschrieben.** Im normalen Testlauf wird der Test übersprungen.
+
 ## Release-Paket bauen
 
 ```sh

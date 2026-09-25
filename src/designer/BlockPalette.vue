@@ -66,12 +66,13 @@ const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
     border-bottom: 1px solid var(--d-divider);
     background: var(--d-surface);
 }
+/* Ten blocks do not fit beside the grid on a laptop: a second row beats a block out of sight. */
 .blocks {
     flex: 1;
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
     min-width: 0;
-    overflow-x: auto;
 }
 .block {
     flex: none;
@@ -120,6 +121,8 @@ const palette = Object.entries(BLOCK_LABELS) as [BlockType, string][];
     }
     .blocks {
         flex-basis: 100%;
+        flex-wrap: nowrap;
+        overflow-x: auto;
     }
     .grid-select {
         margin-left: auto;

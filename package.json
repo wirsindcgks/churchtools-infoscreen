@@ -12,7 +12,8 @@
     "typecheck": "vue-tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
-    "smoke": "playwright test"
+    "smoke": "playwright test",
+    "docs:screenshots": "DOCS_SCREENSHOTS=1 playwright test e2e/docs-screenshots.spec.ts --project=chromium"
   },
   "dependencies": {
     "@churchtools/churchtools-client": "^1.7.3",
