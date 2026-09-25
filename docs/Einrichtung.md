@@ -17,7 +17,7 @@ Rechte bis zum Fernseher im Foyer. Rechne mit etwa einer halben Stunde, den Fern
 | [4. Gruppen und Rechte anlegen lassen](#4-gruppen-und-rechte-anlegen-lassen) | Administrator | Designer → Einstellungen |
 | [5. Gestalter aufnehmen](#5-gestalter-aufnehmen) | Administrator | Gruppe „Infoscreen-Designer" |
 | [6. Geräte-Benutzer anlegen](#6-geräte-benutzer-anlegen) | Administrator | Personen, Gruppe „Infoscreen-Devices" |
-| [7. Den Fernseher einrichten](#7-den-fernseher-einrichten) | wer vor Ort ist | Browser des Fernsehers |
+| [7. Den Fernseher einrichten](#7-den-fernseher-einrichten) | Administrator, dann wer vor Ort ist | Designer → Einstellungen, Kiosk-Browser |
 
 ### Drei Rollen
 
@@ -133,33 +133,31 @@ Mitglied, ob die Kalender der Screens lesbar sind.
 
 ## 7. Den Fernseher einrichten
 
-### Einmal anmelden, dann die Adresse öffnen
+### Die Adresse erzeugen
 
-1. Im Browser des Fernsehers `https://<eure-instanz>.church.tools` öffnen und **mit dem Geräte-Benutzer anmelden**,
-   dabei **„Angemeldet bleiben"** wählen.
-2. Die **Adresse des Screens** öffnen. Du findest sie im Designer auf der Startseite im Menü „…" der Kachel unter
-   **„Adresse kopieren"**. Sie sieht so aus:
+Der Fernseher bekommt eine Adresse, mit der er sich **bei jedem Start selbst** als Geräte-Benutzer anmeldet. Eine
+Anmeldung von Hand im Browser genügt nicht: Auch mit „Angemeldet bleiben" meldet ChurchTools nach 24 Stunden ab.
 
-   ```
-   https://<eure-instanz>.church.tools/ccm/infoscreen-designer/player?screen=foyer
-   ```
+1. Im Designer auf **Einstellungen**, Karte **„Adresse für einen Fernseher"**.
+2. Den **Screen** wählen, **Benutzername und Passwort des Geräte-Kontos** eingeben, **„Adresse erzeugen"**.
+3. **Kopieren** und als **Startseite des Kiosk-Browsers** eintragen. Anmelden musst du dich im Browser nicht.
 
-   **In der Adresse steht kein Passwort** – sie ist nichts wert ohne die Anmeldung im Browser.
+Das Passwort wird nirgends gespeichert; es dient nur dazu, bei ChurchTools den **Login-Token** des Geräte-Kontos
+abzuholen, der in der Adresse steht. **Die Adresse ist deshalb ein Schlüssel:** Wer sie hat, sieht ChurchTools mit
+den Rechten des Geräte-Kontos – nur lesend, aber ohne Passwort. Gib sie nicht per E-Mail oder Chat weiter, sondern
+trag sie direkt am Gerät ein. Ungültig wird sie, sobald das Passwort des Geräte-Kontos geändert wird.
 
-3. Diese Adresse als **Startseite des Kiosk-Browsers** eintragen.
+**Nur zum Ausprobieren** geht es auch ohne: im Browser mit dem Geräte-Benutzer anmelden und im Designer über „…" →
+„Player öffnen" den Screen aufrufen. Das hält einen Tag.
 
-Ist der Browser nicht angemeldet, zeigt der Fernseher: *„Dieser Browser ist nicht bei ChurchTools angemeldet. Bitte
-hier einmal mit dem Geräte-Benutzer anmelden …"*.
-
-> **Wichtig – die Anmeldung hält nur 24 Stunden.** Auch mit „Angemeldet bleiben" meldet ChurchTools den Browser nach
-> einem Tag ab (gemessen). Für den Dauerbetrieb bekommt der Fernseher deshalb eine Adresse, mit der er sich selbst
-> neu anmeldet; sie ist in Arbeit. Bis dahin musst du dich täglich neu anmelden – für einen ersten Test genügt das.
+Fehlt die Anmeldung, zeigt der Fernseher: *„Dieser Fernseher ist nicht bei ChurchTools angemeldet. Seine Adresse
+erzeugt ein Administrator …"*.
 
 ### Einstellungen des Kiosk-Browsers
 
 | Einstellung | Warum |
 | --- | --- |
-| **Dauerhaftes Browserprofil** – Cookies beim Beenden nicht löschen, kein privates Fenster | sonst ist die Anmeldung nach jedem Neustart weg |
+| **Dauerhaftes Browserprofil** – Cookies und Websitedaten beim Beenden nicht löschen | Daten und Bilder bleiben auf dem Gerät und helfen über Netzausfälle |
 | **Beim Start die Adresse des Screens öffnen**, im Vollbild | der Fernseher läuft nach einem Stromausfall von selbst wieder an |
 | **Bildschirmschoner, Energiesparen und Abschalten des Bildschirms aus** | sonst wird das Foyer schwarz |
 | **Neu laden, wenn die Seite nicht lädt** – falls der Kiosk-Browser das kann | startet das Gerät, während das Netz weg ist, kann die Seite sich nicht selbst helfen |
@@ -177,7 +175,8 @@ die Bühne rückt dann um so viel Prozent nach innen.
   anstoßen.
 - Er **hält den letzten Stand und die Bilder auf dem Gerät.** Fällt das Netz aus, zeigt er weiter, was er hatte.
 - Er **lädt jede Nacht zwischen 3 und 4 Uhr neu** und nach **30 Minuten ununterbrochener Fehler** – aber nur, wenn
-  die Seite erreichbar ist.
+  die Seite erreichbar ist. Dabei meldet er sich jedes Mal frisch an; läuft die Anmeldung zwischendurch ab, erneuert
+  er sie selbst.
 
 ## Updates
 
@@ -195,8 +194,10 @@ erhalten.
 1. **Den Geräte-Benutzer aus der Gruppe „Infoscreen-Devices" nehmen.** Damit verliert das Konto alle Rechte, die
    es über diese Gruppe hatte – am Designer und an den Kalendern. Was sein Personenstatus erlaubt, bleibt (deshalb
    in Schritt 6 ein Status mit wenig Rechten).
-2. **Sein Passwort in der ChurchTools-Oberfläche ändern.**
-3. Für das Ersatzgerät ein neues Konto anlegen oder das alte mit neuem Passwort weiterverwenden.
+2. **Sein Passwort in der ChurchTools-Oberfläche ändern.** Damit wird der Login-Token ungültig – die Adresse auf
+   dem verlorenen Gerät meldet sich nicht mehr an.
+3. Für das Ersatzgerät in den Einstellungen eine **neue Adresse erzeugen** (mit dem neuen Passwort). Hängen weitere
+   Fernseher am selben Konto, brauchen sie ebenfalls eine neue Adresse – ein Grund für ein Konto je Standort.
 
 Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Foyer ohnehin zu sehen ist.
 
@@ -219,8 +220,8 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | Kein Menüpunkt „Infoscreen Designer", auch nicht als Administrator | Modulrecht „sehen" fehlt | Schritt 2; Gruppe muss „aktiv" sein |
 | Startseite des Designers: „Dir fehlen Rechte …" | Person ist nicht (aktiv) in „Infoscreen-Designer" | Schritt 5; die Liste nennt das fehlende Recht |
 | Kein Menüpunkt „Einstellungen" im Designer | Du bist kein Administrator | Einstellungen sind Administratoren vorbehalten |
-| Geräte-Benutzer kann sich nicht anmelden: „Überprüfe Benutzername und Passwort" | meist fehlt der **Benutzername** | Schritt 6, Punkt 2 |
-| Fernseher: „Dieser Browser ist nicht bei ChurchTools angemeldet" | Anmeldung abgelaufen oder Cookies gelöscht | neu anmelden; Browserprofil prüfen |
+| „Adresse erzeugen" meldet „Anmeldung fehlgeschlagen" | meist fehlt dem Geräte-Konto der **Benutzername** | Schritt 6, Punkt 2 |
+| Fernseher: „Dieser Fernseher ist nicht bei ChurchTools angemeldet" | Adresse ohne Anmeldung, oder das Passwort des Geräte-Kontos wurde geändert | in den Einstellungen eine neue Adresse erzeugen |
 | Fernseher: „Es gibt keinen Screen „…"" | Adresse vertippt oder Screen gelöscht | Adresse neu kopieren |
 | Fernseher: Termine eines Kalenders fehlen | Gerät darf den Kalender nicht lesen | Einstellungen → „Rechte aktualisieren" |
 | Fernseher: Bild fehlt, Platzhalter statt Bild | Bild im Wiki gelöscht | im Designer ein neues Bild wählen |

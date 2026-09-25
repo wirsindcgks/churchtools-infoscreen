@@ -15,10 +15,13 @@ import { checkClock } from './clock';
 import { appointmentNeeds, appointmentWindow, type PlayerData } from './data';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
 
-/** Shown when the browser of a TV is not signed in (way A: the device signs in once in its browser). */
+/**
+ * Shown when the browser of a TV is not signed in – its address lacks the
+ * device login (way B, G9) or the device's password was changed.
+ */
 export const SIGN_IN_MESSAGE =
-    'Dieser Browser ist nicht bei ChurchTools angemeldet. Bitte hier einmal mit dem Geräte-Benutzer anmelden ' +
-    '(„Angemeldet bleiben" wählen) – danach erscheint der Infoscreen von selbst.';
+    'Dieser Fernseher ist nicht bei ChurchTools angemeldet. Seine Adresse erzeugt ein Administrator im Infoscreen ' +
+    'Designer unter „Einstellungen" – mit ihr meldet er sich bei jedem Start selbst an.';
 
 export interface PlayerState {
     phase: 'loading' | 'running' | 'error';
@@ -46,7 +49,7 @@ export interface PlayerDeps {
     saveCached: (slug: string, state: CachedState) => Promise<void>;
 }
 
-const browserDeps: PlayerDeps = {
+export const browserDeps: PlayerDeps = {
     now: () => new Date(),
     reload: () => window.location.reload(),
     async canReload() {

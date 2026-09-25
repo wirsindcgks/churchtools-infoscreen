@@ -136,15 +136,13 @@ test('rename a screen: the new name shows in the list, an empty one is refused',
     await expect(page.getByTestId('screen-card')).not.toContainText('Demo – Foyer');
 });
 
-test('the screen settings carry the address for the TV, without a secret (way A)', async ({ page }) => {
+test('the editor carries no address for the TV – that is the administrators\' business', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await page.keyboard.press('Escape');
-    const address = page.getByTestId('player-address');
-    await expect(address).toContainText('/ccm/infoscreen-designer/player?screen=demo');
-    await expect(address).toContainText('Angemeldet bleiben');
-    await expect(address).not.toContainText('login_token');
+    await expect(page.getByTestId('screen-name')).toBeVisible();
+    await expect(page.locator('.inspector')).not.toContainText('player?screen=');
 });
 
 test('colours take a hex value; a half-typed one is marked and not taken over (Plan.md 11)', async ({ page }) => {

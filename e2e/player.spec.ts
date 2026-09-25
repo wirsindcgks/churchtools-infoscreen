@@ -40,6 +40,34 @@ test('a human session left in the kiosk browser is not taken for the device acco
     expect(logins).toContain('22');
 });
 
+test('way B: the player takes the token from the fragment, where it survives the ChurchTools redirect (G9)', async ({ page }) => {
+    const logins: string[] = [];
+    await page.route('**/api/whoami**', async (route) => {
+        const url = new URL(route.request().url());
+        if (url.searchParams.has('login_token')) logins.push(url.searchParams.get('login_token') ?? '');
+        await route.fulfill({ json: { data: { id: 1, firstName: 'Mensch', lastName: 'Vorort' } } });
+    });
+    // As after the redirect: the query no longer carries the token, the fragment does.
+    await page.goto('./player?screen=demo&user_id=22#login_token=geraet&user_id=22');
+    await expect(page.getByRole('alert')).toContainText('Person 22');
+    expect(logins).toContain('geraet');
+});
+
+test('way B: the nightly reload goes through the address with the token, so the session is renewed daily (G32)', async ({
+    page,
+}) => {
+    await page.clock.install({ time: new Date('2026-09-26T02:50:00') });
+    await page.route('**/api/whoami**', (route) =>
+        route.fulfill({ json: { data: { id: 22, firstName: 'Infoscreen', lastName: 'Foyer' } } }),
+    );
+    await page.goto('./player?screen=demo&user_id=22#login_token=geraet&user_id=22');
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+    const reload = page.waitForRequest((r) => r.isNavigationRequest() && new URL(r.url()).searchParams.get('login_token') === 'geraet');
+    await page.clock.runFor('02:00:00');
+    const url = new URL((await reload).url());
+    expect(url.searchParams.get('screen')).toBe('demo');
+});
+
 test('an unknown screen is named, not shown as a black page', async ({ page }) => {
     await page.goto('./player?screen=gibt-es-nicht');
     await expect(page.getByRole('alert')).toContainText('gibt-es-nicht');

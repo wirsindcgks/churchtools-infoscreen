@@ -11,11 +11,12 @@ Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
   Die Vorschau ist genau das, was der Fernseher zeigt.
 - **Termine live aus den Kalendern von ChurchTools** – was dort eingetragen wird, erscheint von selbst im Foyer.
 - **Mehrere Screens**, quer oder hochkant, jeder unter einer festen Adresse; handytaugliche Übersicht.
-- **Fernseher, die sich selbst helfen:** Sie holen Änderungen nach wenigen Minuten, halten Daten und Bilder auf dem
-  Gerät, überstehen Netzausfälle und laden nach Fehlern und jede Nacht neu.
+- **Fernseher, die sich selbst helfen:** Sie melden sich selbst an, holen Änderungen nach wenigen Minuten, halten
+  Daten und Bilder auf dem Gerät, überstehen Netzausfälle und laden nach Fehlern und jede Nacht neu.
 - **Rechte mit einem Knopf:** Ein Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an.
 - **Datensparsam:** Zehn freie Schriften kommen von der eigenen Instanz, kein Aufruf an Dritte; das Gerät hat ein
-  eigenes Konto, das nur lesen darf, und in seiner Adresse steht kein Passwort.
+  eigenes Konto, das nur lesen darf; seine Adresse trägt statt eines Passworts einen Login-Token, den ein
+  Passwortwechsel ungültig macht.
 
 ## Installieren
 
@@ -28,7 +29,7 @@ Voraussetzung ist eine ChurchTools-Instanz, auf der Extensions (Custom Modules) 
 ## Stand
 
 Die erste Fassung läuft seit September 2026 auf einer Testinstanz (ChurchTools 3.136, Build 32882), der erste
-Fernseher im Foyer steht aus. Offen ist vor allem, wie lange die Anmeldung des Fernsehers ohne neues Anmelden hält.
+Fernseher im Foyer steht aus.
 Was als Nächstes kommt, steht in [`Plan.md`](Plan.md); Änderungen je Version in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Mitentwickeln

@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { enableTokenLogin, type TokenLogin } from '../ct/client';
+import { enableTokenLogin } from '../ct/client';
 import type { MediaDoc, SlideDoc } from '../model/schema';
 import { imageSource, provideStageContext, type StageContext } from '../player/context';
-import { createPlayer } from '../player/controller';
+import { browserDeps, createPlayer } from '../player/controller';
 import { createChurchToolsPlayerData } from '../player/data';
+import { readDeviceLogin, withDeviceLogin } from '../player/device-login';
 import { screenImageUrls, slideImageUrls } from '../player/images';
 import { createMediaCache } from '../player/media-cache';
 import { createPreloader } from '../player/preload';
@@ -18,13 +19,18 @@ import StageView from '../player/StageView.vue';
 const route = useRoute();
 const slug = typeof route.query.screen === 'string' ? route.query.screen : null;
 
-const token = route.query.login_token;
-const personId = Number(route.query.user_id);
-const login: TokenLogin | undefined =
-    typeof token === 'string' && Number.isInteger(personId) ? { loginToken: token, personId } : undefined;
+// Way B: the token sits in the fragment, ChurchTools has already taken it out of the query (G9).
+const login = readDeviceLogin(new URL(window.location.href));
 if (login) enableTokenLogin(login);
 
-const player = slug ? createPlayer(slug, createChurchToolsPlayerData(login)) : null;
+const player = slug
+    ? createPlayer(slug, createChurchToolsPlayerData(login), {
+          ...browserDeps,
+          // A plain reload would load the address without the token – after 24 hours (G32) the page without our script.
+          reload: () =>
+              login ? window.location.replace(withDeviceLogin(window.location.href, login)) : window.location.reload(),
+      })
+    : null;
 const state = player?.state;
 
 const context = reactive<StageContext>({

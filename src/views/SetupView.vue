@@ -5,9 +5,11 @@ import { EXTENSION_KEY } from '../config';
 import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import { fetchCalendars, type Calendar } from '../ct/api';
-import { httpStatus } from '../ct/client';
+import { httpStatus, instanceBaseUrl } from '../ct/client';
+import { playerUrl } from '../designer/player-url';
 import { findOrCreateCategory, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
-import { SCHEMA_VERSION } from '../model/schema';
+import { SCHEMA_VERSION, type ScreenDoc } from '../model/schema';
+import { withDeviceLogin } from '../player/device-login';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
 import { AUTH, checkDesignerGroup, checkDeviceGroup, type Check, type RequiredRight } from '../setup/checks';
 import {
@@ -20,6 +22,7 @@ import {
     loadPersonGrants,
     type GroupSummary,
 } from '../setup/load';
+import { createDeviceLogin } from '../setup/device-token';
 import { GROUP_NAMES, GROUP_TYPE_NAME, planProvisioning, provision, refreshGrants, type GroupSpec } from '../setup/provision';
 import { getRepository } from '../store/backend';
 import { CATEGORIES, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
@@ -265,13 +268,16 @@ onMounted(async () => {
         const handle = await getRepository();
         repository = handle.repository;
         demo.value = handle.demo;
-        const [list, settings, wikiCategories, calendarList, used] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, used, screenList] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
             fetchCalendars(),
             repository.calendarIdsInUse(),
+            repository.listScreens(),
         ]);
+        screens.value = screenList;
+        device.slug = screenList[0]?.slug ?? '';
         groups.value = list;
         wikiCategoryId = wikiCategories.find((c) => c.name === WIKI_CATEGORY_NAME)?.id ?? null;
         wikiCategoryIdKnown.value = wikiCategoryId !== null;
@@ -294,6 +300,49 @@ onMounted(async () => {
         error.value = explain(e);
     }
 });
+
+/**
+ * Addresses for the TVs, way B (Plan.md, D; G9, G32): the device account's
+ * token goes into the address, so the TV signs itself in on every load.
+ * Password and token are kept nowhere – not in the settings, which designers
+ * can read; the address exists only on this page and in the kiosk browser.
+ */
+const screens = ref<ScreenDoc[]>([]);
+const device = reactive({
+    slug: '',
+    username: '',
+    password: '',
+    busy: false,
+    error: null as string | null,
+    url: null as string | null,
+    personId: null as number | null,
+    copied: false,
+});
+
+async function createTvAddress(): Promise<void> {
+    if (!device.slug || !device.username.trim() || !device.password) return;
+    Object.assign(device, { busy: true, error: null, url: null, personId: null, copied: false });
+    try {
+        const login = await createDeviceLogin(instanceBaseUrl(), device.username, device.password);
+        device.url = withDeviceLogin(playerUrl(device.slug), login);
+        device.personId = login.personId;
+    } catch (e) {
+        device.error = e instanceof Error ? e.message : String(e);
+    } finally {
+        device.password = '';
+        device.busy = false;
+    }
+}
+
+async function copyTvAddress(): Promise<void> {
+    if (!device.url) return;
+    try {
+        await navigator.clipboard.writeText(device.url);
+        device.copied = true;
+    } catch {
+        // Without clipboard access the address stays visible for copying by hand.
+    }
+}
 
 /** Which build is installed (Plan.md, 12). */
 const APP_VERSION = __APP_VERSION__;
@@ -441,6 +490,65 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     Geprüft werden die Rechte der Gruppenrollen und ihrer Gruppentyp-Rollen, bei Geräten dazu Personenstatus und
                     direkt vergebene Rechte. Rechte aus anderen Gruppen zählen nicht mit.
                 </p>
+
+                <section id="fernseher" class="d-card card tv" data-testid="tv-address">
+                    <h2>Adresse für einen Fernseher</h2>
+                    <p class="muted">
+                        Mit dieser Adresse meldet sich der Fernseher bei jedem Start selbst als Geräte-Benutzer an – eine
+                        Anmeldung im Browser hielte nur 24 Stunden. Trag sie als Startseite des Kiosk-Browsers ein.
+                    </p>
+                    <p v-if="!screens.length" class="muted small">Noch keine Screens angelegt.</p>
+                    <form v-else class="tv-form" autocomplete="off" @submit.prevent="createTvAddress">
+                        <label class="d-field">
+                            Screen
+                            <select v-model="device.slug" data-testid="tv-screen">
+                                <option v-for="screen in screens" :key="screen.id" :value="screen.slug">{{ screen.name }}</option>
+                            </select>
+                        </label>
+                        <label class="d-field">
+                            Benutzername des Geräte-Kontos
+                            <input
+                                v-model="device.username"
+                                type="text"
+                                autocapitalize="off"
+                                spellcheck="false"
+                                autocomplete="off"
+                                data-testid="tv-username"
+                            >
+                        </label>
+                        <label class="d-field">
+                            Passwort des Geräte-Kontos
+                            <input v-model="device.password" type="password" autocomplete="new-password" data-testid="tv-password">
+                        </label>
+                        <div class="actions tv-actions">
+                            <button
+                                class="d-btn d-btn--primary"
+                                type="submit"
+                                :disabled="device.busy || !device.username.trim() || !device.password"
+                                data-testid="tv-create"
+                            >
+                                Adresse erzeugen
+                            </button>
+                            <span v-if="device.busy" class="muted">Meldet an …</span>
+                        </div>
+                    </form>
+                    <p class="muted small">
+                        Passwort und Adresse werden nirgends gespeichert. Das Passwort dient nur dazu, bei ChurchTools den
+                        Login-Token des Geräte-Kontos abzuholen.
+                    </p>
+                    <p v-if="device.error" class="error" role="alert" data-testid="tv-error">{{ device.error }}</p>
+                    <div v-if="device.url" class="tv-result" data-testid="tv-result">
+                        <code class="url">{{ device.url }}</code>
+                        <button class="d-btn" type="button" data-testid="tv-copy" @click="copyTvAddress">
+                            {{ device.copied ? 'Kopiert' : 'Kopieren' }}
+                        </button>
+                        <p class="d-banner d-banner--warning small">
+                            <strong>Diese Adresse ist ein Schlüssel.</strong> Wer sie hat, sieht ChurchTools mit den Rechten
+                            des Geräte-Kontos (Person {{ device.personId }}) – nur lesend, aber ohne Passwort. Nicht per
+                            E-Mail oder Chat weitergeben. Ungültig wird sie, sobald das Passwort des Kontos geändert wird.
+                        </p>
+                    </div>
+                </section>
             </template>
             <p class="muted small version" data-testid="app-version">
                 Infoscreen Designer {{ APP_VERSION }} – neuere Fassungen stehen unter „Releases" auf GitHub und werden in
@@ -570,6 +678,32 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 }
 .version {
     margin-top: 24px;
+}
+.tv {
+    margin-top: 16px;
+}
+.tv-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr));
+    gap: 12px;
+    align-items: end;
+}
+.tv-actions {
+    grid-column: 1 / -1;
+    margin: 0;
+}
+.tv-result {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+}
+.tv-result .url {
+    overflow-wrap: anywhere;
+    font-size: var(--d-size-sm);
+}
+.tv-result .d-banner {
+    grid-column: 1 / -1;
 }
 @media (max-width: 48rem) {
     .page-title h1 {
