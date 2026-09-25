@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Appointment } from '../appointments/normalize';
 import { zonedTimeToInstant } from '../appointments/zoned';
 import { makePlaylist, makeScreen } from '../model/testing';
-import { createTimeRule, dayTimeline, scheduleProblems } from './schedule-ops';
+import { createTimeRule, dayTimeline, ruleSummary, scheduleProblems, weekdaysLabel } from './schedule-ops';
 
 const TZ = 'Europe/Berlin';
 // 2026-09-27 is a Sunday.
@@ -100,5 +100,22 @@ describe('dayTimeline', () => {
             { start: 720, end: 1200, playlistId: 'abend', ruleIndex: 1 },
             { start: 1200, end: 1440, playlistId: 'standard', ruleIndex: -1 },
         ]);
+    });
+});
+
+describe('rules in words', () => {
+    it('names runs of days the way people say them', () => {
+        expect(weekdaysLabel([1, 2, 3, 4, 5])).toBe('Mo–Fr');
+        expect(weekdaysLabel([6, 7])).toBe('Sa, So');
+        expect(weekdaysLabel([1, 3, 4, 5, 7])).toBe('Mo, Mi–Fr, So');
+        expect(weekdaysLabel([1, 2, 3, 4, 5, 6, 7])).toBe('täglich');
+    });
+
+    it('sums up a rule in one line', () => {
+        const names = (id: number) => ({ 3: 'Gottesdienste', 4: 'Jugend' })[id] ?? `Kalender ${id}`;
+        expect(ruleSummary(createTimeRule('gd'), names)).toBe('So 09:00–12:00');
+        expect(
+            ruleSummary({ kind: 'appointment', playlistId: 'gd', calendarIds: [3, 4], minutesBefore: 30, minutesAfter: 15 }, names),
+        ).toBe('30 Min. vor bis 15 Min. nach Terminen in Gottesdienste, Jugend');
     });
 });

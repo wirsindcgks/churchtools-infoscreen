@@ -9,7 +9,7 @@
  */
 import Icon from './Icon.vue';
 
-withDefaults(defineProps<{ current?: 'screens' | 'playlists' | 'media' | 'setup'; showSetup?: boolean }>(), { current: undefined, showSetup: true });
+withDefaults(defineProps<{ current?: 'screens' | 'schedules' | 'playlists' | 'media' | 'setup'; showSetup?: boolean }>(), { current: undefined, showSetup: true });
 </script>
 
 <template>

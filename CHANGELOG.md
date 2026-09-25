@@ -15,8 +15,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   Rückgängig/Wiederholen; Speichern mit Konflikterkennung.
 - **Playlists** als eigener Bereich: unabhängig von einem Screen anlegen, gestalten und löschen; dieselbe Playlist
   kann auf mehreren Screens laufen, die Kachel sagt, auf welchen. Der Editor gestaltet eine Playlist.
-- **Zeitpläne** an jeder Screen-Kachel: Standard-Playlist wählen, Regeln nach Uhrzeit (Wochentage, von–bis) und
-  rund um Termine ausgewählter Kalender, die obere gewinnt; eine Tagesvorschau zeigt, was wann läuft.
+- **Zeitpläne** an jeder Screen-Kachel und als eigener Bereich mit allen Screens, ihren Regeln in Worten und dem,
+  was gerade läuft: Standard-Playlist wählen, Regeln nach Uhrzeit (Wochentage, von–bis) und rund um Termine
+  ausgewählter Kalender, die obere gewinnt; eine Tagesvorschau zeigt, was wann läuft.
 - **Mediathek** als eigener Bereich in der Seitenleiste und als Auswahl im Editor: Bilder in den Wiki-Bereich
   „Infoscreen" hochladen, mit Warnung vor dem Löschen, solange ein Bild gezeigt wird.
 - **Player** für Fernseher: meldet sich über seine Adresse bei jedem Start selbst als Geräte-Benutzer an und erneuert

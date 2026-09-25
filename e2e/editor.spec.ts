@@ -300,6 +300,20 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await worship.getByTestId('playlist-menu').click();
     await expect(worship.getByTestId('delete-playlist')).toBeDisabled();
 
+    // All schedules at a glance in the sidebar: the rule in words, the default below it.
+    await page.getByTestId('sidebar-schedules').click();
+    await expect(page.getByTestId('schedules-heading')).toBeVisible();
+    const row = page.getByTestId('schedule-row').filter({ hasText: 'Demo – Foyer' });
+    await expect(row.getByTestId('schedule-rule-line')).toHaveText(/So 09:00–12:00\s*→\s*Gottesdienst/);
+    await expect(row.getByTestId('schedule-default-line')).toContainText('sonst');
+    await expect(row.getByTestId('schedule-default-line')).toContainText('Wochenüberblick');
+    await expect(row.getByTestId('schedule-now')).toContainText(/Gottesdienst|Wochenüberblick/);
+    await expect(page.getByTestId('sidebar-schedules')).toHaveAttribute('aria-current', 'page');
+    await page.screenshot({ path: 'test-results/schedules.png' });
+    await row.getByTestId('schedule-edit').click();
+    await expect(page.getByTestId('schedule-dialog').getByTestId('schedule-rule')).toHaveCount(1);
+    await page.getByTestId('schedule-cancel').click();
+
     // "Slides bearbeiten" in the schedule opens the playlist's editor.
     await page.getByTestId('nav-screens').click();
     await card.getByTestId('open-schedule').click();

@@ -105,3 +105,27 @@ export function dayTimeline(
     }
     return segments;
 }
+
+/** "Mo–Fr", "Sa, So", "täglich" – how the schedules page names the days of a rule. */
+export function weekdaysLabel(days: readonly number[]): string {
+    const sorted = [...new Set(days)].sort((a, b) => a - b);
+    if (!sorted.length) return 'keine Tage';
+    if (sorted.length === 7) return 'täglich';
+    const runs: number[][] = [];
+    for (const day of sorted) {
+        const run = runs.at(-1);
+        if (run && run.at(-1) === day - 1) run.push(day);
+        else runs.push([day]);
+    }
+    const short = (day: number) => WEEKDAYS[day - 1]!.short;
+    return runs
+        .map((run) => (run.length >= 3 ? `${short(run[0]!)}–${short(run.at(-1)!)}` : run.map(short).join(', ')))
+        .join(', ');
+}
+
+/** A rule in one line: "So 09:00–12:00" or "30 Min. vor bis 15 Min. nach Terminen in Gottesdienste". */
+export function ruleSummary(rule: ScheduleRule, calendarName: (id: number) => string): string {
+    if (rule.kind === 'time') return `${weekdaysLabel(rule.weekdays)} ${rule.from}–${rule.to}`;
+    const calendars = rule.calendarIds.map(calendarName).join(', ');
+    return `${rule.minutesBefore} Min. vor bis ${rule.minutesAfter} Min. nach Terminen in ${calendars}`;
+}

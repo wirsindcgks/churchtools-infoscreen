@@ -118,3 +118,19 @@ test.describe('media library as a section of its own (Plan.md 16)', () => {
         await page.screenshot({ path: 'test-results/media-page.png' });
     });
 });
+
+test.describe('sections on a phone', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+    test('schedules, playlists and media library stay reachable from every section', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('sidebar-playlists').click();
+        await expect(page.getByTestId('playlists-heading')).toBeVisible();
+        await page.getByTestId('sidebar-schedules').click();
+        await expect(page.getByTestId('schedules-heading')).toBeVisible();
+        await expect(page.getByTestId('schedule-row')).toHaveCount(1);
+        await page.getByTestId('sidebar-media').click();
+        await expect(page.getByTestId('media-heading')).toBeVisible();
+        await expectNoSidewaysScroll(page);
+    });
+});

@@ -51,7 +51,8 @@ Du brauchst nur die Mitgliedschaft in „Infoscreen-Designer"; alles Weitere kom
    - über der Bühne die **Bausteine**: Text, Bild, Fläche, Uhr, Terminliste, Nächster Termin, Gemeindekopf;
    - auf der **Bühne** ziehen und an den Griffen skalieren; rechts im **Inspektor** Schrift, Farben (auch als
      Hex-Wert), Kalender und Hintergrund.
-4. **Zeitplan** – an der Kachel des Screens („Zeitplan"): welche Playlist er zeigt. Die **Standard-Playlist** läuft
+4. **Zeitplan** – an der Kachel des Screens („Zeitplan") oder in der Seitenleiste unter **„Zeitpläne"**, wo alle
+   Screens mit ihren Regeln und dem, was gerade läuft, untereinander stehen: welche Playlist ein Screen zeigt. Die **Standard-Playlist** läuft
    immer, wenn keine **Regel** passt; Regeln schalten nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30
    Minuten vor dem Gottesdienst bis 15 Minuten danach") auf eine andere Playlist, bei mehreren gewinnt die obere. Zur
    Wahl stehen Playlists im Format des Screens. Die Vorschau zeigt für jeden Tag, was wann läuft.

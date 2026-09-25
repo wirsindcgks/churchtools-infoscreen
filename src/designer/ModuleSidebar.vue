@@ -4,8 +4,9 @@
  * the start page and in the settings. Filters are links with the format in
  * the query, so they work from any page and survive going back. The
  * administration part is only for administrators (role concept, Plan.md F).
- * Below 48rem the filters become a row to swipe; the administration links
- * stay in the bar above.
+ * Below 48rem filters and sections become one row to swipe, on every page –
+ * otherwise a phone could not get from "Playlists" to "Zeitpläne"; the
+ * administration links stay in the bar above.
  */
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
@@ -19,7 +20,7 @@ const active = computed(() => (route.name === 'designer' ? formatFilter(route.qu
 </script>
 
 <template>
-    <nav class="module-sidebar" :class="{ elsewhere: active === null }" aria-label="Infoscreen Designer">
+    <nav class="module-sidebar" aria-label="Infoscreen Designer">
         <ul class="filters">
             <li v-for="f in FILTERS" :key="f.key">
                 <RouterLink
@@ -35,6 +36,17 @@ const active = computed(() => (route.name === 'designer' ? formatFilter(route.qu
             </li>
         </ul>
         <ul class="library">
+            <li>
+                <RouterLink
+                    :to="{ name: 'schedules' }"
+                    :class="{ active: route.name === 'schedules' }"
+                    :aria-current="route.name === 'schedules' ? 'page' : undefined"
+                    data-testid="sidebar-schedules"
+                >
+                    <span class="nav-icon"><Icon name="calendar" :size="16" /></span>
+                    Zeitpläne
+                </RouterLink>
+            </li>
             <li>
                 <RouterLink
                     :to="{ name: 'playlists' }"
@@ -152,16 +164,17 @@ a.active {
         border-color: var(--d-accent);
         background: var(--d-accent-pale);
     }
-    .admin,
-    .elsewhere {
+    .admin {
         display: none;
     }
-    /* Phone: the media library joins the row of filters. */
-    .module-sidebar:not(.elsewhere) {
+    /* Phone: schedules, playlists and media library join the row of filters. */
+    .module-sidebar {
         display: flex;
         gap: 6px;
     }
     ul.library {
+        display: flex;
+        gap: 6px;
         margin: 0;
         padding: 0;
         border: 0;
