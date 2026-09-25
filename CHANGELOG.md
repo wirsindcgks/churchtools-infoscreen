@@ -22,5 +22,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   Passwort zu speichern.
 - **Zehn Schriften** unter der SIL Open Font License, von der eigenen Instanz ausgeliefert; Lato als Standard.
 - **Einrichtungsanleitung** für ChurchTools-Administratoren: `docs/Einrichtung.md`.
+- **Rollen:** Screens anlegen, einstellen und löschen nur Administratoren (Menü „…" der Kachel → „Einstellungen");
+  Gestalter gestalten Slides, Playlists und Bilder. Nach dem Update einmal „Rechte aktualisieren".
 - **Einstellungen** für Administratoren: Der Assistent legt die Gruppen „Infoscreen-Designer" und
   „Infoscreen-Devices" samt Rechten an und prüft sie.

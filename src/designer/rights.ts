@@ -52,8 +52,8 @@ export interface MissingRight {
 }
 
 const ALL = Object.keys(CATEGORIES) as CategoryKey[];
-/** Settings are written by the setup, not by designers. */
-const WRITTEN: CategoryKey[] = ['screens', 'playlists', 'slides', 'media'];
+/** Designers write content; screens and settings belong to the administrators (Plan.md, F). */
+const WRITTEN: CategoryKey[] = ['playlists', 'slides', 'media'];
 
 const DATA_RIGHTS: [keyof ModulePermissions, string, CategoryKey[]][] = [
     ['view custom data', 'Daten ansehen', ALL],

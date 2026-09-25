@@ -63,6 +63,11 @@ const foreignGroups = computed(() =>
 
 const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit];
 
+/** Rights a side must not hold – what the assistant takes back (Plan.md, F). */
+function forbiddenRights(side: Side): RequiredRight[] | null {
+    return plan.value?.find((g) => g.key === side)?.forbidden ?? null;
+}
+
 /** The module rights a side needs – exactly what the assistant grants, so both agree. */
 function moduleRights(side: Side): RequiredRight[] | null {
     const spec = plan.value?.find((g) => g.key === side);
@@ -205,6 +210,7 @@ async function check(side: Side): Promise<void> {
                 roles: rights.roles,
                 wikiCategoryId,
                 moduleRights: moduleRights('designer'),
+                forbidden: forbiddenRights('designer'),
             });
         } else {
             const members = await Promise.all(

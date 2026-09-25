@@ -115,25 +115,36 @@ test('a chosen font comes from the own server, and nothing else is asked for (da
     await page.screenshot({ path: 'test-results/editor-font.png' });
 });
 
-test('rename a screen: the new name shows in the list, an empty one is refused', async ({ page }) => {
+test('an administrator renames a screen in its settings; an empty name is refused (Plan.md 15)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('screen-menu').first().click();
+    await page.getByTestId('screen-settings-open').click();
+    const dialog = page.getByTestId('screen-settings');
+    const name = page.getByTestId('settings-name');
+
+    await name.fill('   ');
+    await expect(dialog.getByText('Ohne Namen lässt sich nicht speichern.')).toBeVisible();
+    await expect(page.getByTestId('settings-save')).toBeDisabled();
+
+    await name.fill('Foyer rechts ');
+    await page.getByTestId('settings-overscan').fill('3');
+    await page.getByTestId('settings-save').click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByTestId('screen-card')).toContainText('Foyer rechts');
+    await expect(page.getByTestId('screen-card')).not.toContainText('Demo – Foyer');
+});
+
+test('the editor saves content without touching the screen\'s settings', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await page.keyboard.press('Escape');
-    const name = page.getByTestId('screen-name');
-
-    await name.fill('   ');
-    await expect(page.getByText('Ohne Namen lässt sich nicht speichern.')).toBeVisible();
-    await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Nicht gespeichert');
-    await expect(page.getByRole('alert')).toContainText('braucht einen Namen');
-
-    await name.fill('Foyer rechts ');
+    // Name and overscan are no longer edited here.
+    await expect(page.getByTestId('screen-info')).toContainText('Demo – Foyer');
+    await expect(page.getByTestId('screen-name')).toHaveCount(0);
+    await page.getByTestId('add-clock').click();
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
-    await page.getByRole('link', { name: 'Screens', exact: true }).click();
-    await expect(page.getByTestId('screen-card')).toContainText('Foyer rechts');
-    await expect(page.getByTestId('screen-card')).not.toContainText('Demo – Foyer');
 });
 
 test('the editor carries no address for the TV – that is the administrators\' business', async ({ page }) => {
@@ -141,7 +152,7 @@ test('the editor carries no address for the TV – that is the administrators\' 
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await page.keyboard.press('Escape');
-    await expect(page.getByTestId('screen-name')).toBeVisible();
+    await expect(page.getByTestId('screen-info')).toBeVisible();
     await expect(page.locator('.inspector')).not.toContainText('player?screen=');
 });
 

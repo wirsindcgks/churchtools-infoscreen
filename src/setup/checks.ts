@@ -104,6 +104,8 @@ export interface DesignerGroupInput {
     /** `null`: the wiki category does not exist yet or is not visible. */
     wikiCategoryId: number | null;
     moduleRights?: ModuleRights;
+    /** Rights designers must not hold: writing screens and settings (Plan.md, F). */
+    forbidden?: RequiredRight[] | null;
 }
 
 export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
@@ -147,6 +149,16 @@ export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
                     ? { level: 'fail', text: `Rolle „${role.name}": am Modul fehlt ${missing.join(', ')}.` }
                     : { level: 'ok', text: `Rolle „${role.name}" darf Screens gestalten.` },
             );
+            const tooMuch = (input.forbidden ?? []).filter((f) => (f.dataId ?? []).some((d) => has(role.grants, f.authId, d)));
+            if (tooMuch.length) {
+                checks.push({
+                    level: 'warn',
+                    text: `Rolle „${role.name}" darf Screens oder Einstellungen ändern – das ist Sache der Administratoren.`,
+                    detail:
+                        '„Rechte aktualisieren" nimmt das bei den Gruppen des Assistenten zurück; bei eigenen Gruppen in der ' +
+                        'Rechteverwaltung von ChurchTools entfernen.',
+                });
+            }
         }
     }
     return checks;

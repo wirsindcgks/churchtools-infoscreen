@@ -9,6 +9,7 @@ import type { PlayerData } from './data';
 
 const NOW = new Date('2026-10-04T08:00:00Z');
 const loaded = (revision = 1): LoadedScreen => ({
+    schedule: null,
     ...DEMO_BUNDLE,
     screen: { ...DEMO_BUNDLE.screen, revision },
     media: [],

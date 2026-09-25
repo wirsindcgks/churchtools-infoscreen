@@ -355,40 +355,18 @@ const slideFill = computed<Fill>(() =>
                 </fieldset>
             </section>
 
-            <section v-if="editor.draft">
+            <section v-if="editor.draft" data-testid="screen-info">
                 <h3>Screen</h3>
-                <label class="d-field">
-                    Name
-                    <input
-                        type="text"
-                        maxlength="100"
-                        data-testid="screen-name"
-                        :value="editor.draft.screen.name"
-                        v-on="edit"
-                        @input="editor.updateScreen({ name: ($event.target as HTMLInputElement).value })"
-                    >
-                    <small v-if="!editor.draft.screen.name.trim()" class="invalid">Ohne Namen lässt sich nicht speichern.</small>
-                </label>
                 <dl>
+                    <dt>Name</dt>
+                    <dd>{{ editor.draft.screen.name }}</dd>
                     <dt>Bühne</dt>
                     <dd>{{ editor.draft.screen.stage.width }} × {{ editor.draft.screen.stage.height }} px</dd>
                 </dl>
-                <label class="d-field">
-                    Overscan-Korrektur (%)
-                    <input
-                        type="number"
-                        min="0"
-                        max="20"
-                        :value="editor.draft.screen.overscanPercent"
-                        v-on="edit"
-                        @input="
-                            editor.updateScreen({
-                                overscanPercent: Math.min(20, Math.max(0, Number(($event.target as HTMLInputElement).value) || 0)),
-                            })
-                        "
-                    >
-                </label>
-                <p class="hint">Verkleinert die Bühne auf Fernsehern, die den Rand abschneiden.</p>
+                <p class="hint">
+                    Name, Format und Overscan stellt ein Administrator auf der Startseite ein – im Menü „…" der Kachel unter
+                    „Einstellungen".
+                </p>
             </section>
         </template>
     </aside>

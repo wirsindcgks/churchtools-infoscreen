@@ -130,4 +130,11 @@ export const churchToolsProvisionApi: ProvisionApi = {
     async grant(roleId, authId, dataId) {
         await churchtoolsClient.put(`/permissions/group_role/${roleId}`, dataId ? { authId, dataId } : { authId });
     },
+    grants(roleId) {
+        return permissions('group_role', roleId);
+    },
+    async revoke(roleId, authId, dataId) {
+        // Spec: DELETE removes the raw assignment named by authId and dataId (Build 32882). Measured with G34's follow-up.
+        await churchtoolsClient.deleteApi(`/permissions/group_role/${roleId}`, { authId, dataId });
+    },
 };

@@ -29,10 +29,12 @@ describe('planProvisioning', () => {
         expect([designer!.name, device!.name]).toEqual([GROUP_NAMES.designer, GROUP_NAMES.device]);
     });
 
-    it('lets designers write every category but the settings, which only the setup writes', () => {
+    it('lets designers write content – playlists, slides, media – but not screens and settings (Plan.md, F)', () => {
         const edit = designer!.grants.find((g) => g.authId === 2017);
-        expect(edit?.dataId).toEqual([1, 4, 7, 10]);
+        expect(edit?.dataId).toEqual([4, 7, 10]);
         expect(designer!.grants.find((g) => g.authId === 2015)?.dataId).toEqual([1, 4, 7, 10, 13]);
+        expect(designer!.forbidden.map((f) => f.authId)).toEqual([2016, 2017, 2018]);
+        expect(designer!.forbidden[0]?.dataId).toEqual([1, 13]);
     });
 
     it('gives designers the wiki category for the media library', () => {
@@ -78,6 +80,10 @@ describe('provision', () => {
                 if (authId === failOnGrant) throw new Error('Forbidden');
                 calls.push(`grant ${roleId} ${authId}${dataId ? ` [${dataId.join(',')}]` : ''}`);
             },
+            grants: async () => [],
+            revoke: async () => {
+                throw new Error('must not revoke');
+            },
         };
         return { api, calls };
     }
@@ -112,10 +118,38 @@ describe('refreshGrants', () => {
             grant: async (roleId, authId, dataId) => {
                 calls.push(`${roleId}:${authId}:${dataId?.join(',') ?? ''}`);
             },
+            grants: async () => [],
+            revoke: async () => {
+                throw new Error('nothing to revoke');
+            },
         };
         const result = await refreshGrants(planProvisioning(input), { device: 28 }, api);
         expect(result.error).toBeNull();
         expect(calls).toContain('280:403:4,5');
         expect(calls.every((c) => c.startsWith('280:'))).toBe(true);
+    });
+
+    it('takes back the designers\' old right to write screens – only what is there, one data id at a time', async () => {
+        const revoked: string[] = [];
+        const api: ProvisionApi = {
+            createGroup: async () => {
+                throw new Error('must not create');
+            },
+            roleIds: async () => [250],
+            grant: async () => {},
+            // As the assistant granted it until 2026-09-25: edit on screens (1) and content; create on content only.
+            grants: async () => [
+                { authId: 2017, dataId: 1 },
+                { authId: 2017, dataId: 4 },
+                { authId: 2016, dataId: 4 },
+            ],
+            revoke: async (roleId, authId, dataId) => {
+                revoked.push(`${roleId}:${authId}:${dataId.join(',')}`);
+            },
+        };
+        const result = await refreshGrants(planProvisioning(input), { designer: 25 }, api);
+        expect(result.error).toBeNull();
+        expect(revoked).toEqual(['250:2017:1']);
+        expect(result.log[0]).toContain('1 Schreibrechte');
     });
 });

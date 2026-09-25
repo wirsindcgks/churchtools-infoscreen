@@ -15,6 +15,8 @@ import ModulePage from '../designer/ModulePage.vue';
 import { checkDesignerRights, type MissingRight } from '../designer/rights';
 import { canManagePermissions } from '../setup/load';
 import ScreenCard from '../designer/ScreenCard.vue';
+import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
+import type { ScreenDoc } from '../model/schema';
 import { usePreview } from '../designer/usePreview';
 import { getRepository, resetDemoStore } from '../store/backend';
 import type { ScreenOverview, ScreenRepository } from '../store/screen-repository';
@@ -28,6 +30,8 @@ const error = ref<string | null>(null);
 const missingRights = ref<MissingRight[]>([]);
 const repository = shallowRef<ScreenRepository | null>(null);
 const creating = ref(false);
+/** The screen whose settings dialog is open – administrators only. */
+const configuring = ref<ScreenDoc | null>(null);
 /** Administrators set the module up (role concept, Plan.md F); everyone else does not see the way there. */
 const admin = ref(false);
 const filter = computed(() => formatFilter(route.query.format));
@@ -128,6 +132,7 @@ async function remove(overview: ScreenOverview): Promise<void> {
             <ModulePage current="screens" :admin="admin" :counts="counts">
                 <template #actions>
                     <button
+                        v-if="admin"
                         class="d-btn d-btn--create"
                         type="button"
                         aria-label="Screen erstellen"
@@ -196,11 +201,19 @@ async function remove(overview: ScreenOverview): Promise<void> {
                         </div>
                     </header>
                     <div v-if="shown.length" class="tiles">
-                        <ScreenCard v-for="o in shown" :key="o.screen.id" :overview="o" @remove="remove(o)" />
+                        <ScreenCard
+                            v-for="o in shown"
+                            :key="o.screen.id"
+                            :overview="o"
+                            :admin="admin"
+                            @remove="remove(o)"
+                            @settings="configuring = o.screen"
+                        />
                     </div>
                     <div v-else-if="!overviews.length" class="empty">
                         <p>Noch keine Screens angelegt.</p>
-                        <button class="d-btn d-btn--create" type="button" @click="creating = true">
+                        <p v-if="!admin" class="muted">Screens legt ein Administrator an – danach gestaltest du sie hier.</p>
+                        <button v-if="admin" class="d-btn d-btn--create" type="button" @click="creating = true">
                             <Icon name="plus" /> Ersten Screen erstellen
                         </button>
                     </div>
@@ -208,8 +221,16 @@ async function remove(overview: ScreenOverview): Promise<void> {
                 </section>
             </ModulePage>
 
+            <ScreenSettingsDialog
+                v-if="configuring"
+                :screen="configuring"
+                :repository="repository"
+                :author="author"
+                @close="configuring = null"
+                @saved="configuring = null; refresh()"
+            />
             <CreateScreenDialog
-                v-if="creating"
+                v-if="creating && admin"
                 :repository="repository"
                 :author="author"
                 @close="creating = false"

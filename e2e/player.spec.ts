@@ -74,6 +74,8 @@ test('way B: the player takes the token off the address bar, and still knows it 
 test('way B: the nightly reload goes through the address with the token, so the session is renewed daily (G32)', async ({
     page,
 }) => {
+    // Two hours of fake time run every timer of the player; WebKit needs longer for that than the default 30 s.
+    test.setTimeout(120_000);
     await page.clock.install({ time: new Date('2026-09-26T02:50:00') });
     await page.route('**/api/whoami**', (route) =>
         route.fulfill({ json: { data: { id: 22, firstName: 'Infoscreen', lastName: 'Foyer' } } }),

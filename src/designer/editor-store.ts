@@ -5,8 +5,8 @@
  */
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
-import type { Block, BlockType, MediaDoc, ScreenBundle, ScreenDoc, SlideDoc } from '../model/schema';
-import { ConflictError, type ScreenRepository } from '../store/screen-repository';
+import type { Block, BlockType, MediaDoc, ScreenBundle, SlideDoc } from '../model/schema';
+import { ConflictError, type ConflictInfo, type ScreenRepository } from '../store/screen-repository';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
 import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, move, reorder, type Layer } from './ops';
@@ -17,11 +17,16 @@ export const useEditorStore = defineStore('editor', () => {
     const repository = shallowRef<ScreenRepository | null>(null);
     const draft = ref<ScreenBundle | null>(null);
     const savedJson = ref('');
-    const revision = ref(0);
+    /**
+     * Revision of the screen's schedule document the draft started from – what
+     * the designers save against (Plan.md, 15); null before the first save of
+     * content since schema 1.2.
+     */
+    const revision = ref<number | null>(null);
     const selectedSlideId = ref<string | null>(null);
     const selectedBlockId = ref<string | null>(null);
     const status = ref<SaveStatus>('idle');
-    const conflict = ref<ScreenDoc | null>(null);
+    const conflict = ref<ConflictInfo | null>(null);
     const error = ref<string | null>(null);
     /** Grid size in stage pixels, 0 = off. A preference of this browser, not part of the screen. */
     const gridSize = ref<number>(loadGridSize());
@@ -73,10 +78,10 @@ export const useEditorStore = defineStore('editor', () => {
         if (repository.value) media.value = await repository.value.listMedia();
     }
 
-    function reset(bundle: ScreenBundle): void {
+    function reset(bundle: ScreenBundle, contentRevision: number | null = null): void {
         draft.value = cloneJson(bundle);
         savedJson.value = JSON.stringify(draft.value);
-        revision.value = bundle.screen.revision;
+        revision.value = contentRevision;
         history.clear();
         historyVersion.value++;
         status.value = 'idle';
@@ -91,7 +96,7 @@ export const useEditorStore = defineStore('editor', () => {
     async function open(slug: string): Promise<void> {
         if (!repository.value) throw new Error('Kein Speicher angebunden.');
         const loaded = await repository.value.loadScreen(slug);
-        reset({ screen: loaded.screen, playlists: loaded.playlists, slides: loaded.slides });
+        reset({ screen: loaded.screen, playlists: loaded.playlists, slides: loaded.slides }, loaded.schedule?.revision ?? null);
     }
 
     /**
@@ -144,10 +149,6 @@ export const useEditorStore = defineStore('editor', () => {
 
     function selectBlock(id: string | null): void {
         selectedBlockId.value = id;
-    }
-
-    function updateScreen(patch: Partial<Pick<ScreenDoc, 'name' | 'overscanPercent'>>): void {
-        change((b) => Object.assign(b.screen, patch));
     }
 
     function addSlide(): void {
@@ -237,22 +238,14 @@ export const useEditorStore = defineStore('editor', () => {
 
     async function save(updatedBy: string): Promise<boolean> {
         if (!repository.value || !draft.value) return false;
-        // The name is how people find a screen in the list: without one there is nothing to click on.
-        const name = draft.value.screen.name.trim();
-        if (!name) {
-            error.value = 'Der Screen braucht einen Namen – unter „Screen", wenn kein Block gewählt ist.';
-            status.value = 'error';
-            return false;
-        }
-        draft.value.screen.name = name;
         status.value = 'saving';
         error.value = null;
         try {
-            const saved = await repository.value.saveScreen(draft.value, {
+            // Slides, playlists and schedule – the screen itself belongs to the administrators (Plan.md, F).
+            const saved = await repository.value.saveContent(draft.value, {
                 expectedRevision: revision.value,
                 updatedBy,
             });
-            draft.value.screen = saved;
             revision.value = saved.revision;
             savedJson.value = JSON.stringify(draft.value);
             status.value = 'saved';
@@ -310,7 +303,6 @@ export const useEditorStore = defineStore('editor', () => {
         redo,
         selectSlide,
         selectBlock,
-        updateScreen,
         addSlide,
         duplicateCurrentSlide,
         removeSlide,

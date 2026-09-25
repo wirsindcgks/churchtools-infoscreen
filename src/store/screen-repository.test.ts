@@ -190,6 +190,109 @@ describe('ScreenRepository', () => {
         expect(await repo.listScreenOverviews()).toEqual([]);
     });
 
+    describe('schedule documents (schema 1.2, Plan.md 15)', () => {
+        async function created() {
+            const screen = await repo.saveScreen(bundle(), { ...save, expectedRevision: null });
+            return { screen, loaded: await repo.loadScreen('foyer-links') };
+        }
+
+        it('keeps a screen without schedule document running on the values of its index', async () => {
+            const { loaded } = await created();
+            expect(loaded.schedule).toBeNull();
+            expect(loaded.screen.defaultPlaylistId).toBe(makePlaylist().id);
+        });
+
+        it('saves content as slides, playlists and a schedule document – the index stays as the administrator left it', async () => {
+            const { screen, loaded } = await created();
+            const ids = await repo.ensureCategories();
+            kv.writes.length = 0;
+            const saved = await repo.saveContent(loaded, { expectedRevision: null, updatedBy: 'Gestalterin' });
+            expect(saved).toMatchObject({ kind: 'schedule', screenId: screen.id, revision: 1, updatedBy: 'Gestalterin' });
+            const category = (w: (typeof kv.writes)[number]) => ('categoryId' in w ? w.categoryId : null);
+            expect(kv.writes.some((w) => category(w) === ids.screens)).toBe(false);
+            expect(category(kv.writes.at(-1)!)).toBe(ids.playlists); // the schedule last
+            const again = await repo.loadScreen('foyer-links');
+            expect(again.schedule?.revision).toBe(1);
+            expect(again.screen.revision).toBe(screen.revision);
+            expect(again.screen.updatedBy).toBe('Gestalterin'); // who saved last, for the tiles
+        });
+
+        it('lets the schedule document decide which playlist runs', async () => {
+            const { loaded } = await created();
+            const extra = makePlaylist({ id: 'abend', name: 'Abend', slideIds: ['slide-2'] });
+            const content = {
+                ...loaded,
+                screen: {
+                    ...loaded.screen,
+                    defaultPlaylistId: 'abend',
+                    schedule: [{ kind: 'time' as const, playlistId: loaded.screen.defaultPlaylistId, weekdays: [7], from: '09:00', to: '12:00' }],
+                },
+                playlists: [...loaded.playlists, extra],
+            };
+            await repo.saveContent(content, { expectedRevision: null, updatedBy: 'Gestalterin' });
+            const again = await repo.loadScreen('foyer-links');
+            expect(again.screen.defaultPlaylistId).toBe('abend');
+            expect(again.screen.schedule).toHaveLength(1);
+            expect(again.playlists.map((p) => p.id).sort()).toEqual(['abend', makePlaylist().id].sort());
+        });
+
+        it('detects two designers saving the same screen', async () => {
+            const { loaded } = await created();
+            await repo.saveContent(loaded, { expectedRevision: null, updatedBy: 'Ben' });
+            await expect(repo.saveContent(loaded, { expectedRevision: null, updatedBy: 'Anna' })).rejects.toMatchObject({
+                name: 'ConflictError',
+                current: { revision: 1, updatedBy: 'Ben' },
+            });
+            await expect(repo.saveContent(loaded, { expectedRevision: 1, updatedBy: 'Anna' })).resolves.toMatchObject({ revision: 2 });
+        });
+
+        it('saves screen settings against the index revision only', async () => {
+            const { screen, loaded } = await created();
+            await repo.saveContent(loaded, { expectedRevision: null, updatedBy: 'Gestalterin' });
+            const renamed = await repo.saveScreenSettings(
+                screen.id,
+                { name: 'Foyer rechts', overscanPercent: 3 },
+                { expectedRevision: screen.revision, updatedBy: 'Admin' },
+            );
+            expect(renamed).toMatchObject({ name: 'Foyer rechts', overscanPercent: 3, revision: screen.revision + 1 });
+            await expect(
+                repo.saveScreenSettings(screen.id, { name: 'Alt' }, { expectedRevision: screen.revision, updatedBy: 'Admin' }),
+            ).rejects.toBeInstanceOf(ConflictError);
+            expect((await repo.loadScreen('foyer-links')).schedule?.revision).toBe(1); // content untouched
+        });
+
+        it('collects the schedule of a deleted screen with its playlists', async () => {
+            const { loaded } = await created();
+            await repo.saveContent(loaded, { expectedRevision: null, updatedBy: 'Gestalterin' });
+            await repo.deleteScreen('foyer-links');
+            const later = new Date(Date.now() + ORPHAN_GRACE_MS + 1000);
+            await repo.collectOrphans(later);
+            const ids = await repo.ensureCategories();
+            expect(await kv.listValues(ids.playlists)).toHaveLength(0);
+        });
+
+        it('counts a calendar that only a schedule rule uses (for the device rights)', async () => {
+            const { loaded } = await created();
+            const content = {
+                ...loaded,
+                screen: {
+                    ...loaded.screen,
+                    schedule: [
+                        {
+                            kind: 'appointment' as const,
+                            playlistId: loaded.screen.defaultPlaylistId,
+                            calendarIds: [9],
+                            minutesBefore: 30,
+                            minutesAfter: 60,
+                        },
+                    ],
+                },
+            };
+            await repo.saveContent(content, { expectedRevision: null, updatedBy: 'Gestalterin' });
+            expect(await repo.calendarIdsInUse()).toContain(9);
+        });
+    });
+
     it('throws for an unknown slug', async () => {
         await expect(repo.loadScreen('gibt-es-nicht')).rejects.toBeInstanceOf(ScreenNotFoundError);
     });

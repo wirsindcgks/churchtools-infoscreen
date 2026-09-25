@@ -72,39 +72,21 @@ describe('editor store', () => {
         expect(editor.slides.map((s) => s.name)).toEqual(['Willkommen', 'Termine']);
     });
 
-    it('renames a screen and trims the name on saving', async () => {
-        const { editor, repository } = await setup();
-        editor.updateScreen({ name: '  Foyer rechts  ' });
-        expect(await editor.save('Anna')).toBe(true);
-        expect((await repository.loadScreen('foyer')).screen.name).toBe('Foyer rechts');
-        expect(editor.dirty).toBe(false);
-    });
-
-    it('refuses to save a screen without a name, and keeps the change to fix it', async () => {
-        const { editor, repository } = await setup();
-        editor.updateScreen({ name: '   ' });
-        expect(await editor.save('Anna')).toBe(false);
-        expect(editor.status).toBe('error');
-        expect(editor.error).toContain('Namen');
-        expect(editor.dirty).toBe(true);
-        expect((await repository.loadScreen('foyer')).screen.name).toBe('Foyer');
-    });
-
     it('saves and reloads the same state', async () => {
         const { editor, repository } = await setup();
         editor.addBlock('clock');
         expect(await editor.save('Anna')).toBe(true);
         expect(editor.dirty).toBe(false);
-        expect(editor.revision).toBe(2);
+        expect(editor.revision).toBe(1); // the first schedule document (schema 1.2)
         const loaded = await repository.loadScreen('foyer');
         expect(loaded.slides[0]?.blocks[0]?.type).toBe('clock');
     });
 
     it('stops at a conflict and lets the user decide', async () => {
         const { editor, repository } = await setup();
-        // Someone else saves in between.
+        // Another designer saves in between.
         const other = await repository.loadScreen('foyer');
-        await repository.saveScreen(other, { expectedRevision: 1, updatedBy: 'Ben' });
+        await repository.saveContent(other, { expectedRevision: null, updatedBy: 'Ben' });
 
         editor.addBlock('text');
         expect(await editor.save('Anna')).toBe(false);
@@ -119,12 +101,27 @@ describe('editor store', () => {
     it('can drop its own changes after a conflict', async () => {
         const { editor, repository } = await setup();
         const other = await repository.loadScreen('foyer');
-        await repository.saveScreen(other, { expectedRevision: 1, updatedBy: 'Ben' });
+        await repository.saveContent(other, { expectedRevision: null, updatedBy: 'Ben' });
         editor.addBlock('text');
         await editor.save('Anna');
         await editor.discardAndReload();
         expect(editor.slide?.blocks).toHaveLength(0);
-        expect(editor.revision).toBe(2);
+        expect(editor.revision).toBe(1);
+    });
+
+    it('saves content without touching the screen document, which belongs to the administrators (Plan.md, F)', async () => {
+        const { editor, repository } = await setup();
+        const before = (await repository.listScreens())[0]!;
+        editor.addBlock('clock');
+        expect(await editor.save('Anna')).toBe(true);
+        // An administrator renames the screen meanwhile – against the screen's own revision, no conflict with content.
+        await repository.saveScreenSettings(before.id, { name: 'Foyer links' }, { expectedRevision: before.revision, updatedBy: 'Admin' });
+        editor.addBlock('text');
+        expect(await editor.save('Anna')).toBe(true);
+        const loaded = await repository.loadScreen('foyer');
+        expect(loaded.screen.name).toBe('Foyer links');
+        expect(loaded.screen.revision).toBe(before.revision + 1);
+        expect(loaded.slides[0]?.blocks).toHaveLength(2);
     });
 
     it('changes paint order and removes blocks', async () => {

@@ -52,7 +52,8 @@ describe('missingDesignerRights', () => {
         );
         expect(missing).toEqual([
             { area: 'module', text: 'Daten bearbeiten', key: 'edit custom data', detail: 'Slides, Medien' },
-            { area: 'module', text: 'Daten löschen', key: 'delete custom data', detail: 'Screens, Playlists, Slides, Medien' },
+            // Screens are the administrators' (Plan.md, F): not asked of designers.
+            { area: 'module', text: 'Daten löschen', key: 'delete custom data', detail: 'Playlists, Slides, Medien' },
         ]);
     });
 

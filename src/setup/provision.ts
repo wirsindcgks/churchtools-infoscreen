@@ -13,7 +13,7 @@
  */
 import type { CategoryKey } from '../store/screen-repository';
 import type { AuthCatalog } from './catalog';
-import { AUTH } from './checks';
+import { AUTH, type Grant } from './checks';
 
 export const GROUP_NAMES = { designer: 'Infoscreen-Designer', device: 'Infoscreen-Devices' } as const;
 /** Group type of both groups, looked up by name: ids and names differ per instance. */
@@ -32,6 +32,13 @@ export interface GroupSpec {
     key: GroupKey;
     name: string;
     grants: GrantSpec[];
+    /**
+     * Rights the group must not have – for designers, writing screens and
+     * settings: screens are the administrators' (Plan.md, F, 2026-09-25).
+     * "Rechte aktualisieren" takes them back from the assistant's groups,
+     * one data id at a time, as ChurchTools stores them (G34).
+     */
+    forbidden: GrantSpec[];
 }
 
 export interface PlanInput {
@@ -62,7 +69,9 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     };
     // Explicit category ids, as ChurchTools itself stores them (G33); "all" by omission is unmeasured (G34).
     const all = Object.values(input.categories).sort((a, b) => a - b);
-    const written = (['screens', 'playlists', 'slides', 'media'] as const).map((k) => input.categories[k]);
+    // Designers write content; the screens themselves and the settings belong to the administrators (F).
+    const written = (['playlists', 'slides', 'media'] as const).map((k) => input.categories[k]);
+    const adminOnly = (['screens', 'settings'] as const).map((k) => input.categories[k]);
 
     const readModule: GrantSpec[] = [
         { authId: moduleRight('view'), label: '„Infoscreen Designer" sehen' },
@@ -89,9 +98,15 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
         device.push({ authId: AUTH.calendarView, dataId: input.calendarIds, label: 'Einzelnen Kalender sehen' });
     }
 
+    const writing = (['create custom data', 'edit custom data', 'delete custom data'] as const).map((auth) => ({
+        authId: moduleRight(auth),
+        dataId: adminOnly,
+        label: `${{ 'create custom data': 'Anlegen', 'edit custom data': 'Bearbeiten', 'delete custom data': 'Löschen' }[auth]} von Screens und Einstellungen`,
+    }));
+
     return [
-        { key: 'designer', name: GROUP_NAMES.designer, grants: designer },
-        { key: 'device', name: GROUP_NAMES.device, grants: device },
+        { key: 'designer', name: GROUP_NAMES.designer, grants: designer, forbidden: writing },
+        { key: 'device', name: GROUP_NAMES.device, grants: device, forbidden: writing },
     ];
 }
 
@@ -100,6 +115,9 @@ export interface ProvisionApi {
     createGroup(name: string, groupTypeId: number): Promise<number>;
     roleIds(groupId: number): Promise<number[]>;
     grant(roleId: number, authId: number, dataId?: number[]): Promise<void>;
+    /** What a role holds now – read before anything is taken back. */
+    grants(roleId: number): Promise<Grant[]>;
+    revoke(roleId: number, authId: number, dataId: number[]): Promise<void>;
 }
 
 export interface ProvisionResult {
@@ -151,10 +169,23 @@ export async function refreshGrants(
             const groupId = groupIds[spec.key];
             if (groupId === undefined) continue;
             const roles = await api.roleIds(groupId);
+            let revoked = 0;
             for (const roleId of roles) {
                 for (const g of spec.grants) await api.grant(roleId, g.authId, g.dataId);
+                // Only what is there is taken back, one data id at a time, and only rights this assistant plans away.
+                const held = await api.grants(roleId);
+                for (const f of spec.forbidden) {
+                    for (const dataId of f.dataId ?? []) {
+                        if (!held.some((g) => g.authId === f.authId && g.dataId === dataId && (g.type ?? 'grant') === 'grant')) continue;
+                        await api.revoke(roleId, f.authId, [dataId]);
+                        revoked++;
+                    }
+                }
             }
-            result.log.push(`Rechte von „${spec.name}" auf den aktuellen Stand gebracht.`);
+            result.log.push(
+                `Rechte von „${spec.name}" auf den aktuellen Stand gebracht` +
+                    (revoked ? ` – ${revoked} Schreibrechte auf Screens oder Einstellungen zurückgenommen.` : '.'),
+            );
         }
     } catch (e) {
         result.error = e instanceof Error ? e.message : String(e);

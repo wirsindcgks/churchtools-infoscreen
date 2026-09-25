@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 1 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 2 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -184,6 +184,24 @@ export const ScreenDoc = v.object({
     updatedBy: v.optional(v.string()),
 });
 
+/**
+ * What runs on a screen and when – the default playlist and the rules (schema
+ * 1.2). Written by the designers, while the screen document itself belongs to
+ * the administrators (Plan.md, F; Nächste Schritte 15). Stored in the category
+ * `playlists`, which designers may write anyway; its revision is the one the
+ * editor's conflict detection uses. Missing, the values in the screen apply.
+ */
+export const ScheduleDoc = v.object({
+    ...DocumentBase,
+    kind: v.literal('schedule'),
+    screenId: Id,
+    defaultPlaylistId: Id,
+    /** Earlier rules win on overlap. */
+    rules: v.array(ScheduleRule),
+    revision: v.pipe(v.number(), v.integer(), v.minValue(0)),
+    updatedBy: v.optional(v.string()),
+});
+
 /** A reference to a ChurchTools file – never the file itself (Plan.md, Medien). */
 export const MediaDoc = v.object({
     ...DocumentBase,
@@ -217,10 +235,32 @@ export type BlockType = Block['type'];
 export type SlideDoc = v.InferOutput<typeof SlideDoc>;
 export type PlaylistDoc = v.InferOutput<typeof PlaylistDoc>;
 export type ScreenDoc = v.InferOutput<typeof ScreenDoc>;
+export type ScheduleDoc = v.InferOutput<typeof ScheduleDoc>;
 export type ScheduleRule = v.InferOutput<typeof ScheduleRule>;
 export type MediaDoc = v.InferOutput<typeof MediaDoc>;
 export type SettingsDoc = v.InferOutput<typeof SettingsDoc>;
-export type AnyDoc = ScreenDoc | PlaylistDoc | SlideDoc | MediaDoc | SettingsDoc;
+export type AnyDoc = ScreenDoc | PlaylistDoc | ScheduleDoc | SlideDoc | MediaDoc | SettingsDoc;
+
+/** The schedule document's id for a screen: one per screen, found without a search. */
+export function scheduleIdFor(screenId: string): string {
+    return `schedule-${screenId}`;
+}
+
+/**
+ * The screen as it runs: the schedule document, where there is one,
+ * overrides default playlist and rules of the screen document. Who saved
+ * last is shown from whichever changed later.
+ */
+export function withSchedule(screen: ScreenDoc, schedule: ScheduleDoc | null | undefined): ScreenDoc {
+    if (!schedule || schedule.screenId !== screen.id) return screen;
+    const later = (schedule.updatedAt ?? '') >= (screen.updatedAt ?? '');
+    return {
+        ...screen,
+        defaultPlaylistId: schedule.defaultPlaylistId,
+        schedule: schedule.rules,
+        ...(later ? { updatedAt: schedule.updatedAt, updatedBy: schedule.updatedBy } : {}),
+    };
+}
 
 /** Everything that makes up one screen, as the player needs it. */
 export interface ScreenBundle {

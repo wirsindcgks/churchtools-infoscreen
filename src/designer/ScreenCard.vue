@@ -10,8 +10,9 @@ import Icon from './Icon.vue';
 import { copyPlayerUrl } from './player-url';
 import SlideThumb from './SlideThumb.vue';
 
-const props = defineProps<{ overview: ScreenOverview }>();
-const emit = defineEmits<{ remove: [] }>();
+/** `admin`: configure and delete are the administrators' (Plan.md, F). */
+const props = defineProps<{ overview: ScreenOverview; admin?: boolean }>();
+const emit = defineEmits<{ remove: []; settings: [] }>();
 
 const screen = computed(() => props.overview.screen);
 const portrait = computed(() => screen.value.stage.height > screen.value.stage.width);
@@ -37,6 +38,11 @@ async function copy(): Promise<void> {
 function remove(): void {
     menuOpen.value = false;
     emit('remove');
+}
+
+function settings(): void {
+    menuOpen.value = false;
+    emit('settings');
 }
 </script>
 
@@ -83,7 +89,10 @@ function remove(): void {
                         <button role="menuitem" type="button" data-testid="copy-address" @click="copy">
                             <Icon name="copy" :size="16" /> {{ copied ? 'Adresse kopiert' : 'Adresse kopieren' }}
                         </button>
-                        <button role="menuitem" type="button" class="danger" data-testid="delete-screen" @click="remove">
+                        <button v-if="admin" role="menuitem" type="button" data-testid="screen-settings-open" @click="settings">
+                            <Icon name="settings" :size="16" /> Einstellungen
+                        </button>
+                        <button v-if="admin" role="menuitem" type="button" class="danger" data-testid="delete-screen" @click="remove">
                             <Icon name="trash" :size="16" /> Löschen
                         </button>
                     </div>

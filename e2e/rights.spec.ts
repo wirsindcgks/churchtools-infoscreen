@@ -26,7 +26,7 @@ test('a designer with all rights sees no notice', async ({ page }) => {
     await expect(page.getByTestId('missing-rights')).toHaveCount(0);
 });
 
-test('only administrators see the setup; everyone else is told whose job it is', async ({ page }) => {
+test('only administrators see the settings and configure screens; everyone else is told whose job it is', async ({ page }) => {
     // The real answer of the instance, minus the right to manage persons and permissions.
     await page.route('**/api/permissions/global', async (route) => {
         const response = await route.fetch();
@@ -37,7 +37,14 @@ test('only administrators see the setup; everyone else is told whose job it is',
     await page.goto('./');
     await expect(page.getByTestId('screens-heading')).toBeVisible();
     await expect(page.getByTestId('open-setup')).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Adressen für die Fernseher' })).toHaveCount(0);
+    // Screens are the administrators' (Plan.md, F): designers open the editor, nothing more.
+    await expect(page.getByTestId('new-screen')).toHaveCount(0);
+    await page.getByTestId('screen-menu').first().click();
+    await expect(page.getByTestId('open-player')).toBeVisible();
+    await expect(page.getByTestId('screen-settings-open')).toHaveCount(0);
+    await expect(page.getByTestId('delete-screen')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('open-editor').first()).toBeVisible();
 
     await page.goto('./einrichtung'); // the old address leads to the settings
     await expect(page).toHaveURL(/\/einstellungen$/);

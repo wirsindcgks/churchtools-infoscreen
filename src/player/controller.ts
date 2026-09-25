@@ -64,6 +64,15 @@ export const browserDeps: PlayerDeps = {
     saveCached,
 };
 
+/**
+ * Which stored state the player shows: the administrators' screen revision
+ * and the designers' schedule revision (schema 1.2) – a save of content does
+ * not touch the screen document any more (Plan.md, 15).
+ */
+function configVersion(loaded: LoadedScreen | null): string | undefined {
+    return loaded ? `${loaded.screen.revision}/${loaded.schedule?.revision ?? 0}` : undefined;
+}
+
 export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = browserDeps) {
     const state = reactive<PlayerState>({
         phase: 'loading',
@@ -199,14 +208,14 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
 
     async function configCycle(): Promise<void> {
         try {
-            const before = state.screen?.screen.revision;
+            const before = configVersion(state.screen);
             await refreshConfig();
             configFailures = 0;
             failingSince.config = null;
             const recovered = blocked;
             blocked = false;
             // A new revision may reference other calendars, and a lifted block shows content again: fetch data now.
-            if (recovered || state.screen?.screen.revision !== before) await refreshData();
+            if (recovered || configVersion(state.screen) !== before) await refreshData();
             scheduleConfig(withJitter(INTERVALS.configMs));
         } catch (error) {
             configFailures++;

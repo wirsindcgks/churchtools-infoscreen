@@ -23,8 +23,8 @@ Rechte bis zum Fernseher im Foyer. Rechne mit etwa einer halben Stunde, den Fern
 
 | Rolle | Wer | Darf |
 | --- | --- | --- |
-| **Administrator** | wer in ChurchTools Berechtigungen verwalten darf | installieren, die **Einstellungen** des Designers öffnen, Gruppen und Rechte anlegen |
-| **Gestalter** | Mitglieder der Gruppe „Infoscreen-Designer" | Screens, Slides und Bilder anlegen, ändern und löschen – nicht die Einstellungen |
+| **Administrator** | wer in ChurchTools Berechtigungen verwalten darf | installieren, die **Einstellungen** des Designers öffnen, Gruppen und Rechte anlegen; **Screens anlegen, einstellen (Name, Overscan) und löschen** – ein Screen steht für ein Gerät im Haus |
+| **Gestalter** | Mitglieder der Gruppe „Infoscreen-Designer" | gestalten, was die Screens zeigen: Slides, Playlists, Zeitpläne und Bilder anlegen, ändern und löschen – nicht die Screens selbst und nicht die Einstellungen |
 | **Gerät** | Mitglieder der Gruppe „Infoscreen-Devices" | nur lesen: die Screens und die Kalender, die sie zeigen |
 
 ### Voraussetzungen
@@ -101,6 +101,10 @@ schon Gruppen mit diesen Namen, hält er an.
 **Später wiederkommen:** Zeigt ein Screen einen weiteren Kalender, klicke in den Einstellungen auf **„Rechte
 aktualisieren"** – sonst fehlen dessen Termine auf dem Fernseher. „Einrichtung entfernen" löscht die beiden Gruppen
 wieder.
+
+**Screens legst du als Administrator an:** auf der Startseite des Designers **„+ Screen erstellen"** – Name, Adresse
+und Format. Name und Overscan änderst du später über das Menü **„…" der Kachel → „Einstellungen"**; was der Screen
+zeigt, gestalten die Gestalter.
 
 *Eigene Gruppen statt der automatischen?* Weiter unten in den Einstellungen lassen sich vorhandene Gruppen für
 Gestalter und Geräte wählen; die Seite prüft dann, was ihnen fehlt, und ändert selbst nichts.
@@ -188,6 +192,10 @@ die Bühne rückt dann um so viel Prozent nach innen.
 
 Die Fernseher übernehmen die neue Fassung **spätestens beim nächtlichen Neuladen**. Screens und Bilder bleiben
 erhalten.
+
+**Nach einem Update einmal „Rechte aktualisieren"** (Designer → Einstellungen, Karte „Automatisch einrichten"). Neue
+Fassungen können die Rechte der beiden Gruppen ändern – etwa seit Version 0.1: Gestalter gestalten Inhalte, die
+Screens selbst legt und stellt ein Administrator ein; ältere Gruppen verlieren dabei ihr Schreibrecht auf Screens.
 
 ## Wenn ein Gerät verloren geht – die Notbremse
 
