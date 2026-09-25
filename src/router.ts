@@ -8,6 +8,7 @@ import NotFoundView from './views/NotFoundView.vue';
 import SetupView from './views/SetupView.vue';
 import MediaView from './views/MediaView.vue';
 import DesignView from './views/DesignView.vue';
+import AboutView from './views/AboutView.vue';
 
 // No lazy routes: a kiosk tab open for weeks would request a chunk that a
 // later extension update has deleted (Plan.md, Risiko 7).
@@ -22,6 +23,7 @@ export const router = createRouter({
         { path: '/player', name: 'player', component: PlayerView },
         { path: '/mediathek', name: 'media', component: MediaView },
         { path: '/design', name: 'design', component: DesignView },
+        { path: '/ueber', name: 'about', component: AboutView },
         { path: '/einstellungen', name: 'setup', component: SetupView },
         // The first name of the page (until 2026-09-24); links to it keep working.
         { path: '/einrichtung', redirect: (to) => ({ name: 'setup', hash: to.hash }) },

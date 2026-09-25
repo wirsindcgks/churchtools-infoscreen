@@ -169,8 +169,8 @@ function observe(el: unknown): void {
         <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
         <p v-else-if="author === null || !repository" class="empty">Lade …</p>
         <div v-else class="layout">
-            <div class="boxes">
-                <section class="d-card box" aria-labelledby="box-corners">
+            <div class="d-card settings">
+                <section class="box" aria-labelledby="box-corners">
                     <h2 id="box-corners">Ecken</h2>
                     <div class="choice" role="radiogroup" aria-labelledby="box-corners">
                         <label v-for="c in (['round', 'square'] as const)" :key="c" class="option" :class="{ on: look.corners === c }">
@@ -182,7 +182,7 @@ function observe(el: unknown): void {
                     <p class="hint">Für Kacheln, Etiketten, Bilder und den Seitenbalken der Terminliste.</p>
                 </section>
 
-                <section class="d-card box" aria-labelledby="box-colours">
+                <section class="box" aria-labelledby="box-colours">
                     <h2 id="box-colours">Farben</h2>
                     <ColorField v-model="look.accent" label="Akzent" testid="theme-accent" />
                     <p class="hint">Für Kalender ohne eigene Farbe, für Kacheln und den Seitenbalken.</p>
@@ -193,7 +193,7 @@ function observe(el: unknown): void {
                     <p class="hint">Text und Hintergrund gelten für neue Slides und Bausteine; bestehende bleiben, wie sie sind.</p>
                 </section>
 
-                <section class="d-card box" aria-labelledby="box-appointments">
+                <section class="box" aria-labelledby="box-appointments">
                     <h2 id="box-appointments">Termine</h2>
                     <div class="choice" role="radiogroup" aria-labelledby="box-appointments">
                         <label class="option option--wide" :class="{ on: look.appointments === 'native' }">
@@ -207,7 +207,7 @@ function observe(el: unknown): void {
                     </div>
                 </section>
 
-                <section class="d-card box" aria-labelledby="box-images">
+                <section class="box" aria-labelledby="box-images">
                     <h2 id="box-images">Terminbilder</h2>
                     <label class="d-field">
                         Format
@@ -239,9 +239,9 @@ function observe(el: unknown): void {
     font-size: var(--d-size-sm);
 }
 /*
- * The settings as cards that fill the width, the preview beside them at a
- * size where the stage is still readable – wider only makes it bigger, not
- * clearer (2026-09-25).
+ * Two boxes: the settings, whose parts spread over the width they get, and
+ * the preview at a size where the stage is still readable – wider only makes
+ * it bigger, not clearer (2026-09-25).
  */
 .layout {
     display: grid;
@@ -249,17 +249,20 @@ function observe(el: unknown): void {
     gap: 16px;
     align-items: start;
 }
-.boxes {
+.settings {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 16px;
+    gap: 20px 28px;
+    padding: 16px 20px 20px;
 }
 .box,
 .preview {
     display: grid;
     align-content: start;
     gap: 10px;
-    padding: 16px 18px;
+}
+.preview {
+    padding: 16px 20px;
 }
 h2 {
     margin: 0;

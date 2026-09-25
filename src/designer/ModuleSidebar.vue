@@ -11,6 +11,7 @@
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { FILTERS, formatFilter, type FormatFilter } from './format-filter';
+import { unseenRelease } from '../about/seen';
 import Icon from './Icon.vue';
 
 defineProps<{ counts?: Record<FormatFilter, number>; admin: boolean }>();
@@ -81,6 +82,22 @@ const active = computed(() => (route.name === 'designer' ? formatFilter(route.qu
                 </RouterLink>
             </li>
         </ul>
+        <ul class="library about">
+            <li>
+                <RouterLink
+                    :to="{ name: 'about' }"
+                    :class="{ active: route.name === 'about' }"
+                    :aria-current="route.name === 'about' ? 'page' : undefined"
+                    data-testid="sidebar-about"
+                >
+                    <span class="nav-icon"><Icon name="info" :size="16" /></span>
+                    Über &amp; Neuigkeiten
+                    <span v-if="unseenRelease" class="new" title="Neue Version – noch nicht angesehen" data-testid="about-new">
+                        <span class="visually-hidden">Neu</span>
+                    </span>
+                </RouterLink>
+            </li>
+        </ul>
         <div v-if="admin" class="admin">
             <h2>Verwaltung</h2>
             <ul>
@@ -147,6 +164,21 @@ a.active {
     border-radius: var(--d-radius);
     background: var(--d-accent-pale);
     color: var(--d-accent);
+}
+.new {
+    width: 8px;
+    height: 8px;
+    margin-left: auto;
+    border-radius: 50%;
+    background: var(--d-accent);
+}
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
 }
 .count {
     margin-left: auto;

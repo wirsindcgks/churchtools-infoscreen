@@ -6,58 +6,55 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 
 ## [Unreleased]
 
-### Neu
+Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt in ChurchTools.
 
-- **Designer** in ChurchTools unter `/ccm/infoscreen-designer/`: Startseite nach dem Muster der Gruppen-Übersicht
-  mit Kacheln, Vorschau der ersten Slide, Filtern nach Format und Suche; handytauglich.
-- **Editor**: Slides anlegen, ordnen, abschalten; neun Bausteine (Text, Bild, Fläche, Uhr, Terminliste, Nächster
-  Termin, Gemeindekopf, Webseite, QR-Code) auf der Bühne ziehen und skalieren, mit Raster und Hilfslinien; Farben als Hex-Wert;
-  Rückgängig/Wiederholen; Speichern mit Konflikterkennung.
-- **Playlists** als eigener Bereich: unabhängig von einem Screen anlegen, gestalten und löschen; dieselbe Playlist
-  kann auf mehreren Screens laufen, die Kachel sagt, auf welchen. Der Editor gestaltet eine Playlist.
-- **Zeitpläne** an jeder Screen-Kachel und als eigener Bereich mit allen Screens, ihren Regeln in Worten und dem,
-  was gerade läuft: Standard-Playlist wählen, Regeln nach Uhrzeit (Wochentage, von–bis) und rund um Termine
-  ausgewählter Kalender, die obere gewinnt; eine Tagesvorschau zeigt, was wann läuft. Termin-Regeln mit frei
-  gewähltem Zeitraum, z. B. „30 Min. vor Beginn bis 10 Min. nach Beginn" für eine Begrüßung.
-  Ein Screen mit Regeln zeigt nach dem Start sofort die richtige Playlist, nicht erst kurz die Standard-Playlist.
-- **Neue Darstellungen** nach dem WordPress-Plugin: die Terminliste als Karten aus dessen Bausteinen, in einer
-  Reihe – Datumskachel, Wochentag mit Datum über der Uhrzeit, Titel mit Untertitel und Ort, das Kalender-Etikett
-  rechtsbündig am Ende; „Nächster Termin" hervorgehoben mit Beschreibung, Bild und denselben Angaben untereinander. Die Liste zeigt nur
-  Einträge, die ganz in die Box passen, und blättert nach deren tatsächlicher Höhe.
-- **Design** als eigener Bereich: für alle Screens Ecken rund oder eckig, Akzentfarbe, Text- und Hintergrundfarbe
-  für neue Slides, Termine „Nativ" oder „Groß" und das Format der Terminbilder (16:9 voreingestellt) – mit
-  Live-Vorschau; ein Baustein mit eigener Darstellung behält sie.
-- **Bausteine „Webseite" und „QR-Code"**: eine fremde Seite per https-Adresse im abgesicherten Rahmen, etwa eine
-  Seite der Gemeinde-Website, in wählbarer Größe; ein QR-Code, der auf dem Gerät entsteht, ohne fremden Dienst.
-- **Terminliste mit allen Terminen** der nächsten Tage: was nicht in die Box passt, blättert seitenweise (10 s je
-  Seite, einstellbar); ein Balken zeigt je Seite die verbleibende Zeit; die Slide bleibt, bis alle Seiten gezeigt
-  sind – die Slide-Liste zeigt die längere Laufzeit („12 → 30 s").
-- **Mediathek im Wiki ausblenden:** Der Wiki-Bereich der Bilder steht im Wiki unter „Ausgeblendet"; für bestehende
-  Installationen ein Knopf in den Einstellungen.
-- **Bausteine sperren:** Ein gesperrter Baustein lässt sich weder verschieben noch ändern oder löschen, bis er
-  entsperrt wird.
-- **Vorschau im Editor:** spielt die Playlist mit allen ungespeicherten Änderungen im Vollbild ab, wie der
-  Fernseher – mit vor/zurück und Anhalten.
-- **Player** zeigt beim Laden eine drehende Sanduhr und übernimmt Gespeichertes in etwa 20 Sekunden: ein
-  Schnellcheck mit einer kleinen Anfrage, erst bei einer Änderung lädt er den Screen.
-- **Mediathek** als eigener Bereich in der Seitenleiste und als Auswahl im Editor: Bilder in den Wiki-Bereich
-  „Infoscreen" hochladen, mit Warnung vor dem Löschen, solange ein Bild gezeigt wird. Unter jedem Bild steht, wo es
-  läuft („Foyer › Gottesdienst › Begrüßung"); Suche auch nach Screen und Playlist, Filter „Unbenutzt" zum Aufräumen.
-- **Zeitpläne mit Vorschau:** neben den Regeln jedes Screens die Playlist, die gerade läuft; ein Klick auf eine
-  Regel zeigt deren Playlist.
-- **Einheitliche Bereiche:** gleicher Kopf, gleiche Suche und Karten auf allen Seiten, Anlegen und Hochladen immer
-  oben rechts; der Rahmen bleibt beim Wechsel im Menü stehen, statt kurz „Lade …" zu zeigen, und der Hintergrund
-  reicht bis zum unteren Rand.
-- **Player** für Fernseher: meldet sich über seine Adresse bei jedem Start selbst als Geräte-Benutzer an und erneuert
-  die Anmeldung täglich; zeigt Termine live, hält Daten und Bilder auf dem Gerät, lädt nach anhaltenden Fehlern und
-  nachts neu.
-- **Adresse für einen Fernseher** in den Einstellungen: aus Benutzername und Passwort des Geräte-Kontos, ohne das
-  Passwort zu speichern.
-- **Zehn Schriften** unter der SIL Open Font License, von der eigenen Instanz ausgeliefert; Lato als Standard.
-- **Einrichtungsanleitung** für ChurchTools-Administratoren: `docs/Einrichtung.md`; dazu das **Onboarding** je Rolle
-  (`docs/Onboarding.md`) und die **Rechte-Übersicht** als Tabelle (`docs/Rechte.md`), die ein Test mit dem
-  Einrichtungsassistenten abgleicht.
-- **Rollen:** Screens anlegen, einstellen und löschen nur Administratoren (Menü „…" der Kachel → „Einstellungen");
-  Gestalter gestalten Slides, Playlists und Bilder. Nach dem Update einmal „Rechte aktualisieren".
-- **Einstellungen** für Administratoren: Der Assistent legt die Gruppen „Infoscreen-Designer" und
-  „Infoscreen-Devices" samt Rechten an und prüft sie.
+### Gestalten
+
+- **Screens auf einen Blick:** Jeder Fernseher ist eine Kachel mit einem Bild dessen, was er zeigt. Filter nach
+  Quer- und Hochformat und eine Suche helfen, wenn es mehr werden. Klappt auch am Handy.
+- **Slides gestalten:** Texte, Bilder, Flächen, Uhr, Terminliste, nächster Termin, Gemeindekopf mit Name und Logo,
+  Webseiten und QR-Codes auf die Fläche ziehen, verschieben und in der Größe ändern. Ein Raster und Hilfslinien
+  helfen beim Ausrichten, Rückgängig und Wiederholen beim Ausprobieren.
+- **Bausteine sperren**, damit ein Hintergrund oder Logo beim Gestalten nicht aus Versehen verrutscht.
+- **Vorschau:** spielt die Playlist im Vollbild ab, wie der Fernseher sie zeigt – auch mit Änderungen, die noch
+  nicht gespeichert sind.
+- **Termine aus dem Kalender**, immer aktuell: als schlichte Liste oder als große Karten mit Datumskachel, Uhrzeit,
+  Ort und Kalender, dazu „Nächster Termin" mit Bild. Passen nicht alle Termine auf die Fläche, blättert die Liste
+  weiter, und ein Balken zeigt, wann die nächste Seite kommt.
+- **Webseite und QR-Code:** eine Seite der Gemeinde-Website auf dem Fernseher zeigen; einen QR-Code zur Anmeldung
+  oder zum Wochenblatt, der ohne fremden Dienst entsteht.
+- **Playlists:** Slides zu Playlists bündeln. Eine Playlist kann auf mehreren Fernsehern laufen.
+- **Zeitpläne:** zu bestimmten Zeiten eine andere Playlist zeigen – etwa sonntags von 9 bis 12 Uhr den
+  Gottesdienst, oder rund um die Termine eines Kalenders, z. B. „30 Minuten vor Beginn bis 10 Minuten danach". Die
+  Seite „Zeitpläne" zeigt für jeden Fernseher, was gerade läuft, mit Vorschau.
+- **Mediathek:** Bilder hochladen und für alle Screens verwenden. Unter jedem Bild steht, wo es läuft („Foyer ›
+  Gottesdienst › Begrüßung"); „Unbenutzt" hilft beim Aufräumen. Vor dem Löschen warnt sie, wenn ein Bild noch
+  gezeigt wird.
+- **Design:** Ecken, Akzentfarbe, Farben für neue Slides, die Darstellung der Termine und das Format der Terminbilder
+  einmal für alle Screens festlegen – mit Vorschau.
+- **Zehn Schriften** zur Auswahl, Lato als Standard.
+- **Gleichzeitig arbeiten:** Haben zwei Personen dieselbe Playlist geändert, sagt der Designer es, statt eine
+  Änderung still zu überschreiben.
+- **Über & Neuigkeiten:** die installierte Version und diese Liste; ein Punkt in der Seitenleiste zeigt, wenn es
+  etwas Neues gibt.
+
+### Am Fernseher
+
+- **Änderungen kommen von selbst:** Gespeichertes erscheint nach etwa 20 Sekunden, ohne dass jemand am Gerät etwas
+  tun muss.
+- **Läuft auch, wenn das Netz hakt:** Der Fernseher behält Inhalte und Bilder und lädt nach längeren Störungen und
+  jede Nacht neu.
+- **Meldet sich selbst an:** Die Adresse des Fernsehers enthält eine eigene Anmeldung für ein Geräte-Konto, das nur
+  Kalender lesen darf. Ein Screen mit Zeitplan zeigt nach dem Einschalten sofort die richtige Playlist.
+
+### Für Administratoren
+
+- **Einrichtung per Knopfdruck:** Ein Assistent in den Einstellungen legt die Gruppen „Infoscreen-Designer" und
+  „Infoscreen-Devices" samt Rechten an und prüft sie. Wer Gestalter sein soll, kommt in die erste Gruppe.
+- **Adresse für einen Fernseher** aus Benutzername und Passwort des Geräte-Kontos – das Passwort wird nicht
+  gespeichert.
+- **Rollen:** Screens anlegen, einstellen und löschen Administratoren; Gestalter kümmern sich um Slides, Playlists,
+  Bilder und Design.
+- **Die Bilder** liegen im Wiki-Bereich „Infoscreen" und können dort unter „Ausgeblendet" aus dem Blick rücken.
+- **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) und eine
+  [Übersicht der Rechte](docs/Rechte.md).

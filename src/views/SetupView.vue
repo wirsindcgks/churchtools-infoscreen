@@ -595,8 +595,9 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                 </section>
             </template>
             <p class="muted small version" data-testid="app-version">
-                Infoscreen Designer {{ APP_VERSION }} – neuere Fassungen stehen unter „Releases" auf GitHub und werden in
-                der Extension-Verwaltung von ChurchTools als ZIP hochgeladen.
+                Infoscreen Designer {{ APP_VERSION }} – was neu ist, steht unter
+                <RouterLink :to="{ name: 'about' }">Über &amp; Neuigkeiten</RouterLink>. Neuere Fassungen stehen unter
+                „Releases" auf GitHub und werden in der Extension-Verwaltung von ChurchTools als ZIP hochgeladen.
             </p>
         </div>
     </ModulePage>
