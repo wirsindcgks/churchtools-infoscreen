@@ -9,6 +9,7 @@ import { PAGE_SECONDS, slideSeconds } from '../player/paging';
 import { useEditorStore } from './editor-store';
 import ColorField from './ColorField.vue';
 import FillEditor from './FillEditor.vue';
+import Icon from './Icon.vue';
 import { BLOCK_LABELS } from './ops';
 
 defineProps<{ calendars: Calendar[] }>();
@@ -92,258 +93,278 @@ const slideFill = computed<Fill>(() =>
     <aside class="inspector">
         <!-- Block -->
         <section v-if="block" data-testid="block-inspector">
-            <h3>{{ BLOCK_LABELS[block.type] }}</h3>
-
-            <div class="grid4">
-                <label v-for="key in ['x', 'y', 'width', 'height'] as const" :key="key" class="d-field">
-                    {{ { x: 'X', y: 'Y', width: 'Breite', height: 'Höhe' }[key] }}
-                    <input
-                        type="number"
-                        :value="block[key]"
-                        :data-testid="`inspector-${key}`"
-                        v-on="edit"
-                        @input="setNumber(key, ($event.target as HTMLInputElement).value)"
-                    >
-                </label>
+            <div class="block-head">
+                <h3>{{ BLOCK_LABELS[block.type] }}</h3>
+                <!-- Plan.md, 25: locked, the whole block stays as it is until unlocked. -->
+                <button
+                    class="d-btn lock-toggle"
+                    :class="{ 'lock-toggle--on': block.locked }"
+                    type="button"
+                    :aria-pressed="!!block.locked"
+                    :title="block.locked ? 'Entsperren, um den Baustein wieder zu bearbeiten' : 'Sperren: nicht mehr verschieben, ändern oder löschen'"
+                    data-testid="lock-toggle"
+                    @click="editor.setLocked(block.id, !block.locked)"
+                >
+                    <Icon :name="block.locked ? 'lock' : 'unlock'" :size="16" />
+                    {{ block.locked ? 'Gesperrt' : 'Sperren' }}
+                </button>
             </div>
-
-            <label v-if="block.type === 'text'" class="d-field">
-                Text
-                <textarea
-                    rows="3"
-                    :value="block.text"
-                    data-testid="text-input"
-                    v-on="edit"
-                    @input="setBlock({ text: ($event.target as HTMLTextAreaElement).value })"
-                />
-            </label>
-
-            <template v-if="block.type === 'shape'">
-                <FillEditor
-                    :model-value="block.fill"
-                    @focus="edit.onFocus"
-                    @blur="edit.onBlur"
-                    @update:model-value="setBlock({ fill: $event })"
-                />
-                <label class="d-field">
-                    Ecken abrunden (px)
-                    <input
-                        type="number"
-                        min="0"
-                        :value="block.cornerRadius"
-                        v-on="edit"
-                        @input="setNumber('cornerRadius', ($event.target as HTMLInputElement).value)"
-                    >
-                </label>
-            </template>
-
-            <template v-if="block.type === 'image'">
-                <div class="media-pick">
-                    <img v-if="mediaUrl(block.mediaId)" :src="mediaUrl(block.mediaId)!" alt="">
-                    <p v-else class="hint">Noch kein Bild gewählt.</p>
-                    <button class="d-btn" type="button" data-testid="pick-image" @click="emit('pick-image', 'block')">
-                        Bild wählen …
-                    </button>
+            <p v-if="block.locked" class="hint" data-testid="locked-hint">
+                Gesperrt: Der Baustein lässt sich nicht verschieben, ändern oder löschen, bis du ihn entsperrst.
+            </p>
+            <!-- A disabled fieldset disables every field and button inside it at once. -->
+            <fieldset class="lockable" :disabled="!!block.locked">
+                <div class="grid4">
+                    <label v-for="key in ['x', 'y', 'width', 'height'] as const" :key="key" class="d-field">
+                        {{ { x: 'X', y: 'Y', width: 'Breite', height: 'Höhe' }[key] }}
+                        <input
+                            type="number"
+                            :value="block[key]"
+                            :data-testid="`inspector-${key}`"
+                            v-on="edit"
+                            @input="setNumber(key, ($event.target as HTMLInputElement).value)"
+                        >
+                    </label>
                 </div>
-                <label class="d-field">
-                    Einpassen
-                    <select :value="block.fit" @change="setBlock({ fit: ($event.target as HTMLSelectElement).value })">
-                        <option value="contain">Ganz zeigen</option>
-                        <option value="cover">Fläche füllen</option>
+
+                <label v-if="block.type === 'text'" class="d-field">
+                    Text
+                    <textarea
+                        rows="3"
+                        :value="block.text"
+                        data-testid="text-input"
+                        v-on="edit"
+                        @input="setBlock({ text: ($event.target as HTMLTextAreaElement).value })"
+                    />
+                </label>
+
+                <template v-if="block.type === 'shape'">
+                    <FillEditor
+                        :model-value="block.fill"
+                        @focus="edit.onFocus"
+                        @blur="edit.onBlur"
+                        @update:model-value="setBlock({ fill: $event })"
+                    />
+                    <label class="d-field">
+                        Ecken abrunden (px)
+                        <input
+                            type="number"
+                            min="0"
+                            :value="block.cornerRadius"
+                            v-on="edit"
+                            @input="setNumber('cornerRadius', ($event.target as HTMLInputElement).value)"
+                        >
+                    </label>
+                </template>
+
+                <template v-if="block.type === 'image'">
+                    <div class="media-pick">
+                        <img v-if="mediaUrl(block.mediaId)" :src="mediaUrl(block.mediaId)!" alt="">
+                        <p v-else class="hint">Noch kein Bild gewählt.</p>
+                        <button class="d-btn" type="button" data-testid="pick-image" @click="emit('pick-image', 'block')">
+                            Bild wählen …
+                        </button>
+                    </div>
+                    <label class="d-field">
+                        Einpassen
+                        <select :value="block.fit" @change="setBlock({ fit: ($event.target as HTMLSelectElement).value })">
+                            <option value="contain">Ganz zeigen</option>
+                            <option value="cover">Fläche füllen</option>
+                        </select>
+                    </label>
+                </template>
+
+                <label v-if="block.type === 'clock'" class="d-field">
+                    Anzeige
+                    <select :value="block.format" @change="setBlock({ format: ($event.target as HTMLSelectElement).value })">
+                        <option value="time">Uhrzeit</option>
+                        <option value="date">Datum</option>
+                        <option value="datetime">Datum und Uhrzeit</option>
                     </select>
                 </label>
-            </template>
 
-            <label v-if="block.type === 'clock'" class="d-field">
-                Anzeige
-                <select :value="block.format" @change="setBlock({ format: ($event.target as HTMLSelectElement).value })">
-                    <option value="time">Uhrzeit</option>
-                    <option value="date">Datum</option>
-                    <option value="datetime">Datum und Uhrzeit</option>
-                </select>
-            </label>
-
-            <template v-if="block.type === 'appointment-list' || block.type === 'next-appointment'">
-                <fieldset>
-                    <legend>Kalender</legend>
-                    <label v-for="c in calendars" :key="c.id" class="check">
+                <template v-if="block.type === 'appointment-list' || block.type === 'next-appointment'">
+                    <fieldset>
+                        <legend>Kalender</legend>
+                        <label v-for="c in calendars" :key="c.id" class="check">
+                            <input
+                                type="checkbox"
+                                :checked="block.calendarIds.includes(c.id)"
+                                @change="toggleCalendar(c.id, ($event.target as HTMLInputElement).checked)"
+                            >
+                            <span class="swatch" :style="{ background: c.color ?? 'transparent' }" />
+                            {{ c.name }}
+                        </label>
+                        <p v-if="!calendars.length" class="hint">Keine Kalender sichtbar.</p>
+                    </fieldset>
+                    <template v-if="block.type === 'appointment-list'">
+                        <div class="grid2">
+                            <label class="d-field">
+                                Tage voraus
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="366"
+                                    :value="block.horizonDays"
+                                    v-on="edit"
+                                    @input="setNumber('horizonDays', ($event.target as HTMLInputElement).value)"
+                                >
+                            </label>
+                            <label v-if="!block.showAll" class="d-field">
+                                Höchstens
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="50"
+                                    :value="block.limit"
+                                    v-on="edit"
+                                    @input="setNumber('limit', ($event.target as HTMLInputElement).value)"
+                                >
+                            </label>
+                            <label v-else class="d-field">
+                                Sekunden je Seite
+                                <input
+                                    type="number"
+                                    min="3"
+                                    max="120"
+                                    :value="block.pageSeconds ?? PAGE_SECONDS"
+                                    data-testid="page-seconds"
+                                    v-on="edit"
+                                    @input="setPageSeconds(($event.target as HTMLInputElement).value)"
+                                >
+                            </label>
+                        </div>
+                        <!-- Plan.md, 23: every appointment of the horizon, page by page. -->
+                        <label class="check">
+                            <input
+                                type="checkbox"
+                                :checked="block.showAll ?? false"
+                                data-testid="show-all"
+                                @change="setBlock({ showAll: ($event.target as HTMLInputElement).checked })"
+                            >
+                            Alle Termine zeigen, seitenweise
+                        </label>
+                        <p v-if="block.showAll" class="hint" data-testid="page-hint">{{ pageHint(block) }}</p>
+                    </template>
+                    <label v-else class="check">
                         <input
                             type="checkbox"
-                            :checked="block.calendarIds.includes(c.id)"
-                            @change="toggleCalendar(c.id, ($event.target as HTMLInputElement).checked)"
+                            :checked="block.showImage"
+                            @change="setBlock({ showImage: ($event.target as HTMLInputElement).checked })"
                         >
-                        <span class="swatch" :style="{ background: c.color ?? 'transparent' }" />
-                        {{ c.name }}
+                        Terminbild zeigen
                     </label>
-                    <p v-if="!calendars.length" class="hint">Keine Kalender sichtbar.</p>
-                </fieldset>
-                <template v-if="block.type === 'appointment-list'">
-                    <div class="grid2">
-                        <label class="d-field">
-                            Tage voraus
-                            <input
-                                type="number"
-                                min="1"
-                                max="366"
-                                :value="block.horizonDays"
-                                v-on="edit"
-                                @input="setNumber('horizonDays', ($event.target as HTMLInputElement).value)"
-                            >
-                        </label>
-                        <label v-if="!block.showAll" class="d-field">
-                            Höchstens
-                            <input
-                                type="number"
-                                min="1"
-                                max="50"
-                                :value="block.limit"
-                                v-on="edit"
-                                @input="setNumber('limit', ($event.target as HTMLInputElement).value)"
-                            >
-                        </label>
-                        <label v-else class="d-field">
-                            Sekunden je Seite
-                            <input
-                                type="number"
-                                min="3"
-                                max="120"
-                                :value="block.pageSeconds ?? PAGE_SECONDS"
-                                data-testid="page-seconds"
-                                v-on="edit"
-                                @input="setPageSeconds(($event.target as HTMLInputElement).value)"
-                            >
-                        </label>
-                    </div>
-                    <!-- Plan.md, 23: every appointment of the horizon, page by page. -->
+                </template>
+
+                <template v-if="block.type === 'church-header'">
                     <label class="check">
                         <input
                             type="checkbox"
-                            :checked="block.showAll ?? false"
-                            data-testid="show-all"
-                            @change="setBlock({ showAll: ($event.target as HTMLInputElement).checked })"
+                            :checked="block.showName"
+                            @change="setBlock({ showName: ($event.target as HTMLInputElement).checked })"
                         >
-                        Alle Termine zeigen, seitenweise
+                        Gemeindenamen zeigen
                     </label>
-                    <p v-if="block.showAll" class="hint" data-testid="page-hint">{{ pageHint(block) }}</p>
-                </template>
-                <label v-else class="check">
-                    <input
-                        type="checkbox"
-                        :checked="block.showImage"
-                        @change="setBlock({ showImage: ($event.target as HTMLInputElement).checked })"
-                    >
-                    Terminbild zeigen
-                </label>
-            </template>
-
-            <template v-if="block.type === 'church-header'">
-                <label class="check">
-                    <input
-                        type="checkbox"
-                        :checked="block.showName"
-                        @change="setBlock({ showName: ($event.target as HTMLInputElement).checked })"
-                    >
-                    Gemeindenamen zeigen
-                </label>
-                <label class="check">
-                    <input
-                        type="checkbox"
-                        data-testid="show-logo"
-                        :checked="block.showLogo"
-                        @change="setBlock({ showLogo: ($event.target as HTMLInputElement).checked })"
-                    >
-                    Logo zeigen
-                </label>
-                <div v-if="block.showLogo" class="media-pick">
-                    <img v-if="mediaUrl(block.logoMediaId, 'max')" class="logo-preview" :src="mediaUrl(block.logoMediaId, 'max')!" alt="">
-                    <p v-else class="hint">Das Logo aus den Gemeindeinfos von ChurchTools.</p>
-                    <button class="d-btn" type="button" data-testid="pick-logo" @click="emit('pick-image', 'logo')">
-                        Eigenes Logo wählen …
-                    </button>
-                    <button
-                        v-if="block.logoMediaId"
-                        class="d-btn"
-                        type="button"
-                        data-testid="reset-logo"
-                        @click="setBlock({ logoMediaId: undefined })"
-                    >
-                        Logo aus ChurchTools verwenden
-                    </button>
-                    <p class="hint">Ein eigenes Logo hilft, wenn das aus ChurchTools auf dem Hintergrund nicht zu sehen ist.</p>
-                </div>
-            </template>
-
-            <fieldset v-if="'style' in block">
-                <legend>Schrift</legend>
-                <div class="grid2">
-                    <label class="d-field wide">
-                        Schriftart
-                        <select
-                            data-testid="font-family"
-                            :value="fontDef(block.style.fontFamily).key"
-                            @change="setStyle({ fontFamily: ($event.target as HTMLSelectElement).value })"
-                        >
-                            <option v-for="f in FONTS" :key="f.key" :value="f.key" :style="{ fontFamily: `'${f.family}'` }">
-                                {{ f.label }}
-                            </option>
-                        </select>
-                    </label>
-                    <label class="d-field">
-                        Größe (px)
+                    <label class="check">
                         <input
-                            type="number"
-                            min="8"
-                            :value="block.style.fontSize"
-                            v-on="edit"
-                            @input="
-                                Number(($event.target as HTMLInputElement).value) >= 1 &&
-                                    setStyle({ fontSize: Number(($event.target as HTMLInputElement).value) })
-                            "
+                            type="checkbox"
+                            data-testid="show-logo"
+                            :checked="block.showLogo"
+                            @change="setBlock({ showLogo: ($event.target as HTMLInputElement).checked })"
                         >
+                        Logo zeigen
                     </label>
-                    <label class="d-field">
-                        Stärke
-                        <select
-                            :value="block.style.fontWeight"
-                            @change="setStyle({ fontWeight: Number(($event.target as HTMLSelectElement).value) as 400 })"
+                    <div v-if="block.showLogo" class="media-pick">
+                        <img v-if="mediaUrl(block.logoMediaId, 'max')" class="logo-preview" :src="mediaUrl(block.logoMediaId, 'max')!" alt="">
+                        <p v-else class="hint">Das Logo aus den Gemeindeinfos von ChurchTools.</p>
+                        <button class="d-btn" type="button" data-testid="pick-logo" @click="emit('pick-image', 'logo')">
+                            Eigenes Logo wählen …
+                        </button>
+                        <button
+                            v-if="block.logoMediaId"
+                            class="d-btn"
+                            type="button"
+                            data-testid="reset-logo"
+                            @click="setBlock({ logoMediaId: undefined })"
                         >
-                            <option :value="400">Normal</option>
-                            <option :value="600">Halbfett</option>
-                            <option :value="700">Fett</option>
+                            Logo aus ChurchTools verwenden
+                        </button>
+                        <p class="hint">Ein eigenes Logo hilft, wenn das aus ChurchTools auf dem Hintergrund nicht zu sehen ist.</p>
+                    </div>
+                </template>
+
+                <fieldset v-if="'style' in block">
+                    <legend>Schrift</legend>
+                    <div class="grid2">
+                        <label class="d-field wide">
+                            Schriftart
+                            <select
+                                data-testid="font-family"
+                                :value="fontDef(block.style.fontFamily).key"
+                                @change="setStyle({ fontFamily: ($event.target as HTMLSelectElement).value })"
+                            >
+                                <option v-for="f in FONTS" :key="f.key" :value="f.key" :style="{ fontFamily: `'${f.family}'` }">
+                                    {{ f.label }}
+                                </option>
+                            </select>
+                        </label>
+                        <label class="d-field">
+                            Größe (px)
+                            <input
+                                type="number"
+                                min="8"
+                                :value="block.style.fontSize"
+                                v-on="edit"
+                                @input="
+                                    Number(($event.target as HTMLInputElement).value) >= 1 &&
+                                        setStyle({ fontSize: Number(($event.target as HTMLInputElement).value) })
+                                "
+                            >
+                        </label>
+                        <label class="d-field">
+                            Stärke
+                            <select
+                                :value="block.style.fontWeight"
+                                @change="setStyle({ fontWeight: Number(($event.target as HTMLSelectElement).value) as 400 })"
+                            >
+                                <option :value="400">Normal</option>
+                                <option :value="600">Halbfett</option>
+                                <option :value="700">Fett</option>
+                            </select>
+                        </label>
+                        <ColorField
+                            label="Farbe"
+                            testid="text-color"
+                            :model-value="block.style.color"
+                            @focus="edit.onFocus"
+                            @blur="edit.onBlur"
+                            @update:model-value="setStyle({ color: $event })"
+                        />
+                    </div>
+                    <label class="d-field">
+                        Ausrichtung
+                        <select
+                            :value="block.style.align"
+                            @change="setStyle({ align: ($event.target as HTMLSelectElement).value as 'left' })"
+                        >
+                            <option value="left">Links</option>
+                            <option value="center">Mittig</option>
+                            <option value="right">Rechts</option>
                         </select>
                     </label>
-                    <ColorField
-                        label="Farbe"
-                        testid="text-color"
-                        :model-value="block.style.color"
-                        @focus="edit.onFocus"
-                        @blur="edit.onBlur"
-                        @update:model-value="setStyle({ color: $event })"
-                    />
-                </div>
-                <label class="d-field">
-                    Ausrichtung
-                    <select
-                        :value="block.style.align"
-                        @change="setStyle({ align: ($event.target as HTMLSelectElement).value as 'left' })"
-                    >
-                        <option value="left">Links</option>
-                        <option value="center">Mittig</option>
-                        <option value="right">Rechts</option>
-                    </select>
-                </label>
-            </fieldset>
+                </fieldset>
 
-            <fieldset>
-                <legend>Ebene</legend>
-                <div class="buttons">
-                    <button class="d-btn" type="button" @click="editor.layerBlock(block.id, 'front')">Ganz nach vorn</button>
-                    <button class="d-btn" type="button" @click="editor.layerBlock(block.id, 'forward')">Eins vor</button>
-                    <button class="d-btn" type="button" @click="editor.layerBlock(block.id, 'backward')">Eins zurück</button>
-                    <button class="d-btn" type="button" @click="editor.layerBlock(block.id, 'back')">Ganz nach hinten</button>
-                </div>
+                <fieldset>
+                    <legend>Ebene</legend>
+                    <div class="buttons">
+                        <button class="d-btn" type="button" @click="editor.layerBlock(block.id, 'front')">Ganz nach vorn</button>
+                        <button class="d-btn" type="button" @click="editor.layerBlock(block.id, 'forward')">Eins vor</button>
+                        <button class="d-btn" type="button" @click="editor.layerBlock(block.id, 'backward')">Eins zurück</button>
+                        <button class="d-btn" type="button" @click="editor.layerBlock(block.id, 'back')">Ganz nach hinten</button>
+                    </div>
+                </fieldset>
+                <button class="d-btn d-btn--danger" type="button" @click="editor.removeBlock(block.id)">Block löschen</button>
             </fieldset>
-            <button class="d-btn d-btn--danger" type="button" @click="editor.removeBlock(block.id)">Block löschen</button>
         </section>
 
         <!-- Slide and screen -->
@@ -544,6 +565,33 @@ legend {
 .invalid {
     color: var(--d-danger);
     font-size: var(--d-size-sm);
+}
+.block-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.lock-toggle {
+    gap: 4px;
+    font-size: var(--d-size-sm);
+}
+.lock-toggle--on {
+    border-color: var(--d-accent);
+    background: var(--d-accent-pale);
+    color: var(--d-accent-strong);
+}
+/* Only a container: the fieldset exists to switch all fields off at once. */
+.lockable {
+    display: grid;
+    gap: inherit;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+.lockable:disabled {
+    opacity: 0.55;
 }
 .hint {
     margin: 0;

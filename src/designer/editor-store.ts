@@ -204,8 +204,24 @@ export const useEditorStore = defineStore('editor', () => {
         selectedBlockId.value = created.id;
     }
 
+    /** A locked block (Plan.md, 25) takes no change – from the stage, the keys or the inspector. */
+    function isLocked(id: string): boolean {
+        return !!slide.value?.blocks.find((x) => x.id === id)?.locked;
+    }
+
+    function setLocked(id: string, locked: boolean): void {
+        const slideId = slide.value?.id;
+        change((b) => {
+            const target = slideIn(b, slideId)?.blocks.find((x) => x.id === id);
+            if (!target) return;
+            if (locked) target.locked = true;
+            else delete target.locked;
+        });
+    }
+
     /** Frame changes are clamped so a block always stays reachable on the stage. */
     function updateBlock(id: string, patch: Partial<Block>): void {
+        if (isLocked(id)) return;
         const slideId = slide.value?.id;
         change((b) => {
             const target = slideIn(b, slideId)?.blocks.find((x) => x.id === id);
@@ -216,6 +232,7 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     function removeBlock(id: string): void {
+        if (isLocked(id)) return;
         const slideId = slide.value?.id;
         change((b) => {
             const target = slideIn(b, slideId);
@@ -225,6 +242,7 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     function layerBlock(id: string, layer: Layer): void {
+        if (isLocked(id)) return;
         const slideId = slide.value?.id;
         change((b) => {
             const target = slideIn(b, slideId);
@@ -321,6 +339,7 @@ export const useEditorStore = defineStore('editor', () => {
         updateBlock,
         removeBlock,
         layerBlock,
+        setLocked,
         save,
         overwrite,
         discardAndReload,

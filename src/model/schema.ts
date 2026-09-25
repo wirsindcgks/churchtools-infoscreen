@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 6 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 7 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -47,6 +47,12 @@ const BlockFrame = {
     y: Px,
     width: PositivePx,
     height: PositivePx,
+    /**
+     * Since 1.7: locked in the editor – not moved, resized, edited, reordered
+     * or deleted until unlocked (Plan.md, Nächste Schritte 25). The player
+     * does not care.
+     */
+    locked: v.optional(v.boolean()),
 };
 
 export const TextBlock = v.object({

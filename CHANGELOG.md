@@ -23,6 +23,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 - **Terminliste mit allen Terminen** der nächsten Tage: was nicht in die Box passt, blättert seitenweise (10 s je
   Seite, einstellbar); ein Balken zeigt je Seite die verbleibende Zeit; die Slide bleibt, bis alle Seiten gezeigt
   sind – die Slide-Liste zeigt die längere Laufzeit („12 → 30 s").
+- **Bausteine sperren:** Ein gesperrter Baustein lässt sich weder verschieben noch ändern oder löschen, bis er
+  entsperrt wird.
 - **Vorschau im Editor:** spielt die Playlist mit allen ungespeicherten Änderungen im Vollbild ab, wie der
   Fernseher – mit vor/zurück und Anhalten.
 - **Player** zeigt beim Laden eine drehende Sanduhr und übernimmt Gespeichertes in etwa 20 Sekunden: ein

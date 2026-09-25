@@ -5,6 +5,7 @@ import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
 import { fitStage } from '../player/stage';
 import { useEditorStore } from './editor-store';
+import Icon from './Icon.vue';
 import { BLOCK_LABELS } from './ops';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 
@@ -43,6 +44,8 @@ function start(event: PointerEvent, block: Block, handle: Handle | 'move'): void
     if (event.button !== 0) return;
     event.stopPropagation();
     editor.selectBlock(block.id);
+    // Locked (Plan.md, 25): it can be chosen – to unlock it in the inspector – but not moved.
+    if (block.locked) return;
     drag = {
         id: block.id,
         handle,
@@ -135,7 +138,7 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
                     v-for="block in blocks"
                     :key="block.id"
                     class="frame"
-                    :class="{ 'frame--selected': block.id === editor.selectedBlockId }"
+                    :class="{ 'frame--selected': block.id === editor.selectedBlockId, 'frame--locked': block.locked }"
                     :style="{
                         left: `${block.x}px`,
                         top: `${block.y}px`,
@@ -151,7 +154,15 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
                     @pointerup="end"
                     @pointercancel="end"
                 >
-                    <template v-if="block.id === editor.selectedBlockId">
+                    <span
+                        v-if="block.locked && block.id === editor.selectedBlockId"
+                        class="lock"
+                        title="Gesperrt – im Inspektor entsperren"
+                        data-testid="frame-lock"
+                    >
+                        <Icon name="lock" :size="16" />
+                    </span>
+                    <template v-else-if="block.id === editor.selectedBlockId">
                         <span
                             v-for="h in HANDLES"
                             :key="h"
@@ -212,6 +223,26 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
 }
 .frame--selected {
     outline: calc(var(--line) * 1.5) solid rgb(59, 130, 246);
+}
+.frame--locked {
+    cursor: default;
+}
+/* Sized in screen pixels like the handles; the stage is shown scaled. */
+.lock {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: grid;
+    place-items: center;
+    width: calc(var(--handle) * 2);
+    height: calc(var(--handle) * 2);
+    border-radius: 0 0 0 calc(var(--handle) / 2);
+    background: var(--d-accent);
+    color: #fff;
+}
+.lock :deep(svg) {
+    width: calc(var(--handle) * 1.4);
+    height: calc(var(--handle) * 1.4);
 }
 .handle {
     position: absolute;

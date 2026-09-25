@@ -511,3 +511,34 @@ test('in the preview a long appointment list turns its pages, with a bar filling
     await expect(preview.getByTestId('list-page')).toHaveText(/^2\//, { timeout: 6_000 });
     await expect(preview.getByTestId('preview-where')).toContainText('3/3 · Termine');
 });
+
+test('a locked block stays put: no drag, no keys, no fields, no delete – until unlocked (Plan.md 25)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await page.getByTestId('add-text').click();
+    const frames = page.getByTestId('frame-text');
+    const count = await frames.count();
+    const frame = frames.last();
+    await page.getByTestId('lock-toggle').click();
+    await expect(page.getByTestId('lock-toggle')).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByTestId('frame-lock')).toBeVisible();
+    await expect(page.getByTestId('text-input')).toBeDisabled();
+    await page.screenshot({ path: 'test-results/editor-locked.png' });
+
+    // Dragging and the arrow and delete keys change nothing.
+    const box = (await frame.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2 + 120, box.y + box.height / 2, { steps: 5 });
+    await page.mouse.up();
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('Delete');
+    expect(Math.round((await frame.boundingBox())!.x)).toBe(Math.round(box.x));
+    await expect(frames).toHaveCount(count);
+
+    await page.getByTestId('lock-toggle').click();
+    await expect(page.getByTestId('text-input')).toBeEnabled();
+    await page.keyboard.press('Delete');
+    await expect(frames).toHaveCount(count - 1);
+});

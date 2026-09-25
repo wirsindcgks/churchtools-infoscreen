@@ -142,6 +142,26 @@ describe('editor store', () => {
         expect(loaded.slides[0]?.blocks).toHaveLength(2);
     });
 
+    it('keeps a locked block as it is until it is unlocked (Plan.md, 25)', async () => {
+        const { editor } = await setup();
+        editor.addBlock('shape');
+        const id = editor.block!.id;
+        editor.addBlock('text');
+        const x = editor.slide!.blocks[0]!.x;
+        editor.setLocked(id, true);
+        editor.updateBlock(id, { x: x + 100 });
+        editor.layerBlock(id, 'front');
+        editor.removeBlock(id);
+        expect(editor.slide!.blocks[0]).toMatchObject({ id, x, locked: true });
+        editor.setLocked(id, false);
+        expect(editor.slide!.blocks[0]!.locked).toBeUndefined();
+        editor.updateBlock(id, { x: x + 100 });
+        expect(editor.slide!.blocks[0]!.x).toBe(x + 100);
+        editor.undo();
+        editor.undo();
+        expect(editor.slide!.blocks[0]!.locked).toBe(true); // locking is a step of its own
+    });
+
     it('changes paint order and removes blocks', async () => {
         const { editor } = await setup();
         editor.addBlock('shape');
