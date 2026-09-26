@@ -151,10 +151,15 @@ Anmeldung von Hand im Browser genügt nicht: Auch mit „Angemeldet bleiben" mel
 Das Passwort wird nirgends gespeichert; es dient nur dazu, bei ChurchTools den **Login-Token** des Geräte-Kontos
 abzuholen, der in der Adresse steht. **Die Adresse ist deshalb ein Schlüssel:** Wer sie hat, sieht ChurchTools mit
 den Rechten des Geräte-Kontos – nur lesend, aber ohne Passwort. Gib sie nicht per E-Mail oder Chat weiter, sondern
-trag sie direkt am Gerät ein. Ungültig wird sie, sobald das Passwort des Geräte-Kontos geändert wird.
+trag sie direkt am Gerät ein. Ungültig wird sie, sobald das Passwort des Geräte-Kontos geändert wird. Die Adresse
+bleibt auch in der Adresszeile des Browsers stehen – nicht fotografieren oder abfilmen, wenn sie zu sehen ist.
+
+**Ein Browser, ein Konto.** ChurchTools kennt je Browser nur eine Anmeldung. Wer im selben Browser selbst in
+ChurchTools angemeldet ist, meldet den Player ab und der Player ihn. Am Schreibtisch deshalb den Player in einem
+**Inkognito-Fenster** oder einem **eigenen Browserprofil** öffnen, nicht in einem Tab neben ChurchTools.
 
 **Nur zum Ausprobieren** geht es auch ohne: im Browser mit dem Geräte-Benutzer anmelden und im Designer über „…" →
-„Player öffnen" den Screen aufrufen. Das hält einen Tag.
+„Player öffnen" den Screen aufrufen – in einem eigenen Browser oder Profil, siehe oben. Das hält einen Tag.
 
 Fehlt die Anmeldung, zeigt der Fernseher: *„Dieser Fernseher ist nicht bei ChurchTools angemeldet. Seine Adresse
 erzeugt ein Administrator …"*.
@@ -237,6 +242,7 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | Kein „+ Screen erstellen", kein „Einstellungen" im Menü der Kachel | Dir fehlt das Recht, Screens anzulegen, zu bearbeiten und zu löschen – auch Administratoren brauchen es | Schritt 2: die drei „Daten in Kategorie …"-Rechte für alle Kategorien |
 | „Adresse erzeugen" meldet „Anmeldung fehlgeschlagen" | meist fehlt dem Geräte-Konto der **Benutzername** | Schritt 6, Punkt 2 |
 | Fernseher: „Dieser Fernseher ist nicht bei ChurchTools angemeldet" | Adresse ohne Anmeldung, oder das Passwort des Geräte-Kontos wurde geändert | in den Einstellungen eine neue Adresse erzeugen |
+| Player im Tab neben ChurchTools: fragt nach Anmeldung oder zeigt keine Termine | Im selben Browser ist jemand anderes angemeldet – ChurchTools kennt je Browser nur eine Anmeldung | Player in einem Inkognito-Fenster oder eigenen Browserprofil öffnen |
 | Fernseher: „Es gibt keinen Screen „…"" | Adresse vertippt oder Screen gelöscht | Adresse neu kopieren |
 | Fernseher: Termine eines Kalenders fehlen | Gerät darf den Kalender nicht lesen | Einstellungen → „Rechte aktualisieren" |
 | Fernseher: Bild fehlt, Platzhalter statt Bild | Bild im Wiki gelöscht | im Designer ein neues Bild wählen |

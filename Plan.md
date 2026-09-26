@@ -11,8 +11,9 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 1. ~~**`v0.2.0`**~~ **veröffentlicht am 2026-09-26** mit Beiträgen (33) und Hinweisen (34). ~~**`v0.1.0`**~~ **veröffentlicht am 2026-09-25** als erstes Release, nachdem Weg B im Testsystem 24 Stunden ohne Auffälligkeiten durchgelaufen ist (Nutzer). Jetzt: **der Test im Haus mit dem Release-ZIP** (Nutzer).
 2. **Ein Raspberry im Foyer über mehrere Tage** – der eigentliche Praxistest, dabei die Laufschrift beobachten.
 3. **Beiträge aus ChurchTools** (Punkt 33) – gebaut; jetzt im Player testen (Test-ZIP, Gruppe „ISD-Beitragstest").
-4. **Planen mit Opus, Umsetzen mit Sonnet** (AGENTS.md) über einige Aufträge beobachten: spart es, ohne dass die Qualität leidet?
-5. **Vor dem 2026-10-22:** die Fixtures sichern (Modul-Antworten aufgezeichnet am 2026-09-25) und klären, wo nach Ablauf der Testinstanz getestet wird (F1).
+4. **Player im Browser neben ChurchTools** *(Nutzer, 2026-09-26)*: Token bleibt in der Adresszeile, der Datenzyklus prüft die Person, die Einrichtungsdoku verlangt einen eigenen Browser (G9, Nachtrag). Kommt mit dem nächsten Release.
+5. **Planen mit Opus, Umsetzen mit Sonnet** (AGENTS.md) über einige Aufträge beobachten: spart es, ohne dass die Qualität leidet?
+6. **Vor dem 2026-10-22:** die Fixtures sichern (Modul-Antworten aufgezeichnet am 2026-09-25) und klären, wo nach Ablauf der Testinstanz getestet wird (F1).
 
 **Bewusst geparkt** – nicht falsch, aber nicht jetzt: alles Weitere am Betriebsbenutzer (G21-Reste), Rate-Limit (G16), Heartbeat und Statusanzeige (widerspricht „Geräte nur lesend"), eine gemeinsame Bibliothek mit `ct-pass-store`, Koppeln am Fernseher.
 
@@ -92,7 +93,7 @@ ChurchTools-Instanz
    ```
    https://<instanz>/ccm/infoscreen-designer/player?screen=foyer-links&login_token=<TOKEN>&user_id=<ID>#login_token=<TOKEN>&user_id=<ID>
    ```
-   Der Player meldet sich bei abgelaufener Sitzung selbst neu an und lädt sich nur über diese Adresse neu; das nächtliche Neuladen erneuert die Sitzung täglich. Die Adresse erzeugt ein Administrator in den Einstellungen aus Benutzername und Passwort des Geräte-Kontos (`POST /api/login/token`, ohne Cookies); gespeichert wird nichts davon. Echte Unterpfade wie `/player` sind gedeckt (G7).
+   Der Player meldet sich bei abgelaufener Sitzung selbst neu an und lädt sich nur über diese Adresse neu; das nächtliche Neuladen erneuert die Sitzung täglich. Die Adresse erzeugt ein Administrator in den Einstellungen aus Benutzername und Passwort des Geräte-Kontos (`POST /api/login/token`, ohne Cookies); gespeichert wird nichts davon. Echte Unterpfade wie `/player` sind gedeckt (G7). **Die Adresszeile behält den Token** (seit 2026-09-26, G9): Ein F5 von Hand meldet so ebenfalls an. **Ein Browser trägt nur eine ChurchTools-Sitzung** – ein Player braucht einen eigenen Browser oder ein eigenes Profil; der Datenzyklus prüft die Person wie der Konfigurationszyklus.
 4. **Weg A, verworfen am 2026-09-25** (entschieden am 2026-09-24): Der Browser meldet sich einmal von Hand an, die Adresse trägt nur den Screen. Auch mit „Angemeldet bleiben" hält die Sitzung nur 24 Stunden (G32), danach bindet ChurchTools unser Skript nicht mehr ein (G9, G33). Bleibt zum Ausprobieren: angemeldet über „Player öffnen".
 
 **Für Weg B gilt: Der Token ist ein Dauerpasswort** – in der URL, im Browserverlauf, auf der SD-Karte. **Die Notbremse ist der Passwortwechsel des Geräte-Benutzers in der Oberfläche**; der Token ist danach sofort ungültig (G18). Einen Admin-Endpunkt zum Widerrufen gibt es nicht.

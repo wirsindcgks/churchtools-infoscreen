@@ -286,6 +286,9 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
 
     async function dataCycle(): Promise<void> {
         try {
+            // The session belongs to the whole browser: someone signing in elsewhere in it would otherwise
+            // have appointments and posts fetched with their rights (way B, G9).
+            await data.assertSignedIn();
             await refreshData();
             dataFailures = 0;
             failingSince.data = null;

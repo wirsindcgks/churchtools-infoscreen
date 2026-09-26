@@ -6,13 +6,7 @@ import type { MediaDoc, SlideDoc } from '../model/schema';
 import { imageSource, provideStageContext, type StageContext } from '../player/context';
 import { browserDeps, createPlayer } from '../player/controller';
 import { createChurchToolsPlayerData } from '../player/data';
-import {
-    readDeviceLogin,
-    rememberDeviceLogin,
-    rememberedDeviceLogin,
-    withDeviceLogin,
-    withoutDeviceLogin,
-} from '../player/device-login';
+import { readDeviceLogin, reloadWithDeviceLogin, withDeviceLogin } from '../player/device-login';
 import { screenImageUrls, slideImageUrls } from '../player/images';
 import { createMediaCache } from '../player/media-cache';
 import { createPreloader } from '../player/preload';
@@ -28,22 +22,21 @@ import StageView from '../player/StageView.vue';
 const route = useRoute();
 const slug = typeof route.query.screen === 'string' ? route.query.screen : null;
 
-// Way B: the token sits in the fragment – ChurchTools has taken it out of the query, if it signed in (G9) –
-// or, after the player has tidied the address, in the tab's session storage.
-const login = readDeviceLogin(new URL(window.location.href)) ?? rememberedDeviceLogin();
+// Way B: the token sits in the fragment – ChurchTools has taken it out of the query, if it signed in (G9).
+const login = readDeviceLogin(new URL(window.location.href));
 if (login) {
     enableTokenLogin(login);
-    rememberDeviceLogin(login);
-    // Off the address bar, off photos and screenshots. It stays in the kiosk configuration and the history.
-    window.history.replaceState(window.history.state, '', withoutDeviceLogin(window.location.href));
+    // A manual reload loads what the address bar shows; without the token in the query, after 24 hours (G32)
+    // or once someone else in this browser signs out, that is the ChurchTools login page without our script.
+    window.history.replaceState(window.history.state, '', withDeviceLogin(window.location.href, login));
 }
 
 const player = slug
     ? createPlayer(slug, createChurchToolsPlayerData(login), {
           ...browserDeps,
-          // A plain reload would load the address without the token – after 24 hours (G32) the page without our script.
-          reload: () =>
-              login ? window.location.replace(withDeviceLogin(window.location.href, login)) : window.location.reload(),
+          // A plain reload would load the address without the token – after 24 hours (G32) the page without our
+          // script; with the token already in the address bar, this reloads instead of a no-op `replace` (G9).
+          reload: () => (login ? reloadWithDeviceLogin(window.location, login) : window.location.reload()),
       })
     : null;
 const state = player?.state;

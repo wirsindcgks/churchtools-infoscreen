@@ -53,22 +53,24 @@ test('way B: the player takes the token from the fragment, where it survives the
     expect(logins).toContain('geraet');
 });
 
-test('way B: the player takes the token off the address bar, and still knows it after a manual reload', async ({ page }) => {
-    const logins: string[] = [];
-    await page.route('**/api/whoami**', async (route) => {
-        const url = new URL(route.request().url());
-        if (url.searchParams.has('login_token')) logins.push(url.searchParams.get('login_token') ?? '');
-        await route.fulfill({ json: { data: { id: 1, firstName: 'Mensch', lastName: 'Vorort' } } });
-    });
-    // As in a browser that was already signed in: ChurchTools left the token in the query (no redirect).
-    await page.goto('./player?screen=demo&login_token=geraet&user_id=22#login_token=geraet&user_id=22');
-    await expect(page.getByRole('alert')).toContainText('Person 22');
-    expect(page.url()).not.toContain('geraet');
-    expect(page.url()).toContain('screen=demo');
+test('way B: the address bar keeps the token in query and fragment, so a manual reload signs in again', async ({
+    page,
+}) => {
+    await page.route('**/api/whoami**', (route) =>
+        route.fulfill({ json: { data: { id: 22, firstName: 'Infoscreen', lastName: 'Foyer' } } }),
+    );
+    // As after the redirect: the query no longer carries the token, the fragment does.
+    await page.goto('./player?screen=demo&user_id=22#login_token=geraet&user_id=22');
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
 
+    const url = new URL(page.url());
+    expect(url.searchParams.get('login_token')).toBe('geraet');
+    expect(url.searchParams.get('screen')).toBe('demo');
+    expect(new URLSearchParams(url.hash.slice(1)).get('login_token')).toBe('geraet');
+
+    const reload = page.waitForRequest((r) => r.isNavigationRequest());
     await page.reload();
-    await expect(page.getByRole('alert')).toContainText('Person 22');
-    expect(logins.filter((t) => t === 'geraet').length).toBeGreaterThanOrEqual(2);
+    expect(new URL((await reload).url()).searchParams.get('login_token')).toBe('geraet');
 });
 
 test('way B: the nightly reload goes through the address with the token, so the session is renewed daily (G32)', async ({

@@ -1,11 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import {
-    readDeviceLogin,
-    rememberDeviceLogin,
-    rememberedDeviceLogin,
-    withDeviceLogin,
-    withoutDeviceLogin,
-} from './device-login';
+import { describe, expect, it, vi } from 'vitest';
+import { readDeviceLogin, reloadWithDeviceLogin, withDeviceLogin } from './device-login';
 
 const base = 'https://gemeinde.church.tools/ccm/infoscreen-designer/player?screen=foyer';
 const login = { loginToken: 'abc+/=', personId: 22 };
@@ -47,32 +41,18 @@ describe('readDeviceLogin', () => {
     });
 });
 
-describe('withoutDeviceLogin', () => {
-    it('takes token and person out of query and fragment, the screen stays', () => {
-        const url = new URL(withoutDeviceLogin(withDeviceLogin(base, login)));
-        expect(url.toString()).toBe(base);
-        expect(url.hash).toBe('');
-    });
-});
-
-describe('rememberDeviceLogin', () => {
-    it('keeps the login for the next reload of the tab', () => {
-        const store = new Map<string, string>();
-        const storage = { setItem: (k: string, v: string) => void store.set(k, v), getItem: (k: string) => store.get(k) ?? null };
-        rememberDeviceLogin(login, storage);
-        expect(rememberedDeviceLogin(storage)).toEqual(login);
+describe('reloadWithDeviceLogin', () => {
+    it('reloads instead of replacing when the address bar already carries the login (G9)', () => {
+        const location = { href: withDeviceLogin(base, login), reload: vi.fn(), replace: vi.fn() };
+        reloadWithDeviceLogin(location, login);
+        expect(location.reload).toHaveBeenCalled();
+        expect(location.replace).not.toHaveBeenCalled();
     });
 
-    it('does without storage when the browser blocks it', () => {
-        const blocked = {
-            setItem: () => {
-                throw new Error('blocked');
-            },
-            getItem: () => {
-                throw new Error('blocked');
-            },
-        };
-        expect(() => rememberDeviceLogin(login, blocked)).not.toThrow();
-        expect(rememberedDeviceLogin(blocked)).toBeUndefined();
+    it('replaces the address when it has lost the login', () => {
+        const location = { href: base, reload: vi.fn(), replace: vi.fn() };
+        reloadWithDeviceLogin(location, login);
+        expect(location.replace).toHaveBeenCalledWith(withDeviceLogin(base, login));
+        expect(location.reload).not.toHaveBeenCalled();
     });
 });

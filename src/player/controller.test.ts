@@ -8,6 +8,7 @@ import { ScreenNotFoundError, type LoadedScreen } from '../store/screen-reposito
 import type { CachedState } from './cache';
 import { contentChanged, createPlayer, type PlayerDeps } from './controller';
 import type { PlayerData } from './data';
+import { INTERVALS } from './timing';
 
 const NOW = new Date('2026-10-04T08:00:00Z');
 const loaded = (revision = 1): LoadedScreen => ({
@@ -327,6 +328,27 @@ describe('player controller', () => {
         await vi.advanceTimersByTimeAsync(30_000);
         expect(player.state.phase).toBe('running');
         expect(player.state.error).toBeNull();
+        player.stop();
+    });
+
+    it('checks the sign-in for the data cycle too, not only every two minutes (way B)', async () => {
+        vi.setSystemTime(NOW);
+        const start = Date.now();
+        // Succeeds at first (as the config cycle finds it during `start`), then fails well before the
+        // data cycle is due – a config cycle in between may catch it too, that does not matter here.
+        const assertSignedIn = vi.fn(async () => {
+            if (Date.now() - start >= INTERVALS.dataMs / 2) throw new WrongPersonError(5, 22);
+        });
+        const appointments = vi.fn(async () => []);
+        const player = createPlayer('demo', fakeData({ assertSignedIn, appointments }), fakeDeps());
+        await player.start();
+        expect(player.state.phase).toBe('running');
+        const callsBefore = appointments.mock.calls.length;
+
+        await vi.advanceTimersByTimeAsync(INTERVALS.dataMs * 1.3);
+        expect(player.state.phase).toBe('error');
+        expect(player.state.error).toContain('Person 22');
+        expect(appointments.mock.calls.length).toBe(callsBefore); // the failed data cycle fetched nothing
         player.stop();
     });
 
