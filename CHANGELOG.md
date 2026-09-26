@@ -4,6 +4,19 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.2.1] – 2026-09-26
+
+Fernseher bleiben angemeldet, auch wenn jemand die Seite von Hand neu lädt.
+
+### Behoben
+
+- Nach einem Neuladen von Hand fragte der Player nach der Anmeldung, statt sich über seine Adresse selbst
+  anzumelden. Die Adresse samt Anmeldung bleibt dafür jetzt in der Adresszeile stehen.
+- War im selben Browser zugleich jemand anderes in ChurchTools angemeldet, holte der Player Termine und Beiträge
+  zeitweise mit dessen Rechten – dann fehlten etwa Termine. Er prüft jetzt vor jedem Abruf, wer angemeldet ist.
+  Ein Player braucht deshalb einen eigenen Browser; zum Ausprobieren am Schreibtisch genügt ein Inkognito-Fenster
+  ([Einrichtung](docs/Einrichtung.md), Schritt 7).
+
 ## [0.2.0] – 2026-09-26
 
 Beiträge aus ChurchTools auf dem Fernseher, und Hinweise an einem eigenen Ort.
@@ -87,5 +100,6 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.2.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.1
 [0.2.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.0
 [0.1.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.1.0
