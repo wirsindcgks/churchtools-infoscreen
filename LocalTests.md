@@ -179,7 +179,7 @@ hoch.
    npm run release:check -- vX.Y.Z
    ```
 
-4. **Committen, taggen, pushen** – mit dem Konto `wirsindcgks`:
+4. **Committen, taggen, pushen** – mit dem Konto `cgksmedia` (Admin der Organisation `wirsindcgks`, der das Repo gehört):
 
    ```sh
    git commit -am "Version X.Y.Z"

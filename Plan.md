@@ -20,7 +20,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 ## Rahmendaten
 
 - **Testinstanz**: Adresse nur in der `.env`, Build 32882 wie produktiv, **Lizenz bis 2026-10-22, 21:53** (30 Tage ab Anlage am 2026-09-22, 21:53; T3). Custom Modules dort **freigeschaltet seit dem 2026-09-24** (T1), angefragt am 2026-09-23. Freigeschaltet wird nach Auskunft vom 2026-09-24 über die Entwickler von ChurchTools, nicht über das Paket; Rückmeldung steht aus. Ein Paketwechsel (etwa auf Combo) ist im Gespräch, dann werden Kalender und Personen der Testinstanz entsprechend reduziert. Die **Produktivinstanz** hat sie (G1).
-- **Autor / Repo**: `wirsindcgks <media@cg-ks.de>`, [`github.com/wirsindcgks/churchtools-infoscreen`](https://github.com/wirsindcgks/churchtools-infoscreen), **öffentlich seit dem 2026-09-25**. Git und `gh` immer als `wirsindcgks`. Offen: ältere Commits nennen noch Instanz-Adressen und die Autor-Adresse – bereinigen oder so lassen, Entscheidung des Nutzers.
+- **Autor / Repo**: `wirsindcgks <media@cg-ks.de>`, [`github.com/wirsindcgks/churchtools-infoscreen`](https://github.com/wirsindcgks/churchtools-infoscreen), **öffentlich seit dem 2026-09-25**. Seit dem 2026-09-27 gehört das Repo der **Organisation** `wirsindcgks`; der frühere gleichnamige Benutzer heißt jetzt `cgksmedia` und ist dort Admin. Git und `gh` immer als `cgksmedia`. Offen: ältere Commits nennen noch Instanz-Adressen und die Autor-Adresse – bereinigen oder so lassen, Entscheidung des Nutzers.
 - **Lizenz**: GPL-2.0-or-later
 - **Ziel**: Das Modul geht am Ende an die ChurchTools-Community – daher **kein Gemeinde-Branding** (seit 2026-09-24).
 - **Extension-Key**: `infoscreen-designer` → Auslieferungspfad `/ccm/infoscreen-designer/`
