@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G9, G11, G14, G15, G18–G20, G22–G32 und G35 sind beantwortet, G16, G21, G33, G34, G36 und G37 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G37).
+**Eine durchgehende Nummerierung.** G1–G9, G11, G14, G15, G18–G20, G22–G32 und G35 sind beantwortet, G16, G21, G33, G34, G36 und G37 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G38).
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -423,6 +423,54 @@ Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit
 ~~**G13 – Was bewirkt `securityLevelId` an einer Kategorie?**~~ **Hinfällig seit G22** – das Feld gibt es auf Build 32882 nicht.
 
 
+
+**G38 – Was bleibt, wenn eine Extension entfernt wird?** *(offen; Recherche am 2026-09-28 ohne Ergebnis, für `Preparation.md` P2)*
+Die Frage entscheidet über den Rückweg von der Produktivinstanz.
+
+**Nicht dokumentiert, soweit öffentlich zugänglich:**
+- **Academy:** Es gibt keine Seite zu Extensions oder Custom Modules. [„Module"](https://churchtools.academy/de/help/system-einstellungen/module/)
+  behandelt nur die eingebauten Module und sagt auch dort nicht, was beim Abschalten mit den Daten geschieht.
+- **[Extension-Boilerplate](https://github.com/churchtools/extension-boilerplate):** Die README nennt `GET` auf
+  `/custommodules` sowie `GET`/`POST`/`PUT`/`DELETE` auf Kategorien und Werte, aber **kein `DELETE` auf das Modul
+  selbst** und nichts zur Deinstallation.
+- **Spezifikation der eigenen Instanz:** Sie enthält keinen `/custommodules`-Pfad (G31). Die neun Schemas sagen
+  nichts über Löschfolgen.
+- **[Forum](https://forum.church.tools/):** Kein Thema zum Entfernen einer Extension. Gesucht wurde nach
+  „Extension löschen", „Extension deinstallieren", „Custom Module", außerdem in der Kategorie
+  „ChurchTools Schnittstellen".
+- **`ct-pass-store` und Publisher:** nichts.
+
+**Regel für den Rückweg** *(Nutzer, 2026-09-28; `Plan.md`, F)*: Gelöscht wird nur, was über das Modul entstanden
+ist. Gewählte bestehende Gruppen nie.
+
+**Was sich ohne Messung sagen lässt:** Die Spuren außerhalb des Modulspeichers sind gewöhnliche
+ChurchTools-Objekte, und ihr Rückweg hängt nicht an der Extension:
+- **Die zwei Gruppen:** „Einrichtung entfernen" löscht sie samt Rollen und Rechten (gemessen, G34).
+- **Der Wiki-Bereich:** `DELETE /wiki/categories/{id}` ist erlaubt (G36). Was dabei mit Seiten und Dateien
+  geschieht, ist ungemessen. Gelöscht werden darf er nur, wenn das Modul ihn angelegt hat. Das merkt sich der
+  Code bisher nicht (`Plan.md`, F).
+- **Der Geräte-Benutzer:** gehört der Gemeinde, nicht dem Modul. Ob er archiviert oder gelöscht wird, entscheidet
+  der Administrator in der Oberfläche (G18, G21).
+
+**Ungeklärt ist, was an der Extension selbst hängt:**
+1. Die **Kategorien und Werte** des Modulspeichers – werden sie gelöscht oder bleiben sie verwaist stehen?
+2. **Modulrechte an fremden Rollen.** `docs/Einrichtung.md`, Schritt 2, lässt den Administrator die Modulrechte
+   an der Rolle seiner **bestehenden** Administratoren-Gruppe setzen. Auf der Produktivinstanz ist das die
+   einzige Änderung an einer bestehenden Rolle. Verschwinden die Rechte mit der Extension, oder bleiben sie als
+   Einträge ohne Modul stehen?
+3. Die **Einträge im Rechtekatalog** (`getMasterData`, G33).
+4. **Findet eine Neuinstallation unter demselben Key die alten Daten wieder?** Das entscheidet, ob man eine
+   verunglückte Installation einfach neu hochladen kann.
+
+**Messplan (Schreibzugriffe, vorher absprechen):** Auf der Testinstanz unter dem Wegwerf-Key
+`infoscreen-designer-test`, damit die echte Installation unberührt bleibt:
+- installieren, einmal öffnen (legt die Kategorien an), einen Wert speichern;
+- Modulrechte an der Rolle der eigenen Testgruppe setzen;
+- vorher alles lesend festhalten: Modul, Kategorien per id, Rechte der Rolle, Rechtekatalog;
+- die Extension in der Oberfläche entfernen, dann dasselbe erneut lesen;
+- unter demselben Key neu installieren und nachsehen, ob die alten Daten wieder da sind.
+
+Parallel lässt sich der Support fragen – nicht statt der Messung, sondern als Zusage neben ihr.
 
 **G17 – Extension Store**: Aufnahmekriterien, Einreichungsweg, ob eine Veröffentlichung überhaupt angestrebt wird. Der Publisher hält seinen Store-Text in einer eigenen `EXTENSION_STORE.md` – ein Muster, das sich übernehmen lässt.
 

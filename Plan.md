@@ -143,6 +143,23 @@ Später hinzu: `templates`, `snippets` (Web-Code), `status` (Heartbeat).
 
 Wer kein Administrator ist, sieht „Einstellungen" weder in der Kopfleiste noch in der Seitenleiste; ruft er die Adresse trotzdem auf, sagt die Seite, dass sie Sache der Administratoren ist. Das ist Bedienung, keine Sperre – die Sperre sind die Rechte selbst: Gestalter haben kein Schreibrecht auf `settings`, Geräte gar keines. **Entschieden am 2026-09-25: Screens konfigurieren nur Administratoren** – anlegen, löschen, Name, Format, Overscan –, damit Gestalter die Screen-Konfiguration nicht beschädigen können; ein Screen steht für ein Gerät im Haus. **Den Zeitplan wählen die Gestalter** (entschieden am selben Tag) – er gehört zum Inhalt, nicht zur Gerätekonfiguration. **Umgesetzt am 2026-09-25** (Punkte 15 und 17): Der Editor schreibt nur Slides, Playlists und das Zeitplan-Dokument; der Assistent gibt Gestaltern kein Schreibrecht mehr auf `screens` und nimmt ein vorhandenes zurück.
 
+**Entfernen nur, was das Modul selbst angelegt hat** *(entschieden am 2026-09-28, Nutzer)*: Gelöscht wird – wenn
+überhaupt – nur, was über das Modul entstanden ist. Was ein Administrator in der Auswahl der Einstellungen wählt,
+etwa eine bestehende Gruppe, wird beim Entfernen **auf keinen Fall** gelöscht. Wiedererkannt wird Eigenes an der
+**gespeicherten id aus dem Moment des Anlegens**, nie am Namen: Eine Gruppe oder ein Bereich mit passendem Namen kann
+der Gemeinde gehören.
+
+| Spur | Wem sie gehört | Stand im Code (2026-09-28) |
+| --- | --- | --- |
+| Kategorien und Werte des Modulspeichers | dem Modul | nur über das Modul erreichbar |
+| Gruppen „Infoscreen-Designer" und „Infoscreen-Devices" | dem Modul, **wenn der Assistent sie angelegt hat** | **hält die Regel ein:** `createdGroupIds` in `settings`; „Einrichtung entfernen" und „Rechte aktualisieren" fassen nur diese ids an, gleichnamige fremde Gruppen werden angezeigt, aber nie übernommen |
+| Gewählte bestehende Gruppen | der Gemeinde | werden weder gelöscht noch mit Rechten versehen |
+| Wiki-Bereich „Infoscreen" | dem Modul, **wenn es ihn angelegt hat** | **Lücke:** `findOrCreateCategory` übernimmt einen bestehenden Bereich gleichen Namens stillschweigend und merkt sich nicht, ob er selbst angelegt ist. Das ist wahrscheinlich, wenn eine Gemeinde schon den eingebauten Infoscreen nutzt. Bevor es einen Rückweg für den Bereich gibt, muss die id beim Anlegen gespeichert werden; ein vorgefundener Bereich ist fremd |
+| Wiki-Seiten des Moduls | dem Modul | tragen die Marke `<!-- infoscreen-designer -->`; fremder Text wird nie überschrieben |
+| Hochgeladene Bilder | dem Modul | liegen auf den Seiten des Moduls |
+| Geräte-Benutzer | der Gemeinde | legt der Administrator in der Oberfläche an, nicht das Modul |
+| Modulrechte an der Administratoren-Rolle (`docs/Einrichtung.md`, Schritt 2) | der Gemeinde | setzt der Administrator von Hand; ob sie mit der Extension verschwinden, ist offen (G38) |
+
 **Zwei Befunde, die den Bau betreffen – der Rest steht in [`Befunde.md`](Befunde.md), „Der Betriebsbenutzer":**
 
 - **Fehlende Rechte sehen nicht wie Fehler aus**, sondern wie leere Listen (G20). Der Player belegt jede Anfrage mit `only_allow_authenticated=true`, prüft die Identität über `whoami` und **behandelt einen leeren Screen als Fehler**, nicht als leeren Kalender.
