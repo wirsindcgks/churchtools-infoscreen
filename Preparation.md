@@ -116,7 +116,8 @@ Alles an `ctpassstore`, dem fremden Modul, das auf unserer Instanz bereits läuf
 nichts verändert.
 
 **Der A-Block ist abgeschlossen** – A1, A3, A4 am 2026-09-22 (G6, G7, G4), A2 am 2026-09-23 (G15).
-Ein Rest bleibt: der Statuscode eines unbekannten `/ccm/`-Pfades als sauberer Gegentest zu G7, siehe A2.
+~~Ein Rest bleibt: der Statuscode eines unbekannten `/ccm/`-Pfades als sauberer Gegentest zu G7, siehe A2.~~
+Nachgeholt am 2026-09-28, siehe A2.
 
 - [x] **A1 · Einbettung ansehen** → **beantwortet G6** *(2026-09-22)*
       **Kein iframe.** ChurchTools hängt die Extension in den eigenen Dokumentkopf
@@ -132,8 +133,10 @@ Ein Rest bleibt: der Statuscode eines unbekannten `/ccm/`-Pfades als sauberer Ge
       (der Vite-Build darf kein Inline-Skript ausliefern), `style-src` **mit** `'unsafe-inline'`,
       `img-src *`, `child-src *`, **kein `media-src`** – externe Videos sind damit blockiert.
       Ein `srcdoc`-Rahmen **erbt** diese Policy. Vollständig in `Plan.md`, G15.
-      **Offen bleibt** der Statuscode von `/ccm/<unbekannt>/` als sauberer Gegentest zu G7: Auf der
-      Testinstanz kam **500**, aber bei abgeschaltetem Feature – das zählt nicht.
+      ~~**Offen bleibt** der Statuscode von `/ccm/<unbekannt>/` als sauberer Gegentest zu G7: Auf der
+      Testinstanz kam **500**, aber bei abgeschaltetem Feature – das zählt nicht.~~
+      **Nachgeholt am 2026-09-28** (G7, Nachtrag): Ein unbekannter Key antwortet `404`, ein unbekannter Unterpfad
+      eines installierten Moduls `200` mit unserem Skript.
 
 - [x] **A3 · SPA-Fallback prüfen** → **beantwortet G7** *(2026-09-22)*
       `/ccm/ctpassstore/pasword` liefert die Modulseite, keinen ChurchTools-404.

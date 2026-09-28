@@ -78,6 +78,19 @@ Vier Folgen, bisher vorgesehen, jetzt belegt:
 
 Zwei Dinge gehören zur Antwort dazu. Erstens ist der leere Inhaltsbereich die Sache des Moduls, nicht des Servers: `ct-pass-store` hat für die unbekannte Route keinen Treffer und zeigt nichts. Unser Router braucht deshalb eine **Catch-all-Route**, die statt Leere eine benennbare Fehlerseite zeigt – auf einem Foyer-TV ist ein leerer Inhaltsbereich nicht von einem Absturz zu unterscheiden. Zweitens ist der **HTTP-Statuscode nicht abgelesen**; möglich bleibt ein 404 mit ausgelieferter Seite im Rumpf. Für den Kiosk-Browser ändert das nichts, für einen Service Worker (G10) schon – beim nächsten Aufruf im Netzwerk-Reiter mitnehmen.
 
+**Nachtrag vom 2026-09-28 – der Statuscode ist abgelesen.** *(Testinstanz, nur lesend, angemeldet, Custom Modules freigeschaltet)*
+
+| Pfad | Antwort |
+| --- | --- |
+| `/ccm/infoscreen-designer/` | `200`, unser Skript eingebunden |
+| `/ccm/infoscreen-designer/gibt-es-nicht` | **`200`**, unser Skript eingebunden – ein sauberer SPA-Rückfall, kein 404 mit Seite im Rumpf |
+| `/ccm/infoscreen-designer/player` | `200`, unser Skript eingebunden |
+| `/ccm/gibt-es-nicht/` (unbekannter Key) | **`404`** |
+
+Den unbekannten Key bestätigt auch G38: Nach dem Löschen des Wegwerf-Moduls antwortete dessen Pfad mit `404`.
+Damit ist der Gegentest aus A2 nachgeholt; die `500` von damals kam vom abgeschalteten Feature. Für einen Service
+Worker (G10) heißt das: Jede Route des Moduls antwortet mit `200` und derselben Seite.
+
 **Nebenbefunde der Instanz** (in A und B eingearbeitet): CORS ist unkonfiguriert und `access_control_allow_credentials` steht auf `false`; die Upload-Grenze liegt bei 128 MB je Datei; Zeitzone `Europe/Berlin`; gehostet bei ChurchTools, also kein Self-Hosting; Wiki, Kalender, Gruppen, Beiträge, Ressourcen und Dienste sind aktiv – sämtliche Datenquellen der Blocktabelle stehen zur Verfügung. **Nachtrag vom Quelltext:** Die `modules`-Liste der Instanz nennt **zwei** fremde Module, `ctpassstore` und `ctradius`. Custom Modules sind hier also kein Einzelfall, und mit `ctradius` steht eine zweite Lesequelle bereit, falls eine Frage an `ct-pass-store` unbeantwortet bleibt.
 
 **G14 – Datei-Adressen, Bilddienst und die 150-Pixel-Falle.** *(2026-09-15 im Nachbarprojekt `churchtools-plugin`; **am 2026-09-23 an der Testinstanz vervollständigt** – aufgezeichnet unter `fixtures/api/files-wiki_1.json` – **lokal, nicht versioniert**)*
@@ -475,7 +488,9 @@ direkt an der Person (`PUT /permissions/person/16` → `204`) und danach zurück
 Personenstatus trägt es nicht. **`/permissions/global` meldet `administer custom modules: true` aber weiter**,
 auch in einer frischen Sitzung. Ein Rechte-Cache ist die naheliegende Erklärung, geprüft ist sie nicht. Ein
 ungültiger `POST /custommodules` antwortete `400` (Validierung) – das unterscheidet nicht, weil die Validierung
-vor der Rechteprüfung liegen kann.
+vor der Rechteprüfung liegen kann. **Entscheidung des Nutzers (2026-09-28): so lassen** – das Recht hilft bei
+künftiger Fehlersuche. Verlässlich ist es damit nicht: Der Eintrag an der Person ist gelöscht. Verschwindet die
+Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId: 15}`).
 
 <details><summary>Recherche vor der Messung (2026-09-28, ohne Ergebnis)</summary>
 
