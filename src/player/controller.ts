@@ -14,6 +14,7 @@ import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '.
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
 import { appointmentNeeds, appointmentWindow, mergePosts, postNeeds, type PlayerData } from './data';
+import { askServiceWorkerHasPage } from './service-worker';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
 
 /**
@@ -51,17 +52,27 @@ export interface PlayerDeps {
     saveCached: (slug: string, state: CachedState) => Promise<void>;
 }
 
+/**
+ * `canReload()` for the browser: a `HEAD` on the page itself, as before. Without a network that fails –
+ * but a service worker (`../sw/sw.ts`, G10) may still hold the page from before the outage, which reload
+ * would show fine. `hasPage` is the messaging call alone, so a test can replace it without a real worker.
+ */
+export function createCanReload(hasPage: (url: string) => Promise<boolean> = askServiceWorkerHasPage): () => Promise<boolean> {
+    return async () => {
+        try {
+            const response = await withTimeout(fetch(window.location.href, { method: 'HEAD', cache: 'no-store' }));
+            if (response.ok) return true;
+        } catch {
+            // no network – ask the service worker below instead of giving up right away
+        }
+        return hasPage(window.location.href);
+    };
+}
+
 export const browserDeps: PlayerDeps = {
     now: () => new Date(),
     reload: () => window.location.reload(),
-    async canReload() {
-        try {
-            const response = await withTimeout(fetch(window.location.href, { method: 'HEAD', cache: 'no-store' }));
-            return response.ok;
-        } catch {
-            return false;
-        }
-    },
+    canReload: createCanReload(),
     loadCached,
     saveCached,
 };

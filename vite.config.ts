@@ -1,6 +1,7 @@
 /// <reference types="vitest/config" />
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import path from 'node:path';
 import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from 'vite';
 import vue from '@vitejs/plugin-vue';
 
@@ -21,6 +22,18 @@ export default defineConfig(({ mode }) => {
             // The ChurchTools CSP forbids inline scripts (G15); the polyfill is one.
             modulePreload: { polyfill: false },
             sourcemap: false,
+            rollupOptions: {
+                // Second entry: `sw.js` (Plan.md, 37; G10) must sit in the ZIP's root to control the whole
+                // module, not under assets/ – and, as a classic script, gets no hash in its name, so the
+                // player's fixed `register('sw.js')` never has to learn a new one.
+                input: {
+                    app: path.resolve(import.meta.dirname, 'index.html'),
+                    sw: path.resolve(import.meta.dirname, 'src/sw/sw.ts'),
+                },
+                output: {
+                    entryFileNames: (chunk) => (chunk.name === 'sw' ? 'sw.js' : 'assets/[name]-[hash].js'),
+                },
+            },
         },
         server: {
             proxy: env.CT_BASE_URL

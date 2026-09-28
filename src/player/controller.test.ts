@@ -6,8 +6,9 @@ import { DEFAULT_THEME, type Block } from '../model/schema';
 import type { Post } from '../posts/normalize';
 import { ScreenNotFoundError, type LoadedScreen } from '../store/screen-repository';
 import type { CachedState } from './cache';
-import { contentChanged, createPlayer, type PlayerDeps } from './controller';
+import { contentChanged, createCanReload, createPlayer, type PlayerDeps } from './controller';
 import type { PlayerData } from './data';
+import { askServiceWorkerHasPage } from './service-worker';
 import { INTERVALS } from './timing';
 
 const NOW = new Date('2026-10-04T08:00:00Z');
@@ -479,5 +480,49 @@ describe('a screen whose calendar data fails', () => {
         expect(player.state.screen).not.toBeNull();
         expect(player.state.staleSince).not.toBeNull();
         player.stop();
+    });
+});
+
+describe('createCanReload (Plan.md, 37; G10)', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it('is true when the network answers the page itself', async () => {
+        const hasPage = vi.fn(async () => false);
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })));
+        await expect(createCanReload(hasPage)()).resolves.toBe(true);
+        expect(hasPage).not.toHaveBeenCalled();
+    });
+
+    it('is false when the network fails and no service worker answers', async () => {
+        vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('offline'))));
+        // No injected `hasPage`: the real one sees no `navigator.serviceWorker` in jsdom, i.e. no controller.
+        await expect(createCanReload()()).resolves.toBe(false);
+    });
+
+    it('is true when the network fails but the worker still has the page cached', async () => {
+        vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('offline'))));
+        const hasPage = vi.fn(async () => true);
+        await expect(createCanReload(hasPage)()).resolves.toBe(true);
+        expect(hasPage).toHaveBeenCalledWith(window.location.href);
+    });
+
+    it('is false when the worker never answers within the time limit', async () => {
+        vi.useFakeTimers();
+        const port2 = { postMessage: vi.fn() };
+        const controller = {
+            postMessage: vi.fn((_message: unknown, transfer: [{ onmessage: unknown }]) => {
+                // never calls transfer[0].onmessage – the worker stays silent
+                void transfer;
+            }),
+        };
+        vi.stubGlobal('MessageChannel', function (this: { port1: unknown; port2: unknown }) {
+            this.port1 = {};
+            this.port2 = port2;
+        });
+        vi.stubGlobal('navigator', { ...navigator, serviceWorker: { controller } });
+        const result = askServiceWorkerHasPage('https://example.com/player', 1000);
+        await vi.advanceTimersByTimeAsync(1000);
+        await expect(result).resolves.toBe(false);
+        vi.useRealTimers();
     });
 });

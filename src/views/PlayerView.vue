@@ -12,6 +12,7 @@ import { createMediaCache } from '../player/media-cache';
 import { createPreloader } from '../player/preload';
 import { useRotation } from '../player/rotation';
 import { activePlaylistId } from '../player/schedule';
+import { registerPlayerServiceWorker } from '../player/service-worker';
 import { fitStage } from '../player/stage';
 import { bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
@@ -55,6 +56,19 @@ const context = reactive<StageContext>({
     paging: true,
 });
 provideStageContext(context);
+
+// Once the player has shown something for the first time (Plan.md, 37; G10) – registering earlier would
+// still leave a restart before that first success with the browser's error page, since nothing is cached
+// yet. The designer never reaches this view, so it never registers.
+let serviceWorkerRegistered = false;
+watch(
+    () => state?.phase,
+    (phase) => {
+        if (phase !== 'running' || serviceWorkerRegistered) return;
+        serviceWorkerRegistered = true;
+        registerPlayerServiceWorker(import.meta.env.BASE_URL);
+    },
+);
 
 // Every loaded configuration – from the offline copy or fresh – brings its images onto the device,
 // the church logo included: a new logo is a new address (G29).

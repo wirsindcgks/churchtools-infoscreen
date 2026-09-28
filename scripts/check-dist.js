@@ -15,11 +15,25 @@ function walk(dir) {
 
 const files = walk(dist);
 
-// 1. One bundle: a kiosk tab must never request a chunk an update has deleted.
+// 1. One bundle under assets/, plus one sw.js in dist's root: a kiosk tab must never request a chunk an
+// update has deleted, and the service worker (Plan.md, 37; G10) must sit in the ZIP's root to control the
+// whole module – one under assets/ would only be allowed to control assets/ itself.
 const scripts = files.filter((f) => f.endsWith('.js'));
-if (scripts.length !== 1) {
-    failures.push(`expected exactly one JavaScript bundle, found ${scripts.length}: ${scripts.join(', ')}`);
+const assetScripts = scripts.filter((f) => f.startsWith(path.join(dist, 'assets') + path.sep));
+const swScript = path.join(dist, 'sw.js');
+if (assetScripts.length !== 1) {
+    failures.push(`expected exactly one JavaScript bundle under assets/, found ${assetScripts.length}: ${assetScripts.join(', ')}`);
 }
+if (!fs.existsSync(swScript)) {
+    failures.push('expected sw.js in dist’s root, found none');
+} else {
+    const sw = fs.readFileSync(swScript, 'utf8');
+    if (/^\s*(import|export)\b/m.test(sw)) failures.push('sw.js contains import/export – it must be a classic script');
+    const { version } = JSON.parse(fs.readFileSync(path.join(import.meta.dirname, '..', 'package.json'), 'utf8'));
+    if (!sw.includes(version)) failures.push(`sw.js does not contain the version (${version}) – a new build would reuse an old cache`);
+}
+const stray = scripts.filter((f) => f !== swScript && !assetScripts.includes(f));
+if (stray.length) failures.push(`unexpected script location: ${stray.join(', ')}`);
 
 // 2. No inline script: the ChurchTools CSP has no 'unsafe-inline' in script-src (G15).
 const html = fs.readFileSync(path.join(dist, 'index.html'), 'utf8');
@@ -65,6 +79,6 @@ if (failures.length) {
     process.exit(1);
 }
 console.log(
-    `dist check passed (${files.length} files, one bundle, no inline script, no instance address, ` +
+    `dist check passed (${files.length} files, one bundle plus sw.js, no inline script, no instance address, ` +
         `${fontFiles.length} local font files with licences, no demo)`,
 );
