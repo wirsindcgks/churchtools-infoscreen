@@ -16,10 +16,10 @@ Kurzfassung je Rolle steht im [Onboarding](Onboarding.md), alle Rechte als Tabel
 | [1. Extension installieren](#1-extension-installieren) | Administrator | Extension-Verwaltung von ChurchTools |
 | [2. Dir selbst die Modulrechte geben](#2-dir-selbst-die-modulrechte-geben) | Administrator | Rechteverwaltung |
 | [3. Den Designer einmal öffnen](#3-den-designer-einmal-öffnen) | Administrator | Menü „Infoscreen Designer" |
-| [4. Gruppen und Rechte anlegen lassen](#4-gruppen-und-rechte-anlegen-lassen) | Administrator | Designer → Einstellungen |
+| [4. Gruppen und Rechte anlegen lassen](#4-gruppen-und-rechte-anlegen-lassen) | Administrator | Designer → Einstellungen → Gruppen und Rechte |
 | [5. Gestalter aufnehmen](#5-gestalter-aufnehmen) | Administrator | Gruppe „Infoscreen-Designer" |
 | [6. Geräte-Benutzer anlegen](#6-geräte-benutzer-anlegen) | Administrator | Personen, Gruppe „Infoscreen-Devices" |
-| [7. Den Fernseher einrichten](#7-den-fernseher-einrichten) | Administrator, dann wer vor Ort ist | Designer → Einstellungen, Kiosk-Browser |
+| [7. Den Fernseher einrichten](#7-den-fernseher-einrichten) | Administrator, dann wer vor Ort ist | Designer → Einstellungen → Adressen für die Fernseher, Kiosk-Browser |
 
 ### Drei Rollen
 
@@ -86,7 +86,7 @@ erstellen" aus Schritt 2. Niemand sonst braucht dieses Recht.
 
 Die Rechteverwaltung von ChurchTools ist fein, aber aufwendig. Deshalb erledigt der Designer den Rest selbst:
 
-1. Im Designer oben auf **Einstellungen**.
+1. Im Designer oben auf **Einstellungen → Gruppen und Rechte**.
 2. In der Karte **„Automatisch einrichten"** unter „Was genau passiert" nachlesen, was angelegt wird.
 3. **„Gruppen und Rechte anlegen"** klicken.
 
@@ -101,18 +101,18 @@ Rechte:
 Der Assistent fasst **nur Gruppen an, die er selbst angelegt hat**, und ändert keine bestehenden Rollen. Gibt es
 schon Gruppen mit diesen Namen, hält er an.
 
-**Später wiederkommen:** Zeigt ein Screen einen weiteren Kalender, klicke in den Einstellungen auf **„Rechte
-aktualisieren"** – sonst fehlen dessen Termine auf dem Fernseher. „Einrichtung entfernen" löscht die beiden Gruppen
-wieder – **nur die, die der Assistent selbst angelegt hat**. Vorhandene Gruppen, die du gewählt hast, bleiben, ebenso
-der Wiki-Bereich mit den Bildern. Ob der Bereich vom Designer angelegt wurde oder schon da war, steht in den
-Einstellungen auf der Karte „Mediathek im Wiki".
+**Später wiederkommen:** Zeigt ein Screen einen weiteren Kalender, klicke in **Einstellungen → Gruppen und Rechte**
+auf **„Rechte aktualisieren"** – sonst fehlen dessen Termine auf dem Fernseher. „Einrichtung entfernen" löscht die
+beiden Gruppen wieder – **nur die, die der Assistent selbst angelegt hat**. Vorhandene Gruppen, die du gewählt hast,
+bleiben, ebenso der Wiki-Bereich mit den Bildern. Ob der Bereich vom Designer angelegt wurde oder schon da war, steht
+unter **Einstellungen → Mediathek im Wiki**.
 
 **Screens legst du als Administrator an:** auf der Startseite des Designers **„+ Screen erstellen"** – Name, Adresse
 und Format. Name und Overscan änderst du später über das Menü **„…" der Kachel → „Einstellungen"**; was der Screen
 zeigt, gestalten die Gestalter.
 
-*Eigene Gruppen statt der automatischen?* Weiter unten in den Einstellungen lassen sich vorhandene Gruppen für
-Gestalter und Geräte wählen; die Seite prüft dann, was ihnen fehlt, und ändert selbst nichts.
+*Eigene Gruppen statt der automatischen?* Weiter unten auf **Einstellungen → Gruppen und Rechte** lassen sich
+vorhandene Gruppen für Gestalter und Geräte wählen; die Seite prüft dann, was ihnen fehlt, und ändert selbst nichts.
 
 ## 5. Gestalter aufnehmen
 
@@ -137,8 +137,8 @@ Standort** („Infoscreen Foyer", „Infoscreen Café") – dann lässt sich ein
    gehört nicht auf ein Gerät im Foyer.
 4. **In die Gruppe „Infoscreen-Devices" aufnehmen.**
 
-Einrichtung prüfen: In den Einstellungen des Designers die Gruppe „Infoscreen-Devices" wählen – die Prüfung zeigt je
-Mitglied, ob die Kalender der Screens lesbar sind.
+Einrichtung prüfen: Unter **Einstellungen → Gruppen und Rechte** die Gruppe „Infoscreen-Devices" wählen – die
+Prüfung zeigt je Mitglied, ob die Kalender der Screens lesbar sind.
 
 ## 7. Den Fernseher einrichten
 
@@ -147,7 +147,7 @@ Mitglied, ob die Kalender der Screens lesbar sind.
 Der Fernseher bekommt eine Adresse, mit der er sich **bei jedem Start selbst** als Geräte-Benutzer anmeldet. Eine
 Anmeldung von Hand im Browser genügt nicht: Auch mit „Angemeldet bleiben" meldet ChurchTools nach 24 Stunden ab.
 
-1. Im Designer auf **Einstellungen**, Karte **„Adresse für einen Fernseher"**.
+1. Im Designer auf **Einstellungen → Adressen für die Fernseher**.
 2. Den **Screen** wählen, **Benutzername und Passwort des Geräte-Kontos** eingeben, **„Adresse erzeugen"**.
 3. **Kopieren** und als **Startseite des Kiosk-Browsers** eintragen. Anmelden musst du dich im Browser nicht.
 
@@ -203,12 +203,12 @@ die Bühne rückt dann um so viel Prozent nach innen.
    herunterladen.
 2. In der Extension-Verwaltung bei „Infoscreen Designer" auf **Bearbeiten** und das ZIP hochladen. Eine
    automatische Aktualisierung aus GitHub bietet ChurchTools nicht an.
-3. Welche Fassung installiert ist, steht unten auf der Seite **Einstellungen** des Designers.
+3. Welche Fassung installiert ist, steht unten auf der Übersicht **Einstellungen** des Designers.
 
 Die Fernseher übernehmen die neue Fassung **spätestens beim nächtlichen Neuladen**. Screens und Bilder bleiben
 erhalten.
 
-**Nach einem Update einmal „Rechte aktualisieren"** (Designer → Einstellungen, Karte „Automatisch einrichten"). Neue
+**Nach einem Update einmal „Rechte aktualisieren"** (Designer → Einstellungen → Gruppen und Rechte). Neue
 Fassungen können die Rechte der beiden Gruppen ändern – etwa seit Version 0.1: Gestalter gestalten Inhalte, die
 Screens selbst legt und stellt ein Administrator ein; ältere Gruppen verlieren dabei ihr Schreibrecht auf Screens.
 
@@ -216,10 +216,10 @@ Screens selbst legt und stellt ein Administrator ein; ältere Gruppen verlieren 
 
 Die Reihenfolge ist wichtig: **erst die Einrichtung, dann die Extension.**
 
-1. **Einstellungen → „Einrichtung entfernen".** Das löscht die beiden Gruppen, die der Assistent angelegt hat,
-   samt ihrer Rechte. Gruppen, die du selbst gewählt hast, bleiben. Diesen Schritt zuerst: Mit der Extension
-   verschwinden auch die Einstellungen, und danach weiß der Designer nicht mehr, welche Gruppen von ihm stammen.
-   Zur Sicherheit fragt ein Dialog nach, zeigt, was verschwindet, und verlangt das Wort **„entfernen"**.
+1. **Einstellungen → Gruppen und Rechte → „Einrichtung entfernen".** Das löscht die beiden Gruppen, die der
+   Assistent angelegt hat, samt ihrer Rechte. Gruppen, die du selbst gewählt hast, bleiben. Diesen Schritt zuerst:
+   Mit der Extension verschwinden auch die Einstellungen, und danach weiß der Designer nicht mehr, welche Gruppen
+   von ihm stammen. Zur Sicherheit fragt ein Dialog nach, zeigt, was verschwindet, und verlangt das Wort **„entfernen"**.
    **Du brauchst dafür die Modulrechte aus [Schritt 2](#2-dir-selbst-die-modulrechte-geben)**, sonst kann der
    Designer nicht speichern, dass die Gruppen weg sind, und löscht deshalb gar nicht erst. **Bist du selbst in
    „Infoscreen-Designer"** und hast die Rechte nur darüber, kommst du danach nicht mehr in den Designer – der
@@ -270,7 +270,7 @@ weg. Für eine neue Fassung siehe [Updates](#updates).
    in Schritt 6 ein Status mit wenig Rechten).
 2. **Sein Passwort in der ChurchTools-Oberfläche ändern.** Damit wird der Login-Token ungültig – die Adresse auf
    dem verlorenen Gerät meldet sich nicht mehr an.
-3. Für das Ersatzgerät in den Einstellungen eine **neue Adresse erzeugen** (mit dem neuen Passwort). Hängen weitere
+3. Für das Ersatzgerät unter **Einstellungen → Adressen für die Fernseher** eine **neue Adresse erzeugen** (mit dem neuen Passwort). Hängen weitere
    Fernseher am selben Konto, brauchen sie ebenfalls eine neue Adresse – ein Grund für ein Konto je Standort.
 
 Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Foyer ohnehin zu sehen ist.
@@ -288,7 +288,7 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
   der Fernseher zeigt dann einen Platzhalter. Bilder am besten nur in der **Mediathek** des Designers verwalten
   (Seitenleiste): Sie warnt vor dem Löschen, wenn ein Bild noch gezeigt wird.
   Im Wiki steht der Bereich unter **„Ausgeblendet"** aus dem Blick (bei älteren Installationen: Einstellungen →
-  „Mediathek im Wiki"); erreichbar bleibt er dort trotzdem.
+  Mediathek im Wiki); erreichbar bleibt er dort trotzdem.
 
 ## Wenn etwas nicht klappt
 
@@ -296,12 +296,12 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | --- | --- | --- |
 | Kein Menüpunkt „Infoscreen Designer", auch nicht als Administrator | Modulrecht „sehen" fehlt | Schritt 2; Gruppe muss „aktiv" sein |
 | Startseite des Designers: „Dir fehlen Rechte …" | Person ist nicht (aktiv) in „Infoscreen-Designer" | Schritt 5; die Liste nennt das fehlende Recht |
-| Kein Menüpunkt „Einstellungen" im Designer | Du bist kein Administrator | Einstellungen sind Administratoren vorbehalten |
+| Kein „Einstellungen" in der Kopfzeile des Designers | Du bist kein Administrator | Einstellungen sind Administratoren vorbehalten |
 | Kein „+ Screen erstellen", kein „Einstellungen" im Menü der Kachel | Dir fehlt das Recht, Screens anzulegen, zu bearbeiten und zu löschen – auch Administratoren brauchen es | Schritt 2: die drei „Daten in Kategorie …"-Rechte für alle Kategorien |
 | „Adresse erzeugen" meldet „Anmeldung fehlgeschlagen" | meist fehlt dem Geräte-Konto der **Benutzername** | Schritt 6, Punkt 2 |
-| Fernseher: „Dieser Fernseher ist nicht bei ChurchTools angemeldet" | Adresse ohne Anmeldung, oder das Passwort des Geräte-Kontos wurde geändert | in den Einstellungen eine neue Adresse erzeugen |
+| Fernseher: „Dieser Fernseher ist nicht bei ChurchTools angemeldet" | Adresse ohne Anmeldung, oder das Passwort des Geräte-Kontos wurde geändert | unter Einstellungen → Adressen für die Fernseher eine neue Adresse erzeugen |
 | Player im Tab neben ChurchTools: fragt nach Anmeldung oder zeigt keine Termine | Im selben Browser ist jemand anderes angemeldet – ChurchTools kennt je Browser nur eine Anmeldung | Player in einem Inkognito-Fenster oder eigenen Browserprofil öffnen |
 | Fernseher: „Es gibt keinen Screen „…"" | Adresse vertippt oder Screen gelöscht | Adresse neu kopieren |
-| Fernseher: Termine eines Kalenders fehlen | Gerät darf den Kalender nicht lesen | Einstellungen → „Rechte aktualisieren" |
+| Fernseher: Termine eines Kalenders fehlen | Gerät darf den Kalender nicht lesen | Einstellungen → Gruppen und Rechte → „Rechte aktualisieren" |
 | Fernseher: Bild fehlt, Platzhalter statt Bild | Bild im Wiki gelöscht | im Designer ein neues Bild wählen |
 | Mediathek: „Den Wiki-Bereich „Infoscreen" gibt es noch nicht" | Die Einrichtung ist noch nicht gelaufen – oder dir fehlt das Recht, den Bereich zu sehen | Schritt 4; sonst die Rechte am Wiki-Bereich prüfen |

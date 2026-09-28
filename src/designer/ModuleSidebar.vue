@@ -2,11 +2,11 @@
 /**
  * The left column of the module, as in "Gruppen" of ChurchTools: the same on
  * the start page and in the settings. Filters are links with the format in
- * the query, so they work from any page and survive going back. The
- * administration part is only for administrators (role concept, Plan.md F).
- * Below 48rem filters and sections become one row to swipe, on every page –
- * otherwise a phone could not get from "Playlists" to "Zeitpläne"; the
- * administration links stay in the bar above.
+ * the query, so they work from any page and survive going back. Below 48rem
+ * filters and sections become one row to swipe, on every page – otherwise a
+ * phone could not get from "Playlists" to "Zeitpläne". "Einstellungen"
+ * (administrators only) moved into the header bar (Plan.md 36); this column
+ * no longer needs to know who is one.
  */
 import { computed } from 'vue';
 import { useRoute } from 'vue-router';
@@ -14,7 +14,7 @@ import { FILTERS, formatFilter, type FormatFilter } from './format-filter';
 import { unseenRelease } from '../about/seen';
 import Icon from './Icon.vue';
 
-defineProps<{ counts?: Record<FormatFilter, number>; admin: boolean }>();
+defineProps<{ counts?: Record<FormatFilter, number> }>();
 
 const route = useRoute();
 const active = computed(() => (route.name === 'designer' ? formatFilter(route.query.format) : null));
@@ -93,21 +93,6 @@ const active = computed(() => (route.name === 'designer' ? formatFilter(route.qu
                 </RouterLink>
             </li>
         </ul>
-        <div v-if="admin" class="admin">
-            <h2>Verwaltung</h2>
-            <ul>
-                <li>
-                    <RouterLink
-                        :to="{ name: 'setup' }"
-                        :class="{ active: route.name === 'setup' }"
-                        data-testid="sidebar-settings"
-                    >
-                        <span class="nav-icon"><Icon name="settings" :size="16" /></span>
-                        Einstellungen
-                    </RouterLink>
-                </li>
-            </ul>
-        </div>
         <ul class="library about">
             <li>
                 <RouterLink
@@ -149,10 +134,6 @@ ul {
     margin: 0;
     padding: 0;
     list-style: none;
-}
-h2 {
-    margin: 20px 10px 6px;
-    font-size: 1em;
 }
 a {
     box-sizing: border-box;
@@ -215,9 +196,6 @@ a.active {
     .filters a.active {
         border-color: var(--d-accent);
         background: var(--d-accent-pale);
-    }
-    .admin {
-        display: none;
     }
     /* Phone: schedules, playlists and media library join the row of filters. */
     .module-sidebar {

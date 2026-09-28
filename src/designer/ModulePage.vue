@@ -40,7 +40,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', measure));
             <template #actions><slot name="actions" /></template>
         </AppBar>
         <div class="layout">
-            <ModuleSidebar :admin="admin" :counts="counts" />
+            <ModuleSidebar :counts="counts" />
             <main class="content"><slot /></main>
         </div>
     </div>

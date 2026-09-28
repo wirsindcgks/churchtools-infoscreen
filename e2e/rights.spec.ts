@@ -45,9 +45,16 @@ test('only administrators see the settings and configure screens; everyone else 
     await expect(page.getByTestId('delete-screen')).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('open-editor').first()).toBeVisible();
+    // "Über & Neuigkeiten" is no setting – it stays visible for everyone (Plan.md 36).
+    await expect(page.getByTestId('sidebar-about')).toBeVisible();
 
     await page.goto('./einrichtung'); // the old address leads to the settings
     await expect(page).toHaveURL(/\/einstellungen$/);
+    await expect(page.getByTestId('setup-admins-only')).toBeVisible();
+    await expect(page.getByTestId('assistant')).toHaveCount(0);
+
+    // Every sub-page stays locked, not just the overview.
+    await page.goto('./einstellungen/gruppen');
     await expect(page.getByTestId('setup-admins-only')).toBeVisible();
     await expect(page.getByTestId('assistant')).toHaveCount(0);
 });

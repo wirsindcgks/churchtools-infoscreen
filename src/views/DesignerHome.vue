@@ -197,7 +197,7 @@ async function remove(overview: ScreenOverview): Promise<void> {
             </ul>
             <p v-if="admin" class="muted">
                 Was eine Gruppe noch braucht, zeigen die
-                <RouterLink :to="{ name: 'setup' }">Einstellungen</RouterLink>; dort legt der Assistent die Gruppen samt
+                <RouterLink :to="{ name: 'setup-groups' }">Einstellungen</RouterLink>; dort legt der Assistent die Gruppen samt
                 Rechten an. Rechte einer Gruppe wirken erst, wenn sie den Status „aktiv" hat.
             </p>
             <p v-else class="muted">

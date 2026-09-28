@@ -7,8 +7,21 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
     await page.goto('./');
     await page.getByTestId('open-setup').click();
     await expect(page.getByTestId('setup-heading')).toHaveText('Einstellungen');
+    // An overview of cards (Plan.md 36): each "settings-card-…" leads to a page of its own.
+    await expect(page.getByTestId('settings-card-groups')).toBeVisible();
+    await expect(page.getByTestId('settings-card-tv')).toBeVisible();
     // Which build is installed, to compare with the releases on GitHub (Plan.md 12).
     await expect(page.getByTestId('app-version')).toContainText(/Infoscreen Designer \d+\.\d+\.\d+/);
+
+    await page.getByTestId('settings-card-groups').click();
+    await expect(page).toHaveURL(/\/einstellungen\/gruppen$/);
+    await expect(page.getByTestId('setup-heading')).toHaveText('Gruppen und Rechte');
+
+    // The back link returns to the overview.
+    await page.getByTestId('settings-back').click();
+    await expect(page).toHaveURL(/\/einstellungen$/);
+    await page.getByTestId('settings-card-groups').click();
+    await expect(page).toHaveURL(/\/einstellungen\/gruppen$/);
 
     // Group checks read live from the test instance, which can take longer than the default 5 s.
     const LIVE = { timeout: 15_000 };
@@ -30,7 +43,7 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
 });
 
 test('the assistant explains itself in demo mode instead of offering to write', async ({ page }) => {
-    await page.goto('./einstellungen');
+    await page.goto('./einstellungen/gruppen');
     const assistant = page.getByTestId('assistant');
     await expect(assistant).toContainText('Im Demo-Modus nicht verfügbar');
     await expect(page.getByTestId('run-assistant')).toBeDisabled();
@@ -46,7 +59,7 @@ test('the settings make a TV address that signs the device in, without keeping t
         if (body.password !== 'richtig') return route.fulfill({ status: 400, json: { message: 'Login failed' } });
         await route.fulfill({ json: { data: { personId: 22, token: 'geraete-token' } } });
     });
-    await page.goto('./einstellungen');
+    await page.goto('./einstellungen/fernseher');
     const card = page.getByTestId('tv-address');
     await card.scrollIntoViewIfNeeded();
 
@@ -70,4 +83,11 @@ test('the settings make a TV address that signs the device in, without keeping t
         { username: 'muser', password: 'richtig' },
     ]);
     await card.screenshot({ path: 'test-results/tv-address.png' });
+});
+
+// The old address `/einrichtung#fernseher` (until 2026-09-28) must not lead into the void.
+test('the old anchor "#fernseher" leads straight to the TV addresses', async ({ page }) => {
+    await page.goto('./einrichtung#fernseher');
+    await expect(page).toHaveURL(/\/einstellungen\/fernseher$/);
+    await expect(page.getByTestId('setup-heading')).toHaveText('Adressen für die Fernseher');
 });
