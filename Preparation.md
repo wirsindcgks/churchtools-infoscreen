@@ -409,7 +409,7 @@ hängt nie an der Testinstanz, auch nicht mit Testinhalten (Entscheidung des Nut
 
 Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eigenen Browsers.
 
-- [ ] **P1 · Einrichtung auf der Testinstanz von vorn** – „Einrichtung entfernen", dann neu einrichten. Danach
+- [x] **P1 · Einrichtung auf der Testinstanz von vorn** – „Einrichtung entfernen", dann neu einrichten. Danach
       darf es keine verwaisten Rechte an fremden Rollen geben, und nur die zwei eigenen Gruppen dürfen angefasst
       worden sein. Das ist der einzige Teil, der Rechte schreibt. *(Schreibzugriff, vorher absprechen.)*
       **Erster Durchgang am 2026-09-28 mit `v0.2.2` – nicht bestanden (G39):** Die Gruppen wurden gelöscht, das
@@ -419,6 +419,14 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
       Rechte anlegen", danach Personen 1 und 16 als „Leiter" in „Infoscreen-Designer" und das Gerätekonto 22 in
       „Infoscreen-Devices" wieder aufnehmen und vorher/nachher vergleichen. Das Entwicklungskonto braucht die
       Modulrechte künftig über eine eigene Admin-Gruppe (`docs/Einrichtung.md`, Schritt 2), nicht über die Gestalter.
+      **→ Zweiter Durchgang am 2026-09-28 bestanden** (`v0.2.3`, Nutzer als System Admin): „Einrichtung entfernen"
+      bereinigte die verwaisten Einträge, „Gruppen und Rechte anlegen" legte die Gruppen 37 und 40 an. Vergleich mit
+      dem Stand vor dem ersten Durchgang: nur die Gruppen 25/28 gegen 37/40 getauscht, **Rechte Rolle für Rolle
+      identisch**, keine andere Gruppe, Gruppentyp-Rolle oder Status-Rechte verändert, Wiki-Bereich unberührt.
+      Dabei aufgefallen: Eine leere Geräte-Gruppe stand als Fehler (rot), eine leere Gestalter-Gruppe als Warnung
+      – beide sind jetzt eine Warnung, denn direkt nach dem Einrichten sind beide leer (kommt mit der nächsten
+      Version). **Offen:** Mitglieder wieder aufnehmen (Personen 1 und 16, Gerätekonto 22) und dem
+      Entwicklungskonto die Modulrechte über eine eigene Admin-Gruppe geben.
 - [x] **P2 · Rückweg beschreiben und auf der Testinstanz einmal gehen** → **gemessen am 2026-09-28 (G38)**:
       Das Löschen der Extension räumt Daten, Modulrechte (auch an fremden Rollen), Rechtekatalog und ZIP selbst ab;
       eine Neuinstallation beginnt leer. Übrig bleiben nur Gruppen, Wiki-Bereich und Geräte-Benutzer – deshalb
@@ -455,10 +463,12 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
       **Nachgeschoben, nicht blockierend:** Nach einem `429` wartet der Player 30 Sekunden statt der von
       ChurchTools empfohlenen 60, und `Retry-After` wird entgegen der alten Notiz in G16 nicht ausgewertet
       (`backoffDelay` kennt es, `controller.ts` übergibt es nicht).
-- [ ] **P6 · Nur ein Release** – Installiert wird ein ZIP aus dem Release-Workflow bei grünem CI, kein
+- [x] **P6 · Nur ein Release** – Installiert wird ein ZIP aus dem Release-Workflow bei grünem CI, kein
       lokaler Build. **Vorbereitet am 2026-09-28:** Die Workflows laufen auf `actions/checkout@v7` und
       `actions/setup-node@v7` (Node.js 24, `Plan.md`, Punkt 35); die Release-Läufe `v0.2.0`–`v0.2.2` waren grün.
       Abgehakt wird P6 mit dem Release, das auf die Produktivinstanz geht – das erste nach dieser Umstellung.
+      **→ Erfüllt mit `v0.2.3` (2026-09-28):** Release-Lauf mit den neuen Actions grün, ZIP auf der Release-Seite.
+      Gilt für jede Installation auf der Produktivinstanz weiter: nur ein ZIP aus dem Release-Workflow.
 - [x] **P7 · Entscheidung des Nutzers: Key** → **entschieden am 2026-09-28: gleich der echte Key
       `infoscreen-designer`**, unter der Bedingung, dass er sich restlos entfernen lässt. Das ist erfüllt:
       „Einrichtung entfernen" nimmt die Gruppen, das Löschen der Extension alles Übrige am Modul (G38). Von Hand

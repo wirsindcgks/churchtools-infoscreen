@@ -188,9 +188,10 @@ export interface DeviceGroupInput {
 export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
     const checks: Check[] = [checkStatus(input.statusId)];
     if (!input.members.length) {
+        // Like an empty designer group: right after the assistant this is the next step, not a fault.
         checks.push({
-            level: 'fail',
-            text: 'Kein Geräte-Benutzer in der Gruppe.',
+            level: 'warn',
+            text: 'Noch kein Geräte-Benutzer in der Gruppe.',
             detail: 'Das Konto, mit dem sich die Fernseher anmelden, gehört hierher.',
         });
         return checks;

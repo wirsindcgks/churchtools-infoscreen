@@ -77,9 +77,9 @@ describe('checkDeviceGroup', () => {
         { id: 4, name: 'Gemeindeleitung', isPublic: false },
     ];
 
-    it('fails without a device account', () => {
+    it('warns without a device account, like an empty designer group – the next step, not a fault', () => {
         const checks = checkDeviceGroup({ statusId: 1, members: [], calendars, usedCalendarIds: [4], wikiCategoryId: WIKI });
-        expect(checks.at(-1)).toMatchObject({ level: 'fail' });
+        expect(checks.at(-1)).toMatchObject({ level: 'warn', text: 'Noch kein Geräte-Benutzer in der Gruppe.' });
     });
 
     it('asks for the right on public calendars too – without it ChurchTools refuses with 403 (G35)', () => {
