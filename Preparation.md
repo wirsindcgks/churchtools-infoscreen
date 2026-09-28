@@ -412,6 +412,13 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
 - [ ] **P1 · Einrichtung auf der Testinstanz von vorn** – „Einrichtung entfernen", dann neu einrichten. Danach
       darf es keine verwaisten Rechte an fremden Rollen geben, und nur die zwei eigenen Gruppen dürfen angefasst
       worden sein. Das ist der einzige Teil, der Rechte schreibt. *(Schreibzugriff, vorher absprechen.)*
+      **Erster Durchgang am 2026-09-28 mit `v0.2.2` – nicht bestanden (G39):** Die Gruppen wurden gelöscht, das
+      Speichern scheiterte, danach war die Seite festgefahren; das Entwicklungskonto kam nicht mehr in den Designer.
+      Andere Gruppen und Rechte blieben unberührt. **Behoben in `v0.2.3`.** **Zweiter Durchgang:** `v0.2.3` als
+      Update auf die Testinstanz, als System Admin „Einrichtung entfernen" (repariert den Zustand) und „Gruppen und
+      Rechte anlegen", danach Personen 1 und 16 als „Leiter" in „Infoscreen-Designer" und das Gerätekonto 22 in
+      „Infoscreen-Devices" wieder aufnehmen und vorher/nachher vergleichen. Das Entwicklungskonto braucht die
+      Modulrechte künftig über eine eigene Admin-Gruppe (`docs/Einrichtung.md`, Schritt 2), nicht über die Gestalter.
 - [x] **P2 · Rückweg beschreiben und auf der Testinstanz einmal gehen** → **gemessen am 2026-09-28 (G38)**:
       Das Löschen der Extension räumt Daten, Modulrechte (auch an fremden Rollen), Rechtekatalog und ZIP selbst ab;
       eine Neuinstallation beginnt leer. Übrig bleiben nur Gruppen, Wiki-Bereich und Geräte-Benutzer – deshalb
@@ -432,6 +439,10 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
 - [ ] **P3 · Sichtbarkeit für Gemeindeglieder** – Wo tauchen die Gruppen vom Typ „Merkmal", der Wiki-Bereich
       (G36) und der Geräte-Benutzer auf: Gruppenliste, App, Personensuche, Wiki? Nichts davon darf wie ein
       Fehler aussehen oder Fragen auslösen.
+      **Teilweise geprüft am 2026-09-28** (Nutzer, mit einem neu angelegten Konto ohne Rechte): kein Wiki, kein
+      Infoscreen Designer. Die Gruppen legt der Assistent mit Sichtbarkeit „Eingeschränkt" an – sichtbar nur mit
+      Rechten wie „view alldata" oder „view group" ([Academy](https://churchtools.academy/de/help/app/gruppen-berechtigen/0-gruppensichtbarkeiten/)).
+      **Offen:** Gruppensuche in Web und App nach dem Neueinrichten (P1), Personensuche nach dem Geräte-Benutzer.
 - [ ] **P4 · Erstes Gerät, auf der Produktivinstanz** *(nach P8)* – Das echte Gerät mit Kiosk-Browser läuft
       mehrere Tage fehlerfrei, zuerst mit Testinhalten in einer eigenen Playlist, einschließlich des nächtlichen
       Neuladens und eines Netzausfalls (E5). Bis dahin hängt kein Gerät an einer Instanz.
@@ -448,9 +459,15 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
       lokaler Build. **Vorbereitet am 2026-09-28:** Die Workflows laufen auf `actions/checkout@v7` und
       `actions/setup-node@v7` (Node.js 24, `Plan.md`, Punkt 35); die Release-Läufe `v0.2.0`–`v0.2.2` waren grün.
       Abgehakt wird P6 mit dem Release, das auf die Produktivinstanz geht – das erste nach dieser Umstellung.
-- [ ] **P7 · Entscheidung des Nutzers: Key** – Wird das Modul auf der Produktivinstanz gleich unter dem echten
-      Key `infoscreen-designer` installiert, der danach bleibt? Oder unter `infoscreen-designer-test`, der sich
-      spurlos wieder entfernen lässt, aber für den Betrieb neu eingerichtet werden muss?
+- [x] **P7 · Entscheidung des Nutzers: Key** → **entschieden am 2026-09-28: gleich der echte Key
+      `infoscreen-designer`**, unter der Bedingung, dass er sich restlos entfernen lässt. Das ist erfüllt:
+      „Einrichtung entfernen" nimmt die Gruppen, das Löschen der Extension alles Übrige am Modul (G38). Von Hand
+      bleiben nur Wiki-Bereich und Geräte-Benutzer, die der Designer nie löscht (`docs/Einrichtung.md`). Vor der
+      Installation lesend prüfen, ob es auf der Produktivinstanz schon Gruppen „Infoscreen-Designer" oder
+      „Infoscreen-Devices" oder einen Wiki-Bereich „Infoscreen" gibt.
+      *Ursprüngliche Frage:* Gleich unter dem echten Key, der danach bleibt? Oder unter
+      `infoscreen-designer-test`, der sich spurlos wieder entfernen lässt, aber für den Betrieb neu eingerichtet
+      werden muss?
 - [ ] **P8 · Freigabe** – Die Installation auf der Produktivinstanz wird mit dem Nutzer abgesprochen. Erst
       dann wird die Regel „gegen die Produktivinstanz nur lesen" in `AGENTS.md` für dieses Modul angepasst.
 

@@ -5,8 +5,9 @@ import { EXTENSION_KEY } from '../config';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import { fetchCalendars, type Calendar } from '../ct/api';
-import { httpStatus, instanceBaseUrl } from '../ct/client';
+import { currentPerson, httpStatus, instanceBaseUrl } from '../ct/client';
 import { playerUrl } from '../designer/player-url';
+import RemoveSetupDialog, { type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
 import { createCategory, setCategoryInMenu, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
 import { SCHEMA_VERSION, type ScreenDoc } from '../model/schema';
 import { withDeviceLogin } from '../player/device-login';
@@ -19,6 +20,7 @@ import {
     loadGroupRights,
     loadGroups,
     loadPersonGrants,
+    personGroupIds,
     type GroupSummary,
 } from '../setup/load';
 import { createDeviceLogin } from '../setup/device-token';
@@ -77,6 +79,14 @@ const createdGroupIds = ref<number[]>([]);
 /** The wiki category the assistant created itself – the only one it may ever delete (Plan.md, F). */
 const createdWikiCategoryId = ref<number | null>(null);
 const assistant = reactive({ allowed: false, running: false, log: [] as string[], error: null as string | null });
+
+/**
+ * Members of a group, as `check()` already loaded it while checking designers
+ * or devices – reused by the removal dialog instead of a fetch of its
+ * own. Unknown for a created group that is neither side's current choice.
+ */
+const groupMemberCounts = reactive<Record<number, number>>({});
+const removeDialog = ref<{ groups: RemoveGroupInfo[]; ownMemberOf: string[] } | null>(null);
 
 /** Groups under the assistant's names that it did not create: it never takes them over. */
 const wikiMissing = computed(() => plan.value !== null && wikiCategoryIdKnown.value === false);
@@ -196,17 +206,70 @@ async function updateRights(): Promise<void> {
     }
 }
 
-async function removeSetup(): Promise<void> {
-    const names = groups.value.filter((g) => createdGroupIds.value.includes(g.id)).map((g) => `„${g.name}"`);
-    const question = `Die vom Assistenten angelegten Gruppen ${names.join(' und ')} samt ihrer Rechte löschen?\n\nIhre Mitglieder verlieren damit den Zugang.`;
-    if (!repository || !window.confirm(question)) return;
+/**
+ * Opens the confirmation dialog for „Einrichtung entfernen" – but only
+ * once this account has saved the settings unchanged: without that right
+ * the deletion could never be recorded, and every retry would run into an
+ * already-gone group and stop right there (Plan.md, F; gemessen 2026-09-28,
+ * Abnahme P1). A real save, not a look at `/permissions/global`: what that
+ * reports for a system administrator is unmeasured.
+ */
+async function openRemoveSetup(): Promise<void> {
+    if (!repository) return;
+    assistant.error = null;
+    try {
+        await persistSettings();
+    } catch (e) {
+        assistant.error =
+            httpStatus(e) === 403
+                ? 'Entfernen nicht möglich: Du darfst die Einstellungen des Designers nicht ändern. Danach wüsste der ' +
+                  'Designer nicht, dass die Gruppen gelöscht sind. Gib deiner Administratoren-Gruppe die Modulrechte ' +
+                  '(Einrichtung, Schritt 2) und versuche es erneut.'
+                : `Entfernen nicht möglich: Die Einstellungen ließen sich nicht speichern (${explain(e)}).`;
+        return;
+    }
+    const affected: RemoveGroupInfo[] = createdGroupIds.value.map((id) => {
+        const group = groups.value.find((g) => g.id === id);
+        return { id, name: group?.name ?? null, memberCount: groupMemberCounts[id] };
+    });
+    let ownGroupIds: number[] = [];
+    try {
+        const person = await currentPerson();
+        ownGroupIds = await personGroupIds(person.id);
+    } catch {
+        // Only the warning about locking oneself out is lost – the dialog still opens and removal still works.
+    }
+    removeDialog.value = {
+        groups: affected,
+        ownMemberOf: affected.filter((g) => ownGroupIds.includes(g.id)).map((g) => g.name ?? `Gruppe ${g.id}`),
+    };
+}
+
+/**
+ * Runs the removal once the dialog confirms it. The dialog closes right
+ * away: progress and errors of every assistant action already have one place
+ * on the page, the assistant card below – showing them a second time inside
+ * a dialog that is about to disappear would only split the story in two.
+ */
+async function confirmRemoveSetup(): Promise<void> {
+    if (!repository) return;
+    removeDialog.value = null;
     assistant.running = true;
     assistant.error = null;
     try {
         const result = await removeCreatedGroups(
             createdGroupIds.value,
             { designer: selected.designer, device: selected.device },
-            (id) => deleteGroup(id).catch((e: unknown) => { throw new Error(explain(e)); }),
+            async (id) => {
+                try {
+                    await deleteGroup(id);
+                    return 'deleted';
+                } catch (e) {
+                    // Already gone – e.g. a save that failed after a previous run (Plan.md, F).
+                    if (httpStatus(e) === 404) return 'gone';
+                    throw new Error(explain(e));
+                }
+            },
         );
         assistant.log = result.log;
         assistant.error = result.error;
@@ -215,7 +278,8 @@ async function removeSetup(): Promise<void> {
         selected.device = result.selected.device ?? null;
         // Saved even after a failure: what is still there must stay removable (Plan.md, F).
         await persistSettings();
-        groups.value = await loadGroups();
+        // Not shown again, even if ChurchTools still had them in the same list request.
+        groups.value = (await loadGroups()).filter((g) => !result.removed.includes(g.id));
         await Promise.all([check('designer'), check('device')]);
     } catch (e) {
         assistant.error = explain(e);
@@ -238,6 +302,7 @@ async function check(side: Side): Promise<void> {
     busy[side] = true;
     try {
         const rights = await loadGroupRights(groupId);
+        groupMemberCounts[groupId] = rights.members.length;
         if (side === 'designer') {
             checks.designer = checkDesignerGroup({
                 statusId: rights.group.statusId,
@@ -446,7 +511,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                             >
                                 Rechte aktualisieren
                             </button>
-                            <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running" data-testid="remove-setup" @click="removeSetup">
+                            <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running" data-testid="remove-setup" @click="openRemoveSetup">
                                 Einrichtung entfernen
                             </button>
                         </div>
@@ -624,6 +689,14 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                 „Releases" auf GitHub und werden in der Extension-Verwaltung von ChurchTools als ZIP hochgeladen.
             </p>
         </div>
+
+        <RemoveSetupDialog
+            v-if="removeDialog"
+            :groups="removeDialog.groups"
+            :own-member-of="removeDialog.ownMemberOf"
+            @close="removeDialog = null"
+            @confirm="confirmRemoveSetup"
+        />
     </ModulePage>
 </template>
 

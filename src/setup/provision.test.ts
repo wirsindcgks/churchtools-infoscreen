@@ -159,12 +159,15 @@ describe('removeCreatedGroups (Plan.md, F: nur entfernen, was das Modul selbst a
         const calls: number[] = [];
         const result = await removeCreatedGroups([25, 28], { designer: 7, device: 28 }, async (id) => {
             calls.push(id);
+            return 'deleted';
         });
         expect(calls).toEqual([25, 28]);
         expect(calls).not.toContain(7);
         expect(result.selected).toEqual({ designer: 7, device: null });
         expect(result.remaining).toEqual([]);
+        expect(result.removed).toEqual([25, 28]);
         expect(result.error).toBeNull();
+        expect(result.log).toEqual(['2 Gruppen gelöscht.']);
     });
 
     it('stops at the first failure: what follows stays untried and remains removable', async () => {
@@ -172,9 +175,11 @@ describe('removeCreatedGroups (Plan.md, F: nur entfernen, was das Modul selbst a
         const result = await removeCreatedGroups([25, 28, 31], { designer: 25, device: null }, async (id) => {
             calls.push(id);
             if (id === 28) throw new Error('Forbidden');
+            return 'deleted';
         });
         expect(calls).toEqual([25, 28]);
         expect(result.remaining).toEqual([28, 31]);
+        expect(result.removed).toEqual([25]);
         expect(result.error).toBe('Forbidden');
         expect(result.selected).toEqual({ designer: null, device: null });
         expect(result.log.at(-1)).toContain('Abgebrochen');
@@ -184,9 +189,45 @@ describe('removeCreatedGroups (Plan.md, F: nur entfernen, was das Modul selbst a
         const calls: number[] = [];
         const result = await removeCreatedGroups([], { designer: null, device: null }, async (id) => {
             calls.push(id);
+            return 'deleted';
         });
         expect(calls).toEqual([]);
         expect(result.remaining).toEqual([]);
+        expect(result.removed).toEqual([]);
         expect(result.error).toBeNull();
+    });
+
+    it('treats an already-deleted group as gone: named on its own line, taken out like a real deletion', async () => {
+        const result = await removeCreatedGroups([25], { designer: 25, device: null }, async () => 'gone');
+        expect(result.remaining).toEqual([]);
+        expect(result.removed).toEqual([25]);
+        expect(result.selected).toEqual({ designer: null, device: null });
+        expect(result.error).toBeNull();
+        // No sum line: nothing was actually deleted.
+        expect(result.log).toEqual(['Gruppe 25 gab es nicht mehr – aus den Einstellungen entfernt.']);
+    });
+
+    it('names a gone id on its own line and still sums up the ones actually deleted', async () => {
+        const result = await removeCreatedGroups([25, 28], { designer: null, device: null }, async (id) =>
+            id === 25 ? 'gone' : 'deleted',
+        );
+        expect(result.remaining).toEqual([]);
+        expect(result.removed).toEqual([25, 28]);
+        expect(result.log).toEqual(['Gruppe 25 gab es nicht mehr – aus den Einstellungen entfernt.', '1 Gruppen gelöscht.']);
+    });
+
+    it('keeps a gone id\'s effect even when a later id fails for real', async () => {
+        const calls: number[] = [];
+        const result = await removeCreatedGroups([25, 28, 31], { designer: 25, device: null }, async (id) => {
+            calls.push(id);
+            if (id === 25) return 'gone';
+            if (id === 28) throw new Error('Forbidden');
+            return 'deleted';
+        });
+        expect(calls).toEqual([25, 28]);
+        expect(result.remaining).toEqual([28, 31]);
+        expect(result.removed).toEqual([25]);
+        expect(result.error).toBe('Forbidden');
+        expect(result.log).toEqual(['Gruppe 25 gab es nicht mehr – aus den Einstellungen entfernt.', 'Abgebrochen: Forbidden']);
     });
 });

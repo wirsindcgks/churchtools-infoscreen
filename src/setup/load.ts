@@ -119,6 +119,23 @@ export async function canManagePermissions(): Promise<boolean> {
     return global.churchcore?.['administer persons'] === true;
 }
 
+interface PersonGroupResponse {
+    group?: { domainIdentifier?: string | null } | null;
+}
+
+/**
+ * Groups a person is a member of, by id – `domainIdentifier` is the group id
+ * as a string (measured 2026-09-28). „Einrichtung entfernen" uses it to warn
+ * before deleting the very group that gives the person access to the
+ * designer (Plan.md, F).
+ */
+export async function personGroupIds(personId: number): Promise<number[]> {
+    const memberships = await churchtoolsClient.get<PersonGroupResponse[]>(`/persons/${personId}/groups`);
+    return memberships
+        .map((m) => (m.group?.domainIdentifier ? Number(m.group.domainIdentifier) : NaN))
+        .filter((id) => !Number.isNaN(id));
+}
+
 export const churchToolsProvisionApi: ProvisionApi = {
     async createGroup(name, groupTypeId) {
         const group = await churchtoolsClient.post<{ id: number }>('/groups', { name, groupTypeId, groupStatusId: 1 });

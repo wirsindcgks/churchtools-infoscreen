@@ -215,6 +215,11 @@ Die Reihenfolge ist wichtig: **erst die Einrichtung, dann die Extension.**
 1. **Einstellungen → „Einrichtung entfernen".** Das löscht die beiden Gruppen, die der Assistent angelegt hat,
    samt ihrer Rechte. Gruppen, die du selbst gewählt hast, bleiben. Diesen Schritt zuerst: Mit der Extension
    verschwinden auch die Einstellungen, und danach weiß der Designer nicht mehr, welche Gruppen von ihm stammen.
+   Zur Sicherheit fragt ein Dialog nach, zeigt, was verschwindet, und verlangt das Wort **„entfernen"**.
+   **Du brauchst dafür die Modulrechte aus [Schritt 2](#2-dir-selbst-die-modulrechte-geben)**, sonst kann der
+   Designer nicht speichern, dass die Gruppen weg sind, und löscht deshalb gar nicht erst. **Bist du selbst in
+   „Infoscreen-Designer"** und hast die Rechte nur darüber, kommst du danach nicht mehr in den Designer – der
+   Dialog warnt davor.
 2. **Extension-Verwaltung → „Infoscreen Designer" → Löschen.** ChurchTools zeigt vorher, was mitgelöscht wird,
    und entfernt dann alle Screens, Playlists, Slides und Einstellungen, die Rechte am Modul – auch die aus
    Schritt 2 an eurer Administratoren-Gruppe – und das hochgeladene ZIP.

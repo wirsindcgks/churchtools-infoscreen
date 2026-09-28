@@ -4,6 +4,26 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.2.3] – 2026-09-28
+
+„Einrichtung entfernen" ist abgesichert und lässt sich nicht mehr festfahren.
+
+### Geändert
+
+- **„Einrichtung entfernen" fragt in einem eigenen Dialog nach**: Er nennt die Gruppen, die verschwinden, mit
+  der Zahl ihrer Mitglieder und den Folgen, und löscht erst, wenn man das Wort „entfernen" eintippt. Wer selbst
+  Mitglied einer der Gruppen ist, bekommt einen Hinweis: Kommen die Rechte am Designer nur über diese Gruppe,
+  sperrt man sich aus ([Einrichtung](docs/Einrichtung.md), „Den Designer wieder entfernen").
+
+### Behoben
+
+- Durfte ein Konto Gruppen löschen, aber die Einstellungen des Designers nicht ändern, löschte „Einrichtung
+  entfernen" die Gruppen und konnte sich das nicht merken. Danach brach jeder weitere Versuch ab. Jetzt prüft
+  der Designer vorher, ob er speichern darf, und löscht sonst nichts. Eine Gruppe, die es schon nicht mehr
+  gibt, gilt als entfernt – eine so festgefahrene Einrichtung lässt sich mit einem Klick bereinigen.
+- Direkt nach dem Entfernen konnten die gelöschten Gruppen noch in der Liste stehen und galten dann als fremd;
+  „Gruppen und Rechte anlegen" blieb gesperrt, bis man die Seite neu lud.
+
 ## [0.2.2] – 2026-09-28
 
 Der Designer räumt nur noch weg, was er selbst angelegt hat.
@@ -118,6 +138,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.2.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.3
 [0.2.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.2
 [0.2.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.1
 [0.2.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.0
