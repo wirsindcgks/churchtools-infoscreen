@@ -157,6 +157,24 @@ Baut `dist/` und packt es als ZIP nach `releases/` (nicht versioniert), benannt 
 **Extension-Verwaltung → Infoscreen Designer → Bearbeiten → ZIP wählen**. Welche Fassung installiert ist, steht unten
 auf der Seite „Einstellungen" des Designers.
 
+### Eine Wegwerf-Installation per API
+
+Zur Fehlersuche lässt sich ein Build unter einem eigenen Key neben die echte Installation legen und wieder
+entfernen, ohne die Oberfläche. Das ist der Weg, den die Extension-Verwaltung selbst geht (gemessen in G38).
+**Nur auf der Testinstanz, und als schreibender Zugriff vorher besprechen** (`AGENTS.md`).
+
+1. Bauen unter dem Wegwerf-Key: `VITE_KEY=infoscreen-designer-test npm run release`.
+2. `POST /api/custommodules` mit `{"name", "shorty": "infoscreen-designer-test", "description", "inMenu": false, "sortKey"}`
+   → `201` mit der Modul-id.
+3. `POST /api/files/custom_module/<id>` mit dem ZIP als Formularfeld `files[]` → `200`. Danach antwortet
+   `/ccm/infoscreen-designer-test/`.
+4. Entfernen: `DELETE /api/custommodules/<id>?dry_run=true` zeigt, was mitgelöscht würde (`409` „Dry Run Output"),
+   `?dry_run=false` löscht (`204`) – samt Daten, Modulrechten und ZIP.
+
+Das Konto braucht dafür das Recht **„Erweiterungen verwalten"** (`churchcore` „administer custom modules");
+Administrator- und Rechteverwaltungs-Rechte genügen nicht (`401`). Die Rechte des Wegwerf-Moduls bekommen eigene
+Nummern – sehen kann es erst, wer sie hat.
+
 ## Release veröffentlichen
 
 Ein Tag `vX.Y.Z` auf GitHub baut das Release von selbst (`.github/workflows/release.yml`). ChurchTools kann sich
