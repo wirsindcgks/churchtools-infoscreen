@@ -193,8 +193,10 @@ hoch.
 
 ## Stolpersteine
 
-- **Die Testinstanz läuft am 2026-10-22 um 21:53 ab.** Danach funktionieren Dev-Server und e2e-Tests nicht mehr
-  gegen sie; Unit-Tests, Lint, Typecheck und Build schon.
+- **Die Testinstanz bleibt für die Zeit der Extensionentwicklung** (Zusage von ChurchTools, 2026-09-28) – das
+  frühere Ablaufdatum 2026-10-22 gilt nicht mehr. **Sie darf nicht produktiv genutzt werden**, sonst wird sie
+  kostenpflichtig. Fällt sie doch einmal weg, laufen Unit-Tests, Lint, Typecheck und Build weiter; Dev-Server und
+  e2e-Tests nicht.
 - **„ChurchTools ist gerade nicht erreichbar"** auf der Startseite: meist ein fehlender oder abgelaufener
   `CT_LOGIN_TOKEN`, oder die Instanz ist nicht erreichbar.
 - **Port 5173 belegt:** Ein anderer Dev-Server läuft noch – beenden (siehe oben) oder einen anderen Port nehmen.

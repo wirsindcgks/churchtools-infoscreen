@@ -7,7 +7,40 @@ Ergebnis erkennt** und **welche Frage aus [`Befunde.md`](Befunde.md)** er beantw
 Die Reihenfolge folgte bisher dem Preis: erst was nichts kostet, dann was Zeit kostet, zuletzt was Daten
 anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
 
-> **⏱ Die Testinstanz läuft ab**
+> **✅ Stand 2026-09-28 – die Frist ist aufgehoben**
+>
+> ChurchTools hat am 2026-09-28 geantwortet (F1): *„dein Entwicklersystem ist für die Zeit der
+> Extensionentwicklung für [dich] kostenfrei nutzbar. Wir prüfen regelmäßig die Nutzung und erlauben uns, das
+> System in Rechnung zu stellen, sofern es produktiv genutzt wird."*
+>
+> - **Das Ende der Lizenz am 2026-10-22 gilt nicht mehr.** Die Testinstanz bleibt, solange an der Extension
+>   entwickelt wird. Was unten mit „vor Ablauf" begründet ist, hat keine Eile mehr.
+> - **Die neue Grenze ist die produktive Nutzung.** Testen darf man auf der Testinstanz alles, auch
+>   tagelang auf einem echten Gerät. Echte Inhalte der Gemeinde, die dauerhaft im Foyer laufen, wären aber
+>   produktive Nutzung und würden kostenpflichtig. Der Betrieb gehört auf die Produktivinstanz.
+>
+> **Offen sind danach, jeweils mit dem Punkt unten bzw. in [`Plan.md`](Plan.md):**
+>
+> - **Praxistest auf echter Hardware**: ein Raspberry mit Kiosk-Browser über mehrere Tage (E5, `Plan.md`,
+>   „Als Nächstes" 2). **Entschieden am 2026-09-28:** Der Dauertest läuft auf der Produktivinstanz. Vorher
+>   muss das Modul die **Abnahme in Abschnitt P** bestehen. Als Vorstufe läuft das Gerät mit Testinhalten
+>   gegen die Testinstanz.
+> - **Beiträge im Player** mit dem Test-ZIP prüfen, Gruppe „ISD-Beitragstest" (`Plan.md`, Punkt 33). Offen
+>   bleiben dabei interne Gruppen und ob Mitglieder eingeschränkter Gruppen deren Beiträge lesen (G37).
+> - **Service Worker unter `/ccm/`** (E1, G10). Das ist nicht mehr blockiert. Ohne ihn zeigt ein Gerät, das
+>   während eines Netzausfalls neu startet, nichts (`Plan.md`, Risiko 2).
+> - **Modul-Fixtures nachsichern**: Die am 2026-09-25 aufgezeichneten Modul-Antworten liegen noch nicht in
+>   der Sicherung außerhalb des Repos. Das ist keine Frist mehr, aber ein einzelner Arbeitsplatz.
+> - **GitHub-Actions auf Node.js 24 heben** (`Plan.md`, Punkt 35). Ab dem 2026-10-19 wechselt zusätzlich
+>   `ubuntu-latest` auf Ubuntu 26.
+> - **Zwei Entscheidungen ohne Vorgabe**: Hardware (G-E2) und Zeitbudget (G-E7).
+> - **Kleinere Reste aus dem Plan**: Rechte am Modul selbst und eine Hausschrift als Modul-Einstellung;
+>   Inspektor am Handy als ausklappbares Blatt; Slides aus einer anderen Playlist übernehmen; eine Playlist
+>   duplizieren; ein Klick auf einen gesperrten Baustein soll zum darüberliegenden durchgreifen.
+>
+> **Geparkt, bis ein Produktschritt es braucht:** C4, D4, F2, F3, G16, `attachments`.
+
+> **⏱ ~~Die Testinstanz läuft ab~~** – *aufgehoben am 2026-09-28, siehe oben; der Kasten bleibt als Verlauf.*
 >
 > Die Testinstanz (Adresse nur in der `.env`) – leer, Build 32882 wie produktiv, **30 Tage Lizenz, bis 2026-10-22, 21:53** (T3).
 > Eine Verlängerung ist ungeklärt (**F1**, zuerst zu fragen).
@@ -74,6 +107,8 @@ muss dem der Produktivinstanz nicht gleichen.
 
 - [x] **T3 · Ablaufdatum notieren** → **2026-10-22, 21:53** *(2026-09-24)*
       30 Tage ab Anlage der Instanz am 2026-09-22 um 21:53. Eingetragen auch in `Plan.md`.
+      **Aufgehoben am 2026-09-28:** Die Instanz bleibt für die Zeit der Extensionentwicklung kostenfrei,
+      solange sie nicht produktiv genutzt wird (F1).
 
 ## A. Kostenlos – nur hinsehen (ca. 30 Minuten)
 
@@ -139,7 +174,7 @@ Ein Rest bleibt: der Statuscode eines unbekannten `/ccm/`-Pfades als sauberer Ge
       ohne Parameter. mkcert ist unnötig, weil keine Cookies im Spiel sind. **Im echten Safari gegengeprüft**
       (2026-09-24): „Hallo <Vorname>" erscheint.
 
-- [ ] **B5 · Typ-Snapshot holen**
+- [x] ~~**B5 · Typ-Snapshot holen**~~ → **nicht möglich** *(2026-09-24, G31)*: Die Typen bleiben handgeschrieben.
       **Ergebnis 2026-09-24:** Auch mit installiertem Modul und Modulrechten führt die Spezifikation keinen Modul-Pfad (G31).
       Für die Modul-Routen gibt es also keinen Snapshot; die Typen bleiben handgeschrieben nach den neun Schemas.
       **Stand 2026-09-24, nach der Freischaltung:** Die Spezifikation enthält als Administrator **weiterhin keinen**
@@ -156,7 +191,7 @@ Ein Rest bleibt: der Statuscode eines unbekannten `/ccm/`-Pfades als sauberer Ge
       **Teilweise vorweggenommen:** Die neun `CustomModule*`-**Schemas** sind auch jetzt schon enthalten und
       liegen lokal als `fixtures/schema/custommodule-schemas.json` (nicht versioniert).
 
-- [ ] **B6 · Testmodul anlegen**
+- [x] **B6 · Testmodul anlegen** → **erledigt am 2026-09-24**: Extension unter `infoscreen-designer` hochgeladen, Rechte vergeben (G33).
       **Auf der Testinstanz** – und dort gleich unter dem echten Key `infoscreen-designer`, weil damit auch der
       spätere Pfad `/ccm/infoscreen-designer/` mitgetestet wird. Der Ausweichkey `infoscreen-designer-test` bleibt für
       den Fall, dass doch auf der Produktivinstanz gearbeitet werden muss.
@@ -188,7 +223,7 @@ Setzt B6 voraus. Diese vier Punkte entscheiden über den Zuschnitt des Datenmode
       Zwei Kategorien mit unterschiedlicher Stufe, Zugriff mit einem gering berechtigten Benutzer.
       Wichtig für `status` – die einzige Kategorie, auf die ein unbeaufsichtigtes Gerät schreiben darf.
 
-- [ ] **C4 · Grenzen gegenprüfen**
+- [ ] **C4 · Grenzen gegenprüfen** – **geparkt**, bis ein Produktschritt es braucht (`Plan.md`, „Nächste Schritte").
       Einen Wert mit 10.001 Zeichen schreiben. Kommt eine saubere Fehlermeldung oder eine stille Kürzung?
       Eine stille Kürzung wäre der unangenehmste Fall und müsste im Designer abgefangen werden.
 
@@ -224,7 +259,7 @@ Setzt B6 voraus. Diese vier Punkte entscheiden über den Zuschnitt des Datenmode
       die im Kalender, in der App und auf der Gemeindeseite auftauchen (Begründung in `Plan.md`, G8).
       Die Frage, ob „nur externe URLs" ein tragfähiger MVP wäre, ist damit **gestrichen** (2026-09-24).
 
-- [ ] **D4 · Aufräumen** – **nur auf der Produktivinstanz**
+- [ ] **D4 · Aufräumen** – **nur auf der Produktivinstanz**, **geparkt**: Dort ist bisher nichts geschrieben worden.
       Dort entfernen Testdateien und Test-Wiki-Kategorie wieder; Uploads erzeugen echte Inhalte.
       Auf der Testinstanz darf alles stehen bleiben – das ist ihr Zweck.
 
@@ -235,7 +270,7 @@ Dauerpasswort auf einer SD-Karte. Auf der leeren Testinstanz gibt es diesen Grun
 eine Frist: **E1 bis E4 sind instanzgebunden und gehören deshalb in die ersten Tage.** Nur E5 hängt an
 Hardware, nicht an der Instanz, und kann warten.
 
-- [ ] **E1 · Service Worker unter `/ccm/`** → beantwortet **G10**
+- [ ] **E1 · Service Worker unter `/ccm/`** → beantwortet **G10** – **nicht mehr blockiert** seit der Freischaltung (2026-09-24)
       Registrierung versuchen: Scope, MIME-Typ, schreibt ChurchTools den Pfad um?
       Scheitert das, bleibt die Offline-Festigkeit halb – ein Pi, der während eines Netzausfalls neu startet,
       hat nichts zu laden. Dann ausdrücklich benennen, nicht übergehen.
@@ -280,13 +315,17 @@ Hardware, nicht an der Instanz, und kann warten.
       **Noch nicht gemessen:** Schritt 2 ist nur negativ geprüft (falsche Daten → 400); ob `archive` als
       zweite Notbremse wirkt, ebenso. Beides hängt an einem Konto mit gesetztem Passwort → **G21**.
 
-- [ ] **E4 · `login_token` in der URL am `/ccm/`-Pfad** → beantwortet **G9** – **doppelt blockiert**
+- [x] **E4 · `login_token` in der URL am `/ccm/`-Pfad** → **beantwortet G9 am 2026-09-25: trägt.** Darauf baut Weg B (`Plan.md`).
+      **Ursprünglicher Eintrag, doppelt blockiert:**
       Es fehlt das Custom Module (T1) **und** ein Token, an den ein Administrator regulär herankommt (E3/G18).
       `…/ccm/infoscreen-designer/player?screen=…&login_token=<TOKEN>&user_id=<ID>&no_url_rewrite=true` in einem
       privaten Fenster aufrufen. **Prüfen, dass wirklich der Infoscreen-Benutzer angemeldet ist** – ChurchTools
       antwortet anonym als öffentlicher Benutzer, ein fehlgeschlagener Login fällt sonst nicht auf.
 
-- [ ] **E5 · Auf der echten Hardware ansehen**
+- [ ] **E5 · Auf der echten Hardware ansehen** – als Praxistest über mehrere Tage (`Plan.md`, „Als Nächstes" 2).
+      **Seit 2026-09-28:** Erst mit Testinhalten gegen die Testinstanz, dann als Dauertest auf der
+      Produktivinstanz (echte Inhalte im Dauerbetrieb wären auf der Testinstanz produktive Nutzung, F1).
+      Der zweite Schritt setzt die Abnahme in Abschnitt P voraus.
       Pi-Generation, Auflösung, Ausrichtung, Overscan, FullPageOS-Stand. Entscheidet über
       **Offene Entscheidung 3** (Hardware) und darüber, ob Videos überhaupt in Frage kommen.
 
@@ -294,12 +333,15 @@ Hardware, nicht an der Instanz, und kann warten.
 
 Früh anstoßen, weil die Antwort nicht von uns abhängt.
 
-- [ ] **F1 · Support anschreiben** – `support@churchtools.de`
+- [x] **F1 · Support anschreiben** – `support@churchtools.de` → **erledigt am 2026-09-28**; die Frage nach dem Rate-Limit ist mit G16 geparkt.
       - ~~Wie widerruft ein Administrator den Login-Token eines Geräts?~~ **Entfällt** – über den
         Passwortwechsel des Geräte-Benutzers (E3/G18), am 2026-09-23 gemessen.
-      - **Zuerst: Custom Modules für die Testinstanz freischalten.** *(angefragt am 2026-09-23; laut Auskunft vom 2026-09-24 schalten die Entwickler frei, nicht das Paket – Rückmeldung steht aus)*
+      - ~~**Zuerst: Custom Modules für die Testinstanz freischalten.**~~ **Freigeschaltet am 2026-09-24** (T1).
+        *(angefragt am 2026-09-23; laut Auskunft vom 2026-09-24 schalten die Entwickler frei, nicht das Paket)*
         Ohne sie sind B5, B6, C1–C4, E1 und E4 blockiert – siehe T1.
-      - **Lässt sich die Testinstanz über die 30 Tage hinaus verlängern?** Wir sind Kunde und
+      - ~~**Lässt sich die Testinstanz über die 30 Tage hinaus verlängern?**~~ **Ja, beantwortet am 2026-09-28:**
+        kostenfrei für die Zeit der Extensionentwicklung; ChurchTools prüft die Nutzung und berechnet das System,
+        sobald es produktiv genutzt wird. Ursprünglich: Wir sind Kunde und
         entwickeln eine Extension; 30 Tage reichen dafür nicht – erst recht nicht, wenn ein Teil davon
         auf die Freischaltung verstreicht.
       - Ist ein Rate-Limit dokumentiert? (**G16** – gemessen wurde keines bei 60 Anfragen je Sekunde,
@@ -307,11 +349,11 @@ Früh anstoßen, weil die Antwort nicht von uns abhängt.
       - ~~Ist ein Speicherziel für Dateien aus Custom Modules geplant?~~ **Entfällt** – die Wiki-Kategorie
         samt Bilddienst beantwortet G8.
 
-- [ ] **F2 · Lukas Block (`lubl`) im Forum ansprechen**
+- [ ] **F2 · Lukas Block (`lubl`) im Forum ansprechen** – **geparkt**
       Nicht zu Fragen, die sein Code beantwortet, sondern zu G8, G10 und zur Idee einer gemeinsamen
       `ct-utils`-Bibliothek. **Geparkt am 2026-09-24** – die gemeinsame Bibliothek ist aus dem Plan gestrichen.
 
-- [ ] **F3 · `bensteUEM/ct-events-load` lesen**
+- [ ] **F3 · `bensteUEM/ct-events-load` lesen** – **geparkt**
       Besonders `src/persistance.ts` und die Terminbehandlung – vor der ersten Zeile Bindungscode in Phase 4.
       **Überholt am 2026-09-24:** Die Terminnormalisierung steht und ist gegen die Fixtures getestet (G19, G23).
       Nur noch lesen, wenn ein Terminfall auftaucht, den sie nicht abdeckt.
@@ -329,14 +371,56 @@ bevor das Screen-Schema steht.
       Regeln nach **Termin** (dank G19 billig) und nach Uhrzeit. Standard-Playlist ist Pflicht, und der
       Player wechselt nicht, solange seine Uhr unbestätigt ist. Siehe `Plan.md`, „Playlists und Zeitpläne".
 - [ ] **G-E2 · Hardware** – wie viele Geräte, welche Generation, Auflösung, Ausrichtung
-- [ ] **G-E3 · Zielgruppe** – nur wir, oder von Anfang an Extension Store (**G17**)
+- [x] **G-E3 · Zielgruppe** – nur wir, oder von Anfang an Extension Store (**G17**) → **Vorgabe:** zuerst nur wir (`Plan.md`)
 - [x] **G-E4 · MVP-Zuschnitt** – **entschieden am 2026-09-24**: wie in `Plan.md`, „Funktionsumfang – MVP".
       Kein Web-Code-Block, keine Geburtstage, keine Videos in V1.
-- [ ] **G-E5 · Wer gestaltet** – nur wir, oder nicht-technische Ehrenamtliche
-- [ ] **G-E6 · Rückfallposition Medien** – ist „nur externe URLs" ein tragfähiger MVP?
+- [x] **G-E5 · Wer gestaltet** – nur wir, oder nicht-technische Ehrenamtliche → **Vorgabe:** zuerst wir
+- [x] ~~**G-E6 · Rückfallposition Medien** – ist „nur externe URLs" ein tragfähiger MVP?~~ **Gestrichen am 2026-09-24**: Der Wiki-Weg trägt (D1–D3).
 - [ ] **G-E7 · Zeitbudget** – der Plan nennt sieben Phasen und keine Schätzung
-- [ ] **G-E8 · Aktualität** – wie schnell muss eine Änderung auf dem TV sein? (setzt das Konfigurationsintervall)
-- [ ] **G-E9 · Ton im Foyer** – ja oder nein
+- [x] **G-E8 · Aktualität** – wie schnell muss eine Änderung auf dem TV sein? → **Vorgabe:** Konfiguration alle 2, Daten alle 10 Minuten
+- [x] **G-E9 · Ton im Foyer** – ja oder nein → **Vorgabe:** alles stumm
+
+Die Vorgaben gelten, bis jemand widerspricht (`Plan.md`, „Offene Entscheidungen"). **Wirklich offen sind G-E2 und G-E7.**
+
+## P. Vor der Produktivinstanz – Abnahme *(angelegt am 2026-09-28)*
+
+Der Dauertest läuft auf der Produktivinstanz (`Plan.md`, „Als Nächstes" 2). Eine Extension kann ChurchTools
+nicht zum Absturz bringen: Sie läuft im Browser unter `/ccm/infoscreen-designer/`. Schaden kann sie auf
+drei Arten: durch **Schreibzugriffe außerhalb ihres eigenen Speichers**, durch **Spuren, die Gemeindeglieder
+sehen**, und durch **Reste, die sich nicht wieder entfernen lassen**. Die Liste prüft genau diese drei Punkte.
+
+**Was das Modul außerhalb seines eigenen Speichers schreibt** (Stand des Codes am 2026-09-28):
+
+| Wer | Was | Wo im Code |
+| --- | --- | --- |
+| Einrichtungsassistent | legt **zwei Gruppen** an (Typ „Merkmal"), setzt Rechte an deren Rollen und nimmt sie zurück; „Einrichtung entfernen" löscht die Gruppen | `src/setup/provision.ts`, `src/setup/load.ts` |
+| Mediathek | legt Seiten im Wiki-Bereich „Infoscreen" an und ändert sie; lädt Dateien hoch und löscht sie | `src/media/wiki.ts` |
+| Einstellungen | erzeugt den Login-Token des Geräte-Benutzers (`POST /login/token`) | `src/setup/device-token.ts` |
+| Designer | schreibt und löscht Werte im eigenen Speicher der Extension | `src/store/churchtools-kv.ts` |
+
+Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eigenen Browsers.
+
+- [ ] **P1 · Einrichtung auf der Testinstanz von vorn** – „Einrichtung entfernen", dann neu einrichten. Danach
+      darf es keine verwaisten Rechte an fremden Rollen geben, und nur die zwei eigenen Gruppen dürfen angefasst
+      worden sein. Das ist der einzige Teil, der Rechte schreibt. *(Schreibzugriff, vorher absprechen.)*
+- [ ] **P2 · Rückweg beschreiben und auf der Testinstanz einmal gehen** – Was bleibt, wenn die Extension
+      deinstalliert wird: Kategorien und Werte, Rechte am Modul, die beiden Gruppen, Wiki-Bereich und Dateien,
+      der Geräte-Benutzer? Zuerst in der Academy nachlesen, dann messen. Das Ergebnis gehört nach
+      `docs/Einrichtung.md`; dort fehlt ein Abschnitt zum Entfernen bisher.
+- [ ] **P3 · Sichtbarkeit für Gemeindeglieder** – Wo tauchen die Gruppen vom Typ „Merkmal", der Wiki-Bereich
+      (G36) und der Geräte-Benutzer auf: Gruppenliste, App, Personensuche, Wiki? Nichts davon darf wie ein
+      Fehler aussehen oder Fragen auslösen.
+- [ ] **P4 · Vorstufe auf der Testinstanz** – Das echte Gerät mit Kiosk-Browser läuft mehrere Tage mit
+      Testinhalten fehlerfrei, einschließlich des nächtlichen Neuladens und eines Netzausfalls (E5).
+- [ ] **P5 · Last überschlagen** – Geräte × Abrufe je Stunde gegen G16. Die Vorgaben sind: Konfiguration alle
+      2 Minuten, Daten alle 10 Minuten, jeweils mit Versatz.
+- [ ] **P6 · Nur ein Release** – Installiert wird ein ZIP aus dem Release-Workflow bei grünem CI, kein
+      lokaler Build.
+- [ ] **P7 · Entscheidung des Nutzers: Key** – Wird das Modul auf der Produktivinstanz gleich unter dem echten
+      Key `infoscreen-designer` installiert, der danach bleibt? Oder unter `infoscreen-designer-test`, der sich
+      spurlos wieder entfernen lässt, aber für den Betrieb neu eingerichtet werden muss?
+- [ ] **P8 · Freigabe** – Die Installation auf der Produktivinstanz wird mit dem Nutzer abgesprochen. Erst
+      dann wird die Regel „gegen die Produktivinstanz nur lesen" in `AGENTS.md` für dieses Modul angepasst.
 
 ---
 
@@ -349,7 +433,7 @@ bevor das Screen-Schema steht.
       Offen und an der Freischaltung hängend: **G9, G10**; **G12, G13** sind seit G22 hinfällig. Dazu **G17** als Entscheidung.
       **G18 hat den Notfallpfad aus E3 erst widerlegt und dann ersetzt** – die Notbremse ist der Passwortwechsel.
       Belege liegen lokal unter `fixtures/` – **nicht im Repo**, siehe `fixtures/README.md`.
-- [ ] **Erst danach das Screen-Schema festlegen.**
+- [x] **Erst danach das Screen-Schema festlegen.** → **überholt**: Das Schema steht seit Phase 1 (2026-09-24) und ist seitdem versioniert gewachsen.
 
 ## Was dabei nicht passieren darf
 
@@ -358,11 +442,14 @@ bevor das Screen-Schema steht.
 - Keine Tests gegen die Produktivinstanz, die Daten verändern – dafür gibt es jetzt die Testinstanz.
   Muss doch produktiv gearbeitet werden, hat das Testmodul einen eigenen Key und schreibt nur in eigene Kategorien.
 - Keine Testinstanz unter erfundenem Gemeindenamen anlegen – die vorhandene läuft auf den echten Namen.
-- Die Frist nicht verstreichen lassen, ohne die Fixtures und den Typ-Snapshot gesichert zu haben.
+- **Die Testinstanz nicht produktiv nutzen** *(seit 2026-09-28)*: Sonst stellt ChurchTools sie in Rechnung (F1).
+  Keine echten Inhalte im Dauerbetrieb, kein Foyer, das an ihr hängt.
+- ~~Die Frist nicht verstreichen lassen, ohne die Fixtures und den Typ-Snapshot gesichert zu haben.~~
+  Die Frist ist seit dem 2026-09-28 aufgehoben; die Sicherung außerhalb des Repos bleibt nötig.
   **Die Fixtures sind seit dem 2026-09-23 aufgezeichnet, der Typ-Snapshot fehlt noch** (hängt an der Freischaltung, B5).
   Da `fixtures/` nicht versioniert ist, ersetzt **keine** Sicherung im Repo den Verlust dieses Arbeitsplatzes –
   eine Kopie außerhalb gehört dazu. **Seit dem 2026-09-24 gesichert**; was danach noch aufgezeichnet wird,
-  vor Ablauf der Instanz nachsichern.
+  ebenfalls nachsichern (offen für die Modul-Antworten vom 2026-09-25).
 - Die aufgezeichneten Antworten nicht roh weitergeben: Instanz-URL, `admin_mail` und personenbezogene Felder
   werden vorher ersetzt. Wie, steht in `fixtures/README.md`.
 - An bestehenden Rollen der Rechteverwaltung nichts ändern – eigene Testgruppe verwenden.
