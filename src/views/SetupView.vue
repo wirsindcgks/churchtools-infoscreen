@@ -8,7 +8,7 @@ import { fetchCalendars, type Calendar } from '../ct/api';
 import { currentPerson, httpStatus, instanceBaseUrl } from '../ct/client';
 import { playerUrl } from '../designer/player-url';
 import RemoveSetupDialog, { type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
-import { createCategory, setCategoryInMenu, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
+import { createCategory, setCategoryInMenu, wikiRestoreLogLine, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
 import { SCHEMA_VERSION, type ScreenDoc } from '../model/schema';
 import { withDeviceLogin } from '../player/device-login';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
@@ -246,6 +246,27 @@ async function openRemoveSetup(): Promise<void> {
 }
 
 /**
+ * Shows the wiki area among „Kategorien" again once the groups behind it are
+ * gone (Plan.md, F, 2026-09-28): with „Infoscreen-Designer" removed, only
+ * administrators reach the area anyway, so it no longer needs to hide under
+ * „Ausgeblendet" – it stays, whether or not the assistant created it, and a
+ * failed toggle is only logged, never treated as a failure of the removal.
+ */
+async function restoreWikiVisibility(): Promise<void> {
+    if (!wikiCategory.value) return;
+    if (wikiCategory.value.inMenu !== false) {
+        assistant.log.push(wikiRestoreLogLine(WIKI_CATEGORY_NAME, 'already-shown'));
+        return;
+    }
+    try {
+        wikiCategory.value = await setCategoryInMenu(wikiCategory.value, true);
+        assistant.log.push(wikiRestoreLogLine(WIKI_CATEGORY_NAME, 'shown'));
+    } catch (e) {
+        assistant.log.push(wikiRestoreLogLine(WIKI_CATEGORY_NAME, { error: explain(e) }));
+    }
+}
+
+/**
  * Runs the removal once the dialog confirms it. The dialog closes right
  * away: progress and errors of every assistant action already have one place
  * on the page, the assistant card below – showing them a second time inside
@@ -276,6 +297,9 @@ async function confirmRemoveSetup(): Promise<void> {
         createdGroupIds.value = result.remaining;
         selected.designer = result.selected.designer ?? null;
         selected.device = result.selected.device ?? null;
+        // Runs before the save below, but cannot block it: it only ever
+        // pushes a log line, never throws (Plan.md, F).
+        if (result.error === null) await restoreWikiVisibility();
         // Saved even after a failure: what is still there must stay removable (Plan.md, F).
         await persistSettings();
         // Not shown again, even if ChurchTools still had them in the same list request.
@@ -694,6 +718,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
             v-if="removeDialog"
             :groups="removeDialog.groups"
             :own-member-of="removeDialog.ownMemberOf"
+            :wiki-category-name="wikiCategory?.name"
             @close="removeDialog = null"
             @confirm="confirmRemoveSetup"
         />

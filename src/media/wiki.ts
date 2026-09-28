@@ -56,6 +56,25 @@ export async function setCategoryInMenu(category: WikiCategory, inMenu: boolean)
     });
 }
 
+/** What „Einrichtung entfernen" managed to do about the area's visibility. */
+export type WikiRestoreOutcome = 'shown' | 'already-shown' | { error: string };
+
+/**
+ * Wording for the log line after „Einrichtung entfernen" tries to put the
+ * wiki area back among „Kategorien" (Plan.md, F, 2026-09-28): it is never
+ * deleted, whether or not the assistant created it – only shown again, so
+ * administrators without the removed groups still find the pictures.
+ */
+export function wikiRestoreLogLine(categoryName: string, outcome: WikiRestoreOutcome): string {
+    if (outcome === 'shown') {
+        return `Wiki-Bereich „${categoryName}" bleibt erhalten und steht im Wiki wieder unter „Kategorien" – dort lassen sich die Bilder sichern.`;
+    }
+    if (outcome === 'already-shown') {
+        return `Wiki-Bereich „${categoryName}" bleibt erhalten – dort lassen sich die Bilder sichern.`;
+    }
+    return `Wiki-Bereich konnte nicht wieder eingeblendet werden: ${outcome.error} – im Wiki unter „Ausgeblendet" zu finden.`;
+}
+
 /** Looks for the module's wiki category by name; `null` without a match, never creates one (Plan.md, F). */
 export async function findCategory(): Promise<WikiCategory | null> {
     const categories = await churchtoolsClient.get<WikiCategory[]>('/wiki/categories');

@@ -225,7 +225,9 @@ Die Reihenfolge ist wichtig: **erst die Einrichtung, dann die Extension.**
    Schritt 2 an eurer Administratoren-Gruppe – und das hochgeladene ZIP.
 3. **Was bleibt, entscheidest du selbst:** der Wiki-Bereich „Infoscreen" mit den Bildern (im Wiki löschen oder
    behalten) und der Geräte-Benutzer (in der Personenverwaltung archivieren oder löschen). Beides gehört nicht
-   dem Designer; er löscht es nie.
+   dem Designer; er löscht es nie. Den Wiki-Bereich zeigt „Einrichtung entfernen" wieder im Wiki unter
+   „Kategorien" an, damit du die Bilder dort sichern kannst. Hineinsehen kann nur, wer Rechte am Bereich hat –
+   die Gestalter nicht mehr, ihre Rechte gingen mit der Gruppe.
 
 **Löschen und neu hochladen ist kein Update.** Eine neu installierte Extension beginnt leer – alle Screens sind
 weg. Für eine neue Fassung siehe [Updates](#updates).

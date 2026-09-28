@@ -63,6 +63,18 @@ describe('RemoveSetupDialog (Plan.md, F: eigene Sicherung statt window.confirm)'
         expect(warning.text()).toContain('Schritt 2');
     });
 
+    it('names the wiki area when one is known, so administrators know where the pictures wait', () => {
+        const wrapper = mount(RemoveSetupDialog, { props: { groups, wikiCategoryName: 'Infoscreen' } });
+        expect(wrapper.text()).toContain(
+            'der Wiki-Bereich „Infoscreen" mit den Bildern wird wieder im Wiki angezeigt, damit Administratoren sie sichern können',
+        );
+    });
+
+    it('leaves the wiki sentence out without a known area', () => {
+        const wrapper = mount(RemoveSetupDialog, { props: { groups } });
+        expect(wrapper.text()).not.toContain('Wiki-Bereich');
+    });
+
     it('focuses the confirm input on mount, so a stray click cannot confirm by pasting elsewhere', () => {
         const wrapper = mount(RemoveSetupDialog, { props: { groups }, attachTo: document.body });
         expect(wrapper.get('[data-testid="remove-setup-confirm-input"]').element).toBe(document.activeElement);

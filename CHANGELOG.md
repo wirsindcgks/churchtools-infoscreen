@@ -14,6 +14,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   der Zahl ihrer Mitglieder und den Folgen, und löscht erst, wenn man das Wort „entfernen" eintippt. Wer selbst
   Mitglied einer der Gruppen ist, bekommt einen Hinweis: Kommen die Rechte am Designer nur über diese Gruppe,
   sperrt man sich aus ([Einrichtung](docs/Einrichtung.md), „Den Designer wieder entfernen").
+- **Nach „Einrichtung entfernen" steht der Wiki-Bereich „Infoscreen" wieder im Wiki** unter „Kategorien" statt
+  unter „Ausgeblendet". Er bleibt mit allen Bildern erhalten; Administratoren können sie dort sichern.
 
 ### Behoben
 

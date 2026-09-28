@@ -22,9 +22,10 @@ export interface RemoveGroupInfo {
     memberCount?: number;
 }
 
-const props = withDefaults(defineProps<{ groups: RemoveGroupInfo[]; ownMemberOf?: string[] }>(), {
-    ownMemberOf: () => [],
-});
+const props = withDefaults(
+    defineProps<{ groups: RemoveGroupInfo[]; ownMemberOf?: string[]; wikiCategoryName?: string | null }>(),
+    { ownMemberOf: () => [], wikiCategoryName: null },
+);
 const emit = defineEmits<{ close: []; confirm: [] }>();
 
 const confirmText = ref('');
@@ -61,7 +62,13 @@ function confirm(): void {
                     <template v-else>Gruppe {{ g.id }} (gibt es nicht mehr)</template>
                 </li>
             </ul>
-            <p>
+            <p v-if="props.wikiCategoryName">
+                Gestalter kommen nicht mehr in den Designer. Fernseher, deren Konto in „{{ GROUP_NAMES.device }}" ist,
+                bekommen keine neuen Inhalte mehr. Screens, Playlists und Bilder bleiben erhalten; der Wiki-Bereich
+                „{{ props.wikiCategoryName }}" mit den Bildern wird wieder im Wiki angezeigt, damit Administratoren
+                sie sichern können. Neu einrichten geht jederzeit.
+            </p>
+            <p v-else>
                 Gestalter kommen nicht mehr in den Designer. Fernseher, deren Konto in „{{ GROUP_NAMES.device }}" ist,
                 bekommen keine neuen Inhalte mehr. Screens, Playlists und Bilder bleiben erhalten; neu einrichten geht
                 jederzeit.
