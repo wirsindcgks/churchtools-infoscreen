@@ -444,13 +444,20 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
       **Regel seit 2026-09-28** (`Plan.md`, F, „Entfernen nur, was das Modul selbst angelegt hat"): Gelöscht wird
       nur, was über das Modul entstanden ist, erkannt an der beim Anlegen gespeicherten id. Gewählte bestehende
       Gruppen nie. Gruppen und Wiki-Bereich halten das seit Schema 1.12 ein.
-- [ ] **P3 · Sichtbarkeit für Gemeindeglieder** – Wo tauchen die Gruppen vom Typ „Merkmal", der Wiki-Bereich
+- [x] **P3 · Sichtbarkeit für Gemeindeglieder** – Wo tauchen die Gruppen vom Typ „Merkmal", der Wiki-Bereich
       (G36) und der Geräte-Benutzer auf: Gruppenliste, App, Personensuche, Wiki? Nichts davon darf wie ein
       Fehler aussehen oder Fragen auslösen.
       **Teilweise geprüft am 2026-09-28** (Nutzer, mit einem neu angelegten Konto ohne Rechte): kein Wiki, kein
       Infoscreen Designer. Die Gruppen legt der Assistent mit Sichtbarkeit „Eingeschränkt" an – sichtbar nur mit
       Rechten wie „view alldata" oder „view group" ([Academy](https://churchtools.academy/de/help/app/gruppen-berechtigen/0-gruppensichtbarkeiten/)).
-      **Offen:** Gruppensuche in Web und App nach dem Neueinrichten (P1), Personensuche nach dem Geräte-Benutzer.
+      **→ Auf der Testinstanz bestanden am 2026-09-28** (Nutzer, nach dem Neueinrichten): Ein Konto ohne Rechte sieht
+      im Menü nur „Beiträge" – keine Personen, keine Gruppen, kein Wiki, keinen Designer; Gruppen, Wiki-Bereich und
+      Geräte-Benutzer kann es gar nicht finden. **Das gilt nur für Konten ohne Rechte.** Auf der Produktivinstanz
+      dürfen Gemeindeglieder je nach Personenstatus mehr, etwa Personen oder Gruppen sehen. Die Gruppen bleiben dann
+      unsichtbar („Eingeschränkt"), der Geräte-Benutzer aber ist eine normale Person – daher in der Anleitung ein
+      sprechender Name wie „Infoscreen Foyer" und ein Status mit wenig Rechten. **Bei P8 einmal wiederholen:** nach
+      der Einrichtung auf der Produktivinstanz mit einem typischen Mitgliedskonto in Web und App nach „Infoscreen"
+      und nach dem Geräte-Benutzer suchen (fünf Minuten, durch den Administrator).
 - [ ] **P4 · Erstes Gerät, auf der Produktivinstanz** *(nach P8)* – Das echte Gerät mit Kiosk-Browser läuft
       mehrere Tage fehlerfrei, zuerst mit Testinhalten in einer eigenen Playlist, einschließlich des nächtlichen
       Neuladens und eines Netzausfalls (E5). Bis dahin hängt kein Gerät an einer Instanz.
@@ -478,7 +485,9 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
       *Ursprüngliche Frage:* Gleich unter dem echten Key, der danach bleibt? Oder unter
       `infoscreen-designer-test`, der sich spurlos wieder entfernen lässt, aber für den Betrieb neu eingerichtet
       werden muss?
-- [ ] **P8 · Freigabe** – Die Installation auf der Produktivinstanz wird mit dem Nutzer abgesprochen. Erst
+- [ ] **P8 · Freigabe** – *Wartet seit dem 2026-09-28 auf die Klärung des Nutzers mit dem Administrator der
+      Produktivinstanz.* Nach der Installation dort P3 mit einem typischen Mitgliedskonto wiederholen.
+      Die Installation auf der Produktivinstanz wird mit dem Nutzer abgesprochen. Erst
       dann wird die Regel „gegen die Produktivinstanz nur lesen" in `AGENTS.md` für dieses Modul angepasst.
 
 ---
