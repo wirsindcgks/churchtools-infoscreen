@@ -4,7 +4,7 @@ Eine Extension für [ChurchTools](https://church.tools), mit der eine Gemeinde d
 gestaltet – im Browser, ohne Programmierkenntnisse. Termine kommen live aus ChurchTools, Bilder aus der eigenen
 Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
 
-![Der Editor: Slides, Bausteine, Bühne und Inspektor](docs/bilder/editor.png)
+![Der Editor: Slides, Bausteine, Bildfläche und Inspektor](docs/bilder/editor.png)
 
 ## Was es kann
 

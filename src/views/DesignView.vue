@@ -13,7 +13,7 @@ import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import { usePreview } from '../designer/usePreview';
 import { createBlock, createSlide } from '../designer/ops';
-import { DEFAULT_THEME, type SlideDoc, type ThemeDoc } from '../model/schema';
+import { DEFAULT_THEME, type Block, type SlideDoc, type ThemeDoc } from '../model/schema';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
 import { fitStage } from '../player/stage';
@@ -49,13 +49,15 @@ const STAGE = { width: 1920, height: 1080 };
 const previewSlide = computed<SlideDoc>(() => {
     const ids = calendars.value.slice(0, 3).map((c) => c.id);
     const slide = createSlide('Vorschau', theme.value);
-    const next = createBlock('next-appointment', STAGE, ids, theme.value);
+    const next = createBlock('next-appointment', STAGE, ids, theme.value) as Extract<Block, { type: 'next-appointment' }>;
     const list = createBlock('appointment-list', STAGE, ids, theme.value);
     slide.blocks = [
         // Fixed ids: the blocks stay mounted while the look changes.
-        // The highlighted card needs its height: title, text, time and place below each other.
-        { ...next, id: 'preview-next', x: 80, y: 40, width: 1760, height: 540 },
-        { ...list, id: 'preview-list', x: 80, y: 620, width: 1760, height: 420, limit: 4 } as typeof list,
+        // The preview shows the look, not the size: at the default 64 px a long title takes three lines beside
+        // the image, and the card would crowd out the list (seen 2026-09-28). At 52 px title, subtitle, day
+        // and time fit the card with room to spare.
+        { ...next, id: 'preview-next', x: 80, y: 40, width: 1760, height: 560, style: { ...next.style, fontSize: 52 } },
+        { ...list, id: 'preview-list', x: 80, y: 640, width: 1760, height: 400, limit: 4 } as typeof list,
     ];
     return slide;
 });

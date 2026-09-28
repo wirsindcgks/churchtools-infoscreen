@@ -66,7 +66,7 @@ async function save(): Promise<void> {
             <label class="d-field">
                 Overscan-Korrektur (%)
                 <input v-model.number="overscan" type="number" min="0" max="20" data-testid="settings-overscan">
-                <small>Verkleinert die Bühne auf Fernsehern, die den Rand abschneiden.</small>
+                <small>Verkleinert die Bildfläche auf Fernsehern, die den Rand abschneiden.</small>
             </label>
             <dl>
                 <dt>Format</dt>

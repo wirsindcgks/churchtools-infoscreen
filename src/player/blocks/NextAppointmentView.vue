@@ -137,7 +137,8 @@ const imageStyle = computed(() =>
     display: flex;
     flex: 1;
     flex-direction: column;
-    justify-content: center;
+    /* Too little room: the overflow goes down, not over the badge at the top. */
+    justify-content: safe center;
     gap: 0.6em;
     min-width: 0;
 }
@@ -152,14 +153,32 @@ const imageStyle = computed(() =>
     gap: 0.25em;
     min-width: 0;
 }
+/*
+ * Three lines at most, and a long German word breaks instead of running under
+ * the image ("Sonntagsgottesdienst", seen in the design preview, 2026-09-28):
+ * beside the image, at the default size, a line holds about eleven letters.
+ * Hyphens where the browser knows German, a plain break where it does not.
+ */
 .hero-title {
+    display: -webkit-box;
+    overflow: hidden;
     font-size: 1.5em;
     font-weight: 700;
     line-height: 1.1;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
 }
 .hero-subtitle {
+    display: -webkit-box;
+    overflow: hidden;
     font-size: 0.75em;
     opacity: 0.8;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 /* Three lines at most: a TV is read in passing. */
 .hero-description {

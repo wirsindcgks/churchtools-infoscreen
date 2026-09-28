@@ -53,13 +53,13 @@ Menü „…". Neue Screens legt ein Administrator an.
 
 ### 2. Slides gestalten
 
-![Editor: links die Slides, oben die Bausteine, in der Mitte die Bühne, rechts der Inspektor](bilder/editor.png)
+![Editor: links die Slides, oben die Bausteine, in der Mitte die Bildfläche, rechts der Inspektor](bilder/editor.png)
 
 - **Links die Slides** – „Neue Slide" unter der letzten, ziehen zum Umsortieren, darunter **„Aus anderer Playlist
   …"**, um Slides einer anderen Playlist als Kopie zu übernehmen.
 - **Oben die Bausteine:** Text, Bild, Fläche, Uhr, Terminliste, Nächster Termin, Gemeindekopf, Webseite, QR-Code und
   **Countdown** („Gottesdienst beginnt in 12:34").
-- **In der Mitte die Bühne:** ziehen, an den Griffen skalieren, am Raster ausrichten.
+- **In der Mitte die Bildfläche:** ziehen, an den Griffen skalieren, am Raster ausrichten.
 - **Rechts der Inspektor:** Schrift, Farben (auch als Hex-Wert), Kalender, Hintergrund. Oben **„Sperren"**, damit
   ein Logo oder Hintergrund nicht verrutscht – ein Klick darauf erreicht dann den Baustein darunter, mit gedrückter
   Alt-Taste (Mac: Option) den gesperrten selbst.
