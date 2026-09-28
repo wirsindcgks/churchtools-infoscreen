@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { Banner } from '../model/schema';
 import { makePlaylist } from '../model/testing';
 import type { PlaylistOverview, StagedPlaylist } from '../store/screen-repository';
-import { groupBanners, untilLabel } from './notices';
+import { bannerFaded, groupBanners, untilLabel } from './notices';
 
 const TZ = 'Europe/Berlin';
 const STAGE = { width: 1920, height: 1080 };
@@ -50,14 +50,57 @@ describe('groupBanners (Plan.md, Nächste Schritte 34)', () => {
     });
 
     it('marks a band whose "until" has passed as expired, apart from a running one', () => {
+        // "Vorbei" lies within the 7-day grace period of Plan.md 38 – it still shows, just as expired.
         const overviews = [
-            overview({ id: 'a', banner: banner({ text: 'Vorbei', until: '2020-01-01T10:00' }) }),
+            overview({ id: 'a', banner: banner({ text: 'Vorbei', until: '2025-12-28T10:00' }) }),
             overview({ id: 'b', banner: banner({ text: 'Läuft noch', until: '2099-01-01T10:00' }) }),
         ];
         const groups = groupBanners(overviews, new Date('2026-01-01T10:00:00Z'), TZ);
         expect(groups).toHaveLength(2);
         expect(groups.find((g) => g.banner.text === 'Vorbei')?.expired).toBe(true);
         expect(groups.find((g) => g.banner.text === 'Läuft noch')?.expired).toBe(false);
+    });
+});
+
+describe('bannerFaded (Plan.md, Nächste Schritte 38)', () => {
+    it('still shows a band 6 days 23 hours after "until", but not once a full 7 days have passed', () => {
+        const b = banner({ until: '2026-01-10T18:00' });
+        // Berlin sits at UTC+1 in January – the wall time is one hour ahead of the instant.
+        const almost = new Date('2026-01-17T16:00:00Z'); // wall time 2026-01-17T17:00, 6d23h after "until"
+        const exactly = new Date('2026-01-17T17:00:00Z'); // wall time 2026-01-17T18:00, a full 7 days after
+        expect(bannerFaded(b, almost, TZ)).toBe(false);
+        expect(bannerFaded(b, exactly, TZ)).toBe(true);
+    });
+
+    it('carries the 7 days over a month change', () => {
+        const b = banner({ until: '2026-01-28T10:00' });
+        const almost = new Date('2026-02-04T08:59:00Z'); // wall time 2026-02-04T09:59
+        const exactly = new Date('2026-02-04T09:00:00Z'); // wall time 2026-02-04T10:00, 7 days later
+        expect(bannerFaded(b, almost, TZ)).toBe(false);
+        expect(bannerFaded(b, exactly, TZ)).toBe(true);
+    });
+
+    it('carries the 7 calendar days across the time change at the end of October, without a fixed offset', () => {
+        // "until" falls before the change (CEST, UTC+2); the fade date falls after it (CET, UTC+1) – the
+        // naive wall-time text stays "2026-10-29T18:00" either way, the instant behind it does not.
+        const b = banner({ until: '2026-10-22T18:00' });
+        const almost = new Date('2026-10-29T16:59:00Z'); // wall time 2026-10-29T17:59 (Berlin at UTC+1)
+        const exactly = new Date('2026-10-29T17:00:00Z'); // wall time 2026-10-29T18:00, a full 7 days later
+        expect(bannerFaded(b, almost, TZ)).toBe(false);
+        expect(bannerFaded(b, exactly, TZ)).toBe(true);
+    });
+
+    it('never fades a band without an "until"', () => {
+        const b = banner();
+        expect(bannerFaded(b, new Date('2099-01-01T00:00:00Z'), TZ)).toBe(false);
+    });
+});
+
+describe('groupBanners leaving faded bands out (Plan.md, Nächste Schritte 38)', () => {
+    it('drops a band 7 days past "until" entirely, not even under "Abgelaufen"', () => {
+        const overviews = [overview({ id: 'a', banner: banner({ until: '2026-01-10T18:00' }) })];
+        const groups = groupBanners(overviews, new Date('2026-01-17T17:00:00Z'), TZ);
+        expect(groups).toHaveLength(0);
     });
 });
 

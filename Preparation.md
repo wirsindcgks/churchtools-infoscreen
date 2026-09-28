@@ -37,7 +37,7 @@ anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
 > - ~~**GitHub-Actions auf Node.js 24 heben**~~ **erledigt am 2026-09-28** (`Plan.md`, Punkt 35). Ab dem
 >   2026-10-19 wechselt zusätzlich `ubuntu-latest` auf Ubuntu 26 – nur beobachten.
 > - **Zwei Entscheidungen ohne Vorgabe**: Hardware (G-E2) und Zeitbudget (G-E7).
-> - **Kleinere Reste aus dem Plan**: Rechte am Modul selbst und eine Hausschrift als Modul-Einstellung;
+> - **Kleinere Reste aus dem Plan**: Rechte am Modul selbst und eine Standardschrift im Design-Reiter;
 >   Inspektor am Handy als ausklappbares Blatt. *(Slides übernehmen und Playlist duplizieren sind seit
 >   Punkt 31 gebaut, das Durchgreifen durch gesperrte Bausteine seit Punkt 25.)*
 >

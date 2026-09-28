@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import type { Block } from '../model/schema';
+import { bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
+import { useStageContext } from '../player/context';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
 import { fitStage } from '../player/stage';
@@ -11,6 +13,12 @@ import { BLOCK_LABELS, blockBelow } from './ops';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 
 const editor = useEditorStore();
+const stage = useStageContext();
+// The designer shows what the TV shows (Plan.md 38): a band past its "until" no longer draws here either.
+const banner = computed(() => {
+    const b = editor.draft?.playlist.banner;
+    return bannerShown(b, stage.now, stage.timeZone) ? b : null;
+});
 const host = ref<HTMLElement | null>(null);
 const overlay = ref<HTMLElement | null>(null);
 const size = reactive({ width: 800, height: 450 });
@@ -135,12 +143,7 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
         <StageView v-if="editor.slide" :width="editor.stage.width" :height="editor.stage.height" :fit="fit">
             <SlideView :slide="editor.slide" :width="editor.stage.width" :height="editor.stage.height" />
             <!-- The playlist's band lies over every slide (Plan.md 32); clicks go through to the blocks. -->
-            <BannerView
-                v-if="editor.draft?.playlist.banner?.text.trim()"
-                class="stage-banner"
-                :banner="editor.draft.playlist.banner"
-                :stage-width="editor.stage.width"
-            />
+            <BannerView v-if="banner" class="stage-banner" :banner="banner" :stage-width="editor.stage.width" />
             <div ref="overlay" class="overlay" :style="gridStyle" data-testid="grid">
                 <div
                     v-for="(guide, i) in guides"

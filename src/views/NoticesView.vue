@@ -172,6 +172,7 @@ async function end(group: BannerGroup): Promise<void> {
                 :count="`${expired.length} ${expired.length === 1 ? 'Hinweis' : 'Hinweise'}`"
                 heading-id="notices-expired"
             >
+                <p class="empty expired-hint">Abgelaufene Hinweise verschwinden nach 7 Tagen von selbst.</p>
                 <ul class="notices">
                     <li
                         v-for="group in expired"
@@ -250,5 +251,8 @@ async function end(group: BannerGroup): Promise<void> {
     margin: 0;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
+}
+.expired-hint {
+    margin-bottom: 8px;
 }
 </style>

@@ -4,9 +4,31 @@
  * three playlists is one notice, not three.
  */
 import type { Banner } from '../model/schema';
-import { bannerShown } from '../player/banner';
+import { bannerShown, wallTime } from '../player/banner';
 import { formatShortDate, formatTime } from '../player/format';
 import type { PlaylistOverview, ScreenRef } from '../store/screen-repository';
+
+/** After how many calendar days an expired band leaves "Hinweise" for good (Plan.md, Nächste Schritte 38). */
+export const EXPIRED_NOTICE_DAYS = 7;
+
+/**
+ * A band whose "until" lies more than `EXPIRED_NOTICE_DAYS` calendar days in the
+ * past, reckoned on the church's wall time – as `until` itself is (Plan.md 38).
+ * Reckoned as text, not as an instant: 7 calendar days on the naive value stay
+ * exact across a time change, a fixed offset would not. A band without an
+ * `until` never fades.
+ */
+export function bannerFaded(banner: Banner, now: Date, timeZone: string): boolean {
+    const parsed = banner.until ? /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(banner.until) : null;
+    if (!parsed) return false;
+    const [, year, month, day, hour, minute] = parsed;
+    const faded = new Date(
+        Date.UTC(Number(year), Number(month) - 1, Number(day) + EXPIRED_NOTICE_DAYS, Number(hour), Number(minute)),
+    );
+    const two = (n: number) => String(n).padStart(2, '0');
+    const fadedText = `${faded.getUTCFullYear()}-${two(faded.getUTCMonth() + 1)}-${two(faded.getUTCDate())}T${two(faded.getUTCHours())}:${two(faded.getUTCMinutes())}`;
+    return fadedText <= wallTime(now, timeZone);
+}
 
 export interface BannerGroup {
     banner: Banner;
@@ -23,6 +45,8 @@ export function groupBanners(overviews: readonly PlaylistOverview[], now: Date, 
     for (const overview of overviews) {
         const banner = overview.playlist.banner;
         if (!banner) continue;
+        // Faded more than EXPIRED_NOTICE_DAYS ago: left out entirely, not even under "Abgelaufen" (Plan.md 38).
+        if (bannerFaded(banner, now, timeZone)) continue;
         const key = JSON.stringify(banner);
         let entry = groups.find((g) => g.key === key);
         if (!entry) {
