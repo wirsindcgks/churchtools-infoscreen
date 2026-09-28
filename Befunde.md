@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G9, G11, G14, G15, G18–G20, G22–G32, G35 und G38 sind beantwortet, G16, G21, G33, G34, G36 und G37 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G38).
+**Eine durchgehende Nummerierung.** G1–G9, G11, G14–G16, G18–G20, G22–G32, G35 und G38 sind beantwortet, G21, G33, G34, G36 und G37 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G38).
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -371,9 +371,23 @@ Die Website-Dateiverwaltung der Academy gehört zum kostenpflichtigen Produkt �
 **Beantwortet am 2026-09-25: Auch „Angemeldet bleiben" hält nur 24 Stunden.** Das Cookie `ChurchToolsV2_…` im Browser des Geräte-Benutzers läuft am **2026-09-25T20:27:39Z** ab – 24 Stunden nach der Anmeldung über das Formular, obwohl der Player die ganze Nacht alle paar Minuten abgefragt hat. Die Sitzung verlängert sich durch Benutzung nicht, genau wie beim Token (oben). **Weg A trägt damit keinen Dauerbetrieb:** Nach einem Tag ist der Fernseher abgemeldet, und nach dem nächsten Neuladen bindet ChurchTools unser Skript gar nicht mehr ein (G9, G33). Der Dauerbetrieb braucht Weg B.
 
 
-**G16 – Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.
+**G16 – Beantwortet: 600 Anfragen je Minute und IP-Adresse; ein Gerät braucht gut 6.** *(Nachtrag 2026-09-28, siehe unten)* Ursprünglich: **Kein Limit in Reichweite, aber keine Zusage.** *(2026-09-23, Testinstanz)* 60 gleichzeitige Anfragen an `/api/whoami` in einer Sekunde: **alle 200**, kein `429`, und **keine Rate-Limit-Header** – weder `X-RateLimit-*` noch `Retry-After`. Weiter wurde nicht gedrückt.
 
-Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit darunter, und der Player wertet `429` und `Retry-After` weiterhin aus – nur ist jetzt belegt, dass er sie im Normalbetrieb nicht zu sehen bekommt. Nach einer **dokumentierten** Grenze bleibt die Frage an den Support (F1) offen.
+Das misst die Reichweite, nicht die Regel. Mehrere Pis plus Designer liegen weit darunter, und der Player bekommt `429` im Normalbetrieb nicht zu sehen. *(Die frühere Aussage, er werte `429` und `Retry-After` aus, stimmt nicht: siehe Nachtrag.)* Nach einer **dokumentierten** Grenze bleibt die Frage an den Support (F1) offen.
+
+**Nachtrag 2026-09-28 – die Regel (für P5).** In der Academy steht kein Limit. Im Forum nennt es ein ChurchTools-Mitarbeiter (David Schilling) zweimal wörtlich: *„Aktuell erlauben wir 600 Requests pro Minute pro IP. Das kann sich aber zukünftig auch noch verringern"*; bei Überschreitung antwortet die API mit `429`, empfohlen ist, *„bei einem 429 60 Sekunden [zu warten] und dann den Request nochmal"* zu schicken ([Forum 9880](https://forum.church.tools/topic/9880/rest-api-too-many-requests), [Forum 5179](https://forum.church.tools/topic/5179/fehler-too-many-requests); ohne Datum). Die Messung vom 2026-09-23 (60 in einer Sekunde, alle `200`) passt dazu. **Pro IP-Adresse** heißt: Alle Geräte eines Hauses, die Handys im Gemeinde-WLAN und die Gestalter vor Ort teilen sich ein Kontingent.
+
+**Was ein Gerät verbraucht** – aus dem Code gezählt (`src/player/controller.ts`, `timing.ts`, `data.ts`, `store/screen-repository.ts`), laufender Betrieb, ein Screen:
+
+| Zyklus | Takt | HTTP-Anfragen je Lauf | je Stunde |
+| --- | --- | --- | --- |
+| Schnellcheck (Punkt 26) | 20 s ± 20 % | 1 – die Werte der Kategorie `playlists` | ~180 |
+| Konfiguration | 2 min ± 20 % | 4–5 – `whoami`, Werte von `screens`, `playlists`, `slides`, dazu `media`, sobald eine Slide ein Bild zeigt | ~120–150 |
+| Daten | 10 min ± 20 % | 7 + je Gruppensatz mit Beiträgen 1 – `whoami`, `/config`, zweimal `/info` (Name, Datumskopf), `/logo` mit Weiterleitung zum Bilddienst, Termine; ein `403` der Termine kostet je Kalender eine weitere | ~42–48 |
+
+**Zusammen rund 375 Anfragen je Stunde, gut 6 je Minute; der Schnellcheck ist die Hälfte davon.** Modul-Id und Kategorien werden je Seitenaufruf einmal nachgeschlagen und dann gehalten; Bilder kommen nach dem ersten Lauf aus dem Cache des Geräts; das nächtliche Neuladen fällt nicht ins Gewicht. Fünf Geräte brauchen gut 30 der 600 je Minute, etwa 5 %. **Der ungünstigste Fall ist ein Stromausfall:** Alle Geräte starten zugleich, der Start hat keinen Versatz und kostet je Gerät rund 15–20 Anfragen, dazu die Dateien der Seite – bei zehn Geräten ein paar hundert in derselben Minute, bei fünf unkritisch. Ob auch die statischen Dateien unter `/ccm/` mitzählen, ist nicht bekannt.
+
+**Was der Player bei `429` tut:** Er behandelt es wie jeden Fehler – erster Versuch nach 30 Sekunden, dann verdoppelt bis 30 Minuten; der Schnellcheck wartet 2 Minuten. `backoffDelay` in `timing.ts` nähme ein `Retry-After` entgegen, `controller.ts` übergibt es aber nicht. Das ist eine kleine Lücke (empfohlen sind 60 Sekunden), kein Hindernis für die Abnahme.
 **G21 – Der Betriebsbenutzer, erstmals gegen ein echtes Konto gemessen.** *(2026-09-23, Testinstanz)* Abschnitt F beschrieb seinen Zuschnitt seit Beginn – aber als Absichtserklärung, nie geprüft. Seit dem 2026-09-23 gibt es Zahlen: Person 22 „Minimal User" (`statusId: 0`, Benutzername `muser`) ist angelegt, Mitglied der Gruppe 16 „Infoscreen-Geraete" in der Rolle Mitarbeiter, und es wurde **eine vollständige Sitzung als dieses Konto** geführt.
 
 **Beim Anlegen: Ein Passwort allein genügt nicht.** Die Person braucht einen **Benutzernamen** (`cmsUserId`). Fehlt er, hat `POST /api/login/token` nichts, wogegen es prüfen könnte – jeder Versuch endet mit „Login fehlgeschlagen: Überprüfe Benutzername und Passwort", unabhängig davon, welches Passwort gesetzt wurde. `POST /api/persons` legt das Feld nicht mit an, und ohne hinterlegtes Postfach scheidet auch `POST /persons/{id}/invite` aus. Das gehört an den Anfang der Einrichtungsdoku, weil der Fehler sonst beim Passwort gesucht wird, wo er nicht liegt.
