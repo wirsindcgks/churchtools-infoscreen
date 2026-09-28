@@ -276,7 +276,7 @@ Dauerpasswort auf einer SD-Karte. Auf der leeren Testinstanz gibt es diesen Grun
 eine Frist: **E1 bis E4 sind instanzgebunden und gehören deshalb in die ersten Tage.** Nur E5 hängt an
 Hardware, nicht an der Instanz, und kann warten.
 
-- [ ] **E1 · Service Worker unter `/ccm/`** → beantwortet **G10** – **nicht mehr blockiert** seit der Freischaltung (2026-09-24)
+- [x] **E1 · Service Worker unter `/ccm/`** → **G10 beantwortet am 2026-09-28: ja**, aus dem Wurzelordner des ZIPs; Bauplan in `Plan.md`, Punkt 37. *(Ursprünglich: nicht mehr blockiert seit der Freischaltung, 2026-09-24.)*
       Registrierung versuchen: Scope, MIME-Typ, schreibt ChurchTools den Pfad um?
       Scheitert das, bleibt die Offline-Festigkeit halb – ein Pi, der während eines Netzausfalls neu startet,
       hat nichts zu laden. Dann ausdrücklich benennen, nicht übergehen.
