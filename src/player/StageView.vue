@@ -13,7 +13,9 @@ const style = computed(() => ({
 
 <template>
     <div class="stage" :style="style">
-        <slot />
+        <!-- `all: initial` drops the page's language as well, and on the stage itself it outranks `lang`:
+             set it again inside, or German titles do not hyphenate. -->
+        <div class="language" lang="de"><slot /></div>
     </div>
 </template>
 
@@ -31,5 +33,8 @@ const style = computed(() => ({
     /* Only for messages on the stage; blocks set their own font. */
     font-family: 'ISD Lato', sans-serif;
     line-height: 1.2;
+}
+.language {
+    display: contents;
 }
 </style>

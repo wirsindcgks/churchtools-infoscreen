@@ -4,6 +4,22 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.2.6] – 2026-09-28
+
+Lange Titel passen in die Karte des nächsten Termins.
+
+### Behoben
+
+- **Lange Titel im „Nächsten Termin" (Darstellung „Modern")** liefen unter das Bild, und bei knappem Platz ragten
+  Datum und Uhrzeit über die Karte hinaus. Jetzt werden lange Wörter wie „Sonntagsgottesdienst" getrennt, der Titel
+  zeigt höchstens drei Zeilen, der Untertitel höchstens zwei. Das gilt im Editor und auf dem Fernseher.
+- **Die Vorschau auf der Seite „Design"** zeigt die Karte des nächsten Termins vollständig und darunter die Termine.
+
+### Geändert
+
+- Die Fläche, auf der im Editor gestaltet wird und die der Fernseher zeigt, heißt jetzt **Bildfläche** statt
+  „Bühne" – in der Oberfläche und in den Anleitungen.
+
 ## [0.2.5] – 2026-09-28
 
 Die Einstellungen sind aufgeräumt, und alte Hinweise räumen sich selbst weg.
@@ -180,6 +196,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.2.6]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.6
 [0.2.5]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.5
 [0.2.4]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.4
 [0.2.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.3

@@ -175,13 +175,13 @@ erzeugt ein Administrator …"*.
 | **Beim Start die Adresse des Screens öffnen**, im Vollbild | der Fernseher läuft nach einem Stromausfall von selbst wieder an |
 | **Bildschirmschoner, Energiesparen und Abschalten des Bildschirms aus** | sonst wird das Foyer schwarz |
 | **Neu laden, wenn die Seite nicht lädt** – falls der Kiosk-Browser das kann | startet das Gerät, während das Netz weg ist, kann die Seite sich nicht selbst helfen |
-| **Auflösung 1920 × 1080** (hochkant 1080 × 1920) | darauf ist die Bühne ausgelegt; andere Seitenverhältnisse bekommen schwarze Ränder |
+| **Auflösung 1920 × 1080** (hochkant 1080 × 1920) | darauf ist die Bildfläche ausgelegt; andere Seitenverhältnisse bekommen schwarze Ränder |
 
 Auf einem Raspberry Pi eignet sich **FullPageOS**: Dort steht die Startadresse in der Datei `fullpageos.txt` auf
 der Boot-Partition.
 
 **Schneidet der Fernseher den Rand ab** (Overscan), stelle im Editor unter „Screen" die **Overscan-Korrektur** ein –
-die Bühne rückt dann um so viel Prozent nach innen.
+die Bildfläche rückt dann um so viel Prozent nach innen.
 
 ### Was der Fernseher von selbst tut
 
