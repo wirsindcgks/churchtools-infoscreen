@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+# Read only, explicitly: the workflow must not depend on the repository default.
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest

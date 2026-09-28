@@ -281,6 +281,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
   Die Regel gilt auch für Felder, die auf der Testinstanz leer sind – auf einer produktiven Instanz sind sie es nicht unbedingt. **Nicht** bereinigt werden Gruppen-, Kalender- und Dienstnamen: Umlaute, Längen und Namensgleichheiten sind wertvolle Testdaten.
 - **Tests, die Vorgaben sichern**: Duldsamkeit des Players (erfundener Blocktyp, unbekanntes Feld). Genau ein JS-Bündel, kein Inline-Skript und keine `*.church.tools`-Adresse im `dist/` prüft `scripts/check-dist.js` bei jedem Build.
 - **CI bei jedem Push**: Lint, Typecheck, Tests, Build. Tag `vx.y.z` baut das Release; Version in `package.json`, `package-lock.json` und `CHANGELOG.md` gemeinsam ziehen.
+- **Rulesets auf GitHub** (seit dem 2026-09-28, übernommen von `connect-churchtools`): `main` lässt sich von niemandem löschen oder per Force-Push umschreiben, die Historie bleibt linear. Andere als Admins kommen nur per Pull Request mit grüner Prüfung `check` hinein, gemergt wird nur per Squash. Release-Tags `v*` legen nur Admins an; löschen oder verschieben kann sie niemand. **Scheitert ein Release-Lauf, wird die nächste Patch-Version getaggt**, statt den Tag neu zu setzen. Heißt der CI-Job einmal anders, muss die Pflicht-Prüfung im Ruleset mitziehen, sonst lässt sich keine PR mehr mergen.
 
 ## Risiken
 
