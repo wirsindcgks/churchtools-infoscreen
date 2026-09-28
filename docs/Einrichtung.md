@@ -229,6 +229,30 @@ Die Reihenfolge ist wichtig: **erst die Einrichtung, dann die Extension.**
    „Kategorien" an, damit du die Bilder dort sichern kannst. Hineinsehen kann nur, wer Rechte am Bereich hat –
    die Gestalter nicht mehr, ihre Rechte gingen mit der Gruppe.
 
+4. **Den Login-Token des Geräte-Benutzers ungültig machen:** sein Passwort ändern oder die Person löschen. Die
+   Adressen der Fernseher enthalten diesen Token; solange er gilt, meldet sich jeder damit als Geräte-Benutzer
+   bei ChurchTools an – auch ohne Designer.
+
+### Was beim Abbau passiert – auf einen Blick
+
+| Was | „Einrichtung entfernen" | Extension löschen | Danach |
+| --- | --- | --- | --- |
+| Gruppen „Infoscreen-Designer" und „Infoscreen-Devices", **wenn der Assistent sie angelegt hat** – samt Rollen, Rechten und Mitgliedschaften | **gelöscht** | – | weg |
+| Gruppen, die du **selbst gewählt** hast | unberührt | Rechte am Modul werden entfernt | bleiben, mit allen anderen Rechten (etwa an Kalendern oder am Wiki-Bereich) |
+| Screens, Playlists, Slides, Hinweise, Design, Einstellungen | bleiben | **gelöscht** | weg; eine Neuinstallation beginnt leer |
+| Rechte am Modul an allen Rollen, auch an eurer Administratoren-Gruppe (Schritt 2) | bleiben | **entfernt** | weg |
+| Das hochgeladene ZIP | bleibt | **gelöscht** | weg |
+| Wiki-Bereich „Infoscreen" mit den Bildern | **bleibt** und steht wieder unter „Kategorien" | bleibt | **von Hand**: sichern, dann im Wiki löschen oder behalten |
+| Adressen der Bilder | bleiben erreichbar | bleiben erreichbar | erreichbar, bis das Bild im Wiki gelöscht ist – ohne Anmeldung, wer die Adresse kennt |
+| Geräte-Benutzer (Person) | bleibt, ohne die Rechte aus „Infoscreen-Devices" | bleibt | **von Hand**: archivieren oder löschen |
+| Login-Token in den Adressen der Fernseher | bleibt gültig | bleibt gültig | **von Hand**: Passwort ändern oder Person löschen |
+| Fernseher | zeigen keine neuen Inhalte mehr | Der Designer ist nicht mehr erreichbar | Kiosk-Browser umstellen oder ausschalten; Bilder und letzter Stand liegen noch im Speicher des Browsers |
+
+Was ChurchTools beim Löschen der Extension abräumt, ist am 2026-09-28 gemessen (`Befunde.md`, G38). Eine Warnung
+beim Löschen selbst kann der Designer nicht zeigen: Das Löschen geschieht in der Extension-Verwaltung von
+ChurchTools, und eine Extension erfährt davon nichts. Deshalb zeigt der Dialog von „Einrichtung entfernen" diese
+Übersicht schon vorher.
+
 **Löschen und neu hochladen ist kein Update.** Eine neu installierte Extension beginnt leer – alle Screens sind
 weg. Für eine neue Fassung siehe [Updates](#updates).
 

@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import { catalogFrom } from './catalog';
 import { AUTH } from './checks';
-import { GROUP_NAMES, MissingAuthError, planProvisioning, provision, refreshGrants, removeCreatedGroups, type ProvisionApi } from './provision';
+import {
+    GROUP_NAMES,
+    MissingAuthError,
+    planProvisioning,
+    provision,
+    refreshGrants,
+    REMOVE_SETUP_NEXT_STEPS_LOG_LINE,
+    removeCreatedGroups,
+    type ProvisionApi,
+} from './provision';
 
 /** The module rights as the test instance numbered them (G33). */
 const catalog = catalogFrom({
@@ -229,5 +238,13 @@ describe('removeCreatedGroups (Plan.md, F: nur entfernen, was das Modul selbst a
         expect(result.removed).toEqual([25]);
         expect(result.error).toBe('Forbidden');
         expect(result.log).toEqual(['Gruppe 25 gab es nicht mehr – aus den Einstellungen entfernt.', 'Abgebrochen: Forbidden']);
+    });
+});
+
+describe('REMOVE_SETUP_NEXT_STEPS_LOG_LINE', () => {
+    it('names both manual steps left after a clean removal: the extension, then the device user and wiki area', () => {
+        expect(REMOVE_SETUP_NEXT_STEPS_LOG_LINE).toContain('Extension-Verwaltung');
+        expect(REMOVE_SETUP_NEXT_STEPS_LOG_LINE).toContain('Geräte-Benutzer');
+        expect(REMOVE_SETUP_NEXT_STEPS_LOG_LINE).toContain('Wiki-Bereich');
     });
 });

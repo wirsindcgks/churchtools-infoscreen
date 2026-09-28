@@ -211,6 +211,17 @@ export async function removeCreatedGroups(
 }
 
 /**
+ * Last log line once `removeCreatedGroups` succeeded: this step never touches
+ * the extension itself or what is left for people to do by hand – that stays
+ * unwritten unless said here (docs/Einrichtung.md, „Was beim Abbau passiert –
+ * auf einen Blick").
+ */
+export const REMOVE_SETUP_NEXT_STEPS_LOG_LINE =
+    'Als Nächstes: den Designer in der Extension-Verwaltung von ChurchTools löschen, falls er ganz weg soll. ' +
+    'Danach von Hand: Geräte-Benutzer archivieren oder löschen (sein Passwort ändern macht die Adressen der ' +
+    'Fernseher ungültig), Wiki-Bereich sichern und löschen oder behalten.';
+
+/**
  * Brings the rights of groups the assistant created up to the current plan,
  * e.g. after a screen started to show another calendar. A grant is a PUT that
  * creates or updates, so granting again what exists changes nothing.

@@ -12,6 +12,7 @@
  * split the story in two.
  */
 import { computed, onMounted, ref } from 'vue';
+import { REPOSITORY_URL } from '../about/changelog';
 import { GROUP_NAMES } from '../setup/provision';
 
 export interface RemoveGroupInfo {
@@ -73,6 +74,52 @@ function confirm(): void {
                 bekommen keine neuen Inhalte mehr. Screens, Playlists und Bilder bleiben erhalten; neu einrichten geht
                 jederzeit.
             </p>
+            <details data-testid="remove-setup-overview">
+                <summary>Was beim Abbau sonst passiert und was bleibt</summary>
+                <div>
+                    <strong>Dieser Schritt</strong>
+                    <ul>
+                        <li>Die oben genannten Gruppen werden mit Rollen, Rechten und Mitgliedschaften gelöscht.</li>
+                        <li>Selbst gewählte Gruppen bleiben unberührt.</li>
+                        <li>Screens, Playlists, Slides, Hinweise und Design bleiben.</li>
+                        <li v-if="props.wikiCategoryName">
+                            Der Wiki-Bereich bleibt und wird wieder im Wiki angezeigt, damit du die Bilder dort sichern
+                            kannst.
+                        </li>
+                        <li v-else>Der Wiki-Bereich bleibt.</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>Danach in der Extension-Verwaltung von ChurchTools – „Infoscreen Designer" löschen</strong>
+                    <ul>
+                        <li>Screens, Playlists, Slides, Hinweise, Design und Einstellungen werden gelöscht.</li>
+                        <li>Die Rechte am Modul werden an allen Rollen entfernt, auch an der Administratoren-Gruppe.</li>
+                        <li>Das hochgeladene ZIP wird gelöscht.</li>
+                        <li>Eine Neuinstallation beginnt leer.</li>
+                    </ul>
+                </div>
+                <div>
+                    <strong>Bleibt, von Hand zu erledigen</strong>
+                    <ul>
+                        <li>
+                            Der Wiki-Bereich mit den Bildern: sichern, dann im Wiki löschen oder behalten. Die
+                            Adressen der Bilder bleiben ohne Anmeldung erreichbar, bis das Bild gelöscht ist.
+                        </li>
+                        <li>
+                            Der Geräte-Benutzer: archivieren oder löschen. Sein Login-Token steckt in den Adressen
+                            der Fernseher und bleibt gültig, bis sein Passwort geändert oder die Person gelöscht ist.
+                        </li>
+                        <li>Die Kiosk-Browser der Fernseher: umstellen oder ausschalten.</li>
+                    </ul>
+                </div>
+                <p>
+                    <a
+                        :href="`${REPOSITORY_URL}/blob/main/docs/Einrichtung.md#was-beim-abbau-passiert--auf-einen-blick`"
+                        target="_blank"
+                        rel="noopener"
+                    >Ausführlich in der Anleitung</a>
+                </p>
+            </details>
             <p v-if="props.ownMemberOf.length" class="d-banner d-banner--warning" data-testid="remove-setup-own-warning">
                 Du bist selbst Mitglied in {{ props.ownMemberOf.map((n) => `„${n}"`).join(' und ') }}. Hast du die Rechte
                 am Designer nur über diese Gruppe, kommst du danach nicht mehr hinein – prüfe vorher Schritt 2 der
@@ -113,6 +160,16 @@ function confirm(): void {
 }
 .groups {
     margin: 0;
+    padding-left: 20px;
+}
+.remove details {
+    font-size: 0.95em;
+}
+.remove details > div + div {
+    margin-top: 10px;
+}
+.remove details ul {
+    margin: 4px 0 0;
     padding-left: 20px;
 }
 </style>

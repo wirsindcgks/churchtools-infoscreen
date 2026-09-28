@@ -70,14 +70,43 @@ describe('RemoveSetupDialog (Plan.md, F: eigene Sicherung statt window.confirm)'
         );
     });
 
-    it('leaves the wiki sentence out without a known area', () => {
+    it('leaves the wiki sentence out of the plain paragraph without a known area', () => {
+        // The overview below mentions the wiki area regardless (it never disappears), so this checks only the
+        // paragraph that describes the immediate effect of confirming, not the whole dialog.
         const wrapper = mount(RemoveSetupDialog, { props: { groups } });
-        expect(wrapper.text()).not.toContain('Wiki-Bereich');
+        const paragraphs = wrapper.findAll('form > p');
+        expect(paragraphs.some((p) => p.text().includes('Wiki-Bereich'))).toBe(false);
     });
 
     it('focuses the confirm input on mount, so a stray click cannot confirm by pasting elsewhere', () => {
         const wrapper = mount(RemoveSetupDialog, { props: { groups }, attachTo: document.body });
         expect(wrapper.get('[data-testid="remove-setup-confirm-input"]').element).toBe(document.activeElement);
         wrapper.unmount();
+    });
+
+    it('has the overview of the whole teardown, collapsed by default', () => {
+        const wrapper = mount(RemoveSetupDialog, { props: { groups } });
+        const overview = wrapper.get('[data-testid="remove-setup-overview"]');
+        expect(overview.attributes('open')).toBeUndefined();
+        expect(overview.text()).toContain('Extension-Verwaltung');
+        expect(overview.text()).toContain('Geräte-Benutzer');
+    });
+
+    it('names the re-display of the wiki area in the overview only with a known area', () => {
+        const without = mount(RemoveSetupDialog, { props: { groups } });
+        expect(without.get('[data-testid="remove-setup-overview"]').text()).not.toContain('wieder im Wiki angezeigt');
+
+        const withArea = mount(RemoveSetupDialog, { props: { groups, wikiCategoryName: 'Infoscreen' } });
+        expect(withArea.get('[data-testid="remove-setup-overview"]').text()).toContain('wieder im Wiki angezeigt');
+    });
+
+    it('links to the detailed teardown table in the manual', () => {
+        const wrapper = mount(RemoveSetupDialog, { props: { groups } });
+        const link = wrapper.get('[data-testid="remove-setup-overview"] a');
+        expect(link.attributes('href')).toBe(
+            'https://github.com/wirsindcgks/churchtools-infoscreen/blob/main/docs/Einrichtung.md#was-beim-abbau-passiert--auf-einen-blick',
+        );
+        expect(link.attributes('target')).toBe('_blank');
+        expect(link.attributes('rel')).toBe('noopener');
     });
 });

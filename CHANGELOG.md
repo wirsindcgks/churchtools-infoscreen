@@ -16,6 +16,10 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   sperrt man sich aus ([Einrichtung](docs/Einrichtung.md), „Den Designer wieder entfernen").
 - **Nach „Einrichtung entfernen" steht der Wiki-Bereich „Infoscreen" wieder im Wiki** unter „Kategorien" statt
   unter „Ausgeblendet". Er bleibt mit allen Bildern erhalten; Administratoren können sie dort sichern.
+- **Der Dialog zeigt, was beim ganzen Abbau passiert**: was „Einrichtung entfernen" löscht, was das Löschen der
+  Extension in ChurchTools danach abräumt und was von Hand bleibt – Wiki-Bereich, Geräte-Benutzer und dessen
+  Login-Token in den Adressen der Fernseher. Die Anleitung hat dazu eine Übersicht
+  ([Einrichtung](docs/Einrichtung.md), „Was beim Abbau passiert – auf einen Blick").
 
 ### Behoben
 

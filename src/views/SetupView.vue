@@ -30,6 +30,7 @@ import {
     planProvisioning,
     provision,
     refreshGrants,
+    REMOVE_SETUP_NEXT_STEPS_LOG_LINE,
     removeCreatedGroups,
     type GroupSpec,
 } from '../setup/provision';
@@ -299,7 +300,12 @@ async function confirmRemoveSetup(): Promise<void> {
         selected.device = result.selected.device ?? null;
         // Runs before the save below, but cannot block it: it only ever
         // pushes a log line, never throws (Plan.md, F).
-        if (result.error === null) await restoreWikiVisibility();
+        if (result.error === null) {
+            await restoreWikiVisibility();
+            // Only shown once removal went through cleanly: the manual steps left over
+            // (extension, device user, wiki area) still apply (docs/Einrichtung.md).
+            assistant.log.push(REMOVE_SETUP_NEXT_STEPS_LOG_LINE);
+        }
         // Saved even after a failure: what is still there must stay removable (Plan.md, F).
         await persistSettings();
         // Not shown again, even if ChurchTools still had them in the same list request.
