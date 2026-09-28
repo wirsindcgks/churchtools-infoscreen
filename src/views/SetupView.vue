@@ -5,9 +5,9 @@ import { EXTENSION_KEY } from '../config';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import { fetchCalendars, type Calendar } from '../ct/api';
-import { currentPerson, httpStatus, instanceBaseUrl } from '../ct/client';
+import { currentPerson, httpStatus, instanceBaseUrl, personUrl } from '../ct/client';
 import { playerUrl } from '../designer/player-url';
-import RemoveSetupDialog, { type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
+import RemoveSetupDialog, { type DeviceAccountInfo, type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
 import { createCategory, setCategoryInMenu, wikiRestoreLogLine, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
 import { SCHEMA_VERSION, type ScreenDoc } from '../model/schema';
 import { withDeviceLogin } from '../player/device-login';
@@ -17,6 +17,7 @@ import {
     churchToolsProvisionApi,
     deleteGroup,
     findGroupTypeId,
+    groupMemberNames,
     loadGroupRights,
     loadGroups,
     loadPersonGrants,
@@ -25,6 +26,7 @@ import {
 } from '../setup/load';
 import { createDeviceLogin } from '../setup/device-token';
 import {
+    devicePasswordRecommendationLogLine,
     GROUP_NAMES,
     GROUP_TYPE_NAME,
     planProvisioning,
@@ -87,7 +89,7 @@ const assistant = reactive({ allowed: false, running: false, log: [] as string[]
  * own. Unknown for a created group that is neither side's current choice.
  */
 const groupMemberCounts = reactive<Record<number, number>>({});
-const removeDialog = ref<{ groups: RemoveGroupInfo[]; ownMemberOf: string[] } | null>(null);
+const removeDialog = ref<{ groups: RemoveGroupInfo[]; ownMemberOf: string[]; deviceAccounts: DeviceAccountInfo[] } | null>(null);
 
 /** Groups under the assistant's names that it did not create: it never takes them over. */
 const wikiMissing = computed(() => plan.value !== null && wikiCategoryIdKnown.value === false);
@@ -240,10 +242,35 @@ async function openRemoveSetup(): Promise<void> {
     } catch {
         // Only the warning about locking oneself out is lost – the dialog still opens and removal still works.
     }
+    let deviceAccounts: DeviceAccountInfo[] = [];
+    try {
+        const deviceGroupId = deviceGroupIdForRemoval();
+        if (deviceGroupId !== null) {
+            const members = await groupMemberNames(deviceGroupId);
+            const baseUrl = instanceBaseUrl();
+            deviceAccounts = members.map((m) => ({ ...m, url: personUrl(baseUrl, m.personId) }));
+        }
+    } catch {
+        // Only naming the device accounts is lost – e.g. the group is already gone (404). The dialog still opens.
+    }
     removeDialog.value = {
         groups: affected,
         ownMemberOf: affected.filter((g) => ownGroupIds.includes(g.id)).map((g) => g.name ?? `Gruppe ${g.id}`),
+        deviceAccounts,
     };
+}
+
+/**
+ * The device group's id for „Einrichtung entfernen" (Plan.md, F; G18): by
+ * name where a group of that name is among the created ones, else by the
+ * device side's own choice – but only if that choice is itself one of the
+ * assistant's own groups. A group nobody can name anymore stays without
+ * device accounts; the dialog still opens.
+ */
+function deviceGroupIdForRemoval(): number | null {
+    const byName = groups.value.find((g) => g.name === GROUP_NAMES.device && createdGroupIds.value.includes(g.id));
+    if (byName) return byName.id;
+    return selected.device !== null && createdGroupIds.value.includes(selected.device) ? selected.device : null;
 }
 
 /**
@@ -275,6 +302,8 @@ async function restoreWikiVisibility(): Promise<void> {
  */
 async function confirmRemoveSetup(): Promise<void> {
     if (!repository) return;
+    // Kept beyond closing the dialog: once the device group is gone, this is the only record of who its members were.
+    const deviceAccountNames = removeDialog.value?.deviceAccounts.map((a) => a.name) ?? [];
     removeDialog.value = null;
     assistant.running = true;
     assistant.error = null;
@@ -302,8 +331,11 @@ async function confirmRemoveSetup(): Promise<void> {
         // pushes a log line, never throws (Plan.md, F).
         if (result.error === null) {
             await restoreWikiVisibility();
+            if (deviceAccountNames.length) {
+                assistant.log.push(devicePasswordRecommendationLogLine(deviceAccountNames));
+            }
             // Only shown once removal went through cleanly: the manual steps left over
-            // (extension, device user, wiki area) still apply (docs/Einrichtung.md).
+            // (extension, device accounts, wiki area) still apply (docs/Einrichtung.md).
             assistant.log.push(REMOVE_SETUP_NEXT_STEPS_LOG_LINE);
         }
         // Saved even after a failure: what is still there must stay removable (Plan.md, F).
@@ -724,6 +756,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
             v-if="removeDialog"
             :groups="removeDialog.groups"
             :own-member-of="removeDialog.ownMemberOf"
+            :device-accounts="removeDialog.deviceAccounts"
             :wiki-category-name="wikiCategory?.name"
             @close="removeDialog = null"
             @confirm="confirmRemoveSetup"

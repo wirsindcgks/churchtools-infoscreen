@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest';
-import { assertAuthenticated, ensureSignedIn, NotAuthenticatedError, WrongPersonError, type SignInApi } from './client';
+import { assertAuthenticated, ensureSignedIn, NotAuthenticatedError, personUrl, WrongPersonError, type SignInApi } from './client';
 import type { Person } from './types';
+
+describe('personUrl (G18: /persons/{id} shows no person, measured 2026-09-28)', () => {
+    it('opens the person view of the instance with the id selected', () => {
+        expect(personUrl('https://example.church.tools', 22)).toBe('https://example.church.tools/?q=churchdb#PersonView/searchEntry:#22');
+    });
+});
 
 describe('assertAuthenticated', () => {
     it('accepts a real person', () => {

@@ -23,9 +23,27 @@ export interface RemoveGroupInfo {
     memberCount?: number;
 }
 
+/**
+ * A device account named before its group is deleted (Plan.md, F; G18): its
+ * login token cannot be revoked, only invalidated by changing the account's
+ * password – and once the group is gone, nobody would know anymore which
+ * accounts were devices.
+ */
+export interface DeviceAccountInfo {
+    personId: number;
+    name: string;
+    /** Where to see and change the account in ChurchTools. */
+    url: string;
+}
+
 const props = withDefaults(
-    defineProps<{ groups: RemoveGroupInfo[]; ownMemberOf?: string[]; wikiCategoryName?: string | null }>(),
-    { ownMemberOf: () => [], wikiCategoryName: null },
+    defineProps<{
+        groups: RemoveGroupInfo[];
+        ownMemberOf?: string[];
+        wikiCategoryName?: string | null;
+        deviceAccounts?: DeviceAccountInfo[];
+    }>(),
+    { ownMemberOf: () => [], wikiCategoryName: null, deviceAccounts: () => [] },
 );
 const emit = defineEmits<{ close: []; confirm: [] }>();
 
@@ -74,6 +92,23 @@ function confirm(): void {
                 bekommen keine neuen Inhalte mehr. Screens, Playlists und Bilder bleiben erhalten; neu einrichten geht
                 jederzeit.
             </p>
+            <section
+                v-if="props.deviceAccounts.length"
+                class="d-banner d-banner--warning device-accounts"
+                data-testid="remove-setup-device-accounts"
+            >
+                <strong>Gerätekonten</strong>
+                <ul>
+                    <li v-for="a in props.deviceAccounts" :key="a.personId">
+                        <a :href="a.url" target="_blank" rel="noopener">{{ a.name }}</a>
+                    </li>
+                </ul>
+                <p>
+                    Empfehlung: Ändere danach die Passwörter dieser Konten in ChurchTools oder lösche die Konten. Erst
+                    dann funktionieren die Adressen der Fernseher nicht mehr – sie enthalten die Anmeldung dieser
+                    Konten. Der Designer kann das nicht selbst tun.
+                </p>
+            </section>
             <details data-testid="remove-setup-overview">
                 <summary>Was beim Abbau sonst passiert und was bleibt</summary>
                 <div>
@@ -106,8 +141,9 @@ function confirm(): void {
                             Adressen der Bilder bleiben ohne Anmeldung erreichbar, bis das Bild gelöscht ist.
                         </li>
                         <li>
-                            Der Geräte-Benutzer: archivieren oder löschen. Sein Login-Token steckt in den Adressen
-                            der Fernseher und bleibt gültig, bis sein Passwort geändert oder die Person gelöscht ist.
+                            Der Geräte-Benutzer: Passwort ändern (empfohlen) oder die Person löschen – sein
+                            Login-Token steckt in den Adressen der Fernseher und gilt bis dahin weiter. Archivieren
+                            kannst du ihn danach.
                         </li>
                         <li>Die Kiosk-Browser der Fernseher: umstellen oder ausschalten.</li>
                     </ul>
@@ -159,6 +195,14 @@ function confirm(): void {
     margin: 0;
 }
 .groups {
+    margin: 0;
+    padding-left: 20px;
+}
+.device-accounts {
+    display: grid;
+    gap: 6px;
+}
+.device-accounts ul {
     margin: 0;
     padding-left: 20px;
 }

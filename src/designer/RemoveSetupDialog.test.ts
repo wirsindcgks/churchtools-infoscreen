@@ -63,6 +63,27 @@ describe('RemoveSetupDialog (Plan.md, F: eigene Sicherung statt window.confirm)'
         expect(warning.text()).toContain('Schritt 2');
     });
 
+    it('names every device account as a link to its own address, with the recommendation to change its password', () => {
+        const deviceAccounts = [
+            { personId: 22, name: 'Minimal User', url: 'https://example.church.tools/?q=churchdb#PersonView/searchEntry:#22' },
+            { personId: 16, name: 'Infoscreen Foyer', url: 'https://example.church.tools/?q=churchdb#PersonView/searchEntry:#16' },
+        ];
+        const wrapper = mount(RemoveSetupDialog, { props: { groups, deviceAccounts } });
+        const block = wrapper.get('[data-testid="remove-setup-device-accounts"]');
+        expect(block.text()).toContain('Gerätekonten');
+        expect(block.text()).toContain('Passwörter');
+        const links = block.findAll('a');
+        expect(links.map((a) => a.text())).toEqual(['Minimal User', 'Infoscreen Foyer']);
+        expect(links[0]!.attributes('href')).toBe(deviceAccounts[0]!.url);
+        expect(links[0]!.attributes('target')).toBe('_blank');
+        expect(links[0]!.attributes('rel')).toBe('noopener');
+    });
+
+    it('leaves out the device accounts block without any collected accounts', () => {
+        const wrapper = mount(RemoveSetupDialog, { props: { groups } });
+        expect(wrapper.find('[data-testid="remove-setup-device-accounts"]').exists()).toBe(false);
+    });
+
     it('names the wiki area when one is known, so administrators know where the pictures wait', () => {
         const wrapper = mount(RemoveSetupDialog, { props: { groups, wikiCategoryName: 'Infoscreen' } });
         expect(wrapper.text()).toContain(

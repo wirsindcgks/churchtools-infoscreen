@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { catalogFrom } from './catalog';
 import { AUTH } from './checks';
 import {
+    devicePasswordRecommendationLogLine,
     GROUP_NAMES,
     MissingAuthError,
     planProvisioning,
@@ -242,9 +243,17 @@ describe('removeCreatedGroups (Plan.md, F: nur entfernen, was das Modul selbst a
 });
 
 describe('REMOVE_SETUP_NEXT_STEPS_LOG_LINE', () => {
-    it('names both manual steps left after a clean removal: the extension, then the device user and wiki area', () => {
+    it('names both manual steps left after a clean removal: the extension, then the device accounts and wiki area', () => {
         expect(REMOVE_SETUP_NEXT_STEPS_LOG_LINE).toContain('Extension-Verwaltung');
-        expect(REMOVE_SETUP_NEXT_STEPS_LOG_LINE).toContain('Geräte-Benutzer');
+        expect(REMOVE_SETUP_NEXT_STEPS_LOG_LINE).toContain('Gerätekonten');
         expect(REMOVE_SETUP_NEXT_STEPS_LOG_LINE).toContain('Wiki-Bereich');
+    });
+});
+
+describe('devicePasswordRecommendationLogLine (G18: a login token is only invalidated by a password change)', () => {
+    it('names every collected account, comma-separated, with the recommendation', () => {
+        expect(devicePasswordRecommendationLogLine(['Minimal User', 'Infoscreen Foyer'])).toBe(
+            'Passwörter ändern empfohlen für: Minimal User, Infoscreen Foyer – dann funktionieren die Adressen der Fernseher nicht mehr.',
+        );
     });
 });

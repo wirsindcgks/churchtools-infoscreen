@@ -20,6 +20,16 @@ export function instanceBaseUrl(): string {
     return (window.settings?.base_url ?? window.location.origin).replace(/\/+$/, '');
 }
 
+/**
+ * Where to see a person's details in ChurchTools – used for device accounts
+ * in „Einrichtung entfernen" (Plan.md, F; G18). `/persons/{id}` itself shows
+ * no person; this address, measured 2026-09-28 on the test instance, opens
+ * the person view with the given id selected.
+ */
+export function personUrl(baseUrl: string, personId: number): string {
+    return `${baseUrl}/?q=churchdb#PersonView/searchEntry:#${personId}`;
+}
+
 /** ChurchTools answers anonymous requests as this pseudo person (G20). */
 export const ANONYMOUS_PERSON_ID = -1;
 

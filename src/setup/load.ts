@@ -102,6 +102,22 @@ export async function loadPersonGrants(personId: number): Promise<{ label: strin
     return { label: `${person.firstName} ${person.lastName}`.trim(), grants: [...byStatus, ...direct] };
 }
 
+/**
+ * Names of a group's members – collected before deleting the device group in
+ * „Einrichtung entfernen" (Plan.md, F; G18): a login token cannot be revoked
+ * from outside, only invalidated by changing the account's password, and once
+ * the group is gone nobody would know anymore which accounts were devices.
+ */
+export async function groupMemberNames(groupId: number): Promise<{ personId: number; name: string }[]> {
+    const members = await churchtoolsClient.getAllPages<{ personId: number }>(`/groups/${groupId}/members`);
+    return Promise.all(
+        members.map(async (m) => {
+            const person = await churchtoolsClient.get<PersonResponse>(`/persons/${m.personId}`);
+            return { personId: m.personId, name: `${person.firstName} ${person.lastName}`.trim() };
+        }),
+    );
+}
+
 /** The group type of the module's groups, by name – ids and names differ per instance. */
 export async function findGroupTypeId(name: string): Promise<number | null> {
     const types = await churchtoolsClient.get<{ id: number; name: string; nameTranslated?: string }[]>('/group/grouptypes');

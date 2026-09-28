@@ -20,6 +20,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   Extension in ChurchTools danach abräumt und was von Hand bleibt – Wiki-Bereich, Geräte-Benutzer und dessen
   Login-Token in den Adressen der Fernseher. Die Anleitung hat dazu eine Übersicht
   ([Einrichtung](docs/Einrichtung.md), „Was beim Abbau passiert – auf einen Blick").
+- **Die Gerätekonten werden beim Namen genannt**, im Dialog mit Link zur Person und danach im Protokoll, mit der
+  Empfehlung, ihre Passwörter zu ändern. Erst dann funktionieren die Adressen der Fernseher nicht mehr. Selbst
+  ändern kann der Designer sie nicht: ChurchTools lässt einen Login-Token nicht von außen widerrufen.
 
 ### Behoben
 

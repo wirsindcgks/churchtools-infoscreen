@@ -218,8 +218,18 @@ export async function removeCreatedGroups(
  */
 export const REMOVE_SETUP_NEXT_STEPS_LOG_LINE =
     'Als Nächstes: den Designer in der Extension-Verwaltung von ChurchTools löschen, falls er ganz weg soll. ' +
-    'Danach von Hand: Geräte-Benutzer archivieren oder löschen (sein Passwort ändern macht die Adressen der ' +
-    'Fernseher ungültig), Wiki-Bereich sichern und löschen oder behalten.';
+    'Danach von Hand: die Passwörter der Gerätekonten ändern oder die Konten löschen (sonst gelten die Adressen ' +
+    'der Fernseher weiter), Wiki-Bereich sichern und löschen oder behalten.';
+
+/**
+ * Log line before `REMOVE_SETUP_NEXT_STEPS_LOG_LINE`, once device accounts
+ * were collected before the device group was deleted (Plan.md, F; G18): a
+ * login token cannot be revoked, only invalidated by a password change – and
+ * by then the group that named the accounts is already gone.
+ */
+export function devicePasswordRecommendationLogLine(names: string[]): string {
+    return `Passwörter ändern empfohlen für: ${names.join(', ')} – dann funktionieren die Adressen der Fernseher nicht mehr.`;
+}
 
 /**
  * Brings the rights of groups the assistant created up to the current plan,
