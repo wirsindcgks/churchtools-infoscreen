@@ -9,7 +9,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 **Als Nächstes** *(neu geordnet am 2026-09-28, nach der Abnahme P1, P2, P5–P7; Maßstab ist der Pitch)*:
 
 1. **Auf die Produktivinstanz und ein Gerät ans Laufen bringen** – **wartet seit dem 2026-09-28 auf die Klärung des Nutzers mit dem Administrator der Produktivinstanz**; bis dahin gehen die Punkte 2 bis 4 vor. Es ist – der eigentliche Praxistest und der kürzeste Weg zu „ausspielen aus ChurchTools" im echten Foyer. In dieser Reihenfolge:
-   1. **P3, Rest** (Nutzer, wenige Minuten): mit einem Konto ohne Rechte in Web und App nach „Infoscreen" und nach dem Geräte-Benutzer suchen.
+   1. ~~**P3, Rest**~~ – **auf der Testinstanz bestanden am 2026-09-28**; nach der Einrichtung auf der Produktivinstanz mit einem typischen Mitgliedskonto wiederholen.
    2. **Lesende Vorprüfung auf der Produktivinstanz:** Gibt es dort schon Gruppen „Infoscreen-Designer" oder „Infoscreen-Devices" oder einen Wiki-Bereich „Infoscreen"? (P7)
    3. **P8, Freigabe und Installation** mit dem Release-ZIP (P6), Schritt 2 der Anleitung über eine **Admin-Gruppe** (nicht über die Gestalter, G39), dann der Assistent.
    4. **P4, ein Raspberry über mehrere Tage** – zuerst mit Testinhalten in einer eigenen Playlist, dabei die Laufschrift, das nächtliche Neuladen und einen Netzausfall beobachten. **Die Beiträge (Punkt 33) gleich mittesten:** ein Beiträge-Block in der Test-Playlist. Das ersetzt den eigenen Test mit dem Test-ZIP.
