@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G9, G11, G14–G16, G18–G20, G22–G32, G35 und G38 sind beantwortet, G21, G33, G34, G36 und G37 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G38).
+**Eine durchgehende Nummerierung.** G1–G9, G11, G14–G16, G18–G20, G22–G32, G35, G38 und G39 sind beantwortet, G21, G33, G34, G36 und G37 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G39).
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -522,6 +522,16 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 - **`ct-pass-store` und Publisher:** nichts.
 
 </details>
+
+**G39 – „Einrichtung entfernen" kann löschen, ohne es speichern zu dürfen, und sperrt dabei aus.** *(2026-09-28, Testinstanz, Abnahme P1, Schreibzugriffe mit Freigabe des Nutzers; `v0.2.2`, gefahren über die installierte Extension mit dem Entwicklungskonto, Person 16)* Vorher und nachher wurden alle Gruppen, Rollenrechte, Status-Rechte, Wiki-Bereiche und die Einstellungen des Moduls lesend festgehalten.
+
+- **Löschen und Speichern hängen an verschiedenen Rechten.** `DELETE /groups/{id}` erlaubt ChurchTools jedem, der Gruppen verwalten darf. Die Einstellungen des Moduls liegen in der Datenkategorie `settings` (id 13) und brauchen „Daten in Kategorie bearbeiten" daran. Das Entwicklungskonto hatte das erste, aber nicht das zweite: Die Gestalter-Gruppe bekommt Schreibrechte nur an `playlists`, `slides` und `media` (4, 7, 10). **Ergebnis:** beide Gruppen gelöscht (`404` danach), in den Einstellungen weiter `createdGroupIds: [25, 28]`. Jeder weitere Versuch brach am ersten `DELETE` mit `404` ab; über die Oberfläche war das nicht mehr zu reparieren.
+- **Wer seine Modulrechte nur über eine angelegte Gruppe hat, sperrt sich aus.** Person 16 hatte „„Infoscreen Designer" sehen" allein über ihre Mitgliedschaft in „Infoscreen-Designer"; danach meldete die Extension „Keine ausreichende Berechtigung". `/permissions/global` zeigte unter `infoscreen-designer` nur noch `false` und leere Listen. Ein **System Admin** kam weiter hinein. Rechte in ChurchTools addieren sich (Academy) – was nur eine Gruppe gab, geht mit ihr.
+- **Die Gruppenliste ist kurz nach dem Löschen veraltet.** `GET /groups` lieferte direkt nach den beiden `DELETE` noch beide Gruppen; Sekunden später nicht mehr. Die Seite hielt sie deshalb für „fremde Gruppen" und sperrte das Neueinrichten. Woran das liegt (Zwischenspeicher in ChurchTools oder Reihenfolge der Anfragen), ist nicht gemessen.
+- **`GET /persons/{id}/groups`** liefert die Mitgliedschaften mit der Gruppen-id als **String** in `group.domainIdentifier`.
+- **Nicht angefasst wurden** andere Gruppen, Rollen oder Status-Rechte. Die Gruppenrechte gingen mit den Gruppen.
+
+**Folge (`v0.2.3`):** Vor dem Löschen speichert die Seite die Einstellungen einmal unverändert – scheitert das, löscht sie nichts. Eine Gruppe, die mit `404` antwortet, gilt als entfernt. Ein eigener Dialog verlangt das Wort „entfernen", nennt, was verschwindet, und warnt, wer selbst Mitglied ist. Gelöschte Gruppen verschwinden sofort aus der Liste. Ob `/permissions/global` für einen System Admin die Kategorien einzeln aufführt, ist nicht gemessen – deshalb die Probe durch Speichern statt einer Rechteprüfung.
 
 **G17 – Extension Store**: Aufnahmekriterien, Einreichungsweg, ob eine Veröffentlichung überhaupt angestrebt wird. Der Publisher hält seinen Store-Text in einer eigenen `EXTENSION_STORE.md` – ein Muster, das sich übernehmen lässt.
 

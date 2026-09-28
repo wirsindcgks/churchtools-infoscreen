@@ -1,6 +1,6 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createCategory, findCategory, setCategoryInMenu } from './wiki';
+import { createCategory, findCategory, setCategoryInMenu, wikiRestoreLogLine } from './wiki';
 
 describe('the wiki area of the media library (G36, Plan.md F)', () => {
     afterEach(() => vi.restoreAllMocks());
@@ -34,5 +34,23 @@ describe('the wiki area of the media library (G36, Plan.md F)', () => {
             inMenu: false,
             fileAccessWithoutPermission: false,
         });
+    });
+
+    it('wikiRestoreLogLine names „Kategorien" only once the area actually moved back there', () => {
+        expect(wikiRestoreLogLine('Infoscreen', 'shown')).toBe(
+            'Wiki-Bereich „Infoscreen" bleibt erhalten und steht im Wiki wieder unter „Kategorien" – dort lassen sich die Bilder sichern.',
+        );
+    });
+
+    it('wikiRestoreLogLine skips „Kategorien" when the area already stood there', () => {
+        expect(wikiRestoreLogLine('Infoscreen', 'already-shown')).toBe(
+            'Wiki-Bereich „Infoscreen" bleibt erhalten – dort lassen sich die Bilder sichern.',
+        );
+    });
+
+    it('wikiRestoreLogLine reports a failed toggle without failing the removal itself', () => {
+        expect(wikiRestoreLogLine('Infoscreen', { error: 'Netzwerkfehler' })).toBe(
+            'Wiki-Bereich konnte nicht wieder eingeblendet werden: Netzwerkfehler – im Wiki unter „Ausgeblendet" zu finden.',
+        );
     });
 });

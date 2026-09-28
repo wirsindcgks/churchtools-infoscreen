@@ -215,12 +215,46 @@ Die Reihenfolge ist wichtig: **erst die Einrichtung, dann die Extension.**
 1. **Einstellungen → „Einrichtung entfernen".** Das löscht die beiden Gruppen, die der Assistent angelegt hat,
    samt ihrer Rechte. Gruppen, die du selbst gewählt hast, bleiben. Diesen Schritt zuerst: Mit der Extension
    verschwinden auch die Einstellungen, und danach weiß der Designer nicht mehr, welche Gruppen von ihm stammen.
+   Zur Sicherheit fragt ein Dialog nach, zeigt, was verschwindet, und verlangt das Wort **„entfernen"**.
+   **Du brauchst dafür die Modulrechte aus [Schritt 2](#2-dir-selbst-die-modulrechte-geben)**, sonst kann der
+   Designer nicht speichern, dass die Gruppen weg sind, und löscht deshalb gar nicht erst. **Bist du selbst in
+   „Infoscreen-Designer"** und hast die Rechte nur darüber, kommst du danach nicht mehr in den Designer – der
+   Dialog warnt davor.
 2. **Extension-Verwaltung → „Infoscreen Designer" → Löschen.** ChurchTools zeigt vorher, was mitgelöscht wird,
    und entfernt dann alle Screens, Playlists, Slides und Einstellungen, die Rechte am Modul – auch die aus
    Schritt 2 an eurer Administratoren-Gruppe – und das hochgeladene ZIP.
 3. **Was bleibt, entscheidest du selbst:** der Wiki-Bereich „Infoscreen" mit den Bildern (im Wiki löschen oder
    behalten) und der Geräte-Benutzer (in der Personenverwaltung archivieren oder löschen). Beides gehört nicht
-   dem Designer; er löscht es nie.
+   dem Designer; er löscht es nie. Den Wiki-Bereich zeigt „Einrichtung entfernen" wieder im Wiki unter
+   „Kategorien" an, damit du die Bilder dort sichern kannst. Hineinsehen kann nur, wer Rechte am Bereich hat –
+   die Gestalter nicht mehr, ihre Rechte gingen mit der Gruppe.
+
+4. **Die Passwörter der Gerätekonten ändern – empfohlen** (oder die Konten löschen). Die Adressen der Fernseher
+   enthalten den Login-Token dieser Konten; solange er gilt, meldet sich jeder damit bei ChurchTools an – auch
+   ohne Designer. Ungültig wird er nur durch ein neues Passwort oder das Löschen der Person; von außen widerrufen
+   lässt er sich nicht. Welche Konten das sind, nennt der Dialog von „Einrichtung entfernen" mit Link zur Person
+   und danach das Protokoll – nach dem Entfernen gibt es die Gruppe „Infoscreen-Devices" nicht mehr, die es
+   verraten hätte.
+
+### Was beim Abbau passiert – auf einen Blick
+
+| Was | „Einrichtung entfernen" | Extension löschen | Danach |
+| --- | --- | --- | --- |
+| Gruppen „Infoscreen-Designer" und „Infoscreen-Devices", **wenn der Assistent sie angelegt hat** – samt Rollen, Rechten und Mitgliedschaften | **gelöscht** | – | weg |
+| Gruppen, die du **selbst gewählt** hast | unberührt | Rechte am Modul werden entfernt | bleiben, mit allen anderen Rechten (etwa an Kalendern oder am Wiki-Bereich) |
+| Screens, Playlists, Slides, Hinweise, Design, Einstellungen | bleiben | **gelöscht** | weg; eine Neuinstallation beginnt leer |
+| Rechte am Modul an allen Rollen, auch an eurer Administratoren-Gruppe (Schritt 2) | bleiben | **entfernt** | weg |
+| Das hochgeladene ZIP | bleibt | **gelöscht** | weg |
+| Wiki-Bereich „Infoscreen" mit den Bildern | **bleibt** und steht wieder unter „Kategorien" | bleibt | **von Hand**: sichern, dann im Wiki löschen oder behalten |
+| Adressen der Bilder | bleiben erreichbar | bleiben erreichbar | erreichbar, bis das Bild im Wiki gelöscht ist – ohne Anmeldung, wer die Adresse kennt |
+| Geräte-Benutzer (Person) | bleibt, ohne die Rechte aus „Infoscreen-Devices" | bleibt | **von Hand**: archivieren oder löschen |
+| Login-Token in den Adressen der Fernseher | bleibt gültig | bleibt gültig | **von Hand, empfohlen**: Passwörter der Gerätekonten ändern oder die Konten löschen |
+| Fernseher | zeigen keine neuen Inhalte mehr | Der Designer ist nicht mehr erreichbar | Kiosk-Browser umstellen oder ausschalten; Bilder und letzter Stand liegen noch im Speicher des Browsers |
+
+Was ChurchTools beim Löschen der Extension abräumt, ist am 2026-09-28 gemessen (`Befunde.md`, G38). Eine Warnung
+beim Löschen selbst kann der Designer nicht zeigen: Das Löschen geschieht in der Extension-Verwaltung von
+ChurchTools, und eine Extension erfährt davon nichts. Deshalb zeigt der Dialog von „Einrichtung entfernen" diese
+Übersicht schon vorher.
 
 **Löschen und neu hochladen ist kein Update.** Eine neu installierte Extension beginnt leer – alle Screens sind
 weg. Für eine neue Fassung siehe [Updates](#updates).

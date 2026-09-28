@@ -155,45 +155,80 @@ export async function provision(plan: GroupSpec[], groupTypeId: number, api: Pro
 export interface RemovalResult {
     /** Created groups still there – what a retry would delete. */
     remaining: number[];
+    /** Ids no longer part of the setup, deleted or already gone – a fresh group list must not show them again (Plan.md, F). */
+    removed: number[];
     selected: Partial<Record<GroupKey, number | null>>;
     log: string[];
     error: string | null;
 }
 
+/** What deleting one group turned out to be: actually deleted, or already gone (a `404`, e.g. from a save that failed after a previous run). */
+export type DeleteOutcome = 'deleted' | 'gone';
+
 /**
  * „Einrichtung entfernen" (Plan.md, F, 2026-09-28): deletes only the groups
  * the assistant created itself, recognised by the id kept since creation,
  * never by name – a group an administrator chose is never touched, even if
- * it is currently selected. Stops at the first failure, so that a retry
- * knows exactly what is still there.
+ * it is currently selected. A group that turns out to be gone already counts
+ * the same as a deleted one: both leave `createdGroupIds`, so a save that
+ * failed once does not wedge every later attempt on the same `404`. Stops at
+ * the first real failure, so that a retry knows exactly what is still there.
  */
 export async function removeCreatedGroups(
     createdGroupIds: readonly number[],
     selected: Partial<Record<GroupKey, number | null>>,
-    deleteGroup: (groupId: number) => Promise<void>,
+    deleteGroup: (groupId: number) => Promise<DeleteOutcome>,
 ): Promise<RemovalResult> {
     const remaining = [...createdGroupIds];
+    const removed: number[] = [];
     const nextSelected = { ...selected };
     const log: string[] = [];
     let deleted = 0;
     let error: string | null = null;
     while (remaining.length) {
         const id = remaining[0]!;
+        let outcome: DeleteOutcome;
         try {
-            await deleteGroup(id);
+            outcome = await deleteGroup(id);
         } catch (e) {
             error = e instanceof Error ? e.message : String(e);
             log.push(`Abgebrochen: ${error}`);
             break;
         }
         remaining.shift();
-        deleted++;
+        removed.push(id);
+        if (outcome === 'gone') {
+            log.push(`Gruppe ${id} gab es nicht mehr – aus den Einstellungen entfernt.`);
+        } else {
+            deleted++;
+        }
         for (const key of Object.keys(nextSelected) as GroupKey[]) {
             if (nextSelected[key] === id) nextSelected[key] = null;
         }
     }
-    if (!error) log.push(`${deleted} Gruppen gelöscht.`);
-    return { remaining, selected: nextSelected, log, error };
+    if (!error && deleted) log.push(`${deleted} Gruppen gelöscht.`);
+    return { remaining, removed, selected: nextSelected, log, error };
+}
+
+/**
+ * Last log line once `removeCreatedGroups` succeeded: this step never touches
+ * the extension itself or what is left for people to do by hand – that stays
+ * unwritten unless said here (docs/Einrichtung.md, „Was beim Abbau passiert –
+ * auf einen Blick").
+ */
+export const REMOVE_SETUP_NEXT_STEPS_LOG_LINE =
+    'Als Nächstes: den Designer in der Extension-Verwaltung von ChurchTools löschen, falls er ganz weg soll. ' +
+    'Danach von Hand: die Passwörter der Gerätekonten ändern oder die Konten löschen (sonst gelten die Adressen ' +
+    'der Fernseher weiter), Wiki-Bereich sichern und löschen oder behalten.';
+
+/**
+ * Log line before `REMOVE_SETUP_NEXT_STEPS_LOG_LINE`, once device accounts
+ * were collected before the device group was deleted (Plan.md, F; G18): a
+ * login token cannot be revoked, only invalidated by a password change – and
+ * by then the group that named the accounts is already gone.
+ */
+export function devicePasswordRecommendationLogLine(names: string[]): string {
+    return `Passwörter ändern empfohlen für: ${names.join(', ')} – dann funktionieren die Adressen der Fernseher nicht mehr.`;
 }
 
 /**
