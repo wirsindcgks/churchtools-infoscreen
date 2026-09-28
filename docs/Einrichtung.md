@@ -189,9 +189,13 @@ die Bühne rückt dann um so viel Prozent nach innen.
   den Screen neu; alles andere am Screen holt er **alle zwei Minuten**, **Termine alle zehn Minuten** – ein Gestalter
   muss nichts anstoßen.
 - Er **hält den letzten Stand und die Bilder auf dem Gerät.** Fällt das Netz aus, zeigt er weiter, was er hatte.
-- Er **lädt jede Nacht zwischen 3 und 4 Uhr neu** und nach **30 Minuten ununterbrochener Fehler** – aber nur, wenn
-  die Seite erreichbar ist. Dabei meldet er sich jedes Mal frisch an; läuft die Anmeldung zwischendurch ab, erneuert
-  er sie selbst.
+- **Auch ein Neustart ohne Netz zeigt den letzten Stand** statt der Fehlerseite des Browsers – etwa nach einem
+  Stromausfall, der auch den Router getroffen hat. Dafür legt der Player die Seite nach dem ersten erfolgreichen
+  Anzeigen auf dem Gerät ab (ein sogenannter Service Worker). Voraussetzung: Er war seit der Installation mindestens
+  einmal mit Netz gelaufen.
+- Er **lädt jede Nacht zwischen 3 und 4 Uhr neu** und nach **30 Minuten ununterbrochener Fehler** – auch ohne Netz,
+  sobald er die Seite auf dem Gerät hat. Dabei meldet er sich jedes Mal frisch an; läuft die Anmeldung zwischendurch
+  ab, erneuert er sie selbst.
 
 ## Updates
 

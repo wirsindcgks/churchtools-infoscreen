@@ -4,6 +4,24 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.2.4] – 2026-09-28
+
+Ein Fernseher, der ohne Netz neu startet, zeigt den letzten Stand.
+
+### Neu
+
+- **Neustart ohne Netz:** Bisher zeigte ein Gerät, das während eines Netzausfalls neu startete – etwa nach einem
+  Stromausfall, der auch den Router traf –, die Fehlerseite des Browsers, bis jemand kam. Jetzt legt der Player
+  seine Seite nach dem ersten erfolgreichen Anzeigen auf dem Gerät ab und zeigt beim Neustart ohne Netz den
+  letzten Stand; sobald das Netz zurück ist, holt er sich Neues. Auch das nächtliche Neuladen darf dann ohne Netz
+  stattfinden. Der Designer und alle Daten aus ChurchTools bleiben davon unberührt.
+
+### Geändert
+
+- Eine noch leere Gruppe „Infoscreen-Devices" steht in den Einstellungen als Hinweis (gelb) statt als Fehler (rot),
+  wie eine leere Gestalter-Gruppe: Direkt nach dem Einrichten sind beide leer, und das ist der nächste Schritt, kein
+  Fehler.
+
 ## [0.2.3] – 2026-09-28
 
 „Einrichtung entfernen" ist abgesichert und lässt sich nicht mehr festfahren.
@@ -147,6 +165,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.2.4]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.4
 [0.2.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.3
 [0.2.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.2
 [0.2.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.1
