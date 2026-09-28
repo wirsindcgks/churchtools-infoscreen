@@ -18,27 +18,30 @@ anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
 > - **Die neue Grenze ist die produktive Nutzung.** Testen darf man auf der Testinstanz alles, auch
 >   tagelang auf einem echten Gerät. Echte Inhalte der Gemeinde, die dauerhaft im Foyer laufen, wären aber
 >   produktive Nutzung und würden kostenpflichtig. Der Betrieb gehört auf die Produktivinstanz.
+> - **Kein Gerät an der Testinstanz** *(Entscheidung des Nutzers, 2026-09-28)*: Auch mit Testinhalten
+>   sähe ein Raspberry, der tagelang alle 20 Sekunden abruft, von außen wie Betrieb aus. Kosten, weil
+>   ChurchTools eine produktive Nutzung erkennt, sollen gar nicht erst entstehen.
 >
 > **Offen sind danach, jeweils mit dem Punkt unten bzw. in [`Plan.md`](Plan.md):**
 >
 > - **Praxistest auf echter Hardware**: ein Raspberry mit Kiosk-Browser über mehrere Tage (E5, `Plan.md`,
->   „Als Nächstes" 2). **Entschieden am 2026-09-28:** Der Dauertest läuft auf der Produktivinstanz. Vorher
->   muss das Modul die **Abnahme in Abschnitt P** bestehen. Als Vorstufe läuft das Gerät mit Testinhalten
->   gegen die Testinstanz.
+>   „Als Nächstes" 2). **Entschieden am 2026-09-28:** Alle Tests mit den Raspberrys laufen auf der
+>   Produktivinstanz, **keine Vorstufe auf der Testinstanz**. Vorher muss das Modul die **Abnahme in
+>   Abschnitt P** bestehen; das Gerät kommt danach (P4).
 > - **Beiträge im Player** mit dem Test-ZIP prüfen, Gruppe „ISD-Beitragstest" (`Plan.md`, Punkt 33). Offen
 >   bleiben dabei interne Gruppen und ob Mitglieder eingeschränkter Gruppen deren Beiträge lesen (G37).
 > - **Service Worker unter `/ccm/`** (E1, G10). Das ist nicht mehr blockiert. Ohne ihn zeigt ein Gerät, das
 >   während eines Netzausfalls neu startet, nichts (`Plan.md`, Risiko 2).
 > - **Modul-Fixtures nachsichern**: Die am 2026-09-25 aufgezeichneten Modul-Antworten liegen noch nicht in
 >   der Sicherung außerhalb des Repos. Das ist keine Frist mehr, aber ein einzelner Arbeitsplatz.
-> - **GitHub-Actions auf Node.js 24 heben** (`Plan.md`, Punkt 35). Ab dem 2026-10-19 wechselt zusätzlich
->   `ubuntu-latest` auf Ubuntu 26.
+> - ~~**GitHub-Actions auf Node.js 24 heben**~~ **erledigt am 2026-09-28** (`Plan.md`, Punkt 35). Ab dem
+>   2026-10-19 wechselt zusätzlich `ubuntu-latest` auf Ubuntu 26 – nur beobachten.
 > - **Zwei Entscheidungen ohne Vorgabe**: Hardware (G-E2) und Zeitbudget (G-E7).
 > - **Kleinere Reste aus dem Plan**: Rechte am Modul selbst und eine Hausschrift als Modul-Einstellung;
->   Inspektor am Handy als ausklappbares Blatt; Slides aus einer anderen Playlist übernehmen; eine Playlist
->   duplizieren; ein Klick auf einen gesperrten Baustein soll zum darüberliegenden durchgreifen.
+>   Inspektor am Handy als ausklappbares Blatt. *(Slides übernehmen und Playlist duplizieren sind seit
+>   Punkt 31 gebaut, das Durchgreifen durch gesperrte Bausteine seit Punkt 25.)*
 >
-> **Geparkt, bis ein Produktschritt es braucht:** C4, D4, F2, F3, G16, `attachments`.
+> **Geparkt, bis ein Produktschritt es braucht:** C4, D4, F2, F3, `attachments`. *(G16 ist seit P5 beantwortet.)*
 
 > **⏱ ~~Die Testinstanz läuft ab~~** – *aufgehoben am 2026-09-28, siehe oben; der Kasten bleibt als Verlauf.*
 >
@@ -326,9 +329,9 @@ Hardware, nicht an der Instanz, und kann warten.
       antwortet anonym als öffentlicher Benutzer, ein fehlgeschlagener Login fällt sonst nicht auf.
 
 - [ ] **E5 · Auf der echten Hardware ansehen** – als Praxistest über mehrere Tage (`Plan.md`, „Als Nächstes" 2).
-      **Seit 2026-09-28:** Erst mit Testinhalten gegen die Testinstanz, dann als Dauertest auf der
-      Produktivinstanz (echte Inhalte im Dauerbetrieb wären auf der Testinstanz produktive Nutzung, F1).
-      Der zweite Schritt setzt die Abnahme in Abschnitt P voraus.
+      **Seit 2026-09-28:** Nur auf der Produktivinstanz, erst mit Testinhalten, dann mit echten; kein Gerät
+      an der Testinstanz, damit dort keine produktive Nutzung erkannt wird (F1, Entscheidung des Nutzers).
+      Setzt die Abnahme in Abschnitt P voraus (P4).
       Pi-Generation, Auflösung, Ausrichtung, Overscan, FullPageOS-Stand. Entscheidet über
       **Offene Entscheidung 3** (Hardware) und darüber, ob Videos überhaupt in Frage kommen.
 
@@ -336,7 +339,7 @@ Hardware, nicht an der Instanz, und kann warten.
 
 Früh anstoßen, weil die Antwort nicht von uns abhängt.
 
-- [x] **F1 · Support anschreiben** – `support@churchtools.de` → **erledigt am 2026-09-28**; die Frage nach dem Rate-Limit ist mit G16 geparkt.
+- [x] **F1 · Support anschreiben** – `support@churchtools.de` → **erledigt am 2026-09-28**; die Frage nach dem Rate-Limit beantwortet seit P5 das Forum (G16).
       - ~~Wie widerruft ein Administrator den Login-Token eines Geräts?~~ **Entfällt** – über den
         Passwortwechsel des Geräte-Benutzers (E3/G18), am 2026-09-23 gemessen.
       - ~~**Zuerst: Custom Modules für die Testinstanz freischalten.**~~ **Freigeschaltet am 2026-09-24** (T1).
@@ -347,8 +350,8 @@ Früh anstoßen, weil die Antwort nicht von uns abhängt.
         sobald es produktiv genutzt wird. Ursprünglich: Wir sind Kunde und
         entwickeln eine Extension; 30 Tage reichen dafür nicht – erst recht nicht, wenn ein Teil davon
         auf die Freischaltung verstreicht.
-      - Ist ein Rate-Limit dokumentiert? (**G16** – gemessen wurde keines bei 60 Anfragen je Sekunde,
-        aber gemessen ist nicht zugesagt.)
+      - ~~Ist ein Rate-Limit dokumentiert?~~ **Beantwortet am 2026-09-28 ohne Support:** 600 Anfragen je Minute
+        und IP-Adresse, genannt von einem ChurchTools-Mitarbeiter im Forum (**G16**).
       - ~~Ist ein Speicherziel für Dateien aus Custom Modules geplant?~~ **Entfällt** – die Wiki-Kategorie
         samt Bilddienst beantwortet G8.
 
@@ -392,6 +395,9 @@ nicht zum Absturz bringen: Sie läuft im Browser unter `/ccm/infoscreen-designer
 drei Arten: durch **Schreibzugriffe außerhalb ihres eigenen Speichers**, durch **Spuren, die Gemeindeglieder
 sehen**, und durch **Reste, die sich nicht wieder entfernen lassen**. Die Liste prüft genau diese drei Punkte.
 
+**Reihenfolge seit 2026-09-28:** P1–P3 und P5–P7 vor der Installation, dann P8, **danach erst P4**. Ein Gerät
+hängt nie an der Testinstanz, auch nicht mit Testinhalten (Entscheidung des Nutzers; siehe Kasten oben).
+
 **Was das Modul außerhalb seines eigenen Speichers schreibt** (Stand des Codes am 2026-09-28):
 
 | Wer | Was | Wo im Code |
@@ -426,12 +432,22 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
 - [ ] **P3 · Sichtbarkeit für Gemeindeglieder** – Wo tauchen die Gruppen vom Typ „Merkmal", der Wiki-Bereich
       (G36) und der Geräte-Benutzer auf: Gruppenliste, App, Personensuche, Wiki? Nichts davon darf wie ein
       Fehler aussehen oder Fragen auslösen.
-- [ ] **P4 · Vorstufe auf der Testinstanz** – Das echte Gerät mit Kiosk-Browser läuft mehrere Tage mit
-      Testinhalten fehlerfrei, einschließlich des nächtlichen Neuladens und eines Netzausfalls (E5).
-- [ ] **P5 · Last überschlagen** – Geräte × Abrufe je Stunde gegen G16. Die Vorgaben sind: Konfiguration alle
-      2 Minuten, Daten alle 10 Minuten, jeweils mit Versatz.
+- [ ] **P4 · Erstes Gerät, auf der Produktivinstanz** *(nach P8)* – Das echte Gerät mit Kiosk-Browser läuft
+      mehrere Tage fehlerfrei, zuerst mit Testinhalten in einer eigenen Playlist, einschließlich des nächtlichen
+      Neuladens und eines Netzausfalls (E5). Bis dahin hängt kein Gerät an einer Instanz.
+      ~~Vorstufe auf der Testinstanz~~ – verworfen am 2026-09-28: Auch Testinhalte sähen dort wie Betrieb aus (F1).
+- [x] **P5 · Last überschlagen** → **gerechnet am 2026-09-28 (G16)**: rund **375 Anfragen je Gerät und
+      Stunde** (gut 6 je Minute), die Hälfte davon der Schnellcheck alle 20 Sekunden, den die ursprüngliche
+      Vorgabe (Konfiguration alle 2, Daten alle 10 Minuten) nicht nannte. ChurchTools erlaubt **600 Anfragen je
+      Minute und IP-Adresse**. Die Geräte eines Hauses teilen sich eine Adresse, mit ihnen die Handys im
+      Gemeinde-WLAN und die Gestalter. Fünf Geräte brauchen rund 5 % davon. Das trägt.
+      **Nachgeschoben, nicht blockierend:** Nach einem `429` wartet der Player 30 Sekunden statt der von
+      ChurchTools empfohlenen 60, und `Retry-After` wird entgegen der alten Notiz in G16 nicht ausgewertet
+      (`backoffDelay` kennt es, `controller.ts` übergibt es nicht).
 - [ ] **P6 · Nur ein Release** – Installiert wird ein ZIP aus dem Release-Workflow bei grünem CI, kein
-      lokaler Build.
+      lokaler Build. **Vorbereitet am 2026-09-28:** Die Workflows laufen auf `actions/checkout@v7` und
+      `actions/setup-node@v7` (Node.js 24, `Plan.md`, Punkt 35); die Release-Läufe `v0.2.0`–`v0.2.2` waren grün.
+      Abgehakt wird P6 mit dem Release, das auf die Produktivinstanz geht – das erste nach dieser Umstellung.
 - [ ] **P7 · Entscheidung des Nutzers: Key** – Wird das Modul auf der Produktivinstanz gleich unter dem echten
       Key `infoscreen-designer` installiert, der danach bleibt? Oder unter `infoscreen-designer-test`, der sich
       spurlos wieder entfernen lässt, aber für den Betrieb neu eingerichtet werden muss?
