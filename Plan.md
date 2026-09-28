@@ -158,7 +158,7 @@ der Gemeinde gehören.
 | Wiki-Seiten des Moduls | dem Modul | tragen die Marke `<!-- infoscreen-designer -->`; fremder Text wird nie überschrieben |
 | Hochgeladene Bilder | dem Modul | liegen auf den Seiten des Moduls |
 | Geräte-Benutzer | der Gemeinde | legt der Administrator in der Oberfläche an, nicht das Modul |
-| Modulrechte an der Administratoren-Rolle (`docs/Einrichtung.md`, Schritt 2) | der Gemeinde | setzt der Administrator von Hand; ob sie mit der Extension verschwinden, ist offen (G38) |
+| Modulrechte an der Administratoren-Rolle (`docs/Einrichtung.md`, Schritt 2) | der Gemeinde | setzt der Administrator von Hand; **verschwinden mit der Extension** – ChurchTools nimmt sie beim Löschen selbst zurück (G38) |
 
 **Zwei Befunde, die den Bau betreffen – der Rest steht in [`Befunde.md`](Befunde.md), „Der Betriebsbenutzer":**
 

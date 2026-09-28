@@ -208,6 +208,23 @@ erhalten.
 Fassungen können die Rechte der beiden Gruppen ändern – etwa seit Version 0.1: Gestalter gestalten Inhalte, die
 Screens selbst legt und stellt ein Administrator ein; ältere Gruppen verlieren dabei ihr Schreibrecht auf Screens.
 
+## Den Designer wieder entfernen
+
+Die Reihenfolge ist wichtig: **erst die Einrichtung, dann die Extension.**
+
+1. **Einstellungen → „Einrichtung entfernen".** Das löscht die beiden Gruppen, die der Assistent angelegt hat,
+   samt ihrer Rechte. Gruppen, die du selbst gewählt hast, bleiben. Diesen Schritt zuerst: Mit der Extension
+   verschwinden auch die Einstellungen, und danach weiß der Designer nicht mehr, welche Gruppen von ihm stammen.
+2. **Extension-Verwaltung → „Infoscreen Designer" → Löschen.** ChurchTools zeigt vorher, was mitgelöscht wird,
+   und entfernt dann alle Screens, Playlists, Slides und Einstellungen, die Rechte am Modul – auch die aus
+   Schritt 2 an eurer Administratoren-Gruppe – und das hochgeladene ZIP.
+3. **Was bleibt, entscheidest du selbst:** der Wiki-Bereich „Infoscreen" mit den Bildern (im Wiki löschen oder
+   behalten) und der Geräte-Benutzer (in der Personenverwaltung archivieren oder löschen). Beides gehört nicht
+   dem Designer; er löscht es nie.
+
+**Löschen und neu hochladen ist kein Update.** Eine neu installierte Extension beginnt leer – alle Screens sind
+weg. Für eine neue Fassung siehe [Updates](#updates).
+
 ## Wenn ein Gerät verloren geht – die Notbremse
 
 1. **Den Geräte-Benutzer aus der Gruppe „Infoscreen-Devices" nehmen.** Damit verliert das Konto alle Rechte, die

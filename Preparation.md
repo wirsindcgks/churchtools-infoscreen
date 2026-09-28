@@ -403,7 +403,12 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
 - [ ] **P1 · Einrichtung auf der Testinstanz von vorn** – „Einrichtung entfernen", dann neu einrichten. Danach
       darf es keine verwaisten Rechte an fremden Rollen geben, und nur die zwei eigenen Gruppen dürfen angefasst
       worden sein. Das ist der einzige Teil, der Rechte schreibt. *(Schreibzugriff, vorher absprechen.)*
-- [ ] **P2 · Rückweg beschreiben und auf der Testinstanz einmal gehen** – Was bleibt, wenn die Extension
+- [x] **P2 · Rückweg beschreiben und auf der Testinstanz einmal gehen** → **gemessen am 2026-09-28 (G38)**:
+      Das Löschen der Extension räumt Daten, Modulrechte (auch an fremden Rollen), Rechtekatalog und ZIP selbst ab;
+      eine Neuinstallation beginnt leer. Übrig bleiben nur Gruppen, Wiki-Bereich und Geräte-Benutzer – deshalb
+      erst „Einrichtung entfernen", dann die Extension löschen. Beschrieben in `docs/Einrichtung.md`,
+      „Den Designer wieder entfernen". Offener Rest: ein vermuteter Rechte-Cache (G38).
+      *Ursprünglicher Auftrag:* Was bleibt, wenn die Extension
       deinstalliert wird: Kategorien und Werte, Rechte am Modul, die beiden Gruppen, Wiki-Bereich und Dateien,
       der Geräte-Benutzer? Zuerst in der Academy nachlesen, dann messen. Das Ergebnis gehört nach
       `docs/Einrichtung.md`; dort fehlt ein Abschnitt zum Entfernen bisher.
