@@ -7,7 +7,7 @@ import PageHeader from '../designer/PageHeader.vue';
 import { fetchCalendars, type Calendar } from '../ct/api';
 import { httpStatus, instanceBaseUrl } from '../ct/client';
 import { playerUrl } from '../designer/player-url';
-import { findOrCreateCategory, setCategoryInMenu, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
+import { createCategory, setCategoryInMenu, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
 import { SCHEMA_VERSION, type ScreenDoc } from '../model/schema';
 import { withDeviceLogin } from '../player/device-login';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
@@ -22,7 +22,15 @@ import {
     type GroupSummary,
 } from '../setup/load';
 import { createDeviceLogin } from '../setup/device-token';
-import { GROUP_NAMES, GROUP_TYPE_NAME, planProvisioning, provision, refreshGrants, type GroupSpec } from '../setup/provision';
+import {
+    GROUP_NAMES,
+    GROUP_TYPE_NAME,
+    planProvisioning,
+    provision,
+    refreshGrants,
+    removeCreatedGroups,
+    type GroupSpec,
+} from '../setup/provision';
 import { isAdministrator } from '../designer/administrator';
 import { getRepository } from '../store/backend';
 import { CATEGORIES, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
@@ -66,6 +74,8 @@ const demo = ref(false);
 const plan = ref<GroupSpec[] | null>(null);
 const planProblem = ref<string | null>(null);
 const createdGroupIds = ref<number[]>([]);
+/** The wiki category the assistant created itself – the only one it may ever delete (Plan.md, F). */
+const createdWikiCategoryId = ref<number | null>(null);
 const assistant = reactive({ allowed: false, running: false, log: [] as string[], error: null as string | null });
 
 /** Groups under the assistant's names that it did not create: it never takes them over. */
@@ -126,6 +136,7 @@ async function persistSettings(): Promise<void> {
         designerGroupId: selected.designer ?? undefined,
         deviceGroupId: selected.device ?? undefined,
         createdGroupIds: createdGroupIds.value.length ? createdGroupIds.value : undefined,
+        createdWikiCategoryId: createdWikiCategoryId.value ?? undefined,
     });
 }
 
@@ -141,8 +152,9 @@ async function runAssistant(): Promise<void> {
         const groupTypeId = await findGroupTypeId(GROUP_TYPE_NAME);
         if (groupTypeId === null) throw new Error(`Den Gruppentyp „${GROUP_TYPE_NAME}" gibt es auf dieser Instanz nicht.`);
         if (wikiCategoryId === null) {
-            wikiCategory.value = await findOrCreateCategory();
+            wikiCategory.value = await createCategory();
             wikiCategoryId = wikiCategory.value.id;
+            createdWikiCategoryId.value = wikiCategory.value.id;
             assistant.log.push(`Wiki-Bereich „${WIKI_CATEGORY_NAME}" angelegt.`);
         }
         computePlan();
@@ -191,13 +203,17 @@ async function removeSetup(): Promise<void> {
     assistant.running = true;
     assistant.error = null;
     try {
-        for (const id of createdGroupIds.value) {
-            await deleteGroup(id);
-            if (selected.designer === id) selected.designer = null;
-            if (selected.device === id) selected.device = null;
-        }
-        assistant.log = [`${createdGroupIds.value.length} Gruppen gelöscht.`];
-        createdGroupIds.value = [];
+        const result = await removeCreatedGroups(
+            createdGroupIds.value,
+            { designer: selected.designer, device: selected.device },
+            (id) => deleteGroup(id).catch((e: unknown) => { throw new Error(explain(e)); }),
+        );
+        assistant.log = result.log;
+        assistant.error = result.error;
+        createdGroupIds.value = result.remaining;
+        selected.designer = result.selected.designer ?? null;
+        selected.device = result.selected.device ?? null;
+        // Saved even after a failure: what is still there must stay removable (Plan.md, F).
         await persistSettings();
         groups.value = await loadGroups();
         await Promise.all([check('designer'), check('device')]);
@@ -311,6 +327,7 @@ onMounted(async () => {
         selected.designer = settings?.designerGroupId ?? null;
         selected.device = settings?.deviceGroupId ?? null;
         createdGroupIds.value = settings?.createdGroupIds ?? [];
+        createdWikiCategoryId.value = settings?.createdWikiCategoryId ?? null;
         if (!demo.value) {
             // Without these the assistant only explains; the page itself still works.
             [categories, catalog] = await Promise.all([
@@ -526,6 +543,13 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     <p data-testid="wiki-menu-state">
                         Im Wiki steht er zurzeit
                         <strong>{{ wikiCategory.inMenu === false ? 'unter „Ausgeblendet"' : 'unter „Kategorien"' }}</strong>.
+                    </p>
+                    <p data-testid="wiki-owner" class="muted small">
+                        <template v-if="wikiCategory.id === createdWikiCategoryId">Angelegt vom Infoscreen Designer.</template>
+                        <template v-else>
+                            Nicht als vom Designer angelegt vermerkt – etwa weil es ihn schon gab. Er gehört damit der Gemeinde und
+                            wird vom Designer nie gelöscht.
+                        </template>
                     </p>
                     <div class="actions">
                         <button class="d-btn" type="button" :disabled="wikiBusy" data-testid="wiki-menu-toggle" @click="toggleWikiMenu">

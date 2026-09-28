@@ -2,7 +2,9 @@
  * The media library: images in the module's wiki category, one page per
  * screen (G26), and a media document per image in the module store that
  * image blocks reference. Images someone uploaded in the wiki directly are
- * adopted the first time they are chosen.
+ * adopted the first time they are chosen. The library never creates the wiki
+ * category itself – that stays the setup assistant's job, so that only it
+ * remembers the id and only it may ever remove it (Plan.md, F).
  */
 import { SCHEMA_VERSION, type MediaDoc } from '../model/schema';
 import type { MediaUse, ScreenRepository } from '../store/screen-repository';
@@ -61,7 +63,15 @@ export interface MediaBackend {
 }
 
 export const wikiBackend: MediaBackend = {
-    category: wiki.findOrCreateCategory,
+    category: async () => {
+        const category = await wiki.findCategory();
+        if (!category) {
+            throw new Error(
+                `Den Wiki-Bereich „${wiki.WIKI_CATEGORY_NAME}" gibt es noch nicht. Ein Administrator legt ihn in den Einstellungen an („Automatisch einrichten").`,
+            );
+        }
+        return category;
+    },
     pages: wiki.listPages,
     files: wiki.listFiles,
     ensurePage: wiki.ensureScreenPage,

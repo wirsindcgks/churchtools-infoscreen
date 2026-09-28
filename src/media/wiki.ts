@@ -56,10 +56,14 @@ export async function setCategoryInMenu(category: WikiCategory, inMenu: boolean)
     });
 }
 
-export async function findOrCreateCategory(): Promise<WikiCategory> {
+/** Looks for the module's wiki category by name; `null` without a match, never creates one (Plan.md, F). */
+export async function findCategory(): Promise<WikiCategory | null> {
     const categories = await churchtoolsClient.get<WikiCategory[]>('/wiki/categories');
-    const found = categories.find((c) => c.name === WIKI_CATEGORY_NAME);
-    if (found) return found;
+    return categories.find((c) => c.name === WIKI_CATEGORY_NAME) ?? null;
+}
+
+/** Creates the module's wiki category. Only the setup assistant calls this, and remembers the id (Plan.md, F). */
+export async function createCategory(): Promise<WikiCategory> {
     return churchtoolsClient.post<WikiCategory>('/wiki/categories', {
         name: WIKI_CATEGORY_NAME,
         sortKey: 99,

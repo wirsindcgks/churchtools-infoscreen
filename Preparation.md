@@ -414,7 +414,7 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
       Messplan in G38.**
       **Regel seit 2026-09-28** (`Plan.md`, F, „Entfernen nur, was das Modul selbst angelegt hat"): Gelöscht wird
       nur, was über das Modul entstanden ist, erkannt an der beim Anlegen gespeicherten id. Gewählte bestehende
-      Gruppen nie. Die Gruppen halten das schon ein; **beim Wiki-Bereich fehlt die gespeicherte id noch.**
+      Gruppen nie. Gruppen und Wiki-Bereich halten das seit Schema 1.12 ein.
 - [ ] **P3 · Sichtbarkeit für Gemeindeglieder** – Wo tauchen die Gruppen vom Typ „Merkmal", der Wiki-Bereich
       (G36) und der Geräte-Benutzer auf: Gruppenliste, App, Personensuche, Wiki? Nichts davon darf wie ein
       Fehler aussehen oder Fragen auslösen.

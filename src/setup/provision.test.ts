@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { catalogFrom } from './catalog';
 import { AUTH } from './checks';
-import { GROUP_NAMES, MissingAuthError, planProvisioning, provision, refreshGrants, type ProvisionApi } from './provision';
+import { GROUP_NAMES, MissingAuthError, planProvisioning, provision, refreshGrants, removeCreatedGroups, type ProvisionApi } from './provision';
 
 /** The module rights as the test instance numbered them (G33). */
 const catalog = catalogFrom({
@@ -151,5 +151,42 @@ describe('refreshGrants', () => {
         expect(result.error).toBeNull();
         expect(revoked).toEqual(['250:2017:1']);
         expect(result.log[0]).toContain('1 Schreibrechte');
+    });
+});
+
+describe('removeCreatedGroups (Plan.md, F: nur entfernen, was das Modul selbst angelegt hat)', () => {
+    it('deletes only the ids the assistant created, never a chosen existing group', async () => {
+        const calls: number[] = [];
+        const result = await removeCreatedGroups([25, 28], { designer: 7, device: 28 }, async (id) => {
+            calls.push(id);
+        });
+        expect(calls).toEqual([25, 28]);
+        expect(calls).not.toContain(7);
+        expect(result.selected).toEqual({ designer: 7, device: null });
+        expect(result.remaining).toEqual([]);
+        expect(result.error).toBeNull();
+    });
+
+    it('stops at the first failure: what follows stays untried and remains removable', async () => {
+        const calls: number[] = [];
+        const result = await removeCreatedGroups([25, 28, 31], { designer: 25, device: null }, async (id) => {
+            calls.push(id);
+            if (id === 28) throw new Error('Forbidden');
+        });
+        expect(calls).toEqual([25, 28]);
+        expect(result.remaining).toEqual([28, 31]);
+        expect(result.error).toBe('Forbidden');
+        expect(result.selected).toEqual({ designer: null, device: null });
+        expect(result.log.at(-1)).toContain('Abgebrochen');
+    });
+
+    it('does nothing for an empty list', async () => {
+        const calls: number[] = [];
+        const result = await removeCreatedGroups([], { designer: null, device: null }, async (id) => {
+            calls.push(id);
+        });
+        expect(calls).toEqual([]);
+        expect(result.remaining).toEqual([]);
+        expect(result.error).toBeNull();
     });
 });

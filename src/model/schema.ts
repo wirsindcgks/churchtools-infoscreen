@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 11 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 12 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -398,6 +398,12 @@ export const SettingsDoc = v.object({
     deviceGroupId: v.optional(v.pipe(v.number(), v.integer())),
     /** Groups the setup assistant created – the only ones it may change or delete. */
     createdGroupIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
+    /**
+     * The wiki category the setup assistant created – the only one the module
+     * may ever delete. Absent for a category it found, and for installations
+     * older than this field.
+     */
+    createdWikiCategoryId: v.optional(v.pipe(v.number(), v.integer())),
 });
 
 export type Fill = v.InferOutput<typeof Fill>;

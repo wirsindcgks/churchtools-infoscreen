@@ -149,12 +149,12 @@ etwa eine bestehende Gruppe, wird beim Entfernen **auf keinen Fall** gelöscht. 
 **gespeicherten id aus dem Moment des Anlegens**, nie am Namen: Eine Gruppe oder ein Bereich mit passendem Namen kann
 der Gemeinde gehören.
 
-| Spur | Wem sie gehört | Stand im Code (2026-09-28) |
+| Spur | Wem sie gehört | Stand im Code (2026-09-28, Schema 1.12) |
 | --- | --- | --- |
 | Kategorien und Werte des Modulspeichers | dem Modul | nur über das Modul erreichbar |
-| Gruppen „Infoscreen-Designer" und „Infoscreen-Devices" | dem Modul, **wenn der Assistent sie angelegt hat** | **hält die Regel ein:** `createdGroupIds` in `settings`; „Einrichtung entfernen" und „Rechte aktualisieren" fassen nur diese ids an, gleichnamige fremde Gruppen werden angezeigt, aber nie übernommen |
+| Gruppen „Infoscreen-Designer" und „Infoscreen-Devices" | dem Modul, **wenn der Assistent sie angelegt hat** | **hält die Regel ein:** `createdGroupIds` in `settings`; „Einrichtung entfernen" und „Rechte aktualisieren" fassen nur diese ids an, gleichnamige fremde Gruppen werden angezeigt, aber nie übernommen. Das Entfernen steckt in `removeCreatedGroups` und ist getestet; bricht es ab, bleiben die noch vorhandenen ids gespeichert |
 | Gewählte bestehende Gruppen | der Gemeinde | werden weder gelöscht noch mit Rechten versehen |
-| Wiki-Bereich „Infoscreen" | dem Modul, **wenn es ihn angelegt hat** | **Lücke:** `findOrCreateCategory` übernimmt einen bestehenden Bereich gleichen Namens stillschweigend und merkt sich nicht, ob er selbst angelegt ist. Das ist wahrscheinlich, wenn eine Gemeinde schon den eingebauten Infoscreen nutzt. Bevor es einen Rückweg für den Bereich gibt, muss die id beim Anlegen gespeichert werden; ein vorgefundener Bereich ist fremd |
+| Wiki-Bereich „Infoscreen" | dem Modul, **wenn es ihn angelegt hat** | **hält die Regel ein:** Nur der Einrichtungsassistent legt den Bereich an und merkt sich die id in `createdWikiCategoryId`; die Mediathek sucht nur und legt nie an. Ein vorgefundener Bereich gleichen Namens wird mitbenutzt, gilt aber als fremd, und die Einstellungen sagen das. Installationen vor Schema 1.12 haben die id nicht – ihr Bereich gilt ebenfalls als fremd und bleibt stehen. Einen Knopf zum Löschen des Bereichs gibt es nicht. **Rest:** Sieht der Administrator den Bereich mangels Wiki-Rechten nicht, legt der Assistent einen zweiten an (G20) |
 | Wiki-Seiten des Moduls | dem Modul | tragen die Marke `<!-- infoscreen-designer -->`; fremder Text wird nie überschrieben |
 | Hochgeladene Bilder | dem Modul | liegen auf den Seiten des Moduls |
 | Geräte-Benutzer | der Gemeinde | legt der Administrator in der Oberfläche an, nicht das Modul |

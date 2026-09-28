@@ -152,6 +152,50 @@ export async function provision(plan: GroupSpec[], groupTypeId: number, api: Pro
     return result;
 }
 
+export interface RemovalResult {
+    /** Created groups still there – what a retry would delete. */
+    remaining: number[];
+    selected: Partial<Record<GroupKey, number | null>>;
+    log: string[];
+    error: string | null;
+}
+
+/**
+ * „Einrichtung entfernen" (Plan.md, F, 2026-09-28): deletes only the groups
+ * the assistant created itself, recognised by the id kept since creation,
+ * never by name – a group an administrator chose is never touched, even if
+ * it is currently selected. Stops at the first failure, so that a retry
+ * knows exactly what is still there.
+ */
+export async function removeCreatedGroups(
+    createdGroupIds: readonly number[],
+    selected: Partial<Record<GroupKey, number | null>>,
+    deleteGroup: (groupId: number) => Promise<void>,
+): Promise<RemovalResult> {
+    const remaining = [...createdGroupIds];
+    const nextSelected = { ...selected };
+    const log: string[] = [];
+    let deleted = 0;
+    let error: string | null = null;
+    while (remaining.length) {
+        const id = remaining[0]!;
+        try {
+            await deleteGroup(id);
+        } catch (e) {
+            error = e instanceof Error ? e.message : String(e);
+            log.push(`Abgebrochen: ${error}`);
+            break;
+        }
+        remaining.shift();
+        deleted++;
+        for (const key of Object.keys(nextSelected) as GroupKey[]) {
+            if (nextSelected[key] === id) nextSelected[key] = null;
+        }
+    }
+    if (!error) log.push(`${deleted} Gruppen gelöscht.`);
+    return { remaining, selected: nextSelected, log, error };
+}
+
 /**
  * Brings the rights of groups the assistant created up to the current plan,
  * e.g. after a screen started to show another calendar. A grant is a PUT that

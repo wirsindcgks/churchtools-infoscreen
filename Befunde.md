@@ -448,7 +448,7 @@ ChurchTools-Objekte, und ihr Rückweg hängt nicht an der Extension:
 - **Die zwei Gruppen:** „Einrichtung entfernen" löscht sie samt Rollen und Rechten (gemessen, G34).
 - **Der Wiki-Bereich:** `DELETE /wiki/categories/{id}` ist erlaubt (G36). Was dabei mit Seiten und Dateien
   geschieht, ist ungemessen. Gelöscht werden darf er nur, wenn das Modul ihn angelegt hat. Das merkt sich der
-  Code bisher nicht (`Plan.md`, F).
+  Code seit Schema 1.12 in `createdWikiCategoryId` (`Plan.md`, F).
 - **Der Geräte-Benutzer:** gehört der Gemeinde, nicht dem Modul. Ob er archiviert oder gelöscht wird, entscheidet
   der Administrator in der Oberfläche (G18, G21).
 
