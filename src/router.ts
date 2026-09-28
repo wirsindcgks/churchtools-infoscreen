@@ -27,9 +27,15 @@ export const router = createRouter({
         { path: '/mediathek', name: 'media', component: MediaView },
         { path: '/design', name: 'design', component: DesignView },
         { path: '/ueber', name: 'about', component: AboutView },
+        // An overview of cards (Plan.md 36); each card leads to a page of its own.
         { path: '/einstellungen', name: 'setup', component: SetupView },
-        // The first name of the page (until 2026-09-24); links to it keep working.
-        { path: '/einrichtung', redirect: (to) => ({ name: 'setup', hash: to.hash }) },
+        { path: '/einstellungen/gruppen', name: 'setup-groups', component: SetupView },
+        { path: '/einstellungen/fernseher', name: 'setup-tv', component: SetupView },
+        { path: '/einstellungen/mediathek', name: 'setup-wiki', component: SetupView },
+        // The first name of the page (until 2026-09-24); links to it keep working. The
+        // old anchor `#fernseher` (until 2026-09-28) lands directly on its new page instead
+        // of being passed through: vue-router would otherwise copy it onto the new address.
+        { path: '/einrichtung', redirect: (to) => ({ name: to.hash === '#fernseher' ? 'setup-tv' : 'setup', hash: '' }) },
         // On a foyer TV an empty page is indistinguishable from a crash (G7).
         { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundView },
     ],

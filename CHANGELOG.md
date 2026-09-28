@@ -4,6 +4,21 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.2.5] – 2026-09-28
+
+Die Einstellungen sind aufgeräumt, und alte Hinweise räumen sich selbst weg.
+
+### Geändert
+
+- **Einstellungen als Übersicht:** Statt einer langen Seite zeigen die Einstellungen Karten – „Gruppen und Rechte",
+  „Adressen für die Fernseher" und „Mediathek im Wiki" –, jede mit einer eigenen Seite. Erreichbar sind sie über
+  „Einstellungen" in der Kopfzeile; in der Seitenleiste stehen sie nicht mehr. Wie bisher sehen sie nur
+  Administratoren. Alte Links auf die Einstellungen führen weiter an die richtige Stelle.
+- **Abgelaufene Hinweise verschwinden nach 7 Tagen** von der Seite „Hinweise". Bis dahin stehen sie unter
+  „Abgelaufen" und lassen sich wie bisher früher entfernen. Hinweise ohne Ende bleiben stehen.
+- **Ein abgelaufener Hinweis erscheint auch im Editor nicht mehr**: weder auf der Slide noch im Inspektor noch als
+  Warnung „wird ersetzt" beim Anlegen eines neuen Hinweises – der Designer zeigt, was der Fernseher zeigt.
+
 ## [0.2.4] – 2026-09-28
 
 Ein Fernseher, der ohne Netz neu startet, zeigt den letzten Stand.
@@ -165,6 +180,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.2.5]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.5
 [0.2.4]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.4
 [0.2.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.3
 [0.2.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.2

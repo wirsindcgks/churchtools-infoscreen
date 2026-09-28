@@ -20,19 +20,20 @@ Etwa eine halbe Stunde, den Fernseher nicht mitgezählt.
 - [ ] **Dir selbst die Modulrechte geben** – auch Admins sehen das Modul sonst nicht
       ([Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)).
 - [ ] **Designer einmal öffnen** – er legt dabei seine Ablage an.
-- [ ] **Einstellungen → „Gruppen und Rechte anlegen"** – der Assistent legt „Infoscreen-Designer" und
+- [ ] **Einstellungen → Gruppen und Rechte → „Gruppen und Rechte anlegen"** – der Assistent legt „Infoscreen-Designer" und
       „Infoscreen-Devices" samt Rechten an ([Schritt 4](Einrichtung.md#4-gruppen-und-rechte-anlegen-lassen)).
 - [ ] **Screens anlegen:** Startseite → **„+ Screen erstellen"**, je Fernseher einer. Name und Overscan später über
       „…" → „Einstellungen".
 - [ ] **Gestalter aufnehmen:** in die Gruppe „Infoscreen-Designer", egal in welcher Rolle.
 - [ ] **Je Fernseher ein Geräte-Konto** mit Benutzername und Passwort, Personenstatus mit wenig Rechten, Mitglied
       von „Infoscreen-Devices" ([Schritt 6](Einrichtung.md#6-geräte-benutzer-anlegen)).
-- [ ] **Adresse für den Fernseher erzeugen:** Einstellungen → „Adresse für einen Fernseher"
+- [ ] **Adresse für den Fernseher erzeugen:** Einstellungen → Adressen für die Fernseher
       ([Schritt 7](Einrichtung.md#7-den-fernseher-einrichten)).
 
 **Danach gelegentlich:**
 
-- **Nach jedem Update** und wenn ein Screen einen neuen Kalender zeigt: Einstellungen → **„Rechte aktualisieren"**.
+- **Nach jedem Update** und wenn ein Screen einen neuen Kalender zeigt: Einstellungen → Gruppen und Rechte →
+  **„Rechte aktualisieren"**.
 - **Gerät verloren?** Passwort des Geräte-Kontos ändern, neue Adresse erzeugen
   ([Notbremse](Einrichtung.md#wenn-ein-gerät-verloren-geht--die-notbremse)).
 - **Jemand hört auf zu gestalten?** Aus der Gruppe „Infoscreen-Designer" nehmen – die Rechte gehen mit.
@@ -120,7 +121,7 @@ eine eigene Darstellung gewählt hat, behält sie.
 
 Das Gerät tut nichts selbst; es braucht nur einmal die richtige Adresse.
 
-- [ ] Ein Administrator hat ein **Geräte-Konto** angelegt und in den **Einstellungen die Adresse** erzeugt.
+- [ ] Ein Administrator hat ein **Geräte-Konto** angelegt und unter **Einstellungen → Adressen für die Fernseher die Adresse** erzeugt.
 - [ ] Die Adresse ist die **Startseite des Kiosk-Browsers**, im Vollbild; auf einem Raspberry Pi mit FullPageOS in
       `fullpageos.txt`. Tastatur und Maus braucht es nicht.
 - [ ] **Bildschirmschoner und Energiesparen aus.**

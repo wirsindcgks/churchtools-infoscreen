@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { computed, onMounted, reactive, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { EXTENSION_KEY } from '../config';
+import Icon, { type IconName } from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import { fetchCalendars, type Calendar } from '../ct/api';
@@ -42,6 +44,54 @@ import { CATEGORIES, type CategoryKey, type ScreenRepository } from '../store/sc
 
 type Side = 'designer' | 'device';
 
+/**
+ * One component, four addresses (Plan.md 36): what the page shows follows
+ * from the route name instead of splitting it into sub-components. `RouterView`
+ * keeps the same instance across all four routes, so `onMounted` loads once,
+ * whichever page one starts on or moves to.
+ */
+const route = useRoute();
+const router = useRouter();
+type SetupPage = 'overview' | 'groups' | 'tv' | 'wiki';
+const page = computed<SetupPage>(() => {
+    switch (route.name) {
+        case 'setup-groups':
+            return 'groups';
+        case 'setup-tv':
+            return 'tv';
+        case 'setup-wiki':
+            return 'wiki';
+        default:
+            return 'overview';
+    }
+});
+const HEADERS: Record<SetupPage, { icon: IconName; title: string; intro: string }> = {
+    overview: {
+        icon: 'settings',
+        title: 'Einstellungen',
+        intro:
+            'Hier verwalten ChurchTools-Administratoren die Gruppen und Rechte für Gestalter und Geräte, die Adressen ' +
+            'der Fernseher und die Mediathek im Wiki.',
+    },
+    groups: {
+        icon: 'person',
+        title: 'Gruppen und Rechte',
+        intro:
+            'Der Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an; hier prüfst und aktualisierst du ' +
+            'sie oder entfernst die Einrichtung.',
+    },
+    tv: {
+        icon: 'tv',
+        title: 'Adressen für die Fernseher',
+        intro: 'Erzeugt die Adresse, mit der sich ein Fernseher selbst anmeldet.',
+    },
+    wiki: {
+        icon: 'image',
+        title: 'Mediathek im Wiki',
+        intro: 'Wo die Bilder der Mediathek im Wiki stehen.',
+    },
+};
+const header = computed(() => HEADERS[page.value]);
 
 const groups = ref<GroupSummary[]>([]);
 const selected = reactive<Record<Side, number | null>>({ designer: null, device: null });
@@ -427,8 +477,16 @@ async function save(): Promise<void> {
  * content, devices only read. Who may manage permissions counts as admin.
  */
 const admin = ref<boolean | null>(null);
+/**
+ * Whether the card "Mediathek im Wiki" can be decided yet: only once the demo
+ * mode and the wiki area are known does the overview know whether to show it.
+ */
+const settingsLoaded = ref(false);
 
 onMounted(async () => {
+    // The former anchor `#fernseher` (until 2026-09-28) jumped down this page;
+    // it now leads to the page of its own.
+    if (route.name === 'setup' && route.hash === '#fernseher') void router.replace({ name: 'setup-tv' });
     try {
         admin.value = await isAdministrator();
         if (!admin.value) return;
@@ -449,6 +507,7 @@ onMounted(async () => {
         wikiCategory.value = wikiCategories.find((c) => c.name === WIKI_CATEGORY_NAME) ?? null;
         wikiCategoryId = wikiCategory.value?.id ?? null;
         wikiCategoryIdKnown.value = wikiCategoryId !== null;
+        settingsLoaded.value = true;
         calendars = calendarList;
         usedCalendarIds = used;
         selected.designer = settings?.designerGroupId ?? null;
@@ -534,9 +593,11 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 <template>
     <ModulePage current="setup">
         <div class="setup">
-            <PageHeader icon="settings" title="Einstellungen" testid="setup-heading">
-                Gruppen und Rechte für Gestalter und Geräte, die Adressen der Fernseher und die Mediathek im Wiki – Sache der
-                ChurchTools-Administratoren.
+            <RouterLink v-if="page !== 'overview'" class="back" :to="{ name: 'setup' }" data-testid="settings-back">
+                <Icon name="back" :size="16" /> Einstellungen
+            </RouterLink>
+            <PageHeader :icon="header.icon" :title="header.title" testid="setup-heading">
+                {{ header.intro }}
             </PageHeader>
             <p v-if="admin === null" class="empty">Lade …</p>
             <section v-else-if="!admin" class="d-banner d-banner--warning" data-testid="setup-admins-only">
@@ -547,146 +608,193 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                 </p>
             </section>
             <template v-else>
-                <p class="lead">
-                    Rechte vergibt ChurchTools an Rollen in Gruppen. Am einfachsten legt der Assistent die beiden Gruppen samt
-                    Rechten an. Wer eigene Gruppen nutzt, wählt sie unten aus – die Prüfung sagt, was fehlt, und ändert nichts.
-                </p>
                 <p v-if="error" class="error" role="alert">{{ error }}</p>
 
-                <section class="d-card card assistant" data-testid="assistant">
-                    <h2>Automatisch einrichten</h2>
-                    <template v-if="createdGroupIds.length">
-                        <p>
-                            Die Gruppen des Infoscreens sind eingerichtet. Wer gestalten soll, wird Mitglied in „{{ GROUP_NAMES.designer }}",
-                            die Konten der Fernseher in „{{ GROUP_NAMES.device }}" – mehr ist nicht zu tun.
-                        </p>
-                        <p class="muted small">
-                            Zeigt ein Screen einen weiteren Kalender, bringt „Rechte aktualisieren" die Gruppen auf den Stand.
-                        </p>
-                        <div class="actions">
-                            <button
-                                class="d-btn d-btn--primary"
-                                type="button"
-                                :disabled="!assistant.allowed || !plan || assistant.running"
-                                data-testid="update-rights"
-                                @click="updateRights"
-                            >
-                                Rechte aktualisieren
-                            </button>
-                            <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running" data-testid="remove-setup" @click="openRemoveSetup">
-                                Einrichtung entfernen
-                            </button>
-                        </div>
-                    </template>
-                    <template v-else>
-                        <p>
-                            Legt zwei leere Gruppen vom Typ „{{ GROUP_TYPE_NAME }}" an und gibt ihren Rollen die nötigen Rechte. Danach
-                            müssen nur noch Personen in die Gruppen aufgenommen werden.
-                        </p>
-                        <p v-if="planProblem" class="muted">{{ planProblem }}</p>
-                        <p v-else-if="foreignGroups.length" class="warn">
-                            Es gibt schon {{ foreignGroups.map((g) => `„${g.name}"`).join(' und ') }}. Der Assistent übernimmt keine
-                            fremden Gruppen – wähle sie unten aus und prüfe ihre Rechte.
-                        </p>
-                        <details v-if="plan" class="plan">
-                            <summary>Was genau passiert</summary>
-                            <div v-for="group in plan" :key="group.key">
-                                <strong>{{ group.name }}</strong> – an allen Rollen:
-                                <ul>
-                                    <li v-for="grant in group.grants" :key="`${grant.authId}`">{{ grant.label }}</li>
-                                </ul>
+                <div v-if="page === 'overview'" class="cards">
+                    <RouterLink class="d-card settings-card" :to="{ name: 'setup-groups' }" data-testid="settings-card-groups">
+                        <span class="settings-card-icon"><Icon name="person" :size="20" /></span>
+                        <span class="settings-card-body">
+                            <h2>Gruppen und Rechte</h2>
+                            <p class="muted">
+                                Der Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an; hier prüfst und
+                                aktualisierst du sie oder entfernst die Einrichtung.
+                            </p>
+                        </span>
+                        <Icon name="forward" class="settings-card-forward" />
+                    </RouterLink>
+                    <RouterLink class="d-card settings-card" :to="{ name: 'setup-tv' }" data-testid="settings-card-tv">
+                        <span class="settings-card-icon"><Icon name="tv" :size="20" /></span>
+                        <span class="settings-card-body">
+                            <h2>Adressen für die Fernseher</h2>
+                            <p class="muted">Erzeugt die Adresse, mit der sich ein Fernseher selbst anmeldet.</p>
+                        </span>
+                        <Icon name="forward" class="settings-card-forward" />
+                    </RouterLink>
+                    <RouterLink
+                        v-if="settingsLoaded && wikiCategory && !demo"
+                        class="d-card settings-card"
+                        :to="{ name: 'setup-wiki' }"
+                        data-testid="settings-card-wiki"
+                    >
+                        <span class="settings-card-icon"><Icon name="image" :size="20" /></span>
+                        <span class="settings-card-body">
+                            <h2>Mediathek im Wiki</h2>
+                            <p class="muted">Wo die Bilder der Mediathek im Wiki stehen.</p>
+                        </span>
+                        <Icon name="forward" class="settings-card-forward" />
+                    </RouterLink>
+                </div>
+
+                <template v-if="page === 'groups'">
+                    <p class="lead">
+                        Rechte vergibt ChurchTools an Rollen in Gruppen. Am einfachsten legt der Assistent die beiden Gruppen samt
+                        Rechten an. Wer eigene Gruppen nutzt, wählt sie unten aus – die Prüfung sagt, was fehlt, und ändert nichts.
+                    </p>
+
+                    <section class="d-card card assistant" data-testid="assistant">
+                        <h2>Automatisch einrichten</h2>
+                        <template v-if="createdGroupIds.length">
+                            <p>
+                                Die Gruppen des Infoscreens sind eingerichtet. Wer gestalten soll, wird Mitglied in „{{ GROUP_NAMES.designer }}",
+                                die Konten der Fernseher in „{{ GROUP_NAMES.device }}" – mehr ist nicht zu tun.
+                            </p>
+                            <p class="muted small">
+                                Zeigt ein Screen einen weiteren Kalender, bringt „Rechte aktualisieren" die Gruppen auf den Stand.
+                            </p>
+                            <div class="actions">
+                                <button
+                                    class="d-btn d-btn--primary"
+                                    type="button"
+                                    :disabled="!assistant.allowed || !plan || assistant.running"
+                                    data-testid="update-rights"
+                                    @click="updateRights"
+                                >
+                                    Rechte aktualisieren
+                                </button>
+                                <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running" data-testid="remove-setup" @click="openRemoveSetup">
+                                    Einrichtung entfernen
+                                </button>
                             </div>
-                            <p v-if="wikiMissing" class="muted small">Dazu wird der Wiki-Bereich „Infoscreen" für die Mediathek angelegt.</p>
-                        </details>
-                        <div class="actions">
-                            <button
-                                class="d-btn d-btn--primary"
-                                type="button"
-                                data-testid="run-assistant"
-                                :disabled="!assistant.allowed || !plan || foreignGroups.length > 0 || assistant.running"
-                                @click="runAssistant"
-                            >
-                                Gruppen und Rechte anlegen
-                            </button>
-                            <span v-if="assistant.running" class="muted">Arbeitet …</span>
-                        </div>
-                    </template>
-                    <ul v-if="assistant.log.length" class="log" data-testid="assistant-log">
-                        <li v-for="(line, i) in assistant.log" :key="i">{{ line }}</li>
-                    </ul>
-                    <p v-if="assistant.error" class="error" role="alert">{{ assistant.error }}</p>
-                </section>
-
-                <div class="sides">
-                    <section v-for="{ side, title, purpose } in SIDES" :key="side" class="d-card card" :data-testid="`setup-${side}`">
-                        <h2>{{ title }}</h2>
-                        <p class="muted">{{ purpose }}</p>
-                        <label class="d-field">
-                            Gruppe
-                            <select
-                                :value="selected[side] ?? ''"
-                                :data-testid="`group-${side}`"
-                                @change="choose(side, ($event.target as HTMLSelectElement).value)"
-                            >
-                                <option value="">– keine gewählt –</option>
-                                <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
-                            </select>
-                        </label>
-                        <p v-if="!groups.length && !error" class="muted">Lade Gruppen …</p>
-                        <p class="muted small">
-                            Keine passende Gruppe? In ChurchTools unter „Gruppen" eine anlegen, auf „aktiv" stellen und hier wählen.
-                        </p>
-
-                        <p v-if="busy[side]" class="muted">Prüfe …</p>
-                        <ul v-else-if="checks[side]" class="checks">
-                            <li v-for="(c, i) in checks[side]" :key="i" :class="`check--${c.level}`">
-                                <span class="symbol" aria-hidden="true">{{ SYMBOL[c.level] }}</span>
-                                <span>
-                                    {{ c.text }}
-                                    <small v-if="c.detail" class="muted">{{ c.detail }}</small>
-                                </span>
-                            </li>
-                        </ul>
-                    </section>
-                </div>
-
-                <div class="actions">
-                    <button class="d-btn d-btn--primary" type="button" data-testid="save-setup" @click="save">Auswahl speichern</button>
-                    <span v-if="saveState === 'saved'" class="muted" data-testid="setup-saved">Gespeichert.</span>
-                    <span v-else-if="saveState === 'saving'" class="muted">Speichert …</span>
-                </div>
-                <p class="muted small">
-                    Geprüft werden die Rechte der Gruppenrollen und ihrer Gruppentyp-Rollen, bei Geräten dazu Personenstatus und
-                    direkt vergebene Rechte. Rechte aus anderen Gruppen zählen nicht mit.
-                </p>
-
-                <section v-if="wikiCategory && !demo" class="d-card card" data-testid="wiki-menu">
-                    <h2>Mediathek im Wiki</h2>
-                    <p class="muted">
-                        Die Bilder der Mediathek liegen im Wiki-Bereich „{{ WIKI_CATEGORY_NAME }}". Gepflegt werden sie im
-                        Designer; im Wiki lässt sich der Bereich unter „Ausgeblendet" aus dem Blick räumen. Er bleibt dort
-                        erreichbar – verborgen im strengen Sinn wird er nicht.
-                    </p>
-                    <p data-testid="wiki-menu-state">
-                        Im Wiki steht er zurzeit
-                        <strong>{{ wikiCategory.inMenu === false ? 'unter „Ausgeblendet"' : 'unter „Kategorien"' }}</strong>.
-                    </p>
-                    <p data-testid="wiki-owner" class="muted small">
-                        <template v-if="wikiCategory.id === createdWikiCategoryId">Angelegt vom Infoscreen Designer.</template>
+                        </template>
                         <template v-else>
-                            Nicht als vom Designer angelegt vermerkt – etwa weil es ihn schon gab. Er gehört damit der Gemeinde und
-                            wird vom Designer nie gelöscht.
+                            <p>
+                                Legt zwei leere Gruppen vom Typ „{{ GROUP_TYPE_NAME }}" an und gibt ihren Rollen die nötigen Rechte. Danach
+                                müssen nur noch Personen in die Gruppen aufgenommen werden.
+                            </p>
+                            <p v-if="planProblem" class="muted">{{ planProblem }}</p>
+                            <p v-else-if="foreignGroups.length" class="warn">
+                                Es gibt schon {{ foreignGroups.map((g) => `„${g.name}"`).join(' und ') }}. Der Assistent übernimmt keine
+                                fremden Gruppen – wähle sie unten aus und prüfe ihre Rechte.
+                            </p>
+                            <details v-if="plan" class="plan">
+                                <summary>Was genau passiert</summary>
+                                <div v-for="group in plan" :key="group.key">
+                                    <strong>{{ group.name }}</strong> – an allen Rollen:
+                                    <ul>
+                                        <li v-for="grant in group.grants" :key="`${grant.authId}`">{{ grant.label }}</li>
+                                    </ul>
+                                </div>
+                                <p v-if="wikiMissing" class="muted small">Dazu wird der Wiki-Bereich „Infoscreen" für die Mediathek angelegt.</p>
+                            </details>
+                            <div class="actions">
+                                <button
+                                    class="d-btn d-btn--primary"
+                                    type="button"
+                                    data-testid="run-assistant"
+                                    :disabled="!assistant.allowed || !plan || foreignGroups.length > 0 || assistant.running"
+                                    @click="runAssistant"
+                                >
+                                    Gruppen und Rechte anlegen
+                                </button>
+                                <span v-if="assistant.running" class="muted">Arbeitet …</span>
+                            </div>
+                        </template>
+                        <ul v-if="assistant.log.length" class="log" data-testid="assistant-log">
+                            <li v-for="(line, i) in assistant.log" :key="i">{{ line }}</li>
+                        </ul>
+                        <p v-if="assistant.error" class="error" role="alert">{{ assistant.error }}</p>
+                    </section>
+
+                    <div class="sides">
+                        <section v-for="{ side, title, purpose } in SIDES" :key="side" class="d-card card" :data-testid="`setup-${side}`">
+                            <h2>{{ title }}</h2>
+                            <p class="muted">{{ purpose }}</p>
+                            <label class="d-field">
+                                Gruppe
+                                <select
+                                    :value="selected[side] ?? ''"
+                                    :data-testid="`group-${side}`"
+                                    @change="choose(side, ($event.target as HTMLSelectElement).value)"
+                                >
+                                    <option value="">– keine gewählt –</option>
+                                    <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
+                                </select>
+                            </label>
+                            <p v-if="!groups.length && !error" class="muted">Lade Gruppen …</p>
+                            <p class="muted small">
+                                Keine passende Gruppe? In ChurchTools unter „Gruppen" eine anlegen, auf „aktiv" stellen und hier wählen.
+                            </p>
+
+                            <p v-if="busy[side]" class="muted">Prüfe …</p>
+                            <ul v-else-if="checks[side]" class="checks">
+                                <li v-for="(c, i) in checks[side]" :key="i" :class="`check--${c.level}`">
+                                    <span class="symbol" aria-hidden="true">{{ SYMBOL[c.level] }}</span>
+                                    <span>
+                                        {{ c.text }}
+                                        <small v-if="c.detail" class="muted">{{ c.detail }}</small>
+                                    </span>
+                                </li>
+                            </ul>
+                        </section>
+                    </div>
+
+                    <div class="actions">
+                        <button class="d-btn d-btn--primary" type="button" data-testid="save-setup" @click="save">Auswahl speichern</button>
+                        <span v-if="saveState === 'saved'" class="muted" data-testid="setup-saved">Gespeichert.</span>
+                        <span v-else-if="saveState === 'saving'" class="muted">Speichert …</span>
+                    </div>
+                    <p class="muted small">
+                        Geprüft werden die Rechte der Gruppenrollen und ihrer Gruppentyp-Rollen, bei Geräten dazu Personenstatus und
+                        direkt vergebene Rechte. Rechte aus anderen Gruppen zählen nicht mit.
+                    </p>
+                </template>
+
+                <template v-if="page === 'wiki'">
+                    <section v-if="wikiCategory && !demo" class="d-card card" data-testid="wiki-menu">
+                        <h2>Mediathek im Wiki</h2>
+                        <p class="muted">
+                            Die Bilder der Mediathek liegen im Wiki-Bereich „{{ WIKI_CATEGORY_NAME }}". Gepflegt werden sie im
+                            Designer; im Wiki lässt sich der Bereich unter „Ausgeblendet" aus dem Blick räumen. Er bleibt dort
+                            erreichbar – verborgen im strengen Sinn wird er nicht.
+                        </p>
+                        <p data-testid="wiki-menu-state">
+                            Im Wiki steht er zurzeit
+                            <strong>{{ wikiCategory.inMenu === false ? 'unter „Ausgeblendet"' : 'unter „Kategorien"' }}</strong>.
+                        </p>
+                        <p data-testid="wiki-owner" class="muted small">
+                            <template v-if="wikiCategory.id === createdWikiCategoryId">Angelegt vom Infoscreen Designer.</template>
+                            <template v-else>
+                                Nicht als vom Designer angelegt vermerkt – etwa weil es ihn schon gab. Er gehört damit der Gemeinde und
+                                wird vom Designer nie gelöscht.
+                            </template>
+                        </p>
+                        <div class="actions">
+                            <button class="d-btn" type="button" :disabled="wikiBusy" data-testid="wiki-menu-toggle" @click="toggleWikiMenu">
+                                {{ wikiCategory.inMenu === false ? 'Wieder unter „Kategorien" zeigen' : 'Unter „Ausgeblendet" führen' }}
+                            </button>
+                        </div>
+                        <p v-if="wikiError" class="error" role="alert">{{ wikiError }}</p>
+                    </section>
+                    <p v-else class="empty" data-testid="wiki-empty">
+                        <template v-if="demo">Im Demo-Modus nicht verfügbar.</template>
+                        <template v-else>
+                            Es gibt noch keinen Wiki-Bereich „{{ WIKI_CATEGORY_NAME }}" – der Assistent legt ihn unter „Gruppen und
+                            Rechte" an.
                         </template>
                     </p>
-                    <div class="actions">
-                        <button class="d-btn" type="button" :disabled="wikiBusy" data-testid="wiki-menu-toggle" @click="toggleWikiMenu">
-                            {{ wikiCategory.inMenu === false ? 'Wieder unter „Kategorien" zeigen' : 'Unter „Ausgeblendet" führen' }}
-                        </button>
-                    </div>
-                    <p v-if="wikiError" class="error" role="alert">{{ wikiError }}</p>
-                </section>
+                </template>
 
-                <section id="fernseher" class="d-card card tv" data-testid="tv-address">
+                <section v-if="page === 'tv'" class="d-card card tv" data-testid="tv-address">
                     <h2>Adresse für einen Fernseher</h2>
                     <p class="muted">
                         Mit dieser Adresse meldet sich der Fernseher bei jedem Start selbst als Geräte-Benutzer an – eine
@@ -745,7 +853,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     </div>
                 </section>
             </template>
-            <p class="muted small version" data-testid="app-version">
+            <p v-if="page === 'overview'" class="muted small version" data-testid="app-version">
                 Infoscreen Designer {{ APP_VERSION }} – was neu ist, steht unter
                 <RouterLink :to="{ name: 'about' }">Über &amp; Neuigkeiten</RouterLink>. Neuere Fassungen stehen unter
                 „Releases" auf GitHub und werden in der Extension-Verwaltung von ChurchTools als ZIP hochgeladen.
@@ -769,10 +877,72 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
     display: grid;
     gap: 16px;
 }
-.sides {
+.sides,
+.cards {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
     gap: 16px;
+}
+.settings-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    color: inherit;
+    text-decoration: none;
+    transition: box-shadow 0.15s, border-color 0.15s;
+}
+.settings-card:hover {
+    border-color: var(--d-interactive);
+    box-shadow: 0 4px 12px -4px #0000001f;
+}
+.settings-card:focus-visible {
+    outline: 2px solid var(--d-accent);
+    outline-offset: 2px;
+}
+.settings-card-icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--d-radius-lg);
+    background: var(--d-accent-pale);
+    color: var(--d-accent);
+}
+.settings-card-body {
+    display: grid;
+    flex: 1;
+    gap: 4px;
+    min-width: 0;
+}
+.settings-card-body h2 {
+    margin: 0;
+    font-size: 1.1em;
+}
+.settings-card-body p {
+    margin: 0;
+}
+.settings-card-forward {
+    flex: none;
+    color: var(--d-text-muted);
+}
+.back {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+    text-decoration: none;
+}
+.back:hover {
+    color: var(--d-text);
+    text-decoration: underline;
+}
+.back:focus-visible {
+    outline: 2px solid var(--d-accent);
+    outline-offset: 2px;
+    border-radius: var(--d-radius);
 }
 .card {
     display: grid;
