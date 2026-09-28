@@ -94,7 +94,8 @@ Der Assistent legt zwei **leere, aktive Gruppen vom Typ „Merkmal"** an und gib
 Rechte:
 
 - **„Infoscreen-Designer"** – das Modul sehen und seine Inhalte bearbeiten, dazu den Wiki-Bereich „Infoscreen", in
-  dem die Bilder der Mediathek liegen (er wird bei Bedarf angelegt).
+  dem die Bilder der Mediathek liegen. Fehlt er, legt ihn der Assistent an; gibt es schon einen Bereich dieses
+  Namens, benutzt er ihn mit. Die Mediathek selbst legt keinen an – sie ist erst nach diesem Schritt nutzbar.
 - **„Infoscreen-Devices"** – das Modul und seine Daten sehen und **jeden Kalender, den ein Screen zeigt**.
 
 Der Assistent fasst **nur Gruppen an, die er selbst angelegt hat**, und ändert keine bestehenden Rollen. Gibt es
@@ -102,7 +103,9 @@ schon Gruppen mit diesen Namen, hält er an.
 
 **Später wiederkommen:** Zeigt ein Screen einen weiteren Kalender, klicke in den Einstellungen auf **„Rechte
 aktualisieren"** – sonst fehlen dessen Termine auf dem Fernseher. „Einrichtung entfernen" löscht die beiden Gruppen
-wieder.
+wieder – **nur die, die der Assistent selbst angelegt hat**. Vorhandene Gruppen, die du gewählt hast, bleiben, ebenso
+der Wiki-Bereich mit den Bildern. Ob der Bereich vom Designer angelegt wurde oder schon da war, steht in den
+Einstellungen auf der Karte „Mediathek im Wiki".
 
 **Screens legst du als Administrator an:** auf der Startseite des Designers **„+ Screen erstellen"** – Name, Adresse
 und Format. Name und Overscan änderst du später über das Menü **„…" der Kachel → „Einstellungen"**; was der Screen
@@ -246,3 +249,4 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | Fernseher: „Es gibt keinen Screen „…"" | Adresse vertippt oder Screen gelöscht | Adresse neu kopieren |
 | Fernseher: Termine eines Kalenders fehlen | Gerät darf den Kalender nicht lesen | Einstellungen → „Rechte aktualisieren" |
 | Fernseher: Bild fehlt, Platzhalter statt Bild | Bild im Wiki gelöscht | im Designer ein neues Bild wählen |
+| Mediathek: „Den Wiki-Bereich „Infoscreen" gibt es noch nicht" | Die Einrichtung ist noch nicht gelaufen – oder dir fehlt das Recht, den Bereich zu sehen | Schritt 4; sonst die Rechte am Wiki-Bereich prüfen |

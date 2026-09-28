@@ -4,6 +4,24 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.2.2] – 2026-09-28
+
+Der Designer räumt nur noch weg, was er selbst angelegt hat.
+
+### Geändert
+
+- **Der Wiki-Bereich „Infoscreen" entsteht nur noch in der Einrichtung** (Einstellungen → „Automatisch
+  einrichten"). Die Mediathek legt ihn nicht mehr beim ersten Öffnen an, sondern sagt, dass die Einrichtung fehlt.
+- **Die Einstellungen zeigen, wem der Wiki-Bereich gehört:** ob ihn der Designer angelegt hat oder ob es ihn schon
+  gab. Einen Bereich, den es schon gab, benutzt der Designer mit, löscht ihn aber nie. Bei Installationen vor dieser
+  Version ist das nicht vermerkt; ihr Bereich gilt deshalb ebenfalls als vorhanden und bleibt stehen.
+
+### Behoben
+
+- Brach „Einrichtung entfernen" mittendrin ab, etwa weil eine Gruppe nicht gelöscht werden durfte, versuchte ein
+  zweiter Anlauf auch die schon gelöschten Gruppen noch einmal. Jetzt merkt sich der Designer, was noch da ist.
+  Vorhandene Gruppen, die in den Einstellungen gewählt sind, fasst „Einrichtung entfernen" wie bisher nicht an.
+
 ## [0.2.1] – 2026-09-26
 
 Fernseher bleiben angemeldet, auch wenn jemand die Seite von Hand neu lädt.
@@ -100,6 +118,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.2.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.2
 [0.2.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.1
 [0.2.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.0
 [0.1.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.1.0
