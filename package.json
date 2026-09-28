@@ -1,7 +1,7 @@
 {
   "name": "churchtools-infoscreen",
   "private": true,
-  "version": "0.2.6",
+  "version": "0.2.7",
   "type": "module",
   "license": "GPL-2.0-or-later",
   "scripts": {

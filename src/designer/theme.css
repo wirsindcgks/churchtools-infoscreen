@@ -86,6 +86,24 @@
 .infoscreen-designer :where(input:not([type='checkbox'], [type='radio'], [type='color']), select) {
     min-height: 2.3em;
 }
+/*
+ * Safari draws a select natively and ignores height and padding: it stood
+ * lower and smaller than the text field beside it (2026-09-28). Without the
+ * native look it takes the field's frame; the arrow is drawn in the text
+ * colour, so it follows a dark theme too.
+ */
+.infoscreen-designer :where(select:not([multiple])) {
+    padding-right: 1.9em;
+    background-image:
+        linear-gradient(45deg, transparent 50%, currentColor 50%),
+        linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position:
+        calc(100% - 1.05em) 50%,
+        calc(100% - 0.7em) 50%;
+    background-size: 0.35em 0.35em;
+    background-repeat: no-repeat;
+    appearance: none;
+}
 .infoscreen-designer :where(input[type='checkbox'], input[type='color']) {
     width: auto;
 }
