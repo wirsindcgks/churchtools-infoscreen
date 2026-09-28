@@ -2,6 +2,7 @@
 import { computed } from 'vue';
 import type { Calendar, PostGroup } from '../ct/api';
 import type { Block, Fill, TextStyle } from '../model/schema';
+import { bannerShown } from '../player/banner';
 import { themeOf, useStageContext } from '../player/context';
 import { fontDef, FONTS } from '../player/fonts';
 import { sizedImageUrl } from '../player/format';
@@ -22,6 +23,8 @@ const editor = useEditorStore();
 const stage = useStageContext();
 const block = computed(() => editor.block);
 const slide = computed(() => editor.slide);
+// The designer shows what the TV shows (Plan.md 38): named only while it still runs.
+const bannerRunning = computed(() => bannerShown(editor.draft?.playlist.banner, stage.now, stage.timeZone));
 
 /** Field edits are gestures: all keystrokes in one field are one undo step. */
 const edit = { onFocus: () => editor.beginGesture(), onBlur: () => editor.endGesture() };
@@ -701,8 +704,8 @@ const slideFill = computed<Fill>(() =>
                     Auf welchem Screen sie wann läuft, legt der Zeitplan des Screens fest – unter „Zeitpläne" oder an der
                     Kachel des Screens. Speichern ändert alle Screens, die sie zeigen.
                 </p>
-                <p v-if="editor.draft.playlist.banner" class="hint" data-testid="banner-status">
-                    Hinweisband: „{{ editor.draft.playlist.banner.text }}" – bearbeiten unter
+                <p v-if="bannerRunning" class="hint" data-testid="banner-status">
+                    Hinweisband: „{{ editor.draft.playlist.banner!.text }}" – bearbeiten unter
                     <RouterLink :to="{ name: 'notices' }">Hinweise</RouterLink>
                 </p>
                 <p v-else class="hint" data-testid="banner-status">

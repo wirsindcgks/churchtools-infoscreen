@@ -9,6 +9,7 @@
  */
 import { computed, onMounted, ref } from 'vue';
 import type { Banner, ThemeDoc } from '../model/schema';
+import { bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
 import StageView from '../player/StageView.vue';
 import { fitStage } from '../player/stage';
@@ -92,9 +93,13 @@ function selectNone(): void {
     selected.value = new Set();
 }
 
-/** A checked playlist that already carries a band of its own – saving replaces it. */
+/**
+ * A checked playlist that already carries a band of its own, still running –
+ * saving replaces it. A faded one does not warn: the designer shows what the
+ * TV shows (Plan.md 38).
+ */
 function hasOtherBanner(overview: PlaylistOverview): boolean {
-    return !!overview.playlist.banner && !originalIds.value.has(overview.playlist.id);
+    return bannerShown(overview.playlist.banner, now, props.timeZone) && !originalIds.value.has(overview.playlist.id);
 }
 
 function revisionOf(id: string): number {
