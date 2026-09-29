@@ -249,7 +249,11 @@ test.describe('with a finger, in both browsers', () => {
         await page.getByTestId('editor-more').click();
         await page.getByTestId('more-preview').click();
         await expect(page.getByTestId('playlist-preview')).toBeVisible();
-        await page.keyboard.press('Escape');
+        // With a finger the controls never fade: a tap moves no pointer that could bring them back.
+        await page.waitForTimeout(3000);
+        await expect(page.getByTestId('playlist-preview')).toHaveClass(/idle/);
+        await expect(page.getByTestId('preview-controls')).toHaveCSS('opacity', '1');
+        await page.getByTestId('preview-controls').getByRole('button', { name: /Schließen/ }).tap();
         await expect(page.getByTestId('playlist-preview')).toHaveCount(0);
     });
 
@@ -441,6 +445,19 @@ test.describe('with a finger, in both browsers', () => {
         const afterX = Number(await page.getByTestId('inspector-x').inputValue());
         expect(afterX).toBeGreaterThan(beforeX);
     });
+});
+
+test('at a desktop the preview controls fade while untouched and come back with the mouse', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await page.getByTestId('open-preview').click();
+    const controls = page.getByTestId('preview-controls');
+    await expect(controls).toHaveCSS('opacity', '1');
+    await page.waitForTimeout(3000);
+    await expect(controls).toHaveCSS('opacity', '0');
+    await page.mouse.move(200, 200);
+    await page.mouse.move(220, 220);
+    await expect(controls).toHaveCSS('opacity', '1');
 });
 
 test('at 1440px the phone sheets are gone, the inspector stands beside the stage (Plan.md 44)', async ({ page }) => {

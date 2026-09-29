@@ -4,6 +4,16 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.2.13] – 2026-09-29
+
+Die Vorschau lässt sich am Handy wieder bedienen.
+
+### Behoben
+
+- **Die Steuerleiste der Vorschau verschwand am Handy** und kam nicht wieder – man konnte weder anhalten noch
+  schließen. Auf Touch-Geräten bleibt sie jetzt eingeblendet. Am Rechner blendet sie sich weiterhin aus, damit die
+  Vorschau aussieht wie der Fernseher, und kommt mit Maus, Klick oder Tippen zurück.
+
 ## [0.2.12] – 2026-09-29
 
 Beim Bearbeiten am Handy bleibt die ganze Slide im Blick.
@@ -285,6 +295,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.2.13]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.13
 [0.2.12]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.12
 [0.2.11]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.11
 [0.2.10]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.10

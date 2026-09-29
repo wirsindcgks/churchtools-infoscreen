@@ -122,6 +122,7 @@ onBeforeUnmount(() => {
         aria-label="Vorschau der Playlist"
         data-testid="playlist-preview"
         @pointermove="wake"
+        @pointerdown="wake"
     >
         <StageView :width="stage.width" :height="stage.height" :fit="fit">
             <Transition name="fade">
@@ -205,6 +206,19 @@ onBeforeUnmount(() => {
 }
 .idle {
     cursor: none;
+}
+/*
+ * Not on a phone or tablet: a tap moves no pointer, so faded controls never
+ * came back there – no way to pause or to close (phone test after v0.2.12,
+ * Plan.md 44). With a finger they stay.
+ */
+@media (pointer: coarse) {
+    .idle .controls {
+        opacity: 1;
+    }
+    .idle {
+        cursor: auto;
+    }
 }
 .controls button {
     display: inline-flex;
