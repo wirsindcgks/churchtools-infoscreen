@@ -12,7 +12,8 @@ async function createScreen(page: Page, name: string, format: 'Quer' | 'Hochkant
     await page.getByTestId('create-dialog').getByText(format).click();
     await page.getByTestId('create').click();
     await expect(page).toHaveURL(/playlists\//);
-    await page.getByRole('link', { name: 'Screens', exact: true }).click();
+    // Not by role and name: "leave-editor" now carries an aria-label of its own below 48rem (Plan.md 44, M2).
+    await page.getByTestId('leave-editor').click();
     await expect(page.getByTestId('screens-heading')).toBeVisible();
 }
 
@@ -64,6 +65,16 @@ test.describe('start page on a desktop', () => {
         await tile.getByTestId('delete-screen').click();
         await expect(page.getByTestId('screen-card')).toHaveCount(1);
     });
+
+    test('the phone menu button does not show – the sidebar is a column already', async ({ page }) => {
+        await page.goto('./');
+        await expect(page.getByTestId('page-menu')).not.toBeVisible();
+        await expect(page.getByTestId('sidebar-screens')).not.toBeVisible();
+
+        await page.getByTestId('sidebar-playlists').click();
+        await expect(page.getByTestId('playlists-heading')).toBeVisible();
+        await expect(page.getByTestId('filter-portrait')).toBeVisible();
+    });
 });
 
 test.describe('on a phone', () => {
@@ -81,6 +92,17 @@ test.describe('on a phone', () => {
         expect(box!.x).toBeGreaterThanOrEqual(0);
         expect(box!.x + box!.width).toBeLessThanOrEqual(390);
         await page.screenshot({ path: 'test-results/create-phone.png' });
+    });
+
+    test('the tiles stand in a single column, wide enough to read', async ({ page }) => {
+        await page.goto('./');
+        const screenBox = await page.getByTestId('screen-card').first().boundingBox();
+        expect(screenBox!.width).toBeGreaterThanOrEqual(300);
+
+        await page.getByTestId('page-menu').click();
+        await page.getByTestId('sidebar-playlists').click();
+        const playlistBox = await page.getByTestId('playlist-card').first().boundingBox();
+        expect(playlistBox!.width).toBeGreaterThanOrEqual(300);
     });
 
     test('the editor stacks slides, stage and inspector', async ({ page }) => {
@@ -128,17 +150,53 @@ test.describe('media library as a section of its own (Plan.md 16)', () => {
 test.describe('sections on a phone', () => {
     test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
-    test('schedules, playlists and media library stay reachable from every section', async ({ page }) => {
+    /** Opens the phone's page menu and picks an entry from it; the menu closes by itself. */
+    async function gotoViaMenu(page: Page, testid: string): Promise<void> {
+        await page.getByTestId('page-menu').click();
+        await page.getByTestId(testid).click();
+    }
+
+    test('every section is reachable through the page menu, and the filters only show on Screens', async ({ page }) => {
         await page.goto('./');
-        await page.getByTestId('sidebar-playlists').click();
+        await expect(page.getByTestId('filter-portrait')).toBeVisible(); // Screens: the filters stand in for a menu of their own
+
+        await gotoViaMenu(page, 'sidebar-playlists');
         await expect(page.getByTestId('playlists-heading')).toBeVisible();
-        await page.getByTestId('sidebar-schedules').click();
+        await expect(page.getByTestId('page-menu')).toContainText('Playlists');
+        await expect(page.getByTestId('filter-portrait')).not.toBeVisible();
+        await expect(page.getByTestId('sidebar-schedules')).not.toBeVisible(); // menu closed again
+
+        await gotoViaMenu(page, 'sidebar-schedules');
         await expect(page.getByTestId('schedules-heading')).toBeVisible();
         await expect(page.getByTestId('schedule-row')).toHaveCount(1);
         // The first slide of what runs now, beside the rules.
         await expect(page.getByTestId('schedule-preview')).toBeVisible();
-        await page.getByTestId('sidebar-media').click();
+
+        await gotoViaMenu(page, 'sidebar-notices');
+        await expect(page.getByTestId('notices-heading')).toBeVisible();
+
+        await gotoViaMenu(page, 'sidebar-media');
         await expect(page.getByTestId('media-heading')).toBeVisible();
+
+        await gotoViaMenu(page, 'sidebar-design');
+        await expect(page.getByTestId('design-heading')).toBeVisible();
+
+        await gotoViaMenu(page, 'sidebar-about');
+        await expect(page.getByTestId('about-heading')).toBeVisible();
+
+        await page.getByTestId('page-menu').click();
+        await page.getByTestId('sidebar-screens').click();
+        await expect(page.getByTestId('screen-card').first()).toBeVisible();
+        await expect(page.getByTestId('filter-portrait')).toBeVisible();
+
+        await page.getByTestId('page-menu').click();
+        await expect(page.getByTestId('sidebar-schedules')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(page.getByTestId('sidebar-schedules')).not.toBeVisible();
+        await expect(page.getByTestId('page-menu')).toBeFocused();
+
         await expectNoSidewaysScroll(page);
+        await page.getByTestId('page-menu').click();
+        await page.screenshot({ path: 'test-results/menu-phone.png' });
     });
 });

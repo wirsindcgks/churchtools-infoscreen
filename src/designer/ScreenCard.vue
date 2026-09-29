@@ -197,7 +197,8 @@ function settings(): void {
     padding-top: 0.35em;
     font-size: 1em;
     font-weight: 700;
-    overflow-wrap: anywhere;
+    hyphens: auto;
+    overflow-wrap: break-word;
 }
 .name a {
     color: inherit;

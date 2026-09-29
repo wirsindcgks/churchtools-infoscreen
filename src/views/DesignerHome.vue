@@ -315,11 +315,16 @@ async function remove(overview: ScreenOverview): Promise<void> {
     font-size: var(--d-size-sm);
 }
 
-/* Phone: one or two columns of tiles. */
+/* Phone: one or two columns, one below 30rem – two would squeeze names unreadably thin. */
 @media (max-width: 48rem) {
     .tiles {
         grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
         gap: 10px;
+    }
+}
+@media (max-width: 30rem) {
+    .tiles {
+        grid-template-columns: minmax(0, 1fr);
     }
 }
 </style>

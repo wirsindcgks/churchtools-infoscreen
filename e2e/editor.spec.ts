@@ -224,6 +224,108 @@ test.describe('with a finger', () => {
     });
 });
 
+// `hasTouch` alone, without `isMobile`: this runs in both browsers (Plan.md 44, M2–M4), unlike the
+// block above, which Playwright only emulates in Chromium.
+test.describe('with a finger, in both browsers', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+    /** Nothing sticks out sideways: a page that scrolls horizontally is broken on a phone. */
+    async function expectNoSidewaysScroll(page: Page): Promise<void> {
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        expect(overflow).toBeLessThanOrEqual(0);
+    }
+
+    test('the header fits in one line, and "…" replaces Vorschau/Player (Plan.md 44, M2)', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        const bar = (await page.locator('.d-appbar').boundingBox())!;
+        expect(bar.height).toBeLessThanOrEqual(100);
+        await expect(page.getByTestId('save')).toBeVisible();
+        await expect(page.getByTestId('editor-more')).toBeVisible();
+        await expect(page.getByTestId('open-preview')).not.toBeVisible();
+        await expectNoSidewaysScroll(page);
+
+        await page.getByTestId('editor-more').click();
+        await page.getByTestId('more-preview').click();
+        await expect(page.getByTestId('playlist-preview')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(page.getByTestId('playlist-preview')).toHaveCount(0);
+    });
+
+    test('"+ Baustein" opens a sheet with all eleven, and the inspector opens as its own sheet (Plan.md 44, M3, M4)', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+
+        await page.getByTestId('add-block-menu').click();
+        const sheet = page.getByTestId('block-sheet');
+        await expect(sheet).toBeVisible();
+        await expect(sheet.locator('[data-testid^="sheet-add-"]')).toHaveCount(11);
+        await sheet.getByTestId('sheet-add-qr').click();
+        await expect(sheet).toHaveCount(0);
+
+        const inspectorSheet = page.getByTestId('inspector-sheet');
+        await expect(inspectorSheet).toHaveClass(/open/);
+        await expect(page.getByTestId('inspector-sheet-toggle')).toContainText('Baustein: QR-Code');
+
+        await page.getByTestId('inspector-x').fill('100');
+        await page.getByTestId('inspector-x').blur();
+        await expect(page.getByTestId('inspector-x')).toHaveValue('100');
+
+        // The sheet covers at most 60 % of the window, and the stage moved up into the free part above it.
+        const sheetBox = (await inspectorSheet.boundingBox())!;
+        expect(sheetBox.height).toBeLessThanOrEqual(844 * 0.6 + 1);
+        await expect
+            .poll(async () => {
+                const stage = (await page.locator('.editor-stage').boundingBox())!;
+                return stage.y >= 0 && stage.y + stage.height <= sheetBox.y + 1;
+            })
+            .toBe(true);
+        await expectNoSidewaysScroll(page);
+
+        await page.getByTestId('inspector-sheet-toggle').click();
+        await expect(inspectorSheet).not.toHaveClass(/open/);
+        await expect(page.getByTestId('block-inspector')).toBeHidden();
+        await expect(page.getByTestId('inspector-sheet-toggle')).toBeVisible();
+    });
+
+    test('Escape closes the "+ Baustein" sheet without deselecting the block (Plan.md 44, M3)', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await page.getByTestId('add-block-menu').click();
+        await page.getByTestId('sheet-add-text').click();
+        await expect(page.getByTestId('inspector-sheet-toggle')).toContainText('Baustein: Text');
+
+        // The open inspector sheet lies over the lower part of the page – collapse it to reach "+ Baustein" again.
+        await page.getByTestId('inspector-sheet-toggle').click();
+        await page.getByTestId('add-block-menu').click();
+        await expect(page.getByTestId('block-sheet')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(page.getByTestId('block-sheet')).toHaveCount(0);
+        await expect(page.getByTestId('inspector-sheet-toggle')).toContainText('Baustein: Text'); // still selected
+    });
+});
+
+test('at 1440px the phone sheets are gone, the inspector stands beside the stage (Plan.md 44)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await expect(page.getByTestId('inspector-sheet-toggle')).not.toBeVisible();
+    await expect(page.getByTestId('add-block-menu')).not.toBeVisible();
+    await expect(page.getByTestId('editor-more')).not.toBeVisible();
+    await expect(page.getByTestId('add-clock')).toBeVisible();
+    await expect(page.getByTestId('open-preview')).toBeVisible();
+
+    await page.getByTestId('add-clock').click();
+    const [stage, inspector] = await Promise.all([
+        page.locator('.editor-stage').boundingBox(),
+        page.getByTestId('block-inspector').boundingBox(),
+    ]);
+    expect(inspector!.x).toBeGreaterThan(stage!.x + stage!.width - 1);
+});
+
 test('the media library in the editor lists pictures to choose from and closes again (reads only)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();

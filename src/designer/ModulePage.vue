@@ -35,7 +35,8 @@ onBeforeUnmount(() => window.removeEventListener('resize', measure));
 </script>
 
 <template>
-    <div ref="root" class="infoscreen-designer module-page" :style="{ minHeight: `calc(100vh - ${top}px)` }">
+    <!-- "de": names on a tile may need to hyphenate (Plan.md 44, M5) – we do not know what the host page sets. -->
+    <div ref="root" lang="de" class="infoscreen-designer module-page" :style="{ minHeight: `calc(100vh - ${top}px)` }">
         <AppBar :current="current" :show-setup="admin">
             <template #actions><slot name="actions" /></template>
         </AppBar>

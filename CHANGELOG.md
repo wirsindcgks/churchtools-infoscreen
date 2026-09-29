@@ -4,6 +4,26 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.2.9] – 2026-09-29
+
+Der Designer am Handy: alle Seiten über ein Menü, und im Editor bleibt die Bildfläche im Blick.
+
+### Geändert
+
+- **Navigation am Handy:** Oben steht ein Knopf mit dem Namen der aktuellen Seite; er klappt die Liste aller Seiten
+  auf – Screens, Zeitpläne, Hinweise, Playlists, Mediathek, Design, Über & Neuigkeiten. Bisher lagen die meisten
+  davon unsichtbar rechts in einer Zeile zum Wischen. Die Filter „Alle / Querformat / Hochformat" stehen am Handy
+  nur noch auf der Seite „Screens".
+- **Kacheln am Handy** stehen untereinander in voller Breite; lange Namen werden nach Silben getrennt statt mitten
+  im Wort.
+- **Editor am Handy:**
+  - Die Kopfleiste passt in eine Zeile. Vorschau und Player stecken im Menü „…".
+  - „+ Baustein" öffnet eine Übersicht mit allen elf Bausteinen; bisher waren nur fünf zu sehen.
+  - Die Einstellungen eines Bausteins erscheinen als Blatt am unteren Rand. Es klappt beim Antippen eines Bausteins
+    von selbst auf, und die Bildfläche rückt darüber, damit man sieht, was man ändert.
+
+Am Rechner sieht alles aus wie bisher.
+
 ## [0.2.8] – 2026-09-29
 
 Eine Schrift für alle neuen Bausteine, und mehr Geduld, wenn ChurchTools um eine Pause bittet.
@@ -222,6 +242,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.2.9]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.9
 [0.2.8]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.8
 [0.2.7]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.7
 [0.2.6]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.6
