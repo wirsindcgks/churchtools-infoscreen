@@ -10,6 +10,7 @@ import { webFrame } from '../web';
 import AppointmentListView from './AppointmentListView.vue';
 import ClockView from './ClockView.vue';
 import CountdownView from './CountdownView.vue';
+import GroupsView from './GroupsView.vue';
 import NextAppointmentView from './NextAppointmentView.vue';
 import PostsView from './PostsView.vue';
 
@@ -112,6 +113,7 @@ const imageUrl = computed(() => {
         <NextAppointmentView v-else-if="block.type === 'next-appointment'" :block="block" />
         <CountdownView v-else-if="block.type === 'countdown'" :block="block" />
         <PostsView v-else-if="block.type === 'posts'" :block="block" :slide-seconds="slideSeconds" />
+        <GroupsView v-else-if="block.type === 'groups'" :block="block" :slide-seconds="slideSeconds" />
     </div>
 </template>
 

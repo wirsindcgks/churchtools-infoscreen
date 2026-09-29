@@ -4,7 +4,7 @@
  * Schritte 11): as a row of plain buttons in the top bar they were lost.
  * Symbol and name, the grid next to them – it is about the stage, too. On a
  * phone six of eleven sat unseen to the right of the row (Plan.md 44, M3):
- * below 48rem a button "+ Baustein" opens a sheet with all eleven as a grid.
+ * below 48rem a button "+ Baustein" opens a sheet with all of them as a grid.
  */
 import { onBeforeUnmount, ref } from 'vue';
 import type { BlockType } from '../model/schema';

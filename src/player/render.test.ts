@@ -2,9 +2,10 @@ import { mount } from '@vue/test-utils';
 import { defineComponent, h, reactive } from 'vue';
 import { describe, expect, it } from 'vitest';
 import { normalizeAppointments } from '../appointments/normalize';
+import type { Group } from '../groups/normalize';
 import { readSlide } from '../model/read';
 import { makeSlide, textBlock } from '../model/testing';
-import type { Block, MediaDoc, SlideDoc } from '../model/schema';
+import type { Block, GroupFields, MediaDoc, SlideDoc } from '../model/schema';
 import type { Post } from '../posts/normalize';
 import { provideStageContext, type StageContext } from './context';
 import SlideView from './SlideView.vue';
@@ -264,5 +265,125 @@ describe('rendering posts (Plan.md 33)', () => {
         expect(
             render(makeSlide({ blocks: [postsBlock({ layout: 'list' })] })).get('[data-testid="posts-empty"]').text(),
         ).toBe('Keine aktuellen Beiträge');
+    });
+});
+
+describe('rendering groups (Plan.md 43)', () => {
+    const group = (overrides: Partial<Group> = {}): Group => ({
+        id: 8,
+        name: 'Kinderkirche',
+        note: 'Kinder ab 3 Jahren sind herzlich willkommen.',
+        imageUrl: null,
+        weekday: 'Sonntag',
+        weekdaySort: 7,
+        meetingTime: '10:00',
+        targetGroup: 'Kinder',
+        category: 'Kinder & Jugend',
+        color: '#14b8a6',
+        leaders: ['Erika Beispiel'],
+        freePlaces: 3,
+        waitinglist: false,
+        publicUrl: 'https://example.church.tools/publicgroup/8',
+        ...overrides,
+    });
+    // The block's own default (schema 1.14): every item on but the leaders.
+    const DEFAULT_SHOW: GroupFields = {
+        name: true,
+        image: true,
+        when: true,
+        targetGroup: true,
+        category: true,
+        note: true,
+        leaders: false,
+        places: true,
+        qr: true,
+    };
+    const style = { fontFamily: 'sans', fontSize: 56, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
+    const groupsBlock = (overrides: Partial<Extract<Block, { type: 'groups' }>> = {}): Block => ({
+        id: 'g',
+        type: 'groups',
+        x: 0,
+        y: 0,
+        width: 1400,
+        height: 700,
+        parentGroupId: 10,
+        groupIds: [],
+        layout: 'card',
+        show: DEFAULT_SHOW,
+        style,
+        ...overrides,
+    });
+    const withGroups = (...groups: Group[]): Partial<StageContext> => ({
+        groupHomepages: [{ parentGroupId: 10, groups }],
+    });
+
+    it('shows the name, weekday and time, free places, the description and a QR code', () => {
+        const card = render(makeSlide({ blocks: [groupsBlock()] }), withGroups(group())).get('[data-testid="groups-card"]');
+        expect(card.text()).toContain('Kinderkirche');
+        expect(card.text()).toContain('Sonntag · 10:00');
+        expect(card.text()).toContain('Noch 3 Plätze frei');
+        expect(card.text()).toContain('Kinder ab 3 Jahren sind herzlich willkommen.');
+        expect(card.find('[data-testid="group-qr"]').exists()).toBe(true);
+    });
+
+    it('hides the leaders unless switched on', () => {
+        const context = withGroups(group());
+        const off = render(makeSlide({ blocks: [groupsBlock()] }), context);
+        expect(off.find('[data-testid="group-leaders"]').exists()).toBe(false);
+        const on = render(makeSlide({ blocks: [groupsBlock({ show: { ...DEFAULT_SHOW, leaders: true } })] }), context);
+        expect(on.get('[data-testid="group-leaders"]').text()).toContain('Erika Beispiel');
+    });
+
+    it('leaves out each item its own switch turns off (name, image, when, places, qr)', () => {
+        const context = withGroups(group({ imageUrl: 'https://example.church.tools/images/8/hash' }));
+        const withShow = (show: Partial<GroupFields>) =>
+            render(makeSlide({ blocks: [groupsBlock({ show: { ...DEFAULT_SHOW, ...show } })] }), context).get(
+                '[data-testid="groups-card"]',
+            );
+
+        expect(withShow({}).text()).toContain('Kinderkirche');
+        expect(withShow({ name: false }).text()).not.toContain('Kinderkirche');
+
+        expect(withShow({}).find('img').exists()).toBe(true);
+        expect(withShow({ image: false }).find('img').exists()).toBe(false);
+
+        expect(withShow({}).text()).toContain('Sonntag');
+        expect(withShow({ when: false }).text()).not.toContain('Sonntag');
+
+        expect(withShow({}).text()).toContain('Plätze frei');
+        expect(withShow({ places: false }).text()).not.toContain('Plätze frei');
+
+        expect(withShow({}).find('[data-testid="group-qr"]').exists()).toBe(true);
+        expect(withShow({ qr: false }).find('[data-testid="group-qr"]').exists()).toBe(false);
+    });
+
+    it('shows rows in the list layout and no QR code', () => {
+        const wrapper = render(
+            makeSlide({ blocks: [groupsBlock({ layout: 'list' })] }),
+            withGroups(group(), group({ id: 9, name: 'Hauskreis' })),
+        );
+        expect(wrapper.findAll('[data-testid="group-row"]')).toHaveLength(2);
+        expect(wrapper.get('[data-testid="groups-list"]').text()).toContain('Hauskreis');
+        expect(wrapper.find('[data-testid="group-qr"]').exists()).toBe(false);
+    });
+
+    it('shows a calm message without a chosen homepage, and without groups on the chosen one', () => {
+        expect(
+            render(makeSlide({ blocks: [groupsBlock({ parentGroupId: undefined })] })).get('[data-testid="groups-empty"]').text(),
+        ).toBe('Keine Gruppen-Homepage gewählt');
+        expect(
+            render(makeSlide({ blocks: [groupsBlock()] }), { groupHomepages: [{ parentGroupId: 10, groups: [] }] })
+                .get('[data-testid="groups-empty"]')
+                .text(),
+        ).toBe('Keine Gruppen');
+    });
+
+    it('with a chosen selection shows only those groups, in their order', () => {
+        const wrapper = render(
+            makeSlide({ blocks: [groupsBlock({ layout: 'list', groupIds: [9, 8] })] }),
+            withGroups(group(), group({ id: 9, name: 'Hauskreis' })),
+        );
+        const rows = wrapper.findAll('[data-testid="group-row"]');
+        expect(rows.map((r) => r.text())).toEqual([expect.stringContaining('Hauskreis'), expect.stringContaining('Kinderkirche')]);
     });
 });

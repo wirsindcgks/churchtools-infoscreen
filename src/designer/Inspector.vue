@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import type { Calendar, PostGroup } from '../ct/api';
-import type { Block, Fill, TextStyle } from '../model/schema';
+import { homepageGroups, selectGroups, type Group, type HomepageEntry } from '../groups/normalize';
+import type { Block, Fill, GroupFields, TextStyle } from '../model/schema';
 import { bannerShown } from '../player/banner';
 import { themeOf, useStageContext } from '../player/context';
 import { fontDef, FONTS } from '../player/fonts';
 import { sizedImageUrl } from '../player/format';
-import { PAGE_SECONDS, POST_SECONDS, slideSeconds } from '../player/paging';
+import { GROUP_SECONDS, PAGE_SECONDS, POST_SECONDS, slideSeconds } from '../player/paging';
 import { qrShape } from '../player/qr';
 import { webFrame, withScheme } from '../player/web';
 import { useEditorStore } from './editor-store';
@@ -15,8 +16,22 @@ import FillEditor from './FillEditor.vue';
 import Icon from './Icon.vue';
 import { BLOCK_LABELS } from './ops';
 
-defineProps<{ calendars: Calendar[]; groups: PostGroup[] }>();
+const props = defineProps<{ calendars: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[] }>();
 const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo'] }>();
+
+/** Labels in the order of `GroupFields` itself, so the fieldset needs no list of its own (Plan.md 43). */
+const GROUP_SHOW_LABELS: Record<keyof GroupFields, string> = {
+    name: 'Name',
+    image: 'Bild',
+    when: 'Wochentag und Uhrzeit',
+    targetGroup: 'Zielgruppe',
+    category: 'Kategorie',
+    note: 'Beschreibung',
+    leaders: 'Leitung',
+    places: 'Freie Plätze',
+    qr: 'QR-Code zur Gruppenseite',
+};
+const GROUP_SHOW_KEYS = Object.keys(GROUP_SHOW_LABELS) as (keyof GroupFields)[];
 
 const editor = useEditorStore();
 /** The preview's stage context: paged lists report their page count there. */
@@ -57,6 +72,73 @@ function togglePostGroup(id: number, on: boolean): void {
 
 /** Between 5 and 120 seconds; anything else waits until the value is sensible. */
 function setPostSeconds(value: string): void {
+    const n = Number(value);
+    if (Number.isInteger(n) && n >= 5 && n <= 120) setBlock({ pageSeconds: n });
+}
+
+/** The homepage's groups, from the preview's live data (Plan.md 43) – empty until it has loaded. */
+const homepageGroupList = computed<Group[]>(() =>
+    block.value && block.value.type === 'groups' ? homepageGroups(stage.groupHomepages, block.value.parentGroupId) : [],
+);
+
+/** Whether the preview has the homepage yet – until then a chosen group is not "missing", only not loaded. */
+const homepageLoaded = computed(
+    () =>
+        block.value?.type === 'groups' &&
+        (stage.groupHomepages ?? []).some((h) => h.parentGroupId === (block.value as { parentGroupId?: number }).parentGroupId),
+);
+
+/**
+ * Stored is the parent group's id, not the homepage's own id or hash – a group has at most one
+ * homepage, and it survives the homepage being recreated (Plan.md 43, a). A fresh choice starts
+ * without a selection: "every group, by weekday" until the designer picks some.
+ */
+function setGroupsHomepage(value: string): void {
+    if (!block.value || block.value.type !== 'groups') return;
+    setBlock({ parentGroupId: value === '' ? undefined : Number(value), groupIds: [] });
+}
+
+/** Whether the stored parent group's homepage fell out of the list – its groups are gone from the TV (Plan.md 43, g). */
+const groupsHomepageMissing = computed(() => {
+    if (!block.value || block.value.type !== 'groups' || block.value.parentGroupId === undefined) return false;
+    const parentGroupId = block.value.parentGroupId;
+    return !props.homepages.some((h) => h.parentGroupId === parentGroupId);
+});
+
+/** Empty `groupIds` means "every group, by weekday"; switching it off starts from all of them, in that order. */
+function toggleAllGroups(checked: boolean): void {
+    if (!block.value || block.value.type !== 'groups') return;
+    setBlock({ groupIds: checked ? [] : selectGroups(homepageGroupList.value, []).map((g) => g.id) });
+}
+
+/** Adds or removes a group from the explicit choice; order is preserved, new ones join at the end. */
+function toggleGroupPick(id: number, on: boolean): void {
+    if (!block.value || block.value.type !== 'groups') return;
+    const next = on ? [...block.value.groupIds, id] : block.value.groupIds.filter((g) => g !== id);
+    setBlock({ groupIds: next });
+}
+
+function removeGroupId(id: number): void {
+    if (!block.value || block.value.type !== 'groups') return;
+    setBlock({ groupIds: block.value.groupIds.filter((g) => g !== id) });
+}
+
+function moveGroupId(index: number, target: number): void {
+    if (!block.value || block.value.type !== 'groups' || target < 0 || target >= block.value.groupIds.length) return;
+    const ids = [...block.value.groupIds];
+    [ids[index], ids[target]] = [ids[target]!, ids[index]!];
+    setBlock({ groupIds: ids });
+}
+
+/** The homepage's groups not yet chosen, in the homepage's own order (Plan.md 43). */
+const pickableGroupList = computed(() => {
+    if (!block.value || block.value.type !== 'groups') return [] as Group[];
+    const chosen = new Set(block.value.groupIds);
+    return homepageGroupList.value.filter((g) => !chosen.has(g.id));
+});
+
+/** Between 5 and 120 seconds, like the posts block's. */
+function setGroupSeconds(value: string): void {
     const n = Number(value);
     if (Number.isInteger(n) && n >= 5 && n <= 120) setBlock({ pageSeconds: n });
 }
@@ -432,6 +514,144 @@ const slideFill = computed<Fill>(() =>
                     <p class="hint">Zeigt die neuesten Beiträge der gewählten Gruppen; abgelaufene nie.</p>
                 </template>
 
+                <!-- Plan.md, 43: groups of a ChurchTools group homepage, one at a time with a QR code or as a list. -->
+                <template v-if="block.type === 'groups'">
+                    <label class="d-field">
+                        Gruppen-Homepage
+                        <select
+                            :value="block.parentGroupId ?? ''"
+                            data-testid="groups-homepage"
+                            @change="setGroupsHomepage(($event.target as HTMLSelectElement).value)"
+                        >
+                            <option value="">– wählen –</option>
+                            <option v-for="h in homepages" :key="h.parentGroupId" :value="h.parentGroupId">{{ h.title }}</option>
+                            <option v-if="groupsHomepageMissing" :value="block.parentGroupId">
+                                (nicht mehr vorhanden)
+                            </option>
+                        </select>
+                    </label>
+                    <p v-if="!homepages.length" class="hint">
+                        Noch keine Gruppen-Homepage. In ChurchTools die Obergruppe öffnen, dann Einstellungen →
+                        Allgemein → Außendarstellung → „Gruppenhomepage erstellen".
+                    </p>
+
+                    <label class="check">
+                        <input
+                            type="checkbox"
+                            :checked="block.groupIds.length === 0"
+                            :disabled="block.groupIds.length === 0 && homepageGroupList.length === 0"
+                            data-testid="groups-all"
+                            @change="toggleAllGroups(($event.target as HTMLInputElement).checked)"
+                        >
+                        Alle Gruppen der Homepage, nach Wochentag
+                    </label>
+
+                    <fieldset v-if="block.groupIds.length">
+                        <legend>Gruppen</legend>
+                        <div v-for="(id, index) in block.groupIds" :key="id" class="group-row">
+                            <template v-if="homepageGroupList.find((g) => g.id === id)">
+                                <label class="check">
+                                    <input
+                                        type="checkbox"
+                                        checked
+                                        :disabled="block.groupIds.length === 1"
+                                        @change="toggleGroupPick(id, ($event.target as HTMLInputElement).checked)"
+                                    >
+                                    {{ homepageGroupList.find((g) => g.id === id)!.name }}
+                                </label>
+                                <span class="spacer" />
+                                <button
+                                    class="d-btn d-btn--icon"
+                                    type="button"
+                                    aria-label="Nach oben"
+                                    title="Nach oben"
+                                    :disabled="index === 0"
+                                    :data-testid="`group-up-${id}`"
+                                    @click="moveGroupId(index, index - 1)"
+                                >
+                                    ↑
+                                </button>
+                                <button
+                                    class="d-btn d-btn--icon"
+                                    type="button"
+                                    aria-label="Nach unten"
+                                    title="Nach unten"
+                                    :disabled="index === block.groupIds.length - 1"
+                                    :data-testid="`group-down-${id}`"
+                                    @click="moveGroupId(index, index + 1)"
+                                >
+                                    ↓
+                                </button>
+                            </template>
+                            <span v-else-if="!homepageLoaded" class="dimmed">Gruppe {{ id }}</span>
+                            <template v-else>
+                                <span class="dimmed">Gruppe {{ id }} – nicht mehr auf der Homepage</span>
+                                <span class="spacer" />
+                                <button class="d-btn" type="button" :data-testid="`group-missing-${id}`" @click="removeGroupId(id)">
+                                    Entfernen
+                                </button>
+                            </template>
+                        </div>
+                        <label v-for="g in pickableGroupList" :key="g.id" class="check">
+                            <input
+                                type="checkbox"
+                                :data-testid="`group-pick-${g.id}`"
+                                @change="toggleGroupPick(g.id, ($event.target as HTMLInputElement).checked)"
+                            >
+                            {{ g.name }}
+                        </label>
+                    </fieldset>
+
+                    <label class="d-field">
+                        Darstellung
+                        <select
+                            :value="block.layout"
+                            data-testid="groups-layout"
+                            @change="setBlock({ layout: ($event.target as HTMLSelectElement).value })"
+                        >
+                            <option value="card">Hervorgehoben – eine Gruppe nach der anderen</option>
+                            <option value="list">Liste – mehrere untereinander</option>
+                        </select>
+                    </label>
+                    <label class="d-field">
+                        {{ block.layout === 'card' ? 'Sekunden je Gruppe' : 'Sekunden je Seite' }}
+                        <input
+                            type="number"
+                            min="5"
+                            max="120"
+                            :value="block.pageSeconds ?? GROUP_SECONDS"
+                            data-testid="group-seconds"
+                            v-on="edit"
+                            @input="setGroupSeconds(($event.target as HTMLInputElement).value)"
+                        >
+                    </label>
+
+                    <fieldset>
+                        <legend>Angaben</legend>
+                        <label v-for="key in GROUP_SHOW_KEYS" :key="key" class="check">
+                            <input
+                                type="checkbox"
+                                :checked="block.show[key]"
+                                :disabled="block.layout === 'list' && (key === 'note' || key === 'qr')"
+                                :data-testid="`group-show-${key}`"
+                                @change="setBlock({ show: { ...block.show, [key]: ($event.target as HTMLInputElement).checked } })"
+                            >
+                            {{ GROUP_SHOW_LABELS[key] }}
+                        </label>
+                        <p v-if="block.layout === 'list'" class="hint">
+                            Beschreibung und QR-Code nur in der Darstellung „Hervorgehoben".
+                        </p>
+                    </fieldset>
+                    <p v-if="block.show.leaders" class="hint">
+                        Namen erscheinen nur, wenn die Gruppen-Homepage in ChurchTools die Leiter zeigt – dann sind sie
+                        ohnehin öffentlich.
+                    </p>
+                    <p class="hint">
+                        Zeigt nur Gruppen, die ChurchTools auf der Homepage öffentlich zeigt – mit und ohne Anmeldung
+                        dieselben.
+                    </p>
+                </template>
+
                 <template v-if="block.type === 'church-header'">
                     <label class="check">
                         <input
@@ -782,6 +1002,21 @@ legend {
 }
 .check--inline {
     padding-bottom: 0.4em;
+}
+/* A chosen group with its reorder buttons, or a missing one with "Entfernen" (Plan.md 43). */
+.group-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.group-row .check {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.spacer {
+    flex: 1;
 }
 .swatch {
     width: 10px;
