@@ -244,8 +244,9 @@ function rowLeaders(group: Group): string | null {
 const cardsRoot = ref<HTMLElement | null>(null);
 
 /**
- * The leaders stand left of the code, flush with its bottom, and end where the code's box begins, as
- * drawn – its caption may be wider than the code. Where that leaves less than four times the font
+ * The leaders stand left of the code, centred on the height of the code itself – not of its caption
+ * (fourth test, 2026-09-29) –, and end where the code's box begins, as drawn: the caption may be
+ * wider than the code. Where that leaves less than four times the font
  * size – four cards a page in a large font left 112 px, not even room for "Leitung:" – they move
  * above the code instead, over the whole width. Where they would then cover the name or the facts,
  * they give way: name and facts first, then the leaders, the description last.
@@ -255,7 +256,12 @@ function placeLeaders(text: HTMLElement, leaders: HTMLElement, qr: HTMLElement |
     const beside = qr ? inner - qr.offsetWidth - safety.value : inner;
     const above = qr !== null && beside < 4 * em.value;
     leaders.style.right = `${above || !qr ? pad.value : pad.value + qr.offsetWidth + safety.value}px`;
-    leaders.style.bottom = `${above && qr ? pad.value + qr.offsetHeight + safety.value : pad.value}px`;
+    if (above && qr) leaders.style.bottom = `${pad.value + qr.offsetHeight + safety.value}px`;
+    else if (qr) {
+        // The code's middle, from the bottom: the caption line (0.54em), the gap (0.3em) and half the code.
+        const middle = pad.value + 0.84 * em.value + qrSide.value / 2;
+        leaders.style.bottom = `${Math.max(pad.value, middle - leaders.offsetHeight / 2)}px`;
+    } else leaders.style.bottom = `${pad.value}px`;
     leaders.classList.toggle('leaders-box--above', above);
     const facts = [...text.querySelectorAll<HTMLElement>('.group-name, .fact')];
     const factsEnd = Math.max(0, ...facts.map((f) => f.offsetTop + f.offsetHeight));
