@@ -41,10 +41,21 @@ describe('designer operations', () => {
             'church-header',
             'countdown',
             'posts',
+            'groups',
         ]);
         for (const block of styled) expect(block.style.fontFamily).toBe('oswald');
         expect(createBanner(theme).style.fontFamily).toBe('oswald');
         expect(createBlock('text', stage)).toMatchObject({ style: { fontFamily: 'lato' } });
+    });
+
+    it('starts a groups block without a homepage, all items on but the leaders (Plan.md 43)', () => {
+        expect(createBlock('groups', stage)).toMatchObject({
+            type: 'groups',
+            groupIds: [],
+            layout: 'card',
+            show: { name: true, image: true, when: true, targetGroup: true, category: true, note: true, leaders: false, places: true, qr: true },
+        });
+        expect(createBlock('groups', stage)).not.toHaveProperty('parentGroupId');
     });
 
     it('duplicates a slide with fresh ids', () => {

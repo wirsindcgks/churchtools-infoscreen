@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
 import type { Post } from '../posts/normalize';
-import { mergePosts, postNeeds, readableAppointments } from './data';
+import { groupNeeds, mergePosts, postNeeds, readableAppointments } from './data';
 
 const forbidden = () => Object.assign(new Error('403'), { response: { status: 403 } });
 
@@ -20,6 +20,21 @@ const postsBlock = (overrides: Partial<Extract<Block, { type: 'posts' }>> = {}):
     layout: 'card',
     showImage: true,
     showAuthor: false,
+    style,
+    ...overrides,
+});
+
+const groups = (overrides: Partial<Extract<Block, { type: 'groups' }>> = {}): Block => ({
+    id: 'gruppen',
+    type: 'groups',
+    x: 0,
+    y: 0,
+    width: 1400,
+    height: 700,
+    parentGroupId: 10,
+    groupIds: [],
+    layout: 'card',
+    show: { name: true, image: true, when: true, targetGroup: true, category: true, note: true, leaders: false, places: true, qr: true },
     style,
     ...overrides,
 });
@@ -95,5 +110,16 @@ describe('readableAppointments', () => {
         });
         await expect(readableAppointments([1, 5], fetch)).rejects.toBe(rateLimited);
         expect(fetch).toHaveBeenCalledTimes(1); // no per-calendar retry: a 429 is not "one calendar is forbidden"
+    });
+});
+
+describe('groupNeeds (Plan.md 43)', () => {
+    it('names each parent group once, sorted; blocks without a homepage do not count', () => {
+        const slides = [
+            makeSlide({ blocks: [groups({ id: 'a', parentGroupId: 10 }), groups({ id: 'b', parentGroupId: 8 })] }),
+            makeSlide({ blocks: [groups({ id: 'c', parentGroupId: 10 }), groups({ id: 'd', parentGroupId: undefined })] }),
+        ];
+        expect(groupNeeds(slides)).toEqual([8, 10]);
+        expect(groupNeeds([makeSlide({ blocks: [] })])).toEqual([]);
     });
 });

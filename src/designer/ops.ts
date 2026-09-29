@@ -1,6 +1,8 @@
 /** Pure editing operations on the data model; the store wires them to history and storage. */
+import * as v from 'valibot';
 import {
     DEFAULT_THEME,
+    GroupFields,
     SCHEMA_VERSION,
     STAGE_PRESETS,
     type Banner,
@@ -119,6 +121,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     qr: 'QR-Code',
     countdown: 'Countdown',
     posts: 'Beiträge',
+    groups: 'Gruppen',
 };
 
 /** A new block with sensible defaults, centred on the stage. */
@@ -140,6 +143,7 @@ export function createBlock(
         qr: [360, 360],
         countdown: [1100, 360],
         posts: [1400, 700],
+        groups: [1400, 700],
     }[type];
     const width = Math.min(size[0]!, stage.width - 80);
     const height = Math.min(size[1]!, stage.height - 80);
@@ -195,6 +199,9 @@ export function createBlock(
                 showAuthor: false,
                 style: textStyle(56),
             };
+        case 'groups':
+            // No homepage yet: the inspector offers them; the leaders stay off until switched on (Plan.md 43).
+            return { ...frame, type, groupIds: [], layout: 'card', show: v.parse(GroupFields, {}), style: textStyle(56) };
     }
 }
 

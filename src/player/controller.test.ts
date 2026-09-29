@@ -3,6 +3,7 @@ import { NotAuthenticatedError, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import { DEMO_BUNDLE } from '../dev/demo';
 import { DEFAULT_THEME, type Block } from '../model/schema';
+import type { Group, HomepageGroups } from '../groups/normalize';
 import type { Post } from '../posts/normalize';
 import { ScreenNotFoundError, type LoadedScreen } from '../store/screen-repository';
 import type { CachedState } from './cache';
@@ -58,6 +59,44 @@ const samplePost: Post = {
     imageRatio: null,
 };
 
+/** A `groups` block showing the homepage at group 10, as on the test instance (G40). */
+const groupsBlock: Block = {
+    id: 'groups',
+    type: 'groups',
+    x: 0,
+    y: 0,
+    width: 1400,
+    height: 700,
+    parentGroupId: 10,
+    groupIds: [],
+    layout: 'card',
+    show: { name: true, image: true, when: true, targetGroup: true, category: true, note: true, leaders: false, places: true, qr: true },
+    style: { fontFamily: 'sans', fontSize: 56, fontWeight: 400, color: '#fff', align: 'left' },
+};
+const withGroups = (): LoadedScreen => {
+    const base = loaded();
+    const [first, ...rest] = base.slides;
+    if (!first) return base;
+    return { ...base, slides: [{ ...first, blocks: [...first.blocks, groupsBlock] }, ...rest] };
+};
+const sampleGroup: Group = {
+    id: 8,
+    name: 'Kinderkirche',
+    note: '',
+    imageUrl: null,
+    weekday: 'Sonntag',
+    weekdaySort: 6,
+    meetingTime: '10:00',
+    targetGroup: '',
+    category: '',
+    color: '#84cc16',
+    leaders: ['Erika Beispiel'],
+    freePlaces: null,
+    waitinglist: false,
+    publicUrl: 'https://example.church.tools/publicgroup/8',
+};
+const sampleHomepages: HomepageGroups[] = [{ parentGroupId: 10, groups: [sampleGroup] }];
+
 function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
     return {
         assertSignedIn: vi.fn(async () => {}),
@@ -70,6 +109,7 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
         serverDate: vi.fn(async () => NOW.toUTCString()),
         appointments: vi.fn(async () => []),
         posts: vi.fn(async () => []),
+        groupHomepages: vi.fn(async () => []),
         ...overrides,
     };
 }
@@ -262,6 +302,57 @@ describe('player controller', () => {
         expect(player.state.posts).toEqual([samplePost]); // kept, not cleared
         expect(player.state.phase).toBe('running');
         expect(player.state.staleSince).toBeNull();
+        player.stop();
+    });
+
+    it('fetches the homepages the groups blocks need and saves their groups offline (Plan.md 43)', async () => {
+        const groupHomepages = vi.fn<PlayerData['groupHomepages']>(async () => sampleHomepages);
+        const deps = fakeDeps();
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withGroups(), groupHomepages }), deps);
+        await player.start();
+        expect(groupHomepages).toHaveBeenCalledWith([10]);
+        expect(player.state.groupHomepages).toEqual(sampleHomepages);
+        expect(deps.saved[0]?.groupHomepages).toEqual(sampleHomepages);
+        player.stop();
+    });
+
+    it('asks for no homepage without a groups block', async () => {
+        const groupHomepages = vi.fn<PlayerData['groupHomepages']>(async () => sampleHomepages);
+        const player = createPlayer('demo', fakeData({ groupHomepages }), fakeDeps());
+        await player.start();
+        expect(groupHomepages).not.toHaveBeenCalled();
+        expect(player.state.groupHomepages).toEqual([]);
+        player.stop();
+    });
+
+    it('keeps the last groups when they cannot be fetched, and lets the data cycle succeed anyway', async () => {
+        const groupHomepages = vi
+            .fn<PlayerData['groupHomepages']>()
+            .mockResolvedValueOnce(sampleHomepages)
+            .mockRejectedValue(new Error('Network Error'));
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withGroups(), groupHomepages }), fakeDeps());
+        await player.start();
+        await vi.advanceTimersByTimeAsync(15 * 60_000);
+        expect(player.state.groupHomepages).toEqual(sampleHomepages); // kept, not cleared
+        expect(player.state.phase).toBe('running');
+        expect(player.state.staleSince).toBeNull();
+        player.stop();
+    });
+
+    it('shows the cached groups after a restart without network', async () => {
+        const cached: CachedState = {
+            screen: withGroups(),
+            appointments: [],
+            groupHomepages: sampleHomepages,
+            timeZone: 'Europe/Berlin',
+            churchName: 'Gemeinde',
+            savedAt: '2026-10-03T20:00:00Z',
+        };
+        const offline = new Error('Network Error');
+        const data = fakeData({ assertSignedIn: vi.fn(async () => Promise.reject(offline)), timeZone: () => Promise.reject(offline) });
+        const player = createPlayer('demo', data, fakeDeps(cached));
+        await player.start();
+        expect(player.state.groupHomepages).toEqual(sampleHomepages);
         player.stop();
     });
 

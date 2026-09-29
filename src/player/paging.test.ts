@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
-import { pageInterval, paginateByHeight, POST_SECONDS, slideSeconds } from './paging';
+import { GROUP_SECONDS, pageInterval, paginateByHeight, POST_SECONDS, slideSeconds } from './paging';
 
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
 const list = (overrides: Partial<Extract<Block, { type: 'appointment-list' }>> = {}): Block => ({
@@ -31,6 +31,21 @@ const posts = (overrides: Partial<Extract<Block, { type: 'posts' }>> = {}): Bloc
     layout: 'card',
     showImage: true,
     showAuthor: false,
+    style,
+    ...overrides,
+});
+
+const groups = (overrides: Partial<Extract<Block, { type: 'groups' }>> = {}): Block => ({
+    id: 'gruppen',
+    type: 'groups',
+    x: 0,
+    y: 0,
+    width: 1400,
+    height: 700,
+    parentGroupId: 10,
+    groupIds: [],
+    layout: 'card',
+    show: { name: true, image: true, when: true, targetGroup: true, category: true, note: true, leaders: false, places: true, qr: true },
     style,
     ...overrides,
 });
@@ -68,5 +83,16 @@ describe('paging an appointment list', () => {
         expect(slideSeconds(slide, {})).toBe(8); // not yet measured
         expect(slideSeconds(makeSlide({ durationSeconds: 8, blocks: [posts({ layout: 'list' })] }), { beitraege: 3 })).toBe(8);
         expect(slideSeconds(makeSlide({ durationSeconds: 8, blocks: [posts({ pageSeconds: 5 })] }), { beitraege: 3 })).toBe(15);
+    });
+});
+
+describe('paging a groups block (Plan.md 43)', () => {
+    it('keeps the slide until every group or page has shown, as a card and as a list', () => {
+        const card = makeSlide({ durationSeconds: 8, blocks: [groups()] });
+        expect(slideSeconds(card, { gruppen: 4 })).toBe(4 * GROUP_SECONDS);
+        expect(slideSeconds(card, { gruppen: 1 })).toBe(8);
+        expect(slideSeconds(card, {})).toBe(8);
+        const listed = makeSlide({ durationSeconds: 8, blocks: [groups({ layout: 'list', pageSeconds: 6 })] });
+        expect(slideSeconds(listed, { gruppen: 2 })).toBe(12);
     });
 });

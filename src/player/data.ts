@@ -5,8 +5,16 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
 import { startOfZonedDay } from '../appointments/zoned';
-import { fetchAppointments, fetchChurchLogoUrl, fetchPosts, fetchTimeZone } from '../ct/api';
+import {
+    fetchAppointments,
+    fetchChurchLogoUrl,
+    fetchGroupHomepage,
+    fetchGroupHomepageList,
+    fetchPosts,
+    fetchTimeZone,
+} from '../ct/api';
 import { ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
+import { normalizeHomepage, type HomepageGroups } from '../groups/normalize';
 import type { ScreenDoc, SlideDoc } from '../model/schema';
 import { normalizePosts, type Post } from '../posts/normalize';
 import { getRepository } from '../store/backend';
@@ -27,6 +35,12 @@ export interface PlayerData {
     serverDate(): Promise<string | null>;
     appointments(calendarIds: number[], from: Date, to: Date, timeZone: string): Promise<Appointment[]>;
     posts(groupIds: number[], limit: number): Promise<Post[]>;
+    /**
+     * The groups of the homepages at these parent groups (schema 1.14). A
+     * homepage that is gone or disabled comes back without groups – its
+     * groups leave the TV (Plan.md 43, g).
+     */
+    groupHomepages(parentGroupIds: number[]): Promise<HomepageGroups[]>;
 }
 
 /** Data from ChurchTools; with `login`, only for that device account. */
@@ -72,6 +86,19 @@ export const churchToolsPlayerData: PlayerData = {
     async posts(groupIds, limit) {
         const raw = await withTimeout(fetchPosts(groupIds, limit));
         return normalizePosts(raw);
+    },
+    async groupHomepages(parentGroupIds) {
+        if (!parentGroupIds.length) return [];
+        const list = await withTimeout(fetchGroupHomepageList());
+        const baseUrl = instanceBaseUrl();
+        return Promise.all(
+            parentGroupIds.map(async (parentGroupId) => {
+                const entry = list.find((e) => e.parentGroupId === parentGroupId);
+                if (!entry) return { parentGroupId, groups: [] };
+                const raw = await withTimeout(fetchGroupHomepage(entry.hash));
+                return { parentGroupId, groups: normalizeHomepage(raw, baseUrl) };
+            }),
+        );
     },
 };
 
@@ -150,4 +177,13 @@ export function mergePosts(lists: Post[][]): Post[] {
     const byId = new Map<number, Post>();
     for (const list of lists) for (const post of list) byId.set(post.id, post);
     return [...byId.values()];
+}
+
+/** The parent groups whose homepages a screen's `groups` blocks show, each once, sorted. */
+export function groupNeeds(slides: SlideDoc[]): number[] {
+    const ids = new Set<number>();
+    for (const block of slides.flatMap((s) => s.blocks)) {
+        if (block.type === 'groups' && block.parentGroupId !== undefined) ids.add(block.parentGroupId);
+    }
+    return [...ids].sort((a, b) => a - b);
 }

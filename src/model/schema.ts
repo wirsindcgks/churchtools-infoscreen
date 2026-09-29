@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 13 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 14 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -194,6 +194,54 @@ export const PostsBlock = v.object({
     style: TextStyle,
 });
 
+/** The items a `groups` block shows of each group (schema 1.14); all on but the leaders. */
+export const GroupFields = v.object({
+    name: v.optional(v.boolean(), true),
+    image: v.optional(v.boolean(), true),
+    /** Weekday and meeting time. */
+    when: v.optional(v.boolean(), true),
+    targetGroup: v.optional(v.boolean(), true),
+    category: v.optional(v.boolean(), true),
+    /** The description, a few lines of it. */
+    note: v.optional(v.boolean(), true),
+    /**
+     * Off until switched on, like the author of a post (G37). Even then only
+     * names ChurchTools itself shows on the homepage (Plan.md 43, c).
+     */
+    leaders: v.optional(v.boolean(), false),
+    /** "Noch 3 Plätze frei" – only for groups with a maximum. */
+    places: v.optional(v.boolean(), true),
+    /** A QR code to the group's public page; `card` only. */
+    qr: v.optional(v.boolean(), true),
+});
+
+/**
+ * Since 1.14: the groups of a ChurchTools group homepage – an overview of what
+ * groups there are, one at a time with a QR code or as a list (Plan.md,
+ * Nächste Schritte 43). The source is the homepage, never `/groups`: it holds
+ * only what ChurchTools shows the public (G40). Stored is the id of the
+ * homepage's parent group, not the homepage's id or hash – those change when
+ * the homepage is made anew. Without it the block shows a calm placeholder.
+ */
+export const GroupsBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('groups'),
+    parentGroupId: v.optional(v.pipe(v.number(), v.integer())),
+    /** Empty: every group of the homepage, by weekday; else exactly these, in this order. */
+    groupIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(100)),
+    /** `card` – one group after the other, with its QR code; `list` – rows, page by page. */
+    layout: v.optional(v.picklist(['card', 'list']), 'card'),
+    /**
+     * What each group shows, one switch per item (wish of the user,
+     * 2026-09-29). Missing switches take their default; new items can come
+     * without a new field.
+     */
+    show: v.optional(GroupFields, {}),
+    /** Seconds per group (`card`) or per page (`list`); default GROUP_SECONDS. */
+    pageSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(120))),
+    style: TextStyle,
+});
+
 export const Block = v.variant('type', [
     TextBlock,
     ImageBlock,
@@ -206,6 +254,7 @@ export const Block = v.variant('type', [
     QrBlock,
     CountdownBlock,
     PostsBlock,
+    GroupsBlock,
 ]);
 
 /** The calendars whose appointments a block shows or counts down to. */
@@ -417,6 +466,7 @@ export const SettingsDoc = v.object({
 export type Fill = v.InferOutput<typeof Fill>;
 export type TextStyle = v.InferOutput<typeof TextStyle>;
 export type Block = v.InferOutput<typeof Block>;
+export type GroupFields = v.InferOutput<typeof GroupFields>;
 export type BlockType = Block['type'];
 export type SlideDoc = v.InferOutput<typeof SlideDoc>;
 export type PlaylistDoc = v.InferOutput<typeof PlaylistDoc>;

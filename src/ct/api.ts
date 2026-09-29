@@ -1,6 +1,7 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import type { AppointmentResponse } from '../appointments/normalize';
 import { zonedDateKey } from '../appointments/zoned';
+import { isValidHomepageHash, normalizeHomepageList, type HomepageEntry } from '../groups/normalize';
 import type { PostResponse } from '../posts/normalize';
 
 /**
@@ -93,4 +94,18 @@ export async function fetchPostGroups(): Promise<PostGroup[]> {
         .filter((g) => g.settings?.postsEnabled)
         .map((g) => ({ id: g.id, name: g.name, visibility: g.settings?.visibility ?? 'restricted' }))
         .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+}
+
+/**
+ * The enabled group homepages – anonymous, and the same for everyone (G40).
+ * Each with its parent group, its title and the hash to fetch it by.
+ */
+export async function fetchGroupHomepageList(): Promise<HomepageEntry[]> {
+    return normalizeHomepageList(await churchtoolsClient.get<unknown[]>('/grouphomepages'));
+}
+
+/** One homepage with the groups ChurchTools shows the public (G40). The hash is checked before it goes into the path. */
+export function fetchGroupHomepage(hash: string): Promise<unknown> {
+    if (!isValidHomepageHash(hash)) return Promise.reject(new Error('Ungültige Kennung einer Gruppen-Homepage.'));
+    return churchtoolsClient.get<unknown>(`/grouphomepages/${hash}`);
 }

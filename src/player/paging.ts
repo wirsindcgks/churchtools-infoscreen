@@ -11,6 +11,8 @@ export const PAGE_SECONDS = 10;
 export const SHOW_ALL_CAP = 200;
 /** Seconds per post while a `posts` block of layout `card` pages through them, unless set otherwise. */
 export const POST_SECONDS = 15;
+/** Seconds per group (card) or per page (list) of a `groups` block, unless set otherwise – time to scan the QR code. */
+export const GROUP_SECONDS = 15;
 
 /**
  * Splits rows into pages by their measured heights – rows of the card layout
@@ -67,6 +69,11 @@ export function slideSeconds(slide: SlideDoc, pages: Readonly<Record<string, num
         if (block.type === 'posts' && block.layout === 'card') {
             const count = pages[block.id] ?? 1;
             if (count > 1) seconds = Math.max(seconds, count * (block.pageSeconds ?? POST_SECONDS));
+        }
+        // Both layouts page: one group per page as a card, as many rows as fit as a list.
+        if (block.type === 'groups') {
+            const count = pages[block.id] ?? 1;
+            if (count > 1) seconds = Math.max(seconds, count * (block.pageSeconds ?? GROUP_SECONDS));
         }
     }
     return seconds;
