@@ -2,7 +2,8 @@
 
 Wer mit dem Infoscreen Designer arbeitet, hat eine von drei Rollen. Hier steht für jede, was zu tun ist – in der
 Reihenfolge, in der es passiert. Die Einzelheiten stehen in der [Einrichtungsanleitung](Einrichtung.md), welche
-Rechte wer braucht in der [Rechte-Übersicht](Rechte.md).
+Rechte wer braucht in der [Rechte-Übersicht](Rechte.md). Was der Designer kann, zeigt die Übersicht
+[Der Designer in Bildern](Funktionen.md).
 
 | Rolle | Wer | Aufgabe |
 | --- | --- | --- |
@@ -57,21 +58,41 @@ Menü „…". Neue Screens legt ein Administrator an.
 
 - **Links die Slides** – „Neue Slide" unter der letzten, ziehen zum Umsortieren, darunter **„Aus anderer Playlist
   …"**, um Slides einer anderen Playlist als Kopie zu übernehmen.
-- **Oben die Bausteine:** Text, Bild, Fläche, Uhr, Terminliste, Nächster Termin, Gemeindekopf, Webseite, QR-Code und
-  **Countdown** („Gottesdienst beginnt in 12:34").
+- **Oben die Bausteine:** Text, Bild, Fläche, Uhr, Terminliste, Nächster Termin, Gemeindekopf, Webseite, QR-Code,
+  **Countdown** („Gottesdienst beginnt in 12:34"), **Beiträge** öffentlicher Gruppen und **Gruppen** (siehe unten).
 - **In der Mitte die Bildfläche:** ziehen, an den Griffen skalieren, am Raster ausrichten.
 - **Rechts der Inspektor:** Schrift, Farben (auch als Hex-Wert), Kalender, Hintergrund. Oben **„Sperren"**, damit
   ein Logo oder Hintergrund nicht verrutscht – ein Klick darauf erreicht dann den Baustein darunter, mit gedrückter
   Alt-Taste (Mac: Option) den gesperrten selbst.
-- **Hinweisband:** Ist kein Baustein gewählt, zeigt der Inspektor die Playlist. Dort lässt sich ein Band über alle
-  Slides legen – als Laufschrift oder stehend, etwa „Heute Parkplatz gesperrt", mit **„Zeigen bis"**, danach
-  verschwindet es von selbst.
+- **Hinweise** haben eine eigene Seite in der Seitenleiste: ein Band über allen Slides der gewählten Playlists – als
+  Laufschrift oder stehend, etwa „Heute Parkplatz gesperrt", mit **„Zeigen bis"**, danach verschwindet es von selbst.
 - **Vorschau** (oben): spielt die Playlist mit deinen Änderungen im Vollbild ab, wie der Fernseher – ohne zu
   speichern. Esc schließt sie.
 - **Speichern** (oder ⌘S / Strg+S). Alle Fernseher, die diese Playlist zeigen, übernehmen die Änderung in etwa
   20 Sekunden von selbst.
 
-### 3. Playlists
+### 3. Gruppen aus ChurchTools
+
+Der Baustein **„Gruppen"** zeigt, was es in der Gemeinde für Gruppen gibt – aus einer **Gruppen-Homepage** von
+ChurchTools. Die legt ein Administrator an der Obergruppe an: Gruppe öffnen → **Einstellungen → Allgemein →
+Außendarstellung → „Gruppenhomepage erstellen"**
+([Academy](https://churchtools.academy/de/help/churchtools-module/einstellungen-gruppen/wie-passe-ich-die-gruppenhomepage-meiner-obergruppe-an/)).
+Darauf erscheinen die Untergruppen, deren öffentliche Seite eingeschaltet ist.
+
+- **Im Inspektor** die Homepage wählen; dann **alle Gruppen** (nach Wochentag) oder eine **Auswahl** in eigener
+  Reihenfolge (↑/↓). Eine Gruppe allein ist ein Highlight – daneben ein zweiter Baustein mit den übrigen.
+- **Darstellung:** Karten mit **ein bis vier Gruppen je Seite** oder eine Liste. Jede Karte trägt einen **QR-Code**
+  auf die öffentliche Gruppenseite, über den man sich anmelden kann.
+- **Angaben:** Name, Bild, Wochentag und Uhrzeit, Zielgruppe, Kategorie, Beschreibung, Leitung, Bild der Leitung,
+  freie Plätze, QR-Code – jede einzeln abschaltbar. **Leitung und Bild der Leitung sind aus**, bis du sie
+  einschaltest; sie erscheinen nur, wenn die Gruppen-Homepage in ChurchTools die Leiter ohnehin zeigt.
+- **Wird es eng**, gibt zuerst die Beschreibung nach, dann die Leitung; Name und Angaben bleiben. Bei drei oder vier
+  Gruppen je Seite passt eine kleinere Schrift (etwa 40 px) besser.
+- Was du in ChurchTools an einer Gruppe änderst, steht nach spätestens zehn Minuten auf dem Fernseher.
+
+![Editor mit dem Baustein „Gruppen": zwei Karten mit QR-Code, rechts die Schalter für jede Angabe](bilder/gruppen.png)
+
+### 4. Playlists
 
 Eine **Playlist** ist der Inhalt, den ein Screen zeigt; sie kann auf mehreren Screens laufen. Unter **„Playlists"**
 legst du neue an (oben rechts) und **duplizierst** bestehende (Menü „…") – die Kopie hat eigene Slides, Änderungen
@@ -79,7 +100,7 @@ daran berühren das Original nicht.
 
 ![Playlists als Kacheln mit Format, Zahl der Slides und den Screens, die sie zeigen](bilder/playlists.png)
 
-### 4. Zeitpläne
+### 5. Zeitpläne
 
 Welche Playlist ein Screen wann zeigt. Die **Standard-Playlist** läuft, wenn keine **Regel** passt. Regeln schalten auf
 eine andere – nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten vor Beginn bis 10 Minuten nach
@@ -89,7 +110,7 @@ ihren Regeln und daneben die Playlist, die gerade läuft; ein Klick auf eine Reg
 
 ![Zeitpläne: je Screen die Regeln und eine Vorschau der laufenden Playlist](bilder/zeitplaene.png)
 
-### 5. Bilder
+### 6. Bilder
 
 Über den Baustein „Bild" oder in der **Mediathek**. Unter jedem Bild steht, wo es läuft („Foyer › Gottesdienst ›
 Begrüßung"); „Unbenutzt" hilft beim Aufräumen. Ein Bild lässt sich beliebig oft verwenden. **Nichts Vertrauliches
@@ -97,7 +118,7 @@ hochladen** – Bilder sind über ihre Adresse ohne Anmeldung abrufbar.
 
 ![Mediathek mit Suche, Filtern und der Angabe, wo ein Bild verwendet wird](bilder/mediathek.png)
 
-### 6. Design
+### 7. Design
 
 Einmal für alle Screens: Ecken rund oder eckig, Akzentfarbe, Farben für neue Slides, die Schrift für neue Bausteine
 und Hinweise, Termine **„Nativ"** (schlichte Zeilen) oder **„Modern"** (Karten mit Datumskachel) und das Format der
@@ -116,7 +137,8 @@ behalten auch ihre Schrift.
 - **Sagt die Startseite „Dir fehlen Rechte"**, nennt sie das Recht – gib die Meldung an einen Administrator weiter.
 - **Was neu ist**, steht unter **„Über & Neuigkeiten"** unten in der Seitenleiste; ein blauer Punkt zeigt eine neue
   Version an.
-- **Alles auf einem Screen sieht jeder im Foyer.** Personenbezogenes gehört nicht darauf.
+- **Alles auf einem Screen sieht jeder im Foyer.** Personenbezogenes gehört nicht darauf. Die Leitung einer Gruppe
+  zeigt der Baustein nur, wenn du sie einschaltest und ChurchTools sie ohnehin öffentlich zeigt.
 
 ## Gerät – der Fernseher
 

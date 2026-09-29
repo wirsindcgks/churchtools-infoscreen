@@ -20,13 +20,22 @@ const CALENDARS = [
     { id: 4, name: 'Musik', color: '#5c6bc0' },
 ];
 
-/** A picture as SVG: gradient and a word – enough to look like a poster, made of nothing real. */
-function poster(title: string, from: string, to: string): string {
+/**
+ * A picture as SVG: a gradient and shapes – enough to look like a photo's colours, made of nothing
+ * real and without text (wish of the user, 2026-09-29). `_title` only names the picture in this file.
+ */
+function poster(_title: string, from: string, to: string): string {
     return `<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
 <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${from}"/><stop offset="1" stop-color="${to}"/></linearGradient></defs>
 <rect width="1600" height="900" fill="url(#g)"/>
 <circle cx="1260" cy="220" r="260" fill="#ffffff" opacity="0.12"/><circle cx="260" cy="760" r="340" fill="#000000" opacity="0.10"/>
-<text x="120" y="520" font-family="Lato, sans-serif" font-size="150" font-weight="700" fill="#ffffff">${title}</text></svg>`;
+<path d="M0 900L520 470L860 720L1150 520L1600 860V900Z" fill="#000000" opacity="0.14"/></svg>`;
+}
+
+/** A person's picture: a plain silhouette on a colour – no face of anyone real, no text. */
+function avatar(colour: string): string {
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect width="200" height="200" fill="${colour}"/>
+<circle cx="100" cy="78" r="38" fill="#ffffff" opacity="0.85"/><path d="M30 200c0-44 31-72 70-72s70 28 70 72z" fill="#ffffff" opacity="0.85"/></svg>`;
 }
 
 const PICTURES: Record<number, string> = {
@@ -36,7 +45,117 @@ const PICTURES: Record<number, string> = {
     903: poster('Frühstück', '#14532d', '#4c9a5f'),
     904: poster('Konzert', '#312e81', '#5c6bc0'),
     905: poster('Sommerfest', '#9a3412', '#eab308'),
+    911: poster('Hauskreis', '#1e3a8a', '#0ea5e9'),
+    912: poster('Jugend', '#7c2d12', '#f97316'),
+    913: poster('Kinder', '#14532d', '#84cc16'),
+    914: poster('Chor', '#4c1d95', '#a855f7'),
+    921: avatar('#0f766e'),
+    922: avatar('#b45309'),
+    923: avatar('#7c3aed'),
+    924: avatar('#be123c'),
+    932: poster('Freizeit', '#9a3412', '#f97316'),
 };
+
+/** Master data as a group homepage names it (G40): weekdays with ChurchTools' order, Monday first. */
+const WEEKDAY = {
+    wednesday: { id: 3, name: 'wednesday', nameTranslated: 'Mittwoch', sortKey: 2 },
+    thursday: { id: 4, name: 'thursday', nameTranslated: 'Donnerstag', sortKey: 3 },
+    friday: { id: 5, name: 'friday', nameTranslated: 'Freitag', sortKey: 4 },
+    saturday: { id: 6, name: 'saturday', nameTranslated: 'Samstag', sortKey: 5 },
+    sunday: { id: 0, name: 'sunday', nameTranslated: 'Sonntag', sortKey: 6 },
+};
+
+function leader(first: string, last: string, picture: number | null): unknown {
+    return {
+        domainType: 'person',
+        title: `${first} ${last}`,
+        imageUrl: picture ? `${origin}/images/${picture}/person.svg` : null,
+        domainAttributes: { firstName: first, lastName: last, isArchived: false, dateOfDeath: null },
+    };
+}
+
+/** The homepage "Kleingruppen" of the made-up church, with what ChurchTools shows the public. */
+function homepage(): unknown {
+    const group = (
+        id: number,
+        name: string,
+        weekday: keyof typeof WEEKDAY,
+        time: string,
+        target: string,
+        category: string,
+        color: string,
+        note: string,
+        picture: number | null,
+        leaders: unknown[],
+        places: [number | null, number] = [null, 0],
+    ) => ({
+        id,
+        name,
+        maxMemberCount: places[0],
+        currentMemberCount: places[1],
+        requestedSeatsCount: 0,
+        allowWaitinglist: false,
+        information: {
+            note,
+            imageUrl: picture ? `${origin}/images/${picture}/gruppe.svg` : null,
+            meetingTime: time,
+            weekday: WEEKDAY[weekday],
+            targetGroup: { name: target, nameTranslated: target, sortKey: 1 },
+            groupCategory: { name: category, sortKey: 10 },
+            color,
+            leader: leaders,
+        },
+    });
+    return {
+        showLeaders: true,
+        showGroupImages: true,
+        groups: [
+            group(41, 'Hauskreis Mitte', 'wednesday', '19:30', 'Erwachsene', 'Hauskreise', 'sky',
+                'Wir lesen gemeinsam in der Bibel, beten füreinander und teilen den Alltag. Neue sind jederzeit willkommen – **einfach vorbeikommen**.',
+                911, [leader('Anna', 'Beispiel', 921), leader('Jonas', 'Muster', 922)], [12, 9]),
+            group(42, 'Jugendkreis', 'friday', '19:00', 'Jugendliche', 'Jugend', 'orange',
+                'Spiele, Gespräche und Andacht für alle zwischen 13 und 19 Jahren. Einmal im Monat kochen wir zusammen.',
+                912, [leader('Lea', 'Sommer', 923)]),
+            group(43, 'Kinderkirche', 'sunday', '10:00', 'Kinder', 'Kinder', 'lime',
+                'Parallel zum Gottesdienst: Geschichten aus der Bibel, Lieder und Basteln für Kinder von 3 bis 11 Jahren.',
+                913, [leader('Tim', 'Kaiser', 924)]),
+            group(44, 'Gemeindechor', 'thursday', '20:00', 'Jeder', 'Musik', 'purple',
+                'Vierstimmig, von Gospel bis Choral. Notenkenntnisse helfen, sind aber keine Bedingung.',
+                914, [leader('Jonas', 'Muster', 922)], [30, 28]),
+            group(45, 'Werkstatt-Team', 'saturday', '10:00', 'Erwachsene', 'Dienste', 'teal',
+                'Wir reparieren, was im Gemeindehaus anfällt, und bauen für Feste auf.',
+                null, [leader('Anna', 'Beispiel', 921)]),
+        ],
+    };
+}
+
+/** Groups with posts switched on, and two posts – for the posts block. */
+const POST_GROUPS = [
+    { id: 42, name: 'Jugendkreis', settings: { postsEnabled: true, visibility: 'public' } },
+    { id: 44, name: 'Gemeindechor', settings: { postsEnabled: true, visibility: 'public' } },
+];
+
+function posts(): unknown[] {
+    const daysAgo = (n: number) => new Date(Date.now() - n * 86_400_000).toISOString();
+    return [
+        {
+            id: 2,
+            title: 'Sommerfreizeit: Anmeldung offen',
+            content: 'Vom 3. bis 10. August fahren wir an die Ostsee. **Anmeldeschluss ist der 30. Juni.**\n\nFragen? Sprich uns nach dem Jugendkreis an.',
+            publishedDate: daysAgo(1),
+            group: { domainIdentifier: '42', title: 'Jugendkreis', color: { key: 'orange' }, initials: 'JK' },
+            imagesMeta: [{ imageUrl: `${origin}/images/932/freizeit.svg`, aspectRatio: 16 / 9 }],
+        },
+        {
+            id: 1,
+            title: 'Neue Stimmen gesucht',
+            content: 'Für das Konzert im Herbst suchen wir Verstärkung im Tenor und Bass.',
+            publishedDate: daysAgo(4),
+            group: { domainIdentifier: '44', title: 'Gemeindechor', color: { key: 'purple' }, initials: 'GC' },
+            imagesMeta: [],
+        },
+    ];
+}
 
 function appointments(): unknown[] {
     const items = [
@@ -97,6 +216,20 @@ async function fakeChurch(page: Page): Promise<void> {
         if (path === '/info') return json({ siteName: 'Gemeinde am Markt' });
         if (path === '/calendars') return json(CALENDARS);
         if (path === '/calendars/appointments') return json(appointments());
+        if (path === '/groups') return route.fulfill({ json: { data: POST_GROUPS, meta: { pagination: { lastPage: 1 } } } });
+        if (path === '/posts') return json(posts());
+        if (path === '/grouphomepages') {
+            return json([
+                {
+                    domainType: 'grouphomepage',
+                    domainIdentifier: '1',
+                    title: 'Kleingruppen',
+                    apiUrl: `${origin}/api/grouphomepages/kleingruppen`,
+                    domainAttributes: { parentGroupId: 40, childGroupIds: [41, 42, 43, 44, 45] },
+                },
+            ]);
+        }
+        if (path === '/grouphomepages/kleingruppen') return json(homepage());
         if (path === '/wiki/categories') return json([{ id: WIKI, name: 'Infoscreen', inMenu: false }]);
         if (path === `/wiki/categories/${WIKI}/pages`) return json([{ guid: 'p-media', title: 'mediathek' }]);
         if (path.startsWith(`/wiki/categories/${WIKI}/pages/`)) return json({ guid: 'p-main', title: 'main', text: '' });
@@ -168,19 +301,56 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
 
-    // The first screen's playlist, with a band over every slide.
+    // A band over every slide of the first screen – since 0.2.0 on its own page, "Hinweise" (Plan.md 34).
+    await page.goto('hinweise');
+    await page.getByTestId('new-notice').click();
+    const notice = page.getByTestId('notice-dialog');
+    await notice.getByTestId('banner-text').fill('Nach dem Gottesdienst: Kirchencafé im Foyer – herzlich willkommen!');
+    // Standing for the picture: running text would be caught halfway in the frame.
+    await notice.getByTestId('banner-mode').selectOption('static');
+    await notice.getByTestId('notice-save').click();
+    await expect(notice).toBeHidden();
+
+    // The first screen's playlist.
     await page.goto('./');
     await page.getByTestId('screen-card').filter({ hasText: 'Foyer' }).getByTestId('open-editor').click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
-    await page.getByTestId('banner-toggle').check();
-    await page.getByTestId('banner-text').fill('Nach dem Gottesdienst: Kirchencafé im Foyer – herzlich willkommen!');
-    // Standing for the picture: running text would be caught halfway in the frame.
-    await page.getByTestId('banner-mode').selectOption('static');
-    await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
     await page.getByTestId('slide-item').nth(2).click();
     await page.getByTestId('frame-appointment-list').first().click();
     await shoot(page, 'editor');
+
+    // Groups of a group homepage: two a page, with leaders and their pictures (Plan.md 43).
+    await page.getByTestId('add-slide').click();
+    await page.getByTestId('add-groups').click();
+    await page.getByTestId('groups-homepage').selectOption('40');
+    await frame(page, { x: 60, y: 60, width: 1800, height: 960 });
+    await page.getByTestId('groups-per-page').selectOption('2');
+    // A font as a church would set it for two cards a page; the default (56 px) is meant for one.
+    await page.getByTestId('block-inspector').getByLabel('Größe (px)').fill('44');
+    await page.getByTestId('group-show-leaders').check();
+    await page.getByTestId('group-show-leaderImages').check();
+    await expect(page.locator('.editor-stage').getByTestId('group-card').first()).toBeVisible();
+    await shoot(page, 'gruppen');
+
+    // The same slide as the TV shows it, in the full-screen preview.
+    await page.getByTestId('open-preview').click();
+    await expect(page.getByTestId('playlist-preview')).toBeVisible();
+    await page.mouse.move(5, 5);
+    await page.waitForTimeout(3000); // the controls step aside, as on a TV
+    await shoot(page, 'vorschau');
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('playlist-preview')).toBeHidden();
+
+    // Posts of ChurchTools groups (Plan.md 33).
+    await page.getByTestId('add-slide').click();
+    await page.getByTestId('add-posts').click();
+    await page.getByTestId('post-group-42').check();
+    await page.getByTestId('post-group-44').check();
+    await frame(page, { x: 160, y: 140, width: 1600, height: 800 });
+    await expect(page.locator('.editor-stage').getByTestId('posts-card')).toContainText('Sommerfreizeit');
+    await shoot(page, 'beitraege');
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
 
     // A rule for Sunday morning.
     await page.goto('./');
@@ -209,4 +379,24 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await page.getByTestId('sidebar-media').click();
     await expect(page.getByTestId('media-uses').first()).toBeVisible();
     await shoot(page, 'mediathek');
+
+    await page.getByTestId('sidebar-notices').click();
+    await expect(page.getByTestId('notice-card').first()).toBeVisible();
+    await shoot(page, 'hinweise');
+});
+
+test.describe('on a phone', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+    test('the editor with its sheet', async ({ page, baseURL }) => {
+        origin = new URL(baseURL!).origin;
+        await fakeChurch(page);
+        await page.goto('./');
+        await page.getByTestId('screen-card').filter({ hasText: 'Foyer' }).getByTestId('open-editor').click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await page.getByTestId('slide-item').nth(2).click(); // the appointments
+        await page.getByTestId('frame-appointment-list').first().click();
+        await expect(page.getByTestId('inspector-sheet')).toHaveClass(/open/);
+        await shoot(page, 'handy');
+    });
 });

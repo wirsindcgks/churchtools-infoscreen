@@ -4,6 +4,28 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.3.0] – 2026-09-29
+
+Neu: der Baustein **Gruppen** – was es in der Gemeinde für Gruppen gibt, direkt aus ChurchTools, mit QR-Code zum
+Anmelden.
+
+### Hinzugefügt
+
+- **Baustein „Gruppen":** zeigt die Gruppen einer Gruppen-Homepage aus ChurchTools – alle, nach Wochentag sortiert,
+  oder eine Auswahl in eigener Reihenfolge. Je Gruppe Name, Bild, Wochentag und Uhrzeit, Zielgruppe, Kategorie,
+  Beschreibung, freie Plätze und ein **QR-Code auf die öffentliche Gruppenseite**, jede Angabe einzeln abschaltbar.
+  Als **Karten** mit ein bis vier Gruppen je Seite oder als **Liste**, seitenweise mit Ladebalken und Seitenzahl wie
+  die Terminliste.
+- **Leitung und Bild der Leitung** lassen sich zuschalten. Beides ist aus, bis man es einschaltet, und erscheint nur,
+  wenn die Gruppen-Homepage in ChurchTools die Leiter ohnehin öffentlich zeigt.
+- Der Baustein zeigt nur, was ChurchTools auf der Gruppen-Homepage öffentlich zeigt – Gruppen ohne öffentliche Seite
+  nie, auch wenn das Konto des Fernsehers mehr sehen dürfte.
+
+### Behoben
+
+- **Die Vorschau im Editor zeigte keine Beiträge** („Keine aktuellen Beiträge"), obwohl der Fernseher sie zeigte.
+- **Fett gesetzter Text in Beiträgen** war auf dunklen Karten kaum zu lesen.
+
 ## [0.2.13] – 2026-09-29
 
 Die Vorschau lässt sich am Handy wieder bedienen.
@@ -295,6 +317,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.3.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.0
 [0.2.13]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.13
 [0.2.12]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.12
 [0.2.11]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.11

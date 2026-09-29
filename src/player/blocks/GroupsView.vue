@@ -248,24 +248,27 @@ const cardsRoot = ref<HTMLElement | null>(null);
  * (fourth test, 2026-09-29) –, and end where the code's box begins, as drawn: the caption may be
  * wider than the code. Where that leaves less than four times the font
  * size – four cards a page in a large font left 112 px, not even room for "Leitung:" – they move
- * above the code instead, over the whole width. Where they would then cover the name or the facts,
- * they give way: name and facts first, then the leaders, the description last.
+ * above the code instead, over the whole width. Where centring them would cover the name or the
+ * facts, they sit at the bottom instead; where even that would, they give way: name and facts
+ * first, then the leaders, the description last.
  */
 function placeLeaders(text: HTMLElement, leaders: HTMLElement, qr: HTMLElement | null): void {
     const inner = text.clientWidth - 2 * pad.value;
     const beside = qr ? inner - qr.offsetWidth - safety.value : inner;
     const above = qr !== null && beside < 4 * em.value;
     leaders.style.right = `${above || !qr ? pad.value : pad.value + qr.offsetWidth + safety.value}px`;
+    leaders.classList.toggle('leaders-box--above', above);
+    const facts = [...text.querySelectorAll<HTMLElement>('.group-name, .fact')];
+    const factsEnd = Math.max(0, ...facts.map((f) => f.offsetTop + f.offsetHeight));
+    const covers = (): boolean => leaders.offsetTop < factsEnd + 0.3 * em.value;
     if (above && qr) leaders.style.bottom = `${pad.value + qr.offsetHeight + safety.value}px`;
     else if (qr) {
         // The code's middle, from the bottom: the caption line (0.54em), the gap (0.3em) and half the code.
         const middle = pad.value + 0.84 * em.value + qrSide.value / 2;
         leaders.style.bottom = `${Math.max(pad.value, middle - leaders.offsetHeight / 2)}px`;
+        if (covers()) leaders.style.bottom = `${pad.value}px`;
     } else leaders.style.bottom = `${pad.value}px`;
-    leaders.classList.toggle('leaders-box--above', above);
-    const facts = [...text.querySelectorAll<HTMLElement>('.group-name, .fact')];
-    const factsEnd = Math.max(0, ...facts.map((f) => f.offsetTop + f.offsetHeight));
-    leaders.classList.toggle('leaders-box--hidden', leaders.offsetTop < factsEnd + 0.3 * em.value);
+    leaders.classList.toggle('leaders-box--hidden', covers());
 }
 
 function fitCards(): void {
@@ -275,11 +278,14 @@ function fitCards(): void {
         if (leaders) placeLeaders(text, leaders, qr);
         const note = text.querySelector<HTMLElement>('.group-note');
         if (!note) return;
+        note.classList.remove('group-note--none'); // measured as shown, not as left out last time
         const shown = leaders && !leaders.classList.contains('leaders-box--hidden') ? leaders : null;
         const bottom = shown ? shown.offsetTop - 0.3 * em.value : text.clientHeight - pad.value;
         const room = Math.max(0, bottom - note.offsetTop);
         note.style.maxHeight = `${room}px`;
         note.classList.toggle('group-note--cut', note.scrollHeight > room + 1);
+        // Less than two lines (0.72em at line height 1.4): left out rather than half a line fading away.
+        note.classList.toggle('group-note--none', room < 2 * 0.72 * 1.4 * em.value && note.scrollHeight > room + 1);
     });
 }
 watch(cards, () => void nextTick(fitCards));
@@ -541,6 +547,9 @@ onMounted(() => {
     font-size: 0.72em;
     line-height: 1.4;
     white-space: pre-line;
+}
+.group-note--none {
+    display: none;
 }
 .group-note--cut {
     -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 2.8em), transparent 100%);

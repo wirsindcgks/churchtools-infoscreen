@@ -282,6 +282,12 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 - **Die Bilder der Mediathek und das Gemeindelogo sind über ihre Adresse ohne Anmeldung abrufbar.** So liefert
   ChurchTools Bilder aus; die Adressen sind lang und nicht zu erraten, aber wer eine kennt, kann das Bild ansehen.
   Lade nichts hoch, was nicht öffentlich sein darf.
+- **Gruppen und Beiträge zeigt der Designer nur, soweit ChurchTools sie ohnehin öffentlich zeigt.** Der Baustein
+  „Gruppen" liest eine **Gruppen-Homepage** ohne Anmeldung – genau das, was jeder Besucher sieht –, nie die
+  Gruppenliste, in der das Konto des Fernsehers auch interne Gruppen sähe. Die **Leitung** (Vor- und Nachname) und
+  ihr **Bild** zeigt er nur, wenn ein Gestalter es einschaltet und die Homepage die Leiter ohnehin zeigt; nichts
+  sonst von einer Person. Den Namen der Autorin oder des Autors eines Beitrags zeigt der Baustein „Beiträge" nur,
+  wenn man es einschaltet.
 - **Schriften kommen von eurer eigenen Instanz**, nicht von einem Schriftendienst – kein Aufruf verrät Gerät oder
   Gestalter an Dritte.
 - **Die Bilder liegen im Wiki-Bereich „Infoscreen".** Wer dort ein Bild löscht, löscht es auch auf den Screens –
@@ -304,4 +310,7 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | Fernseher: „Es gibt keinen Screen „…"" | Adresse vertippt oder Screen gelöscht | Adresse neu kopieren |
 | Fernseher: Termine eines Kalenders fehlen | Gerät darf den Kalender nicht lesen | Einstellungen → Gruppen und Rechte → „Rechte aktualisieren" |
 | Fernseher: Bild fehlt, Platzhalter statt Bild | Bild im Wiki gelöscht | im Designer ein neues Bild wählen |
+| Baustein „Gruppen": „Noch keine Gruppen-Homepage" | In ChurchTools gibt es keine Gruppen-Homepage | an der Obergruppe: Einstellungen → Allgemein → Außendarstellung → „Gruppenhomepage erstellen" |
+| Baustein „Gruppen": eine Gruppe fehlt | Ihre öffentliche Seite ist aus, oder sie ist keine Untergruppe der Obergruppe | in ChurchTools an der Gruppe die öffentliche Seite einschalten |
+| Baustein „Gruppen": keine Leitung, obwohl eingeschaltet | Die Gruppen-Homepage zeigt die Leiter nicht – oder die Karte ist zu voll | an der Homepage „Leiter anzeigen" einschalten; sonst weniger Gruppen je Seite oder eine kleinere Schrift |
 | Mediathek: „Den Wiki-Bereich „Infoscreen" gibt es noch nicht" | Die Einrichtung ist noch nicht gelaufen – oder dir fehlt das Recht, den Bereich zu sehen | Schritt 4; sonst die Rechte am Wiki-Bereich prüfen |
