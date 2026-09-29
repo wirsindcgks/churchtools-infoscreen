@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName } from '../ct/client';
 import { fetchPostGroups, type PostGroup } from '../ct/api';
@@ -10,6 +10,7 @@ import { useEditorStore } from '../designer/editor-store';
 import Icon from '../designer/Icon.vue';
 import Inspector from '../designer/Inspector.vue';
 import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
+import { BLOCK_LABELS } from '../designer/ops';
 import PlaylistPreview from '../designer/PlaylistPreview.vue';
 import SlideList from '../designer/SlideList.vue';
 import { usePreview } from '../designer/usePreview';
@@ -50,6 +51,55 @@ const groups = ref<PostGroup[]>([]);
 
 /** The preview of the unsaved draft, as the TV would show it. */
 const previewing = ref(false);
+
+/**
+ * The inspector as a sheet at the bottom on a phone (Plan.md 44, M4). CSS
+ * ignores this at a desktop width, so it stays false and does nothing there.
+ */
+const inspectorOpen = ref(false);
+watch(
+    () => editor.selectedBlockId,
+    (id) => {
+        if (id === null) return; // deselecting does not close it again
+        inspectorOpen.value = true;
+        void nextTick(showStageAboveSheet);
+    },
+);
+
+/**
+ * The open sheet covers the lower 60 % of a phone, and the stage sits below
+ * the slides – it would vanish behind the sheet just when a block on it is
+ * being edited. So the stage moves up into the free part; the page has room
+ * for that because it grows by the sheet's height while the sheet is open.
+ */
+function showStageAboveSheet(): void {
+    if (!window.matchMedia('(max-width: 48rem)').matches) return;
+    const stage = root.value?.querySelector<HTMLElement>('.editor-stage');
+    if (!stage) return;
+    const { top, bottom } = stage.getBoundingClientRect();
+    if (top < 0 || bottom > window.innerHeight * 0.4) stage.scrollIntoView({ block: 'start', behavior: 'smooth' });
+}
+
+/** The name the sheet's bar and the "…" menu don't have room for otherwise. */
+const sheetLabel = computed(() => {
+    if (editor.block) return `Baustein: ${BLOCK_LABELS[editor.block.type]}`;
+    return editor.slide?.name ? `Slide: ${editor.slide.name}` : 'Slide';
+});
+
+/** The "…" menu below 48rem, after the one on a screen tile (Plan.md 44, M2). */
+const moreMenuOpen = ref(false);
+const moreMenuRoot = ref<HTMLElement | null>(null);
+function closeMoreMenuOnOutside(event: Event): void {
+    if (!moreMenuRoot.value?.contains(event.target as Node)) moreMenuOpen.value = false;
+}
+watch(moreMenuOpen, (open) => {
+    if (open) document.addEventListener('pointerdown', closeMoreMenuOnOutside);
+    else document.removeEventListener('pointerdown', closeMoreMenuOnOutside);
+});
+function openPreviewFromMenu(): void {
+    moreMenuOpen.value = false;
+    previewing.value = true;
+}
 
 /** Which picker the media library was opened for. */
 const libraryFor = ref<'block' | 'background' | 'logo' | null>(null);
@@ -119,6 +169,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
     window.removeEventListener('keydown', onKey);
     window.removeEventListener('beforeunload', onBeforeUnload);
+    document.removeEventListener('pointerdown', closeMoreMenuOnOutside);
 });
 
 onBeforeRouteLeave(() => !editor.dirty || window.confirm('Ungespeicherte Änderungen verwerfen?'));
@@ -132,6 +183,11 @@ function save(): void {
 }
 
 function onKey(event: KeyboardEvent): void {
+    // The "…" menu blocks other keys while open, like the dialogs below: only Escape does anything.
+    if (moreMenuOpen.value) {
+        if (event.key === 'Escape') moreMenuOpen.value = false;
+        return;
+    }
     // With a dialog open, keys belong to the dialog – Delete must not hit the block behind it.
     if (libraryFor.value) {
         if (event.key === 'Escape') libraryFor.value = null;
@@ -158,6 +214,7 @@ function onKey(event: KeyboardEvent): void {
         editor.removeBlock(editor.block.id);
     } else if (event.key === 'Escape') {
         editor.selectBlock(null);
+        inspectorOpen.value = false;
     } else if (editor.block && event.key.startsWith('Arrow')) {
         event.preventDefault();
         const step = event.shiftKey ? 10 : 1;
@@ -173,6 +230,7 @@ function onKey(event: KeyboardEvent): void {
     <div
         ref="root"
         class="infoscreen-designer editor"
+        :class="{ 'sheet-open': inspectorOpen }"
         :style="{ height: `calc(100vh - ${top}px)`, '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}` }"
     >
         <AppBar>
@@ -180,12 +238,15 @@ function onKey(event: KeyboardEvent): void {
                 class="back"
                 :to="back.to"
                 :title="`Editor verlassen, zurück zu „${back.label}“`"
+                :aria-label="`Zurück zu ${back.label}`"
                 data-testid="leave-editor"
             >
-                <Icon name="back" :size="18" /><span>{{ back.label }}</span>
+                <Icon name="back" :size="18" /><span class="back-label">{{ back.label }}</span>
             </RouterLink>
-            <strong class="title">{{ editor.draft?.playlist.name || 'Playlist' }}</strong>
-            <span class="status" :class="`status--${editor.status}`" data-testid="save-status">{{ statusText }}</span>
+            <span class="heading">
+                <strong class="title">{{ editor.draft?.playlist.name || 'Playlist' }}</strong>
+                <span class="status" :class="`status--${editor.status}`" data-testid="save-status">{{ statusText }}</span>
+            </span>
             <!-- The TVs check every 20 s for what was saved (Plan.md, 26); in demo mode an open player takes it at once. -->
             <span
                 v-if="editor.status === 'saved' && editor.screens.length && !demo"
@@ -237,6 +298,42 @@ function onKey(event: KeyboardEvent): void {
                 >
                     <Icon name="play" :size="16" /> Player<span v-if="editor.screens.length > 1" class="muted">: {{ s.name }}</span>
                 </RouterLink>
+                <!-- Below 48rem "Vorschau" and "Player" move in here – Rückgängig/Wiederholen and Speichern stay outside (Plan.md 44, M2). -->
+                <div ref="moreMenuRoot" class="more-menu">
+                    <button
+                        class="d-btn d-btn--icon"
+                        type="button"
+                        aria-label="Weitere Aktionen"
+                        aria-haspopup="menu"
+                        :aria-expanded="moreMenuOpen"
+                        data-testid="editor-more"
+                        @click="moreMenuOpen = !moreMenuOpen"
+                    >
+                        <Icon name="more" />
+                    </button>
+                    <div v-if="moreMenuOpen" class="more-menu-list" role="menu">
+                        <button
+                            role="menuitem"
+                            type="button"
+                            data-testid="more-preview"
+                            :disabled="!editor.slides.length"
+                            @click="openPreviewFromMenu"
+                        >
+                            <Icon name="eye" :size="16" /> Vorschau
+                        </button>
+                        <RouterLink
+                            v-for="s in editor.screens.slice(0, 1)"
+                            :key="s.id"
+                            role="menuitem"
+                            :to="{ name: 'player', query: { screen: s.slug } }"
+                            target="_blank"
+                            data-testid="more-player"
+                            @click="moreMenuOpen = false"
+                        >
+                            <Icon name="play" :size="16" /> Player
+                        </RouterLink>
+                    </div>
+                </div>
                 <button
                     class="d-btn d-btn--primary"
                     type="button"
@@ -262,7 +359,21 @@ function onKey(event: KeyboardEvent): void {
                 <BlockPalette />
                 <EditorStage />
             </div>
-            <Inspector :calendars="calendars" :groups="groups" @pick-image="openLibrary" />
+            <!-- Below 48rem this becomes a sheet at the bottom; above, `display: contents` leaves the grid untouched (Plan.md 44, M4). -->
+            <div class="inspector-sheet" :class="{ open: inspectorOpen }" data-testid="inspector-sheet">
+                <button
+                    type="button"
+                    class="sheet-bar"
+                    :aria-expanded="inspectorOpen"
+                    aria-controls="inspector-panel"
+                    data-testid="inspector-sheet-toggle"
+                    @click="inspectorOpen = !inspectorOpen"
+                >
+                    <span class="sheet-label">{{ sheetLabel }}</span>
+                    <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
+                </button>
+                <Inspector id="inspector-panel" :calendars="calendars" :groups="groups" @pick-image="openLibrary" />
+            </div>
         </div>
 
         <PlaylistPreview
@@ -344,6 +455,10 @@ function onKey(event: KeyboardEvent): void {
 .d-link:hover {
     text-decoration: underline;
 }
+/* At a desktop width `.heading` is transparent to layout: title and status sit beside each other as before. */
+.heading {
+    display: contents;
+}
 .title {
     overflow: hidden;
     font-size: 1.1em;
@@ -385,15 +500,67 @@ function onKey(event: KeyboardEvent): void {
     min-height: 0;
 }
 
+/* The "…" menu (Plan.md 44, M2), after the one of a screen tile – only shown below 48rem. */
+.more-menu {
+    position: relative;
+    display: none;
+}
+.more-menu-list {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 10;
+    display: grid;
+    min-width: 170px;
+    padding: 4px;
+    border: 1px solid var(--d-divider);
+    border-radius: var(--d-radius-lg);
+    background: var(--d-surface);
+    box-shadow: var(--d-shadow);
+}
+.more-menu-list a,
+.more-menu-list button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 36px;
+    padding: 6px 10px;
+    border: 0;
+    border-radius: var(--d-radius);
+    background: none;
+    color: var(--d-text);
+    font: inherit;
+    text-align: left;
+    text-decoration: none;
+    cursor: pointer;
+}
+.more-menu-list a:hover,
+.more-menu-list button:hover {
+    background: var(--d-panel);
+}
+.more-menu-list button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* The inspector as a sheet at the bottom of a phone (Plan.md 44, M4); untouched above 48rem. */
+.inspector-sheet {
+    display: contents;
+}
+.sheet-bar {
+    display: none;
+}
+
 /*
  * Phone and narrow windows: one column – slides as a row to swipe, the
- * stage in its own aspect ratio, the inspector below; the page scrolls.
- * Designing with a finger comes with Plan.md, Nächste Schritte 11.
+ * stage in its own aspect ratio; the inspector moved into its own sheet
+ * at the bottom, and the header into one row (Plan.md 44, M2–M4).
  */
 @media (max-width: 48rem) {
     .editor {
         height: auto !important;
         min-height: 0;
+        padding-bottom: calc(56px + env(safe-area-inset-bottom));
     }
     .columns {
         grid-template-columns: minmax(0, 1fr);
@@ -403,6 +570,98 @@ function onKey(event: KeyboardEvent): void {
         height: auto;
         aspect-ratio: var(--stage-aspect);
         max-height: 70vh;
+    }
+
+    /* Header: back link loses its label, title and status stack, "…" replaces Vorschau/Player. */
+    .editor :deep(.start) {
+        min-width: 0;
+    }
+    .editor :deep(.end) {
+        flex-wrap: nowrap;
+    }
+    .back-label {
+        display: none;
+    }
+    .heading {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+    .status {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .status-hint {
+        display: none;
+    }
+    .preview-btn,
+    .player-link {
+        display: none;
+    }
+    .more-menu {
+        display: block;
+    }
+
+    /* Sheet: a 56 px bar, and the inspector itself only while open. */
+    .inspector-sheet {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 1000;
+        display: flex;
+        flex-direction: column;
+        border-top: 1px solid var(--d-divider);
+        border-radius: var(--d-radius-lg) var(--d-radius-lg) 0 0;
+        background: var(--d-surface);
+        box-shadow: var(--d-shadow);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+    .sheet-bar {
+        display: flex;
+        flex: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        height: 56px;
+        padding: 0 16px;
+        border: 0;
+        background: none;
+        color: var(--d-text);
+        font: inherit;
+        font-weight: 700;
+        text-align: left;
+        cursor: pointer;
+    }
+    .sheet-label {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .sheet-chevron {
+        flex: none;
+        /* Closed points up – tap to open upward; open points down – tap to close (Plan.md 44, M4). */
+        transform: rotate(180deg);
+        transition: transform 0.15s;
+    }
+    .sheet-chevron.open {
+        transform: rotate(0deg);
+    }
+    .inspector-sheet:not(.open) :deep(.inspector) {
+        display: none;
+    }
+    .inspector-sheet.open {
+        max-height: 60vh;
+        max-height: 60dvh;
+    }
+    /* Room to scroll the stage above the open sheet (showStageAboveSheet). */
+    .editor.sheet-open {
+        padding-bottom: calc(60vh + env(safe-area-inset-bottom));
+        padding-bottom: calc(60dvh + env(safe-area-inset-bottom));
+    }
+    /* ChurchTools' own top bar stays on top when scrolling; leave it room. */
+    .editor :deep(.editor-stage) {
+        scroll-margin-top: 64px;
     }
 }
 </style>

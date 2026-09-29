@@ -724,11 +724,12 @@ const slideFill = computed<Fill>(() =>
     border-left: 1px solid var(--d-divider);
     background: var(--d-surface);
 }
-/* Phone: below the stage, as long as it needs to be (Plan.md, 10). */
+/* Phone: in the editor's sheet now (Plan.md 44, M4) – it owns the border and the max-height. */
 @media (max-width: 48rem) {
     .inspector {
-        overflow-y: visible;
-        border-top: 1px solid var(--d-divider);
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
         border-left: 0;
     }
 }

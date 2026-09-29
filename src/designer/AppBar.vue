@@ -91,13 +91,6 @@ withDefaults(defineProps<{ current?: 'screens' | 'schedules' | 'notices' | 'play
     .d-appbar {
         padding: 6px 12px;
     }
-    /* Title and actions each get a line of their own instead of overlapping. */
-    .start {
-        flex-basis: 100%;
-    }
-    .end {
-        flex: 1;
-    }
     .module-icon {
         display: none;
     }
