@@ -191,8 +191,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
 .add-block-btn {
     display: none;
 }
-/* Phone: the row of blocks is gone (Plan.md 44, M3) – a button opens a sheet with all of them instead. */
-@media (max-width: 48rem) {
+/* Phone and tablet: the row of blocks is gone (Plan.md 44, M3; 45) – a button opens a sheet with all of them instead. */
+@media (max-width: 48rem), (min-width: 48.0625rem) and (max-width: 75rem) {
     .blocks {
         display: none;
     }
@@ -259,6 +259,19 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
         overflow-y: auto;
         padding: 16px;
         border-radius: var(--d-radius-lg) var(--d-radius-lg) 0 0;
+        background: var(--d-surface);
+        box-shadow: var(--d-shadow);
+    }
+}
+/* On a tablet the sheet is a dialog in the middle (Plan.md 45), sized like `.d-dialog`. */
+@media (min-width: 48.0625rem) and (max-width: 75rem) {
+    .block-sheet-panel {
+        box-sizing: border-box;
+        width: min(460px, 100%);
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
+        padding: 16px;
+        border-radius: var(--d-radius-lg);
         background: var(--d-surface);
         box-shadow: var(--d-shadow);
     }

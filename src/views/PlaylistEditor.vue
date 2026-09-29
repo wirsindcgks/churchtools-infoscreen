@@ -63,6 +63,17 @@ const previewing = ref(false);
 const inspectorOpen = ref(false);
 
 /**
+ * The slides as a drawer on a tablet (Plan.md 45), closed by default. CSS ignores
+ * it at a phone or desktop width; the phone's own row keeps its state in `SlideList.vue`.
+ */
+const slidesDrawerOpen = ref(false);
+/** A tap on a slide chooses it – and folds the drawer away; the buttons of the chosen one stay out of it. */
+function closeSlidesDrawerOnPick(event: Event): void {
+    if ((event.target as HTMLElement).closest('[data-testid="slide-item"]')) slidesDrawerOpen.value = false;
+}
+const slideNumber = computed(() => editor.slides.findIndex((s) => s.id === editor.slide?.id) + 1);
+
+/**
  * Whether a pointer is currently down anywhere in the window – needed to
  * delay opening the sheet while a drag is under way (see the watcher below).
  * Captured, not bubbled: `EditorStage.vue`'s own `pointerdown` handler calls
@@ -424,13 +435,53 @@ function onKey(event: KeyboardEvent): void {
 
         <p v-if="loadError" class="d-banner d-banner--error banner" role="alert">{{ loadError }}</p>
         <div v-else-if="editor.draft" class="columns">
-            <SlideList />
+            <!-- Between 48rem and 75rem the slides and the inspector are drawers over the stage, a 44 px rail each (Plan.md 45); elsewhere the rails are hidden. -->
+            <div class="tablet-rail tablet-rail--slides">
+                <button
+                    type="button"
+                    class="tablet-toggle"
+                    :aria-expanded="slidesDrawerOpen"
+                    aria-controls="slide-list-ol"
+                    :aria-label="`Slides, aktuell Nummer ${slideNumber}`"
+                    data-testid="tablet-slides-toggle"
+                    @click="slidesDrawerOpen = !slidesDrawerOpen"
+                >
+                    <Icon name="slides" :size="20" />
+                    <span class="tablet-number">{{ slideNumber }}</span>
+                </button>
+            </div>
+            <SlideList :class="{ 'drawer-open': slidesDrawerOpen }" @click="closeSlidesDrawerOnPick" />
             <div class="stage-column">
                 <BlockPalette />
                 <EditorStage />
             </div>
             <!-- Below 48rem this becomes a sheet at the bottom; above, `display: contents` leaves the grid untouched (Plan.md 44, M4). -->
+            <div class="tablet-rail tablet-rail--inspector">
+                <button
+                    type="button"
+                    class="tablet-toggle"
+                    :aria-expanded="inspectorOpen"
+                    aria-controls="inspector-panel"
+                    :aria-label="sheetLabel"
+                    :title="sheetLabel"
+                    data-testid="tablet-inspector-toggle"
+                    @click="inspectorOpen = !inspectorOpen"
+                >
+                    <Icon name="settings" :size="20" />
+                </button>
+            </div>
             <div class="inspector-sheet" :class="{ open: inspectorOpen }" data-testid="inspector-sheet">
+                <div class="drawer-head">
+                    <strong class="drawer-title">{{ sheetLabel }}</strong>
+                    <button
+                        type="button"
+                        class="d-btn"
+                        data-testid="tablet-inspector-close"
+                        @click="inspectorOpen = false"
+                    >
+                        <Icon name="close" :size="16" /> Schließen
+                    </button>
+                </div>
                 <button
                     type="button"
                     class="sheet-bar"
@@ -568,6 +619,12 @@ function onKey(event: KeyboardEvent): void {
     display: grid;
     grid-template-columns: 220px 1fr 300px;
     min-height: 0;
+}
+
+/* Rails and the drawer's head belong to the tablet range (Plan.md 45); hidden elsewhere. */
+.tablet-rail,
+.drawer-head {
+    display: none;
 }
 
 /* The "…" menu (Plan.md 44, M2), after the one of a screen tile – only shown below 48rem. */
@@ -742,6 +799,129 @@ function onKey(event: KeyboardEvent): void {
     .editor.sheet-open .slide-list,
     .editor.sheet-open .block-palette {
         display: none;
+    }
+}
+
+/*
+ * Tablet, over 48rem up to 75rem (Plan.md 45): the stage takes the middle, the slides and the
+ * inspector are a 44 px rail each at the edges and open as drawers over the stage – absolute in
+ * `.columns`, so the stage does not move. No backdrop: what lies beside a drawer stays usable.
+ * `.slide-list` and `.inspector` are child roots and carry this scope's attribute.
+ */
+@media (min-width: 48.0625rem) and (max-width: 75rem) {
+    .columns {
+        position: relative;
+        grid-template-columns: 44px minmax(0, 1fr) 44px;
+    }
+    .tablet-rail--slides {
+        grid-column: 1;
+    }
+    .stage-column {
+        grid-column: 2;
+    }
+    .tablet-rail--inspector {
+        grid-column: 3;
+    }
+    .tablet-rail--slides,
+    .stage-column,
+    .tablet-rail--inspector {
+        grid-row: 1;
+    }
+    /* Upright, the slide sits right under "+ Baustein" instead of in the middle of a tall column. */
+    .stage-column > :last-child {
+        flex: 0 1 auto;
+        height: auto;
+        min-height: 0;
+        aspect-ratio: var(--stage-aspect);
+    }
+    .tablet-rail {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding-top: 6px;
+        background: var(--d-surface);
+    }
+    .tablet-rail--slides {
+        border-right: 1px solid var(--d-divider);
+    }
+    .tablet-rail--inspector {
+        border-left: 1px solid var(--d-divider);
+    }
+    .tablet-toggle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        width: 40px;
+        min-height: 44px;
+        padding: 4px 0;
+        border: 1px solid var(--d-divider);
+        border-radius: var(--d-radius);
+        background: var(--d-surface);
+        color: var(--d-text);
+        font: inherit;
+        cursor: pointer;
+    }
+    .tablet-toggle:hover,
+    .tablet-toggle[aria-expanded='true'] {
+        border-color: var(--d-interactive);
+        background: var(--d-accent-pale);
+    }
+    .tablet-number {
+        font-size: var(--d-size-sm);
+        font-weight: 700;
+    }
+
+    .slide-list {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 44px;
+        z-index: 30;
+        box-sizing: border-box;
+        width: 240px;
+        border-right: 1px solid var(--d-divider);
+        box-shadow: var(--d-shadow);
+    }
+    .slide-list:not(.drawer-open) {
+        display: none;
+    }
+
+    .inspector-sheet {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 44px;
+        z-index: 30;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        width: 320px;
+        border-left: 1px solid var(--d-divider);
+        background: var(--d-surface);
+        box-shadow: var(--d-shadow);
+    }
+    .inspector-sheet:not(.open) {
+        display: none;
+    }
+    .drawer-head {
+        display: flex;
+        flex: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--d-divider);
+    }
+    .drawer-title {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .inspector-sheet :deep(.inspector) {
+        flex: 1;
+        overflow-x: hidden;
     }
 }
 </style>

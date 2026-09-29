@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G11, G14–G16, G18–G20, G22–G32, G35, G38 und G39 sind beantwortet, G21, G33, G34, G36, G37 und G40 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G40).
+**Eine durchgehende Nummerierung.** G1–G11, G14–G16, G18–G20, G22–G32, G35, G38 und G39 sind beantwortet, G21, G33, G34, G36, G37, G40 und G41 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G41).
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -553,6 +553,14 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 - **Beschreibung mit Auszeichnung:** `information.note` kann `**fett**` enthalten (von Hand eingetragen in Gruppe 8) – wie der Text der Beiträge (G37), nicht „reiner Text", wie das Plugin annahm.
 
 **Offen:** ob `showLeaders: false` die Leiter weglässt – das braucht einen weiteren Schreibzugriff (Schalter an Homepage 4) und ist für den Bau nicht nötig, wenn der Baustein nur liefert, was ChurchTools liefert. Folgen: `Plan.md`, Punkt 43.
+
+**G41 – Zur Hälfte: Räume und Dienste für die Kandidaten aus Plan.md, Punkt 46.** *(2026-09-29, Testinstanz, nur lesend, als Entwicklungskonto und als Geräte-Konto)*
+
+- **Buchungen:** `GET /bookings` verlangt `resource_ids[]` (ohne: `400`, „Die Eingabe muss ein Array sein") und nimmt `from`/`to`. Je Eintrag `booking.base` mit `title`, `subtitle`, `description`, `resourceId`, `statusId`, `appointment` (id, Titel, Kalender), `onBehalfOfPid`, `showInCal`, Serienangaben und `meta.createdPerson`; dazu `calculated.startDate`/`endDate` – **Serien löst die API also wie bei Terminen selbst auf** (vgl. G19). Die Ressource steht eingebettet mit `name`, `resourceTypeId`, `location`, `description`. Die Testinstanz hat eine Buchung (Raum 01, am Gottesdienst hängend).
+- **Das Geräte-Konto bekommt `403`** („Forbidden to view ressources: [1,2,3]"); `/resources` liefert ihm eine leere Liste statt 7 (wie G21). Es hat unter `churchresource` weder `view` noch `view resource`. Ein Baustein „Raumbelegung" braucht also ein neues Recht fürs Gerät, je Ressource vergeben – der Assistent und `docs/Rechte.md` müssten es kennen. Die Nummern der beiden Rechte sind noch abzulesen (wie G33).
+- **Ressourcentypen** (`/resource/masterdata`): Raum, Gegenstand, Fahrzeug – ein Baustein filtert auf Räume.
+- **Dienste:** `GET /events?from&to&include=eventServices` liefert dem Geräte-Konto das eine Event der Instanz **samt `eventServices`**; es hat `churchservice: view events` für die Kalender 1–3, aber kein `view servicegroup`. Je Dienst `serviceId`, `personId`, `person`, `name`, `isAccepted`, `isValid` – **und `requesterPerson`**, wer den Dienst angefragt hat, mit Name, Bild, `guid` und Profil-Adresse. Das darf nie auf den Bildschirm. Alle Dienste der Instanz sind unbesetzt (`person: null`), ob das Gerät die **Namen eingeteilter Personen** sieht, ist deshalb ungemessen. `/services` (Stammdaten, ungeschützt) trägt je Dienst `hidePersonName` – in der Testinstanz überall `false`.
+- **Offen:** Namen eingeteilter Personen fürs Gerät (braucht eine Einteilung im Event der Testinstanz – Schreibzugriff, vorher besprechen); die Rechte-Nummern für Ressourcen.
 
 **G17 – Extension Store**: Aufnahmekriterien, Einreichungsweg, ob eine Veröffentlichung überhaupt angestrebt wird. Der Publisher hält seinen Store-Text in einer eigenen `EXTENSION_STORE.md` – ein Muster, das sich übernehmen lässt.
 

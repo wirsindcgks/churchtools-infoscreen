@@ -447,6 +447,121 @@ test.describe('with a finger, in both browsers', () => {
     });
 });
 
+// A tablet between 48rem and 75rem: slides and inspector are drawers over the stage (Plan.md 45).
+test.describe('on a tablet (Plan.md 45)', () => {
+    test.use({ viewport: { width: 820, height: 1180 }, hasTouch: true });
+
+    async function openEditor(page: Page): Promise<void> {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('leave-editor')).toBeVisible();
+    }
+    async function stageWidth(page: Page): Promise<number> {
+        return Math.round((await page.locator('.editor-stage').boundingBox())!.width);
+    }
+    async function expectNoSidewaysScroll(page: Page): Promise<void> {
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        expect(overflow).toBeLessThanOrEqual(0);
+    }
+    /** Both drawers shut, both rails there, "+ Baustein" instead of the row of blocks. */
+    async function expectRestingLayout(page: Page, minStage: number): Promise<void> {
+        expect(await stageWidth(page)).toBeGreaterThanOrEqual(minStage);
+        await expectNoSidewaysScroll(page);
+        await expect(page.getByTestId('slide-item').first()).not.toBeVisible();
+        await expect(page.getByTestId('inspector-sheet')).not.toBeVisible();
+        await expect(page.getByTestId('tablet-slides-toggle')).toBeVisible();
+        await expect(page.getByTestId('tablet-inspector-toggle')).toBeVisible();
+        await expect(page.getByTestId('add-block-menu')).toBeVisible();
+        await expect(page.getByTestId('add-clock')).not.toBeVisible();
+        await expect(page.getByTestId('inspector-sheet-toggle')).not.toBeVisible();
+    }
+
+    test('the stage takes the width, both drawers are shut, both rails are there', async ({ page }) => {
+        await openEditor(page);
+        await expectRestingLayout(page, 700);
+        await expect(page.getByTestId('tablet-slides-toggle')).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    test('the slides drawer opens over the stage, and a tap on a slide chooses it and shuts the drawer', async ({ page }) => {
+        await openEditor(page);
+        const before = await stageWidth(page);
+
+        await page.getByTestId('tablet-slides-toggle').tap();
+        await expect(page.getByTestId('tablet-slides-toggle')).toHaveAttribute('aria-expanded', 'true');
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('slide-item').first()).toBeVisible();
+        expect(await stageWidth(page)).toBe(before);
+        await expectNoSidewaysScroll(page);
+
+        await page.getByTestId('slide-item').nth(1).tap();
+        await expect(page.getByTestId('slide-item').nth(1)).not.toBeVisible();
+        await expect(page.getByTestId('tablet-slides-toggle')).toHaveAttribute('aria-expanded', 'false');
+        await expect(page.getByTestId('tablet-slides-toggle')).toContainText('2');
+
+        // The button opens and shuts it, and the phone's remembered row is not touched.
+        await page.getByTestId('tablet-slides-toggle').tap();
+        await expect(page.getByTestId('slide-item').first()).toBeVisible();
+        await page.getByTestId('tablet-slides-toggle').tap();
+        await expect(page.getByTestId('slide-item').first()).not.toBeVisible();
+        expect(await page.evaluate(() => window.localStorage.getItem('infoscreen-designer:slides-open'))).toBeNull();
+    });
+
+    test('a block on the stage opens the inspector drawer, "Schließen" shuts it', async ({ page }) => {
+        await openEditor(page);
+        const before = await stageWidth(page);
+
+        await page.getByTestId('frame-text').first().tap();
+        await expect(page.getByTestId('inspector-sheet')).toBeVisible();
+        await expect(page.getByTestId('block-inspector')).toBeVisible();
+        await expect(page.getByTestId('tablet-inspector-toggle')).toHaveAttribute('aria-label', /Baustein: Text/);
+        expect(await stageWidth(page)).toBe(before);
+        await expectNoSidewaysScroll(page);
+
+        await page.getByTestId('tablet-inspector-close').tap();
+        await expect(page.getByTestId('inspector-sheet')).not.toBeVisible();
+        expect(await stageWidth(page)).toBe(before);
+
+        // The rail's button opens it again, without a block chosen anew.
+        await page.getByTestId('tablet-inspector-toggle').tap();
+        await expect(page.getByTestId('inspector-sheet')).toBeVisible();
+        await page.getByTestId('tablet-inspector-toggle').tap();
+        await expect(page.getByTestId('inspector-sheet')).not.toBeVisible();
+    });
+
+    test('"+ Baustein" opens its sheet in the middle of the window', async ({ page }) => {
+        await openEditor(page);
+        await page.getByTestId('add-block-menu').tap();
+        const panel = page.locator('.block-sheet-panel');
+        await expect(panel).toBeVisible();
+        const box = (await panel.boundingBox())!;
+        expect(Math.abs(box.x + box.width / 2 - 410)).toBeLessThanOrEqual(2);
+        expect(box.y + box.height).toBeLessThan(1180 - 100);
+    });
+
+    test('the same picture across, at 1180 px', async ({ page }) => {
+        await page.setViewportSize({ width: 1180, height: 820 });
+        await openEditor(page);
+        await expectRestingLayout(page, 1000);
+    });
+
+    test('at 1280 px the three columns are as before, and no rails show', async ({ page }) => {
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await openEditor(page);
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('slide-item').first()).toBeVisible();
+        await page.getByTestId('frame-text').first().click();
+        await expect(page.getByTestId('block-inspector')).toBeVisible();
+        await expect(page.getByTestId('tablet-slides-toggle')).not.toBeVisible();
+        await expect(page.getByTestId('tablet-inspector-toggle')).not.toBeVisible();
+        await expect(page.getByTestId('tablet-inspector-close')).not.toBeVisible();
+        await expect(page.getByTestId('add-clock')).toBeVisible();
+        const inspector = (await page.getByTestId('block-inspector').boundingBox())!;
+        const stage = (await page.locator('.editor-stage').boundingBox())!;
+        expect(inspector.x).toBeGreaterThanOrEqual(stage.x + stage.width - 1);
+        await expectNoSidewaysScroll(page);
+    });
+});
+
 test('at a desktop the preview controls fade while untouched and come back with the mouse', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
