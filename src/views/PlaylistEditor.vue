@@ -57,10 +57,41 @@ const previewing = ref(false);
  * ignores this at a desktop width, so it stays false and does nothing there.
  */
 const inspectorOpen = ref(false);
+
+/**
+ * Whether a pointer is currently down anywhere in the window – needed to
+ * delay opening the sheet while a drag is under way (see the watcher below).
+ * Captured, not bubbled: `EditorStage.vue`'s own `pointerdown` handler calls
+ * `stopPropagation()` to keep a drag from also reaching its ancestors, which
+ * would otherwise stop a plain bubble-phase listener here from ever firing.
+ */
+const pointerDown = ref(false);
+function onPointerDown(): void {
+    pointerDown.value = true;
+}
+/** Opens the sheet once a pointer that was down while a block got chosen lifts again (see below). */
+let openSheetOnPointerUp = false;
+function onPointerUpOrCancel(): void {
+    pointerDown.value = false;
+    if (openSheetOnPointerUp) {
+        openSheetOnPointerUp = false;
+        inspectorOpen.value = true;
+        void nextTick(showStageAboveSheet);
+    }
+}
+
 watch(
     () => editor.selectedBlockId,
     (id) => {
         if (id === null) return; // deselecting does not close it again
+        // A finger still down means this selection may be the start of a drag: below 48rem,
+        // opening the sheet right now hides the slides and the block bar and moves the stage
+        // up into the space they leave – right under the finger that is dragging it (second
+        // phone test, Plan.md 44). So it waits for that finger to lift.
+        if (pointerDown.value) {
+            openSheetOnPointerUp = true;
+            return;
+        }
         inspectorOpen.value = true;
         void nextTick(showStageAboveSheet);
     },
@@ -148,6 +179,11 @@ onMounted(async () => {
     top.value = root.value?.getBoundingClientRect().top ?? 0;
     window.addEventListener('keydown', onKey);
     window.addEventListener('beforeunload', onBeforeUnload);
+    // Capture phase (see the comment on `pointerDown` above): it must run before a block's own
+    // `pointerdown` handler can stop the event from bubbling any further.
+    window.addEventListener('pointerdown', onPointerDown, true);
+    window.addEventListener('pointerup', onPointerUpOrCancel, true);
+    window.addEventListener('pointercancel', onPointerUpOrCancel, true);
     try {
         const [handle, person] = await Promise.all([getRepository(), currentPerson()]);
         author.value = displayName(person);
@@ -169,6 +205,9 @@ onMounted(async () => {
 onBeforeUnmount(() => {
     window.removeEventListener('keydown', onKey);
     window.removeEventListener('beforeunload', onBeforeUnload);
+    window.removeEventListener('pointerdown', onPointerDown, true);
+    window.removeEventListener('pointerup', onPointerUpOrCancel, true);
+    window.removeEventListener('pointercancel', onPointerUpOrCancel, true);
     document.removeEventListener('pointerdown', closeMoreMenuOnOutside);
 });
 
@@ -658,6 +697,17 @@ function onKey(event: KeyboardEvent): void {
     .editor.sheet-open {
         padding-bottom: calc(60vh + env(safe-area-inset-bottom));
         padding-bottom: calc(60dvh + env(safe-area-inset-bottom));
+    }
+    /*
+     * While the sheet is open, only the stage stands above it – the slides and the block bar
+     * are gone (second phone test, Plan.md 44): together with the sheet they left no room for
+     * the stage at all, exactly while a block on it is being edited. `.slide-list` is a child
+     * component's root, which carries this scope's attribute too (Vue's scoped CSS reaches a
+     * child's root node), so no `:deep()` is needed here.
+     */
+    .editor.sheet-open .slide-list,
+    .editor.sheet-open .block-palette {
+        display: none;
     }
     /* ChurchTools' own top bar stays on top when scrolling; leave it room. */
     .editor :deep(.editor-stage) {

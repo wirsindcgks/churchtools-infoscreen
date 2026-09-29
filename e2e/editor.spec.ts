@@ -314,11 +314,21 @@ test.describe('with a finger, in both browsers', () => {
         await page.getByTestId('open-editor').first().click();
         await expect(page.getByTestId('slide-item')).toHaveCount(3);
 
-        // Open by default: at most 170 px tall, and the thumbnail is 64 px – not the 176 px wide filmstrip tile.
+        // Open by default: at most 120 px tall, and the thumbnail is 36 px (Plan.md 44, second phone test).
         let listBox = (await page.locator('.slide-list').boundingBox())!;
-        expect(listBox.height).toBeLessThanOrEqual(170);
+        expect(listBox.height).toBeLessThanOrEqual(120);
         const thumbBox = (await page.locator('.thumb').first().boundingBox())!;
-        expect(Math.abs(thumbBox.height - 64)).toBeLessThanOrEqual(1);
+        expect(Math.abs(thumbBox.height - 36)).toBeLessThanOrEqual(1);
+
+        // Three slides and both tiles fit side by side within the phone's width; more would scroll within the row.
+        const tiles = await Promise.all([
+            ...(await page.getByTestId('slide-item').all()).map((t) => t.boundingBox()),
+            page.getByTestId('add-slide').boundingBox(),
+            page.getByTestId('import-slides').boundingBox(),
+        ]);
+        for (let i = 1; i < tiles.length; i++) expect(tiles[i]!.x).toBeGreaterThan(tiles[i - 1]!.x + tiles[i - 1]!.width);
+        expect(tiles.at(-1)!.x + tiles.at(-1)!.width).toBeLessThanOrEqual(390);
+        await expectNoSidewaysScroll(page); // the row scrolls within itself; the page around it does not
 
         // Collapsed: the row is gone, the toggle names the selected slide, at most 52 px tall.
         await page.getByTestId('slides-toggle').click();
@@ -331,6 +341,13 @@ test.describe('with a finger, in both browsers', () => {
         await page.reload();
         await expect(page.getByTestId('leave-editor')).toBeVisible();
         await expect(page.getByTestId('slides-toggle')).toHaveAttribute('aria-expanded', 'false');
+        await expect(page.getByTestId('slide-item').first()).toBeHidden();
+
+        // Collapsing is a phone thing: a window pulled wide again shows the slides (seen by the user, v0.2.10).
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('slide-item').first()).toBeVisible();
+        await page.setViewportSize({ width: 390, height: 844 });
         await expect(page.getByTestId('slide-item').first()).toBeHidden();
 
         await page.getByTestId('slides-toggle').click();
@@ -349,6 +366,58 @@ test.describe('with a finger, in both browsers', () => {
 
         await page.getByTestId('slide-remove-phone').click();
         await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    });
+
+    test('with the sheet open only the stage stands above it (Plan.md 44, second phone test)', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+
+        await page.getByTestId('add-block-menu').click();
+        await page.getByTestId('sheet-add-text').click();
+        await expect(page.getByTestId('inspector-sheet')).toHaveClass(/open/);
+        await expect(page.getByTestId('slide-item').first()).not.toBeVisible();
+        await expect(page.getByTestId('add-block-menu')).not.toBeVisible();
+        await expect(page.locator('.editor-stage')).toBeVisible();
+        const sheetBox = (await page.getByTestId('inspector-sheet').boundingBox())!;
+        // `showStageAboveSheet` scrolls smoothly – give the animation time to land.
+        await expect
+            .poll(async () => {
+                const stage = (await page.locator('.editor-stage').boundingBox())!;
+                return stage.y >= 0 && stage.y + stage.height <= sheetBox.y + 1;
+            })
+            .toBe(true);
+
+        // Tapping the bar closes the sheet again – both come back.
+        await page.getByTestId('inspector-sheet-toggle').click();
+        await expect(page.getByTestId('slide-item').first()).toBeVisible();
+        await expect(page.getByTestId('add-block-menu')).toBeVisible();
+    });
+
+    test('a drag that starts by choosing a block only opens the sheet once the finger lifts (Plan.md 44, second phone test)', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+
+        const frame = page.getByTestId('frame-text').first();
+        const box = (await frame.boundingBox())!;
+        // The block's stage x before the drag – read from its screen position, as in the snap test above,
+        // because the inspector (and with it `inspector-x`) is not even in the DOM's visible part yet.
+        const stage = (await page.locator('.editor-stage .stage').boundingBox())!;
+        const scale = stage.width / 1920;
+        const beforeX = (box.x - stage.x) / scale;
+
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2, { steps: 5 });
+        // Mid-drag: the block is chosen, but the sheet must not have opened and shoved the stage around yet.
+        await expect(page.getByTestId('inspector-sheet-toggle')).toContainText('Baustein: Text');
+        await expect(page.getByTestId('inspector-sheet')).not.toHaveClass(/open/);
+
+        await page.mouse.up();
+        await expect(page.getByTestId('inspector-sheet')).toHaveClass(/open/);
+        const afterX = Number(await page.getByTestId('inspector-x').inputValue());
+        expect(afterX).toBeGreaterThan(beforeX);
     });
 });
 
