@@ -30,15 +30,17 @@ anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
 >   Abschnitt P** bestehen; das Gerät kommt danach (P4).
 > - **Beiträge im Player** mit dem Test-ZIP prüfen, Gruppe „ISD-Beitragstest" (`Plan.md`, Punkt 33). Offen
 >   bleiben dabei interne Gruppen und ob Mitglieder eingeschränkter Gruppen deren Beiträge lesen (G37).
-> - **Service Worker unter `/ccm/`** (E1, G10). Das ist nicht mehr blockiert. Ohne ihn zeigt ein Gerät, das
->   während eines Netzausfalls neu startet, nichts (`Plan.md`, Risiko 2).
+> - ~~**Service Worker unter `/ccm/`**~~ (E1, G10) **gebaut und abgenommen am 2026-09-28, `v0.2.4`**
+>   (`Plan.md`, Punkt 37).
 > - **Modul-Fixtures nachsichern**: Die am 2026-09-25 aufgezeichneten Modul-Antworten liegen noch nicht in
->   der Sicherung außerhalb des Repos. Das ist keine Frist mehr, aber ein einzelner Arbeitsplatz.
+>   der Sicherung außerhalb des Repos. Das ist keine Frist mehr, aber ein einzelner Arbeitsplatz. **Der Ort der
+>   Sicherung steht bewusst nicht im Repo – den nennt der Nutzer.**
 > - ~~**GitHub-Actions auf Node.js 24 heben**~~ **erledigt am 2026-09-28** (`Plan.md`, Punkt 35). Ab dem
 >   2026-10-19 wechselt zusätzlich `ubuntu-latest` auf Ubuntu 26 – nur beobachten.
 > - **Zwei Entscheidungen ohne Vorgabe**: Hardware (G-E2) und Zeitbudget (G-E7).
-> - **Kleinere Reste aus dem Plan**: Rechte am Modul selbst und eine Standardschrift im Design-Reiter;
->   Inspektor am Handy als ausklappbares Blatt. *(Slides übernehmen und Playlist duplizieren sind seit
+> - **Kleinere Reste aus dem Plan** stehen seit dem 2026-09-28 im Umsetzungsplan (`Plan.md`, „Als Nächstes" 5,
+>   Punkte 39–43): `429`, Standardschrift, Inspektor am Handy, ein wackelnder e2e-Test, der Baustein „Gruppen".
+>   *(Die Rechte am Modul selbst vergibt und prüft der Assistent seit Punkt 8.)* *(Slides übernehmen und Playlist duplizieren sind seit
 >   Punkt 31 gebaut, das Durchgreifen durch gesperrte Bausteine seit Punkt 25.)*
 >
 > **Geparkt, bis ein Produktschritt es braucht:** C4, D4, F2, F3, `attachments`. *(G16 ist seit P5 beantwortet.)*
