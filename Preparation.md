@@ -39,7 +39,7 @@ anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
 >   2026-10-19 wechselt zusätzlich `ubuntu-latest` auf Ubuntu 26 – nur beobachten.
 > - **Zwei Entscheidungen ohne Vorgabe**: Hardware (G-E2) und Zeitbudget (G-E7).
 > - **Kleinere Reste aus dem Plan** stehen seit dem 2026-09-28 im Umsetzungsplan (`Plan.md`, „Als Nächstes" 5,
->   Punkte 39–43): `429`, Standardschrift, Inspektor am Handy, ein wackelnder e2e-Test, der Baustein „Gruppen".
+>   Punkte 39–44): `429`, Standardschrift, Inspektor am Handy, ein wackelnder e2e-Test, der Baustein „Gruppen", der Designer am Handy.
 >   *(Die Rechte am Modul selbst vergibt und prüft der Assistent seit Punkt 8.)* *(Slides übernehmen und Playlist duplizieren sind seit
 >   Punkt 31 gebaut, das Durchgreifen durch gesperrte Bausteine seit Punkt 25.)*
 >
