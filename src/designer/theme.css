@@ -199,6 +199,17 @@
     .infoscreen-designer :where(button.d-btn, input:not([type='checkbox'], [type='radio']), select) {
         min-height: 40px;
     }
+    /*
+     * iOS zooms into a field whose text is smaller than 16px as soon as it is
+     * tapped, and does not zoom out again: the page then pans sideways
+     * (seen on an iPhone after v0.2.9, Plan.md 44). Not `:where` – no field
+     * of a component may take it below 16px.
+     */
+    .infoscreen-designer input:not([type='checkbox'], [type='radio'], [type='color']),
+    .infoscreen-designer select,
+    .infoscreen-designer textarea {
+        font-size: 16px;
+    }
 }
 
 /* "+ Screen erstellen" and its siblings keep only their symbol on a phone; the label stays in aria-label. */

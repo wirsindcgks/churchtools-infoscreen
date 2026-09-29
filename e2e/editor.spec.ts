@@ -272,6 +272,8 @@ test.describe('with a finger, in both browsers', () => {
         await page.getByTestId('inspector-x').fill('100');
         await page.getByTestId('inspector-x').blur();
         await expect(page.getByTestId('inspector-x')).toHaveValue('100');
+        // Below 16px iOS zooms in on a tapped field and the page pans sideways afterwards.
+        await expect(page.getByTestId('inspector-x')).toHaveCSS('font-size', '16px');
 
         // The sheet covers at most 60 % of the window, and the stage moved up into the free part above it.
         const sheetBox = (await inspectorSheet.boundingBox())!;
@@ -306,6 +308,48 @@ test.describe('with a finger, in both browsers', () => {
         await expect(page.getByTestId('block-sheet')).toHaveCount(0);
         await expect(page.getByTestId('inspector-sheet-toggle')).toContainText('Baustein: Text'); // still selected
     });
+
+    test('the slide row is collapsible and small on a phone (Plan.md 44)', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+
+        // Open by default: at most 170 px tall, and the thumbnail is 64 px – not the 176 px wide filmstrip tile.
+        let listBox = (await page.locator('.slide-list').boundingBox())!;
+        expect(listBox.height).toBeLessThanOrEqual(170);
+        const thumbBox = (await page.locator('.thumb').first().boundingBox())!;
+        expect(Math.abs(thumbBox.height - 64)).toBeLessThanOrEqual(1);
+
+        // Collapsed: the row is gone, the toggle names the selected slide, at most 52 px tall.
+        await page.getByTestId('slides-toggle').click();
+        await expect(page.getByTestId('slide-item').first()).toBeHidden();
+        await expect(page.getByTestId('slides-current')).toContainText('Willkommen');
+        listBox = (await page.locator('.slide-list').boundingBox())!;
+        expect(listBox.height).toBeLessThanOrEqual(52);
+
+        // The choice survives a reload – kept per viewer in localStorage.
+        await page.reload();
+        await expect(page.getByTestId('leave-editor')).toBeVisible();
+        await expect(page.getByTestId('slides-toggle')).toHaveAttribute('aria-expanded', 'false');
+        await expect(page.getByTestId('slide-item').first()).toBeHidden();
+
+        await page.getByTestId('slides-toggle').click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expectNoSidewaysScroll(page);
+    });
+
+    test('duplicate and remove the current slide from the phone header (Plan.md 44)', async ({ page }) => {
+        page.on('dialog', (dialog) => void dialog.accept());
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+
+        await page.getByTestId('slide-duplicate-phone').click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(4);
+
+        await page.getByTestId('slide-remove-phone').click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    });
 });
 
 test('at 1440px the phone sheets are gone, the inspector stands beside the stage (Plan.md 44)', async ({ page }) => {
@@ -317,6 +361,10 @@ test('at 1440px the phone sheets are gone, the inspector stands beside the stage
     await expect(page.getByTestId('editor-more')).not.toBeVisible();
     await expect(page.getByTestId('add-clock')).toBeVisible();
     await expect(page.getByTestId('open-preview')).toBeVisible();
+    // The phone-only slide row header and its actions are gone; the selected tile keeps its own (Plan.md 44).
+    await expect(page.getByTestId('slides-toggle')).not.toBeVisible();
+    await expect(page.getByTestId('slide-duplicate-phone')).not.toBeVisible();
+    await expect(page.getByRole('button', { name: 'Duplizieren', exact: true })).toBeVisible();
 
     await page.getByTestId('add-clock').click();
     const [stage, inspector] = await Promise.all([

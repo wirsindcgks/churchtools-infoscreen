@@ -730,6 +730,8 @@ const slideFill = computed<Fill>(() =>
         flex: 1;
         min-height: 0;
         overflow-y: auto;
+        /* The sheet scrolls up and down only; the fields follow the width of the phone (Plan.md 44). */
+        overflow-x: hidden;
         border-left: 0;
     }
 }
