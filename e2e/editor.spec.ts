@@ -99,7 +99,12 @@ test('a chosen font comes from the own server, and nothing else is asked for (da
     const fonts: string[] = [];
     page.on('request', (request) => {
         const url = new URL(request.url());
-        if (url.hostname !== 'localhost') foreign.push(url.hostname);
+        // The API answers with absolute image addresses on the instance's own host (the test
+        // series' appointment image). In the dev server the browser fetches those past the
+        // proxy, straight from the instance; in production the instance is the app's own
+        // origin, so that is not a data-protection issue (Plan.md 42).
+        const isInstanceImage = request.resourceType() === 'image' && url.pathname.startsWith('/images/');
+        if (url.hostname !== 'localhost' && !isInstanceImage) foreign.push(url.hostname);
         if (url.pathname.endsWith('.woff2')) fonts.push(url.pathname);
     });
     await page.goto('./');
@@ -733,6 +738,24 @@ test('the design page sets the look of all screens: corners, large appointments,
     // The preview plays in the theme too – its page bar in the accent colour (seen missing, 2026-09-25).
     await page.getByTestId('open-preview').click();
     await expect(page.getByTestId('playlist-preview').locator('.slide').first()).toHaveAttribute('style', /--isd-accent: #e11d48/);
+});
+
+test('the design page sets the font new blocks start with; blocks that exist keep theirs (Plan.md 40)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('sidebar-design').click();
+    await page.getByTestId('theme-font').selectOption('oswald');
+    await page.getByTestId('theme-save').click();
+    await expect(page.getByTestId('theme-saved')).toBeVisible();
+
+    await page.getByTestId('sidebar-playlists').click();
+    await page.getByTestId('playlist-card').first().getByTestId('open-playlist').click();
+    const stage = page.locator('.editor-stage');
+    // WebKit reports the name without quotes.
+    const welcome = stage.locator('.block--text').filter({ hasText: 'Herzlich willkommen!' });
+    await expect(welcome.locator('.text')).toHaveCSS('font-family', /^"?ISD Lato"?, sans-serif$/);
+    await page.getByTestId('add-text').click();
+    await expect(page.getByTestId('font-family')).toHaveValue('oswald');
+    await expect(stage.locator('.block--text').last().locator('.text')).toHaveCSS('font-family', /^"?ISD Oswald"?, sans-serif$/);
 });
 
 test('a website and a QR code (Plan.md 28)', async ({ page }) => {

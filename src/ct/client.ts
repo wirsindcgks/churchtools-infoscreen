@@ -79,6 +79,29 @@ export function httpStatus(error: unknown): number | null {
     return typeof status === 'number' ? status : null;
 }
 
+/** ChurchTools recommends waiting 60 seconds after a `429` (G16); the test instance sent no `Retry-After`. */
+const RATE_LIMIT_WAIT_MS = 60_000;
+
+/**
+ * How long to wait after a `429`, honouring `Retry-After` when ChurchTools sends one – as seconds or
+ * as an HTTP date. `undefined` for any other error. `error.response.headers` may be a plain object or
+ * an `AxiosHeaders` instance, so this reads the header as a property instead of assuming a `.get()`
+ * method; the key is usually lower-cased, `Retry-After` is a fallback. Never less than
+ * `RATE_LIMIT_WAIT_MS`, also without a header or with one that cannot be parsed (G16).
+ */
+export function retryAfterMs(error: unknown, now: number = Date.now()): number | undefined {
+    if (httpStatus(error) !== 429) return undefined;
+    const headers = (error as { response?: { headers?: Record<string, unknown> } })?.response?.headers;
+    const header = headers?.['retry-after'] ?? headers?.['Retry-After'];
+    if (typeof header === 'string') {
+        const seconds = Number(header);
+        if (Number.isFinite(seconds) && seconds >= 0) return Math.max(RATE_LIMIT_WAIT_MS, seconds * 1000);
+        const date = Date.parse(header);
+        if (!Number.isNaN(date)) return Math.max(RATE_LIMIT_WAIT_MS, date - now);
+    }
+    return RATE_LIMIT_WAIT_MS;
+}
+
 /** The device account from the player address: `login_token` and `user_id`. */
 export interface TokenLogin {
     loginToken: string;

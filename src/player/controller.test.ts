@@ -440,6 +440,19 @@ describe('player controller', () => {
         player.stop();
     });
 
+    it('waits at least 60 s after a 429, not the usual 30 s (G16)', async () => {
+        const rateLimited = Object.assign(new Error('429'), { response: { status: 429, headers: {} } });
+        const loadScreen = vi.fn().mockRejectedValueOnce(rateLimited).mockResolvedValue(loaded());
+        const player = createPlayer('demo', fakeData({ loadScreen }), fakeDeps());
+        await player.start();
+        expect(loadScreen.mock.calls.length).toBe(1);
+        await vi.advanceTimersByTimeAsync(59_000);
+        expect(loadScreen.mock.calls.length).toBe(1); // not yet – the usual 30 s backoff would have retried already
+        await vi.advanceTimersByTimeAsync(2_000);
+        expect(loadScreen.mock.calls.length).toBe(2);
+        player.stop();
+    });
+
     it('treats a device clock far from the server time as unconfirmed', async () => {
         const player = createPlayer(
             'demo',

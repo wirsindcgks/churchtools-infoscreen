@@ -4,10 +4,13 @@ import {
     MAX_VALUE_LENGTH,
     readScreen,
     readSlide,
+    readTheme,
     SchemaTooNewError,
     serialize,
     ValueTooLargeError,
 } from './read';
+import { DEFAULT_FONT } from '../player/fonts';
+import { SCHEMA_VERSION, THEME_ID } from './schema';
 import { makeSlide, makeScreen, textBlock } from './testing';
 
 describe('readSlide – tolerant towards newer data', () => {
@@ -70,6 +73,19 @@ describe('readSlide – tolerant towards newer data', () => {
             showImage: true,
             showAuthor: false,
         });
+    });
+});
+
+describe('readTheme – the font new blocks start with (schema 1.13, Plan.md 40)', () => {
+    const theme = { schema: { major: 1, minor: 12 }, kind: 'theme', id: THEME_ID };
+
+    it('reads a theme from before 1.13 with Lato, the font new blocks had until then', () => {
+        expect(readTheme(theme).font).toBe('lato');
+        expect(readTheme(theme).font).toBe(DEFAULT_FONT);
+    });
+
+    it('keeps a font key it does not know; drawing falls back, saving does not lose it', () => {
+        expect(readTheme({ ...theme, schema: { ...SCHEMA_VERSION }, font: 'comic-neue' }).font).toBe('comic-neue');
     });
 });
 
