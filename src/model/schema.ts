@@ -232,12 +232,18 @@ export const GroupsBlock = v.object({
     /** `card` – one group after the other, with its QR code; `list` – rows, page by page. */
     layout: v.optional(v.picklist(['card', 'list']), 'card'),
     /**
+     * Groups per page as `card` (wish of the user, 2026-09-29): side by side
+     * in a wide block, stacked in a tall one; each card takes the shape of
+     * its own cell – two in a 16:9 block are portrait cards.
+     */
+    perPage: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(4)), 1),
+    /**
      * What each group shows, one switch per item (wish of the user,
      * 2026-09-29). Missing switches take their default; new items can come
      * without a new field.
      */
     show: v.optional(GroupFields, {}),
-    /** Seconds per group (`card`) or per page (`list`); default GROUP_SECONDS. */
+    /** Seconds per page, in both layouts; default GROUP_SECONDS. */
     pageSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(120))),
     style: TextStyle,
 });

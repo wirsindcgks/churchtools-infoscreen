@@ -38,6 +38,8 @@ export default defineConfig(({ mode }) => {
         server: {
             proxy: env.CT_BASE_URL
                 ? {
+                      // Group homepages go anonymous, as the module asks for them (Plan.md 43) – first, so /api does not catch them.
+                      '/api/grouphomepages': devProxy(env.CT_BASE_URL, undefined),
                       '/api': devProxy(env.CT_BASE_URL, env.CT_LOGIN_TOKEN),
                       // The image service is anonymous (G14); proxied only because the instance sends no CORS headers.
                       '/images': devProxy(env.CT_BASE_URL, undefined),

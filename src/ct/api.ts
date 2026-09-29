@@ -97,15 +97,36 @@ export async function fetchPostGroups(): Promise<PostGroup[]> {
 }
 
 /**
- * The enabled group homepages – anonymous, and the same for everyone (G40).
- * Each with its parent group, its title and the hash to fetch it by.
+ * Group homepages are read anonymously, with the browser's cookies left out –
+ * the device then shows exactly what any visitor sees (G40). And in German:
+ * ChurchTools names weekdays and target groups in the language of each
+ * request's `Accept-Language`, signed in or not, and in the instance's own
+ * without one (measured 2026-09-29). A TV whose system is set to English
+ * showed "Sunday" beside "Noch 3 Plätze frei"; the module speaks German.
+ * The ChurchTools client can set neither, so this uses `fetch` like
+ * `fetchChurchLogoUrl`.
  */
-export async function fetchGroupHomepageList(): Promise<HomepageEntry[]> {
-    return normalizeHomepageList(await churchtoolsClient.get<unknown[]>('/grouphomepages'));
+async function getAnonymously<T>(baseUrl: string, path: string, fetcher: typeof fetch): Promise<T> {
+    const response = await fetcher(`${baseUrl}/api${path}`, {
+        cache: 'no-store',
+        credentials: 'omit',
+        headers: { Accept: 'application/json', 'Accept-Language': 'de' },
+    });
+    if (!response.ok) {
+        throw Object.assign(new Error(`${path}: HTTP ${response.status}`), {
+            response: { status: response.status, headers: { 'retry-after': response.headers.get('retry-after') ?? undefined } },
+        });
+    }
+    return ((await response.json()) as { data: T }).data;
+}
+
+/** The enabled group homepages, each with its parent group, its title and the hash to fetch it by. */
+export async function fetchGroupHomepageList(baseUrl: string, fetcher: typeof fetch = fetch): Promise<HomepageEntry[]> {
+    return normalizeHomepageList(await getAnonymously<unknown[]>(baseUrl, '/grouphomepages', fetcher));
 }
 
 /** One homepage with the groups ChurchTools shows the public (G40). The hash is checked before it goes into the path. */
-export function fetchGroupHomepage(hash: string): Promise<unknown> {
+export function fetchGroupHomepage(baseUrl: string, hash: string, fetcher: typeof fetch = fetch): Promise<unknown> {
     if (!isValidHomepageHash(hash)) return Promise.reject(new Error('Ungültige Kennung einer Gruppen-Homepage.'));
-    return churchtoolsClient.get<unknown>(`/grouphomepages/${hash}`);
+    return getAnonymously<unknown>(baseUrl, `/grouphomepages/${hash}`, fetcher);
 }

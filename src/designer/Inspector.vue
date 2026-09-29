@@ -613,8 +613,22 @@ const slideFill = computed<Fill>(() =>
                             <option value="list">Liste – mehrere untereinander</option>
                         </select>
                     </label>
+                    <label v-if="block.layout === 'card'" class="d-field">
+                        Gruppen je Seite
+                        <select
+                            :value="block.perPage"
+                            data-testid="groups-per-page"
+                            @change="setBlock({ perPage: Number(($event.target as HTMLSelectElement).value) })"
+                        >
+                            <option v-for="n in 4" :key="n" :value="n">{{ n }}</option>
+                        </select>
+                    </label>
+                    <p v-if="block.layout === 'card' && block.perPage > 1" class="hint">
+                        {{ block.width >= block.height ? 'Nebeneinander' : 'Untereinander' }}; jede Karte richtet sich nach
+                        ihrer eigenen Form – zwei in einem breiten Baustein stehen hochkant.
+                    </p>
                     <label class="d-field">
-                        {{ block.layout === 'card' ? 'Sekunden je Gruppe' : 'Sekunden je Seite' }}
+                        {{ block.layout === 'card' && block.perPage === 1 ? 'Sekunden je Gruppe' : 'Sekunden je Seite' }}
                         <input
                             type="number"
                             min="5"

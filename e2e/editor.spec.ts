@@ -1127,14 +1127,15 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await expect(card.getByTestId('group-qr')).toBeVisible();
     await page.waitForTimeout(300);
     await stage.screenshot({ path: 'test-results/editor-groups-card.png' });
-    await expect(card).toHaveClass(/hero--landscape/); // default size, 1400 × 700
+    const groupCard = card.getByTestId('group-card');
+    await expect(groupCard).toHaveClass(/hero--landscape/); // default size, 1400 × 700
     await card.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-card-landscape.png` });
 
     // Hochkant: the same group, now with its image above the text instead of beside it.
     await inspector.getByTestId('inspector-width').fill('700');
     await inspector.getByTestId('inspector-height').fill('1000');
     await inspector.getByTestId('inspector-height').blur();
-    await expect(card).toHaveClass(/hero--portrait/);
+    await expect(groupCard).toHaveClass(/hero--portrait/);
     await page.waitForTimeout(300);
     await card.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-card-portrait.png` });
 
@@ -1142,6 +1143,20 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await inspector.getByTestId('inspector-width').fill('1400');
     await inspector.getByTestId('inspector-height').fill('700');
     await inspector.getByTestId('inspector-height').blur();
+
+    // Two a page: in a 16:9 block side by side, each a portrait card. How many groups the homepage
+    // holds is up to whoever tends the test instance – one page without a bar, or more with one.
+    await inspector.getByTestId('inspector-width').fill('1600');
+    await inspector.getByTestId('inspector-height').fill('900');
+    await inspector.getByTestId('inspector-height').blur();
+    await inspector.getByTestId('groups-per-page').selectOption('2');
+    await expect(groupCard.first()).toHaveClass(/hero--portrait/);
+    const shownCards = await groupCard.count();
+    expect(shownCards).toBeGreaterThanOrEqual(1);
+    expect(shownCards).toBeLessThanOrEqual(2);
+    if (shownCards === 2) await expect(card.getByTestId('groups-pager')).toContainText('1/');
+    await page.waitForTimeout(300);
+    await card.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-card-two-a-page.png` });
 
     await inspector.getByTestId('group-show-leaders').check();
     await expect(card.getByTestId('group-leaders')).toBeVisible();

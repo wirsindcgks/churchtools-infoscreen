@@ -89,13 +89,13 @@ export const churchToolsPlayerData: PlayerData = {
     },
     async groupHomepages(parentGroupIds) {
         if (!parentGroupIds.length) return [];
-        const list = await withTimeout(fetchGroupHomepageList());
         const baseUrl = instanceBaseUrl();
+        const list = await withTimeout(fetchGroupHomepageList(baseUrl));
         return Promise.all(
             parentGroupIds.map(async (parentGroupId) => {
                 const entry = list.find((e) => e.parentGroupId === parentGroupId);
                 if (!entry) return { parentGroupId, groups: [] };
-                const raw = await withTimeout(fetchGroupHomepage(entry.hash));
+                const raw = await withTimeout(fetchGroupHomepage(baseUrl, entry.hash));
                 return { parentGroupId, groups: normalizeHomepage(raw, baseUrl) };
             }),
         );

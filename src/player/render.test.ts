@@ -309,6 +309,7 @@ describe('rendering groups (Plan.md 43)', () => {
         parentGroupId: 10,
         groupIds: [],
         layout: 'card',
+        perPage: 1,
         show: DEFAULT_SHOW,
         style,
         ...overrides,
@@ -385,5 +386,52 @@ describe('rendering groups (Plan.md 43)', () => {
         );
         const rows = wrapper.findAll('[data-testid="group-row"]');
         expect(rows.map((r) => r.text())).toEqual([expect.stringContaining('Hauskreis'), expect.stringContaining('Kinderkirche')]);
+    });
+
+    describe('several groups a page (wish of the user, 2026-09-29)', () => {
+        const three = [group({ id: 1, name: 'Alpha' }), group({ id: 2, name: 'Beta' }), group({ id: 3, name: 'Gamma' })];
+
+        it('shows perPage cards side by side in a wide block, each shaped like its own cell', () => {
+            const wide = groupsBlock({ width: 1600, height: 900, groupIds: [1, 2, 3], perPage: 2 });
+            const wrapper = render(makeSlide({ blocks: [wide] }), withGroups(...three));
+            const cards = wrapper.findAll('[data-testid="group-card"]');
+            expect(cards.map((c) => c.get('.group-name').text())).toEqual(['Alpha', 'Beta']);
+            // A 16:9 block, 56 × 0.4 apart: two cells of 788.8 px next to a height of 900 − 50.4 → portrait cards.
+            expect(cards[0]!.classes()).toContain('hero--portrait');
+            expect(cards[0]!.attributes('style')).toContain('width: 788.8px');
+            expect(wrapper.find('.cells').classes()).toContain('cells--row');
+        });
+
+        it('stacks them in a tall block', () => {
+            const wrapper = render(
+                makeSlide({ blocks: [groupsBlock({ width: 700, height: 1400, groupIds: [1, 2], perPage: 2 })] }),
+                withGroups(...three),
+            );
+            expect(wrapper.find('.cells').classes()).toContain('cells--column');
+            expect(wrapper.findAll('[data-testid="group-card"]')).toHaveLength(2);
+        });
+
+        it('shows the page bar with the page count and reports the pages to the rotation, like the appointment list', () => {
+            const pages: Record<string, number> = {};
+            const wrapper = render(makeSlide({ blocks: [groupsBlock({ perPage: 2 })] }), { ...withGroups(...three), pages });
+            expect(wrapper.get('[data-testid="groups-pager"]').text()).toContain('1/2');
+            expect(pages.g).toBe(2);
+        });
+
+        it('shows no page bar when everything fits one page', () => {
+            const pages: Record<string, number> = {};
+            const wrapper = render(makeSlide({ blocks: [groupsBlock({ perPage: 3 })] }), { ...withGroups(...three), pages });
+            expect(wrapper.findAll('[data-testid="group-card"]')).toHaveLength(3);
+            expect(wrapper.find('[data-testid="groups-pager"]').exists()).toBe(false);
+            expect(pages.g).toBe(1);
+        });
+    });
+
+    it('reads **bold** in the description as in posts, and keeps its paragraphs as lines', () => {
+        const note = 'In der **Kinderkirche** gestaltest du Angebote.\n\nKomm vorbei!';
+        const card = render(makeSlide({ blocks: [groupsBlock()] }), withGroups(group({ note }))).get('[data-testid="group-note"]');
+        expect(card.find('strong').text()).toBe('Kinderkirche');
+        expect(card.text()).not.toContain('**');
+        expect(card.text()).toContain('Komm vorbei!');
     });
 });

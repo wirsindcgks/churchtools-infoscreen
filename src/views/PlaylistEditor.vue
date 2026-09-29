@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
-import { currentPerson, displayName } from '../ct/client';
+import { currentPerson, displayName, instanceBaseUrl } from '../ct/client';
 import { fetchGroupHomepageList, fetchPostGroups, type PostGroup } from '../ct/api';
 import AppBar from '../designer/AppBar.vue';
 import BlockPalette from '../designer/BlockPalette.vue';
@@ -222,7 +222,7 @@ onMounted(async () => {
         groups.value = [];
     }
     try {
-        homepages.value = await fetchGroupHomepageList();
+        homepages.value = await fetchGroupHomepageList(instanceBaseUrl());
     } catch {
         homepages.value = [];
     }

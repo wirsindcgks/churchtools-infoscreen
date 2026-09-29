@@ -201,7 +201,7 @@ export function createBlock(
             };
         case 'groups':
             // No homepage yet: the inspector offers them; the leaders stay off until switched on (Plan.md 43).
-            return { ...frame, type, groupIds: [], layout: 'card', show: v.parse(GroupFields, {}), style: textStyle(56) };
+            return { ...frame, type, groupIds: [], layout: 'card', perPage: 1, show: v.parse(GroupFields, {}), style: textStyle(56) };
     }
 }
 

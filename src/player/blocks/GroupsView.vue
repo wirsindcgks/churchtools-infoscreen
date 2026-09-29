@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
  * Groups of a ChurchTools group homepage (schema 1.14, Plan.md, Nächste
- * Schritte 43): one group at a time as a card with a QR code to its public
- * page, or as many rows as fit. Paging works like PostsView's card and
- * AppointmentListView's list. The privacy rule lives in
+ * Schritte 43): cards with a QR code to each group's public page, one to
+ * four a page, or as many rows as fit. Both turn their pages and show the
+ * page bar like AppointmentListView. The privacy rule lives in
  * `src/groups/normalize.ts` – this view reads nothing but `Group` fields.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -11,6 +11,7 @@ import { homepageGroups, placesText, selectGroups, whenText, type Group } from '
 import { IMAGE_RATIOS, type Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
+import { postParagraphs } from '../../posts/text';
 import { GROUP_SECONDS, pageInterval, paginateByHeight } from '../paging';
 import { qrShape } from '../qr';
 import CalendarBadge from './CalendarBadge.vue';
@@ -30,102 +31,56 @@ function hideOnError(event: Event): void {
     (event.target as HTMLElement).style.display = 'none';
 }
 
-// --- card: one group per page, mechanics like PostsView's ---
-const page = ref(0);
-const current = computed(() => (items.value.length ? (items.value[page.value % items.value.length] ?? null) : null));
+// --- pages: both layouts turn them the same way, with the same bar as AppointmentListView ---
 
-let cardTimer: ReturnType<typeof setInterval> | undefined;
-function turnCardPages(): void {
-    clearInterval(cardTimer);
-    page.value = 0;
-    const count = items.value.length;
-    if (props.block.layout !== 'card' || count < 2 || context.paging === false) return;
-    const seconds = pageInterval(props.block.pageSeconds ?? GROUP_SECONDS, props.slideSeconds ?? 0, count);
-    cardTimer = setInterval(() => (page.value = (page.value + 1) % count), seconds * 1000);
-}
-watch(
-    [() => items.value.length, () => props.block.layout, () => props.block.pageSeconds, () => props.slideSeconds, () => context.paging],
-    () => turnCardPages(),
-);
-onMounted(turnCardPages);
-onBeforeUnmount(() => clearInterval(cardTimer));
+/** The page bar at the bottom: 0.55em text and a little air, like AppointmentListView's. */
+const reserve = computed(() => props.block.style.fontSize * 0.9);
 
-// Landscape: image left, text, QR right; portrait: image on top, text, QR bottom right.
-const landscape = computed(() => props.block.width >= props.block.height);
-
-/** The theme's image shape (Plan.md 27); 'free' has no ratio of its own, so 16:9 like a post without one. */
-const imageRatio = computed(() => {
-    const ratio = themeOf(context).imageRatio;
-    return ratio === 'free' ? 16 / 9 : IMAGE_RATIOS[ratio];
+/** Card: `perPage` groups a page (wish of the user, 2026-09-29). */
+const cardPages = computed(() => {
+    const pages: Group[][] = [];
+    for (let i = 0; i < items.value.length; i += props.block.perPage) pages.push(items.value.slice(i, i + props.block.perPage));
+    return pages;
 });
 
-const image = computed(() => {
-    const url = props.block.show.image ? current.value?.imageUrl : null;
-    if (!url) return null;
-    if (landscape.value) {
-        const width = Math.min(props.block.height * imageRatio.value, props.block.width * 0.4);
-        return { url: imageSource(context, sizedImageUrl(url, width, props.block.height, 'crop')), style: { width: `${width}px`, height: '100%' } };
-    }
-    const height = Math.min(props.block.width / imageRatio.value, props.block.height * 0.4);
-    return { url: imageSource(context, sizedImageUrl(url, props.block.width, height, 'crop')), style: { width: '100%', height: `${height}px` } };
-});
-
-/** The QR code's side, capped so it never crowds out the text (Plan.md 43). */
-const qrSide = computed(() =>
-    landscape.value
-        ? Math.min(props.block.height * 0.45, props.block.width * 0.28)
-        : Math.min(props.block.width * 0.3, props.block.height * 0.22),
-);
-const qr = computed(() => (props.block.show.qr && current.value ? qrShape(current.value.publicUrl) : null));
-
-const barColor = computed(() => current.value?.color ?? themeOf(context).accent);
-const whenLine = computed(() => (props.block.show.when && current.value ? whenText(current.value) : ''));
-const targetCategoryLine = computed(() => {
-    if (!current.value) return '';
-    const parts: string[] = [];
-    if (props.block.show.targetGroup && current.value.targetGroup) parts.push(current.value.targetGroup);
-    if (props.block.show.category && current.value.category) parts.push(current.value.category);
-    return parts.join(' · ');
-});
-const placesLine = computed(() => (props.block.show.places && current.value ? placesText(current.value) : null));
-
-// --- list: as many rows as fit, page by page, after AppointmentListView ---
+// List: as many whole rows as fit, measured in a hidden copy.
 const heights = ref<number[]>([]);
 const measureList = ref<HTMLElement | null>(null);
 function measure(): void {
     const rows = measureList.value?.querySelectorAll<HTMLElement>(':scope > .row');
     heights.value = rows ? [...rows].map((row) => row.offsetHeight) : [];
 }
-/** The page bar at the bottom, like AppointmentListView's. */
-const reserve = computed(() => props.block.style.fontSize * 0.9);
 const listPages = computed(() => paginateByHeight(items.value, heights.value, props.block.height, reserve.value));
-const listPage = ref(0);
-const shownRows = computed(() => listPages.value[listPage.value % listPages.value.length] ?? []);
+
+const pages = computed(() => (props.block.layout === 'card' ? cardPages.value : listPages.value));
+const page = ref(0);
+const shown = computed(() => pages.value[page.value % Math.max(1, pages.value.length)] ?? []);
+const paged = computed(() => pages.value.length > 1);
 
 // Tell the rotation how many pages there are – of the layout shown, also right after switching it.
-const pageCount = computed(() => (props.block.layout === 'card' ? items.value.length || 1 : listPages.value.length));
 watch(
-    pageCount,
+    () => Math.max(1, pages.value.length),
     (count) => {
         if (context.pages) context.pages[props.block.id] = count;
     },
     { immediate: true },
 );
 
-let listTimer: ReturnType<typeof setInterval> | undefined;
+let timer: ReturnType<typeof setInterval> | undefined;
+/** Seconds of the page shown, for the progress bar; 0 while pages do not turn. */
 const turnSeconds = ref(0);
-function turnListPages(): void {
-    clearInterval(listTimer);
-    listPage.value = 0;
+function turnPages(): void {
+    clearInterval(timer);
+    page.value = 0;
     turnSeconds.value = 0;
-    const count = listPages.value.length;
-    if (props.block.layout !== 'list' || count < 2 || context.paging === false) return;
+    const count = pages.value.length;
+    if (count < 2 || context.paging === false) return;
     turnSeconds.value = pageInterval(props.block.pageSeconds ?? GROUP_SECONDS, props.slideSeconds ?? 0, count);
-    listTimer = setInterval(() => (listPage.value = (listPage.value + 1) % count), turnSeconds.value * 1000);
+    timer = setInterval(() => (page.value = (page.value + 1) % count), turnSeconds.value * 1000);
 }
 watch(
-    [() => listPages.value.length, () => props.block.layout, () => props.block.pageSeconds, () => props.slideSeconds, () => context.paging],
-    () => turnListPages(),
+    [() => pages.value.length, () => props.block.layout, () => props.block.pageSeconds, () => props.slideSeconds, () => context.paging],
+    () => turnPages(),
 );
 watch(
     [
@@ -140,10 +95,71 @@ watch(
 );
 onMounted(() => {
     measure();
-    turnListPages();
+    turnPages();
     void document.fonts?.ready.then(measure);
 });
-onBeforeUnmount(() => clearInterval(listTimer));
+onBeforeUnmount(() => clearInterval(timer));
+
+// --- card geometry: cells side by side in a wide block, stacked in a tall one ---
+
+const gap = computed(() => props.block.style.fontSize * 0.4);
+const sideBySide = computed(() => props.block.width >= props.block.height);
+/** One card's size; all cells of a page share it, so a last page with fewer cards keeps their size. */
+const cell = computed(() => {
+    const n = props.block.perPage;
+    const height = props.block.height - (paged.value ? reserve.value : 0);
+    return sideBySide.value
+        ? { width: (props.block.width - gap.value * (n - 1)) / n, height }
+        : { width: props.block.width, height: (height - gap.value * (n - 1)) / n };
+});
+// Each card by its own shape – landscape: image left, text, QR right; portrait: image on top, QR bottom right.
+const landscape = computed(() => cell.value.width >= cell.value.height);
+
+/** The theme's image shape (Plan.md 27); 'free' has no ratio of its own, so 16:9 like a post without one. */
+const imageRatio = computed(() => {
+    const ratio = themeOf(context).imageRatio;
+    return ratio === 'free' ? 16 / 9 : IMAGE_RATIOS[ratio];
+});
+
+function cardImage(group: Group): { url: string; style: Record<string, string> } | null {
+    if (!props.block.show.image || !group.imageUrl) return null;
+    const { width: w, height: h } = cell.value;
+    if (landscape.value) {
+        const width = Math.min(h * imageRatio.value, w * 0.4);
+        return { url: imageSource(context, sizedImageUrl(group.imageUrl, width, h, 'crop')), style: { width: `${width}px`, height: '100%' } };
+    }
+    const height = Math.min(w / imageRatio.value, h * 0.4);
+    return { url: imageSource(context, sizedImageUrl(group.imageUrl, w, height, 'crop')), style: { width: '100%', height: `${height}px` } };
+}
+
+/** The QR code's side, capped so it never crowds out the text (Plan.md 43). */
+const qrSide = computed(() =>
+    landscape.value
+        ? Math.min(cell.value.height * 0.45, cell.value.width * 0.28)
+        : Math.min(cell.value.width * 0.3, cell.value.height * 0.22),
+);
+
+/** Everything a card shows, worked out once per page – QR codes are not free to make. */
+const cards = computed(() =>
+    props.block.layout !== 'card'
+        ? []
+        : shown.value.map((group) => ({
+              group,
+              image: cardImage(group),
+              qr: props.block.show.qr ? qrShape(group.publicUrl) : null,
+              barColor: group.color ?? themeOf(context).accent,
+              when: props.block.show.when ? whenText(group) : '',
+              targetCategory: [
+                  props.block.show.targetGroup ? group.targetGroup : '',
+                  props.block.show.category ? group.category : '',
+              ]
+                  .filter((part) => part !== '')
+                  .join(' · '),
+              places: props.block.show.places ? placesText(group) : null,
+              // `**bold**` and links read as in posts; paragraphs become line breaks, so three lines stay three.
+              note: props.block.show.note ? postParagraphs(group.note) : [],
+          })),
+);
 
 function rowColor(group: Group): string {
     return group.color ?? themeOf(context).accent;
@@ -191,7 +207,7 @@ function rowLeaders(group: Group): string | null {
             </li>
         </ul>
         <ul class="rows">
-            <li v-for="g in shownRows" :key="g.id" class="row" data-testid="group-row">
+            <li v-for="g in shown" :key="g.id" class="row" data-testid="group-row">
                 <div class="row-avatar" :style="{ background: rowColor(g) }">
                     <img v-if="rowImage(g)" :src="rowImage(g)!" alt="" @error="hideOnError">
                     <span v-else>{{ g.name.charAt(0).toUpperCase() }}</span>
@@ -205,54 +221,98 @@ function rowLeaders(group: Group): string | null {
             </li>
             <li v-if="items.length === 0" class="empty" data-testid="groups-empty">{{ emptyMessage }}</li>
         </ul>
-        <div v-if="listPages.length > 1" class="pager">
+        <div v-if="paged" class="pager" data-testid="groups-pager">
             <span class="track">
-                <span v-if="turnSeconds" :key="listPage" class="progress" :style="{ animationDuration: `${turnSeconds}s` }" />
+                <span v-if="turnSeconds" :key="page" class="progress" :style="{ animationDuration: `${turnSeconds}s` }" />
             </span>
-            <span class="page-number">{{ listPage + 1 }}/{{ listPages.length }}</span>
+            <span class="page-number">{{ page + 1 }}/{{ pages.length }}</span>
         </div>
     </div>
 
-    <!-- Card: one group at a time – image, text with a coloured bar, and a QR code to its public page. -->
-    <div v-else class="hero" :class="landscape ? 'hero--landscape' : 'hero--portrait'" :style="textStyle(block.style)" data-testid="groups-card">
-        <template v-if="current">
-            <!-- Keyed by address: a hidden broken image must not hide the next group's. -->
-            <img v-if="image" :key="image.url" class="hero-image" :src="image.url" :style="image.style" alt="" @error="hideOnError">
-            <div class="hero-text">
-                <span class="group-bar" :style="{ background: barColor }" />
-                <div class="hero-body">
-                    <div v-if="block.show.name" class="group-name">{{ current.name }}</div>
-                    <div v-if="whenLine" class="meta-line">{{ whenLine }}</div>
-                    <div v-if="targetCategoryLine" class="meta-line">{{ targetCategoryLine }}</div>
-                    <div v-if="placesLine" class="meta-line">{{ placesLine }}</div>
-                    <div v-if="block.show.note && current.note" class="group-note">{{ current.note }}</div>
-                    <div v-if="block.show.leaders && current.leaders.length" class="group-leaders" data-testid="group-leaders">
-                        Leitung: {{ current.leaders.join(', ') }}
+    <!-- Cards: one to four a page, each image, text with a coloured bar, and a QR code to its public page. -->
+    <div v-else class="groups-cards" :style="textStyle(block.style)" data-testid="groups-card">
+        <div
+            v-if="cards.length"
+            class="cells"
+            :class="sideBySide ? 'cells--row' : 'cells--column'"
+            :style="{ gap: `${gap}px` }"
+        >
+            <div
+                v-for="c in cards"
+                :key="c.group.id"
+                class="hero"
+                :class="landscape ? 'hero--landscape' : 'hero--portrait'"
+                :style="{ width: `${cell.width}px`, height: `${cell.height}px` }"
+                data-testid="group-card"
+            >
+                <!-- Keyed by address: a hidden broken image must not hide the next group's. -->
+                <img v-if="c.image" :key="c.image.url" class="hero-image" :src="c.image.url" :style="c.image.style" alt="" @error="hideOnError">
+                <!-- Text and QR code share a row: beside the image in landscape, below it in portrait. -->
+                <div class="hero-main">
+                    <div class="hero-text">
+                        <span class="group-bar" :style="{ background: c.barColor }" />
+                        <div class="hero-body">
+                            <div v-if="block.show.name" class="group-name">{{ c.group.name }}</div>
+                            <div v-if="c.when" class="meta-line">{{ c.when }}</div>
+                            <div v-if="c.targetCategory" class="meta-line">{{ c.targetCategory }}</div>
+                            <div v-if="c.places" class="meta-line">{{ c.places }}</div>
+                            <div v-if="c.note.length" class="group-note" data-testid="group-note">
+                                <template v-for="(paragraph, i) in c.note" :key="i">
+                                    <template v-if="i > 0">{{ '\n' }}</template>
+                                    <template v-for="(inline, j) in paragraph" :key="j">
+                                        <strong v-if="inline.kind === 'strong'">{{ inline.text }}</strong>
+                                        <template v-else>{{ inline.text }}</template>
+                                    </template>
+                                </template>
+                            </div>
+                            <div v-if="block.show.leaders && c.group.leaders.length" class="group-leaders" data-testid="group-leaders">
+                                Leitung: {{ c.group.leaders.join(', ') }}
+                            </div>
+                        </div>
+                    </div>
+                    <div v-if="c.qr" class="group-qr" data-testid="group-qr" :style="{ width: `${qrSide}px` }">
+                        <svg
+                            class="qr-code"
+                            :viewBox="`0 0 ${c.qr.size} ${c.qr.size}`"
+                            preserveAspectRatio="xMidYMid meet"
+                            shape-rendering="crispEdges"
+                            :style="{ width: `${qrSide}px`, height: `${qrSide}px` }"
+                        >
+                            <rect :width="c.qr.size" :height="c.qr.size" fill="#ffffff" />
+                            <path :d="c.qr.path" fill="#111111" />
+                        </svg>
+                        <span class="qr-caption">Zur Gruppe</span>
                     </div>
                 </div>
             </div>
-            <div v-if="qr" class="group-qr" data-testid="group-qr" :style="{ width: `${qrSide}px` }">
-                <svg
-                    class="qr-code"
-                    :viewBox="`0 0 ${qr.size} ${qr.size}`"
-                    preserveAspectRatio="xMidYMid meet"
-                    shape-rendering="crispEdges"
-                    :style="{ width: `${qrSide}px`, height: `${qrSide}px` }"
-                >
-                    <rect :width="qr.size" :height="qr.size" fill="#ffffff" />
-                    <path :d="qr.path" fill="#111111" />
-                </svg>
-                <span class="qr-caption">Zur Gruppe</span>
-            </div>
-        </template>
-        <div v-else class="hero-text hero-subtitle" data-testid="groups-empty">{{ emptyMessage }}</div>
+        </div>
+        <div v-else class="hero hero-subtitle" data-testid="groups-empty">{{ emptyMessage }}</div>
+        <div v-if="paged" class="pager" data-testid="groups-pager">
+            <span class="track">
+                <span v-if="turnSeconds" :key="page" class="progress" :style="{ animationDuration: `${turnSeconds}s` }" />
+            </span>
+            <span class="page-number">{{ page + 1 }}/{{ pages.length }}</span>
+        </div>
     </div>
 </template>
 
 <style scoped>
+/* Cards: the cells fill the block above the page bar. */
+.groups-cards {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+.cells {
+    display: flex;
+}
+.cells--column {
+    flex-direction: column;
+}
 /* Card, after PostsView's .hero – background and radius, bleeding image. */
 .hero {
     display: flex;
+    flex: none;
     box-sizing: border-box;
     width: 100%;
     height: 100%;
@@ -280,6 +340,13 @@ function rowLeaders(group: Group): string | null {
     min-height: 0;
     padding: 0.8em 0.8em 0.8em 1.1em;
 }
+/* Text and QR code side by side; the text takes what the QR code leaves. */
+.hero-main {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+}
 /* A narrow strip in the group's colour, the whole height of the text column. */
 .group-bar {
     position: absolute;
@@ -297,6 +364,7 @@ function rowLeaders(group: Group): string | null {
 }
 .group-name {
     display: -webkit-box;
+    flex-shrink: 0;
     overflow: hidden;
     font-size: 1.1em;
     font-weight: 700;
@@ -305,11 +373,15 @@ function rowLeaders(group: Group): string | null {
     -webkit-line-clamp: 2;
 }
 .meta-line {
+    flex-shrink: 0;
     font-size: 0.62em;
     opacity: 0.85;
 }
 .group-note {
     display: -webkit-box;
+    /* The only item that gives way when the card is short: the name and the facts keep their lines. */
+    flex-shrink: 1;
+    min-height: 0;
     overflow: hidden;
     margin-top: 0.2em;
     font-size: 0.72em;
@@ -319,6 +391,7 @@ function rowLeaders(group: Group): string | null {
     -webkit-line-clamp: 3;
 }
 .group-leaders {
+    flex-shrink: 0;
     margin-top: auto;
     font-size: 0.6em;
     opacity: 0.75;
@@ -330,7 +403,7 @@ function rowLeaders(group: Group): string | null {
     font-size: 0.75em;
     opacity: 0.8;
 }
-/* The QR code: centred beside the text in landscape, hugging the bottom right in portrait. */
+/* The QR code: centred beside the text in landscape, at the bottom right in portrait. */
 .group-qr {
     display: flex;
     flex: none;
