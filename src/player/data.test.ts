@@ -87,4 +87,13 @@ describe('readableAppointments', () => {
         });
         await expect(readableAppointments([1, 5], fetch)).rejects.toThrow('Network Error');
     });
+
+    it('does not ask calendars individually on a 429, and passes it through unchanged (G16)', async () => {
+        const rateLimited = Object.assign(new Error('429'), { response: { status: 429, headers: {} } });
+        const fetch = vi.fn(async () => {
+            throw rateLimited;
+        });
+        await expect(readableAppointments([1, 5], fetch)).rejects.toBe(rateLimited);
+        expect(fetch).toHaveBeenCalledTimes(1); // no per-calendar retry: a 429 is not "one calendar is forbidden"
+    });
 });

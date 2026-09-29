@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * The look of all screens (Plan.md, Nächste Schritte 27): corners, colours,
- * the plain or the large appointment blocks and the shape of their images –
+ * the font new blocks start with (40), the plain or the large appointment
+ * blocks and the shape of their images –
  * set once instead of in every block. A live preview shows it with the
  * player's own components and real appointments. Designers save it like a
  * playlist, against its revision.
@@ -16,11 +17,12 @@ import { createBlock, createSlide } from '../designer/ops';
 import { DEFAULT_THEME, type Block, type SlideDoc, type ThemeDoc } from '../model/schema';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
+import { fontDef, FONTS } from '../player/fonts';
 import { fitStage } from '../player/stage';
 import { getRepository } from '../store/backend';
 import { ConflictError, type ScreenRepository } from '../store/screen-repository';
 
-type Look = Pick<ThemeDoc, 'corners' | 'accent' | 'text' | 'background' | 'appointments' | 'imageRatio'>;
+type Look = Pick<ThemeDoc, 'corners' | 'accent' | 'text' | 'background' | 'font' | 'appointments' | 'imageRatio'>;
 
 const repository = shallowRef<ScreenRepository | null>(null);
 const author = ref<string | null>(null);
@@ -33,8 +35,8 @@ const status = ref<'idle' | 'saving' | 'saved' | 'conflict' | 'error'>('idle');
 const message = ref<string | null>(null);
 
 function pick(theme: ThemeDoc): Look {
-    const { corners, accent, text, background, appointments, imageRatio } = theme;
-    return { corners, accent, text, background, appointments, imageRatio };
+    const { corners, accent, text, background, font, appointments, imageRatio } = theme;
+    return { corners, accent, text, background, font, appointments, imageRatio };
 }
 
 const dirty = computed(() => JSON.stringify(look.value) !== JSON.stringify(saved.value));
@@ -161,8 +163,8 @@ function observe(el: unknown): void {
 
         <PageHeader icon="palette" title="Design" testid="design-heading">
             Das Erscheinungsbild aller Screens. Ecken, Akzentfarbe, Darstellung der Termine und Bildformat gelten
-            sofort überall; ein Baustein mit eigener Darstellung behält sie. Text- und Hintergrundfarbe bekommen
-            neue Slides und Bausteine.
+            sofort überall; ein Baustein mit eigener Darstellung behält sie. Text- und Hintergrundfarbe und die
+            Schrift bekommen neue Slides und Bausteine.
         </PageHeader>
 
         <p v-if="message" class="d-banner d-banner--error" role="alert">
@@ -194,6 +196,25 @@ function observe(el: unknown): void {
                         <ColorField v-model="look.background" label="Hintergrund" testid="theme-background" />
                     </div>
                     <p class="hint">Text und Hintergrund gelten für neue Slides und Bausteine; bestehende bleiben, wie sie sind.</p>
+                </section>
+
+                <section class="box" aria-labelledby="box-font">
+                    <h2 id="box-font">Schrift</h2>
+                    <label class="d-field">
+                        Schriftart
+                        <!-- An unknown key stays stored until someone picks a font; it draws as Lato meanwhile. -->
+                        <select
+                            data-testid="theme-font"
+                            :value="fontDef(look.font).key"
+                            :style="{ fontFamily: `'${fontDef(look.font).family}'` }"
+                            @change="look.font = ($event.target as HTMLSelectElement).value"
+                        >
+                            <option v-for="f in FONTS" :key="f.key" :value="f.key" :style="{ fontFamily: `'${f.family}'` }">
+                                {{ f.label }}
+                            </option>
+                        </select>
+                    </label>
+                    <p class="hint">Mit dieser Schrift beginnen neue Bausteine und Hinweise; bestehende behalten ihre.</p>
                 </section>
 
                 <section class="box" aria-labelledby="box-appointments">

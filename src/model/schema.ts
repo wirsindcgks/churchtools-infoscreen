@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 12 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 13 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -356,7 +356,8 @@ export const ScheduleDoc = v.object({
  * The look of all screens (schema 1.9, Plan.md, Nächste Schritte 27): one
  * document in the category `playlists`, which designers write and devices
  * read – no new rights. Blocks that set their own layout keep it; the colours
- * for text and background are what new slides and blocks start with.
+ * for text and background and the font are what new slides and blocks start
+ * with.
  */
 export const ThemeDoc = v.object({
     ...DocumentBase,
@@ -370,6 +371,13 @@ export const ThemeDoc = v.object({
     appointments: v.optional(v.picklist(['native', 'large']), 'native'),
     /** Shape of appointment images; `free` shows them as they are. */
     imageRatio: v.optional(v.picklist(['16:9', '4:3', '3:2', '1:1', 'free']), '16:9'),
+    /**
+     * The font new blocks and banners start with (schema 1.13, Plan.md 40) – a
+     * key into the bundled fonts like `TextStyle.fontFamily`. A literal, not
+     * `DEFAULT_FONT`, so that the model imports nothing from the player; a
+     * test keeps the two equal.
+     */
+    font: v.optional(v.string(), 'lato'),
     revision: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
     updatedBy: v.optional(v.string()),
 });

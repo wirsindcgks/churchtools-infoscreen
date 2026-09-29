@@ -7,7 +7,7 @@
  */
 import { reactive } from 'vue';
 import type { Appointment } from '../appointments/normalize';
-import { NotAuthenticatedError, WrongPersonError } from '../ct/client';
+import { NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import { revivePosts, type Post } from '../posts/normalize';
 import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '../store/screen-repository';
@@ -184,8 +184,8 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                 if (contentChanged(state.screen, revisions)) scheduleConfig(0);
             }
             later(withJitter(INTERVALS.quickCheckMs), quickCycle);
-        } catch {
-            later(withJitter(INTERVALS.configMs), quickCycle);
+        } catch (error) {
+            later(Math.max(withJitter(INTERVALS.configMs), retryAfterMs(error) ?? 0), quickCycle);
         }
     }
 
@@ -290,7 +290,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         } catch (error) {
             configFailures++;
             fail(error);
-            scheduleConfig(backoffDelay(30_000, configFailures));
+            scheduleConfig(backoffDelay(30_000, configFailures, retryAfterMs(error)));
             await noteFailure('config');
         }
     }
@@ -307,7 +307,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         } catch (error) {
             dataFailures++;
             fail(error);
-            later(backoffDelay(30_000, dataFailures), dataCycle);
+            later(backoffDelay(30_000, dataFailures, retryAfterMs(error)), dataCycle);
             await noteFailure('data');
         }
     }

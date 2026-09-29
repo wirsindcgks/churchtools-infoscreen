@@ -418,7 +418,7 @@ describe('ScreenRepository', () => {
         it('keeps one theme for all screens beside the playlists, checked against its revision (Plan.md 27)', async () => {
             const { screen } = await created();
             expect(await repo.loadTheme()).toBeNull();
-            const look = { corners: 'square' as const, accent: '#e11d48', text: '#111111', background: '#f8fafc', appointments: 'large' as const, imageRatio: '4:3' as const };
+            const look = { corners: 'square' as const, accent: '#e11d48', text: '#111111', background: '#f8fafc', font: 'oswald', appointments: 'large' as const, imageRatio: '4:3' as const };
             const first = await repo.saveTheme(look, { expectedRevision: null, updatedBy: 'Anna' });
             expect(first).toMatchObject({ ...look, id: 'theme', kind: 'theme', revision: 1, updatedBy: 'Anna' });
             await expect(repo.saveTheme(look, { expectedRevision: null, updatedBy: 'Ben' })).rejects.toBeInstanceOf(ConflictError);

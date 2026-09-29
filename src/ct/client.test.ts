@@ -1,10 +1,47 @@
 import { describe, expect, it, vi } from 'vitest';
-import { assertAuthenticated, ensureSignedIn, NotAuthenticatedError, personUrl, WrongPersonError, type SignInApi } from './client';
+import {
+    assertAuthenticated,
+    ensureSignedIn,
+    NotAuthenticatedError,
+    personUrl,
+    retryAfterMs,
+    WrongPersonError,
+    type SignInApi,
+} from './client';
 import type { Person } from './types';
+
+const rateLimited = (headers: Record<string, string> = {}) =>
+    Object.assign(new Error('429'), { response: { status: 429, headers } });
 
 describe('personUrl (G18: /persons/{id} shows no person, measured 2026-09-28)', () => {
     it('opens the person view of the instance with the id selected', () => {
         expect(personUrl('https://example.church.tools', 22)).toBe('https://example.church.tools/?q=churchdb#PersonView/searchEntry:#22');
+    });
+});
+
+describe('retryAfterMs (G16: ChurchTools recommends 60 s after a 429)', () => {
+    const now = new Date('2026-09-29T10:00:00Z').getTime();
+
+    it('waits at least 60 s on a 429 without a Retry-After header', () => {
+        expect(retryAfterMs(rateLimited(), now)).toBe(60_000);
+    });
+
+    it('honours a longer Retry-After in seconds', () => {
+        expect(retryAfterMs(rateLimited({ 'retry-after': '120' }), now)).toBe(120_000);
+    });
+
+    it('never waits less than 60 s, even with a short Retry-After', () => {
+        expect(retryAfterMs(rateLimited({ 'retry-after': '5' }), now)).toBe(60_000);
+    });
+
+    it('reads a Retry-After given as an HTTP date', () => {
+        const in90s = new Date(now + 90_000).toUTCString();
+        expect(retryAfterMs(rateLimited({ 'retry-after': in90s }), now)).toBe(90_000);
+    });
+
+    it('is undefined for any other error', () => {
+        const serverError = Object.assign(new Error('500'), { response: { status: 500 } });
+        expect(retryAfterMs(serverError, now)).toBeUndefined();
     });
 });
 

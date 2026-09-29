@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { serialize } from '../model/read';
 import { textBlock, makeSlide } from '../model/testing';
-import { BLOCK_LABELS, blockBelow as below, clampFrame, createBlock, createScreenBundle, duplicateSlide, move, reorder, slugify } from './ops';
+import { BLOCK_LABELS, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, duplicateSlide, move, reorder, slugify } from './ops';
 import { History } from './history';
-import type { Block, BlockType } from '../model/schema';
+import { DEFAULT_THEME, type Block, type BlockType } from '../model/schema';
 
 const stage = { width: 1920, height: 1080 };
 
@@ -26,6 +26,25 @@ describe('designer operations', () => {
             expect(() => serialize(makeSlide({ blocks: [block] }))).not.toThrow();
             expect(block.x + block.width).toBeLessThanOrEqual(stage.width);
         }
+    });
+
+    it('starts every block with a text style, and every banner, in the theme\'s font (Plan.md 40)', () => {
+        const theme = { ...DEFAULT_THEME, font: 'oswald' };
+        const styled = (Object.keys(BLOCK_LABELS) as BlockType[])
+            .map((type) => createBlock(type, stage, [2], theme))
+            .filter((block): block is Extract<Block, { style: unknown }> => 'style' in block);
+        expect(styled.map((b) => b.type)).toEqual([
+            'text',
+            'clock',
+            'appointment-list',
+            'next-appointment',
+            'church-header',
+            'countdown',
+            'posts',
+        ]);
+        for (const block of styled) expect(block.style.fontFamily).toBe('oswald');
+        expect(createBanner(theme).style.fontFamily).toBe('oswald');
+        expect(createBlock('text', stage)).toMatchObject({ style: { fontFamily: 'lato' } });
     });
 
     it('duplicates a slide with fresh ids', () => {

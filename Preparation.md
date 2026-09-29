@@ -469,9 +469,8 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
       Vorgabe (Konfiguration alle 2, Daten alle 10 Minuten) nicht nannte. ChurchTools erlaubt **600 Anfragen je
       Minute und IP-Adresse**. Die Geräte eines Hauses teilen sich eine Adresse, mit ihnen die Handys im
       Gemeinde-WLAN und die Gestalter. Fünf Geräte brauchen rund 5 % davon. Das trägt.
-      **Nachgeschoben, nicht blockierend:** Nach einem `429` wartet der Player 30 Sekunden statt der von
-      ChurchTools empfohlenen 60, und `Retry-After` wird entgegen der alten Notiz in G16 nicht ausgewertet
-      (`backoffDelay` kennt es, `controller.ts` übergibt es nicht).
+      **Nachgeschoben, geschlossen am 2026-09-29:** Nach einem `429` wartet der Player jetzt mindestens 60
+      Sekunden, länger, wenn `Retry-After` es verlangt; siehe `Plan.md`, Punkt 39, und G16.
 - [x] **P6 · Nur ein Release** – Installiert wird ein ZIP aus dem Release-Workflow bei grünem CI, kein
       lokaler Build. **Vorbereitet am 2026-09-28:** Die Workflows laufen auf `actions/checkout@v7` und
       `actions/setup-node@v7` (Node.js 24, `Plan.md`, Punkt 35); die Release-Läufe `v0.2.0`–`v0.2.2` waren grün.

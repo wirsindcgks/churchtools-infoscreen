@@ -11,7 +11,6 @@ import {
     type TextStyle,
     type ThemeDoc,
 } from '../model/schema';
-import { DEFAULT_FONT } from '../player/fonts';
 
 /** Deep copy of plain JSON data; unlike structuredClone it also accepts Vue proxies. */
 export function cloneJson<T>(value: T): T {
@@ -99,8 +98,8 @@ export function duplicateSlide(slide: SlideDoc): SlideDoc {
     };
 }
 
-const style = (fontSize: number, color: string, extra: Partial<TextStyle> = {}): TextStyle => ({
-    fontFamily: DEFAULT_FONT,
+const style = (fontFamily: string, fontSize: number, color: string, extra: Partial<TextStyle> = {}): TextStyle => ({
+    fontFamily,
     fontSize,
     fontWeight: 400,
     color,
@@ -153,21 +152,23 @@ export function createBlock(
     };
     const calendars = calendarIds.length ? calendarIds.slice(0, 3) : [1];
     const ink = theme.text;
+    // In the theme's font (Plan.md 40); blocks that exist keep theirs.
+    const textStyle = (fontSize: number, extra: Partial<TextStyle> = {}) => style(theme.font, fontSize, ink, extra);
     switch (type) {
         case 'text':
-            return { ...frame, type, text: 'Text', style: style(72, ink) };
+            return { ...frame, type, text: 'Text', style: textStyle(72) };
         case 'image':
             return { ...frame, type, mediaId: '', fit: 'contain' };
         case 'shape':
             return { ...frame, type, fill: { kind: 'solid', color: '#334155' }, cornerRadius: 0 };
         case 'clock':
-            return { ...frame, type, format: 'time', style: style(64, ink, { fontWeight: 600, align: 'right' }) };
+            return { ...frame, type, format: 'time', style: textStyle(64, { fontWeight: 600, align: 'right' }) };
         case 'appointment-list':
-            return { ...frame, type, calendarIds: calendars, horizonDays: 14, limit: 6, style: style(44, ink) };
+            return { ...frame, type, calendarIds: calendars, horizonDays: 14, limit: 6, style: textStyle(44) };
         case 'next-appointment':
-            return { ...frame, type, calendarIds: calendars, showImage: true, style: style(64, ink, { fontWeight: 600 }) };
+            return { ...frame, type, calendarIds: calendars, showImage: true, style: textStyle(64, { fontWeight: 600 }) };
         case 'church-header':
-            return { ...frame, type, showLogo: true, showName: true, style: style(48, ink, { fontWeight: 600 }) };
+            return { ...frame, type, showLogo: true, showName: true, style: textStyle(48, { fontWeight: 600 }) };
         case 'web':
             return { ...frame, type, url: '', zoom: 1 };
         case 'qr':
@@ -180,7 +181,7 @@ export function createBlock(
                 calendarIds: calendars,
                 showTitle: true,
                 runningText: 'Läuft gerade',
-                style: style(120, ink, { fontWeight: 700, align: 'center' }),
+                style: textStyle(120, { fontWeight: 700, align: 'center' }),
             };
         case 'posts':
             return {
@@ -192,12 +193,12 @@ export function createBlock(
                 layout: 'card',
                 showImage: true,
                 showAuthor: false,
-                style: style(56, ink),
+                style: textStyle(56),
             };
     }
 }
 
-/** A band for a playlist that has none (Plan.md 32): in the accent colour, at the bottom, running. */
+/** A band for a playlist that has none (Plan.md 32): in the accent colour and the theme's font, at the bottom, running. */
 export function createBanner(theme: ThemeDoc = DEFAULT_THEME): Banner {
     return {
         text: '',
@@ -206,7 +207,7 @@ export function createBanner(theme: ThemeDoc = DEFAULT_THEME): Banner {
         height: 90,
         speed: 140,
         background: theme.accent,
-        style: style(48, '#ffffff', { fontWeight: 600 }),
+        style: style(theme.font, 48, '#ffffff', { fontWeight: 600 }),
     };
 }
 
