@@ -20,7 +20,9 @@ Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
   selbst verschwindet.
 - **Mediathek und Design:** Bilder einmal hochladen und überall verwenden, mit der Angabe, wo sie laufen; Ecken,
   Farben und Darstellung der Termine einmal für alle Screens festlegen.
-- **Mehrere Screens**, quer oder hochkant, jeder unter einer festen Adresse; handytaugliche Übersicht.
+- **Mehrere Screens**, quer oder hochkant, jeder unter einer festen Adresse.
+- **Auch am Handy:** Übersicht, Menü und Editor passen sich dem Telefon an – Slides gestalten mit dem Finger, die
+  Einstellungen eines Bausteins als Blatt am unteren Rand, die ganze Slide darüber im Blick.
 - **Fernseher, die sich selbst helfen:** Sie melden sich selbst an, holen Änderungen in etwa 20 Sekunden, halten
   Daten und Bilder auf dem Gerät, überstehen Netzausfälle und laden nach Fehlern und jede Nacht neu.
 - **Rechte mit einem Knopf:** Ein Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an.
