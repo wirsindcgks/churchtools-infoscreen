@@ -1164,9 +1164,12 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     // Four a page with the leaders' pictures, as the user tried it on the test instance.
     await expect(inspector.getByTestId('group-show-leaderImages')).toBeEnabled();
     await inspector.getByTestId('group-show-leaderImages').check();
-    await inspector.getByTestId('groups-per-page').selectOption('4');
-    await page.waitForTimeout(600);
-    await card.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-card-four-a-page.png` });
+    // One to four a page, for comparing them side by side (third test, 2026-09-29).
+    for (const perPage of ['1', '2', '3', '4']) {
+        await inspector.getByTestId('groups-per-page').selectOption(perPage);
+        await page.waitForTimeout(600);
+        await card.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-card-${perPage}-a-page.png` });
+    }
 
     await inspector.getByTestId('groups-layout').selectOption('list');
     const list = stage.getByTestId('groups-list');
