@@ -12,7 +12,7 @@ import {
 
 const BASE = 'https://example.church.tools';
 
-/** A leader as ChurchTools sends it anonymously (G40) – with guid, picture and id the block must not take. */
+/** A leader as ChurchTools sends it anonymously (G40) – with guid, id and addresses the block must not take. */
 function leader(first: string, last: string, extra: Record<string, unknown> = {}) {
     return {
         domainType: 'person',
@@ -136,19 +136,22 @@ describe('normalizeHomepage', () => {
         expect(JSON.stringify(g)).not.toMatch(/canSignUp|signUpPersons|Geräte-Konto|settings/);
     });
 
-    it('takes leaders by first and last name only – no guid, picture or id (Plan.md 43, c)', () => {
+    it('takes leaders by name and picture only – no guid, id or addresses (Plan.md 43, c)', () => {
         const [g] = normalizeHomepage(
-            homepage([group(8, {}, { leader: [leader('Erika', 'Beispiel'), leader('Max', 'Muster')] })]),
+            homepage([group(8, {}, { leader: [leader('Erika', 'Beispiel'), { ...leader('Max', 'Muster'), imageUrl: null }] })]),
             BASE,
         );
-        expect(g!.leaders).toEqual(['Erika Beispiel', 'Max Muster']);
-        expect(JSON.stringify(g)).not.toMatch(/GUID-1|images\/99|persons\/22/);
+        expect(g!.leaders).toEqual([
+            { name: 'Erika Beispiel', imageUrl: `${BASE}/images/99/secret` },
+            { name: 'Max Muster', imageUrl: null },
+        ]);
+        expect(JSON.stringify(g)).not.toMatch(/GUID-1|persons\/22|"22"|EB/);
     });
 
     it('falls back to the title when a leader has no names', () => {
         const nameless = { ...leader('A', 'B'), title: 'Gemeindebüro', domainAttributes: { firstName: '', lastName: null } };
         const [g] = normalizeHomepage(homepage([group(8, {}, { leader: [nameless] })]), BASE);
-        expect(g!.leaders).toEqual(['Gemeindebüro']);
+        expect(g!.leaders.map((l) => l.name)).toEqual(['Gemeindebüro']);
     });
 
     it('leaves out archived and deceased leaders', () => {
@@ -164,7 +167,7 @@ describe('normalizeHomepage', () => {
             ]),
             BASE,
         );
-        expect(g!.leaders).toEqual(['Erika Beispiel']);
+        expect(g!.leaders.map((l) => l.name)).toEqual(['Erika Beispiel']);
     });
 
     it('takes no leaders unless the homepage itself shows them – whatever the response carries', () => {

@@ -28,6 +28,7 @@ const GROUP_SHOW_LABELS: Record<keyof GroupFields, string> = {
     category: 'Kategorie',
     note: 'Beschreibung',
     leaders: 'Leitung',
+    leaderImages: 'Bild der Leitung',
     places: 'Freie Plätze',
     qr: 'QR-Code zur Gruppenseite',
 };
@@ -646,7 +647,7 @@ const slideFill = computed<Fill>(() =>
                             <input
                                 type="checkbox"
                                 :checked="block.show[key]"
-                                :disabled="block.layout === 'list' && (key === 'note' || key === 'qr')"
+                                :disabled="(block.layout === 'list' && (key === 'note' || key === 'qr' || key === 'leaderImages')) || (key === 'leaderImages' && !block.show.leaders)"
                                 :data-testid="`group-show-${key}`"
                                 @change="setBlock({ show: { ...block.show, [key]: ($event.target as HTMLInputElement).checked } })"
                             >

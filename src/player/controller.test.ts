@@ -71,7 +71,7 @@ const groupsBlock: Block = {
     groupIds: [],
     layout: 'card',
     perPage: 1,
-    show: { name: true, image: true, when: true, targetGroup: true, category: true, note: true, leaders: false, places: true, qr: true },
+    show: { name: true, image: true, when: true, targetGroup: true, category: true, note: true, leaders: false, leaderImages: false, places: true, qr: true },
     style: { fontFamily: 'sans', fontSize: 56, fontWeight: 400, color: '#fff', align: 'left' },
 };
 const withGroups = (): LoadedScreen => {
@@ -91,7 +91,7 @@ const sampleGroup: Group = {
     targetGroup: '',
     category: '',
     color: '#84cc16',
-    leaders: ['Erika Beispiel'],
+    leaders: [{ name: 'Erika Beispiel', imageUrl: null }],
     freePlaces: null,
     waitinglist: false,
     publicUrl: 'https://example.church.tools/publicgroup/8',

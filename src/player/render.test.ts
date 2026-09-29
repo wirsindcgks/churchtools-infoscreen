@@ -280,7 +280,7 @@ describe('rendering groups (Plan.md 43)', () => {
         targetGroup: 'Kinder',
         category: 'Kinder & Jugend',
         color: '#14b8a6',
-        leaders: ['Erika Beispiel'],
+        leaders: [{ name: 'Erika Beispiel', imageUrl: 'https://example.church.tools/images/406/hash' }],
         freePlaces: 3,
         waitinglist: false,
         publicUrl: 'https://example.church.tools/publicgroup/8',
@@ -295,6 +295,7 @@ describe('rendering groups (Plan.md 43)', () => {
         category: true,
         note: true,
         leaders: false,
+        leaderImages: false,
         places: true,
         qr: true,
     };
@@ -433,5 +434,52 @@ describe('rendering groups (Plan.md 43)', () => {
         expect(card.find('strong').text()).toBe('Kinderkirche');
         expect(card.text()).not.toContain('**');
         expect(card.text()).toContain('Komm vorbei!');
+    });
+
+    describe('after the second test (wish of the user, 2026-09-29)', () => {
+        it('shows a leader\'s picture only with both switches on', () => {
+            const context = withGroups(group());
+            const namesOnly = render(makeSlide({ blocks: [groupsBlock({ show: { ...DEFAULT_SHOW, leaders: true } })] }), context);
+            expect(namesOnly.get('[data-testid="group-leaders"]').text()).toContain('Erika Beispiel');
+            expect(namesOnly.find('[data-testid="leader-image"]').exists()).toBe(false);
+            const pictureWithoutNames = render(
+                makeSlide({ blocks: [groupsBlock({ show: { ...DEFAULT_SHOW, leaderImages: true } })] }),
+                context,
+            );
+            expect(pictureWithoutNames.find('[data-testid="leader-image"]').exists()).toBe(false);
+            const both = render(
+                makeSlide({ blocks: [groupsBlock({ show: { ...DEFAULT_SHOW, leaders: true, leaderImages: true } })] }),
+                context,
+            );
+            expect(both.get('[data-testid="leader-image"]').attributes('src')).toContain('/images/406/hash');
+        });
+
+        it('gives each fact its own line with a symbol', () => {
+            const card = render(makeSlide({ blocks: [groupsBlock()] }), withGroups(group()));
+            expect(card.get('[data-testid="group-fact-when"]').text()).toBe('Sonntag · 10:00');
+            expect(card.get('[data-testid="group-fact-who"]').text()).toBe('Kinder');
+            expect(card.get('[data-testid="group-fact-category"]').text()).toBe('Kinder & Jugend');
+            expect(card.get('[data-testid="group-fact-places"]').text()).toBe('Noch 3 Plätze frei');
+            expect(card.find('[data-testid="group-fact-when"] svg').exists()).toBe(true);
+            expect(card.find('[data-testid="group-fact-who"]').exists()).toBe(true);
+            const without = render(
+                makeSlide({ blocks: [groupsBlock({ show: { ...DEFAULT_SHOW, targetGroup: false } })] }),
+                withGroups(group()),
+            );
+            expect(without.find('[data-testid="group-fact-who"]').exists()).toBe(false);
+        });
+
+        it('sizes the QR code by the code alone – no width on its box that the page could count padding into', () => {
+            const qr = render(makeSlide({ blocks: [groupsBlock()] }), withGroups(group())).get('[data-testid="group-qr"]');
+            expect(qr.attributes('style') ?? '').not.toContain('width');
+            expect(qr.get('svg').attributes('style')).toContain('width');
+        });
+
+        it('puts the colour bar before the image, down the whole card', () => {
+            const card = render(makeSlide({ blocks: [groupsBlock()] }), withGroups(group({ imageUrl: 'https://example.church.tools/images/5/x' })))
+                .get('[data-testid="group-card"]');
+            expect(card.element.firstElementChild?.classList.contains('group-bar')).toBe(true);
+            expect(card.find('.hero-content img').exists()).toBe(true);
+        });
     });
 });

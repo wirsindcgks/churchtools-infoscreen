@@ -65,7 +65,7 @@ const groupsBlock: Block = {
     groupIds: [],
     layout: 'card',
     perPage: 1,
-    show: { name: true, image: true, when: true, targetGroup: true, category: true, note: true, leaders: false, places: true, qr: true },
+    show: { name: true, image: true, when: true, targetGroup: true, category: true, note: true, leaders: false, leaderImages: false, places: true, qr: true },
     style,
 };
 

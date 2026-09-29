@@ -1159,7 +1159,14 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await card.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-card-two-a-page.png` });
 
     await inspector.getByTestId('group-show-leaders').check();
-    await expect(card.getByTestId('group-leaders')).toBeVisible();
+    await expect(card.getByTestId('group-leaders').first()).toBeVisible();
+
+    // Four a page with the leaders' pictures, as the user tried it on the test instance.
+    await expect(inspector.getByTestId('group-show-leaderImages')).toBeEnabled();
+    await inspector.getByTestId('group-show-leaderImages').check();
+    await inspector.getByTestId('groups-per-page').selectOption('4');
+    await page.waitForTimeout(600);
+    await card.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-card-four-a-page.png` });
 
     await inspector.getByTestId('groups-layout').selectOption('list');
     const list = stage.getByTestId('groups-list');

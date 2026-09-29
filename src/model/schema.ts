@@ -209,6 +209,8 @@ export const GroupFields = v.object({
      * names ChurchTools itself shows on the homepage (Plan.md 43, c).
      */
     leaders: v.optional(v.boolean(), false),
+    /** The leaders' pictures beside their names; off until switched on, and only with `leaders` (wish of the user, 2026-09-29). */
+    leaderImages: v.optional(v.boolean(), false),
     /** "Noch 3 Plätze frei" – only for groups with a maximum. */
     places: v.optional(v.boolean(), true),
     /** A QR code to the group's public page; `card` only. */

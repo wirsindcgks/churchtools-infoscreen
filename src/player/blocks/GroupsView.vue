@@ -139,6 +139,20 @@ const qrSide = computed(() =>
         : Math.min(cell.value.width * 0.3, cell.value.height * 0.22),
 );
 
+/** Line-art symbols for the facts, drawn in the text's own colour – no icon font on a TV. */
+const FACT_ICONS = {
+    when: ['M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z', 'M12 7v5l3 2'],
+    who: ['M9 11a3 3 0 1 0 0-6a3 3 0 1 0 0 6z', 'M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6', 'M16 5a3 3 0 0 1 0 6', 'M18 14.5c1.8.8 3 2.9 3 5.5'],
+    category: ['M3 12V4h8l10 10-8 8z', 'M7.5 7.5h.01'],
+    places: ['M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18z', 'M8 12l3 3 5-6'],
+} as const;
+
+/** A leader's picture, cropped square to the size it shows at (2em of the 0.6em leaders line). */
+function leaderImage(url: string): string {
+    const side = 1.2 * props.block.style.fontSize;
+    return imageSource(context, sizedImageUrl(url, side, side, 'crop'));
+}
+
 /** Everything a card shows, worked out once per page – QR codes are not free to make. */
 const cards = computed(() =>
     props.block.layout !== 'card'
@@ -148,14 +162,19 @@ const cards = computed(() =>
               image: cardImage(group),
               qr: props.block.show.qr ? qrShape(group.publicUrl) : null,
               barColor: group.color ?? themeOf(context).accent,
-              when: props.block.show.when ? whenText(group) : '',
-              targetCategory: [
-                  props.block.show.targetGroup ? group.targetGroup : '',
-                  props.block.show.category ? group.category : '',
-              ]
-                  .filter((part) => part !== '')
-                  .join(' · '),
-              places: props.block.show.places ? placesText(group) : null,
+              // Each fact on its own line with its symbol (wish of the user, 2026-09-29).
+              facts: [
+                  { icon: 'when' as const, text: props.block.show.when ? whenText(group) : '' },
+                  { icon: 'who' as const, text: props.block.show.targetGroup ? group.targetGroup : '' },
+                  { icon: 'category' as const, text: props.block.show.category ? group.category : '' },
+                  { icon: 'places' as const, text: (props.block.show.places ? placesText(group) : null) ?? '' },
+              ].filter((fact) => fact.text !== ''),
+              leaders: props.block.show.leaders
+                  ? group.leaders.map((leader) => ({
+                        name: leader.name,
+                        image: props.block.show.leaderImages && leader.imageUrl ? leaderImage(leader.imageUrl) : null,
+                    }))
+                  : [],
               // `**bold**` and links read as in posts; paragraphs become line breaks, so three lines stay three.
               note: props.block.show.note ? postParagraphs(group.note) : [],
           })),
@@ -185,8 +204,24 @@ function rowMeta(group: Group): string {
     return parts.join(' · ');
 }
 function rowLeaders(group: Group): string | null {
-    return props.block.show.leaders && group.leaders.length ? `Leitung: ${group.leaders.join(', ')}` : null;
+    return props.block.show.leaders && group.leaders.length ? `Leitung: ${group.leaders.map((l) => l.name).join(', ')}` : null;
 }
+
+/**
+ * The description runs as long as the card has room (wish of the user, 2026-09-29) and fades out
+ * only where it is really cut – a short one keeps its last line crisp. Measured after each page.
+ */
+const cardsRoot = ref<HTMLElement | null>(null);
+function markCutNotes(): void {
+    cardsRoot.value?.querySelectorAll<HTMLElement>('.group-note').forEach((note) => {
+        note.classList.toggle('group-note--cut', note.scrollHeight > note.clientHeight + 1);
+    });
+}
+watch(cards, () => void nextTick(markCutNotes));
+onMounted(() => {
+    void nextTick(markCutNotes);
+    void document.fonts?.ready.then(markCutNotes);
+});
 </script>
 
 <template>
@@ -230,7 +265,8 @@ function rowLeaders(group: Group): string | null {
     </div>
 
     <!-- Cards: one to four a page, each image, text with a coloured bar, and a QR code to its public page. -->
-    <div v-else class="groups-cards" :style="textStyle(block.style)" data-testid="groups-card">
+    <!-- lang="de": hyphenation needs a language, and what the page around sets is unknown (Plan.md 44, M5). -->
+    <div v-else ref="cardsRoot" class="groups-cards" lang="de" :style="textStyle(block.style)" data-testid="groups-card">
         <div
             v-if="cards.length"
             class="cells"
@@ -245,17 +281,21 @@ function rowLeaders(group: Group): string | null {
                 :style="{ width: `${cell.width}px`, height: `${cell.height}px` }"
                 data-testid="group-card"
             >
-                <!-- Keyed by address: a hidden broken image must not hide the next group's. -->
-                <img v-if="c.image" :key="c.image.url" class="hero-image" :src="c.image.url" :style="c.image.style" alt="" @error="hideOnError">
-                <!-- Text and QR code share a row: beside the image in landscape, below it in portrait. -->
-                <div class="hero-main">
-                    <div class="hero-text">
-                        <span class="group-bar" :style="{ background: c.barColor }" />
-                        <div class="hero-body">
+                <!-- The group's colour runs down the whole card, the image included (wish of the user, 2026-09-29). -->
+                <span class="group-bar" :style="{ background: c.barColor }" />
+                <div class="hero-content">
+                    <!-- Keyed by address: a hidden broken image must not hide the next group's. -->
+                    <img v-if="c.image" :key="c.image.url" class="hero-image" :src="c.image.url" :style="c.image.style" alt="" @error="hideOnError">
+                    <!-- Text and QR code share a row: beside the image in landscape, below it in portrait. -->
+                    <div class="hero-main">
+                        <div class="hero-text">
                             <div v-if="block.show.name" class="group-name">{{ c.group.name }}</div>
-                            <div v-if="c.when" class="meta-line">{{ c.when }}</div>
-                            <div v-if="c.targetCategory" class="meta-line">{{ c.targetCategory }}</div>
-                            <div v-if="c.places" class="meta-line">{{ c.places }}</div>
+                            <div v-for="fact in c.facts" :key="fact.icon" class="fact" :data-testid="`group-fact-${fact.icon}`">
+                                <svg class="fact-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path v-for="(d, k) in FACT_ICONS[fact.icon]" :key="k" :d="d" />
+                                </svg>
+                                <span>{{ fact.text }}</span>
+                            </div>
                             <div v-if="c.note.length" class="group-note" data-testid="group-note">
                                 <template v-for="(paragraph, i) in c.note" :key="i">
                                     <template v-if="i > 0">{{ '\n' }}</template>
@@ -265,23 +305,55 @@ function rowLeaders(group: Group): string | null {
                                     </template>
                                 </template>
                             </div>
-                            <div v-if="block.show.leaders && c.group.leaders.length" class="group-leaders" data-testid="group-leaders">
-                                Leitung: {{ c.group.leaders.join(', ') }}
+                            <div v-if="landscape && c.leaders.length" class="group-leaders" data-testid="group-leaders">
+                                <span>Leitung:</span>
+                                <span v-for="(leader, k) in c.leaders" :key="k" class="leader">
+                                    <img
+                                        v-if="leader.image"
+                                        :key="leader.image"
+                                        class="leader-image"
+                                        :src="leader.image"
+                                        alt=""
+                                        data-testid="leader-image"
+                                        @error="hideOnError"
+                                    >
+                                    {{ leader.name }}
+                                </span>
                             </div>
                         </div>
-                    </div>
-                    <div v-if="c.qr" class="group-qr" data-testid="group-qr" :style="{ width: `${qrSide}px` }">
-                        <svg
-                            class="qr-code"
-                            :viewBox="`0 0 ${c.qr.size} ${c.qr.size}`"
-                            preserveAspectRatio="xMidYMid meet"
-                            shape-rendering="crispEdges"
-                            :style="{ width: `${qrSide}px`, height: `${qrSide}px` }"
-                        >
-                            <rect :width="c.qr.size" :height="c.qr.size" fill="#ffffff" />
-                            <path :d="c.qr.path" fill="#111111" />
-                        </svg>
-                        <span class="qr-caption">Zur Gruppe</span>
+                        <!-- Landscape: the QR code beside the text. Portrait: a foot below the full-width text,
+                             the leaders on the left and the QR code on the right – beside the text it left
+                             four narrow cards a few letters each (second test, 2026-09-29). -->
+                        <div v-if="c.qr || (!landscape && c.leaders.length)" class="hero-side">
+                            <div v-if="!landscape && c.leaders.length" class="group-leaders" data-testid="group-leaders">
+                                <span>Leitung:</span>
+                                <span v-for="(leader, k) in c.leaders" :key="k" class="leader">
+                                    <img
+                                        v-if="leader.image"
+                                        :key="leader.image"
+                                        class="leader-image"
+                                        :src="leader.image"
+                                        alt=""
+                                        data-testid="leader-image"
+                                        @error="hideOnError"
+                                    >
+                                    {{ leader.name }}
+                                </span>
+                            </div>
+                            <div v-if="c.qr" class="group-qr" data-testid="group-qr">
+                                <svg
+                                    class="qr-code"
+                                    :viewBox="`0 0 ${c.qr.size} ${c.qr.size}`"
+                                    preserveAspectRatio="xMidYMid meet"
+                                    shape-rendering="crispEdges"
+                                    :style="{ width: `${qrSide}px`, height: `${qrSide}px` }"
+                                >
+                                    <rect :width="c.qr.size" :height="c.qr.size" fill="#ffffff" />
+                                    <path :d="c.qr.path" fill="#111111" />
+                                </svg>
+                                <span class="qr-caption">Zur Gruppe</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -320,11 +392,14 @@ function rowLeaders(group: Group): string | null {
     border-radius: var(--isd-radius, 0.4em);
     background: rgba(255, 255, 255, 0.07);
 }
-.hero--landscape {
-    flex-direction: row;
-    align-items: stretch;
+/* Bar, then image and text – side by side in landscape, one above the other in portrait. */
+.hero-content {
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
 }
-.hero--portrait {
+.hero--portrait .hero-content {
     flex-direction: column;
 }
 .hero-image {
@@ -332,69 +407,114 @@ function rowLeaders(group: Group): string | null {
     object-fit: cover;
 }
 .hero-text {
-    position: relative;
     display: flex;
     flex: 1;
     flex-direction: column;
+    gap: 0.3em;
     min-width: 0;
     min-height: 0;
-    padding: 0.8em 0.8em 0.8em 1.1em;
+    overflow: hidden;
+    padding: 0.8em;
 }
-/* Text and QR code side by side; the text takes what the QR code leaves. */
+/* Landscape: text and QR code side by side. Portrait: the text above, the foot with leaders and QR below. */
 .hero-main {
     display: flex;
     flex: 1;
     min-width: 0;
     min-height: 0;
 }
-/* A narrow strip in the group's colour, the whole height of the text column. */
-.group-bar {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 0.25em;
-}
-.hero-body {
-    display: flex;
+.hero--portrait .hero-main {
     flex-direction: column;
-    gap: 0.3em;
-    min-height: 0;
-    overflow: hidden;
+}
+.hero-side {
+    display: flex;
+    flex: none;
+}
+.hero--portrait .hero-side {
+    align-items: flex-end;
+}
+.hero--portrait .hero-side .group-leaders {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0 0 0.8em 0.8em;
+}
+/* A narrow strip in the group's colour, the whole height of the card. */
+.group-bar {
+    flex: none;
+    width: 0.25em;
 }
 .group-name {
     display: -webkit-box;
     flex-shrink: 0;
     overflow: hidden;
+    /* A long name in a narrow card breaks by syllable instead of running off the edge. */
+    overflow-wrap: break-word;
+    hyphens: auto;
     font-size: 1.1em;
     font-weight: 700;
     line-height: 1.2;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
 }
-.meta-line {
+.fact {
+    display: flex;
     flex-shrink: 0;
+    align-items: center;
+    gap: 0.45em;
     font-size: 0.62em;
     opacity: 0.85;
 }
+.fact-icon {
+    flex: none;
+    width: 1.1em;
+    height: 1.1em;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 2;
+}
+/* As long as the card has room; the only item that gives way – the name and the facts keep their lines. */
 .group-note {
-    display: -webkit-box;
-    /* The only item that gives way when the card is short: the name and the facts keep their lines. */
-    flex-shrink: 1;
+    flex: 0 1 auto;
     min-height: 0;
     overflow: hidden;
     margin-top: 0.2em;
     font-size: 0.72em;
     line-height: 1.4;
     white-space: pre-line;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
+}
+.group-note--cut {
+    -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 2.8em), transparent 100%);
+    mask-image: linear-gradient(to bottom, black calc(100% - 2.8em), transparent 100%);
+}
+/* The page around the player styles <strong> of its own – dark on a dark card. */
+.group-note strong {
+    color: inherit;
+    font-weight: 700;
 }
 .group-leaders {
+    display: flex;
     flex-shrink: 0;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.3em 0.8em;
     margin-top: auto;
+    padding-top: 0.3em;
     font-size: 0.6em;
-    opacity: 0.75;
+    opacity: 0.85;
+}
+.leader {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4em;
+}
+.leader-image {
+    width: 2em;
+    height: 2em;
+    border-radius: 50%;
+    object-fit: cover;
 }
 .hero-subtitle {
     display: flex;
@@ -403,7 +523,8 @@ function rowLeaders(group: Group): string | null {
     font-size: 0.75em;
     opacity: 0.8;
 }
-/* The QR code: centred beside the text in landscape, at the bottom right in portrait. */
+/* The QR code: centred beside the text in landscape, at the bottom right in portrait. Sized by its
+   code alone – the page around the player counts padding into widths, which pushed it off the edge. */
 .group-qr {
     display: flex;
     flex: none;
@@ -411,10 +532,8 @@ function rowLeaders(group: Group): string | null {
     align-items: center;
     justify-content: center;
     gap: 0.3em;
+    box-sizing: content-box;
     padding: 0.8em;
-}
-.hero--portrait .group-qr {
-    align-self: flex-end;
 }
 .qr-code {
     display: block;
@@ -422,6 +541,7 @@ function rowLeaders(group: Group): string | null {
 }
 .qr-caption {
     font-size: 0.45em;
+    white-space: nowrap;
     opacity: 0.8;
 }
 

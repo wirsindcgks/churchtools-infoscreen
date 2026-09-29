@@ -6,9 +6,9 @@
  * shows the public, for anonymous callers and the device account alike –
  * `/groups` would hand the device internal groups too. From each group only
  * named fields are taken. What describes the one who asks (`canSignUp`,
- * `signUpPersons`) or identifies a person beyond the name (`guid`, the
- * person's id and picture) never leaves this file, although ChurchTools
- * sends it anonymously.
+ * `signUpPersons`) or identifies a person beyond name and picture (`guid`,
+ * the person's id and addresses) never leaves this file, although
+ * ChurchTools sends it anonymously.
  */
 import { groupColor } from '../posts/normalize';
 
@@ -28,6 +28,7 @@ interface MasterDataResponse {
 
 interface LeaderResponse {
     title?: string | null;
+    imageUrl?: string | null;
     domainAttributes?: {
         firstName?: string | null;
         lastName?: string | null;
@@ -83,13 +84,24 @@ export interface Group {
     targetGroup: string;
     category: string;
     color: string | null;
-    /** First and last name only – and only where the homepage itself shows its leaders. */
-    leaders: string[];
+    /** Only where the homepage itself shows its leaders (Plan.md 43, c). */
+    leaders: Leader[];
     /** Null without a maximum; then nothing is said about places. */
     freePlaces: number | null;
     waitinglist: boolean;
     /** The group's public page, the target of its QR code; anonymous `200` (G40). */
     publicUrl: string;
+}
+
+/**
+ * A leader as the block may know them: first and last name, and the picture
+ * the public homepage shows beside them. The picture's address is a key
+ * (G14) – it shows only when the block switches it on (wish of the user,
+ * 2026-09-29); nothing else of the person is kept.
+ */
+export interface Leader {
+    name: string;
+    imageUrl: string | null;
 }
 
 export interface HomepageGroups {
@@ -124,20 +136,20 @@ function label(value: MasterDataResponse | null | undefined): string {
 }
 
 /**
- * The names of a group's leaders – the privacy rule of Plan.md 43 (c). Only
- * when the homepage says it shows leaders: whether ChurchTools leaves them
- * out otherwise is not measured (G40), so this does not rely on it. Archived
- * and deceased people drop out.
+ * A group's leaders – the privacy rule of Plan.md 43 (c). Only when the
+ * homepage says it shows leaders: whether ChurchTools leaves them out
+ * otherwise is not measured (G40), so this does not rely on it. Name and
+ * picture only; archived and deceased people drop out.
  */
-function leaderNames(leaders: LeaderResponse[] | null | undefined): string[] {
+function leadersOf(leaders: LeaderResponse[] | null | undefined): Leader[] {
     return (leaders ?? [])
         .filter((l) => !l?.domainAttributes?.isArchived && !l?.domainAttributes?.dateOfDeath)
         .map((l) => {
             const first = (l.domainAttributes?.firstName ?? '').trim();
             const last = (l.domainAttributes?.lastName ?? '').trim();
-            return `${first} ${last}`.trim() || (l.title ?? '').trim();
+            return { name: `${first} ${last}`.trim() || (l.title ?? '').trim(), imageUrl: l.imageUrl || null };
         })
-        .filter((name) => name !== '');
+        .filter((leader) => leader.name !== '');
 }
 
 /**
@@ -180,7 +192,7 @@ export function normalizeHomepage(raw: unknown, baseUrl: string): Group[] {
             targetGroup: label(info.targetGroup),
             category: label(info.groupCategory),
             color: groupColor(info.color ? { key: info.color } : null),
-            leaders: showLeaders ? leaderNames(info.leader) : [],
+            leaders: showLeaders ? leadersOf(info.leader) : [],
             freePlaces: freePlaces(group),
             waitinglist: group.allowWaitinglist === true,
             publicUrl: `${base}/publicgroup/${id}`,
