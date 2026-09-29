@@ -15,6 +15,7 @@ export function usePreview(
     media: Ref<MediaDoc[]>,
     theme: Ref<ThemeDoc | null> = ref(null),
     posts: Ref<{ groupIds: number[]; limit: number }[]> = ref([]),
+    groupHomepages: Ref<number[]> = ref([]),
 ) {
     const context = reactive<StageContext>({
         now: new Date(),
@@ -24,6 +25,7 @@ export function usePreview(
         churchLogo: null,
         appointments: [],
         posts: [],
+        groupHomepages: [],
         media: new Map(),
         // Paged lists report their pages (the inspector names them) but hold page 1 while designing.
         pages: {},
@@ -84,12 +86,30 @@ export function usePreview(
         }
     }
 
+    let groupHomepagesRequest = 0;
+    async function loadGroupHomepages(): Promise<void> {
+        const ids = groupHomepages.value;
+        const mine = ++groupHomepagesRequest;
+        if (!ids.length) {
+            context.groupHomepages = [];
+            return;
+        }
+        try {
+            const list = await churchToolsPlayerData.groupHomepages(ids);
+            if (mine === groupHomepagesRequest) context.groupHomepages = list;
+        } catch (error) {
+            problem.value = error instanceof Error ? error.message : String(error);
+        }
+    }
+
     watch(media, (list) => (context.media = new Map(list.map((m) => [m.id, m]))), { immediate: true });
     watch(theme, (value) => (context.theme = value), { immediate: true });
     watch(() => calendarIds.value.join(), () => void loadAppointments());
     watch(() => JSON.stringify(posts.value), () => void loadPosts());
+    watch(() => groupHomepages.value.join(), () => void loadGroupHomepages());
     void loadBasics().then(loadAppointments);
     void loadPosts();
+    void loadGroupHomepages();
 
     const ticker = setInterval(() => (context.now = new Date()), 30_000);
     onBeforeUnmount(() => clearInterval(ticker));

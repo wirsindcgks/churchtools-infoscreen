@@ -9,11 +9,12 @@ import { reactive } from 'vue';
 import type { Appointment } from '../appointments/normalize';
 import { NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
+import type { HomepageGroups } from '../groups/normalize';
 import { revivePosts, type Post } from '../posts/normalize';
 import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '../store/screen-repository';
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
-import { appointmentNeeds, appointmentWindow, mergePosts, postNeeds, type PlayerData } from './data';
+import { appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, postNeeds, type PlayerData } from './data';
 import { askServiceWorkerHasPage } from './service-worker';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
 
@@ -30,6 +31,7 @@ export interface PlayerState {
     screen: LoadedScreen | null;
     appointments: Appointment[];
     posts: Post[];
+    groupHomepages: HomepageGroups[];
     timeZone: string;
     churchName: string;
     churchLogo: string | null;
@@ -105,6 +107,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         screen: null,
         appointments: [],
         posts: [],
+        groupHomepages: [],
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         churchName: '',
         churchLogo: null,
@@ -253,6 +256,14 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                       return state.posts;
                   })
             : [];
+        const parentGroupIds = groupNeeds(state.screen.slides);
+        // Groups are decoration too: a failure keeps the last ones.
+        const groupHomepages = parentGroupIds.length
+            ? await data.groupHomepages(parentGroupIds).catch((error: unknown) => {
+                  console.warn('Gruppen konnten nicht geladen werden:', error);
+                  return state.groupHomepages;
+              })
+            : [];
 
         Object.assign(state, {
             timeZone,
@@ -260,6 +271,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             churchLogo,
             appointments,
             posts,
+            groupHomepages,
             clockConfirmed: checkClock(serverDate, now).confirmed,
             phase: 'running',
             staleSince: null,
@@ -269,6 +281,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             screen: state.screen,
             appointments,
             posts,
+            groupHomepages,
             timeZone,
             churchName,
             churchLogo,
@@ -319,6 +332,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                 screen: cached.screen,
                 appointments: reviveAppointments(cached.appointments),
                 posts: cached.posts ? revivePosts(cached.posts) : [],
+                groupHomepages: cached.groupHomepages ?? [],
                 timeZone: cached.timeZone,
                 churchName: cached.churchName,
                 churchLogo: cached.churchLogo ?? null,

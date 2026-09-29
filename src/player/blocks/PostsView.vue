@@ -295,6 +295,11 @@ onMounted(() => {
 .paragraph:last-child {
     margin-bottom: 0;
 }
+/* The page around the player styles <strong> of its own – dark on a dark card (seen with groups, 2026-09-29). */
+.paragraph strong {
+    color: inherit;
+    font-weight: 700;
+}
 
 /* List, after AppointmentRow's .card rows. */
 .posts-list {

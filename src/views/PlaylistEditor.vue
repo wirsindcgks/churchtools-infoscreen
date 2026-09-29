@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
-import { currentPerson, displayName } from '../ct/client';
-import { fetchPostGroups, type PostGroup } from '../ct/api';
+import { currentPerson, displayName, instanceBaseUrl } from '../ct/client';
+import { fetchGroupHomepageList, fetchPostGroups, type PostGroup } from '../ct/api';
 import AppBar from '../designer/AppBar.vue';
 import BlockPalette from '../designer/BlockPalette.vue';
 import EditorStage from '../designer/EditorStage.vue';
@@ -14,9 +14,10 @@ import { BLOCK_LABELS } from '../designer/ops';
 import PlaylistPreview from '../designer/PlaylistPreview.vue';
 import SlideList from '../designer/SlideList.vue';
 import { usePreview } from '../designer/usePreview';
+import type { HomepageEntry } from '../groups/normalize';
 import type { MediaDoc } from '../model/schema';
 import { MEDIA_PAGE } from '../media/library';
-import { postNeeds } from '../player/data';
+import { groupNeeds, postNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 
 const route = useRoute();
@@ -44,10 +45,13 @@ const { calendars, problem } = usePreview(
     computed(() => editor.media),
     computed(() => editor.theme),
     computed(() => postNeeds(editor.slides)),
+    computed(() => groupNeeds(editor.slides)),
 );
 
 /** Groups with posts switched on, for the „Beiträge"-Baustein; loaded once. Unreadable → an empty list, the inspector says so. */
 const groups = ref<PostGroup[]>([]);
+/** Group homepages for the „Gruppen"-Baustein (Plan.md 43); loaded once, unreadable → an empty list. */
+const homepages = ref<HomepageEntry[]>([]);
 
 /** The preview of the unsaved draft, as the TV would show it. */
 const previewing = ref(false);
@@ -216,6 +220,11 @@ onMounted(async () => {
         groups.value = await fetchPostGroups();
     } catch {
         groups.value = [];
+    }
+    try {
+        homepages.value = await fetchGroupHomepageList(instanceBaseUrl());
+    } catch {
+        homepages.value = [];
     }
 });
 
@@ -433,7 +442,7 @@ function onKey(event: KeyboardEvent): void {
                     <span class="sheet-label">{{ sheetLabel }}</span>
                     <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
                 </button>
-                <Inspector id="inspector-panel" :calendars="calendars" :groups="groups" @pick-image="openLibrary" />
+                <Inspector id="inspector-panel" :calendars="calendars" :groups="groups" :homepages="homepages" @pick-image="openLibrary" />
             </div>
         </div>
 

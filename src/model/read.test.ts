@@ -74,6 +74,27 @@ describe('readSlide – tolerant towards newer data', () => {
             showAuthor: false,
         });
     });
+
+    it('reads a minimal groups block with its defaults – leaders off (schema 1.14, Plan.md 43)', () => {
+        const block = {
+            id: 'g',
+            type: 'groups',
+            x: 0,
+            y: 0,
+            width: 1400,
+            height: 700,
+            groupIds: [],
+            style: { fontFamily: 'sans', fontSize: 56, fontWeight: 400, color: '#fff', align: 'left' },
+        };
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [block, { ...block, id: 'h', show: { leaders: true, qr: false } }] });
+        expect(issues).toEqual([]);
+        expect(doc.blocks[0]).toMatchObject({
+            layout: 'card',
+            show: { name: true, image: true, when: true, targetGroup: true, category: true, note: true, leaders: false, places: true, qr: true },
+        });
+        expect(doc.blocks[0]).not.toHaveProperty('parentGroupId');
+        expect(doc.blocks[1]).toMatchObject({ show: { name: true, leaders: true, qr: false } });
+    });
 });
 
 describe('readTheme – the font new blocks start with (schema 1.13, Plan.md 40)', () => {

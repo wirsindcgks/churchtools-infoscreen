@@ -4,6 +4,7 @@
  * here are never fatal: without storage the player just has no fallback.
  */
 import type { Appointment } from '../appointments/normalize';
+import type { HomepageGroups } from '../groups/normalize';
 import type { Post } from '../posts/normalize';
 import type { LoadedScreen } from '../store/screen-repository';
 
@@ -16,6 +17,8 @@ export interface CachedState {
     churchLogo?: string | null;
     /** Missing in states saved before posts came (schema 1.11). */
     posts?: Post[];
+    /** Missing in states saved before groups came (schema 1.14). Leaders' names only, nothing else of a person. */
+    groupHomepages?: HomepageGroups[];
     savedAt: string;
 }
 

@@ -9,14 +9,17 @@ Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
 ## Was es kann
 
 - **Gestalten wie in einem Folien-Editor:** Slides mit Text, Bild, Fläche, Uhr, Terminliste, nächstem Termin,
-  Countdown, Gemeindekopf mit Logo, Webseite und QR-Code; ziehen, skalieren, am Raster ausrichten, sperren;
-  Rückgängig/Wiederholen. Die Vorschau ist genau das, was der Fernseher zeigt.
+  Countdown, Gemeindekopf mit Logo, Webseite, QR-Code, Beiträgen und Gruppen; ziehen, skalieren, am Raster
+  ausrichten, sperren; Rückgängig/Wiederholen. Die Vorschau ist genau das, was der Fernseher zeigt.
 - **Termine live aus den Kalendern von ChurchTools** – was dort eingetragen wird, erscheint von selbst im Foyer, als
   schlichte Liste oder als Karten mit Datumskachel.
+- **Gruppen und Beiträge aus ChurchTools:** die Gruppen einer Gruppen-Homepage mit Treffzeit, freien Plätzen und
+  einem QR-Code zum Anmelden, die neuesten Beiträge öffentlicher Gruppen – nur, was ChurchTools ohnehin öffentlich
+  zeigt.
 - **Playlists und Zeitpläne:** Eine Playlist kann auf mehreren Screens laufen; Regeln nach Uhrzeit oder rund um
   Termine schalten um, etwa „30 Minuten vor dem Gottesdienst die Begrüßung". Die Startseite zeigt, was jeder
   Fernseher gerade zeigt.
-- **Hinweisband:** eine Laufschrift oder ein stehender Hinweis über allen Slides, der zur eingestellten Zeit von
+- **Hinweise:** eine Laufschrift oder ein stehender Hinweis über allen Slides, der zur eingestellten Zeit von
   selbst verschwindet.
 - **Mediathek und Design:** Bilder einmal hochladen und überall verwenden, mit der Angabe, wo sie laufen; Ecken,
   Farben und Darstellung der Termine einmal für alle Screens festlegen.
@@ -30,10 +33,12 @@ Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
   eigenes Konto, das nur lesen darf; seine Adresse trägt statt eines Passworts einen Login-Token, den ein
   Passwortwechsel ungültig macht.
 
-Mehr Bilder – Startseite, Zeitpläne, Mediathek, Design – zeigt das [Onboarding](docs/Onboarding.md#gestalter--inhalte-gestalten).
+**Mehr Bilder** – Gruppen, Vorschau, Beiträge, Hinweise, Zeitpläne, Mediathek, Design und der Designer am Handy –
+zeigt die Übersicht [**Der Designer in Bildern**](docs/Funktionen.md).
 
 ## Installieren
 
+- **[Der Designer in Bildern](docs/Funktionen.md)** – was er kann, in Screenshots.
 - **[Onboarding](docs/Onboarding.md)** – der Einstieg je Rolle: Administrator, Gestalter, Gerät.
 - **[Einrichtungsanleitung für ChurchTools-Administratoren](docs/Einrichtung.md)** – Installation, Rechte,
   Geräte-Benutzer, Kiosk-Browser, Updates und Datenschutz.
@@ -44,8 +49,9 @@ Voraussetzung ist eine ChurchTools-Instanz, auf der Extensions (Custom Modules) 
 
 ## Stand
 
-Version 0.1.0 ist das erste Release (25. September 2026). Sie läuft auf einer Testinstanz (ChurchTools 3.136,
-Build 32882); der erste Fernseher im Foyer steht aus.
+Aktuell ist Version 0.3.0 (29. September 2026) mit dem Baustein „Gruppen"; das erste Release war 0.1.0 am
+25. September 2026. Der Designer läuft auf einer Testinstanz (ChurchTools 3.136, Build 32882); der erste Fernseher
+im Foyer steht aus.
 Was als Nächstes kommt, steht in [`Plan.md`](Plan.md); Änderungen je Version in [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Mitentwickeln

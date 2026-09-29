@@ -50,6 +50,7 @@ const context = reactive<StageContext>({
     churchLogo: null,
     appointments: [],
     posts: [],
+    groupHomepages: [],
     media: new Map<string, MediaDoc>(),
     images: new Map<string, string>(),
     pages: {},
@@ -94,6 +95,7 @@ watch(
             state.churchLogo,
             state.appointments,
             state.posts,
+            state.groupHomepages,
             state.screen,
         ] as const),
     () => {
@@ -104,6 +106,7 @@ watch(
         context.churchLogo = state.churchLogo;
         context.appointments = state.appointments;
         context.posts = state.posts;
+        context.groupHomepages = state.groupHomepages;
         context.media = new Map((state.screen?.media ?? []).map((m) => [m.id, m]));
         context.theme = state.screen?.theme ?? null;
     },

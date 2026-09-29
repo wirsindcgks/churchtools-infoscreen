@@ -140,10 +140,11 @@ npx playwright test --grep-invert "upload an image"   # ohne den schreibenden Te
 npm run docs:screenshots
 ```
 
-Schreibt die Bilder in `docs/bilder/`, die [Onboarding](docs/Onboarding.md) und README zeigen – nach einer
-sichtbaren Änderung am Designer neu erzeugen und mit einchecken. Alles, was ChurchTools antworten würde, ist dabei
-erfunden (die „Gemeinde am Markt" mit Kalendern, Terminen, Logo und Bildern), und jede schreibende Anfrage wird im
-Browser beantwortet: **Kein Name, Termin oder Bild der Testinstanz landet im Repository, und nichts wird dorthin
+Schreibt die Bilder in `docs/bilder/`, die [Onboarding](docs/Onboarding.md), die Übersicht
+[Der Designer in Bildern](docs/Funktionen.md) und README zeigen – nach einer sichtbaren Änderung am Designer neu
+erzeugen und mit einchecken. Alles, was ChurchTools antworten würde, ist dabei erfunden (die „Gemeinde am Markt" mit
+Kalendern, Terminen, Gruppen, Beiträgen, Logo und Bildern; die Bilder sind Farbverläufe ohne Text, die Personen
+Silhouetten), und jede schreibende Anfrage wird im Browser beantwortet: **Kein Name, Termin oder Bild der Testinstanz landet im Repository, und nichts wird dorthin
 geschrieben.** Im normalen Testlauf wird der Test übersprungen.
 
 ## Release-Paket bauen

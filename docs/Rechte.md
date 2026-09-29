@@ -20,6 +20,11 @@ Rolle zeigt das [Onboarding](Onboarding.md).
 der Designer blendet nur aus, was ohnehin scheitern würde. Auch Administratoren brauchen die Rechte am Modul
 ausdrücklich – ChurchTools-Adminrechte schließen sie nicht ein (sie können sie sich aber jederzeit selbst geben).
 
+**Gruppen und Beiträge brauchen kein eigenes Recht.** Der Baustein „Gruppen" liest eine Gruppen-Homepage ohne
+Anmeldung, so wie jeder Besucher sie sieht; der Baustein „Beiträge" zeigt Beiträge öffentlicher Gruppen, die auch
+ohne Anmeldung sichtbar sind. Deshalb vergibt der Assistent dafür nichts – und der Fernseher zeigt nie mehr, als
+ChurchTools ohnehin öffentlich zeigt.
+
 ## Rechte je Rolle
 
 **Kategorien** sind die Ablagen des Moduls in ChurchTools: **Screens**, **Playlists**, **Slides**, **Medien** und
