@@ -14,9 +14,14 @@ const editor = useEditorStore();
 /** The preview's stage context: paged lists report their pages there (Plan.md, 23). */
 const stage = useStageContext();
 const THUMB_WIDTH = 176;
-/** On a phone the row is one line tall instead of a filmstrip beside the stage (Plan.md 44). */
-const THUMB_HEIGHT_PHONE = 64;
-const PHONE_TILE_MIN_WIDTH = 104;
+/**
+ * On a phone the row is one line tall instead of a filmstrip beside the stage
+ * (Plan.md 44). Shrunk again after the second phone test: 64 px still left
+ * only three-and-a-bit tiles on screen at once (Plan.md 44).
+ */
+const THUMB_HEIGHT_PHONE = 36;
+/** A touch target stays reachable even for a portrait screen's narrow thumbnail (Plan.md 44). */
+const PHONE_TILE_MIN_WIDTH = 56;
 
 /** How long the slide really runs: longer than set when a paged list needs the time. */
 function runs(slide: SlideDoc): { seconds: number; longer: boolean } {
@@ -42,7 +47,11 @@ const thumb = computed(() => {
     const height = Math.round((THUMB_WIDTH * editor.stage.height) / editor.stage.width);
     return { width: THUMB_WIDTH, height, fit: fitStage({ width: THUMB_WIDTH, height }, editor.stage) };
 });
-/** A fixed tile width on a phone, so a long name cannot widen the tile (Plan.md 44). */
+/**
+ * The tile is exactly as wide as its thumbnail on a phone – the name that
+ * used to widen it is gone there (Plan.md 44, second phone test); only a
+ * portrait thumbnail's narrow width still needs a floor to stay tappable.
+ */
 const tileWidth = computed(() => (phone.value ? Math.max(PHONE_TILE_MIN_WIDTH, thumb.value.width) : null));
 
 /** Whether the row is open, kept per viewer; without storage it simply defaults to open (Plan.md 44). */
@@ -132,7 +141,8 @@ function removeCurrent(): void {
                 <Icon name="trash" :size="16" />
             </button>
         </div>
-        <ol v-show="open" id="slide-list-ol">
+        <!-- Collapsed only on a phone: CSS, not v-show – a desktop-wide window always shows the slides. -->
+        <ol id="slide-list-ol" :class="{ collapsed: !open }">
             <li
                 v-for="(slide, index) in editor.slides"
                 :key="slide.id"
@@ -142,6 +152,8 @@ function removeCurrent(): void {
                     over: over === index && dragging !== index,
                 }"
                 :style="{ width: tileWidth ? `${tileWidth}px` : undefined }"
+                :title="`${index + 1}. ${slide.name}`"
+                :aria-label="`${index + 1}. ${slide.name}`"
                 draggable="true"
                 data-testid="slide-item"
                 @click="editor.selectSlide(slide.id)"
@@ -158,6 +170,8 @@ function removeCurrent(): void {
                 </div>
                 <div class="meta">
                     <span class="name">{{ index + 1 }}. {{ slide.name }}</span>
+                    <!-- On a phone the name sits in the header and the sheet's bar already; here it would not fit next to the duration (Plan.md 44, second phone test). -->
+                    <span class="index-num">{{ index + 1 }} ·</span>
                     <span
                         class="duration"
                         :class="{ longer: runs(slide).longer }"
@@ -182,21 +196,36 @@ function removeCurrent(): void {
                     </button>
                 </div>
             </li>
-            <!-- Where one looks for the next slide: below the last (Plan.md, Nächste Schritte 11). -->
-            <li class="add-item" :style="{ width: tileWidth ? `${tileWidth}px` : undefined }">
+            <!--
+                Where one looks for the next slide: below the last (Plan.md, Nächste Schritte 11). On a
+                phone both tiles shrink to icon-only, image-sized squares beside the slides themselves
+                instead of stacking full-width below them (Plan.md 44, second phone test) – the same two
+                buttons, only restyled by the media query below, not duplicated.
+            -->
+            <li class="add-item">
                 <button
                     class="add"
                     type="button"
+                    title="Neue Slide"
+                    aria-label="Neue Slide"
                     data-testid="add-slide"
-                    :style="{ minHeight: `${thumb.height}px` }"
+                    :style="phone ? { width: `${tileWidth}px`, height: `${thumb.height}px` } : { minHeight: `${thumb.height}px` }"
                     @click="editor.addSlide()"
                 >
                     <Icon name="plus" :size="22" />
-                    Neue Slide
+                    <span class="add-label">Neue Slide</span>
                 </button>
-                <button class="import" type="button" data-testid="import-slides" @click="importing = true">
+                <button
+                    class="import"
+                    type="button"
+                    title="Slides aus anderer Playlist übernehmen"
+                    aria-label="Slides aus anderer Playlist übernehmen"
+                    data-testid="import-slides"
+                    :style="phone ? { width: `${tileWidth}px`, height: `${thumb.height}px` } : undefined"
+                    @click="importing = true"
+                >
                     <Icon name="copy" :size="16" />
-                    Aus anderer Playlist …
+                    <span class="import-label">Aus anderer Playlist …</span>
                 </button>
             </li>
         </ol>
@@ -324,6 +353,11 @@ li.disabled .thumb {
     white-space: nowrap;
     text-overflow: ellipsis;
 }
+/* Replaces `.name` on a phone, where the tile has no room left for it (Plan.md 44, second phone test). */
+.index-num {
+    display: none;
+    color: var(--d-text-muted);
+}
 .duration.longer {
     color: var(--d-accent-strong);
 }
@@ -361,6 +395,7 @@ li.disabled .thumb {
         padding: 2px 8px;
         border-bottom: 1px solid var(--d-divider);
     }
+    /* Same look as the page menu's own button (`ModuleSidebar.vue`) – a frame makes it obvious this collapses (Plan.md 44, second phone test). */
     .toggle {
         display: flex;
         flex: 1;
@@ -368,10 +403,10 @@ li.disabled .thumb {
         align-items: center;
         justify-content: space-between;
         gap: 6px;
-        padding: 4px 6px;
-        border: 0;
-        border-radius: var(--d-radius);
-        background: none;
+        padding: 0 10px;
+        border: 1px solid var(--d-divider);
+        border-radius: var(--d-radius-lg);
+        background: var(--d-surface);
         color: var(--d-text);
         font: inherit;
         font-weight: 700;
@@ -379,7 +414,7 @@ li.disabled .thumb {
         cursor: pointer;
     }
     .toggle:hover {
-        background: var(--d-panel);
+        border-color: var(--d-interactive);
     }
     .toggle-label {
         overflow: hidden;
@@ -398,36 +433,91 @@ li.disabled .thumb {
     .toggle-chevron.open {
         transform: rotate(180deg);
     }
+    /*
+     * No horizontal padding and no gap: at 390 px the three demo slides plus the two tiles
+     * (78 px each, landscape) already fill the row exactly – any padding or gap would force
+     * it to scroll (Plan.md 44, second phone test, „Ziel“).
+     */
     ol {
         display: flex;
         align-items: flex-start;
         gap: 6px;
-        padding: 6px;
+        padding: 6px 8px;
         overflow-x: auto;
         overflow-y: hidden;
     }
-    li,
-    li.add-item {
+    /*
+     * `min-width: 104px` is gone: the tile is exactly as wide as its thumbnail now (`tileWidth`
+     * in the script), padding and border are gone too, so nothing but the thumbnail itself
+     * decides the outer width – a border would otherwise widen the box even with
+     * `box-sizing: border-box`, because the thumbnail inside is not itself shrunk.
+     */
+    li {
         box-sizing: border-box;
         flex: none;
-        min-width: 104px;
-        padding: 4px;
+        padding: 0;
+        border: 0;
+    }
+    /* Outside the tile, into the gap: a frame inside would cover the small thumbnail. */
+    li.active {
+        outline: 2px solid var(--d-accent);
+        outline-offset: 1px;
+    }
+    li.over {
+        outline-style: dashed;
+        outline-color: var(--d-accent);
+    }
+    /* The two tiles below sit side by side here instead of stacked full-width (Plan.md 44). */
+    li.add-item {
+        display: flex;
+        box-sizing: border-box;
+        flex: none;
+        gap: 6px;
+        padding: 0;
+    }
+    .thumb {
+        /* Centres a portrait thumbnail, which is narrower than the tile's own minimum width. */
+        margin: 0 auto;
     }
     .meta {
+        justify-content: flex-start;
+        gap: 2px;
         margin-top: 3px;
+        overflow: hidden;
+        white-space: nowrap;
     }
-    /* "Aus anderer Playlist …" is narrower here than the tile, so it wraps (Plan.md 44) – kept small to fit the budget. */
+    .name {
+        display: none;
+    }
+    .index-num {
+        display: inline;
+    }
+    /* Icon only, no label underneath – the name is reachable via `title`/`aria-label` instead. */
+    .add-label,
+    .import-label {
+        display: none;
+    }
+    .add {
+        padding: 0;
+    }
     .import {
-        margin-top: 2px;
-        padding: 2px;
-        font-size: 0.6875rem;
-        line-height: 1.15;
+        box-sizing: border-box;
+        margin-top: 0;
+        padding: 0;
+        border: 2px dashed var(--d-interactive);
+        border-radius: var(--d-radius);
+    }
+    .import:hover {
+        border-color: var(--d-accent);
     }
     .actions {
         display: none;
     }
     li + li {
         margin-top: 0;
+    }
+    ol.collapsed {
+        display: none;
     }
 }
 </style>
