@@ -4,6 +4,16 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.2.12] – 2026-09-29
+
+Beim Bearbeiten am Handy bleibt die ganze Slide im Blick.
+
+### Geändert
+
+- **Einstellungen im Editor am Handy** nehmen höchstens die untere Hälfte des Bildschirms ein und scrollen in sich.
+  Die Slide darüber wird so weit verkleinert, dass sie ganz zu sehen ist – auch im Hochformat, nach dem Drehen des
+  Telefons und wenn man die Einstellungen der Slide über die Leiste unten öffnet.
+
 ## [0.2.11] – 2026-09-29
 
 Nachgebessert nach dem zweiten Test am iPhone.
@@ -275,6 +285,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.2.12]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.12
 [0.2.11]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.11
 [0.2.10]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.10
 [0.2.9]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.9

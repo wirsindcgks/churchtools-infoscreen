@@ -76,7 +76,6 @@ function onPointerUpOrCancel(): void {
     if (openSheetOnPointerUp) {
         openSheetOnPointerUp = false;
         inspectorOpen.value = true;
-        void nextTick(showStageAboveSheet);
     }
 }
 
@@ -93,22 +92,39 @@ watch(
             return;
         }
         inspectorOpen.value = true;
-        void nextTick(showStageAboveSheet);
     },
 );
+// However the sheet opens – a chosen block or a tap on its bar – the whole slide goes above it.
+watch(inspectorOpen, (open) => {
+    if (open) void nextTick(showStageAboveSheet);
+    else stageMax.value = null;
+});
 
 /**
- * The open sheet covers the lower 60 % of a phone, and the stage sits below
- * the slides – it would vanish behind the sheet just when a block on it is
- * being edited. So the stage moves up into the free part; the page has room
- * for that because it grows by the sheet's height while the sheet is open.
+ * The open sheet covers at most the lower half of a phone, and it scrolls
+ * itself – so the whole slide belongs in the upper half, always (third phone
+ * test, Plan.md 44). The slides and the block bar are hidden then; the stage
+ * shrinks to what is left above the sheet and the page scrolls it into view:
+ * from the top of the page when the bars above leave room (Speichern stays in
+ * sight), else to 64 px below the window's top edge, where ChurchTools' own
+ * bar may sit.
  */
+const stageMax = ref<number | null>(null);
+const STAGE_GAP = 8;
 function showStageAboveSheet(): void {
-    if (!window.matchMedia('(max-width: 48rem)').matches) return;
+    if (!inspectorOpen.value || !window.matchMedia('(max-width: 48rem)').matches) return;
     const stage = root.value?.querySelector<HTMLElement>('.editor-stage');
     if (!stage) return;
-    const { top, bottom } = stage.getBoundingClientRect();
-    if (top < 0 || bottom > window.innerHeight * 0.4) stage.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    const half = window.innerHeight / 2;
+    const pageTop = stage.getBoundingClientRect().top + window.scrollY;
+    const fromPageTop = pageTop <= half * 0.6;
+    const top = fromPageTop ? pageTop : 64;
+    stageMax.value = Math.max(120, Math.floor(half - top - STAGE_GAP));
+    window.scrollTo({ top: fromPageTop ? 0 : pageTop - top, behavior: 'smooth' });
+}
+/** Turning the phone or resizing the window changes both halves. */
+function onResize(): void {
+    if (inspectorOpen.value) showStageAboveSheet();
 }
 
 /** The name the sheet's bar and the "…" menu don't have room for otherwise. */
@@ -178,6 +194,7 @@ const statusText = computed(() => {
 onMounted(async () => {
     top.value = root.value?.getBoundingClientRect().top ?? 0;
     window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onResize);
     window.addEventListener('beforeunload', onBeforeUnload);
     // Capture phase (see the comment on `pointerDown` above): it must run before a block's own
     // `pointerdown` handler can stop the event from bubbling any further.
@@ -204,6 +221,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
     window.removeEventListener('keydown', onKey);
+    window.removeEventListener('resize', onResize);
     window.removeEventListener('beforeunload', onBeforeUnload);
     window.removeEventListener('pointerdown', onPointerDown, true);
     window.removeEventListener('pointerup', onPointerUpOrCancel, true);
@@ -270,7 +288,11 @@ function onKey(event: KeyboardEvent): void {
         ref="root"
         class="infoscreen-designer editor"
         :class="{ 'sheet-open': inspectorOpen }"
-        :style="{ height: `calc(100vh - ${top}px)`, '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}` }"
+        :style="{
+            height: `calc(100vh - ${top}px)`,
+            '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}`,
+            '--stage-max': stageMax === null ? undefined : `${stageMax}px`,
+        }"
     >
         <AppBar>
             <RouterLink
@@ -690,13 +712,16 @@ function onKey(event: KeyboardEvent): void {
         display: none;
     }
     .inspector-sheet.open {
-        max-height: 60vh;
-        max-height: 60dvh;
+        max-height: 50vh;
+        max-height: 50dvh;
     }
-    /* Room to scroll the stage above the open sheet (showStageAboveSheet). */
+    /* Room to scroll the stage above the open sheet, and the stage no taller than that room (showStageAboveSheet). */
     .editor.sheet-open {
-        padding-bottom: calc(60vh + env(safe-area-inset-bottom));
-        padding-bottom: calc(60dvh + env(safe-area-inset-bottom));
+        padding-bottom: calc(50vh + env(safe-area-inset-bottom));
+        padding-bottom: calc(50dvh + env(safe-area-inset-bottom));
+    }
+    .editor.sheet-open .stage-column > :last-child {
+        max-height: var(--stage-max, 40vh);
     }
     /*
      * While the sheet is open, only the stage stands above it – the slides and the block bar
@@ -708,10 +733,6 @@ function onKey(event: KeyboardEvent): void {
     .editor.sheet-open .slide-list,
     .editor.sheet-open .block-palette {
         display: none;
-    }
-    /* ChurchTools' own top bar stays on top when scrolling; leave it room. */
-    .editor :deep(.editor-stage) {
-        scroll-margin-top: 64px;
     }
 }
 </style>
