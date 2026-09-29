@@ -275,9 +275,9 @@ test.describe('with a finger, in both browsers', () => {
         // Below 16px iOS zooms in on a tapped field and the page pans sideways afterwards.
         await expect(page.getByTestId('inspector-x')).toHaveCSS('font-size', '16px');
 
-        // The sheet covers at most 60 % of the window, and the stage moved up into the free part above it.
+        // The sheet covers at most half the window, and the stage moved up into the free part above it.
         const sheetBox = (await inspectorSheet.boundingBox())!;
-        expect(sheetBox.height).toBeLessThanOrEqual(844 * 0.6 + 1);
+        expect(sheetBox.height).toBeLessThanOrEqual(844 * 0.5 + 1);
         await expect
             .poll(async () => {
                 const stage = (await page.locator('.editor-stage').boundingBox())!;
@@ -392,6 +392,28 @@ test.describe('with a finger, in both browsers', () => {
         await page.getByTestId('inspector-sheet-toggle').click();
         await expect(page.getByTestId('slide-item').first()).toBeVisible();
         await expect(page.getByTestId('add-block-menu')).toBeVisible();
+    });
+
+    test('on a low window the sheet takes at most half, and the whole slide shrinks to fit above it (Plan.md 44, third phone test)', async ({ page }) => {
+        await page.setViewportSize({ width: 390, height: 560 });
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+
+        // Opened from its bar, without a block: the slide's own settings.
+        await page.getByTestId('inspector-sheet-toggle').click();
+        await expect(page.getByTestId('slide-inspector')).toBeVisible();
+        const sheetBox = (await page.getByTestId('inspector-sheet').boundingBox())!;
+        expect(sheetBox.height).toBeLessThanOrEqual(560 * 0.5 + 1);
+        // The rendered slide, not just its frame: all of it above the sheet, scaled down to fit.
+        await expect
+            .poll(async () => {
+                const slide = (await page.locator('.editor-stage .stage').first().boundingBox())!;
+                return slide.y >= 0 && slide.y + slide.height <= sheetBox.y + 1 && slide.height > 100;
+            })
+            .toBe(true);
+        await expectNoSidewaysScroll(page);
+        await page.screenshot({ path: 'test-results/sheet-low-window.png' });
     });
 
     test('a drag that starts by choosing a block only opens the sheet once the finger lifts (Plan.md 44, second phone test)', async ({ page }) => {
