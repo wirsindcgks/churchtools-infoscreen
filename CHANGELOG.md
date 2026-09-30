@@ -4,7 +4,7 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
-## [Unreleased]
+## [0.3.8] – 2026-09-30
 
 ### Neu
 
@@ -16,9 +16,11 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 - **Der Raum am Termin:** Der „Nächste Termin" und die Terminliste als Karten zeigen neben dem Ort den gebuchten Raum
   („Kirchsaal · Saal"), abschaltbar mit „Raum zeigen". Dafür bekommt das Gerät mit „Rechte aktualisieren" das Recht,
   alle Räume zu sehen; am Termin steht nur der Raumname, nie der Titel einer Buchung.
+- Beide zeigen nur **bestätigte** Buchungen – eine Anfrage, die noch wartet, erscheint nicht; der Inspektor sagt das.
 
 ### Geändert
 
+- **Schalter mit Info-Kreis** im Inspektor sind so groß wie die anderen Schalter.
 - **Testversionen erkennbar:** Ein Build mit noch nicht gespeicherten Änderungen heißt unter „Über & Neuigkeiten"
   jetzt z. B. „0.3.7+612cd6f-dirty" und gibt sich nicht mehr als die veröffentlichte Version aus.
 
@@ -435,6 +437,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.3.8]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.8
 [0.3.7]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.7
 [0.3.6]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.6
 [0.3.5]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.5

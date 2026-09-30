@@ -50,7 +50,7 @@ Voraussetzung ist eine ChurchTools-Instanz, auf der Extensions (Custom Modules) 
 
 ## Stand
 
-Aktuell ist Version 0.3.7 (30. September 2026) mit verknüpften Slides, davor 0.3.6 mit dem Baustein „Galerie", seit 0.3.2 mit einem ruhigeren Editor, davor 0.3.1 mit dem Designer auf dem Tablet; das erste Release war 0.1.0 am
+Aktuell ist Version 0.3.8 (30. September 2026) mit der Raumbelegung und dem Raum am Termin, davor 0.3.7 mit verknüpften Slides, 0.3.6 mit dem Baustein „Galerie", seit 0.3.2 mit einem ruhigeren Editor, davor 0.3.1 mit dem Designer auf dem Tablet; das erste Release war 0.1.0 am
 25. September 2026. Der Designer läuft auf einer Testinstanz (ChurchTools 3.136, Build 32882); der erste Fernseher
 im Foyer steht aus.
 Was als Nächstes kommt, steht in [`Plan.md`](Plan.md); Änderungen je Version in [`CHANGELOG.md`](CHANGELOG.md).
