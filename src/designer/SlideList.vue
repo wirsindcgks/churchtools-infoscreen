@@ -10,6 +10,7 @@ import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
 import SlideImportDialog from './SlideImportDialog.vue';
 
+const emit = defineEmits<{ collapse: [] }>();
 const editor = useEditorStore();
 /** The preview's stage context: paged lists report their pages there (Plan.md, 23). */
 const stage = useStageContext();
@@ -97,8 +98,21 @@ function removeCurrent(): void {
 <template>
     <aside class="slide-list">
         <header class="header-desktop">
-            <strong>Slides</strong>
-            <span class="count">{{ editor.slides.length }}</span>
+            <span class="title">
+                <strong>Slides</strong>
+                <span class="count">{{ editor.slides.length }}</span>
+            </span>
+            <!-- Only over 75rem, where the column folds into a rail (Plan.md 45). -->
+            <button
+                type="button"
+                class="d-btn d-btn--icon collapse"
+                title="Slides einklappen"
+                aria-label="Slides einklappen"
+                data-testid="desktop-slides-collapse"
+                @click="emit('collapse')"
+            >
+                <Icon name="chevron-down" :size="16" class="collapse-icon" />
+            </button>
         </header>
         <!-- Phone: a collapsible row instead of a header, with the current slide's actions beside it (Plan.md 44). -->
         <div class="header-phone">
@@ -247,6 +261,22 @@ function removeCurrent(): void {
     justify-content: space-between;
     padding: 10px 12px;
     border-bottom: 1px solid var(--d-divider);
+}
+.title {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+}
+.collapse {
+    display: none;
+}
+.collapse-icon {
+    transform: rotate(90deg);
+}
+@media (min-width: 75.0625rem) {
+    .collapse {
+        display: inline-flex;
+    }
 }
 /* Phone: a collapsible row replaces the header (Plan.md 44); hidden at a desktop width. */
 .header-phone {

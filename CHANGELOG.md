@@ -4,6 +4,21 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.3.1] – 2026-09-30
+
+Neu: der Designer **auf dem Tablet**, und am Rechner lassen sich die Seitenspalten einklappen.
+
+### Hinzugefügt
+
+- **Tablet:** Die Slide nimmt fast die ganze Breite ein – auf einem iPad hochkant etwa 760 statt 290 Pixel. Die
+  Slides stehen als schmale Leiste am linken Rand und klappen als Liste auf; nach der Wahl einer Slide klappt sie
+  wieder zu. Die Bausteine kommen über **„+ Baustein"**.
+- **Die Einstellungen eines Bausteins verdecken die Slide nicht:** Auf dem Tablet hochkant öffnen sie als Blatt am
+  unteren Rand wie am Handy, die ganze Slide bleibt darüber; quer stehen sie als Spalte daneben und lassen sich mit
+  „Einklappen" zur Leiste machen.
+- **Am Rechner einklappbar:** Slides und Einstellungen lassen sich je zu einer schmalen Leiste einklappen, die Slide
+  wächst mit. Der Browser merkt sich das für den nächsten Besuch.
+
 ## [0.3.0] – 2026-09-29
 
 Neu: der Baustein **Gruppen** – was es in der Gemeinde für Gruppen gibt, direkt aus ChurchTools, mit QR-Code zum
@@ -317,6 +332,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.3.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.1
 [0.3.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.0
 [0.2.13]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.13
 [0.2.12]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.12

@@ -32,12 +32,12 @@ anfasst. **Seit dem 2026-09-22 gilt ein anderer Taktgeber.**
 >   bleiben dabei interne Gruppen und ob Mitglieder eingeschränkter Gruppen deren Beiträge lesen (G37).
 > - ~~**Service Worker unter `/ccm/`**~~ (E1, G10) **gebaut und abgenommen am 2026-09-28, `v0.2.4`**
 >   (`Plan.md`, Punkt 37).
-> - **Modul-Fixtures nachsichern**: Die am 2026-09-25 aufgezeichneten Modul-Antworten liegen noch nicht in
->   der Sicherung außerhalb des Repos. Das ist keine Frist mehr, aber ein einzelner Arbeitsplatz. **Der Ort der
->   Sicherung steht bewusst nicht im Repo – den nennt der Nutzer.**
+> - ~~**Modul-Fixtures nachsichern**~~ **erledigt** (Auskunft des Nutzers am 2026-09-29). Der Ort der Sicherung
+>   steht bewusst nicht im Repo.
 > - ~~**GitHub-Actions auf Node.js 24 heben**~~ **erledigt am 2026-09-28** (`Plan.md`, Punkt 35). Ab dem
 >   2026-10-19 wechselt zusätzlich `ubuntu-latest` auf Ubuntu 26 – nur beobachten.
-> - **Zwei Entscheidungen ohne Vorgabe**: Hardware (G-E2) und Zeitbudget (G-E7).
+> - ~~**Zwei Entscheidungen ohne Vorgabe**: Hardware (G-E2) und Zeitbudget (G-E7).~~ **Beide entschieden am 2026-09-29**
+>   (Abschnitt G).
 > - **Kleinere Reste aus dem Plan** stehen seit dem 2026-09-28 im Umsetzungsplan (`Plan.md`, „Als Nächstes" 5,
 >   Punkte 39–44): ~~`429`, Standardschrift, Inspektor am Handy, ein wackelnder e2e-Test~~, der Baustein „Gruppen", ~~der Designer am Handy~~ –
 >   **offen ist nur noch der Baustein „Gruppen"** (Punkt 43); alles andere ist bis `v0.2.13` gebaut, der Designer am Handy am
@@ -380,17 +380,20 @@ bevor das Screen-Schema steht.
       Zeitplan-Oberfläche später; Slides werden referenziert und dürfen in mehreren Playlists vorkommen.
       Regeln nach **Termin** (dank G19 billig) und nach Uhrzeit. Standard-Playlist ist Pflicht, und der
       Player wechselt nicht, solange seine Uhr unbestätigt ist. Siehe `Plan.md`, „Playlists und Zeitpläne".
-- [ ] **G-E2 · Hardware** – wie viele Geräte, welche Generation, Auflösung, Ausrichtung
+- [x] **G-E2 · Hardware** – wie viele Geräte, welche Generation, Auflösung, Ausrichtung → **keine Zielhardware**
+      (`Plan.md`, „Offene Entscheidungen" 3, seit dem 2026-09-24; hier nachgetragen am 2026-09-29): jeder aktuelle
+      Browser mit dauerhaftem Profil. Für das eigene Foyer ist es der Raspberry aus dem Dauertest P4.
 - [x] **G-E3 · Zielgruppe** – nur wir, oder von Anfang an Extension Store (**G17**) → **Vorgabe:** zuerst nur wir (`Plan.md`)
 - [x] **G-E4 · MVP-Zuschnitt** – **entschieden am 2026-09-24**: wie in `Plan.md`, „Funktionsumfang – MVP".
       Kein Web-Code-Block, keine Geburtstage, keine Videos in V1.
 - [x] **G-E5 · Wer gestaltet** – nur wir, oder nicht-technische Ehrenamtliche → **Vorgabe:** zuerst wir
 - [x] ~~**G-E6 · Rückfallposition Medien** – ist „nur externe URLs" ein tragfähiger MVP?~~ **Gestrichen am 2026-09-24**: Der Wiki-Weg trägt (D1–D3).
-- [ ] **G-E7 · Zeitbudget** – der Plan nennt sieben Phasen und keine Schätzung
+- [x] **G-E7 · Zeitbudget** – der Plan nennt sieben Phasen und keine Schätzung → **entschieden am 2026-09-29: kein
+      festes Budget.** Der Pitch ist der Taktgeber; ein Release je fertigem Stück.
 - [x] **G-E8 · Aktualität** – wie schnell muss eine Änderung auf dem TV sein? → **Vorgabe:** Konfiguration alle 2, Daten alle 10 Minuten
 - [x] **G-E9 · Ton im Foyer** – ja oder nein → **Vorgabe:** alles stumm
 
-Die Vorgaben gelten, bis jemand widerspricht (`Plan.md`, „Offene Entscheidungen"). **Wirklich offen sind G-E2 und G-E7.**
+Die Vorgaben gelten, bis jemand widerspricht (`Plan.md`, „Offene Entscheidungen"). **Seit dem 2026-09-29 ist keine davon mehr offen.**
 
 ## P. Vor der Produktivinstanz – Abnahme *(angelegt am 2026-09-28)*
 

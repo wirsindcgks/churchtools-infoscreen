@@ -959,8 +959,8 @@ const slideFill = computed<Fill>(() =>
     border-left: 1px solid var(--d-divider);
     background: var(--d-surface);
 }
-/* Phone: in the editor's sheet now (Plan.md 44, M4) – it owns the border and the max-height. */
-@media (max-width: 48rem) {
+/* Phone and tablet upright: in the editor's sheet now (Plan.md 44, M4; 45) – it owns the border and the max-height. */
+@media (max-width: 48rem), (min-width: 48.0625rem) and (max-width: 75rem) and (orientation: portrait) {
     .inspector {
         flex: 1;
         min-height: 0;

@@ -447,6 +447,216 @@ test.describe('with a finger, in both browsers', () => {
     });
 });
 
+// A tablet between 48rem and 75rem: the slides are a drawer over the stage; the inspector is a sheet at the
+// bottom upright and a column beside the stage lying down (Plan.md 45).
+test.describe('on a tablet (Plan.md 45)', () => {
+    test.use({ viewport: { width: 820, height: 1180 }, hasTouch: true });
+
+    async function openEditor(page: Page): Promise<void> {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('leave-editor')).toBeVisible();
+    }
+    async function stageWidth(page: Page): Promise<number> {
+        return Math.round((await page.locator('.editor-stage').boundingBox())!.width);
+    }
+    async function expectNoSidewaysScroll(page: Page): Promise<void> {
+        const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+        expect(overflow).toBeLessThanOrEqual(0);
+    }
+    /** The slides drawer shut with its rail there, "+ Baustein" instead of the row of blocks. */
+    async function expectRestingLayout(page: Page, minStage: number): Promise<void> {
+        expect(await stageWidth(page)).toBeGreaterThanOrEqual(minStage);
+        await expectNoSidewaysScroll(page);
+        await expect(page.getByTestId('slide-item').first()).not.toBeVisible();
+        await expect(page.getByTestId('tablet-slides-toggle')).toBeVisible();
+        await expect(page.getByTestId('add-block-menu')).toBeVisible();
+        await expect(page.getByTestId('add-clock')).not.toBeVisible();
+    }
+
+    test('upright: the stage takes the width, the inspector is a bar at the bottom, and there is no rail for it', async ({ page }) => {
+        await openEditor(page);
+        await expectRestingLayout(page, 700);
+        await expect(page.getByTestId('tablet-slides-toggle')).toHaveAttribute('aria-expanded', 'false');
+        await expect(page.getByTestId('tablet-inspector-toggle')).not.toBeVisible();
+        await expect(page.getByTestId('inspector-sheet-toggle')).toBeVisible();
+        await expect(page.getByTestId('inspector-sheet')).not.toHaveClass(/open/);
+    });
+
+    test('upright: a block on the stage opens the sheet below the slide, and the stage stays as it is', async ({ page }) => {
+        await openEditor(page);
+        const before = await stageWidth(page);
+
+        await page.getByTestId('frame-text').first().tap();
+        const sheet = page.getByTestId('inspector-sheet');
+        await expect(sheet).toHaveClass(/open/);
+        await expect(page.getByTestId('block-inspector')).toBeVisible();
+        await expect(page.getByTestId('inspector-sheet-toggle')).toContainText('Baustein: Text');
+        await expect(page.getByTestId('tablet-inspector-close')).not.toBeVisible();
+        expect(await stageWidth(page)).toBe(before);
+        expect(await stageWidth(page)).toBeGreaterThanOrEqual(700);
+        await expectNoSidewaysScroll(page);
+
+        const [stage, sheetBox] = await Promise.all([page.locator('.editor-stage').boundingBox(), sheet.boundingBox()]);
+        // The whole slide stays above the sheet, lower handles included: upright on a tablet it takes 45 %, not half.
+        expect(sheetBox!.y).toBeGreaterThanOrEqual(stage!.y + stage!.height);
+        expect(sheetBox!.height).toBeLessThanOrEqual(1180 * 0.45 + 1);
+
+        // The slides and the block row stay: there is room for them upright.
+        await expect(page.getByTestId('add-block-menu')).toBeVisible();
+
+        await page.getByTestId('inspector-sheet-toggle').tap();
+        await expect(sheet).not.toHaveClass(/open/);
+        await page.getByTestId('inspector-sheet-toggle').tap();
+        await expect(sheet).toHaveClass(/open/);
+    });
+
+    test('the slides drawer opens over the stage, and a tap on a slide chooses it and shuts the drawer', async ({ page }) => {
+        await openEditor(page);
+        const before = await stageWidth(page);
+
+        await page.getByTestId('tablet-slides-toggle').tap();
+        await expect(page.getByTestId('tablet-slides-toggle')).toHaveAttribute('aria-expanded', 'true');
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('slide-item').first()).toBeVisible();
+        await expect(page.getByTestId('desktop-slides-collapse')).not.toBeVisible();
+        expect(await stageWidth(page)).toBe(before);
+        await expectNoSidewaysScroll(page);
+
+        await page.getByTestId('slide-item').nth(1).tap();
+        await expect(page.getByTestId('slide-item').nth(1)).not.toBeVisible();
+        await expect(page.getByTestId('tablet-slides-toggle')).toHaveAttribute('aria-expanded', 'false');
+        await expect(page.getByTestId('tablet-slides-toggle')).toContainText('2');
+
+        // The button opens and shuts it, and neither the phone's remembered row nor a desktop column is touched.
+        await page.getByTestId('tablet-slides-toggle').tap();
+        await expect(page.getByTestId('slide-item').first()).toBeVisible();
+        await page.getByTestId('tablet-slides-toggle').tap();
+        await expect(page.getByTestId('slide-item').first()).not.toBeVisible();
+        expect(await page.evaluate(() => window.localStorage.getItem('infoscreen-designer:slides-open'))).toBeNull();
+        expect(await page.evaluate(() => window.localStorage.getItem('infoscreen-designer:desktop-slides-open'))).toBeNull();
+    });
+
+    test('"+ Baustein" opens its sheet in the middle of the window', async ({ page }) => {
+        await openEditor(page);
+        await page.getByTestId('add-block-menu').tap();
+        const panel = page.locator('.block-sheet-panel');
+        await expect(panel).toBeVisible();
+        const box = (await panel.boundingBox())!;
+        expect(Math.abs(box.x + box.width / 2 - 410)).toBeLessThanOrEqual(2);
+        expect(box.y + box.height).toBeLessThan(1180 - 100);
+    });
+
+    test.describe('lying down, at 1180 px', () => {
+        test.use({ viewport: { width: 1180, height: 820 } });
+
+        test('the stage takes the width, the inspector is a rail', async ({ page }) => {
+            await openEditor(page);
+            await expectRestingLayout(page, 1000);
+            await expect(page.getByTestId('inspector-sheet')).not.toBeVisible();
+            await expect(page.getByTestId('tablet-inspector-toggle')).toBeVisible();
+            await expect(page.getByTestId('inspector-sheet-toggle')).not.toBeVisible();
+        });
+
+        test('a block opens the inspector as a column, the stage gives way, "Einklappen" shuts it', async ({ page }) => {
+            await openEditor(page);
+            const before = await stageWidth(page);
+
+            await page.getByTestId('frame-text').first().tap();
+            await expect(page.getByTestId('inspector-sheet')).toBeVisible();
+            await expect(page.getByTestId('block-inspector')).toBeVisible();
+            await expect(page.getByTestId('tablet-inspector-toggle')).toHaveAttribute('aria-label', /Baustein: Text/);
+            await expect(page.getByTestId('tablet-inspector-toggle')).not.toBeVisible();
+            await expect(page.getByTestId('tablet-inspector-close')).toContainText('Einklappen');
+            await expect.poll(() => stageWidth(page)).toBeLessThan(before);
+            const [stage, sheet] = await Promise.all([page.locator('.editor-stage').boundingBox(), page.getByTestId('inspector-sheet').boundingBox()]);
+            expect(stage!.x + stage!.width).toBeLessThanOrEqual(sheet!.x + 1);
+            await expectNoSidewaysScroll(page);
+
+            await page.getByTestId('tablet-inspector-close').tap();
+            await expect(page.getByTestId('inspector-sheet')).not.toBeVisible();
+            await expect.poll(() => stageWidth(page)).toBeGreaterThanOrEqual(1000);
+
+            // The rail's button opens it again, without a block chosen anew.
+            await page.getByTestId('tablet-inspector-toggle').tap();
+            await expect(page.getByTestId('inspector-sheet')).toBeVisible();
+            expect(await page.evaluate(() => window.localStorage.getItem('infoscreen-designer:desktop-inspector-open'))).toBeNull();
+        });
+    });
+
+    test('at 1280 px the three columns are open, and the rails are gone', async ({ page }) => {
+        await page.setViewportSize({ width: 1280, height: 800 });
+        await openEditor(page);
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('slide-item').first()).toBeVisible();
+        await page.getByTestId('frame-text').first().click();
+        await expect(page.getByTestId('block-inspector')).toBeVisible();
+        await expect(page.getByTestId('tablet-slides-toggle')).not.toBeVisible();
+        await expect(page.getByTestId('tablet-inspector-toggle')).not.toBeVisible();
+        await expect(page.getByTestId('tablet-inspector-close')).not.toBeVisible();
+        await expect(page.getByTestId('desktop-slides-collapse')).toBeVisible();
+        await expect(page.getByTestId('desktop-inspector-collapse')).toBeVisible();
+        await expect(page.getByTestId('add-clock')).toBeVisible();
+        const inspector = (await page.getByTestId('block-inspector').boundingBox())!;
+        const stage = (await page.locator('.editor-stage').boundingBox())!;
+        expect(inspector.x).toBeGreaterThanOrEqual(stage.x + stage.width - 1);
+        await expectNoSidewaysScroll(page);
+    });
+});
+
+// Over 75rem both side columns fold into a 44 px rail, and stay so (Plan.md 45).
+test.describe('at a desktop the two columns fold (Plan.md 45)', () => {
+    test.use({ viewport: { width: 1440, height: 900 } });
+
+    async function stageWidth(page: Page): Promise<number> {
+        return Math.round((await page.locator('.editor-stage').boundingBox())!.width);
+    }
+
+    test('fold, remembered across a reload, unfold from the rails; a chosen block does not unfold the inspector', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('block-inspector').or(page.getByTestId('inspector-sheet'))).toBeVisible();
+        await expect(page.getByTestId('tablet-slides-toggle')).not.toBeVisible();
+        await expect(page.getByTestId('tablet-inspector-toggle')).not.toBeVisible();
+        const open = await stageWidth(page);
+
+        await page.getByTestId('desktop-slides-collapse').click();
+        await expect(page.getByTestId('slide-item').first()).not.toBeVisible();
+        await expect(page.getByTestId('tablet-slides-toggle')).toBeVisible();
+        await expect(page.getByTestId('tablet-slides-toggle')).toHaveAttribute('aria-expanded', 'false');
+        await expect.poll(() => stageWidth(page)).toBeGreaterThan(open);
+        const slidesFolded = await stageWidth(page);
+
+        await page.getByTestId('desktop-inspector-collapse').click();
+        await expect(page.getByTestId('inspector-sheet')).not.toBeVisible();
+        await expect(page.getByTestId('tablet-inspector-toggle')).toBeVisible();
+        await expect.poll(() => stageWidth(page)).toBeGreaterThan(slidesFolded);
+
+        // Choosing a block does not unfold what the viewer folded.
+        await page.getByTestId('frame-text').first().click();
+        await expect(page.getByTestId('inspector-sheet')).not.toBeVisible();
+        await expect(page.getByTestId('tablet-inspector-toggle')).toHaveAttribute('aria-label', /Baustein: Text/);
+
+        await page.reload();
+        await expect(page.getByTestId('leave-editor')).toBeVisible();
+        await expect(page.getByTestId('tablet-slides-toggle')).toBeVisible();
+        await expect(page.getByTestId('tablet-inspector-toggle')).toBeVisible();
+        await expect(page.getByTestId('slide-item').first()).not.toBeVisible();
+        await expect(page.getByTestId('inspector-sheet')).not.toBeVisible();
+
+        await page.getByTestId('tablet-slides-toggle').click();
+        await expect(page.getByTestId('slide-item').first()).toBeVisible();
+        await expect(page.getByTestId('tablet-slides-toggle')).not.toBeVisible();
+        await page.getByTestId('tablet-inspector-toggle').click();
+        await expect(page.getByTestId('inspector-sheet')).toBeVisible();
+        await expect(page.getByTestId('tablet-inspector-toggle')).not.toBeVisible();
+        expect(await page.evaluate(() => window.localStorage.getItem('infoscreen-designer:desktop-slides-open'))).toBe('1');
+        expect(await page.evaluate(() => window.localStorage.getItem('infoscreen-designer:desktop-inspector-open'))).toBe('1');
+        expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
+    });
+});
+
 test('at a desktop the preview controls fade while untouched and come back with the mouse', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();

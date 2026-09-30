@@ -57,10 +57,67 @@ const homepages = ref<HomepageEntry[]>([]);
 const previewing = ref(false);
 
 /**
- * The inspector as a sheet at the bottom on a phone (Plan.md 44, M4). CSS
- * ignores this at a desktop width, so it stays false and does nothing there.
+ * The inspector as a sheet at the bottom on a phone and a tablet standing upright (Plan.md 44, M4; 45),
+ * as a column beside the stage on a tablet lying down. CSS ignores it at a desktop width (see `desktopInspectorOpen`).
  */
 const inspectorOpen = ref(false);
+
+/**
+ * The slides as a drawer on a tablet (Plan.md 45), closed by default. CSS ignores
+ * it at a phone or desktop width; the phone's own row keeps its state in `SlideList.vue`.
+ */
+const slidesDrawerOpen = ref(false);
+/** A tap on a slide chooses it – and folds the drawer away; the buttons of the chosen one stay out of it. */
+function closeSlidesDrawerOnPick(event: Event): void {
+    if ((event.target as HTMLElement).closest('[data-testid="slide-item"]')) slidesDrawerOpen.value = false;
+}
+
+/**
+ * The two columns of a desktop, each collapsible to a 44 px rail and remembered per viewer (Plan.md 45).
+ * Their own refs: `inspectorOpen` above belongs to the sheet and the tablet's column, which open by themselves.
+ */
+const DESKTOP_SLIDES_KEY = 'infoscreen-designer:desktop-slides-open';
+const DESKTOP_INSPECTOR_KEY = 'infoscreen-designer:desktop-inspector-open';
+function storedOpen(key: string): boolean {
+    try {
+        return window.localStorage.getItem(key) !== '0';
+    } catch {
+        return true;
+    }
+}
+function rememberOpen(key: string, open: boolean): void {
+    try {
+        window.localStorage.setItem(key, open ? '1' : '0');
+    } catch {
+        // Private window or blocked storage: it just opens by default again next time.
+    }
+}
+const desktopSlidesOpen = ref(storedOpen(DESKTOP_SLIDES_KEY));
+const desktopInspectorOpen = ref(storedOpen(DESKTOP_INSPECTOR_KEY));
+watch(desktopSlidesOpen, (open) => rememberOpen(DESKTOP_SLIDES_KEY, open));
+watch(desktopInspectorOpen, (open) => rememberOpen(DESKTOP_INSPECTOR_KEY, open));
+
+/** Over 75rem – the same line CSS draws; reactive, because the buttons act on other state there. */
+const desktopQuery = window.matchMedia('(min-width: 75.0625rem)');
+const desktop = ref(desktopQuery.matches);
+function onDesktopChange(event: MediaQueryListEvent): void {
+    desktop.value = event.matches;
+}
+desktopQuery.addEventListener('change', onDesktopChange);
+onBeforeUnmount(() => desktopQuery.removeEventListener('change', onDesktopChange));
+
+/** Whether the column stands open: the desktop's remembered state, else the sheet's (a tablet lying down). */
+const inspectorColumnOpen = computed(() => (desktop.value ? desktopInspectorOpen.value : inspectorOpen.value));
+const slidesExpanded = computed(() => (desktop.value ? desktopSlidesOpen.value : slidesDrawerOpen.value));
+function toggleSlides(): void {
+    if (desktop.value) desktopSlidesOpen.value = !desktopSlidesOpen.value;
+    else slidesDrawerOpen.value = !slidesDrawerOpen.value;
+}
+function toggleInspectorColumn(): void {
+    if (desktop.value) desktopInspectorOpen.value = !desktopInspectorOpen.value;
+    else inspectorOpen.value = !inspectorOpen.value;
+}
+const slideNumber = computed(() => editor.slides.findIndex((s) => s.id === editor.slide?.id) + 1);
 
 /**
  * Whether a pointer is currently down anywhere in the window – needed to
@@ -423,14 +480,58 @@ function onKey(event: KeyboardEvent): void {
         <p v-if="problem" class="d-banner d-banner--error banner" role="alert">Vorschaudaten: {{ problem }}</p>
 
         <p v-if="loadError" class="d-banner d-banner--error banner" role="alert">{{ loadError }}</p>
-        <div v-else-if="editor.draft" class="columns">
-            <SlideList />
+        <div
+            v-else-if="editor.draft"
+            class="columns"
+            :class="{ 'slides-folded': desktop && !desktopSlidesOpen, 'inspector-folded': !inspectorColumnOpen }"
+        >
+            <!-- Between 48rem and 75rem the slides are a drawer over the stage; over 75rem a column. A 44 px rail each stands in for a shut one (Plan.md 45). -->
+            <div class="tablet-rail tablet-rail--slides">
+                <button
+                    type="button"
+                    class="tablet-toggle"
+                    :aria-expanded="slidesExpanded"
+                    aria-controls="slide-list-ol"
+                    :aria-label="`Slides, aktuell Nummer ${slideNumber}`"
+                    data-testid="tablet-slides-toggle"
+                    @click="toggleSlides"
+                >
+                    <Icon name="slides" :size="20" />
+                    <span class="tablet-number">{{ slideNumber }}</span>
+                </button>
+            </div>
+            <SlideList :class="{ 'drawer-open': slidesDrawerOpen }" @click="closeSlidesDrawerOnPick" @collapse="desktopSlidesOpen = false" />
             <div class="stage-column">
                 <BlockPalette />
                 <EditorStage />
             </div>
-            <!-- Below 48rem this becomes a sheet at the bottom; above, `display: contents` leaves the grid untouched (Plan.md 44, M4). -->
+            <!-- Below 48rem and upright above it this becomes a sheet at the bottom; otherwise a column beside the stage (Plan.md 44, M4; 45). -->
+            <div class="tablet-rail tablet-rail--inspector">
+                <button
+                    type="button"
+                    class="tablet-toggle"
+                    :aria-expanded="inspectorColumnOpen"
+                    aria-controls="inspector-panel"
+                    :aria-label="sheetLabel"
+                    :title="sheetLabel"
+                    data-testid="tablet-inspector-toggle"
+                    @click="toggleInspectorColumn"
+                >
+                    <Icon name="settings" :size="20" />
+                </button>
+            </div>
             <div class="inspector-sheet" :class="{ open: inspectorOpen }" data-testid="inspector-sheet">
+                <div class="drawer-head">
+                    <strong class="drawer-title">{{ sheetLabel }}</strong>
+                    <button
+                        type="button"
+                        class="d-btn"
+                        :data-testid="desktop ? 'desktop-inspector-collapse' : 'tablet-inspector-close'"
+                        @click="toggleInspectorColumn"
+                    >
+                        Einklappen <Icon name="chevron-down" :size="16" class="collapse-icon" />
+                    </button>
+                </div>
                 <button
                     type="button"
                     class="sheet-bar"
@@ -564,10 +665,19 @@ function onKey(event: KeyboardEvent): void {
     flex: 1;
 }
 .columns {
+    /* The widths of the two side columns; a collapsed one is a 44 px rail (Plan.md 45). */
+    --slides-w: 220px;
+    --inspector-w: 300px;
     flex: 1;
     display: grid;
-    grid-template-columns: 220px 1fr 300px;
+    grid-template-columns: var(--slides-w) minmax(0, 1fr) var(--inspector-w);
     min-height: 0;
+}
+
+/* Rails and the drawer's head belong to the range above 48rem (Plan.md 45); hidden below. */
+.tablet-rail,
+.drawer-head {
+    display: none;
 }
 
 /* The "…" menu (Plan.md 44, M2), after the one of a screen tile – only shown below 48rem. */
@@ -622,54 +732,13 @@ function onKey(event: KeyboardEvent): void {
 }
 
 /*
- * Phone and narrow windows: one column – slides as a row to swipe, the
- * stage in its own aspect ratio; the inspector moved into its own sheet
- * at the bottom, and the header into one row (Plan.md 44, M2–M4).
+ * The sheet at the bottom: on a phone, and on a tablet standing upright – there the stage is wide
+ * and the slide sits at the top, so the sheet finds room below it (Plan.md 44, M4; 45). Lying down
+ * a tablet has the inspector as a column beside the stage instead.
  */
-@media (max-width: 48rem) {
+@media (max-width: 48rem), (min-width: 48.0625rem) and (max-width: 75rem) and (orientation: portrait) {
     .editor {
-        height: auto !important;
-        min-height: 0;
         padding-bottom: calc(56px + env(safe-area-inset-bottom));
-    }
-    .columns {
-        grid-template-columns: minmax(0, 1fr);
-    }
-    .stage-column > :last-child {
-        flex: none;
-        height: auto;
-        aspect-ratio: var(--stage-aspect);
-        max-height: 70vh;
-    }
-
-    /* Header: back link loses its label, title and status stack, "…" replaces Vorschau/Player. */
-    .editor :deep(.start) {
-        min-width: 0;
-    }
-    .editor :deep(.end) {
-        flex-wrap: nowrap;
-    }
-    .back-label {
-        display: none;
-    }
-    .heading {
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
-    }
-    .status {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .status-hint {
-        display: none;
-    }
-    .preview-btn,
-    .player-link {
-        display: none;
-    }
-    .more-menu {
-        display: block;
     }
 
     /* Sheet: a 56 px bar, and the inspector itself only while open. */
@@ -724,11 +793,64 @@ function onKey(event: KeyboardEvent): void {
         max-height: 50vh;
         max-height: 50dvh;
     }
-    /* Room to scroll the stage above the open sheet, and the stage no taller than that room (showStageAboveSheet). */
+    /* Room to scroll the stage above the open sheet. */
     .editor.sheet-open {
         padding-bottom: calc(50vh + env(safe-area-inset-bottom));
         padding-bottom: calc(50dvh + env(safe-area-inset-bottom));
     }
+}
+
+/*
+ * Phone and narrow windows: one column – slides as a row to swipe, the
+ * stage in its own aspect ratio; the inspector moved into its own sheet
+ * at the bottom, and the header into one row (Plan.md 44, M2–M4).
+ */
+@media (max-width: 48rem) {
+    .editor {
+        height: auto !important;
+        min-height: 0;
+    }
+    .columns {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .stage-column > :last-child {
+        flex: none;
+        height: auto;
+        aspect-ratio: var(--stage-aspect);
+        max-height: 70vh;
+    }
+
+    /* Header: back link loses its label, title and status stack, "…" replaces Vorschau/Player. */
+    .editor :deep(.start) {
+        min-width: 0;
+    }
+    .editor :deep(.end) {
+        flex-wrap: nowrap;
+    }
+    .back-label {
+        display: none;
+    }
+    .heading {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+    .status {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .status-hint {
+        display: none;
+    }
+    .preview-btn,
+    .player-link {
+        display: none;
+    }
+    .more-menu {
+        display: block;
+    }
+
+    /* The stage no taller than the room above the open sheet (showStageAboveSheet). */
     .editor.sheet-open .stage-column > :last-child {
         max-height: var(--stage-max, 40vh);
     }
@@ -742,6 +864,184 @@ function onKey(event: KeyboardEvent): void {
     .editor.sheet-open .slide-list,
     .editor.sheet-open .block-palette {
         display: none;
+    }
+}
+
+/*
+ * Above 48rem (Plan.md 45): the stage takes the middle column, the slides and the inspector stand
+ * beside it – or, folded, as a 44 px rail with one button. `.slide-list` and `.inspector` are
+ * child roots and carry this scope's attribute.
+ */
+@media (min-width: 48.0625rem) {
+    .stage-column {
+        grid-column: 2;
+        grid-row: 1;
+    }
+    .tablet-rail--slides {
+        grid-column: 1;
+        grid-row: 1;
+    }
+    .tablet-rail--inspector {
+        grid-column: 3;
+        grid-row: 1;
+    }
+    .tablet-rail {
+        flex-direction: column;
+        align-items: center;
+        padding-top: 6px;
+        background: var(--d-surface);
+    }
+    .tablet-rail--slides {
+        display: flex;
+        border-right: 1px solid var(--d-divider);
+    }
+    .tablet-rail--inspector {
+        border-left: 1px solid var(--d-divider);
+    }
+    .tablet-toggle {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 2px;
+        width: 40px;
+        min-height: 44px;
+        padding: 4px 0;
+        border: 1px solid var(--d-divider);
+        border-radius: var(--d-radius);
+        background: var(--d-surface);
+        color: var(--d-text);
+        font: inherit;
+        cursor: pointer;
+    }
+    .tablet-toggle:hover,
+    .tablet-toggle[aria-expanded='true'] {
+        border-color: var(--d-interactive);
+        background: var(--d-accent-pale);
+    }
+    .tablet-number {
+        font-size: var(--d-size-sm);
+        font-weight: 700;
+    }
+    .collapse-icon {
+        transform: rotate(-90deg);
+    }
+}
+
+/*
+ * Tablet, up to 75rem: the slides open as a drawer over the stage – absolute in `.columns`, so the
+ * stage does not move. No backdrop: what lies beside a drawer stays usable.
+ */
+@media (min-width: 48.0625rem) and (max-width: 75rem) {
+    .columns {
+        position: relative;
+        --slides-w: 44px;
+    }
+    /* Upright, the slide sits right under "+ Baustein" instead of in the middle of a tall column. */
+    .stage-column > :last-child {
+        flex: 0 1 auto;
+        height: auto;
+        min-height: 0;
+        aspect-ratio: var(--stage-aspect);
+    }
+    .slide-list {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 44px;
+        z-index: 30;
+        box-sizing: border-box;
+        width: 240px;
+        border-right: 1px solid var(--d-divider);
+        box-shadow: var(--d-shadow);
+    }
+    .slide-list:not(.drawer-open) {
+        display: none;
+    }
+}
+
+/* Tablet upright: the inspector is the sheet at the bottom, so there is no rail for it. */
+@media (min-width: 48.0625rem) and (max-width: 75rem) and (orientation: portrait) {
+    .columns {
+        grid-template-columns: 44px minmax(0, 1fr);
+    }
+    /* A little lower than on a phone, so the slide's lower handles stay above the sheet (820 × 1180: slide ends at 597). */
+    .inspector-sheet.open {
+        max-height: 45vh;
+        max-height: 45dvh;
+    }
+    .editor.sheet-open {
+        padding-bottom: calc(45vh + env(safe-area-inset-bottom));
+        padding-bottom: calc(45dvh + env(safe-area-inset-bottom));
+    }
+}
+
+/*
+ * The inspector as a column beside the stage: on a desktop, and on a tablet lying down. Open it
+ * takes its width from the stage; folded it is a rail (Plan.md 45).
+ */
+@media (min-width: 75.0625rem), (min-width: 48.0625rem) and (orientation: landscape) {
+    .columns {
+        --inspector-w: 320px;
+    }
+    .columns.inspector-folded {
+        --inspector-w: 44px;
+    }
+    .columns.inspector-folded .inspector-sheet {
+        display: none;
+    }
+    .columns.inspector-folded .tablet-rail--inspector {
+        display: flex;
+    }
+    .inspector-sheet {
+        grid-column: 3;
+        grid-row: 1;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        border-left: 1px solid var(--d-divider);
+        background: var(--d-surface);
+    }
+    .drawer-head {
+        display: flex;
+        flex: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 8px 12px;
+        border-bottom: 1px solid var(--d-divider);
+    }
+    .drawer-title {
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .inspector-sheet :deep(.inspector) {
+        flex: 1;
+        overflow-x: hidden;
+        border-left: 0;
+    }
+}
+
+/* Desktop: both columns fold away, and stay so (remembered per viewer). */
+@media (min-width: 75.0625rem) {
+    .columns {
+        --inspector-w: 300px;
+    }
+    .columns.inspector-folded {
+        --inspector-w: 44px;
+    }
+    .columns.slides-folded {
+        --slides-w: 44px;
+    }
+    .columns.slides-folded .slide-list,
+    .columns:not(.slides-folded) .tablet-rail--slides {
+        display: none;
+    }
+    .slide-list {
+        grid-column: 1;
+        grid-row: 1;
     }
 }
 </style>

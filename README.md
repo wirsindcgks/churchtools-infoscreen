@@ -24,8 +24,9 @@ Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
 - **Mediathek und Design:** Bilder einmal hochladen und überall verwenden, mit der Angabe, wo sie laufen; Ecken,
   Farben und Darstellung der Termine einmal für alle Screens festlegen.
 - **Mehrere Screens**, quer oder hochkant, jeder unter einer festen Adresse.
-- **Auch am Handy:** Übersicht, Menü und Editor passen sich dem Telefon an – Slides gestalten mit dem Finger, die
-  Einstellungen eines Bausteins als Blatt am unteren Rand, die ganze Slide darüber im Blick.
+- **Auch am Handy und auf dem Tablet:** Übersicht, Menü und Editor passen sich an – Slides gestalten mit dem Finger,
+  die Einstellungen eines Bausteins als Blatt am unteren Rand oder als Spalte daneben, die ganze Slide im Blick. Am
+  Rechner lassen sich Slides und Einstellungen einklappen.
 - **Fernseher, die sich selbst helfen:** Sie melden sich selbst an, holen Änderungen in etwa 20 Sekunden, halten
   Daten und Bilder auf dem Gerät, überstehen Netzausfälle und laden nach Fehlern und jede Nacht neu.
 - **Rechte mit einem Knopf:** Ein Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an.
@@ -49,7 +50,7 @@ Voraussetzung ist eine ChurchTools-Instanz, auf der Extensions (Custom Modules) 
 
 ## Stand
 
-Aktuell ist Version 0.3.0 (29. September 2026) mit dem Baustein „Gruppen"; das erste Release war 0.1.0 am
+Aktuell ist Version 0.3.1 (30. September 2026) mit dem Designer auf dem Tablet, davor 0.3.0 mit dem Baustein „Gruppen"; das erste Release war 0.1.0 am
 25. September 2026. Der Designer läuft auf einer Testinstanz (ChurchTools 3.136, Build 32882); der erste Fernseher
 im Foyer steht aus.
 Was als Nächstes kommt, steht in [`Plan.md`](Plan.md); Änderungen je Version in [`CHANGELOG.md`](CHANGELOG.md).

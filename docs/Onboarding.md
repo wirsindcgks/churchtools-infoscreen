@@ -61,7 +61,8 @@ Menü „…". Neue Screens legt ein Administrator an.
 - **Oben die Bausteine:** Text, Bild, Fläche, Uhr, Terminliste, Nächster Termin, Gemeindekopf, Webseite, QR-Code,
   **Countdown** („Gottesdienst beginnt in 12:34"), **Beiträge** öffentlicher Gruppen und **Gruppen** (siehe unten).
 - **In der Mitte die Bildfläche:** ziehen, an den Griffen skalieren, am Raster ausrichten.
-- **Rechts der Inspektor:** Schrift, Farben (auch als Hex-Wert), Kalender, Hintergrund. Oben **„Sperren"**, damit
+- **Rechts der Inspektor:** Schrift, Farben (auch als Hex-Wert), Kalender, Hintergrund. Slides und Inspektor lassen
+  sich einklappen, damit die Bildfläche mehr Platz bekommt; auf dem Tablet sind sie das von Anfang an. Oben **„Sperren"**, damit
   ein Logo oder Hintergrund nicht verrutscht – ein Klick darauf erreicht dann den Baustein darunter, mit gedrückter
   Alt-Taste (Mac: Option) den gesperrten selbst.
 - **Hinweise** haben eine eigene Seite in der Seitenleiste: ein Band über allen Slides der gewählten Playlists – als
