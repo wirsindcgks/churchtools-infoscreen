@@ -4,6 +4,26 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.3.2] – 2026-09-30
+
+Neu: ein **ruhigerer Editor** – weniger auf einmal, alles weiter erreichbar.
+
+### Geändert
+
+- **Bausteine alphabetisch:** „+ Baustein" gibt es jetzt auch am Rechner und zeigt alle Bausteine von „Beiträge" bis
+  „Webseite". Die Leiste mit zwölf Knöpfen über der Slide ist weg, die Slide bekommt mehr Höhe.
+- **Einstellungen zum Aufklappen:** Oben steht, worum es beim Baustein geht – Text, Kalender, Homepage. „Schrift" und
+  „Position & Ebene" sind zugeklappt und zeigen in einer Zeile, was eingestellt ist; was man einmal aufklappt, bleibt
+  offen. Genauso „Angaben" bei Gruppen sowie „Hintergrund" und „Playlist" bei der Slide.
+- **Sperren und Löschen** stehen im Kopf der Einstellungen, die Ebene ist eine Zeile aus vier Symbolen; Duplizieren
+  und Entfernen einer Slide sind Symbole. Längere Erklärungen öffnet ein ⓘ, Warnungen bleiben sichtbar.
+- **Aufgeräumt:** Trennlinien statt Kästen, weniger Farbe; die Köpfe von Slides, Bausteinleiste und Einstellungen
+  stehen auf einer Linie, eingeklappte Leisten haben Luft um ihre Knöpfe, „Einklappen" ist ein Pfeil.
+
+### Behoben
+
+- Die **Anzahl der Screens** in der Seitenleiste fehlte auf allen Seiten außer der Startseite.
+
 ## [0.3.1] – 2026-09-30
 
 Neu: der Designer **auf dem Tablet**, und am Rechner lassen sich die Seitenspalten einklappen.
@@ -332,6 +352,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.3.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.2
 [0.3.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.1
 [0.3.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.0
 [0.2.13]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.13
