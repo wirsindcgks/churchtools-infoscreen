@@ -20,6 +20,8 @@ const PATHS = {
     slides: ['M7 7h13v11H7z', 'M4 4h13', 'M4 4v11'],
     person: [circle(12, 8, 3.5), 'M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6'],
     copy: ['M9 9h11v11H9z', 'M5 15H4V4h11v1'],
+    // Linked slides (Plan.md 49): two chain links.
+    link: ['M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1', 'M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1'],
     trash: ['M4 7h16', 'M10 11v6', 'M14 11v6', 'M6 7l1 13h10l1-13', 'M9 7V4h6v3'],
     play: ['M8 5l11 7-11 7z'],
     pause: ['M8 5v14', 'M16 5v14'],

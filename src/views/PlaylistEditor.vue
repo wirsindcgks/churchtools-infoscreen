@@ -279,6 +279,16 @@ const statusText = computed(() => {
     }
 });
 
+/** Where, by whom and when a linked slide was saved in between (Plan.md 49) – as much as is known. */
+const slideConflictText = computed(() => {
+    const c = editor.slideConflict;
+    if (!c) return '';
+    const where = c.playlist ? ` in „${c.playlist}"` : '';
+    const who = c.updatedBy ? ` von ${c.updatedBy}` : '';
+    const when = c.updatedAt ? ` (${new Date(c.updatedAt).toLocaleString('de-DE')})` : '';
+    return `„${c.slide.name}" wurde${where}${who} geändert${when}, während du sie bearbeitet hast. Gespeichert wurde nichts.`;
+});
+
 onMounted(async () => {
     top.value = root.value?.getBoundingClientRect().top ?? 0;
     window.addEventListener('keydown', onKey);
@@ -599,6 +609,21 @@ function onKey(event: KeyboardEvent): void {
             @choose-many="chosenMany"
             @close="libraryFor = null"
         />
+
+        <div v-if="editor.status === 'conflict' && editor.slideConflict" class="d-dialog-backdrop" role="dialog" aria-modal="true">
+            <div class="d-dialog" data-testid="slide-conflict-dialog">
+                <h2>Eine verknüpfte Slide wurde inzwischen geändert</h2>
+                <p>{{ slideConflictText }}</p>
+                <div class="d-dialog-actions">
+                    <button class="d-btn d-btn--primary" type="button" data-testid="slide-conflict-reload" @click="editor.discardAndReload()">
+                        Neu laden
+                    </button>
+                    <button class="d-btn" type="button" data-testid="slide-conflict-keep" @click="editor.keepAsCopy(author)">
+                        Als eigene Kopie behalten
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <div v-if="editor.status === 'conflict' && editor.conflict" class="d-dialog-backdrop" role="dialog" aria-modal="true">
             <div class="d-dialog" data-testid="conflict-dialog">

@@ -57,7 +57,12 @@ Menü „…". Neue Screens legt ein Administrator an.
 ![Editor: links die Slides, oben „+ Baustein", in der Mitte die Bildfläche, rechts der Inspektor](bilder/editor.png)
 
 - **Links die Slides** – „Neue Slide" unter der letzten, ziehen zum Umsortieren, darunter **„Aus anderer Playlist
-  …"**, um Slides einer anderen Playlist als Kopie zu übernehmen.
+  …"**, um Slides einer anderen Playlist zu übernehmen – **„Als Kopie"** (Vorgabe: was du hier änderst, bleibt in der
+  anderen Playlist, wie es ist) oder **„Verknüpft"**: dann ist es dieselbe Slide, und eine Änderung gilt in beiden
+  Playlists. Verknüpfte Slides tragen ein Kettensymbol auf dem Vorschaubild; im Inspektor steht unter dem Namen
+  „Auch in: …", dort löst **„Verknüpfung lösen"** die Slide zu einer eigenen Kopie nur für diese Playlist. Hat
+  jemand eine verknüpfte Slide inzwischen woanders geändert, speichert der Editor nichts, sondern fragt: **„Neu laden"**
+  oder **„Als eigene Kopie behalten"**.
 - **„+ Baustein"** öffnet alle Bausteine, alphabetisch: Beiträge, Bild, Countdown („Gottesdienst beginnt in 12:34"),
   Fläche, Galerie (siehe unten), Gemeindekopf, Gruppen (siehe unten), Nächster Termin, QR-Code, Terminliste, Text, Uhr und Webseite.
 - **In der Mitte die Bildfläche:** ziehen, an den Griffen skalieren, an den **Hilfslinien** ausrichten (oben rechts: Abstand wählen oder aus; mit gedrückter Alt-Taste frei platzieren).
@@ -106,8 +111,8 @@ Darauf erscheinen die Untergruppen, deren öffentliche Seite eingeschaltet ist.
 ### 4. Playlists
 
 Eine **Playlist** ist der Inhalt, den ein Screen zeigt; sie kann auf mehreren Screens laufen. Unter **„Playlists"**
-legst du neue an (oben rechts) und **duplizierst** bestehende (Menü „…") – die Kopie hat eigene Slides, Änderungen
-daran berühren das Original nicht.
+legst du neue an (oben rechts) und **duplizierst** bestehende (Menü „…") – du wählst **„Kopie"** (eigene Slides,
+Änderungen daran berühren das Original nicht) oder **„Verknüpft"** (dieselben Slides, Änderungen gelten in beiden).
 
 ![Playlists als Kacheln mit Format, Zahl der Slides und den Screens, die sie zeigen](bilder/playlists.png)
 

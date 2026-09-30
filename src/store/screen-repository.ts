@@ -96,6 +96,29 @@ export class ConflictError extends Error {
     }
 }
 
+/** A shared slide someone else saved in between – from which playlist, by whom, when. */
+export interface SlideConflictInfo {
+    /** The name of the stored version. */
+    slide: { id: string; name: string };
+    /** The other playlist that saved it, when that can be told; null otherwise. */
+    playlist: string | null;
+    updatedBy?: string;
+    updatedAt?: string;
+}
+
+/** Not a {@link ConflictError}: it is about one slide that several playlists show, not the playlist itself. */
+export class SlideConflictError extends Error {
+    constructor(readonly current: SlideConflictInfo) {
+        super(
+            `Die Slide „${current.slide.name}" wurde inzwischen geändert` +
+                (current.playlist ? ` (in „${current.playlist}")` : '') +
+                (current.updatedBy ? `, von ${current.updatedBy}` : '') +
+                '.',
+        );
+        this.name = 'SlideConflictError';
+    }
+}
+
 export class PlaylistNotFoundError extends Error {
     constructor(readonly id: string) {
         super('Diese Playlist gibt es nicht (mehr).');
@@ -142,6 +165,8 @@ export interface LoadedPlaylist extends PlaylistBundle {
     playlist: StagedPlaylist;
     media: MediaDoc[];
     screens: ScreenRef[];
+    /** By slide id of this playlist: the other playlists that show it too; only slides with at least one. */
+    sharedWith: Record<string, { id: string; name: string }[]>;
     issues: ReadIssue[];
 }
 
@@ -205,6 +230,8 @@ export interface SaveOptions {
     expectedRevision: number | null;
     updatedBy: string;
     now?: Date;
+    /** {@link ScreenRepository.savePlaylist} only: the slides to write; without it all of them are. */
+    changedSlideIds?: readonly string[];
 }
 
 export class ScreenRepository {
@@ -464,11 +491,20 @@ export class ScreenRepository {
         const mediaIds = new Set(slides.flatMap(referencedMedia));
         const mediaRead = mediaIds.size ? await this.readAll('media', readMedia) : { docs: [], issues: [] };
         const media = mediaRead.docs.map((m) => m.doc).filter((m) => mediaIds.has(m.id));
+        const sharedWith: LoadedPlaylist['sharedWith'] = {};
+        for (const sid of stored.doc.slideIds) {
+            const others = running.playlists
+                .filter((p) => p.doc.id !== id && p.doc.slideIds.includes(sid))
+                .map((p) => ({ id: p.doc.id, name: withPlaylistDefaults(p.doc, screens).name }))
+                .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+            if (others.length) sharedWith[sid] = others;
+        }
         return {
             playlist: withPlaylistDefaults(stored.doc, screens),
             slides,
             media,
             screens: screensShowing(id, screens),
+            sharedWith,
             issues: [...issues, ...mediaRead.issues],
         };
     }
@@ -511,16 +547,23 @@ export class ScreenRepository {
 
     /**
      * A copy of a playlist with copies of its slides – changing the copy never
-     * changes the original. Screens are not told: the copy runs nowhere until
-     * a schedule chooses it.
+     * changes the original. With `linked` the copy shows the very same slides
+     * instead (Plan.md 49): nothing is written for them. Screens are not told:
+     * the copy runs nowhere until a schedule chooses it.
      */
-    async duplicatePlaylist(id: string, updatedBy: string, now = new Date()): Promise<StagedPlaylist> {
+    async duplicatePlaylist(
+        id: string,
+        updatedBy: string,
+        now = new Date(),
+        options: { linked?: boolean } = {},
+    ): Promise<StagedPlaylist> {
         const source = await this.loadPlaylist(id);
         const time = now.toISOString();
         const byId = new Map(source.slides.map((s) => [s.id, s]));
         const slides = source.playlist.slideIds.flatMap((slideId) => {
             const slide = byId.get(slideId);
-            return slide ? [copySlide(slide, time)] : [];
+            if (!slide) return [];
+            return [options.linked ? slide : copySlide(slide, time)];
         });
         const playlist: StagedPlaylist = {
             schema: { ...SCHEMA_VERSION },
@@ -534,7 +577,7 @@ export class ScreenRepository {
             updatedAt: time,
         };
         const ids = await this.ensureCategories();
-        for (const slide of slides) await this.kv.createValue(ids.slides, serialize(slide));
+        if (!options.linked) for (const slide of slides) await this.kv.createValue(ids.slides, serialize(slide));
         await this.kv.createValue(ids.playlists, serialize(playlist));
         return playlist;
     }
@@ -544,6 +587,12 @@ export class ScreenRepository {
      * first, the playlist last and with the revision – a save that breaks off
      * halfway leaves the old order visible, and two designers saving the same
      * playlist notice each other. Screens and schedules stay untouched.
+     *
+     * With `changedSlideIds` only those slides are written (Plan.md 49): a
+     * slide that another playlist shows too must not be overwritten with the
+     * stale copy this editor loaded. Of the slides to write, a shared one is
+     * checked against its `updatedAt` first; everything is checked before the
+     * first write.
      */
     async savePlaylist(bundle: PlaylistBundle, options: SaveOptions): Promise<StagedPlaylist> {
         const now = (options.now ?? new Date()).toISOString();
@@ -569,12 +618,34 @@ export class ScreenRepository {
             updatedBy: options.updatedBy,
             updatedAt: now,
         };
-        const slides = bundle.slides.map((doc) => serialize({ ...doc, updatedAt: now }));
+        const changed = options.changedSlideIds ? new Set(options.changedSlideIds) : null;
+        const toWrite = bundle.slides.filter((doc) => !changed || changed.has(doc.id));
+
+        const screens = running.screens.map((s) => s.doc);
+        const others = running.playlists.filter((p) => p.doc.id !== bundle.playlist.id);
+        const sharedIds = new Set(others.flatMap((p) => p.doc.slideIds));
+        const shared = toWrite.filter((doc) => sharedIds.has(doc.id));
+        if (shared.length) {
+            const storedDocs = new Map((await this.readSlides()).docs.map((s) => [s.doc.id, s.doc]));
+            for (const doc of shared) {
+                const onDisk = storedDocs.get(doc.id);
+                if (!onDisk || onDisk.updatedAt === doc.updatedAt) continue;
+                // savePlaylist stamps a playlist and its slides with the same time – that finds who saved the slide.
+                const saver = others.find((p) => p.doc.slideIds.includes(doc.id) && p.doc.updatedAt === onDisk.updatedAt);
+                throw new SlideConflictError({
+                    slide: { id: onDisk.id, name: onDisk.name },
+                    playlist: saver ? withPlaylistDefaults(saver.doc, screens).name : null,
+                    updatedBy: saver?.doc.updatedBy,
+                    updatedAt: onDisk.updatedAt,
+                });
+            }
+        }
+        const slides = toWrite.map((doc) => serialize({ ...doc, updatedAt: now }));
         const text = serialize(playlist);
 
         const ids = await this.ensureCategories();
         const storedSlides = await this.valueIdsById('slides');
-        for (const [i, doc] of bundle.slides.entries()) await this.upsert(ids.slides, storedSlides.get(doc.id), slides[i]!);
+        for (const [i, doc] of toWrite.entries()) await this.upsert(ids.slides, storedSlides.get(doc.id), slides[i]!);
         await this.kv.updateValue(ids.playlists, stored.valueId, text);
         return playlist;
     }

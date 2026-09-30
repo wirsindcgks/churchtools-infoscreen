@@ -4,6 +4,20 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [Unreleased]
+
+### Neu
+
+- **Verknüpfte Slides:** Eine Slide kann in mehreren Playlists stehen und bleibt überall gleich – etwa die Begrüßung.
+  „Aus anderer Playlist …" und „Duplizieren" fragen jetzt: als Kopie (wie bisher, die Vorgabe) oder verknüpft.
+  Verknüpfte Slides tragen ein Kettensymbol; im Inspektor steht, wo sie noch laufen, und „Verknüpfung lösen" macht
+  daraus eine eigene Kopie. Hat jemand die Slide inzwischen in einer anderen Playlist geändert, speichert der Editor
+  nichts, sondern fragt: neu laden oder als eigene Kopie behalten.
+
+### Geändert
+
+- **Speichern schreibt nur geänderte Slides:** Unveränderte Slides einer Playlist bleiben beim Speichern unberührt.
+
 ## [0.3.6] – 2026-09-30
 
 ### Neu

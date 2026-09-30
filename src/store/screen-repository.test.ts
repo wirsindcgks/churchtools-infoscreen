@@ -10,6 +10,7 @@ import {
     PlaylistNotFoundError,
     ScreenNotFoundError,
     ScreenRepository,
+    SlideConflictError,
     SlugTakenError,
 } from './screen-repository';
 
@@ -483,5 +484,114 @@ describe('ScreenRepository', () => {
         // The playlist stays – it is content of its own (schema 1.4); its slides are still in it.
         const later = new Date(savedAt.getTime() + ORPHAN_GRACE_MS * 2);
         expect(await repo.collectOrphans(later)).toEqual({ playlists: 0, slides: 0 });
+    });
+
+    describe('linked slides (Plan.md 49)', () => {
+        const savedAt = new Date('2026-10-04T08:00:00Z');
+        const later = (minutes: number) => new Date(savedAt.getTime() + minutes * 60_000);
+        const A = makePlaylist().id;
+
+        /** Playlist A of the screen and B, a linked duplicate of it: both show the same two slides. */
+        async function linkedPair() {
+            await repo.saveScreen(bundle(), { ...save, expectedRevision: null, now: savedAt });
+            const b = await repo.duplicatePlaylist(A, 'Anna', later(1), { linked: true });
+            return { b: b.id };
+        }
+        const withName = <T extends { slides: { id: string; name: string }[] }>(loaded: T, id: string, name: string): T => ({
+            ...loaded,
+            slides: loaded.slides.map((s) => (s.id === id ? { ...s, name } : s)),
+        });
+
+        it('writes only the slides it is told changed', async () => {
+            await repo.saveScreen(bundle(), { ...save, expectedRevision: null, now: savedAt });
+            const loaded = await repo.loadPlaylist(A);
+            kv.writes.length = 0;
+            await repo.savePlaylist(withName(loaded, 'slide-1', 'Neu'), {
+                expectedRevision: 0,
+                updatedBy: 'Anna',
+                changedSlideIds: ['slide-1'],
+            });
+            expect(kv.writes).toHaveLength(2); // the slide, then the playlist
+            const after = await repo.loadPlaylist(A);
+            expect(after.slides.find((x) => x.id === 'slide-1')?.name).toBe('Neu');
+            expect(after.slides.find((x) => x.id === 'slide-2')?.updatedAt).toBe(savedAt.toISOString());
+        });
+
+        it('throws before the first write when a shared slide was saved from another playlist', async () => {
+            const { b } = await linkedPair();
+            const inA = await repo.loadPlaylist(A);
+            const inB = await repo.loadPlaylist(b);
+            await repo.savePlaylist(withName(inB, 'slide-1', 'Von Ben'), {
+                expectedRevision: inB.playlist.revision,
+                updatedBy: 'Ben',
+                now: later(5),
+                changedSlideIds: ['slide-1'],
+            });
+            kv.writes.length = 0;
+            const attempt = repo.savePlaylist(withName(inA, 'slide-2', 'Von Anna'), {
+                expectedRevision: 0,
+                updatedBy: 'Anna',
+                now: later(9),
+                changedSlideIds: ['slide-1', 'slide-2'],
+            });
+            await expect(attempt).rejects.toBeInstanceOf(SlideConflictError);
+            await expect(attempt).rejects.toMatchObject({
+                current: { slide: { id: 'slide-1', name: 'Von Ben' }, playlist: 'Foyer links (Kopie)', updatedBy: 'Ben' },
+            });
+            expect(kv.writes).toHaveLength(0);
+            expect((await repo.loadPlaylist(A)).slides.find((x) => x.id === 'slide-2')?.name).toBe('Termine');
+        });
+
+        it('lets an unshared slide through even if its stored copy is newer', async () => {
+            await repo.saveScreen(bundle(), { ...save, expectedRevision: null, now: savedAt });
+            const stale = await repo.loadPlaylist(A);
+            const current = await repo.loadPlaylist(A);
+            await repo.savePlaylist(current, { expectedRevision: 0, updatedBy: 'Ben', now: later(5) });
+            await expect(
+                repo.savePlaylist(withName(stale, 'slide-1', 'Neu'), {
+                    expectedRevision: 1,
+                    updatedBy: 'Anna',
+                    now: later(9),
+                    changedSlideIds: ['slide-1'],
+                }),
+            ).resolves.toMatchObject({ revision: 2 });
+        });
+
+        it('tells for each slide which other playlists show it, sorted by name', async () => {
+            const { b } = await linkedPair();
+            const c = await repo.duplicatePlaylist(A, 'Anna', later(2), { linked: true });
+            await repo.savePlaylist(
+                { ...(await repo.loadPlaylist(c.id)), playlist: { ...(await repo.loadPlaylist(c.id)).playlist, name: 'Aula' } },
+                { expectedRevision: 1, updatedBy: 'Anna', now: later(3), changedSlideIds: [] },
+            );
+            const inA = await repo.loadPlaylist(A);
+            expect(inA.sharedWith['slide-1']?.map((p) => p.name)).toEqual(['Aula', 'Foyer links (Kopie)']);
+            const own = await repo.createPlaylist({ name: 'Allein', stage: { width: 1920, height: 1080 } }, 'Anna');
+            expect((await repo.loadPlaylist(own.id)).sharedWith).toEqual({});
+            expect((await repo.loadPlaylist(b)).sharedWith['slide-2']?.map((p) => p.id)).toContain(A);
+        });
+
+        it('duplicates linked: the same slide ids, no slide written; by default copies', async () => {
+            const { b } = await linkedPair();
+            const ids = await repo.ensureCategories();
+            const linked = await repo.loadPlaylist(b);
+            expect(linked.playlist.slideIds).toEqual(['slide-1', 'slide-2']);
+            expect(await kv.listValues(ids.slides)).toHaveLength(2);
+
+            const copy = await repo.duplicatePlaylist(A, 'Anna', later(3));
+            expect(copy.slideIds.some((id) => id === 'slide-1' || id === 'slide-2')).toBe(false);
+            expect(await kv.listValues(ids.slides)).toHaveLength(4);
+        });
+
+        it('keeps shared slides while any playlist shows them when tidying up', async () => {
+            const { b } = await linkedPair();
+            await repo.deleteScreen('foyer-links');
+            await repo.deletePlaylist(A);
+            const soon = later(ORPHAN_GRACE_MS / 60_000 + 60 * 24);
+            expect(await repo.collectOrphans(soon)).toEqual({ playlists: 0, slides: 0 });
+            expect((await repo.loadPlaylist(b)).slides).toHaveLength(2);
+            await repo.deletePlaylist(b);
+            expect(await repo.collectOrphans(soon)).toEqual({ playlists: 0, slides: 2 });
+        });
     });
 });
