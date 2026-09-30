@@ -55,10 +55,12 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
         >
             <Icon name="plus" :size="16" /> Baustein
         </button>
-        <label class="grid-select" title="Raster: Blöcke rasten ein; mit gedrückter Alt-Taste frei platzieren">
+        <!-- The symbol alone was not recognised (Plan.md 47): the word stays beside it. -->
+        <label class="grid-select" title="Hilfslinien: Bausteine rasten ein; mit gedrückter Alt-Taste frei platzieren">
             <Icon name="grid" :size="16" />
+            <span class="grid-label">Hilfslinien</span>
             <select
-                aria-label="Raster"
+                aria-label="Hilfslinien"
                 :value="editor.gridSize"
                 data-testid="grid-size"
                 @change="editor.setGridSize(Number(($event.target as HTMLSelectElement).value))"
@@ -118,6 +120,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
     gap: 6px;
     margin-left: auto;
     color: var(--d-text-muted);
+}
+.grid-label {
+    font-size: var(--d-size-sm);
 }
 .grid-select select {
     width: auto;
