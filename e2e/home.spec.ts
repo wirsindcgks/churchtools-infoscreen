@@ -200,3 +200,21 @@ test.describe('sections on a phone', () => {
         await page.screenshot({ path: 'test-results/menu-phone.png' });
     });
 });
+
+test.describe('the number of screens in the sidebar (Plan.md 47)', () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test('stays when going to another section, and appears after a reload there', async ({ page }) => {
+        await page.goto('./');
+        await expect(page.getByTestId('filter-all').locator('.count')).toBeVisible();
+        const start = await page.getByTestId('filter-all').locator('.count').innerText();
+
+        await page.getByTestId('sidebar-design').click();
+        await expect(page).toHaveURL(/design/);
+        await expect(page.getByTestId('filter-all').locator('.count')).toHaveText(start);
+
+        await page.reload();
+        await expect(page.getByTestId('filter-all').locator('.count')).toHaveText(start);
+        await expect(page.getByTestId('filter-portrait').locator('.count')).toBeVisible();
+    });
+});

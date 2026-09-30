@@ -166,6 +166,15 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
 .sheet-block :deep(.d-icon) {
     color: var(--d-text-muted);
 }
+/* Above 48rem the bar is as tall as the heads of the columns beside it, so their rules meet (Plan.md 47). */
+@media (min-width: 48.0625rem) {
+    .block-palette {
+        box-sizing: border-box;
+        flex: none;
+        height: var(--editor-head-h);
+        padding: 0 12px;
+    }
+}
 /* Below 48rem the backdrop of the "+ Baustein" sheet sits at the bottom, not centred. */
 @media (max-width: 48rem) {
     .block-sheet-backdrop {

@@ -10,15 +10,15 @@
  * belong. "Einstellungen" (administrators only) moved into the header bar
  * (Plan.md 36); this column no longer needs to know who is one.
  */
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { FILTERS, formatFilter, type FormatFilter } from './format-filter';
+import { FILTERS, formatFilter } from './format-filter';
+import { ensureScreenCounts, screenCounts } from './screen-counts';
 import { unseenRelease } from '../about/seen';
 import Icon, { type IconName } from './Icon.vue';
 
-defineProps<{ counts?: Record<FormatFilter, number> }>();
-
 const route = useRoute();
+onMounted(() => void ensureScreenCounts());
 const active = computed(() => (route.name === 'designer' ? formatFilter(route.query.format) : null));
 /** Below 48rem the format filters only make sense on "Screens" itself. */
 const onScreens = computed(() => route.name === 'designer');
@@ -116,7 +116,7 @@ watch(
                 >
                     <span class="nav-icon"><Icon :name="f.icon" :size="16" /></span>
                     {{ f.label }}
-                    <span v-if="counts" class="count">{{ counts[f.key] }}</span>
+                    <span v-if="screenCounts" class="count">{{ screenCounts[f.key] }}</span>
                 </RouterLink>
             </li>
         </ul>

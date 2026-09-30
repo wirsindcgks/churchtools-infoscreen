@@ -573,7 +573,7 @@ test.describe('on a tablet (Plan.md 45)', () => {
             await expect(page.getByTestId('block-inspector')).toBeVisible();
             await expect(page.getByTestId('tablet-inspector-toggle')).toHaveAttribute('aria-label', /Baustein: Text/);
             await expect(page.getByTestId('tablet-inspector-toggle')).not.toBeVisible();
-            await expect(page.getByTestId('tablet-inspector-close')).toContainText('Einklappen');
+            await expect(page.getByTestId('tablet-inspector-close')).toHaveAttribute('aria-label', 'Einklappen');
             await expect.poll(() => stageWidth(page)).toBeLessThan(before);
             const [stage, sheet] = await Promise.all([page.locator('.editor-stage').boundingBox(), page.getByTestId('inspector-sheet').boundingBox()]);
             expect(stage!.x + stage!.width).toBeLessThanOrEqual(sheet!.x + 1);
@@ -1488,4 +1488,87 @@ test('the block is layered from the position section and deleted from its header
     await page.getByTestId('layer-back').click();
     await page.getByTestId('block-delete').click();
     await expect(frames).toHaveCount(count - 1);
+});
+
+/** The centre of a button, and how far it stands from the top-left corner of the rail around it. */
+async function railButton(page: Page, testid: string, rail: string): Promise<{ centerY: number; left: number; top: number; width: number; height: number }> {
+    const [button, around] = await Promise.all([page.getByTestId(testid).boundingBox(), page.locator(rail).boundingBox()]);
+    return { centerY: button!.y + button!.height / 2, left: button!.x - around!.x, top: button!.y - around!.y, width: button!.width, height: button!.height };
+}
+
+test.describe('the heads of the editor stand on one line (Plan.md 47)', () => {
+    async function openEditor(page: Page): Promise<void> {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('add-block-menu')).toBeVisible();
+    }
+
+    test('at a desktop the slides head, "+ Baustein" and the inspector head are equally tall and their rules meet', async ({ page }) => {
+        await openEditor(page);
+        await page.getByTestId('frame-text').first().click();
+        await expect(page.getByTestId('block-inspector')).toBeVisible();
+        const [slides, palette, inspector] = await Promise.all([
+            page.locator('.header-desktop').boundingBox(),
+            page.locator('.block-palette').boundingBox(),
+            page.locator('.drawer-head').boundingBox(),
+        ]);
+        expect(Math.abs(slides!.height - palette!.height)).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(inspector!.height - palette!.height)).toBeLessThanOrEqual(0.5);
+        const bottom = (b: { y: number; height: number }) => b.y + b.height;
+        expect(Math.abs(bottom(slides!) - bottom(palette!))).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(bottom(inspector!) - bottom(palette!))).toBeLessThanOrEqual(0.5);
+    });
+
+    test('"Einklappen" is a button with a name and no words', async ({ page }) => {
+        await openEditor(page);
+        const button = page.getByTestId('desktop-inspector-collapse');
+        await expect(button).toHaveText('');
+        await expect(button).toHaveAccessibleName('Einklappen');
+        await expect(button).toHaveAttribute('title', 'Einklappen');
+    });
+
+    test('folded at a desktop, the rails carry their buttons in the head zone with air around them', async ({ page }) => {
+        await openEditor(page);
+        await page.getByTestId('desktop-slides-collapse').click();
+        await page.getByTestId('desktop-inspector-collapse').click();
+        const palette = (await page.getByTestId('add-block-menu').boundingBox())!;
+        for (const [testid, rail] of [
+            ['tablet-slides-toggle', '.tablet-rail--slides'],
+            ['tablet-inspector-toggle', '.tablet-rail--inspector'],
+        ] as const) {
+            const b = await railButton(page, testid, rail);
+            expect(Math.abs(b.centerY - (palette.y + palette.height / 2))).toBeLessThanOrEqual(1);
+            expect(b.left).toBeGreaterThanOrEqual(8);
+            expect(b.top).toBeGreaterThanOrEqual(8);
+            expect(b.width).toBe(36);
+            expect(b.height).toBe(36);
+        }
+        const railBox = (await page.locator('.tablet-rail--slides').boundingBox())!;
+        expect(railBox.width).toBe(53); // 8 + 36 + 8 and the rule
+    });
+
+    for (const [name, viewport] of [
+        ['lying', { width: 1180, height: 820 }],
+        ['upright', { width: 820, height: 1180 }],
+    ] as const) {
+        test(`on a tablet ${name}, the slides button stands level with "+ Baustein" and clear of the edge`, async ({ page }) => {
+            await page.setViewportSize(viewport);
+            await openEditor(page);
+            const palette = (await page.getByTestId('add-block-menu').boundingBox())!;
+            const b = await railButton(page, 'tablet-slides-toggle', '.tablet-rail--slides');
+            expect(Math.abs(b.centerY - (palette.y + palette.height / 2))).toBeLessThanOrEqual(1);
+            expect(b.left).toBeGreaterThanOrEqual(8);
+            expect(b.top).toBeGreaterThanOrEqual(8);
+        });
+    }
+
+    test('on a tablet lying down, the inspector rail button stands level too', async ({ page }) => {
+        await page.setViewportSize({ width: 1180, height: 820 });
+        await openEditor(page);
+        const palette = (await page.getByTestId('add-block-menu').boundingBox())!;
+        const b = await railButton(page, 'tablet-inspector-toggle', '.tablet-rail--inspector');
+        expect(Math.abs(b.centerY - (palette.y + palette.height / 2))).toBeLessThanOrEqual(1);
+        expect(b.left).toBeGreaterThanOrEqual(8);
+        expect(b.top).toBeGreaterThanOrEqual(8);
+    });
 });

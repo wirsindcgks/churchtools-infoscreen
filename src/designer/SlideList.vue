@@ -266,7 +266,10 @@ function removeCurrent(): void {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
+    box-sizing: border-box;
+    flex: none;
+    height: var(--editor-head-h);
+    padding: 0 12px;
     border-bottom: 1px solid var(--d-divider);
 }
 .title {
