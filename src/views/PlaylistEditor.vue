@@ -73,7 +73,7 @@ function closeSlidesDrawerOnPick(event: Event): void {
 }
 
 /**
- * The two columns of a desktop, each collapsible to a 44 px rail and remembered per viewer (Plan.md 45).
+ * The two columns of a desktop, each collapsible to a 53 px rail and remembered per viewer (Plan.md 45).
  * Their own refs: `inspectorOpen` above belongs to the sheet and the tablet's column, which open by themselves.
  */
 const DESKTOP_SLIDES_KEY = 'infoscreen-designer:desktop-slides-open';
@@ -485,20 +485,22 @@ function onKey(event: KeyboardEvent): void {
             class="columns"
             :class="{ 'slides-folded': desktop && !desktopSlidesOpen, 'inspector-folded': !inspectorColumnOpen }"
         >
-            <!-- Between 48rem and 75rem the slides are a drawer over the stage; over 75rem a column. A 44 px rail each stands in for a shut one (Plan.md 45). -->
+            <!-- Between 48rem and 75rem the slides are a drawer over the stage; over 75rem a column. A 53 px rail each stands in for a shut one (Plan.md 45). -->
             <div class="tablet-rail tablet-rail--slides">
-                <button
-                    type="button"
-                    class="tablet-toggle"
-                    :aria-expanded="slidesExpanded"
-                    aria-controls="slide-list-ol"
-                    :aria-label="`Slides, aktuell Nummer ${slideNumber}`"
-                    data-testid="tablet-slides-toggle"
-                    @click="toggleSlides"
-                >
-                    <Icon name="slides" :size="20" />
-                    <span class="tablet-number">{{ slideNumber }}</span>
-                </button>
+                <div class="rail-head">
+                    <button
+                        type="button"
+                        class="tablet-toggle"
+                        :aria-expanded="slidesExpanded"
+                        aria-controls="slide-list-ol"
+                        :aria-label="`Slides, aktuell Nummer ${slideNumber}`"
+                        data-testid="tablet-slides-toggle"
+                        @click="toggleSlides"
+                    >
+                        <Icon name="slides" :size="16" />
+                        <span class="tablet-number">{{ slideNumber }}</span>
+                    </button>
+                </div>
             </div>
             <SlideList :class="{ 'drawer-open': slidesDrawerOpen }" @click="closeSlidesDrawerOnPick" @collapse="desktopSlidesOpen = false" />
             <div class="stage-column">
@@ -507,29 +509,33 @@ function onKey(event: KeyboardEvent): void {
             </div>
             <!-- Below 48rem and upright above it this becomes a sheet at the bottom; otherwise a column beside the stage (Plan.md 44, M4; 45). -->
             <div class="tablet-rail tablet-rail--inspector">
-                <button
-                    type="button"
-                    class="tablet-toggle"
-                    :aria-expanded="inspectorColumnOpen"
-                    aria-controls="inspector-panel"
-                    :aria-label="sheetLabel"
-                    :title="sheetLabel"
-                    data-testid="tablet-inspector-toggle"
-                    @click="toggleInspectorColumn"
-                >
-                    <Icon name="settings" :size="20" />
-                </button>
+                <div class="rail-head">
+                    <button
+                        type="button"
+                        class="tablet-toggle"
+                        :aria-expanded="inspectorColumnOpen"
+                        aria-controls="inspector-panel"
+                        :aria-label="sheetLabel"
+                        :title="sheetLabel"
+                        data-testid="tablet-inspector-toggle"
+                        @click="toggleInspectorColumn"
+                    >
+                        <Icon name="settings" :size="20" />
+                    </button>
+                </div>
             </div>
             <div class="inspector-sheet" :class="{ open: inspectorOpen }" data-testid="inspector-sheet">
                 <div class="drawer-head">
                     <strong class="drawer-title">{{ sheetLabel }}</strong>
                     <button
                         type="button"
-                        class="d-btn"
+                        class="d-btn d-btn--icon"
+                        title="Einklappen"
+                        aria-label="Einklappen"
                         :data-testid="desktop ? 'desktop-inspector-collapse' : 'tablet-inspector-close'"
                         @click="toggleInspectorColumn"
                     >
-                        Einklappen <Icon name="chevron-down" :size="16" class="collapse-icon" />
+                        <Icon name="chevron-down" :size="16" class="collapse-icon" />
                     </button>
                 </div>
                 <button
@@ -588,6 +594,11 @@ function onKey(event: KeyboardEvent): void {
 
 <style scoped>
 .editor {
+    /*
+     * One height for the heads of the three columns above 48rem (slides, "+ Baustein", inspector) and
+     * the rail buttons' zone, so their lines meet: 8 px air, a 36 px button, 8 px air, and the 1 px rule.
+     */
+    --editor-head-h: 53px;
     display: flex;
     flex-direction: column;
     min-height: 480px;
@@ -665,7 +676,7 @@ function onKey(event: KeyboardEvent): void {
     flex: 1;
 }
 .columns {
-    /* The widths of the two side columns; a collapsed one is a 44 px rail (Plan.md 45). */
+    /* The widths of the two side columns; a collapsed one is a 53 px rail (Plan.md 45). */
     --slides-w: 220px;
     --inspector-w: 300px;
     flex: 1;
@@ -869,7 +880,7 @@ function onKey(event: KeyboardEvent): void {
 
 /*
  * Above 48rem (Plan.md 45): the stage takes the middle column, the slides and the inspector stand
- * beside it – or, folded, as a 44 px rail with one button. `.slide-list` and `.inspector` are
+ * beside it – or, folded, as a 53 px rail with one button. `.slide-list` and `.inspector` are
  * child roots and carry this scope's attribute.
  */
 @media (min-width: 48.0625rem) {
@@ -887,9 +898,16 @@ function onKey(event: KeyboardEvent): void {
     }
     .tablet-rail {
         flex-direction: column;
-        align-items: center;
-        padding-top: 6px;
         background: var(--d-surface);
+    }
+    /* The button's zone is as tall as the heads beside it, with the same rule below. */
+    .rail-head {
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: var(--editor-head-h);
+        border-bottom: 1px solid var(--d-divider);
     }
     .tablet-rail--slides {
         display: flex;
@@ -903,10 +921,10 @@ function onKey(event: KeyboardEvent): void {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 2px;
-        width: 40px;
-        min-height: 44px;
-        padding: 4px 0;
+        gap: 0;
+        width: 36px;
+        height: 36px;
+        padding: 0;
         border: 1px solid var(--d-divider);
         border-radius: var(--d-radius);
         background: var(--d-surface);
@@ -920,8 +938,9 @@ function onKey(event: KeyboardEvent): void {
         background: var(--d-accent-pale);
     }
     .tablet-number {
-        font-size: var(--d-size-sm);
+        font-size: 11px;
         font-weight: 700;
+        line-height: 1;
     }
     .collapse-icon {
         transform: rotate(-90deg);
@@ -935,7 +954,7 @@ function onKey(event: KeyboardEvent): void {
 @media (min-width: 48.0625rem) and (max-width: 75rem) {
     .columns {
         position: relative;
-        --slides-w: 44px;
+        --slides-w: 53px;
     }
     /* Upright, the slide sits right under "+ Baustein" instead of in the middle of a tall column. */
     .stage-column > :last-child {
@@ -948,7 +967,7 @@ function onKey(event: KeyboardEvent): void {
         position: absolute;
         top: 0;
         bottom: 0;
-        left: 44px;
+        left: 53px;
         z-index: 30;
         box-sizing: border-box;
         width: 240px;
@@ -963,7 +982,7 @@ function onKey(event: KeyboardEvent): void {
 /* Tablet upright: the inspector is the sheet at the bottom, so there is no rail for it. */
 @media (min-width: 48.0625rem) and (max-width: 75rem) and (orientation: portrait) {
     .columns {
-        grid-template-columns: 44px minmax(0, 1fr);
+        grid-template-columns: 53px minmax(0, 1fr);
     }
     /* A little lower than on a phone, so the slide's lower handles stay above the sheet (820 × 1180: slide ends at 597). */
     .inspector-sheet.open {
@@ -985,7 +1004,7 @@ function onKey(event: KeyboardEvent): void {
         --inspector-w: 320px;
     }
     .columns.inspector-folded {
-        --inspector-w: 44px;
+        --inspector-w: 53px;
     }
     .columns.inspector-folded .inspector-sheet {
         display: none;
@@ -1009,7 +1028,9 @@ function onKey(event: KeyboardEvent): void {
         align-items: center;
         justify-content: space-between;
         gap: 8px;
-        padding: 8px 12px;
+        box-sizing: border-box;
+        height: var(--editor-head-h);
+        padding: 0 12px;
         border-bottom: 1px solid var(--d-divider);
     }
     .drawer-title {
@@ -1030,10 +1051,10 @@ function onKey(event: KeyboardEvent): void {
         --inspector-w: 300px;
     }
     .columns.inspector-folded {
-        --inspector-w: 44px;
+        --inspector-w: 53px;
     }
     .columns.slides-folded {
-        --slides-w: 44px;
+        --slides-w: 53px;
     }
     .columns.slides-folded .slide-list,
     .columns:not(.slides-folded) .tablet-rail--slides {

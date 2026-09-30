@@ -152,7 +152,7 @@ function removeCurrent(): void {
                 :disabled="!editor.slide || editor.slides.length <= 1"
                 @click="removeCurrent"
             >
-                <Icon name="trash" :size="16" />
+                <Icon name="trash" :size="16" class="danger-icon" />
             </button>
         </div>
         <!-- Collapsed only on a phone: CSS, not v-show – a desktop-wide window always shows the slides. -->
@@ -196,17 +196,24 @@ function removeCurrent(): void {
                     </span>
                 </div>
                 <div v-if="slide.id === editor.slide?.id" class="actions" @click.stop>
-                    <button class="d-btn" type="button" title="Duplizieren" @click="editor.duplicateCurrentSlide()">
-                        Duplizieren
+                    <button
+                        class="d-btn d-btn--icon"
+                        type="button"
+                        title="Duplizieren"
+                        aria-label="Duplizieren"
+                        @click="editor.duplicateCurrentSlide()"
+                    >
+                        <Icon name="copy" :size="16" />
                     </button>
                     <button
-                        class="d-btn d-btn--danger"
+                        class="d-btn d-btn--icon"
                         type="button"
                         title="Entfernen"
+                        aria-label="Entfernen"
                         :disabled="editor.slides.length <= 1"
                         @click="remove(slide.id, slide.name)"
                     >
-                        Entfernen
+                        <Icon name="trash" :size="16" class="danger-icon" />
                     </button>
                 </div>
             </li>
@@ -259,7 +266,10 @@ function removeCurrent(): void {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 10px 12px;
+    box-sizing: border-box;
+    flex: none;
+    height: var(--editor-head-h);
+    padding: 0 12px;
     border-bottom: 1px solid var(--d-divider);
 }
 .title {
@@ -401,8 +411,11 @@ li.disabled .thumb {
     margin-top: 6px;
 }
 .actions .d-btn {
-    padding: 0.2em 0.6em;
-    font-size: var(--d-size-sm);
+    padding: 0.25em;
+}
+/* Red only on the wastebasket (Plan.md 47). */
+.danger-icon {
+    color: var(--d-danger);
 }
 /*
  * Phone: the slides become a row to swipe above the stage (Plan.md, 10), collapsible and

@@ -9,10 +9,9 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { administrator, isAdministrator } from './administrator';
 import AppBar from './AppBar.vue';
-import type { FormatFilter } from './format-filter';
 import ModuleSidebar from './ModuleSidebar.vue';
 
-defineProps<{ current: 'screens' | 'schedules' | 'notices' | 'playlists' | 'media' | 'design' | 'about' | 'setup'; counts?: Record<FormatFilter, number> }>();
+defineProps<{ current: 'screens' | 'schedules' | 'notices' | 'playlists' | 'media' | 'design' | 'about' | 'setup' }>();
 
 const admin = computed(() => administrator.value === true);
 
@@ -41,7 +40,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', measure));
             <template #actions><slot name="actions" /></template>
         </AppBar>
         <div class="layout">
-            <ModuleSidebar :counts="counts" />
+            <ModuleSidebar />
             <main class="content"><slot /></main>
         </div>
     </div>

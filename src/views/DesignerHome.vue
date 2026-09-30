@@ -9,7 +9,7 @@ import { computed, onMounted, ref, shallowRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName, NotAuthenticatedError } from '../ct/client';
 import CreateScreenDialog from '../designer/CreateScreenDialog.vue';
-import { FILTERS, formatFilter, type FormatFilter } from '../designer/format-filter';
+import { FILTERS, formatFilter } from '../designer/format-filter';
 import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
@@ -23,6 +23,7 @@ import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
 import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema';
 import { groupNeeds, postNeeds } from '../player/data';
 import { ruleCalendarIds, runningNow } from '../designer/running';
+import { setScreenCounts } from '../designer/screen-counts';
 import { usePreview } from '../designer/usePreview';
 import { getRepository, resetDemoStore } from '../store/backend';
 import type { ScreenOverview, ScreenRepository } from '../store/screen-repository';
@@ -53,11 +54,6 @@ const query = ref('');
 const ready = computed(() => author.value !== null && repository.value !== null);
 
 const isPortrait = (o: ScreenOverview) => o.screen.stage.height > o.screen.stage.width;
-
-const counts = computed<Record<FormatFilter, number>>(() => {
-    const portrait = overviews.value.filter(isPortrait).length;
-    return { all: overviews.value.length, portrait, landscape: overviews.value.length - portrait };
-});
 
 const shown = computed(() => {
     const needle = query.value.trim().toLocaleLowerCase('de');
@@ -101,6 +97,7 @@ async function refresh(): Promise<void> {
         repository.value.loadTheme().catch(() => null),
     ]);
     overviews.value = list;
+    setScreenCounts(list.map((o) => o.screen));
     theme.value = stored;
 }
 
@@ -161,7 +158,7 @@ async function remove(overview: ScreenOverview): Promise<void> {
 </script>
 
 <template>
-    <ModulePage current="screens" :counts="ready ? counts : undefined">
+    <ModulePage current="screens">
         <template #actions>
             <button
                 v-if="screensAdmin"

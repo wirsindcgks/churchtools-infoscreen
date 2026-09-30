@@ -57,6 +57,11 @@ const PATHS = {
     palette: ['M12 3.5a8.5 8.5 0 1 0 0 17c1.2 0 1.8-.8 1.8-1.7 0-1.3-1-1.6-1-2.6 0-.9.7-1.6 1.7-1.6h2.2a3.8 3.8 0 0 0 3.8-3.8c0-4.2-3.8-7.3-8.5-7.3z', circle(7.5, 11.5, 1), circle(10, 7.5, 1), circle(14.5, 7.5, 1)],
     // The page menu on a phone (Plan.md 44, M1): rotates 180° when open.
     'chevron-down': ['M6 9l6 6 6-6'],
+    // Stacking order in the inspector (Plan.md 47): an arrow, to a line for "all the way".
+    'layer-front': ['M12 19V8', 'M7 13l5-5 5 5', 'M5 4h14'],
+    'layer-forward': ['M12 19V6', 'M7 11l5-5 5 5'],
+    'layer-backward': ['M12 5v13', 'M7 13l5 5 5-5'],
+    'layer-back': ['M12 5v11', 'M7 12l5 5 5-5', 'M5 20h14'],
 } as const;
 
 export type IconName = keyof typeof PATHS;

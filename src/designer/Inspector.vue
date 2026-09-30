@@ -14,7 +14,9 @@ import { useEditorStore } from './editor-store';
 import ColorField from './ColorField.vue';
 import FillEditor from './FillEditor.vue';
 import Icon from './Icon.vue';
-import { BLOCK_LABELS } from './ops';
+import InfoHint from './InfoHint.vue';
+import InspectorSection from './InspectorSection.vue';
+import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
 
 const props = defineProps<{ calendars: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[] }>();
 const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo'] }>();
@@ -202,6 +204,38 @@ const slideFill = computed<Fill>(() =>
     slide.value && slide.value.background.kind !== 'media' ? slide.value.background : { kind: 'solid', color: '#000000' },
 );
 
+/** Folded sections say what is set inside (Plan.md 47). */
+const fontSummary = computed(() =>
+    block.value && 'style' in block.value ? `${fontDef(block.value.style.fontFamily).label} · ${block.value.style.fontSize} px` : '',
+);
+const positionSummary = computed(() =>
+    block.value ? `${block.value.x}, ${block.value.y} · ${block.value.width} × ${block.value.height}` : '',
+);
+const fieldsSummary = computed(() =>
+    block.value?.type === 'groups' ? `${GROUP_SHOW_KEYS.filter((key) => block.value!.type === 'groups' && block.value.show[key]).length} von ${GROUP_SHOW_KEYS.length}` : '',
+);
+const playlistSummary = computed(() =>
+    editor.screens.length ? editor.screens.map((s) => s.name).join(', ') : 'noch keinem Screen',
+);
+const backgroundSummary = computed(() => {
+    const background = slide.value?.background;
+    if (!background) return '';
+    return background.kind === 'solid' ? 'Farbe' : background.kind === 'linear-gradient' ? 'Verlauf' : 'Bild';
+});
+/** The colours a fill shows, as swatches beside the folded summary. */
+const backgroundColors = computed(() => {
+    const background = slide.value?.background;
+    if (!background || background.kind === 'media') return [];
+    return background.kind === 'solid' ? [background.color] : background.stops.map((stop) => stop.color);
+});
+
+const LAYERS = [
+    { where: 'front', icon: 'layer-front', label: 'Ganz nach vorn' },
+    { where: 'forward', icon: 'layer-forward', label: 'Eins vor' },
+    { where: 'backward', icon: 'layer-backward', label: 'Eins zurück' },
+    { where: 'back', icon: 'layer-back', label: 'Ganz nach hinten' },
+] as const;
+
 </script>
 
 <template>
@@ -209,39 +243,44 @@ const slideFill = computed<Fill>(() =>
         <!-- Block -->
         <section v-if="block" data-testid="block-inspector">
             <div class="block-head">
-                <h3>{{ BLOCK_LABELS[block.type] }}</h3>
-                <!-- Plan.md, 25: locked, the whole block stays as it is until unlocked. -->
-                <button
-                    class="d-btn lock-toggle"
-                    :class="{ 'lock-toggle--on': block.locked }"
-                    type="button"
-                    :aria-pressed="!!block.locked"
-                    :title="block.locked ? 'Entsperren, um den Baustein wieder zu bearbeiten' : 'Sperren: nicht mehr verschieben, ändern oder löschen'"
-                    data-testid="lock-toggle"
-                    @click="editor.setLocked(block.id, !block.locked)"
-                >
-                    <Icon :name="block.locked ? 'lock' : 'unlock'" :size="16" />
-                    {{ block.locked ? 'Gesperrt' : 'Sperren' }}
-                </button>
+                <h3>
+                    <Icon :name="BLOCK_ICONS[block.type]" :size="18" />
+                    {{ BLOCK_LABELS[block.type] }}
+                </h3>
+                <div class="head-actions">
+                    <!-- Plan.md, 25: locked, the whole block stays as it is until unlocked. -->
+                    <button
+                        class="d-btn lock-toggle"
+                        :class="{ 'lock-toggle--on': block.locked }"
+                        type="button"
+                        :aria-pressed="!!block.locked"
+                        :aria-label="block.locked ? 'Gesperrt' : 'Sperren'"
+                        :title="block.locked ? 'Entsperren, um den Baustein wieder zu bearbeiten' : 'Sperren: nicht mehr verschieben, ändern oder löschen'"
+                        data-testid="lock-toggle"
+                        @click="editor.setLocked(block.id, !block.locked)"
+                    >
+                        <Icon :name="block.locked ? 'lock' : 'unlock'" :size="16" />
+                        <span class="btn-word">{{ block.locked ? 'Gesperrt' : 'Sperren' }}</span>
+                    </button>
+                    <button
+                        class="d-btn lock-toggle"
+                        type="button"
+                        title="Baustein löschen"
+                        aria-label="Baustein löschen"
+                        :disabled="!!block.locked"
+                        data-testid="block-delete"
+                        @click="editor.removeBlock(block.id)"
+                    >
+                        <Icon name="trash" :size="16" class="danger-icon" />
+                        <span class="btn-word">Löschen</span>
+                    </button>
+                </div>
             </div>
             <p v-if="block.locked" class="hint" data-testid="locked-hint">
                 Gesperrt: Der Baustein lässt sich nicht verschieben, ändern oder löschen, bis du ihn entsperrst.
             </p>
-            <!-- A disabled fieldset disables every field and button inside it at once. -->
+            <!-- A disabled fieldset disables every field and button inside it at once; a summary is none, so sections still fold. -->
             <fieldset class="lockable" :disabled="!!block.locked">
-                <div class="grid4">
-                    <label v-for="key in ['x', 'y', 'width', 'height'] as const" :key="key" class="d-field">
-                        {{ { x: 'X', y: 'Y', width: 'Breite', height: 'Höhe' }[key] }}
-                        <input
-                            type="number"
-                            :value="block[key]"
-                            :data-testid="`inspector-${key}`"
-                            v-on="edit"
-                            @input="setNumber(key, ($event.target as HTMLInputElement).value)"
-                        >
-                    </label>
-                </div>
-
                 <label v-if="block.type === 'text'" class="d-field">
                     Text
                     <textarea
@@ -335,10 +374,13 @@ const slideFill = computed<Fill>(() =>
                             @input="setBlock({ runningText: ($event.target as HTMLInputElement).value })"
                         >
                     </label>
-                    <p class="hint">
-                        Zählt bis zum Beginn des nächsten Termins dieser Kalender; ganztägige Termine zählen nicht mit.
-                        Passt gut auf eine Playlist, die ein Zeitplan „30 Minuten vor Beginn“ einschaltet.
-                    </p>
+                    <div class="hint-row">
+                        <span>Zählweise</span>
+                        <InfoHint>
+                            Zählt bis zum Beginn des nächsten Termins dieser Kalender; ganztägige Termine zählen nicht mit.
+                            Passt gut auf eine Playlist, die ein Zeitplan „30 Minuten vor Beginn“ einschaltet.
+                        </InfoHint>
+                    </div>
                 </template>
 
                 <template v-if="block.type === 'appointment-list' || block.type === 'next-appointment'">
@@ -512,7 +554,10 @@ const slideFill = computed<Fill>(() =>
                         >
                         Namen der Autorin oder des Autors zeigen
                     </label>
-                    <p class="hint">Zeigt die neuesten Beiträge der gewählten Gruppen; abgelaufene nie.</p>
+                    <div class="hint-row">
+                        <span>Auswahl der Beiträge</span>
+                        <InfoHint>Zeigt die neuesten Beiträge der gewählten Gruppen; abgelaufene nie.</InfoHint>
+                    </div>
                 </template>
 
                 <!-- Plan.md, 43: groups of a ChurchTools group homepage, one at a time with a QR code or as a list. -->
@@ -641,8 +686,14 @@ const slideFill = computed<Fill>(() =>
                         >
                     </label>
 
-                    <fieldset>
-                        <legend>Angaben</legend>
+                    <div class="hint-row">
+                        <span>Sichtbarkeit</span>
+                        <InfoHint>
+                            Zeigt nur Gruppen, die ChurchTools auf der Homepage öffentlich zeigt – mit und ohne Anmeldung
+                            dieselben.
+                        </InfoHint>
+                    </div>
+                    <InspectorSection id="fields" title="Angaben" :summary="fieldsSummary">
                         <label v-for="key in GROUP_SHOW_KEYS" :key="key" class="check">
                             <input
                                 type="checkbox"
@@ -656,15 +707,11 @@ const slideFill = computed<Fill>(() =>
                         <p v-if="block.layout === 'list'" class="hint">
                             Beschreibung und QR-Code nur in der Darstellung „Hervorgehoben".
                         </p>
-                    </fieldset>
-                    <p v-if="block.show.leaders" class="hint">
-                        Namen erscheinen nur, wenn die Gruppen-Homepage in ChurchTools die Leiter zeigt – dann sind sie
-                        ohnehin öffentlich.
-                    </p>
-                    <p class="hint">
-                        Zeigt nur Gruppen, die ChurchTools auf der Homepage öffentlich zeigt – mit und ohne Anmeldung
-                        dieselben.
-                    </p>
+                        <p v-if="block.show.leaders" class="hint">
+                            Namen erscheinen nur, wenn die Gruppen-Homepage in ChurchTools die Leiter zeigt – dann sind sie
+                            ohnehin öffentlich.
+                        </p>
+                    </InspectorSection>
                 </template>
 
                 <template v-if="block.type === 'church-header'">
@@ -700,15 +747,26 @@ const slideFill = computed<Fill>(() =>
                         >
                             Logo aus ChurchTools verwenden
                         </button>
-                        <p class="hint">Ein eigenes Logo hilft, wenn das aus ChurchTools auf dem Hintergrund nicht zu sehen ist.</p>
+                        <div class="hint-row">
+                            <span>Eigenes Logo</span>
+                            <InfoHint>Ein eigenes Logo hilft, wenn das aus ChurchTools auf dem Hintergrund nicht zu sehen ist.</InfoHint>
+                        </div>
                     </div>
                 </template>
 
                 <!-- Plan.md, 28: another website in a frame – a page of the church website, a widget. -->
                 <template v-if="block.type === 'web'">
-                    <label class="d-field">
-                        Adresse
+                    <div class="d-field">
+                        <div class="hint-row">
+                            <label for="web-url-input">Adresse</label>
+                            <InfoHint>
+                                Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer. Viele große Seiten
+                                wie Google verbieten das Einbetten – der Rahmen zeigt dann einen Fehler. Eigene Seiten, etwa die
+                                der Gemeinde-Website, gehen meist.
+                            </InfoHint>
+                        </div>
                         <input
+                            id="web-url-input"
                             type="text"
                             inputmode="url"
                             :value="block.url"
@@ -716,7 +774,7 @@ const slideFill = computed<Fill>(() =>
                             v-on="edit"
                             @change="setBlock({ url: withScheme(($event.target as HTMLInputElement).value) })"
                         >
-                    </label>
+                    </div>
                     <p class="hint" data-testid="web-enter-hint">Mit Enter übernehmen – erst dann lädt die Seite.</p>
                     <p v-if="webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
                     <label class="d-field">
@@ -730,11 +788,6 @@ const slideFill = computed<Fill>(() =>
                             <option :value="3">300 %</option>
                         </select>
                     </label>
-                    <p class="hint">
-                        Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer. Viele große Seiten wie
-                        Google verbieten das Einbetten – der Rahmen zeigt dann einen Fehler. Eigene Seiten, etwa die der
-                        Gemeinde-Website, gehen meist.
-                    </p>
                 </template>
 
                 <template v-if="block.type === 'qr'">
@@ -751,6 +804,10 @@ const slideFill = computed<Fill>(() =>
                         >
                     </label>
                     <p v-if="block.data.trim() && !qrShape(block.data)" class="hint">Zu lang für einen QR-Code.</p>
+                    <div class="hint-row">
+                        <span>Farben</span>
+                        <InfoHint>Dunkel auf hell lesen alle Handykameras am sichersten.</InfoHint>
+                    </div>
                     <div class="grid2">
                         <ColorField
                             label="Farbe"
@@ -767,11 +824,12 @@ const slideFill = computed<Fill>(() =>
                             @update:model-value="setBlock({ background: $event })"
                         />
                     </div>
-                    <p class="hint">Dunkel auf hell lesen alle Handykameras am sichersten.</p>
                 </template>
 
-                <fieldset v-if="'style' in block">
-                    <legend>Schrift</legend>
+                <InspectorSection v-if="'style' in block" id="font" title="Schrift" :summary="fontSummary">
+                    <template #summary-extra>
+                        <span class="swatch" :style="{ background: block.style.color }" />
+                    </template>
                     <div class="grid2">
                         <label class="d-field wide">
                             Schriftart
@@ -829,18 +887,39 @@ const slideFill = computed<Fill>(() =>
                             <option value="right">Rechts</option>
                         </select>
                     </label>
-                </fieldset>
+                </InspectorSection>
 
-                <fieldset>
-                    <legend>Ebene</legend>
-                    <div class="buttons">
-                        <button class="d-btn" type="button" @click="editor.layerBlock(block.id, 'front')">Ganz nach vorn</button>
-                        <button class="d-btn" type="button" @click="editor.layerBlock(block.id, 'forward')">Eins vor</button>
-                        <button class="d-btn" type="button" @click="editor.layerBlock(block.id, 'backward')">Eins zurück</button>
-                        <button class="d-btn" type="button" @click="editor.layerBlock(block.id, 'back')">Ganz nach hinten</button>
+                <InspectorSection id="position" title="Position &amp; Ebene" :summary="positionSummary">
+                    <div class="grid4">
+                        <label v-for="key in ['x', 'y', 'width', 'height'] as const" :key="key" class="d-field">
+                            {{ { x: 'X', y: 'Y', width: 'Breite', height: 'Höhe' }[key] }}
+                            <input
+                                type="number"
+                                :value="block[key]"
+                                :data-testid="`inspector-${key}`"
+                                v-on="edit"
+                                @input="setNumber(key, ($event.target as HTMLInputElement).value)"
+                            >
+                        </label>
                     </div>
-                </fieldset>
-                <button class="d-btn d-btn--danger" type="button" @click="editor.removeBlock(block.id)">Block löschen</button>
+                    <div class="layer-row">
+                        <span class="row-label">Ebene</span>
+                        <div class="layer-buttons">
+                            <button
+                                v-for="layer in LAYERS"
+                                :key="layer.where"
+                                class="d-btn d-btn--icon"
+                                type="button"
+                                :title="layer.label"
+                                :aria-label="layer.label"
+                                :data-testid="`layer-${layer.where}`"
+                                @click="editor.layerBlock(block.id, layer.where)"
+                            >
+                                <Icon :name="layer.icon" :size="16" />
+                            </button>
+                        </div>
+                    </div>
+                </InspectorSection>
             </fieldset>
         </section>
 
@@ -883,8 +962,10 @@ const slideFill = computed<Fill>(() =>
                 <p v-if="runsLonger" class="hint" data-testid="duration-hint">
                     Läuft {{ runsLonger }} s – so lange braucht die Terminliste für alle Seiten.
                 </p>
-                <fieldset>
-                    <legend>Hintergrund</legend>
+                <InspectorSection id="background" title="Hintergrund" :summary="backgroundSummary">
+                    <template #summary-extra>
+                        <span v-for="(color, i) in backgroundColors" :key="i" class="swatch" :style="{ background: color }" />
+                    </template>
                     <label class="d-field">
                         Hintergrund aus
                         <select
@@ -907,45 +988,49 @@ const slideFill = computed<Fill>(() =>
                         @blur="edit.onBlur"
                         @update:model-value="editor.updateSlide({ background: $event })"
                     />
-                </fieldset>
+                </InspectorSection>
             </section>
 
             <!-- The playlist is the designers' own (schema 1.4); where it runs, the screens' schedules decide. -->
-            <section v-if="editor.draft" data-testid="playlist-info">
-                <h3>Playlist</h3>
-                <label class="d-field">
-                    Name
-                    <input
-                        type="text"
-                        maxlength="100"
-                        :value="editor.draft.playlist.name"
-                        data-testid="playlist-name-input"
-                        v-on="edit"
-                        @input="editor.renamePlaylist(($event.target as HTMLInputElement).value)"
-                    >
-                </label>
-                <dl>
-                    <dt>Format</dt>
-                    <dd>
-                        {{ editor.stage.height > editor.stage.width ? 'Hochkant' : 'Quer' }},
-                        {{ editor.stage.width }} × {{ editor.stage.height }} px
-                    </dd>
-                    <dt>Läuft auf</dt>
-                    <dd data-testid="playlist-screens">
-                        {{ editor.screens.length ? editor.screens.map((s) => s.name).join(', ') : 'noch keinem Screen' }}
-                    </dd>
-                </dl>
-                <p class="hint">
-                    Auf welchem Screen sie wann läuft, legt der Zeitplan des Screens fest – unter „Zeitpläne" oder an der
-                    Kachel des Screens. Speichern ändert alle Screens, die sie zeigen.
-                </p>
-                <p v-if="bannerRunning" class="hint" data-testid="banner-status">
-                    Hinweisband: „{{ editor.draft.playlist.banner!.text }}" – bearbeiten unter
-                    <RouterLink :to="{ name: 'notices' }">Hinweise</RouterLink>
-                </p>
-                <p v-else class="hint" data-testid="banner-status">
-                    Kein Hinweisband – anlegen unter <RouterLink :to="{ name: 'notices' }">Hinweise</RouterLink>
-                </p>
+            <section v-if="editor.draft">
+                <InspectorSection id="playlist" title="Playlist" :summary="playlistSummary">
+                    <div data-testid="playlist-info" class="playlist-info">
+                        <label class="d-field">
+                            Name
+                            <input
+                                type="text"
+                                maxlength="100"
+                                :value="editor.draft.playlist.name"
+                                data-testid="playlist-name-input"
+                                v-on="edit"
+                                @input="editor.renamePlaylist(($event.target as HTMLInputElement).value)"
+                            >
+                        </label>
+                        <dl>
+                            <dt>Format</dt>
+                            <dd>
+                                {{ editor.stage.height > editor.stage.width ? 'Hochkant' : 'Quer' }},
+                                {{ editor.stage.width }} × {{ editor.stage.height }} px
+                            </dd>
+                            <dt>Läuft auf</dt>
+                            <dd data-testid="playlist-screens">{{ playlistSummary }}</dd>
+                        </dl>
+                        <div class="hint-row">
+                            <span>Zeitplan</span>
+                            <InfoHint>
+                                Auf welchem Screen sie wann läuft, legt der Zeitplan des Screens fest – unter „Zeitpläne" oder an
+                                der Kachel des Screens. Speichern ändert alle Screens, die sie zeigen.
+                            </InfoHint>
+                        </div>
+                        <p v-if="bannerRunning" class="hint" data-testid="banner-status">
+                            Hinweisband: „{{ editor.draft.playlist.banner!.text }}" – bearbeiten unter
+                            <RouterLink :to="{ name: 'notices' }">Hinweise</RouterLink>
+                        </p>
+                        <p v-else class="hint" data-testid="banner-status">
+                            Kein Hinweisband – anlegen unter <RouterLink :to="{ name: 'notices' }">Hinweise</RouterLink>
+                        </p>
+                    </div>
+                </InspectorSection>
             </section>
         </template>
     </aside>
@@ -970,29 +1055,29 @@ const slideFill = computed<Fill>(() =>
         border-left: 0;
     }
 }
-section + section {
-    margin-top: 20px;
-    padding-top: 16px;
-    border-top: 1px solid var(--d-divider);
-}
 section {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 10px;
 }
 h3 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     margin: 0;
     font-size: 1.05em;
 }
+/* No boxes in boxes (Plan.md 47): a fieldset only groups; the sections bring the divider lines. */
 fieldset {
     display: grid;
     gap: 8px;
+    min-width: 0;
     margin: 0;
-    padding: 8px 10px 10px;
-    border: 1px solid var(--d-divider);
-    border-radius: var(--d-radius);
+    padding: 0;
+    border: 0;
 }
 legend {
-    padding: 0 4px;
+    padding: 0;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
@@ -1039,14 +1124,33 @@ legend {
     border-radius: 50%;
     border: 1px solid var(--d-divider);
 }
-.buttons {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-}
-.buttons .d-btn {
-    justify-content: center;
+/* A small caption with its (i) at the end, the explanation opening below (Plan.md 47). */
+.hint-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    color: var(--d-text-muted);
     font-size: var(--d-size-sm);
+}
+.layer-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.row-label {
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+.layer-buttons {
+    display: flex;
+    gap: 4px;
+}
+.playlist-info {
+    display: grid;
+    gap: 10px;
 }
 .media-pick {
     display: grid;
@@ -1070,13 +1174,33 @@ legend {
 }
 .block-head {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
 }
+.head-actions {
+    display: flex;
+    gap: 6px;
+}
 .lock-toggle {
     gap: 4px;
     font-size: var(--d-size-sm);
+}
+/* Red only on the wastebasket (Plan.md 47). */
+.danger-icon {
+    color: var(--d-danger);
+}
+/* Below 48rem (the sheet on a phone) only the symbols: the word stays for screen readers. */
+@media (max-width: 48rem) {
+    .btn-word {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
 }
 .lock-toggle--on {
     border-color: var(--d-accent);
@@ -1086,7 +1210,8 @@ legend {
 /* Only a container: the fieldset exists to switch all fields off at once. */
 .lockable {
     display: grid;
-    gap: inherit;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
     min-width: 0;
     margin: 0;
     padding: 0;
@@ -1094,6 +1219,10 @@ legend {
 }
 .lockable:disabled {
     opacity: 0.55;
+}
+/* Sections follow one another without the grid's gap; each brings its own divider line. */
+.lockable > :deep(.section) + :deep(.section) {
+    margin-top: -10px;
 }
 .hint {
     margin: 0;
