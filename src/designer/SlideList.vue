@@ -105,7 +105,7 @@ function removeCurrent(): void {
             <!-- Over 75rem the column folds into a rail, below it the drawer closes (Plan.md 45); the phone has its own header. -->
             <button
                 type="button"
-                class="d-btn d-btn--icon collapse"
+                class="d-btn d-btn--icon collapse-btn"
                 title="Slides einklappen"
                 aria-label="Slides einklappen"
                 data-testid="slides-collapse"
