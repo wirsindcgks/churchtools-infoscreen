@@ -59,7 +59,7 @@ Menü „…". Neue Screens legt ein Administrator an.
 - **Links die Slides** – „Neue Slide" unter der letzten, ziehen zum Umsortieren, darunter **„Aus anderer Playlist
   …"**, um Slides einer anderen Playlist als Kopie zu übernehmen.
 - **„+ Baustein"** öffnet alle Bausteine, alphabetisch: Beiträge, Bild, Countdown („Gottesdienst beginnt in 12:34"),
-  Fläche, Gemeindekopf, Gruppen (siehe unten), Nächster Termin, QR-Code, Terminliste, Text, Uhr und Webseite.
+  Fläche, Galerie (siehe unten), Gemeindekopf, Gruppen (siehe unten), Nächster Termin, QR-Code, Terminliste, Text, Uhr und Webseite.
 - **In der Mitte die Bildfläche:** ziehen, an den Griffen skalieren, an den **Hilfslinien** ausrichten (oben rechts: Abstand wählen oder aus; mit gedrückter Alt-Taste frei platzieren).
 - **Rechts der Inspektor:** Sein Kopf sagt, wo du bist („Slide 2 von 5"). Oben steht der Inhalt des Bausteins (Text, Kalender, Adresse …), darunter aufklappbare
   Bereiche – **Schrift** und **Position & Ebene**, bei Gruppen auch **Angaben**. Zugeklappt zeigt jeder Bereich in
@@ -74,6 +74,13 @@ Menü „…". Neue Screens legt ein Administrator an.
   speichern. Esc schließt sie.
 - **Speichern** (oder ⌘S / Strg+S). Alle Fernseher, die diese Playlist zeigen, übernehmen die Änderung in etwa
   20 Sekunden von selbst.
+
+**Galerie:** Der Baustein zeigt Bilder aus der Mediathek nacheinander. Mit **„+ Bilder"** wählst du mehrere auf einmal
+(die Zahl auf dem Bild ist die Reihenfolge), im Inspektor sortierst du sie mit ↑ und ↓ oder nimmst eins heraus. Du
+stellst die **Dauer je Bild** ein und den **Übergang** – Überblenden, Schieben, Aufdecken, Heranzoomen oder ohne. Die Slide läuft so lange, bis jedes Bild einmal zu sehen
+war; höchstens 30 Bilder je Galerie. Sie läuft auch ohne Netz, denn die Bilder liegen auf dem Gerät.
+
+![Editor mit dem Baustein „Galerie": rechts die Liste der Bilder mit Reihenfolge, Dauer und Übergang](bilder/galerie.png)
 
 ### 3. Gruppen aus ChurchTools
 

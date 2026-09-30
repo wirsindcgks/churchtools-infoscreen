@@ -336,6 +336,24 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await expect(page.locator('.editor-stage').getByTestId('group-card').first()).toBeVisible();
     await shoot(page, 'gruppen');
 
+    // A slideshow of three library pictures (Plan.md 46), on a slide of its own.
+    await page.getByTestId('add-slide').click();
+    await addBlock(page, 'slideshow');
+    await frame(page, { x: 160, y: 140, width: 1600, height: 800 });
+    await page.getByTestId('pick-slideshow').click();
+    const library = page.getByTestId('media-library');
+    for (const name of ['jugendtreff', 'fruehstueck', 'konzertabend']) {
+        await library.getByTestId('media-item').filter({ hasText: name }).locator('button.pick').click();
+    }
+    await library.getByTestId('media-add').click();
+    await expect(library).toBeHidden();
+    await expect(page.getByTestId('slideshow-row')).toHaveCount(3);
+    await page.getByTestId('slideshow-seconds').fill('8');
+    await page.getByTestId('slideshow-seconds').blur();
+    await shoot(page, 'galerie');
+    await page.getByTestId('slide-item').nth(3).click();
+    await page.getByTestId('frame-groups').first().click();
+
     // The same slide as the TV shows it, in the full-screen preview.
     await page.getByTestId('open-preview').click();
     await expect(page.getByTestId('playlist-preview')).toBeVisible();

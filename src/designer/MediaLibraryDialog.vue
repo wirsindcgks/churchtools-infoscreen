@@ -2,27 +2,64 @@
 /**
  * The media library in the editor: choose a picture for a block or the
  * background – the same pictures, with where they are shown, as on the media
- * library page. A single upload is chosen right away.
+ * library page. A single upload is chosen right away. With `multiple` (the
+ * slideshow, Plan.md 46) a click marks pictures in order, an upload is marked
+ * instead of chosen, and "Hinzufügen" hands over all of them at once.
  */
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import type { MediaItem } from '../media/library';
 import type { MediaDoc } from '../model/schema';
 import MediaGrid from './MediaGrid.vue';
 import { useMediaLibrary } from './useMediaLibrary';
 
-const props = defineProps<{ screen: { slug: string; name: string }; selectedMediaId?: string }>();
-const emit = defineEmits<{ choose: [MediaDoc]; close: [] }>();
+const props = defineProps<{ screen: { slug: string; name: string }; selectedMediaId?: string; multiple?: boolean; max?: number }>();
+const emit = defineEmits<{ choose: [MediaDoc]; chooseMany: [MediaDoc[]]; close: [] }>();
+
+/** File ids of the marked pictures, in the order they were marked. */
+const marked = ref<number[]>([]);
+const limit = computed(() => props.max ?? Infinity);
+const limitHint = ref(false);
+let limitTimer: ReturnType<typeof setTimeout> | undefined;
+function tooMany(): void {
+    limitHint.value = true;
+    clearTimeout(limitTimer);
+    limitTimer = setTimeout(() => (limitHint.value = false), 3000);
+}
+function mark(fileIds: number[]): void {
+    for (const id of fileIds) {
+        if (marked.value.includes(id)) continue;
+        if (marked.value.length >= limit.value) return tooMany();
+        marked.value.push(id);
+    }
+}
 
 const { items, loading, busy, problem, dragOver, dropZone, upload, adopt, remove } = useMediaLibrary(
     () => props.screen,
     (docs) => {
-        if (docs.length === 1) emit('choose', docs[0]!);
+        if (props.multiple) mark(docs.map((d) => d.fileId));
+        else if (docs.length === 1) emit('choose', docs[0]!);
     },
 );
 
 async function choose(item: MediaItem): Promise<void> {
+    if (props.multiple) {
+        if (marked.value.includes(item.fileId)) marked.value = marked.value.filter((id) => id !== item.fileId);
+        else mark([item.fileId]);
+        return;
+    }
     const doc = await adopt(item);
     if (doc) emit('choose', doc);
+}
+
+/** Every marked picture becomes a media document, in the order marked. */
+async function addMarked(): Promise<void> {
+    const docs: MediaDoc[] = [];
+    for (const id of marked.value) {
+        const item = items.value.find((i) => i.fileId === id);
+        const doc = item ? await adopt(item) : null;
+        if (doc) docs.push(doc);
+    }
+    if (docs.length) emit('chooseMany', docs);
 }
 
 const input = ref<HTMLInputElement | null>(null);
@@ -42,6 +79,16 @@ async function picked(): Promise<void> {
                 <button class="d-btn d-btn--create" type="button" :disabled="!!busy || loading" @click="input?.click()">
                     Bilder hochladen
                 </button>
+                <button
+                    v-if="multiple"
+                    class="d-btn d-btn--primary"
+                    type="button"
+                    :disabled="!marked.length || !!busy"
+                    data-testid="media-add"
+                    @click="addMarked"
+                >
+                    Hinzufügen ({{ marked.length }})
+                </button>
                 <button class="d-btn" type="button" @click="emit('close')">Schließen</button>
                 <input
                     ref="input"
@@ -55,6 +102,7 @@ async function picked(): Promise<void> {
             </header>
             <p v-if="busy" class="banner">{{ busy }}</p>
             <p v-if="problem" class="banner banner--error" role="alert">{{ problem }}</p>
+            <p v-if="limitHint" class="banner" role="status" data-testid="media-limit">Höchstens 30 Bilder je Galerie</p>
             <div class="body">
                 <p v-if="loading" class="empty">Lade Bilder …</p>
                 <MediaGrid
@@ -62,6 +110,8 @@ async function picked(): Promise<void> {
                     :items="items"
                     :selected-media-id="selectedMediaId"
                     choosable
+                    :multiple="multiple"
+                    :marked="marked"
                     @choose="choose"
                     @remove="remove"
                 />

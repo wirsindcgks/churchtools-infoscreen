@@ -188,6 +188,28 @@ describe('ScreenRepository', () => {
         expect((await repo.loadScreen('foyer-links')).media.map((m) => m.id)).toEqual(['logo-weiss']);
     });
 
+    it('counts every image of a slideshow as a use, and loads them (schema 1.15)', async () => {
+        const slideshow = { id: 'dia', type: 'slideshow' as const, x: 0, y: 0, width: 1200, height: 675, mediaIds: ['bild-1', 'bild-2'], fit: 'cover' as const, seconds: 6, transition: 'fade' as const };
+        for (const [n, id] of ['bild-1', 'bild-2', 'bild-3'].entries()) {
+            await repo.saveMedia({
+                schema: { major: 1, minor: 15 },
+                kind: 'media',
+                id,
+                name: id,
+                fileId: 20 + n,
+                imageUrl: `https://gemeinde.example/images/${20 + n}/abc`,
+            });
+        }
+        await repo.saveScreen(bundle({ slides: [makeSlide({ id: 'slide-1', blocks: [slideshow] }), makeSlide({ id: 'slide-2' })] }), {
+            ...save,
+            expectedRevision: null,
+        });
+        expect(await repo.mediaUsage('bild-1')).toHaveLength(1);
+        expect(await repo.mediaUsage('bild-2')).toHaveLength(1);
+        expect(await repo.mediaUsage('bild-3')).toHaveLength(0);
+        expect((await repo.loadScreen('foyer-links')).media.map((m) => m.id).sort()).toEqual(['bild-1', 'bild-2']);
+    });
+
     it('lists each screen with its first enabled slide and the number of slides', async () => {
         const slides = [
             makeSlide({ id: 'slide-1', enabled: false }),

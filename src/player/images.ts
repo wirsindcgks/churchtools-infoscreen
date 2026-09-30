@@ -45,6 +45,12 @@ export function slideImageUrls(
     for (const block of slide.blocks) {
         const item = block.type === 'image' ? media.get(block.mediaId) : undefined;
         if (item) urls.push(blockImageUrl(item, block));
+        if (block.type === 'slideshow') {
+            for (const id of block.mediaIds) {
+                const shown = media.get(id);
+                if (shown) urls.push(blockImageUrl(shown, block));
+            }
+        }
         const logo = block.type === 'church-header' ? headerLogoUrl(block, media, churchLogo) : null;
         if (logo) urls.push(logo);
     }

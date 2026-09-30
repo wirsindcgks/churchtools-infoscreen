@@ -28,6 +28,17 @@ describe('designer operations', () => {
         }
     });
 
+    it('creates a slideshow empty, with the defaults, at 1200 x 675', () => {
+        expect(createBlock('slideshow', stage)).toMatchObject({
+            mediaIds: [],
+            fit: 'cover',
+            seconds: 6,
+            transition: 'fade',
+            width: 1200,
+            height: 675,
+        });
+    });
+
     it('starts every block with a text style, and every banner, in the theme\'s font (Plan.md 40)', () => {
         const theme = { ...DEFAULT_THEME, font: 'oswald' };
         const styled = (Object.keys(BLOCK_LABELS) as BlockType[])
@@ -149,6 +160,7 @@ describe('the palette (Plan.md 47)', () => {
             'Bild',
             'Countdown',
             'Fläche',
+            'Galerie',
             'Gemeindekopf',
             'Gruppen',
             'Nächster Termin',

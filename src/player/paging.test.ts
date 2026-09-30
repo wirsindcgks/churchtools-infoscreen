@@ -87,6 +87,41 @@ describe('paging an appointment list', () => {
     });
 });
 
+describe('paging a slideshow (Plan.md 46)', () => {
+    const show = (overrides: Partial<Extract<Block, { type: 'slideshow' }>> = {}): Block => ({
+        id: 'dia',
+        type: 'slideshow',
+        x: 0,
+        y: 0,
+        width: 1200,
+        height: 675,
+        mediaIds: ['a', 'b', 'c', 'd'],
+        fit: 'cover',
+        seconds: 6,
+        transition: 'fade',
+        ...overrides,
+    });
+
+    it('keeps the slide until every image has run once', () => {
+        expect(slideSeconds(makeSlide({ durationSeconds: 10, blocks: [show()] }), {})).toBe(24);
+        expect(slideSeconds(makeSlide({ durationSeconds: 10, blocks: [show({ seconds: 4 })] }), {})).toBe(16);
+    });
+
+    it('leaves a slide alone that is longer than the images need', () => {
+        expect(slideSeconds(makeSlide({ durationSeconds: 60, blocks: [show()] }), {})).toBe(60);
+    });
+
+    it('needs no more time than the slide has for one image', () => {
+        expect(slideSeconds(makeSlide({ durationSeconds: 10, blocks: [show({ mediaIds: ['a'] })] }), {})).toBe(10);
+    });
+
+    it('prefers the count the block reports over the stored list', () => {
+        const slide = makeSlide({ durationSeconds: 10, blocks: [show()] });
+        expect(slideSeconds(slide, { dia: 2 })).toBe(12);
+        expect(slideSeconds(slide, { dia: 1 })).toBe(10);
+    });
+});
+
 describe('paging a groups block (Plan.md 43)', () => {
     it('keeps the slide until every group or page has shown, as a card and as a list', () => {
         const card = makeSlide({ durationSeconds: 8, blocks: [groups()] });
