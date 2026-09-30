@@ -658,7 +658,7 @@ const LAYERS = [
                             Raum zeigen
                         </label>
                         <InfoHint>
-                            Zeigt die gebuchten Räume des Termins neben dem Ort. Damit der Fernseher sie sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, alle Räume zu sehen.
+                            Zeigt die gebuchten Räume des Termins neben dem Ort – nur bestätigte Buchungen, keine, die noch warten. Damit der Fernseher sie sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, alle Räume zu sehen.
                         </InfoHint>
                     </div>
                 </template>
@@ -952,6 +952,7 @@ const LAYERS = [
 
                     <fieldset class="rooms-list">
                         <legend>Räume</legend>
+                        <p class="hint" data-testid="rooms-confirmed-hint">Gezeigt werden nur bestätigte Buchungen, keine, die noch warten.</p>
                         <p v-if="!block.rooms.length" class="hint">Noch keine Räume gewählt.</p>
                         <div v-for="(entry, index) in block.rooms" :key="entry.resourceId" class="room-entry" data-testid="room-entry">
                             <div class="room-head">
