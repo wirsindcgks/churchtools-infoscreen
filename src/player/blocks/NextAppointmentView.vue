@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { selectUpcoming } from '../../appointments/normalize';
 import type { Block } from '../../model/schema';
 import { themeOf, useStageContext } from '../context';
-import { formatDate, sizedImageUrl, textStyle, timeRange } from '../format';
+import { formatDate, placeLine, sizedImageUrl, textStyle, timeRange } from '../format';
 import { imageBox, nextLayout } from '../theme';
 import CalendarBadge from './CalendarBadge.vue';
 import DateTile from './DateTile.vue';
@@ -21,6 +21,12 @@ const next = computed(
             calendarIds: props.block.calendarIds,
         })[0] ?? null,
 );
+
+/** Place and, if asked for, the booked rooms: "Gemeindezentrum · Saal". */
+const place = computed(() => (next.value ? placeLine(next.value, props.block.showRooms) : null));
+
+/** The plain layout has no place line of its own: it appears with the rooms, after the same pattern. */
+const classicPlace = computed(() => (props.block.showRooms && next.value?.rooms?.length ? place.value : null));
 
 const card = computed(() => nextLayout(props.block, themeOf(context)) === 'card');
 
@@ -66,9 +72,9 @@ const imageStyle = computed(() =>
                         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
                         {{ timeRange(next) }}
                     </span>
-                    <span v-if="next.location">
+                    <span v-if="place" data-testid="next-place">
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></svg>
-                        {{ next.location }}
+                        {{ place }}
                     </span>
                 </div>
             </div>
@@ -84,6 +90,10 @@ const imageStyle = computed(() =>
             <div class="meta">{{ formatDate(next.start, context.timeZone) }}</div>
             <div v-if="!next.allDay" class="meta">{{ next.startTime }} Uhr</div>
             <div v-if="next.subtitle" class="meta">{{ next.subtitle }}</div>
+            <div v-if="classicPlace" class="meta place" data-testid="next-place">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></svg>
+                {{ classicPlace }}
+            </div>
         </div>
         <div v-else class="text meta">Derzeit ist kein Termin geplant.</div>
     </div>
@@ -121,6 +131,21 @@ const imageStyle = computed(() =>
 .meta {
     font-size: 0.7em;
     opacity: 0.9;
+}
+.place {
+    display: flex;
+    align-items: center;
+    gap: 0.45em;
+}
+.place svg {
+    flex: none;
+    width: 1em;
+    height: 1em;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 .hero {
     display: flex;

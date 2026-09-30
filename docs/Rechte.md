@@ -85,11 +85,14 @@ In der Rechteverwaltung unter **„Ressourcen"**.
 
 | Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
 | --- | --- | --- | --- | --- |
-| Ressource sehen | Ressource sehen (`view resource`, 205) | für die Vorschau | **alle Räume** | **jeden Raum, den ein Screen zeigt** ⁴ |
+| Ressource sehen | Ressource sehen (`view resource`, 205) | für die Vorschau | **alle Räume** | **jeden Raum, den ein Screen zeigt** – und **alle Räume**, sobald ein Termin-Baustein „Raum zeigen" an hat ⁴ |
 
 ⁴ **Nur Räume,** nicht Gegenstände und Fahrzeuge. Das Recht „„Ressourcen" sehen" (201) braucht niemand – das Recht
 je Ressource genügt. Gestalter sehen nur Räume, für die sie das Recht haben; fehlt es, steht der Raum im Baustein
 „Raumbelegung" nicht zur Auswahl. Zeigt ein Screen einen weiteren Raum, einmal „Rechte aktualisieren".
+**Raum am Termin:** Welche Räume künftige Termine buchen, weiß der Assistent nicht vorher – deshalb bekommt das Gerät
+„Ressource sehen" für alle Räume, sobald ein „Nächster Termin" oder eine Terminliste (als Karten) „Raum zeigen" an hat.
+Am Termin steht nur der Raumname, nie ein Buchungstitel.
 **Ein entzogenes Recht wirkt bei ChurchTools noch eine Weile nach – gemessen gut 40 Minuten.**
 
 ### ChurchTools selbst – nur für Administratoren
@@ -115,6 +118,7 @@ in der Regel.
 | die Einstellungen öffnen | Administrator | „Personen administrieren" |
 | dass der Fernseher Termine zeigt | Gerät | Einzelnen Kalender sehen für jeden Kalender des Screens |
 | dass der Fernseher die Raumbelegung zeigt | Gerät | Ressource sehen für jeden Raum des Screens |
+| dass der Fernseher den Raum am Termin zeigt | Gerät | Ressource sehen für alle Räume |
 | Räume im Baustein „Raumbelegung" wählen | Gestalter | Ressource sehen für die Räume |
 
 Die Startseite des Designers nennt fehlende Rechte selbst; die Einstellungsseite prüft die Rechte beider Gruppen und

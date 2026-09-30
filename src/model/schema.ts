@@ -104,6 +104,11 @@ export const AppointmentListBlock = v.object({
      * the list of the WordPress plugin (Plan.md, 20); `rows` is the plain list.
      */
     layout: v.optional(v.picklist(['rows', 'cards'])),
+    /**
+     * Since 1.16: the booked rooms beside the place – in the `cards` layout only
+     * (Plan.md, Nächste Schritte 50). Missing = off.
+     */
+    showRooms: v.optional(v.boolean()),
     style: TextStyle,
 });
 
@@ -118,6 +123,8 @@ export const NextAppointmentBlock = v.object({
      * (Plan.md, 20); `classic` is the plain one.
      */
     layout: v.optional(v.picklist(['classic', 'card'])),
+    /** Since 1.16: the booked rooms beside the place, in both layouts (Plan.md, Nächste Schritte 50). Missing = off. */
+    showRooms: v.optional(v.boolean()),
     style: TextStyle,
 });
 

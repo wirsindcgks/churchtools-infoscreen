@@ -195,9 +195,9 @@ export function createBlock(
         case 'clock':
             return { ...frame, type, format: 'time', style: textStyle(64, { fontWeight: 600, align: 'right' }) };
         case 'appointment-list':
-            return { ...frame, type, calendarIds: calendars, horizonDays: 14, limit: 6, style: textStyle(44) };
+            return { ...frame, type, calendarIds: calendars, horizonDays: 14, limit: 6, showRooms: true, style: textStyle(44) };
         case 'next-appointment':
-            return { ...frame, type, calendarIds: calendars, showImage: true, style: textStyle(64, { fontWeight: 600 }) };
+            return { ...frame, type, calendarIds: calendars, showImage: true, showRooms: true, style: textStyle(64, { fontWeight: 600 }) };
         case 'church-header':
             return { ...frame, type, showLogo: true, showName: true, style: textStyle(48, { fontWeight: 600 }) };
         case 'web':

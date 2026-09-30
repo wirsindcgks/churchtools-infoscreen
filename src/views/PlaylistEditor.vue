@@ -18,6 +18,7 @@ import type { HomepageEntry } from '../groups/normalize';
 import type { MediaDoc } from '../model/schema';
 import { MEDIA_PAGE } from '../media/library';
 import { roomsOf, type RoomInfo } from '../rooms/normalize';
+import { needsAppointmentRooms } from '../appointments/rooms';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 
@@ -48,6 +49,7 @@ const { calendars, problem } = usePreview(
     computed(() => postNeeds(editor.slides)),
     computed(() => groupNeeds(editor.slides)),
     computed(() => roomNeeds(editor.slides)),
+    computed(() => needsAppointmentRooms(editor.slides.flatMap((s) => s.blocks))),
 );
 
 /** Groups with posts switched on, for the „Beiträge"-Baustein; loaded once. Unreadable → an empty list, the inspector says so. */

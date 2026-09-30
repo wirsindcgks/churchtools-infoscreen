@@ -46,11 +46,35 @@ const BOOKINGS: Record<number, unknown[]> = {
     3: [],
 };
 
+/**
+ * An appointment as `/calendars/appointments` sends it with `include[]=bookings`: the bookings beside `base`,
+ * with fields that must never show – a confirmed room, a confirmed item, a waiting room.
+ */
+const APPOINTMENT = {
+    appointment: {
+        base: {
+            id: 9,
+            title: 'Sonntagsgottesdienst',
+            allDay: false,
+            calendar: { id: 1, name: 'Gottesdienste', color: '#2e7d8c' },
+            address: { name: 'Kirchsaal' },
+        },
+        calculated: { startDate: '2026-10-04T08:00:00Z', endDate: '2026-10-04T09:30:00Z' },
+    },
+    bookings: [
+        { base: { id: 11, title: 'Geheimer Buchungstitel', resourceId: 1, statusId: 2, description: 'Geheim', onBehalfOfPid: 77 } },
+        { base: { id: 12, title: 'Beamer-Buchung', resourceId: 4, statusId: 2 } },
+        { base: { id: 13, title: 'Noch nicht bestätigt', resourceId: 2, statusId: 1 } },
+    ],
+};
+
 interface Church {
     rooms?: typeof ROOMS;
     /** Rooms whose bookings answer 403, as for a device without the right (G45). */
     forbidden?: number[];
     bookingRequests: URLSearchParams[];
+    /** The requests for appointments, to see whether the bookings were asked for. */
+    appointmentRequests?: URLSearchParams[];
 }
 
 async function fakeChurch(page: Page, church: Church = { bookingRequests: [] }): Promise<Church> {
@@ -65,7 +89,11 @@ async function fakeChurch(page: Page, church: Church = { bookingRequests: [] }):
         if (path === '/whoami') return json({ id: 1, firstName: 'Anna', lastName: 'Beispiel' });
         if (path === '/info') return json({ siteName: 'Gemeinde am Markt' });
         if (path === '/calendars') return json([{ id: 1, name: 'Gottesdienste', color: '#2e7d8c' }]);
-        if (path === '/calendars/appointments') return json([]);
+        if (path === '/calendars/appointments') {
+            church.appointmentRequests?.push(url.searchParams);
+            // The bookings only where they were asked for – as ChurchTools does.
+            return json([url.searchParams.has('include[]') ? APPOINTMENT : { appointment: APPOINTMENT.appointment }]);
+        }
         if (path === '/permissions/global') return json({ churchcore: { 'administer persons': true } });
         if (path === '/resource/masterdata') return json({ resourceTypes: TYPES, resources: church.rooms ?? ROOMS });
         if (path === '/bookings') {
@@ -88,6 +116,16 @@ async function newRoomsBlock(page: Page, ownSlide = true): Promise<void> {
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     if (ownSlide) await page.getByTestId('add-slide').click();
     await addBlock(page, 'rooms');
+    await expect(page.getByTestId('block-inspector')).toBeVisible();
+}
+
+/** A new block of this type on a slide of its own. */
+async function newBlock(page: Page, type: string): Promise<void> {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await page.getByTestId('add-slide').click();
+    await addBlock(page, type);
     await expect(page.getByTestId('block-inspector')).toBeVisible();
 }
 
@@ -243,3 +281,42 @@ for (const size of [
         await page.screenshot({ path: `test-results/rooms-inspector-${size.width}.png` });
     });
 }
+
+test('the room at an appointment: beside the place, in both layouts of the next appointment', async ({ page }) => {
+    const church = await fakeChurch(page, { bookingRequests: [], appointmentRequests: [] });
+    await newBlock(page, 'next-appointment');
+
+    // Asked for with the bookings – and only the confirmed room comes through, no title, no item.
+    await expect.poll(() => church.appointmentRequests!.some((r) => r.getAll('include[]').includes('bookings'))).toBe(true);
+    const place = stage(page).getByTestId('next-place');
+    await page.getByTestId('next-layout').selectOption('card');
+    await expect(place).toHaveText('Kirchsaal · Saal');
+    await page.screenshot({ path: 'test-results/rooms-at-appointment.png' });
+    await page.getByTestId('next-layout').selectOption('classic');
+    await expect(place).toHaveText('Kirchsaal · Saal');
+    await expect(stage(page)).not.toContainText('Geheimer Buchungstitel');
+    await expect(stage(page)).not.toContainText('Beamer');
+
+    // Off: the card shows the place alone, the plain layout none – as before.
+    await page.getByTestId('show-rooms').uncheck();
+    await expect(place).toHaveCount(0);
+    await page.getByTestId('next-layout').selectOption('card');
+    await expect(place).toHaveText('Kirchsaal');
+    await page.getByTestId('show-rooms').check();
+    await expect(place).toHaveText('Kirchsaal · Saal');
+});
+
+test('the room in the list of appointments: as cards, not as rows', async ({ page }) => {
+    await fakeChurch(page, { bookingRequests: [], appointmentRequests: [] });
+    await newBlock(page, 'appointment-list');
+
+    await page.getByTestId('list-layout').selectOption('cards');
+    await expect(stage(page).getByTestId('list-place')).toHaveText('Kirchsaal · Saal');
+    await expect(page.getByTestId('show-rooms')).toBeVisible();
+
+    await page.getByTestId('list-layout').selectOption('rows');
+    await expect(stage(page).getByTestId('list-card')).toHaveCount(0);
+    await expect(stage(page)).toContainText('Sonntagsgottesdienst');
+    await expect(stage(page)).not.toContainText('Saal');
+    await expect(page.getByTestId('show-rooms')).toHaveCount(0);
+});

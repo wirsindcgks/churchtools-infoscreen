@@ -484,6 +484,55 @@ describe('rendering groups (Plan.md 43)', () => {
     });
 });
 
+describe('the room at an appointment (Plan.md 50)', () => {
+    const frame = { x: 0, y: 0, width: 1600, height: 600, calendarIds: [2], style };
+    const appointment = (location: { name?: string; addition?: string } | null, bookings: unknown[] = []) =>
+        normalizeAppointments(
+            [
+                {
+                    appointment: {
+                        base: { id: 4, title: 'Gottesdienst', allDay: false, calendar: { id: 2, name: 'Gottesdienst' }, address: location },
+                        calculated: { startDate: '2026-10-04T09:00:00Z', endDate: '2026-10-04T10:30:00Z' },
+                    },
+                    bookings,
+                } as never,
+            ],
+            BERLIN,
+            [
+                { id: 1, name: 'Saal' },
+                { id: 3, name: 'Raum 01' },
+            ],
+        );
+    const booked = (...ids: number[]) => ids.map((resourceId) => ({ base: { id: resourceId, resourceId, statusId: 2 } }));
+    const next = (layout: 'classic' | 'card', showRooms = true): Block => ({ id: 'n', type: 'next-appointment', ...frame, layout, showRooms, showImage: false });
+    const list = (layout: 'rows' | 'cards', showRooms = true): Block => ({ id: 'l', type: 'appointment-list', ...frame, horizonDays: 14, limit: 5, layout, showRooms });
+    const place = (block: Block, appointments: ReturnType<typeof appointment>, testid: string) =>
+        render(makeSlide({ blocks: [block] }), { appointments }).find(`[data-testid="${testid}"]`);
+
+    it('puts the room after the place in one line, several rooms separated by commas', () => {
+        const place_ = { name: 'Gemeindezentrum' };
+        expect(place(next('card'), appointment(place_, booked(1)), 'next-place').text()).toBe('Gemeindezentrum · Saal');
+        expect(place(next('classic'), appointment(place_, booked(1, 3)), 'next-place').text()).toBe('Gemeindezentrum · Saal, Raum 01');
+        expect(place(list('cards'), appointment(place_, booked(1, 3)), 'list-place').text()).toBe('Gemeindezentrum · Saal, Raum 01');
+    });
+
+    it('shows the room alone without a place, and the place alone without a room', () => {
+        expect(place(next('card'), appointment(null, booked(1)), 'next-place').text()).toBe('Saal');
+        expect(place(next('classic'), appointment(null, booked(1)), 'next-place').text()).toBe('Saal');
+        expect(place(next('card'), appointment({ name: 'Gemeindezentrum' }), 'next-place').text()).toBe('Gemeindezentrum');
+        // The plain layout shows no place of its own: without a room it stays as it was.
+        expect(place(next('classic'), appointment({ name: 'Gemeindezentrum' }), 'next-place').exists()).toBe(false);
+    });
+
+    it('shows no room where the block does not ask, and none in the list of rows', () => {
+        const place_ = { name: 'Gemeindezentrum' };
+        expect(place(next('card', false), appointment(place_, booked(1)), 'next-place').text()).toBe('Gemeindezentrum');
+        expect(place(list('cards', false), appointment(place_, booked(1)), 'list-place').text()).toBe('Gemeindezentrum');
+        const rows = render(makeSlide({ blocks: [list('rows')] }), { appointments: appointment(place_, booked(1)) });
+        expect(rows.text()).not.toContain('Saal');
+    });
+});
+
 describe('rendering rooms (Plan.md 46)', () => {
     const roomsBlock = (overrides: Partial<Extract<Block, { type: 'rooms' }>> = {}): Block => ({
         id: 'r',

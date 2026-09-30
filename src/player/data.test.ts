@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { makeSlide } from '../model/testing';
+import { makeScreen, makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
 import type { Post } from '../posts/normalize';
-import { groupNeeds, mergePosts, postNeeds, readableAppointments } from './data';
+import { appointmentNeeds, groupNeeds, mergePosts, postNeeds, readableAppointments } from './data';
 
 const forbidden = () => Object.assign(new Error('403'), { response: { status: 403 } });
 
@@ -122,5 +122,38 @@ describe('groupNeeds (Plan.md 43)', () => {
         ];
         expect(groupNeeds(slides)).toEqual([8, 10]);
         expect(groupNeeds([makeSlide({ blocks: [] })])).toEqual([]);
+    });
+});
+
+describe('appointmentNeeds – rooms (Plan.md 50)', () => {
+    const base = { x: 0, y: 0, width: 1400, height: 700, calendarIds: [2], style };
+    const next = (overrides: Partial<Extract<Block, { type: 'next-appointment' }>> = {}): Block => ({ id: 'n', type: 'next-appointment', ...base, showImage: true, ...overrides });
+    const list = (overrides: Partial<Extract<Block, { type: 'appointment-list' }>> = {}): Block => ({
+        id: 'l',
+        type: 'appointment-list',
+        ...base,
+        horizonDays: 14,
+        limit: 5,
+        ...overrides,
+    });
+    const rooms = (...blocks: Block[]) => appointmentNeeds(makeScreen(), [makeSlide({ blocks })]).rooms;
+
+    it('wants rooms for a next appointment that shows them, in both layouts', () => {
+        expect(rooms(next())).toBe(false);
+        expect(rooms(next({ showRooms: true }))).toBe(true);
+        expect(rooms(next({ showRooms: true, layout: 'classic' }))).toBe(true);
+        expect(rooms(next({ showRooms: true, layout: 'card' }))).toBe(true);
+    });
+
+    it('wants rooms for a list only as cards – or following the theme, which is not known here', () => {
+        expect(rooms(list({ showRooms: true, layout: 'rows' }))).toBe(false);
+        expect(rooms(list({ showRooms: true, layout: 'cards' }))).toBe(true);
+        expect(rooms(list({ showRooms: true }))).toBe(true);
+        expect(rooms(list({ layout: 'cards' }))).toBe(false);
+    });
+
+    it('never wants rooms for a countdown', () => {
+        const countdown: Block = { id: 'c', type: 'countdown', ...base, showTitle: true, runningText: 'Läuft', showRooms: true } as Block;
+        expect(rooms(countdown)).toBe(false);
     });
 });

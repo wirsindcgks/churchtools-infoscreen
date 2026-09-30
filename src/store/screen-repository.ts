@@ -13,6 +13,7 @@
  * instead of a broken one. Concurrent edits are detected through `revision`,
  * not prevented: between reading and writing a window remains (Risiko 6).
  */
+import { needsAppointmentRooms } from '../appointments/rooms';
 import {
     readMedia,
     readPlaylistOrSchedule,
@@ -820,6 +821,12 @@ export class ScreenRepository {
             if (block.type === 'rooms') block.rooms.forEach((r) => ids.add(r.resourceId));
         }
         return [...ids].sort((a, b) => a - b);
+    }
+
+    /** Whether any block shows the rooms of its appointments – then a device must see every room (Plan.md 50). */
+    async appointmentRoomsInUse(): Promise<boolean> {
+        const slides = await this.readSlides();
+        return needsAppointmentRooms(slides.docs.flatMap((s) => s.doc.blocks));
     }
 
     async saveMedia(doc: MediaDoc): Promise<void> {

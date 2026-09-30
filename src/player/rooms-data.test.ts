@@ -162,3 +162,44 @@ describe('roomNeeds', () => {
         expect(roomNeeds([makeSlide({ blocks: [] })])).toEqual({ resourceIds: [], days: 1 });
     });
 });
+
+describe('the rooms of appointments (Plan.md 50)', () => {
+    const appointment = (bookings?: unknown[]) => ({
+        appointment: {
+            base: { id: 4, title: 'Gottesdienst', allDay: false, calendar: { id: 2, name: 'Gottesdienst' } },
+            calculated: { startDate: '2026-10-03T09:00:00Z', endDate: '2026-10-03T10:30:00Z' },
+        },
+        ...(bookings ? { bookings } : {}),
+    });
+    const booked = (resourceId: number) => ({ base: { id: resourceId, title: 'Geheim', resourceId, statusId: 2 } });
+
+    function stub(masterdataAnswer: () => unknown): void {
+        get.mockImplementation(async (path: string) => {
+            if (path === '/resource/masterdata') return masterdataAnswer();
+            if (path === '/calendars/appointments') return [appointment([booked(3), booked(1)])];
+            throw new Error(`unexpected ${path}`);
+        });
+    }
+
+    it('asks for the bookings and the stammdaten only when rooms are wanted', async () => {
+        stub(() => masterdata);
+        const withRooms = await churchToolsPlayerData.appointments([2], FROM, TO, TZ, { rooms: true });
+        expect(withRooms[0]!.rooms).toEqual(['Saal', 'Raum 01']);
+        expect(get).toHaveBeenCalledWith('/calendars/appointments', expect.objectContaining({ include: ['bookings'] }));
+
+        get.mockClear();
+        const without = await churchToolsPlayerData.appointments([2], FROM, TO, TZ);
+        expect(without[0]!.rooms).toBeUndefined();
+        expect(get).toHaveBeenCalledTimes(1);
+        expect(get.mock.calls[0]![1]).not.toHaveProperty('include');
+    });
+
+    it('shows the appointments without rooms when the stammdaten fail', async () => {
+        stub(() => {
+            throw serverError();
+        });
+        const list = await churchToolsPlayerData.appointments([2], FROM, TO, TZ, { rooms: true });
+        expect(list).toHaveLength(1);
+        expect(list[0]!.rooms).toBeUndefined();
+    });
+});

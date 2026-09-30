@@ -160,6 +160,40 @@ describe('checkDeviceGroup', () => {
         expect(fail?.detail).toContain('Ressource sehen');
     });
 
+    it('checks that a device sees every room when appointments show theirs (Plan.md 50)', () => {
+        const rooms = [
+            { id: 1, name: 'Saal' },
+            { id: 3, name: 'Raum 01' },
+            { id: 4, name: 'Keller' },
+        ];
+        const check = (grants: Grant[]) =>
+            checkDeviceGroup({
+                statusId: 1,
+                members: [{ label: 'Gerät A', grants }],
+                calendars,
+                usedCalendarIds: [],
+                rooms,
+                usedRoomIds: [],
+                appointmentRooms: true,
+                wikiCategoryId: WIKI,
+            }).filter((c) => c.text.startsWith('Räume an Terminen'));
+        expect(check([grant(AUTH.resourceView, 1)])).toEqual([
+            {
+                level: 'fail',
+                text: 'Räume an Terminen: Gerät A sieht 2 von 3 Räumen nicht.',
+                detail: '„Rechte aktualisieren" gibt der Gerätegruppe das Recht „Ressource sehen" für alle Räume.',
+            },
+        ]);
+        expect(check([grant(AUTH.resourceView, 1), grant(AUTH.resourceView, 3), grant(AUTH.resourceView, 4)])).toEqual([
+            { level: 'ok', text: 'Räume an Terminen sind sichtbar.' },
+        ]);
+    });
+
+    it('adds no row for rooms at appointments when no block asks for them', () => {
+        const checks = checkDeviceGroup({ statusId: 1, members: [{ label: 'G', grants: [] }], calendars, usedCalendarIds: [], rooms: [{ id: 1, name: 'Saal' }], wikiCategoryId: WIKI });
+        expect(checks.some((c) => c.text.startsWith('Räume an Terminen'))).toBe(false);
+    });
+
     it('warns about a room a screen uses that is not to be found, and adds no row without used rooms', () => {
         const members = [{ label: 'Gerät', grants: [] }];
         const unknown = checkDeviceGroup({ statusId: 1, members, calendars, usedCalendarIds: [], rooms: [], usedRoomIds: [42], wikiCategoryId: WIKI });

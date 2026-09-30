@@ -121,3 +121,12 @@ export function textOn(color: string | null | undefined): string {
     }) as [number, number, number];
     return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.179 ? '#111827' : '#ffffff';
 }
+
+/**
+ * The place line of an appointment: "Gemeindezentrum · Saal, Raum 01". The rooms
+ * only where the block asks for them (`showRooms`); null when there is nothing to say.
+ */
+export function placeLine(appointment: { location: string | null; rooms?: string[] }, showRooms?: boolean): string | null {
+    const rooms = showRooms ? (appointment.rooms ?? []).join(', ') : '';
+    return [appointment.location, rooms].filter(Boolean).join(' · ') || null;
+}

@@ -158,7 +158,10 @@ function posts(): unknown[] {
     ];
 }
 
-function appointments(): unknown[] {
+/** The rooms booked for an appointment (by its number), as `include[]=bookings` sends them – Saal and Jugendkeller of `RESOURCES`. */
+const APPOINTMENT_ROOMS: Record<number, number> = { 1: 1, 5: 1, 2: 3 };
+
+function appointments(withBookings: boolean): unknown[] {
     const items = [
         ['Gottesdienst', 'mit Kinderprogramm', 1, 0, 10, 901, 'Kirchsaal'],
         ['Jugendtreff', 'Spieleabend', 2, 1, 19, 902, 'Jugendraum'],
@@ -187,6 +190,13 @@ function appointments(): unknown[] {
                 },
                 calculated: { startDate: start.toISOString(), endDate: new Date(start.getTime() + 5_400_000).toISOString() },
             },
+            ...(withBookings
+                ? {
+                      bookings: APPOINTMENT_ROOMS[i + 1]
+                          ? [{ base: { id: 100 + i, title: 'Buchung', resourceId: APPOINTMENT_ROOMS[i + 1], statusId: 2 } }]
+                          : [],
+                  }
+                : {}),
         };
     });
 }
@@ -254,7 +264,9 @@ async function fakeChurch(page: Page): Promise<void> {
         if (path === '/config') return json({ timezone: 'Europe/Berlin' });
         if (path === '/info') return json({ siteName: 'Gemeinde am Markt' });
         if (path === '/calendars') return json(CALENDARS);
-        if (path === '/calendars/appointments') return json(appointments());
+        if (path === '/calendars/appointments') {
+            return json(appointments(new URL(request.url()).searchParams.has('include[]')));
+        }
         if (path === '/groups') return route.fulfill({ json: { data: POST_GROUPS, meta: { pagination: { lastPage: 1 } } } });
         if (path === '/posts') return json(posts());
         if (path === '/grouphomepages') {
@@ -362,6 +374,9 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await page.getByTestId('slide-item').nth(2).click();
     await page.getByTestId('frame-appointment-list').first().click();
+    // The rooms beside the place (Plan.md 50): the list as cards shows them on request.
+    await page.getByTestId('show-rooms').check();
+    await expect(page.locator('.editor-stage').getByTestId('list-place').first()).toContainText('Saal');
     await shoot(page, 'editor');
 
     // Groups of a group homepage: two a page, with leaders and their pictures (Plan.md 43).

@@ -125,6 +125,8 @@ let usedCalendarIds: number[] = [];
 /** Rooms the administrator sees; empty when the master data is unreadable – the page runs on (G45). */
 let rooms: RoomInfo[] = [];
 let usedRoomIds: number[] = [];
+/** A block shows the rooms of its appointments (Plan.md 50). */
+let appointmentRooms = false;
 let catalog: AuthCatalog | null = null;
 let categories: Partial<Record<CategoryKey, number>> = {};
 
@@ -193,6 +195,7 @@ function computePlan(): void {
             calendarIds: usedCalendarIds,
             roomIds: rooms.map((r) => r.id),
             usedRoomIds,
+            appointmentRooms,
         });
     } catch (e) {
         planProblem.value = explain(e);
@@ -444,6 +447,7 @@ async function check(side: Side): Promise<void> {
                 usedCalendarIds,
                 rooms,
                 usedRoomIds,
+                appointmentRooms,
                 wikiCategoryId,
                 moduleRights: moduleRights('device'),
             });
@@ -502,7 +506,7 @@ onMounted(async () => {
         const handle = await getRepository();
         repository = handle.repository;
         demo.value = handle.demo;
-        const [list, settings, wikiCategories, calendarList, used, screenList, masterdata, usedRooms] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, used, screenList, masterdata, usedRooms, roomsAtAppointments] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
@@ -511,6 +515,7 @@ onMounted(async () => {
             repository.listScreens(),
             fetchResourceMasterdata().catch(() => null),
             repository.roomIdsInUse(),
+            repository.appointmentRoomsInUse(),
         ]);
         screens.value = screenList;
         device.slug = screenList[0]?.slug ?? '';
@@ -523,6 +528,7 @@ onMounted(async () => {
         usedCalendarIds = used;
         rooms = masterdata ? roomsOf(masterdata) : [];
         usedRoomIds = usedRooms;
+        appointmentRooms = roomsAtAppointments;
         selected.designer = settings?.designerGroupId ?? null;
         selected.device = settings?.deviceGroupId ?? null;
         createdGroupIds.value = settings?.createdGroupIds ?? [];

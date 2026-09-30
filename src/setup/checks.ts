@@ -202,6 +202,8 @@ export interface DeviceGroupInput {
     /** The rooms the administrator sees, to name the used ones. */
     rooms?: RoomInfo[];
     usedRoomIds?: number[];
+    /** A block shows the rooms of its appointments (Plan.md 50): the device must see all rooms. */
+    appointmentRooms?: boolean;
     wikiCategoryId: number | null;
     moduleRights?: ModuleRights;
 }
@@ -258,6 +260,24 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                   }
                 : { level: 'ok', text: `„${room.name}" ist sichtbar.` },
         );
+    }
+
+    if (input.appointmentRooms) {
+        const all = input.rooms ?? [];
+        const blind = input.members
+            .map((m) => ({ label: m.label, unseen: all.filter((r) => !has(m.grants, AUTH.resourceView, r.id)).length }))
+            .filter((m) => m.unseen > 0);
+        if (blind.length) {
+            for (const m of blind) {
+                checks.push({
+                    level: 'fail',
+                    text: `Räume an Terminen: ${m.label} sieht ${m.unseen} von ${all.length} Räumen nicht.`,
+                    detail: '„Rechte aktualisieren" gibt der Gerätegruppe das Recht „Ressource sehen" für alle Räume.',
+                });
+            }
+        } else {
+            checks.push({ level: 'ok', text: 'Räume an Terminen sind sichtbar.' });
+        }
     }
 
     if (!input.moduleRights) {

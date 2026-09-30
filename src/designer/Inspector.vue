@@ -9,6 +9,7 @@ import { fontDef, FONTS } from '../player/fonts';
 import { calendarColor, sizedImageUrl } from '../player/format';
 import { GROUP_SECONDS, PAGE_SECONDS, POST_SECONDS, slideSeconds } from '../player/paging';
 import { qrShape } from '../player/qr';
+import { listLayout } from '../player/theme';
 import type { RoomInfo } from '../rooms/normalize';
 import { webFrame, withScheme } from '../player/web';
 import { useEditorStore } from './editor-store';
@@ -645,6 +646,21 @@ const LAYERS = [
                         >
                         Terminbild zeigen
                     </label>
+                    <!-- Plan.md, 50: the booked rooms beside the place; the list shows them as cards only. -->
+                    <div v-if="block.type === 'next-appointment' || listLayout(block, themeOf(stage)) === 'cards'" class="hint-row">
+                        <label class="check">
+                            <input
+                                type="checkbox"
+                                :checked="block.showRooms ?? false"
+                                data-testid="show-rooms"
+                                @change="setBlock({ showRooms: ($event.target as HTMLInputElement).checked })"
+                            >
+                            Raum zeigen
+                        </label>
+                        <InfoHint>
+                            Zeigt die gebuchten Räume des Termins neben dem Ort. Damit der Fernseher sie sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, alle Räume zu sehen.
+                        </InfoHint>
+                    </div>
                 </template>
 
                 <!-- Plan.md, 33: posts of ChurchTools groups, after the terminlists' cards. -->

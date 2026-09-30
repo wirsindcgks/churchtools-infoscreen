@@ -30,7 +30,7 @@ const catalog = catalogFrom({
     ),
 });
 const categories = { screens: 1, playlists: 4, slides: 7, media: 10, settings: 13 };
-const input = { catalog, moduleKey: 'infoscreen-designer', categories, wikiCategoryId: 1, calendarIds: [4, 5], roomIds: [1, 2, 3], usedRoomIds: [2] };
+const input = { catalog, moduleKey: 'infoscreen-designer', categories, wikiCategoryId: 1, calendarIds: [4, 5], roomIds: [1, 2, 3], usedRoomIds: [2], appointmentRooms: false };
 
 describe('planProvisioning', () => {
     const [designer, device] = planProvisioning(input);
@@ -63,6 +63,15 @@ describe('planProvisioning', () => {
             label: 'Ressource sehen',
         });
         expect(device!.grants.find((g) => g.authId === AUTH.resourceView)?.dataId).toEqual([2]);
+    });
+
+    it('gives the device every room in one entry when appointments show theirs (Plan.md 50)', () => {
+        const [, v] = planProvisioning({ ...input, appointmentRooms: true, roomIds: [1, 2, 3], usedRoomIds: [2, 7] });
+        const entries = v!.grants.filter((g) => g.authId === AUTH.resourceView);
+        expect(entries).toEqual([{ authId: 205, dataId: [1, 2, 3, 7], label: 'Ressource sehen' }]);
+        // No rooms visible at all: nothing to add.
+        const [, none] = planProvisioning({ ...input, appointmentRooms: true, roomIds: [], usedRoomIds: [] });
+        expect(none!.grants.some((g) => g.authId === AUTH.resourceView)).toBe(false);
     });
 
     it('gives nobody "Ressourcen sehen" (201) – the right per room is enough (G45)', () => {

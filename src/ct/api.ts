@@ -27,6 +27,7 @@ export function fetchAppointments(
     from: Date,
     to: Date,
     timeZone: string,
+    options: { bookings?: boolean } = {},
 ): Promise<AppointmentResponse[]> {
     if (calendarIds.length === 0) return Promise.resolve([]);
     return churchtoolsClient.get<AppointmentResponse[]>('/calendars/appointments', {
@@ -34,6 +35,8 @@ export function fetchAppointments(
         from: zonedDateKey(from, timeZone),
         to: zonedDateKey(to, timeZone),
         only_allow_authenticated: 'true',
+        // The bookings of the appointments, for their rooms; without the right the list is empty, not a 403.
+        ...(options.bookings ? { include: ['bookings'] } : {}),
     });
 }
 

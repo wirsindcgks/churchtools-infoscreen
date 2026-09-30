@@ -60,6 +60,13 @@ Nur bestätigte Buchungen erscheinen, und nur Raum, Zeit und Titel – nie Besch
 Weil ein Titel Namen enthalten kann („Gespräch Familie X"), lässt er sich **je Raum abschalten**; dann steht dort
 „Belegt". Die Rechte dafür vergibt der Assistent (siehe [Rechte](Rechte.md)).
 
+## Der Raum am Termin
+
+Beim **Nächsten Termin** und bei der **Terminliste als Karten** zeigt der Schalter **„Raum zeigen"** die gebuchten Räume
+neben dem Ort, mit der Pin-Nadel: „Gemeindezentrum · Saal". Nur bestätigte Buchungen von Räumen zählen, und am Termin
+steht nur der Raumname, nie ein Buchungstitel. Das Gerät braucht dafür das Recht, alle Räume zu sehen – „Rechte
+aktualisieren" gibt es ihm (siehe [Rechte](Rechte.md)).
+
 ## Die Vorschau – genau wie am Fernseher
 
 „Vorschau" spielt die Playlist mit allen ungespeicherten Änderungen im Vollbild ab: dieselben Bausteine, derselbe

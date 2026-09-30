@@ -490,6 +490,25 @@ describe('ScreenRepository', () => {
         expect(await repo.roomIdsInUse()).toEqual([2, 3, 5]);
     });
 
+    it('knows whether a block shows the rooms of its appointments (Plan.md 50, for the device rights)', async () => {
+        expect(await repo.appointmentRoomsInUse()).toBe(false);
+        const style = { fontFamily: 'sans', fontSize: 44, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
+        const frame = { x: 0, y: 0, width: 1400, height: 700, calendarIds: [2], style };
+        const blocks = (showRooms: boolean, layout: 'rows' | 'cards') => [
+            { id: 'l', type: 'appointment-list' as const, ...frame, horizonDays: 14, limit: 5, layout, showRooms },
+        ];
+        await repo.saveScreen(
+            bundle({ slides: [makeSlide({ id: 'slide-1', blocks: blocks(true, 'rows') }), makeSlide({ id: 'slide-2' })] }),
+            { ...save, expectedRevision: null },
+        );
+        expect(await repo.appointmentRoomsInUse()).toBe(false);
+        await repo.saveScreen(
+            bundle({ slides: [makeSlide({ id: 'slide-1', blocks: blocks(true, 'cards') }), makeSlide({ id: 'slide-2' })] }),
+            { ...save, expectedRevision: 1 },
+        );
+        expect(await repo.appointmentRoomsInUse()).toBe(true);
+    });
+
     it('throws for an unknown slug', async () => {
         await expect(repo.loadScreen('gibt-es-nicht')).rejects.toBeInstanceOf(ScreenNotFoundError);
     });

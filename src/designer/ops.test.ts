@@ -40,6 +40,9 @@ describe('designer operations', () => {
     });
 
     it('creates a rooms block empty, as an overview of today, at 1400 x 700 (Plan.md 46)', () => {
+        expect(createBlock('next-appointment', stage, [2])).toMatchObject({ showRooms: true });
+        expect(createBlock('appointment-list', stage, [2])).toMatchObject({ showRooms: true });
+        expect(createBlock('countdown', stage, [2])).not.toHaveProperty('showRooms');
         expect(createBlock('rooms', stage)).toMatchObject({ type: 'rooms', rooms: [], layout: 'overview', days: 1, width: 1400, height: 700 });
         expect(BLOCK_LABELS.rooms).toBe('Raumbelegung');
     });
