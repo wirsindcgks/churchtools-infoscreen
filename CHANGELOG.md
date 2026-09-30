@@ -4,6 +4,16 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.3.4] – 2026-09-30
+
+### Behoben
+
+- **Kalenderfarben als Name:** ChurchTools liefert eine Kalenderfarbe auch als Wort, etwa `black`. Etiketten und
+  Datumskacheln solcher Kalender waren auf weißen Slides unsichtbar. Die Farbe wird jetzt wie im WordPress-Plugin
+  `connect-churchtools` unverändert übernommen und im Browser getönt; die Schrift auf dem Etikett wählt dunkel oder
+  weiß nach der Leuchtdichte der Farbe.
+- **Ladebalken beim Blättern** (Terminliste, Gruppen) steht mittig auf Höhe der Seitenzahl.
+
 ## [0.3.3] – 2026-09-30
 
 Feinschliff am Editor nach dem Test im Testsystem.
@@ -368,6 +378,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.3.4]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.4
 [0.3.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.3
 [0.3.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.2
 [0.3.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.1
