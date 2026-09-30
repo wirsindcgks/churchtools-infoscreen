@@ -12,7 +12,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   „Aus anderer Playlist …" und „Duplizieren" fragen jetzt: als Kopie (wie bisher, die Vorgabe) oder verknüpft.
   Verknüpfte Slides tragen ein Kettensymbol; im Inspektor steht, wo sie noch laufen, und „Verknüpfung lösen" macht
   daraus eine eigene Kopie. Hat jemand die Slide inzwischen in einer anderen Playlist geändert, speichert der Editor
-  nichts, sondern fragt: neu laden oder als eigene Kopie behalten.
+  nichts, sondern fragt: neu laden oder als eigene Kopie behalten. Nach dem Speichern sagt eine kurze Meldung, wenn
+  verknüpfte Slides dabei waren und wo sie noch laufen.
 
 ### Geändert
 

@@ -279,6 +279,24 @@ const statusText = computed(() => {
     }
 });
 
+/** After a save that wrote linked slides (Plan.md 49): which, and where else they now look the same. */
+const linkedNotice = computed(() => {
+    const saved = editor.linkedSaved;
+    if (!saved.length) return '';
+    const quote = (names: string[]) => names.map((n) => `„${n}"`).join(', ');
+    if (saved.length === 1) {
+        return `Verknüpfte Slide ${quote([saved[0]!.name])} gespeichert – gilt auch in ${quote(saved[0]!.playlists)}.`;
+    }
+    const playlists = [...new Set(saved.flatMap((s) => s.playlists))];
+    return `${saved.length} verknüpfte Slides gespeichert – sie gelten auch in ${quote(playlists)}.`;
+});
+const LINKED_NOTICE_MS = 8000;
+let linkedNoticeTimer: ReturnType<typeof setTimeout> | undefined;
+watch(linkedNotice, (text) => {
+    clearTimeout(linkedNoticeTimer);
+    if (text) linkedNoticeTimer = setTimeout(() => (editor.linkedSaved = []), LINKED_NOTICE_MS);
+});
+
 /** Where, by whom and when a linked slide was saved in between (Plan.md 49) – as much as is known. */
 const slideConflictText = computed(() => {
     const c = editor.slideConflict;
@@ -516,6 +534,15 @@ function onKey(event: KeyboardEvent): void {
         <p v-if="editor.error" class="d-banner d-banner--error banner" role="alert">{{ editor.error }}</p>
         <p v-if="problem" class="d-banner d-banner--error banner" role="alert">Vorschaudaten: {{ problem }}</p>
 
+        <!-- Floats instead of pushing the stage down; goes by itself (Plan.md 49). -->
+        <div v-if="linkedNotice" class="d-banner linked-notice" role="status" data-testid="linked-save-notice">
+            <Icon name="link" :size="16" />
+            <span>{{ linkedNotice }}</span>
+            <button class="d-btn d-btn--icon" type="button" aria-label="Meldung schließen" @click="editor.linkedSaved = []">
+                <Icon name="close" :size="16" />
+            </button>
+        </div>
+
         <p v-if="loadError" class="d-banner d-banner--error banner" role="alert">{{ loadError }}</p>
         <div
             v-else-if="editor.draft"
@@ -716,6 +743,28 @@ function onKey(event: KeyboardEvent): void {
 }
 .status--saved {
     color: var(--d-success);
+}
+.linked-notice {
+    position: fixed;
+    bottom: 16px;
+    left: 50%;
+    /* Above the phone's inspector sheet, below dialogs. */
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: max-content;
+    max-width: calc(100% - 32px);
+    transform: translateX(-50%);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+    font-size: var(--d-size-sm);
+}
+.linked-notice > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.linked-notice .d-icon {
+    flex: none;
 }
 .banner {
     border-radius: 0;

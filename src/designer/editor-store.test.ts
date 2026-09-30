@@ -230,6 +230,19 @@ describe('linked slides (Plan.md 49)', () => {
         expect(kv.writes).toHaveLength(2); // the changed slide and the playlist
     });
 
+    it('names the linked slides a save wrote, and forgets them with the next change', async () => {
+        const { editor, b } = await linkedSetup();
+        editor.addSlide();
+        expect(await editor.save('Anna')).toBe(true);
+        expect(editor.linkedSaved).toEqual([]); // only an own slide was new
+        editor.selectSlide(editor.slides[0]!.id);
+        editor.updateSlide({ name: 'Begrüßung' });
+        expect(await editor.save('Anna')).toBe(true);
+        expect(editor.linkedSaved).toEqual([{ name: 'Begrüßung', playlists: [b.name] }]);
+        editor.updateSlide({ name: 'Hallo' });
+        expect(editor.linkedSaved).toEqual([]);
+    });
+
     it('saves a linked slide twice in a row without a false conflict', async () => {
         const { editor, repository, playlistId, b } = await linkedSetup();
         expect(editor.linkedIn(editor.slide!.id).map((p) => p.id)).toEqual([b.id]);

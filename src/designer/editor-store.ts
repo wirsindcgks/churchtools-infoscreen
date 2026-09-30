@@ -43,6 +43,8 @@ export const useEditorStore = defineStore('editor', () => {
      * removed – undoing "Verknüpfung lösen" brings the old id back, and it is linked again.
      */
     const sharedWith = ref<LoadedPlaylist['sharedWith']>({});
+    /** Linked slides the last save wrote, with where else they run – the editor tells the designer (Plan.md 49). */
+    const linkedSaved = ref<{ name: string; playlists: string[] }[]>([]);
     /** Each slide as last loaded or saved, as JSON – what `save()` compares to write only changed slides. */
     let baseline = new Map<string, string>();
     const error = ref<string | null>(null);
@@ -109,6 +111,7 @@ export const useEditorStore = defineStore('editor', () => {
         status.value = 'idle';
         conflict.value = null;
         slideConflict.value = null;
+        linkedSaved.value = [];
         error.value = null;
         if (!slides.value.some((s) => s.id === selectedSlideId.value)) {
             selectedSlideId.value = slides.value[0]?.id ?? null;
@@ -141,6 +144,7 @@ export const useEditorStore = defineStore('editor', () => {
             gestureRecorded = gestureOpen;
         }
         mutate(draft.value);
+        linkedSaved.value = [];
         if (status.value === 'saved') status.value = 'idle';
     }
 
@@ -203,6 +207,14 @@ export const useEditorStore = defineStore('editor', () => {
             b.playlist.slideIds.splice(b.playlist.slideIds.indexOf(originalId) + 1, 0, copy.id);
         });
         selectSlide(copy.id);
+    }
+
+    /** Slide ids of the playlist as last loaded or saved. */
+    const savedSlideIds = computed(() => new Set<string>(savedJson.value ? JSON.parse(savedJson.value).playlist.slideIds : []));
+
+    /** A slide taken over linked but not saved yet: the other playlists learn of the link only with the save. */
+    function linkPending(slideId: string): boolean {
+        return linkedIn(slideId).length > 0 && !savedSlideIds.value.has(slideId);
     }
 
     /** The other playlists that show this slide too – empty for a slide of this playlist alone. */
@@ -349,6 +361,8 @@ export const useEditorStore = defineStore('editor', () => {
             const changedSlideIds = draft.value.slides
                 .filter((s) => baseline.get(s.id) !== JSON.stringify(s) || (options.mine && !linkedIn(s.id).length))
                 .map((s) => s.id);
+            // Links taken over since the last save come into being now – the other playlists learn of them.
+            const newlyLinked = draft.value.slides.filter((s) => linkPending(s.id)).map((s) => s.id);
             const saved = await repository.value.savePlaylist(draft.value, {
                 expectedRevision: revision.value,
                 updatedBy,
@@ -361,6 +375,9 @@ export const useEditorStore = defineStore('editor', () => {
             // The written slides now carry the save's time – the next save of a shared one compares against it.
             for (const s of draft.value.slides) if (changedSlideIds.includes(s.id)) s.updatedAt = saved.updatedAt;
             markSaved();
+            linkedSaved.value = slides.value
+                .filter((s) => (changedSlideIds.includes(s.id) || newlyLinked.includes(s.id)) && linkedIn(s.id).length)
+                .map((s) => ({ name: s.name, playlists: linkedIn(s.id).map((p) => p.name) }));
             status.value = 'saved';
             return true;
         } catch (e) {
@@ -421,7 +438,9 @@ export const useEditorStore = defineStore('editor', () => {
         conflict,
         slideConflict,
         sharedWith,
+        linkedSaved,
         linkedIn,
+        linkPending,
         error,
         canUndo,
         canRedo,

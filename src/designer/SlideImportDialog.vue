@@ -112,6 +112,7 @@ function take(): void {
             </p>
             <p v-else class="hint" data-testid="slide-import-linked-hint">
                 Verknüpfte Slides bleiben gleich: Was du hier änderst, ändert sich auch in „{{ sourceName }}" – und umgekehrt.
+                Die Verknüpfung entsteht beim Speichern; erst dann zeigt auch „{{ sourceName }}" sie an.
             </p>
             <p v-if="problem" class="d-banner d-banner--error" role="alert">{{ problem }}</p>
             <p v-if="loading" class="hint">Lade Playlists …</p>

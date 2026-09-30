@@ -1075,6 +1075,9 @@ const LAYERS = [
                     <span class="linked-text" :title="`Auch in: ${linkedNames}`" data-testid="slide-linked-in">
                         <Icon name="link" :size="14" />
                         <span class="linked-names">Auch in: {{ linkedNames }}</span>
+                        <span v-if="editor.linkPending(slide.id)" class="linked-pending" data-testid="slide-link-pending">
+                            ab dem Speichern
+                        </span>
                     </span>
                     <InfoHint>
                         Änderungen an dieser Slide – auch Dauer und „Abgeschaltet" – gelten in allen genannten Playlists.
@@ -1354,6 +1357,10 @@ legend {
 }
 .linked-text .d-icon {
     flex: none;
+}
+.linked-pending {
+    flex: none;
+    font-style: italic;
 }
 .linked-names {
     overflow: hidden;

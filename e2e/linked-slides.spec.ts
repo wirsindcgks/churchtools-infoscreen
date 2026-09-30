@@ -44,6 +44,10 @@ test('a linked duplicate shows the chain, and a change in one playlist arrives i
 
     await rename(page, 'Gemeinsam geändert');
     await save(page);
+    const notice = page.getByTestId('linked-save-notice');
+    await expect(notice).toContainText('Verknüpfte Slide „Gemeinsam geändert" gespeichert – gilt auch in „');
+    await notice.getByRole('button', { name: 'Meldung schließen' }).click();
+    await expect(notice).toHaveCount(0);
 
     await openPlaylist(page, 0);
     await expect(page.getByTestId('slide-item').first()).toContainText('Gemeinsam geändert');
@@ -58,6 +62,7 @@ test('"Verknüpfung lösen" makes an own copy: a later change stays in this play
     await expect(page.getByTestId('slide-linked-badge')).toHaveCount(2);
     await rename(page, 'Nur hier');
     await save(page);
+    await expect(page.getByTestId('linked-save-notice')).toHaveCount(0);
 
     await openPlaylist(page, 0);
     await expect(page.getByTestId('slide-item').first()).not.toContainText('Nur hier');
@@ -83,13 +88,25 @@ test('slides taken over linked: "schon hier" for the ones already in the playlis
     await dialog.getByTestId('slide-import-take').click();
     await expect(page.getByTestId('slide-item')).toHaveCount(4);
     await expect(page.getByTestId('slide-linked-badge')).toHaveCount(1);
+    await expect(dialog.getByTestId('slide-import-linked-hint')).toHaveCount(0);
+    // The link comes with the save: until then the inspector says so.
+    await expect(page.getByTestId('slide-link-pending')).toHaveText('ab dem Speichern');
     await save(page);
+    await expect(page.getByTestId('linked-save-notice')).toContainText('gilt auch in „');
+    await expect(page.getByTestId('slide-link-pending')).toHaveCount(0);
+    await expect(page.getByTestId('slide-linked-in')).toBeVisible();
 
     // … and taken over once, they are not offered again.
     await page.getByTestId('import-slides').click();
     await dialog.getByTestId('slide-import-linked').check();
     await expect(dialog.getByTestId('slide-import-here')).toHaveCount(1);
     await expect(dialog.getByTestId('slide-import-item').first().locator('input')).toBeDisabled();
+
+    // After the save the source knows of the link, too.
+    await openPlaylist(page, 0);
+    await expect(page.getByTestId('slide-linked-badge')).toHaveCount(1);
+    await expect(page.getByTestId('slide-linked-in')).toContainText('(Kopie)');
+    await expect(page.getByTestId('slide-link-pending')).toHaveCount(0);
 });
 
 test('two windows change the same linked slide: notice, reload, keep as an own copy', async ({ page, context }) => {
