@@ -201,8 +201,45 @@ const FILES = [
     [904, 'konzertabend.jpg'],
 ] as const;
 
+/** The rooms of the made-up church – and a projector, which the block does not offer. */
+const RESOURCE_TYPES = [
+    { id: 1, name: 'resource.type.room', nameTranslated: 'Raum', sortKey: 10 },
+    { id: 2, name: 'resource.type.item', nameTranslated: 'Gegenstand', sortKey: 20 },
+];
+const RESOURCES = [
+    { id: 1, name: 'Saal', nameTranslated: 'Saal', sortKey: 10, resourceTypeId: 1 },
+    { id: 2, name: 'Gruppenraum 1', nameTranslated: 'Gruppenraum 1', sortKey: 20, resourceTypeId: 1 },
+    { id: 3, name: 'Jugendkeller', nameTranslated: 'Jugendkeller', sortKey: 30, resourceTypeId: 1 },
+    { id: 4, name: 'Beamer', nameTranslated: 'Beamer', sortKey: 40, resourceTypeId: 2 },
+];
+
+/**
+ * The pictures are taken on an ordinary morning, today at 10:30 – the browser's clock is fixed to it
+ * (`fakeChurch`), so that the rooms show a Sunday-like morning whenever the pictures are made. Appointments
+ * start tomorrow at the earliest and posts lie days back, so they do not mind.
+ */
+const DOC_NOW = (() => {
+    const now = new Date();
+    now.setHours(10, 30, 0, 0);
+    return now;
+})();
+
+/** Bookings around `DOC_NOW`: one running, the others to come today. */
+function bookings(resourceId: number): unknown[] {
+    const at = (minutes: number) => new Date(DOC_NOW.getTime() + minutes * 60_000).toISOString().replace(/\.\d+Z$/, 'Z');
+    const make = (id: number, title: string, from: number, to: number) => {
+        const base = { id, title, resourceId, statusId: 2, allDay: false, startDate: at(from), endDate: at(to) };
+        return { booking: { base, calculated: { startDate: base.startDate, endDate: base.endDate } } };
+    };
+    if (resourceId === 1) return [make(1, 'Gottesdienst', -30, 60), make(2, 'Chorprobe', 450, 540)];
+    if (resourceId === 2) return [make(3, 'Kindergottesdienst', -30, 60), make(4, 'Bibelgespräch', 510, 600)];
+    if (resourceId === 3) return [make(5, 'Jugendtreff', 450, 600)];
+    return [];
+}
+
 /** Every answer of the made-up church; writes stop here, reads the pictures do not need go to the instance. */
 async function fakeChurch(page: Page): Promise<void> {
+    await page.clock.setFixedTime(DOC_NOW);
     await page.route('**/images/**', (route) => {
         const id = Number(/\/images\/(\d+)\//.exec(route.request().url())?.[1]);
         return route.fulfill({ contentType: 'image/svg+xml', body: PICTURES[id] ?? poster('Bild', '#334155', '#64748b') });
@@ -214,6 +251,7 @@ async function fakeChurch(page: Page): Promise<void> {
         const json = (data: unknown) => route.fulfill({ json: { data } });
         if (request.method() !== 'GET') return json({});
         if (path === '/whoami') return json({ id: 1, firstName: 'Anna', lastName: 'Beispiel' });
+        if (path === '/config') return json({ timezone: 'Europe/Berlin' });
         if (path === '/info') return json({ siteName: 'Gemeinde am Markt' });
         if (path === '/calendars') return json(CALENDARS);
         if (path === '/calendars/appointments') return json(appointments());
@@ -231,6 +269,11 @@ async function fakeChurch(page: Page): Promise<void> {
             ]);
         }
         if (path === '/grouphomepages/kleingruppen') return json(homepage());
+        if (path === '/resource/masterdata') return json({ resourceTypes: RESOURCE_TYPES, resources: RESOURCES });
+        if (path === '/bookings') {
+            const ids = new URL(request.url()).searchParams.getAll('resource_ids[]').map(Number);
+            return json(ids.flatMap(bookings));
+        }
         if (path === '/wiki/categories') return json([{ id: WIKI, name: 'Infoscreen', inMenu: false }]);
         if (path === `/wiki/categories/${WIKI}/pages`) return json([{ guid: 'p-media', title: 'mediathek' }]);
         if (path.startsWith(`/wiki/categories/${WIKI}/pages/`)) return json({ guid: 'p-main', title: 'main', text: '' });
@@ -362,6 +405,17 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await shoot(page, 'vorschau');
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('playlist-preview')).toBeHidden();
+
+    // The room occupancy (Plan.md 46): three rooms, one booking running, the others to come.
+    await page.getByTestId('add-slide').click();
+    await addBlock(page, 'rooms');
+    await frame(page, { x: 160, y: 140, width: 1600, height: 800 });
+    await page.getByTestId('rooms-add-all').click();
+    await page.getByTestId('room-entry').nth(0).getByTestId('room-hint').fill('Erdgeschoss');
+    await page.getByTestId('room-entry').nth(1).getByTestId('room-hint').fill('1. OG, links');
+    await page.getByTestId('room-entry').nth(2).getByTestId('room-hint').fill('Untergeschoss');
+    await expect(page.locator('.editor-stage').getByTestId('room-row')).toHaveCount(3);
+    await shoot(page, 'raumbelegung');
 
     // Posts of ChurchTools groups (Plan.md 33).
     await page.getByTestId('add-slide').click();

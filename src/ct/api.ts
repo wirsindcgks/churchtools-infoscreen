@@ -3,6 +3,7 @@ import type { AppointmentResponse } from '../appointments/normalize';
 import { zonedDateKey } from '../appointments/zoned';
 import { isValidHomepageHash, normalizeHomepageList, type HomepageEntry } from '../groups/normalize';
 import type { PostResponse } from '../posts/normalize';
+import { BOOKING_CONFIRMED, type ResourceMasterdata } from '../rooms/normalize';
 
 /**
  * The instance time zone. Readable anonymously and therefore by the device
@@ -33,6 +34,30 @@ export function fetchAppointments(
         from: zonedDateKey(from, timeZone),
         to: zonedDateKey(to, timeZone),
         only_allow_authenticated: 'true',
+    });
+}
+
+/**
+ * The stammdaten of the resources (types and resources), as far as the
+ * caller may see them – a caller without the right sees no resource (G45).
+ */
+export function fetchResourceMasterdata(): Promise<ResourceMasterdata> {
+    return churchtoolsClient.get<ResourceMasterdata>('/resource/masterdata');
+}
+
+/**
+ * The confirmed bookings of one room. One request per room: a missing right
+ * fails the whole request with 403, however many rooms it names (G45).
+ * `status_ids[]=2` is set on purpose – without it ChurchTools also sends
+ * bookings that still wait. `from` and `to` are local dates of the instance;
+ * `to` is still inclusive.
+ */
+export function fetchBookings(resourceId: number, from: Date, to: Date, timeZone: string): Promise<unknown[]> {
+    return churchtoolsClient.get<unknown[]>('/bookings', {
+        resource_ids: [resourceId],
+        status_ids: [BOOKING_CONFIRMED],
+        from: zonedDateKey(from, timeZone),
+        to: zonedDateKey(to, timeZone),
     });
 }
 

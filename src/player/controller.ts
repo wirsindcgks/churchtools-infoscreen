@@ -11,10 +11,11 @@ import { NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/cli
 import { SchemaTooNewError } from '../model/read';
 import type { HomepageGroups } from '../groups/normalize';
 import { revivePosts, type Post } from '../posts/normalize';
+import { reviveRooms, type RoomBookings } from '../rooms/normalize';
 import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '../store/screen-repository';
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
-import { appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, postNeeds, type PlayerData } from './data';
+import { appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, postNeeds, roomNeeds, type PlayerData } from './data';
 import { askServiceWorkerHasPage } from './service-worker';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
 
@@ -32,6 +33,7 @@ export interface PlayerState {
     appointments: Appointment[];
     posts: Post[];
     groupHomepages: HomepageGroups[];
+    rooms: RoomBookings[];
     timeZone: string;
     churchName: string;
     churchLogo: string | null;
@@ -108,6 +110,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         appointments: [],
         posts: [],
         groupHomepages: [],
+        rooms: [],
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         churchName: '',
         churchLogo: null,
@@ -264,6 +267,15 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                   return state.groupHomepages;
               })
             : [];
+        const roomWants = roomNeeds(state.screen.slides);
+        const roomWindow = appointmentWindow(now, timeZone, roomWants.days);
+        // Rooms are decoration too: a failure keeps the last bookings.
+        const rooms = roomWants.resourceIds.length
+            ? await data.rooms(roomWants.resourceIds, roomWindow.from, roomWindow.to, timeZone).catch((error: unknown) => {
+                  console.warn('Räume konnten nicht geladen werden:', error);
+                  return state.rooms;
+              })
+            : [];
 
         Object.assign(state, {
             timeZone,
@@ -272,6 +284,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             appointments,
             posts,
             groupHomepages,
+            rooms,
             clockConfirmed: checkClock(serverDate, now).confirmed,
             phase: 'running',
             staleSince: null,
@@ -282,6 +295,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             appointments,
             posts,
             groupHomepages,
+            rooms,
             timeZone,
             churchName,
             churchLogo,
@@ -333,6 +347,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                 appointments: reviveAppointments(cached.appointments),
                 posts: cached.posts ? revivePosts(cached.posts) : [],
                 groupHomepages: cached.groupHomepages ?? [],
+                rooms: cached.rooms ? reviveRooms(cached.rooms) : [],
                 timeZone: cached.timeZone,
                 churchName: cached.churchName,
                 churchLogo: cached.churchLogo ?? null,

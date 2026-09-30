@@ -469,6 +469,27 @@ describe('ScreenRepository', () => {
         });
     });
 
+    it('collects the rooms every rooms block shows, once and sorted (schema 1.16, for the device rights)', async () => {
+        expect(await repo.roomIdsInUse()).toEqual([]);
+        const block = (id: string, ids: number[]) => ({
+            id,
+            type: 'rooms' as const,
+            x: 0,
+            y: 0,
+            width: 1400,
+            height: 700,
+            rooms: ids.map((resourceId) => ({ resourceId, hint: '', showTitles: true })),
+            layout: 'overview' as const,
+            days: 1 as const,
+            style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400 as const, color: '#fff', align: 'left' as const },
+        });
+        await repo.saveScreen(
+            bundle({ slides: [makeSlide({ id: 'slide-1', blocks: [block('a', [5, 2])] }), makeSlide({ id: 'slide-2', blocks: [block('b', [2, 3])] })] }),
+            { ...save, expectedRevision: null },
+        );
+        expect(await repo.roomIdsInUse()).toEqual([2, 3, 5]);
+    });
+
     it('throws for an unknown slug', async () => {
         await expect(repo.loadScreen('gibt-es-nicht')).rejects.toBeInstanceOf(ScreenNotFoundError);
     });

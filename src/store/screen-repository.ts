@@ -812,6 +812,16 @@ export class ScreenRepository {
         return [...ids].sort((a, b) => a - b);
     }
 
+    /** Every room a screen's `rooms` blocks show – what a device must be able to see (G45). */
+    async roomIdsInUse(): Promise<number[]> {
+        const slides = await this.readSlides();
+        const ids = new Set<number>();
+        for (const block of slides.docs.flatMap((s) => s.doc.blocks)) {
+            if (block.type === 'rooms') block.rooms.forEach((r) => ids.add(r.resourceId));
+        }
+        return [...ids].sort((a, b) => a - b);
+    }
+
     async saveMedia(doc: MediaDoc): Promise<void> {
         const ids = await this.ensureCategories();
         const text = serialize(doc);

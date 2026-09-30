@@ -64,7 +64,7 @@ Menü „…". Neue Screens legt ein Administrator an.
   jemand eine verknüpfte Slide inzwischen woanders geändert, speichert der Editor nichts, sondern fragt: **„Neu laden"**
   oder **„Als eigene Kopie behalten"**.
 - **„+ Baustein"** öffnet alle Bausteine, alphabetisch: Beiträge, Bild, Countdown („Gottesdienst beginnt in 12:34"),
-  Fläche, Galerie (siehe unten), Gemeindekopf, Gruppen (siehe unten), Nächster Termin, QR-Code, Terminliste, Text, Uhr und Webseite.
+  Fläche, Galerie (siehe unten), Gemeindekopf, Gruppen (siehe unten), Nächster Termin, QR-Code, Raumbelegung (siehe unten), Terminliste, Text, Uhr und Webseite.
 - **In der Mitte die Bildfläche:** ziehen, an den Griffen skalieren, an den **Hilfslinien** ausrichten (oben rechts: Abstand wählen oder aus; mit gedrückter Alt-Taste frei platzieren).
 - **Rechts der Inspektor:** Sein Kopf sagt, wo du bist („Slide 2 von 5"). Oben steht der Inhalt des Bausteins (Text, Kalender, Adresse …), darunter aufklappbare
   Bereiche – **Schrift** und **Position & Ebene**, bei Gruppen auch **Angaben**. Zugeklappt zeigt jeder Bereich in

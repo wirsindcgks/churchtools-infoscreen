@@ -46,12 +46,15 @@ const context = reactive<StageContext>({
     get appointments() {
         return parent.appointments;
     },
-    // Posts and groups too – without them their blocks read "none" here while the TV shows them.
+    // Posts, groups and rooms too – without them their blocks read "none" here while the TV shows them.
     get posts() {
         return parent.posts;
     },
     get groupHomepages() {
         return parent.groupHomepages;
+    },
+    get rooms() {
+        return parent.rooms;
     },
     get media() {
         return parent.media;

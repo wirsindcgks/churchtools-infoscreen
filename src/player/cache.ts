@@ -6,6 +6,7 @@
 import type { Appointment } from '../appointments/normalize';
 import type { HomepageGroups } from '../groups/normalize';
 import type { Post } from '../posts/normalize';
+import type { RoomBookings } from '../rooms/normalize';
 import type { LoadedScreen } from '../store/screen-repository';
 
 export interface CachedState {
@@ -19,6 +20,8 @@ export interface CachedState {
     posts?: Post[];
     /** Missing in states saved before groups came (schema 1.14). Leaders' names only, nothing else of a person. */
     groupHomepages?: HomepageGroups[];
+    /** Missing in states saved before rooms came (schema 1.16). Titles of confirmed bookings only – see `src/rooms/normalize.ts`. */
+    rooms?: RoomBookings[];
     savedAt: string;
 }
 

@@ -21,7 +21,7 @@ import ScreenCard from '../designer/ScreenCard.vue';
 import ScheduleDialog from '../designer/ScheduleDialog.vue';
 import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
 import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema';
-import { groupNeeds, postNeeds } from '../player/data';
+import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { ruleCalendarIds, runningNow } from '../designer/running';
 import { setScreenCounts } from '../designer/screen-counts';
 import { usePreview } from '../designer/usePreview';
@@ -86,6 +86,9 @@ const { context } = usePreview(
     ),
     computed(() =>
         groupNeeds(overviews.value.flatMap((o) => Object.values(o.playlists).flatMap((p) => (p.firstSlide ? [p.firstSlide] : [])))),
+    ),
+    computed(() =>
+        roomNeeds(overviews.value.flatMap((o) => Object.values(o.playlists).flatMap((p) => (p.firstSlide ? [p.firstSlide] : [])))),
     ),
 );
 

@@ -5,6 +5,7 @@ import { DEMO_BUNDLE } from '../dev/demo';
 import { DEFAULT_THEME, type Block } from '../model/schema';
 import type { Group, HomepageGroups } from '../groups/normalize';
 import type { Post } from '../posts/normalize';
+import type { RoomBookings } from '../rooms/normalize';
 import { ScreenNotFoundError, type LoadedScreen } from '../store/screen-repository';
 import type { CachedState } from './cache';
 import { contentChanged, createCanReload, createPlayer, type PlayerDeps } from './controller';
@@ -98,6 +99,36 @@ const sampleGroup: Group = {
 };
 const sampleHomepages: HomepageGroups[] = [{ parentGroupId: 10, groups: [sampleGroup] }];
 
+/** A `rooms` block showing rooms 1 and 3, as in the made-up church. */
+const roomsBlock: Block = {
+    id: 'raeume',
+    type: 'rooms',
+    x: 0,
+    y: 0,
+    width: 1400,
+    height: 700,
+    rooms: [
+        { resourceId: 1, hint: '', showTitles: true },
+        { resourceId: 3, hint: '', showTitles: true },
+    ],
+    layout: 'overview',
+    days: 2,
+    style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' },
+};
+const withRooms = (): LoadedScreen => {
+    const base = loaded();
+    const [first, ...rest] = base.slides;
+    if (!first) return base;
+    return { ...base, slides: [{ ...first, blocks: [...first.blocks, roomsBlock] }, ...rest] };
+};
+const sampleRooms: RoomBookings[] = [
+    {
+        resourceId: 1,
+        name: 'Saal',
+        bookings: [{ id: 1, resourceId: 1, title: 'Gottesdienst', start: new Date('2026-10-03T19:00:00Z'), end: new Date('2026-10-03T20:00:00Z'), allDay: false }],
+    },
+];
+
 function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
     return {
         assertSignedIn: vi.fn(async () => {}),
@@ -111,6 +142,7 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
         appointments: vi.fn(async () => []),
         posts: vi.fn(async () => []),
         groupHomepages: vi.fn(async () => []),
+        rooms: vi.fn(async () => []),
         ...overrides,
     };
 }
@@ -315,6 +347,65 @@ describe('player controller', () => {
         expect(player.state.groupHomepages).toEqual(sampleHomepages);
         expect(deps.saved[0]?.groupHomepages).toEqual(sampleHomepages);
         player.stop();
+    });
+
+    it('fetches the rooms the rooms blocks need for their days, and saves the bookings offline (Plan.md 46)', async () => {
+        const rooms = vi.fn<PlayerData['rooms']>(async () => sampleRooms);
+        const deps = fakeDeps();
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withRooms(), rooms }), deps);
+        await player.start();
+        expect(rooms).toHaveBeenCalledTimes(1);
+        const [ids, from, to, timeZone] = rooms.mock.calls[0]!;
+        expect(ids).toEqual([1, 3]);
+        expect(timeZone).toBe('Europe/Berlin');
+        expect(to.getTime() - from.getTime()).toBeGreaterThanOrEqual(47 * 3600_000); // two days
+        expect(player.state.rooms).toEqual(sampleRooms);
+        expect(deps.saved[0]?.rooms).toEqual(sampleRooms);
+        player.stop();
+    });
+
+    it('asks for no room without a rooms block', async () => {
+        const rooms = vi.fn<PlayerData['rooms']>(async () => sampleRooms);
+        const player = createPlayer('demo', fakeData({ rooms }), fakeDeps());
+        await player.start();
+        expect(rooms).not.toHaveBeenCalled();
+        expect(player.state.rooms).toEqual([]);
+        player.stop();
+    });
+
+    it('keeps the last bookings when they cannot be fetched, and lets the data cycle succeed anyway', async () => {
+        const rooms = vi.fn<PlayerData['rooms']>().mockResolvedValueOnce(sampleRooms).mockRejectedValue(new Error('Network Error'));
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withRooms(), rooms }), fakeDeps());
+        await player.start();
+        await vi.advanceTimersByTimeAsync(15 * 60_000);
+        expect(rooms.mock.calls.length).toBeGreaterThanOrEqual(2);
+        expect(player.state.rooms).toEqual(sampleRooms); // kept, not cleared
+        expect(player.state.phase).toBe('running');
+        expect(player.state.staleSince).toBeNull();
+        player.stop();
+    });
+
+    it('shows the cached bookings after a restart without network, with their dates back (older states have none)', async () => {
+        const cached: CachedState = {
+            screen: withRooms(),
+            appointments: [],
+            rooms: JSON.parse(JSON.stringify(sampleRooms)),
+            timeZone: 'Europe/Berlin',
+            churchName: 'Gemeinde',
+            savedAt: '2026-10-03T20:00:00Z',
+        };
+        const offline = new Error('Network Error');
+        const data = fakeData({ assertSignedIn: vi.fn(async () => Promise.reject(offline)), timeZone: () => Promise.reject(offline) });
+        const player = createPlayer('demo', data, fakeDeps(cached));
+        await player.start();
+        expect(player.state.rooms).toEqual(sampleRooms);
+        expect(player.state.rooms[0]!.bookings[0]!.start).toBeInstanceOf(Date);
+        player.stop();
+
+        const old = createPlayer('demo', data, fakeDeps({ ...cached, rooms: undefined }));
+        await old.start();
+        expect(old.state.rooms).toEqual([]);
+        old.stop();
     });
 
     it('asks for no homepage without a groups block', async () => {

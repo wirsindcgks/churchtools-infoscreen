@@ -35,6 +35,8 @@ const plan = planProvisioning({
     categories: { screens: 1, playlists: 4, slides: 7, media: 10, settings: 13 },
     wikiCategoryId: 1,
     calendarIds: [1],
+    roomIds: [1],
+    usedRoomIds: [1],
 });
 
 describe('docs/Rechte.md', () => {
@@ -46,7 +48,7 @@ describe('docs/Rechte.md', () => {
 
     it('names every permission key of the module and the core rights by number', () => {
         expect(MODULE_AUTHS.filter((auth) => !doc.includes(`\`${auth}\``))).toEqual([]);
-        for (const id of [AUTH.calendarView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit]) {
+        for (const id of [AUTH.calendarView, AUTH.resourceView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit]) {
             expect(doc).toContain(String(id));
         }
     });

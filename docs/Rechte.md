@@ -14,7 +14,7 @@ Rolle zeigt das [Onboarding](Onboarding.md).
 | --- | --- | --- | --- |
 | **Administrator** | ChurchTools-Admins mit „Personen administrieren" | Extension installieren, **Einstellungen** öffnen (Assistent, Rechte prüfen, Adressen für Fernseher), **Screens anlegen, einstellen, löschen** | – |
 | **Gestalter** | Mitglieder der Gruppe **„Infoscreen-Designer"** | gestalten, was die Screens zeigen: Slides, Playlists, Zeitpläne, Bilder in der Mediathek | Screens anlegen, einstellen, löschen; Einstellungen |
-| **Gerät** | Konten der Fernseher, Mitglieder von **„Infoscreen-Devices"** | nur lesen: die Screens und die Kalender, die sie zeigen | alles andere |
+| **Gerät** | Konten der Fernseher, Mitglieder von **„Infoscreen-Devices"** | nur lesen: die Screens, die Kalender und die Räume, die sie zeigen | alles andere |
 
 **Die Sperre sitzt bei ChurchTools, nicht im Designer.** ChurchTools prüft bei jedem Lesen und Speichern das Recht;
 der Designer blendet nur aus, was ohnehin scheitern würde. Auch Administratoren brauchen die Rechte am Modul
@@ -79,6 +79,19 @@ In der Rechteverwaltung unter **„Kalender"**.
 ³ **Auch öffentliche Kalender.** Ein angemeldetes Konto ohne dieses Recht bekommt für die ganze Terminabfrage einen
 Fehler. Zeigt ein Screen einen weiteren Kalender, einmal „Rechte aktualisieren".
 
+### Ressourcen – für die Raumbelegung
+
+In der Rechteverwaltung unter **„Ressourcen"**.
+
+| Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
+| --- | --- | --- | --- | --- |
+| Ressource sehen | Ressource sehen (`view resource`, 205) | für die Vorschau | **alle Räume** | **jeden Raum, den ein Screen zeigt** ⁴ |
+
+⁴ **Nur Räume,** nicht Gegenstände und Fahrzeuge. Das Recht „„Ressourcen" sehen" (201) braucht niemand – das Recht
+je Ressource genügt. Gestalter sehen nur Räume, für die sie das Recht haben; fehlt es, steht der Raum im Baustein
+„Raumbelegung" nicht zur Auswahl. Zeigt ein Screen einen weiteren Raum, einmal „Rechte aktualisieren".
+**Ein entzogenes Recht wirkt bei ChurchTools noch eine Weile nach – gemessen gut 40 Minuten.**
+
 ### ChurchTools selbst – nur für Administratoren
 
 | Recht | Wofür |
@@ -101,6 +114,8 @@ in der Regel.
 | einen Screen anlegen, umbenennen, löschen | Administrator | Daten in Kategorie erstellen / bearbeiten / löschen für **Screens** |
 | die Einstellungen öffnen | Administrator | „Personen administrieren" |
 | dass der Fernseher Termine zeigt | Gerät | Einzelnen Kalender sehen für jeden Kalender des Screens |
+| dass der Fernseher die Raumbelegung zeigt | Gerät | Ressource sehen für jeden Raum des Screens |
+| Räume im Baustein „Raumbelegung" wählen | Gestalter | Ressource sehen für die Räume |
 
 Die Startseite des Designers nennt fehlende Rechte selbst; die Einstellungsseite prüft die Rechte beider Gruppen und
 warnt, wenn Gestalter mehr dürfen als vorgesehen.

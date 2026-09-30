@@ -483,3 +483,75 @@ describe('rendering groups (Plan.md 43)', () => {
         });
     });
 });
+
+describe('rendering rooms (Plan.md 46)', () => {
+    const roomsBlock = (overrides: Partial<Extract<Block, { type: 'rooms' }>> = {}): Block => ({
+        id: 'r',
+        type: 'rooms',
+        x: 0,
+        y: 0,
+        width: 1400,
+        height: 700,
+        rooms: [
+            { resourceId: 1, hint: '1. OG, links', showTitles: true },
+            { resourceId: 2, hint: '', showTitles: false },
+        ],
+        layout: 'overview',
+        days: 1,
+        style,
+        ...overrides,
+    });
+    // `now` of `render` is 10:00 Berlin on 2026-10-04.
+    const booking = (id: number, resourceId: number, title: string | null, from: string, to: string) => ({
+        id,
+        resourceId,
+        title,
+        start: new Date(`2026-10-04T${from}:00Z`),
+        end: new Date(`2026-10-04T${to}:00Z`),
+        allDay: false,
+    });
+    const rooms = [
+        { resourceId: 1, name: 'Saal', bookings: [booking(1, 1, 'Gottesdienst', '07:30', '09:30'), booking(2, 1, 'Chor', '12:00', '13:00')] },
+        { resourceId: 2, name: 'Gruppenraum 1', bookings: [booking(3, 2, 'Gespräch Familie X', '12:00', '13:00')] },
+    ];
+
+    it('shows a calm placeholder until rooms are chosen', () => {
+        expect(render(makeSlide({ blocks: [roomsBlock({ rooms: [] })] }), { rooms }).get('[data-testid="rooms-placeholder"]').text()).toBe('Räume wählen');
+    });
+
+    it('shows each room with its way-finder and bookings, the running one marked, and "Belegt" where titles are off', () => {
+        const wrapper = render(makeSlide({ blocks: [roomsBlock()] }), { rooms });
+        const rows = wrapper.findAll('[data-testid="room-row"]');
+        expect(rows).toHaveLength(2);
+        expect(rows[0]!.text()).toContain('1. OG, links');
+        expect(rows[0]!.get('[data-now]').text()).toContain('09:30–11:30');
+        expect(rows[1]!.text()).toContain('Belegt');
+        expect(wrapper.text()).not.toContain('Familie X');
+    });
+
+    it('says so when nothing is booked any more', () => {
+        const free = rooms.map((r) => ({ ...r, bookings: [] }));
+        const wrapper = render(makeSlide({ blocks: [roomsBlock()] }), { rooms: free });
+        expect(wrapper.get('[data-testid="rooms-empty"]').text()).toBe('Heute sind keine Räume belegt.');
+    });
+
+    it('tells an unreadable room apart from an empty day: no data at all is "nicht verfügbar"', () => {
+        const wrapper = render(makeSlide({ blocks: [roomsBlock()] }), { rooms: [] });
+        expect(wrapper.get('[data-testid="rooms-unreadable"]').text()).toBe('Raumbelegung nicht verfügbar');
+        expect(wrapper.find('[data-testid="rooms-empty"]').exists()).toBe(false);
+    });
+
+    it('shows the door sign of the first room', () => {
+        const wrapper = render(makeSlide({ blocks: [roomsBlock({ layout: 'door' })] }), { rooms });
+        expect(wrapper.get('[data-testid="door-name"]').text()).toBe('Saal');
+        expect(wrapper.get('[data-testid="door-current"]').text()).toBe('Gottesdienst');
+        expect(wrapper.get('[data-testid="door-state"]').text()).toContain('bis 11:30');
+        expect(wrapper.get('[data-testid="door-next"]').text()).toContain('Chor');
+    });
+
+    it('reports one page for the door sign and at least one for the overview, for the rotation', () => {
+        const pages: Record<string, number> = {};
+        render(makeSlide({ blocks: [roomsBlock()] }), { rooms, pages });
+        expect(pages.r).toBe(1);
+    });
+});

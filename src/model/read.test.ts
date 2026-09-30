@@ -163,3 +163,35 @@ describe('serialize – strict towards what we write', () => {
         expect(readSlide(JSON.parse(serialize(slide))).doc).toEqual(slide);
     });
 });
+
+describe('readSlide – rooms block (schema 1.16, Plan.md 46)', () => {
+    const rooms = { id: 'r', type: 'rooms', x: 0, y: 0, width: 1400, height: 700, rooms: [], style: { fontFamily: 'sans', fontSize: 44, color: '#fff' } };
+
+    it('reads an empty block with its defaults, and a room with its defaults', () => {
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [rooms, { ...rooms, id: 's', rooms: [{ resourceId: 3 }] }] });
+        expect(issues).toEqual([]);
+        expect(doc.blocks[0]).toMatchObject({ rooms: [], layout: 'overview', days: 1 });
+        expect(doc.blocks[0]).not.toHaveProperty('pageSeconds');
+        expect(doc.blocks[1]).toMatchObject({ rooms: [{ resourceId: 3, hint: '', showTitles: true }] });
+    });
+
+    it('skips a block with more than 30 rooms, with an issue', () => {
+        const many = Array.from({ length: 31 }, (_, i) => ({ resourceId: i + 1 }));
+        const ok = Array.from({ length: 30 }, (_, i) => ({ resourceId: i + 1 }));
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [{ ...rooms, rooms: many }, { ...rooms, id: 's', rooms: ok }] });
+        expect(doc.blocks.map((b) => b.id)).toEqual(['s']);
+        expect(issues).toHaveLength(1);
+    });
+
+    it('takes days 1 and 2 only, and the two layouts only', () => {
+        for (const days of [0, 3]) expect(readSlide({ ...makeSlide(), blocks: [{ ...rooms, days }] }).doc.blocks).toEqual([]);
+        expect(readSlide({ ...makeSlide(), blocks: [{ ...rooms, days: 2, layout: 'door' }] }).doc.blocks[0]).toMatchObject({ days: 2, layout: 'door' });
+        expect(readSlide({ ...makeSlide(), blocks: [{ ...rooms, layout: 'grid' }] }).doc.blocks).toEqual([]);
+    });
+
+    it('skips a block whose way-finder is longer than 100 characters', () => {
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [{ ...rooms, rooms: [{ resourceId: 1, hint: 'x'.repeat(101) }] }] });
+        expect(doc.blocks).toEqual([]);
+        expect(issues).toHaveLength(1);
+    });
+});

@@ -19,7 +19,7 @@ import SearchField from '../designer/SearchField.vue';
 import SlideThumb from '../designer/SlideThumb.vue';
 import { usePreview } from '../designer/usePreview';
 import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema';
-import { groupNeeds, postNeeds } from '../player/data';
+import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 
@@ -48,6 +48,7 @@ const { context, calendars } = usePreview(
     theme,
     computed(() => postNeeds([...playlists.value.values()].flatMap((o) => (o.firstSlide ? [o.firstSlide] : [])))),
     computed(() => groupNeeds([...playlists.value.values()].flatMap((o) => (o.firstSlide ? [o.firstSlide] : [])))),
+    computed(() => roomNeeds([...playlists.value.values()].flatMap((o) => (o.firstSlide ? [o.firstSlide] : [])))),
 );
 
 const shown = computed(() => {

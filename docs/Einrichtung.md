@@ -96,13 +96,16 @@ Rechte:
 - **„Infoscreen-Designer"** – das Modul sehen und seine Inhalte bearbeiten, dazu den Wiki-Bereich „Infoscreen", in
   dem die Bilder der Mediathek liegen. Fehlt er, legt ihn der Assistent an; gibt es schon einen Bereich dieses
   Namens, benutzt er ihn mit. Die Mediathek selbst legt keinen an – sie ist erst nach diesem Schritt nutzbar.
-- **„Infoscreen-Devices"** – das Modul und seine Daten sehen und **jeden Kalender, den ein Screen zeigt**.
+- **„Infoscreen-Devices"** – das Modul und seine Daten sehen, **jeden Kalender, den ein Screen zeigt**, und **jeden
+  Raum, den ein Screen zeigt**. Die Gestalter sehen dazu alle Räume, damit sie im Baustein „Raumbelegung" wählen können.
 
 Der Assistent fasst **nur Gruppen an, die er selbst angelegt hat**, und ändert keine bestehenden Rollen. Gibt es
 schon Gruppen mit diesen Namen, hält er an.
 
 **Später wiederkommen:** Zeigt ein Screen einen weiteren Kalender, klicke in **Einstellungen → Gruppen und Rechte**
-auf **„Rechte aktualisieren"** – sonst fehlen dessen Termine auf dem Fernseher. „Einrichtung entfernen" löscht die
+auf **„Rechte aktualisieren"** – sonst fehlen dessen Termine auf dem Fernseher. Zeigt ein Screen neue Räume, ebenfalls
+einmal „Rechte aktualisieren". Entfernt man einen Raum, kann ein Fernseher ihn noch bis zu einer Dreiviertelstunde
+zeigen, weil ChurchTools Rechte zwischenspeichert. „Einrichtung entfernen" löscht die
 beiden Gruppen wieder – **nur die, die der Assistent selbst angelegt hat**. Vorhandene Gruppen, die du gewählt hast,
 bleiben, ebenso der Wiki-Bereich mit den Bildern. Ob der Bereich vom Designer angelegt wurde oder schon da war, steht
 unter **Einstellungen → Mediathek im Wiki**.
@@ -309,6 +312,7 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | Player im Tab neben ChurchTools: fragt nach Anmeldung oder zeigt keine Termine | Im selben Browser ist jemand anderes angemeldet – ChurchTools kennt je Browser nur eine Anmeldung | Player in einem Inkognito-Fenster oder eigenen Browserprofil öffnen |
 | Fernseher: „Es gibt keinen Screen „…"" | Adresse vertippt oder Screen gelöscht | Adresse neu kopieren |
 | Fernseher: Termine eines Kalenders fehlen | Gerät darf den Kalender nicht lesen | Einstellungen → Gruppen und Rechte → „Rechte aktualisieren" |
+| Fernseher: Ein Raum fehlt in der Raumbelegung | Gerät darf den Raum nicht sehen | Einstellungen → Gruppen und Rechte → „Rechte aktualisieren" |
 | Fernseher: Bild fehlt, Platzhalter statt Bild | Bild im Wiki gelöscht | im Designer ein neues Bild wählen |
 | Baustein „Gruppen": „Noch keine Gruppen-Homepage" | In ChurchTools gibt es keine Gruppen-Homepage | an der Obergruppe: Einstellungen → Allgemein → Außendarstellung → „Gruppenhomepage erstellen" |
 | Baustein „Gruppen": eine Gruppe fehlt | Ihre öffentliche Seite ist aus, oder sie ist keine Untergruppe der Obergruppe | in ChurchTools an der Gruppe die öffentliche Seite einschalten |

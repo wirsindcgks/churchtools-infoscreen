@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
-import { GROUP_SECONDS, pageInterval, paginateByHeight, POST_SECONDS, slideSeconds } from './paging';
+import { GROUP_SECONDS, PAGE_SECONDS, pageInterval, paginateByHeight, POST_SECONDS, slideSeconds } from './paging';
 
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
 const list = (overrides: Partial<Extract<Block, { type: 'appointment-list' }>> = {}): Block => ({
@@ -130,5 +130,33 @@ describe('paging a groups block (Plan.md 43)', () => {
         expect(slideSeconds(card, {})).toBe(8);
         const listed = makeSlide({ durationSeconds: 8, blocks: [groups({ layout: 'list', pageSeconds: 6 })] });
         expect(slideSeconds(listed, { gruppen: 2 })).toBe(12);
+    });
+});
+
+describe('paging a rooms block (Plan.md 46)', () => {
+    const rooms = (overrides: Partial<Extract<Block, { type: 'rooms' }>> = {}): Block => ({
+        id: 'raeume',
+        type: 'rooms',
+        x: 0,
+        y: 0,
+        width: 1400,
+        height: 700,
+        rooms: [{ resourceId: 1, hint: '', showTitles: true }],
+        layout: 'overview',
+        days: 1,
+        style,
+        ...overrides,
+    });
+
+    it('keeps the slide until every page of the overview has shown', () => {
+        const slide = makeSlide({ durationSeconds: 8, blocks: [rooms()] });
+        expect(slideSeconds(slide, { raeume: 3 })).toBe(3 * PAGE_SECONDS);
+        expect(slideSeconds(slide, { raeume: 1 })).toBe(8);
+        expect(slideSeconds(slide, {})).toBe(8);
+        expect(slideSeconds(makeSlide({ durationSeconds: 8, blocks: [rooms({ pageSeconds: 6 })] }), { raeume: 2 })).toBe(12);
+    });
+
+    it('does not page the door sign', () => {
+        expect(slideSeconds(makeSlide({ durationSeconds: 8, blocks: [rooms({ layout: 'door' })] }), { raeume: 3 })).toBe(8);
     });
 });

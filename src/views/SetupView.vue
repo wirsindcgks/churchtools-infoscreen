@@ -6,13 +6,14 @@ import { EXTENSION_KEY } from '../config';
 import Icon, { type IconName } from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
-import { fetchCalendars, type Calendar } from '../ct/api';
+import { fetchCalendars, fetchResourceMasterdata, type Calendar } from '../ct/api';
 import { currentPerson, httpStatus, instanceBaseUrl, personUrl } from '../ct/client';
 import { playerUrl } from '../designer/player-url';
 import RemoveSetupDialog, { type DeviceAccountInfo, type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
 import { createCategory, setCategoryInMenu, wikiRestoreLogLine, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
 import { SCHEMA_VERSION, type ScreenDoc } from '../model/schema';
 import { withDeviceLogin } from '../player/device-login';
+import { roomsOf, type RoomInfo } from '../rooms/normalize';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
 import { AUTH, checkDesignerGroup, checkDeviceGroup, type Check, type RequiredRight } from '../setup/checks';
 import {
@@ -121,6 +122,9 @@ async function toggleWikiMenu(): Promise<void> {
 }
 let calendars: Calendar[] = [];
 let usedCalendarIds: number[] = [];
+/** Rooms the administrator sees; empty when the master data is unreadable – the page runs on (G45). */
+let rooms: RoomInfo[] = [];
+let usedRoomIds: number[] = [];
 let catalog: AuthCatalog | null = null;
 let categories: Partial<Record<CategoryKey, number>> = {};
 
@@ -151,7 +155,7 @@ const foreignGroups = computed(() =>
     ),
 );
 
-const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit];
+const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.resourceView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit];
 
 /** Rights a side must not hold – what the assistant takes back (Plan.md, F). */
 function forbiddenRights(side: Side): RequiredRight[] | null {
@@ -187,6 +191,8 @@ function computePlan(): void {
             categories: categories as Record<CategoryKey, number>,
             wikiCategoryId,
             calendarIds: usedCalendarIds,
+            roomIds: rooms.map((r) => r.id),
+            usedRoomIds,
         });
     } catch (e) {
         planProblem.value = explain(e);
@@ -422,6 +428,7 @@ async function check(side: Side): Promise<void> {
                 wikiCategoryId,
                 moduleRights: moduleRights('designer'),
                 forbidden: forbiddenRights('designer'),
+                roomIds: rooms.map((r) => r.id),
             });
         } else {
             const members = await Promise.all(
@@ -435,6 +442,8 @@ async function check(side: Side): Promise<void> {
                 members,
                 calendars,
                 usedCalendarIds,
+                rooms,
+                usedRoomIds,
                 wikiCategoryId,
                 moduleRights: moduleRights('device'),
             });
@@ -493,13 +502,15 @@ onMounted(async () => {
         const handle = await getRepository();
         repository = handle.repository;
         demo.value = handle.demo;
-        const [list, settings, wikiCategories, calendarList, used, screenList] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, used, screenList, masterdata, usedRooms] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
             fetchCalendars(),
             repository.calendarIdsInUse(),
             repository.listScreens(),
+            fetchResourceMasterdata().catch(() => null),
+            repository.roomIdsInUse(),
         ]);
         screens.value = screenList;
         device.slug = screenList[0]?.slug ?? '';
@@ -510,6 +521,8 @@ onMounted(async () => {
         settingsLoaded.value = true;
         calendars = calendarList;
         usedCalendarIds = used;
+        rooms = masterdata ? roomsOf(masterdata) : [];
+        usedRoomIds = usedRooms;
         selected.designer = settings?.designerGroupId ?? null;
         selected.device = settings?.deviceGroupId ?? null;
         createdGroupIds.value = settings?.createdGroupIds ?? [];

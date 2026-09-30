@@ -2,13 +2,14 @@
 import { computed } from 'vue';
 import type { Calendar, PostGroup } from '../ct/api';
 import { homepageGroups, selectGroups, type Group, type HomepageEntry } from '../groups/normalize';
-import type { Block, Fill, GroupFields, TextStyle } from '../model/schema';
+import type { Block, Fill, GroupFields, RoomEntry, TextStyle } from '../model/schema';
 import { bannerShown } from '../player/banner';
 import { themeOf, useStageContext } from '../player/context';
 import { fontDef, FONTS } from '../player/fonts';
 import { calendarColor, sizedImageUrl } from '../player/format';
 import { GROUP_SECONDS, PAGE_SECONDS, POST_SECONDS, slideSeconds } from '../player/paging';
 import { qrShape } from '../player/qr';
+import type { RoomInfo } from '../rooms/normalize';
 import { webFrame, withScheme } from '../player/web';
 import { useEditorStore } from './editor-store';
 import ColorField from './ColorField.vue';
@@ -18,7 +19,8 @@ import InfoHint from './InfoHint.vue';
 import InspectorSection from './InspectorSection.vue';
 import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
 
-const props = defineProps<{ calendars: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[] }>();
+/** `rooms`: the rooms the designer may see; null while they are not loaded yet. */
+const props = defineProps<{ calendars: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null }>();
 const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow'] }>();
 
 /** Labels in the order of `GroupFields` itself, so the fieldset needs no list of its own (Plan.md 43). */
@@ -144,6 +146,50 @@ const pickableGroupList = computed(() => {
 function setGroupSeconds(value: string): void {
     const n = Number(value);
     if (Number.isInteger(n) && n >= 5 && n <= 120) setBlock({ pageSeconds: n });
+}
+
+/** Most rooms a block holds – the schema's limit. */
+const ROOMS_MAX = 30;
+
+function roomEntries(): RoomEntry[] {
+    return block.value?.type === 'rooms' ? block.value.rooms : [];
+}
+
+/** The name ChurchTools gives the room – from what the designer may see, else from the preview's data. */
+function roomName(resourceId: number): string | null {
+    return props.rooms?.find((r) => r.id === resourceId)?.name ?? stage.rooms?.find((r) => r.resourceId === resourceId)?.name ?? null;
+}
+
+/** The visible rooms not chosen yet, in ChurchTools' order. */
+const pickableRooms = computed(() => {
+    const chosen = new Set(roomEntries().map((r) => r.resourceId));
+    return (props.rooms ?? []).filter((r) => !chosen.has(r.id));
+});
+
+function addRooms(infos: RoomInfo[]): void {
+    const next = [...roomEntries(), ...infos.map((r): RoomEntry => ({ resourceId: r.id, hint: '', showTitles: true }))];
+    setBlock({ rooms: next.slice(0, ROOMS_MAX) });
+}
+
+/** The chosen room joins the list, and the select reads "+ Raum" again. */
+function pickRoom(select: HTMLSelectElement): void {
+    addRooms(pickableRooms.value.filter((r) => r.id === Number(select.value)));
+    select.value = '';
+}
+
+function setRoom(index: number, patch: Partial<RoomEntry>): void {
+    setBlock({ rooms: roomEntries().map((r, i) => (i === index ? { ...r, ...patch } : r)) });
+}
+
+function moveRoom(index: number, target: number): void {
+    const entries = [...roomEntries()];
+    if (target < 0 || target >= entries.length) return;
+    [entries[index], entries[target]] = [entries[target]!, entries[index]!];
+    setBlock({ rooms: entries });
+}
+
+function removeRoom(index: number): void {
+    setBlock({ rooms: roomEntries().filter((_, i) => i !== index) });
 }
 
 /** The other playlists showing the current slide, as one line; empty for an unlinked slide (Plan.md 49). */
@@ -848,6 +894,145 @@ const LAYERS = [
                     </InspectorSection>
                 </template>
 
+                <!-- Plan.md, 46: which rooms are taken today – an overview or the door sign of the first room. -->
+                <template v-if="block.type === 'rooms'">
+                    <label class="d-field">
+                        Anordnung
+                        <select
+                            :value="block.layout"
+                            data-testid="rooms-layout"
+                            @change="setBlock({ layout: ($event.target as HTMLSelectElement).value })"
+                        >
+                            <option value="overview">Übersicht – alle gewählten Räume</option>
+                            <option value="door">Türschild – der erste Raum</option>
+                        </select>
+                    </label>
+                    <label class="d-field">
+                        Tage
+                        <select
+                            :value="block.days"
+                            data-testid="rooms-days"
+                            @change="setBlock({ days: Number(($event.target as HTMLSelectElement).value) })"
+                        >
+                            <option :value="1">Heute</option>
+                            <option :value="2">Heute und morgen</option>
+                        </select>
+                    </label>
+                    <label v-if="block.layout === 'overview'" class="d-field">
+                        Sekunden je Seite
+                        <input
+                            type="number"
+                            min="5"
+                            max="120"
+                            :value="block.pageSeconds ?? PAGE_SECONDS"
+                            data-testid="rooms-seconds"
+                            v-on="edit"
+                            @input="setGroupSeconds(($event.target as HTMLInputElement).value)"
+                        >
+                    </label>
+                    <p v-if="block.layout === 'door'" class="hint" data-testid="rooms-door-hint">
+                        Das Türschild zeigt den ersten Raum der Liste.
+                    </p>
+
+                    <fieldset class="rooms-list">
+                        <legend>Räume</legend>
+                        <p v-if="!block.rooms.length" class="hint">Noch keine Räume gewählt.</p>
+                        <div v-for="(entry, index) in block.rooms" :key="entry.resourceId" class="room-entry" data-testid="room-entry">
+                            <div class="room-head">
+                                <span v-if="roomName(entry.resourceId)" class="room-name" :title="roomName(entry.resourceId)!" data-testid="room-name">
+                                    {{ roomName(entry.resourceId) }}
+                                </span>
+                                <span v-else class="room-name dimmed" data-testid="room-name">Raum {{ entry.resourceId }} – nicht sichtbar</span>
+                                <button
+                                    class="d-btn d-btn--icon"
+                                    type="button"
+                                    aria-label="Nach oben"
+                                    title="Nach oben"
+                                    :disabled="index === 0"
+                                    data-testid="room-up"
+                                    @click="moveRoom(index, index - 1)"
+                                >
+                                    ↑
+                                </button>
+                                <button
+                                    class="d-btn d-btn--icon"
+                                    type="button"
+                                    aria-label="Nach unten"
+                                    title="Nach unten"
+                                    :disabled="index === block.rooms.length - 1"
+                                    data-testid="room-down"
+                                    @click="moveRoom(index, index + 1)"
+                                >
+                                    ↓
+                                </button>
+                                <button
+                                    class="d-btn d-btn--icon"
+                                    type="button"
+                                    aria-label="Raum entfernen"
+                                    title="Raum entfernen"
+                                    data-testid="room-remove"
+                                    @click="removeRoom(index)"
+                                >
+                                    <Icon name="close" :size="14" />
+                                </button>
+                            </div>
+                            <label class="d-field">
+                                Wegweiser
+                                <input
+                                    type="text"
+                                    maxlength="100"
+                                    :value="entry.hint"
+                                    placeholder="z. B. 1. OG, links"
+                                    data-testid="room-hint"
+                                    v-on="edit"
+                                    @input="setRoom(index, { hint: ($event.target as HTMLInputElement).value })"
+                                >
+                            </label>
+                            <div class="hint-row">
+                                <label class="check">
+                                    <input
+                                        type="checkbox"
+                                        :checked="entry.showTitles"
+                                        data-testid="room-titles"
+                                        @change="setRoom(index, { showTitles: ($event.target as HTMLInputElement).checked })"
+                                    >
+                                    Titel zeigen
+                                </label>
+                                <InfoHint>
+                                    Buchungstitel können Namen enthalten, etwa „Gespräch Familie X". Für solche Räume den Titel
+                                    ausschalten – dann steht dort „Belegt".
+                                </InfoHint>
+                            </div>
+                        </div>
+                        <p v-if="rooms && !rooms.length" class="hint" data-testid="rooms-none">
+                            Keine Räume sichtbar. Ein Administrator gibt der Gruppe „Infoscreen-Designer" unter Einstellungen
+                            mit „Rechte aktualisieren" das Recht, Räume zu sehen.
+                        </p>
+                        <div v-else-if="rooms" class="room-add">
+                            <select
+                                :disabled="!pickableRooms.length || block.rooms.length >= ROOMS_MAX"
+                                value=""
+                                aria-label="Raum hinzufügen"
+                                data-testid="rooms-add"
+                                @change="pickRoom($event.target as HTMLSelectElement)"
+                            >
+                                <option value="">+ Raum</option>
+                                <option v-for="r in pickableRooms" :key="r.id" :value="r.id">{{ r.name }}</option>
+                            </select>
+                            <button
+                                class="d-btn"
+                                type="button"
+                                :disabled="!pickableRooms.length || block.rooms.length >= ROOMS_MAX"
+                                data-testid="rooms-add-all"
+                                @click="addRooms(pickableRooms)"
+                            >
+                                Alle Räume hinzufügen
+                            </button>
+                        </div>
+                        <span v-if="rooms?.length" class="hint" data-testid="rooms-count">{{ block.rooms.length }} von {{ ROOMS_MAX }}</span>
+                    </fieldset>
+                </template>
+
                 <template v-if="block.type === 'church-header'">
                     <label class="check">
                         <input
@@ -1267,6 +1452,42 @@ legend {
 }
 .spacer {
     flex: 1;
+}
+/* The rooms of a block: name with reorder buttons, way-finder, title switch (Plan.md 46). Nothing may widen the column. */
+.rooms-list {
+    grid-template-columns: minmax(0, 1fr);
+}
+.room-entry {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 6px;
+    min-width: 0;
+    padding: 6px 0;
+    border-top: 1px solid var(--d-divider);
+}
+.room-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.room-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 600;
+}
+.room-add {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.room-add select {
+    flex: 1;
+    min-width: 0;
 }
 /* The pictures of a slideshow: thumbnail, file name, reorder and remove (Plan.md 46). */
 .slideshow-images {

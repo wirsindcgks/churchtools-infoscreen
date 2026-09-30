@@ -65,6 +65,28 @@ describe('checkDesignerGroup', () => {
         expect(checks.find((c) => c.text.includes('Wiki'))?.level).toBe('info');
     });
 
+    it('warns when a role does not see every room – they would be missing in the block "Raumbelegung" (G45)', () => {
+        const all = checkDesignerGroup({
+            statusId: 1,
+            roles: [role({ grants: [...designerGrants, grant(AUTH.resourceView, 1), grant(AUTH.resourceView, 2)] })],
+            wikiCategoryId: WIKI,
+            roomIds: [1, 2],
+        });
+        expect(all.some((c) => c.text.includes('Räume'))).toBe(false);
+        const some = checkDesignerGroup({
+            statusId: 1,
+            roles: [role({ name: 'Leiter', grants: [...designerGrants, grant(AUTH.resourceView, 1)] })],
+            wikiCategoryId: WIKI,
+            roomIds: [1, 2],
+        });
+        expect(some.find((c) => c.text.includes('Räume'))).toMatchObject({ level: 'warn', text: 'Rolle „Leiter" sieht nicht alle Räume.' });
+    });
+
+    it('says nothing about rooms where there are none', () => {
+        const checks = checkDesignerGroup({ statusId: 1, roles: [role()], wikiCategoryId: WIKI, roomIds: [] });
+        expect(checks.some((c) => c.text.includes('Räume'))).toBe(false);
+    });
+
     it('says the module rights wait for the installed extension', () => {
         const checks = checkDesignerGroup({ statusId: 1, roles: [role()], wikiCategoryId: WIKI });
         expect(checks.at(-1)).toMatchObject({ level: 'info' });
@@ -116,6 +138,34 @@ describe('checkDeviceGroup', () => {
             wikiCategoryId: WIKI,
         });
         expect(checks.find((c) => c.text.includes('Wiki-Rechte'))?.level).toBe('warn');
+    });
+
+    it('fails for a room a device cannot see, and is content with one it can (G45)', () => {
+        const rooms = [
+            { id: 1, name: 'Saal' },
+            { id: 3, name: 'Raum 01' },
+        ];
+        const checks = checkDeviceGroup({
+            statusId: 1,
+            members: [{ label: 'Minimal User', grants: [grant(AUTH.resourceView, 3)] }],
+            calendars,
+            usedCalendarIds: [],
+            rooms,
+            usedRoomIds: [1, 3],
+            wikiCategoryId: WIKI,
+        });
+        expect(checks.find((c) => c.text.includes('Raum 01'))?.level).toBe('ok');
+        const fail = checks.find((c) => c.text.includes('Saal'));
+        expect(fail).toMatchObject({ level: 'fail', text: '„Saal" ist für Minimal User nicht sichtbar.' });
+        expect(fail?.detail).toContain('Ressource sehen');
+    });
+
+    it('warns about a room a screen uses that is not to be found, and adds no row without used rooms', () => {
+        const members = [{ label: 'Gerät', grants: [] }];
+        const unknown = checkDeviceGroup({ statusId: 1, members, calendars, usedCalendarIds: [], rooms: [], usedRoomIds: [42], wikiCategoryId: WIKI });
+        expect(unknown.find((c) => c.text.includes('42'))?.level).toBe('warn');
+        const none = checkDeviceGroup({ statusId: 1, members, calendars, usedCalendarIds: [], rooms: [{ id: 1, name: 'Saal' }], usedRoomIds: [], wikiCategoryId: WIKI });
+        expect(none.some((c) => c.text.includes('Saal') || c.text.includes('Raum'))).toBe(false);
     });
 
     it('warns about a calendar a screen uses that no longer exists', () => {

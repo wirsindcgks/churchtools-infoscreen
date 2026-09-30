@@ -13,6 +13,7 @@ import CountdownView from './CountdownView.vue';
 import GroupsView from './GroupsView.vue';
 import NextAppointmentView from './NextAppointmentView.vue';
 import PostsView from './PostsView.vue';
+import RoomsView from './RoomsView.vue';
 import SlideshowView from './SlideshowView.vue';
 
 /** `slideSeconds`: how long the slide shows – a paged list shares it out among its pages. */
@@ -115,6 +116,7 @@ const imageUrl = computed(() => {
         <CountdownView v-else-if="block.type === 'countdown'" :block="block" />
         <PostsView v-else-if="block.type === 'posts'" :block="block" :slide-seconds="slideSeconds" />
         <GroupsView v-else-if="block.type === 'groups'" :block="block" :slide-seconds="slideSeconds" />
+        <RoomsView v-else-if="block.type === 'rooms'" :block="block" :slide-seconds="slideSeconds" />
         <SlideshowView v-else-if="block.type === 'slideshow'" :block="block" :slide-seconds="slideSeconds" />
     </div>
 </template>
