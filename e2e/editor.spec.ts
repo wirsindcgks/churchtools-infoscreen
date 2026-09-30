@@ -1,4 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
+import { addBlock, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -10,7 +11,7 @@ test('edit a slide: add text, type, drag, undo, save', async ({ page }) => {
     await page.waitForTimeout(1500);
     await page.screenshot({ path: 'test-results/editor-open.png' });
 
-    await page.getByTestId('add-text').click();
+    await addBlock(page, 'text');
     await expect(page.getByTestId('block-inspector')).toBeVisible();
     await page.getByTestId('text-input').fill('Gemeindefest am Samstag');
     await page.getByTestId('text-input').blur();
@@ -48,7 +49,7 @@ test('create a new portrait screen', async ({ page }) => {
     await expect(page.getByTestId('playlist-info')).toContainText('Foyer Hochkant');
     await expect(page.getByTestId('playlist-info')).toContainText('Hochkant, 1080 × 1920');
     await expect(page.getByTestId('slide-item')).toHaveCount(1);
-    await page.getByTestId('add-clock').click();
+    await addBlock(page, 'clock');
     await page.waitForTimeout(500);
     await page.screenshot({ path: 'test-results/editor-portrait.png' });
 });
@@ -58,7 +59,8 @@ test('blocks snap to the grid and to the stage centre with a guide line', async 
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await page.getByTestId('grid-size').selectOption('20');
-    await page.getByTestId('add-shape').click(); // created centred, 600 × 300
+    await addBlock(page, 'shape'); // created centred, 600 × 300
+    await openSection(page, 'position');
     await page.getByTestId('inspector-x').fill('100');
     await page.getByTestId('inspector-x').blur();
 
@@ -111,6 +113,7 @@ test('a chosen font comes from the own server, and nothing else is asked for (da
     await page.getByTestId('open-editor').first().click();
     await page.getByTestId('frame-text').first().click();
     await expect(page.getByTestId('text-input')).toHaveValue('Herzlich willkommen!');
+    await openSection(page, 'font');
     await page.getByTestId('font-family').selectOption('barlow-semi-condensed');
     const title = page.locator('.editor-stage .block--text').filter({ hasText: 'Herzlich willkommen!' });
     // WebKit reports the name without quotes.
@@ -151,7 +154,7 @@ test('the editor saves content without touching the screen\'s settings', async (
     await expect(page.getByTestId('playlist-info')).toContainText('Demo – Foyer'); // where it runs
     await expect(page.getByTestId('playlist-name-input')).toHaveValue('Wochenüberblick');
     await expect(page.getByTestId('screen-name')).toHaveCount(0);
-    await page.getByTestId('add-clock').click();
+    await addBlock(page, 'clock');
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
 });
@@ -161,6 +164,7 @@ test('the editor carries no address for the TV – that is the administrators\' 
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await page.keyboard.press('Escape');
+    await openSection(page, 'playlist');
     await expect(page.getByTestId('playlist-info')).toBeVisible();
     await expect(page.locator('.inspector')).not.toContainText('player?screen=');
 });
@@ -168,9 +172,10 @@ test('the editor carries no address for the TV – that is the administrators\' 
 test('colours take a hex value; a half-typed one is marked and not taken over (Plan.md 11)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
-    await page.getByTestId('add-text').click();
+    await addBlock(page, 'text');
     await page.getByTestId('text-input').fill('Farbprobe');
     const text = page.locator('.editor-stage').getByText('Farbprobe');
+    await openSection(page, 'font');
     const hex = page.getByTestId('text-color');
 
     await hex.fill('#1E3A5F');
@@ -201,7 +206,7 @@ test('a new slide comes from the tile below the last one, blocks from the bar ab
     await expect(page.getByTestId('slide-item')).toHaveCount(4);
 
     const [palette, stage] = await Promise.all([
-        page.getByTestId('add-clock').boundingBox(),
+        page.getByTestId('add-block-menu').boundingBox(),
         page.locator('.editor-stage').boundingBox(),
     ]);
     expect(palette!.y + palette!.height).toBeLessThanOrEqual(stage!.y + 1); // right above the stage
@@ -273,6 +278,7 @@ test.describe('with a finger, in both browsers', () => {
         await expect(inspectorSheet).toHaveClass(/open/);
         await expect(page.getByTestId('inspector-sheet-toggle')).toContainText('Baustein: QR-Code');
 
+        await openSection(page, 'position');
         await page.getByTestId('inspector-x').fill('100');
         await page.getByTestId('inspector-x').blur();
         await expect(page.getByTestId('inspector-x')).toHaveValue('100');
@@ -471,7 +477,7 @@ test.describe('on a tablet (Plan.md 45)', () => {
         await expect(page.getByTestId('slide-item').first()).not.toBeVisible();
         await expect(page.getByTestId('tablet-slides-toggle')).toBeVisible();
         await expect(page.getByTestId('add-block-menu')).toBeVisible();
-        await expect(page.getByTestId('add-clock')).not.toBeVisible();
+        await expect(page.getByTestId('add-clock')).toHaveCount(0); // the row of blocks is gone everywhere (Plan.md 47)
     }
 
     test('upright: the stage takes the width, the inspector is a bar at the bottom, and there is no rail for it', async ({ page }) => {
@@ -596,7 +602,7 @@ test.describe('on a tablet (Plan.md 45)', () => {
         await expect(page.getByTestId('tablet-inspector-close')).not.toBeVisible();
         await expect(page.getByTestId('desktop-slides-collapse')).toBeVisible();
         await expect(page.getByTestId('desktop-inspector-collapse')).toBeVisible();
-        await expect(page.getByTestId('add-clock')).toBeVisible();
+        await expect(page.getByTestId('add-block-menu')).toBeVisible();
         const inspector = (await page.getByTestId('block-inspector').boundingBox())!;
         const stage = (await page.locator('.editor-stage').boundingBox())!;
         expect(inspector.x).toBeGreaterThanOrEqual(stage.x + stage.width - 1);
@@ -675,16 +681,15 @@ test('at 1440px the phone sheets are gone, the inspector stands beside the stage
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await expect(page.getByTestId('inspector-sheet-toggle')).not.toBeVisible();
-    await expect(page.getByTestId('add-block-menu')).not.toBeVisible();
     await expect(page.getByTestId('editor-more')).not.toBeVisible();
-    await expect(page.getByTestId('add-clock')).toBeVisible();
+    await expect(page.getByTestId('add-block-menu')).toBeVisible(); // "+ Baustein" on every width (Plan.md 47)
     await expect(page.getByTestId('open-preview')).toBeVisible();
     // The phone-only slide row header and its actions are gone; the selected tile keeps its own (Plan.md 44).
     await expect(page.getByTestId('slides-toggle')).not.toBeVisible();
     await expect(page.getByTestId('slide-duplicate-phone')).not.toBeVisible();
     await expect(page.getByRole('button', { name: 'Duplizieren', exact: true })).toBeVisible();
 
-    await page.getByTestId('add-clock').click();
+    await addBlock(page, 'clock');
     const [stage, inspector] = await Promise.all([
         page.locator('.editor-stage').boundingBox(),
         page.getByTestId('block-inspector').boundingBox(),
@@ -695,7 +700,7 @@ test('at 1440px the phone sheets are gone, the inspector stands beside the stage
 test('the media library in the editor lists pictures to choose from and closes again (reads only)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
-    await page.getByTestId('add-image').click();
+    await addBlock(page, 'image');
     await page.getByTestId('pick-image').click();
     const library = page.getByTestId('media-library');
     await expect(library).toBeVisible();
@@ -909,7 +914,7 @@ test('the preview plays the unsaved draft like the TV, and saves nothing', async
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
-    await page.getByTestId('add-text').click();
+    await addBlock(page, 'text');
     await page.getByTestId('text-input').fill('Nur in der Vorschau');
     await page.getByTestId('text-input').blur();
     await expect(page.getByTestId('save-status')).toHaveText('Ungespeicherte Änderungen');
@@ -989,7 +994,7 @@ test('a locked block stays put: no drag, no keys, no fields, no delete – until
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
-    await page.getByTestId('add-text').click();
+    await addBlock(page, 'text');
     const frames = page.getByTestId('frame-text');
     const count = await frames.count();
     const frame = frames.last();
@@ -1025,8 +1030,8 @@ test('a click on a locked block reaches the one below; Alt-click takes the locke
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     // Two texts in the same place: the second lies on top and gets locked.
-    await page.getByTestId('add-text').click();
-    await page.getByTestId('add-text').click();
+    await addBlock(page, 'text');
+    await addBlock(page, 'text');
     const frames = page.getByTestId('frame-text');
     const below = frames.nth((await frames.count()) - 2);
     const top = frames.last();
@@ -1081,7 +1086,7 @@ test('a countdown to the next appointment, and the band moved to "Hinweise" (Pla
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     const stage = page.locator('.editor-stage');
 
-    await page.getByTestId('add-countdown').click();
+    await addBlock(page, 'countdown');
     // The mocked appointments start tomorrow at the earliest: days and hours.
     await expect(stage.getByTestId('countdown-time')).toHaveText(/^\d+ Tag(e)? \d+ Std\.$|^\d+:\d{2}:\d{2}$/);
     await expect(stage.getByTestId('countdown')).toContainText('beginnt in');
@@ -1092,6 +1097,7 @@ test('a countdown to the next appointment, and the band moved to "Hinweise" (Pla
 
     // The band moved out of the inspector (Plan.md 34): it only links to "Hinweise" now.
     await page.getByTestId('grid').click({ position: { x: 5, y: 5 } }); // choose no block
+    await openSection(page, 'playlist');
     await expect(page.getByTestId('banner-status')).toContainText('Kein Hinweisband');
     await expect(page.getByTestId('banner-status').getByRole('link', { name: 'Hinweise' })).toHaveAttribute('href', /\/hinweise$/);
 
@@ -1221,7 +1227,7 @@ test('the design page sets the font new blocks start with; blocks that exist kee
     // WebKit reports the name without quotes.
     const welcome = stage.locator('.block--text').filter({ hasText: 'Herzlich willkommen!' });
     await expect(welcome.locator('.text')).toHaveCSS('font-family', /^"?ISD Lato"?, sans-serif$/);
-    await page.getByTestId('add-text').click();
+    await addBlock(page, 'text');
     await expect(page.getByTestId('font-family')).toHaveValue('oswald');
     await expect(stage.locator('.block--text').last().locator('.text')).toHaveCSS('font-family', /^"?ISD Oswald"?, sans-serif$/);
 });
@@ -1235,7 +1241,7 @@ test('a website and a QR code (Plan.md 28)', async ({ page }) => {
     await page.getByTestId('open-editor').first().click();
     const stage = page.locator('.editor-stage');
 
-    await page.getByTestId('add-web').click();
+    await addBlock(page, 'web');
     await expect(page.getByTestId('web-problem')).toContainText('Noch keine Adresse');
     // Typed without https://, as people do: the designer adds it.
     await page.getByTestId('web-url').fill('www.gemeinde.example/wochenblatt/');
@@ -1249,7 +1255,7 @@ test('a website and a QR code (Plan.md 28)', async ({ page }) => {
     await page.getByTestId('web-zoom').selectOption('2');
     await expect(frame).toHaveAttribute('style', /scale\(2\)/);
 
-    await page.getByTestId('add-qr').click();
+    await addBlock(page, 'qr');
     await page.getByTestId('qr-data').fill('https://www.gemeinde.example/anmeldung/');
     await expect(stage.getByTestId('qr-code')).toBeVisible();
     await page.getByTestId('save').click();
@@ -1270,7 +1276,7 @@ test('a posts block shows a public group\'s posts, as a card and as a list (Plan
     await page.getByTestId('add-slide').click();
     await expect(page.getByTestId('slide-item')).toHaveCount(4);
 
-    await page.getByTestId('add-posts').click();
+    await addBlock(page, 'posts');
     const inspector = page.getByTestId('block-inspector');
     const group = inspector.locator('label.check', { hasText: 'ISD-Beitragstest' });
     await expect(group).toBeVisible({ timeout: 15_000 }); // the group list comes from ChurchTools
@@ -1286,6 +1292,7 @@ test('a posts block shows a public group\'s posts, as a card and as a list (Plan
     await card.screenshot({ path: `${SCRATCHPAD}/posts-card-landscape.png` });
 
     // Hochkant: the same post, now with its image above the text instead of beside it.
+    await openSection(page, 'position');
     await inspector.getByTestId('inspector-width').fill('700');
     await inspector.getByTestId('inspector-height').fill('1000');
     await inspector.getByTestId('inspector-height').blur();
@@ -1322,7 +1329,7 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await page.getByTestId('add-slide').click();
     await expect(page.getByTestId('slide-item')).toHaveCount(4);
 
-    await page.getByTestId('add-groups').click();
+    await addBlock(page, 'groups');
     const inspector = page.getByTestId('block-inspector');
     const homepageSelect = inspector.getByTestId('groups-homepage');
     // The title carries a non-breaking space ("Gottesdienst | Gottesdienste") – matched by value, not by label.
@@ -1342,6 +1349,7 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await card.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-card-landscape.png` });
 
     // Hochkant: the same group, now with its image above the text instead of beside it.
+    await openSection(page, 'position');
     await inspector.getByTestId('inspector-width').fill('700');
     await inspector.getByTestId('inspector-height').fill('1000');
     await inspector.getByTestId('inspector-height').blur();
@@ -1368,6 +1376,7 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await page.waitForTimeout(300);
     await card.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-card-two-a-page.png` });
 
+    await openSection(page, 'fields');
     await inspector.getByTestId('group-show-leaders').check();
     await expect(card.getByTestId('group-leaders').first()).toBeVisible();
 
@@ -1388,4 +1397,95 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await page.waitForTimeout(300);
     await stage.screenshot({ path: 'test-results/editor-groups-list.png' });
     await list.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-list.png` });
+});
+
+test('the blocks stand in German alphabetical order in the "+ Baustein" sheet; the old row is gone (Plan.md 47)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await expect(page.getByTestId('add-text')).toHaveCount(0);
+
+    await page.getByTestId('add-block-menu').click();
+    const sheet = page.getByTestId('block-sheet');
+    await expect(sheet).toBeVisible();
+    const types = await sheet.locator('[data-testid^="sheet-add-"]').evaluateAll((buttons) =>
+        buttons.map((b) => b.getAttribute('data-testid')!.replace('sheet-add-', '')),
+    );
+    // Beiträge, Bild, Countdown, Fläche, Gemeindekopf, Gruppen, Nächster Termin, QR-Code, Terminliste, Text, Uhr, Webseite
+    expect(types).toEqual([
+        'posts',
+        'image',
+        'countdown',
+        'shape',
+        'church-header',
+        'groups',
+        'next-appointment',
+        'qr',
+        'appointment-list',
+        'text',
+        'clock',
+        'web',
+    ]);
+});
+
+test('"Position & Ebene" starts folded and stays open for the next block and after a reload (Plan.md 47)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await addBlock(page, 'text');
+    await expect(page.getByTestId('section-position')).not.toHaveAttribute('open', '');
+    await expect(page.getByTestId('inspector-x')).toBeHidden();
+
+    await openSection(page, 'position');
+    await expect(page.getByTestId('inspector-x')).toBeVisible();
+    await addBlock(page, 'clock');
+    await expect(page.getByTestId('section-position')).toHaveAttribute('open', '');
+    await expect(page.getByTestId('inspector-x')).toBeVisible();
+
+    await page.reload();
+    await expect(page.getByTestId('leave-editor')).toBeVisible();
+    await page.getByTestId('frame-text').first().click();
+    await expect(page.getByTestId('section-position')).toHaveAttribute('open', '');
+});
+
+test('a locked block: delete is off, sections still fold, fields stay locked (Plan.md 47)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await addBlock(page, 'text');
+    await expect(page.getByTestId('block-delete')).toBeEnabled();
+    await page.getByTestId('lock-toggle').click();
+    await expect(page.getByTestId('block-delete')).toBeDisabled();
+
+    await page.getByTestId('section-position-toggle').click();
+    await expect(page.getByTestId('section-position')).toHaveAttribute('open', '');
+    await expect(page.getByTestId('inspector-x')).toBeDisabled();
+    await page.getByTestId('section-position-toggle').click();
+    await expect(page.getByTestId('section-position')).not.toHaveAttribute('open', '');
+});
+
+test('an explanation stays behind its (i) until asked for (Plan.md 47)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await addBlock(page, 'qr');
+    const inspector = page.getByTestId('block-inspector');
+    const hint = inspector.getByText('Dunkel auf hell lesen alle Handykameras am sichersten.');
+    await expect(hint).toHaveCount(0);
+    const info = inspector.getByRole('button', { name: 'Erklärung' });
+    await expect(info).toHaveAttribute('aria-expanded', 'false');
+    await info.click();
+    await expect(info).toHaveAttribute('aria-expanded', 'true');
+    await expect(hint).toBeVisible();
+    await info.click();
+    await expect(hint).toHaveCount(0);
+});
+
+test('the block is layered from the position section and deleted from its header (Plan.md 47)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await addBlock(page, 'shape');
+    const frames = page.getByTestId('frame-shape');
+    const count = await frames.count();
+    await openSection(page, 'position');
+    await page.getByTestId('layer-back').click();
+    await page.getByTestId('block-delete').click();
+    await expect(frames).toHaveCount(count - 1);
 });

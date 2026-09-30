@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { serialize } from '../model/read';
 import { textBlock, makeSlide } from '../model/testing';
-import { BLOCK_LABELS, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, duplicateSlide, move, reorder, slugify } from './ops';
+import { BLOCK_LABELS, PALETTE, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, duplicateSlide, move, reorder, slugify } from './ops';
 import { History } from './history';
 import { DEFAULT_THEME, type Block, type BlockType } from '../model/schema';
 
@@ -139,5 +139,24 @@ describe('a click on a locked block (Plan.md 25)', () => {
     it('reaches nothing where no unlocked block lies below', () => {
         expect(below([back, cover], cover, { x: 150, y: 50 })).toBeNull();
         expect(below([cover, back], cover, { x: 50, y: 50 })).toBeNull(); // above it, not below
+    });
+});
+
+describe('the palette (Plan.md 47)', () => {
+    it('lists every block type in German alphabetical order', () => {
+        expect(PALETTE.map(([, label]) => label)).toEqual([
+            'Beiträge',
+            'Bild',
+            'Countdown',
+            'Fläche',
+            'Gemeindekopf',
+            'Gruppen',
+            'Nächster Termin',
+            'QR-Code',
+            'Terminliste',
+            'Text',
+            'Uhr',
+            'Webseite',
+        ]);
     });
 });

@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { expect, test } from '@playwright/test';
+import { addBlock } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -19,7 +20,7 @@ test('upload an image, place it, and get warned before deleting it', async ({ pa
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
 
-    await page.getByTestId('add-image').click();
+    await addBlock(page, 'image');
     await page.getByTestId('pick-image').click();
     await expect(page.getByTestId('media-library')).toBeVisible();
     await page.getByTestId('media-upload').setInputFiles({

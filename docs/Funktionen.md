@@ -17,10 +17,10 @@ Editor; Adresse, Zeitplan und Player stecken im Menü „…". Filter trennen Qu
 
 ## Der Editor
 
-Slides gestalten wie in einem Folienprogramm: links die Slides, oben die Bausteine, in der Mitte die Bildfläche,
-rechts der Inspektor mit allen Einstellungen des gewählten Bausteins. Ziehen, an den Griffen skalieren, am Raster
-ausrichten, sperren, rückgängig machen. Termine kommen live aus den Kalendern von ChurchTools – hier als Karten mit
-Datumskachel und Kalenderfarbe.
+Slides gestalten wie in einem Folienprogramm: links die Slides, oben „+ Baustein" (alle Bausteine, alphabetisch), in der
+Mitte die Bildfläche, rechts der Inspektor: oben der Inhalt des gewählten Bausteins, darunter aufklappbare Bereiche.
+Ziehen, an den Griffen skalieren, am Raster ausrichten, sperren, rückgängig machen. Termine kommen live aus den
+Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe.
 
 ![Editor mit einer Terminliste als Karten, darüber Gemeindename und Uhr](bilder/editor.png)
 

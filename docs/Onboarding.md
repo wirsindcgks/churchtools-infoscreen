@@ -54,17 +54,20 @@ Menü „…". Neue Screens legt ein Administrator an.
 
 ### 2. Slides gestalten
 
-![Editor: links die Slides, oben die Bausteine, in der Mitte die Bildfläche, rechts der Inspektor](bilder/editor.png)
+![Editor: links die Slides, oben „+ Baustein", in der Mitte die Bildfläche, rechts der Inspektor](bilder/editor.png)
 
 - **Links die Slides** – „Neue Slide" unter der letzten, ziehen zum Umsortieren, darunter **„Aus anderer Playlist
   …"**, um Slides einer anderen Playlist als Kopie zu übernehmen.
-- **Oben die Bausteine:** Text, Bild, Fläche, Uhr, Terminliste, Nächster Termin, Gemeindekopf, Webseite, QR-Code,
-  **Countdown** („Gottesdienst beginnt in 12:34"), **Beiträge** öffentlicher Gruppen und **Gruppen** (siehe unten).
+- **„+ Baustein"** öffnet alle Bausteine, alphabetisch: Beiträge, Bild, Countdown („Gottesdienst beginnt in 12:34"),
+  Fläche, Gemeindekopf, Gruppen (siehe unten), Nächster Termin, QR-Code, Terminliste, Text, Uhr und Webseite.
 - **In der Mitte die Bildfläche:** ziehen, an den Griffen skalieren, am Raster ausrichten.
-- **Rechts der Inspektor:** Schrift, Farben (auch als Hex-Wert), Kalender, Hintergrund. Slides und Inspektor lassen
-  sich einklappen, damit die Bildfläche mehr Platz bekommt; auf dem Tablet sind sie das von Anfang an. Oben **„Sperren"**, damit
-  ein Logo oder Hintergrund nicht verrutscht – ein Klick darauf erreicht dann den Baustein darunter, mit gedrückter
-  Alt-Taste (Mac: Option) den gesperrten selbst.
+- **Rechts der Inspektor:** oben der Inhalt des Bausteins (Text, Kalender, Adresse …), darunter aufklappbare
+  Bereiche – **Schrift** und **Position & Ebene**, bei Gruppen auch **Angaben**. Zugeklappt zeigt jeder Bereich in
+  einer Zeile, was eingestellt ist; was du einmal aufklappst, bleibt offen. Im Kopf des Inspektors stehen
+  **„Sperren"** – damit ein Logo oder Hintergrund nicht verrutscht, ein Klick darauf erreicht dann den Baustein
+  darunter, mit gedrückter Alt-Taste (Mac: Option) den gesperrten selbst – und **„Löschen"**. Ein **ⓘ** klappt eine
+  Erklärung auf. Slides und Inspektor lassen sich einklappen, damit die Bildfläche mehr Platz bekommt; auf dem
+  Tablet sind sie das von Anfang an.
 - **Hinweise** haben eine eigene Seite in der Seitenleiste: ein Band über allen Slides der gewählten Playlists – als
   Laufschrift oder stehend, etwa „Heute Parkplatz gesperrt", mit **„Zeigen bis"**, danach verschwindet es von selbst.
 - **Vorschau** (oben): spielt die Playlist mit deinen Änderungen im Vollbild ab, wie der Fernseher – ohne zu

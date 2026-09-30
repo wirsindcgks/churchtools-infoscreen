@@ -1,5 +1,6 @@
 /** Pure editing operations on the data model; the store wires them to history and storage. */
 import * as v from 'valibot';
+import type { IconName } from './Icon.vue';
 import {
     DEFAULT_THEME,
     GroupFields,
@@ -123,6 +124,26 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     posts: 'Beiträge',
     groups: 'Gruppen',
 };
+
+export const BLOCK_ICONS: Record<BlockType, IconName> = {
+    text: 'text',
+    image: 'image',
+    shape: 'shape',
+    clock: 'clock',
+    'appointment-list': 'list',
+    'next-appointment': 'calendar',
+    'church-header': 'header',
+    web: 'web',
+    qr: 'qr',
+    countdown: 'timer',
+    posts: 'news',
+    groups: 'people',
+};
+
+/** Every block type in German alphabetical order (Plan.md 47): new types find their place by their label. */
+export const PALETTE: [BlockType, string][] = (Object.entries(BLOCK_LABELS) as [BlockType, string][]).sort((a, b) =>
+    a[1].localeCompare(b[1], 'de'),
+);
 
 /** A new block with sensible defaults, centred on the stage. */
 export function createBlock(
