@@ -279,6 +279,34 @@ const statusText = computed(() => {
     }
 });
 
+/** After a save that wrote linked slides (Plan.md 49): which, and where else they now look the same. */
+const linkedNotice = computed(() => {
+    const saved = editor.linkedSaved;
+    if (!saved.length) return '';
+    const quote = (names: string[]) => names.map((n) => `„${n}"`).join(', ');
+    if (saved.length === 1) {
+        return `Verknüpfte Slide ${quote([saved[0]!.name])} gespeichert – gilt auch in ${quote(saved[0]!.playlists)}.`;
+    }
+    const playlists = [...new Set(saved.flatMap((s) => s.playlists))];
+    return `${saved.length} verknüpfte Slides gespeichert – sie gelten auch in ${quote(playlists)}.`;
+});
+const LINKED_NOTICE_MS = 8000;
+let linkedNoticeTimer: ReturnType<typeof setTimeout> | undefined;
+watch(linkedNotice, (text) => {
+    clearTimeout(linkedNoticeTimer);
+    if (text) linkedNoticeTimer = setTimeout(() => (editor.linkedSaved = []), LINKED_NOTICE_MS);
+});
+
+/** Where, by whom and when a linked slide was saved in between (Plan.md 49) – as much as is known. */
+const slideConflictText = computed(() => {
+    const c = editor.slideConflict;
+    if (!c) return '';
+    const where = c.playlist ? ` in „${c.playlist}"` : '';
+    const who = c.updatedBy ? ` von ${c.updatedBy}` : '';
+    const when = c.updatedAt ? ` (${new Date(c.updatedAt).toLocaleString('de-DE')})` : '';
+    return `„${c.slide.name}" wurde${where}${who} geändert${when}, während du sie bearbeitet hast. Gespeichert wurde nichts.`;
+});
+
 onMounted(async () => {
     top.value = root.value?.getBoundingClientRect().top ?? 0;
     window.addEventListener('keydown', onKey);
@@ -532,6 +560,14 @@ function onKey(event: KeyboardEvent): void {
             <SlideList :class="{ 'drawer-open': slidesDrawerOpen }" @click="closeSlidesDrawerOnPick" @collapse="collapseSlides" />
             <div class="stage-column">
                 <BlockPalette />
+                <!-- Floats over the middle of the stage instead of pushing it down; goes by itself (Plan.md 49). -->
+                <div v-if="linkedNotice" class="d-banner linked-notice" role="status" data-testid="linked-save-notice">
+                    <Icon name="link" :size="16" />
+                    <span>{{ linkedNotice }}</span>
+                    <button class="d-btn d-btn--icon" type="button" aria-label="Meldung schließen" @click="editor.linkedSaved = []">
+                        <Icon name="close" :size="16" />
+                    </button>
+                </div>
                 <EditorStage />
             </div>
             <!-- Below 48rem and upright above it this becomes a sheet at the bottom; otherwise a column beside the stage (Plan.md 44, M4; 45). -->
@@ -599,6 +635,21 @@ function onKey(event: KeyboardEvent): void {
             @choose-many="chosenMany"
             @close="libraryFor = null"
         />
+
+        <div v-if="editor.status === 'conflict' && editor.slideConflict" class="d-dialog-backdrop" role="dialog" aria-modal="true">
+            <div class="d-dialog" data-testid="slide-conflict-dialog">
+                <h2>Eine verknüpfte Slide wurde inzwischen geändert</h2>
+                <p>{{ slideConflictText }}</p>
+                <div class="d-dialog-actions">
+                    <button class="d-btn d-btn--primary" type="button" data-testid="slide-conflict-reload" @click="editor.discardAndReload()">
+                        Neu laden
+                    </button>
+                    <button class="d-btn" type="button" data-testid="slide-conflict-keep" @click="editor.keepAsCopy(author)">
+                        Als eigene Kopie behalten
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <div v-if="editor.status === 'conflict' && editor.conflict" class="d-dialog-backdrop" role="dialog" aria-modal="true">
             <div class="d-dialog" data-testid="conflict-dialog">
@@ -692,11 +743,34 @@ function onKey(event: KeyboardEvent): void {
 .status--saved {
     color: var(--d-success);
 }
+.linked-notice {
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    /* Above the stage and its handles. */
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: max-content;
+    max-width: calc(100% - 32px);
+    transform: translateX(-50%);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+    font-size: var(--d-size-sm);
+}
+.linked-notice > span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.linked-notice .d-icon {
+    flex: none;
+}
 .banner {
     border-radius: 0;
     font-size: var(--d-size-sm);
 }
 .stage-column {
+    position: relative;
     display: flex;
     flex-direction: column;
     min-width: 0;

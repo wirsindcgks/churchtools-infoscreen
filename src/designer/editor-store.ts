@@ -8,7 +8,16 @@
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef } from 'vue';
 import { blockCalendarIds, DEFAULT_THEME, type Block, type BlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type ThemeDoc } from '../model/schema';
-import { ConflictError, copySlide, type ConflictInfo, type ScreenRef, type ScreenRepository } from '../store/screen-repository';
+import {
+    ConflictError,
+    copySlide,
+    SlideConflictError,
+    type ConflictInfo,
+    type LoadedPlaylist,
+    type ScreenRef,
+    type ScreenRepository,
+    type SlideConflictInfo,
+} from '../store/screen-repository';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
 import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, move, reorder, type Layer } from './ops';
@@ -27,6 +36,17 @@ export const useEditorStore = defineStore('editor', () => {
     const selectedBlockId = ref<string | null>(null);
     const status = ref<SaveStatus>('idle');
     const conflict = ref<ConflictInfo | null>(null);
+    /** A slide another playlist saved in between (Plan.md 49); set instead of `conflict`. */
+    const slideConflict = ref<SlideConflictInfo | null>(null);
+    /**
+     * By slide id: the other playlists that show the slide too. Entries are never
+     * removed – undoing "Verknüpfung lösen" brings the old id back, and it is linked again.
+     */
+    const sharedWith = ref<LoadedPlaylist['sharedWith']>({});
+    /** Linked slides the last save wrote, with where else they run – the editor tells the designer (Plan.md 49). */
+    const linkedSaved = ref<{ name: string; playlists: string[] }[]>([]);
+    /** Each slide as last loaded or saved, as JSON – what `save()` compares to write only changed slides. */
+    let baseline = new Map<string, string>();
     const error = ref<string | null>(null);
     /** Grid size in stage pixels, 0 = off. A preference of this browser, not part of the playlist. */
     const gridSize = ref<number>(loadGridSize());
@@ -72,14 +92,26 @@ export const useEditorStore = defineStore('editor', () => {
         if (repository.value) media.value = await repository.value.listMedia();
     }
 
-    function reset(bundle: PlaylistBundle, playlistRevision = bundle.playlist.revision ?? 0): void {
-        draft.value = cloneJson(bundle);
+    function markSaved(): void {
         savedJson.value = JSON.stringify(draft.value);
+        baseline = new Map((draft.value?.slides ?? []).map((s) => [s.id, JSON.stringify(s)]));
+    }
+
+    function reset(
+        bundle: PlaylistBundle,
+        playlistRevision = bundle.playlist.revision ?? 0,
+        shared: LoadedPlaylist['sharedWith'] = {},
+    ): void {
+        draft.value = cloneJson(bundle);
+        markSaved();
+        sharedWith.value = cloneJson(shared);
         revision.value = playlistRevision;
         history.clear();
         historyVersion.value++;
         status.value = 'idle';
         conflict.value = null;
+        slideConflict.value = null;
+        linkedSaved.value = [];
         error.value = null;
         if (!slides.value.some((s) => s.id === selectedSlideId.value)) {
             selectedSlideId.value = slides.value[0]?.id ?? null;
@@ -96,7 +128,7 @@ export const useEditorStore = defineStore('editor', () => {
         ]);
         theme.value = stored ?? DEFAULT_THEME;
         screens.value = loaded.screens;
-        reset({ playlist: loaded.playlist, slides: loaded.slides }, loaded.playlist.revision);
+        reset({ playlist: loaded.playlist, slides: loaded.slides }, loaded.playlist.revision, loaded.sharedWith);
     }
 
     /**
@@ -112,6 +144,7 @@ export const useEditorStore = defineStore('editor', () => {
             gestureRecorded = gestureOpen;
         }
         mutate(draft.value);
+        linkedSaved.value = [];
         if (status.value === 'saved') status.value = 'idle';
     }
 
@@ -176,19 +209,60 @@ export const useEditorStore = defineStore('editor', () => {
         selectSlide(copy.id);
     }
 
+    /** Slide ids of the playlist as last loaded or saved. */
+    const savedSlideIds = computed(() => new Set<string>(savedJson.value ? JSON.parse(savedJson.value).playlist.slideIds : []));
+
+    /** A slide taken over linked but not saved yet: the other playlists learn of the link only with the save. */
+    function linkPending(slideId: string): boolean {
+        return linkedIn(slideId).length > 0 && !savedSlideIds.value.has(slideId);
+    }
+
+    /** The other playlists that show this slide too – empty for a slide of this playlist alone. */
+    function linkedIn(slideId: string): { id: string; name: string }[] {
+        return sharedWith.value[slideId] ?? [];
+    }
+
     /**
-     * Copies of slides from another playlist, after the current one – copies,
-     * so that editing them here never changes the other playlist.
+     * Slides from another playlist, after the current one. By default copies,
+     * so that editing them here never changes the other playlist. With `linked`
+     * (Plan.md 49) the very same slides: they keep their id, one already here
+     * is skipped, and they count as unchanged until edited here.
      */
-    function insertSlides(sources: SlideDoc[]): void {
-        if (!sources.length) return;
-        const copies = sources.map((source) => copySlide(source));
+    function insertSlides(
+        sources: SlideDoc[],
+        options: { linked?: boolean; from?: { id: string; name: string }; sharedWith?: LoadedPlaylist['sharedWith'] } = {},
+    ): void {
+        const here = new Set(draft.value?.slides.map((s) => s.id));
+        const taken = options.linked ? sources.filter((s) => !here.has(s.id)).map((s) => cloneJson(s)) : sources.map((s) => copySlide(s));
+        if (!taken.length) return;
+        if (options.linked) {
+            const own = draft.value?.playlist.id;
+            for (const slide of taken) {
+                const others = [...(options.from ? [options.from] : []), ...(options.sharedWith?.[slide.id] ?? [])];
+                const merged = new Map([...linkedIn(slide.id), ...others].filter((p) => p.id !== own).map((p) => [p.id, p]));
+                sharedWith.value = { ...sharedWith.value, [slide.id]: [...merged.values()] };
+                baseline.set(slide.id, JSON.stringify(slide));
+            }
+        }
         change((b) => {
-            b.slides.push(...copies);
+            b.slides.push(...taken);
             const at = b.playlist.slideIds.indexOf(slide.value?.id ?? '') + 1;
-            b.playlist.slideIds.splice(at > 0 ? at : b.playlist.slideIds.length, 0, ...copies.map((c) => c.id));
+            b.playlist.slideIds.splice(at > 0 ? at : b.playlist.slideIds.length, 0, ...taken.map((c) => c.id));
         });
-        selectSlide(copies[0]!.id);
+        selectSlide(taken[0]!.id);
+    }
+
+    /** Turns a linked slide into an own copy for this playlist alone – a new id, so the other playlists keep the old one. */
+    function unlinkSlide(id: string): void {
+        const original = slides.value.find((s) => s.id === id);
+        if (!original) return;
+        const copy = copySlide(original, original.updatedAt);
+        change((b) => {
+            b.playlist.slideIds = b.playlist.slideIds.map((s) => (s === id ? copy.id : s));
+            b.slides = b.slides.filter((s) => s.id !== id);
+            b.slides.push(copy);
+        });
+        selectSlide(copy.id);
     }
 
     function removeSlide(id: string): void {
@@ -268,7 +342,11 @@ export const useEditorStore = defineStore('editor', () => {
         });
     }
 
-    async function save(updatedBy: string): Promise<boolean> {
+    /**
+     * `mine`: the knowing overwrite after a playlist conflict – every slide of this playlist
+     * alone is written as the draft has it, not only the changed ones; linked slides still only when changed.
+     */
+    async function save(updatedBy: string, options: { mine?: boolean } = {}): Promise<boolean> {
         if (!repository.value || !draft.value) return false;
         if (!draft.value.playlist.name.trim()) {
             error.value = 'Die Playlist braucht einen Namen.';
@@ -279,19 +357,35 @@ export const useEditorStore = defineStore('editor', () => {
         error.value = null;
         try {
             // The playlist and its slides – screens and schedules stay as they are (Plan.md, F).
+            // Only changed slides are written: a linked slide may have been saved from another playlist since.
+            const changedSlideIds = draft.value.slides
+                .filter((s) => baseline.get(s.id) !== JSON.stringify(s) || (options.mine && !linkedIn(s.id).length))
+                .map((s) => s.id);
+            // Links taken over since the last save come into being now – the other playlists learn of them.
+            const newlyLinked = draft.value.slides.filter((s) => linkPending(s.id)).map((s) => s.id);
             const saved = await repository.value.savePlaylist(draft.value, {
                 expectedRevision: revision.value,
                 updatedBy,
+                changedSlideIds,
             });
             revision.value = saved.revision;
             draft.value.playlist.revision = saved.revision;
             draft.value.playlist.updatedBy = saved.updatedBy;
             draft.value.playlist.updatedAt = saved.updatedAt;
-            savedJson.value = JSON.stringify(draft.value);
+            // The written slides now carry the save's time – the next save of a shared one compares against it.
+            for (const s of draft.value.slides) if (changedSlideIds.includes(s.id)) s.updatedAt = saved.updatedAt;
+            markSaved();
+            linkedSaved.value = slides.value
+                .filter((s) => (changedSlideIds.includes(s.id) || newlyLinked.includes(s.id)) && linkedIn(s.id).length)
+                .map((s) => ({ name: s.name, playlists: linkedIn(s.id).map((p) => p.name) }));
             status.value = 'saved';
             return true;
         } catch (e) {
-            if (e instanceof ConflictError) {
+            if (e instanceof SlideConflictError) {
+                slideConflict.value = e.current;
+                conflict.value = null;
+                status.value = 'conflict';
+            } else if (e instanceof ConflictError) {
                 conflict.value = e.current;
                 status.value = 'conflict';
             } else {
@@ -307,6 +401,14 @@ export const useEditorStore = defineStore('editor', () => {
         if (!conflict.value) return false;
         revision.value = conflict.value.revision;
         conflict.value = null;
+        return save(updatedBy, { mine: true });
+    }
+
+    /** Slide conflict: keep my version of the slide as a copy of my own and save again. */
+    async function keepAsCopy(updatedBy: string): Promise<boolean> {
+        if (!slideConflict.value) return false;
+        unlinkSlide(slideConflict.value.slide.id);
+        slideConflict.value = null;
         return save(updatedBy);
     }
 
@@ -334,6 +436,11 @@ export const useEditorStore = defineStore('editor', () => {
         selectedBlockId,
         status,
         conflict,
+        slideConflict,
+        sharedWith,
+        linkedSaved,
+        linkedIn,
+        linkPending,
         error,
         canUndo,
         canRedo,
@@ -350,6 +457,7 @@ export const useEditorStore = defineStore('editor', () => {
         addSlide,
         duplicateCurrentSlide,
         insertSlides,
+        unlinkSlide,
         removeSlide,
         moveSlide,
         updateSlide,
@@ -360,6 +468,7 @@ export const useEditorStore = defineStore('editor', () => {
         setLocked,
         save,
         overwrite,
+        keepAsCopy,
         discardAndReload,
     };
 });

@@ -87,11 +87,21 @@ async function created(id: string): Promise<void> {
     await router.push({ name: 'editor', params: { id } });
 }
 
-/** A copy with copies of the slides; it opens in the editor, since one duplicates to change something. */
-async function duplicate(overview: PlaylistOverview): Promise<void> {
+/** The playlist being duplicated, while the dialog asks how (Plan.md 49). */
+const duplicating = ref<PlaylistOverview | null>(null);
+const duplicateMode = ref<'copy' | 'linked'>('copy');
+
+function askDuplicate(overview: PlaylistOverview): void {
+    duplicateMode.value = 'copy';
+    duplicating.value = overview;
+}
+
+/** A copy with copies of the slides – or linked to the same ones; it opens in the editor, since one duplicates to change something. */
+async function duplicate(overview: PlaylistOverview, linked: boolean): Promise<void> {
+    duplicating.value = null;
     if (!repository.value || author.value === null) return;
     try {
-        const copy = await repository.value.duplicatePlaylist(overview.playlist.id, author.value);
+        const copy = await repository.value.duplicatePlaylist(overview.playlist.id, author.value, new Date(), { linked });
         await router.push({ name: 'editor', params: { id: copy.id } });
     } catch (e) {
         window.alert(e instanceof Error ? e.message : String(e));
@@ -155,7 +165,7 @@ async function remove(overview: PlaylistOverview): Promise<void> {
                         :key="o.playlist.id"
                         :overview="o"
                         @remove="remove(o)"
-                        @duplicate="duplicate(o)"
+                        @duplicate="askDuplicate(o)"
                     />
                 </div>
                 <div v-else-if="!overviews.length" class="empty">
@@ -167,6 +177,40 @@ async function remove(overview: PlaylistOverview): Promise<void> {
                 <p v-else class="empty">Keine Playlist passt zu Suche und Filter.</p>
             </GroupCard>
         </template>
+
+        <div
+            v-if="duplicating"
+            class="d-dialog-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="duplicate-title"
+            @click.self="duplicating = null"
+        >
+            <div class="d-dialog duplicate" data-testid="duplicate-dialog">
+                <h2 id="duplicate-title">Playlist duplizieren</h2>
+                <div class="options" role="radiogroup" aria-labelledby="duplicate-title">
+                    <label>
+                        <input v-model="duplicateMode" type="radio" value="copy" data-testid="duplicate-copy">
+                        Kopie – eigene Slides, unabhängig
+                    </label>
+                    <label>
+                        <input v-model="duplicateMode" type="radio" value="linked" data-testid="duplicate-linked">
+                        Verknüpft – dieselben Slides, Änderungen gelten in beiden
+                    </label>
+                </div>
+                <div class="d-dialog-actions">
+                    <button class="d-btn" type="button" @click="duplicating = null">Abbrechen</button>
+                    <button
+                        class="d-btn d-btn--primary"
+                        type="button"
+                        data-testid="duplicate-confirm"
+                        @click="duplicate(duplicating, duplicateMode === 'linked')"
+                    >
+                        Duplizieren
+                    </button>
+                </div>
+            </div>
+        </div>
 
         <CreatePlaylistDialog
             v-if="creating && repository && author !== null"
@@ -183,6 +227,27 @@ async function remove(overview: PlaylistOverview): Promise<void> {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 14px;
+}
+.duplicate {
+    display: grid;
+    gap: 12px;
+    width: min(460px, 100%);
+}
+.duplicate h2 {
+    margin: 0;
+}
+.options {
+    display: grid;
+    gap: 8px;
+}
+.duplicate label {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+.duplicate input[type='radio'] {
+    flex: none;
+    width: auto;
 }
 .empty {
     display: grid;

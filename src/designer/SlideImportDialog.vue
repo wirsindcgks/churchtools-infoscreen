@@ -1,12 +1,13 @@
 <script setup lang="ts">
 /**
- * Slides from another playlist of the same format, taken over as copies:
- * editing them here never changes the other playlist (Plan.md 31).
+ * Slides from another playlist of the same format, taken over as copies –
+ * editing them here never changes the other playlist (Plan.md 31) – or, by
+ * choice, linked: the very same slides, a change counts in both (Plan.md 49).
  */
 import { computed, onMounted, ref, watch } from 'vue';
 import { sameStage, type SlideDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
-import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
+import type { LoadedPlaylist, PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 import { useEditorStore } from './editor-store';
 import SlideThumb from './SlideThumb.vue';
 
@@ -17,8 +18,16 @@ let repository: ScreenRepository | null = null;
 const playlists = ref<PlaylistOverview[]>([]);
 const playlistId = ref('');
 const slides = ref<SlideDoc[]>([]);
+const sourceShared = ref<LoadedPlaylist['sharedWith']>({});
 const chosen = ref(new Set<string>());
+const mode = ref<'copy' | 'linked'>('copy');
 const loading = ref(true);
+const sourceName = computed(() => playlists.value.find((o) => o.playlist.id === playlistId.value)?.playlist.name ?? '');
+/** A slide already in this playlist cannot be linked a second time. */
+const here = computed(() => new Set(editor.draft?.slides.map((s) => s.id)));
+function unavailable(id: string): boolean {
+    return mode.value === 'linked' && here.value.has(id);
+}
 const problem = ref<string | null>(null);
 
 /** Only playlists of the same format: a portrait slide on a landscape stage would be cut. */
@@ -45,13 +54,21 @@ watch(playlistId, async (id) => {
     try {
         const loaded = await repository.loadPlaylist(id);
         const byId = new Map(loaded.slides.map((s) => [s.id, s]));
-        if (playlistId.value === id) slides.value = loaded.playlist.slideIds.flatMap((s) => byId.get(s) ?? []);
+        if (playlistId.value === id) {
+            slides.value = loaded.playlist.slideIds.flatMap((s) => byId.get(s) ?? []);
+            sourceShared.value = loaded.sharedWith;
+        }
     } catch (e) {
         problem.value = e instanceof Error ? e.message : String(e);
     }
 });
 
+watch(mode, () => {
+    chosen.value = new Set([...chosen.value].filter((id) => !unavailable(id)));
+});
+
 function toggle(id: string): void {
+    if (unavailable(id)) return;
     const next = new Set(chosen.value);
     if (next.has(id)) next.delete(id);
     else next.add(id);
@@ -59,7 +76,16 @@ function toggle(id: string): void {
 }
 
 function take(): void {
-    editor.insertSlides(slides.value.filter((s) => chosen.value.has(s.id)));
+    const picked = slides.value.filter((s) => chosen.value.has(s.id));
+    if (mode.value === 'linked') {
+        editor.insertSlides(picked, {
+            linked: true,
+            from: { id: playlistId.value, name: sourceName.value },
+            sharedWith: sourceShared.value,
+        });
+    } else {
+        editor.insertSlides(picked);
+    }
     emit('close');
 }
 </script>
@@ -68,7 +94,26 @@ function take(): void {
     <div class="d-dialog-backdrop" role="dialog" aria-modal="true" aria-labelledby="import-title" @click.self="emit('close')">
         <div class="d-dialog import" data-testid="slide-import">
             <h2 id="import-title">Slides aus anderer Playlist</h2>
-            <p class="hint">Übernommen werden Kopien – was du hier änderst, bleibt in der anderen Playlist, wie es ist.</p>
+            <fieldset class="mode" data-testid="slide-import-mode">
+                <legend>Übernehmen als</legend>
+                <div class="mode-options">
+                    <label>
+                        <input v-model="mode" type="radio" value="copy" data-testid="slide-import-copy">
+                        Als Kopie
+                    </label>
+                    <label>
+                        <input v-model="mode" type="radio" value="linked" data-testid="slide-import-linked">
+                        Verknüpft
+                    </label>
+                </div>
+            </fieldset>
+            <p v-if="mode === 'copy'" class="hint">
+                Übernommen werden Kopien – was du hier änderst, bleibt in der anderen Playlist, wie es ist.
+            </p>
+            <p v-else class="hint" data-testid="slide-import-linked-hint">
+                Verknüpfte Slides bleiben gleich: Was du hier änderst, ändert sich auch in „{{ sourceName }}" – und umgekehrt.
+                Die Verknüpfung entsteht beim Speichern; erst dann zeigt auch „{{ sourceName }}" sie an.
+            </p>
             <p v-if="problem" class="d-banner d-banner--error" role="alert">{{ problem }}</p>
             <p v-if="loading" class="hint">Lade Playlists …</p>
             <p v-else-if="!candidates.length" class="hint" data-testid="slide-import-none">
@@ -85,12 +130,18 @@ function take(): void {
                 </label>
                 <ul class="slides">
                     <li v-for="slide in slides" :key="slide.id">
-                        <label :class="{ on: chosen.has(slide.id) }" data-testid="slide-import-item">
+                        <label :class="{ on: chosen.has(slide.id), off: unavailable(slide.id) }" data-testid="slide-import-item">
                             <SlideThumb :slide="slide" :stage="editor.stage" />
                             <span class="name">
-                                <input type="checkbox" :checked="chosen.has(slide.id)" @change="toggle(slide.id)">
+                                <input
+                                    type="checkbox"
+                                    :checked="chosen.has(slide.id)"
+                                    :disabled="unavailable(slide.id)"
+                                    @change="toggle(slide.id)"
+                                >
                                 {{ slide.name }}
                             </span>
+                            <span v-if="unavailable(slide.id)" class="hint" data-testid="slide-import-here">schon hier</span>
                         </label>
                     </li>
                 </ul>
@@ -104,7 +155,12 @@ function take(): void {
                     data-testid="slide-import-take"
                     @click="take"
                 >
-                    {{ chosen.size === 1 ? '1 Slide übernehmen' : `${chosen.size} Slides übernehmen` }}
+                    <template v-if="mode === 'linked'">
+                        {{ chosen.size === 1 ? '1 Slide verknüpfen' : `${chosen.size} Slides verknüpfen` }}
+                    </template>
+                    <template v-else>
+                        {{ chosen.size === 1 ? '1 Slide übernehmen' : `${chosen.size} Slides übernehmen` }}
+                    </template>
                 </button>
             </div>
         </div>
@@ -142,6 +198,36 @@ function take(): void {
     border: 2px solid transparent;
     border-radius: var(--d-radius-lg);
     cursor: pointer;
+}
+.mode {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+/* A div inside: WebKit lays a flex fieldset out wrongly. */
+.mode-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+}
+.mode legend {
+    padding: 0;
+    margin-bottom: 4px;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+.mode label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.mode input[type='radio'] {
+    flex: none;
+    width: auto;
+}
+.slides label.off {
+    cursor: default;
+    opacity: 0.5;
 }
 .slides label.on {
     border-color: var(--d-accent);

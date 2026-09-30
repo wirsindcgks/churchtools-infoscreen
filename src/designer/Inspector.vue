@@ -146,6 +146,16 @@ function setGroupSeconds(value: string): void {
     if (Number.isInteger(n) && n >= 5 && n <= 120) setBlock({ pageSeconds: n });
 }
 
+/** The other playlists showing the current slide, as one line; empty for an unlinked slide (Plan.md 49). */
+const linkedNames = computed(() =>
+    editor.slide
+        ? editor
+              .linkedIn(editor.slide.id)
+              .map((p) => p.name)
+              .join(', ')
+        : '',
+);
+
 /** Seconds the slide really runs when a paged list needs longer than its duration; else 0. */
 const runsLonger = computed(() => {
     if (!slide.value) return 0;
@@ -1060,6 +1070,23 @@ const LAYERS = [
                         @input="editor.updateSlide({ name: ($event.target as HTMLInputElement).value })"
                     >
                 </label>
+                <!-- A slide that other playlists show too (Plan.md 49): changes here count there as well. -->
+                <div v-if="linkedNames" class="linked" data-testid="slide-linked">
+                    <span class="linked-text" :title="`Auch in: ${linkedNames}`" data-testid="slide-linked-in">
+                        <Icon name="link" :size="14" />
+                        <span class="linked-names">Auch in: {{ linkedNames }}</span>
+                        <span v-if="editor.linkPending(slide.id)" class="linked-pending" data-testid="slide-link-pending">
+                            ab dem Speichern
+                        </span>
+                    </span>
+                    <InfoHint>
+                        Änderungen an dieser Slide – auch Dauer und „Abgeschaltet" – gelten in allen genannten Playlists.
+                        „Verknüpfung lösen" macht daraus eine eigene Kopie nur für diese Playlist.
+                    </InfoHint>
+                    <button class="d-btn" type="button" data-testid="slide-unlink" @click="editor.unlinkSlide(slide.id)">
+                        Verknüpfung lösen
+                    </button>
+                </div>
                 <div class="grid2">
                     <label class="d-field">
                         Anzeigedauer (s)
@@ -1312,6 +1339,33 @@ legend {
 .layer-buttons {
     display: flex;
     gap: 4px;
+}
+.linked {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+.linked-text {
+    display: flex;
+    flex: 1 1 12rem;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+.linked-text .d-icon {
+    flex: none;
+}
+.linked-pending {
+    flex: none;
+    font-style: italic;
+}
+.linked-names {
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 .playlist-info {
     display: grid;

@@ -1073,6 +1073,9 @@ test('duplicate a playlist and take slides over from another one, as copies (Pla
     const before = await cards.count();
     await cards.first().getByTestId('playlist-menu').click();
     await page.getByTestId('duplicate-playlist').click();
+    // Copy is the default of the dialog that asks (Plan.md 49).
+    await expect(page.getByTestId('duplicate-copy')).toBeChecked();
+    await page.getByTestId('duplicate-confirm').click();
     // The copy opens in the editor, with copies of all slides.
     await expect(page).toHaveURL(/playlists\/[\w-]+$/);
     await expect(page.getByTestId('slide-item')).toHaveCount(3);

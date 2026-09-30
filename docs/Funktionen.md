@@ -72,7 +72,7 @@ gewählten Playlists und verschwindet zur eingestellten Zeit von selbst.
 ## Playlists
 
 Eine Playlist ist der Inhalt eines Screens und kann auf mehreren Screens laufen. Duplizieren ergibt eine Kopie mit
-eigenen Slides.
+eigenen Slides – oder auf Wunsch eine Playlist mit denselben, verknüpften Slides.
 
 ![Playlists als Kacheln mit Format, Zahl der Slides und den Screens, die sie zeigen](bilder/playlists.png)
 

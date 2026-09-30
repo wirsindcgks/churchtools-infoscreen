@@ -86,6 +86,11 @@ function drop(index: number): void {
     over.value = null;
 }
 
+/** What the chain symbol says: the other playlists showing the slide (Plan.md 49). */
+function linkedLabel(id: string): string {
+    return `Verknüpft mit: ${editor.linkedIn(id).map((p) => p.name).join(', ')}`;
+}
+
 function remove(id: string, name: string): void {
     if (window.confirm(`Slide „${name}" aus dieser Playlist entfernen?`)) editor.removeSlide(id);
 }
@@ -181,6 +186,15 @@ function removeCurrent(): void {
                     <StageView :width="editor.stage.width" :height="editor.stage.height" :fit="thumb.fit">
                         <SlideView :slide="slide" :width="editor.stage.width" :height="editor.stage.height" />
                     </StageView>
+                    <span
+                        v-if="editor.linkedIn(slide.id).length"
+                        class="linked-badge"
+                        :title="linkedLabel(slide.id)"
+                        :aria-label="linkedLabel(slide.id)"
+                        data-testid="slide-linked-badge"
+                    >
+                        <Icon name="link" :size="12" />
+                    </span>
                 </div>
                 <div class="meta">
                     <span class="name">{{ index + 1 }}. {{ slide.name }}</span>
@@ -372,6 +386,18 @@ li.disabled .thumb {
     border-radius: var(--d-radius);
     background: #000;
     pointer-events: none;
+}
+.linked-badge {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    display: flex;
+    align-items: center;
+    padding: 3px;
+    border-radius: var(--d-radius);
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    pointer-events: auto;
 }
 .meta {
     display: flex;

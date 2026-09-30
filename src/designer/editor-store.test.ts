@@ -6,7 +6,8 @@ import { useEditorStore } from './editor-store';
 import { createScreenBundle } from './ops';
 
 async function setup() {
-    const repository = new ScreenRepository(new MemoryKv());
+    const kv = new MemoryKv();
+    const repository = new ScreenRepository(kv);
     const bundle = createScreenBundle({ name: 'Foyer', slug: 'foyer', orientation: 'landscape' });
     await repository.saveScreen(bundle, { expectedRevision: null, updatedBy: 'Anna' });
     setActivePinia(createPinia());
@@ -14,7 +15,7 @@ async function setup() {
     editor.attach(repository);
     const playlistId = bundle.screen.defaultPlaylistId;
     await editor.open(playlistId);
-    return { editor, repository, playlistId };
+    return { editor, repository, playlistId, kv };
 }
 
 describe('editor store', () => {
@@ -116,6 +117,21 @@ describe('editor store', () => {
         expect((await repository.loadPlaylist(playlistId)).playlist.updatedBy).toBe('Anna');
     });
 
+    it('keeps all of its own slides with "Meine behalten", not only the changed ones (Plan.md 49)', async () => {
+        const { editor, repository, playlistId } = await setup();
+        // Ben renames the one slide; Anna only renames the playlist.
+        const other = await repository.loadPlaylist(playlistId);
+        other.slides[0]!.name = 'Bens Name';
+        await repository.savePlaylist(other, { expectedRevision: 1, updatedBy: 'Ben' });
+
+        editor.renamePlaylist('Annas Playlist');
+        expect(await editor.save('Anna')).toBe(false);
+        expect(await editor.overwrite('Anna')).toBe(true);
+        const stored = await repository.loadPlaylist(playlistId);
+        expect(stored.playlist.name).toBe('Annas Playlist');
+        expect(stored.slides[0]?.name).toBe('Willkommen');
+    });
+
     it('can drop its own changes after a conflict', async () => {
         const { editor, repository, playlistId } = await setup();
         const other = await repository.loadPlaylist(playlistId);
@@ -191,5 +207,106 @@ describe('editor store gestures', () => {
         editor.endGesture();
         editor.undo();
         expect((editor.block as { text?: string } | null)?.text).toBe('Text');
+    });
+});
+
+describe('linked slides (Plan.md 49)', () => {
+    /** The editor on playlist A, and B, a linked duplicate of it: both show the same slide. */
+    async function linkedSetup() {
+        const base = await setup();
+        const b = await base.repository.duplicatePlaylist(base.playlistId, 'Anna', new Date(), { linked: true });
+        await base.editor.open(base.playlistId);
+        return { ...base, b };
+    }
+    const inFuture = () => new Date(Date.now() + 60_000);
+
+    it('writes only the slides that changed', async () => {
+        const { editor, kv } = await setup();
+        editor.addSlide();
+        await editor.save('Anna');
+        kv.writes.length = 0;
+        editor.updateSlide({ name: 'Zweite' });
+        expect(await editor.save('Anna')).toBe(true);
+        expect(kv.writes).toHaveLength(2); // the changed slide and the playlist
+    });
+
+    it('names the linked slides a save wrote, and forgets them with the next change', async () => {
+        const { editor, b } = await linkedSetup();
+        editor.addSlide();
+        expect(await editor.save('Anna')).toBe(true);
+        expect(editor.linkedSaved).toEqual([]); // only an own slide was new
+        editor.selectSlide(editor.slides[0]!.id);
+        editor.updateSlide({ name: 'Begrüßung' });
+        expect(await editor.save('Anna')).toBe(true);
+        expect(editor.linkedSaved).toEqual([{ name: 'Begrüßung', playlists: [b.name] }]);
+        editor.updateSlide({ name: 'Hallo' });
+        expect(editor.linkedSaved).toEqual([]);
+    });
+
+    it('saves a linked slide twice in a row without a false conflict', async () => {
+        const { editor, repository, playlistId, b } = await linkedSetup();
+        expect(editor.linkedIn(editor.slide!.id).map((p) => p.id)).toEqual([b.id]);
+        editor.updateSlide({ name: 'Eins' });
+        expect(await editor.save('Anna')).toBe(true);
+        editor.updateSlide({ name: 'Zwei' });
+        expect(await editor.save('Anna')).toBe(true);
+        expect(editor.status).toBe('saved');
+        expect((await repository.loadPlaylist(b.id)).slides[0]?.name).toBe('Zwei');
+        expect((await repository.loadPlaylist(playlistId)).slides[0]?.name).toBe('Zwei');
+    });
+
+    it('stops when another playlist saved the linked slide first, and can keep mine as a copy', async () => {
+        const { editor, repository, b } = await linkedSetup();
+        const inB = await repository.loadPlaylist(b.id);
+        await repository.savePlaylist(
+            { ...inB, slides: inB.slides.map((s) => ({ ...s, name: 'Von Ben' })) },
+            { expectedRevision: inB.playlist.revision, updatedBy: 'Ben', now: inFuture(), changedSlideIds: [inB.slides[0]!.id] },
+        );
+        editor.updateSlide({ name: 'Von Anna' });
+        expect(await editor.save('Anna')).toBe(false);
+        expect(editor.status).toBe('conflict');
+        expect(editor.conflict).toBeNull();
+        expect(editor.slideConflict).toMatchObject({ slide: { name: 'Von Ben' }, updatedBy: 'Ben' });
+
+        const oldId = editor.slide!.id;
+        expect(await editor.keepAsCopy('Anna')).toBe(true);
+        expect(editor.slide!.id).not.toBe(oldId);
+        expect(editor.slide!.name).toBe('Von Anna');
+        expect(editor.linkedIn(editor.slide!.id)).toEqual([]);
+        expect((await repository.loadPlaylist(b.id)).slides[0]?.name).toBe('Von Ben');
+    });
+
+    it('takes slides over linked: same id, unchanged until edited, duplicates skipped', async () => {
+        const { editor, repository, playlistId, kv } = await setup();
+        const other = await repository.createPlaylist({ name: 'Andere', stage: editor.stage }, 'Anna');
+        await editor.open(other.id);
+        const source = (await repository.loadPlaylist(playlistId)).slides;
+        editor.insertSlides(source, { linked: true, from: { id: playlistId, name: 'Foyer' } });
+        expect(editor.slides.map((s) => s.id)).toContain(source[0]!.id);
+        expect(editor.linkedIn(source[0]!.id)).toEqual([{ id: playlistId, name: 'Foyer' }]);
+        editor.insertSlides(source, { linked: true, from: { id: playlistId, name: 'Foyer' } });
+        expect(editor.slides).toHaveLength(2);
+
+        kv.writes.length = 0;
+        expect(await editor.save('Anna')).toBe(true);
+        expect(kv.writes).toHaveLength(1); // only the playlist
+        editor.selectSlide(source[0]!.id);
+        editor.updateSlide({ name: 'Geändert' });
+        kv.writes.length = 0;
+        await editor.save('Anna');
+        expect(kv.writes).toHaveLength(2);
+    });
+
+    it('lets a copy replace the linked slide in place, and undo brings the link back', async () => {
+        const { editor } = await linkedSetup();
+        const oldId = editor.slide!.id;
+        editor.unlinkSlide(oldId);
+        expect(editor.slide!.id).not.toBe(oldId);
+        expect(editor.slide!.name).toBe('Willkommen');
+        expect(editor.slides.map((s) => s.id)).not.toContain(oldId);
+        expect(editor.linkedIn(editor.slide!.id)).toEqual([]);
+        editor.undo();
+        expect(editor.slide!.id).toBe(oldId);
+        expect(editor.linkedIn(oldId)).toHaveLength(1);
     });
 });
