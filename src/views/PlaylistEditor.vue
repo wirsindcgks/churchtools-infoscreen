@@ -534,15 +534,6 @@ function onKey(event: KeyboardEvent): void {
         <p v-if="editor.error" class="d-banner d-banner--error banner" role="alert">{{ editor.error }}</p>
         <p v-if="problem" class="d-banner d-banner--error banner" role="alert">Vorschaudaten: {{ problem }}</p>
 
-        <!-- Floats instead of pushing the stage down; goes by itself (Plan.md 49). -->
-        <div v-if="linkedNotice" class="d-banner linked-notice" role="status" data-testid="linked-save-notice">
-            <Icon name="link" :size="16" />
-            <span>{{ linkedNotice }}</span>
-            <button class="d-btn d-btn--icon" type="button" aria-label="Meldung schließen" @click="editor.linkedSaved = []">
-                <Icon name="close" :size="16" />
-            </button>
-        </div>
-
         <p v-if="loadError" class="d-banner d-banner--error banner" role="alert">{{ loadError }}</p>
         <div
             v-else-if="editor.draft"
@@ -569,6 +560,14 @@ function onKey(event: KeyboardEvent): void {
             <SlideList :class="{ 'drawer-open': slidesDrawerOpen }" @click="closeSlidesDrawerOnPick" @collapse="collapseSlides" />
             <div class="stage-column">
                 <BlockPalette />
+                <!-- Floats over the middle of the stage instead of pushing it down; goes by itself (Plan.md 49). -->
+                <div v-if="linkedNotice" class="d-banner linked-notice" role="status" data-testid="linked-save-notice">
+                    <Icon name="link" :size="16" />
+                    <span>{{ linkedNotice }}</span>
+                    <button class="d-btn d-btn--icon" type="button" aria-label="Meldung schließen" @click="editor.linkedSaved = []">
+                        <Icon name="close" :size="16" />
+                    </button>
+                </div>
                 <EditorStage />
             </div>
             <!-- Below 48rem and upright above it this becomes a sheet at the bottom; otherwise a column beside the stage (Plan.md 44, M4; 45). -->
@@ -745,11 +744,11 @@ function onKey(event: KeyboardEvent): void {
     color: var(--d-success);
 }
 .linked-notice {
-    position: fixed;
+    position: absolute;
     bottom: 16px;
     left: 50%;
-    /* Above the phone's inspector sheet, below dialogs. */
-    z-index: 1050;
+    /* Above the stage and its handles. */
+    z-index: 20;
     display: flex;
     align-items: center;
     gap: 8px;
@@ -771,6 +770,7 @@ function onKey(event: KeyboardEvent): void {
     font-size: var(--d-size-sm);
 }
 .stage-column {
+    position: relative;
     display: flex;
     flex-direction: column;
     min-width: 0;
