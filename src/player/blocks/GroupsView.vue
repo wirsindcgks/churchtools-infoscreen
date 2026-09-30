@@ -727,8 +727,15 @@ onMounted(() => {
         transform: scaleX(1);
     }
 }
+/*
+ * The digits, not the line, decide the middle (Plan.md 47): a line keeps room below for descenders
+ * that "1/2" has not, and the bar sat below the figures. Trimmed to cap height and baseline, the
+ * box is the figures themselves; where `text-box` is unknown, line-height 1 comes close.
+ */
 .page-number {
     opacity: 0.6;
+    line-height: 1;
     white-space: nowrap;
+    text-box: trim-both cap alphabetic;
 }
 </style>

@@ -6,7 +6,7 @@ import type { Block, Fill, GroupFields, TextStyle } from '../model/schema';
 import { bannerShown } from '../player/banner';
 import { themeOf, useStageContext } from '../player/context';
 import { fontDef, FONTS } from '../player/fonts';
-import { sizedImageUrl } from '../player/format';
+import { calendarColor, sizedImageUrl } from '../player/format';
 import { GROUP_SECONDS, PAGE_SECONDS, POST_SECONDS, slideSeconds } from '../player/paging';
 import { qrShape } from '../player/qr';
 import { webFrame, withScheme } from '../player/web';
@@ -345,7 +345,7 @@ const LAYERS = [
                             :checked="block.calendarIds.includes(c.id)"
                             @change="toggleCalendar(c.id, ($event.target as HTMLInputElement).checked)"
                         >
-                        <span class="swatch" :style="{ background: c.color ?? 'transparent' }" />
+                        <span class="swatch" :style="{ background: calendarColor(c.color) ?? 'transparent' }" />
                         {{ c.name }}
                     </label>
                     <p v-if="!calendars.length" class="hint">Keine Kalender sichtbar.</p>

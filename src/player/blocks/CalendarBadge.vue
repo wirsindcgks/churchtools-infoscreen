@@ -2,14 +2,14 @@
 /** The calendar as a small label in its own colour, legible on any stage (Plan.md, 20). */
 import { computed } from 'vue';
 import { themeOf, useStageContext } from '../context';
-import { textOn, withAlpha } from '../format';
+import { textOn, tint } from '../format';
 
 const props = defineProps<{ name: string; color: string | null }>();
 const context = useStageContext();
 // A calendar without a colour takes the theme's accent (Plan.md, 27).
 const base = computed(() => props.color ?? themeOf(context).accent);
 const style = computed(() => ({
-    background: withAlpha(base.value, 0.9) ?? 'rgba(255, 255, 255, 0.2)',
+    background: tint(base.value, 90),
     color: textOn(base.value),
 }));
 </script>

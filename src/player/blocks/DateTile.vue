@@ -2,13 +2,13 @@
 /** The date as a tile – day large, month small – tinted in the calendar's colour (Plan.md, 20). */
 import { computed } from 'vue';
 import { themeOf, useStageContext } from '../context';
-import { dateTile, withAlpha } from '../format';
+import { dateTile, tint } from '../format';
 
 const props = defineProps<{ start: Date; timeZone: string; color: string | null }>();
 const context = useStageContext();
 const tile = computed(() => dateTile(props.start, props.timeZone));
 // A calendar without a colour takes the theme's accent (Plan.md, 27).
-const background = computed(() => withAlpha(props.color ?? themeOf(context).accent, 0.28) ?? 'rgba(255, 255, 255, 0.12)');
+const background = computed(() => tint(props.color ?? themeOf(context).accent, 28));
 </script>
 
 <template>

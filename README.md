@@ -50,7 +50,7 @@ Voraussetzung ist eine ChurchTools-Instanz, auf der Extensions (Custom Modules) 
 
 ## Stand
 
-Aktuell ist Version 0.3.3 (30. September 2026) mit einem ruhigeren Editor (seit 0.3.2), davor 0.3.1 mit dem Designer auf dem Tablet; das erste Release war 0.1.0 am
+Aktuell ist Version 0.3.4 (30. September 2026) mit einem ruhigeren Editor (seit 0.3.2), davor 0.3.1 mit dem Designer auf dem Tablet; das erste Release war 0.1.0 am
 25. September 2026. Der Designer läuft auf einer Testinstanz (ChurchTools 3.136, Build 32882); der erste Fernseher
 im Foyer steht aus.
 Was als Nächstes kommt, steht in [`Plan.md`](Plan.md); Änderungen je Version in [`CHANGELOG.md`](CHANGELOG.md).

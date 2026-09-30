@@ -1,6 +1,7 @@
 /** Display helpers for the stage: fonts, image addresses, German dates. */
 import type { TextStyle } from '../model/schema';
 import { fontStack } from './fonts';
+import { GROUP_COLORS } from './palette';
 
 export function textStyle(style: TextStyle): Record<string, string> {
     return {
@@ -64,22 +65,59 @@ export function timeRange(a: { allDay: boolean; startTime: string | null; endTim
 }
 
 /**
- * A calendar colour with transparency, for tiles and badges that must read on
- * a dark and on a light stage alike. Hex only (what ChurchTools sends); other
- * values give null and the caller falls back to a neutral tone.
+ * A calendar colour as a CSS colour, or null. ChurchTools sends hex, but also
+ * names such as `black` and palette names such as `sky`; like the WordPress
+ * plugin the value is passed on as it is, so the browser mixes it (`color-mix`).
+ * Order: hex, CSS colour name, palette name.
  */
-export function withAlpha(color: string | null | undefined, alpha: number): string | null {
-    const hex = color?.trim().replace(/^#/, '') ?? '';
-    const full = /^[0-9a-f]{3}$/i.test(hex) ? [...hex].map((c) => c + c).join('') : hex;
-    if (!/^[0-9a-f]{6}$/i.test(full)) return null;
-    const [r, g, b] = [0, 2, 4].map((i) => parseInt(full.slice(i, i + 2), 16));
-    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+export function calendarColor(value: string | null | undefined): string | null {
+    const text = value?.trim().toLowerCase() ?? '';
+    if (!text) return null;
+    const hex = text.replace(/^#/, '');
+    if (/^([0-9a-f]{3}|[0-9a-f]{6})$/.test(hex)) {
+        return `#${hex.length === 3 ? [...hex].map((c) => c + c).join('') : hex}`;
+    }
+    const isCssColor =
+        typeof CSS !== 'undefined' && typeof CSS.supports === 'function'
+            ? CSS.supports('color', text)
+            : /^[a-z]+$/.test(text) && !(text in GROUP_COLORS); // jsdom knows no colours: palette names go to the palette
+    if (isCssColor && !/^(inherit|initial|unset|revert|currentcolor)$/.test(text)) return text;
+    return GROUP_COLORS[text] ?? null;
 }
 
-/** Black or white text on a calendar colour, whichever reads better. */
+/** A tint of a colour that lets the stage show through, for tiles and badges on a dark and a light stage alike. */
+export function tint(color: string, percent: number): string {
+    return `color-mix(in srgb, ${color} ${percent}%, transparent)`;
+}
+
+let canvas: CanvasRenderingContext2D | null | undefined;
+
+/** Resolves any CSS colour to `#rrggbb` through a canvas; without canvas (jsdom) only black and white are known. */
+function toHex(color: string): string | null {
+    if (canvas === undefined) {
+        try {
+            canvas = typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d');
+        } catch {
+            canvas = null;
+        }
+    }
+    if (canvas) {
+        canvas.fillStyle = '#000000';
+        canvas.fillStyle = color;
+        const resolved = canvas.fillStyle;
+        return /^#[0-9a-f]{6}$/i.test(resolved) ? resolved : null;
+    }
+    if (/^#[0-9a-f]{6}$/i.test(color)) return color;
+    return ({ black: '#000000', white: '#ffffff' } as Record<string, string>)[color] ?? null;
+}
+
+/** Dark or white text on a calendar colour, whichever reads better (WCAG luminance, as the WordPress plugin does). */
 export function textOn(color: string | null | undefined): string {
-    const rgba = withAlpha(color, 1);
-    if (!rgba) return '#ffffff';
-    const [r, g, b] = rgba.match(/\d+/g)!.map(Number) as [number, number, number];
-    return 0.299 * r + 0.587 * g + 0.114 * b > 160 ? '#111111' : '#ffffff';
+    const hex = color ? toHex(color) : null;
+    if (!hex) return '#ffffff';
+    const [r, g, b] = [1, 3, 5].map((i) => {
+        const c = parseInt(hex.slice(i, i + 2), 16) / 255;
+        return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    }) as [number, number, number];
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.179 ? '#111827' : '#ffffff';
 }
