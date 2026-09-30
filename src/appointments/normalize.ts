@@ -6,6 +6,7 @@
  * recurrence math: it reads `calculated` for the occurrence and `base` for
  * the description, and does everything else in the instance time zone.
  */
+import { calendarColor } from '../player/format';
 import { startOfZonedDay, zonedDateKey, zonedTimeKey } from './zoned';
 
 /** The fields of an appointment this code reads; the response has many more. */
@@ -90,7 +91,7 @@ function normalizeOne(response: AppointmentResponse, timeZone: string): Appointm
         baseId: base.id,
         calendarId: base.calendar.id,
         calendarName: base.calendar.name,
-        color: base.calendar.color ?? null,
+        color: calendarColor(base.calendar.color),
         title: base.title,
         subtitle: base.subtitle ?? '',
         start,
