@@ -102,13 +102,13 @@ function removeCurrent(): void {
                 <strong>Slides</strong>
                 <span class="count">{{ editor.slides.length }}</span>
             </span>
-            <!-- Only over 75rem, where the column folds into a rail (Plan.md 45). -->
+            <!-- Over 75rem the column folds into a rail, below it the drawer closes (Plan.md 45); the phone has its own header. -->
             <button
                 type="button"
-                class="d-btn d-btn--icon collapse"
+                class="d-btn d-btn--icon collapse-btn"
                 title="Slides einklappen"
                 aria-label="Slides einklappen"
-                data-testid="desktop-slides-collapse"
+                data-testid="slides-collapse"
                 @click="emit('collapse')"
             >
                 <Icon name="chevron-down" :size="16" class="collapse-icon" />
@@ -277,16 +277,8 @@ function removeCurrent(): void {
     align-items: baseline;
     gap: 6px;
 }
-.collapse {
-    display: none;
-}
 .collapse-icon {
     transform: rotate(90deg);
-}
-@media (min-width: 75.0625rem) {
-    .collapse {
-        display: inline-flex;
-    }
 }
 /* Phone: a collapsible row replaces the header (Plan.md 44); hidden at a desktop width. */
 .header-phone {

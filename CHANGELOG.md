@@ -4,6 +4,22 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.3.3] – 2026-09-30
+
+Feinschliff am Editor nach dem Test im Testsystem.
+
+### Geändert
+
+- **Kopf der Einstellungen zweizeilig:** oben der Baustein, darunter „Sperren" und „Löschen" gleich breit – auch bei
+  langen Namen wie „Nächster Termin" bricht nichts mehr um. Am Handy bleibt es eine Zeile mit Symbolen.
+- **„Hilfslinien"** steht jetzt neben dem Raster-Symbol; das Symbol allein war nicht zu erkennen.
+
+### Behoben
+
+- Der Knopf **„<" zum Einklappen der Slides** war in ChurchTools unsichtbar (im Demo-Modus nicht): Sein Klassenname
+  stieß mit einer Hilfsklasse von ChurchTools zusammen. Ein Test fängt solche Namen künftig ab.
+- Auf dem Tablet und in schmalen Fenstern fehlte in der aufgeklappten Slides-Liste der Knopf zum Zuklappen.
+
 ## [0.3.2] – 2026-09-30
 
 Neu: ein **ruhigerer Editor** – weniger auf einmal, alles weiter erreichbar.
@@ -352,6 +368,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.3.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.3
 [0.3.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.2
 [0.3.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.1
 [0.3.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.0

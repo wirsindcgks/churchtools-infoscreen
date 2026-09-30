@@ -113,6 +113,15 @@ function toggleSlides(): void {
     if (desktop.value) desktopSlidesOpen.value = !desktopSlidesOpen.value;
     else slidesDrawerOpen.value = !slidesDrawerOpen.value;
 }
+/** The "<" in the slides' head: folds the column at a desktop width, else closes the drawer and hands the focus back. */
+function collapseSlides(): void {
+    if (desktop.value) {
+        desktopSlidesOpen.value = false;
+        return;
+    }
+    slidesDrawerOpen.value = false;
+    void nextTick(() => document.querySelector<HTMLElement>('[data-testid="tablet-slides-toggle"]')?.focus());
+}
 function toggleInspectorColumn(): void {
     if (desktop.value) desktopInspectorOpen.value = !desktopInspectorOpen.value;
     else inspectorOpen.value = !inspectorOpen.value;
@@ -502,7 +511,7 @@ function onKey(event: KeyboardEvent): void {
                     </button>
                 </div>
             </div>
-            <SlideList :class="{ 'drawer-open': slidesDrawerOpen }" @click="closeSlidesDrawerOnPick" @collapse="desktopSlidesOpen = false" />
+            <SlideList :class="{ 'drawer-open': slidesDrawerOpen }" @click="closeSlidesDrawerOnPick" @collapse="collapseSlides" />
             <div class="stage-column">
                 <BlockPalette />
                 <EditorStage />

@@ -60,7 +60,7 @@ Menü „…". Neue Screens legt ein Administrator an.
   …"**, um Slides einer anderen Playlist als Kopie zu übernehmen.
 - **„+ Baustein"** öffnet alle Bausteine, alphabetisch: Beiträge, Bild, Countdown („Gottesdienst beginnt in 12:34"),
   Fläche, Gemeindekopf, Gruppen (siehe unten), Nächster Termin, QR-Code, Terminliste, Text, Uhr und Webseite.
-- **In der Mitte die Bildfläche:** ziehen, an den Griffen skalieren, am Raster ausrichten.
+- **In der Mitte die Bildfläche:** ziehen, an den Griffen skalieren, an den **Hilfslinien** ausrichten (oben rechts: Abstand wählen oder aus; mit gedrückter Alt-Taste frei platzieren).
 - **Rechts der Inspektor:** oben der Inhalt des Bausteins (Text, Kalender, Adresse …), darunter aufklappbare
   Bereiche – **Schrift** und **Position & Ebene**, bei Gruppen auch **Angaben**. Zugeklappt zeigt jeder Bereich in
   einer Zeile, was eingestellt ist; was du einmal aufklappst, bleibt offen. Im Kopf des Inspektors stehen
