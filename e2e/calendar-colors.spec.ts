@@ -88,3 +88,46 @@ test('a calendar in black keeps its badge and date tile on a white slide', async
     expect(tr + tg + tb).toBeLessThan(0.3);
     expect(tAlpha).toBeCloseTo(0.28, 2);
 });
+
+/** Sets a background and a text colour on the appointment list of the slide at `position`. */
+async function colourSlide(page: Page, position: number, background: string, text: string): Promise<void> {
+    await page.getByTestId('slide-item').nth(position).click();
+    await openSection(page, 'background');
+    const hex = page.getByTestId('fill-color');
+    await hex.fill(background);
+    await hex.blur();
+    await page.getByTestId('frame-appointment-list').first().click();
+    await openSection(page, 'font');
+    const colour = page.getByTestId('text-color');
+    await colour.fill(text);
+    await colour.blur();
+}
+
+test('the dividing lines follow the text colour: dark on a light slide, light on a dark one', async ({ page }) => {
+    test.setTimeout(120_000); // the player has to come round to the slide twice
+    await fakeCalendars(page);
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await colourSlide(page, 2, '#ffffff', '#1a1a1a');
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await page.goto('./player?screen=demo');
+    const row = page.locator('.row:visible').first();
+    await expect(row).toBeVisible({ timeout: 30_000 });
+    const [r, g, b, alpha] = channels(await row.evaluate((el) => getComputedStyle(el).borderBottomColor));
+    expect(r + g + b).toBeLessThan(0.6);
+    expect(alpha).toBeGreaterThan(0.05);
+
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await colourSlide(page, 2, '#101820', '#f5f5f5');
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await page.goto('./player?screen=demo');
+    const dark = page.locator('.row:visible').first();
+    await expect(dark).toBeVisible({ timeout: 30_000 });
+    const [lr, lg, lb, lAlpha] = channels(await dark.evaluate((el) => getComputedStyle(el).borderBottomColor));
+    expect(lr + lg + lb).toBeGreaterThan(2.4);
+    expect(lAlpha).toBeGreaterThan(0.05);
+});

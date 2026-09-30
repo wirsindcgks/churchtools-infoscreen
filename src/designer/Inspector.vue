@@ -926,7 +926,6 @@ const LAYERS = [
         <!-- Slide and screen -->
         <template v-else>
             <section v-if="slide" data-testid="slide-inspector">
-                <h3>Slide</h3>
                 <label class="d-field">
                     Name
                     <input

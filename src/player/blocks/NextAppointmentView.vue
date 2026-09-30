@@ -131,7 +131,7 @@ const imageStyle = computed(() =>
     height: 100%;
     padding: 0.8em;
     border-radius: var(--isd-radius, 0.4em);
-    background: rgba(255, 255, 255, 0.07);
+    background: color-mix(in srgb, currentColor 7%, transparent);
 }
 .hero-text {
     display: flex;

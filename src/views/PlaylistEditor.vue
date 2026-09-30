@@ -203,6 +203,12 @@ const sheetLabel = computed(() => {
     return editor.slide?.name ? `Slide: ${editor.slide.name}` : 'Slide';
 });
 
+/** The drawer's head says where you are, whatever is chosen; the name and the block have their own heads below (Plan.md 48). */
+const drawerTitle = computed(() => {
+    const index = editor.slide ? editor.slides.indexOf(editor.slide) : -1;
+    return index < 0 ? 'Slide' : `Slide ${index + 1} von ${editor.slides.length}`;
+});
+
 /** The "…" menu below 48rem, after the one on a screen tile (Plan.md 44, M2). */
 const moreMenuOpen = ref(false);
 const moreMenuRoot = ref<HTMLElement | null>(null);
@@ -535,7 +541,7 @@ function onKey(event: KeyboardEvent): void {
             </div>
             <div class="inspector-sheet" :class="{ open: inspectorOpen }" data-testid="inspector-sheet">
                 <div class="drawer-head">
-                    <strong class="drawer-title">{{ sheetLabel }}</strong>
+                    <strong class="drawer-title" data-testid="inspector-drawer-title">{{ drawerTitle }}</strong>
                     <button
                         type="button"
                         class="d-btn d-btn--icon"
