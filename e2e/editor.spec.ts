@@ -525,7 +525,7 @@ test.describe('on a tablet (Plan.md 45)', () => {
         await expect(page.getByTestId('tablet-slides-toggle')).toHaveAttribute('aria-expanded', 'true');
         await expect(page.getByTestId('slide-item')).toHaveCount(3);
         await expect(page.getByTestId('slide-item').first()).toBeVisible();
-        await expect(page.getByTestId('desktop-slides-collapse')).not.toBeVisible();
+        await expect(page.getByTestId('slides-collapse')).toBeVisible();
         expect(await stageWidth(page)).toBe(before);
         await expectNoSidewaysScroll(page);
 
@@ -600,7 +600,7 @@ test.describe('on a tablet (Plan.md 45)', () => {
         await expect(page.getByTestId('tablet-slides-toggle')).not.toBeVisible();
         await expect(page.getByTestId('tablet-inspector-toggle')).not.toBeVisible();
         await expect(page.getByTestId('tablet-inspector-close')).not.toBeVisible();
-        await expect(page.getByTestId('desktop-slides-collapse')).toBeVisible();
+        await expect(page.getByTestId('slides-collapse')).toBeVisible();
         await expect(page.getByTestId('desktop-inspector-collapse')).toBeVisible();
         await expect(page.getByTestId('add-block-menu')).toBeVisible();
         const inspector = (await page.getByTestId('block-inspector').boundingBox())!;
@@ -627,7 +627,7 @@ test.describe('at a desktop the two columns fold (Plan.md 45)', () => {
         await expect(page.getByTestId('tablet-inspector-toggle')).not.toBeVisible();
         const open = await stageWidth(page);
 
-        await page.getByTestId('desktop-slides-collapse').click();
+        await page.getByTestId('slides-collapse').click();
         await expect(page.getByTestId('slide-item').first()).not.toBeVisible();
         await expect(page.getByTestId('tablet-slides-toggle')).toBeVisible();
         await expect(page.getByTestId('tablet-slides-toggle')).toHaveAttribute('aria-expanded', 'false');
@@ -1529,7 +1529,7 @@ test.describe('the heads of the editor stand on one line (Plan.md 47)', () => {
 
     test('folded at a desktop, the rails carry their buttons in the head zone with air around them', async ({ page }) => {
         await openEditor(page);
-        await page.getByTestId('desktop-slides-collapse').click();
+        await page.getByTestId('slides-collapse').click();
         await page.getByTestId('desktop-inspector-collapse').click();
         const palette = (await page.getByTestId('add-block-menu').boundingBox())!;
         for (const [testid, rail] of [
@@ -1570,5 +1570,51 @@ test.describe('the heads of the editor stand on one line (Plan.md 47)', () => {
         expect(Math.abs(b.centerY - (palette.y + palette.height / 2))).toBeLessThanOrEqual(1);
         expect(b.left).toBeGreaterThanOrEqual(8);
         expect(b.top).toBeGreaterThanOrEqual(8);
+    });
+});
+
+test.describe('the slides "<" and the two-line block head (Plan.md 47)', () => {
+    async function openEditor(page: Page): Promise<void> {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('add-block-menu')).toBeVisible();
+    }
+
+    for (const [name, viewport] of [
+        ['lying', { width: 1180, height: 820 }],
+        ['upright', { width: 820, height: 1180 }],
+    ] as const) {
+        test(`on a tablet ${name}, "<" in the drawer shuts it and the focus goes back to the slides button`, async ({ page }) => {
+            await page.setViewportSize(viewport);
+            await openEditor(page);
+            await page.getByTestId('tablet-slides-toggle').click();
+            await expect(page.getByTestId('slide-item').first()).toBeVisible();
+            await expect(page.getByTestId('slides-collapse')).toBeVisible();
+            await page.getByTestId('slides-collapse').click();
+            await expect(page.getByTestId('slide-item').first()).not.toBeVisible();
+            await expect(page.getByTestId('tablet-slides-toggle')).toBeFocused();
+        });
+    }
+
+    test('at a desktop, "Sperren" and "Löschen" stand side by side, equally wide, below the name', async ({ page }) => {
+        await openEditor(page);
+        await page.getByTestId('add-block-menu').click();
+        await page.getByTestId('sheet-add-next-appointment').click();
+        await expect(page.getByTestId('block-inspector')).toBeVisible();
+        for (const type of ['next-appointment', 'text']) {
+            if (type === 'text') {
+                await page.getByTestId('add-block-menu').click();
+                await page.getByTestId('sheet-add-text').click();
+            }
+            const [h3, lock, del] = await Promise.all([
+                page.locator('.block-head h3').boundingBox(),
+                page.getByTestId('lock-toggle').boundingBox(),
+                page.getByTestId('block-delete').boundingBox(),
+            ]);
+            const mid = (b: { y: number; height: number }) => b.y + b.height / 2;
+            expect(Math.abs(mid(lock!) - mid(del!))).toBeLessThanOrEqual(1);
+            expect(mid(lock!)).toBeGreaterThan(h3!.y + h3!.height);
+            expect(Math.abs(lock!.width - del!.width)).toBeLessThanOrEqual(1);
+        }
     });
 });

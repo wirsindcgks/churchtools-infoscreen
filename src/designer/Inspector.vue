@@ -1183,6 +1183,22 @@ legend {
     display: flex;
     gap: 6px;
 }
+/* Over 48rem always two lines, whatever the name's length: name, then two equal buttons (Plan.md 47). */
+@media (min-width: 48.0625rem) {
+    .block-head {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        justify-content: stretch;
+    }
+    .head-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+    .head-actions .lock-toggle {
+        justify-content: center;
+    }
+}
 .lock-toggle {
     gap: 4px;
     font-size: var(--d-size-sm);
