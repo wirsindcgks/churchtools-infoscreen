@@ -452,7 +452,7 @@ onMounted(() => {
     height: 100%;
     overflow: hidden;
     border-radius: var(--isd-radius, 0.4em);
-    background: rgba(255, 255, 255, 0.07);
+    background: color-mix(in srgb, currentColor 7%, transparent);
 }
 /* Bar, then image and text – side by side in landscape, one above the other in portrait. */
 .hero-content {
@@ -635,7 +635,7 @@ onMounted(() => {
     align-items: center;
     gap: 0.9em;
     padding: 0.55em 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
 }
 .row-avatar {
     display: flex;

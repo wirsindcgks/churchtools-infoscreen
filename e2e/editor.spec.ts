@@ -37,6 +37,20 @@ test('edit a slide: add text, type, drag, undo, save', async ({ page }) => {
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
 });
 
+test('the inspector head says which slide this is, and the slide inspector has no heading of its own', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    const title = page.getByTestId('inspector-drawer-title');
+    await expect(title).toHaveText('Slide 1 von 3');
+    await expect(page.getByTestId('slide-inspector').getByRole('heading', { name: 'Slide', exact: true })).toHaveCount(0);
+    await page.getByTestId('slide-item').nth(1).click();
+    await expect(title).toHaveText('Slide 2 von 3');
+    await addBlock(page, 'text');
+    await expect(page.getByTestId('block-inspector')).toBeVisible();
+    await expect(title).toHaveText('Slide 2 von 3');
+});
+
 test('create a new portrait screen', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('new-screen').click();

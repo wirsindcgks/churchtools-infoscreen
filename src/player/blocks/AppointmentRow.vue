@@ -51,7 +51,7 @@ defineProps<{ appointment: Appointment; layout: 'rows' | 'cards'; timeZone: stri
     grid-template-columns: 6.5em 5.5em 1fr;
     gap: 0.5em;
     padding: 0.25em 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
 }
 .when,
 .time {

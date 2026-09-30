@@ -157,7 +157,8 @@ const imageUrl = computed(() => {
     height: 100%;
 }
 .placeholder {
-    background: rgba(255, 255, 255, 0.06);
+    /* Image and web page have no text colour of their own: a middle grey shows on light and dark slides alike (Plan.md 48). */
+    background: rgba(128, 128, 128, 0.15);
 }
 .web {
     display: block;
