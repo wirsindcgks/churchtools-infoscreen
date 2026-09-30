@@ -225,10 +225,10 @@ function openPreviewFromMenu(): void {
 }
 
 /** Which picker the media library was opened for. */
-const libraryFor = ref<'block' | 'background' | 'logo' | null>(null);
+const libraryFor = ref<'block' | 'background' | 'logo' | 'slideshow' | null>(null);
 const libraryTarget = ref<string | null>(null);
 
-function openLibrary(kind: 'block' | 'background' | 'logo'): void {
+function openLibrary(kind: 'block' | 'background' | 'logo' | 'slideshow'): void {
     libraryTarget.value = kind === 'background' ? null : (editor.block?.id ?? null);
     libraryFor.value = kind;
 }
@@ -241,6 +241,18 @@ async function chosen(media: MediaDoc): Promise<void> {
         editor.updateBlock(libraryTarget.value, { logoMediaId: media.id });
     } else if (libraryFor.value === 'background') {
         editor.updateSlide({ background: { kind: 'media', mediaId: media.id } });
+    }
+    libraryFor.value = null;
+}
+
+/** Slideshow: the new pictures join at the end, without those already in, up to the limit – one undo step. */
+async function chosenMany(docs: MediaDoc[]): Promise<void> {
+    await editor.refreshMedia();
+    const target = editor.block;
+    if (libraryFor.value === 'slideshow' && target?.type === 'slideshow' && target.id === libraryTarget.value) {
+        const have = new Set(target.mediaIds);
+        const added = docs.map((d) => d.id).filter((id) => !have.has(id));
+        editor.updateBlock(target.id, { mediaIds: [...target.mediaIds, ...new Set(added)].slice(0, 30) });
     }
     libraryFor.value = null;
 }
@@ -581,7 +593,10 @@ function onKey(event: KeyboardEvent): void {
             v-if="libraryFor && editor.draft"
             :screen="MEDIA_PAGE"
             :selected-media-id="currentMediaId"
+            :multiple="libraryFor === 'slideshow'"
+            :max="editor.block?.type === 'slideshow' ? 30 - editor.block.mediaIds.length : undefined"
             @choose="chosen"
+            @choose-many="chosenMany"
             @close="libraryFor = null"
         />
 

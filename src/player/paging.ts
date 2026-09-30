@@ -75,6 +75,11 @@ export function slideSeconds(slide: SlideDoc, pages: Readonly<Record<string, num
             const count = pages[block.id] ?? 1;
             if (count > 1) seconds = Math.max(seconds, count * (block.pageSeconds ?? GROUP_SECONDS));
         }
+        // Every image runs once; the block reports how many it shows (missing ones are skipped).
+        if (block.type === 'slideshow') {
+            const count = pages[block.id] ?? block.mediaIds.length;
+            if (count > 1) seconds = Math.max(seconds, count * (block.seconds ?? 6));
+        }
     }
     return seconds;
 }

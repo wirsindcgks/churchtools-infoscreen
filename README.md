@@ -9,7 +9,7 @@ Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
 ## Was es kann
 
 - **Gestalten wie in einem Folien-Editor:** Slides mit Text, Bild, Fläche, Uhr, Terminliste, nächstem Termin,
-  Countdown, Gemeindekopf mit Logo, Webseite, QR-Code, Beiträgen und Gruppen; ziehen, skalieren, am Raster
+  Countdown, Gemeindekopf mit Logo, Webseite, QR-Code, Beiträgen, Gruppen und einer Galerie; ziehen, skalieren, am Raster
   ausrichten, sperren; Rückgängig/Wiederholen. Die Vorschau ist genau das, was der Fernseher zeigt.
 - **Termine live aus den Kalendern von ChurchTools** – was dort eingetragen wird, erscheint von selbst im Foyer, als
   schlichte Liste oder als Karten mit Datumskachel.
@@ -50,7 +50,7 @@ Voraussetzung ist eine ChurchTools-Instanz, auf der Extensions (Custom Modules) 
 
 ## Stand
 
-Aktuell ist Version 0.3.5 (30. September 2026) mit einem ruhigeren Editor (seit 0.3.2), davor 0.3.1 mit dem Designer auf dem Tablet; das erste Release war 0.1.0 am
+Aktuell ist Version 0.3.6 (30. September 2026) mit dem Baustein „Galerie", seit 0.3.2 mit einem ruhigeren Editor, davor 0.3.1 mit dem Designer auf dem Tablet; das erste Release war 0.1.0 am
 25. September 2026. Der Designer läuft auf einer Testinstanz (ChurchTools 3.136, Build 32882); der erste Fernseher
 im Foyer steht aus.
 Was als Nächstes kommt, steht in [`Plan.md`](Plan.md); Änderungen je Version in [`CHANGELOG.md`](CHANGELOG.md).

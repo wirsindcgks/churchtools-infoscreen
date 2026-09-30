@@ -3,17 +3,20 @@
  * The pictures of the media library as tiles: picture, name, and where it is
  * shown – "Foyer › Gottesdienst › Begrüßung" instead of the wiki page it was
  * uploaded to (Plan.md, Nächste Schritte 18). In the editor a click chooses a
- * picture; on the media library page there is nothing to choose for.
+ * picture; on the media library page there is nothing to choose for. With `multiple`
+ * a click marks or unmarks: the tile shows the running number of the choice, `marked`
+ * holds the file ids in that order.
  */
 import { computed } from 'vue';
 import { usageLines, type MediaItem } from '../media/library';
 import { sizedImageUrl } from '../player/format';
 
-const props = defineProps<{ items: MediaItem[]; selectedMediaId?: string; choosable?: boolean }>();
+const props = defineProps<{ items: MediaItem[]; selectedMediaId?: string; choosable?: boolean; multiple?: boolean; marked?: number[] }>();
 const emit = defineEmits<{ choose: [MediaItem]; remove: [MediaItem] }>();
 
 /** Two places fit under a picture; the rest are counted and in the tooltip. */
 const SHOWN = 2;
+const numberOf = (item: MediaItem): number => (props.marked?.indexOf(item.fileId) ?? -1) + 1;
 const places = computed(() => new Map(props.items.map((item) => [item.fileId, usageLines(item.uses)])));
 </script>
 
@@ -22,11 +25,19 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
         <figure
             v-for="item in items"
             :key="item.fileId"
-            :class="{ selected: item.mediaId && item.mediaId === selectedMediaId }"
+            :class="{ selected: (item.mediaId && item.mediaId === selectedMediaId) || numberOf(item) > 0 }"
             data-testid="media-item"
         >
-            <button v-if="choosable" class="pick" type="button" :title="`${item.name} verwenden`" @click="emit('choose', item)">
+            <button
+                v-if="choosable"
+                class="pick"
+                type="button"
+                :title="multiple ? `${item.name} markieren` : `${item.name} verwenden`"
+                :aria-pressed="multiple ? numberOf(item) > 0 : undefined"
+                @click="emit('choose', item)"
+            >
                 <img :src="sizedImageUrl(item.imageUrl, 320, 180, 'crop')" :alt="item.name" loading="lazy">
+                <span v-if="multiple && numberOf(item) > 0" class="mark" data-testid="media-mark">{{ numberOf(item) }}</span>
             </button>
             <div v-else class="pick">
                 <img :src="sizedImageUrl(item.imageUrl, 320, 180, 'crop')" :alt="item.name" loading="lazy">
@@ -66,6 +77,7 @@ figure.selected {
     border-color: var(--d-accent);
 }
 .pick {
+    position: relative;
     display: block;
     width: 100%;
     padding: 0;
@@ -75,6 +87,20 @@ figure.selected {
     cursor: pointer;
     aspect-ratio: 16 / 9;
     overflow: hidden;
+}
+.mark {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    min-width: 24px;
+    padding: 2px 6px;
+    border-radius: 12px;
+    background: var(--d-accent);
+    color: #fff;
+    font-size: var(--d-size-sm);
+    font-weight: 700;
+    line-height: 20px;
+    text-align: center;
 }
 .pick img {
     display: block;

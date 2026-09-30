@@ -97,6 +97,44 @@ describe('readSlide – tolerant towards newer data', () => {
     });
 });
 
+describe('readSlide – slideshow block (schema 1.15, Plan.md 46)', () => {
+    const slideshow = { id: 'd', type: 'slideshow', x: 0, y: 0, width: 1200, height: 675, mediaIds: ['a', 'b'] };
+
+    it('reads a minimal slideshow with its defaults', () => {
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [slideshow, { ...slideshow, id: 'e', mediaIds: [] }] });
+        expect(issues).toEqual([]);
+        expect(doc.blocks[0]).toMatchObject({ mediaIds: ['a', 'b'], fit: 'cover', seconds: 6, transition: 'fade' });
+        expect(doc.blocks[1]).toMatchObject({ mediaIds: [] });
+    });
+
+    it('skips a slideshow with more than 30 images, with an issue', () => {
+        const many = Array.from({ length: 31 }, (_, i) => `m${i}`);
+        const ok = Array.from({ length: 30 }, (_, i) => `m${i}`);
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [{ ...slideshow, mediaIds: many }, { ...slideshow, id: 'e', mediaIds: ok }] });
+        expect(doc.blocks.map((b) => b.id)).toEqual(['e']);
+        expect(issues).toHaveLength(1);
+    });
+
+    it('reads the five transitions and skips a slideshow with an unknown one', () => {
+        for (const transition of ['fade', 'slide', 'wipe', 'zoom', 'none']) {
+            const { doc, issues } = readSlide({ ...makeSlide(), blocks: [{ ...slideshow, transition }] });
+            expect(issues).toEqual([]);
+            expect(doc.blocks[0]).toMatchObject({ transition });
+        }
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [{ ...slideshow, transition: 'spin' }] });
+        expect(doc.blocks).toEqual([]);
+        expect(issues).toHaveLength(1);
+    });
+
+    it('skips a slideshow with seconds outside 3 to 60', () => {
+        for (const seconds of [2, 61]) {
+            const { doc, issues } = readSlide({ ...makeSlide(), blocks: [{ ...slideshow, seconds }] });
+            expect(doc.blocks).toEqual([]);
+            expect(issues).toHaveLength(1);
+        }
+    });
+});
+
 describe('readTheme – the font new blocks start with (schema 1.13, Plan.md 40)', () => {
     const theme = { schema: { major: 1, minor: 12 }, kind: 'theme', id: THEME_ID };
 

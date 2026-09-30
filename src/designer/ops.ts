@@ -123,6 +123,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     countdown: 'Countdown',
     posts: 'Beiträge',
     groups: 'Gruppen',
+    slideshow: 'Galerie',
 };
 
 export const BLOCK_ICONS: Record<BlockType, IconName> = {
@@ -138,6 +139,7 @@ export const BLOCK_ICONS: Record<BlockType, IconName> = {
     countdown: 'timer',
     posts: 'news',
     groups: 'people',
+    slideshow: 'slideshow',
 };
 
 /** Every block type in German alphabetical order (Plan.md 47): new types find their place by their label. */
@@ -165,6 +167,7 @@ export function createBlock(
         countdown: [1100, 360],
         posts: [1400, 700],
         groups: [1400, 700],
+        slideshow: [1200, 675],
     }[type];
     const width = Math.min(size[0]!, stage.width - 80);
     const height = Math.min(size[1]!, stage.height - 80);
@@ -220,6 +223,8 @@ export function createBlock(
                 showAuthor: false,
                 style: textStyle(56),
             };
+        case 'slideshow':
+            return { ...frame, type, mediaIds: [], fit: 'cover', seconds: 6, transition: 'fade' };
         case 'groups':
             // No homepage yet: the inspector offers them; the leaders stay off until switched on (Plan.md 43).
             return { ...frame, type, groupIds: [], layout: 'card', perPage: 1, show: v.parse(GroupFields, {}), style: textStyle(56) };

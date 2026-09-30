@@ -929,6 +929,7 @@ function referencedMedia(slide: SlideDoc): string[] {
     const ids = slide.blocks.flatMap((b) => {
         if (b.type === 'image' && b.mediaId) return [b.mediaId];
         if (b.type === 'church-header' && b.logoMediaId) return [b.logoMediaId];
+        if (b.type === 'slideshow') return b.mediaIds;
         return [];
     });
     if (slide.background.kind === 'media') ids.push(slide.background.mediaId);

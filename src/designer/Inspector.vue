@@ -19,7 +19,7 @@ import InspectorSection from './InspectorSection.vue';
 import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
 
 const props = defineProps<{ calendars: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[] }>();
-const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo'] }>();
+const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow'] }>();
 
 /** Labels in the order of `GroupFields` itself, so the fieldset needs no list of its own (Plan.md 43). */
 const GROUP_SHOW_LABELS: Record<keyof GroupFields, string> = {
@@ -195,6 +195,34 @@ function mediaUrl(id: string | undefined, fit: 'crop' | 'max' = 'crop'): string 
     return media ? sizedImageUrl(media.imageUrl, 272, 153, fit) : null;
 }
 
+/** Most pictures a slideshow holds – the schema's limit. */
+const SLIDESHOW_MAX = 30;
+
+function slideshowIds(): string[] {
+    return block.value?.type === 'slideshow' ? block.value.mediaIds : [];
+}
+
+function mediaName(id: string): string | null {
+    return editor.media.find((m) => m.id === id)?.name ?? null;
+}
+
+function moveSlideshowImage(index: number, target: number): void {
+    const ids = [...slideshowIds()];
+    if (target < 0 || target >= ids.length) return;
+    [ids[index], ids[target]] = [ids[target]!, ids[index]!];
+    setBlock({ mediaIds: ids });
+}
+
+function removeSlideshowImage(index: number): void {
+    setBlock({ mediaIds: slideshowIds().filter((_, i) => i !== index) });
+}
+
+/** Between 3 and 60 seconds; anything else waits until the value is sensible. */
+function setSlideshowSeconds(value: string): void {
+    const n = Number(value);
+    if (Number.isInteger(n) && n >= 3 && n <= 60) setBlock({ seconds: n });
+}
+
 function setBackgroundKind(kind: string): void {
     if (kind === 'media') emit('pick-image', 'background');
     else editor.updateSlide({ background: slideFill.value });
@@ -326,6 +354,102 @@ const LAYERS = [
                             <option value="cover">Fläche füllen</option>
                         </select>
                     </label>
+                </template>
+
+                <!-- Plan.md, 46: library pictures one after the other. -->
+                <template v-if="block.type === 'slideshow'">
+                    <fieldset class="slideshow-images">
+                        <legend>Bilder</legend>
+                        <p v-if="!block.mediaIds.length" class="hint">Noch keine Bilder gewählt.</p>
+                        <ol v-else class="slideshow-list" data-testid="slideshow-list">
+                            <li v-for="(id, index) in block.mediaIds" :key="`${id}-${index}`" class="slideshow-row" data-testid="slideshow-row">
+                                <img v-if="mediaUrl(id)" :src="mediaUrl(id)!" alt="">
+                                <span v-else class="slideshow-missing" />
+                                <span class="slideshow-name" :title="mediaName(id) ?? ''">{{ mediaName(id) ?? 'Bild fehlt' }}</span>
+                                <button
+                                    class="d-btn d-btn--icon"
+                                    type="button"
+                                    aria-label="Nach oben"
+                                    title="Nach oben"
+                                    :disabled="index === 0"
+                                    data-testid="slideshow-up"
+                                    @click="moveSlideshowImage(index, index - 1)"
+                                >
+                                    <Icon name="layer-forward" :size="14" />
+                                </button>
+                                <button
+                                    class="d-btn d-btn--icon"
+                                    type="button"
+                                    aria-label="Nach unten"
+                                    title="Nach unten"
+                                    :disabled="index === block.mediaIds.length - 1"
+                                    data-testid="slideshow-down"
+                                    @click="moveSlideshowImage(index, index + 1)"
+                                >
+                                    <Icon name="layer-backward" :size="14" />
+                                </button>
+                                <button
+                                    class="d-btn d-btn--icon"
+                                    type="button"
+                                    aria-label="Bild entfernen"
+                                    title="Bild entfernen"
+                                    data-testid="slideshow-remove"
+                                    @click="removeSlideshowImage(index)"
+                                >
+                                    <Icon name="close" :size="14" />
+                                </button>
+                            </li>
+                        </ol>
+                        <div class="slideshow-add">
+                            <button
+                                class="d-btn"
+                                type="button"
+                                :disabled="block.mediaIds.length >= SLIDESHOW_MAX"
+                                data-testid="pick-slideshow"
+                                @click="emit('pick-image', 'slideshow')"
+                            >
+                                + Bilder
+                            </button>
+                            <span class="hint" data-testid="slideshow-count">{{ block.mediaIds.length }} von {{ SLIDESHOW_MAX }}</span>
+                        </div>
+                    </fieldset>
+                    <label class="d-field">
+                        Dauer je Bild (Sekunden)
+                        <input
+                            type="number"
+                            min="3"
+                            max="60"
+                            :value="block.seconds ?? 6"
+                            data-testid="slideshow-seconds"
+                            v-on="edit"
+                            @input="setSlideshowSeconds(($event.target as HTMLInputElement).value)"
+                        >
+                    </label>
+                    <label class="d-field">
+                        Einpassen
+                        <select :value="block.fit ?? 'cover'" data-testid="slideshow-fit" @change="setBlock({ fit: ($event.target as HTMLSelectElement).value })">
+                            <option value="contain">Ganz zeigen</option>
+                            <option value="cover">Fläche füllen</option>
+                        </select>
+                    </label>
+                    <label class="d-field">
+                        Übergang
+                        <select
+                            :value="block.transition ?? 'fade'"
+                            data-testid="slideshow-transition"
+                            @change="setBlock({ transition: ($event.target as HTMLSelectElement).value })"
+                        >
+                            <option value="fade">Überblenden</option>
+                            <option value="slide">Schieben</option>
+                            <option value="wipe">Aufdecken</option>
+                            <option value="zoom">Heranzoomen</option>
+                            <option value="none">Ohne</option>
+                        </select>
+                    </label>
+                    <div class="hint-row">
+                        <span>Laufzeit</span>
+                        <InfoHint>Die Slide läuft so lange, bis jedes Bild einmal zu sehen war.</InfoHint>
+                    </div>
                 </template>
 
                 <label v-if="block.type === 'clock'" class="d-field">
@@ -1116,6 +1240,48 @@ legend {
 }
 .spacer {
     flex: 1;
+}
+/* The pictures of a slideshow: thumbnail, file name, reorder and remove (Plan.md 46). */
+.slideshow-images {
+    /* A long file name must not widen the column: the track may shrink below its content. */
+    grid-template-columns: minmax(0, 1fr);
+}
+.slideshow-list {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.slideshow-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.slideshow-row img,
+.slideshow-missing {
+    flex: none;
+    width: 48px;
+    height: 27px;
+    border-radius: 3px;
+    background: var(--d-panel);
+    object-fit: cover;
+}
+.slideshow-name {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--d-size-sm);
+}
+.slideshow-add {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
 }
 .swatch {
     width: 10px;

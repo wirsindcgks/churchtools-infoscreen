@@ -116,6 +116,23 @@ describe('screenImageUrls', () => {
         ]);
     });
 
+    it('requests every present image of a slideshow in the size of the block, as the player does', () => {
+        const dia: Block = {
+            id: 'dia',
+            type: 'slideshow',
+            x: 0,
+            y: 0,
+            width: 1200,
+            height: 675,
+            mediaIds: ['m1', 'gone'],
+            seconds: 6,
+            transition: 'fade',
+            fit: 'cover',
+        };
+        const urls = screenImageUrls([makeSlide({ blocks: [dia] })], media, { width: 1920, height: 1080 });
+        expect(urls).toEqual(['https://ct.example/images/1/aaa?w=1200&h=675&fit=max']);
+    });
+
     it('skips images whose media is gone or not chosen yet', () => {
         const slides = [makeSlide({ blocks: [image('b1', 'missing'), image('b2', '')] })];
         expect(screenImageUrls(slides, media, { width: 1920, height: 1080 })).toEqual([]);

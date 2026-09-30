@@ -4,6 +4,17 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.3.6] – 2026-09-30
+
+### Neu
+
+- **Baustein „Galerie":** bis zu 30 Bilder aus der Mediathek nacheinander in einem Baustein, etwa für Impressionen vom
+  letzten Gemeindefest. Übergänge: Überblenden, Schieben, Aufdecken, Heranzoomen oder ohne; Dauer je Bild 3–60 Sekunden,
+  Einpassen oder Fläche füllen. Die Slide läuft, bis jedes Bild einmal zu sehen war. Die Bilder liegen wie alle anderen
+  auf dem Gerät, die Galerie läuft also auch ohne Netz. Ein Player vor dieser Version lässt den Baustein aus.
+- **Mehrere Bilder auf einmal wählen:** Für die Galerie markiert man in der Mediathek mehrere Bilder – mit Nummer in
+  der gewählten Reihenfolge – und übernimmt sie mit „Hinzufügen".
+
 ## [0.3.5] – 2026-09-30
 
 ### Geändert
@@ -391,6 +402,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.3.6]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.6
 [0.3.5]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.5
 [0.3.4]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.4
 [0.3.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.3

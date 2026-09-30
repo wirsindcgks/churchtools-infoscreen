@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 14 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 15 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -250,6 +250,23 @@ export const GroupsBlock = v.object({
     style: TextStyle,
 });
 
+/**
+ * Since 1.15: several library images one after the other, with a fade or a cut
+ * (Plan.md, Nächste Schritte 46). Empty until images are chosen; the player then
+ * shows a calm placeholder. The slide stays until every image has run once. At
+ * most 30 images; more makes the block invalid, and it is skipped.
+ */
+export const SlideshowBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('slideshow'),
+    mediaIds: v.pipe(v.array(Id), v.maxLength(30)),
+    fit: v.optional(v.picklist(['contain', 'cover']), 'cover'),
+    /** Seconds per image; default 6. */
+    seconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(3), v.maxValue(60)), 6),
+    /** How the next image comes: fade, push from the right, wipe from the left, fade with a slow zoom, or a cut. */
+    transition: v.optional(v.picklist(['fade', 'slide', 'wipe', 'zoom', 'none']), 'fade'),
+});
+
 export const Block = v.variant('type', [
     TextBlock,
     ImageBlock,
@@ -263,6 +280,7 @@ export const Block = v.variant('type', [
     CountdownBlock,
     PostsBlock,
     GroupsBlock,
+    SlideshowBlock,
 ]);
 
 /** The calendars whose appointments a block shows or counts down to. */
