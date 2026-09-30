@@ -89,10 +89,12 @@ das Format der Bilder – mit Vorschau.
 
 ![Design: Einstellungen links, Vorschau rechts](bilder/design.png)
 
-## Am Handy
+## Am Handy und auf dem Tablet
 
 Der Designer passt sich dem Telefon an: Seiten über ein Menü, Slides und Bausteine zum Aufklappen, die Einstellungen
-eines Bausteins als Blatt am unteren Rand – die ganze Slide bleibt darüber im Blick.
+eines Bausteins als Blatt am unteren Rand – die ganze Slide bleibt darüber im Blick. Auf dem Tablet nimmt die Slide
+fast die ganze Breite ein; die Einstellungen öffnen hochkant als Blatt, quer als Spalte daneben. Am Rechner lassen
+sich Slides und Einstellungen einklappen.
 
 <img src="bilder/handy.png" alt="Editor am Handy: oben die Slide, unten das Blatt mit den Einstellungen der Terminliste" width="320">
 
