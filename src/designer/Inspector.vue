@@ -647,7 +647,7 @@ const LAYERS = [
                         Terminbild zeigen
                     </label>
                     <!-- Plan.md, 50: the booked rooms beside the place; the list shows them as cards only. -->
-                    <div v-if="block.type === 'next-appointment' || listLayout(block, themeOf(stage)) === 'cards'" class="hint-row">
+                    <div v-if="block.type === 'next-appointment' || listLayout(block, themeOf(stage)) === 'cards'" class="hint-row hint-row--check">
                         <label class="check">
                             <input
                                 type="checkbox"
@@ -1005,7 +1005,7 @@ const LAYERS = [
                                     @input="setRoom(index, { hint: ($event.target as HTMLInputElement).value })"
                                 >
                             </label>
-                            <div class="hint-row">
+                            <div class="hint-row hint-row--check">
                                 <label class="check">
                                     <input
                                         type="checkbox"
@@ -1563,6 +1563,11 @@ legend {
     gap: 4px;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
+}
+/* A switch with its info circle: the switch reads like the other switches, not like a field label. */
+.hint-row--check {
+    color: inherit;
+    font-size: inherit;
 }
 .layer-row {
     display: flex;

@@ -292,6 +292,13 @@ test('the room at an appointment: beside the place, in both layouts of the next 
     await page.getByTestId('next-layout').selectOption('card');
     await expect(place).toHaveText('Kirchsaal · Saal');
     await page.screenshot({ path: 'test-results/rooms-at-appointment.png' });
+    // "Raum zeigen" reads like "Terminbild zeigen" above it – same size, same colour (wish of the user, 2026-09-30).
+    const look = (text: string) =>
+        page.getByTestId('block-inspector').locator('label.check', { hasText: text }).evaluate((el) => {
+            const style = getComputedStyle(el);
+            return `${style.fontSize} ${style.color}`;
+        });
+    expect(await look('Raum zeigen')).toBe(await look('Terminbild zeigen'));
     await page.getByTestId('next-layout').selectOption('classic');
     await expect(place).toHaveText('Kirchsaal · Saal');
     await expect(stage(page)).not.toContainText('Geheimer Buchungstitel');
