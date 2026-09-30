@@ -9,9 +9,12 @@
  * of the extension itself exist only once it is installed.
  */
 
+import type { RoomInfo } from '../rooms/normalize';
+
 /** Core permission ids (G30). */
 export const AUTH = {
     calendarView: 403, // churchcal: "Einzelnen Kalender sehen"
+    resourceView: 205, // churchresource: "Ressource sehen"
     wikiView: 501, // churchwiki: "Wiki" sehen
     wikiCategoryView: 502, // churchwiki: "Einzelne Wiki-Kategorien sehen"
     wikiCategoryEdit: 503, // churchwiki: "Einzelne Wiki-Kategorien bearbeiten"
@@ -106,6 +109,8 @@ export interface DesignerGroupInput {
     moduleRights?: ModuleRights;
     /** Rights designers must not hold: writing screens and settings (Plan.md, F). */
     forbidden?: RequiredRight[] | null;
+    /** Every room the administrator sees – designers choose among them for the block "Raumbelegung" (G45). */
+    roomIds?: number[];
 }
 
 export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
@@ -161,6 +166,19 @@ export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
             }
         }
     }
+
+    // Rooms are chosen in the designer: without the right on a room it is missing from the list (G45).
+    const roomIds = input.roomIds ?? [];
+    if (roomIds.length) {
+        for (const role of relevantRoles(input.roles)) {
+            if (roomIds.every((id) => has(role.grants, AUTH.resourceView, id))) continue;
+            checks.push({
+                level: 'warn',
+                text: `Rolle „${role.name}" sieht nicht alle Räume.`,
+                detail: 'Dann fehlen sie im Baustein „Raumbelegung". „Rechte aktualisieren" gibt sie den Gruppen des Assistenten.',
+            });
+        }
+    }
     return checks;
 }
 
@@ -181,6 +199,11 @@ export interface DeviceGroupInput {
     members: DeviceMember[];
     calendars: CalendarInfo[];
     usedCalendarIds: number[];
+    /** The rooms the administrator sees, to name the used ones. */
+    rooms?: RoomInfo[];
+    usedRoomIds?: number[];
+    /** A block shows the rooms of its appointments (Plan.md 50): the device must see all rooms. */
+    appointmentRooms?: boolean;
     wikiCategoryId: number | null;
     moduleRights?: ModuleRights;
 }
@@ -218,6 +241,43 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                   }
                 : { level: 'ok', text: `„${calendar.name}" ist sichtbar.` },
         );
+    }
+
+    const roomsById = new Map((input.rooms ?? []).map((r) => [r.id, r]));
+    for (const id of input.usedRoomIds ?? []) {
+        const room = roomsById.get(id);
+        if (!room) {
+            checks.push({ level: 'warn', text: `Raum ${id} wird verwendet, ist aber nicht (mehr) zu finden.` });
+            continue;
+        }
+        const blind = input.members.filter((m) => !has(m.grants, AUTH.resourceView, id)).map((m) => m.label);
+        checks.push(
+            blind.length
+                ? {
+                      level: 'fail',
+                      text: `„${room.name}" ist für ${blind.join(', ')} nicht sichtbar.`,
+                      detail: 'Recht „Ressource sehen" für diesen Raum an die Rolle der Gerätegruppe geben – oder „Rechte aktualisieren".',
+                  }
+                : { level: 'ok', text: `„${room.name}" ist sichtbar.` },
+        );
+    }
+
+    if (input.appointmentRooms) {
+        const all = input.rooms ?? [];
+        const blind = input.members
+            .map((m) => ({ label: m.label, unseen: all.filter((r) => !has(m.grants, AUTH.resourceView, r.id)).length }))
+            .filter((m) => m.unseen > 0);
+        if (blind.length) {
+            for (const m of blind) {
+                checks.push({
+                    level: 'fail',
+                    text: `Räume an Terminen: ${m.label} sieht ${m.unseen} von ${all.length} Räumen nicht.`,
+                    detail: '„Rechte aktualisieren" gibt der Gerätegruppe das Recht „Ressource sehen" für alle Räume.',
+                });
+            }
+        } else {
+            checks.push({ level: 'ok', text: 'Räume an Terminen sind sichtbar.' });
+        }
     }
 
     if (!input.moduleRights) {

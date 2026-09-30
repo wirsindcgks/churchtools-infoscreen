@@ -57,6 +57,8 @@ const PATHS = {
     news: ['M4 4h16v16H4z', 'M7 7h6v5H7z', 'M15 8h2', 'M15 11h2', 'M7 14.5h11', 'M7 17h8'],
     // Galerie (slideshow) (Plan.md 46): two offset picture frames.
     slideshow: ['M8 4h13v10H8z', 'M4 8v12h13v-2', 'M8 12l4-4 3 3 2-2 4 4'],
+    // Raumbelegung (Plan.md 46): a door with a handle.
+    door: ['M6 21V4h12v17', 'M4 21h16', circle(14.5, 12.5, 0.8)],
     // The design page (Plan.md, Nächste Schritte 27)
     palette: ['M12 3.5a8.5 8.5 0 1 0 0 17c1.2 0 1.8-.8 1.8-1.7 0-1.3-1-1.6-1-2.6 0-.9.7-1.6 1.7-1.6h2.2a3.8 3.8 0 0 0 3.8-3.8c0-4.2-3.8-7.3-8.5-7.3z', circle(7.5, 11.5, 1), circle(10, 7.5, 1), circle(14.5, 7.5, 1)],
     // The page menu on a phone (Plan.md 44, M1): rotates 180° when open.

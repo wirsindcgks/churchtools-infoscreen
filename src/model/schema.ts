@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 15 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 16 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -104,6 +104,11 @@ export const AppointmentListBlock = v.object({
      * the list of the WordPress plugin (Plan.md, 20); `rows` is the plain list.
      */
     layout: v.optional(v.picklist(['rows', 'cards'])),
+    /**
+     * Since 1.16: the booked rooms beside the place – in the `cards` layout only
+     * (Plan.md, Nächste Schritte 50). Missing = off.
+     */
+    showRooms: v.optional(v.boolean()),
     style: TextStyle,
 });
 
@@ -118,6 +123,8 @@ export const NextAppointmentBlock = v.object({
      * (Plan.md, 20); `classic` is the plain one.
      */
     layout: v.optional(v.picklist(['classic', 'card'])),
+    /** Since 1.16: the booked rooms beside the place, in both layouts (Plan.md, Nächste Schritte 50). Missing = off. */
+    showRooms: v.optional(v.boolean()),
     style: TextStyle,
 });
 
@@ -267,6 +274,35 @@ export const SlideshowBlock = v.object({
     transition: v.optional(v.picklist(['fade', 'slide', 'wipe', 'zoom', 'none']), 'fade'),
 });
 
+/** One room of a `rooms` block (schema 1.16). */
+export const RoomEntry = v.object({
+    resourceId: v.pipe(v.number(), v.integer()),
+    /** Wegweiser, e.g. "1. OG, links"; empty = none. */
+    hint: v.optional(v.pipe(v.string(), v.maxLength(100)), ''),
+    /** Booking titles may carry names ("Gespräch Familie X"); off → "Belegt". */
+    showTitles: v.optional(v.boolean(), true),
+});
+
+/**
+ * Since 1.16: which rooms are taken today – as an overview of all chosen
+ * rooms or as the door sign of the first one (Plan.md, Nächste Schritte 46).
+ * Only resources of the type room; the privacy rule lives in
+ * `src/rooms/normalize.ts`. Empty until rooms are chosen; the player then
+ * shows a calm placeholder. At most 30 rooms; more makes the block invalid,
+ * and it is skipped.
+ */
+export const RoomsBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('rooms'),
+    rooms: v.pipe(v.array(RoomEntry), v.maxLength(30)),
+    layout: v.optional(v.picklist(['overview', 'door']), 'overview'),
+    /** 1 = today, 2 = today and tomorrow. */
+    days: v.optional(v.picklist([1, 2]), 1),
+    /** Seconds per page of the overview; default PAGE_SECONDS. */
+    pageSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(120))),
+    style: TextStyle,
+});
+
 export const Block = v.variant('type', [
     TextBlock,
     ImageBlock,
@@ -281,6 +317,7 @@ export const Block = v.variant('type', [
     PostsBlock,
     GroupsBlock,
     SlideshowBlock,
+    RoomsBlock,
 ]);
 
 /** The calendars whose appointments a block shows or counts down to. */
@@ -493,6 +530,7 @@ export type Fill = v.InferOutput<typeof Fill>;
 export type TextStyle = v.InferOutput<typeof TextStyle>;
 export type Block = v.InferOutput<typeof Block>;
 export type GroupFields = v.InferOutput<typeof GroupFields>;
+export type RoomEntry = v.InferOutput<typeof RoomEntry>;
 export type BlockType = Block['type'];
 export type SlideDoc = v.InferOutput<typeof SlideDoc>;
 export type PlaylistDoc = v.InferOutput<typeof PlaylistDoc>;

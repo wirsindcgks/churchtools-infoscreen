@@ -5,13 +5,22 @@
  * the WordPress plugin's list (Plan.md, 20) and sets them in one line: date
  * tile, day over time, title with subtitle and place, the category at the end.
  */
+import { computed } from 'vue';
 import type { Appointment } from '../../appointments/normalize';
-import { formatDate, formatShortDate, timeRange } from '../format';
+import { formatDate, formatShortDate, placeLine, timeRange } from '../format';
 import CalendarBadge from './CalendarBadge.vue';
 import DateTile from './DateTile.vue';
 
 /** `measuring`: a row of the hidden copy – not to be found as one that shows. */
-defineProps<{ appointment: Appointment; layout: 'rows' | 'cards'; timeZone: string; measuring?: boolean }>();
+const props = defineProps<{
+    appointment: Appointment;
+    layout: 'rows' | 'cards';
+    timeZone: string;
+    measuring?: boolean;
+    /** The booked rooms beside the place – in the card form only (schema 1.16). */
+    showRooms?: boolean;
+}>();
+const place = computed(() => placeLine(props.appointment, props.showRooms));
 </script>
 
 <template>
@@ -31,9 +40,9 @@ defineProps<{ appointment: Appointment; layout: 'rows' | 'cards'; timeZone: stri
         <span class="card-body">
             <span class="title">{{ appointment.title }}</span>
             <span v-if="appointment.subtitle" class="subtitle">{{ appointment.subtitle }}</span>
-            <span v-if="appointment.location" class="meta-item place">
+            <span v-if="place" class="meta-item place" :data-testid="measuring ? undefined : 'list-place'">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></svg>
-                {{ appointment.location }}
+                {{ place }}
             </span>
         </span>
         <CalendarBadge class="card-badge" :name="appointment.calendarName" :color="appointment.color" />

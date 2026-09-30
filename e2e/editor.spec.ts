@@ -284,7 +284,7 @@ test.describe('with a finger, in both browsers', () => {
         await page.getByTestId('add-block-menu').click();
         const sheet = page.getByTestId('block-sheet');
         await expect(sheet).toBeVisible();
-        await expect(sheet.locator('[data-testid^="sheet-add-"]')).toHaveCount(13);
+        await expect(sheet.locator('[data-testid^="sheet-add-"]')).toHaveCount(14);
         await sheet.getByTestId('sheet-add-qr').click();
         await expect(sheet).toHaveCount(0);
 
@@ -1428,7 +1428,7 @@ test('the blocks stand in German alphabetical order in the "+ Baustein" sheet; t
     const types = await sheet.locator('[data-testid^="sheet-add-"]').evaluateAll((buttons) =>
         buttons.map((b) => b.getAttribute('data-testid')!.replace('sheet-add-', '')),
     );
-    // Beiträge, Bild, Countdown, Fläche, Galerie, Gemeindekopf, Gruppen, Nächster Termin, QR-Code, Terminliste, Text, Uhr, Webseite
+    // Beiträge, Bild, Countdown, Fläche, Galerie, Gemeindekopf, Gruppen, Nächster Termin, QR-Code, Raumbelegung, Terminliste, Text, Uhr, Webseite
     expect(types).toEqual([
         'posts',
         'image',
@@ -1439,6 +1439,7 @@ test('the blocks stand in German alphabetical order in the "+ Baustein" sheet; t
         'groups',
         'next-appointment',
         'qr',
+        'rooms',
         'appointment-list',
         'text',
         'clock',

@@ -201,3 +201,49 @@ describe.skipIf(!hasFixture('api/appointments-series.json'))('recorded series fr
         expect(a?.description).toBe('Mit Kinderprogramm & Kirchencafé. Alle sind willkommen.');
     });
 });
+
+describe('the rooms of an appointment (Plan.md 50)', () => {
+    const rooms = [
+        { id: 1, name: 'Saal' },
+        { id: 3, name: 'Raum 01' },
+    ];
+    const when = ['2026-10-04T09:00:00Z', '2026-10-04T10:30:00Z'] as const;
+    const booking = (resourceId: number, statusId = 2, extra: object = {}) => ({
+        base: { id: resourceId * 10, title: 'Gespräch Familie X', resourceId, statusId, description: 'privat', onBehalfOfPid: 77, ...extra },
+    });
+    const roomsOf = (bookings: unknown[], place: 'top' | 'inside' = 'top') => {
+        const r = response(1, ...when);
+        if (place === 'top') r.bookings = bookings as never;
+        else r.appointment.bookings = bookings as never;
+        return normalizeAppointments([r], BERLIN, rooms)[0]!.rooms;
+    };
+
+    it('names the confirmed rooms once, in the order of the stammdaten', () => {
+        expect(roomsOf([booking(3), booking(1), booking(1)])).toEqual(['Saal', 'Raum 01']);
+    });
+
+    it('leaves out waiting and rejected bookings and resources that are no room', () => {
+        expect(roomsOf([booking(1, 1), booking(3, 3), booking(5)])).toBeUndefined();
+        expect(roomsOf([booking(1, 1), booking(3), booking(5)])).toEqual(['Raum 01']);
+    });
+
+    it('reads the bookings beside the appointment and inside it, also in the shape of /bookings', () => {
+        expect(roomsOf([booking(1)], 'inside')).toEqual(['Saal']);
+        expect(roomsOf([{ booking: booking(3) }])).toEqual(['Raum 01']);
+    });
+
+    it('has no rooms without bookings, without stammdaten or with an empty list', () => {
+        expect(normalizeAppointments([response(1, ...when)], BERLIN, rooms)[0]).not.toHaveProperty('rooms');
+        expect(roomsOf([])).toBeUndefined();
+        const r = response(1, ...when);
+        r.bookings = [booking(1)] as never;
+        expect(normalizeAppointments([r], BERLIN)[0]).not.toHaveProperty('rooms');
+    });
+
+    it('carries nothing else of a booking – no title, no description, no person', () => {
+        const r = response(1, ...when);
+        r.bookings = [booking(1)] as never;
+        const json = JSON.stringify(normalizeAppointments([r], BERLIN, rooms));
+        for (const secret of ['Familie X', 'privat', '77', 'onBehalfOfPid']) expect(json).not.toContain(secret);
+    });
+});

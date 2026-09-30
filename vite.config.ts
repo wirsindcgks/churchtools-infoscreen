@@ -55,13 +55,18 @@ export default defineConfig(({ mode }) => {
     };
 });
 
-/** `0.1.0` for a tagged release, `0.1.0+abc1234` for any other build. */
+/**
+ * `0.1.0` for a tagged release, `0.1.0+abc1234` for any other build, `0.1.0+abc1234-dirty` for one with
+ * uncommitted changes – else a test build made on the tagged commit would call itself the release, and
+ * „Über & Neuigkeiten" could not tell the two apart (2026-09-30).
+ */
 function appVersion(): string {
     const { version } = JSON.parse(fs.readFileSync('package.json', 'utf8')) as { version: string };
     try {
         const git = (...args: string[]) => execFileSync('git', args, { encoding: 'utf8' }).trim();
-        if (git('tag', '--points-at', 'HEAD').split('\n').includes(`v${version}`)) return version;
-        return `${version}+${git('rev-parse', '--short', 'HEAD')}`;
+        const dirty = git('status', '--porcelain', '--untracked-files=no') !== '';
+        if (!dirty && git('tag', '--points-at', 'HEAD').split('\n').includes(`v${version}`)) return version;
+        return `${version}+${git('rev-parse', '--short', 'HEAD')}${dirty ? '-dirty' : ''}`;
     } catch {
         return version;
     }

@@ -3,6 +3,7 @@ import type { Appointment } from '../appointments/normalize';
 import { DEFAULT_THEME, type MediaDoc, type ThemeDoc } from '../model/schema';
 import type { HomepageGroups } from '../groups/normalize';
 import type { Post } from '../posts/normalize';
+import type { RoomBookings } from '../rooms/normalize';
 
 /** What blocks read while rendering; the player provides it, the designer preview will too. */
 export interface StageContext {
@@ -17,6 +18,8 @@ export interface StageContext {
     posts?: Post[];
     /** Groups of the homepages the `groups` blocks need (schema 1.14); missing counts as none. */
     groupHomepages?: HomepageGroups[];
+    /** Bookings of the rooms the `rooms` blocks need (schema 1.16); missing counts as none. */
+    rooms?: RoomBookings[];
     media: Map<string, MediaDoc>;
     /** Image addresses already on the device (original → blob URL); the player fills it, the designer does not. */
     images?: Map<string, string>;

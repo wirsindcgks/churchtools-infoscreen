@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName, instanceBaseUrl } from '../ct/client';
-import { fetchGroupHomepageList, fetchPostGroups, type PostGroup } from '../ct/api';
+import { fetchGroupHomepageList, fetchPostGroups, fetchResourceMasterdata, type PostGroup } from '../ct/api';
 import AppBar from '../designer/AppBar.vue';
 import BlockPalette from '../designer/BlockPalette.vue';
 import EditorStage from '../designer/EditorStage.vue';
@@ -17,7 +17,9 @@ import { usePreview } from '../designer/usePreview';
 import type { HomepageEntry } from '../groups/normalize';
 import type { MediaDoc } from '../model/schema';
 import { MEDIA_PAGE } from '../media/library';
-import { groupNeeds, postNeeds } from '../player/data';
+import { roomsOf, type RoomInfo } from '../rooms/normalize';
+import { needsAppointmentRooms } from '../appointments/rooms';
+import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 
 const route = useRoute();
@@ -46,12 +48,16 @@ const { calendars, problem } = usePreview(
     computed(() => editor.theme),
     computed(() => postNeeds(editor.slides)),
     computed(() => groupNeeds(editor.slides)),
+    computed(() => roomNeeds(editor.slides)),
+    computed(() => needsAppointmentRooms(editor.slides.flatMap((s) => s.blocks))),
 );
 
 /** Groups with posts switched on, for the „Beiträge"-Baustein; loaded once. Unreadable → an empty list, the inspector says so. */
 const groups = ref<PostGroup[]>([]);
 /** Group homepages for the „Gruppen"-Baustein (Plan.md 43); loaded once, unreadable → an empty list. */
 const homepages = ref<HomepageEntry[]>([]);
+/** Rooms for the „Raumbelegung"-Baustein (Plan.md 46); null until loaded, unreadable → none. */
+const rooms = ref<RoomInfo[] | null>(null);
 
 /** The preview of the unsaved draft, as the TV would show it. */
 const previewing = ref(false);
@@ -338,6 +344,11 @@ onMounted(async () => {
     } catch {
         homepages.value = [];
     }
+    try {
+        rooms.value = roomsOf(await fetchResourceMasterdata());
+    } catch {
+        rooms.value = [];
+    }
 });
 
 onBeforeUnmount(() => {
@@ -612,7 +623,7 @@ function onKey(event: KeyboardEvent): void {
                     <span class="sheet-label">{{ sheetLabel }}</span>
                     <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
                 </button>
-                <Inspector id="inspector-panel" :calendars="calendars" :groups="groups" :homepages="homepages" @pick-image="openLibrary" />
+                <Inspector id="inspector-panel" :calendars="calendars" :groups="groups" :homepages="homepages" :rooms="rooms" @pick-image="openLibrary" />
             </div>
         </div>
 

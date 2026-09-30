@@ -16,6 +16,8 @@ export function usePreview(
     theme: Ref<ThemeDoc | null> = ref(null),
     posts: Ref<{ groupIds: number[]; limit: number }[]> = ref([]),
     groupHomepages: Ref<number[]> = ref([]),
+    rooms: Ref<{ resourceIds: number[]; days: number }> = ref({ resourceIds: [], days: 1 }),
+    appointmentRooms: Ref<boolean> = ref(false),
 ) {
     const context = reactive<StageContext>({
         now: new Date(),
@@ -26,6 +28,7 @@ export function usePreview(
         appointments: [],
         posts: [],
         groupHomepages: [],
+        rooms: [],
         media: new Map(),
         // Paged lists report their pages (the inspector names them) but hold page 1 while designing.
         pages: {},
@@ -61,7 +64,9 @@ export function usePreview(
         }
         try {
             const window = appointmentWindow(new Date(), context.timeZone, 90);
-            const list = await churchToolsPlayerData.appointments(ids, window.from, window.to, context.timeZone);
+            const list = await churchToolsPlayerData.appointments(ids, window.from, window.to, context.timeZone, {
+                rooms: appointmentRooms.value,
+            });
             if (mine === request) context.appointments = list;
         } catch (error) {
             problem.value = error instanceof Error ? error.message : String(error);
@@ -102,12 +107,34 @@ export function usePreview(
         }
     }
 
+    let roomsRequest = 0;
+    async function loadRooms(): Promise<void> {
+        const { resourceIds, days } = rooms.value;
+        const mine = ++roomsRequest;
+        if (!resourceIds.length) {
+            context.rooms = [];
+            return;
+        }
+        try {
+            const window = appointmentWindow(new Date(), context.timeZone, days);
+            const list = await churchToolsPlayerData.rooms(resourceIds, window.from, window.to, context.timeZone);
+            if (mine === roomsRequest) context.rooms = list;
+        } catch (error) {
+            problem.value = error instanceof Error ? error.message : String(error);
+        }
+    }
+
     watch(media, (list) => (context.media = new Map(list.map((m) => [m.id, m]))), { immediate: true });
     watch(theme, (value) => (context.theme = value), { immediate: true });
-    watch(() => calendarIds.value.join(), () => void loadAppointments());
+    watch(() => `${calendarIds.value.join()}|${appointmentRooms.value}`, () => void loadAppointments());
     watch(() => JSON.stringify(posts.value), () => void loadPosts());
     watch(() => groupHomepages.value.join(), () => void loadGroupHomepages());
-    void loadBasics().then(loadAppointments);
+    watch(() => JSON.stringify(rooms.value), () => void loadRooms());
+    // Appointments and rooms need the instance time zone.
+    void loadBasics().then(() => {
+        void loadAppointments();
+        void loadRooms();
+    });
     void loadPosts();
     void loadGroupHomepages();
 

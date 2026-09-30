@@ -4,19 +4,23 @@
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
+import { needsAppointmentRooms } from '../appointments/rooms';
 import { startOfZonedDay } from '../appointments/zoned';
 import {
     fetchAppointments,
+    fetchBookings,
     fetchChurchLogoUrl,
     fetchGroupHomepage,
     fetchGroupHomepageList,
     fetchPosts,
+    fetchResourceMasterdata,
     fetchTimeZone,
 } from '../ct/api';
 import { ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
 import { normalizeHomepage, type HomepageGroups } from '../groups/normalize';
 import type { ScreenDoc, SlideDoc } from '../model/schema';
 import { normalizePosts, type Post } from '../posts/normalize';
+import { normalizeBookings, roomsOf, type RoomBookings } from '../rooms/normalize';
 import { getRepository } from '../store/backend';
 import type { ContentRevisions, LoadedScreen } from '../store/screen-repository';
 import { withTimeout } from './timing';
@@ -33,7 +37,18 @@ export interface PlayerData {
     churchLogo(): Promise<string | null>;
     /** `Date` header of a server response, for the clock check. */
     serverDate(): Promise<string | null>;
-    appointments(calendarIds: number[], from: Date, to: Date, timeZone: string): Promise<Appointment[]>;
+    /**
+     * With `rooms`, the booked rooms come along (schema 1.16, Plan.md 50). Names
+     * the stammdaten cannot give – no right, a failure – leave the appointments
+     * without rooms; they never fail the appointments.
+     */
+    appointments(
+        calendarIds: number[],
+        from: Date,
+        to: Date,
+        timeZone: string,
+        options?: { rooms?: boolean },
+    ): Promise<Appointment[]>;
     posts(groupIds: number[], limit: number): Promise<Post[]>;
     /**
      * The groups of the homepages at these parent groups (schema 1.14). A
@@ -41,6 +56,12 @@ export interface PlayerData {
      * groups leave the TV (Plan.md 43, g).
      */
     groupHomepages(parentGroupIds: number[]): Promise<HomepageGroups[]>;
+    /**
+     * The confirmed bookings of these rooms within `[from, to)` (schema 1.16).
+     * A room the caller may not read (403), that the stammdaten do not name or
+     * that is no room drops out; other errors fail.
+     */
+    rooms(resourceIds: number[], from: Date, to: Date, timeZone: string): Promise<RoomBookings[]>;
 }
 
 /** Data from ChurchTools; with `login`, only for that device account. */
@@ -77,11 +98,20 @@ export const churchToolsPlayerData: PlayerData = {
         );
         return response.headers?.date ?? null;
     },
-    async appointments(calendarIds, from, to, timeZone) {
-        const raw = await readableAppointments(calendarIds, (ids) =>
-            withTimeout(fetchAppointments(ids, from, to, timeZone)),
-        );
-        return normalizeAppointments(raw, timeZone);
+    async appointments(calendarIds, from, to, timeZone, options = {}) {
+        const wantsRooms = options.rooms === true;
+        const [raw, rooms] = await Promise.all([
+            readableAppointments(calendarIds, (ids) =>
+                withTimeout(fetchAppointments(ids, from, to, timeZone, { bookings: wantsRooms })),
+            ),
+            wantsRooms
+                ? withTimeout(fetchResourceMasterdata()).then(roomsOf, (error: unknown) => {
+                      console.warn('Räume der Termine konnten nicht geladen werden:', error);
+                      return [];
+                  })
+                : [],
+        ]);
+        return normalizeAppointments(raw, timeZone, rooms);
     },
     async posts(groupIds, limit) {
         const raw = await withTimeout(fetchPosts(groupIds, limit));
@@ -99,6 +129,29 @@ export const churchToolsPlayerData: PlayerData = {
                 return { parentGroupId, groups: normalizeHomepage(raw, baseUrl) };
             }),
         );
+    },
+    async rooms(resourceIds, from, to, timeZone) {
+        if (!resourceIds.length) return [];
+        const known = new Map(roomsOf(await withTimeout(fetchResourceMasterdata())).map((r) => [r.id, r.name]));
+        const parts = await Promise.all(
+            resourceIds
+                .filter((id) => known.has(id))
+                .map(async (resourceId): Promise<RoomBookings | null> => {
+                    try {
+                        const raw = await withTimeout(fetchBookings(resourceId, from, to, timeZone));
+                        // `to` is still inclusive at ChurchTools: cut to what touches the window.
+                        const bookings = normalizeBookings(raw).filter(
+                            (b) => b.resourceId === resourceId && b.start < to && b.end > from,
+                        );
+                        return { resourceId, name: known.get(resourceId)!, bookings };
+                    } catch (error) {
+                        if (httpStatus(error) !== 403) throw error;
+                        console.warn(`Raum ${resourceId}: keine Leserechte (403) – übersprungen.`);
+                        return null;
+                    }
+                }),
+        );
+        return parts.filter((p): p is RoomBookings => p !== null);
     },
 };
 
@@ -130,10 +183,14 @@ export async function readableAppointments<T>(
 }
 
 /** Calendars and the time window a screen needs, over all its blocks and rules. */
-export function appointmentNeeds(screen: ScreenDoc, slides: SlideDoc[]): { calendarIds: number[]; days: number } {
+export function appointmentNeeds(
+    screen: ScreenDoc,
+    slides: SlideDoc[],
+): { calendarIds: number[]; days: number; rooms: boolean } {
     const ids = new Set<number>();
     let days = 1;
-    for (const block of slides.flatMap((s) => s.blocks)) {
+    const blocks = slides.flatMap((s) => s.blocks);
+    for (const block of blocks) {
         if (block.type === 'appointment-list') {
             block.calendarIds.forEach((id) => ids.add(id));
             days = Math.max(days, block.horizonDays);
@@ -146,7 +203,7 @@ export function appointmentNeeds(screen: ScreenDoc, slides: SlideDoc[]): { calen
     for (const rule of screen.schedule) {
         if (rule.kind === 'appointment') rule.calendarIds.forEach((id) => ids.add(id));
     }
-    return { calendarIds: [...ids].sort((a, b) => a - b), days };
+    return { calendarIds: [...ids].sort((a, b) => a - b), days, rooms: needsAppointmentRooms(blocks) };
 }
 
 export function appointmentWindow(now: Date, timeZone: string, days: number): { from: Date; to: Date } {
@@ -186,4 +243,20 @@ export function groupNeeds(slides: SlideDoc[]): number[] {
         if (block.type === 'groups' && block.parentGroupId !== undefined) ids.add(block.parentGroupId);
     }
     return [...ids].sort((a, b) => a - b);
+}
+
+/**
+ * The rooms a screen's `rooms` blocks show, each once and sorted, and the
+ * days ahead they need (1 = today, 2 = today and tomorrow). Blocks without
+ * rooms do not count.
+ */
+export function roomNeeds(slides: SlideDoc[]): { resourceIds: number[]; days: number } {
+    const ids = new Set<number>();
+    let days = 1;
+    for (const block of slides.flatMap((s) => s.blocks)) {
+        if (block.type !== 'rooms' || block.rooms.length === 0) continue;
+        block.rooms.forEach((r) => ids.add(r.resourceId));
+        days = Math.max(days, block.days);
+    }
+    return { resourceIds: [...ids].sort((a, b) => a - b), days };
 }

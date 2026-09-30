@@ -39,6 +39,14 @@ describe('designer operations', () => {
         });
     });
 
+    it('creates a rooms block empty, as an overview of today, at 1400 x 700 (Plan.md 46)', () => {
+        expect(createBlock('next-appointment', stage, [2])).toMatchObject({ showRooms: true });
+        expect(createBlock('appointment-list', stage, [2])).toMatchObject({ showRooms: true });
+        expect(createBlock('countdown', stage, [2])).not.toHaveProperty('showRooms');
+        expect(createBlock('rooms', stage)).toMatchObject({ type: 'rooms', rooms: [], layout: 'overview', days: 1, width: 1400, height: 700 });
+        expect(BLOCK_LABELS.rooms).toBe('Raumbelegung');
+    });
+
     it('starts every block with a text style, and every banner, in the theme\'s font (Plan.md 40)', () => {
         const theme = { ...DEFAULT_THEME, font: 'oswald' };
         const styled = (Object.keys(BLOCK_LABELS) as BlockType[])
@@ -53,6 +61,7 @@ describe('designer operations', () => {
             'countdown',
             'posts',
             'groups',
+            'rooms',
         ]);
         for (const block of styled) expect(block.style.fontFamily).toBe('oswald');
         expect(createBanner(theme).style.fontFamily).toBe('oswald');
@@ -165,6 +174,7 @@ describe('the palette (Plan.md 47)', () => {
             'Gruppen',
             'Nächster Termin',
             'QR-Code',
+            'Raumbelegung',
             'Terminliste',
             'Text',
             'Uhr',

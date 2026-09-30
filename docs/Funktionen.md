@@ -24,8 +24,8 @@ Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe
 
 ![Editor mit einer Terminliste als Karten, darüber Gemeindename und Uhr](bilder/editor.png)
 
-**Dreizehn Bausteine:** Text, Bild, Fläche, Galerie, Uhr, Terminliste, Nächster Termin, Gemeindekopf mit Logo,
-Webseite, QR-Code, Countdown, Beiträge und Gruppen.
+**Vierzehn Bausteine:** Text, Bild, Fläche, Galerie, Uhr, Terminliste, Nächster Termin, Gemeindekopf mit Logo,
+Webseite, QR-Code, Countdown, Beiträge, Gruppen und Raumbelegung.
 
 ## Galerie
 
@@ -45,6 +45,27 @@ einzeln abschalten; ein bis vier Gruppen je Seite, oder als Liste.
 ![Editor mit dem Baustein „Gruppen": zwei Karten nebeneinander, rechts die Schalter für jede Angabe](bilder/gruppen.png)
 
 Gezeigt wird nur, was ChurchTools auf der Gruppen-Homepage ohnehin öffentlich zeigt.
+
+## Raumbelegung
+
+„Was ist heute im Saal los?" – die Buchungen der **Räume** aus ChurchTools, als **Übersicht** aller gewählten Räume oder
+als **Türschild** des ersten Raums: „Jetzt" mit Titel und Ende oder „Frei" (mit „bis 14:00", wenn noch etwas kommt),
+darunter „Danach" mit den nächsten Buchungen. Die laufende Buchung ist hervorgehoben; heute oder heute und morgen;
+ein **Wegweiser** je Raum („1. OG, links"). Gewählt werden nur Räume, nicht Gegenstände und Fahrzeuge. Die Übersicht
+wechselt seitenweise, die Slide bleibt, bis alle Seiten gelaufen sind.
+
+![Editor mit dem Baustein „Raumbelegung": die Übersicht dreier Räume mit ihren Buchungen, rechts die Liste der Räume](bilder/raumbelegung.png)
+
+Nur bestätigte Buchungen erscheinen, und nur Raum, Zeit und Titel – nie Beschreibung, Notizen oder Namen der Buchenden.
+Weil ein Titel Namen enthalten kann („Gespräch Familie X"), lässt er sich **je Raum abschalten**; dann steht dort
+„Belegt". Die Rechte dafür vergibt der Assistent (siehe [Rechte](Rechte.md)).
+
+## Der Raum am Termin
+
+Beim **Nächsten Termin** und bei der **Terminliste als Karten** zeigt der Schalter **„Raum zeigen"** die gebuchten Räume
+neben dem Ort, mit der Pin-Nadel: „Gemeindezentrum · Saal". Nur bestätigte Buchungen von Räumen zählen, und am Termin
+steht nur der Raumname, nie ein Buchungstitel. Das Gerät braucht dafür das Recht, alle Räume zu sehen – „Rechte
+aktualisieren" gibt es ihm (siehe [Rechte](Rechte.md)).
 
 ## Die Vorschau – genau wie am Fernseher
 

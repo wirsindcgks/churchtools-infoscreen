@@ -124,6 +124,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     posts: 'Beiträge',
     groups: 'Gruppen',
     slideshow: 'Galerie',
+    rooms: 'Raumbelegung',
 };
 
 export const BLOCK_ICONS: Record<BlockType, IconName> = {
@@ -140,6 +141,7 @@ export const BLOCK_ICONS: Record<BlockType, IconName> = {
     posts: 'news',
     groups: 'people',
     slideshow: 'slideshow',
+    rooms: 'door',
 };
 
 /** Every block type in German alphabetical order (Plan.md 47): new types find their place by their label. */
@@ -168,6 +170,7 @@ export function createBlock(
         posts: [1400, 700],
         groups: [1400, 700],
         slideshow: [1200, 675],
+        rooms: [1400, 700],
     }[type];
     const width = Math.min(size[0]!, stage.width - 80);
     const height = Math.min(size[1]!, stage.height - 80);
@@ -192,9 +195,9 @@ export function createBlock(
         case 'clock':
             return { ...frame, type, format: 'time', style: textStyle(64, { fontWeight: 600, align: 'right' }) };
         case 'appointment-list':
-            return { ...frame, type, calendarIds: calendars, horizonDays: 14, limit: 6, style: textStyle(44) };
+            return { ...frame, type, calendarIds: calendars, horizonDays: 14, limit: 6, showRooms: true, style: textStyle(44) };
         case 'next-appointment':
-            return { ...frame, type, calendarIds: calendars, showImage: true, style: textStyle(64, { fontWeight: 600 }) };
+            return { ...frame, type, calendarIds: calendars, showImage: true, showRooms: true, style: textStyle(64, { fontWeight: 600 }) };
         case 'church-header':
             return { ...frame, type, showLogo: true, showName: true, style: textStyle(48, { fontWeight: 600 }) };
         case 'web':
@@ -223,6 +226,9 @@ export function createBlock(
                 showAuthor: false,
                 style: textStyle(56),
             };
+        case 'rooms':
+            // No room yet: the inspector offers the ones the designer may see (Plan.md 46).
+            return { ...frame, type, rooms: [], layout: 'overview', days: 1, style: textStyle(44) };
         case 'slideshow':
             return { ...frame, type, mediaIds: [], fit: 'cover', seconds: 6, transition: 'fade' };
         case 'groups':

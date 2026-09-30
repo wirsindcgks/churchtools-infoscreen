@@ -7,6 +7,7 @@
  * the description, and does everything else in the instance time zone.
  */
 import { calendarColor } from '../player/format';
+import { BOOKING_CONFIRMED, type RoomInfo } from '../rooms/normalize';
 import { startOfZonedDay, zonedDateKey, zonedTimeKey } from './zoned';
 
 /** The fields of an appointment this code reads; the response has many more. */
@@ -25,7 +26,16 @@ export interface AppointmentResponse {
             address?: { name?: string | null; addition?: string | null } | null;
         };
         calculated: { startDate: string; endDate: string };
+        /** With `include[]=bookings`; ChurchTools puts it beside `base`, read here in both places. */
+        bookings?: BookingEntry[] | null;
     };
+    bookings?: BookingEntry[] | null;
+}
+
+/** A booking of an appointment, as far as the room is read from it – nothing else is. */
+interface BookingEntry {
+    base?: { resourceId?: number | string | null; statusId?: number | null } | null;
+    booking?: { base?: { resourceId?: number | string | null; statusId?: number | null } | null } | null;
 }
 
 export interface Appointment {
@@ -56,14 +66,25 @@ export interface Appointment {
     location: string | null;
     /** The description as plain text, markup removed. */
     description: string;
+    /**
+     * The names of the rooms booked for it (confirmed bookings of resources of the type room),
+     * by `sortKey`, then name. Only names: no booking title, no description (Plan.md, 50).
+     * Missing where rooms were not asked for or none is booked.
+     */
+    rooms?: string[];
 }
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
-export function normalizeAppointments(responses: AppointmentResponse[], timeZone: string): Appointment[] {
+/** `rooms`: the rooms of the stammdaten (`roomsOf`); without them no appointment gets a room. */
+export function normalizeAppointments(
+    responses: AppointmentResponse[],
+    timeZone: string,
+    rooms: RoomInfo[] = [],
+): Appointment[] {
     const byKey = new Map<string, Appointment>();
     for (const response of responses) {
-        const appointment = normalizeOne(response, timeZone);
+        const appointment = normalizeOne(response, timeZone, rooms);
         if (appointment) byKey.set(appointment.key, appointment);
     }
     return [...byKey.values()].sort(
@@ -74,7 +95,7 @@ export function normalizeAppointments(responses: AppointmentResponse[], timeZone
     );
 }
 
-function normalizeOne(response: AppointmentResponse, timeZone: string): Appointment | null {
+function normalizeOne(response: AppointmentResponse, timeZone: string, rooms: RoomInfo[]): Appointment | null {
     const { base, calculated } = response.appointment;
     const start = parseInstant(calculated.startDate, timeZone);
     const endRaw = parseInstant(calculated.endDate, timeZone);
@@ -85,6 +106,8 @@ function normalizeOne(response: AppointmentResponse, timeZone: string): Appointm
     // lasts until the end of that local day, not until its first minute.
     const endDate = base.allDay ? allDayEndDate(calculated.endDate, endRaw, timeZone) : zonedDateKey(endRaw, timeZone);
     const end = DATE_ONLY.test(calculated.endDate) ? startOfZonedDay(endRaw, timeZone, 1) : endRaw;
+
+    const roomNames = bookedRooms(response.bookings ?? response.appointment.bookings, rooms);
 
     return {
         key: `${base.id}@${start.toISOString()}`,
@@ -105,7 +128,20 @@ function normalizeOne(response: AppointmentResponse, timeZone: string): Appointm
         imageUrl: base.image?.imageUrl ?? null,
         location: [base.address?.name, base.address?.addition].map((part) => part?.trim()).filter(Boolean).join(', ') || null,
         description: plainText(base.description ?? ''),
+        ...(roomNames.length ? { rooms: roomNames } : {}),
     };
+}
+
+/** Names of the rooms with a confirmed booking, each once, in the order of `rooms`. */
+function bookedRooms(bookings: BookingEntry[] | null | undefined, rooms: RoomInfo[]): string[] {
+    if (!bookings?.length || !rooms.length) return [];
+    const booked = new Set<number>();
+    for (const entry of bookings) {
+        const base = entry?.booking?.base ?? entry?.base;
+        if (base?.statusId !== BOOKING_CONFIRMED) continue;
+        booked.add(Number(base.resourceId));
+    }
+    return rooms.filter((r) => booked.has(r.id)).map((r) => r.name);
 }
 
 /** Text without tags and entities, on one line – enough for three lines on a TV. */

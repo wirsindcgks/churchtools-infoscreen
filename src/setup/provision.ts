@@ -52,6 +52,15 @@ export interface PlanInput {
      * without the right gets 403 for the whole request (G35).
      */
     calendarIds: number[];
+    /**
+     * Every room the administrator sees: designers may choose among all of
+     * them (Plan.md 46; G45). Type room only – no items or vehicles.
+     */
+    roomIds: number[];
+    /** The rooms the screens show – what a device must be able to read. */
+    usedRoomIds: number[];
+    /** A block shows the rooms of its appointments (Plan.md 50): the device sees every room then. */
+    appointmentRooms: boolean;
 }
 
 export class MissingAuthError extends Error {
@@ -86,6 +95,10 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
         { authId: moduleRight('delete custom data'), dataId: written, label: 'Daten in Kategorie löschen' },
         { authId: AUTH.wikiView, label: '„Wiki" sehen' },
     ];
+    // "Ressource sehen" per room (205) is enough; "Ressourcen sehen" (201) nobody needs (G45).
+    if (input.roomIds.length) {
+        designer.push({ authId: AUTH.resourceView, dataId: input.roomIds, label: 'Ressource sehen' });
+    }
     if (input.wikiCategoryId !== null) {
         designer.push(
             { authId: AUTH.wikiCategoryView, dataId: [input.wikiCategoryId], label: 'Wiki-Bereich „Infoscreen" sehen' },
@@ -96,6 +109,14 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     const device: GrantSpec[] = [...readModule];
     if (input.calendarIds.length) {
         device.push({ authId: AUTH.calendarView, dataId: input.calendarIds, label: 'Einzelnen Kalender sehen' });
+    }
+    // One entry: every room when appointments show theirs, plus what the rooms blocks use.
+    const deviceRooms =
+        input.appointmentRooms && input.roomIds.length
+            ? [...new Set([...input.roomIds, ...input.usedRoomIds])].sort((a, b) => a - b)
+            : input.usedRoomIds;
+    if (deviceRooms.length) {
+        device.push({ authId: AUTH.resourceView, dataId: deviceRooms, label: 'Ressource sehen' });
     }
 
     const writing = (['create custom data', 'edit custom data', 'delete custom data'] as const).map((auth) => ({
