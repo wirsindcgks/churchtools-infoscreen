@@ -171,6 +171,12 @@ test.describe('sections on a phone', () => {
         await expect(page.getByTestId('schedule-row')).toHaveCount(1);
         // The first slide of what runs now, beside the rules.
         await expect(page.getByTestId('schedule-preview')).toBeVisible();
+        // The picture opens the schedule, like "Bearbeiten"; the playlist's name leads to the editor.
+        await page.getByTestId('schedule-preview').click();
+        await expect(page.getByTestId('schedule-dialog')).toBeVisible();
+        await page.getByTestId('schedule-cancel').click();
+        await expect(page.getByTestId('schedule-dialog')).toBeHidden();
+        await expect(page.getByTestId('schedule-playlist')).toHaveAttribute('href', /\/playlists\//);
 
         await gotoViaMenu(page, 'sidebar-notices');
         await expect(page.getByTestId('notices-heading')).toBeVisible();

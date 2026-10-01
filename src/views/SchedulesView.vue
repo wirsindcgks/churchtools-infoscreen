@@ -4,7 +4,8 @@
  * default playlist, the rules in words, and what runs right now – evaluated
  * with the player's own rule matching. Beside them the first slide of the
  * playlist that runs now, or of the line one clicks. Editing opens the same
- * dialog as the screen's tile.
+ * dialog as the screen's tile – by the button or by the picture, since the page
+ * is about schedules; the playlist's name below the picture leads to its editor.
  */
 import { computed, onMounted, reactive, ref, shallowRef } from 'vue';
 import { currentPerson, displayName } from '../ct/client';
@@ -122,7 +123,7 @@ onMounted(async () => {
     <ModulePage current="schedules">
         <PageHeader icon="calendar" title="Zeitpläne" testid="schedules-heading">
             Welche Playlist auf welchem Screen wann läuft. Passt keine Regel, läuft die Standard-Playlist; passen mehrere,
-            gilt die obere. Ein Klick auf eine Zeile zeigt ihre Playlist.
+            gilt die obere. Ein Klick auf eine Zeile zeigt ihre Playlist, ein Klick auf das Bild öffnet den Zeitplan.
         </PageHeader>
 
         <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
@@ -144,19 +145,30 @@ onMounted(async () => {
                 <ul v-if="shown.length" class="schedules">
                     <li v-for="screen in shown" :key="screen.id" class="schedule" data-testid="schedule-row">
                         <figure class="preview">
-                            <RouterLink
-                                v-if="previewed(screen)"
+                            <button
                                 class="thumb"
-                                :to="{ name: 'editor', params: { id: previewed(screen)!.playlist.id } }"
-                                :aria-label="`${previewed(screen)!.playlist.name} bearbeiten`"
+                                type="button"
+                                :aria-label="`Zeitplan von ${screen.name} bearbeiten`"
+                                :title="`Zeitplan von ${screen.name} bearbeiten`"
                                 data-testid="schedule-preview"
+                                @click="editing = screen.slug"
                             >
-                                <SlideThumb :slide="previewed(screen)!.firstSlide" :stage="previewed(screen)!.playlist.stage" />
-                            </RouterLink>
-                            <SlideThumb v-else :slide="null" :stage="screen.stage" />
+                                <SlideThumb
+                                    :slide="previewed(screen)?.firstSlide ?? null"
+                                    :stage="previewed(screen)?.playlist.stage ?? screen.stage"
+                                />
+                            </button>
                             <figcaption>
                                 {{ previewIndex(screen) === running(screen).ruleIndex ? 'Läuft jetzt' : 'Vorschau' }}:
-                                <strong>{{ previewed(screen)?.playlist.name ?? 'Playlist fehlt' }}</strong>
+                                <RouterLink
+                                    v-if="previewed(screen)"
+                                    :to="{ name: 'editor', params: { id: previewed(screen)!.playlist.id } }"
+                                    :title="`Playlist ${previewed(screen)!.playlist.name} im Editor öffnen`"
+                                    data-testid="schedule-playlist"
+                                >
+                                    {{ previewed(screen)!.playlist.name }}
+                                </RouterLink>
+                                <strong v-else>Playlist fehlt</strong>
                             </figcaption>
                         </figure>
                         <div class="details">
@@ -243,11 +255,15 @@ onMounted(async () => {
     gap: 6px;
     margin: 0;
 }
-.thumb,
-.preview > .slide-thumb {
+.thumb {
     display: block;
+    width: 100%;
+    padding: 0;
     overflow: hidden;
+    border: 0;
     border-radius: var(--d-radius);
+    background: none;
+    cursor: pointer;
 }
 .thumb:focus-visible {
     outline: 2px solid var(--d-accent);
@@ -257,8 +273,10 @@ figcaption {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
-figcaption strong {
+figcaption strong,
+figcaption a {
     color: var(--d-text);
+    font-weight: 700;
 }
 .row-head {
     display: flex;
