@@ -25,11 +25,12 @@ Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe
 ![Editor mit einer Terminliste als Karten, darüber Gemeindename und Uhr](bilder/editor.png)
 
 **Fünfzehn Bausteine:** Text, Bild, Fläche, Galerie, Video, Uhr, Terminliste, Nächster Termin, Gemeindekopf mit Logo,
-Webseite, QR-Code, Countdown, Beiträge, Gruppen und Raumbelegung.
+Webseite, QR-Code, Countdown, Beiträge, Gruppen und Raumbelegung. Beim Baustein „Webseite" geht statt der Adresse auch der
+Einbettungscode (`<iframe …>`), den Karten, Umfragen oder Pinnwände anbieten – übernommen wird nur die Adresse darin.
 
 ## Galerie
 
-Bilder aus der Mediathek nacheinander, mit fünf Übergängen (Überblenden, Schieben, Aufdecken, Heranzoomen oder harter Schnitt). Mehrere Bilder auf einmal wählen, mit ↑/↓
+Bilder aus der Mediathek nacheinander, mit vier Übergängen (Überblenden, Schieben, Aufdecken oder harter Schnitt). Dazu zoomt jedes Bild auf Wunsch langsam hinein, heraus oder abwechselnd (Feld „Bewegung"). Mehrere Bilder auf einmal wählen, mit ↑/↓
 sortieren, Dauer je Bild und Darstellung (Ganz zeigen oder Fläche füllen) einstellen. Die Slide läuft, bis jedes Bild
 einmal zu sehen war; höchstens 30 Bilder. Die Bilder liegen auf dem Gerät, die Galerie läuft auch ohne Netz.
 

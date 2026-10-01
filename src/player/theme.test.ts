@@ -8,7 +8,7 @@ import { provideStageContext, type StageContext } from './context';
 import { qrShape } from './qr';
 import SlideView from './SlideView.vue';
 import { imageBox, listLayout, themeVars } from './theme';
-import { webFrame, withScheme } from './web';
+import { embedAddress, webFrame, withScheme } from './web';
 
 const BERLIN = 'Europe/Berlin';
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
@@ -72,6 +72,20 @@ describe('the website block (Plan.md 28)', () => {
         expect(withScheme('https://gemeinde.de')).toBe('https://gemeinde.de');
         expect(withScheme('http://gemeinde.de')).toBe('http://gemeinde.de'); // still refused by webFrame
         expect(withScheme('')).toBe('');
+    });
+
+    it('reads the address out of an embed code (Plan.md 55 C)', () => {
+        const map = 'https://www.openstreetmap.example/export/embed.html?bbox=1,2,3,4&layer=mapnik';
+        expect(embedAddress(`<iframe src="${map}"></iframe>`)).toBe(map);
+        expect(embedAddress(`<IFRAME width="600" height="400" frameborder="0" allow="fullscreen" src="${map}" style="border:0"></IFRAME>`)).toBe(map);
+        expect(embedAddress(`<iframe src='${map}'></iframe>`)).toBe(map);
+        expect(embedAddress('<iframe src="//www.gemeinde.example/umfrage"></iframe>')).toBe('https://www.gemeinde.example/umfrage');
+        expect(embedAddress('<iframe src="https://a.example/1"></iframe><iframe src="https://b.example/2"></iframe>')).toBe('https://a.example/1');
+        expect(embedAddress('<iframe src="http://a.example/1"></iframe>')).toBe('http://a.example/1'); // still refused by webFrame
+        expect(embedAddress('<iframe width="600"></iframe>')).toBe('');
+        expect(embedAddress('<div><script>alert(1)</script><iframe src="https://a.example/1"></iframe></div>')).toBe('https://a.example/1');
+        expect(embedAddress('gemeinde.de/wochenblatt')).toBe('gemeinde.de/wochenblatt');
+        expect(embedAddress('https://gemeinde.de/?q=<b>')).toBe('https://gemeinde.de/?q=<b>');
     });
 
     it('renders a sandboxed frame, scaled by its zoom, and a placeholder without an address', () => {

@@ -127,6 +127,21 @@ describe('readSlide – slideshow block (schema 1.15, Plan.md 46)', () => {
         expect(issues).toHaveLength(1);
     });
 
+    it('reads the motion (schema 1.19): none by default, an old zoom transition stays valid, an unknown motion is skipped', () => {
+        expect(readSlide({ ...makeSlide(), blocks: [slideshow] }).doc.blocks[0]).toMatchObject({ motion: 'none' });
+        for (const motion of ['none', 'in', 'out', 'alternate']) {
+            const { doc, issues } = readSlide({ ...makeSlide(), blocks: [{ ...slideshow, motion }] });
+            expect(issues).toEqual([]);
+            expect(doc.blocks[0]).toMatchObject({ motion });
+        }
+        const old = readSlide({ ...makeSlide(), blocks: [{ ...slideshow, transition: 'zoom' }] });
+        expect(old.issues).toEqual([]);
+        expect(old.doc.blocks[0]).toMatchObject({ transition: 'zoom', motion: 'none' });
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [{ ...slideshow, motion: 'spin' }] });
+        expect(doc.blocks).toEqual([]);
+        expect(issues).toHaveLength(1);
+    });
+
     it('skips a slideshow with seconds outside 3 to 60', () => {
         for (const seconds of [2, 61]) {
             const { doc, issues } = readSlide({ ...makeSlide(), blocks: [{ ...slideshow, seconds }] });

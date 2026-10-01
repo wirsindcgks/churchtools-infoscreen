@@ -190,7 +190,7 @@ describe('ScreenRepository', () => {
     });
 
     it('counts every image of a slideshow as a use, and loads them (schema 1.15)', async () => {
-        const slideshow = { id: 'dia', type: 'slideshow' as const, x: 0, y: 0, width: 1200, height: 675, mediaIds: ['bild-1', 'bild-2'], fit: 'cover' as const, seconds: 6, transition: 'fade' as const };
+        const slideshow = { id: 'dia', type: 'slideshow' as const, x: 0, y: 0, width: 1200, height: 675, mediaIds: ['bild-1', 'bild-2'], fit: 'cover' as const, seconds: 6, transition: 'fade' as const, motion: 'none' as const };
         for (const [n, id] of ['bild-1', 'bild-2', 'bild-3'].entries()) {
             await repo.saveMedia({
                 schema: { major: 1, minor: 15 },

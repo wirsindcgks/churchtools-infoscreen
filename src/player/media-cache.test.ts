@@ -127,6 +127,7 @@ describe('screenImageUrls', () => {
             mediaIds: ['m1', 'gone'],
             seconds: 6,
             transition: 'fade',
+            motion: 'none',
             fit: 'cover',
         };
         const urls = screenImageUrls([makeSlide({ blocks: [dia] })], media, { width: 1920, height: 1080 });

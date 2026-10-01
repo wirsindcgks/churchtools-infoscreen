@@ -10,7 +10,7 @@ const background = ref<'dark' | 'light' | 'checker'>('dark');
  * A file of the media library, large (Plan.md, Nächste Schritte 53): a picture the way a TV shows it (at most
  * 1920 × 1080, fitted, never cropped) or a video with the browser's controls, on a background to switch – plain
  * pictures look different on white than on a dark slide, and the checkerboard shows what is transparent. Pages
- * through `items` without wrapping around. With `actionLabel` there is a button to choose the file.
+ * through `items` without wrapping around. With `actionLabel` there is a button to choose the file; `notice` is a line under the header (the limit of a gallery).
  */
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
 import { formatDuration } from '../media/video';
@@ -20,7 +20,7 @@ import { videoSrc } from '../player/video';
 import FilterChips from './FilterChips.vue';
 import Icon from './Icon.vue';
 
-const props = defineProps<{ items: MediaItem[]; fileId: number; actionLabel?: string }>();
+const props = defineProps<{ items: MediaItem[]; fileId: number; actionLabel?: string; notice?: string }>();
 const emit = defineEmits<{ 'update:fileId': [number]; action: [MediaItem]; close: [] }>();
 
 const BACKGROUNDS = [
@@ -123,6 +123,7 @@ onBeforeUnmount(() => {
                 </button>
                 <button ref="closeButton" class="d-btn" type="button" data-testid="preview-close" @click="emit('close')">Schließen</button>
             </header>
+            <p v-if="notice" class="banner" role="status" data-testid="preview-notice">{{ notice }}</p>
             <div class="body">
                 <div class="stage" :data-background="background" data-testid="preview-stage">
                     <video
@@ -198,6 +199,12 @@ header {
 }
 .spacer {
     flex: 1;
+}
+.banner {
+    margin: 0;
+    padding: 6px 16px;
+    background: var(--d-accent-pale);
+    font-size: var(--d-size-sm);
 }
 .position {
     min-width: 5.5em;

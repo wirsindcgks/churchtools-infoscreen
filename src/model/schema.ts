@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 18 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 19 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -278,8 +278,13 @@ export const SlideshowBlock = v.object({
     fit: v.optional(v.picklist(['contain', 'cover']), 'cover'),
     /** Seconds per image; default 6. */
     seconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(3), v.maxValue(60)), 6),
-    /** How the next image comes: fade, push from the right, wipe from the left, fade with a slow zoom, or a cut. */
+    /**
+     * How the next image comes: fade, push from the right, wipe from the left, or a cut. `zoom` (a fade with a slow
+     * zoom in) is only read since 1.19, for old data: it plays as a fade with `motion: 'in'`.
+     */
     transition: v.optional(v.picklist(['fade', 'slide', 'wipe', 'zoom', 'none']), 'fade'),
+    /** Since 1.19: a slow zoom of every image while it stands, with any transition; `alternate` zooms every second one out. */
+    motion: v.optional(v.picklist(['none', 'in', 'out', 'alternate']), 'none'),
 });
 
 /** One room of a `rooms` block (schema 1.16). */
