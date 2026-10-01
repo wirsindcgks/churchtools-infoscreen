@@ -491,7 +491,7 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
       *Ursprüngliche Frage:* Gleich unter dem echten Key, der danach bleibt? Oder unter
       `infoscreen-designer-test`, der sich spurlos wieder entfernen lässt, aber für den Betrieb neu eingerichtet
       werden muss?
-- [ ] **P8 · Freigabe** – *Wartet seit dem 2026-09-28 auf die Klärung des Nutzers mit dem Administrator der
+- [ ] **P8 · Freigabe** – **Der Ablauf in Stufen steht seit dem 2026-10-01 in `Plan.md`, Punkt 57.** *Wartet seit dem 2026-09-28 auf die Klärung des Nutzers mit dem Administrator der
       Produktivinstanz.* Nach der Installation dort P3 mit einem typischen Mitgliedskonto wiederholen.
       Die Installation auf der Produktivinstanz wird mit dem Nutzer abgesprochen. Erst
       dann wird die Regel „gegen die Produktivinstanz nur lesen" in `AGENTS.md` für dieses Modul angepasst.
