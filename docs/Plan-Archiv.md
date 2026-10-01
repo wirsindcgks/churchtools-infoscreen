@@ -258,3 +258,23 @@ zweiten Liste unten.
 
 
 **Nicht anfassen, bis ein Produktschritt es braucht:** C4, `attachments`, `ct-events-load`, das Gespräch mit dem Autor von `ct-pass-store`. Die Frage 306/403 aus G21 ist seit G30 beantwortet.
+
+## Funktionsumfang – Später – Stand bis zum 2026-10-01
+
+Die Liste stand im Plan unter „Funktionsumfang" und ist am 2026-10-01 aufgelöst worden: Gebautes ist gestrichen,
+Offenes steht im Plan in „Auf einen Blick" als Idee oder unter „Bewusst geparkt". Hier der Wortlaut.
+
+In ungefährer Reihenfolge des Nutzens:
+
+- **Updates der Extension**: Auf Build 32882 nur als ZIP im Bearbeiten-Dialog der Extension-Verwaltung – ein Feld für eine Download-Adresse oder ein automatisches Update aus GitHub gibt es nicht (Code der Oberfläche gelesen, 2026-09-24). Releases auf GitHub tragen deshalb das ZIP zum Herunterladen und Hochladen.
+- Heartbeat und Statusanzeige je Screen („zuletzt gesehen") – braucht die Kategorie `status` und damit das einzige Schreibrecht des Geräts. **Widerspricht dem Rollenkonzept** (Geräte nur lesend, F) – vor dem Bau entscheiden.
+- **Anregungen aus einer anderen Digital-Signage-Oberfläche** *(vom Nutzer gezeigt am 2026-09-24; ein fremdes, echtes Produkt – Ideen übernehmen, Aussehen, Texte und Namen nicht)*: auf der Kachel ein **Status-Punkt** je Screen (setzt den Heartbeat voraus, siehe oben); die Vorschau **in einem stilisierten Bildschirm** statt als nacktes Bild; ein **Umschalter „läuft gerade"** direkt auf der Kachel, der die Standard-Playlist wechselt, ohne den Editor zu öffnen; **eigene Bereiche** für Playlists, Zeitpläne und die Mediathek in der Navigation, sobald Playlists mehr als eine Liste je Screen sind; Auswertungen als fernes „vielleicht".
+- **Koppeln am Fernseher** *(geprüft und zurückgestellt am 2026-09-25)*: Adresse ohne Token, einmal am Gerät als Geräte-Benutzer anmelden, der Player holt sich seinen eigenen Token (`GET /persons/{eigene id}/logintoken`, für das eigene Konto `200`, G18) und lädt sich danach nur über die Adresse mit Token neu – der Administrator gäbe das Geräte-Passwort nie im Designer ein. **Zurückgestellt, weil:** die Startadresse im Kiosk ohne Token bleibt; ist das Gerät länger als etwa einen Tag aus, bindet ChurchTools unser Skript nicht mehr ein (G33) und jemand muss sich am Gerät neu anmelden. Die Raspberries der Gemeinde haben **weder Tastatur noch Maus**, und der im Foyer wird zum Umstellen auf dem Rollwagen abgeschaltet. Der Generator (Weg B, D) trägt alle Fälle mit einem Weg.
+- Export/Import eines Screens als JSON, Vorlagen, Duplizieren.
+- Weitere Datenblöcke: ~~Beiträge, Gruppen, QR-Code, Laufschrift~~ (gebaut); Raumbelegung, Dienste – **Kandidaten mit Bewertung in Punkt 46**.
+- Wechsel der Auflösung eines bestehenden Screens als Umrechnung mit Vorschau.
+- Löschen in der Mediathek mit Referenzzählung (bis dahin: löschen in ChurchTools, der Player zeigt einen Platzhalter).
+- Warnung bei schlechter Lesbarkeit aus fünf Metern.
+- Service Worker für den Neustart ohne Netz (G10).
+- Web-Code-Block, Videos – **Kandidaten mit Bewertung in Punkt 46** (lokal und aus ChurchTools zuerst).
+- Extension Store (G17). Das Rollenkonzept steht seit dem 2026-09-24 (F).
