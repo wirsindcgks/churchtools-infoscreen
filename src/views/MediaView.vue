@@ -11,6 +11,7 @@ import FilterChips from '../designer/FilterChips.vue';
 import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
 import MediaGrid from '../designer/MediaGrid.vue';
+import MediaPreview from '../designer/MediaPreview.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import SearchField from '../designer/SearchField.vue';
@@ -22,6 +23,9 @@ const { items, loading, busy, problem, dragOver, dropZone, upload, remove, accep
 const query = ref('');
 const show = ref<MediaShow>('all');
 const shown = computed(() => filterMedia(items.value, query.value, show.value));
+
+/** The file open in the preview; it pages through `shown`, so search and filter apply. */
+const previewId = ref<number | null>(null);
 
 const SHOW = [
     { key: 'all', label: 'Alle', title: 'Alle Bilder und Videos' },
@@ -90,12 +94,14 @@ async function picked(): Promise<void> {
             <p v-if="busy" class="d-banner">{{ busy }}</p>
             <p v-if="problem" class="d-banner d-banner--error" role="alert">{{ problem }}</p>
             <p v-if="loading" class="empty">Lade Mediathek …</p>
-            <MediaGrid v-else-if="shown.length" :items="shown" @remove="remove" />
+            <MediaGrid v-else-if="shown.length" :items="shown" @remove="remove" @preview="previewId = $event.fileId" />
             <p v-else-if="!items.length" class="empty">
                 Noch keine Bilder oder Videos. Hochladen oben rechts oder einfach hierher ziehen.
             </p>
             <p v-else class="empty">Nichts passt zu Suche und Filter.</p>
         </GroupCard>
+
+        <MediaPreview v-if="previewId !== null" v-model:file-id="previewId" :items="shown" @close="previewId = null" />
     </ModulePage>
 </template>
 

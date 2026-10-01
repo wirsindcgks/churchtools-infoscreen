@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createScreenBundle } from '../designer/ops';
 import { MemoryKv } from '../store/memory-kv';
 import { ScreenRepository } from '../store/screen-repository';
-import { filterMedia, MediaInUseError, MediaLibrary, usageLines, VIDEO_MAX_BYTES, VIDEO_TYPES, type MediaBackend, type MediaItem } from './library';
+import { filterMedia, MediaInUseError, MediaLibrary, neighbours, usageLines, VIDEO_MAX_BYTES, VIDEO_TYPES, type MediaBackend, type MediaItem } from './library';
 import type { WikiFile, WikiPage } from './wiki';
 
 class FakeWiki implements MediaBackend {
@@ -224,5 +224,28 @@ describe('MediaLibrary', () => {
             await library.remove(item!, true);
             expect(wiki.removed).toEqual([item!.fileId]);
         });
+    });
+});
+
+describe('neighbours', () => {
+    const file = (fileId: number): MediaItem => ({ fileId, name: `f${fileId}`, imageUrl: '', kind: 'image', page: 'mediathek', uses: [] });
+    const list = [file(1), file(2), file(3)];
+
+    it('knows the previous and the next file in the middle', () => {
+        expect(neighbours(list, 2)).toEqual({ index: 1, count: 3, prev: list[0], next: list[2] });
+    });
+
+    it('has no previous file at the start and no next file at the end, and does not wrap around', () => {
+        expect(neighbours(list, 1)).toEqual({ index: 0, count: 3, prev: undefined, next: list[1] });
+        expect(neighbours(list, 3)).toEqual({ index: 2, count: 3, prev: list[1], next: undefined });
+    });
+
+    it('has neither for a single file', () => {
+        expect(neighbours([file(5)], 5)).toEqual({ index: 0, count: 1, prev: undefined, next: undefined });
+    });
+
+    it('is null for a file that is not among them', () => {
+        expect(neighbours(list, 99)).toBeNull();
+        expect(neighbours([], 1)).toBeNull();
     });
 });

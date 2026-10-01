@@ -61,6 +61,19 @@ export function filterMedia(items: readonly MediaItem[], query: string, show: Me
     );
 }
 
+/**
+ * Where a file stands among the files shown, and its neighbours for paging in the preview – no wrap-around at
+ * the ends. `null` for a file that is not among them.
+ */
+export function neighbours(
+    items: readonly MediaItem[],
+    fileId: number,
+): { index: number; count: number; prev?: MediaItem; next?: MediaItem } | null {
+    const index = items.findIndex((i) => i.fileId === fileId);
+    if (index < 0) return null;
+    return { index, count: items.length, prev: items[index - 1], next: items[index + 1] };
+}
+
 /** The wiki calls, replaceable in tests. */
 export interface MediaBackend {
     category(): Promise<WikiCategory>;

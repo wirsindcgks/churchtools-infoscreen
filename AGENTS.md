@@ -18,6 +18,12 @@ Einrichten, Starten, Beenden und Testen beschreibt [`LocalTests.md`](LocalTests.
 Ein Befund gehört nach `Befunde.md`, eine Festlegung nach `Plan.md`, ein Handgriff nach `Preparation.md`.
 Wer eine Messung in den Plan schreibt, bläht ihn auf – genau das ist am 2026-09-23 korrigiert worden.
 
+**Was offen ist, steht vollständig in `Plan.md`, „Auf einen Blick"** – mehr muss dafür niemand lesen. Erledigte
+Punkte liegen wörtlich und mit ihrer Nummer in [`docs/Plan-Archiv.md`](docs/Plan-Archiv.md) (seit dem 2026-10-01);
+dorthin zeigen Verweise im Code wie „Plan.md 47". Das Archiv wird nur gezielt nach einer Nummer durchsucht, nie
+ganz geladen. Mit jedem Release wandert der veröffentlichte Punkt aus dem Plan ins Archiv; was an ihm offen bleibt,
+kommt als eigene Zeile in „Auf einen Blick".
+
 ## Fünf Regeln, die Geld gekostet haben
 
 1. **Der Pitch ist der Taktgeber, nicht das gerade Messbare.** Ist etwas durch den Hersteller blockiert, nicht in

@@ -5,12 +5,14 @@
  * library page. It shows what the block needs: pictures, or with `kind`
  * "video" (the video block, Plan.md 52) only videos. A single upload is chosen right away. With `multiple` (the
  * slideshow, Plan.md 46) a click marks pictures in order, an upload is marked
- * instead of chosen, and "Hinzufügen" hands over all of them at once.
+ * instead of chosen, and "Hinzufügen" hands over all of them at once. The eye on a tile opens the preview
+ * (Plan.md 53), which can choose or mark the file too.
  */
 import { computed, ref } from 'vue';
 import type { MediaItem } from '../media/library';
 import type { MediaDoc } from '../model/schema';
 import MediaGrid from './MediaGrid.vue';
+import MediaPreview from './MediaPreview.vue';
 import { useMediaLibrary } from './useMediaLibrary';
 
 const props = withDefaults(
@@ -46,6 +48,12 @@ const { items, loading, busy, problem, dragOver, dropZone, upload, adopt, remove
     props.kind,
 );
 const shown = computed(() => items.value.filter((i) => i.kind === props.kind));
+/** The file open in the preview; it pages through `shown`. */
+const previewId = ref<number | null>(null);
+const previewAction = computed(() => {
+    if (!props.multiple) return 'Verwenden';
+    return previewId.value !== null && marked.value.includes(previewId.value) ? 'Markierung aufheben' : 'Markieren';
+});
 const noun = computed(() => (props.kind === 'video' ? 'Videos' : 'Bilder'));
 
 async function choose(item: MediaItem): Promise<void> {
@@ -121,10 +129,19 @@ async function picked(): Promise<void> {
                     :marked="marked"
                     @choose="choose"
                     @remove="remove"
+                    @preview="previewId = $event.fileId"
                 />
                 <p v-else class="empty">Noch keine {{ noun }}. Hochladen per Knopf oder einfach hierher ziehen.</p>
             </div>
         </div>
+        <MediaPreview
+            v-if="previewId !== null"
+            v-model:file-id="previewId"
+            :items="shown"
+            :action-label="previewAction"
+            @action="choose"
+            @close="previewId = null"
+        />
     </div>
 </template>
 

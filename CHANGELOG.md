@@ -4,6 +4,18 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.4.1] – 2026-10-01
+
+### Neu
+
+- **Vorschau in der Mediathek:** Ein Klick auf eine Kachel öffnet das Bild oder Video groß – so, wie ein Fernseher
+  es zeigt. Der Hintergrund lässt sich zwischen „Dunkel", „Hell" und „Karo" umschalten: Freigestellte Grafiken
+  wirken auf Weiß anders als auf einer dunklen Slide, und das Karo zeigt, was durchsichtig ist. Daneben stehen Name,
+  Maße, Länge, Datum und alle Stellen, an denen die Datei läuft. Mit den Pfeilen oder den Pfeiltasten blättert man
+  durch die Dateien, die gerade zu sehen sind.
+- **Vorschau beim Auswählen:** Im Editor öffnet das Auge auf einer Kachel der Mediathek die Vorschau; dort steht
+  auch „Verwenden" bzw. bei der Galerie „Markieren".
+
 ## [0.4.0] – 2026-10-01
 
 ### Neu
@@ -477,6 +489,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.4.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.4.1
 [0.4.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.4.0
 [0.3.9]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.9
 [0.3.8]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.8
