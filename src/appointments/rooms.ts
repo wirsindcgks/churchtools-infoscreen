@@ -17,3 +17,26 @@ export function showsAppointmentRooms(block: Block): boolean {
 export function needsAppointmentRooms(blocks: readonly Block[]): boolean {
     return blocks.some(showsAppointmentRooms);
 }
+
+/**
+ * Whether the rooms show at an appointment of this calendar: the block asks for them and the
+ * calendar is not one it leaves out (schema 1.17). Loading and device rights follow `showRooms` alone.
+ */
+export function showsRoomsAt(
+    block: { showRooms?: boolean; roomsOffCalendarIds?: readonly number[] },
+    calendarId: number,
+): boolean {
+    return block.showRooms === true && !(block.roomsOffCalendarIds ?? []).includes(calendarId);
+}
+
+/** The ids left out after a checkbox "Räume zeigen für": `shown` takes the calendar out of the list or puts it back. */
+export function toggleRoomsOff(off: readonly number[] | undefined, calendarId: number, shown: boolean): number[] {
+    const rest = (off ?? []).filter((id) => id !== calendarId);
+    return shown ? rest : [...rest, calendarId].sort((a, b) => a - b);
+}
+
+/** The ids left out once the block's calendars changed: only chosen calendars stay; undefined when none is left. */
+export function pruneRoomsOff(off: readonly number[] | undefined, calendarIds: readonly number[]): number[] | undefined {
+    const kept = (off ?? []).filter((id) => calendarIds.includes(id));
+    return kept.length ? kept : undefined;
+}

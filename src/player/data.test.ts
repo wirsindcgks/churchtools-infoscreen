@@ -2,7 +2,22 @@ import { describe, expect, it, vi } from 'vitest';
 import { makeScreen, makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
 import type { Post } from '../posts/normalize';
-import { appointmentNeeds, groupNeeds, mergePosts, postNeeds, readableAppointments } from './data';
+import * as api from '../ct/api';
+import { appointmentNeeds, churchToolsPlayerData, groupNeeds, mergePosts, postNeeds, readableAppointments } from './data';
+
+vi.mock('../ct/api', () => ({
+    fetchAppointments: vi.fn(),
+    fetchEvents: vi.fn(),
+    fetchServices: vi.fn(),
+    fetchServiceGroups: vi.fn(),
+    fetchResourceMasterdata: vi.fn(),
+    fetchBookings: vi.fn(),
+    fetchChurchLogoUrl: vi.fn(),
+    fetchGroupHomepage: vi.fn(),
+    fetchGroupHomepageList: vi.fn(),
+    fetchPosts: vi.fn(),
+    fetchTimeZone: vi.fn(),
+}));
 
 const forbidden = () => Object.assign(new Error('403'), { response: { status: 403 } });
 
@@ -155,5 +170,77 @@ describe('appointmentNeeds – rooms (Plan.md 50)', () => {
     it('never wants rooms for a countdown', () => {
         const countdown: Block = { id: 'c', type: 'countdown', ...base, showTitle: true, runningText: 'Läuft', showRooms: true } as Block;
         expect(rooms(countdown)).toBe(false);
+    });
+});
+
+describe('appointmentNeeds – services (Plan.md 51)', () => {
+    const base = { x: 0, y: 0, width: 1400, height: 700, calendarIds: [2], style };
+    const next = (overrides: Partial<Extract<Block, { type: 'next-appointment' }>> = {}): Block => ({ id: 'n', type: 'next-appointment', ...base, showImage: true, ...overrides });
+    const list = (overrides: Partial<Extract<Block, { type: 'appointment-list' }>> = {}): Block => ({
+        id: 'l',
+        type: 'appointment-list',
+        ...base,
+        horizonDays: 14,
+        limit: 5,
+        ...overrides,
+    });
+    const services = (...blocks: Block[]) => appointmentNeeds(makeScreen(), [makeSlide({ blocks })]).services;
+
+    it('lists the services of all blocks, sorted and each once', () => {
+        expect(services(next(), list())).toEqual([]);
+        expect(services(next({ services: [7, 3] }), list({ id: 'l2', layout: 'cards', services: [3, 5] }))).toEqual([3, 5, 7]);
+    });
+
+    it('counts a list only where it shows cards – and the next appointment in both layouts', () => {
+        expect(services(list({ layout: 'rows', services: [3] }))).toEqual([]);
+        expect(services(list({ services: [3] }))).toEqual([3]);
+        expect(services(next({ layout: 'classic', services: [4] }))).toEqual([4]);
+        expect(services(next({ layout: 'card', services: [4] }))).toEqual([4]);
+    });
+
+    it('never counts a countdown', () => {
+        const countdown = { id: 'c', type: 'countdown', ...base, showTitle: true, runningText: 'Läuft', services: [3] } as Block;
+        expect(services(countdown)).toEqual([]);
+    });
+});
+
+describe('churchToolsPlayerData.appointments – services (Plan.md 51)', () => {
+    const appointment = {
+        appointment: {
+            base: { id: 9, title: 'Gottesdienst', allDay: false, calendar: { id: 2, name: 'Gottesdienst', color: 'black' } },
+            calculated: { startDate: '2026-10-04T08:00:00Z', endDate: '2026-10-04T09:30:00Z' },
+        },
+    };
+    const event = {
+        appointmentId: 9,
+        startDate: '2026-10-04T08:00:00Z',
+        eventServices: [{ serviceId: 1, person: null, name: 'Anna Beispiel', isAccepted: true }],
+    };
+    const from = new Date('2026-10-01T00:00:00Z');
+    const to = new Date('2026-10-30T00:00:00Z');
+
+    it('keeps the appointments when the events cannot be loaded', async () => {
+        vi.mocked(api.fetchAppointments).mockResolvedValue([appointment]);
+        vi.mocked(api.fetchEvents).mockRejectedValue(forbidden());
+        vi.mocked(api.fetchServices).mockResolvedValue([{ id: 1, name: 'Predigt', serviceGroupId: 1 }]);
+        vi.mocked(api.fetchServiceGroups).mockResolvedValue([{ id: 1, viewAll: true }]);
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+        const list = await churchToolsPlayerData.appointments([2], from, to, 'Europe/Berlin', { services: [1] });
+        expect(list).toHaveLength(1);
+        expect(list[0]).not.toHaveProperty('services');
+        expect(warn).toHaveBeenCalled();
+        warn.mockRestore();
+    });
+
+    it('adds the services when everything loads – and asks for none when none is chosen', async () => {
+        vi.mocked(api.fetchAppointments).mockResolvedValue([appointment]);
+        vi.mocked(api.fetchEvents).mockResolvedValue([event]);
+        vi.mocked(api.fetchServices).mockResolvedValue([{ id: 1, name: 'Predigt', serviceGroupId: 1 }]);
+        vi.mocked(api.fetchServiceGroups).mockResolvedValue([{ id: 1, viewAll: true }]);
+        const [a] = await churchToolsPlayerData.appointments([2], from, to, 'Europe/Berlin', { services: [1] });
+        expect(a?.services).toEqual([{ serviceId: 1, name: 'Predigt', people: ['Anna Beispiel'] }]);
+        vi.mocked(api.fetchEvents).mockClear();
+        await churchToolsPlayerData.appointments([2], from, to, 'Europe/Berlin', { services: [] });
+        expect(api.fetchEvents).not.toHaveBeenCalled();
     });
 });

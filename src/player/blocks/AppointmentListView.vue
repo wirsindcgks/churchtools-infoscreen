@@ -9,6 +9,7 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { selectUpcoming } from '../../appointments/normalize';
+import { showsRoomsAt } from '../../appointments/rooms';
 import type { Block } from '../../model/schema';
 import { themeOf, useStageContext } from '../context';
 import { textStyle } from '../format';
@@ -103,11 +104,11 @@ onBeforeUnmount(() => clearInterval(timer));
     <div class="paged" :style="textStyle(block.style)">
         <!-- Every row once, invisible, in the same markup and width as the shown ones: for pages and whole rows. -->
         <ul ref="measureList" class="list measure" aria-hidden="true">
-            <AppointmentRow v-for="a in items" :key="a.key" :appointment="a" :layout="layout" :time-zone="context.timeZone" :show-rooms="block.showRooms" measuring />
+            <AppointmentRow v-for="a in items" :key="a.key" :appointment="a" :layout="layout" :time-zone="context.timeZone" :show-rooms="showsRoomsAt(block, a.calendarId)" :services="block.services" measuring />
         </ul>
         <Transition name="page" mode="out-in">
             <ul :key="page" class="list" :class="{ 'list--cards': layout === 'cards' }">
-                <AppointmentRow v-for="a in shown" :key="a.key" :appointment="a" :layout="layout" :time-zone="context.timeZone" :show-rooms="block.showRooms" />
+                <AppointmentRow v-for="a in shown" :key="a.key" :appointment="a" :layout="layout" :time-zone="context.timeZone" :show-rooms="showsRoomsAt(block, a.calendarId)" :services="block.services" />
                 <!-- An empty week is a normal state and must look like one, not like a failure. -->
                 <li v-if="items.length === 0" class="empty">Keine Termine in den nächsten {{ block.horizonDays }} Tagen.</li>
             </ul>

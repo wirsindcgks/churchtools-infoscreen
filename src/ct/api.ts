@@ -1,5 +1,6 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import type { AppointmentResponse } from '../appointments/normalize';
+import type { EventResponse, ServiceGroupResponse, ServiceResponse } from '../appointments/services';
 import { zonedDateKey } from '../appointments/zoned';
 import { isValidHomepageHash, normalizeHomepageList, type HomepageEntry } from '../groups/normalize';
 import type { PostResponse } from '../posts/normalize';
@@ -38,6 +39,29 @@ export function fetchAppointments(
         // The bookings of the appointments, for their rooms; without the right the list is empty, not a 403.
         ...(options.bookings ? { include: ['bookings'] } : {}),
     });
+}
+
+/**
+ * The events between two local dates with their services (`eventServices`). One request:
+ * how `/events` pages is not measured (G46) – a window longer than the page would lose events.
+ * Without the right to see the events of a calendar the answer is a 403 or an empty list (G46).
+ */
+export function fetchEvents(from: Date, to: Date, timeZone: string): Promise<EventResponse[]> {
+    return churchtoolsClient.get<EventResponse[]>('/events', {
+        from: zonedDateKey(from, timeZone),
+        to: zonedDateKey(to, timeZone),
+        include: 'eventServices',
+    });
+}
+
+/** The services of ChurchTools, unprotected stammdaten (G46). */
+export function fetchServices(): Promise<ServiceResponse[]> {
+    return churchtoolsClient.get<ServiceResponse[]>('/services');
+}
+
+/** The service groups, with `viewAll` – "Ohne Berechtigung einsehbar" (G46). */
+export function fetchServiceGroups(): Promise<ServiceGroupResponse[]> {
+    return churchtoolsClient.get<ServiceGroupResponse[]>('/servicegroups');
 }
 
 /**

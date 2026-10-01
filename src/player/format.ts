@@ -31,6 +31,9 @@ export function formatTime(instant: Date, timeZone: string): string {
     return new Intl.DateTimeFormat('de-DE', { timeZone, hour: '2-digit', minute: '2-digit' }).format(instant);
 }
 
+/** The widest date `formatDate` makes in German: a Thursday in September (30th, the longest weekday and month). */
+export const WIDEST_DATE = new Date('2027-09-30T12:00:00Z');
+
 export function formatDate(instant: Date, timeZone: string): string {
     return new Intl.DateTimeFormat('de-DE', { timeZone, weekday: 'long', day: 'numeric', month: 'long' }).format(
         instant,
@@ -129,4 +132,21 @@ export function textOn(color: string | null | undefined): string {
 export function placeLine(appointment: { location: string | null; rooms?: string[] }, showRooms?: boolean): string | null {
     const rooms = showRooms ? (appointment.rooms ?? []).join(', ') : '';
     return [appointment.location, rooms].filter(Boolean).join(' · ') || null;
+}
+
+/**
+ * The service line of an appointment: "Predigt: Anna Beispiel · Moderation: Ben Muster, Cora Test".
+ * Only the services this block chose, in the order of the appointment's own list; null when there
+ * is nothing to say (Plan.md, Nächste Schritte 51).
+ */
+export function servicesLine(
+    appointment: { services?: { serviceId: number; name: string; people: string[] }[] },
+    serviceIds: readonly number[] | undefined,
+): string | null {
+    if (!serviceIds?.length) return null;
+    const chosen = new Set(serviceIds);
+    const parts = (appointment.services ?? [])
+        .filter((s) => chosen.has(s.serviceId) && s.people.length)
+        .map((s) => `${s.name}: ${s.people.join(', ')}`);
+    return parts.join(' · ') || null;
 }

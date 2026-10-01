@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { calendarColor, formatDate, formatShortDate, formatTime, sizedImageUrl, textOn } from './format';
+import { calendarColor, formatDate, formatShortDate, formatTime, servicesLine, sizedImageUrl, WIDEST_DATE, textOn } from './format';
 
 describe('sizedImageUrl', () => {
     it('always sets both dimensions, because w alone yields a 150 px high image (G14)', () => {
@@ -67,5 +67,45 @@ describe('textOn', () => {
     it('takes white without a usable colour', () => {
         expect(textOn(null)).toBe('#ffffff');
         expect(textOn('nonsense')).toBe('#ffffff');
+    });
+});
+
+describe('servicesLine (Plan.md 51)', () => {
+    const appointment = {
+        services: [
+            { serviceId: 1, name: 'Predigt', people: ['Anna Beispiel'] },
+            { serviceId: 2, name: 'Moderation', people: ['Ben Muster', 'Cora Test'] },
+            { serviceId: 3, name: 'Ton', people: ['Dirk Probe'] },
+        ],
+    };
+
+    it('joins the services with " · " and the people with ", "', () => {
+        expect(servicesLine(appointment, [1, 2])).toBe('Predigt: Anna Beispiel · Moderation: Ben Muster, Cora Test');
+    });
+
+    it('shows only the services the block chose, in the order of the appointment', () => {
+        expect(servicesLine(appointment, [3, 2])).toBe('Moderation: Ben Muster, Cora Test · Ton: Dirk Probe');
+    });
+
+    it('is null when there is nothing to show', () => {
+        expect(servicesLine(appointment, [])).toBeNull();
+        expect(servicesLine(appointment, undefined)).toBeNull();
+        expect(servicesLine(appointment, [9])).toBeNull();
+        expect(servicesLine({}, [1])).toBeNull();
+    });
+});
+
+describe('WIDEST_DATE', () => {
+    it('is no shorter than any day of a year, in text length (the date column of the cards)', () => {
+        const widest = formatDate(WIDEST_DATE, 'Europe/Berlin');
+        expect(widest).toBe('Donnerstag, 30. September');
+        for (let day = 0; day < 366; day++) {
+            const instant = new Date(Date.UTC(2028, 0, 1 + day, 12));
+            expect(formatDate(instant, 'Europe/Berlin').length).toBeLessThanOrEqual(widest.length);
+        }
+        for (let day = 0; day < 365; day++) {
+            const instant = new Date(Date.UTC(2027, 0, 1 + day, 12));
+            expect(formatDate(instant, 'Europe/Berlin').length).toBeLessThanOrEqual(widest.length);
+        }
     });
 });

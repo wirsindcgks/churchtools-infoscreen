@@ -7,7 +7,7 @@
  */
 import { computed } from 'vue';
 import type { Appointment } from '../../appointments/normalize';
-import { formatDate, formatShortDate, placeLine, timeRange } from '../format';
+import { formatDate, formatShortDate, WIDEST_DATE, placeLine, servicesLine, timeRange } from '../format';
 import CalendarBadge from './CalendarBadge.vue';
 import DateTile from './DateTile.vue';
 
@@ -19,8 +19,12 @@ const props = defineProps<{
     measuring?: boolean;
     /** The booked rooms beside the place – in the card form only (schema 1.16). */
     showRooms?: boolean;
+    /** The services this block shows under the place – in the card form only (schema 1.17). */
+    services?: number[];
 }>();
 const place = computed(() => placeLine(props.appointment, props.showRooms));
+const widestDate = computed(() => formatDate(WIDEST_DATE, props.timeZone));
+const people = computed(() => servicesLine(props.appointment, props.services));
 </script>
 
 <template>
@@ -28,6 +32,11 @@ const place = computed(() => placeLine(props.appointment, props.showRooms));
     <li v-if="layout === 'cards'" class="row card" :data-testid="measuring ? undefined : 'list-card'">
         <DateTile :start="appointment.start" :time-zone="timeZone" :color="appointment.color" />
         <span class="card-when">
+            <!-- The widest date there is, unseen: the column is as wide on every row and every page. -->
+            <span class="meta-item card-measure" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><rect x="4" y="5.5" width="16" height="15" rx="2" /><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" /></svg>
+                {{ widestDate }}
+            </span>
             <span class="meta-item">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="15" rx="2" /><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4" /></svg>
                 {{ formatDate(appointment.start, timeZone) }}
@@ -36,13 +45,19 @@ const place = computed(() => placeLine(props.appointment, props.showRooms));
                 <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
                 {{ timeRange(appointment) }}
             </span>
+            <span v-if="place" class="card-place-box">
+                <span class="meta-item card-place" :data-testid="measuring ? undefined : 'list-place'">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></svg>
+                    <span class="meta-text">{{ place }}</span>
+                </span>
+            </span>
         </span>
         <span class="card-body">
             <span class="title">{{ appointment.title }}</span>
             <span v-if="appointment.subtitle" class="subtitle">{{ appointment.subtitle }}</span>
-            <span v-if="place" class="meta-item place" :data-testid="measuring ? undefined : 'list-place'">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></svg>
-                {{ place }}
+            <span v-if="people" class="meta-item place" :data-testid="measuring ? undefined : 'list-services'">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg>
+                <span class="meta-text">{{ people }}</span>
             </span>
         </span>
         <CalendarBadge class="card-badge" :name="appointment.calendarName" :color="appointment.color" />
@@ -77,7 +92,7 @@ const place = computed(() => placeLine(props.appointment, props.showRooms));
  * same place –, the title taking the rest, the category at the right end.
  */
 .card {
-    grid-template-columns: auto 9em minmax(0, 1fr) auto;
+    grid-template-columns: auto max-content minmax(0, 1fr) auto;
     align-items: center;
     gap: 0.9em;
     padding: 0.55em 0;
@@ -87,7 +102,26 @@ const place = computed(() => placeLine(props.appointment, props.showRooms));
     gap: 0.15em;
     min-width: 0;
     font-size: 0.68em;
-    font-weight: 600;
+    font-weight: 400;
+}
+.card-measure {
+    height: 0;
+    visibility: hidden;
+}
+/*
+ * Place and room under day and time: they never widen the column, they end with an ellipsis. The box has no
+ * width of its own – the line lies in it, taking the width the date gives (`width: 0; min-width: 100%` does not
+ * resolve in a grid).
+ */
+.card-place-box {
+    position: relative;
+    height: 1.3em;
+}
+.card-place {
+    position: absolute;
+    inset: 0;
+    font-weight: 400;
+    opacity: 0.8;
 }
 .card-body {
     display: grid;
@@ -118,6 +152,12 @@ const place = computed(() => placeLine(props.appointment, props.showRooms));
     display: flex;
     align-items: center;
     gap: 0.45em;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.meta-text {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;

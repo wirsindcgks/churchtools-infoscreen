@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { selectUpcoming } from '../../appointments/normalize';
+import { showsRoomsAt } from '../../appointments/rooms';
 import type { Block } from '../../model/schema';
 import { themeOf, useStageContext } from '../context';
-import { formatDate, placeLine, sizedImageUrl, textStyle, timeRange } from '../format';
+import { formatDate, placeLine, servicesLine, sizedImageUrl, textStyle, timeRange } from '../format';
 import { imageBox, nextLayout } from '../theme';
 import CalendarBadge from './CalendarBadge.vue';
 import DateTile from './DateTile.vue';
@@ -23,10 +24,13 @@ const next = computed(
 );
 
 /** Place and, if asked for, the booked rooms: "Gemeindezentrum · Saal". */
-const place = computed(() => (next.value ? placeLine(next.value, props.block.showRooms) : null));
+const place = computed(() => (next.value ? placeLine(next.value, showsRoomsAt(props.block, next.value.calendarId)) : null));
 
 /** The plain layout has no place line of its own: it appears with the rooms, after the same pattern. */
-const classicPlace = computed(() => (props.block.showRooms && next.value?.rooms?.length ? place.value : null));
+const classicPlace = computed(() => (next.value && showsRoomsAt(props.block, next.value.calendarId) && next.value.rooms?.length ? place.value : null));
+
+/** Who takes the services the block chose, in its own line under the place. */
+const people = computed(() => (next.value ? servicesLine(next.value, props.block.services) : null));
 
 const card = computed(() => nextLayout(props.block, themeOf(context)) === 'card');
 
@@ -76,6 +80,10 @@ const imageStyle = computed(() =>
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></svg>
                         {{ place }}
                     </span>
+                    <span v-if="people" class="hero-services" data-testid="next-services">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg>
+                        <span>{{ people }}</span>
+                    </span>
                 </div>
             </div>
             <img v-if="image" class="hero-image" :src="image" :style="imageStyle" alt="" data-testid="next-image">
@@ -93,6 +101,10 @@ const imageStyle = computed(() =>
             <div v-if="classicPlace" class="meta place" data-testid="next-place">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></svg>
                 {{ classicPlace }}
+            </div>
+            <div v-if="people" class="meta place place--wrap" data-testid="next-services">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg>
+                <span>{{ people }}</span>
             </div>
         </div>
         <div v-else class="text meta">Derzeit ist kein Termin geplant.</div>
@@ -136,6 +148,9 @@ const imageStyle = computed(() =>
     display: flex;
     align-items: center;
     gap: 0.45em;
+}
+.place--wrap {
+    align-items: flex-start;
 }
 .place svg {
     flex: none;
@@ -233,6 +248,9 @@ const imageStyle = computed(() =>
     display: inline-flex;
     align-items: center;
     gap: 0.45em;
+}
+.hero-meta .hero-services {
+    align-items: flex-start;
 }
 .hero-meta svg {
     flex: none;

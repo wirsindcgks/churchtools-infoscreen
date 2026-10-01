@@ -5,15 +5,19 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
+import { appointmentServicesInUse } from '../appointments/services';
 import { startOfZonedDay } from '../appointments/zoned';
 import {
     fetchAppointments,
     fetchBookings,
     fetchChurchLogoUrl,
+    fetchEvents,
     fetchGroupHomepage,
     fetchGroupHomepageList,
     fetchPosts,
     fetchResourceMasterdata,
+    fetchServiceGroups,
+    fetchServices,
     fetchTimeZone,
 } from '../ct/api';
 import { ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
@@ -40,14 +44,15 @@ export interface PlayerData {
     /**
      * With `rooms`, the booked rooms come along (schema 1.16, Plan.md 50). Names
      * the stammdaten cannot give – no right, a failure – leave the appointments
-     * without rooms; they never fail the appointments.
+     * without rooms; they never fail the appointments. The same goes for `services`
+     * (schema 1.17, Plan.md 51): any failure – a 403 too – leaves out the services only.
      */
     appointments(
         calendarIds: number[],
         from: Date,
         to: Date,
         timeZone: string,
-        options?: { rooms?: boolean },
+        options?: { rooms?: boolean; services?: number[] },
     ): Promise<Appointment[]>;
     posts(groupIds: number[], limit: number): Promise<Post[]>;
     /**
@@ -100,7 +105,8 @@ export const churchToolsPlayerData: PlayerData = {
     },
     async appointments(calendarIds, from, to, timeZone, options = {}) {
         const wantsRooms = options.rooms === true;
-        const [raw, rooms] = await Promise.all([
+        const serviceIds = options.services ?? [];
+        const [raw, rooms, serviceInput] = await Promise.all([
             readableAppointments(calendarIds, (ids) =>
                 withTimeout(fetchAppointments(ids, from, to, timeZone, { bookings: wantsRooms })),
             ),
@@ -110,8 +116,21 @@ export const churchToolsPlayerData: PlayerData = {
                       return [];
                   })
                 : [],
+            serviceIds.length
+                ? Promise.all([
+                      withTimeout(fetchEvents(from, to, timeZone)),
+                      withTimeout(fetchServices()),
+                      withTimeout(fetchServiceGroups()),
+                  ]).then(
+                      ([events, services, serviceGroups]) => ({ events, services, serviceGroups, chosen: serviceIds }),
+                      (error: unknown) => {
+                          console.warn('Dienste der Termine konnten nicht geladen werden:', error);
+                          return undefined;
+                      },
+                  )
+                : undefined,
         ]);
-        return normalizeAppointments(raw, timeZone, rooms);
+        return normalizeAppointments(raw, timeZone, rooms, serviceInput);
     },
     async posts(groupIds, limit) {
         const raw = await withTimeout(fetchPosts(groupIds, limit));
@@ -186,7 +205,7 @@ export async function readableAppointments<T>(
 export function appointmentNeeds(
     screen: ScreenDoc,
     slides: SlideDoc[],
-): { calendarIds: number[]; days: number; rooms: boolean } {
+): { calendarIds: number[]; days: number; rooms: boolean; services: number[] } {
     const ids = new Set<number>();
     let days = 1;
     const blocks = slides.flatMap((s) => s.blocks);
@@ -203,7 +222,12 @@ export function appointmentNeeds(
     for (const rule of screen.schedule) {
         if (rule.kind === 'appointment') rule.calendarIds.forEach((id) => ids.add(id));
     }
-    return { calendarIds: [...ids].sort((a, b) => a - b), days, rooms: needsAppointmentRooms(blocks) };
+    return {
+        calendarIds: [...ids].sort((a, b) => a - b),
+        days,
+        rooms: needsAppointmentRooms(blocks),
+        services: appointmentServicesInUse(blocks),
+    };
 }
 
 export function appointmentWindow(now: Date, timeZone: string, days: number): { from: Date; to: Date } {

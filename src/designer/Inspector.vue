@@ -10,6 +10,8 @@ import { calendarColor, sizedImageUrl } from '../player/format';
 import { GROUP_SECONDS, PAGE_SECONDS, POST_SECONDS, slideSeconds } from '../player/paging';
 import { qrShape } from '../player/qr';
 import { listLayout } from '../player/theme';
+import { pruneRoomsOff, toggleRoomsOff } from '../appointments/rooms';
+import { SERVICES_MAX, toggleServiceIds, type ServiceInfo } from '../appointments/services';
 import type { RoomInfo } from '../rooms/normalize';
 import { webFrame, withScheme } from '../player/web';
 import { useEditorStore } from './editor-store';
@@ -21,7 +23,7 @@ import InspectorSection from './InspectorSection.vue';
 import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
 
 /** `rooms`: the rooms the designer may see; null while they are not loaded yet. */
-const props = defineProps<{ calendars: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null }>();
+const props = defineProps<{ calendars: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null; services?: ServiceInfo[] | null; servicesFailed?: boolean }>();
 const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow'] }>();
 
 /** Labels in the order of `GroupFields` itself, so the fieldset needs no list of its own (Plan.md 43). */
@@ -66,7 +68,23 @@ function setStyle(patch: Partial<TextStyle>): void {
 function toggleCalendar(id: number, on: boolean): void {
     if (!block.value || !('calendarIds' in block.value)) return;
     const next = on ? [...block.value.calendarIds, id] : block.value.calendarIds.filter((c) => c !== id);
-    if (next.length) setBlock({ calendarIds: [...new Set(next)].sort((a, b) => a - b) });
+    if (!next.length) return;
+    const ids = [...new Set(next)].sort((a, b) => a - b);
+    // A calendar that leaves the block leaves the list of those without rooms, too.
+    setBlock({ calendarIds: ids, ...('roomsOffCalendarIds' in block.value ? { roomsOffCalendarIds: pruneRoomsOff(block.value.roomsOffCalendarIds, ids) } : {}) });
+}
+
+/** The chosen calendars to switch rooms for: with "Raum zeigen" on and more than one calendar; else null. */
+function roomsFor(b: NonNullable<typeof block.value>): Calendar[] | null {
+    if (b.type !== 'next-appointment' && b.type !== 'appointment-list') return null;
+    if (!b.showRooms || b.calendarIds.length < 2) return null;
+    if (b.type === 'appointment-list' && listLayout(b, themeOf(stage)) !== 'cards') return null;
+    return props.calendars.filter((k) => b.calendarIds.includes(k.id));
+}
+
+function toggleRoomsFor(calendarId: number, shown: boolean): void {
+    if (!block.value || (block.value.type !== 'next-appointment' && block.value.type !== 'appointment-list')) return;
+    setBlock({ roomsOffCalendarIds: pruneRoomsOff(toggleRoomsOff(block.value.roomsOffCalendarIds, calendarId, shown), block.value.calendarIds) });
 }
 
 /** Empty is allowed here (Plan.md 33): a fresh block starts without a group until one is chosen. */
@@ -147,6 +165,17 @@ const pickableGroupList = computed(() => {
 function setGroupSeconds(value: string): void {
     const n = Number(value);
     if (Number.isInteger(n) && n >= 5 && n <= 120) setBlock({ pageSeconds: n });
+}
+
+/** Chosen services that can still be shown – only they count against the limit. */
+function shownServiceCount(chosen: number[] | undefined): number {
+    return toggleServiceIds(chosen, -1, false, props.services ?? null).length;
+}
+
+/** Services not showable any more leave the document with the next click (Plan.md 51). */
+function toggleService(id: number, on: boolean): void {
+    if (!block.value || (block.value.type !== 'next-appointment' && block.value.type !== 'appointment-list')) return;
+    setBlock({ services: toggleServiceIds(block.value.services, id, on, props.services && !props.servicesFailed ? props.services : null) });
 }
 
 /** Most rooms a block holds – the schema's limit. */
@@ -661,6 +690,45 @@ const LAYERS = [
                             Zeigt die gebuchten Räume des Termins neben dem Ort – nur bestätigte Buchungen, keine, die noch warten. Damit der Fernseher sie sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, alle Räume zu sehen.
                         </InfoHint>
                     </div>
+                    <!-- Plan.md, 51: rooms can be left out for single calendars. -->
+                    <fieldset v-if="roomsFor(block)" class="rooms-for" data-testid="rooms-for">
+                        <legend>Räume zeigen für:</legend>
+                        <label v-for="c in roomsFor(block)" :key="c.id" class="check">
+                            <input
+                                type="checkbox"
+                                :checked="!(block.roomsOffCalendarIds ?? []).includes(c.id)"
+                                :data-testid="`rooms-calendar-${c.id}`"
+                                @change="toggleRoomsFor(c.id, ($event.target as HTMLInputElement).checked)"
+                            >
+                            {{ c.name }}
+                        </label>
+                    </fieldset>
+                    <!-- Plan.md, 51: who takes a service – only accepted assignments of services in groups open to all. -->
+                    <fieldset
+                        v-if="block.type === 'next-appointment' || listLayout(block, themeOf(stage)) === 'cards'"
+                        data-testid="services-fieldset"
+                    >
+                        <legend class="legend-row">
+                            Dienste zeigen
+                            <InfoHint>
+                                Zeigt, wer den Dienst übernimmt – nur zugesagte Einteilungen und nur Dienste aus Dienstgruppen, die in ChurchTools ‚Ohne Berechtigung einsehbar‘ sind. Die Vorschau zeigt, was dein Konto sehen darf. Damit der Fernseher die Dienste sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, die Events dieser Kalender zu sehen.
+                            </InfoHint>
+                        </legend>
+                        <p v-if="servicesFailed" class="hint" data-testid="services-failed">Dienste konnten nicht geladen werden.</p>
+                        <p v-else-if="services && !services.length" class="hint" data-testid="services-none">
+                            Keine Dienste verfügbar – in ChurchTools ist keine Dienstgruppe ‚Ohne Berechtigung einsehbar‘.
+                        </p>
+                        <label v-for="s in services ?? []" :key="s.id" class="check">
+                            <input
+                                type="checkbox"
+                                :checked="(block.services ?? []).includes(s.id)"
+                                :disabled="!(block.services ?? []).includes(s.id) && shownServiceCount(block.services) >= SERVICES_MAX"
+                                :data-testid="`service-${s.id}`"
+                                @change="toggleService(s.id, ($event.target as HTMLInputElement).checked)"
+                            >
+                            {{ s.name }}
+                        </label>
+                    </fieldset>
                 </template>
 
                 <!-- Plan.md, 33: posts of ChurchTools groups, after the terminlists' cards. -->
@@ -1427,6 +1495,17 @@ fieldset {
     margin: 0;
     padding: 0;
     border: 0;
+}
+.legend-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    width: 100%;
+}
+.rooms-for {
+    margin-left: 1.6em;
 }
 legend {
     padding: 0;

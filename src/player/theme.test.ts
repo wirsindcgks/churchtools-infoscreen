@@ -124,10 +124,10 @@ describe('the theme on the stage (Plan.md 27)', () => {
         const large = { ...DEFAULT_THEME, appointments: 'large' as const };
         const cards = render(makeSlide({ blocks: [list] }), { appointments, theme: large });
         const card = cards.find('[data-testid="list-card"]');
-        // One line: tile, day over time, title with subtitle and place, the category at the end.
+        // One line: tile, day over time over place, title with subtitle, the category at the end.
         expect(card.find('.tile').text()).toMatch(/4\s*OKT/);
-        expect(card.find('.card-when').text()).toMatch(/Sonntag, 4\. Oktober\s*11:00–12:30 Uhr/);
-        expect(card.find('.card-body').text()).toMatch(/Gottesdienst\s*mit Abendmahl\s*Gemeindezentrum, Saal/);
+        expect(card.find('.card-when').text()).toMatch(/Sonntag, 4\. Oktober\s*11:00–12:30 Uhr\s*Gemeindezentrum, Saal/);
+        expect(card.find('.card-body').text()).toMatch(/Gottesdienst\s*mit Abendmahl/);
         expect(card.findAll(':scope > *').map((c) => c.classes()[0])).toEqual(['tile', 'card-when', 'card-body', 'badge']);
         // A block that chose rows keeps them.
         const rows = render(makeSlide({ blocks: [{ ...list, layout: 'rows' } as Block] }), { appointments, theme: large });

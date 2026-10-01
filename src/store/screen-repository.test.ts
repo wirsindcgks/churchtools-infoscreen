@@ -509,6 +509,19 @@ describe('ScreenRepository', () => {
         expect(await repo.appointmentRoomsInUse()).toBe(true);
     });
 
+    it('collects the calendars of the blocks that show services (Plan.md 51, for the device rights)', async () => {
+        expect(await repo.serviceCalendarIdsInUse()).toEqual([]);
+        const style = { fontFamily: 'sans', fontSize: 44, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
+        const frame = { x: 0, y: 0, width: 1400, height: 700, style };
+        const blocks = [
+            { id: 'n', type: 'next-appointment' as const, ...frame, calendarIds: [7, 3], showImage: true, services: [1] },
+            { id: 'l', type: 'appointment-list' as const, ...frame, calendarIds: [5], horizonDays: 14, limit: 5, layout: 'cards' as const },
+            { id: 'r', type: 'appointment-list' as const, ...frame, calendarIds: [6], horizonDays: 14, limit: 5, layout: 'rows' as const, services: [1] },
+        ];
+        await repo.saveScreen(bundle({ slides: [makeSlide({ id: 'slide-1', blocks }), makeSlide({ id: 'slide-2' })] }), { ...save, expectedRevision: null });
+        expect(await repo.serviceCalendarIdsInUse()).toEqual([3, 7]);
+    });
+
     it('throws for an unknown slug', async () => {
         await expect(repo.loadScreen('gibt-es-nicht')).rejects.toBeInstanceOf(ScreenNotFoundError);
     });

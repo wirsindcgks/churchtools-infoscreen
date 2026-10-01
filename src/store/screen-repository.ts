@@ -14,6 +14,7 @@
  * not prevented: between reading and writing a window remains (Risiko 6).
  */
 import { needsAppointmentRooms } from '../appointments/rooms';
+import { appointmentServiceIds } from '../appointments/services';
 import {
     readMedia,
     readPlaylistOrSchedule,
@@ -809,6 +810,16 @@ export class ScreenRepository {
         }
         for (const rule of screens.flatMap((s) => s.doc.schedule)) {
             if (rule.kind === 'appointment') rule.calendarIds.forEach((id) => ids.add(id));
+        }
+        return [...ids].sort((a, b) => a - b);
+    }
+
+    /** The calendars of every block that shows services – what a device must see the events of (Plan.md 51). */
+    async serviceCalendarIdsInUse(): Promise<number[]> {
+        const slides = await this.readSlides();
+        const ids = new Set<number>();
+        for (const block of slides.docs.flatMap((s) => s.doc.blocks)) {
+            if (appointmentServiceIds(block).length) blockCalendarIds(block).forEach((id) => ids.add(id));
         }
         return [...ids].sort((a, b) => a - b);
     }

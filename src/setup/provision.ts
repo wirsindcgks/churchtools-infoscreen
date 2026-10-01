@@ -61,6 +61,8 @@ export interface PlanInput {
     usedRoomIds: number[];
     /** A block shows the rooms of its appointments (Plan.md 50): the device sees every room then. */
     appointmentRooms: boolean;
+    /** The calendars of the blocks that show services (Plan.md 51): the device sees their events. */
+    serviceCalendarIds: number[];
 }
 
 export class MissingAuthError extends Error {
@@ -117,6 +119,10 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
             : input.usedRoomIds;
     if (deviceRooms.length) {
         device.push({ authId: AUTH.resourceView, dataId: deviceRooms, label: 'Ressource sehen' });
+    }
+
+    if (input.serviceCalendarIds.length) {
+        device.push({ authId: AUTH.eventView, dataId: input.serviceCalendarIds, label: 'Events von einzelnen Kalendern sehen' });
     }
 
     const writing = (['create custom data', 'edit custom data', 'delete custom data'] as const).map((auth) => ({

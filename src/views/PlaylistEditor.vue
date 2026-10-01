@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName, instanceBaseUrl } from '../ct/client';
-import { fetchGroupHomepageList, fetchPostGroups, fetchResourceMasterdata, type PostGroup } from '../ct/api';
+import { fetchGroupHomepageList, fetchPostGroups, fetchResourceMasterdata, fetchServiceGroups, fetchServices, type PostGroup } from '../ct/api';
 import AppBar from '../designer/AppBar.vue';
 import BlockPalette from '../designer/BlockPalette.vue';
 import EditorStage from '../designer/EditorStage.vue';
@@ -19,6 +19,7 @@ import type { MediaDoc } from '../model/schema';
 import { MEDIA_PAGE } from '../media/library';
 import { roomsOf, type RoomInfo } from '../rooms/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
+import { appointmentServicesInUse, serviceChoices, type ServiceInfo } from '../appointments/services';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 
@@ -50,6 +51,7 @@ const { calendars, problem } = usePreview(
     computed(() => groupNeeds(editor.slides)),
     computed(() => roomNeeds(editor.slides)),
     computed(() => needsAppointmentRooms(editor.slides.flatMap((s) => s.blocks))),
+    computed(() => appointmentServicesInUse(editor.slides.flatMap((s) => s.blocks))),
 );
 
 /** Groups with posts switched on, for the „Beiträge"-Baustein; loaded once. Unreadable → an empty list, the inspector says so. */
@@ -58,6 +60,9 @@ const groups = ref<PostGroup[]>([]);
 const homepages = ref<HomepageEntry[]>([]);
 /** Rooms for the „Raumbelegung"-Baustein (Plan.md 46); null until loaded, unreadable → none. */
 const rooms = ref<RoomInfo[] | null>(null);
+/** Services people may see (Plan.md 51); null until loaded, unreadable → `servicesFailed`. */
+const services = ref<ServiceInfo[] | null>(null);
+const servicesFailed = ref(false);
 
 /** The preview of the unsaved draft, as the TV would show it. */
 const previewing = ref(false);
@@ -349,6 +354,13 @@ onMounted(async () => {
     } catch {
         rooms.value = [];
     }
+    try {
+        const [list, serviceGroups] = await Promise.all([fetchServices(), fetchServiceGroups()]);
+        services.value = serviceChoices(list, serviceGroups);
+    } catch {
+        services.value = [];
+        servicesFailed.value = true;
+    }
 });
 
 onBeforeUnmount(() => {
@@ -623,7 +635,7 @@ function onKey(event: KeyboardEvent): void {
                     <span class="sheet-label">{{ sheetLabel }}</span>
                     <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
                 </button>
-                <Inspector id="inspector-panel" :calendars="calendars" :groups="groups" :homepages="homepages" :rooms="rooms" @pick-image="openLibrary" />
+                <Inspector id="inspector-panel" :calendars="calendars" :groups="groups" :homepages="homepages" :rooms="rooms" :services="services" :services-failed="servicesFailed" @pick-image="openLibrary" />
             </div>
         </div>
 

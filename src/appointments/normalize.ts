@@ -8,6 +8,7 @@
  */
 import { calendarColor } from '../player/format';
 import { BOOKING_CONFIRMED, type RoomInfo } from '../rooms/normalize';
+import { servicesByAppointment, type AppointmentService, type ServiceInput } from './services';
 import { startOfZonedDay, zonedDateKey, zonedTimeKey } from './zoned';
 
 /** The fields of an appointment this code reads; the response has many more. */
@@ -72,20 +73,32 @@ export interface Appointment {
      * Missing where rooms were not asked for or none is booked.
      */
     rooms?: string[];
+    /**
+     * Who takes which service – names only, no id of a person, no image, no comment (Plan.md, 51).
+     * By `sortKey` of the service, then name. Missing where services were not asked for or nobody is assigned.
+     */
+    services?: AppointmentService[];
 }
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
 
-/** `rooms`: the rooms of the stammdaten (`roomsOf`); without them no appointment gets a room. */
+/** `rooms`: the rooms of the stammdaten (`roomsOf`); without them no appointment gets a room. `serviceInput`: likewise for services (Plan.md, 51). */
 export function normalizeAppointments(
     responses: AppointmentResponse[],
     timeZone: string,
     rooms: RoomInfo[] = [],
+    serviceInput?: ServiceInput,
 ): Appointment[] {
     const byKey = new Map<string, Appointment>();
     for (const response of responses) {
         const appointment = normalizeOne(response, timeZone, rooms);
         if (appointment) byKey.set(appointment.key, appointment);
+    }
+    if (serviceInput) {
+        for (const [key, services] of servicesByAppointment(serviceInput)) {
+            const appointment = byKey.get(key);
+            if (appointment) appointment.services = services;
+        }
     }
     return [...byKey.values()].sort(
         (a, b) =>

@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 16 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 17 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -109,6 +109,10 @@ export const AppointmentListBlock = v.object({
      * (Plan.md, Nächste Schritte 50). Missing = off.
      */
     showRooms: v.optional(v.boolean()),
+    /** Since 1.17: ids of the services whose people show under the place, cards only (Plan.md, Nächste Schritte 51). Missing or empty = off. */
+    services: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(6))),
+    /** Since 1.17: calendars whose appointments show no booked rooms though `showRooms` is on (Plan.md, Nächste Schritte 51). Missing = none left out. */
+    roomsOffCalendarIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
     style: TextStyle,
 });
 
@@ -125,6 +129,10 @@ export const NextAppointmentBlock = v.object({
     layout: v.optional(v.picklist(['classic', 'card'])),
     /** Since 1.16: the booked rooms beside the place, in both layouts (Plan.md, Nächste Schritte 50). Missing = off. */
     showRooms: v.optional(v.boolean()),
+    /** Since 1.17: ids of the services whose people show under the place, in both layouts (Plan.md, Nächste Schritte 51). Missing or empty = off. */
+    services: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(6))),
+    /** Since 1.17: calendars whose appointments show no booked rooms though `showRooms` is on (Plan.md, Nächste Schritte 51). Missing = none left out. */
+    roomsOffCalendarIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
     style: TextStyle,
 });
 

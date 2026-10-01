@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G11, G14–G16, G18–G20, G22–G32, G35, G38, G39 und G42–G44 sind beantwortet, G21, G33, G34, G36, G37, G40, G41 und G45 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G45).
+**Eine durchgehende Nummerierung.** G1–G11, G14–G16, G18–G20, G22–G32, G35, G38, G39 und G42–G44 sind beantwortet, G21, G33, G34, G36, G37, G40, G41, G45 und G46 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G46).
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -590,6 +590,17 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 - **Folgen für den Bau (Plan.md, Punkt 46.2):** Der Assistent vergibt dem Gerät **nur 205** für die Räume, die ein Screen zeigt, und – Entscheidung des Nutzers vom 2026-09-30 – **der Gestalter-Gruppe 205 für alle Räume** (Typ Raum), damit sie im Designer wählen können; beides ohne 201. Der Player fragt **je Raum einzeln** an, damit ein fehlendes Recht nur diesen Raum leer lässt, und immer mit `status_ids[]=2`.
 
 **G17 – Extension Store**: Aufnahmekriterien, Einreichungsweg, ob eine Veröffentlichung überhaupt angestrebt wird. Der Publisher hält seinen Store-Text in einer eigenen `EXTENSION_STORE.md` – ein Muster, das sich übernehmen lässt.
+
+**G46 – Zur Hälfte: Dienste am Termin – woher das Event-Recht kommt und welche Dienste ein Gerät sieht.** *(2026-10-01, Testinstanz, nur lesend, als Entwicklungskonto und als Geräte-Konto; dazu die OpenAPI-Spezifikation der Instanz; Anlass: Plan.md, Punkt 51)* **Academy vorab:** Ist an einer Dienstgruppe „Ohne Berechtigung einsehbar" gesetzt, sehen alle Personen die Dienste dieser Gruppe und die dafür Eingeteilten ([Dienstkategorie anlegen](https://churchtools.academy/de/help/app/verwalten-events/40-wie-lege-ich-eine-dienstkategorie-an)).
+
+- **306 kommt beim Geräte-Konto aus dem Personenstatus, nicht aus der Geräte-Gruppe.** `GET /permissions/status/0` trägt 306 und 403 für die Kalender 1–3; die Rollen der Gruppe „Infoscreen-Devices" tragen nur 403 und 205, die Person selbst nichts. Auf einer Instanz, deren Status dieses Recht nicht hat, fehlte es dem Gerät – der Assistent muss 306 selbst vergeben. Beantwortet die offene Frage aus Plan.md, Punkt 46.3.
+- **Das Gerät sieht nur die Dienste offener Dienstgruppen.** Das Event 1 hat fünf Dienste; das Entwicklungskonto sieht alle, das Geräte-Konto (ohne `view servicegroup`) nur „Predigt". Deren Dienstgruppe „Programm" hat `viewAll: true`, „Technik" und „Musik" haben `false` – Messung und Academy stimmen überein.
+- **Die Stammdaten sind für das Gerät lesbar:** `/servicegroups` (3, mit `viewAll`) und `/services` (8, mit `serviceGroupId` und `hidePersonName`).
+- **Ein Event hängt über `appointmentId` und `startDate` am Termin** – beim Event 1 gleich dem Beginn des Termins 1. Abgesagte Events tragen `isCanceled`; `/events` liefert sie nur mit `canceled=true`.
+- **Eine Einteilung kann eine Person oder ein freier Name sein** (Spezifikation, `PUT /events/{id}/servicerequests/{id}`: genau eines von `personId` und `name`, „Name of an external assignee").
+- **Events legt man nicht einzeln an:** Die Spezifikation führt kein `POST /events`; ein Event entsteht über das Feld `events` beim Anlegen oder Ändern eines Termins (`POST`/`PUT /calendars/{id}/appointments…`). Der Rumpf des `PUT` ist in der Spezifikation leer.
+- **Events an Serienterminen passen auf den Terminschlüssel** *(Test des Nutzers im Testsystem, 2026-10-01, mit dem Test-ZIP `0.3.8+b46a97c-dirty`)*: Zwei von ihm in der Oberfläche angelegte Events an der Testserie (4. und 11. Oktober) zeigen je ihre eigene Einteilung am richtigen Termin.
+- **Offen:** was `/events` einem Konto **ohne** 306 antwortet (`403` oder leere Liste); wie `/events` blättert (bei einem Event nur `meta.count`); ob `hidePersonName` den Namen schon in der API verbirgt (G41).
 
 ---
 

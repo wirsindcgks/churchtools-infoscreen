@@ -95,6 +95,18 @@ je Ressource genügt. Gestalter sehen nur Räume, für die sie das Recht haben; 
 Am Termin steht nur der Raumname, nie ein Buchungstitel.
 **Ein entzogenes Recht wirkt bei ChurchTools noch eine Weile nach – gemessen gut 40 Minuten.**
 
+### Events – für Dienste am Termin
+
+In der Rechteverwaltung unter **„Events"**.
+
+| Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
+| --- | --- | --- | --- | --- |
+| Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | für die Vorschau | für die Vorschau | **jeden Kalender, dessen Termine Dienste zeigen** ⁵ |
+
+⁵ **Kommt aus dem Events-Modul** (in der Rechteverwaltung unter „Events"). Das Gerät sieht damit nur die Dienste
+offen einsehbarer Dienstgruppen („Ohne Berechtigung einsehbar"), keine anderen – und nur zugesagte Einteilungen. Das
+Recht an den Dienstgruppen selbst bekommt das Gerät nicht.
+
 ### ChurchTools selbst – nur für Administratoren
 
 | Recht | Wofür |

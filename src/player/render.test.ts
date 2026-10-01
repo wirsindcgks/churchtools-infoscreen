@@ -524,6 +524,18 @@ describe('the room at an appointment (Plan.md 50)', () => {
         expect(place(next('classic'), appointment({ name: 'Gemeindezentrum' }), 'next-place').exists()).toBe(false);
     });
 
+    it('puts the place in the date column of a card, and leaves out the rooms of a calendar the block names', () => {
+        const place_ = { name: 'Gemeindezentrum' };
+        const cards = { ...list('cards'), roomsOffCalendarIds: [2] } as Block;
+        const found = render(makeSlide({ blocks: [cards] }), { appointments: appointment(place_, booked(1)) });
+        expect(found.find('.card-when [data-testid="list-place"]').text()).toBe('Gemeindezentrum');
+        expect(place({ ...next('card'), roomsOffCalendarIds: [2] } as Block, appointment(place_, booked(1)), 'next-place').text()).toBe('Gemeindezentrum');
+        // The plain layout shows the place only with rooms: a calendar left out has none.
+        expect(place({ ...next('classic'), roomsOffCalendarIds: [2] } as Block, appointment(place_, booked(1)), 'next-place').exists()).toBe(false);
+        // Another calendar is left out: the rooms stay.
+        expect(place({ ...list('cards'), roomsOffCalendarIds: [9] } as Block, appointment(place_, booked(1)), 'list-place').text()).toBe('Gemeindezentrum · Saal');
+    });
+
     it('shows no room where the block does not ask, and none in the list of rows', () => {
         const place_ = { name: 'Gemeindezentrum' };
         expect(place(next('card', false), appointment(place_, booked(1)), 'next-place').text()).toBe('Gemeindezentrum');

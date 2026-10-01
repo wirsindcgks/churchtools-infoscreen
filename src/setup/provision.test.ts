@@ -30,7 +30,7 @@ const catalog = catalogFrom({
     ),
 });
 const categories = { screens: 1, playlists: 4, slides: 7, media: 10, settings: 13 };
-const input = { catalog, moduleKey: 'infoscreen-designer', categories, wikiCategoryId: 1, calendarIds: [4, 5], roomIds: [1, 2, 3], usedRoomIds: [2], appointmentRooms: false };
+const input = { catalog, moduleKey: 'infoscreen-designer', categories, wikiCategoryId: 1, calendarIds: [4, 5], roomIds: [1, 2, 3], usedRoomIds: [2], appointmentRooms: false, serviceCalendarIds: [] as number[] };
 
 describe('planProvisioning', () => {
     const [designer, device] = planProvisioning(input);
@@ -72,6 +72,18 @@ describe('planProvisioning', () => {
         // No rooms visible at all: nothing to add.
         const [, none] = planProvisioning({ ...input, appointmentRooms: true, roomIds: [], usedRoomIds: [] });
         expect(none!.grants.some((g) => g.authId === AUTH.resourceView)).toBe(false);
+    });
+
+    it('gives the device the events of the calendars that show services – and only then (Plan.md 51)', () => {
+        expect(device!.grants.some((g) => g.authId === AUTH.eventView)).toBe(false);
+        expect(designer!.grants.some((g) => g.authId === AUTH.eventView)).toBe(false);
+        const [d, v] = planProvisioning({ ...input, serviceCalendarIds: [5] });
+        expect(v!.grants.find((g) => g.authId === AUTH.eventView)).toEqual({
+            authId: 306,
+            dataId: [5],
+            label: 'Events von einzelnen Kalendern sehen',
+        });
+        expect(d!.grants.some((g) => g.authId === AUTH.eventView)).toBe(false);
     });
 
     it('gives nobody "Ressourcen sehen" (201) – the right per room is enough (G45)', () => {

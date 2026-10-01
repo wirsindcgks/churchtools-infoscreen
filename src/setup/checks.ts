@@ -15,6 +15,7 @@ import type { RoomInfo } from '../rooms/normalize';
 export const AUTH = {
     calendarView: 403, // churchcal: "Einzelnen Kalender sehen"
     resourceView: 205, // churchresource: "Ressource sehen"
+    eventView: 306, // churchservice: "Events von einzelnen Kalendern sehen"
     wikiView: 501, // churchwiki: "Wiki" sehen
     wikiCategoryView: 502, // churchwiki: "Einzelne Wiki-Kategorien sehen"
     wikiCategoryEdit: 503, // churchwiki: "Einzelne Wiki-Kategorien bearbeiten"
@@ -204,6 +205,8 @@ export interface DeviceGroupInput {
     usedRoomIds?: number[];
     /** A block shows the rooms of its appointments (Plan.md 50): the device must see all rooms. */
     appointmentRooms?: boolean;
+    /** The calendars of the blocks that show services (Plan.md 51): the device must see their events. */
+    serviceCalendarIds?: number[];
     wikiCategoryId: number | null;
     moduleRights?: ModuleRights;
 }
@@ -278,6 +281,22 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         } else {
             checks.push({ level: 'ok', text: 'Räume an Terminen sind sichtbar.' });
         }
+    }
+
+    const serviceCalendarIds = input.serviceCalendarIds ?? [];
+    if (serviceCalendarIds.length) {
+        const blind = input.members
+            .filter((m) => !serviceCalendarIds.every((id) => has(m.grants, AUTH.eventView, id)))
+            .map((m) => m.label);
+        checks.push(
+            blind.length
+                ? {
+                      level: 'fail',
+                      text: `Dienste an Terminen: ${blind.join(', ')} sieht die Events der Kalender nicht.`,
+                      detail: '„Rechte aktualisieren" gibt der Gerätegruppe das Recht „Events von einzelnen Kalendern sehen" für diese Kalender.',
+                  }
+                : { level: 'ok', text: 'Dienste an Terminen sind sichtbar.' },
+        );
     }
 
     if (!input.moduleRights) {
