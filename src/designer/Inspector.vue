@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import type { Calendar, PostGroup } from '../ct/api';
 import { homepageGroups, selectGroups, type Group, type HomepageEntry } from '../groups/normalize';
 import type { Block, Fill, GroupFields, RoomEntry, TextStyle } from '../model/schema';
@@ -13,7 +13,8 @@ import { listLayout } from '../player/theme';
 import { pruneRoomsOff, toggleRoomsOff } from '../appointments/rooms';
 import { SERVICES_MAX, toggleServiceIds, type ServiceInfo } from '../appointments/services';
 import type { RoomInfo } from '../rooms/normalize';
-import { webFrame, withScheme } from '../player/web';
+import { effectiveMotion, effectiveTransition } from '../player/slideshow';
+import { embedAddress, webFrame, withScheme } from '../player/web';
 import { useEditorStore } from './editor-store';
 import ColorField from './ColorField.vue';
 import FillEditor from './FillEditor.vue';
@@ -55,6 +56,13 @@ const edit = { onFocus: () => editor.beginGesture(), onBlur: () => editor.endGes
 
 function setBlock(patch: Record<string, unknown>): void {
     if (block.value) editor.updateBlock(block.value.id, patch as Partial<Block>);
+}
+
+/** An old block with the transition `zoom` is written as fade plus motion the moment either one changes. */
+function setSlideshow(patch: { transition?: string; motion?: string }): void {
+    const current = block.value;
+    if (current?.type !== 'slideshow') return;
+    setBlock({ transition: effectiveTransition(current), motion: effectiveMotion(current), ...patch });
 }
 
 function setNumber(key: string, value: string): void {
@@ -270,6 +278,24 @@ const themeLayout = computed(() => (themeOf(stage).appointments === 'large' ? 'm
 function webProblem(url: string): string | null {
     if (!url.trim()) return 'Noch keine Adresse – der Baustein bleibt leer.';
     return webFrame(url, window.location.origin) ? null : 'Nur Adressen mit https:// werden gezeigt.';
+}
+
+/** The block whose pasted embed code held no address – shown until its next change. */
+const embedProblemBlock = ref<string | null>(null);
+
+/** An embed code pasted into the address field gives its address; without one the block stays as it was. */
+function setWebUrl(input: HTMLInputElement): void {
+    const pasted = input.value;
+    const address = embedAddress(pasted);
+    const current = block.value;
+    if (!current) return;
+    if (!address && /<iframe/i.test(pasted)) {
+        embedProblemBlock.value = current.id;
+        if (current.type === 'web') input.value = current.url;
+        return;
+    }
+    embedProblemBlock.value = null;
+    setBlock({ url: withScheme(address) });
 }
 
 function setSlideNumber(value: string): void {
@@ -562,15 +588,27 @@ const LAYERS = [
                     <label class="d-field">
                         Übergang
                         <select
-                            :value="block.transition ?? 'fade'"
+                            :value="effectiveTransition(block)"
                             data-testid="slideshow-transition"
-                            @change="setBlock({ transition: ($event.target as HTMLSelectElement).value })"
+                            @change="setSlideshow({ transition: ($event.target as HTMLSelectElement).value })"
                         >
                             <option value="fade">Überblenden</option>
                             <option value="slide">Schieben</option>
                             <option value="wipe">Aufdecken</option>
-                            <option value="zoom">Heranzoomen</option>
                             <option value="none">Ohne</option>
+                        </select>
+                    </label>
+                    <label class="d-field">
+                        Bewegung
+                        <select
+                            :value="effectiveMotion(block)"
+                            data-testid="slideshow-motion"
+                            @change="setSlideshow({ motion: ($event.target as HTMLSelectElement).value })"
+                        >
+                            <option value="none">Keine</option>
+                            <option value="in">Langsam hineinzoomen</option>
+                            <option value="out">Langsam herauszoomen</option>
+                            <option value="alternate">Abwechselnd</option>
                         </select>
                     </label>
                     <div class="hint-row">
@@ -1203,9 +1241,10 @@ const LAYERS = [
                 <template v-if="block.type === 'web'">
                     <div class="d-field">
                         <div class="hint-row">
-                            <label for="web-url-input">Adresse</label>
+                            <label for="web-url-input">Adresse oder Einbettungscode</label>
                             <InfoHint>
-                                Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer. Viele große Seiten
+                                Statt der Adresse geht auch der Einbettungscode („iframe"), den Karten, Umfragen oder Pinnwände
+                                anbieten – übernommen wird nur die Adresse darin. Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer. Viele große Seiten
                                 wie Google verbieten das Einbetten – der Rahmen zeigt dann einen Fehler. Eigene Seiten, etwa die
                                 der Gemeinde-Website, gehen meist.
                             </InfoHint>
@@ -1217,11 +1256,12 @@ const LAYERS = [
                             :value="block.url"
                             data-testid="web-url"
                             v-on="edit"
-                            @change="setBlock({ url: withScheme(($event.target as HTMLInputElement).value) })"
+                            @change="setWebUrl($event.target as HTMLInputElement)"
                         >
                     </div>
                     <p class="hint" data-testid="web-enter-hint">Mit Enter übernehmen – erst dann lädt die Seite.</p>
-                    <p v-if="webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
+                    <p v-if="embedProblemBlock === block.id" class="hint" data-testid="web-problem">Im Einbettungscode steht keine Adresse.</p>
+                    <p v-else-if="webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
                     <label class="d-field">
                         Größe der Seite
                         <select :value="block.zoom" data-testid="web-zoom" @change="setNumber('zoom', ($event.target as HTMLSelectElement).value)">

@@ -4,7 +4,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 
 ## Auf einen Blick
 
-**Stand 2026-10-01.** Veröffentlicht sind `v0.1.0` bis `v0.4.2`; das Modul läuft im echten ChurchTools der Testinstanz, auf der Produktivinstanz noch nicht. Die Fernseher melden sich über ihre Adresse selbst an (Weg B, Abschnitt D). Das Repository ist seit dem 2026-09-25 öffentlich.
+**Stand 2026-10-01.** Veröffentlicht sind `v0.1.0` bis `v0.5.0`; das Modul läuft im echten ChurchTools der Testinstanz, auf der Produktivinstanz noch nicht. Die Fernseher melden sich über ihre Adresse selbst an (Weg B, Abschnitt D). Das Repository ist seit dem 2026-09-25 öffentlich.
 
 **Dieser Abschnitt ist die vollständige Liste dessen, was offen ist.** Wer wissen will, was als Nächstes kommt, liest ihn und sonst nichts. Erledigtes steht mit seiner Nummer in [`docs/Plan-Archiv.md`](docs/Plan-Archiv.md) und wird nur nachgeschlagen, wenn jemand die Begründung einer alten Entscheidung braucht.
 
@@ -19,16 +19,14 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
       - ein Beiträge-Block in der Test-Playlist (Archiv, Punkt 33);
       - der Service Worker: ob die Skripte der ChurchTools-Seite ohne Netz stören und was bei einem langen Ausfall mit abgelaufener Sitzung passiert (Archiv, Punkt 37; Risiko 2);
       - der Baustein „Video": Dauerlauf über eine Nacht und Ton (Archiv, Punkt 52). Der Nutzer will ihn danach gegebenenfalls schärfen.
-2. **Weitere Inhalte, wenn der Nutzer sie wählt** (Punkt 46): Einbettungscode im Baustein „Webseite"; YouTube/Vimeo samt Livestream; Videos ohne Netz (heute zeigt der Fernseher ohne Netz an der Stelle nichts, die CSP erlaubt `blob:` für Medien nicht, G47).
+2. **Erst messen, dann planen** (Opus, nach dem Gerätetest P4): **Videos ohne Netz** (Punkt 46.7 – ob der Service Worker ein Video samt Bereichsanfragen aus dem Cache liefern kann) und **eine eigene hochgeladene Schrift** (ob die Download-Adresse einer Schriftdatei unter der CSP trägt; bräuchte ein Schema-Feld).
+3. **Vorschau in einem zweiten Fenster** (Punkt 56) – skizziert, noch nicht gewählt.
 
 **Kleine Reste, kein Auftrag, bis jemand sie wählt:**
 
-- Die Vorschau im Editor in einem zweiten Fenster, das beim Bearbeiten mitläuft (Archiv, Punkt 24).
-- Eine eigene hochgeladene Schrift – das Gerät bräuchte dafür Wiki-Rechte; seit `v0.4.0` hat es „Wiki-Bereich sehen" (Archiv, Punkt 6; G47).
-- Sieht ein Administrator den Wiki-Bereich mangels Wiki-Rechten nicht, legt der Assistent einen zweiten an (Abschnitt F, G20).
-- In der Vorschau der Mediathek erscheint der Hinweis „Höchstens 30 Bilder je Galerie" hinter der Vorschau (Archiv, Punkt 53).
+- Der Abbruch des Assistenten bei unsichtbarem Wiki-Bereich ist gegen kein echtes ChurchTools geprüft; ein fremder Bereich gleichen Namens, den der Administrator trotz Wiki-Recht nicht sieht, bleibt unerkennbar (Archiv, Punkt 55 B).
 - Beiträge: interne Gruppen, und ob Mitglieder eingeschränkter Gruppen deren Beiträge lesen (G37).
-- Alles unter „Funktionsumfang – Später".
+- Alles unter „Funktionsumfang – Später" – die Liste ist seit dem Kürzen des Plans nicht durchgesehen; einzelnes kann erledigt sein.
 
 **Beobachten:** ob die Griffe am Handy im Alltag reichen und der Zoom-Schutz (16 px) auf jedem Gerät greift (Archiv, Punkt 44). Und die Arbeitsteilung: Opus plant und sieht durch, der Umsetzer baut – auch die Feedback-Runden zum Layout (AGENTS.md).
 
@@ -358,11 +356,13 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 Hier stehen nur Punkte, die noch nicht veröffentlicht sind, mit vollem Text. Die Rangfolge steht in „Auf einen Blick".
 
 46. **Weitere Inhalte – Kandidaten** *(recherchiert am 2026-09-29; „wir schauen dann auf dem Weg, welche wir mitnehmen")*. **Maßstab des Nutzers: Was lokal und mit ChurchTools geht, hat Vorrang.** Kein Auftrag; jeder Punkt braucht vor dem Bau seinen eigenen Bauplan. Erledigt sind 1 Galerie (`v0.3.6`), 2 Raumbelegung (`v0.3.8`), 3 Dienste am Termin (`v0.3.9`, Punkt 51) und 4 Video (`v0.4.0`, Punkt 52) – Recherche, Bauplan-Entwürfe und Messungen dazu im Archiv. Offen:
-    5. **Einbettungscode in „Webseite"** – ein Feld, in das man den `<iframe …>`-Code eines Anbieters (Karten, Umfragen, Pinnwände) einfügt; der Designer liest die Adresse heraus und verwirft den Rest. Deckt fast alles, was man von einem HTML-Baustein erwartet, ohne dessen Risiko. **Ein echter HTML-Baustein bleibt draußen**, solange nichts Neues dafür spricht (G15; Abschnitt „Eigener Web-Code").
-    6. **YouTube/Vimeo, auch der Livestream** – eigener Baustein, weil YouTube im Rahmen von „Webseite" (`no-referrer`) die Einbettung verweigert (Archiv, Punkt 28). Nur mit Netz, nichts auf dem Gerät, das Gerät ruft Google auf – deshalb hinter den lokalen Punkten.
+    5. ~~**Einbettungscode in „Webseite"**~~ – **veröffentlicht in `v0.5.0`** (Archiv, Punkt 55 C).
+    6. ~~**YouTube/Vimeo, auch der Livestream**~~ – **zurückgestellt am 2026-10-01 (Nutzer):** Der Livestream wird im Haus über SDI verteilt, ohne Zeitverzögerung; ein Baustein dafür bringt nichts. Wenn doch: eigener Baustein, weil YouTube im Rahmen von „Webseite" die Einbettung verweigert (Archiv, Punkt 28).
     7. **Videos ohne Netz** *(aus Punkt 52)* – ginge nur über den Service Worker, weil die CSP `blob:` für Medien nicht erlaubt (G47); ungemessen.
 
     **Nicht aufgenommen:** Wetter (fremder Dienst, für uns unwichtig); Losung des Tages (nur nach Anfrage bei der Herrnhuter Brüdergemeine); Geburtstage (Datenschutz); Social Feeds (entschieden am 2026-09-25); PDF und PowerPoint (als Bilder exportieren).
+
+56. **Vorschau in einem zweiten Fenster** *(Rest aus Punkt 24; noch nicht gewählt)*. Für zwei Bildschirme: Die Vorschau des Editors läuft in einem eigenen Fenster mit, während man bearbeitet. Skizze: eine Route `/vorschau/<playlist>` ohne Bedienelemente, die der Editor über „Vorschau › im eigenen Fenster" öffnet; der Editor sendet seinen ungespeicherten Stand (Slides, Playlist, gewählte Slide) über einen `BroadcastChannel`, das Fenster zeigt die gewählte Slide und folgt der Auswahl. Schließt man den Editor, sagt das Fenster das und bleibt beim letzten Stand. Kein Schema, keine Rechte. Ein eigener Auftrag mit eigenem Release, erst wenn der Nutzer ihn wählt.
 
 ### Verzeichnis der erledigten Punkte
 
@@ -423,6 +423,7 @@ Volltext in [`docs/Plan-Archiv.md`](docs/Plan-Archiv.md). Die Punkte 1 bis 6 der
 | 52 | Baustein „Video" |
 | 53 | Vorschau in der Mediathek |
 | 54 | Klick auf das Bild bei den Zeitplänen |
+| 55 | Reste-Paket: Hinweis zur Obergrenze, kein zweiter Wiki-Bereich, Einbettungscode, Bewegung in der Galerie |
 
 ## Quellen
 

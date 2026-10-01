@@ -111,6 +111,8 @@ beiden Gruppen wieder – **nur die, die der Assistent selbst angelegt hat**. Vo
 bleiben, ebenso der Wiki-Bereich mit den Bildern. Ob der Bereich vom Designer angelegt wurde oder schon da war, steht
 unter **Einstellungen → Mediathek im Wiki**.
 
+Der Assistent legt den Wiki-Bereich nur an, wenn du das Wiki sehen darfst; ohne dieses Recht bricht er ab, bevor er etwas anlegt. Einen fremden Bereich gleichen Namens, den du nicht sehen darfst, kann er nicht erkennen.
+
 **Screens legst du als Administrator an:** auf der Startseite des Designers **„+ Screen erstellen"** – Name, Adresse
 und Format. Name und Overscan änderst du später über das Menü **„…" der Kachel → „Einstellungen"**; was der Screen
 zeigt, gestalten die Gestalter.

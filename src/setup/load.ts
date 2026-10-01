@@ -135,6 +135,12 @@ export async function canManagePermissions(): Promise<boolean> {
     return global.churchcore?.['administer persons'] === true;
 }
 
+/** Whether the signed-in person may see the wiki (`churchwiki: view`) – the same source as the designer's rights check. */
+export async function canViewWiki(): Promise<boolean> {
+    const global = await churchtoolsClient.get<{ churchwiki?: { view?: boolean } }>('/permissions/global');
+    return global.churchwiki?.view === true;
+}
+
 interface PersonGroupResponse {
     group?: { domainIdentifier?: string | null } | null;
 }

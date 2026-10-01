@@ -34,3 +34,14 @@ export function withScheme(input: string): string {
     if (!text || /^[a-z][a-z0-9+.-]*:\/\//i.test(text)) return text;
     return `https://${text.replace(/^\/+/, '')}`;
 }
+
+/**
+ * The address in what was pasted into the website block: for an embed code (`<iframe src="…">`) the `src` of its
+ * first frame – `//host/…` as https –, an empty string when it has none; anything else comes back unchanged.
+ * Read with the parser, never put into the page, so the code's scripts do not run.
+ */
+export function embedAddress(input: string): string {
+    if (!/<iframe/i.test(input)) return input;
+    const src = new DOMParser().parseFromString(input, 'text/html').querySelector('iframe')?.getAttribute('src')?.trim() ?? '';
+    return src.startsWith('//') ? `https:${src}` : src;
+}

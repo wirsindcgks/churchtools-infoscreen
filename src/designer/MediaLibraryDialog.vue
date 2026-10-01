@@ -25,6 +25,7 @@ const emit = defineEmits<{ choose: [MediaDoc]; chooseMany: [MediaDoc[]]; close: 
 const marked = ref<number[]>([]);
 const limit = computed(() => props.max ?? Infinity);
 const limitHint = ref(false);
+const LIMIT_TEXT = 'Höchstens 30 Bilder je Galerie';
 let limitTimer: ReturnType<typeof setTimeout> | undefined;
 function tooMany(): void {
     limitHint.value = true;
@@ -117,7 +118,7 @@ async function picked(): Promise<void> {
             </header>
             <p v-if="busy" class="banner">{{ busy }}</p>
             <p v-if="problem" class="banner banner--error" role="alert">{{ problem }}</p>
-            <p v-if="limitHint" class="banner" role="status" data-testid="media-limit">Höchstens 30 Bilder je Galerie</p>
+            <p v-if="limitHint" class="banner" role="status" data-testid="media-limit">{{ LIMIT_TEXT }}</p>
             <div class="body">
                 <p v-if="loading" class="empty">Lade {{ noun }} …</p>
                 <MediaGrid
@@ -139,6 +140,7 @@ async function picked(): Promise<void> {
             v-model:file-id="previewId"
             :items="shown"
             :action-label="previewAction"
+            :notice="limitHint ? LIMIT_TEXT : undefined"
             @action="choose"
             @close="previewId = null"
         />

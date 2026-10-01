@@ -17,6 +17,7 @@ import { roomsOf, type RoomInfo } from '../rooms/normalize';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
 import { AUTH, checkDesignerGroup, checkDeviceGroup, type Check, type RequiredRight } from '../setup/checks';
 import {
+    canViewWiki,
     churchToolsProvisionApi,
     deleteGroup,
     findGroupTypeId,
@@ -27,6 +28,7 @@ import {
     personGroupIds,
     type GroupSummary,
 } from '../setup/load';
+import { wikiCategoryCreation } from '../setup/wiki-creation';
 import { createDeviceLogin } from '../setup/device-token';
 import {
     devicePasswordRecommendationLogLine,
@@ -226,9 +228,16 @@ async function runAssistant(): Promise<void> {
     assistant.error = null;
     assistant.log = [];
     try {
+        // Before anything is created, groups included: no second wiki area for one the administrator cannot see (Plan.md 55 B).
+        const creation = wikiCategoryCreation({
+            visibleCategoryId: wikiCategoryId,
+            createdCategoryId: createdWikiCategoryId.value,
+            canViewWiki: await canViewWiki(),
+        });
+        if (!creation.create && creation.problem) throw new Error(creation.problem);
         const groupTypeId = await findGroupTypeId(GROUP_TYPE_NAME);
         if (groupTypeId === null) throw new Error(`Den Gruppentyp „${GROUP_TYPE_NAME}" gibt es auf dieser Instanz nicht.`);
-        if (wikiCategoryId === null) {
+        if (creation.create) {
             wikiCategory.value = await createCategory();
             wikiCategoryId = wikiCategory.value.id;
             createdWikiCategoryId.value = wikiCategory.value.id;

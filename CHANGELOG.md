@@ -4,6 +4,25 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.5.0] – 2026-10-01
+
+### Neu
+
+- **Galerie mit Bewegung:** Bilder können, während sie stehen, langsam hinein- oder herauszoomen – oder abwechselnd.
+  Das neue Feld „Bewegung" gilt mit jedem Übergang. Den bisherigen Übergang „Heranzoomen" gibt es dafür nicht mehr;
+  eine Galerie, die ihn nutzt, läuft unverändert und zeigt sich als „Überblenden" mit „Langsam hineinzoomen".
+- **Einbettungscode im Baustein „Webseite":** Anbieter von Karten, Umfragen oder Pinnwänden geben oft einen
+  „iframe"-Code heraus statt einer Adresse. Er lässt sich jetzt ins Adressfeld einfügen; übernommen wird nur die
+  Adresse darin.
+
+### Behoben
+
+- **Mediathek:** Wer in der Vorschau das 31. Bild für eine Galerie markieren will, sieht den Hinweis „Höchstens 30
+  Bilder je Galerie" jetzt in der Vorschau – bisher lag er dahinter.
+- **Einrichtung:** Der Assistent legt keinen zweiten Wiki-Bereich „Infoscreen" mehr an, wenn es schon einen gibt, den
+  der Administrator nicht sieht. Er bricht ab, bevor er etwas anlegt, und sagt, welches Recht fehlt. Dafür braucht,
+  wer den Assistenten startet, das Recht, das Wiki zu sehen.
+
 ## [0.4.2] – 2026-10-01
 
 ### Geändert
@@ -496,6 +515,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.5.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.5.0
 [0.4.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.4.2
 [0.4.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.4.1
 [0.4.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.4.0

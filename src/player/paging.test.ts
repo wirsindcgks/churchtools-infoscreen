@@ -99,6 +99,7 @@ describe('paging a slideshow (Plan.md 46)', () => {
         fit: 'cover',
         seconds: 6,
         transition: 'fade',
+        motion: 'none',
         ...overrides,
     });
 

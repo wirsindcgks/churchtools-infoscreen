@@ -202,11 +202,32 @@ test('a slideshow takes at most 30 pictures, and an upload is marked instead of 
     await expect(page.getByTestId('pick-slideshow')).toBeDisabled();
 });
 
+test('the preview of a 31st picture says that a gallery takes at most 30', async ({ page, baseURL }) => {
+    test.setTimeout(90_000);
+    await fakeLibrary(page, baseURL, 31);
+    await newSlideWithSlideshow(page);
+    await page.getByTestId('pick-slideshow').click();
+    const library = page.getByTestId('media-library');
+    await expect(library.getByTestId('media-item')).toHaveCount(31);
+    const buttons = library.locator('button.pick');
+    for (let i = 0; i < 30; i++) await buttons.nth(i).click();
+    await expect(library.getByTestId('media-add')).toHaveText('Hinzufügen (30)');
+
+    await library.getByTestId('media-item').nth(30).getByTestId('media-preview-open').click();
+    const preview = page.getByTestId('media-preview');
+    await expect(preview).toBeVisible();
+    await expect(preview.getByTestId('preview-notice')).toHaveCount(0);
+    await preview.getByTestId('preview-action').click();
+    await expect(preview.getByTestId('preview-notice')).toHaveText('Höchstens 30 Bilder je Galerie');
+    await page.screenshot({ path: 'test-results/notice-in-preview.png' });
+    await preview.getByTestId('preview-close').click();
+    await expect(library.getByTestId('media-add')).toHaveText('Hinzufügen (30)');
+});
+
 const TRANSITIONS = [
     ['fade', 'Überblenden'],
     ['slide', 'Schieben'],
     ['wipe', 'Aufdecken'],
-    ['zoom', 'Heranzoomen'],
     ['none', 'Ohne'],
 ] as const;
 
@@ -231,7 +252,7 @@ for (const [transition] of TRANSITIONS) {
         const preview = page.getByTestId('playlist-preview');
         const layer = preview.getByTestId('slideshow').locator('[data-active]');
         await expect(layer).toBeVisible({ timeout: 15_000 });
-        // What moves: opacity for the fade, transform for the push, clip-path for the wipe, scale for the zoom.
+        // What moves: opacity for the fade, transform for the push, clip-path for the wipe.
         const moves = await layer.evaluate((el) => ({
             transition: getComputedStyle(el).transitionProperty,
             animation: getComputedStyle(el.querySelector('img')!).animationName,
@@ -239,7 +260,8 @@ for (const [transition] of TRANSITIONS) {
         if (transition === 'fade') expect(moves.transition).toContain('opacity');
         if (transition === 'slide') expect(moves.transition).toContain('transform');
         if (transition === 'wipe') expect(moves.transition).toContain('clip-path');
-        if (transition === 'zoom') expect(moves.animation).toContain('slideshow-zoom');
+        // No motion chosen: the picture stands still.
+        expect(moves.animation).toBe('none');
 
         const before = await layer.locator('img').getAttribute('src');
         await expect(async () => {
@@ -248,6 +270,86 @@ for (const [transition] of TRANSITIONS) {
         if (transition === 'slide' || transition === 'wipe') await page.screenshot({ path: `test-results/galerie-${transition}.png` });
     });
 }
+
+/** A slideshow of two pictures on its own slide, 3 seconds each, the preview not yet open. */
+async function twoPictures(page: Page, baseURL: string | undefined): Promise<void> {
+    await fakeLibrary(page, baseURL, 3);
+    await newSlideWithSlideshow(page);
+    await page.getByTestId('pick-slideshow').click();
+    const library = page.getByTestId('media-library');
+    for (const name of ['bild-01', 'bild-02']) await library.getByTestId('media-item').filter({ hasText: name }).locator('button.pick').click();
+    await library.getByTestId('media-add').click();
+    await expect(page.getByTestId('slideshow-row')).toHaveCount(2);
+    await page.getByTestId('slideshow-seconds').fill('3');
+    await page.getByTestId('slideshow-seconds').blur();
+}
+
+test('the motion "Abwechselnd" zooms the first picture in and the next one out in the preview (schema 1.19)', async ({ page, baseURL }) => {
+    test.setTimeout(60_000);
+    await twoPictures(page, baseURL);
+    const motion = page.getByTestId('slideshow-motion');
+    expect(await motion.locator('option').allTextContents()).toEqual(['Keine', 'Langsam hineinzoomen', 'Langsam herauszoomen', 'Abwechselnd']);
+    await expect(motion).toHaveValue('none');
+    await motion.selectOption('alternate');
+    await page.screenshot({ path: 'test-results/slideshow-motion.png' });
+
+    // The stage of the editor stands still.
+    const onStage = page.locator('.editor-stage').getByTestId('slideshow').locator('[data-active] img');
+    await expect(onStage).toHaveCSS('animation-name', 'none');
+
+    await page.getByTestId('open-preview').click();
+    const layer = page.getByTestId('playlist-preview').getByTestId('slideshow').locator('[data-active]');
+    await expect(layer).toHaveClass(/layer--motion-in/, { timeout: 15_000 });
+    expect(await layer.locator('img').evaluate((el) => getComputedStyle(el).animationName)).toContain('slideshow-zoom-in');
+    await expect(layer).toHaveClass(/layer--motion-out/, { timeout: 8_000 });
+    expect(await layer.locator('img').evaluate((el) => getComputedStyle(el).animationName)).toContain('slideshow-zoom-out');
+});
+
+test('a motion goes with a push: the transition moves the layer, the zoom the picture (schema 1.19)', async ({ page, baseURL }) => {
+    test.setTimeout(60_000);
+    await twoPictures(page, baseURL);
+    await page.getByTestId('slideshow-transition').selectOption('slide');
+    await page.getByTestId('slideshow-motion').selectOption('out');
+    await page.getByTestId('open-preview').click();
+    const layer = page.getByTestId('playlist-preview').getByTestId('slideshow').locator('[data-active]');
+    await expect(layer).toBeVisible({ timeout: 15_000 });
+    const styles = await layer.evaluate((el) => ({
+        transition: getComputedStyle(el).transitionProperty,
+        animation: getComputedStyle(el.querySelector('img')!).animationName,
+    }));
+    expect(styles.transition).toContain('transform');
+    expect(styles.animation).toContain('slideshow-zoom-out');
+});
+
+test('a saved block with the old transition "zoom" shows as fade with zooming in, and is rewritten on change (schema 1.19)', async ({ page, baseURL }) => {
+    test.setTimeout(60_000);
+    await twoPictures(page, baseURL);
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    // Turn what was saved into what 1.18 wrote.
+    const turned = await page.evaluate(() => {
+        const key = 'infoscreen-designer.demo-store';
+        const raw = localStorage.getItem(key) ?? '';
+        const changed = raw.replace(/\\"transition\\":\\"fade\\"/g, '\\"transition\\":\\"zoom\\"');
+        localStorage.setItem(key, changed);
+        return changed !== raw;
+    });
+    expect(turned).toBe(true);
+
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await page.getByTestId('slide-item').nth(1).click();
+    await page.getByTestId('frame-slideshow').first().click();
+    await expect(page.getByTestId('slideshow-transition')).toHaveValue('fade');
+    await expect(page.getByTestId('slideshow-motion')).toHaveValue('in');
+    await expect(page.getByTestId('slideshow-transition').locator('option')).toHaveCount(4);
+
+    await page.getByTestId('slideshow-transition').selectOption('slide');
+    await expect(page.getByTestId('slideshow-motion')).toHaveValue('in');
+    await page.getByTestId('save').click();
+    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    expect(await page.evaluate(() => (localStorage.getItem('infoscreen-designer.demo-store') ?? '').includes('zoom\\"'))).toBe(false);
+});
 
 // Wide column, tablet sheet, tablet lying down, phone sheet: the buttons of a row stay inside the inspector.
 for (const size of [

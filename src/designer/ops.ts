@@ -236,7 +236,7 @@ export function createBlock(
             // No video yet: the inspector offers the library's; sound stays off until switched on (Plan.md 52).
             return { ...frame, type, fit: 'contain', sound: false };
         case 'slideshow':
-            return { ...frame, type, mediaIds: [], fit: 'cover', seconds: 6, transition: 'fade' };
+            return { ...frame, type, mediaIds: [], fit: 'cover', seconds: 6, transition: 'fade', motion: 'none' };
         case 'groups':
             // No homepage yet: the inspector offers them; the leaders stay off until switched on (Plan.md 43).
             return { ...frame, type, groupIds: [], layout: 'card', perPage: 1, show: v.parse(GroupFields, {}), style: textStyle(56) };

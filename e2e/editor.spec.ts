@@ -1281,6 +1281,26 @@ test('a website and a QR code (Plan.md 28)', async ({ page }) => {
     await stage.screenshot({ path: 'test-results/web-and-qr.png' });
 });
 
+test('an embed code in the website block gives its address (Plan.md 55 C)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await addBlock(page, 'web');
+    const field = page.getByTestId('web-url');
+    await expect(page.locator('label[for="web-url-input"]')).toHaveText('Adresse oder Einbettungscode');
+
+    await field.fill('<iframe src="//www.gemeinde.example/umfrage" width="600" height="400" allow="fullscreen"></iframe>');
+    await field.press('Enter');
+    await expect(field).toHaveValue('https://www.gemeinde.example/umfrage');
+    await expect(page.locator('.editor-stage').getByTestId('web-frame')).toHaveAttribute('src', 'https://www.gemeinde.example/umfrage');
+    await page.screenshot({ path: 'test-results/web-embed.png' });
+
+    // A code without an address changes nothing and says why.
+    await field.fill('<iframe width="600"></iframe>');
+    await field.press('Enter');
+    await expect(page.getByTestId('web-problem')).toHaveText('Im Einbettungscode steht keine Adresse.');
+    await expect(field).toHaveValue('https://www.gemeinde.example/umfrage');
+});
+
 // Reads the real test instance (nur lesend, Plan.md 33): the group "ISD-Beitragstest" is public,
 // posts are switched on, and it has posts – among them "Biete Akkuschrauber" with an image (Befunde G37).
 // A fresh, empty slide keeps the card free of anything from the demo slides underneath it.
