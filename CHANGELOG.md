@@ -4,6 +4,26 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.3.9] – 2026-10-01
+
+### Neu
+
+- **Dienste am Termin:** Der „Nächste Termin" und die Terminliste als Karten zeigen, wer einen Dienst übernimmt –
+  „Predigt: Anna Beispiel". Im Inspektor unter „Dienste zeigen" wählt man bis zu sechs Dienste. Gezeigt werden nur
+  **zugesagte** Einteilungen und nur Dienste aus Dienstgruppen, die in ChurchTools „Ohne Berechtigung einsehbar"
+  sind; Dienste, deren Personenname verborgen ist, erscheinen nie. Auf den Bildschirm kommt nur der Name – kein
+  Bild, kein Kommentar, nicht, wer angefragt hat. Dafür bekommt das Gerät mit „Rechte aktualisieren" das Recht,
+  die Events der Kalender dieser Bausteine zu sehen.
+- **Räume je Kalender:** Unter „Raum zeigen" lässt sich je gewähltem Kalender abschalten, ob die gebuchten Räume am
+  Termin stehen – etwa für Veranstaltungen, die viele Räume buchen. Ein eingetragener Ort bleibt stehen.
+
+### Geändert
+
+- **Terminliste als Karten, neu geordnet:** Links stehen Datum, Uhrzeit und darunter Ort und Raum, rechts Titel,
+  Untertitel und die Dienste – höchstens drei Zeilen je Termin. Der Abstand links und rechts vom Datum ist gleich,
+  und die Datumsspalte ist auf jeder Seite gleich breit, sodass beim Seitenwechsel nichts verrutscht. Datum und
+  Uhrzeit sind nicht mehr fett; ein langer Ort endet mit „…".
+
 ## [0.3.8] – 2026-09-30
 
 ### Neu
@@ -437,6 +457,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.3.9]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.9
 [0.3.8]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.8
 [0.3.7]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.7
 [0.3.6]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.6

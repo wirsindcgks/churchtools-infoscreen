@@ -195,3 +195,45 @@ describe('readSlide – rooms block (schema 1.16, Plan.md 46)', () => {
         expect(issues).toHaveLength(1);
     });
 });
+
+describe('readSlide – services at appointments (schema 1.17, Plan.md 51)', () => {
+    const style = { fontFamily: 'sans', fontSize: 44, color: '#fff' };
+    const next = { id: 'n', type: 'next-appointment', x: 0, y: 0, width: 800, height: 400, calendarIds: [1], style };
+    const list = { ...next, id: 'l', type: 'appointment-list', horizonDays: 14, limit: 6 };
+
+    it('reads services and stays valid without them', () => {
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [{ ...next, services: [3, 4] }, list] });
+        expect(issues).toEqual([]);
+        expect(doc.blocks[0]).toMatchObject({ services: [3, 4] });
+        expect(doc.blocks[1]).not.toHaveProperty('services');
+    });
+
+    it('skips a block with more than 6 services, with an issue', () => {
+        const { doc, issues } = readSlide({
+            ...makeSlide(),
+            blocks: [{ ...list, services: [1, 2, 3, 4, 5, 6, 7] }, { ...next, services: [1, 2, 3, 4, 5, 6] }],
+        });
+        expect(doc.blocks.map((b) => b.id)).toEqual(['n']);
+        expect(issues).toHaveLength(1);
+    });
+
+    it('rejects non-integer ids', () => {
+        expect(readSlide({ ...makeSlide(), blocks: [{ ...next, services: [1.5] }] }).doc.blocks).toEqual([]);
+    });
+});
+
+describe('readSlide – rooms off per calendar (schema 1.17, Plan.md 51)', () => {
+    const style = { fontFamily: 'sans', fontSize: 44, color: '#fff' };
+    const next = { id: 'n', type: 'next-appointment', x: 0, y: 0, width: 800, height: 400, calendarIds: [1, 2], showRooms: true, style };
+
+    it('reads the list and stays valid without it', () => {
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [{ ...next, roomsOffCalendarIds: [2] }, { ...next, id: 'm' }] });
+        expect(issues).toEqual([]);
+        expect(doc.blocks[0]).toMatchObject({ roomsOffCalendarIds: [2] });
+        expect(doc.blocks[1]).not.toHaveProperty('roomsOffCalendarIds');
+    });
+
+    it('rejects ids that are no integers', () => {
+        expect(readSlide({ ...makeSlide(), blocks: [{ ...next, roomsOffCalendarIds: ['a'] }] }).doc.blocks).toEqual([]);
+    });
+});

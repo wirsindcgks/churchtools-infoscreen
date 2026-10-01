@@ -281,6 +281,13 @@ async function fakeChurch(page: Page): Promise<void> {
             ]);
         }
         if (path === '/grouphomepages/kleingruppen') return json(homepage());
+        if (path === '/services') {
+            return json([
+                { id: 1, name: 'Predigt', serviceGroupId: 1, hidePersonName: false, sortKey: 10 },
+                { id: 2, name: 'Moderation', serviceGroupId: 1, hidePersonName: false, sortKey: 20 },
+            ]);
+        }
+        if (path === '/servicegroups') return json([{ id: 1, name: 'Programm', viewAll: true }]);
         if (path === '/resource/masterdata') return json({ resourceTypes: RESOURCE_TYPES, resources: RESOURCES });
         if (path === '/bookings') {
             const ids = new URL(request.url()).searchParams.getAll('resource_ids[]').map(Number);

@@ -65,7 +65,18 @@ Weil ein Titel Namen enthalten kann („Gespräch Familie X"), lässt er sich **
 Beim **Nächsten Termin** und bei der **Terminliste als Karten** zeigt der Schalter **„Raum zeigen"** die gebuchten Räume
 neben dem Ort, mit der Pin-Nadel: „Gemeindezentrum · Saal". Nur bestätigte Buchungen von Räumen zählen, und am Termin
 steht nur der Raumname, nie ein Buchungstitel. Das Gerät braucht dafür das Recht, alle Räume zu sehen – „Rechte
-aktualisieren" gibt es ihm (siehe [Rechte](Rechte.md)).
+aktualisieren" gibt es ihm (siehe [Rechte](Rechte.md)). Hat ein Baustein mehrere Kalender, lässt sich
+„Räume zeigen für:" je Kalender abschalten – etwa wo für einen Termin viele Räume gebucht werden; ein eingetragener Ort
+bleibt stehen.
+
+## Die Dienste am Termin
+
+Beim **Nächsten Termin** und bei der **Terminliste als Karten** zeigt „Dienste zeigen", wer einen Dienst übernimmt –
+„Predigt: Anna Beispiel · Moderation: Ben Muster" –, in einer eigenen Zeile mit einem Personen-Symbol (in der Liste unter Titel und Untertitel).
+Gewählt wird je Baustein aus den Diensten, die zur Auswahl stehen. Gezeigt werden nur **zugesagte** Einteilungen und nur
+Dienste aus Dienstgruppen, die in ChurchTools „Ohne Berechtigung einsehbar" sind; was eine Gemeinde dort verborgen hält,
+bleibt auch am Fernseher verborgen, und am Termin stehen nur Name und Dienst, nie ein Foto oder ein Kommentar. Das Gerät
+braucht dafür das Recht, die Events der Kalender zu sehen – „Rechte aktualisieren" gibt es ihm (siehe [Rechte](Rechte.md)).
 
 ## Die Vorschau – genau wie am Fernseher
 

@@ -18,6 +18,7 @@ export function usePreview(
     groupHomepages: Ref<number[]> = ref([]),
     rooms: Ref<{ resourceIds: number[]; days: number }> = ref({ resourceIds: [], days: 1 }),
     appointmentRooms: Ref<boolean> = ref(false),
+    appointmentServices: Ref<number[]> = ref([]),
 ) {
     const context = reactive<StageContext>({
         now: new Date(),
@@ -66,6 +67,7 @@ export function usePreview(
             const window = appointmentWindow(new Date(), context.timeZone, 90);
             const list = await churchToolsPlayerData.appointments(ids, window.from, window.to, context.timeZone, {
                 rooms: appointmentRooms.value,
+                services: appointmentServices.value,
             });
             if (mine === request) context.appointments = list;
         } catch (error) {
@@ -126,7 +128,7 @@ export function usePreview(
 
     watch(media, (list) => (context.media = new Map(list.map((m) => [m.id, m]))), { immediate: true });
     watch(theme, (value) => (context.theme = value), { immediate: true });
-    watch(() => `${calendarIds.value.join()}|${appointmentRooms.value}`, () => void loadAppointments());
+    watch(() => `${calendarIds.value.join()}|${appointmentRooms.value}|${appointmentServices.value.join()}`, () => void loadAppointments());
     watch(() => JSON.stringify(posts.value), () => void loadPosts());
     watch(() => groupHomepages.value.join(), () => void loadGroupHomepages());
     watch(() => JSON.stringify(rooms.value), () => void loadRooms());

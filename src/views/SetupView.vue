@@ -127,6 +127,8 @@ let rooms: RoomInfo[] = [];
 let usedRoomIds: number[] = [];
 /** A block shows the rooms of its appointments (Plan.md 50). */
 let appointmentRooms = false;
+/** The calendars of the blocks that show services (Plan.md 51). */
+let serviceCalendarIds: number[] = [];
 let catalog: AuthCatalog | null = null;
 let categories: Partial<Record<CategoryKey, number>> = {};
 
@@ -157,7 +159,7 @@ const foreignGroups = computed(() =>
     ),
 );
 
-const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.resourceView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit];
+const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.resourceView, AUTH.eventView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit];
 
 /** Rights a side must not hold – what the assistant takes back (Plan.md, F). */
 function forbiddenRights(side: Side): RequiredRight[] | null {
@@ -196,6 +198,7 @@ function computePlan(): void {
             roomIds: rooms.map((r) => r.id),
             usedRoomIds,
             appointmentRooms,
+            serviceCalendarIds,
         });
     } catch (e) {
         planProblem.value = explain(e);
@@ -448,6 +451,7 @@ async function check(side: Side): Promise<void> {
                 rooms,
                 usedRoomIds,
                 appointmentRooms,
+                serviceCalendarIds,
                 wikiCategoryId,
                 moduleRights: moduleRights('device'),
             });
@@ -506,7 +510,7 @@ onMounted(async () => {
         const handle = await getRepository();
         repository = handle.repository;
         demo.value = handle.demo;
-        const [list, settings, wikiCategories, calendarList, used, screenList, masterdata, usedRooms, roomsAtAppointments] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, used, screenList, masterdata, usedRooms, roomsAtAppointments, serviceCalendars] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
@@ -516,6 +520,7 @@ onMounted(async () => {
             fetchResourceMasterdata().catch(() => null),
             repository.roomIdsInUse(),
             repository.appointmentRoomsInUse(),
+            repository.serviceCalendarIdsInUse(),
         ]);
         screens.value = screenList;
         device.slug = screenList[0]?.slug ?? '';
@@ -529,6 +534,7 @@ onMounted(async () => {
         rooms = masterdata ? roomsOf(masterdata) : [];
         usedRoomIds = usedRooms;
         appointmentRooms = roomsAtAppointments;
+        serviceCalendarIds = serviceCalendars;
         selected.designer = settings?.designerGroupId ?? null;
         selected.device = settings?.deviceGroupId ?? null;
         createdGroupIds.value = settings?.createdGroupIds ?? [];

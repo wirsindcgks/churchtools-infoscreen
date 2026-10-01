@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addBlock } from './helpers';
+import { addBlock, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -68,6 +68,42 @@ const APPOINTMENT = {
     ],
 };
 
+/**
+ * The services of the appointment, as `/events?include=eventServices` sends them – invented people, and fields
+ * that must never show (who asked, the comment). "Ton" belongs to a group that is not open to all.
+ */
+const SERVICE_LIST = [
+    { id: 1, name: 'Predigt', serviceGroupId: 1, hidePersonName: false, sortKey: 10 },
+    { id: 2, name: 'Moderation', serviceGroupId: 1, hidePersonName: false, sortKey: 20 },
+    { id: 3, name: 'Ton', serviceGroupId: 2, hidePersonName: false, sortKey: 30 },
+];
+const SERVICE_GROUPS = [
+    { id: 1, name: 'Programm', viewAll: true },
+    { id: 2, name: 'Technik', viewAll: false },
+];
+const assignment = (serviceId: number, first: string, last: string, isAccepted = true) => ({
+    serviceId,
+    personId: 41,
+    person: { title: `${last}, ${first}`, domainAttributes: { firstName: first, lastName: last }, guid: 'g-1', imageUrl: 'https://example.invalid/bild' },
+    name: null,
+    isAccepted,
+    isValid: true,
+    comment: 'Geheimer Kommentar',
+    requesterPerson: { title: 'Geheim, Anfrager', guid: 'g-2' },
+});
+const EVENT = {
+    id: 5,
+    appointmentId: 9,
+    startDate: '2026-10-04T08:00:00Z',
+    isCanceled: false,
+    eventServices: [
+        assignment(1, 'Anna', 'Beispiel'),
+        assignment(2, 'Ben', 'Muster'),
+        assignment(2, 'Cora', 'Nochoffen', false),
+        assignment(3, 'Dirk', 'Technik'),
+    ],
+};
+
 interface Church {
     rooms?: typeof ROOMS;
     /** Rooms whose bookings answer 403, as for a device without the right (G45). */
@@ -75,10 +111,41 @@ interface Church {
     bookingRequests: URLSearchParams[];
     /** The requests for appointments, to see whether the bookings were asked for. */
     appointmentRequests?: URLSearchParams[];
+    /** A second calendar, "Jugend", with an appointment and a booked room of its own. */
+    second?: boolean;
+    /** Appointments (and the events of the first) of its own, and the clock: for the pictures of the list. */
+    scene?: { now: Date; appointments: unknown[]; eventStart: string };
 }
 
+/** An appointment as `/calendars/appointments` sends it with its bookings; names are made up. */
+function scheduled(
+    id: number,
+    calendar: { id: number; name: string; color: string },
+    title: string,
+    start: string,
+    extra: { subtitle?: string; place?: string; rooms?: number[] } = {},
+) {
+    const end = new Date(new Date(start).getTime() + 90 * 60_000).toISOString();
+    return {
+        appointment: {
+            base: {
+                id,
+                title,
+                subtitle: extra.subtitle ?? null,
+                allDay: false,
+                calendar,
+                address: extra.place ? { name: extra.place } : null,
+            },
+            calculated: { startDate: start, endDate: end },
+        },
+        bookings: (extra.rooms ?? []).map((resourceId) => ({ base: { id: 100 + resourceId, resourceId, statusId: 2 } })),
+    };
+}
+const GOTTESDIENSTE = { id: 1, name: 'Gottesdienste', color: '#2e7d8c' };
+const JUGEND = { id: 2, name: 'Jugend', color: '#b45309' };
+
 async function fakeChurch(page: Page, church: Church = { bookingRequests: [] }): Promise<Church> {
-    await page.clock.setFixedTime(NOW);
+    await page.clock.setFixedTime(church.scene?.now ?? NOW);
     await page.route('**/api/**', (route: Route) => {
         const request = route.request();
         const url = new URL(request.url());
@@ -88,14 +155,22 @@ async function fakeChurch(page: Page, church: Church = { bookingRequests: [] }):
         if (path === '/config') return json({ timezone: 'Europe/Berlin' });
         if (path === '/whoami') return json({ id: 1, firstName: 'Anna', lastName: 'Beispiel' });
         if (path === '/info') return json({ siteName: 'Gemeinde am Markt' });
-        if (path === '/calendars') return json([{ id: 1, name: 'Gottesdienste', color: '#2e7d8c' }]);
+        if (path === '/calendars') return json(church.second || church.scene ? [GOTTESDIENSTE, JUGEND] : [GOTTESDIENSTE]);
         if (path === '/calendars/appointments') {
             church.appointmentRequests?.push(url.searchParams);
+            if (church.scene) return json(church.scene.appointments);
+            if (church.second) {
+                const youth = scheduled(10, JUGEND, 'Jugendabend', '2026-10-04T16:00:00Z', { place: 'Jugendhaus', rooms: [2] });
+                return json([APPOINTMENT, youth]);
+            }
             // The bookings only where they were asked for – as ChurchTools does.
             return json([url.searchParams.has('include[]') ? APPOINTMENT : { appointment: APPOINTMENT.appointment }]);
         }
         if (path === '/permissions/global') return json({ churchcore: { 'administer persons': true } });
         if (path === '/resource/masterdata') return json({ resourceTypes: TYPES, resources: church.rooms ?? ROOMS });
+        if (path === '/events') return json([church.scene ? { ...EVENT, startDate: church.scene.eventStart } : EVENT]);
+        if (path === '/services') return json(SERVICE_LIST);
+        if (path === '/servicegroups') return json(SERVICE_GROUPS);
         if (path === '/bookings') {
             church.bookingRequests.push(url.searchParams);
             const ids = url.searchParams.getAll('resource_ids[]').map(Number);
@@ -326,4 +401,112 @@ test('the room in the list of appointments: as cards, not as rows', async ({ pag
     await expect(stage(page)).toContainText('Sonntagsgottesdienst');
     await expect(stage(page)).not.toContainText('Saal');
     await expect(page.getByTestId('show-rooms')).toHaveCount(0);
+});
+
+test('the services at an appointment: only open ones are offered, only accepted people show', async ({ page }) => {
+    await fakeChurch(page, { bookingRequests: [] });
+    await newBlock(page, 'next-appointment');
+    await page.getByTestId('next-layout').selectOption('card');
+
+    // Off until chosen; "Ton" is in a group that is not open to all and is not offered.
+    await expect(stage(page).getByTestId('next-services')).toHaveCount(0);
+    await expect(page.getByTestId('service-1')).toBeVisible();
+    await expect(page.getByTestId('service-2')).toBeVisible();
+    await expect(page.getByTestId('service-3')).toHaveCount(0);
+
+    await page.getByTestId('service-1').check();
+    await expect(stage(page).getByTestId('next-services')).toHaveText('Predigt: Anna Beispiel');
+    await page.getByTestId('service-2').check();
+    await expect(stage(page).getByTestId('next-services')).toHaveText('Predigt: Anna Beispiel · Moderation: Ben Muster');
+    for (const secret of ['Nochoffen', 'Dirk', 'Geheim']) await expect(stage(page)).not.toContainText(secret);
+
+    await page.getByTestId('next-layout').selectOption('classic');
+    await expect(stage(page).getByTestId('next-services')).toContainText('Predigt: Anna Beispiel');
+    await page.getByTestId('service-2').uncheck();
+    await expect(stage(page).getByTestId('next-services')).toHaveText('Predigt: Anna Beispiel');
+});
+
+test('the services in the list of appointments: as cards, not as rows', async ({ page }) => {
+    await fakeChurch(page, { bookingRequests: [] });
+    await newBlock(page, 'appointment-list');
+    await page.getByTestId('list-layout').selectOption('cards');
+    await page.getByTestId('service-1').check();
+    await expect(stage(page).getByTestId('list-services')).toHaveText('Predigt: Anna Beispiel');
+
+    await page.getByTestId('list-layout').selectOption('rows');
+    await expect(page.getByTestId('services-fieldset')).toHaveCount(0);
+    await expect(stage(page)).not.toContainText('Anna Beispiel');
+});
+
+test('rooms can be left out for single calendars: the room goes, the place stays', async ({ page }) => {
+    await fakeChurch(page, { bookingRequests: [], second: true });
+    await newBlock(page, 'appointment-list');
+    await page.getByTestId('list-layout').selectOption('cards');
+    const places = stage(page).getByTestId('list-place');
+    await expect(places).toHaveText(['Kirchsaal · Saal', 'Jugendhaus · Gruppenraum 1']);
+
+    await expect(page.getByTestId('rooms-calendar-1')).toBeChecked();
+    await page.getByTestId('rooms-calendar-2').uncheck();
+    await expect(places).toHaveText(['Kirchsaal · Saal', 'Jugendhaus']);
+    await page.getByTestId('rooms-calendar-2').check();
+    await expect(places).toHaveText(['Kirchsaal · Saal', 'Jugendhaus · Gruppenraum 1']);
+
+    // The other way round: the room of the first calendar goes.
+    await page.getByTestId('rooms-calendar-1').uncheck();
+    await expect(places).toHaveText(['Kirchsaal', 'Jugendhaus · Gruppenraum 1']);
+});
+
+/** A list of cards in four states of the day: with everything, a very long place, none, and a Thursday in September. */
+function scene(base: 'normal' | 'long') {
+    const day = (n: number, time: string) => {
+        const start = base === 'normal' ? Date.UTC(2026, 9, 4 + n) : Date.UTC(2027, 8, 30 + n);
+        return `${new Date(start).toISOString().slice(0, 10)}T${time}:00Z`;
+    };
+    const first = day(0, '08:00');
+    return {
+        now: base === 'normal' ? NOW : new Date('2027-09-27T08:30:00Z'),
+        eventStart: first,
+        appointments: [
+            scheduled(9, GOTTESDIENSTE, 'Sonntagsgottesdienst', first, { subtitle: 'mit Abendmahl', place: 'Kirchsaal', rooms: [1] }),
+            scheduled(10, JUGEND, 'Jugendabend', day(1, '16:00'), {
+                place: 'Evangelisches Gemeindehaus am Marktplatz mit dem sehr langen Namen der Gemeinde',
+                rooms: [2],
+            }),
+            scheduled(11, GOTTESDIENSTE, 'Taufgespräch', day(3, '18:00')),
+            scheduled(12, JUGEND, 'Hauskreis', day(4, '19:30'), { place: 'Jugendhaus' }),
+        ],
+    };
+}
+
+test('the cards of the list: date column of one width, place under the date, three lines at most', async ({ page }) => {
+    const titleLeft = async () => stage(page).getByTestId('list-card').first().locator('.title').evaluate((el) => el.getBoundingClientRect().left);
+    const open = async (which: 'normal' | 'long') => {
+        await page.unroute('**/api/**').catch(() => undefined);
+        await fakeChurch(page, { bookingRequests: [], scene: scene(which) });
+        await newBlock(page, 'appointment-list');
+        await page.getByTestId('list-layout').selectOption('cards');
+        await page.getByTestId('service-1').check();
+        // Tall enough for all four cards on one page.
+        await openSection(page, 'position');
+        await page.getByTestId('inspector-height').fill('900');
+        await page.getByTestId('inspector-height').blur();
+        await expect(stage(page).getByTestId('list-card')).toHaveCount(4);
+        await expect(stage(page).getByTestId('list-services')).toHaveText('Predigt: Anna Beispiel');
+        await expect(page.getByTestId('rooms-calendar-2')).toBeVisible();
+    };
+
+    await open('normal');
+    // Place and room stand in the date column and never widen it; the long place ends with an ellipsis.
+    await expect(stage(page).getByTestId('list-card').first().locator('.card-when').getByTestId('list-place')).toHaveText('Kirchsaal · Saal');
+    const clipped = stage(page).getByTestId('list-place').nth(1);
+    expect(await clipped.locator('.meta-text').evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
+    const widths = await stage(page).getByTestId('list-card').locator('.card-when').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().width)));
+    expect(new Set(widths).size).toBe(1);
+    const left = await titleLeft();
+    await page.screenshot({ path: 'test-results/dienste/list-cards.png' });
+
+    await open('long');
+    await expect(stage(page).getByTestId('list-card').first()).toContainText('Donnerstag, 30. September');
+    expect(await titleLeft()).toBeCloseTo(left, 0);
+    await page.screenshot({ path: 'test-results/dienste/list-cards-long-date.png' });
 });

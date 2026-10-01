@@ -189,6 +189,25 @@ describe('checkDeviceGroup', () => {
         ]);
     });
 
+    it('checks that a device sees the events of the calendars that show services (Plan.md 51)', () => {
+        const check = (grants: Grant[], serviceCalendarIds = [1, 2]) =>
+            checkDeviceGroup({
+                statusId: 1,
+                members: [{ label: 'Gerät A', grants }],
+                calendars,
+                usedCalendarIds: [],
+                serviceCalendarIds,
+                wikiCategoryId: WIKI,
+            }).filter((c) => c.text.startsWith('Dienste an Terminen'));
+        const [fail] = check([grant(AUTH.eventView, 1)]);
+        expect(fail).toMatchObject({ level: 'fail', text: 'Dienste an Terminen: Gerät A sieht die Events der Kalender nicht.' });
+        expect(fail?.detail).toContain('Events von einzelnen Kalendern sehen');
+        expect(check([grant(AUTH.eventView, 1), grant(AUTH.eventView, 2)])).toEqual([
+            { level: 'ok', text: 'Dienste an Terminen sind sichtbar.' },
+        ]);
+        expect(check([], [])).toEqual([]);
+    });
+
     it('adds no row for rooms at appointments when no block asks for them', () => {
         const checks = checkDeviceGroup({ statusId: 1, members: [{ label: 'G', grants: [] }], calendars, usedCalendarIds: [], rooms: [{ id: 1, name: 'Saal' }], wikiCategoryId: WIKI });
         expect(checks.some((c) => c.text.startsWith('Räume an Terminen'))).toBe(false);
