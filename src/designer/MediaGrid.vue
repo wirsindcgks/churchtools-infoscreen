@@ -3,7 +3,8 @@
  * The pictures and videos of the media library as tiles: picture, name, and where it is
  * shown – "Foyer › Gottesdienst › Begrüßung" instead of the wiki page it was
  * uploaded to (Plan.md, Nächste Schritte 18). In the editor a click chooses a
- * picture; on the media library page there is nothing to choose for. With `multiple`
+ * picture, and a small eye on the tile opens the preview; on the media library page
+ * there is nothing to choose for, so a click opens the preview (Plan.md 53). With `multiple`
  * a click marks or unmarks: the tile shows the running number of the choice, `marked`
  * holds the file ids in that order.
  */
@@ -15,7 +16,7 @@ import { videoSrc } from '../player/video';
 import Icon from './Icon.vue';
 
 const props = defineProps<{ items: MediaItem[]; selectedMediaId?: string; choosable?: boolean; multiple?: boolean; marked?: number[] }>();
-const emit = defineEmits<{ choose: [MediaItem]; remove: [MediaItem] }>();
+const emit = defineEmits<{ choose: [MediaItem]; remove: [MediaItem]; preview: [MediaItem] }>();
 
 /** Two places fit under a picture; the rest are counted and in the tooltip. */
 const SHOWN = 2;
@@ -32,12 +33,11 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
             data-testid="media-item"
         >
             <button
-                v-if="choosable"
                 class="pick"
                 type="button"
-                :title="multiple ? `${item.name} markieren` : `${item.name} verwenden`"
-                :aria-pressed="multiple ? numberOf(item) > 0 : undefined"
-                @click="emit('choose', item)"
+                :title="choosable ? (multiple ? `${item.name} markieren` : `${item.name} verwenden`) : `${item.name} ansehen`"
+                :aria-pressed="choosable && multiple ? numberOf(item) > 0 : undefined"
+                @click="choosable ? emit('choose', item) : emit('preview', item)"
             >
                 <template v-if="item.kind === 'video'">
                     <video :src="videoSrc(item) ?? undefined" preload="metadata" muted playsinline :aria-label="item.name" />
@@ -46,13 +46,18 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                 <img v-else :src="sizedImageUrl(item.imageUrl, 320, 180, 'crop')" :alt="item.name" loading="lazy">
                 <span v-if="multiple && numberOf(item) > 0" class="mark" data-testid="media-mark">{{ numberOf(item) }}</span>
             </button>
-            <div v-else class="pick">
-                <template v-if="item.kind === 'video'">
-                    <video :src="videoSrc(item) ?? undefined" preload="metadata" muted playsinline :aria-label="item.name" />
-                    <span class="badge"><Icon name="play" :size="12" /><template v-if="formatDuration(item.durationSeconds)">{{ formatDuration(item.durationSeconds) }}</template></span>
-                </template>
-                <img v-else :src="sizedImageUrl(item.imageUrl, 320, 180, 'crop')" :alt="item.name" loading="lazy">
-            </div>
+            <!-- Beside the tile button, not in it: a button in a button is not valid. -->
+            <button
+                v-if="choosable"
+                class="look"
+                type="button"
+                :aria-label="`${item.name} ansehen`"
+                :title="`${item.name} ansehen`"
+                data-testid="media-preview-open"
+                @click="emit('preview', item)"
+            >
+                <Icon name="eye" :size="16" />
+            </button>
             <figcaption>
                 <span class="name" :title="item.name">{{ item.name }}</span>
                 <button class="delete" type="button" :title="`${item.name} löschen`" @click="emit('remove', item)">Löschen</button>
@@ -80,6 +85,7 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
     gap: 14px;
 }
 figure {
+    position: relative;
     margin: 0;
     border: 2px solid transparent;
     border-radius: var(--d-radius-lg);
@@ -112,6 +118,33 @@ figure.selected {
     font-weight: 700;
     line-height: 20px;
     text-align: center;
+}
+/* The eye sits on the figure, over the picture, top right – the running number is top left. */
+.look {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.75);
+    color: #fff;
+    cursor: pointer;
+    opacity: 0;
+}
+figure:hover .look,
+figure:focus-within .look,
+.look:focus-visible {
+    opacity: 1;
+}
+@media (hover: none) {
+    .look {
+        opacity: 1;
+    }
 }
 .pick img,
 .pick video {
