@@ -211,6 +211,38 @@ describe('ScreenRepository', () => {
         expect((await repo.loadScreen('foyer-links')).media.map((m) => m.id).sort()).toEqual(['bild-1', 'bild-2']);
     });
 
+    it('counts a video as a use, loads it, and knows whether any is shown (schema 1.18)', async () => {
+        const video = { id: 'film', type: 'video' as const, x: 0, y: 0, width: 1280, height: 720, mediaId: 'clip-1', fit: 'contain' as const, sound: false };
+        expect(await repo.videoInUse()).toBe(false);
+        for (const [n, id] of ['clip-1', 'clip-2'].entries()) {
+            await repo.saveMedia({
+                schema: { major: 1, minor: 18 },
+                kind: 'media',
+                id,
+                name: `${id}.mp4`,
+                fileId: 30 + n,
+                imageUrl: '',
+                mediaType: 'video',
+                fileUrl: `https://gemeinde.example/?q=public/filedownload&id=${30 + n}&filename=abc`,
+                durationSeconds: 12,
+            });
+        }
+        await repo.saveScreen(bundle({ slides: [makeSlide({ id: 'slide-1', blocks: [{ ...video, mediaId: undefined }] }), makeSlide({ id: 'slide-2' })] }), {
+            ...save,
+            expectedRevision: null,
+        });
+        // A video block nobody has chosen a video for needs nothing yet.
+        expect(await repo.videoInUse()).toBe(false);
+        await repo.saveScreen(bundle({ slides: [makeSlide({ id: 'slide-1', blocks: [video] }), makeSlide({ id: 'slide-2' })] }), {
+            ...save,
+            expectedRevision: 1,
+        });
+        expect(await repo.videoInUse()).toBe(true);
+        expect(await repo.mediaUsage('clip-1')).toHaveLength(1);
+        expect(await repo.mediaUsage('clip-2')).toHaveLength(0);
+        expect((await repo.loadScreen('foyer-links')).media.map((m) => m.id)).toEqual(['clip-1']);
+    });
+
     it('lists each screen with its first enabled slide and the number of slides', async () => {
         const slides = [
             makeSlide({ id: 'slide-1', enabled: false }),

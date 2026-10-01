@@ -1,21 +1,30 @@
 /**
- * The media library: images in the module's wiki category, one page per
- * screen (G26), and a media document per image in the module store that
- * image blocks reference. Images someone uploaded in the wiki directly are
+ * The media library: images and videos in the module's wiki category, one page per
+ * screen (G26), and a media document per file in the module store that
+ * blocks reference. Images someone uploaded in the wiki directly are
  * adopted the first time they are chosen. The library never creates the wiki
  * category itself – that stays the setup assistant's job, so that only it
  * remembers the id and only it may ever remove it (Plan.md, F).
  */
 import { SCHEMA_VERSION, type MediaDoc } from '../model/schema';
 import type { MediaUse, ScreenRepository } from '../store/screen-repository';
+import { videoSrc } from '../player/video';
 import type { PreparedImage } from './scale';
+import { readVideoMetadata, videoProblem, type VideoMetadata } from './video';
 import * as wiki from './wiki';
 import type { WikiCategory, WikiFile, WikiPage } from './wiki';
+
+export { VIDEO_MAX_BYTES, VIDEO_TYPES } from './video';
 
 export interface MediaItem {
     fileId: number;
     name: string;
+    /** Empty for a video: the image service takes none (G42). */
     imageUrl: string;
+    kind: 'image' | 'video';
+    /** Download address of a video. */
+    fileUrl?: string;
+    durationSeconds?: number;
     /** Title of the carrier page, i.e. the slug of the screen it was uploaded for. */
     page: string;
     width?: number;
@@ -81,6 +90,11 @@ export const wikiBackend: MediaBackend = {
 
 const OVERVIEW_PAGE = 'main';
 
+/** A video is a file without an image address, named like an MP4, that has a download address. */
+function isVideoFile(file: WikiFile): boolean {
+    return !file.imageUrl && /\.mp4$/i.test(file.name) && !!file.fileUrl;
+}
+
 /**
  * The wiki page uploads go to. Since playlists stand on their own (schema
  * 1.4) there is no screen to name a page after; the library is flat, and
@@ -89,8 +103,11 @@ const OVERVIEW_PAGE = 'main';
 export const MEDIA_PAGE = { slug: 'mediathek', name: 'Mediathek' } as const;
 
 export class MediaInUseError extends Error {
-    constructor(readonly usage: { playlist: string; slide: string }[]) {
-        super(`Das Bild wird noch verwendet: ${usage.map((u) => `${u.playlist} › ${u.slide}`).join(', ')}.`);
+    constructor(
+        readonly usage: { playlist: string; slide: string }[],
+        what = 'Bild',
+    ) {
+        super(`Das ${what} wird noch verwendet: ${usage.map((u) => `${u.playlist} › ${u.slide}`).join(', ')}.`);
         this.name = 'MediaInUseError';
     }
 }
@@ -101,6 +118,7 @@ export class MediaLibrary {
     constructor(
         private readonly backend: MediaBackend,
         private readonly repository: ScreenRepository,
+        private readonly readMetadata: (url: string) => Promise<VideoMetadata> = readVideoMetadata,
     ) {}
 
     private categoryId(): Promise<number> {
@@ -111,7 +129,7 @@ export class MediaLibrary {
         return this.category.then((c) => c.id);
     }
 
-    /** All images of all screen pages, newest first. Files without an image address (PDFs …) are left out. */
+    /** All images and videos of all screen pages, newest first. Other files (PDFs …) are left out. */
     async list(): Promise<MediaItem[]> {
         const categoryId = await this.categoryId();
         const pages = (await this.backend.pages(categoryId)).filter((p) => p.title !== OVERVIEW_PAGE);
@@ -122,22 +140,28 @@ export class MediaLibrary {
         );
         return perPage
             .flat()
-            .filter(({ f }) => !!f.imageUrl)
-            .map(({ f, page }) => ({
-                fileId: f.id,
-                name: f.name,
-                imageUrl: f.imageUrl!,
-                page: page.title,
-                width: f.imageMetadata?.width,
-                height: f.imageMetadata?.height,
-                createdAt: f.meta?.createdDate,
-                mediaId: byFile.get(f.id)?.id,
-                uses: uses.get(byFile.get(f.id)?.id ?? '') ?? [],
-            }))
+            .filter(({ f }) => !!f.imageUrl || isVideoFile(f))
+            .map(({ f, page }): MediaItem => {
+                const doc = byFile.get(f.id);
+                const video = !f.imageUrl;
+                return {
+                    fileId: f.id,
+                    name: f.name,
+                    imageUrl: f.imageUrl ?? '',
+                    kind: video ? 'video' : 'image',
+                    ...(video ? { fileUrl: f.fileUrl!, durationSeconds: doc?.durationSeconds } : {}),
+                    page: page.title,
+                    width: f.imageMetadata?.width ?? doc?.width,
+                    height: f.imageMetadata?.height ?? doc?.height,
+                    createdAt: f.meta?.createdDate,
+                    mediaId: doc?.id,
+                    uses: uses.get(doc?.id ?? '') ?? [],
+                };
+            })
             .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '') || b.fileId - a.fileId);
     }
 
-    /** The media document for an image; created on first use. */
+    /** The media document for an image or video; created on first use. */
     async adopt(item: MediaItem): Promise<MediaDoc> {
         const existing = (await this.repository.listMedia()).find((d) => d.fileId === item.fileId);
         if (existing) return existing;
@@ -147,7 +171,9 @@ export class MediaLibrary {
             id: crypto.randomUUID(),
             name: item.name,
             fileId: item.fileId,
-            imageUrl: item.imageUrl,
+            imageUrl: item.kind === 'video' ? '' : item.imageUrl,
+            ...(item.kind === 'video' ? { mediaType: 'video' as const, fileUrl: item.fileUrl } : {}),
+            ...(item.durationSeconds !== undefined ? { durationSeconds: item.durationSeconds } : {}),
             ...(item.width ? { width: item.width } : {}),
             ...(item.height ? { height: item.height } : {}),
         };
@@ -168,6 +194,7 @@ export class MediaLibrary {
                     fileId: file.id,
                     name: file.name,
                     imageUrl: file.imageUrl,
+                    kind: 'image',
                     page: screen.slug,
                     uses: [],
                     width: image.width || undefined,
@@ -178,14 +205,39 @@ export class MediaLibrary {
         return docs;
     }
 
+    /**
+     * Uploads a video as it is – no scaling – and returns its media document.
+     * Type and size are refused before anything is sent. Length and size come
+     * from the uploaded file afterwards; without them the video is saved all the same.
+     */
+    async uploadVideo(file: File, screen: { slug: string; name: string }): Promise<MediaDoc> {
+        const problem = videoProblem(file);
+        if (problem) throw new Error(problem);
+        const categoryId = await this.categoryId();
+        const page = await this.backend.ensurePage(categoryId, screen.slug, screen.name);
+        const uploaded = await this.backend.upload(categoryId, page.guid, file, file.name);
+        if (!uploaded.fileUrl) throw new Error(`„${file.name}" ist kein Video, das ChurchTools abspielen kann.`);
+        const metadata = await this.readMetadata(videoSrc({ fileUrl: uploaded.fileUrl }) ?? uploaded.fileUrl).catch((): VideoMetadata => ({}));
+        return this.adopt({
+            fileId: uploaded.id,
+            name: uploaded.name,
+            imageUrl: '',
+            kind: 'video',
+            fileUrl: uploaded.fileUrl,
+            page: screen.slug,
+            uses: [],
+            ...metadata,
+        });
+    }
+
     async usage(item: MediaItem): Promise<{ playlist: string; slide: string }[]> {
         return item.mediaId ? this.repository.mediaUsage(item.mediaId) : [];
     }
 
-    /** Deletes an image – unless it is still shown somewhere and `force` is not set. */
+    /** Deletes an image or video – unless it is still shown somewhere and `force` is not set. */
     async remove(item: MediaItem, force = false): Promise<void> {
         const usage = await this.usage(item);
-        if (usage.length && !force) throw new MediaInUseError(usage);
+        if (usage.length && !force) throw new MediaInUseError(usage, item.kind === 'video' ? 'Video' : 'Bild');
         await this.backend.remove(item.fileId);
         if (item.mediaId) await this.repository.deleteMedia(item.mediaId);
     }

@@ -207,6 +207,8 @@ export interface DeviceGroupInput {
     appointmentRooms?: boolean;
     /** The calendars of the blocks that show services (Plan.md 51): the device must see their events. */
     serviceCalendarIds?: number[];
+    /** A screen shows a video (Plan.md 52): the device must see the wiki category, else the video does not run. */
+    videoInUse?: boolean;
     wikiCategoryId: number | null;
     moduleRights?: ModuleRights;
 }
@@ -312,15 +314,33 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         }
     }
 
-    // Least privilege (Plan.md, F): images come through the image service without sign-in (G14).
+    // Videos come through the download address, which wants "Wiki-Bereich sehen" (502) and nothing more (G47, Plan.md 52).
+    if (input.wikiCategoryId !== null) {
+        const wiki = input.wikiCategoryId;
+        const blind = input.members.filter((m) => !has(m.grants, AUTH.wikiCategoryView, wiki)).map((m) => m.label);
+        if (blind.length) {
+            const subject = `${blind.join(', ')} ${blind.length === 1 ? 'darf' : 'dürfen'} den Wiki-Bereich „Infoscreen" nicht sehen`;
+            checks.push(
+                input.videoInUse
+                    ? { level: 'fail', text: `${subject} – Videos laufen nicht.`, detail: '„Rechte aktualisieren" gibt der Gerätegruppe das Recht „Einzelne Wiki-Kategorien sehen" für den Bereich.' }
+                    : { level: 'warn', text: `${subject} – Videos würden nicht laufen.`, detail: '„Rechte aktualisieren" vergibt es.' },
+            );
+        } else if (input.videoInUse) {
+            checks.push({ level: 'ok', text: 'Videos können laufen: der Wiki-Bereich „Infoscreen" ist sichtbar.' });
+        }
+    }
+
+    // Least privilege (Plan.md, F): images come through the image service without sign-in (G14), videos need only 502.
     const wikiHolders = input.members
-        .filter((m) => [AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit].some((a) => has(m.grants, a)))
+        .filter((m) => [AUTH.wikiView, AUTH.wikiCategoryEdit].some((a) => has(m.grants, a)))
         .map((m) => m.label);
     if (wikiHolders.length) {
         checks.push({
             level: 'warn',
             text: `${wikiHolders.join(', ')} ${wikiHolders.length === 1 ? 'hat' : 'haben'} Wiki-Rechte, die ein Gerät nicht braucht.`,
-            detail: 'Bilder lädt der Fernseher ohne Anmeldung. Weniger Rechte heißt weniger Schaden, wenn ein Gerät verloren geht.',
+            detail:
+                'Bilder lädt der Fernseher ohne Anmeldung, zum Abspielen von Videos genügt „Wiki-Bereich Infoscreen sehen". ' +
+                'Weniger Rechte heißt weniger Schaden, wenn ein Gerät verloren geht.',
         });
     }
     return checks;

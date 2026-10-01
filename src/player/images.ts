@@ -2,7 +2,7 @@
  * Which image addresses a slide requests. Player, media cache and preloading
  * must agree on them to the letter: the sized URL is the cache key.
  */
-import type { Block, MediaDoc, SlideDoc } from '../model/schema';
+import { isVideo, type Block, type MediaDoc, type SlideDoc } from '../model/schema';
 import { sizedImageUrl } from './format';
 
 export interface Size {
@@ -28,7 +28,9 @@ type HeaderBlock = Extract<Block, { type: 'church-header' }>;
  */
 export function headerLogoUrl(block: HeaderBlock, media: Map<string, MediaDoc>, churchLogo: string | null): string | null {
     if (!block.showLogo) return null;
-    const own = block.logoMediaId ? media.get(block.logoMediaId) : undefined;
+    const found = block.logoMediaId ? media.get(block.logoMediaId) : undefined;
+    // A video is no image, whatever it was chosen for.
+    const own = found && !isVideo(found) ? found : undefined;
     const base = own?.imageUrl ?? churchLogo;
     return base ? sizedImageUrl(base, block.width, block.height) : null;
 }
@@ -41,14 +43,14 @@ export function slideImageUrls(
 ): string[] {
     const urls: string[] = [];
     const background = slide.background.kind === 'media' ? media.get(slide.background.mediaId) : undefined;
-    if (background) urls.push(backgroundImageUrl(background, stage));
+    if (background && !isVideo(background)) urls.push(backgroundImageUrl(background, stage));
     for (const block of slide.blocks) {
         const item = block.type === 'image' ? media.get(block.mediaId) : undefined;
-        if (item) urls.push(blockImageUrl(item, block));
+        if (item && !isVideo(item)) urls.push(blockImageUrl(item, block));
         if (block.type === 'slideshow') {
             for (const id of block.mediaIds) {
                 const shown = media.get(id);
-                if (shown) urls.push(blockImageUrl(shown, block));
+                if (shown && !isVideo(shown)) urls.push(blockImageUrl(shown, block));
             }
         }
         const logo = block.type === 'church-header' ? headerLogoUrl(block, media, churchLogo) : null;

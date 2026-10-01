@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * The media library as a section of its own (Plan.md, Nächste Schritte 16
- * and 18): all pictures with where they are shown, search, "Unbenutzt" to
+ * and 18): all pictures and videos with where they are shown, search, "Unbenutzt" to
  * tidy up, upload and delete – without opening a playlist first. Uploads go
  * to the wiki page "Mediathek"; the wiki category stays the storage behind
  * it (G8).
@@ -17,16 +17,16 @@ import SearchField from '../designer/SearchField.vue';
 import { useMediaLibrary } from '../designer/useMediaLibrary';
 import { filterMedia, MEDIA_PAGE as GENERAL, type MediaShow } from '../media/library';
 
-const { items, loading, busy, problem, dragOver, dropZone, upload, remove } = useMediaLibrary(() => GENERAL);
+const { items, loading, busy, problem, dragOver, dropZone, upload, remove, accept } = useMediaLibrary(() => GENERAL);
 
 const query = ref('');
 const show = ref<MediaShow>('all');
 const shown = computed(() => filterMedia(items.value, query.value, show.value));
 
 const SHOW = [
-    { key: 'all', label: 'Alle', title: 'Alle Bilder' },
-    { key: 'used', label: 'Verwendet', title: 'Verwendete Bilder' },
-    { key: 'unused', label: 'Unbenutzt', title: 'Unbenutzte Bilder' },
+    { key: 'all', label: 'Alle', title: 'Alle Bilder und Videos' },
+    { key: 'used', label: 'Verwendet', title: 'Verwendete Bilder und Videos' },
+    { key: 'unused', label: 'Unbenutzt', title: 'Unbenutzte Bilder und Videos' },
 ] as const;
 
 const input = ref<HTMLInputElement | null>(null);
@@ -42,18 +42,18 @@ async function picked(): Promise<void> {
             <button
                 class="d-btn d-btn--create"
                 type="button"
-                aria-label="Bilder hochladen"
+                aria-label="Bilder und Videos hochladen"
                 :disabled="!!busy || loading"
                 data-testid="media-upload-button"
                 @click="input?.click()"
             >
                 <Icon name="plus" />
-                <span class="create-label">Bilder hochladen</span>
+                <span class="create-label">Hochladen</span>
             </button>
             <input
                 ref="input"
                 type="file"
-                accept="image/png,image/jpeg,image/webp,image/gif"
+                :accept="accept"
                 multiple
                 hidden
                 data-testid="media-upload"
@@ -62,22 +62,22 @@ async function picked(): Promise<void> {
         </template>
 
         <PageHeader icon="image" title="Mediathek" testid="media-heading">
-            Bilder für alle Screens. Sie liegen im Wiki-Bereich „Infoscreen" von ChurchTools – dort bitte nichts löschen,
-            sonst fehlt das Bild auf den Fernsehern. Wer ein Bild kennt, kann es ohne Anmeldung abrufen; nichts
-            Vertrauliches hochladen.
+            Bilder und Videos für alle Screens. Sie liegen im Wiki-Bereich „Infoscreen" von ChurchTools – dort bitte nichts löschen,
+            sonst fehlt die Datei auf den Fernsehern. Wer ein Bild kennt, kann es ohne Anmeldung abrufen; nichts
+            Vertrauliches hochladen. Videos: MP4 (H.264) bis 128 MB.
         </PageHeader>
 
         <SearchField
             v-model="query"
-            placeholder="Suchen nach Bild, Screen, Playlist oder Slide …"
-            label="Bilder durchsuchen"
+            placeholder="Suchen nach Datei, Screen, Playlist oder Slide …"
+            label="Mediathek durchsuchen"
             testid="media-search"
         />
 
         <GroupCard
             icon="image"
             :title="SHOW.find((s) => s.key === show)!.title"
-            :count="`${shown.length} ${shown.length === 1 ? 'Bild' : 'Bilder'}`"
+            :count="`${shown.length} ${shown.length === 1 ? 'Datei' : 'Dateien'}`"
             heading-id="media-group"
             class="library"
             :class="{ 'library--drop': dragOver }"
@@ -89,12 +89,12 @@ async function picked(): Promise<void> {
             </template>
             <p v-if="busy" class="d-banner">{{ busy }}</p>
             <p v-if="problem" class="d-banner d-banner--error" role="alert">{{ problem }}</p>
-            <p v-if="loading" class="empty">Lade Bilder …</p>
+            <p v-if="loading" class="empty">Lade Mediathek …</p>
             <MediaGrid v-else-if="shown.length" :items="shown" @remove="remove" />
             <p v-else-if="!items.length" class="empty">
-                Noch keine Bilder. Hochladen oben rechts oder einfach hierher ziehen.
+                Noch keine Bilder oder Videos. Hochladen oben rechts oder einfach hierher ziehen.
             </p>
-            <p v-else class="empty">Kein Bild passt zu Suche und Filter.</p>
+            <p v-else class="empty">Nichts passt zu Suche und Filter.</p>
         </GroupCard>
     </ModulePage>
 </template>

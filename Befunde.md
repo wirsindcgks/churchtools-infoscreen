@@ -20,7 +20,7 @@ Messbericht – der Plan soll aber vom Produkt handeln.
 
 Geprüft wird gegen die eigene Instanz, nicht gegen die Demo und nicht gegen eine Vermutung – dieselbe Regel wie in `kraichtal-wetter-hacs`. Als zweite Quelle gilt der Quellcode einer Extension, die auf dieser Instanz **läuft**; er beweist Verhalten, das keine Spezifikation zusagt.
 
-**Eine durchgehende Nummerierung.** G1–G11, G14–G16, G18–G20, G22–G32, G35, G38, G39 und G42–G44 sind beantwortet, G21, G33, G34, G36, G37, G40, G41, G45 und G46 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G46).
+**Eine durchgehende Nummerierung.** G1–G11, G14–G16, G18–G20, G22–G32, G35, G38, G39 und G42–G44 sind beantwortet, G21, G33, G34, G36, G37, G40, G41, G45, G46 und G47 zur Hälfte; G12 und G13 sind hinfällig, der Rest offen (zuletzt G47).
 
 **Sackgassen bleiben stehen, kurz und als solche gekennzeichnet.** Ein Plan, der nur die richtigen Wege nennt, lädt dazu ein, die falschen ein zweites Mal zu gehen. Die Nummer bleibt einem Punkt erhalten, auch wenn er wandert. (Der frühere „G4" für die KV-Grenzen heißt jetzt G2; die alte Doppelnummerierung – Buchstabenkürzel für Beantwortetes, eigene Zählung für Offenes – ist damit aufgelöst.)
 
@@ -601,6 +601,15 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 - **Events legt man nicht einzeln an:** Die Spezifikation führt kein `POST /events`; ein Event entsteht über das Feld `events` beim Anlegen oder Ändern eines Termins (`POST`/`PUT /calendars/{id}/appointments…`). Der Rumpf des `PUT` ist in der Spezifikation leer.
 - **Events an Serienterminen passen auf den Terminschlüssel** *(Test des Nutzers im Testsystem, 2026-10-01, mit dem Test-ZIP `0.3.8+b46a97c-dirty`)*: Zwei von ihm in der Oberfläche angelegte Events an der Testserie (4. und 11. Oktober) zeigen je ihre eigene Einteilung am richtigen Termin.
 - **Offen:** was `/events` einem Konto **ohne** 306 antwortet (`403` oder leere Liste); wie `/events` blättert (bei einem Event nur `meta.count`); ob `hidePersonName` den Namen schon in der API verbirgt (G41).
+
+**G47 – Zur Hälfte: Videos fürs Gerät – „Wiki-Bereich sehen" (502) allein genügt.** *(2026-10-01, Testinstanz, als Entwicklungskonto und als Geräte-Konto; **schreibend mit OK des Nutzers:** `PUT /permissions/group_role/{id}` mit `authId` 502 und `dataId` [Bereich „Infoscreen"] an beiden Rollen der Gruppe „Infoscreen-Devices"; Anlass: Plan.md, Punkt 52; schließt an G42 an)*
+
+- **Vorher:** Das Geräte-Konto hat unter `churchwiki` nichts (`view: false`, `view category: []`). Die Download-Adresse des Testvideos (Datei 451) antwortet ihm mit `403`, dem Entwicklungskonto mit `206 video/mp4`; die Dateiliste der Mediathek-Seite (`/files/wiki_<Bereich>/<Seite>`) antwortet dem Gerät mit `200` und **leerer Liste** – wieder ein fehlendes Recht, das nicht wie ein Fehler aussieht (G20).
+- **Nachher, sofort:** `view category: [<Bereich>]`, `view` weiter `false`. Die Download-Adresse antwortet dem Gerät mit `206 video/mp4`. **„Wiki" sehen (501) braucht ein Gerät also nicht.** Das Recht wirkte ohne Wartezeit – anders als ein entzogenes (G45).
+- **Was das Gerät damit zusätzlich sieht:** den Bereich „Infoscreen" in `/wiki/categories` (nur diesen, nicht „Standard"), dessen Seiten und deren Dateilisten. Dort liegen die Mediathek und die Übersichtsseite des Designers.
+- **Die Download-Adresse will eine Sitzung, kein Token im Kopf:** Mit `Authorization: Login …` antwortet sie mit `302` auf sich selbst, mit dem Sitzungs-Cookie mit `206`. Für den Player unerheblich – ein `<video>` schickt ohnehin nur Cookies –, für Messungen mit `curl` wichtig. (G42 sagte „mit Token im Header wie mit Sitzung" für das `403`; für das `200` gilt es nicht.)
+- **`blob:` ist für Videos nicht erlaubt.** Die CSP auf `/ccm/` lautet `default-src 'self'; img-src * data: blob: …; connect-src *` – ohne `media-src`. Der Weg der Bilder (Cache Storage → `blob:`-Adresse, G28) ist Videos damit verschlossen; ein Video ohne Netz ginge nur über den Service Worker, der Bereichsanfragen aus dem Cache beantwortet. Nicht gemessen, aus der CSP gelesen.
+- **Offen:** Abspielen auf dem Raspberry über Stunden und Ton ohne Geste im Kiosk (G42, mit P4); Videos ohne Netz.
 
 ---
 

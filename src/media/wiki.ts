@@ -5,8 +5,9 @@
  * screen, titled with its slug.
  * Page titles cannot be changed later (Academy) – the slug is fixed anyway.
  *
- * The device needs no wiki rights: images are served through the image
- * service address, which works without sign-in (G14).
+ * Images are served through the image service address, which works without
+ * sign-in (G14). Videos only come through the download address, which wants
+ * the right to see the category (G47).
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { httpStatus } from '../ct/client';
@@ -36,6 +37,8 @@ export interface WikiFile {
     id: number;
     name: string;
     imageUrl: string | null;
+    /** Download address; the only one a video has (G42). */
+    fileUrl?: string | null;
     size?: number | null;
     imageMetadata?: { width?: number; height?: number } | null;
     meta?: { createdDate?: string };

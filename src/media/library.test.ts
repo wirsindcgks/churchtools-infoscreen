@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createScreenBundle } from '../designer/ops';
 import { MemoryKv } from '../store/memory-kv';
 import { ScreenRepository } from '../store/screen-repository';
-import { filterMedia, MediaInUseError, MediaLibrary, usageLines, type MediaBackend, type MediaItem } from './library';
+import { filterMedia, MediaInUseError, MediaLibrary, usageLines, VIDEO_MAX_BYTES, VIDEO_TYPES, type MediaBackend, type MediaItem } from './library';
 import type { WikiFile, WikiPage } from './wiki';
 
 class FakeWiki implements MediaBackend {
@@ -10,6 +10,7 @@ class FakeWiki implements MediaBackend {
     filesByPage = new Map<string, WikiFile[]>();
     nextId = 100;
     removed: number[] = [];
+    withoutFileUrl = false;
 
     async category() {
         return { id: 7, name: 'Infoscreen' };
@@ -28,7 +29,11 @@ class FakeWiki implements MediaBackend {
         return page;
     }
     async upload(_: number, guid: string, __: Blob, name: string) {
-        const file: WikiFile = { id: this.nextId++, name, imageUrl: `https://example.church.tools/images/${this.nextId}/h` };
+        const video = /\.mp4$/i.test(name);
+        const file: WikiFile = video
+            ? { id: this.nextId++, name, imageUrl: null, fileUrl: `https://example.church.tools/?q=public/filedownload&id=${this.nextId}&filename=h` }
+            : { id: this.nextId++, name, imageUrl: `https://example.church.tools/images/${this.nextId}/h` };
+        if (this.withoutFileUrl) delete file.fileUrl;
         this.filesByPage.set(guid, [...(this.filesByPage.get(guid) ?? []), file]);
         return file;
     }
@@ -44,12 +49,20 @@ describe('MediaLibrary', () => {
     let wiki: FakeWiki;
     let repository: ScreenRepository;
     let library: MediaLibrary;
+    let metadata: () => Promise<{ durationSeconds?: number; width?: number; height?: number }>;
 
     beforeEach(() => {
         wiki = new FakeWiki();
         repository = new ScreenRepository(new MemoryKv());
-        library = new MediaLibrary(wiki, repository);
+        metadata = async () => ({ durationSeconds: 12, width: 1920, height: 1080 });
+        library = new MediaLibrary(wiki, repository, () => metadata());
     });
+
+    const video = (name: string, size = 1000, type = 'video/mp4') => {
+        const file = new File(['x'], name, { type });
+        Object.defineProperty(file, 'size', { value: size });
+        return file;
+    };
 
     it('uploads to the page of the screen and creates it on first use', async () => {
         const [doc] = await library.upload([image('plakat.jpg')], { slug: 'foyer', name: 'Foyer' });
@@ -125,7 +138,7 @@ describe('MediaLibrary', () => {
         ];
         expect(usageLines([{ playlist, slide, screens }])).toEqual(['Foyer › Gottesdienst › Begrüßung', 'Saal › Gottesdienst › Begrüßung']);
         expect(usageLines([{ playlist, slide, screens: [] }])).toEqual(['Gottesdienst › Begrüßung']);
-        const item: MediaItem = { fileId: 1, name: 'x.jpg', imageUrl: '', page: 'mediathek', uses: [{ playlist, slide, screens }] };
+        const item: MediaItem = { fileId: 1, name: 'x.jpg', imageUrl: '', kind: 'image', page: 'mediathek', uses: [{ playlist, slide, screens }] };
         expect(filterMedia([item], 'saal', 'all')).toHaveLength(1);
     });
 
@@ -134,5 +147,82 @@ describe('MediaLibrary', () => {
         const [item] = await library.list();
         await library.remove(item!);
         expect(await library.list()).toEqual([]);
+    });
+
+    describe('videos (Plan.md 52)', () => {
+        const screen = { slug: 'mediathek', name: 'Mediathek' };
+
+        it('lists a video – a file without image address, named .mp4, with a download address – beside the images, and leaves other files out', async () => {
+            await library.upload([image('a.jpg')], screen);
+            await library.uploadVideo(video('Film.MP4'), screen);
+            wiki.filesByPage.set('p-mediathek', [
+                ...wiki.filesByPage.get('p-mediathek')!,
+                { id: 7, name: 'Programm.pdf', imageUrl: null, fileUrl: 'https://example.church.tools/?q=public/filedownload&id=7&filename=p' },
+                { id: 8, name: 'ohne.mp4', imageUrl: null },
+            ]);
+            const items = await library.list();
+            expect(items.map((i) => [i.name, i.kind]).sort()).toEqual([['Film.MP4', 'video'], ['a.jpg', 'image']]);
+            const film = items.find((i) => i.kind === 'video')!;
+            expect(film).toMatchObject({ imageUrl: '', durationSeconds: 12, width: 1920 });
+            expect(film.fileUrl).toContain('filedownload');
+        });
+
+        it('stores an uploaded video as it is, with its address, length and size, and no image address', async () => {
+            const doc = await library.uploadVideo(video('Film.mp4'), screen);
+            expect(doc).toMatchObject({ mediaType: 'video', imageUrl: '', durationSeconds: 12, width: 1920, height: 1080, name: 'Film.mp4' });
+            expect(doc.fileUrl).toContain('filedownload');
+            expect(await repository.listMedia()).toHaveLength(1);
+        });
+
+        it('adopts a video found in the wiki with mediaType and fileUrl', async () => {
+            await wiki.ensurePage(7, 'mediathek');
+            wiki.filesByPage.set('p-mediathek', [{ id: 60, name: 'Direkt.mp4', imageUrl: null, fileUrl: 'https://example.church.tools/?q=public/filedownload&id=60&filename=h' }]);
+            const [item] = await library.list();
+            expect(item).toMatchObject({ kind: 'video', mediaId: undefined });
+            const doc = await library.adopt(item!);
+            expect(doc).toMatchObject({ mediaType: 'video', fileId: 60, imageUrl: '' });
+            expect(doc).not.toHaveProperty('durationSeconds');
+            expect((await library.adopt(item!)).id).toBe(doc.id);
+        });
+
+        it('refuses another type or a file over the limit before anything is sent', async () => {
+            expect(VIDEO_TYPES).toEqual(['video/mp4']);
+            await expect(library.uploadVideo(video('a.mov', 1000, 'video/quicktime'), screen)).rejects.toThrow('Nur MP4-Videos (H.264) werden unterstützt.');
+            await expect(library.uploadVideo(video('gross.mp4', VIDEO_MAX_BYTES + 1), screen)).rejects.toThrow('„gross.mp4" ist größer als 128 MB.');
+            await expect(library.uploadVideo(video('genau.mp4', VIDEO_MAX_BYTES), screen)).resolves.toBeDefined();
+            expect([...wiki.pagesById.values()].map((p) => p.title)).toEqual(['main', 'mediathek']);
+            expect(wiki.filesByPage.get('p-mediathek')).toHaveLength(1);
+        });
+
+        it('saves the video without length and size when they cannot be read', async () => {
+            metadata = async () => {
+                throw new Error('kein Netz');
+            };
+            const doc = await library.uploadVideo(video('Film.mp4'), screen);
+            expect(doc).toMatchObject({ mediaType: 'video', name: 'Film.mp4' });
+            expect(doc).not.toHaveProperty('durationSeconds');
+            expect(await repository.listMedia()).toHaveLength(1);
+        });
+
+        it('fails in German when the answer has no download address', async () => {
+            wiki.withoutFileUrl = true;
+            await expect(library.uploadVideo(video('Film.mp4'), screen)).rejects.toThrow('kein Video, das ChurchTools abspielen kann');
+            expect(await repository.listMedia()).toEqual([]);
+        });
+
+        it('protects a video that a screen shows, and calls it a video', async () => {
+            const doc = await library.uploadVideo(video('Film.mp4'), screen);
+            const bundle = createScreenBundle({ name: 'Foyer', slug: 'foyer', orientation: 'landscape' });
+            bundle.slides[0]!.blocks.push({ id: 'film', type: 'video', x: 0, y: 0, width: 100, height: 100, mediaId: doc.id, fit: 'contain', sound: false });
+            await repository.saveScreen(bundle, { expectedRevision: null, updatedBy: 'Anna' });
+            const [item] = await library.list();
+            expect(usageLines(item!.uses)).toEqual(['Foyer › Foyer › Willkommen']);
+            const attempt = library.remove(item!);
+            await expect(attempt).rejects.toBeInstanceOf(MediaInUseError);
+            await expect(attempt).rejects.toThrow('Das Video wird noch verwendet');
+            expect(wiki.removed).toEqual([]);
+            await library.remove(item!, true);
+            expect(wiki.removed).toEqual([item!.fileId]);
+        });
     });
 });

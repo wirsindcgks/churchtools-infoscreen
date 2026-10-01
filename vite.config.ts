@@ -45,6 +45,8 @@ export default defineConfig(({ mode }) => {
                       '/images': devProxy(env.CT_BASE_URL, undefined),
                       // The church logo, anonymous as well; it redirects to /images (G29).
                       '/logo': devProxy(env.CT_BASE_URL, undefined),
+                      // The download address of a video (Plan.md 52); a regex, since it is the start page with a query – only that query, never the app itself.
+                      '^/\\?q=public/filedownload': devProxy(env.CT_BASE_URL, env.CT_LOGIN_TOKEN),
                   }
                 : undefined,
         },

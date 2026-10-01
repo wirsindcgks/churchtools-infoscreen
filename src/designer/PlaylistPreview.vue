@@ -67,6 +67,8 @@ const context = reactive<StageContext>({
     get paging() {
         return !paused.value;
     },
+    // Videos play, but never with sound unless the designer asks for it with the button on the video.
+    silent: true,
 });
 provideStageContext(context);
 

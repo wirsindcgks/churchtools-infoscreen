@@ -1,3 +1,4 @@
+import * as v from 'valibot';
 import { describe, expect, it } from 'vitest';
 import {
     InvalidDocumentError,
@@ -10,7 +11,7 @@ import {
     ValueTooLargeError,
 } from './read';
 import { DEFAULT_FONT } from '../player/fonts';
-import { SCHEMA_VERSION, THEME_ID } from './schema';
+import { isVideo, MediaDoc, SCHEMA_VERSION, THEME_ID } from './schema';
 import { makeSlide, makeScreen, textBlock } from './testing';
 
 describe('readSlide – tolerant towards newer data', () => {
@@ -132,6 +133,43 @@ describe('readSlide – slideshow block (schema 1.15, Plan.md 46)', () => {
             expect(doc.blocks).toEqual([]);
             expect(issues).toHaveLength(1);
         }
+    });
+});
+
+describe('readSlide – video block (schema 1.18, Plan.md 52)', () => {
+    const video = { id: 'v', type: 'video', x: 0, y: 0, width: 1280, height: 720 };
+
+    it('reads a video without a medium, with its defaults', () => {
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [video, { ...video, id: 'w', mediaId: 'm1', sound: true, fit: 'cover' }] });
+        expect(issues).toEqual([]);
+        expect(doc.blocks[0]).toMatchObject({ fit: 'contain', sound: false });
+        expect(doc.blocks[0]).not.toHaveProperty('mediaId');
+        expect(doc.blocks[1]).toMatchObject({ mediaId: 'm1', fit: 'cover', sound: true });
+    });
+
+    it('skips a video with an unknown fit, with an issue', () => {
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [{ ...video, fit: 'stretch' }] });
+        expect(doc.blocks).toEqual([]);
+        expect(issues).toHaveLength(1);
+    });
+});
+
+describe('MediaDoc – videos (schema 1.18, Plan.md 52)', () => {
+    const base = { schema: { major: 1, minor: 17 }, kind: 'media', id: 'm', name: 'a.png', fileId: 1, imageUrl: 'https://x/img' };
+
+    it('keeps a document without the new fields valid, and counts it as an image', () => {
+        const doc = v.parse(MediaDoc, base);
+        expect(isVideo(doc)).toBe(false);
+    });
+
+    it('reads a video with its address and length', () => {
+        const doc = v.parse(MediaDoc, { ...base, imageUrl: '', mediaType: 'video', fileUrl: 'https://x/?q=public/filedownload&id=1', durationSeconds: 12 });
+        expect(isVideo(doc)).toBe(true);
+        expect(doc.durationSeconds).toBe(12);
+    });
+
+    it('rejects an unknown media type', () => {
+        expect(v.safeParse(MediaDoc, { ...base, mediaType: 'audio' }).success).toBe(false);
     });
 });
 

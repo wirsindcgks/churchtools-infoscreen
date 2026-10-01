@@ -85,6 +85,11 @@ export function slideSeconds(slide: SlideDoc, pages: Readonly<Record<string, num
             const count = pages[block.id] ?? block.mediaIds.length;
             if (count > 1) seconds = Math.max(seconds, count * (block.seconds ?? 6));
         }
+        // The video reports its length – here in seconds, not pages; unknown (not loaded, failed), the slide keeps its time.
+        if (block.type === 'video') {
+            const length = pages[block.id];
+            if (length) seconds = Math.max(seconds, length);
+        }
     }
     return seconds;
 }

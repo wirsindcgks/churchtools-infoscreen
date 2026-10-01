@@ -20,11 +20,12 @@ import FillEditor from './FillEditor.vue';
 import Icon from './Icon.vue';
 import InfoHint from './InfoHint.vue';
 import InspectorSection from './InspectorSection.vue';
+import { formatDuration } from '../media/video';
 import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
 
 /** `rooms`: the rooms the designer may see; null while they are not loaded yet. */
 const props = defineProps<{ calendars: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null; services?: ServiceInfo[] | null; servicesFailed?: boolean }>();
-const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow'] }>();
+const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow' | 'video'] }>();
 
 /** Labels in the order of `GroupFields` itself, so the fieldset needs no list of its own (Plan.md 43). */
 const GROUP_SHOW_LABELS: Record<keyof GroupFields, string> = {
@@ -281,6 +282,14 @@ function mediaUrl(id: string | undefined, fit: 'crop' | 'max' = 'crop'): string 
     return media ? sizedImageUrl(media.imageUrl, 272, 153, fit) : null;
 }
 
+/** The chosen video's name and length for the line under the button, "Film.mp4 · 0:12". */
+function videoLabel(id: string | undefined): string | null {
+    const media = id ? editor.media.find((m) => m.id === id) : undefined;
+    if (!media) return null;
+    const length = formatDuration(media.durationSeconds);
+    return length ? `${media.name} · ${length}` : media.name;
+}
+
 /** Most pictures a slideshow holds – the schema's limit. */
 const SLIDESHOW_MAX = 30;
 
@@ -440,6 +449,38 @@ const LAYERS = [
                             <option value="cover">Fläche füllen</option>
                         </select>
                     </label>
+                </template>
+
+                <!-- Plan.md, 52: one library video, in a loop. -->
+                <template v-if="block.type === 'video'">
+                    <div class="media-pick">
+                        <p v-if="videoLabel(block.mediaId)" class="video-name" data-testid="video-name">{{ videoLabel(block.mediaId) }}</p>
+                        <p v-else-if="block.mediaId" class="hint" data-testid="video-name">Video fehlt</p>
+                        <p v-else class="hint">Noch kein Video gewählt.</p>
+                        <button class="d-btn" type="button" data-testid="pick-video" @click="emit('pick-image', 'video')">
+                            {{ block.mediaId ? 'Anderes Video …' : 'Video wählen …' }}
+                        </button>
+                    </div>
+                    <div class="hint-row hint-row--check">
+                        <label class="check">
+                            <input
+                                type="checkbox"
+                                :checked="block.sound ?? false"
+                                data-testid="video-sound"
+                                @change="setBlock({ sound: ($event.target as HTMLInputElement).checked })"
+                            >
+                            Ton
+                        </label>
+                        <InfoHint>Ton startet nur, wenn der Browser des Fernsehers es erlaubt – sonst läuft das Video stumm.</InfoHint>
+                    </div>
+                    <label class="d-field">
+                        Einpassen
+                        <select :value="block.fit ?? 'contain'" data-testid="video-fit" @change="setBlock({ fit: ($event.target as HTMLSelectElement).value })">
+                            <option value="contain">Ganz zeigen</option>
+                            <option value="cover">Fläche füllen</option>
+                        </select>
+                    </label>
+                    <p class="hint">Die Slide dauert mindestens so lange wie das Video. Ohne Netz zeigt der Fernseher an dieser Stelle nichts.</p>
                 </template>
 
                 <!-- Plan.md, 46: library pictures one after the other. -->
@@ -1696,6 +1737,11 @@ legend {
 .media-pick {
     display: grid;
     gap: 6px;
+}
+.video-name {
+    margin: 0;
+    overflow-wrap: anywhere;
+    font-weight: 700;
 }
 .media-pick img {
     width: 100%;

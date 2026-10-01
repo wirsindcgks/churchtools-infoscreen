@@ -236,17 +236,17 @@ function openPreviewFromMenu(): void {
 }
 
 /** Which picker the media library was opened for. */
-const libraryFor = ref<'block' | 'background' | 'logo' | 'slideshow' | null>(null);
+const libraryFor = ref<'block' | 'background' | 'logo' | 'slideshow' | 'video' | null>(null);
 const libraryTarget = ref<string | null>(null);
 
-function openLibrary(kind: 'block' | 'background' | 'logo' | 'slideshow'): void {
+function openLibrary(kind: 'block' | 'background' | 'logo' | 'slideshow' | 'video'): void {
     libraryTarget.value = kind === 'background' ? null : (editor.block?.id ?? null);
     libraryFor.value = kind;
 }
 
 async function chosen(media: MediaDoc): Promise<void> {
     await editor.refreshMedia();
-    if (libraryFor.value === 'block' && libraryTarget.value) {
+    if ((libraryFor.value === 'block' || libraryFor.value === 'video') && libraryTarget.value) {
         editor.updateBlock(libraryTarget.value, { mediaId: media.id });
     } else if (libraryFor.value === 'logo' && libraryTarget.value) {
         editor.updateBlock(libraryTarget.value, { logoMediaId: media.id });
@@ -270,6 +270,7 @@ async function chosenMany(docs: MediaDoc[]): Promise<void> {
 
 const currentMediaId = computed(() => {
     if (libraryFor.value === 'block' && editor.block?.type === 'image') return editor.block.mediaId;
+    if (libraryFor.value === 'video' && editor.block?.type === 'video') return editor.block.mediaId;
     if (libraryFor.value === 'logo' && editor.block?.type === 'church-header') return editor.block.logoMediaId;
     const bg = editor.slide?.background;
     return bg?.kind === 'media' ? bg.mediaId : undefined;
@@ -653,6 +654,7 @@ function onKey(event: KeyboardEvent): void {
             :screen="MEDIA_PAGE"
             :selected-media-id="currentMediaId"
             :multiple="libraryFor === 'slideshow'"
+            :kind="libraryFor === 'video' ? 'video' : 'image'"
             :max="editor.block?.type === 'slideshow' ? 30 - editor.block.mediaIds.length : undefined"
             @choose="chosen"
             @choose-many="chosenMany"

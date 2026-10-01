@@ -840,6 +840,12 @@ export class ScreenRepository {
         return needsAppointmentRooms(slides.docs.flatMap((s) => s.doc.blocks));
     }
 
+    /** Whether any slide shows a video – then a device must see the wiki category (Plan.md 52). */
+    async videoInUse(): Promise<boolean> {
+        const slides = await this.readSlides();
+        return slides.docs.some((s) => s.doc.blocks.some((b) => b.type === 'video' && !!b.mediaId));
+    }
+
     async saveMedia(doc: MediaDoc): Promise<void> {
         const ids = await this.ensureCategories();
         const text = serialize(doc);
@@ -1029,6 +1035,7 @@ function referencedMedia(slide: SlideDoc): string[] {
         if (b.type === 'image' && b.mediaId) return [b.mediaId];
         if (b.type === 'church-header' && b.logoMediaId) return [b.logoMediaId];
         if (b.type === 'slideshow') return b.mediaIds;
+        if (b.type === 'video' && b.mediaId) return [b.mediaId];
         return [];
     });
     if (slide.background.kind === 'media') ids.push(slide.background.mediaId);

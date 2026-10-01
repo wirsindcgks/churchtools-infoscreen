@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 17 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 18 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -311,6 +311,20 @@ export const RoomsBlock = v.object({
     style: TextStyle,
 });
 
+/**
+ * Since 1.18: one library video, played in a loop with or without sound
+ * (Plan.md, Nächste Schritte 52). Empty until a video is chosen; the player
+ * then shows a calm placeholder. The slide stays at least as long as the video.
+ */
+export const VideoBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('video'),
+    mediaId: v.optional(Id),
+    fit: v.optional(v.picklist(['contain', 'cover']), 'contain'),
+    /** Off until switched on; the browser of the device may still keep it muted. */
+    sound: v.optional(v.boolean(), false),
+});
+
 export const Block = v.variant('type', [
     TextBlock,
     ImageBlock,
@@ -326,6 +340,7 @@ export const Block = v.variant('type', [
     GroupsBlock,
     SlideshowBlock,
     RoomsBlock,
+    VideoBlock,
 ]);
 
 /** The calendars whose appointments a block shows or counts down to. */
@@ -512,7 +527,17 @@ export const MediaDoc = v.object({
     imageUrl: v.pipe(v.string(), v.maxLength(1000)),
     width: v.optional(PositivePx),
     height: v.optional(PositivePx),
+    /** Since 1.18: missing = an image. The image service takes no videos (G42), so `imageUrl` is `''` for one. */
+    mediaType: v.optional(v.picklist(['image', 'video'])),
+    /** Since 1.18: download address of a video; the player plays it from there (G47). */
+    fileUrl: v.optional(v.pipe(v.string(), v.maxLength(1000))),
+    /** Since 1.18: length of a video in seconds, when it could be read. */
+    durationSeconds: v.optional(v.pipe(v.number(), v.minValue(0))),
 });
+
+export function isVideo(doc: MediaDoc): boolean {
+    return doc.mediaType === 'video';
+}
 
 /**
  * Module-wide settings, one document in the category `settings`. Written by

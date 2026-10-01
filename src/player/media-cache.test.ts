@@ -133,6 +133,12 @@ describe('screenImageUrls', () => {
         expect(urls).toEqual(['https://ct.example/images/1/aaa?w=1200&h=675&fit=max']);
     });
 
+    it('never takes a video for an image, and never asks the image service about one (Plan.md 52)', () => {
+        const clip: MediaDoc = { ...media[0]!, id: 'clip', imageUrl: '', mediaType: 'video', fileUrl: 'https://ct.example/?q=public/filedownload&id=9&filename=x' };
+        const slides = [makeSlide({ background: { kind: 'media', mediaId: 'clip' }, blocks: [image('b1', 'clip')] })];
+        expect(screenImageUrls(slides, [...media, clip], { width: 1920, height: 1080 })).toEqual([]);
+    });
+
     it('skips images whose media is gone or not chosen yet', () => {
         const slides = [makeSlide({ blocks: [image('b1', 'missing'), image('b2', '')] })];
         expect(screenImageUrls(slides, media, { width: 1920, height: 1080 })).toEqual([]);
