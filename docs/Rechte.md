@@ -14,7 +14,7 @@ Rolle zeigt das [Onboarding](Onboarding.md).
 | --- | --- | --- | --- |
 | **Administrator** | ChurchTools-Admins mit „Personen administrieren" | Extension installieren, **Einstellungen** öffnen (Assistent, Rechte prüfen, Adressen für Fernseher), **Screens anlegen, einstellen, löschen** | – |
 | **Gestalter** | Mitglieder der Gruppe **„Infoscreen-Designer"** | gestalten, was die Screens zeigen: Slides, Playlists, Zeitpläne, Bilder in der Mediathek | Screens anlegen, einstellen, löschen; Einstellungen |
-| **Gerät** | Konten der Fernseher, Mitglieder von **„Infoscreen-Devices"** | nur lesen: die Screens, die Kalender und die Räume, die sie zeigen | alles andere |
+| **Gerät** | Konten der Fernseher, Mitglieder von **„Infoscreen-Devices"** | nur lesen: die Screens, die Kalender und die Räume, die sie zeigen – und die Videos der Mediathek | alles andere |
 
 **Die Sperre sitzt bei ChurchTools, nicht im Designer.** ChurchTools prüft bei jedem Lesen und Speichern das Recht;
 der Designer blendet nur aus, was ohnehin scheitern würde. Auch Administratoren brauchen die Rechte am Modul
@@ -58,15 +58,18 @@ sie noch hat („Rechte aktualisieren"):
 
 ### Wiki – für die Mediathek
 
-Die Bilder der Mediathek liegen im Wiki-Bereich **„Infoscreen"**. In der Rechteverwaltung unter **„Wiki"**.
+Bilder und Videos der Mediathek liegen im Wiki-Bereich **„Infoscreen"**. In der Rechteverwaltung unter **„Wiki"**.
 
 | Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
 | --- | --- | --- | --- | --- |
 | „Wiki" sehen | „Wiki" sehen (`view`, 501) | ✓ | ✓ | – ² |
-| Wiki-Bereich „Infoscreen" sehen | Einzelne Wiki-Kategorien sehen (`view category`, 502) | ✓ | ✓ | – ² |
-| Wiki-Bereich „Infoscreen" bearbeiten | Einzelne Wiki-Kategorien bearbeiten (`edit category`, 503) | ✓ | ✓ | – |
+| Wiki-Bereich „Infoscreen" sehen | Einzelne Wiki-Kategorien sehen (`view category`, 502) | ✓ | ✓ | ✓ ² |
+| Wiki-Bereich „Infoscreen" bearbeiten | Einzelne Wiki-Kategorien bearbeiten (`edit category`, 503) | ✓ | ✓ | – ² |
 
-² Geräte brauchen kein Wiki-Recht: Bilder kommen über den Bilddienst von ChurchTools, der ohne Anmeldung liefert.
+² Bilder kommen ohne Anmeldung über den Bilddienst von ChurchTools. Videos gibt es nur über die Download-Adresse der
+Datei, und die verlangt dieses eine Recht – deshalb bekommt das Gerät „Wiki-Bereich „Infoscreen" sehen", immer, auch
+bevor ein Screen ein Video zeigt. Damit sieht das Gerät die Dateien dieses Bereichs. „Wiki" sehen und das Bearbeiten
+braucht ein Gerät nicht; die Einstellungsseite warnt, wenn es sie hat.
 
 ### Kalender – für Termine auf den Screens
 
@@ -125,10 +128,11 @@ in der Regel.
 | den Menüpunkt „Infoscreen Designer" sehen | alle | „Infoscreen Designer" sehen |
 | Screens auf der Startseite sehen | alle | Kategorien sehen, Daten in Kategorie sehen |
 | Slides gestalten und speichern | Gestalter | Daten in Kategorie erstellen / bearbeiten / löschen für Playlists und Slides |
-| Bilder hochladen | Gestalter | „Wiki" sehen und Wiki-Bereich „Infoscreen" sehen / bearbeiten, dazu Medien schreiben |
+| Bilder und Videos hochladen | Gestalter | „Wiki" sehen und Wiki-Bereich „Infoscreen" sehen / bearbeiten, dazu Medien schreiben |
 | einen Screen anlegen, umbenennen, löschen | Administrator | Daten in Kategorie erstellen / bearbeiten / löschen für **Screens** |
 | die Einstellungen öffnen | Administrator | „Personen administrieren" |
 | dass der Fernseher Termine zeigt | Gerät | Einzelnen Kalender sehen für jeden Kalender des Screens |
+| dass der Fernseher Videos abspielt | Gerät | Wiki-Bereich „Infoscreen" sehen |
 | dass der Fernseher die Raumbelegung zeigt | Gerät | Ressource sehen für jeden Raum des Screens |
 | dass der Fernseher den Raum am Termin zeigt | Gerät | Ressource sehen für alle Räume |
 | Räume im Baustein „Raumbelegung" wählen | Gestalter | Ressource sehen für die Räume |

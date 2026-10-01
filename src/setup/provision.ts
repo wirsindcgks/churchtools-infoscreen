@@ -109,6 +109,10 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     }
 
     const device: GrantSpec[] = [...readModule];
+    // Videos come only through the download address, which wants this one right; "Wiki" sehen (501) a device does not need (G47, Plan.md 52).
+    if (input.wikiCategoryId !== null) {
+        device.push({ authId: AUTH.wikiCategoryView, dataId: [input.wikiCategoryId], label: 'Wiki-Bereich „Infoscreen" sehen' });
+    }
     if (input.calendarIds.length) {
         device.push({ authId: AUTH.calendarView, dataId: input.calendarIds, label: 'Einzelnen Kalender sehen' });
     }

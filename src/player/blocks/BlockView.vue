@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import type { Block } from '../../model/schema';
+import { isVideo, type Block } from '../../model/schema';
 import { imageSource, useStageContext } from '../context';
 import { fillStyle } from '../fill';
 import { textStyle } from '../format';
@@ -15,6 +15,7 @@ import NextAppointmentView from './NextAppointmentView.vue';
 import PostsView from './PostsView.vue';
 import RoomsView from './RoomsView.vue';
 import SlideshowView from './SlideshowView.vue';
+import VideoView from './VideoView.vue';
 
 /** `slideSeconds`: how long the slide shows – a paged list shares it out among its pages. */
 const props = defineProps<{ block: Block; slideSeconds?: number }>();
@@ -52,7 +53,7 @@ const qr = computed(() => (props.block.type === 'qr' ? qrShape(props.block.data)
 const imageUrl = computed(() => {
     if (props.block.type !== 'image') return null;
     const media = context.media.get(props.block.mediaId);
-    return media ? imageSource(context, blockImageUrl(media, props.block)) : null;
+    return media && !isVideo(media) ? imageSource(context, blockImageUrl(media, props.block)) : null;
 });
 </script>
 
@@ -118,6 +119,7 @@ const imageUrl = computed(() => {
         <GroupsView v-else-if="block.type === 'groups'" :block="block" :slide-seconds="slideSeconds" />
         <RoomsView v-else-if="block.type === 'rooms'" :block="block" :slide-seconds="slideSeconds" />
         <SlideshowView v-else-if="block.type === 'slideshow'" :block="block" :slide-seconds="slideSeconds" />
+        <VideoView v-else-if="block.type === 'video'" :block="block" />
     </div>
 </template>
 

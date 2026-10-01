@@ -2,7 +2,8 @@
 /**
  * The media library in the editor: choose a picture for a block or the
  * background – the same pictures, with where they are shown, as on the media
- * library page. A single upload is chosen right away. With `multiple` (the
+ * library page. It shows what the block needs: pictures, or with `kind`
+ * "video" (the video block, Plan.md 52) only videos. A single upload is chosen right away. With `multiple` (the
  * slideshow, Plan.md 46) a click marks pictures in order, an upload is marked
  * instead of chosen, and "Hinzufügen" hands over all of them at once.
  */
@@ -12,7 +13,10 @@ import type { MediaDoc } from '../model/schema';
 import MediaGrid from './MediaGrid.vue';
 import { useMediaLibrary } from './useMediaLibrary';
 
-const props = defineProps<{ screen: { slug: string; name: string }; selectedMediaId?: string; multiple?: boolean; max?: number }>();
+const props = withDefaults(
+    defineProps<{ screen: { slug: string; name: string }; selectedMediaId?: string; multiple?: boolean; max?: number; kind?: 'image' | 'video' }>(),
+    { kind: 'image', selectedMediaId: undefined, max: undefined },
+);
 const emit = defineEmits<{ choose: [MediaDoc]; chooseMany: [MediaDoc[]]; close: [] }>();
 
 /** File ids of the marked pictures, in the order they were marked. */
@@ -33,13 +37,16 @@ function mark(fileIds: number[]): void {
     }
 }
 
-const { items, loading, busy, problem, dragOver, dropZone, upload, adopt, remove } = useMediaLibrary(
+const { items, loading, busy, problem, dragOver, dropZone, upload, adopt, remove, accept } = useMediaLibrary(
     () => props.screen,
     (docs) => {
         if (props.multiple) mark(docs.map((d) => d.fileId));
         else if (docs.length === 1) emit('choose', docs[0]!);
     },
+    props.kind,
 );
+const shown = computed(() => items.value.filter((i) => i.kind === props.kind));
+const noun = computed(() => (props.kind === 'video' ? 'Videos' : 'Bilder'));
 
 async function choose(item: MediaItem): Promise<void> {
     if (props.multiple) {
@@ -74,10 +81,10 @@ async function picked(): Promise<void> {
         <div class="library" :class="{ 'library--drop': dragOver }" data-testid="media-library" v-on="dropZone">
             <header>
                 <h2>Mediathek</h2>
-                <span class="hint">Neue Bilder landen im Wiki-Bereich „Infoscreen", Seite <code>{{ screen.slug }}</code>.</span>
+                <span class="hint">Neue {{ noun }} landen im Wiki-Bereich „Infoscreen", Seite <code>{{ screen.slug }}</code>.</span>
                 <span class="spacer" />
                 <button class="d-btn d-btn--create" type="button" :disabled="!!busy || loading" @click="input?.click()">
-                    Bilder hochladen
+                    {{ noun }} hochladen
                 </button>
                 <button
                     v-if="multiple"
@@ -93,7 +100,7 @@ async function picked(): Promise<void> {
                 <input
                     ref="input"
                     type="file"
-                    accept="image/png,image/jpeg,image/webp,image/gif"
+                    :accept="accept"
                     multiple
                     hidden
                     data-testid="media-upload"
@@ -104,10 +111,10 @@ async function picked(): Promise<void> {
             <p v-if="problem" class="banner banner--error" role="alert">{{ problem }}</p>
             <p v-if="limitHint" class="banner" role="status" data-testid="media-limit">Höchstens 30 Bilder je Galerie</p>
             <div class="body">
-                <p v-if="loading" class="empty">Lade Bilder …</p>
+                <p v-if="loading" class="empty">Lade {{ noun }} …</p>
                 <MediaGrid
-                    v-else-if="items.length"
-                    :items="items"
+                    v-else-if="shown.length"
+                    :items="shown"
                     :selected-media-id="selectedMediaId"
                     choosable
                     :multiple="multiple"
@@ -115,7 +122,7 @@ async function picked(): Promise<void> {
                     @choose="choose"
                     @remove="remove"
                 />
-                <p v-else class="empty">Noch keine Bilder. Hochladen per Knopf oder einfach hierher ziehen.</p>
+                <p v-else class="empty">Noch keine {{ noun }}. Hochladen per Knopf oder einfach hierher ziehen.</p>
             </div>
         </div>
     </div>

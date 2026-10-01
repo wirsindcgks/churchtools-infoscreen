@@ -4,6 +4,26 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.4.0] – 2026-10-01
+
+### Neu
+
+- **Baustein „Video":** Ein eigenes Video aus der Mediathek auf der Slide – MP4 (H.264) bis 128 MB. Die Slide dauert
+  mindestens so lange wie das Video; dauert sie länger, läuft es in Schleife. **Ton** ist je Baustein einschaltbar
+  und zunächst aus; verweigert der Browser des Fernsehers den Ton, läuft das Video stumm. Die Vorschau im Designer
+  spielt stumm und bietet den Ton auf einem Knopf an. **Ohne Netz zeigt der Fernseher an dieser Stelle nichts** –
+  Videos liegen, anders als Bilder, nicht auf dem Gerät. Auf einem Kiosk-Gerät ist der Baustein noch nicht im
+  Dauerbetrieb geprüft.
+- **Videos in der Mediathek:** Hochladen, Löschschutz und „Wo läuft es" wie bei Bildern; eine Kachel zeigt ein
+  Standbild und die Länge. Wo ein Bild verlangt ist, werden keine Videos angeboten – und umgekehrt.
+
+### Geändert
+
+- **Geräte sehen den Wiki-Bereich „Infoscreen":** Videos gibt ChurchTools nur über die Download-Adresse der Datei
+  heraus, und die verlangt dieses Recht. „Rechte aktualisieren" vergibt es an die Geräte-Gruppe; die
+  Einstellungsseite meldet, wenn es fehlt. „Wiki" sehen und das Bearbeiten braucht ein Gerät weiterhin nicht.
+- Die Seite „Mediathek" spricht von Dateien statt von Bildern.
+
 ## [0.3.9] – 2026-10-01
 
 ### Neu
@@ -457,6 +477,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.4.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.4.0
 [0.3.9]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.9
 [0.3.8]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.8
 [0.3.7]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.3.7

@@ -10,7 +10,7 @@
  * shows; the rotation keeps the slide until each has run once.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import type { Block } from '../../model/schema';
+import { isVideo, type Block } from '../../model/schema';
 import { imageSource, useStageContext } from '../context';
 import { blockImageUrl } from '../images';
 import { pageInterval } from '../paging';
@@ -24,7 +24,7 @@ const DECODE_WAIT_MS = 1500;
 const urls = computed(() =>
     props.block.mediaIds.flatMap((id) => {
         const media = context.media.get(id);
-        return media ? [imageSource(context, blockImageUrl(media, props.block))] : [];
+        return media && !isVideo(media) ? [imageSource(context, blockImageUrl(media, props.block))] : [];
     }),
 );
 

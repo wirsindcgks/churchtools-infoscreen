@@ -51,9 +51,20 @@ describe('planProvisioning', () => {
         expect(designer!.grants.find((g) => g.authId === AUTH.wikiCategoryEdit)?.dataId).toEqual([1]);
     });
 
-    it('lets devices only read: the module, its data and every calendar of the screens, public ones too (G35)', () => {
-        expect(device!.grants.map((g) => g.authId).sort((a, b) => a - b)).toEqual([205, 403, 2010, 2011, 2015]);
+    it('lets devices only read: the module, its data, every calendar of the screens, public ones too (G35), and the wiki category for videos (G47)', () => {
+        expect(device!.grants.map((g) => g.authId).sort((a, b) => a - b)).toEqual([205, 403, 502, 2010, 2011, 2015]);
         expect(device!.grants.find((g) => g.authId === AUTH.calendarView)?.dataId).toEqual([4, 5]);
+    });
+
+    it('gives devices the wiki category to see – always, but never "Wiki" itself or the right to edit (Plan.md 52)', () => {
+        expect(device!.grants.find((g) => g.authId === AUTH.wikiCategoryView)).toEqual({
+            authId: 502,
+            dataId: [1],
+            label: 'Wiki-Bereich „Infoscreen" sehen',
+        });
+        expect(device!.grants.some((g) => g.authId === AUTH.wikiView || g.authId === AUTH.wikiCategoryEdit)).toBe(false);
+        const [, without] = planProvisioning({ ...input, wikiCategoryId: null });
+        expect(without!.grants.some((g) => g.authId === AUTH.wikiCategoryView)).toBe(false);
     });
 
     it('gives designers "Ressource sehen" for every room, devices only for the rooms a screen shows (G45)', () => {

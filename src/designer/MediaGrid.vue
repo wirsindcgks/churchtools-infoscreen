@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * The pictures of the media library as tiles: picture, name, and where it is
+ * The pictures and videos of the media library as tiles: picture, name, and where it is
  * shown – "Foyer › Gottesdienst › Begrüßung" instead of the wiki page it was
  * uploaded to (Plan.md, Nächste Schritte 18). In the editor a click chooses a
  * picture; on the media library page there is nothing to choose for. With `multiple`
@@ -9,7 +9,10 @@
  */
 import { computed } from 'vue';
 import { usageLines, type MediaItem } from '../media/library';
+import { formatDuration } from '../media/video';
 import { sizedImageUrl } from '../player/format';
+import { videoSrc } from '../player/video';
+import Icon from './Icon.vue';
 
 const props = defineProps<{ items: MediaItem[]; selectedMediaId?: string; choosable?: boolean; multiple?: boolean; marked?: number[] }>();
 const emit = defineEmits<{ choose: [MediaItem]; remove: [MediaItem] }>();
@@ -36,11 +39,19 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                 :aria-pressed="multiple ? numberOf(item) > 0 : undefined"
                 @click="emit('choose', item)"
             >
-                <img :src="sizedImageUrl(item.imageUrl, 320, 180, 'crop')" :alt="item.name" loading="lazy">
+                <template v-if="item.kind === 'video'">
+                    <video :src="videoSrc(item) ?? undefined" preload="metadata" muted playsinline :aria-label="item.name" />
+                    <span class="badge"><Icon name="play" :size="12" /><template v-if="formatDuration(item.durationSeconds)">{{ formatDuration(item.durationSeconds) }}</template></span>
+                </template>
+                <img v-else :src="sizedImageUrl(item.imageUrl, 320, 180, 'crop')" :alt="item.name" loading="lazy">
                 <span v-if="multiple && numberOf(item) > 0" class="mark" data-testid="media-mark">{{ numberOf(item) }}</span>
             </button>
             <div v-else class="pick">
-                <img :src="sizedImageUrl(item.imageUrl, 320, 180, 'crop')" :alt="item.name" loading="lazy">
+                <template v-if="item.kind === 'video'">
+                    <video :src="videoSrc(item) ?? undefined" preload="metadata" muted playsinline :aria-label="item.name" />
+                    <span class="badge"><Icon name="play" :size="12" /><template v-if="formatDuration(item.durationSeconds)">{{ formatDuration(item.durationSeconds) }}</template></span>
+                </template>
+                <img v-else :src="sizedImageUrl(item.imageUrl, 320, 180, 'crop')" :alt="item.name" loading="lazy">
             </div>
             <figcaption>
                 <span class="name" :title="item.name">{{ item.name }}</span>
@@ -102,13 +113,31 @@ figure.selected {
     line-height: 20px;
     text-align: center;
 }
-.pick img {
+.pick img,
+.pick video {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
 }
-button.pick:hover img {
+/* The still of a video: the first frame, never played; the badge says it is one. */
+.badge {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 7px;
+    border-radius: 12px;
+    background: rgba(15, 23, 42, 0.75);
+    color: #fff;
+    font-size: var(--d-size-sm);
+    font-weight: 700;
+    line-height: 20px;
+}
+button.pick:hover img,
+button.pick:hover video {
     opacity: 0.85;
 }
 figcaption {

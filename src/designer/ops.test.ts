@@ -39,6 +39,13 @@ describe('designer operations', () => {
         });
     });
 
+    it('creates a video empty, without sound, at 1280 x 720 (Plan.md 52)', () => {
+        const block = createBlock('video', stage);
+        expect(block).toMatchObject({ type: 'video', fit: 'contain', sound: false, width: 1280, height: 720 });
+        expect(block).not.toHaveProperty('mediaId');
+        expect(BLOCK_LABELS.video).toBe('Video');
+    });
+
     it('creates a rooms block empty, as an overview of today, at 1400 x 700 (Plan.md 46)', () => {
         expect(createBlock('next-appointment', stage, [2])).toMatchObject({ showRooms: true });
         expect(createBlock('appointment-list', stage, [2])).toMatchObject({ showRooms: true });
@@ -178,6 +185,7 @@ describe('the palette (Plan.md 47)', () => {
             'Terminliste',
             'Text',
             'Uhr',
+            'Video',
             'Webseite',
         ]);
     });

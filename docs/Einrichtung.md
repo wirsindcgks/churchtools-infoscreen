@@ -27,7 +27,7 @@ Kurzfassung je Rolle steht im [Onboarding](Onboarding.md), alle Rechte als Tabel
 | --- | --- | --- |
 | **Administrator** | wer in ChurchTools Berechtigungen verwalten darf | installieren, die **Einstellungen** des Designers öffnen, Gruppen und Rechte anlegen; **Screens anlegen, einstellen (Name, Overscan) und löschen** – ein Screen steht für ein Gerät im Haus |
 | **Gestalter** | Mitglieder der Gruppe „Infoscreen-Designer" | gestalten, was die Screens zeigen: Slides, Playlists, Zeitpläne und Bilder anlegen, ändern und löschen – nicht die Screens selbst und nicht die Einstellungen |
-| **Gerät** | Mitglieder der Gruppe „Infoscreen-Devices" | nur lesen: die Screens und die Kalender, die sie zeigen |
+| **Gerät** | Mitglieder der Gruppe „Infoscreen-Devices" | nur lesen: die Screens, die Kalender und Räume, die sie zeigen, und die Videos der Mediathek |
 
 ### Voraussetzungen
 
@@ -96,8 +96,9 @@ Rechte:
 - **„Infoscreen-Designer"** – das Modul sehen und seine Inhalte bearbeiten, dazu den Wiki-Bereich „Infoscreen", in
   dem die Bilder der Mediathek liegen. Fehlt er, legt ihn der Assistent an; gibt es schon einen Bereich dieses
   Namens, benutzt er ihn mit. Die Mediathek selbst legt keinen an – sie ist erst nach diesem Schritt nutzbar.
-- **„Infoscreen-Devices"** – das Modul und seine Daten sehen, **jeden Kalender, den ein Screen zeigt**, und **jeden
-  Raum, den ein Screen zeigt**. Die Gestalter sehen dazu alle Räume, damit sie im Baustein „Raumbelegung" wählen können.
+- **„Infoscreen-Devices"** – das Modul und seine Daten sehen, **jeden Kalender, den ein Screen zeigt**, **jeden
+  Raum, den ein Screen zeigt**, und den Wiki-Bereich „Infoscreen" (nur sehen) – Videos laufen nur über die
+  Download-Adresse ihrer Datei, und die verlangt dieses Recht. Die Gestalter sehen dazu alle Räume, damit sie im Baustein „Raumbelegung" wählen können.
 
 Der Assistent fasst **nur Gruppen an, die er selbst angelegt hat**, und ändert keine bestehenden Rollen. Gibt es
 schon Gruppen mit diesen Namen, hält er an.
@@ -182,6 +183,9 @@ erzeugt ein Administrator …"*.
 
 Auf einem Raspberry Pi eignet sich **FullPageOS**: Dort steht die Startadresse in der Datei `fullpageos.txt` auf
 der Boot-Partition.
+
+**Ton bei Videos:** Kiosk-Browser lassen Ton ohne Klick oft erst zu, wenn man es ihnen erlaubt – bei Chromium mit der
+Startoption `--autoplay-policy=no-user-gesture-required`. Ohne sie läuft ein Video mit eingeschaltetem Ton stumm.
 
 **Schneidet der Fernseher den Rand ab** (Overscan), stelle im Editor unter „Screen" die **Overscan-Korrektur** ein –
 die Bildfläche rückt dann um so viel Prozent nach innen.

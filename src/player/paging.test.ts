@@ -122,6 +122,23 @@ describe('paging a slideshow (Plan.md 46)', () => {
     });
 });
 
+describe('a video (Plan.md 52): the block reports seconds, not pages', () => {
+    const video: Block = { id: 'film', type: 'video', x: 0, y: 0, width: 1280, height: 720, fit: 'contain', sound: false };
+
+    it('keeps the slide as long as the video, when that is longer', () => {
+        expect(slideSeconds(makeSlide({ durationSeconds: 10, blocks: [video] }), { film: 45 })).toBe(45);
+    });
+
+    it('leaves a slide alone that is longer than the video', () => {
+        expect(slideSeconds(makeSlide({ durationSeconds: 60, blocks: [video] }), { film: 12 })).toBe(60);
+    });
+
+    it('keeps the slide\'s own time while no length is known – not loaded yet, or failed', () => {
+        expect(slideSeconds(makeSlide({ durationSeconds: 10, blocks: [video] }), {})).toBe(10);
+        expect(slideSeconds(makeSlide({ durationSeconds: 10, blocks: [video] }), { film: 0 })).toBe(10);
+    });
+});
+
 describe('paging a groups block (Plan.md 43)', () => {
     it('keeps the slide until every group or page has shown, as a card and as a list', () => {
         const card = makeSlide({ durationSeconds: 8, blocks: [groups()] });

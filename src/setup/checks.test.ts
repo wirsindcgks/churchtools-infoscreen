@@ -140,6 +140,38 @@ describe('checkDeviceGroup', () => {
         expect(checks.find((c) => c.text.includes('Wiki-Rechte'))?.level).toBe('warn');
     });
 
+    it('warns about "Wiki" and editing, but no longer about seeing the category – videos need that (Plan.md 52)', () => {
+        const check = (grants: Grant[]) =>
+            checkDeviceGroup({ statusId: 1, members: [{ label: 'Gerät A', grants }], calendars, usedCalendarIds: [], wikiCategoryId: WIKI }).filter((c) =>
+                c.text.includes('Wiki-Rechte'),
+            );
+        expect(check([grant(AUTH.wikiCategoryView, WIKI)])).toEqual([]);
+        expect(check([grant(AUTH.wikiCategoryView, WIKI), grant(AUTH.wikiCategoryEdit, WIKI)])).toHaveLength(1);
+        expect(check([grant(AUTH.wikiCategoryView, WIKI), grant(AUTH.wikiView)])).toHaveLength(1);
+    });
+
+    it('checks that a device may see the wiki category: a failure while a screen shows a video, else a warning (Plan.md 52)', () => {
+        const check = (grants: Grant[], videoInUse: boolean, wikiCategoryId: number | null = WIKI) =>
+            checkDeviceGroup({
+                statusId: 1,
+                members: [{ label: 'Gerät A', grants }],
+                calendars,
+                usedCalendarIds: [],
+                videoInUse,
+                wikiCategoryId,
+            }).filter((c) => c.text.includes('Wiki-Bereich „Infoscreen"'));
+        expect(check([], true)).toEqual([
+            expect.objectContaining({ level: 'fail', text: 'Gerät A darf den Wiki-Bereich „Infoscreen" nicht sehen – Videos laufen nicht.' }),
+        ]);
+        expect(check([], false)).toEqual([
+            { level: 'warn', text: 'Gerät A darf den Wiki-Bereich „Infoscreen" nicht sehen – Videos würden nicht laufen.', detail: '„Rechte aktualisieren" vergibt es.' },
+        ]);
+        expect(check([grant(AUTH.wikiCategoryView, WIKI)], true)).toEqual([expect.objectContaining({ level: 'ok' })]);
+        expect(check([grant(AUTH.wikiCategoryView, WIKI)], false)).toEqual([]);
+        // No wiki category yet: nothing to see.
+        expect(check([], true, null)).toEqual([]);
+    });
+
     it('fails for a room a device cannot see, and is content with one it can (G45)', () => {
         const rooms = [
             { id: 1, name: 'Saal' },

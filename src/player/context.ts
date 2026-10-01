@@ -23,10 +23,12 @@ export interface StageContext {
     media: Map<string, MediaDoc>;
     /** Image addresses already on the device (original → blob URL); the player fills it, the designer does not. */
     images?: Map<string, string>;
-    /** Page counts of paged appointment lists, by block id – the rotation keeps a slide until all have run (Plan.md, 23). */
+    /** Page counts of paged appointment lists, by block id – the rotation keeps a slide until all have run (Plan.md, 23); a video reports its length in seconds. */
     pages?: Record<string, number>;
     /** Whether paged lists turn their pages; the designer preview holds page 1. */
     paging?: boolean;
+    /** Videos stay mute whatever their block says – the designer preview, which offers a button for the sound (Plan.md 52). */
+    silent?: boolean;
     /** The look of all screens (schema 1.9); missing or null means the defaults. */
     theme?: ThemeDoc | null;
 }

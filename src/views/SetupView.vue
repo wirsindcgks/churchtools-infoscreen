@@ -129,6 +129,8 @@ let usedRoomIds: number[] = [];
 let appointmentRooms = false;
 /** The calendars of the blocks that show services (Plan.md 51). */
 let serviceCalendarIds: number[] = [];
+/** A screen shows a video (Plan.md 52). */
+let videoInUse = false;
 let catalog: AuthCatalog | null = null;
 let categories: Partial<Record<CategoryKey, number>> = {};
 
@@ -452,6 +454,7 @@ async function check(side: Side): Promise<void> {
                 usedRoomIds,
                 appointmentRooms,
                 serviceCalendarIds,
+                videoInUse,
                 wikiCategoryId,
                 moduleRights: moduleRights('device'),
             });
@@ -510,7 +513,7 @@ onMounted(async () => {
         const handle = await getRepository();
         repository = handle.repository;
         demo.value = handle.demo;
-        const [list, settings, wikiCategories, calendarList, used, screenList, masterdata, usedRooms, roomsAtAppointments, serviceCalendars] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, used, screenList, masterdata, usedRooms, roomsAtAppointments, serviceCalendars, videos] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
@@ -521,6 +524,7 @@ onMounted(async () => {
             repository.roomIdsInUse(),
             repository.appointmentRoomsInUse(),
             repository.serviceCalendarIdsInUse(),
+            repository.videoInUse(),
         ]);
         screens.value = screenList;
         device.slug = screenList[0]?.slug ?? '';
@@ -535,6 +539,7 @@ onMounted(async () => {
         usedRoomIds = usedRooms;
         appointmentRooms = roomsAtAppointments;
         serviceCalendarIds = serviceCalendars;
+        videoInUse = videos;
         selected.designer = settings?.designerGroupId ?? null;
         selected.device = settings?.deviceGroupId ?? null;
         createdGroupIds.value = settings?.createdGroupIds ?? [];
@@ -610,7 +615,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
     {
         side: 'device',
         title: 'Geräte',
-        purpose: 'Die Konten, mit denen sich die Fernseher anmelden. Sie brauchen nur Leserechte auf die Kalender ihrer Screens – sonst nichts.',
+        purpose: 'Die Konten, mit denen sich die Fernseher anmelden. Sie brauchen nur Leserechte: auf die Kalender ihrer Screens und, für Videos, auf den Wiki-Bereich „Infoscreen" – sonst nichts.',
     },
 ];
 </script>

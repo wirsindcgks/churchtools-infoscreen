@@ -24,7 +24,7 @@ Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe
 
 ![Editor mit einer Terminliste als Karten, darüber Gemeindename und Uhr](bilder/editor.png)
 
-**Vierzehn Bausteine:** Text, Bild, Fläche, Galerie, Uhr, Terminliste, Nächster Termin, Gemeindekopf mit Logo,
+**Fünfzehn Bausteine:** Text, Bild, Fläche, Galerie, Video, Uhr, Terminliste, Nächster Termin, Gemeindekopf mit Logo,
 Webseite, QR-Code, Countdown, Beiträge, Gruppen und Raumbelegung.
 
 ## Galerie
@@ -34,6 +34,16 @@ sortieren, Dauer je Bild und Darstellung (Ganz zeigen oder Fläche füllen) eins
 einmal zu sehen war; höchstens 30 Bilder. Die Bilder liegen auf dem Gerät, die Galerie läuft auch ohne Netz.
 
 ![Editor mit dem Baustein „Galerie": rechts die Liste der Bilder mit Reihenfolge, Dauer und Übergang](bilder/galerie.png)
+
+## Video
+
+Ein Video aus der Mediathek, als Endlosschleife und von vorn bei jedem Durchlauf der Slide. Hochgeladen wird **MP4 mit
+H.264, bis 128 MB**; das Video bleibt, wie es ist – es wird nicht umgerechnet. Der **Ton** lässt sich je Baustein
+einschalten (Vorgabe: aus); er startet nur, wenn der Browser des Fernsehers es erlaubt, sonst läuft das Video stumm.
+Die Slide dauert mindestens so lange wie das Video. **Ohne Netz zeigt der Fernseher an dieser Stelle nichts:** Videos
+werden nicht auf dem Gerät gespeichert, sondern bei jedem Durchlauf von ChurchTools geladen. Dafür braucht das Gerät
+das Recht „Wiki-Bereich „Infoscreen" sehen" – der Assistent vergibt es. In der Vorschau laufen Videos stumm; ein Knopf
+am Video schaltet den Ton zu. Auf einem Kiosk-Gerät noch nicht im Dauerbetrieb geprüft.
 
 ## Gruppen aus ChurchTools
 
@@ -117,8 +127,8 @@ Beginn bis 10 Minuten nach Beginn"). Daneben die Playlist, die gerade läuft.
 
 ## Mediathek
 
-Bilder einmal hochladen und überall verwenden. Unter jedem Bild steht, wo es läuft; „Unbenutzt" hilft beim
-Aufräumen.
+Bilder und Videos einmal hochladen und überall verwenden. Unter jedem Bild steht, wo es läuft; „Unbenutzt" hilft beim
+Aufräumen. Videos zeigen ein Standbild mit ihrer Länge.
 
 ![Mediathek mit Suche, Filtern und der Angabe, wo ein Bild verwendet wird](bilder/mediathek.png)
 
