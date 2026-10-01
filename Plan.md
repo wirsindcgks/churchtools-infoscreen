@@ -4,7 +4,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 
 ## Auf einen Blick
 
-**Stand 2026-10-01.** Veröffentlicht sind `v0.1.0` bis `v0.4.1`; das Modul läuft im echten ChurchTools der Testinstanz, auf der Produktivinstanz noch nicht. Die Fernseher melden sich über ihre Adresse selbst an (Weg B, Abschnitt D). Das Repository ist seit dem 2026-09-25 öffentlich.
+**Stand 2026-10-01.** Veröffentlicht sind `v0.1.0` bis `v0.4.2`; das Modul läuft im echten ChurchTools der Testinstanz, auf der Produktivinstanz noch nicht. Die Fernseher melden sich über ihre Adresse selbst an (Weg B, Abschnitt D). Das Repository ist seit dem 2026-09-25 öffentlich.
 
 **Dieser Abschnitt ist die vollständige Liste dessen, was offen ist.** Wer wissen will, was als Nächstes kommt, liest ihn und sonst nichts. Erledigtes steht mit seiner Nummer in [`docs/Plan-Archiv.md`](docs/Plan-Archiv.md) und wird nur nachgeschlagen, wenn jemand die Begründung einer alten Entscheidung braucht.
 
@@ -19,8 +19,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
       - ein Beiträge-Block in der Test-Playlist (Archiv, Punkt 33);
       - der Service Worker: ob die Skripte der ChurchTools-Seite ohne Netz stören und was bei einem langen Ausfall mit abgelaufener Sitzung passiert (Archiv, Punkt 37; Risiko 2);
       - der Baustein „Video": Dauerlauf über eine Nacht und Ton (Archiv, Punkt 52). Der Nutzer will ihn danach gegebenenfalls schärfen.
-2. **Der Designer am echten Tablet** (Archiv, Punkt 45) – seit `v0.3.1` gebaut, am Gerät nicht geprüft. Zu sehen: Die offene Inspektor-Schublade verdeckt bei 820 px die rechten gut 300 px der Bildfläche.
-3. **Weitere Inhalte, wenn der Nutzer sie wählt** (Punkt 46): Einbettungscode im Baustein „Webseite"; YouTube/Vimeo samt Livestream; Videos ohne Netz (heute zeigt der Fernseher ohne Netz an der Stelle nichts, die CSP erlaubt `blob:` für Medien nicht, G47).
+2. **Weitere Inhalte, wenn der Nutzer sie wählt** (Punkt 46): Einbettungscode im Baustein „Webseite"; YouTube/Vimeo samt Livestream; Videos ohne Netz (heute zeigt der Fernseher ohne Netz an der Stelle nichts, die CSP erlaubt `blob:` für Medien nicht, G47).
 
 **Kleine Reste, kein Auftrag, bis jemand sie wählt:**
 
@@ -415,7 +414,7 @@ Volltext in [`docs/Plan-Archiv.md`](docs/Plan-Archiv.md). Die Punkte 1 bis 6 der
 | 42 | Wackelnder e2e-Test „Schriften nur vom eigenen Server" |
 | 43 | Baustein „Gruppen" – eine Übersicht, welche Gruppen es gibt |
 | 44 | Der Designer am Handy – ein Durchgang |
-| 45 | Der Designer auf dem Tablet |
+| 45 | Der Designer auf dem Tablet – am echten Tablet abgenommen am 2026-10-01 |
 | 47 | Der Editor wird ruhiger – Bausteine alphabetisch, Inspektor zum Aufklappen |
 | 48 | Linien auf hellen Slides, Inspektor-Kopf ohne Doppelung |
 | 49 | Verknüpfte Slides – Kopien, die nach dem Bearbeiten gleich bleiben |
@@ -423,6 +422,7 @@ Volltext in [`docs/Plan-Archiv.md`](docs/Plan-Archiv.md). Die Punkte 1 bis 6 der
 | 51 | Dienste am Termin |
 | 52 | Baustein „Video" |
 | 53 | Vorschau in der Mediathek |
+| 54 | Klick auf das Bild bei den Zeitplänen |
 
 ## Quellen
 
