@@ -11,19 +11,40 @@ import { churchtoolsClient } from '@churchtools/churchtools-client';
 interface AuthEntry {
     id: number | string;
     auth: string;
+    /** The right as the permission management of ChurchTools words it, e.g. "Einzelnen Kalender sehen". */
+    bezeichnung?: string | null;
 }
+
+/**
+ * The modules as ChurchTools' own overview of a person's rights heads them ("Personen: …", read off
+ * the test instance on 2026-10-02). A module not listed here gives its right without a heading.
+ */
+const MODULE_NAMES: Record<string, string> = {
+    churchdb: 'Personen',
+    churchcal: 'Kalender',
+    churchservice: 'Events',
+    churchresource: 'Ressourcen',
+    churchwiki: 'Wiki',
+};
 
 export interface AuthCatalog {
     /** The id of a right, e.g. `id('infoscreen-designer', 'view')`; undefined if unknown. */
     id(module: string, auth: string): number | undefined;
-    /** A right by its id, as module and API name: `name(403)` → "churchcal: view category"; undefined if unknown. */
+    /**
+     * A right by its id, in the words of ChurchTools: `name(403)` → "Kalender: Einzelnen Kalender sehen".
+     * Without a wording in the catalogue, module and API name ("churchcal: view category"); undefined if unknown.
+     */
     name(id: number): string | undefined;
 }
 
 export function catalogFrom(authTable: Record<string, Record<string, AuthEntry>>): AuthCatalog {
     const names = new Map<number, string>();
     for (const [module, rights] of Object.entries(authTable)) {
-        for (const [auth, entry] of Object.entries(rights ?? {})) names.set(Number(entry.id), `${module}: ${entry.auth ?? auth}`);
+        for (const [auth, entry] of Object.entries(rights ?? {})) {
+            const wording = entry.bezeichnung?.trim();
+            const heading = MODULE_NAMES[module];
+            names.set(Number(entry.id), wording ? (heading ? `${heading}: ${wording}` : wording) : `${module}: ${entry.auth ?? auth}`);
+        }
     }
     return {
         id(module, auth) {

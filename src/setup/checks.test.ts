@@ -281,17 +281,19 @@ describe('rights a device does not need (Plan.md 58 E)', () => {
         const grants = [grant(2010), grant(AUTH.calendarView, 1), grant(AUTH.calendarView, 2), grant(101, 3), grant(101, 4), grant(7)];
         expect(excessRights(grants, planned)).toEqual([7, 101]);
         expect(excessRights([...grants, { authId: 7, dataId: null, type: 'revoke' }], planned)).toEqual([101]);
+        // Seeing the own person data comes with the usual person status; editing it is a right to change something.
+        expect(excessRights([grant(AUTH.ownDataView, 2), grant(132, 2)], planned)).toEqual([132]);
         // Wiki rights have their own line.
         expect(excessRights([grant(AUTH.wikiView), grant(AUTH.wikiCategoryEdit, WIKI)], planned)).toEqual([]);
     });
 
     it('names them, by name where the catalogue has one', () => {
-        const authName = (id: number) => (id === 101 ? 'churchdb: view' : undefined);
+        const authName = (id: number) => (id === 101 ? 'Personen: Personen bearbeiten' : undefined);
         const [one] = device([grant(2010), grant(101, 3)], { plannedAuthIds: planned, authName });
         expect(one?.level).toBe('warn');
-        expect(one?.text).toBe('Gerät A hat ein Recht, das ein Gerät nicht braucht: churchdb: view.');
+        expect(one?.text).toBe('Gerät A hat ein Recht, das ein Gerät nicht braucht: Personen: Personen bearbeiten.');
         const [two] = device([grant(101), grant(7)], { plannedAuthIds: planned, authName });
-        expect(two?.text).toBe('Gerät A hat 2 Rechte, die ein Gerät nicht braucht: Recht 7, churchdb: view.');
+        expect(two?.text).toBe('Gerät A hat 2 Rechte, die ein Gerät nicht braucht: Recht 7, Personen: Personen bearbeiten.');
     });
 
     it('counts what it does not name', () => {

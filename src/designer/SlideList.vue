@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import type { SlideDoc } from '../model/schema';
 import { useStageContext } from '../player/context';
 import { slideSeconds } from '../player/paging';
@@ -39,14 +39,34 @@ function onPhoneChange(event: MediaQueryListEvent): void {
 phoneQuery.addEventListener('change', onPhoneChange);
 onBeforeUnmount(() => phoneQuery.removeEventListener('change', onPhoneChange));
 
+/**
+ * The room the list really has. A scrollbar that takes space – a mouse on a Mac, most of Windows – narrows
+ * it once the slides no longer fit, and a thumbnail of fixed width then stuck out of its tile's frame.
+ * 0 while unknown or hidden; the thumbnail keeps its full width then.
+ */
+const list = ref<HTMLElement | null>(null);
+const listWidth = ref(0);
+/** What a tile takes beside its thumbnail: the list's padding, the tile's padding and its border, on both sides. */
+const TILE_CHROME = 2 * (8 + 8 + 2);
+const THUMB_MIN_WIDTH = 96;
+let listObserver: ResizeObserver | undefined;
+onMounted(() => {
+    if (!list.value || typeof ResizeObserver === 'undefined') return;
+    listObserver = new ResizeObserver(() => (listWidth.value = list.value?.clientWidth ?? 0));
+    listObserver.observe(list.value);
+});
+onBeforeUnmount(() => listObserver?.disconnect());
+
 const thumb = computed(() => {
     if (phone.value) {
         const height = THUMB_HEIGHT_PHONE;
         const width = Math.round((height * editor.stage.width) / editor.stage.height);
         return { width, height, fit: fitStage({ width, height }, editor.stage) };
     }
-    const height = Math.round((THUMB_WIDTH * editor.stage.height) / editor.stage.width);
-    return { width: THUMB_WIDTH, height, fit: fitStage({ width: THUMB_WIDTH, height }, editor.stage) };
+    const room = listWidth.value > 0 ? Math.max(THUMB_MIN_WIDTH, listWidth.value - TILE_CHROME) : THUMB_WIDTH;
+    const width = Math.min(THUMB_WIDTH, room);
+    const height = Math.round((width * editor.stage.height) / editor.stage.width);
+    return { width, height, fit: fitStage({ width, height }, editor.stage) };
 });
 /**
  * The tile is exactly as wide as its thumbnail on a phone – the name that
@@ -161,7 +181,7 @@ function removeCurrent(): void {
             </button>
         </div>
         <!-- Collapsed only on a phone: CSS, not v-show – a desktop-wide window always shows the slides. -->
-        <ol id="slide-list-ol" :class="{ collapsed: !open }">
+        <ol id="slide-list-ol" ref="list" :class="{ collapsed: !open }">
             <li
                 v-for="(slide, index) in editor.slides"
                 :key="slide.id"
@@ -301,6 +321,9 @@ function removeCurrent(): void {
 ol {
     flex: 1;
     overflow-y: auto;
+    /* The room of a scrollbar that takes space is kept free at all times – else a thumbnail made narrower for it
+       would make the list shorter, the scrollbar go, and the thumbnail grow again. */
+    scrollbar-gutter: stable;
     margin: 0;
     padding: 8px;
     list-style: none;
@@ -506,6 +529,7 @@ li.disabled .thumb {
         padding: 6px 8px;
         overflow-x: auto;
         overflow-y: hidden;
+        scrollbar-gutter: auto;
     }
     /*
      * `min-width: 104px` is gone: the tile is exactly as wide as its thumbnail now (`tileWidth`
