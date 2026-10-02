@@ -69,8 +69,7 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
             >
                 <Icon name="eye" :size="16" />
             </button>
-            <!-- The label carries the place, not the checkbox: ChurchTools styles inputs itself and would pull it back into the flow. -->
-            <label v-if="selectable" class="select" :title="`${item.name} auswählen`">
+            <label v-if="selectable" class="tile-check" :title="`${item.name} auswählen`">
                 <input
                     type="checkbox"
                     :checked="selected?.includes(item.fileId)"
@@ -147,8 +146,12 @@ figure.selected {
     line-height: 20px;
     text-align: center;
 }
-/* The checkbox lies on the picture, where the running number does – the two never show together. */
-.select {
+/*
+ * The checkbox lies on the picture, where the running number does – the two never show together.
+ * Not named `select`: a stylesheet ChurchTools loads later gives that class `position: relative`,
+ * which put the box under the picture (Befunde G43, Nachtrag).
+ */
+.tile-check {
     position: absolute;
     top: 6px;
     left: 6px;
@@ -162,7 +165,7 @@ figure.selected {
     background: rgba(255, 255, 255, 0.85);
     cursor: pointer;
 }
-.select input {
+.tile-check input {
     position: static;
     flex: none;
     width: 18px;
