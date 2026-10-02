@@ -1,5 +1,5 @@
 import { EXTENSION_KEY } from '../config';
-import { httpStatus } from '../ct/client';
+import { httpStatus, instanceBaseUrl } from '../ct/client';
 import { seedDemo } from '../dev/demo';
 import { createDemoKv, onDemoChange, resetDemo } from '../dev/demo-kv';
 import { ChurchToolsKv, findCustomModule } from './churchtools-kv';
@@ -32,7 +32,7 @@ async function create(): Promise<RepositoryHandle> {
     // VITE_USE_MODULE=true in .env opts in (LocalTests.md).
     const demoFirst = import.meta.env.DEV && import.meta.env.VITE_USE_MODULE !== 'true';
     if (!demoFirst && (await moduleExists())) {
-        return { repository: new ScreenRepository(new ChurchToolsKv(EXTENSION_KEY)), demo: false };
+        return { repository: new ScreenRepository(new ChurchToolsKv(EXTENSION_KEY), ownOrigins()), demo: false };
     }
     // Written as a positive branch so that the release build drops the demo entirely.
     if (import.meta.env.DEV) {
@@ -42,6 +42,15 @@ async function create(): Promise<RepositoryHandle> {
         return { repository, demo: true };
     }
     throw new Error('Das Custom Module ist auf dieser Instanz nicht verfügbar.');
+}
+
+/**
+ * Where media may come from: the instance, under the address ChurchTools names and the one the page
+ * runs on. None in development – the instance sits behind the proxy there, and its addresses are foreign.
+ */
+function ownOrigins(): string[] {
+    if (import.meta.env.DEV) return [];
+    return [...new Set([new URL(instanceBaseUrl()).origin, window.location.origin])];
 }
 
 async function moduleExists(): Promise<boolean> {

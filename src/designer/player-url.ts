@@ -1,8 +1,7 @@
 /**
- * The address a TV opens (way A, decided 2026-09-24): no secret in it, the
- * browser of the TV signs in once as the device account – like the built-in
- * info screen. It lives where the designer lives, so the origin is right in
- * ChurchTools and in development alike.
+ * The address of the player without any login, to open and copy in the designer. It lives where
+ * the designer lives, so the origin is right in ChurchTools and in development alike. The address
+ * for a TV, with the device account's login token, is made in the settings (`withDeviceLogin`).
  */
 export function playerUrl(slug: string): string {
     return new URL(`player?screen=${encodeURIComponent(slug)}`, window.location.origin + import.meta.env.BASE_URL).toString();

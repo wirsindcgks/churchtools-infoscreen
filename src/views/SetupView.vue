@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { churchtoolsClient } from '@churchtools/churchtools-client';
-import { computed, onMounted, reactive, ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { EXTENSION_KEY } from '../config';
 import Icon, { type IconName } from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
-import { fetchCalendars, fetchResourceMasterdata, type Calendar } from '../ct/api';
+import { fetchCalendars, fetchResourceMasterdata, fetchServiceGroups, fetchServices, type Calendar } from '../ct/api';
+import { serviceChoices, type ServiceInfo } from '../appointments/services';
 import { currentPerson, httpStatus, instanceBaseUrl, personUrl } from '../ct/client';
 import { playerUrl } from '../designer/player-url';
 import RemoveSetupDialog, { type DeviceAccountInfo, type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
 import { createCategory, setCategoryInMenu, wikiRestoreLogLine, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
-import { SCHEMA_VERSION, type ScreenDoc } from '../model/schema';
+import type { ScreenDoc } from '../model/schema';
 import { withDeviceLogin } from '../player/device-login';
 import { roomsOf, type RoomInfo } from '../rooms/normalize';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
@@ -28,6 +29,7 @@ import {
     personGroupIds,
     type GroupSummary,
 } from '../setup/load';
+import { settingsToSave, type SettingsFields } from '../setup/settings-doc';
 import { wikiCategoryCreation } from '../setup/wiki-creation';
 import { createDeviceLogin } from '../setup/device-token';
 import {
@@ -54,8 +56,7 @@ type Side = 'designer' | 'device';
  * whichever page one starts on or moves to.
  */
 const route = useRoute();
-const router = useRouter();
-type SetupPage = 'overview' | 'groups' | 'tv' | 'wiki';
+type SetupPage = 'overview' | 'groups' | 'tv' | 'wiki' | 'services';
 const page = computed<SetupPage>(() => {
     switch (route.name) {
         case 'setup-groups':
@@ -64,6 +65,8 @@ const page = computed<SetupPage>(() => {
             return 'tv';
         case 'setup-wiki':
             return 'wiki';
+        case 'setup-services':
+            return 'services';
         default:
             return 'overview';
     }
@@ -92,6 +95,11 @@ const HEADERS: Record<SetupPage, { icon: IconName; title: string; intro: string 
         icon: 'image',
         title: 'Mediathek im Wiki',
         intro: 'Wo die Bilder der Mediathek im Wiki stehen.',
+    },
+    services: {
+        icon: 'person',
+        title: 'Dienste auf Screens',
+        intro: 'Welche Dienste mit Namen auf einem Fernseher erscheinen dürfen.',
     },
 };
 const header = computed(() => HEADERS[page.value]);
@@ -209,14 +217,65 @@ function computePlan(): void {
     }
 }
 
-async function persistSettings(): Promise<void> {
-    await repository!.saveSettings({
-        schema: { ...SCHEMA_VERSION },
-        designerGroupId: selected.designer ?? undefined,
-        deviceGroupId: selected.device ?? undefined,
-        createdGroupIds: createdGroupIds.value.length ? createdGroupIds.value : undefined,
-        createdWikiCategoryId: createdWikiCategoryId.value ?? undefined,
-    });
+/** Saves `changes` over the stored settings, read fresh – what they do not name stays (see `settingsToSave`). By default the assistant's fields. */
+async function persistSettings(changes?: Partial<SettingsFields>): Promise<void> {
+    const current = await repository!.loadSettings();
+    await repository!.saveSettings(
+        settingsToSave(
+            current,
+            changes ?? {
+                designerGroupId: selected.designer ?? undefined,
+                deviceGroupId: selected.device ?? undefined,
+                createdGroupIds: createdGroupIds.value.length ? createdGroupIds.value : undefined,
+                createdWikiCategoryId: createdWikiCategoryId.value ?? undefined,
+            },
+        ),
+    );
+}
+
+/** The services an administrator may allow (Plan.md 58): null until loaded or where they cannot be. */
+const serviceList = ref<ServiceInfo[] | null>(null);
+const servicesFailed = ref(false);
+const allowedServices = ref<number[]>([]);
+const servicesSaved = ref(false);
+const servicesSaving = ref(false);
+let servicesRequested = false;
+/** Most services the settings hold – the schema's limit. */
+const ALLOWED_SERVICES_MAX = 50;
+
+async function loadServices(): Promise<void> {
+    if (servicesRequested || !repository) return;
+    servicesRequested = true;
+    try {
+        // Its own reads, so a failure elsewhere on the page (the wiki, say) does not stop it; unreadable settings must not save over them.
+        const [list, serviceGroups, settings] = await Promise.all([fetchServices(), fetchServiceGroups(), repository.loadSettings()]);
+        allowedServices.value = settings?.allowedServiceIds ?? [];
+        serviceList.value = serviceChoices(list, serviceGroups);
+    } catch {
+        servicesFailed.value = true;
+    }
+}
+
+/** Saves at once; ids that are not a showable service any more drop out here, not before. */
+async function toggleAllowedService(id: number, on: boolean, box: HTMLInputElement): Promise<void> {
+    if (!repository || !serviceList.value || servicesSaving.value) return;
+    const known = new Set(serviceList.value.map((s) => s.id));
+    const next = [...new Set(on ? [...allowedServices.value, id] : allowedServices.value.filter((a) => a !== id))]
+        .filter((a) => known.has(a))
+        .sort((a, b) => a - b);
+    servicesSaving.value = true;
+    servicesSaved.value = false;
+    error.value = null;
+    try {
+        await persistSettings({ allowedServiceIds: next });
+        allowedServices.value = next;
+        servicesSaved.value = true;
+    } catch (e) {
+        box.checked = !on;
+        error.value = explain(e);
+    } finally {
+        servicesSaving.value = false;
+    }
 }
 
 async function runAssistant(): Promise<void> {
@@ -466,6 +525,9 @@ async function check(side: Side): Promise<void> {
                 videoInUse,
                 wikiCategoryId,
                 moduleRights: moduleRights('device'),
+                // Only with the catalogue: without the plan nobody knows what a device needs (Plan.md 58 E).
+                plannedAuthIds: plan.value?.find((spec) => spec.key === 'device')?.grants.map((g) => g.authId),
+                authName: (authId) => catalog?.name(authId),
             });
         }
         if (selected.designer !== null && selected.designer === selected.device) {
@@ -513,15 +575,13 @@ const admin = ref<boolean | null>(null);
 const settingsLoaded = ref(false);
 
 onMounted(async () => {
-    // The former anchor `#fernseher` (until 2026-09-28) jumped down this page;
-    // it now leads to the page of its own.
-    if (route.name === 'setup' && route.hash === '#fernseher') void router.replace({ name: 'setup-tv' });
     try {
         admin.value = await isAdministrator();
         if (!admin.value) return;
         const handle = await getRepository();
         repository = handle.repository;
         demo.value = handle.demo;
+        if (page.value === 'services') void loadServices();
         const [list, settings, wikiCategories, calendarList, used, screenList, masterdata, usedRooms, roomsAtAppointments, serviceCalendars, videos] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
@@ -566,6 +626,11 @@ onMounted(async () => {
     } catch (e) {
         error.value = explain(e);
     }
+});
+
+// RouterView keeps this instance: arriving on the page later loads the services then.
+watch(page, (now) => {
+    if (now === 'services' && admin.value) void loadServices();
 });
 
 /**
@@ -679,6 +744,14 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         <span class="settings-card-body">
                             <h2>Mediathek im Wiki</h2>
                             <p class="muted">Wo die Bilder der Mediathek im Wiki stehen.</p>
+                        </span>
+                        <Icon name="forward" class="settings-card-forward" />
+                    </RouterLink>
+                    <RouterLink class="d-card settings-card" :to="{ name: 'setup-services' }" data-testid="settings-card-services">
+                        <span class="settings-card-icon"><Icon name="person" :size="20" /></span>
+                        <span class="settings-card-body">
+                            <h2>Dienste auf Screens</h2>
+                            <p class="muted">Welche Dienste mit Namen auf einem Fernseher erscheinen dürfen.</p>
                         </span>
                         <Icon name="forward" class="settings-card-forward" />
                     </RouterLink>
@@ -796,6 +869,37 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         Geprüft werden die Rechte der Gruppenrollen und ihrer Gruppentyp-Rollen, bei Geräten dazu Personenstatus und
                         direkt vergebene Rechte. Rechte aus anderen Gruppen zählen nicht mit.
                     </p>
+                </template>
+
+                <template v-if="page === 'services'">
+                    <section class="d-card card" data-testid="allowed-services">
+                        <p class="lead">
+                            Dienste zeigen, wer eingeteilt ist – mit Vor- und Nachnamen, für alle sichtbar, die am Fernseher
+                            vorbeigehen. Hier legst du fest, welche Dienste Gestalter überhaupt wählen können. Ohne Auswahl
+                            erscheint kein Dienst. Zur Wahl stehen nur Dienste, deren Dienstgruppe in ChurchTools „Ohne
+                            Berechtigung einsehbar" ist und die Namen nicht verbergen.
+                        </p>
+                        <p v-if="servicesFailed" class="error" role="alert" data-testid="allowed-services-failed">
+                            Dienste konnten nicht geladen werden.
+                        </p>
+                        <p v-else-if="!serviceList" class="empty">Lade …</p>
+                        <p v-else-if="!serviceList.length" class="muted" data-testid="allowed-services-none">
+                            In ChurchTools gibt es keinen Dienst, der gezeigt werden könnte.
+                        </p>
+                        <template v-else>
+                            <label v-for="s in serviceList" :key="s.id" class="check">
+                                <input
+                                    type="checkbox"
+                                    :checked="allowedServices.includes(s.id)"
+                                    :disabled="servicesSaving || (!allowedServices.includes(s.id) && allowedServices.length >= ALLOWED_SERVICES_MAX)"
+                                    data-testid="allowed-service"
+                                    @change="toggleAllowedService(s.id, ($event.target as HTMLInputElement).checked, $event.target as HTMLInputElement)"
+                                >
+                                {{ s.name }}
+                            </label>
+                            <p v-if="servicesSaved" class="muted small" role="status" data-testid="allowed-services-saved">Gespeichert</p>
+                        </template>
+                    </section>
                 </template>
 
                 <template v-if="page === 'wiki'">
@@ -996,6 +1100,11 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 }
 .card p {
     margin: 0;
+}
+.check {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 .checks {
     display: grid;

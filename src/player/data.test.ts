@@ -151,7 +151,7 @@ describe('appointmentNeeds – rooms (Plan.md 50)', () => {
         limit: 5,
         ...overrides,
     });
-    const rooms = (...blocks: Block[]) => appointmentNeeds(makeScreen(), [makeSlide({ blocks })]).rooms;
+    const rooms = (...blocks: Block[]) => appointmentNeeds(makeScreen(), [makeSlide({ blocks })], []).rooms;
 
     it('wants rooms for a next appointment that shows them, in both layouts', () => {
         expect(rooms(next())).toBe(false);
@@ -184,11 +184,21 @@ describe('appointmentNeeds – services (Plan.md 51)', () => {
         limit: 5,
         ...overrides,
     });
-    const services = (...blocks: Block[]) => appointmentNeeds(makeScreen(), [makeSlide({ blocks })]).services;
+    const ALL = [3, 4, 5, 7];
+    const services = (...blocks: Block[]) => appointmentNeeds(makeScreen(), [makeSlide({ blocks })], ALL).services;
 
     it('lists the services of all blocks, sorted and each once', () => {
         expect(services(next(), list())).toEqual([]);
         expect(services(next({ services: [7, 3] }), list({ id: 'l2', layout: 'cards', services: [3, 5] }))).toEqual([3, 5, 7]);
+    });
+
+    it('asks only for the services an administrator allowed – none without an allowance', () => {
+        const blocks = [next({ services: [7, 3] }), list({ id: 'l2', layout: 'cards', services: [3, 5] })];
+        const needs = (allowed: number[] | undefined) => appointmentNeeds(makeScreen(), [makeSlide({ blocks })], allowed).services;
+        expect(needs([3, 7])).toEqual([3, 7]);
+        expect(needs([5])).toEqual([5]);
+        expect(needs([])).toEqual([]);
+        expect(needs(undefined)).toEqual([]);
     });
 
     it('counts a list only where it shows cards – and the next appointment in both layouts', () => {

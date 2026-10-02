@@ -144,7 +144,9 @@ Standort** („Infoscreen Foyer", „Infoscreen Café") – dann lässt sich ein
 4. **In die Gruppe „Infoscreen-Devices" aufnehmen.**
 
 Einrichtung prüfen: Unter **Einstellungen → Gruppen und Rechte** die Gruppe „Infoscreen-Devices" wählen – die
-Prüfung zeigt je Mitglied, ob die Kalender der Screens lesbar sind.
+Prüfung zeigt je Mitglied, ob die Kalender der Screens lesbar sind, und nennt jedes Recht des Kontos, das ein Gerät
+nicht braucht. Steht dort eine Warnung, dem Konto einen Personenstatus ohne diese Rechte geben: Wer die Adresse des
+Fernsehers kennt, hat sie sonst auch.
 
 ## 7. Den Fernseher einrichten
 
@@ -286,8 +288,15 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 
 ## Was öffentlich ist – Datenschutz
 
-- **Alles auf einem Screen sieht jeder, der vorbeigeht.** Personenbezogenes – Geburtstage, Dienstpläne mit Namen,
-  Kontaktdaten – gehört nicht auf einen Infoscreen.
+- **Alles auf einem Screen sieht jeder, der vorbeigeht.** Personenbezogenes – Geburtstage, Kontaktdaten – gehört
+  nicht auf einen Infoscreen.
+- **Dienste mit Namen erscheinen nur nach Freigabe.** Wer an einem Termin welchen Dienst übernimmt, zeigt ein
+  Baustein nur für Dienste, die ein Administrator unter **Einstellungen → Dienste auf Screens** freigegeben hat –
+  etwa nur „Predigt". Ohne Freigabe erscheint kein Dienst. Zur Wahl stehen ohnehin nur Dienste, deren Dienstgruppe
+  in ChurchTools „Ohne Berechtigung einsehbar" ist und die Namen nicht verbergen; gezeigt werden Vor- und Nachname
+  zugesagter Einteilungen, nichts sonst von einer Person.
+- **Buchungstitel der Raumbelegung lassen sich je Raum abschalten.** Ein Titel wie „Gespräch Familie X" verrät
+  mehr, als ein Türschild soll; ohne Titel steht dort „Belegt".
 - **Die Bilder der Mediathek und das Gemeindelogo sind über ihre Adresse ohne Anmeldung abrufbar.** So liefert
   ChurchTools Bilder aus; die Adressen sind lang und nicht zu erraten, aber wer eine kennt, kann das Bild ansehen.
   Lade nichts hoch, was nicht öffentlich sein darf.
@@ -299,6 +308,16 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
   wenn man es einschaltet.
 - **Schriften kommen von eurer eigenen Instanz**, nicht von einem Schriftendienst – kein Aufruf verrät Gerät oder
   Gestalter an Dritte.
+- **Eine eingebettete Webseite ist ein Aufruf bei Dritten.** Der Baustein „Webseite" lädt die fremde Seite auf dem
+  Fernseher und im Editor: Ihr Betreiber erfährt die Internetadresse des Geräts und des Gestalters und kann Cookies
+  setzen. Der Designer selbst gibt nichts weiter – auch nicht, von welcher Seite der Aufruf kommt. Bettet nur ein,
+  was ihr auch auf eurer Website einbetten würdet. Seiten des eigenen ChurchTools nimmt der Baustein nicht an.
+- **Der Designer merkt sich, wer zuletzt gespeichert hat.** Der Name steht an Screens, Playlists und Zeitplänen,
+  damit Gestalter einander nicht überschreiben. Lesen können ihn die Gestalter, die Administratoren und die
+  Gerätekonten.
+- **Der Fernseher behält den letzten Stand.** Damit er einen Netzausfall übersteht, liegen Bilder und Inhalte im
+  Browserprofil des Geräts – auch Namen, die ein Screen zeigt (Leitung, Dienste, Autorinnen und Autoren). Wer ein
+  Gerät weggibt, löscht vorher das Browserprofil.
 - **Die Bilder liegen im Wiki-Bereich „Infoscreen".** Wer dort ein Bild löscht, löscht es auch auf den Screens –
   der Fernseher zeigt dann einen Platzhalter. Bilder am besten nur in der **Mediathek** des Designers verwalten
   (Seitenleiste): Sie warnt vor dem Löschen, wenn ein Bild noch gezeigt wird.

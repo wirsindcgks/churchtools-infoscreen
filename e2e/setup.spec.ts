@@ -84,10 +84,3 @@ test('the settings make a TV address that signs the device in, without keeping t
     ]);
     await card.screenshot({ path: 'test-results/tv-address.png' });
 });
-
-// The old address `/einrichtung#fernseher` (until 2026-09-28) must not lead into the void.
-test('the old anchor "#fernseher" leads straight to the TV addresses', async ({ page }) => {
-    await page.goto('./einrichtung#fernseher');
-    await expect(page).toHaveURL(/\/einstellungen\/fernseher$/);
-    await expect(page.getByTestId('setup-heading')).toHaveText('Adressen für die Fernseher');
-});

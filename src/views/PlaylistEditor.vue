@@ -13,13 +13,14 @@ import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
 import { BLOCK_LABELS } from '../designer/ops';
 import PlaylistPreview from '../designer/PlaylistPreview.vue';
 import SlideList from '../designer/SlideList.vue';
+import type { SettingsDoc } from '../model/schema';
 import { usePreview } from '../designer/usePreview';
 import type { HomepageEntry } from '../groups/normalize';
 import type { MediaDoc } from '../model/schema';
 import { MEDIA_PAGE } from '../media/library';
 import { roomsOf, type RoomInfo } from '../rooms/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
-import { appointmentServicesInUse, serviceChoices, type ServiceInfo } from '../appointments/services';
+import { allowedServiceIds, appointmentServicesInUse, serviceChoices, type ServiceInfo } from '../appointments/services';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 
@@ -42,6 +43,9 @@ const author = ref('');
 const root = ref<HTMLElement | null>(null);
 const top = ref(0);
 
+/** The services an administrator allows on screens (Plan.md 58); none until loaded, and where the settings cannot be read. */
+const allowedServices = ref<number[]>([]);
+
 const calendarIds = computed(() => editor.calendarIds);
 const { calendars, problem } = usePreview(
     calendarIds,
@@ -51,7 +55,7 @@ const { calendars, problem } = usePreview(
     computed(() => groupNeeds(editor.slides)),
     computed(() => roomNeeds(editor.slides)),
     computed(() => needsAppointmentRooms(editor.slides.flatMap((s) => s.blocks))),
-    computed(() => appointmentServicesInUse(editor.slides.flatMap((s) => s.blocks))),
+    computed(() => allowedServiceIds(appointmentServicesInUse(editor.slides.flatMap((s) => s.blocks)), allowedServices.value)),
 );
 
 /** Groups with posts switched on, for the „Beiträge"-Baustein; loaded once. Unreadable → an empty list, the inspector says so. */
@@ -329,8 +333,10 @@ onMounted(async () => {
     window.addEventListener('pointerdown', onPointerDown, true);
     window.addEventListener('pointerup', onPointerUpOrCancel, true);
     window.addEventListener('pointercancel', onPointerUpOrCancel, true);
+    let loadSettings: (() => Promise<SettingsDoc | null>) | null = null;
     try {
         const [handle, person] = await Promise.all([getRepository(), currentPerson()]);
+        loadSettings = () => handle.repository.loadSettings();
         author.value = displayName(person);
         demo.value = handle.demo;
         editor.attach(handle.repository);
@@ -354,6 +360,11 @@ onMounted(async () => {
         rooms.value = roomsOf(await fetchResourceMasterdata());
     } catch {
         rooms.value = [];
+    }
+    try {
+        allowedServices.value = ((await loadSettings?.()) ?? null)?.allowedServiceIds ?? [];
+    } catch {
+        allowedServices.value = [];
     }
     try {
         const [list, serviceGroups] = await Promise.all([fetchServices(), fetchServiceGroups()]);
@@ -636,7 +647,7 @@ function onKey(event: KeyboardEvent): void {
                     <span class="sheet-label">{{ sheetLabel }}</span>
                     <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
                 </button>
-                <Inspector id="inspector-panel" :calendars="calendars" :groups="groups" :homepages="homepages" :rooms="rooms" :services="services" :services-failed="servicesFailed" @pick-image="openLibrary" />
+                <Inspector id="inspector-panel" :calendars="calendars" :groups="groups" :homepages="homepages" :rooms="rooms" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" @pick-image="openLibrary" />
             </div>
         </div>
 

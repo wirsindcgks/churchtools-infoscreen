@@ -17,6 +17,7 @@ import { needsAppointmentRooms } from '../appointments/rooms';
 import { appointmentServiceIds } from '../appointments/services';
 import {
     readMedia,
+    withOwnAddresses,
     readPlaylistOrSchedule,
     readScreen,
     readSettings,
@@ -193,6 +194,11 @@ export interface LoadedScreen extends ScreenBundle {
     media: MediaDoc[];
     /** The look of all screens (schema 1.9); null while nobody set one – then the defaults apply. */
     theme?: ThemeDoc | null;
+    /**
+     * The services an administrator allows on screens (schema 1.20, Plan.md 58); empty without settings.
+     * An offline copy of an older player lacks it – read it with `?? []`.
+     */
+    allowedServiceIds: number[];
     issues: ReadIssue[];
 }
 
@@ -239,7 +245,19 @@ export interface SaveOptions {
 export class ScreenRepository {
     private categoryIds: Promise<Record<CategoryKey, number>> | null = null;
 
-    constructor(private readonly kv: KvBackend) {}
+    /**
+     * `mediaOrigins`: the origins media addresses may point to – the instance's own (`withOwnAddresses`).
+     * Without them every address passes: development and tests, where the instance sits behind a proxy.
+     */
+    constructor(
+        private readonly kv: KvBackend,
+        private readonly mediaOrigins: readonly string[] = [],
+    ) {}
+
+    private readonly readOwnMedia = (raw: unknown): MediaDoc => {
+        const doc = readMedia(raw);
+        return this.mediaOrigins.length ? withOwnAddresses(doc, this.mediaOrigins) : doc;
+    };
 
     /** Creates missing categories on first use, like the setup assistant of ct-pass-store. */
     ensureCategories(): Promise<Record<CategoryKey, number>> {
@@ -309,7 +327,7 @@ export class ScreenRepository {
         const shownSlides = (o: ScreenOverview) => Object.values(o.playlists).flatMap((p) => (p.firstSlide ? [p.firstSlide] : []));
         const mediaIds = new Set(overviews.flatMap((o) => shownSlides(o).flatMap(referencedMedia)));
         if (mediaIds.size) {
-            const media = (await this.readAll('media', readMedia)).docs.map((m) => m.doc);
+            const media = (await this.readAll('media', this.readOwnMedia)).docs.map((m) => m.doc);
             for (const o of overviews) {
                 const ids = new Set(shownSlides(o).flatMap(referencedMedia));
                 o.media = media.filter((m) => ids.has(m.id));
@@ -342,14 +360,19 @@ export class ScreenRepository {
         }
 
         const mediaIds = new Set(slides.flatMap(referencedMedia));
-        const mediaRead = mediaIds.size ? await this.readAll('media', readMedia) : { docs: [], issues: [] };
+        const mediaRead = mediaIds.size ? await this.readAll('media', this.readOwnMedia) : { docs: [], issues: [] };
         issues.push(...mediaRead.issues);
         const media = mediaRead.docs.map((m) => m.doc).filter((m) => mediaIds.has(m.id));
         for (const id of mediaIds) {
             if (!media.some((m) => m.id === id)) issues.push({ documentId: id, message: 'Medium fehlt.' });
         }
 
-        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, issues };
+        // Settings that cannot be read allow nothing: the strict side.
+        const allowedServiceIds = await this.loadSettings().then(
+            (settings) => settings?.allowedServiceIds ?? [],
+            () => [] as number[],
+        );
+        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, allowedServiceIds, issues };
     }
 
     /**
@@ -465,7 +488,7 @@ export class ScreenRepository {
         });
         const mediaIds = new Set(overviews.flatMap((o) => (o.firstSlide ? referencedMedia(o.firstSlide) : [])));
         if (mediaIds.size) {
-            const media = (await this.readAll('media', readMedia)).docs.map((m) => m.doc);
+            const media = (await this.readAll('media', this.readOwnMedia)).docs.map((m) => m.doc);
             for (const o of overviews) {
                 const ids = o.firstSlide ? referencedMedia(o.firstSlide) : [];
                 o.media = media.filter((m) => ids.includes(m.id));
@@ -491,7 +514,7 @@ export class ScreenRepository {
         }
 
         const mediaIds = new Set(slides.flatMap(referencedMedia));
-        const mediaRead = mediaIds.size ? await this.readAll('media', readMedia) : { docs: [], issues: [] };
+        const mediaRead = mediaIds.size ? await this.readAll('media', this.readOwnMedia) : { docs: [], issues: [] };
         const media = mediaRead.docs.map((m) => m.doc).filter((m) => mediaIds.has(m.id));
         const sharedWith: LoadedPlaylist['sharedWith'] = {};
         for (const sid of stored.doc.slideIds) {
@@ -785,7 +808,7 @@ export class ScreenRepository {
     }
 
     async listMedia(): Promise<MediaDoc[]> {
-        return (await this.readAll('media', readMedia)).docs.map((m) => m.doc);
+        return (await this.readAll('media', this.readOwnMedia)).docs.map((m) => m.doc);
     }
 
     /** The module settings; none yet is not an error, it is the state before the setup. */

@@ -99,7 +99,7 @@ kommt als eigene Zeile in „Auf einen Blick".
 
 Vue 3 + TypeScript + Vite + Pinia, `@churchtools/churchtools-client`, Vitest, Playwright – wie im
 [Extension-Boilerplate](https://github.com/churchtools/extension-boilerplate) von ChurchTools.
-Extension-Key `infoscreen-designer`, Auslieferungspfad `/ccm/infoscreen-designer/`. Lizenz GPL-2.0-or-later.
+Extension-Key `infoscreen-designer`, Auslieferungspfad `/ccm/infoscreen-designer/`. Lizenz GPL-3.0-or-later.
 
 **Drei Bauregeln, die aus gemessenen Grenzen folgen** – Herleitung jeweils in `Befunde.md`:
 

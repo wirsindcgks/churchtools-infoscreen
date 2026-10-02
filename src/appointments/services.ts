@@ -17,6 +17,13 @@ export function appointmentServicesInUse(blocks: readonly Block[]): number[] {
     return [...new Set(blocks.flatMap(appointmentServiceIds))].sort((a, b) => a - b);
 }
 
+/** The chosen services, as far as an administrator allowed them (Plan.md 58); order kept. Missing or empty `allowed`: none. */
+export function allowedServiceIds(chosen: readonly number[], allowed: readonly number[] | undefined): number[] {
+    if (!allowed?.length) return [];
+    const open = new Set(allowed);
+    return chosen.filter((id) => open.has(id));
+}
+
 /** One entry of `GET /services`, as far as this code reads it. */
 export interface ServiceResponse {
     id?: number;

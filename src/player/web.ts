@@ -9,23 +9,34 @@ export interface WebFrame {
     sandbox: string;
 }
 
+/** Why an address is not shown: no https address, or a page of the own ChurchTools. */
+export type WebRefusal = 'not-https' | 'own-instance';
+
 /**
- * The frame for an address, or null for one that is not shown: only https.
- * A foreign page keeps its own origin – without it most widgets fail – and
- * cannot reach ChurchTools across origins. A page of our own origin gets no
- * `allow-same-origin`: it would run with the session of the device or of the
- * designer.
+ * Null for an address the block shows, else why not. Only https, and never a
+ * page of our own origin: the browser would load it with the cookies of
+ * whoever looks at the slide – the device or a designer –, and an address
+ * that does something when merely opened would do it in their name.
  */
-export function webFrame(url: string, ownOrigin: string): WebFrame | null {
+export function webRefusal(url: string, ownOrigin: string): WebRefusal | null {
     let parsed: URL;
     try {
         parsed = new URL(url.trim());
     } catch {
-        return null;
+        return 'not-https';
     }
-    if (parsed.protocol !== 'https:') return null;
-    const foreign = parsed.origin !== ownOrigin;
-    return { src: parsed.href, sandbox: foreign ? 'allow-scripts allow-same-origin' : 'allow-scripts' };
+    if (parsed.protocol !== 'https:') return 'not-https';
+    return parsed.origin === ownOrigin ? 'own-instance' : null;
+}
+
+/**
+ * The frame for an address, or null for one that is not shown (`webRefusal`).
+ * The foreign page keeps its own origin – without it most widgets fail – and
+ * cannot reach ChurchTools across origins.
+ */
+export function webFrame(url: string, ownOrigin: string): WebFrame | null {
+    if (webRefusal(url, ownOrigin)) return null;
+    return { src: new URL(url.trim()).href, sandbox: 'allow-scripts allow-same-origin' };
 }
 
 /** "gemeinde.de/seite" → "https://gemeinde.de/seite": an address typed without a scheme is taken as https. */

@@ -1,9 +1,8 @@
 /**
  * The KV store of a real ChurchTools instance.
  *
- * Unverified until Custom Modules are enabled on the test instance (T1):
- * paths and payloads follow the OpenAPI schemas of build 32882 and the
- * official boilerplate, but no request of this file has run yet.
+ * Paths and payloads follow the OpenAPI schemas of build 32882; the data lives in the KV store
+ * of the module, reached through the Custom Modules API.
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import type { KvBackend, KvCategory, KvValue } from './kv';

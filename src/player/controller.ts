@@ -244,7 +244,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             data.churchLogo().catch(() => state.churchLogo),
         ]);
         const now = deps.now();
-        const needs = appointmentNeeds(state.screen.screen, state.screen.slides);
+        const needs = appointmentNeeds(state.screen.screen, state.screen.slides, state.screen.allowedServiceIds ?? []);
         const window = appointmentWindow(now, timeZone, needs.days);
         const appointments = needs.calendarIds.length
             ? await data.appointments(needs.calendarIds, window.from, window.to, timeZone, { rooms: needs.rooms, services: needs.services })

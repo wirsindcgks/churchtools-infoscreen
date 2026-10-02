@@ -206,6 +206,18 @@ async function newBlock(page: Page, type: string): Promise<void> {
 
 const stage = (page: Page) => page.locator('.editor-stage');
 
+/** An administrator allows these services on screens (Plan.md 58) – on the settings page, as a person would. */
+async function allowServices(page: Page, ...names: string[]): Promise<void> {
+    await page.goto('./einstellungen/dienste');
+    for (const name of names) {
+        const box = page.getByRole('checkbox', { name });
+        await expect(box).toBeVisible();
+        if (await box.isChecked()) continue; // allowed by an earlier visit: the demo store lives on
+        await box.check();
+        await expect(page.getByTestId('allowed-services-saved')).toBeVisible();
+    }
+}
+
 test('choose rooms, see the bookings, and keep the titles private where asked', async ({ page }) => {
     const church = await fakeChurch(page);
     await newRoomsBlock(page);
@@ -405,6 +417,7 @@ test('the room in the list of appointments: as cards, not as rows', async ({ pag
 
 test('the services at an appointment: only open ones are offered, only accepted people show', async ({ page }) => {
     await fakeChurch(page, { bookingRequests: [] });
+    await allowServices(page, 'Predigt', 'Moderation');
     await newBlock(page, 'next-appointment');
     await page.getByTestId('next-layout').selectOption('card');
 
@@ -426,8 +439,39 @@ test('the services at an appointment: only open ones are offered, only accepted 
     await expect(stage(page).getByTestId('next-services')).toHaveText('Predigt: Anna Beispiel');
 });
 
+test('services only after an administrator allowed them: the inspector offers exactly those', async ({ page }) => {
+    await fakeChurch(page, { bookingRequests: [] });
+    await newBlock(page, 'next-appointment');
+    await page.getByTestId('next-layout').selectOption('card');
+
+    // Nothing allowed: no box, a hint that says where to allow.
+    await expect(page.getByTestId('services-not-allowed')).toContainText('Noch kein Dienst freigegeben');
+    await expect(page.getByTestId('services-none')).toHaveCount(0);
+    await expect(page.getByTestId('services-fieldset').getByRole('checkbox')).toHaveCount(0);
+
+    // The settings page offers the two showable services, none checked; "Ton" (group not open to all) is not there.
+    await page.goto('./einstellungen/dienste');
+    await expect(page.getByTestId('allowed-service')).toHaveCount(2);
+    await expect(page.getByRole('checkbox', { name: 'Ton' })).toHaveCount(0);
+    await expect(page.getByTestId('allowed-service').first()).not.toBeChecked();
+    await page.getByRole('checkbox', { name: 'Moderation' }).check();
+    await expect(page.getByTestId('allowed-services-saved')).toHaveText('Gespeichert');
+
+    // The choice survives a reload, and the inspector offers just that one.
+    await page.reload();
+    await expect(page.getByRole('checkbox', { name: 'Moderation' })).toBeChecked();
+    await newBlock(page, 'next-appointment');
+    await page.getByTestId('next-layout').selectOption('card');
+    await expect(page.getByTestId('services-not-allowed')).toHaveCount(0);
+    await expect(page.getByTestId('service-2')).toBeVisible();
+    await expect(page.getByTestId('service-1')).toHaveCount(0);
+    await page.getByTestId('service-2').check();
+    await expect(stage(page).getByTestId('next-services')).toHaveText('Moderation: Ben Muster');
+});
+
 test('the services in the list of appointments: as cards, not as rows', async ({ page }) => {
     await fakeChurch(page, { bookingRequests: [] });
+    await allowServices(page, 'Predigt');
     await newBlock(page, 'appointment-list');
     await page.getByTestId('list-layout').selectOption('cards');
     await page.getByTestId('service-1').check();
@@ -483,6 +527,7 @@ test('the cards of the list: date column of one width, place under the date, thr
     const open = async (which: 'normal' | 'long') => {
         await page.unroute('**/api/**').catch(() => undefined);
         await fakeChurch(page, { bookingRequests: [], scene: scene(which) });
+        await allowServices(page, 'Predigt');
         await newBlock(page, 'appointment-list');
         await page.getByTestId('list-layout').selectOption('cards');
         await page.getByTestId('service-1').check();

@@ -8,7 +8,7 @@ import { provideStageContext, type StageContext } from './context';
 import { qrShape } from './qr';
 import SlideView from './SlideView.vue';
 import { imageBox, listLayout, themeVars } from './theme';
-import { embedAddress, webFrame, withScheme } from './web';
+import { embedAddress, webFrame, webRefusal, withScheme } from './web';
 
 const BERLIN = 'Europe/Berlin';
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
@@ -54,7 +54,7 @@ const appointments = normalizeAppointments(
 );
 
 describe('the website block (Plan.md 28)', () => {
-    it('frames only https, a foreign page with its own origin, our own without it', () => {
+    it('frames only https, and never a page of the own instance', () => {
         const own = 'https://gemeinde.church.tools';
         expect(webFrame('http://example.org', own)).toBeNull();
         expect(webFrame('javascript:alert(1)', own)).toBeNull();
@@ -63,8 +63,11 @@ describe('the website block (Plan.md 28)', () => {
             src: 'https://www.gemeinde.example/wochenblatt/',
             sandbox: 'allow-scripts allow-same-origin',
         });
-        // Same origin with allow-same-origin would run with the device's session.
-        expect(webFrame(`${own}/ccm/anything`, own)?.sandbox).toBe('allow-scripts');
+        // A page of the own instance would load with the cookies of whoever looks at the slide.
+        expect(webFrame(`${own}/ccm/anything`, own)).toBeNull();
+        expect(webRefusal(`${own}/?q=anything`, own)).toBe('own-instance');
+        expect(webRefusal('http://example.org', own)).toBe('not-https');
+        expect(webRefusal('https://www.gemeinde.example/', own)).toBeNull();
     });
 
     it('takes an address typed without a scheme as https, and leaves others as they are', () => {

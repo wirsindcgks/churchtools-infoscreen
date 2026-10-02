@@ -16,14 +16,21 @@ interface AuthEntry {
 export interface AuthCatalog {
     /** The id of a right, e.g. `id('infoscreen-designer', 'view')`; undefined if unknown. */
     id(module: string, auth: string): number | undefined;
+    /** A right by its id, as module and API name: `name(403)` → "churchcal: view category"; undefined if unknown. */
+    name(id: number): string | undefined;
 }
 
 export function catalogFrom(authTable: Record<string, Record<string, AuthEntry>>): AuthCatalog {
+    const names = new Map<number, string>();
+    for (const [module, rights] of Object.entries(authTable)) {
+        for (const [auth, entry] of Object.entries(rights ?? {})) names.set(Number(entry.id), `${module}: ${entry.auth ?? auth}`);
+    }
     return {
         id(module, auth) {
             const entry = authTable[module]?.[auth];
             return entry ? Number(entry.id) : undefined;
         },
+        name: (id) => names.get(id),
     };
 }
 

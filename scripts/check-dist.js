@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Guards three rules from Plan.md that a normal build would silently break.
+// Guards rules from Plan.md that a normal build would silently break.
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -74,11 +74,23 @@ for (const file of scripts) {
     }
 }
 
+// 6. Licences travel with the package: the own one, and the texts of the bundled npm packages (MIT, Apache-2.0).
+if (!fs.existsSync(path.join(dist, 'LICENSE.txt'))) failures.push('LICENSE.txt missing in dist’s root');
+const notices = path.join(dist, 'licenses', 'THIRD-PARTY-NOTICES.txt');
+if (!fs.existsSync(notices)) {
+    failures.push('licenses/THIRD-PARTY-NOTICES.txt missing');
+} else {
+    const text = fs.readFileSync(notices, 'utf8');
+    for (const name of ['vue', '@churchtools/churchtools-client']) {
+        if (!new RegExp(`^${name} \\d`, 'm').test(text)) failures.push(`licenses/THIRD-PARTY-NOTICES.txt does not name ${name}`);
+    }
+}
+
 if (failures.length) {
     console.error('dist check failed:\n  - ' + failures.join('\n  - '));
     process.exit(1);
 }
 console.log(
     `dist check passed (${files.length} files, one bundle plus sw.js, no inline script, no instance address, ` +
-        `${fontFiles.length} local font files with licences, no demo)`,
+        `${fontFiles.length} local font files with licences, no demo, licence texts of the own and the bundled packages)`,
 );

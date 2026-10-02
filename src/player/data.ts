@@ -5,7 +5,7 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
-import { appointmentServicesInUse } from '../appointments/services';
+import { allowedServiceIds, appointmentServicesInUse } from '../appointments/services';
 import { startOfZonedDay } from '../appointments/zoned';
 import {
     fetchAppointments,
@@ -205,6 +205,7 @@ export async function readableAppointments<T>(
 export function appointmentNeeds(
     screen: ScreenDoc,
     slides: SlideDoc[],
+    allowed: readonly number[] | undefined,
 ): { calendarIds: number[]; days: number; rooms: boolean; services: number[] } {
     const ids = new Set<number>();
     let days = 1;
@@ -226,7 +227,7 @@ export function appointmentNeeds(
         calendarIds: [...ids].sort((a, b) => a - b),
         days,
         rooms: needsAppointmentRooms(blocks),
-        services: appointmentServicesInUse(blocks),
+        services: allowedServiceIds(appointmentServicesInUse(blocks), allowed),
     };
 }
 

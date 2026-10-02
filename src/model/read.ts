@@ -90,6 +90,28 @@ export function readMedia(raw: unknown): MediaDoc {
     return parseStrict(MediaDoc, raw, 'media');
 }
 
+/**
+ * A media document with only addresses of the own instance: one that points elsewhere is emptied, and
+ * the player shows its calm placeholder. Whoever may write media documents could otherwise make every
+ * TV and every designer's browser call a foreign server. `origins` are the instance's own; relative
+ * addresses count as its own, anything unreadable or without an origin (`data:`) does not.
+ */
+export function withOwnAddresses(doc: MediaDoc, origins: readonly string[]): MediaDoc {
+    const own = (address: string): boolean => {
+        try {
+            return origins.includes(new URL(address, origins[0]).origin);
+        } catch {
+            return false;
+        }
+    };
+    const { fileUrl, ...rest } = doc;
+    return {
+        ...rest,
+        imageUrl: doc.imageUrl === '' || own(doc.imageUrl) ? doc.imageUrl : '',
+        ...(fileUrl !== undefined && own(fileUrl) ? { fileUrl } : {}),
+    };
+}
+
 export function readSettings(raw: unknown): SettingsDoc {
     checkVersion(raw);
     return parseStrict(SettingsDoc, raw, 'settings');

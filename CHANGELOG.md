@@ -4,6 +4,35 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.6.0] – 2026-10-02
+
+Eine Durchsicht auf Sicherheit und Datenschutz, bevor das Modul weitergegeben wird. Eine ausnutzbare Lücke fand sich
+nicht; diese Version schließt, was offen stand.
+
+### Geändert
+
+- **Dienste erscheinen nur noch nach Freigabe.** Unter **Einstellungen → Dienste auf Screens** legt ein Administrator
+  fest, welche Dienste mit Namen auf einem Fernseher stehen dürfen – etwa nur „Predigt". Gestalter wählen nur aus
+  diesen. **Nach dem Update zeigt ein Screen Dienste erst wieder, wenn sie freigegeben sind.**
+- **Der Baustein „Webseite" bettet das eigene ChurchTools nicht mehr ein.** Der Inspektor sagt es, wenn eine solche
+  Adresse eingetragen ist; fremde Seiten laufen wie bisher.
+- **Lizenz:** Der Designer steht jetzt unter der GNU General Public License, Version 3 oder später (bisher Version 2
+  oder später) – sie verträgt sich mit den Lizenzen aller mitgelieferten Bibliotheken.
+
+### Neu
+
+- **Die Prüfung der Gerätegruppe nennt Rechte, die ein Gerät nicht braucht.** Die Adresse eines Fernsehers trägt die
+  Rechte seines Kontos; hat es mehr als nötig – meist aus dem Personenstatus –, steht das jetzt unter
+  **Einstellungen → Gruppen und Rechte**, mit dem Namen des Rechts.
+- **Lizenztexte im Paket:** Das ZIP enthält die Lizenz des Designers und die aller mitgelieferten Bibliotheken.
+
+### Behoben
+
+- **Bilder und Videos kommen nur noch von der eigenen Instanz.** Ein Eintrag der Mediathek, der auf einen fremden
+  Server zeigt, bleibt leer.
+- Die alten Adressen `/einrichtung` und `/einrichtung#fernseher` gibt es nicht mehr; die Einstellungen stehen unter
+  `/einstellungen`.
+
 ## [0.5.0] – 2026-10-01
 
 ### Neu
@@ -515,6 +544,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.6.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.6.0
 [0.5.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.5.0
 [0.4.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.4.2
 [0.4.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.4.1

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { normalizeAppointments, type AppointmentResponse } from './normalize';
 import {
+    allowedServiceIds,
     appointmentServiceIds,
     appointmentServicesInUse,
     serviceChoices,
@@ -207,5 +208,18 @@ describe('toggleServiceIds', () => {
 
     it('never holds more than 6', () => {
         expect(toggleServiceIds([1, 2, 3, 4, 5, 6], 7, true, available)).toHaveLength(6);
+    });
+});
+
+describe('allowedServiceIds', () => {
+    it('allows nothing without an allowance', () => {
+        expect(allowedServiceIds([1, 2], undefined)).toEqual([]);
+        expect(allowedServiceIds([1, 2], [])).toEqual([]);
+    });
+
+    it('keeps the chosen ones that are allowed, in the order chosen', () => {
+        expect(allowedServiceIds([7, 3, 5], [3, 5, 9])).toEqual([3, 5]);
+        expect(allowedServiceIds([5, 3, 7], [7, 3, 5])).toEqual([5, 3, 7]);
+        expect(allowedServiceIds([], [3])).toEqual([]);
     });
 });

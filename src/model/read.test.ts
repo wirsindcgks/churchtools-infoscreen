@@ -4,11 +4,13 @@ import {
     InvalidDocumentError,
     MAX_VALUE_LENGTH,
     readScreen,
+    readSettings,
     readSlide,
     readTheme,
     SchemaTooNewError,
     serialize,
     ValueTooLargeError,
+    withOwnAddresses,
 } from './read';
 import { DEFAULT_FONT } from '../player/fonts';
 import { isVideo, MediaDoc, SCHEMA_VERSION, THEME_ID } from './schema';
@@ -188,6 +190,34 @@ describe('MediaDoc – videos (schema 1.18, Plan.md 52)', () => {
     });
 });
 
+describe('withOwnAddresses – media only from the own instance', () => {
+    const own = ['https://gemeinde.example'];
+    const media = (fields: Partial<MediaDoc>): MediaDoc =>
+        v.parse(MediaDoc, { schema: { ...SCHEMA_VERSION }, kind: 'media', id: 'm', name: 'Bild', fileId: 1, imageUrl: '', ...fields });
+
+    it('keeps addresses of the instance, also relative ones', () => {
+        const image = media({ imageUrl: 'https://gemeinde.example/images/1/hash' });
+        expect(withOwnAddresses(image, own)).toEqual(image);
+        expect(withOwnAddresses(media({ imageUrl: '/images/1/hash' }), own).imageUrl).toBe('/images/1/hash');
+        const video = media({ mediaType: 'video', fileUrl: 'https://gemeinde.example/?q=public/filedownload&id=7&filename=h' });
+        expect(withOwnAddresses(video, own)).toEqual(video);
+    });
+
+    it('empties an address that points elsewhere, whatever its form', () => {
+        for (const imageUrl of ['https://fremd.example/pixel.png', '//fremd.example/pixel.png', 'http://gemeinde.example/images/1/h', 'data:image/png;base64,AAAA']) {
+            expect(withOwnAddresses(media({ imageUrl }), own).imageUrl).toBe('');
+        }
+        const video = withOwnAddresses(media({ mediaType: 'video', fileUrl: 'https://fremd.example/film.mp4' }), own);
+        expect(video.fileUrl).toBeUndefined();
+        expect(isVideo(video)).toBe(true);
+    });
+
+    it('accepts every origin the instance goes by', () => {
+        const both = ['https://gemeinde.example', 'https://gemeinde.church.example'];
+        expect(withOwnAddresses(media({ imageUrl: 'https://gemeinde.church.example/images/1/h' }), both).imageUrl).not.toBe('');
+    });
+});
+
 describe('readTheme – the font new blocks start with (schema 1.13, Plan.md 40)', () => {
     const theme = { schema: { major: 1, minor: 12 }, kind: 'theme', id: THEME_ID };
 
@@ -288,5 +318,20 @@ describe('readSlide – rooms off per calendar (schema 1.17, Plan.md 51)', () =>
 
     it('rejects ids that are no integers', () => {
         expect(readSlide({ ...makeSlide(), blocks: [{ ...next, roomsOffCalendarIds: ['a'] }] }).doc.blocks).toEqual([]);
+    });
+});
+
+describe('readSettings – allowed services (schema 1.20, Plan.md 58)', () => {
+    const base = { schema: { ...SCHEMA_VERSION }, id: 'settings', kind: 'settings' };
+
+    it('reads the field, and its absence as none given', () => {
+        expect(readSettings({ ...base, allowedServiceIds: [3, 7] }).allowedServiceIds).toEqual([3, 7]);
+        expect(readSettings(base).allowedServiceIds).toBeUndefined();
+    });
+
+    it('refuses what is no list of whole numbers or holds more than 50', () => {
+        expect(() => readSettings({ ...base, allowedServiceIds: ['3'] })).toThrow();
+        expect(() => readSettings({ ...base, allowedServiceIds: [1.5] })).toThrow();
+        expect(() => readSettings({ ...base, allowedServiceIds: Array.from({ length: 51 }, (_, i) => i) })).toThrow();
     });
 });
