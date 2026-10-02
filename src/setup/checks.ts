@@ -19,6 +19,8 @@ export const AUTH = {
     wikiView: 501, // churchwiki: "Wiki" sehen
     wikiCategoryView: 502, // churchwiki: "Einzelne Wiki-Kategorien sehen"
     wikiCategoryEdit: 503, // churchwiki: "Einzelne Wiki-Kategorien bearbeiten"
+    // The person status of a fresh instance gives it to everyone, the device account too (measured 2026-10-02, status 0).
+    ownDataView: 131, // churchdb: "Eigene Personendaten sehen - bis zum gewählten Sicherheitslevel"
 } as const;
 
 /** `dataId` of a right granted for all data, e.g. all calendars – seen on person rights (G30). */
@@ -226,10 +228,12 @@ const EXCESS_NAMED = 6;
 /**
  * The rights a device account holds that no device needs – by right, whatever data it is for. The
  * address of a TV carries its account's login token (Plan.md, D): who has the address has these rights.
- * Wiki rights have their own line in `checkDeviceGroup`.
+ * Wiki rights have their own line in `checkDeviceGroup`. Seeing the own person data does not count: it reaches
+ * no further than the device account's own record, and the usual person status brings it along. Editing it
+ * does count, like every right that changes something – a device only reads (user, 2026-10-02).
  */
 export function excessRights(grants: Grant[], plannedAuthIds: readonly number[]): number[] {
-    const planned = new Set<number>([...plannedAuthIds, AUTH.wikiView, AUTH.wikiCategoryEdit]);
+    const planned = new Set<number>([...plannedAuthIds, AUTH.wikiView, AUTH.wikiCategoryEdit, AUTH.ownDataView]);
     const held = [...new Set(grants.map((g) => g.authId))].filter((authId) => has(grants, authId));
     return held.filter((authId) => !planned.has(authId)).sort((a, b) => a - b);
 }
@@ -377,8 +381,9 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                     `${member.label} hat ${excess.length === 1 ? 'ein Recht' : `${excess.length} Rechte`}, ` +
                     `${excess.length === 1 ? 'das' : 'die'} ein Gerät nicht braucht: ${names.join(', ')}${more > 0 ? ` und ${more} weitere` : ''}.`,
                 detail:
-                    'Wer die Adresse des Fernsehers kennt, hat diese Rechte. Meist kommen sie aus dem Personenstatus oder einer ' +
-                    'anderen Gruppe des Kontos – dem Gerätekonto einen Status ohne Rechte geben.',
+                    'Ein Gerät soll nur lesen, und nur, was seine Screens zeigen: Wer die Adresse des Fernsehers kennt, hat diese ' +
+                    'Rechte auch. Meist kommen sie aus dem Personenstatus oder einer anderen Gruppe des Kontos. Die Namen sind die ' +
+                    'der Rechteverwaltung von ChurchTools; dort der Person einen Status ohne diese Rechte geben.',
             });
         }
     }

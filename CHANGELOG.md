@@ -4,6 +4,21 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.6.1] – 2026-10-02
+
+### Behoben
+
+- **Editor:** In einer Playlist mit vielen Slides ragte das Vorschaubild rechts über den Rahmen seiner Kachel, sobald
+  die Liste scrollte und der Rollbalken Platz nahm – etwa mit angeschlossener Maus. Das Vorschaubild richtet sich
+  jetzt nach der Breite der Liste.
+
+### Geändert
+
+- **Rechte der Gerätekonten in Klartext:** Die Prüfung unter **Einstellungen → Gruppen und Rechte** nennt ein Recht,
+  das ein Gerät nicht braucht, jetzt so, wie es in der Rechteverwaltung von ChurchTools heißt – etwa „Personen:
+  Eigene Personendaten bearbeiten". „Eigene Personendaten sehen" zählt nicht mehr dazu: Es kommt mit dem üblichen
+  Personenstatus und reicht nicht über das eigene Konto hinaus. Was etwas ändern kann, wird weiter genannt.
+
 ## [0.6.0] – 2026-10-02
 
 Eine Durchsicht auf Sicherheit und Datenschutz, bevor das Modul weitergegeben wird. Eine ausnutzbare Lücke fand sich
@@ -544,6 +559,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.6.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.6.1
 [0.6.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.6.0
 [0.5.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.5.0
 [0.4.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.4.2

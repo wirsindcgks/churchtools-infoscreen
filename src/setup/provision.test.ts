@@ -33,9 +33,22 @@ const categories = { screens: 1, playlists: 4, slides: 7, media: 10, settings: 1
 const input = { catalog, moduleKey: 'infoscreen-designer', categories, wikiCategoryId: 1, calendarIds: [4, 5], roomIds: [1, 2, 3], usedRoomIds: [2], appointmentRooms: false, serviceCalendarIds: [] as number[] };
 
 describe('the catalogue', () => {
-    it('names a right by its id, as module and API name', () => {
+    it('names a right by its id – in the words of ChurchTools, else as module and API name', () => {
         expect(catalog.name(2010)).toBe('infoscreen-designer: view');
         expect(catalog.name(1)).toBeUndefined();
+        const worded = catalogFrom({
+            churchdb: {
+                'security level edit own data': {
+                    id: 132,
+                    auth: 'security level edit own data',
+                    bezeichnung: 'Eigene Personendaten bearbeiten - bis zum gewählten Sicherheitslevel',
+                },
+            },
+            churchcore: { 'administer settings': { id: 1, auth: 'administer settings', bezeichnung: 'System-Einstellungen verwalten' } },
+        });
+        expect(worded.name(132)).toBe('Personen: Eigene Personendaten bearbeiten - bis zum gewählten Sicherheitslevel');
+        // A module whose heading in ChurchTools is not known: the wording alone.
+        expect(worded.name(1)).toBe('System-Einstellungen verwalten');
     });
 });
 

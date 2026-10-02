@@ -1656,3 +1656,28 @@ test.describe('the slides "<" and the two-line block head (Plan.md 47)', () => {
         }
     });
 });
+
+// A scrollbar that takes space (a mouse on a Mac, most of Windows) narrows the list once the slides no longer fit:
+// the thumbnail must follow, or it sticks out of its tile's frame (seen on a playlist of nine slides, 2026-10-02).
+test('with a scrollbar that takes space, every thumbnail stays inside its tile', async ({ page, browserName }) => {
+    test.skip(browserName !== 'chromium', 'Only Chromium lets a test force a classic scrollbar');
+    await page.setViewportSize({ width: 1400, height: 520 });
+    await page.goto('./');
+    await page.addStyleTag({ content: '#slide-list-ol::-webkit-scrollbar { width: 15px; }' });
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    const list = page.locator('#slide-list-ol');
+    await expect.poll(() => list.evaluate((el) => el.scrollHeight > el.clientHeight)).toBe(true);
+    await expect
+        .poll(() =>
+            page.getByTestId('slide-item').evaluateAll((items) =>
+                items.every((item) => {
+                    const thumb = item.querySelector('.thumb')!.getBoundingClientRect();
+                    const tile = item.getBoundingClientRect();
+                    return thumb.right <= tile.right - 8 && thumb.left >= tile.left + 8;
+                }),
+            ),
+        )
+        .toBe(true);
+    await page.locator('.slide-list').screenshot({ path: 'test-results/slide-list-scrollbar.png' });
+});
