@@ -117,6 +117,33 @@ export function useMediaLibrary(
         await reload();
     }
 
+    /**
+     * Deletes several files after the delete dialog asked. Files the dialog showed as shown somewhere go with
+     * `force`; one that came into use since is left alone and named. Returns the file ids that are gone.
+     */
+    async function removeMany(list: readonly MediaItem[]): Promise<number[]> {
+        if (!library) return [];
+        problem.value = null;
+        const gone: number[] = [];
+        const kept: string[] = [];
+        try {
+            for (const [i, item] of list.entries()) {
+                busy.value = `Lösche ${item.name} (${i + 1}/${list.length}) …`;
+                try {
+                    await library.remove(item, item.uses.length > 0);
+                    gone.push(item.fileId);
+                } catch (e) {
+                    kept.push(e instanceof MediaInUseError ? `„${item.name}" wird inzwischen gezeigt` : `„${item.name}": ${message(e)}`);
+                }
+            }
+        } finally {
+            busy.value = null;
+        }
+        if (kept.length) problem.value = `Nicht gelöscht: ${kept.join('; ')}.`;
+        await reload().catch((e: unknown) => (problem.value = message(e)));
+        return gone;
+    }
+
     /** Pictures dropped anywhere on the library are uploaded: `v-on="dropZone"`. */
     const dropZone = {
         dragover: (event: DragEvent) => {
@@ -133,7 +160,7 @@ export function useMediaLibrary(
         },
     };
 
-    return { items, loading, busy, problem, dragOver, dropZone, upload, adopt, remove, accept: acceptFor(kinds) };
+    return { items, loading, busy, problem, dragOver, dropZone, upload, adopt, remove, removeMany, reload, accept: acceptFor(kinds) };
 }
 
 function message(e: unknown): string {

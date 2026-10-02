@@ -117,7 +117,8 @@ gewählten Playlists und verschwindet zur eingestellten Zeit von selbst.
 ## Playlists
 
 Eine Playlist ist der Inhalt eines Screens und kann auf mehreren Screens laufen. Duplizieren ergibt eine Kopie mit
-eigenen Slides – oder auf Wunsch eine Playlist mit denselben, verknüpften Slides.
+eigenen Slides – oder auf Wunsch eine Playlist mit denselben, verknüpften Slides. Jede Kachel zeigt, wann die
+Playlist zuletzt bearbeitet wurde – beim Überfahren auch die Uhrzeit und von wem.
 
 ![Playlists als Kacheln mit Format, Zahl der Slides und den Screens, die sie zeigen](bilder/playlists.png)
 
@@ -134,6 +135,10 @@ Bilder und Videos einmal hochladen und überall verwenden. Unter jedem Bild steh
 Aufräumen. Videos zeigen ein Standbild mit ihrer Länge. Ein Klick auf eine Kachel öffnet die Datei groß – so, wie ein Fernseher sie zeigt –
 mit Maßen, Länge und Datum, auf dunklem, hellem oder kariertem Grund; mit den Pfeiltasten blättert man durch die gerade sichtbaren
 Dateien. Im Auswahl-Dialog des Editors öffnet das Auge auf der Kachel die Vorschau, dort steht auch „Verwenden".
+
+Zum Aufräumen wählt man eine oder mehrere Dateien über das Kästchen auf der Kachel und löscht sie gemeinsam. Vorher
+nennt ein Dialog jede Datei – und zu jeder, die noch auf einer Slide läuft, die Stelle. Verwendete Dateien lassen sich
+dabei aussparen („Nur unbenutzte löschen").
 
 ![Mediathek mit Suche, Filtern und der Angabe, wo ein Bild verwendet wird](bilder/mediathek.png)
 

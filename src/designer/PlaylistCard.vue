@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * A playlist on the playlists page (Plan.md, Nächste Schritte 19): its first
- * slide, name, format, and on which screens it runs. The tile opens the
+ * slide, name, format, when it was last edited, and on which screens it runs. The tile opens the
  * editor; duplicating copies its slides too; deleting waits until no screen
  * shows it.
  */
@@ -21,6 +21,19 @@ const portrait = computed(() => playlist.value.stage.height > playlist.value.sta
 const inUse = computed(() => props.overview.screens.length > 0);
 /** A band is running (Plan.md, Nächste Schritte 34) – not one that only sits there, expired. */
 const hasBanner = computed(() => bannerShown(playlist.value.banner, context.now, context.timeZone));
+
+/** "28.09.2026" on the tile, with time and name in the tooltip – in the church's time zone, like every time here. */
+const edited = computed(() => {
+    const at = props.overview.editedAt ? new Date(props.overview.editedAt) : null;
+    if (!at || Number.isNaN(at.getTime())) return null;
+    const format = (options: Intl.DateTimeFormatOptions) =>
+        new Intl.DateTimeFormat('de-DE', { timeZone: context.timeZone, ...options }).format(at);
+    const by = props.overview.editedBy ? ` von ${props.overview.editedBy}` : '';
+    return {
+        date: format({ day: '2-digit', month: '2-digit', year: 'numeric' }),
+        title: `Zuletzt bearbeitet am ${format({ dateStyle: 'long', timeStyle: 'short' })}${by}`,
+    };
+});
 
 const menuOpen = ref(false);
 const root = ref<HTMLElement | null>(null);
@@ -109,6 +122,10 @@ function duplicate(): void {
                 <span title="Slides">
                     <Icon name="slides" :size="16" />
                     {{ overview.slideCount }}
+                </span>
+                <span v-if="edited" :title="edited.title" data-testid="playlist-edited">
+                    <Icon name="clock" :size="16" />
+                    {{ edited.date }}
                 </span>
             </p>
             <p class="facts muted" data-testid="playlist-screens">

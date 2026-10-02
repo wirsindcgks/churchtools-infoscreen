@@ -4,6 +4,23 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.7.0] – 2026-10-02
+
+### Neu
+
+- **Playlists:** Jede Kachel zeigt, wann die Playlist zuletzt bearbeitet wurde; beim Überfahren stehen Uhrzeit und
+  Name dabei. Es zählt die jüngste Speicherung der Playlist oder einer ihrer Slides – auch wenn eine verknüpfte Slide
+  über eine andere Playlist geändert wurde.
+- **Mediathek:** Dateien lassen sich über ein Kästchen auf der Kachel auswählen – eine oder mehrere, dazu „Alle
+  auswählen" für das, was Suche und Filter gerade zeigen – und gemeinsam löschen. Vorher nennt ein Dialog jede Datei.
+  Läuft eine noch auf einer Slide, steht dort, wo (Screen › Playlist › Slide), mit dem Hinweis auf die leere Fläche;
+  „Nur unbenutzte löschen" spart diese Dateien aus.
+
+### Geändert
+
+- **Mediathek:** Die Kacheln sehen aus wie die der Screens und Playlists. Auf der Seite „Mediathek" ersetzt die
+  Auswahl den Link „Löschen" an der einzelnen Kachel; im Auswahl-Dialog des Editors bleibt er.
+
 ## [0.6.4] – 2026-10-02
 
 ### Geändert
@@ -589,6 +606,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.7.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.7.0
 [0.6.4]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.6.4
 [0.6.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.6.3
 [0.6.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.6.2

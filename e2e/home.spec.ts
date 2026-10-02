@@ -133,9 +133,10 @@ test.describe('media library as a section of its own (Plan.md 16)', () => {
         // Upload sits where "Screen erstellen" and "Playlist erstellen" sit: top right in the bar.
         await expect(page.locator('.d-appbar').getByTestId('media-upload-button')).toBeEnabled();
         await expect(library.getByText('Lade Bilder …')).toHaveCount(0);
-        // Pictures here are managed, not chosen: no "verwenden" button.
+        // Pictures here are managed, not chosen: a click looks at one (Plan.md 53), a checkbox picks it for deleting.
         await expect(library.getByTestId('media-item').first()).toBeVisible();
-        await expect(library.locator('button.pick')).toHaveCount(0);
+        await expect(library.locator('button.pick').first()).toHaveAttribute('title', / ansehen$/);
+        await expect(library.getByTestId('media-select')).toHaveCount(await library.getByTestId('media-item').count());
         // Each picture says where it is shown, or that it is unused (Plan.md 18).
         const items = await library.getByTestId('media-item').count();
         await expect(library.getByTestId('media-uses')).toHaveCount(items);

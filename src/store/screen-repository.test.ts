@@ -282,6 +282,23 @@ describe('ScreenRepository', () => {
             expect(overview?.slideCount).toBe(2);
         });
 
+        it('tells when a playlist was last edited – also through a linked slide saved elsewhere', async () => {
+            const made = await repo.createPlaylist({ name: 'Gottesdienst', stage: LANDSCAPE }, 'Anna', new Date('2026-09-01T08:00:00Z'));
+            const twin = await repo.duplicatePlaylist(made.id, 'Ben', new Date('2026-09-02T08:00:00Z'), { linked: true });
+            const find = async (id: string) => (await repo.listPlaylists()).find((o) => o.playlist.id === id);
+            expect(await find(made.id)).toMatchObject({ editedAt: '2026-09-01T08:00:00.000Z', editedBy: 'Anna' });
+            expect(await find(twin.id)).toMatchObject({ editedAt: '2026-09-02T08:00:00.000Z', editedBy: 'Ben' });
+
+            const { playlist, slides } = await repo.loadPlaylist(twin.id);
+            await repo.savePlaylist(
+                { playlist, slides },
+                { expectedRevision: playlist.revision, updatedBy: 'Ben', now: new Date('2026-09-03T08:00:00Z') },
+            );
+            // The slide is shown by both: the first playlist changed too, but nobody saved it itself.
+            expect(await find(made.id)).toMatchObject({ editedAt: '2026-09-03T08:00:00.000Z', editedBy: null });
+            expect(await find(twin.id)).toMatchObject({ editedAt: '2026-09-03T08:00:00.000Z', editedBy: 'Ben' });
+        });
+
         it('creates a playlist that runs nowhere yet and keeps it through a tidy-up', async () => {
             const made = await repo.createPlaylist({ name: 'Gottesdienst', stage: LANDSCAPE }, 'Anna');
             const loaded = await repo.loadPlaylist(made.id);

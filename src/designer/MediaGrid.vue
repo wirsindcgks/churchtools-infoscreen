@@ -6,7 +6,8 @@
  * picture, and a small eye on the tile opens the preview; on the media library page
  * there is nothing to choose for, so a click opens the preview (Plan.md 53). With `multiple`
  * a click marks or unmarks: the tile shows the running number of the choice, `marked`
- * holds the file ids in that order.
+ * holds the file ids in that order. With `selectable` (the media library page) every tile has a
+ * checkbox to pick files for deleting – several at once – in place of its own "Löschen".
  */
 import { computed } from 'vue';
 import { usageLines, type MediaItem } from '../media/library';
@@ -15,8 +16,17 @@ import { sizedImageUrl } from '../player/format';
 import { videoSrc } from '../player/video';
 import Icon from './Icon.vue';
 
-const props = defineProps<{ items: MediaItem[]; selectedMediaId?: string; choosable?: boolean; multiple?: boolean; marked?: number[] }>();
-const emit = defineEmits<{ choose: [MediaItem]; remove: [MediaItem]; preview: [MediaItem] }>();
+const props = defineProps<{
+    items: MediaItem[];
+    selectedMediaId?: string;
+    choosable?: boolean;
+    multiple?: boolean;
+    marked?: number[];
+    selectable?: boolean;
+    /** File ids of the tiles picked through their checkbox. */
+    selected?: number[];
+}>();
+const emit = defineEmits<{ choose: [MediaItem]; remove: [MediaItem]; preview: [MediaItem]; toggle: [MediaItem] }>();
 
 /** Two places fit under a picture; the rest are counted and in the tooltip. */
 const SHOWN = 2;
@@ -29,7 +39,8 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
         <figure
             v-for="item in items"
             :key="item.fileId"
-            :class="{ selected: (item.mediaId && item.mediaId === selectedMediaId) || numberOf(item) > 0 }"
+            class="d-card"
+            :class="{ selected: (item.mediaId && item.mediaId === selectedMediaId) || numberOf(item) > 0 || selected?.includes(item.fileId) }"
             data-testid="media-item"
         >
             <button
@@ -58,9 +69,19 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
             >
                 <Icon name="eye" :size="16" />
             </button>
+            <input
+                v-if="selectable"
+                class="select"
+                type="checkbox"
+                :checked="selected?.includes(item.fileId)"
+                :aria-label="`${item.name} auswählen`"
+                :title="`${item.name} auswählen`"
+                data-testid="media-select"
+                @change="emit('toggle', item)"
+            >
             <figcaption>
                 <span class="name" :title="item.name">{{ item.name }}</span>
-                <button class="delete" type="button" :title="`${item.name} löschen`" @click="emit('remove', item)">Löschen</button>
+                <button v-if="!selectable" class="delete" type="button" :title="`${item.name} löschen`" @click="emit('remove', item)">Löschen</button>
                 <span
                     v-if="places.get(item.fileId)!.length"
                     class="uses"
@@ -84,14 +105,21 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 14px;
 }
+/* A tile like those of the screens and playlists: picture on top, the facts below. */
 figure {
     position: relative;
+    display: flex;
+    flex-direction: column;
     margin: 0;
-    border: 2px solid transparent;
-    border-radius: var(--d-radius-lg);
+    transition: box-shadow 0.15s, border-color 0.15s;
+}
+figure:hover {
+    border-color: var(--d-interactive);
+    box-shadow: 0 4px 12px -4px #0000001f;
 }
 figure.selected {
     border-color: var(--d-accent);
+    box-shadow: 0 0 0 1px var(--d-accent);
 }
 .pick {
     position: relative;
@@ -99,7 +127,7 @@ figure.selected {
     width: 100%;
     padding: 0;
     border: 0;
-    border-radius: var(--d-radius);
+    border-radius: var(--d-radius-lg) var(--d-radius-lg) 0 0;
     background: var(--d-panel);
     cursor: pointer;
     aspect-ratio: 16 / 9;
@@ -118,6 +146,18 @@ figure.selected {
     font-weight: 700;
     line-height: 20px;
     text-align: center;
+}
+/* The checkbox sits where the running number does – the two never show together. */
+.select {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    padding: 0;
+    accent-color: var(--d-accent);
+    cursor: pointer;
 }
 /* The eye sits on the figure, over the picture, top right – the running number is top left. */
 .look {
@@ -177,7 +217,7 @@ figcaption {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 0 6px;
-    padding: 4px 2px 0;
+    padding: 8px 14px 12px;
     font-size: var(--d-size-sm);
 }
 .name {

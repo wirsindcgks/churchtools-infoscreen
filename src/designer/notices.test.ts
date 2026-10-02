@@ -22,7 +22,7 @@ function banner(overrides: Partial<Banner> = {}): Banner {
 
 function overview(overrides: Partial<StagedPlaylist> = {}, screens: PlaylistOverview['screens'] = []): PlaylistOverview {
     const playlist: StagedPlaylist = { ...makePlaylist(), stage: STAGE, revision: 1, ...overrides };
-    return { playlist, firstSlide: null, slideCount: 0, media: [], screens };
+    return { playlist, firstSlide: null, slideCount: 0, media: [], screens, editedAt: null, editedBy: null };
 }
 
 describe('groupBanners (Plan.md, Nächste Schritte 34)', () => {
