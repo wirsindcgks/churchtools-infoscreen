@@ -64,19 +64,19 @@ test('the checks of a group are folded by category, and the head names what is n
         await expect(calendars).toContainText(/ist sichtbar\./);
     }
 
-    // A group with a warning shows it in its head.
+    // A group with a warning says so in its head – in a word, not with the line itself.
     for (const warned of await device.locator('.check-group--warn').all()) {
-        await expect(warned.locator('summary').getByTestId('check-notice').first()).toBeVisible();
+        await expect(warned.locator('summary')).toContainText(/Warnung/);
     }
 
     // Any group with something to say, for the picture: open, its lines come below the head with their
     // explanations – and the head no longer says the same a second time.
     const noisy = device.locator('.check-group--fail, .check-group--warn, .check-group--info');
     if (await noisy.count()) {
-        await expect(noisy.first().locator('summary').getByTestId('check-notice').first()).toBeVisible();
+        await expect(noisy.first().locator('summary')).toContainText(/Fehler|Warnung|Hinweis/);
+        await expect(noisy.first().locator('.check-list li').first()).toBeHidden();
         await noisy.first().locator('summary').click();
         await expect(noisy.first()).toHaveAttribute('open', '');
-        await expect(noisy.first().locator('summary').getByTestId('check-notice').first()).toBeHidden();
         await expect(noisy.first().locator('.check-list li').first()).toBeVisible();
         if (testInfo.project.name === 'chromium') await page.getByTestId('setup-device').screenshot({ path: 'test-results/setup-checks-open.png' });
     }

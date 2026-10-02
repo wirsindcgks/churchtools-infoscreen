@@ -354,7 +354,7 @@ describe('groupChecks', () => {
         expect(groupChecks([c('ok', 'a')]).map((g) => g.category)).toEqual(['group']);
     });
 
-    it('takes the worst level and lists the notices worst first, else in order', () => {
+    it('takes the worst level and counts what waits inside, worst first', () => {
         const [group] = groupChecks([
             c('info', 'i1', 'rooms'),
             c('ok', 'o', 'rooms'),
@@ -364,20 +364,18 @@ describe('groupChecks', () => {
             c('info', 'i2', 'rooms'),
         ]);
         expect(group?.level).toBe('fail');
-        expect(group?.notices.map((n) => n.text)).toEqual(['f1', 'w1', 'w2', 'i1', 'i2']);
         expect(group?.checks).toHaveLength(6);
-        expect(group?.summary).toBe('1 von 6 in Ordnung');
+        expect(group?.summary).toBe('1 Fehler, 2 Warnungen, 2 Hinweise');
     });
 
     it('ranks info above ok and writes the summary', () => {
         const [info] = groupChecks([c('ok', 'a', 'module'), c('info', 'b', 'module')]);
         expect(info?.level).toBe('info');
-        expect(info?.summary).toBe('1 von 2 in Ordnung');
+        expect(info?.summary).toBe('1 Hinweis');
         const [ok] = groupChecks([c('ok', 'a', 'module'), c('ok', 'b', 'module')]);
         expect(ok?.level).toBe('ok');
-        expect(ok?.notices).toEqual([]);
         expect(ok?.summary).toBe('2 von 2 in Ordnung');
         expect(groupChecks([c('ok', 'a', 'module')])[0]?.summary).toBe('In Ordnung');
-        expect(groupChecks([c('warn', 'a', 'module')])[0]?.summary).toBe('0 von 1 in Ordnung');
+        expect(groupChecks([c('warn', 'a', 'module')])[0]?.summary).toBe('1 Warnung');
     });
 });

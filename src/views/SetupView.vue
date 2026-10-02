@@ -866,17 +866,6 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                             <span class="check-group-summary muted">{{ group.summary }}</span>
                                             <Icon name="chevron-down" :size="14" class="chevron" />
                                         </span>
-                                        <ul v-if="group.notices.length" class="check-notices">
-                                            <li
-                                                v-for="(c, i) in group.notices"
-                                                :key="i"
-                                                :class="`check--${c.level}`"
-                                                data-testid="check-notice"
-                                            >
-                                                <span class="symbol" aria-hidden="true">{{ SYMBOL[c.level] }}</span>
-                                                <span>{{ c.text }}</span>
-                                            </li>
-                                        </ul>
                                     </summary>
                                     <ul class="check-list">
                                         <li v-for="(c, i) in group.checks" :key="i" :class="`check--${c.level}`">
@@ -1180,7 +1169,6 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 .check-group:not([open]) .chevron {
     transform: rotate(-90deg);
 }
-.check-notices,
 .check-list {
     display: grid;
     gap: 8px;
@@ -1188,17 +1176,9 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
     padding: 0;
     list-style: none;
 }
-.check-notices {
-    padding-left: 28px;
-}
-/* Open, every line stands below with its explanation – the head would only say it twice. */
-.check-group[open] .check-notices {
-    display: none;
-}
 .check-list {
     padding: 0 0 12px;
 }
-.check-notices li,
 .check-list li {
     display: grid;
     grid-template-columns: 22px minmax(0, 1fr);
