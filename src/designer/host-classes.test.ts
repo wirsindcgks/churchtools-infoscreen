@@ -44,6 +44,8 @@ const HOST_UTILITIES = [
     'transform',
     'filter',
     'blur',
+    // A form component of the host, in a stylesheet it loads later: `.cts .select { position: relative }` (G43, Nachtrag).
+    'select',
 ];
 
 /**

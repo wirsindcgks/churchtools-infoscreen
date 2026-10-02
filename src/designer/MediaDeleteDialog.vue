@@ -44,7 +44,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
                     {{ used.length === 1 ? 'Eine Datei wird' : `${used.length} Dateien werden` }} noch gezeigt. Nach dem
                     Löschen bleibt dort eine leere Fläche.
                 </p>
-                <ul class="list" data-testid="media-delete-used">
+                <ul class="files" data-testid="media-delete-used">
                     <li v-for="item in used" :key="item.fileId">
                         <span v-if="item.kind === 'video'" class="thumb"><Icon name="video" :size="16" /></span>
                         <img v-else class="thumb" :src="sizedImageUrl(item.imageUrl, 96, 54, 'crop')" alt="">
@@ -58,7 +58,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
 
             <template v-if="unused.length && items.length > 1">
                 <h3>Unbenutzt ({{ unused.length }})</h3>
-                <ul class="list" data-testid="media-delete-unused">
+                <ul class="files" data-testid="media-delete-unused">
                     <li v-for="item in unused" :key="item.fileId">
                         <span v-if="item.kind === 'video'" class="thumb"><Icon name="video" :size="16" /></span>
                         <img v-else class="thumb" :src="sizedImageUrl(item.imageUrl, 96, 54, 'crop')" alt="">
@@ -102,7 +102,7 @@ h3 {
     margin: 16px 0 0;
     font-size: 1em;
 }
-.list {
+.files {
     display: grid;
     gap: 8px;
     max-height: 30vh;
@@ -112,7 +112,7 @@ h3 {
     list-style: none;
     font-size: var(--d-size-sm);
 }
-.list li {
+.files li {
     display: grid;
     grid-template-columns: 64px minmax(0, 1fr);
     align-items: start;
@@ -128,7 +128,7 @@ h3 {
     color: var(--d-text-muted);
     object-fit: cover;
 }
-.list div {
+.files div {
     display: grid;
     min-width: 0;
 }
