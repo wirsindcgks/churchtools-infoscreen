@@ -1191,6 +1191,10 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 .check-notices {
     padding-left: 28px;
 }
+/* Open, every line stands below with its explanation – the head would only say it twice. */
+.check-group[open] .check-notices {
+    display: none;
+}
 .check-list {
     padding: 0 0 12px;
 }
