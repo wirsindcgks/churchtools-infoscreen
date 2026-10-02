@@ -1,0 +1,44 @@
+name: Funktion vorschlagen
+description: Einen Wunsch oder eine neue Funktion für den Infoscreen Designer vorschlagen.
+title: "[Feature] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Umgesetzt werden kann nur, was ChurchTools einer Erweiterung erlaubt: Der Designer läuft im Browser, liest
+        über die API von ChurchTools und ruft von sich aus keine fremden Dienste auf. Was er heute schon kann, steht in
+        [Funktionen](https://github.com/wirsindcgks/churchtools-infoscreen/blob/main/docs/Funktionen.md) –
+        vielleicht gibt es die Option bereits.
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Wunsch / Anwendungsfall
+      description: Was möchtest du erreichen, und warum?
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Betroffener Bereich
+      options:
+        - Editor (Slides und Bausteine)
+        - Neuer Baustein
+        - Fernseher (Player)
+        - Playlists, Zeitpläne, Hinweise
+        - Mediathek
+        - Design
+        - Einstellungen (Gruppen und Rechte, Adressen, Dienste)
+        - Sonstiges
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Wie löst du es bisher?
+      description: Ein Umweg, ein anderes Werkzeug, ein Bild statt eines Bausteins – falls es etwas gibt.
+    validations:
+      required: false

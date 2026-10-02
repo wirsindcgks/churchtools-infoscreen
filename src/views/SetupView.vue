@@ -16,7 +16,7 @@ import type { ScreenDoc } from '../model/schema';
 import { withDeviceLogin } from '../player/device-login';
 import { roomsOf, type RoomInfo } from '../rooms/normalize';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
-import { AUTH, checkDesignerGroup, checkDeviceGroup, type Check, type RequiredRight } from '../setup/checks';
+import { AUTH, checkDesignerGroup, checkDeviceGroup, groupChecks, type Check, type RequiredRight } from '../setup/checks';
 import {
     canViewWiki,
     churchToolsProvisionApi,
@@ -533,12 +533,13 @@ async function check(side: Side): Promise<void> {
         if (selected.designer !== null && selected.designer === selected.device) {
             checks[side]!.unshift({
                 level: 'warn',
+                category: 'group',
                 text: 'Gestalter und Geräte sind dieselbe Gruppe.',
                 detail: 'Dann bekommen die Geräte die Rechte der Gestalter – mehr, als ein unbeaufsichtigtes Gerät haben sollte.',
             });
         }
     } catch (e) {
-        checks[side] = [{ level: 'fail', text: 'Prüfen nicht möglich.', detail: explain(e) }];
+        checks[side] = [{ level: 'fail', category: 'group', text: 'Prüfen nicht möglich.', detail: explain(e) }];
     } finally {
         busy[side] = false;
     }
@@ -848,15 +849,46 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                             </p>
 
                             <p v-if="busy[side]" class="muted">Prüfe …</p>
-                            <ul v-else-if="checks[side]" class="checks">
-                                <li v-for="(c, i) in checks[side]" :key="i" :class="`check--${c.level}`">
-                                    <span class="symbol" aria-hidden="true">{{ SYMBOL[c.level] }}</span>
-                                    <span>
-                                        {{ c.text }}
-                                        <small v-if="c.detail" class="muted">{{ c.detail }}</small>
-                                    </span>
-                                </li>
-                            </ul>
+                            <div v-else-if="checks[side]" class="checks" :data-testid="`checks-${side}`">
+                                <details
+                                    v-for="group in groupChecks(checks[side]!)"
+                                    :key="group.category"
+                                    :class="`check-group check-group--${group.level}`"
+                                    data-testid="check-group"
+                                    :data-category="group.category"
+                                >
+                                    <summary>
+                                        <span class="check-group-head">
+                                            <span :class="`check--${group.level}`">
+                                                <span class="symbol" aria-hidden="true">{{ SYMBOL[group.level] }}</span>
+                                            </span>
+                                            <strong>{{ group.title }}</strong>
+                                            <span class="check-group-summary muted">{{ group.summary }}</span>
+                                            <Icon name="chevron-down" :size="14" class="chevron" />
+                                        </span>
+                                        <ul v-if="group.notices.length" class="check-notices">
+                                            <li
+                                                v-for="(c, i) in group.notices"
+                                                :key="i"
+                                                :class="`check--${c.level}`"
+                                                data-testid="check-notice"
+                                            >
+                                                <span class="symbol" aria-hidden="true">{{ SYMBOL[c.level] }}</span>
+                                                <span>{{ c.text }}</span>
+                                            </li>
+                                        </ul>
+                                    </summary>
+                                    <ul class="check-list">
+                                        <li v-for="(c, i) in group.checks" :key="i" :class="`check--${c.level}`">
+                                            <span class="symbol" aria-hidden="true">{{ SYMBOL[c.level] }}</span>
+                                            <span>
+                                                {{ c.text }}
+                                                <small v-if="c.detail" class="muted">{{ c.detail }}</small>
+                                            </span>
+                                        </li>
+                                    </ul>
+                                </details>
+                            </div>
                         </section>
                     </div>
 
@@ -1107,19 +1139,70 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
     gap: 8px;
 }
 .checks {
+    margin: 4px 0 0;
+}
+.check-group {
+    border-top: 1px solid var(--d-divider);
+}
+.check-group:last-child {
+    border-bottom: 1px solid var(--d-divider);
+}
+.check-group summary {
+    display: grid;
+    gap: 4px;
+    min-height: 44px;
+    padding: 8px 0;
+    list-style: none;
+    cursor: pointer;
+}
+.check-group summary::-webkit-details-marker {
+    display: none;
+}
+.check-group summary:focus-visible {
+    outline: 2px solid var(--d-accent);
+    outline-offset: 2px;
+}
+.check-group-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 8px;
+    min-height: 28px;
+}
+.check-group-summary {
+    margin-left: auto;
+    font-size: var(--d-size-sm);
+}
+.check-group .chevron {
+    color: var(--d-text-muted);
+    transition: transform 0.15s;
+}
+.check-group:not([open]) .chevron {
+    transform: rotate(-90deg);
+}
+.check-notices,
+.check-list {
     display: grid;
     gap: 8px;
-    margin: 4px 0 0;
+    margin: 0;
     padding: 0;
     list-style: none;
 }
-.checks li {
+.check-notices {
+    padding-left: 28px;
+}
+.check-list {
+    padding: 0 0 12px;
+}
+.check-notices li,
+.check-list li {
     display: grid;
-    grid-template-columns: 22px 1fr;
+    grid-template-columns: 22px minmax(0, 1fr);
     gap: 6px;
     align-items: start;
+    overflow-wrap: anywhere;
 }
-.checks small {
+.check-list small {
     display: block;
 }
 .symbol {

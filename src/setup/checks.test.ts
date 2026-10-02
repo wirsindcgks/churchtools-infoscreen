@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, excessRights, has, type Grant, type RoleRights } from './checks';
+import { AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, excessRights, groupChecks, has, type Check, type Grant, type RoleRights } from './checks';
 
 const grant = (authId: number, dataId: number | null = null): Grant => ({ authId, dataId, type: 'grant' });
 const WIKI = 1;
@@ -164,7 +164,7 @@ describe('checkDeviceGroup', () => {
             expect.objectContaining({ level: 'fail', text: 'Gerät A darf den Wiki-Bereich „Infoscreen" nicht sehen – Videos laufen nicht.' }),
         ]);
         expect(check([], false)).toEqual([
-            { level: 'warn', text: 'Gerät A darf den Wiki-Bereich „Infoscreen" nicht sehen – Videos würden nicht laufen.', detail: '„Rechte aktualisieren" vergibt es.' },
+            { level: 'warn', category: 'media', text: 'Gerät A darf den Wiki-Bereich „Infoscreen" nicht sehen – Videos würden nicht laufen.', detail: '„Rechte aktualisieren" vergibt es.' },
         ]);
         expect(check([grant(AUTH.wikiCategoryView, WIKI)], true)).toEqual([expect.objectContaining({ level: 'ok' })]);
         expect(check([grant(AUTH.wikiCategoryView, WIKI)], false)).toEqual([]);
@@ -212,12 +212,13 @@ describe('checkDeviceGroup', () => {
         expect(check([grant(AUTH.resourceView, 1)])).toEqual([
             {
                 level: 'fail',
+                category: 'rooms',
                 text: 'Räume an Terminen: Gerät A sieht 2 von 3 Räumen nicht.',
                 detail: '„Rechte aktualisieren" gibt der Gerätegruppe das Recht „Ressource sehen" für alle Räume.',
             },
         ]);
         expect(check([grant(AUTH.resourceView, 1), grant(AUTH.resourceView, 3), grant(AUTH.resourceView, 4)])).toEqual([
-            { level: 'ok', text: 'Räume an Terminen sind sichtbar.' },
+            { level: 'ok', category: 'rooms', text: 'Räume an Terminen sind sichtbar.' },
         ]);
     });
 
@@ -235,7 +236,7 @@ describe('checkDeviceGroup', () => {
         expect(fail).toMatchObject({ level: 'fail', text: 'Dienste an Terminen: Gerät A sieht die Events der Kalender nicht.' });
         expect(fail?.detail).toContain('Events von einzelnen Kalendern sehen');
         expect(check([grant(AUTH.eventView, 1), grant(AUTH.eventView, 2)])).toEqual([
-            { level: 'ok', text: 'Dienste an Terminen sind sichtbar.' },
+            { level: 'ok', category: 'services', text: 'Dienste an Terminen sind sichtbar.' },
         ]);
         expect(check([], [])).toEqual([]);
     });
@@ -333,5 +334,50 @@ describe('module rights, as the assistant grants them', () => {
             moduleRights: required,
         });
         expect(checks.find((c) => c.text.includes('Gerät darf'))?.level).toBe('ok');
+    });
+});
+
+describe('groupChecks', () => {
+    const c = (level: Check['level'], text: string, category?: Check['category']): Check => ({ level, text, category });
+
+    it('returns nothing for nothing', () => {
+        expect(groupChecks([])).toEqual([]);
+    });
+
+    it('orders the groups as fixed and leaves out empty categories', () => {
+        const groups = groupChecks([c('ok', 'a', 'rights'), c('ok', 'b', 'calendars'), c('ok', 'c', 'group'), c('ok', 'd', 'media')]);
+        expect(groups.map((g) => g.category)).toEqual(['group', 'calendars', 'media', 'rights']);
+        expect(groups.map((g) => g.title)).toEqual(['Gruppe', 'Kalender', 'Mediathek und Videos', 'Weitere Rechte']);
+    });
+
+    it('counts a check without a category to the group', () => {
+        expect(groupChecks([c('ok', 'a')]).map((g) => g.category)).toEqual(['group']);
+    });
+
+    it('takes the worst level and lists the notices worst first, else in order', () => {
+        const [group] = groupChecks([
+            c('info', 'i1', 'rooms'),
+            c('ok', 'o', 'rooms'),
+            c('warn', 'w1', 'rooms'),
+            c('fail', 'f1', 'rooms'),
+            c('warn', 'w2', 'rooms'),
+            c('info', 'i2', 'rooms'),
+        ]);
+        expect(group?.level).toBe('fail');
+        expect(group?.notices.map((n) => n.text)).toEqual(['f1', 'w1', 'w2', 'i1', 'i2']);
+        expect(group?.checks).toHaveLength(6);
+        expect(group?.summary).toBe('1 von 6 in Ordnung');
+    });
+
+    it('ranks info above ok and writes the summary', () => {
+        const [info] = groupChecks([c('ok', 'a', 'module'), c('info', 'b', 'module')]);
+        expect(info?.level).toBe('info');
+        expect(info?.summary).toBe('1 von 2 in Ordnung');
+        const [ok] = groupChecks([c('ok', 'a', 'module'), c('ok', 'b', 'module')]);
+        expect(ok?.level).toBe('ok');
+        expect(ok?.notices).toEqual([]);
+        expect(ok?.summary).toBe('2 von 2 in Ordnung');
+        expect(groupChecks([c('ok', 'a', 'module')])[0]?.summary).toBe('In Ordnung');
+        expect(groupChecks([c('warn', 'a', 'module')])[0]?.summary).toBe('0 von 1 in Ordnung');
     });
 });
