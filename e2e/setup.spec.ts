@@ -42,6 +42,55 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
     await expect(device.locator('.checks')).toContainText('Die Gruppe ist aktiv.', LIVE);
 });
 
+// Reads groups and rights of the test instance, writes nothing.
+test('the checks of a group are folded by category, and the head names what is not fine', async ({ page }, testInfo) => {
+    const LIVE = { timeout: 15_000 };
+    await page.goto('./einstellungen/gruppen');
+    await page.getByTestId('group-device').selectOption({ label: 'Infoscreen-Devices' });
+    const device = page.getByTestId('checks-device');
+    await expect(device.getByTestId('check-group').first()).toBeVisible(LIVE);
+
+    // Folded at first, whatever the level.
+    const groups = device.getByTestId('check-group');
+    for (const group of await groups.all()) await expect(group).not.toHaveAttribute('open', '');
+    await page.getByTestId('setup-device').scrollIntoViewIfNeeded();
+    if (testInfo.project.name === 'chromium') await page.getByTestId('setup-device').screenshot({ path: 'test-results/setup-checks-closed.png' });
+
+    const calendars = device.locator('[data-testid="check-group"][data-category="calendars"]');
+    if (await calendars.count()) {
+        await expect(calendars).not.toHaveAttribute('open', '');
+        await calendars.locator('summary').click();
+        await expect(calendars).toHaveAttribute('open', '');
+        await expect(calendars).toContainText(/ist sichtbar\./);
+    }
+
+    // A group with a warning shows it in its head.
+    for (const warned of await device.locator('.check-group--warn').all()) {
+        await expect(warned.locator('summary').getByTestId('check-notice').first()).toBeVisible();
+    }
+
+    // Any group with something to say, for the picture: open, its details come below the head.
+    const noisy = device.locator('.check-group--fail, .check-group--warn, .check-group--info');
+    if (await noisy.count()) {
+        await noisy.first().locator('summary').click();
+        await expect(noisy.first()).toHaveAttribute('open', '');
+        await expect(noisy.first().locator('summary').getByTestId('check-notice').first()).toBeVisible();
+        if (testInfo.project.name === 'chromium') await page.getByTestId('setup-device').screenshot({ path: 'test-results/setup-checks-open.png' });
+    }
+});
+
+test('the folded checks fit a phone', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'chromium', 'one screenshot is enough');
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('./einstellungen/gruppen');
+    await page.getByTestId('group-device').selectOption({ label: 'Infoscreen-Devices' });
+    await expect(page.getByTestId('checks-device').getByTestId('check-group').first()).toBeVisible({ timeout: 15_000 });
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow).toBeLessThanOrEqual(0);
+    await page.getByTestId('setup-device').scrollIntoViewIfNeeded();
+    await page.screenshot({ path: 'test-results/setup-checks-phone.png' });
+});
+
 test('the assistant explains itself in demo mode instead of offering to write', async ({ page }) => {
     await page.goto('./einstellungen/gruppen');
     const assistant = page.getByTestId('assistant');

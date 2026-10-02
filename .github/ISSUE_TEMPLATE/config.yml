@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Einrichtung
+    url: https://github.com/wirsindcgks/churchtools-infoscreen/blob/main/docs/Einrichtung.md
+    about: Installation, Gruppen und Rechte, Geräte-Benutzer und Fernseher Schritt für Schritt.
+  - name: Wenn etwas nicht klappt
+    url: https://github.com/wirsindcgks/churchtools-infoscreen/blob/main/docs/Einrichtung.md#wenn-etwas-nicht-klappt
+    about: Fehlende Rechte, leere Bausteine, abgemeldete Fernseher – vieles klärt sich hier.

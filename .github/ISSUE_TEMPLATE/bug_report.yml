@@ -1,0 +1,109 @@
+name: Fehler melden
+description: Etwas am Infoscreen Designer funktioniert nicht wie erwartet.
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Wirf vor der Beschreibung einen Blick auf **Einstellungen → Gruppen und Rechte** im Designer: Die Prüfung
+        dort zeigt, ob Gestaltern oder Geräten ein Recht fehlt – daran liegt es am häufigsten. Weitere bekannte
+        Stolpersteine stehen in der Anleitung unter
+        [Wenn etwas nicht klappt](https://github.com/wirsindcgks/churchtools-infoscreen/blob/main/docs/Einrichtung.md#wenn-etwas-nicht-klappt).
+
+        Dieses Issue ist öffentlich: bitte **keine Adresse eines Fernsehers** (sie enthält den Login-Token des
+        Gerätekontos), keine Passwörter, keine Adresse eurer ChurchTools-Instanz und keine Personendaten einfügen –
+        auch nicht in Screenshots.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: Was ist passiert?
+      description: Beschreibe den Fehler möglichst genau. Screenshots helfen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Was hast du stattdessen erwartet?
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Wie lässt sich der Fehler nachstellen?
+      description: Bei Anzeigefehlern bitte den Baustein und seine Einstellungen im Inspektor angeben.
+      placeholder: |
+        1. …
+        2. …
+    validations:
+      required: false
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Betroffener Bereich
+      options:
+        - Editor (Slides und Bausteine)
+        - Fernseher (Player)
+        - Playlists, Zeitpläne, Hinweise
+        - Mediathek
+        - Design
+        - Einstellungen (Gruppen und Rechte, Adressen, Dienste)
+        - Installation und Updates
+        - Sonstiges
+    validations:
+      required: true
+
+  - type: dropdown
+    id: role
+    attributes:
+      label: In welcher Rolle?
+      description: Administratoren, Gestalter und Geräte haben verschiedene Rechte.
+      options:
+        - Administrator
+        - Gestalter
+        - Gerät (Fernseher)
+        - Weiß ich nicht
+    validations:
+      required: true
+
+  - type: input
+    id: designer-version
+    attributes:
+      label: Version des Designers
+      description: Steht im Designer unter `Einstellungen` ganz unten und unter `Über & Neuigkeiten`.
+      placeholder: "z. B. 0.6.1"
+    validations:
+      required: true
+
+  - type: input
+    id: churchtools-version
+    attributes:
+      label: ChurchTools-Version
+      description: Falls bekannt.
+      placeholder: "z. B. 3.136"
+    validations:
+      required: false
+
+  - type: input
+    id: environment
+    attributes:
+      label: Browser und Gerät
+      description: Beim Fernseher bitte auch das Gerät und den Kiosk-Browser nennen.
+      placeholder: "z. B. Chrome 140 unter Windows; Raspberry Pi 4 mit FullPageOS"
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Meldungen aus der Browser-Konsole
+      description: |
+        Falls vorhanden: Entwicklerwerkzeuge öffnen (F12), Reiter „Konsole", rote und gelbe Zeilen hier einfügen.
+        Bitte vorher durchsehen und Adressen eurer Instanz entfernen.
+      render: shell
+    validations:
+      required: false
