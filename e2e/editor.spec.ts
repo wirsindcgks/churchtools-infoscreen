@@ -1301,12 +1301,11 @@ test('an embed code in the website block gives its address (Plan.md 55 C)', asyn
     await expect(field).toHaveValue('https://www.gemeinde.example/umfrage');
 });
 
-// Reads the real test instance (nur lesend, Plan.md 33): the group "ISD-Beitragstest" is public,
+// Needs data of the own test instance (E2E_INSTANCE_DATA) and reads it (nur lesend, Plan.md 33): the group "ISD-Beitragstest" is public,
 // posts are switched on, and it has posts – among them "Biete Akkuschrauber" with an image (Befunde G37).
 // A fresh, empty slide keeps the card free of anything from the demo slides underneath it.
-const SCRATCHPAD = '/private/tmp/claude-501/-Users-tobiasnikola-Documents-Git-churchtools-infoscreen/dc9de791-16ba-47d5-92a4-c5a2cc5bdae1/scratchpad';
-
 test('a posts block shows a public group\'s posts, as a card and as a list (Plan.md 33)', async ({ page }) => {
+    test.skip(!process.env.E2E_INSTANCE_DATA, 'Setzt Daten der eigenen Testinstanz voraus (öffentliche Gruppe „ISD-Beitragstest“ mit Beiträgen) – nur mit E2E_INSTANCE_DATA=1.');
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
@@ -1326,7 +1325,7 @@ test('a posts block shows a public group\'s posts, as a card and as a list (Plan
     await page.waitForTimeout(300);
     await stage.screenshot({ path: 'test-results/editor-posts-card.png' });
     await expect(card).toHaveClass(/hero--landscape/); // default size, 1400 × 700
-    await card.screenshot({ path: `${SCRATCHPAD}/posts-card-landscape.png` });
+    await card.screenshot({ path: `test-results/posts-card-landscape.png` });
 
     // Hochkant: the same post, now with its image above the text instead of beside it.
     await openSection(page, 'position');
@@ -1335,7 +1334,7 @@ test('a posts block shows a public group\'s posts, as a card and as a list (Plan
     await inspector.getByTestId('inspector-height').blur();
     await expect(card).toHaveClass(/hero--portrait/);
     await page.waitForTimeout(300);
-    await card.screenshot({ path: `${SCRATCHPAD}/posts-card-portrait.png` });
+    await card.screenshot({ path: `test-results/posts-card-portrait.png` });
 
     // Ohne Bild: back to the default size, with "Bild zeigen" switched off.
     await inspector.getByTestId('inspector-width').fill('1400');
@@ -1345,7 +1344,7 @@ test('a posts block shows a public group\'s posts, as a card and as a list (Plan
     await showImage.locator('input[type="checkbox"]').uncheck();
     await expect(card.getByTestId('post-image')).toHaveCount(0);
     await page.waitForTimeout(300);
-    await card.screenshot({ path: `${SCRATCHPAD}/posts-card-text.png` });
+    await card.screenshot({ path: `test-results/posts-card-text.png` });
     await showImage.locator('input[type="checkbox"]').check();
 
     await inspector.getByTestId('posts-layout').selectOption('list');
@@ -1355,11 +1354,10 @@ test('a posts block shows a public group\'s posts, as a card and as a list (Plan
     await stage.screenshot({ path: 'test-results/editor-posts-list.png' });
 });
 
-// Reads the real test instance (nur lesend, Plan.md 43): the homepage at group 10, titled "Gottesdienst |
+// Needs data of the own test instance (E2E_INSTANCE_DATA) and reads it (nur lesend, Plan.md 43): the homepage at group 10, titled "Gottesdienst |
 // Gottesdienste", holds group 8 "Kinderkirche" among its groups, with a leader entered (Befunde G40).
-const GROUPS_SCRATCHPAD = '/private/tmp/claude-501/-Users-tobiasnikola-Documents-Git-churchtools-infoscreen/f74c45c5-1787-4b69-98eb-7cfd61401f63/scratchpad';
-
 test('a groups block shows a group homepage\'s groups, as a card and as a list (Plan.md 43)', async ({ page }) => {
+    test.skip(!process.env.E2E_INSTANCE_DATA, 'Setzt Daten der eigenen Testinstanz voraus (Gruppen-Homepage „Gottesdienst | Gottesdienste“ mit der Gruppe „Kinderkirche“) – nur mit E2E_INSTANCE_DATA=1.');
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
@@ -1383,7 +1381,7 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await stage.screenshot({ path: 'test-results/editor-groups-card.png' });
     const groupCard = card.getByTestId('group-card');
     await expect(groupCard).toHaveClass(/hero--landscape/); // default size, 1400 × 700
-    await card.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-card-landscape.png` });
+    await card.screenshot({ path: `test-results/groups-card-landscape.png` });
 
     // Hochkant: the same group, now with its image above the text instead of beside it.
     await openSection(page, 'position');
@@ -1392,7 +1390,7 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await inspector.getByTestId('inspector-height').blur();
     await expect(groupCard).toHaveClass(/hero--portrait/);
     await page.waitForTimeout(300);
-    await card.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-card-portrait.png` });
+    await card.screenshot({ path: `test-results/groups-card-portrait.png` });
 
     // Back to the default size before switching to the list.
     await inspector.getByTestId('inspector-width').fill('1400');
@@ -1411,7 +1409,7 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     expect(shownCards).toBeLessThanOrEqual(2);
     if (shownCards === 2) await expect(card.getByTestId('groups-pager')).toContainText('1/');
     await page.waitForTimeout(300);
-    await card.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-card-two-a-page.png` });
+    await card.screenshot({ path: `test-results/groups-card-two-a-page.png` });
 
     await openSection(page, 'fields');
     await inspector.getByTestId('group-show-leaders').check();
@@ -1424,7 +1422,7 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     for (const perPage of ['1', '2', '3', '4']) {
         await inspector.getByTestId('groups-per-page').selectOption(perPage);
         await page.waitForTimeout(600);
-        await card.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-card-${perPage}-a-page.png` });
+        await card.screenshot({ path: `test-results/groups-card-${perPage}-a-page.png` });
     }
 
     await inspector.getByTestId('groups-layout').selectOption('list');
@@ -1433,7 +1431,7 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await expect(stage.getByTestId('group-row').filter({ hasText: 'Kinderkirche' })).toBeVisible();
     await page.waitForTimeout(300);
     await stage.screenshot({ path: 'test-results/editor-groups-list.png' });
-    await list.screenshot({ path: `${GROUPS_SCRATCHPAD}/groups-list.png` });
+    await list.screenshot({ path: `test-results/groups-list.png` });
 });
 
 test('the blocks stand in German alphabetical order in the "+ Baustein" sheet; the old row is gone (Plan.md 47)', async ({ page }) => {

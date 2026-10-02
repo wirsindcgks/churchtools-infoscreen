@@ -11,10 +11,10 @@ import { GROUP_SECONDS, PAGE_SECONDS, POST_SECONDS, slideSeconds } from '../play
 import { qrShape } from '../player/qr';
 import { listLayout } from '../player/theme';
 import { pruneRoomsOff, toggleRoomsOff } from '../appointments/rooms';
-import { SERVICES_MAX, toggleServiceIds, type ServiceInfo } from '../appointments/services';
+import { allowedServiceIds, SERVICES_MAX, toggleServiceIds, type ServiceInfo } from '../appointments/services';
 import type { RoomInfo } from '../rooms/normalize';
 import { effectiveMotion, effectiveTransition } from '../player/slideshow';
-import { embedAddress, webFrame, withScheme } from '../player/web';
+import { embedAddress, webRefusal, withScheme } from '../player/web';
 import { useEditorStore } from './editor-store';
 import ColorField from './ColorField.vue';
 import FillEditor from './FillEditor.vue';
@@ -25,7 +25,7 @@ import { formatDuration } from '../media/video';
 import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
 
 /** `rooms`: the rooms the designer may see; null while they are not loaded yet. */
-const props = defineProps<{ calendars: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null; services?: ServiceInfo[] | null; servicesFailed?: boolean }>();
+const props = defineProps<{ calendars: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null; services?: ServiceInfo[] | null; allowedServices?: number[]; servicesFailed?: boolean }>();
 const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow' | 'video'] }>();
 
 /** Labels in the order of `GroupFields` itself, so the fieldset needs no list of its own (Plan.md 43). */
@@ -176,15 +176,22 @@ function setGroupSeconds(value: string): void {
     if (Number.isInteger(n) && n >= 5 && n <= 120) setBlock({ pageSeconds: n });
 }
 
+/** The services to choose from: the showable ones an administrator allowed (Plan.md 58). Null while unknown. */
+const choosableServices = computed<ServiceInfo[] | null>(() => {
+    if (!props.services) return null;
+    const allowed = new Set(allowedServiceIds(props.services.map((s) => s.id), props.allowedServices));
+    return props.services.filter((s) => allowed.has(s.id));
+});
+
 /** Chosen services that can still be shown – only they count against the limit. */
 function shownServiceCount(chosen: number[] | undefined): number {
-    return toggleServiceIds(chosen, -1, false, props.services ?? null).length;
+    return toggleServiceIds(chosen, -1, false, choosableServices.value).length;
 }
 
 /** Services not showable any more leave the document with the next click (Plan.md 51). */
 function toggleService(id: number, on: boolean): void {
     if (!block.value || (block.value.type !== 'next-appointment' && block.value.type !== 'appointment-list')) return;
-    setBlock({ services: toggleServiceIds(block.value.services, id, on, props.services && !props.servicesFailed ? props.services : null) });
+    setBlock({ services: toggleServiceIds(block.value.services, id, on, choosableServices.value && !props.servicesFailed ? choosableServices.value : null) });
 }
 
 /** Most rooms a block holds – the schema's limit. */
@@ -277,7 +284,9 @@ const themeLayout = computed(() => (themeOf(stage).appointments === 'large' ? 'm
 /** Why an address is not shown – or null when it is. */
 function webProblem(url: string): string | null {
     if (!url.trim()) return 'Noch keine Adresse – der Baustein bleibt leer.';
-    return webFrame(url, window.location.origin) ? null : 'Nur Adressen mit https:// werden gezeigt.';
+    const refusal = webRefusal(url, window.location.origin);
+    if (refusal === 'own-instance') return 'Seiten des eigenen ChurchTools werden nicht eingebettet – dafür gibt es die Bausteine „Gruppen" und „QR-Code".';
+    return refusal ? 'Nur Adressen mit https:// werden gezeigt.' : null;
 }
 
 /** The block whose pasted embed code held no address – shown until its next change. */
@@ -797,7 +806,10 @@ const LAYERS = [
                         <p v-else-if="services && !services.length" class="hint" data-testid="services-none">
                             Keine Dienste verfügbar – in ChurchTools ist keine Dienstgruppe ‚Ohne Berechtigung einsehbar‘.
                         </p>
-                        <label v-for="s in services ?? []" :key="s.id" class="check">
+                        <p v-else-if="choosableServices && !choosableServices.length" class="hint" data-testid="services-not-allowed">
+                            Noch kein Dienst freigegeben – ein Administrator legt in den Einstellungen unter „Dienste auf Screens“ fest, welche gezeigt werden dürfen.
+                        </p>
+                        <label v-for="s in choosableServices ?? []" :key="s.id" class="check">
                             <input
                                 type="checkbox"
                                 :checked="(block.services ?? []).includes(s.id)"

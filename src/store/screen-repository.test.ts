@@ -274,10 +274,10 @@ describe('ScreenRepository', () => {
             expect(loaded.screen.defaultPlaylistId).toBe(makePlaylist().id);
         });
 
-        it('gives an old playlist the format and name of the screen that shows it, until it is saved', async () => {
+        it('gives a playlist without a format that of the screen that shows it, until it is saved', async () => {
             await created();
             const [overview] = await repo.listPlaylists();
-            expect(overview?.playlist).toMatchObject({ name: 'Foyer links', stage: LANDSCAPE, revision: 0 });
+            expect(overview?.playlist).toMatchObject({ name: 'Standard', stage: LANDSCAPE, revision: 0 });
             expect(overview?.screens.map((s) => s.slug)).toEqual(['foyer-links']);
             expect(overview?.slideCount).toBe(2);
         });
@@ -621,7 +621,7 @@ describe('ScreenRepository', () => {
             });
             await expect(attempt).rejects.toBeInstanceOf(SlideConflictError);
             await expect(attempt).rejects.toMatchObject({
-                current: { slide: { id: 'slide-1', name: 'Von Ben' }, playlist: 'Foyer links (Kopie)', updatedBy: 'Ben' },
+                current: { slide: { id: 'slide-1', name: 'Von Ben' }, playlist: 'Standard (Kopie)', updatedBy: 'Ben' },
             });
             expect(kv.writes).toHaveLength(0);
             expect((await repo.loadPlaylist(A)).slides.find((x) => x.id === 'slide-2')?.name).toBe('Termine');
@@ -650,7 +650,7 @@ describe('ScreenRepository', () => {
                 { expectedRevision: 1, updatedBy: 'Anna', now: later(3), changedSlideIds: [] },
             );
             const inA = await repo.loadPlaylist(A);
-            expect(inA.sharedWith['slide-1']?.map((p) => p.name)).toEqual(['Aula', 'Foyer links (Kopie)']);
+            expect(inA.sharedWith['slide-1']?.map((p) => p.name)).toEqual(['Aula', 'Standard (Kopie)']);
             const own = await repo.createPlaylist({ name: 'Allein', stage: { width: 1920, height: 1080 } }, 'Anna');
             expect((await repo.loadPlaylist(own.id)).sharedWith).toEqual({});
             expect((await repo.loadPlaylist(b)).sharedWith['slide-2']?.map((p) => p.id)).toContain(A);
@@ -677,6 +677,40 @@ describe('ScreenRepository', () => {
             expect((await repo.loadPlaylist(b)).slides).toHaveLength(2);
             await repo.deletePlaylist(b);
             expect(await repo.collectOrphans(soon)).toEqual({ playlists: 0, slides: 2 });
+        });
+    });
+
+    describe('the services an administrator allows (Plan.md 58)', () => {
+        const settings = { schema: { major: 1, minor: 20 }, id: 'settings', kind: 'settings' };
+
+        it('comes with the loaded screen', async () => {
+            await repo.saveScreen(bundle(), { ...save, expectedRevision: null });
+            expect((await repo.loadScreen('foyer-links')).allowedServiceIds).toEqual([]); // no settings yet
+            await repo.saveSettings({ schema: { major: 1, minor: 20 }, designerGroupId: 4 });
+            expect((await repo.loadScreen('foyer-links')).allowedServiceIds).toEqual([]); // no field
+            await repo.saveSettings({ schema: { major: 1, minor: 20 }, allowedServiceIds: [3, 7] });
+            expect((await repo.loadScreen('foyer-links')).allowedServiceIds).toEqual([3, 7]);
+        });
+
+        it('is none when the settings cannot be read – the screen still loads', async () => {
+            await repo.saveScreen(bundle(), { ...save, expectedRevision: null });
+            await repo.saveSettings({ schema: { major: 1, minor: 20 }, allowedServiceIds: [3] });
+            const settingsId = (await repo.ensureCategories()).settings;
+            const listValues = kv.listValues.bind(kv);
+            kv.listValues = async (categoryId) => {
+                if (categoryId === settingsId) throw new Error('403');
+                return listValues(categoryId);
+            };
+            const loaded = await repo.loadScreen('foyer-links');
+            expect(loaded.allowedServiceIds).toEqual([]);
+            expect(loaded.screen.slug).toBe('foyer-links');
+        });
+
+        it('is none when the settings document is broken', async () => {
+            await repo.saveScreen(bundle(), { ...save, expectedRevision: null });
+            const ids = await repo.ensureCategories();
+            await kv.createValue(ids.settings, JSON.stringify({ ...settings, allowedServiceIds: ['x'] }));
+            expect((await repo.loadScreen('foyer-links')).allowedServiceIds).toEqual([]);
         });
     });
 });

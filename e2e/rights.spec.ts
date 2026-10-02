@@ -48,8 +48,7 @@ test('only administrators see the settings and configure screens; everyone else 
     // "Über & Neuigkeiten" is no setting – it stays visible for everyone (Plan.md 36).
     await expect(page.getByTestId('sidebar-about')).toBeVisible();
 
-    await page.goto('./einrichtung'); // the old address leads to the settings
-    await expect(page).toHaveURL(/\/einstellungen$/);
+    await page.goto('./einstellungen');
     await expect(page.getByTestId('setup-admins-only')).toBeVisible();
     await expect(page.getByTestId('assistant')).toHaveCount(0);
 

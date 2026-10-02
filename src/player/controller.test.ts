@@ -19,6 +19,7 @@ const loaded = (revision = 1): LoadedScreen => ({
     ...DEMO_BUNDLE,
     screen: { ...DEMO_BUNDLE.screen, revision },
     media: [],
+    allowedServiceIds: [],
     issues: [],
 });
 

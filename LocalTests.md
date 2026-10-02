@@ -131,6 +131,8 @@ npx playwright test --grep-invert "upload an image"   # ohne den schreibenden Te
 - **`e2e/media.spec.ts` schreibt auf die Testinstanz:** Er lädt ein Testbild in den Wiki-Bereich „Infoscreen"
   und löscht es am Ende wieder. Scheitert er vorher, bleibt die Datei liegen. Nach den Arbeitsregeln wird ein
   schreibender Zugriff vorher besprochen – im Zweifel mit `--grep-invert "upload an image"` ausschließen.
+- Zwei Tests in `e2e/editor.spec.ts` (Beiträge- und Gruppen-Baustein) setzen Daten der eigenen Testinstanz voraus und
+  bleiben ohne Zutun übersprungen. Wer diese Daten auf seiner Instanz hat, setzt `E2E_INSTANCE_DATA=1`.
 - Alle anderen e2e-Tests lesen nur. Wo sie Rechte oder Anmeldungen durchspielen, verändern sie die Antwort
   im Browser, nicht die Instanz.
 

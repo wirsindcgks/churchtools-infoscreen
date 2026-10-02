@@ -43,7 +43,7 @@ onMounted(markReleaseSeen);
                 <li><a :href="`${REPOSITORY_URL}/issues`" target="_blank" rel="noopener">Fehler melden oder etwas wünschen</a></li>
                 <li><a :href="`${REPOSITORY_URL}#readme`" target="_blank" rel="noopener">Quellcode und Anleitung</a></li>
             </ul>
-            <p class="muted">Freie Software unter der GNU General Public License, Version 2 oder später.</p>
+            <p class="muted">Freie Software unter der GNU General Public License, Version 3 oder später.</p>
         </section>
 
         <section

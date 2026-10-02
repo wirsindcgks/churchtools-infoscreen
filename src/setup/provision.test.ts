@@ -32,6 +32,13 @@ const catalog = catalogFrom({
 const categories = { screens: 1, playlists: 4, slides: 7, media: 10, settings: 13 };
 const input = { catalog, moduleKey: 'infoscreen-designer', categories, wikiCategoryId: 1, calendarIds: [4, 5], roomIds: [1, 2, 3], usedRoomIds: [2], appointmentRooms: false, serviceCalendarIds: [] as number[] };
 
+describe('the catalogue', () => {
+    it('names a right by its id, as module and API name', () => {
+        expect(catalog.name(2010)).toBe('infoscreen-designer: view');
+        expect(catalog.name(1)).toBeUndefined();
+    });
+});
+
 describe('planProvisioning', () => {
     const [designer, device] = planProvisioning(input);
 

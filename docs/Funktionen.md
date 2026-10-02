@@ -27,6 +27,7 @@ Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe
 **Fünfzehn Bausteine:** Text, Bild, Fläche, Galerie, Video, Uhr, Terminliste, Nächster Termin, Gemeindekopf mit Logo,
 Webseite, QR-Code, Countdown, Beiträge, Gruppen und Raumbelegung. Beim Baustein „Webseite" geht statt der Adresse auch der
 Einbettungscode (`<iframe …>`), den Karten, Umfragen oder Pinnwände anbieten – übernommen wird nur die Adresse darin.
+Seiten des eigenen ChurchTools bettet der Baustein nicht ein.
 
 ## Galerie
 
@@ -84,7 +85,8 @@ bleibt stehen.
 
 Beim **Nächsten Termin** und bei der **Terminliste als Karten** zeigt „Dienste zeigen", wer einen Dienst übernimmt –
 „Predigt: Anna Beispiel · Moderation: Ben Muster" –, in einer eigenen Zeile mit einem Personen-Symbol (in der Liste unter Titel und Untertitel).
-Gewählt wird je Baustein aus den Diensten, die zur Auswahl stehen. Gezeigt werden nur **zugesagte** Einteilungen und nur
+Gewählt wird je Baustein aus den Diensten, die ein Administrator unter **Einstellungen → Dienste auf Screens** freigegeben hat;
+ohne Freigabe erscheint kein Dienst. Gezeigt werden nur **zugesagte** Einteilungen und nur
 Dienste aus Dienstgruppen, die in ChurchTools „Ohne Berechtigung einsehbar" sind; was eine Gemeinde dort verborgen hält,
 bleibt auch am Fernseher verborgen, und am Termin stehen nur Name und Dienst, nie ein Foto oder ein Kommentar. Das Gerät
 braucht dafür das Recht, die Events der Kalender zu sehen – „Rechte aktualisieren" gibt es ihm (siehe [Rechte](Rechte.md)).

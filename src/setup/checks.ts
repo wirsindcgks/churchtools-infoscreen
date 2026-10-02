@@ -211,6 +211,27 @@ export interface DeviceGroupInput {
     videoInUse?: boolean;
     wikiCategoryId: number | null;
     moduleRights?: ModuleRights;
+    /**
+     * The rights the assistant plans for a device, by id (Plan.md 58 E). With them the check names what a
+     * device account holds beyond – without them (no catalogue, as in development) it says nothing.
+     */
+    plannedAuthIds?: number[];
+    /** A right's name for people; the bare number where there is none. */
+    authName?: (authId: number) => string | undefined;
+}
+
+/** More names would not be read on the page; the rest is counted. */
+const EXCESS_NAMED = 6;
+
+/**
+ * The rights a device account holds that no device needs – by right, whatever data it is for. The
+ * address of a TV carries its account's login token (Plan.md, D): who has the address has these rights.
+ * Wiki rights have their own line in `checkDeviceGroup`.
+ */
+export function excessRights(grants: Grant[], plannedAuthIds: readonly number[]): number[] {
+    const planned = new Set<number>([...plannedAuthIds, AUTH.wikiView, AUTH.wikiCategoryEdit]);
+    const held = [...new Set(grants.map((g) => g.authId))].filter((authId) => has(grants, authId));
+    return held.filter((authId) => !planned.has(authId)).sort((a, b) => a - b);
 }
 
 export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
@@ -342,6 +363,24 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                 'Bilder lädt der Fernseher ohne Anmeldung, zum Abspielen von Videos genügt „Wiki-Bereich Infoscreen sehen". ' +
                 'Weniger Rechte heißt weniger Schaden, wenn ein Gerät verloren geht.',
         });
+    }
+
+    if (input.plannedAuthIds) {
+        for (const member of input.members) {
+            const excess = excessRights(member.grants, input.plannedAuthIds);
+            if (!excess.length) continue;
+            const names = excess.slice(0, EXCESS_NAMED).map((id) => input.authName?.(id) ?? `Recht ${id}`);
+            const more = excess.length - names.length;
+            checks.push({
+                level: 'warn',
+                text:
+                    `${member.label} hat ${excess.length === 1 ? 'ein Recht' : `${excess.length} Rechte`}, ` +
+                    `${excess.length === 1 ? 'das' : 'die'} ein Gerät nicht braucht: ${names.join(', ')}${more > 0 ? ` und ${more} weitere` : ''}.`,
+                detail:
+                    'Wer die Adresse des Fernsehers kennt, hat diese Rechte. Meist kommen sie aus dem Personenstatus oder einer ' +
+                    'anderen Gruppe des Kontos – dem Gerätekonto einen Status ohne Rechte geben.',
+            });
+        }
     }
     return checks;
 }

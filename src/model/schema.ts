@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 19 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 20 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -562,6 +562,8 @@ export const SettingsDoc = v.object({
      * older than this field.
      */
     createdWikiCategoryId: v.optional(v.pipe(v.number(), v.integer())),
+    /** Since 1.20: the services an administrator allows on screens (Plan.md 58); missing or empty = none. */
+    allowedServiceIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
 });
 
 export type Fill = v.InferOutput<typeof Fill>;
@@ -610,19 +612,16 @@ export function sameStage(a: { width: number; height: number }, b: { width: numb
 }
 
 /**
- * A playlist as the designer handles it. Before schema 1.4 a playlist had
- * no format and was usually called "Standard": it takes both from the
- * screen that shows it, until the next save stores them.
+ * A playlist as the designer handles it: with a format and a revision. Both are optional in the
+ * stored document; a playlist without a format takes that of the screen that shows it.
  */
 export function withPlaylistDefaults(
     playlist: PlaylistDoc,
     screens: readonly ScreenDoc[],
 ): PlaylistDoc & { stage: { width: number; height: number }; revision: number } {
     const users = screens.filter((s) => playlistIdsOf(s).includes(playlist.id));
-    const legacyName = !playlist.stage && playlist.name === 'Standard' && users.length === 1;
     return {
         ...playlist,
-        name: legacyName ? users[0]!.name : playlist.name,
         stage: playlist.stage ?? { ...(users[0]?.stage ?? STAGE_PRESETS.landscape) },
         revision: playlist.revision ?? 0,
     };
