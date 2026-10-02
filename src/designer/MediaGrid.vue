@@ -69,16 +69,16 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
             >
                 <Icon name="eye" :size="16" />
             </button>
-            <input
-                v-if="selectable"
-                class="select"
-                type="checkbox"
-                :checked="selected?.includes(item.fileId)"
-                :aria-label="`${item.name} auswählen`"
-                :title="`${item.name} auswählen`"
-                data-testid="media-select"
-                @change="emit('toggle', item)"
-            >
+            <!-- The label carries the place, not the checkbox: ChurchTools styles inputs itself and would pull it back into the flow. -->
+            <label v-if="selectable" class="select" :title="`${item.name} auswählen`">
+                <input
+                    type="checkbox"
+                    :checked="selected?.includes(item.fileId)"
+                    :aria-label="`${item.name} auswählen`"
+                    data-testid="media-select"
+                    @change="emit('toggle', item)"
+                >
+            </label>
             <figcaption>
                 <span class="name" :title="item.name">{{ item.name }}</span>
                 <button v-if="!selectable" class="delete" type="button" :title="`${item.name} löschen`" @click="emit('remove', item)">Löschen</button>
@@ -147,13 +147,26 @@ figure.selected {
     line-height: 20px;
     text-align: center;
 }
-/* The checkbox sits where the running number does – the two never show together. */
+/* The checkbox lies on the picture, where the running number does – the two never show together. */
 .select {
     position: absolute;
-    top: 8px;
-    left: 8px;
-    width: 20px;
-    height: 20px;
+    top: 6px;
+    left: 6px;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    margin: 0;
+    border-radius: var(--d-radius);
+    background: rgba(255, 255, 255, 0.85);
+    cursor: pointer;
+}
+.select input {
+    position: static;
+    flex: none;
+    width: 18px;
+    height: 18px;
     margin: 0;
     padding: 0;
     accent-color: var(--d-accent);
