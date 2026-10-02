@@ -34,6 +34,8 @@ function picture(id: number): string {
 async function fakeLibrary(page: Page, baseURL: string | undefined): Promise<() => void> {
     const origin = new URL(baseURL!).origin;
     let release = () => {};
+    // A copy per test: deleting takes files out of it.
+    const files = [...LIBRARY];
     const released = new Promise<void>((resolve) => (release = resolve));
     await page.route('**/logo**', (route) => route.fulfill({ status: 404 }));
     await page.route('**/images/**', (route) => {
@@ -59,6 +61,8 @@ async function fakeLibrary(page: Page, baseURL: string | undefined): Promise<() 
             ...(m.video ? { fileUrl: `${origin}/?q=public/filedownload&id=${m.id}&filename=abc` } : {}),
             meta: { createdDate: `2026-09-01T10:00:${String(m.id % 60).padStart(2, '0')}Z` },
         });
+        const deleted = request.method() === 'DELETE' ? /^\/files\/(\d+)$/.exec(path) : null;
+        if (deleted) files.splice(files.findIndex((m) => m.id === Number(deleted[1])), 1);
         if (request.method() !== 'GET') return json({});
         if (path === '/config') return json({ timezone: 'Europe/Berlin' });
         if (path === '/whoami') return json({ id: 1, firstName: 'Anna', lastName: 'Beispiel' });
@@ -69,7 +73,7 @@ async function fakeLibrary(page: Page, baseURL: string | undefined): Promise<() 
         if (path === `/wiki/categories/${WIKI}/pages`) return json([{ guid: 'p-media', title: 'mediathek' }]);
         if (path === `/wiki/categories/${WIKI}/pages/mediathek`) return json({ guid: 'p-media', title: 'mediathek' });
         if (path.startsWith(`/wiki/categories/${WIKI}/pages/`)) return json({ guid: 'p-main', title: 'main', text: '' });
-        if (path === `/files/wiki_${WIKI}/p-media`) return json(LIBRARY.map(file));
+        if (path === `/files/wiki_${WIKI}/p-media`) return json(files.map(file));
         if (path === '/permissions/global') {
             return json({
                 churchcore: { 'administer persons': true },
@@ -217,4 +221,47 @@ test.describe('on a phone', () => {
         await page.screenshot({ path: 'test-results/preview-phone.png' });
         release();
     });
+});
+
+test('checkboxes pick several files; the dialog names them and deletes after asking', async ({ page, baseURL }) => {
+    const release = await fakeLibrary(page, baseURL);
+    await page.goto('./');
+    await page.getByTestId('sidebar-media').click();
+    const items = page.getByTestId('media-item');
+    await expect(items).toHaveCount(4);
+    // Nothing picked: no button to delete, and no tile deletes on its own.
+    await expect(page.getByTestId('media-delete-selected')).toHaveCount(0);
+    await expect(items.getByRole('button', { name: 'Löschen' })).toHaveCount(0);
+
+    await items.filter({ hasText: 'bild-01' }).getByTestId('media-select').check();
+    await items.filter({ hasText: 'bild-02' }).getByTestId('media-select').check();
+    await expect(page.getByTestId('media-selection')).toContainText('2 ausgewählt');
+    await page.screenshot({ path: 'test-results/media-selection.png' });
+
+    await page.getByTestId('media-delete-selected').click();
+    const dialog = page.getByTestId('media-delete-dialog');
+    await expect(dialog.getByRole('heading', { level: 2 })).toHaveText('2 Dateien löschen?');
+    await expect(dialog.getByTestId('media-delete-unused').locator('li')).toHaveCount(2);
+    // No slide shows them: nothing to warn about.
+    await expect(dialog.getByTestId('media-delete-warning')).toHaveCount(0);
+    await page.screenshot({ path: 'test-results/media-delete-dialog.png' });
+
+    // Cancelling keeps files and selection.
+    await dialog.getByTestId('media-delete-cancel').click();
+    await expect(dialog).toBeHidden();
+    await expect(items).toHaveCount(4);
+    await expect(page.getByTestId('media-selection')).toContainText('2 ausgewählt');
+
+    await page.getByTestId('media-delete-selected').click();
+    await dialog.getByTestId('media-delete-confirm').click();
+    await expect(items).toHaveCount(2);
+    await expect(items.locator('.name')).toHaveText(['Predigtreihe.mp4', 'freigestellt.svg']);
+    await expect(page.getByTestId('media-delete-selected')).toHaveCount(0);
+
+    // "Alle auswählen" takes what search and filter show.
+    await page.getByTestId('media-select-all').check();
+    await expect(page.getByTestId('media-selection')).toContainText('2 ausgewählt');
+    await page.getByTestId('media-selection-clear').click();
+    await expect(page.getByTestId('media-select-all')).not.toBeChecked();
+    release();
 });

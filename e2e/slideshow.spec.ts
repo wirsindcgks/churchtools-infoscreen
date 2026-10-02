@@ -167,9 +167,13 @@ test('build a slideshow with several pictures, keep it, and see it in the librar
     const used = page.getByTestId('media-item').filter({ hasText: 'bild-02' });
     await expect(used.getByTestId('media-uses')).not.toHaveText('Unbenutzt');
     await expect(page.getByTestId('media-item').filter({ hasText: 'bild-01' }).getByTestId('media-uses')).toHaveText('Unbenutzt');
-    await used.getByRole('button', { name: 'Löschen' }).click();
-    await expect.poll(() => dialogs.length).toBeGreaterThan(1);
-    expect(dialogs.some((message) => message.includes('wird noch gezeigt'))).toBe(true);
+    await used.getByTestId('media-select').check();
+    await page.getByTestId('media-delete-selected').click();
+    const ask = page.getByTestId('media-delete-dialog');
+    await expect(ask.getByTestId('media-delete-warning')).toContainText('wird noch gezeigt');
+    await expect(ask.getByTestId('media-delete-used')).toContainText('bild-02');
+    await expect(ask.getByTestId('media-delete-confirm')).toHaveText('Trotzdem löschen');
+    await ask.getByTestId('media-delete-cancel').click();
     await expect(used).toHaveCount(1);
 });
 

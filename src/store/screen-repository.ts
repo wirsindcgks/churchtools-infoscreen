@@ -162,6 +162,13 @@ export interface PlaylistOverview {
     media: MediaDoc[];
     /** Screens whose schedule shows it, as default or through a rule. */
     screens: ScreenRef[];
+    /**
+     * The last save that changed what it shows: its own or, later, that of one
+     * of its slides through another playlist (Plan.md 49). Null before any.
+     */
+    editedAt: string | null;
+    /** Who saved then – unknown where a linked slide was saved elsewhere since. */
+    editedBy: string | null;
 }
 
 export interface LoadedPlaylist extends PlaylistBundle {
@@ -478,12 +485,16 @@ export class ScreenRepository {
         const slides = new Map((await this.readSlides()).docs.map((s) => [s.doc.id, s.doc]));
         const overviews = running.playlists.map(({ doc }) => {
             const own = doc.slideIds.map((id) => slides.get(id)).filter((s): s is SlideDoc => s !== undefined);
+            // ISO instants of one clock: the latest is the greatest string.
+            const editedAt = [doc, ...own].reduce((latest, d) => ((d.updatedAt ?? '') > latest ? d.updatedAt! : latest), '');
             return {
                 playlist: withPlaylistDefaults(doc, screens),
                 firstSlide: own.find((s) => s.enabled) ?? own[0] ?? null,
                 slideCount: own.length,
                 media: [] as MediaDoc[],
                 screens: screensShowing(doc.id, screens),
+                editedAt: editedAt || null,
+                editedBy: (editedAt === (doc.updatedAt ?? '') && doc.updatedBy) || null,
             };
         });
         const mediaIds = new Set(overviews.flatMap((o) => (o.firstSlide ? referencedMedia(o.firstSlide) : [])));
