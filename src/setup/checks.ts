@@ -423,11 +423,18 @@ export interface CheckGroup {
     /** The worst level in the group: fail > warn > info > ok. */
     level: Level;
     checks: Check[];
-    /** Every check that is not `ok`, worst first, else in order – what the head of the group shows. */
-    notices: Check[];
-    /** "5 von 5 in Ordnung" – checks of level `ok` out of all. */
+    /**
+     * What the head of the group says beside its symbol: "5 von 5 in Ordnung" while all is well, else what
+     * waits inside, worst first – "1 Fehler, 2 Warnungen". The lines themselves show once the group is open.
+     */
     summary: string;
 }
+
+const COUNTED: { level: Level; one: string; many: string }[] = [
+    { level: 'fail', one: 'Fehler', many: 'Fehler' },
+    { level: 'warn', one: 'Warnung', many: 'Warnungen' },
+    { level: 'info', one: 'Hinweis', many: 'Hinweise' },
+];
 
 /** Sorts checks into their categories, in a fixed order; categories without a check are left out. */
 export function groupChecks(checks: Check[]): CheckGroup[] {
@@ -437,19 +444,12 @@ export function groupChecks(checks: Check[]): CheckGroup[] {
         if (!own.length) continue;
         const ok = own.filter((c) => c.level === 'ok').length;
         const level = own.reduce<Level>((worst, c) => (SEVERITY[c.level] > SEVERITY[worst] ? c.level : worst), 'ok');
-        const notices = own
-            .map((check, index) => ({ check, index }))
-            .filter(({ check }) => check.level !== 'ok')
-            .sort((a, b) => SEVERITY[b.check.level] - SEVERITY[a.check.level] || a.index - b.index)
-            .map(({ check }) => check);
-        groups.push({
-            category,
-            title,
-            level,
-            checks: own,
-            notices,
-            summary: own.length === 1 && ok === 1 ? 'In Ordnung' : `${ok} von ${own.length} in Ordnung`,
-        });
+        const counts = COUNTED.map(({ level: counted, one, many }) => {
+            const n = own.filter((c) => c.level === counted).length;
+            return n ? `${n} ${n === 1 ? one : many}` : '';
+        }).filter((part) => part !== '');
+        const allWell = own.length === 1 ? 'In Ordnung' : `${ok} von ${own.length} in Ordnung`;
+        groups.push({ category, title, level, checks: own, summary: counts.length ? counts.join(', ') : allWell });
     }
     return groups;
 }
