@@ -12,8 +12,9 @@ nichts davon stammt aus einer echten ChurchTools-Instanz. Die Bilder entstehen a
 
 Jeder Fernseher ist eine Kachel – mit dem, was er **gerade** zeigt. Ein Klick öffnet die laufende Playlist im
 Editor; Adresse, Zeitplan und Player stecken im Menü „…". Filter trennen Quer- und Hochformat. Die Angaben der
-Kachel stehen untereinander, zuletzt wann und von wem sie oder ihr Zeitplan zuletzt geändert wurde – so auch auf den
-Kacheln der Playlists, Zeitpläne, Hinweise und der Mediathek.
+Kachel stehen untereinander, zuletzt wann und von wem sie oder ihr Zeitplan zuletzt geändert wurde. Alle Bereiche –
+Screens, Playlists, Zeitpläne, Hinweise und Mediathek – zeigen dieselben Kacheln in derselben Breite; lange Namen
+brechen um, nichts wird abgeschnitten.
 
 ![Startseite: zwei Screens als Kacheln, quer und hochkant, jeweils mit der laufenden Slide](bilder/startseite.png)
 
@@ -125,10 +126,14 @@ einschaltet.
 ## Hinweise
 
 Ein Band über allen Slides – als Laufschrift oder stehend, etwa „Heute Parkplatz gesperrt". Es läuft auf den
-gewählten Playlists und verschwindet zur eingestellten Zeit von selbst. Jeder Hinweis zeigt, wann und von wem er
-zuletzt geändert wurde; das Speichern einer Slide zählt dabei nicht.
+gewählten Playlists und verschwindet zur eingestellten Zeit von selbst. Jeder Hinweis ist eine Kachel mit einer
+**Zeitleiste über die nächsten sieben Tage**: Sie zeigt, wann er tatsächlich am Fernseher steht – also wann eine
+seiner Playlists laut Zeitplan auf einem Screen läuft, bis zu seinem Ende. Darunter steht jeder Screen in einer
+eigenen Zeile; fährt man darüber, leuchten seine Zeiten auf. Steht ein Hinweis in den sieben Tagen auf keinem
+Fernseher, sagt die Kachel das. Jeder Hinweis zeigt auch, wann und von wem er zuletzt geändert wurde; das Speichern
+einer Slide zählt dabei nicht.
 
-![Seite „Hinweise" mit einem laufenden Hinweis und den Playlists, auf denen er läuft](bilder/hinweise.png)
+![Seite „Hinweise": Kacheln mit Vorschau des Bands, Zeitleiste über sieben Tage und den Screens](bilder/hinweise.png)
 
 ## Playlists
 
@@ -141,10 +146,13 @@ Playlist oder eine ihrer Slides zuletzt geändert wurde und von wem.
 ## Zeitpläne
 
 Welche Playlist ein Screen wann zeigt: nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten vor
-Beginn bis 10 Minuten nach Beginn"). Daneben die Playlist, die gerade läuft. Unter den Regeln steht, wann und von
-wem der Zeitplan oder der Screen zuletzt gespeichert wurde.
+Beginn bis 10 Minuten nach Beginn"). Jeder Screen ist eine Kachel mit der Playlist, die gerade läuft, und einer
+**Zeitleiste über die nächsten sieben Tage** – heute oben, mit einer Nadel für jetzt, jede Playlist in ihrer Farbe
+wie im Zeitplan-Dialog. Darunter die Regeln in denselben Farben: Fährt man über eine Regel, leuchten ihre Zeiten
+auf; ein Klick auf eine Regel oder einen Abschnitt zeigt deren Playlist im Bild. Zuletzt steht, wann und von wem
+der Zeitplan oder der Screen zuletzt gespeichert wurde.
 
-![Zeitpläne: je Screen die Regeln und eine Vorschau der laufenden Playlist](bilder/zeitplaene.png)
+![Zeitpläne: je Screen eine Kachel mit Vorschau, Zeitleiste über sieben Tage und den Regeln](bilder/zeitplaene.png)
 
 ## Mediathek
 

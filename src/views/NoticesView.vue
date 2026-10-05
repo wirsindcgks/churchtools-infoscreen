@@ -7,23 +7,29 @@
  * once, checked against every revision before anything is written.
  */
 import { computed, onMounted, ref, shallowRef } from 'vue';
+import { zonedDateKey, zonedParts } from '../appointments/zoned';
 import { currentPerson, displayName } from '../ct/client';
 import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import { lastEdited } from '../designer/last-edited';
-import { type BannerGroup, groupBanners, untilLabel } from '../designer/notices';
+import { type BannerGroup, groupBanners, noticeTimeline, untilLabel } from '../designer/notices';
 import { providePalette } from '../designer/palette';
 import NoticeDialog from '../designer/NoticeDialog.vue';
+import NoticeThumb from '../designer/NoticeThumb.vue';
 import PageHeader from '../designer/PageHeader.vue';
+import { ruleCalendarIds } from '../designer/running';
+import { fromMinutes, WEEKDAYS } from '../designer/schedule-ops';
 import { usePreview } from '../designer/usePreview';
-import { bannerKey, DEFAULT_THEME, type Banner, type ThemeDoc } from '../model/schema';
+import WeekTimeline, { type TimelineDay } from '../designer/WeekTimeline.vue';
+import { bannerKey, DEFAULT_THEME, type Banner, type ScreenDoc, type ThemeDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 
 const repository = shallowRef<ScreenRepository | null>(null);
 const author = ref<string | null>(null);
 const overviews = ref<PlaylistOverview[]>([]);
+const screens = ref<ScreenDoc[]>([]);
 const theme = ref<ThemeDoc | null>(null);
 const error = ref<string | null>(null);
 /** Loaded: the page shows its frame before, and its content from then on. */
@@ -33,8 +39,8 @@ const dialogOpen = ref(false);
 /** The group being edited, to preselect its playlists; null for a new notice. */
 const editingBanner = ref<Banner | null>(null);
 
-// Only the time and time zone matter here – no appointments or media, unlike the other pages' previews.
-const { context } = usePreview(ref([]), ref([]), theme);
+// The time and zone, and the appointments of the rule calendars: a rule bound to an appointment decides when a band stands (Plan.md 69).
+const { context } = usePreview(computed(() => ruleCalendarIds(screens.value)), ref([]), theme);
 /** The dialog and new notices need an actual theme – without one yet, the defaults apply (Plan.md 27). */
 const themeOrDefault = computed(() => theme.value ?? DEFAULT_THEME);
 providePalette(themeOrDefault);
@@ -47,9 +53,14 @@ function modeLabel(banner: Banner): string {
     return banner.mode === 'static' ? 'Stehend' : 'Laufschrift';
 }
 
-function onLabel(group: BannerGroup): string {
-    const playlists = group.playlists.map((o) => o.playlist.name).join(', ');
-    return group.screens.length ? `Auf: ${playlists} – läuft auf ${group.screens.map((s) => s.name).join(', ')}` : `Auf: ${playlists}`;
+/** "bis Sa., 27.09., 18:00"; for an expired band "abgelaufen am Sa., 27.09., 18:00", as `until` stands. */
+function endLabel(group: BannerGroup): string {
+    const label = untilLabel(group.banner.until);
+    return group.expired ? label.replace(/^bis /, 'abgelaufen am ') : label;
+}
+
+function screenNames(ids: readonly string[]): string {
+    return ids.map((id) => screens.value.find((s) => s.id === id)?.name ?? '').join(', ');
 }
 
 /** When and by whom the band was last changed; none for a band from before the stamp (Plan.md 66). */
@@ -59,12 +70,14 @@ function edited(group: BannerGroup) {
 
 async function refresh(): Promise<void> {
     if (!repository.value) return;
-    const [list, stored] = await Promise.all([
+    const [list, screenList, stored] = await Promise.all([
         repository.value.listPlaylists(),
+        repository.value.listScreens(),
         // The preview and new notices start in the theme's colours; without it the defaults apply.
         repository.value.loadTheme().catch(() => null),
     ]);
     overviews.value = list;
+    screens.value = screenList;
     theme.value = stored;
 }
 
@@ -78,6 +91,57 @@ onMounted(async () => {
         error.value = e instanceof Error ? e.message : String(e);
     }
 });
+
+// The week strip (Plan.md 69): seven days from today; a stretch's key is the screens it stands on.
+const DAYS = 7;
+const today = computed(() => {
+    const [year, month, day] = zonedDateKey(context.now, context.timeZone).split('-').map(Number) as [number, number, number];
+    return { year, month, day };
+});
+const needle = computed(() => {
+    const p = zonedParts(context.now, context.timeZone);
+    return { dayIndex: 0, minute: p.hour * 60 + p.minute };
+});
+const dayFormat = computed(
+    () => new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' }),
+);
+/** The strips of the running notices; they change with the day, the screens and the appointments, not with the clock's tick. */
+const weeks = computed(
+    () => new Map(running.value.map((g) => [bannerKey(g.banner), noticeTimeline(g, screens.value, today.value, DAYS, context.timeZone, context.appointments)])),
+);
+
+/** The screen line under the pointer or focus lights up its stretches; a stretch under the pointer lights up its screens' lines. */
+const lineHover = ref<{ notice: string; screen: string } | null>(null);
+const segmentHover = ref<{ notice: string; key: string } | null>(null);
+
+function weekDays(group: BannerGroup): TimelineDay[] {
+    const notice = bannerKey(group.banner);
+    const lit = lineHover.value?.notice === notice ? lineHover.value.screen : null;
+    return (weeks.value.get(notice) ?? []).map((day) => ({
+        label: WEEKDAYS[day.weekday - 1]!.short,
+        title: dayFormat.value.format(new Date(Date.UTC(day.date.year, day.date.month - 1, day.date.day))),
+        segments: day.segments.map((segment) => ({
+            start: segment.start,
+            end: segment.end,
+            color: segment.visible ? 'var(--d-accent)' : null,
+            // A stretch that stands on the lit screen shares its key with the highlight, whoever else it stands on.
+            key: lit !== null && segment.screenIds.includes(lit) ? lit : segment.screenIds.join('|'),
+            label: segment.visible
+                ? `${WEEKDAYS[day.weekday - 1]!.short} ${fromMinutes(segment.start)}–${fromMinutes(segment.end)}: ${screenNames(segment.screenIds)}`
+                : '',
+        })),
+    }));
+}
+
+/** Whether the notice shows anywhere in the seven days. */
+function showsAnywhere(group: BannerGroup): boolean {
+    return (weeks.value.get(bannerKey(group.banner)) ?? []).some((day) => day.segments.some((s) => s.visible));
+}
+
+function isLinked(group: BannerGroup, screen: string): boolean {
+    const hover = segmentHover.value;
+    return hover?.notice === bannerKey(group.banner) && hover.key.split('|').includes(screen);
+}
 
 function openNew(): void {
     editingBanner.value = null;
@@ -149,32 +213,69 @@ async function end(group: BannerGroup): Promise<void> {
                 :count="`${running.length} ${running.length === 1 ? 'Hinweis' : 'Hinweise'}`"
                 heading-id="notices-running"
             >
-                <ul v-if="running.length" class="notices">
-                    <li
-                        v-for="group in running"
-                        :key="bannerKey(group.banner)"
-                        class="d-card notice-card"
-                        data-testid="notice-card"
-                    >
-                        <p class="text">{{ group.banner.text }}</p>
-                        <ul class="facts">
-                            <li>{{ modeLabel(group.banner) }}</li>
-                            <li>{{ untilLabel(group.banner.until) }}</li>
-                            <li>{{ onLabel(group) }}</li>
-                            <li v-if="edited(group)?.when" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
-                                <Icon name="clock" :size="16" />
-                                <span>{{ edited(group)!.when }}</span>
-                            </li>
-                            <li v-if="edited(group)?.by" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
-                                <Icon name="person" :size="16" />
-                                <span>{{ edited(group)!.by }}</span>
-                            </li>
-                        </ul>
-                        <div class="actions">
-                            <button class="d-btn" type="button" data-testid="notice-edit" @click="edit(group)">Bearbeiten</button>
-                            <button class="d-btn d-btn--danger" type="button" data-testid="notice-end" @click="end(group)">
-                                Beenden
-                            </button>
+                <ul v-if="running.length" class="d-tiles">
+                    <li v-for="group in running" :key="bannerKey(group.banner)" class="d-card d-tile" data-testid="notice-card">
+                        <div class="d-tile-media">
+                            <NoticeThumb :banner="group.banner" :background="themeOrDefault.background" />
+                        </div>
+                        <div class="d-tile-body">
+                            <h3 class="d-tile-title">{{ group.banner.text }}</h3>
+                            <WeekTimeline
+                                class="week"
+                                :days="weekDays(group)"
+                                :now="needle"
+                                :highlight="lineHover?.notice === bannerKey(group.banner) ? lineHover.screen : null"
+                                @hover="(key) => (segmentHover = key === null ? null : { notice: bannerKey(group.banner), key })"
+                            />
+                            <p v-if="!showsAnywhere(group)" class="nowhere" data-testid="notice-nowhere">
+                                Erscheint in den nächsten 7 Tagen auf keinem Fernseher
+                            </p>
+                            <ul class="d-facts">
+                                <li>
+                                    <Icon name="banner" :size="16" />
+                                    <span>{{ modeLabel(group.banner) }}</span>
+                                </li>
+                                <li>
+                                    <Icon name="timer" :size="16" />
+                                    <span>{{ endLabel(group) }}</span>
+                                </li>
+                                <li>
+                                    <Icon name="list" :size="16" />
+                                    <span>{{ group.playlists.map((o) => o.playlist.name).join(', ') }}</span>
+                                </li>
+                                <li
+                                    v-for="screen in group.screens"
+                                    :key="screen.id"
+                                    class="screen-line"
+                                    :class="{ linked: isLinked(group, screen.id) }"
+                                    data-testid="notice-screen-line"
+                                    @mouseenter="lineHover = { notice: bannerKey(group.banner), screen: screen.id }"
+                                    @mouseleave="lineHover = null"
+                                    @focusin="lineHover = { notice: bannerKey(group.banner), screen: screen.id }"
+                                    @focusout="lineHover = null"
+                                >
+                                    <Icon name="tv" :size="16" />
+                                    <span>{{ screen.name }}</span>
+                                </li>
+                                <li v-if="!group.screens.length">
+                                    <Icon name="tv" :size="16" />
+                                    <span>auf keinem Screen</span>
+                                </li>
+                                <li v-if="edited(group)?.when" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
+                                    <Icon name="clock" :size="16" />
+                                    <span>{{ edited(group)!.when }}</span>
+                                </li>
+                                <li v-if="edited(group)?.by" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
+                                    <Icon name="person" :size="16" />
+                                    <span>{{ edited(group)!.by }}</span>
+                                </li>
+                            </ul>
+                            <div class="actions">
+                                <button class="d-btn" type="button" data-testid="notice-edit" @click="edit(group)">Bearbeiten</button>
+                                <button class="d-btn d-btn--danger" type="button" data-testid="notice-end" @click="end(group)">
+                                    Beenden
+                                </button>
+                            </div>
                         </div>
                     </li>
                 </ul>
@@ -189,31 +290,48 @@ async function end(group: BannerGroup): Promise<void> {
                 heading-id="notices-expired"
             >
                 <p class="empty expired-hint">Abgelaufene Hinweise verschwinden nach 7 Tagen von selbst.</p>
-                <ul class="notices">
-                    <li
-                        v-for="group in expired"
-                        :key="bannerKey(group.banner)"
-                        class="d-card notice-card"
-                        data-testid="notice-card-expired"
-                    >
-                        <p class="text">{{ group.banner.text }}</p>
-                        <ul class="facts">
-                            <li>{{ modeLabel(group.banner) }}</li>
-                            <li>{{ untilLabel(group.banner.until) }}</li>
-                            <li>{{ onLabel(group) }}</li>
-                            <li v-if="edited(group)?.when" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
-                                <Icon name="clock" :size="16" />
-                                <span>{{ edited(group)!.when }}</span>
-                            </li>
-                            <li v-if="edited(group)?.by" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
-                                <Icon name="person" :size="16" />
-                                <span>{{ edited(group)!.by }}</span>
-                            </li>
-                        </ul>
-                        <div class="actions">
-                            <button class="d-btn" type="button" data-testid="notice-remove" @click="clear(group)">
-                                Entfernen
-                            </button>
+                <ul class="d-tiles">
+                    <li v-for="group in expired" :key="bannerKey(group.banner)" class="d-card d-tile" data-testid="notice-card-expired">
+                        <div class="d-tile-media">
+                            <NoticeThumb :banner="group.banner" :background="themeOrDefault.background" />
+                        </div>
+                        <div class="d-tile-body">
+                            <h3 class="d-tile-title">{{ group.banner.text }}</h3>
+                            <ul class="d-facts">
+                                <li>
+                                    <Icon name="banner" :size="16" />
+                                    <span>{{ modeLabel(group.banner) }}</span>
+                                </li>
+                                <li>
+                                    <Icon name="timer" :size="16" />
+                                    <span>{{ endLabel(group) }}</span>
+                                </li>
+                                <li>
+                                    <Icon name="list" :size="16" />
+                                    <span>{{ group.playlists.map((o) => o.playlist.name).join(', ') }}</span>
+                                </li>
+                                <li v-for="screen in group.screens" :key="screen.id">
+                                    <Icon name="tv" :size="16" />
+                                    <span>{{ screen.name }}</span>
+                                </li>
+                                <li v-if="!group.screens.length">
+                                    <Icon name="tv" :size="16" />
+                                    <span>auf keinem Screen</span>
+                                </li>
+                                <li v-if="edited(group)?.when" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
+                                    <Icon name="clock" :size="16" />
+                                    <span>{{ edited(group)!.when }}</span>
+                                </li>
+                                <li v-if="edited(group)?.by" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
+                                    <Icon name="person" :size="16" />
+                                    <span>{{ edited(group)!.by }}</span>
+                                </li>
+                            </ul>
+                            <div class="actions">
+                                <button class="d-btn" type="button" data-testid="notice-remove" @click="clear(group)">
+                                    Entfernen
+                                </button>
+                            </div>
                         </div>
                     </li>
                 </ul>
@@ -234,48 +352,30 @@ async function end(group: BannerGroup): Promise<void> {
 </template>
 
 <style scoped>
-.notices {
-    display: grid;
-    gap: 12px;
+/* A list, but laid out like the tiles' div elsewhere. */
+ul.d-tiles {
     margin: 0;
     padding: 0;
     list-style: none;
 }
-.notice-card {
-    display: grid;
-    gap: 4px;
-    padding: 12px 14px;
+.week {
+    margin: 6px 0;
 }
-.text {
-    margin: 0;
-    overflow: hidden;
-    font-weight: 700;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-/* One fact per line; a long value wraps under its own words, not under the icon. */
-.facts {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
+.nowhere {
+    margin: 0 0 4px;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
-.facts li {
-    display: flex;
-    align-items: flex-start;
-    gap: 4px;
-    max-width: 100%;
-    min-width: 0;
-    overflow-wrap: anywhere;
+.screen-line {
+    align-self: stretch;
+    border-radius: var(--d-radius);
+    margin: -3px -8px;
+    padding: 3px 8px;
+    max-width: none;
 }
-.facts li :deep(svg) {
-    flex: none;
-    margin-top: 0.1em;
+.screen-line:hover,
+.screen-line.linked {
+    background: var(--d-panel);
 }
 .actions {
     display: flex;

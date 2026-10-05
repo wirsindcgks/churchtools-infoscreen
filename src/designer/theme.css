@@ -146,6 +146,86 @@
     background: var(--d-surface);
 }
 
+/*
+ * Tiles (Plan.md 67): one grid and one tile for screens, playlists and media – the same width in every
+ * area, and nothing on them is cut off: a long name or value wraps. The wider the content of a tile
+ * (the timeline of Plan.md 68 and 69), the less the minimum width may shrink.
+ */
+.infoscreen-designer :where(.d-tiles) {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+}
+@media (max-width: 48rem) {
+    .infoscreen-designer :where(.d-tiles) {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 10px;
+    }
+}
+/* One column on a narrow phone – two would squeeze names unreadably thin. */
+@media (max-width: 30rem) {
+    .infoscreen-designer :where(.d-tiles) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+.infoscreen-designer :where(.d-tile) {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    margin: 0;
+    overflow: visible;
+    transition: box-shadow 0.15s, border-color 0.15s;
+}
+.infoscreen-designer :where(.d-tile:hover) {
+    border-color: var(--d-interactive);
+    box-shadow: 0 4px 12px -4px #0000001f;
+}
+/* The picture on top, 16:9, with the round corners of the tile. */
+.infoscreen-designer :where(.d-tile-media) {
+    display: block;
+    overflow: hidden;
+    border-radius: var(--d-radius-lg) var(--d-radius-lg) 0 0;
+    aspect-ratio: 16 / 9;
+}
+.infoscreen-designer :where(.d-tile-body) {
+    display: grid;
+    gap: 4px;
+    padding: 6px 14px 12px;
+}
+.infoscreen-designer :where(.d-tile-title) {
+    margin: 0;
+    padding-top: 0.35em;
+    font-size: 1em;
+    font-weight: 700;
+    hyphens: auto;
+    overflow-wrap: anywhere;
+}
+/* One fact per line; a long value wraps under its own words, not under the icon. */
+.infoscreen-designer :where(.d-facts) {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+.infoscreen-designer :where(.d-facts > li) {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.infoscreen-designer :where(.d-facts > li > svg) {
+    flex: none;
+    margin-top: 0.1em;
+}
+
 .infoscreen-designer :where(.d-banner) {
     margin: 0;
     padding: 8px 14px;

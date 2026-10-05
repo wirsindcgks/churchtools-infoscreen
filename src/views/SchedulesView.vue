@@ -8,6 +8,7 @@
  * is about schedules; the playlist's name below the picture leads to its editor.
  */
 import { computed, onMounted, reactive, ref, shallowRef } from 'vue';
+import { zonedDateKey, zonedParts } from '../appointments/zoned';
 import { currentPerson, displayName } from '../ct/client';
 import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
@@ -16,10 +17,11 @@ import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import ScheduleDialog from '../designer/ScheduleDialog.vue';
 import { ruleCalendarIds, runningNow } from '../designer/running';
-import { ruleSummary } from '../designer/schedule-ops';
+import { fromMinutes, playlistColors, ruleSummary, weekTimeline, WEEKDAYS } from '../designer/schedule-ops';
 import SearchField from '../designer/SearchField.vue';
 import SlideThumb from '../designer/SlideThumb.vue';
 import { usePreview } from '../designer/usePreview';
+import WeekTimeline, { type TimelineDay } from '../designer/WeekTimeline.vue';
 import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
@@ -99,6 +101,60 @@ function choose(screen: ScreenDoc, index: number): void {
     chosen.set(screen.id, index < 0 ? 'default' : String(index));
 }
 
+// The week strip (Plan.md 68): seven days from today, a stretch's key is its rule's index or 'default'.
+const DAYS = 7;
+const todayKey = computed(() => zonedDateKey(context.now, context.timeZone));
+const today = computed(() => {
+    const [year, month, day] = todayKey.value.split('-').map(Number) as [number, number, number];
+    return { year, month, day };
+});
+const needle = computed(() => {
+    const p = zonedParts(context.now, context.timeZone);
+    return { dayIndex: 0, minute: p.hour * 60 + p.minute };
+});
+/** The week strips of all screens; they change with the day, the screens and the appointments, not with the clock's tick. */
+const weeks = computed(
+    () =>
+        new Map(
+            screens.value.map((s) => [s.id, weekTimeline(s, today.value, DAYS, context.timeZone, context.appointments)]),
+        ),
+);
+const dayFormat = computed(
+    () => new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' }),
+);
+
+function colorOf(screen: ScreenDoc, playlistId: string): string {
+    return playlistColors(screen.defaultPlaylistId, screen.schedule).get(playlistId)!;
+}
+
+function weekDays(screen: ScreenDoc): TimelineDay[] {
+    const colors = playlistColors(screen.defaultPlaylistId, screen.schedule);
+    return (weeks.value.get(screen.id) ?? []).map((day) => ({
+        label: WEEKDAYS[day.weekday - 1]!.short,
+        title: dayFormat.value.format(new Date(Date.UTC(day.date.year, day.date.month - 1, day.date.day))),
+        segments: day.segments.map((segment) => ({
+            start: segment.start,
+            end: segment.end,
+            color: colors.get(segment.playlistId)!,
+            key: segment.ruleIndex < 0 ? 'default' : String(segment.ruleIndex),
+            label:
+                `${WEEKDAYS[day.weekday - 1]!.short} ${fromMinutes(segment.start)}–${fromMinutes(segment.end)}: ` +
+                `${playlistName(segment.playlistId)} – ${segment.ruleIndex < 0 ? 'Standard' : `Regel ${segment.ruleIndex + 1}`}`,
+        })),
+    }));
+}
+
+function keyIndex(key: string): number {
+    return key === 'default' ? -1 : Number(key);
+}
+
+/** A rule line under the pointer or focus lights up its stretches; a stretch under the pointer lights up its line. */
+const lineHover = ref<{ screen: string; key: string } | null>(null);
+const segmentHover = ref<{ screen: string; key: string } | null>(null);
+function isLinked(screen: ScreenDoc, key: string): boolean {
+    return segmentHover.value?.screen === screen.id && segmentHover.value.key === key;
+}
+
 async function refresh(): Promise<void> {
     if (!repository.value) return;
     const [list, overviews, stored] = await Promise.all([
@@ -148,23 +204,23 @@ onMounted(async () => {
                 :count="`${shown.length} ${shown.length === 1 ? 'Screen' : 'Screens'}`"
                 heading-id="schedules-group"
             >
-                <ul v-if="shown.length" class="schedules">
-                    <li v-for="screen in shown" :key="screen.id" class="schedule" data-testid="schedule-row">
-                        <figure class="preview">
-                            <button
-                                class="thumb"
-                                type="button"
-                                :aria-label="`Zeitplan von ${screen.name} bearbeiten`"
-                                :title="`Zeitplan von ${screen.name} bearbeiten`"
-                                data-testid="schedule-preview"
-                                @click="editing = screen.slug"
-                            >
-                                <SlideThumb
-                                    :slide="previewed(screen)?.firstSlide ?? null"
-                                    :stage="previewed(screen)?.playlist.stage ?? screen.stage"
-                                />
-                            </button>
-                            <figcaption>
+                <ul v-if="shown.length" class="d-tiles">
+                    <li v-for="screen in shown" :key="screen.id" class="d-card d-tile" data-testid="schedule-row">
+                        <button
+                            class="thumb d-tile-media"
+                            type="button"
+                            :aria-label="`Zeitplan von ${screen.name} bearbeiten`"
+                            :title="`Zeitplan von ${screen.name} bearbeiten`"
+                            data-testid="schedule-preview"
+                            @click="editing = screen.slug"
+                        >
+                            <SlideThumb
+                                :slide="previewed(screen)?.firstSlide ?? null"
+                                :stage="previewed(screen)?.playlist.stage ?? screen.stage"
+                            />
+                        </button>
+                        <div class="d-tile-body">
+                            <p class="caption">
                                 {{ previewIndex(screen) === running(screen).ruleIndex ? 'Läuft jetzt' : 'Vorschau' }}:
                                 <RouterLink
                                     v-if="previewed(screen)"
@@ -175,56 +231,83 @@ onMounted(async () => {
                                     {{ previewed(screen)!.playlist.name }}
                                 </RouterLink>
                                 <strong v-else>Playlist fehlt</strong>
-                            </figcaption>
-                        </figure>
-                        <div class="details">
-                            <div class="row-head">
-                                <Icon
-                                    :name="screen.stage.height > screen.stage.width ? 'portrait' : 'landscape'"
-                                    :size="18"
-                                    class="format"
-                                />
-                                <h3>{{ screen.name }}</h3>
-                                <span class="now" data-testid="schedule-now">
-                                    Jetzt: <strong>{{ playlistName(running(screen).playlistId) }}</strong>
-                                </span>
+                            </p>
+                            <div class="title-row">
+                                <h3 class="d-tile-title">{{ screen.name || 'Ohne Namen' }}</h3>
                                 <button class="d-btn" type="button" data-testid="schedule-edit" @click="editing = screen.slug">
                                     Bearbeiten
                                 </button>
                             </div>
-                            <ol class="rules">
+                            <WeekTimeline
+                                class="week"
+                                :days="weekDays(screen)"
+                                :now="needle"
+                                :highlight="lineHover?.screen === screen.id ? lineHover.key : null"
+                                @hover="(key) => (segmentHover = key === null ? null : { screen: screen.id, key })"
+                                @pick="({ segment }) => choose(screen, keyIndex(segment.key))"
+                            />
+                            <ul class="d-facts">
+                                <li :title="screen.stage.height > screen.stage.width ? 'Hochkant' : 'Quer'">
+                                    <Icon :name="screen.stage.height > screen.stage.width ? 'portrait' : 'landscape'" :size="16" />
+                                    {{ screen.stage.height > screen.stage.width ? 'Hochkant' : 'Quer' }}
+                                </li>
+                                <li data-testid="schedule-now">
+                                    <Icon name="list" :size="16" />
+                                    <span>Jetzt: <strong class="now">{{ playlistName(running(screen).playlistId) }}</strong></span>
+                                </li>
                                 <li
                                     v-for="(rule, index) in screen.schedule"
                                     :key="index"
-                                    :class="{ active: running(screen).ruleIndex === index, previewed: previewIndex(screen) === index }"
+                                    class="rule-line"
+                                    :class="{
+                                        active: running(screen).ruleIndex === index,
+                                        previewed: previewIndex(screen) === index,
+                                        linked: isLinked(screen, String(index)),
+                                    }"
                                     data-testid="schedule-rule-line"
+                                    @mouseenter="lineHover = { screen: screen.id, key: String(index) }"
+                                    @mouseleave="lineHover = null"
+                                    @focusin="lineHover = { screen: screen.id, key: String(index) }"
+                                    @focusout="lineHover = null"
                                 >
                                     <button type="button" class="line" :aria-pressed="previewIndex(screen) === index" @click="choose(screen, index)">
+                                        <span class="swatch" :style="{ background: colorOf(screen, rule.playlistId) }" aria-hidden="true" />
                                         <span class="rank">{{ index + 1 }}</span>
-                                        <span>{{ ruleSummary(rule, calendarName) }}</span>
-                                        <span class="arrow" aria-hidden="true">→</span>
-                                        <strong>{{ playlistName(rule.playlistId) }}</strong>
+                                        <span class="text">
+                                            {{ ruleSummary(rule, calendarName) }}
+                                            <span class="arrow" aria-hidden="true">→</span>
+                                            <strong>{{ playlistName(rule.playlistId) }}</strong>
+                                        </span>
                                     </button>
                                 </li>
                                 <li
-                                    :class="{ active: running(screen).ruleIndex < 0, previewed: previewIndex(screen) < 0 }"
+                                    class="rule-line"
+                                    :class="{
+                                        active: running(screen).ruleIndex < 0,
+                                        previewed: previewIndex(screen) < 0,
+                                        linked: isLinked(screen, 'default'),
+                                    }"
                                     data-testid="schedule-default-line"
+                                    @mouseenter="lineHover = { screen: screen.id, key: 'default' }"
+                                    @mouseleave="lineHover = null"
+                                    @focusin="lineHover = { screen: screen.id, key: 'default' }"
+                                    @focusout="lineHover = null"
                                 >
                                     <button type="button" class="line" :aria-pressed="previewIndex(screen) < 0" @click="choose(screen, -1)">
-                                        <span class="rank rank--default" aria-hidden="true">·</span>
-                                        <span>{{ screen.schedule.length ? 'sonst' : 'immer' }}</span>
-                                        <span class="arrow" aria-hidden="true">→</span>
-                                        <strong>{{ playlistName(screen.defaultPlaylistId) }}</strong>
-                                        <span class="muted">(Standard)</span>
+                                        <span class="swatch" :style="{ background: colorOf(screen, screen.defaultPlaylistId) }" aria-hidden="true" />
+                                        <span class="text">
+                                            {{ screen.schedule.length ? 'sonst' : 'immer' }}
+                                            <span class="arrow" aria-hidden="true">→</span>
+                                            <strong>{{ playlistName(screen.defaultPlaylistId) }}</strong>
+                                            <span class="muted">(Standard)</span>
+                                        </span>
                                     </button>
                                 </li>
-                            </ol>
-                            <ul v-if="edited(screen)" class="facts">
-                                <li v-if="edited(screen)!.when" :title="edited(screen)!.whenTitle!" data-testid="schedule-edited-at">
+                                <li v-if="edited(screen)?.when" :title="edited(screen)!.whenTitle!" data-testid="schedule-edited-at">
                                     <Icon name="clock" :size="16" />
                                     <span>{{ edited(screen)!.when }}</span>
                                 </li>
-                                <li v-if="edited(screen)!.by" :title="edited(screen)!.byTitle!" data-testid="schedule-edited-by">
+                                <li v-if="edited(screen)?.by" :title="edited(screen)!.byTitle!" data-testid="schedule-edited-by">
                                     <Icon name="person" :size="16" />
                                     <span>{{ edited(screen)!.by }}</span>
                                 </li>
@@ -249,35 +332,16 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.schedules {
-    display: grid;
-    gap: 12px;
+/* A list, but laid out like the tiles' div elsewhere. */
+ul.d-tiles {
     margin: 0;
     padding: 0;
     list-style: none;
 }
-.schedule {
-    display: grid;
-    grid-template-columns: 240px minmax(0, 1fr);
-    gap: 16px;
-    align-items: start;
-    padding: 12px 14px;
-    border: 1px solid var(--d-divider);
-    border-radius: var(--d-radius-lg);
-    background: var(--d-surface);
-}
-.preview {
-    display: grid;
-    gap: 6px;
-    margin: 0;
-}
 .thumb {
-    display: block;
     width: 100%;
     padding: 0;
-    overflow: hidden;
     border: 0;
-    border-radius: var(--d-radius);
     background: none;
     cursor: pointer;
 }
@@ -285,84 +349,52 @@ onMounted(async () => {
     outline: 2px solid var(--d-accent);
     outline-offset: 2px;
 }
-figcaption {
+.caption {
+    margin: 0;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
-figcaption strong,
-figcaption a {
+.caption strong,
+.caption a {
     color: var(--d-text);
     font-weight: 700;
 }
-.row-head {
+.title-row {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px 12px;
+    align-items: flex-start;
+    gap: 8px;
 }
-.row-head h3 {
-    margin: 0;
-    font-size: 1.05em;
+.title-row .d-tile-title {
+    flex: 1;
+    min-width: 0;
 }
-.format {
-    color: var(--d-text-muted);
+.week {
+    margin: 6px 0;
 }
 .now {
-    margin-left: auto;
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
-}
-.now strong {
     color: var(--d-success);
 }
-.rules {
-    display: grid;
-    gap: 4px;
-    margin: 10px 0 0;
-    padding: 0;
-    list-style: none;
-    font-size: var(--d-size-sm);
-}
-/* One fact per line; a long value wraps under its own words, not under the icon. */
-.facts {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    margin: 10px 0 0;
-    padding: 0 8px;
-    list-style: none;
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
-}
-.facts li {
-    display: flex;
-    align-items: flex-start;
-    gap: 4px;
-    max-width: 100%;
-    min-width: 0;
-    overflow-wrap: anywhere;
-}
-.facts li :deep(svg) {
-    flex: none;
-    margin-top: 0.1em;
+.rule-line {
+    align-self: stretch;
 }
 .line {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    align-items: flex-start;
     gap: 6px;
-    width: 100%;
-    padding: 4px 8px;
+    width: calc(100% + 16px);
+    margin: -3px -8px;
+    padding: 3px 8px;
     border: 0;
     border-radius: var(--d-radius);
     background: none;
     color: inherit;
     font: inherit;
     text-align: left;
+    overflow-wrap: anywhere;
     cursor: pointer;
 }
-.line:hover {
+.line:hover,
+.linked .line {
     background: var(--d-panel);
 }
 .previewed .line {
@@ -371,7 +403,15 @@ figcaption a {
 .active .line {
     box-shadow: inset 3px 0 0 var(--d-success);
 }
+.swatch {
+    flex: none;
+    width: 0.8em;
+    height: 0.8em;
+    margin-top: 0.25em;
+    border-radius: 2px;
+}
 .rank {
+    flex: none;
     display: inline-grid;
     place-items: center;
     width: 1.5em;
@@ -380,8 +420,11 @@ figcaption a {
     background: var(--d-panel);
     font-weight: 700;
 }
-.rank--default {
-    background: none;
+.text {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 4px;
+    min-width: 0;
 }
 .arrow {
     color: var(--d-text-muted);
@@ -393,17 +436,5 @@ figcaption a {
 }
 .muted {
     color: var(--d-text-muted);
-}
-
-/* Phone: the preview above the rules, "Jetzt" below the name. */
-@media (max-width: 48rem) {
-    .schedule {
-        grid-template-columns: minmax(0, 1fr);
-    }
-    .now {
-        order: 3;
-        width: 100%;
-        margin-left: 0;
-    }
 }
 </style>

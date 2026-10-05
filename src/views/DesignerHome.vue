@@ -229,7 +229,7 @@ async function remove(overview: ScreenOverview): Promise<void> {
                 :count="`${shown.length} ${shown.length === 1 ? 'Screen' : 'Screens'}`"
                 :heading-id="`group-${current.key}`"
             >
-                <div v-if="shown.length" class="tiles">
+                <div v-if="shown.length" class="d-tiles">
                     <ScreenCard
                         v-for="o in shown"
                         :key="o.screen.id"
@@ -281,11 +281,6 @@ async function remove(overview: ScreenOverview): Promise<void> {
 </template>
 
 <style scoped>
-.tiles {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 14px;
-}
 .empty {
     display: grid;
     justify-items: start;
@@ -316,18 +311,5 @@ async function remove(overview: ScreenOverview): Promise<void> {
 .muted {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
-}
-
-/* Phone: one or two columns, one below 30rem – two would squeeze names unreadably thin. */
-@media (max-width: 48rem) {
-    .tiles {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 10px;
-    }
-}
-@media (max-width: 30rem) {
-    .tiles {
-        grid-template-columns: minmax(0, 1fr);
-    }
 }
 </style>

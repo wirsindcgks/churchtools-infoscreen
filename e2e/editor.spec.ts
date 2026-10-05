@@ -911,6 +911,26 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     const scheduleBy = (await row.getByTestId('schedule-edited-by').boundingBox())!;
     expect(scheduleBy.y).toBeGreaterThanOrEqual(scheduleAt.y + scheduleAt.height - 1);
     await page.screenshot({ path: 'test-results/schedules.png' });
+
+    // The week strip (Plan.md 68): seven days, joined to the rule lines in both directions.
+    await expect(row.getByTestId('week-day')).toHaveCount(7);
+    await expect(row.getByTestId('week-needle')).toHaveCount(1);
+    const ruleSegments = row.locator('[data-testid="week-segment"][data-key="0"]');
+    await expect(ruleSegments).toHaveCount(1); // Sundays only: once in seven days
+    await expect(ruleSegments.first()).toHaveAttribute('aria-label', /^So 09:00–12:00: Gottesdienst – Regel 1$/);
+    await row.getByTestId('schedule-rule-line').hover();
+    await expect(ruleSegments.first()).toHaveAttribute('data-dim', 'false');
+    await expect(row.locator('[data-testid="week-segment"][data-key="default"]').first()).toHaveAttribute('data-dim', 'true');
+    await row.getByTestId('schedule-edit').hover();
+    await expect(row.locator('[data-testid="week-segment"][data-key="default"]').first()).toHaveAttribute('data-dim', 'false');
+    await ruleSegments.first().hover();
+    await expect(row.getByTestId('schedule-rule-line')).toHaveClass(/linked/);
+    await ruleSegments.first().click(); // chooses the preview like a click on the line
+    await expect(row.getByTestId('schedule-rule-line').getByRole('button')).toHaveAttribute('aria-pressed', 'true');
+    await expect(row.getByTestId('schedule-playlist')).toHaveText('Gottesdienst');
+    await row.locator('[data-testid="week-segment"][data-key="default"]').first().click();
+    await expect(row.getByTestId('schedule-playlist')).toHaveText('Wochenüberblick');
+
     await row.getByTestId('schedule-edit').click();
     await expect(page.getByTestId('schedule-dialog').getByTestId('schedule-rule')).toHaveCount(1);
     await page.getByTestId('schedule-cancel').click();
