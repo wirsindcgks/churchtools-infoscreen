@@ -4,6 +4,25 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.9.0] – 2026-10-05
+
+### Neu
+
+- **Farbpalette im Design:** Auf der Seite „Design" legt ihr bis zu zwölf Farben eurer Gemeinde mit Namen an
+  („Gemeindeblau", „Sonnengelb"), ordnet sie und entfernt sie wieder. Im Editor stehen sie an jedem Farbfeld als
+  kleine Tupfer zum Anklicken – zusammen mit Akzent, Text und Hintergrund des Designs, auch ohne Palette. Ein Klick
+  übernimmt den Hex-Wert; beim Darüberfahren steht der Name mit Hex-Code. Die Farbe wird kopiert: Ändert ihr eine
+  Palettenfarbe später, färbt das bestehende Slides nicht um. Die Tupfer gibt es auch im Dialog der Hinweise.
+- **Datenmodell:** Schema 1.21 (`palette` im Design). Ältere Designs lesen sich wie bisher; die Fernseher brauchen die
+  Palette nicht.
+
+### Geändert
+
+- **Mediathek:** Das Kästchen zur Auswahl steht ohne weißen Kasten auf dem Bild; ein leichter Schatten hält es auf
+  hellen wie dunklen Bildern sichtbar.
+- **Anleitung:** Die Rechte für Installation und Einrichtung stehen vollständig in einer Tabelle, getrennt nach
+  einmalig und dauerhaft, mit Hinweis, was gemessen ist.
+
 ## [0.8.1] – 2026-10-05
 
 ### Behoben
@@ -675,6 +694,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.9.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.9.0
 [0.8.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.8.1
 [0.8.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.8.0
 [0.7.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.7.3

@@ -24,6 +24,10 @@ Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe
 Kalender,** und interne Termine (nur für angemeldete Benutzer) zeigt kein Fernseher. Hat ein Baustein einen Kalender, der
 nicht öffentlich ist, nennt ihn der Editor und bietet an, ihn zu entfernen.
 
+**Farben aus der Palette:** An jedem Farbfeld des Editors stehen kleine Tupfer – zuerst Akzent, Text und Hintergrund
+des Designs, dann die Farbpalette (Seite „Design"). Ein Klick setzt den Hex-Wert, beim Darüberfahren steht der Name.
+Die Farbe wird **kopiert**: Ändert ihr eine Palettenfarbe später, färbt das bestehende Slides nicht um.
+
 ![Editor mit einer Terminliste als Karten, darüber Gemeindename und Uhr](bilder/editor.png)
 
 **Fünfzehn Bausteine:** Text, Bild, Fläche, Galerie, Video, Uhr, Terminliste, Nächster Termin, Gemeindekopf mit Logo,
@@ -147,7 +151,8 @@ dabei aussparen („Nur unbenutzte löschen").
 ## Design
 
 Einmal für alle Screens: Ecken, Akzentfarbe, Farben und Schrift für neue Bausteine, Termine schlicht oder als Karten,
-das Format der Bilder – mit Vorschau.
+das Format der Bilder – mit Vorschau. Dazu eine **Farbpalette**: bis zu zwölf Farben der Gemeinde mit Namen
+(„Gemeindeblau"), in einer Reihenfolge, die ihr selbst bestimmt.
 
 ![Design: Einstellungen links, Vorschau rechts](bilder/design.png)
 

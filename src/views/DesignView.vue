@@ -10,6 +10,7 @@
 import { computed, onMounted, ref, shallowRef, watch } from 'vue';
 import { currentPerson, displayName } from '../ct/client';
 import ColorField from '../designer/ColorField.vue';
+import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import { usePreview } from '../designer/usePreview';
@@ -22,7 +23,7 @@ import { fitStage } from '../player/stage';
 import { getRepository } from '../store/backend';
 import { ConflictError, type ScreenRepository } from '../store/screen-repository';
 
-type Look = Pick<ThemeDoc, 'corners' | 'accent' | 'text' | 'background' | 'font' | 'appointments' | 'imageRatio'>;
+type Look = Pick<ThemeDoc, 'corners' | 'accent' | 'text' | 'background' | 'font' | 'appointments' | 'imageRatio'> & Required<Pick<ThemeDoc, 'palette'>>;
 
 const repository = shallowRef<ScreenRepository | null>(null);
 const author = ref<string | null>(null);
@@ -36,7 +37,25 @@ const message = ref<string | null>(null);
 
 function pick(theme: ThemeDoc): Look {
     const { corners, accent, text, background, font, appointments, imageRatio } = theme;
-    return { corners, accent, text, background, font, appointments, imageRatio };
+    return { corners, accent, text, background, font, appointments, imageRatio, palette: theme.palette ?? [] };
+}
+
+/** The palette is a list: a copy must not share it, or editing `look` would change `saved`, too. */
+function copyLook(from: Look): Look {
+    return { ...from, palette: from.palette.map((p) => ({ ...p })) };
+}
+
+const PALETTE_MAX = 12;
+
+function addPaletteColor(): void {
+    if (look.value.palette.length < PALETTE_MAX) look.value.palette.push({ name: '', color: look.value.accent });
+}
+
+function movePaletteColor(index: number, by: -1 | 1): void {
+    const list = look.value.palette;
+    const target = index + by;
+    if (target < 0 || target >= list.length) return;
+    [list[index], list[target]] = [list[target]!, list[index]!];
 }
 
 const dirty = computed(() => JSON.stringify(look.value) !== JSON.stringify(saved.value));
@@ -85,8 +104,8 @@ async function load(): Promise<void> {
     if (!repository.value) return;
     const stored = await repository.value.loadTheme();
     revision.value = stored ? (stored.revision ?? 0) : null;
-    saved.value = pick(stored ?? DEFAULT_THEME);
-    look.value = { ...saved.value };
+    saved.value = copyLook(pick(stored ?? DEFAULT_THEME));
+    look.value = copyLook(saved.value);
 }
 
 async function save(): Promise<void> {
@@ -99,7 +118,7 @@ async function save(): Promise<void> {
             updatedBy: author.value,
         });
         revision.value = stored.revision ?? 0;
-        saved.value = { ...look.value };
+        saved.value = copyLook(look.value);
         status.value = 'saved';
     } catch (e) {
         if (e instanceof ConflictError) {
@@ -149,7 +168,7 @@ function observe(el: unknown): void {
             <span v-if="status === 'saved' && !dirty" class="ok" data-testid="theme-saved">
                 Gespeichert – die Fernseher zeigen es in etwa 20 s.
             </span>
-            <button class="d-btn" type="button" :disabled="!dirty" @click="look = { ...saved }">Verwerfen</button>
+            <button class="d-btn" type="button" :disabled="!dirty" @click="look = copyLook(saved)">Verwerfen</button>
             <button
                 class="d-btn d-btn--primary"
                 type="button"
@@ -196,6 +215,71 @@ function observe(el: unknown): void {
                         <ColorField v-model="look.background" label="Hintergrund" testid="theme-background" />
                     </div>
                     <p class="hint">Text und Hintergrund gelten für neue Slides und Bausteine; bestehende bleiben, wie sie sind.</p>
+                </section>
+
+                <section class="box" aria-labelledby="box-palette">
+                    <h2 id="box-palette">Farbpalette</h2>
+                    <p class="hint">Farben eurer Gemeinde mit Namen – im Editor stehen sie an jedem Farbfeld zum Anklicken.</p>
+                    <div v-for="(entry, i) in look.palette" :key="i" class="palette-entry" data-testid="palette-entry">
+                        <ColorField v-model="entry.color" :label="`Farbe ${i + 1}`" />
+                        <label class="d-field">
+                            Name
+                            <input
+                                v-model="entry.name"
+                                type="text"
+                                maxlength="40"
+                                placeholder="Gemeindeblau"
+                                autocomplete="off"
+                                data-testid="palette-name"
+                            >
+                        </label>
+                        <div class="palette-actions">
+                            <button
+                                class="d-btn d-btn--icon"
+                                type="button"
+                                :disabled="i === 0"
+                                :aria-label="`Farbe ${i + 1} nach oben`"
+                                title="Nach oben"
+                                data-testid="palette-up"
+                                @click="movePaletteColor(i, -1)"
+                            >
+                                <Icon name="layer-forward" />
+                            </button>
+                            <button
+                                class="d-btn d-btn--icon"
+                                type="button"
+                                :disabled="i === look.palette.length - 1"
+                                :aria-label="`Farbe ${i + 1} nach unten`"
+                                title="Nach unten"
+                                data-testid="palette-down"
+                                @click="movePaletteColor(i, 1)"
+                            >
+                                <Icon name="layer-backward" />
+                            </button>
+                            <button
+                                class="d-btn d-btn--icon"
+                                type="button"
+                                :aria-label="`Farbe ${i + 1} entfernen`"
+                                title="Entfernen"
+                                data-testid="palette-remove"
+                                @click="look.palette.splice(i, 1)"
+                            >
+                                <Icon name="trash" />
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <button
+                            class="d-btn"
+                            type="button"
+                            :disabled="look.palette.length >= PALETTE_MAX"
+                            data-testid="palette-add"
+                            @click="addPaletteColor"
+                        >
+                            <Icon name="plus" /> Farbe hinzufügen
+                        </button>
+                    </div>
+                    <p v-if="look.palette.length >= PALETTE_MAX" class="hint">Höchstens {{ PALETTE_MAX }} Farben.</p>
                 </section>
 
                 <section class="box" aria-labelledby="box-font">
@@ -339,6 +423,16 @@ h2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
+}
+.palette-entry {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: end;
+}
+.palette-actions {
+    display: flex;
+    gap: 2px;
 }
 .hint {
     margin: 0;

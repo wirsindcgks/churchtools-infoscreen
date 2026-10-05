@@ -364,6 +364,14 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     // The look first: large appointments, so that the pictures show the cards.
     await page.goto('design');
     await page.getByTestId('appointments-large').check();
+    // Two of the church's colours with names: the palette shows on the page, the swatches in the editor (Plan.md 64).
+    for (const [i, [name, hex]] of [['Gemeindeblau', '#1d4ed8'], ['Sonnengelb', '#f5b301']].entries()) {
+        await page.getByTestId('palette-add').click();
+        const entry = page.getByTestId('palette-entry').nth(i);
+        await entry.getByTestId('palette-name').fill(name!);
+        await entry.locator('input.hex').fill(hex!);
+        await entry.locator('input.hex').blur();
+    }
     await page.getByTestId('theme-save').click();
     await expect(page.getByTestId('theme-saved')).toBeVisible();
     await shoot(page, 'design');

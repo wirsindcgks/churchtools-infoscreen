@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 20 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 21 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -518,6 +518,8 @@ export const ThemeDoc = v.object({
      * test keeps the two equal.
      */
     font: v.optional(v.string(), 'lato'),
+    /** Since 1.21: the church's named colours (Plan.md 64), offered at every colour field in the editor; copied on use, so none is referenced. */
+    palette: v.optional(v.pipe(v.array(v.object({ name: v.pipe(v.string(), v.maxLength(40)), color: Color })), v.maxLength(12))),
     revision: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
     updatedBy: v.optional(v.string()),
 });
