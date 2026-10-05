@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { calendarColor, formatDate, formatShortDate, formatTime, servicesLine, sizedImageUrl, WIDEST_DATE, textOn } from './format';
+import type { TextStyle } from '../model/schema';
+import { textStyle, calendarColor, formatDate, formatShortDate, formatTime, servicesLine, sizedImageUrl, WIDEST_DATE, textOn } from './format';
 
 describe('sizedImageUrl', () => {
     it('always sets both dimensions, because w alone yields a 150 px high image (G14)', () => {
@@ -107,5 +108,15 @@ describe('WIDEST_DATE', () => {
             const instant = new Date(Date.UTC(2027, 0, 1 + day, 12));
             expect(formatDate(instant, 'Europe/Berlin').length).toBeLessThanOrEqual(widest.length);
         }
+    });
+});
+
+describe('textStyle', () => {
+    const style: TextStyle = { fontFamily: 'sans', fontSize: 40, fontWeight: 400, color: '#ffffff', align: 'left' };
+
+    it('sets capitals only when asked (Plan.md 65)', () => {
+        expect(textStyle(style)).not.toHaveProperty('textTransform');
+        expect(textStyle({ ...style, uppercase: false })).not.toHaveProperty('textTransform');
+        expect(textStyle({ ...style, uppercase: true }).textTransform).toBe('uppercase');
     });
 });

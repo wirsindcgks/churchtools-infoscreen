@@ -50,15 +50,45 @@ test('a swatch sets the hex value of a text colour and of a fill (Plan.md 64)', 
     await page.getByTestId('text-input').fill('Farbprobe');
 
     await openSection(page, 'font');
-    await expect(page.getByTestId('text-color-swatch')).toHaveCount(5);
+    const palette = page.getByTestId('palette-group').first();
+    await expect(palette.getByTestId('text-color-swatch')).toHaveCount(5);
     await page.getByRole('button', { name: 'Sonnengelb (#F5B301)' }).first().click();
     await expect(page.getByTestId('text-color')).toHaveValue('#f5b301');
-    await expect(page.getByTestId('text-color-swatch').nth(4)).toHaveAttribute('aria-pressed', 'true');
+    await expect(palette.getByTestId('text-color-swatch').nth(4)).toHaveAttribute('aria-pressed', 'true');
 
     await page.getByTestId('slide-item').nth(2).click();
     await openSection(page, 'background');
-    await page.getByTestId('fill-color-swatch').nth(3).click();
+    await page.getByTestId('palette-group').getByTestId('fill-color-swatch').nth(3).click();
     await expect(page.getByTestId('fill-color')).toHaveValue('#1d4ed8');
+});
+
+test('the swatches stand in two groups: the palette, and what the slide uses beyond it (Plan.md 65)', async ({ page }) => {
+    await makePalette(page);
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await addBlock(page, 'text');
+    await openSection(page, 'font');
+    const palette = page.getByTestId('palette-group').first();
+    const onSlide = page.getByTestId('slide-colors-group').first();
+    await expect(palette).toBeVisible();
+    await expect(palette).toContainText('Farbpalette');
+    await expect(palette.getByRole('group', { name: 'Farbe: Farbpalette' })).toBeVisible();
+
+    // A palette colour in use stays under "Farbpalette" only.
+    await page.getByRole('button', { name: 'Sonnengelb (#F5B301)' }).first().click();
+    await expect(page.getByTestId('text-color')).toHaveValue('#f5b301');
+    await expect(onSlide.getByRole('button', { name: 'Sonnengelb (#F5B301)' })).toHaveCount(0);
+    await expect(onSlide.getByRole('button', { name: /#F5B301/i })).toHaveCount(0);
+    await expect(palette.getByRole('button', { name: 'Sonnengelb (#F5B301)' })).toHaveAttribute('aria-pressed', 'true');
+
+    // A free colour, set through the hex field, shows up under "Auf der Slide".
+    await page.getByTestId('text-color').fill('#12ab34');
+    await expect(page.getByTestId('text-color')).toHaveValue('#12ab34');
+    await expect(onSlide).toBeVisible();
+    await expect(onSlide).toContainText('Auf der Slide');
+    await expect(onSlide.getByRole('group', { name: 'Farbe: auf der Slide' })).toBeVisible();
+    await expect(onSlide.getByRole('button', { name: '#12ab34 (#12AB34)' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(palette.getByRole('button', { name: /#12AB34/ })).toHaveCount(0);
 });
 
 test('without a palette the three colours of the design stand as swatches', async ({ page }) => {
@@ -66,7 +96,7 @@ test('without a palette the three colours of the design stand as swatches', asyn
     await page.getByTestId('open-editor').first().click();
     await addBlock(page, 'text');
     await openSection(page, 'font');
-    const swatches = page.getByTestId('text-color-swatch');
+    const swatches = page.getByTestId('palette-group').first().getByTestId('text-color-swatch');
     await expect(swatches).toHaveCount(3);
     await expect(swatches.nth(0)).toHaveAttribute('title', 'Akzent (#3B82F6)');
     await expect(swatches.nth(1)).toHaveAttribute('title', 'Text (#FFFFFF)');

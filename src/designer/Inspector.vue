@@ -370,7 +370,9 @@ const slideFill = computed<Fill>(() =>
 
 /** Folded sections say what is set inside (Plan.md 47). */
 const fontSummary = computed(() =>
-    block.value && 'style' in block.value ? `${fontDef(block.value.style.fontFamily).label} · ${block.value.style.fontSize} px` : '',
+    block.value && 'style' in block.value
+        ? `${fontDef(block.value.style.fontFamily).label} · ${block.value.style.fontSize} px${block.value.style.uppercase ? ' · Großbuchstaben' : ''}`
+        : '',
 );
 const positionSummary = computed(() =>
     block.value ? `${block.value.x}, ${block.value.y} · ${block.value.width} × ${block.value.height}` : '',
@@ -1392,6 +1394,15 @@ const LAYERS = [
                             @update:model-value="setStyle({ color: $event })"
                         />
                     </div>
+                    <label class="check">
+                        <input
+                            type="checkbox"
+                            :checked="block.style.uppercase ?? false"
+                            data-testid="text-uppercase"
+                            @change="setStyle({ uppercase: ($event.target as HTMLInputElement).checked })"
+                        >
+                        Großbuchstaben
+                    </label>
                     <label class="d-field">
                         Ausrichtung
                         <select

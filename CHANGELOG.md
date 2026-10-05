@@ -4,6 +4,21 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.10.0] – 2026-10-05
+
+### Neu
+
+- **Großbuchstaben:** Im Bereich „Schrift" jedes Bausteins mit Schrift gibt es das Kästchen „Großbuchstaben". Ihr
+  schreibt den Text normal, der Fernseher zeigt ihn in Großbuchstaben; gespeichert bleibt, wie ihr ihn getippt habt.
+  Fernseher mit einem älteren Stand zeigen den Text bis zum Update normal.
+- **Datenmodell:** Schema 1.22 (`uppercase` in der Schrift). Ältere Slides lesen sich wie bisher.
+
+### Geändert
+
+- **Farbtupfer in zwei Gruppen:** An jedem Farbfeld stehen zuerst die „Farbpalette" (Akzent, Text, Hintergrund und
+  eure Palette), darunter „Auf der Slide" – die Farben der gerade bearbeiteten Slide, die nicht in der Farbpalette
+  stehen. So seht ihr, was vom Freigegebenen abweicht. Im Dialog der Hinweise gibt es nur die „Farbpalette".
+
 ## [0.9.0] – 2026-10-05
 
 ### Neu
@@ -694,6 +709,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.10.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.10.0
 [0.9.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.9.0
 [0.8.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.8.1
 [0.8.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.8.0

@@ -252,6 +252,21 @@ describe('readTheme – the palette (schema 1.21, Plan.md 64)', () => {
     });
 });
 
+describe('readSlide – capitals (schema 1.22, Plan.md 65)', () => {
+    const style = { fontFamily: 'sans', fontSize: 64, color: '#ffffff' };
+    const slide = (extra: object) => ({ ...makeSlide(), blocks: [{ ...textBlock('a'), style: { ...style, ...extra } }] });
+    const styleOf = (raw: unknown) => (readSlide(raw).doc.blocks[0] as { style: { uppercase?: boolean } }).style;
+
+    it('reads a style from before 1.22 without the field', () => {
+        expect(styleOf(slide({})).uppercase).toBeUndefined();
+    });
+
+    it('reads the field, on or off', () => {
+        expect(styleOf(slide({ uppercase: true })).uppercase).toBe(true);
+        expect(styleOf(slide({ uppercase: false })).uppercase).toBe(false);
+    });
+});
+
 describe('serialize – strict towards what we write', () => {
     it('rejects an invalid document', () => {
         expect(() => serialize({ ...makeScreen(), slug: 'Foyer Links' })).toThrow(InvalidDocumentError);

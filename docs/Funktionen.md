@@ -24,9 +24,16 @@ Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe
 Kalender,** und interne Termine (nur für angemeldete Benutzer) zeigt kein Fernseher. Hat ein Baustein einen Kalender, der
 nicht öffentlich ist, nennt ihn der Editor und bietet an, ihn zu entfernen.
 
-**Farben aus der Palette:** An jedem Farbfeld des Editors stehen kleine Tupfer – zuerst Akzent, Text und Hintergrund
-des Designs, dann die Farbpalette (Seite „Design"). Ein Klick setzt den Hex-Wert, beim Darüberfahren steht der Name.
+**Farben aus der Palette:** An jedem Farbfeld des Editors stehen kleine Tupfer in zwei Gruppen. Zuerst die
+**„Farbpalette"** – Akzent, Text und Hintergrund des Designs, dann die Palette (Seite „Design"); das ist das
+Freigegebene. Darunter **„Auf der Slide"** – Farben, die die gerade bearbeitete Slide benutzt, die aber nicht in der
+Farbpalette stehen; so fällt auf, was vom Freigegebenen abweicht. Eine leere Gruppe erscheint nicht; Farbwähler und
+Hex-Feld bleiben, abweichen geht weiter. Ein Klick setzt den Hex-Wert, beim Darüberfahren steht der Name.
 Die Farbe wird **kopiert**: Ändert ihr eine Palettenfarbe später, färbt das bestehende Slides nicht um.
+
+**Schrift:** Im Bereich „Schrift" – in jedem Baustein, der Schrift hat – steht neben Schriftart, Größe, Stärke und
+Farbe das Kästchen **„Großbuchstaben"**. Ihr schreibt wie gewohnt; der Fernseher zeigt den Text in Großbuchstaben, der
+gespeicherte Text bleibt, wie ihr ihn getippt habt.
 
 ![Editor mit einer Terminliste als Karten, darüber Gemeindename und Uhr](bilder/editor.png)
 

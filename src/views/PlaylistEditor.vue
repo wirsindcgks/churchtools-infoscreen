@@ -47,7 +47,10 @@ const top = ref(0);
 /** The services an administrator allows on screens (Plan.md 58); none until loaded, and where the settings cannot be read. */
 const allowedServices = ref<number[]>([]);
 
-providePalette(computed(() => editor.theme));
+providePalette(
+    computed(() => editor.theme),
+    computed(() => editor.slide),
+);
 
 const calendarIds = computed(() => editor.calendarIds);
 const { calendars, hiddenCalendars, problem } = usePreview(
