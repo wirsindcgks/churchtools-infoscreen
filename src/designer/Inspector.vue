@@ -1385,14 +1385,6 @@ const LAYERS = [
                                 <option :value="700">Fett</option>
                             </select>
                         </label>
-                        <ColorField
-                            label="Farbe"
-                            testid="text-color"
-                            :model-value="block.style.color"
-                            @focus="edit.onFocus"
-                            @blur="edit.onBlur"
-                            @update:model-value="setStyle({ color: $event })"
-                        />
                     </div>
                     <label class="check">
                         <input
@@ -1403,6 +1395,14 @@ const LAYERS = [
                         >
                         Großbuchstaben
                     </label>
+                    <ColorField
+                        label="Farbe"
+                        testid="text-color"
+                        :model-value="block.style.color"
+                        @focus="edit.onFocus"
+                        @blur="edit.onBlur"
+                        @update:model-value="setStyle({ color: $event })"
+                    />
                     <label class="d-field">
                         Ausrichtung
                         <select

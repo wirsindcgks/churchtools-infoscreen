@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_THEME } from '../model/schema';
 import { makeSlide, textBlock } from '../model/testing';
-import { paletteColors, slideColors } from './palette';
+import { paletteColors, slideColors, slideSwatches } from './palette';
 
 const theme = { ...DEFAULT_THEME, accent: '#3b82f6', text: '#ffffff', background: '#1e293b' };
 
@@ -69,5 +69,25 @@ describe('slideColors', () => {
         const slide = makeSlide({ background: { kind: 'solid', color: 'transparent' }, blocks: [withColor('a', 'red'), withColor('b', 'rgb(1,2,3)')] });
         expect(slideColors(slide, [])).toEqual([]);
         expect(slideColors(null, [])).toEqual([]);
+    });
+});
+
+describe('slideSwatches', () => {
+    const withColor = (id: string, color: string) => {
+        const block = textBlock(id);
+        return { ...block, style: { ...(block as { style: object }).style, color } } as typeof block;
+    };
+
+    it('lists every colour of the slide, approved ones under their palette name (Plan.md 65)', () => {
+        const slide = makeSlide({ background: { kind: 'solid', color: '#1E293B' }, blocks: [withColor('a', '#f5b301'), withColor('b', '#12ab34')] });
+        const palette = [
+            { name: 'Hintergrund', color: '#1e293b' },
+            { name: 'Sonnengelb', color: '#F5B301' },
+        ];
+        expect(slideSwatches(slide, palette)).toEqual([
+            { name: 'Hintergrund', color: '#1e293b' },
+            { name: 'Sonnengelb', color: '#f5b301' },
+            { name: '#12ab34', color: '#12ab34' },
+        ]);
     });
 });

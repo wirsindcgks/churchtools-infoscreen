@@ -325,6 +325,7 @@ zweiten Liste unten.
     - **Tests.** Unit: Farben einer Slide (Schlüssel, Verläufe, Duplikate, Grenze 12, ohne Palettenfarben); Schema mit und ohne `uppercase`; `format.ts` setzt die Umwandlung. e2e: beide Gruppen im Inspector, eine Palettenfarbe erscheint nicht unter „Auf der Slide"; Schalter „Großbuchstaben" macht den Text auf der Bühne groß, der gespeicherte Text bleibt klein.
     - **Dokumentation.** `docs/Funktionen.md` (Editor: zwei Gruppen; Schrift: Großbuchstaben); CHANGELOG.
     - **Gebaut vom Umsetzer, durchgesehen von Opus und veröffentlicht als `v0.10.0` am 2026-10-05.** Kurz- und Langform eines Hex-Werts (`#fff`, `#ffffff`) gelten unter „Auf der Slide" als verschiedene Farben.
+    - **Geändert in `v0.10.1` (Nutzer, 2026-10-05):** „Auf der Slide" zeigt alle Farben der Slide, auch freigegebene (mit Palettennamen) – die Gruppe fehlte, sobald eine Slide nur freigegebene Farben nutzte; „Großbuchstaben" steht vor der Farbe.
 
 ## Funktionsumfang – Später – Stand bis zum 2026-10-01
 
