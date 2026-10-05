@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * Confirms „Einrichtung entfernen" (Plan.md, F, 2026-09-28): a plain
+ * Confirms „Automatische Einrichtung rückgängig machen" (Plan.md, F, 2026-09-28): a plain
  * `window.confirm` was too easy to click away without reading. The dialog
  * names exactly what disappears and asks for the word „entfernen" typed out,
  * so the click that deletes two groups is never an accident.
@@ -69,7 +69,7 @@ function confirm(): void {
             data-testid="remove-setup-dialog"
             @submit.prevent="confirm"
         >
-            <h2 id="remove-setup-title">Einrichtung entfernen</h2>
+            <h2 id="remove-setup-title">Automatische Einrichtung rückgängig machen</h2>
             <p>Das wird gelöscht:</p>
             <ul class="groups">
                 <li v-for="g in props.groups" :key="g.id">
@@ -176,7 +176,7 @@ function confirm(): void {
             <div class="d-dialog-actions">
                 <button class="d-btn" type="button" @click="emit('close')">Abbrechen</button>
                 <button class="d-btn d-btn--danger" type="submit" :disabled="!canConfirm" data-testid="remove-setup-confirm">
-                    Einrichtung entfernen
+                    Automatische Einrichtung rückgängig machen
                 </button>
             </div>
         </form>

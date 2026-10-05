@@ -106,7 +106,7 @@ schon Gruppen mit diesen Namen, hält er an.
 **Später wiederkommen:** Zeigt ein Screen einen weiteren Kalender, klicke in **Einstellungen → Gruppen und Rechte**
 auf **„Rechte aktualisieren"** – sonst fehlen dessen Termine auf dem Fernseher. Zeigt ein Screen neue Räume, ebenfalls
 einmal „Rechte aktualisieren". Entfernt man einen Raum, kann ein Fernseher ihn noch bis zu einer Dreiviertelstunde
-zeigen, weil ChurchTools Rechte zwischenspeichert. „Einrichtung entfernen" löscht die
+zeigen, weil ChurchTools Rechte zwischenspeichert. „Automatische Einrichtung rückgängig machen" löscht die
 beiden Gruppen wieder – **nur die, die der Assistent selbst angelegt hat**. Vorhandene Gruppen, die du gewählt hast,
 bleiben, ebenso der Wiki-Bereich mit den Bildern. Ob der Bereich vom Designer angelegt wurde oder schon da war, steht
 unter **Einstellungen → Mediathek im Wiki**.
@@ -123,7 +123,8 @@ vorhandene Gruppen für Gestalter und Geräte wählen; die Seite prüft dann, wa
 ## 5. Gestalter aufnehmen
 
 Wer Infoscreens gestalten soll, wird **Mitglied der Gruppe „Infoscreen-Designer"** – die Rolle ist egal, alle Rollen
-haben dieselben Rechte. Möchtest du selbst gestalten, nimm dich auch auf; die Rechte aus Schritt 2 kannst du dann
+haben dieselben Rechte. Dazu gehört das Bearbeiten des Wiki-Bereichs „Infoscreen" – wer dort Mitglied ist, kann im
+Wiki Bilder löschen, auch an der Warnung der Mediathek vorbei. Vergib die Mitgliedschaft deshalb bewusst. Möchtest du selbst gestalten, nimm dich auch auf; die Rechte aus Schritt 2 kannst du dann
 behalten (für die Einstellungen) oder auf „sehen" zurücknehmen.
 
 Gestalter sehen die Einstellungen nicht. Fehlt ihnen ein Recht, sagt die Startseite des Designers, welches.
@@ -134,19 +135,22 @@ Der Fernseher meldet sich mit einem **eigenen ChurchTools-Konto** an, das nur le
 Standort** („Infoscreen Foyer", „Infoscreen Café") – dann lässt sich ein einzelnes Gerät sperren (siehe
 [Notbremse](#wenn-ein-gerät-verloren-geht--die-notbremse)).
 
-1. **Person anlegen**, etwa „Infoscreen Foyer". Eine E-Mail-Adresse ist nicht nötig.
+1. **Person anlegen**, etwa „Infoscreen Foyer" – **eine eigene Person je Standort, kein echtes Personenkonto**
+   (nicht das einer Mitarbeiterin oder eines Ehrenamtlichen). Eine E-Mail-Adresse ist nicht nötig.
 2. **Benutzername und Passwort in der ChurchTools-Oberfläche setzen.** Wichtig: **Ein Passwort allein reicht
    nicht.** Ohne Benutzernamen scheitert jede Anmeldung mit „Überprüfe Benutzername und Passwort" – egal, welches
    Passwort gesetzt ist. Der Fehler wird dann meist am Passwort gesucht, wo er nicht liegt.
 3. **Personenstatus mit möglichst wenig Rechten wählen.** Rechte in ChurchTools addieren sich: Was der Status
    erlaubt, darf das Gerät zusätzlich zu seiner Gruppe. Ein Status für Mitarbeiter mit weitreichenden Rechten
    gehört nicht auf ein Gerät im Foyer.
-4. **In die Gruppe „Infoscreen-Devices" aufnehmen.**
+4. **In die Gruppe „Infoscreen-Devices" aufnehmen – und in keine weitere.** Rechte addieren sich: Was eine andere
+   Gruppe erlaubt, darf auch der Fernseher, und mit ihm jeder, der seine Adresse kennt. Rechte aus anderen Gruppen
+   sieht die Prüfung nicht; sie nennt seit Version 0.7.3 nur die Gruppen.
 
 Einrichtung prüfen: Unter **Einstellungen → Gruppen und Rechte** die Gruppe „Infoscreen-Devices" wählen – die
 Prüfung zeigt je Mitglied, ob die Kalender der Screens lesbar sind, und nennt jedes Recht des Kontos, das ein Gerät
 nicht braucht. Steht dort eine Warnung, dem Konto einen Personenstatus ohne diese Rechte geben: Wer die Adresse des
-Fernsehers kennt, hat sie sonst auch.
+Fernsehers kennt, hat sie sonst auch. Ist das Konto noch in weiteren Gruppen, nennt die Prüfung sie mit Namen.
 
 ## 7. Den Fernseher einrichten
 
@@ -227,7 +231,7 @@ Screens selbst legt und stellt ein Administrator ein; ältere Gruppen verlieren 
 
 Die Reihenfolge ist wichtig: **erst die Einrichtung, dann die Extension.**
 
-1. **Einstellungen → Gruppen und Rechte → „Einrichtung entfernen".** Das löscht die beiden Gruppen, die der
+1. **Einstellungen → Gruppen und Rechte → „Automatische Einrichtung rückgängig machen".** Das löscht die beiden Gruppen, die der
    Assistent angelegt hat, samt ihrer Rechte. Gruppen, die du selbst gewählt hast, bleiben. Diesen Schritt zuerst:
    Mit der Extension verschwinden auch die Einstellungen, und danach weiß der Designer nicht mehr, welche Gruppen
    von ihm stammen. Zur Sicherheit fragt ein Dialog nach, zeigt, was verschwindet, und verlangt das Wort **„entfernen"**.
@@ -240,20 +244,20 @@ Die Reihenfolge ist wichtig: **erst die Einrichtung, dann die Extension.**
    Schritt 2 an eurer Administratoren-Gruppe – und das hochgeladene ZIP.
 3. **Was bleibt, entscheidest du selbst:** der Wiki-Bereich „Infoscreen" mit den Bildern (im Wiki löschen oder
    behalten) und der Geräte-Benutzer (in der Personenverwaltung archivieren oder löschen). Beides gehört nicht
-   dem Designer; er löscht es nie. Den Wiki-Bereich zeigt „Einrichtung entfernen" wieder im Wiki unter
+   dem Designer; er löscht es nie. Den Wiki-Bereich zeigt „Automatische Einrichtung rückgängig machen" wieder im Wiki unter
    „Kategorien" an, damit du die Bilder dort sichern kannst. Hineinsehen kann nur, wer Rechte am Bereich hat –
    die Gestalter nicht mehr, ihre Rechte gingen mit der Gruppe.
 
 4. **Die Passwörter der Gerätekonten ändern – empfohlen** (oder die Konten löschen). Die Adressen der Fernseher
    enthalten den Login-Token dieser Konten; solange er gilt, meldet sich jeder damit bei ChurchTools an – auch
    ohne Designer. Ungültig wird er nur durch ein neues Passwort oder das Löschen der Person; von außen widerrufen
-   lässt er sich nicht. Welche Konten das sind, nennt der Dialog von „Einrichtung entfernen" mit Link zur Person
+   lässt er sich nicht. Welche Konten das sind, nennt der Dialog von „Automatische Einrichtung rückgängig machen" mit Link zur Person
    und danach das Protokoll – nach dem Entfernen gibt es die Gruppe „Infoscreen-Devices" nicht mehr, die es
    verraten hätte.
 
 ### Was beim Abbau passiert – auf einen Blick
 
-| Was | „Einrichtung entfernen" | Extension löschen | Danach |
+| Was | „Automatische Einrichtung rückgängig machen" | Extension löschen | Danach |
 | --- | --- | --- | --- |
 | Gruppen „Infoscreen-Designer" und „Infoscreen-Devices", **wenn der Assistent sie angelegt hat** – samt Rollen, Rechten und Mitgliedschaften | **gelöscht** | – | weg |
 | Gruppen, die du **selbst gewählt** hast | unberührt | Rechte am Modul werden entfernt | bleiben, mit allen anderen Rechten (etwa an Kalendern oder am Wiki-Bereich) |
@@ -268,7 +272,7 @@ Die Reihenfolge ist wichtig: **erst die Einrichtung, dann die Extension.**
 
 Was ChurchTools beim Löschen der Extension abräumt, ist am 2026-09-28 gemessen (`Befunde.md`, G38). Eine Warnung
 beim Löschen selbst kann der Designer nicht zeigen: Das Löschen geschieht in der Extension-Verwaltung von
-ChurchTools, und eine Extension erfährt davon nichts. Deshalb zeigt der Dialog von „Einrichtung entfernen" diese
+ChurchTools, und eine Extension erfährt davon nichts. Deshalb zeigt der Dialog von „Automatische Einrichtung rückgängig machen" diese
 Übersicht schon vorher.
 
 **Löschen und neu hochladen ist kein Update.** Eine neu installierte Extension beginnt leer – alle Screens sind
@@ -323,6 +327,9 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
   (Seitenleiste): Sie warnt vor dem Löschen, wenn ein Bild noch gezeigt wird.
   Im Wiki steht der Bereich unter **„Ausgeblendet"** aus dem Blick (bei älteren Installationen: Einstellungen →
   Mediathek im Wiki); erreichbar bleibt er dort trotzdem.
+- **Das Bearbeitungsrecht am Wiki-Bereich „Infoscreen" nur eng vergeben.** Wer es hat, kann im Wiki Bilder löschen –
+  an der Warnung der Mediathek vorbei –, und auf den Fernsehern fehlen sie dann. Jedes Mitglied von
+  „Infoscreen-Designer" hat dieses Recht; deshalb auch die Mitgliedschaft dort bewusst vergeben.
 
 ## Wenn etwas nicht klappt
 

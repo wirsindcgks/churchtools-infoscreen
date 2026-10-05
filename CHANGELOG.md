@@ -4,6 +4,21 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.7.3] – 2026-10-05
+
+### Geändert
+
+- **Einstellungen:** „Einrichtung entfernen" heißt jetzt „Automatische Einrichtung rückgängig machen". Das alte Wort
+  klang nach „alles deinstallieren"; gelöscht werden nur die beiden Gruppen, die der Assistent angelegt hat. Das Wort,
+  das man im Dialog eintippt, bleibt „entfernen".
+- **Dienste freigeben:** Über der Liste steht ein deutlicher Hinweis, dass die Namen der Eingeteilten öffentlich sind.
+  Das Ankreuzen eines Dienstes fragt vorher nach; bei „Abbrechen" bleibt das Kästchen leer und nichts wird gespeichert.
+- **Prüfung der Gerätegruppe:** Ist ein Gerätekonto auch Mitglied in anderen Gruppen, nennt die Prüfung sie mit Namen –
+  deren Rechte bekommt der Fernseher mit. Die Rechte selbst prüft sie weiterhin nicht.
+- **Anleitung:** Das Gerätekonto soll eine eigene Person je Standort sein, kein echtes Personenkonto, und in keiner
+  weiteren Gruppe stehen. Das Bearbeitungsrecht am Wiki-Bereich „Infoscreen" ist eng zu vergeben: Wer es hat, kann im Wiki
+  Bilder löschen, auch an der Warnung der Mediathek vorbei.
+
 ## [0.7.2] – 2026-10-02
 
 ### Behoben
@@ -623,6 +638,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.7.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.7.3
 [0.7.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.7.2
 [0.7.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.7.1
 [0.7.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.7.0

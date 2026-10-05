@@ -104,7 +104,7 @@ export async function loadPersonGrants(personId: number): Promise<{ label: strin
 
 /**
  * Names of a group's members – collected before deleting the device group in
- * „Einrichtung entfernen" (Plan.md, F; G18): a login token cannot be revoked
+ * „Automatische Einrichtung rückgängig machen" (Plan.md, F; G18): a login token cannot be revoked
  * from outside, only invalidated by changing the account's password, and once
  * the group is gone nobody would know anymore which accounts were devices.
  */
@@ -142,20 +142,29 @@ export async function canViewWiki(): Promise<boolean> {
 }
 
 interface PersonGroupResponse {
-    group?: { domainIdentifier?: string | null } | null;
+    group?: { title?: string | null; domainIdentifier?: string | null } | null;
 }
 
 /**
- * Groups a person is a member of, by id – `domainIdentifier` is the group id
- * as a string (measured 2026-09-28). „Einrichtung entfernen" uses it to warn
+ * Groups a person is a member of – `domainIdentifier` is the group id as a
+ * string, `title` the name (both measured 2026-09-28 / 2026-10-05). Without a
+ * title the group is called „Gruppe <id>".
+ */
+export async function personGroups(personId: number): Promise<{ id: number; name: string }[]> {
+    const memberships = await churchtoolsClient.get<PersonGroupResponse[]>(`/persons/${personId}/groups`);
+    return memberships.flatMap((m) => {
+        const id = m.group?.domainIdentifier ? Number(m.group.domainIdentifier) : NaN;
+        return Number.isNaN(id) ? [] : [{ id, name: m.group?.title || `Gruppe ${id}` }];
+    });
+}
+
+/**
+ * Groups a person is a member of, by id. „Automatische Einrichtung rückgängig machen" uses it to warn
  * before deleting the very group that gives the person access to the
  * designer (Plan.md, F).
  */
 export async function personGroupIds(personId: number): Promise<number[]> {
-    const memberships = await churchtoolsClient.get<PersonGroupResponse[]>(`/persons/${personId}/groups`);
-    return memberships
-        .map((m) => (m.group?.domainIdentifier ? Number(m.group.domainIdentifier) : NaN))
-        .filter((id) => !Number.isNaN(id));
+    return (await personGroups(personId)).map((g) => g.id);
 }
 
 export const churchToolsProvisionApi: ProvisionApi = {

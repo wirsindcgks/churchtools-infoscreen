@@ -213,6 +213,7 @@ async function allowServices(page: Page, ...names: string[]): Promise<void> {
         const box = page.getByRole('checkbox', { name });
         await expect(box).toBeVisible();
         if (await box.isChecked()) continue; // allowed by an earlier visit: the demo store lives on
+        page.once('dialog', (dialog) => void dialog.accept()); // the confirmation before releasing a service
         await box.check();
         await expect(page.getByTestId('allowed-services-saved')).toBeVisible();
     }
@@ -454,6 +455,20 @@ test('services only after an administrator allowed them: the inspector offers ex
     await expect(page.getByTestId('allowed-service')).toHaveCount(2);
     await expect(page.getByRole('checkbox', { name: 'Ton' })).toHaveCount(0);
     await expect(page.getByTestId('allowed-service').first()).not.toBeChecked();
+    await expect(page.getByTestId('allowed-services-warning')).toContainText('macht Namen öffentlich');
+
+    // Ticking asks first; "Abbrechen" leaves the box empty and saves nothing.
+    const asked: string[] = [];
+    const answer = { accept: false };
+    page.on('dialog', (dialog) => {
+        asked.push(dialog.message());
+        void (answer.accept ? dialog.accept() : dialog.dismiss());
+    });
+    await page.getByRole('checkbox', { name: 'Moderation' }).click();
+    await expect(page.getByRole('checkbox', { name: 'Moderation' })).not.toBeChecked();
+    await expect(page.getByTestId('allowed-services-saved')).toHaveCount(0);
+    expect(asked[0]).toContain('„Moderation" freigeben?');
+    answer.accept = true;
     await page.getByRole('checkbox', { name: 'Moderation' }).check();
     await expect(page.getByTestId('allowed-services-saved')).toHaveText('Gespeichert');
 

@@ -197,6 +197,8 @@ export interface DeviceMember {
     label: string;
     /** Everything this person holds: group role, group type role, person status and direct rights. */
     grants: Grant[];
+    /** Names of the person's groups besides the device group; left out when they could not be read. */
+    otherGroups?: string[];
 }
 
 export interface CalendarInfo {
@@ -259,6 +261,17 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         return checks;
     }
     checks.push({ level: 'ok', category: 'group', text: `${input.members.length} Geräte-Benutzer.` });
+    for (const m of input.members) {
+        if (!m.otherGroups?.length) continue;
+        checks.push({
+            level: 'warn',
+            category: 'rights',
+            text: `${m.label} ist auch Mitglied in ${m.otherGroups.map((g) => `„${g}"`).join(', ')}.`,
+            detail:
+                'Rechte aus diesen Gruppen bekommt auch der Fernseher – und jeder, der seine Adresse kennt. Die Prüfung sieht sie nicht. ' +
+                'Ein Gerätekonto gehört nur in „Infoscreen-Devices".',
+        });
+    }
 
     if (!input.usedCalendarIds.length) {
         checks.push({ level: 'info', category: 'calendars', text: 'Noch zeigt kein Screen Termine.' });
