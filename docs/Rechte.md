@@ -124,7 +124,10 @@ Recht an den Dienstgruppen selbst bekommt das Gerät nicht.
 | unter „Gruppen": „Gruppen eines Gruppentyps erstellen" (für „Merkmal") **und** „Gruppen eines Gruppentyps sehen" | „Gruppen und Rechte anlegen" – eine selbst angelegte Gruppe sieht man sonst nicht und der Assistent bräche ab |
 | unter „Gruppen": „Gruppe löschen" (je Gruppe) **oder** „Gruppen eines Gruppentyps löschen" | „Automatische Einrichtung rückgängig machen" |
 | unter „Gruppen": „Gruppen verwalten" | ersetzt alle Gruppenrechte oben auf einmal |
-| Zugang zur Extension-Verwaltung | Die Extension installieren und aktualisieren |
+| „Erweiterungen verwalten" (`churchcore`) | Die Extension installieren und aktualisieren (Name aus dem Rechtekatalog; nicht eigens gemessen) |
+| unter „Wiki": „Wiki" sehen **und** „Stammdaten bearbeiten" | Der Assistent legt den Wiki-Bereich „Infoscreen" an (Anlegen eines Bereichs verlangt laut API-Spezifikation „Stammdaten bearbeiten") |
+| unter „Kalender": „Einzelnen Kalender sehen" für jeden Kalender, den die Fernseher zeigen sollen | Der Assistent vergibt Rechte nur für Kalender, die du selbst siehst – **auch als Super-Admin nötig** |
+| unter „Ressourcen": „Ressource sehen" für die Räume | Gestalter bekommen die Räume, die du siehst |
 
 Fehlt ein Gruppenrecht, graut die Einstellungsseite den Knopf aus und nennt darunter, was fehlt (gemessen am 2026-10-05).
 
