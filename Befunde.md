@@ -654,6 +654,15 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 - **Nachgemessen, mit OK des Nutzers – `viewAll` trägt, G46 gilt.** `PUT /events/7/eventservices` mit den bisherigen fünf Diensten (je `count: 1`) und zusätzlich Dienst 3 „Leitung" (Dienstgruppe „Programm", `viewAll`, an keine Gruppe gebunden) → `204`. Neu ist Eintrag 160, offen. Das Geräte-Konto sieht über `GET /events/7` und über `GET /events?include=eventServices` jetzt **„Predigt" und den offenen Dienst „Leitung"** – ohne Gruppe und ohne Einteilung. Die offenen Dienste aus „Technik" und „Musik" sieht es weiter nicht. Zurückgenommen mit demselben `PUT` und `count: 0` für Dienst 3 (`204`); danach trägt Event 7 wieder genau die fünf Einträge von vorher, mit denselben ids und Einteilungen.
 - **Folge:** Was der Personenstatus des Geräte-Kontos auf der Produktivinstanz mitbringt (Plan.md, Punkt 57, Stufe 4), beantwortet dort ein einziger lesender Aufruf mit diesem Endpunkt, statt die Rechte von Status, Gruppen und Person einzeln abzulesen. Ob die Einstellungsseite die Herkunft selbst anzeigt, ist nicht entschieden.
 
+
+**G52 – Beantwortet: Ein falsches Kürzel installiert sich ohne Fehler und endet in einer weißen Seite.** *(2026-10-05, Produktivinstanz, erste Installation mit `v0.14.0` durch den Nutzer; danach nur lesend und ohne Anmeldung)* Die Maske „Erweiterung hinzufügen" hat die Felder Name, Kürzel, Beschreibung, Sortierung, „Im Menü anzeigen" und ZIP-Datei; **vorbelegt ist nichts**, das Kürzel wird von Hand getippt. Es stand als `infoscreendesigner` da, ohne Bindestrich.
+
+- **ChurchTools nimmt das an.** `settings.modules` der Seite nennt `infoscreendesigner`, `/ccm/infoscreendesigner/` antwortet mit `200`, der Menüpunkt führt dorthin, und unsere `index.html` wird eingehängt.
+- **Unsere Dateien liegen dort, aber das Bündel sucht sie woanders.** Ihre Adressen sind beim Bauen fest auf `/ccm/infoscreen-designer/` gesetzt (`base` in `vite.config.ts`). Dort antwortet die Instanz für jeden Pfad mit `404`, wie bei einem unbekannten Kürzel (G7, G38). Die Konsole meldet `404` für `assets/app-….js` und `….css`, und die Seite bleibt weiß.
+- **Relative Adressen würden nicht helfen:** Das Modul findet seine Daten über das Kürzel in `GET /custommodules` (G31), und der Bereich des Service Workers und die Player-Adressen hängen ebenfalls daran (G10).
+- **Behoben durch Neuanlage mit `infoscreen-designer`.** Danach lief die Installation. Ob sich das Kürzel über „Bearbeiten" ändern lässt, ist nicht gemessen.
+- **Folge:** `docs/Einrichtung.md` beschreibt die Maske jetzt Feld für Feld. Unter „Wenn etwas nicht klappt" steht das Erkennungszeichen: eine weiße Seite und `404` auf `…/ccm/infoscreen-designer/assets/…`.
+
 ---
 
 ## Der Betriebsbenutzer – wie er eingerichtet wird und wie nicht
