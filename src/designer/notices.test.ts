@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { Banner } from '../model/schema';
-import { makePlaylist } from '../model/testing';
+import { makePlaylist, makeScreen } from '../model/testing';
 import type { PlaylistOverview, StagedPlaylist } from '../store/screen-repository';
-import { bannerFaded, groupBanners, untilLabel } from './notices';
+import { bannerFaded, groupBanners, noticeTimeline, untilLabel } from './notices';
+import { createTimeRule } from './schedule-ops';
 
 const TZ = 'Europe/Berlin';
 const STAGE = { width: 1920, height: 1080 };
@@ -129,5 +130,65 @@ describe('untilLabel', () => {
     it('says "ohne Ende" without one', () => {
         expect(untilLabel(undefined)).toBe('ohne Ende');
         expect(untilLabel('')).toBe('ohne Ende');
+    });
+});
+
+describe('noticeTimeline (Plan.md 69)', () => {
+    // 2026-09-27 is a Sunday.
+    const SUNDAY = { year: 2026, month: 9, day: 27 };
+    const NOW = new Date('2026-09-27T08:00:00Z');
+    const foyer = { id: 'screen-1', slug: 'foyer', name: 'Foyer' };
+    const cafe = { id: 'screen-2', slug: 'cafe', name: 'Café' };
+
+    function groupOf(overviews: PlaylistOverview[]) {
+        return groupBanners(overviews, NOW, TZ)[0]!;
+    }
+    /** The visible stretches of a day as [start, end]. */
+    function visible(day: ReturnType<typeof noticeTimeline>[number]): [number, number][] {
+        return day.segments.filter((s) => s.visible).map((s) => [s.start, s.end]);
+    }
+
+    it('shows a band on a playlist that only runs by a Sunday rule just there', () => {
+        const group = groupOf([overview({ id: 'gd', banner: banner() }, [foyer])]);
+        const screen = makeScreen({ id: 'screen-1', defaultPlaylistId: 'standard', schedule: [createTimeRule('gd')] });
+        const days = noticeTimeline(group, [screen], SUNDAY, 7, TZ, []);
+        expect(days).toHaveLength(7);
+        expect(days[0]?.weekday).toBe(7);
+        expect(visible(days[0]!)).toEqual([[540, 720]]);
+        expect(days[0]?.segments.find((s) => s.visible)?.screenIds).toEqual(['screen-1']);
+        for (const day of days.slice(1)) expect(visible(day)).toEqual([]);
+    });
+
+    it('cuts at until: to the minute on its day, nothing after', () => {
+        const b = banner({ until: '2026-09-27T10:30' });
+        const group = groupOf([overview({ id: 'standard', banner: b }, [foyer])]);
+        const screen = makeScreen({ id: 'screen-1', defaultPlaylistId: 'standard' });
+        const days = noticeTimeline(group, [screen], { ...SUNDAY, day: 26 }, 3, TZ, []);
+        expect(visible(days[0]!)).toEqual([[0, 1440]]);
+        expect(visible(days[1]!)).toEqual([[0, 630]]);
+        expect(visible(days[2]!)).toEqual([]);
+    });
+
+    it('unites screens and names both where they overlap', () => {
+        const group = groupOf([overview({ id: 'gd', banner: banner() }, [foyer, cafe])]);
+        const a = makeScreen({ id: 'screen-1', defaultPlaylistId: 'standard', schedule: [createTimeRule('gd')] });
+        const b = makeScreen({
+            id: 'screen-2',
+            defaultPlaylistId: 'standard',
+            schedule: [{ ...createTimeRule('gd'), from: '10:00', to: '14:00' }],
+        });
+        const day = noticeTimeline(group, [a, b], SUNDAY, 1, TZ, [])[0]!;
+        expect(day.segments.filter((s) => s.visible)).toEqual([
+            { start: 540, end: 600, visible: true, screenIds: ['screen-1'] },
+            { start: 600, end: 720, visible: true, screenIds: ['screen-1', 'screen-2'] },
+            { start: 720, end: 840, visible: true, screenIds: ['screen-2'] },
+        ]);
+    });
+
+    it('shows nothing when no screen runs a playlist of the group', () => {
+        const group = groupOf([overview({ id: 'orphan', banner: banner() })]);
+        const screen = makeScreen({ defaultPlaylistId: 'standard' });
+        const days = noticeTimeline(group, [screen], SUNDAY, 7, TZ, []);
+        for (const day of days) expect(day.segments).toEqual([{ start: 0, end: 1440, visible: false, screenIds: [] }]);
     });
 });

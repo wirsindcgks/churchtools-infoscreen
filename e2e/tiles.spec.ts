@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 /**
- * One grid and one tile for screens, playlists, media and schedules (Plan.md 67, 68), in demo mode: the same width in
+ * One grid and one tile for screens, playlists, media, schedules and notices and notices (Plan.md 67, 68, 69), in demo mode: the same width in
  * every area, one column on a narrow phone, two on a wide one, and nothing on a tile cut off.
  */
 
@@ -10,10 +10,14 @@ const AREAS = [
     { name: 'Playlists', menu: 'sidebar-playlists', tile: 'playlist-card' },
     { name: 'Mediathek', menu: 'sidebar-media', tile: 'media-item' },
     { name: 'Zeitpläne', menu: 'sidebar-schedules', tile: 'schedule-row' },
+    { name: 'Hinweise', menu: 'sidebar-notices', tile: 'notice-card' },
 ] as const;
 
-/** Small marks that may stay one line with an ellipsis: the video length, the "Hinweis" flag, the number of a choice. */
-const ALLOWED = '.badge, .banner-flag, .mark';
+/**
+ * Small marks that may stay one line with an ellipsis: the video length, the "Hinweis" flag, the number of a choice –
+ * and the pictures, which show what the TV shows (a standing band cuts its text there too).
+ */
+const ALLOWED = '.badge, .banner-flag, .mark, .slide-thumb, .notice-thumb';
 
 async function open(page: Page, menu: string, tile: string): Promise<Locator> {
     await page.goto('./');
@@ -23,8 +27,31 @@ async function open(page: Page, menu: string, tile: string): Promise<Locator> {
         await page.getByTestId(menu).click();
     }
     const tiles = page.getByTestId(tile);
+    if (tile === 'notice-card') await seedNotices(page, tiles);
     await expect(tiles.first()).toBeVisible({ timeout: 15_000 });
     return tiles;
+}
+
+/** The demo starts without notices; a band belongs to its playlists, so a second tile needs a second playlist. */
+async function seedNotices(page: Page, tiles: Locator): Promise<void> {
+    await expect(page.getByTestId('notices-heading')).toBeVisible();
+    if ((await tiles.count()) > 0) return;
+    for (const [index, text] of ['Heute Parkplatz gesperrt', 'Kinderkirche fällt aus – bitte die Aushänge beachten'].entries()) {
+        await page.getByTestId('new-notice').click();
+        const dialog = page.getByTestId('notice-dialog');
+        const choices = dialog.locator('label.check input');
+        if (index > 0) {
+            if ((await choices.count()) < 2) {
+                await dialog.getByTestId('notice-cancel').click();
+                return;
+            }
+            await dialog.getByTestId('notice-playlists-none').click();
+            await choices.nth(index).check();
+        }
+        await dialog.getByTestId('banner-text').fill(text);
+        await dialog.getByTestId('notice-save').click();
+        await expect(dialog).toBeHidden();
+    }
 }
 
 async function columns(tiles: Locator): Promise<number> {
@@ -41,10 +68,11 @@ test.describe('tiles of equal width', () => {
             const tiles = await open(page, area.menu, area.tile);
             widths.push((await tiles.first().boundingBox())!.width);
         }
-        const [screens, playlists, media, schedules] = widths as [number, number, number, number];
+        const [screens, playlists, media, schedules, notices] = widths as [number, number, number, number, number];
         expect(Math.abs(screens - playlists)).toBeLessThanOrEqual(1);
         expect(Math.abs(screens - media)).toBeLessThanOrEqual(1);
         expect(Math.abs(screens - schedules)).toBeLessThanOrEqual(1);
+        expect(Math.abs(screens - notices)).toBeLessThanOrEqual(1);
     });
 
     for (const area of AREAS) {
