@@ -4,6 +4,16 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.13.0] – 2026-10-05
+
+### Neu
+
+- **Vertikale Ausrichtung:** Im Bereich „Schrift" steht neben „Ausrichtung" das Feld „Vertikal" – oben, mittig oder
+  unten in der Box. Es gibt es bei Text, Uhr, Countdown, Nächstem Termin und Gemeindekopf. Ohne Wahl bleibt alles,
+  wie es war. Passt der Inhalt nicht in die Box, beginnt er oben; der Anfang wird nie abgeschnitten. Fernseher mit
+  einem älteren Stand zeigen bis zum Update wie bisher.
+- **Datenmodell:** Schema 1.24 (`verticalAlign` in der Schrift). Ältere Slides lesen sich wie bisher.
+
 ## [0.12.0] – 2026-10-05
 
 ### Neu
@@ -758,6 +768,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.13.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.13.0
 [0.12.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.12.0
 [0.11.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.11.0
 [0.10.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.10.1
