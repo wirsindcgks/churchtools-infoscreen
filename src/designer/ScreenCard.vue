@@ -2,12 +2,14 @@
 /**
  * A screen on the start page, built after the group tiles of ChurchTools:
  * picture on top – the first slide of the playlist that runs now, as the TV
- * shows it – name and a line of facts below. The tile opens that playlist in
+ * shows it – name and the facts below, one per line. The tile opens that playlist in
  * the editor; the rest is in the "…" menu.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { useStageContext } from '../player/context';
 import type { ScreenOverview } from '../store/screen-repository';
 import Icon from './Icon.vue';
+import { lastEdited } from './last-edited';
 import type { Running } from './running';
 import { copyPlayerUrl } from './player-url';
 import SlideThumb from './SlideThumb.vue';
@@ -20,6 +22,9 @@ const props = defineProps<{ overview: ScreenOverview; admin?: boolean; running?:
 const emit = defineEmits<{ remove: []; settings: []; schedule: [] }>();
 
 const screen = computed(() => props.overview.screen);
+const context = useStageContext();
+/** When and by whom the screen or its schedule was last saved (Plan.md 66). */
+const edited = computed(() => lastEdited(screen.value.updatedAt, screen.value.updatedBy, context.timeZone));
 const portrait = computed(() => screen.value.stage.height > screen.value.stage.width);
 /** The playlist the tile shows and opens. */
 const shown = computed(() => {
@@ -124,38 +129,46 @@ function settings(): void {
                     </div>
                 </div>
             </div>
-            <p class="facts">
-                <span :title="portrait ? 'Hochkant' : 'Quer'">
+            <ul class="facts">
+                <li :title="portrait ? 'Hochkant' : 'Quer'">
                     <Icon :name="portrait ? 'portrait' : 'landscape'" :size="16" />
                     {{ portrait ? 'Hochkant' : 'Quer' }}
-                </span>
-                <code :title="`Adresse für das Gerät: ${screen.slug}`">{{ screen.slug }}</code>
-            </p>
-            <p class="facts muted">
-                <span
+                </li>
+                <li>
+                    <code :title="`Adresse für das Gerät: ${screen.slug}`">{{ screen.slug }}</code>
+                </li>
+                <li
                     :title="byRule ? `Läuft jetzt nach Zeitplan – ${shown?.slideCount ?? 0} Slides` : `Standard-Playlist – ${shown?.slideCount ?? 0} Slides`"
                     :class="{ 'by-rule': byRule }"
                     data-testid="screen-playlist"
                 >
                     <Icon name="list" :size="16" />
-                    {{ shown?.name ?? 'Playlist fehlt' }}
-                    <span v-if="byRule" class="now-tag" data-testid="screen-running">jetzt</span>
-                </span>
-                <button
-                    class="schedule-link"
-                    type="button"
-                    :title="screen.schedule.length ? 'Zeitplan: welche Playlist wann läuft' : 'Zeitplan anlegen: zu bestimmten Zeiten andere Slides zeigen'"
-                    data-testid="open-schedule"
-                    @click="schedule"
-                >
-                    <Icon name="calendar" :size="16" />
-                    {{ scheduleLabel }}
-                </button>
-                <span v-if="screen.updatedBy" :title="`Zuletzt gespeichert von ${screen.updatedBy}`">
+                    <span>
+                        {{ shown?.name ?? 'Playlist fehlt' }}
+                        <span v-if="byRule" class="now-tag" data-testid="screen-running">jetzt</span>
+                    </span>
+                </li>
+                <li>
+                    <button
+                        class="schedule-link"
+                        type="button"
+                        :title="screen.schedule.length ? 'Zeitplan: welche Playlist wann läuft' : 'Zeitplan anlegen: zu bestimmten Zeiten andere Slides zeigen'"
+                        data-testid="open-schedule"
+                        @click="schedule"
+                    >
+                        <Icon name="calendar" :size="16" />
+                        {{ scheduleLabel }}
+                    </button>
+                </li>
+                <li v-if="edited?.when" :title="edited.whenTitle!" data-testid="screen-edited-at">
+                    <Icon name="clock" :size="16" />
+                    <span>{{ edited.when }}</span>
+                </li>
+                <li v-if="edited?.by" :title="edited.byTitle!" data-testid="screen-edited-by">
                     <Icon name="person" :size="16" />
-                    {{ screen.updatedBy }}
-                </span>
-            </p>
+                    <span>{{ edited.by }}</span>
+                </li>
+            </ul>
         </div>
     </article>
 </template>
@@ -204,19 +217,29 @@ function settings(): void {
     color: inherit;
     text-decoration: none;
 }
+/* One fact per line; a long value wraps under its own words, not under the icon. */
 .facts {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
     margin: 0;
+    padding: 0;
+    list-style: none;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
-.facts span {
-    display: inline-flex;
-    align-items: center;
+.facts li {
+    display: flex;
+    align-items: flex-start;
     gap: 4px;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.facts li :deep(svg) {
+    flex: none;
+    margin-top: 0.1em;
 }
 .by-rule {
     color: var(--d-text);
@@ -229,9 +252,6 @@ function settings(): void {
     color: var(--d-accent-text);
     font-size: 0.85em;
     font-weight: 700;
-}
-.facts code {
-    overflow-wrap: anywhere;
 }
 .schedule-link {
     display: inline-flex;

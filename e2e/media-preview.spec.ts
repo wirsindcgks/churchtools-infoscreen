@@ -59,7 +59,10 @@ async function fakeLibrary(page: Page, baseURL: string | undefined): Promise<() 
             imageUrl: m.video ? null : `${origin}/images/${m.id}/${m.name}`,
             imageMetadata: m.video ? null : { width: 1600, height: 900 },
             ...(m.video ? { fileUrl: `${origin}/?q=public/filedownload&id=${m.id}&filename=abc` } : {}),
-            meta: { createdDate: `2026-09-01T10:00:${String(m.id % 60).padStart(2, '0')}Z` },
+            meta: {
+                createdDate: `2026-09-01T10:00:${String(m.id % 60).padStart(2, '0')}Z`,
+                createdPerson: m.id === 500 ? null : { title: 'Anna Beispiel' },
+            },
         });
         const deleted = request.method() === 'DELETE' ? /^\/files\/(\d+)$/.exec(path) : null;
         if (deleted) files.splice(files.findIndex((m) => m.id === Number(deleted[1])), 1);
@@ -94,6 +97,18 @@ test('a tile opens the preview; page through the files, switch the background, c
     await expect(items).toHaveCount(4);
     // Newest first: the video, the disc, bild-02, bild-01.
     await expect(items.locator('.name')).toHaveText(['Predigtreihe.mp4', 'freigestellt.svg', 'bild-02.svg', 'bild-01.svg']);
+
+    // When and by whom each file was uploaded, a line each (Plan.md 66); 500 has no known uploader.
+    await expect(items.first().getByTestId('media-edited-at')).toHaveText('01.09.2026, 12:00');
+    await expect(items.first().getByTestId('media-edited-at')).toHaveAttribute('title', 'Hochgeladen am 1. September 2026 um 12:00');
+    await expect(items.first().getByTestId('media-edited-by')).toHaveText('Anna Beispiel');
+    await expect(items.first().getByTestId('media-edited-by')).toHaveAttribute('title', 'Hochgeladen von Anna Beispiel');
+    const upAt = (await items.first().getByTestId('media-edited-at').boundingBox())!;
+    const upBy = (await items.first().getByTestId('media-edited-by').boundingBox())!;
+    expect(upBy.y).toBeGreaterThanOrEqual(upAt.y + upAt.height - 1);
+    await expect(items.filter({ hasText: 'bild-01' }).getByTestId('media-edited-by')).toHaveCount(0);
+    await expect(items.filter({ hasText: 'bild-01' }).getByTestId('media-edited-at')).toHaveCount(1);
+    await page.screenshot({ path: 'test-results/media-edited.png' });
 
     await items.filter({ hasText: 'bild-01' }).locator('button.pick').click();
     const preview = page.getByTestId('media-preview');
@@ -171,6 +186,8 @@ test('in the editor the eye opens the preview; Escape closes only it; "Verwenden
     const library = page.getByTestId('media-library');
     const items = library.getByTestId('media-item');
     await expect(items).toHaveCount(3);
+    // The picking dialog shows no upload details (Plan.md 66).
+    await expect(items.first().getByTestId('media-edited-at')).toHaveCount(0);
     await items.first().hover();
     await expect(items.first().getByTestId('media-preview-open')).toBeVisible();
     await page.screenshot({ path: 'test-results/preview-dialog.png' });

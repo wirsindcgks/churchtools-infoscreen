@@ -3,7 +3,7 @@
  * reads exactly the same show as one entry – "Heute Parkplatz gesperrt" on
  * three playlists is one notice, not three.
  */
-import type { Banner } from '../model/schema';
+import { bannerKey, type Banner } from '../model/schema';
 import { bannerShown, wallTime } from '../player/banner';
 import { formatShortDate, formatTime } from '../player/format';
 import type { PlaylistOverview, ScreenRef } from '../store/screen-repository';
@@ -37,9 +37,12 @@ export interface BannerGroup {
     screens: ScreenRef[];
     /** Its `until` (Wanduhr der Gemeinde) has passed – the TVs no longer show it. */
     expired: boolean;
+    /** The newest stamp among the group's bands (Plan.md 66); missing for bands saved before schema 1.23. */
+    updatedAt?: string;
+    updatedBy?: string;
 }
 
-/** One entry per distinct band – compared as text (`JSON.stringify`), playlists without a band left out. */
+/** One entry per distinct band – compared as text (`bannerKey`, without the stamp), playlists without a band left out. */
 export function groupBanners(overviews: readonly PlaylistOverview[], now: Date, timeZone: string): BannerGroup[] {
     const groups: { key: string; group: BannerGroup }[] = [];
     for (const overview of overviews) {
@@ -47,13 +50,17 @@ export function groupBanners(overviews: readonly PlaylistOverview[], now: Date, 
         if (!banner) continue;
         // Faded more than EXPIRED_NOTICE_DAYS ago: left out entirely, not even under "Abgelaufen" (Plan.md 38).
         if (bannerFaded(banner, now, timeZone)) continue;
-        const key = JSON.stringify(banner);
+        const key = bannerKey(banner);
         let entry = groups.find((g) => g.key === key);
         if (!entry) {
             entry = { key, group: { banner, playlists: [], screens: [], expired: !bannerShown(banner, now, timeZone) } };
             groups.push(entry);
         }
         entry.group.playlists.push(overview);
+        if (banner.updatedAt && banner.updatedAt > (entry.group.updatedAt ?? '')) {
+            entry.group.updatedAt = banner.updatedAt;
+            entry.group.updatedBy = banner.updatedBy;
+        }
         for (const screen of overview.screens) {
             if (!entry.group.screens.some((s) => s.id === screen.id)) entry.group.screens.push(screen);
         }

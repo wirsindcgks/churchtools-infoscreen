@@ -11,6 +11,7 @@ import { computed, onMounted, reactive, ref, shallowRef } from 'vue';
 import { currentPerson, displayName } from '../ct/client';
 import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
+import { lastEdited } from '../designer/last-edited';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import ScheduleDialog from '../designer/ScheduleDialog.vue';
@@ -65,6 +66,11 @@ const shown = computed(() => {
 
 function playlistName(id: string): string {
     return playlists.value.get(id)?.playlist.name ?? 'Playlist fehlt';
+}
+
+/** When and by whom the screen or its schedule was last saved (Plan.md 66). */
+function edited(screen: ScreenDoc) {
+    return lastEdited(screen.updatedAt, screen.updatedBy, context.timeZone);
 }
 
 function calendarName(id: number): string {
@@ -213,6 +219,16 @@ onMounted(async () => {
                                     </button>
                                 </li>
                             </ol>
+                            <ul v-if="edited(screen)" class="facts">
+                                <li v-if="edited(screen)!.when" :title="edited(screen)!.whenTitle!" data-testid="schedule-edited-at">
+                                    <Icon name="clock" :size="16" />
+                                    <span>{{ edited(screen)!.when }}</span>
+                                </li>
+                                <li v-if="edited(screen)!.by" :title="edited(screen)!.byTitle!" data-testid="schedule-edited-by">
+                                    <Icon name="person" :size="16" />
+                                    <span>{{ edited(screen)!.by }}</span>
+                                </li>
+                            </ul>
                         </div>
                     </li>
                 </ul>
@@ -306,6 +322,30 @@ figcaption a {
     padding: 0;
     list-style: none;
     font-size: var(--d-size-sm);
+}
+/* One fact per line; a long value wraps under its own words, not under the icon. */
+.facts {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin: 10px 0 0;
+    padding: 0 8px;
+    list-style: none;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+.facts li {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.facts li :deep(svg) {
+    flex: none;
+    margin-top: 0.1em;
 }
 .line {
     display: flex;

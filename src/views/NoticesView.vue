@@ -11,12 +11,13 @@ import { currentPerson, displayName } from '../ct/client';
 import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
+import { lastEdited } from '../designer/last-edited';
 import { type BannerGroup, groupBanners, untilLabel } from '../designer/notices';
 import { providePalette } from '../designer/palette';
 import NoticeDialog from '../designer/NoticeDialog.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import { usePreview } from '../designer/usePreview';
-import { DEFAULT_THEME, type Banner, type ThemeDoc } from '../model/schema';
+import { bannerKey, DEFAULT_THEME, type Banner, type ThemeDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 
@@ -49,6 +50,11 @@ function modeLabel(banner: Banner): string {
 function onLabel(group: BannerGroup): string {
     const playlists = group.playlists.map((o) => o.playlist.name).join(', ');
     return group.screens.length ? `Auf: ${playlists} – läuft auf ${group.screens.map((s) => s.name).join(', ')}` : `Auf: ${playlists}`;
+}
+
+/** When and by whom the band was last changed; none for a band from before the stamp (Plan.md 66). */
+function edited(group: BannerGroup) {
+    return lastEdited(group.updatedAt, group.updatedBy, context.timeZone);
 }
 
 async function refresh(): Promise<void> {
@@ -146,16 +152,24 @@ async function end(group: BannerGroup): Promise<void> {
                 <ul v-if="running.length" class="notices">
                     <li
                         v-for="group in running"
-                        :key="JSON.stringify(group.banner)"
+                        :key="bannerKey(group.banner)"
                         class="d-card notice-card"
                         data-testid="notice-card"
                     >
                         <p class="text">{{ group.banner.text }}</p>
-                        <p class="facts muted">
-                            <span>{{ modeLabel(group.banner) }}</span>
-                            <span>{{ untilLabel(group.banner.until) }}</span>
-                        </p>
-                        <p class="on muted">{{ onLabel(group) }}</p>
+                        <ul class="facts">
+                            <li>{{ modeLabel(group.banner) }}</li>
+                            <li>{{ untilLabel(group.banner.until) }}</li>
+                            <li>{{ onLabel(group) }}</li>
+                            <li v-if="edited(group)?.when" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
+                                <Icon name="clock" :size="16" />
+                                <span>{{ edited(group)!.when }}</span>
+                            </li>
+                            <li v-if="edited(group)?.by" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
+                                <Icon name="person" :size="16" />
+                                <span>{{ edited(group)!.by }}</span>
+                            </li>
+                        </ul>
                         <div class="actions">
                             <button class="d-btn" type="button" data-testid="notice-edit" @click="edit(group)">Bearbeiten</button>
                             <button class="d-btn d-btn--danger" type="button" data-testid="notice-end" @click="end(group)">
@@ -178,16 +192,24 @@ async function end(group: BannerGroup): Promise<void> {
                 <ul class="notices">
                     <li
                         v-for="group in expired"
-                        :key="JSON.stringify(group.banner)"
+                        :key="bannerKey(group.banner)"
                         class="d-card notice-card"
                         data-testid="notice-card-expired"
                     >
                         <p class="text">{{ group.banner.text }}</p>
-                        <p class="facts muted">
-                            <span>{{ modeLabel(group.banner) }}</span>
-                            <span>{{ untilLabel(group.banner.until) }}</span>
-                        </p>
-                        <p class="on muted">{{ onLabel(group) }}</p>
+                        <ul class="facts">
+                            <li>{{ modeLabel(group.banner) }}</li>
+                            <li>{{ untilLabel(group.banner.until) }}</li>
+                            <li>{{ onLabel(group) }}</li>
+                            <li v-if="edited(group)?.when" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
+                                <Icon name="clock" :size="16" />
+                                <span>{{ edited(group)!.when }}</span>
+                            </li>
+                            <li v-if="edited(group)?.by" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
+                                <Icon name="person" :size="16" />
+                                <span>{{ edited(group)!.by }}</span>
+                            </li>
+                        </ul>
                         <div class="actions">
                             <button class="d-btn" type="button" data-testid="notice-remove" @click="clear(group)">
                                 Entfernen
@@ -231,18 +253,29 @@ async function end(group: BannerGroup): Promise<void> {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+/* One fact per line; a long value wraps under its own words, not under the icon. */
 .facts {
     display: flex;
-    gap: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
     margin: 0;
-    font-size: var(--d-size-sm);
-}
-.on {
-    margin: 0;
-    font-size: var(--d-size-sm);
-}
-.muted {
+    padding: 0;
+    list-style: none;
     color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+.facts li {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.facts li :deep(svg) {
+    flex: none;
+    margin-top: 0.1em;
 }
 .actions {
     display: flex;

@@ -4,6 +4,25 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.11.0] – 2026-10-05
+
+### Neu
+
+- **Wer und wann, auf jeder Kachel:** Screens, Playlists, Zeitpläne, Hinweise und die Mediathek zeigen, wann und von
+  wem zuletzt etwas geändert wurde – Datum mit Uhrzeit und Name, beim Darüberfahren in Langform. In der Mediathek ist
+  das das Hochladen, wie ChurchTools es an der Datei führt.
+- **Hinweise mit eigenem Stempel:** Ein Hinweis merkt sich, wann und von wem er selbst zuletzt geändert wurde; wer nur
+  eine Slide der Playlist speichert, ändert ihn nicht. Hinweise von vor dieser Version zeigen das erst nach ihrer
+  nächsten Änderung.
+- **Datenmodell:** Schema 1.23 (`updatedAt` und `updatedBy` am Hinweisband). Ältere Playlists lesen sich wie bisher;
+  Fernseher ignorieren die Felder.
+
+### Geändert
+
+- **Kacheln:** Die Angaben einer Kachel stehen untereinander, eine je Zeile.
+- **Playlists:** Wurde eine verknüpfte Slide aus einer anderen Playlist gespeichert, nennt die Kachel jetzt auch, wer
+  das war; bisher blieb der Name dann leer.
+
 ## [0.10.1] – 2026-10-05
 
 ### Geändert
@@ -718,6 +737,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.11.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.11.0
 [0.10.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.10.1
 [0.10.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.10.0
 [0.9.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.9.0

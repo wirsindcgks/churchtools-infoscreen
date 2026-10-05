@@ -15,6 +15,7 @@ import { formatDuration } from '../media/video';
 import { sizedImageUrl } from '../player/format';
 import { videoSrc } from '../player/video';
 import Icon from './Icon.vue';
+import { lastEdited } from './last-edited';
 
 const props = defineProps<{
     items: MediaItem[];
@@ -25,12 +26,26 @@ const props = defineProps<{
     selectable?: boolean;
     /** File ids of the tiles picked through their checkbox. */
     selected?: number[];
+    /** The media library page: when and by whom each file was uploaded. Not in the picking dialog (Plan.md 66). */
+    details?: boolean;
+    /** The church's time zone, for the upload time. */
+    timeZone?: string;
 }>();
 const emit = defineEmits<{ choose: [MediaItem]; remove: [MediaItem]; preview: [MediaItem]; toggle: [MediaItem] }>();
 
 /** Two places fit under a picture; the rest are counted and in the tooltip. */
 const SHOWN = 2;
 const numberOf = (item: MediaItem): number => (props.marked?.indexOf(item.fileId) ?? -1) + 1;
+const uploads = computed(() =>
+    props.details
+        ? new Map(
+              props.items.map((item) => [
+                  item.fileId,
+                  lastEdited(item.createdAt, item.createdBy, props.timeZone ?? 'UTC', 'Hochgeladen'),
+              ]),
+          )
+        : new Map<number, ReturnType<typeof lastEdited>>(),
+);
 const places = computed(() => new Map(props.items.map((item) => [item.fileId, usageLines(item.uses)])));
 </script>
 
@@ -93,6 +108,24 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                     </span>
                 </span>
                 <span v-else class="uses unused" data-testid="media-uses">Unbenutzt</span>
+                <span v-if="uploads.get(item.fileId)" class="facts">
+                    <span
+                        v-if="uploads.get(item.fileId)!.when"
+                        :title="uploads.get(item.fileId)!.whenTitle!"
+                        data-testid="media-edited-at"
+                    >
+                        <Icon name="clock" :size="16" />
+                        <span>{{ uploads.get(item.fileId)!.when }}</span>
+                    </span>
+                    <span
+                        v-if="uploads.get(item.fileId)!.by"
+                        :title="uploads.get(item.fileId)!.byTitle!"
+                        data-testid="media-edited-by"
+                    >
+                        <Icon name="person" :size="16" />
+                        <span>{{ uploads.get(item.fileId)!.by }}</span>
+                    </span>
+                </span>
             </figcaption>
         </figure>
     </div>
@@ -262,5 +295,27 @@ figcaption {
 }
 .unused {
     font-style: italic;
+}
+/* One fact per line, as on the other tiles; a long name wraps under its own words, not under the icon. */
+.facts {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    margin-top: 4px;
+    color: var(--d-text-muted);
+}
+.facts > span {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+    max-width: 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.facts :deep(svg) {
+    flex: none;
+    margin-top: 0.1em;
 }
 </style>

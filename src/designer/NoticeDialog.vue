@@ -4,11 +4,11 @@
  * (Plan.md, Nächste Schritte 34) – "Heute Parkplatz gesperrt" no longer hides
  * in a playlist's inspector. Saves the playlist documents alone, through
  * `saveBanners`; slides stay untouched. `editing` identifies the group by its
- * band, matched against freshly loaded playlists (`JSON.stringify`, as
+ * band, matched against freshly loaded playlists (`bannerKey`, as
  * `groupBanners` does) – so a reload after a conflict finds it again.
  */
 import { computed, onMounted, ref } from 'vue';
-import type { Banner, ThemeDoc } from '../model/schema';
+import { bannerKey, type Banner, type ThemeDoc } from '../model/schema';
 import { bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
 import StageView from '../player/StageView.vue';
@@ -54,13 +54,10 @@ async function load(): Promise<void> {
     banner.value = cloneJson(props.editing ?? createBanner(props.theme));
     try {
         overviews.value = await props.repository.listPlaylists();
-        originalIds.value = props.editing
-            ? new Set(
-                  overviews.value
-                      .filter((o) => JSON.stringify(o.playlist.banner) === JSON.stringify(props.editing))
-                      .map((o) => o.playlist.id),
-              )
-            : new Set();
+        const key = props.editing ? bannerKey(props.editing) : null;
+        originalIds.value = new Set(
+            overviews.value.filter((o) => key !== null && o.playlist.banner && bannerKey(o.playlist.banner) === key).map((o) => o.playlist.id),
+        );
         // New: preselected are the playlists a screen actually shows – editing keeps the group as it is.
         selected.value = props.editing
             ? new Set(originalIds.value)

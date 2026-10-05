@@ -11,7 +11,9 @@ nichts davon stammt aus einer echten ChurchTools-Instanz. Die Bilder entstehen a
 ## Die Screens
 
 Jeder Fernseher ist eine Kachel – mit dem, was er **gerade** zeigt. Ein Klick öffnet die laufende Playlist im
-Editor; Adresse, Zeitplan und Player stecken im Menü „…". Filter trennen Quer- und Hochformat.
+Editor; Adresse, Zeitplan und Player stecken im Menü „…". Filter trennen Quer- und Hochformat. Die Angaben der
+Kachel stehen untereinander, zuletzt wann und von wem sie oder ihr Zeitplan zuletzt geändert wurde – so auch auf den
+Kacheln der Playlists, Zeitpläne, Hinweise und der Mediathek.
 
 ![Startseite: zwei Screens als Kacheln, quer und hochkant, jeweils mit der laufenden Slide](bilder/startseite.png)
 
@@ -123,7 +125,8 @@ einschaltet.
 ## Hinweise
 
 Ein Band über allen Slides – als Laufschrift oder stehend, etwa „Heute Parkplatz gesperrt". Es läuft auf den
-gewählten Playlists und verschwindet zur eingestellten Zeit von selbst.
+gewählten Playlists und verschwindet zur eingestellten Zeit von selbst. Jeder Hinweis zeigt, wann und von wem er
+zuletzt geändert wurde; das Speichern einer Slide zählt dabei nicht.
 
 ![Seite „Hinweise" mit einem laufenden Hinweis und den Playlists, auf denen er läuft](bilder/hinweise.png)
 
@@ -131,21 +134,22 @@ gewählten Playlists und verschwindet zur eingestellten Zeit von selbst.
 
 Eine Playlist ist der Inhalt eines Screens und kann auf mehreren Screens laufen. Duplizieren ergibt eine Kopie mit
 eigenen Slides – oder auf Wunsch eine Playlist mit denselben, verknüpften Slides. Jede Kachel zeigt, wann die
-Playlist zuletzt bearbeitet wurde – beim Überfahren auch die Uhrzeit und von wem.
+Playlist oder eine ihrer Slides zuletzt geändert wurde und von wem.
 
 ![Playlists als Kacheln mit Format, Zahl der Slides und den Screens, die sie zeigen](bilder/playlists.png)
 
 ## Zeitpläne
 
 Welche Playlist ein Screen wann zeigt: nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten vor
-Beginn bis 10 Minuten nach Beginn"). Daneben die Playlist, die gerade läuft.
+Beginn bis 10 Minuten nach Beginn"). Daneben die Playlist, die gerade läuft. Unter den Regeln steht, wann und von
+wem der Zeitplan oder der Screen zuletzt gespeichert wurde.
 
 ![Zeitpläne: je Screen die Regeln und eine Vorschau der laufenden Playlist](bilder/zeitplaene.png)
 
 ## Mediathek
 
 Bilder und Videos einmal hochladen und überall verwenden. Unter jedem Bild steht, wo es läuft; „Unbenutzt" hilft beim
-Aufräumen. Videos zeigen ein Standbild mit ihrer Länge. Ein Klick auf eine Kachel öffnet die Datei groß – so, wie ein Fernseher sie zeigt –
+Aufräumen. Darunter steht, wann und von wem die Datei hochgeladen wurde – so, wie ChurchTools es an der Datei führt. Videos zeigen ein Standbild mit ihrer Länge. Ein Klick auf eine Kachel öffnet die Datei groß – so, wie ein Fernseher sie zeigt –
 mit Maßen, Länge und Datum, auf dunklem, hellem oder kariertem Grund; mit den Pfeiltasten blättert man durch die gerade sichtbaren
 Dateien. Im Auswahl-Dialog des Editors öffnet das Auge auf der Kachel die Vorschau, dort steht auch „Verwenden".
 

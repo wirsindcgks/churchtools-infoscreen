@@ -80,6 +80,20 @@ describe('MediaLibrary', () => {
         expect(items.every((i) => i.mediaId)).toBe(true);
     });
 
+    it('names who uploaded a file, as ChurchTools reports it, and leaves it out otherwise (Plan.md 66)', async () => {
+        await wiki.ensurePage(7, 'foyer');
+        wiki.filesByPage.set('p-foyer', [
+            { id: 61, name: 'mit.png', imageUrl: 'https://example.church.tools/images/61/h', meta: { createdDate: '2026-10-05T12:32:00Z', createdPerson: { title: 'Anna Beispiel' } } },
+            { id: 62, name: 'ohne.png', imageUrl: 'https://example.church.tools/images/62/h', meta: { createdDate: '2026-10-05T12:30:00Z', createdPerson: null } },
+            { id: 63, name: 'leer.png', imageUrl: 'https://example.church.tools/images/63/h' },
+        ]);
+        const items = await library.list();
+        const byName = (name: string) => items.find((i) => i.name === name)!;
+        expect(byName('mit.png').createdBy).toBe('Anna Beispiel');
+        expect(byName('ohne.png').createdBy).toBeUndefined();
+        expect(byName('leer.png').createdBy).toBeUndefined();
+    });
+
     it('adopts an image that was uploaded in the wiki directly', async () => {
         await wiki.ensurePage(7, 'foyer');
         wiki.filesByPage.set('p-foyer', [{ id: 55, name: 'direkt.png', imageUrl: 'https://example.church.tools/images/55/h' }]);

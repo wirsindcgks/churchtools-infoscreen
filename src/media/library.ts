@@ -30,6 +30,8 @@ export interface MediaItem {
     width?: number;
     height?: number;
     createdAt?: string;
+    /** Who uploaded it: ChurchTools' `meta.createdPerson`. */
+    createdBy?: string;
     /** Set once the image has a media document in the module store. */
     mediaId?: string;
     /** Where it is shown; empty for an image no slide uses (Plan.md, Nächste Schritte 18). */
@@ -167,6 +169,7 @@ export class MediaLibrary {
                     width: f.imageMetadata?.width ?? doc?.width,
                     height: f.imageMetadata?.height ?? doc?.height,
                     createdAt: f.meta?.createdDate,
+                    createdBy: f.meta?.createdPerson?.title,
                     mediaId: doc?.id,
                     uses: uses.get(doc?.id ?? '') ?? [],
                 };
