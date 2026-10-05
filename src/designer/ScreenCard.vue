@@ -75,18 +75,18 @@ function settings(): void {
 </script>
 
 <template>
-    <article ref="root" class="d-card screen-card" data-testid="screen-card" @keydown.esc="menuOpen = false">
+    <article ref="root" class="d-card d-tile" data-testid="screen-card" @keydown.esc="menuOpen = false">
         <RouterLink
-            class="open"
+            class="open d-tile-media"
             :to="{ name: 'editor', params: { id: shown?.id ?? screen.defaultPlaylistId } }"
             :aria-label="`${shown?.name ?? screen.name} bearbeiten`"
             data-testid="open-editor"
         >
             <SlideThumb :slide="shown?.firstSlide ?? null" :stage="screen.stage" />
         </RouterLink>
-        <div class="body">
+        <div class="d-tile-body">
             <div class="title-row">
-                <h3 class="name">
+                <h3 class="d-tile-title">
                     <RouterLink :to="{ name: 'editor', params: { id: shown?.id ?? screen.defaultPlaylistId } }" tabindex="-1">
                         {{ screen.name || 'Ohne Namen' }}
                     </RouterLink>
@@ -129,7 +129,7 @@ function settings(): void {
                     </div>
                 </div>
             </div>
-            <ul class="facts">
+            <ul class="d-facts">
                 <li :title="portrait ? 'Hochkant' : 'Quer'">
                     <Icon :name="portrait ? 'portrait' : 'landscape'" :size="16" />
                     {{ portrait ? 'Hochkant' : 'Quer' }}
@@ -174,72 +174,22 @@ function settings(): void {
 </template>
 
 <style scoped>
-.screen-card {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    overflow: visible;
-    transition: box-shadow 0.15s, border-color 0.15s;
-}
-.screen-card:hover {
-    border-color: var(--d-interactive);
-    box-shadow: 0 4px 12px -4px #0000001f;
-}
-.open {
-    display: block;
-    overflow: hidden;
-    border-radius: var(--d-radius-lg) var(--d-radius-lg) 0 0;
-}
 .open:focus-visible {
     outline: 2px solid var(--d-accent);
     outline-offset: 2px;
-}
-.body {
-    display: grid;
-    gap: 4px;
-    padding: 6px 14px 12px;
 }
 .title-row {
     display: flex;
     align-items: flex-start;
     gap: 4px;
 }
-.name {
+.title-row .d-tile-title {
     flex: 1;
-    margin: 0;
-    padding-top: 0.35em;
-    font-size: 1em;
-    font-weight: 700;
-    hyphens: auto;
-    overflow-wrap: break-word;
+    min-width: 0;
 }
-.name a {
+.d-tile-title a {
     color: inherit;
     text-decoration: none;
-}
-/* One fact per line; a long value wraps under its own words, not under the icon. */
-.facts {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
-}
-.facts li {
-    display: flex;
-    align-items: flex-start;
-    gap: 4px;
-    max-width: 100%;
-    min-width: 0;
-    overflow-wrap: anywhere;
-}
-.facts li :deep(svg) {
-    flex: none;
-    margin-top: 0.1em;
 }
 .by-rule {
     color: var(--d-text);

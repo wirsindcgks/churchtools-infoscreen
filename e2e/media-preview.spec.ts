@@ -96,7 +96,7 @@ test('a tile opens the preview; page through the files, switch the background, c
     const items = page.getByTestId('media-item');
     await expect(items).toHaveCount(4);
     // Newest first: the video, the disc, bild-02, bild-01.
-    await expect(items.locator('.name')).toHaveText(['Predigtreihe.mp4', 'freigestellt.svg', 'bild-02.svg', 'bild-01.svg']);
+    await expect(items.locator('.d-tile-title')).toHaveText(['Predigtreihe.mp4', 'freigestellt.svg', 'bild-02.svg', 'bild-01.svg']);
 
     // When and by whom each file was uploaded, a line each (Plan.md 66); 500 has no known uploader.
     await expect(items.first().getByTestId('media-edited-at')).toHaveText('01.09.2026, 12:00');
@@ -272,7 +272,7 @@ test('checkboxes pick several files; the dialog names them and deletes after ask
     await page.getByTestId('media-delete-selected').click();
     await dialog.getByTestId('media-delete-confirm').click();
     await expect(items).toHaveCount(2);
-    await expect(items.locator('.name')).toHaveText(['Predigtreihe.mp4', 'freigestellt.svg']);
+    await expect(items.locator('.d-tile-title')).toHaveText(['Predigtreihe.mp4', 'freigestellt.svg']);
     await expect(page.getByTestId('media-delete-selected')).toHaveCount(0);
 
     // "Alle auswählen" takes what search and filter show.

@@ -160,7 +160,7 @@ async function remove(overview: PlaylistOverview): Promise<void> {
                 <template #tools>
                     <FilterChips v-model="format" :options="FORMATS" label="Format" testid="playlist-filter" />
                 </template>
-                <div v-if="shown.length" class="tiles">
+                <div v-if="shown.length" class="d-tiles">
                     <PlaylistCard
                         v-for="o in shown"
                         :key="o.playlist.id"
@@ -224,11 +224,6 @@ async function remove(overview: PlaylistOverview): Promise<void> {
 </template>
 
 <style scoped>
-.tiles {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 14px;
-}
 .duplicate {
     display: grid;
     gap: 12px;
@@ -260,18 +255,5 @@ async function remove(overview: PlaylistOverview): Promise<void> {
 }
 .empty p {
     margin: 0;
-}
-
-/* Phone: one or two columns, one below 30rem – two would squeeze names unreadably thin. */
-@media (max-width: 48rem) {
-    .tiles {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 10px;
-    }
-}
-@media (max-width: 30rem) {
-    .tiles {
-        grid-template-columns: minmax(0, 1fr);
-    }
 }
 </style>

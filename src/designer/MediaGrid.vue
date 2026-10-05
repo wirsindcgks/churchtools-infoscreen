@@ -35,6 +35,8 @@ const emit = defineEmits<{ choose: [MediaItem]; remove: [MediaItem]; preview: [M
 
 /** Two places fit under a picture; the rest are counted and in the tooltip. */
 const SHOWN = 2;
+/** A use is a playlist, as on the screen tiles ("list"); the lines read "Foyer › Gottesdienst › Begrüßung". */
+const USE_ICON = 'list';
 const numberOf = (item: MediaItem): number => (props.marked?.indexOf(item.fileId) ?? -1) + 1;
 const uploads = computed(() =>
     props.details
@@ -50,16 +52,16 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
 </script>
 
 <template>
-    <div class="media-grid">
+    <div class="d-tiles">
         <figure
             v-for="item in items"
             :key="item.fileId"
-            class="d-card"
+            class="d-card d-tile"
             :class="{ selected: (item.mediaId && item.mediaId === selectedMediaId) || numberOf(item) > 0 || selected?.includes(item.fileId) }"
             data-testid="media-item"
         >
             <button
-                class="pick"
+                class="pick d-tile-media"
                 type="button"
                 :title="choosable ? (multiple ? `${item.name} markieren` : `${item.name} verwenden`) : `${item.name} ansehen`"
                 :aria-pressed="choosable && multiple ? numberOf(item) > 0 : undefined"
@@ -93,77 +95,66 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                     @change="emit('toggle', item)"
                 >
             </label>
-            <figcaption>
-                <span class="name" :title="item.name">{{ item.name }}</span>
-                <button v-if="!selectable" class="delete" type="button" :title="`${item.name} löschen`" @click="emit('remove', item)">Löschen</button>
-                <span
-                    v-if="places.get(item.fileId)!.length"
-                    class="uses"
-                    :title="places.get(item.fileId)!.join('\n')"
-                    data-testid="media-uses"
-                >
-                    <span v-for="line in places.get(item.fileId)!.slice(0, SHOWN)" :key="line" class="use">{{ line }}</span>
-                    <span v-if="places.get(item.fileId)!.length > SHOWN" class="use more">
-                        und {{ places.get(item.fileId)!.length - SHOWN }} weitere
-                    </span>
-                </span>
-                <span v-else class="uses unused" data-testid="media-uses">Unbenutzt</span>
-                <span v-if="uploads.get(item.fileId)" class="facts">
-                    <span
-                        v-if="uploads.get(item.fileId)!.when"
+            <figcaption class="d-tile-body">
+                <div class="title-row">
+                    <span class="d-tile-title" :title="item.name">{{ item.name }}</span>
+                    <button v-if="!selectable" class="delete" type="button" :title="`${item.name} löschen`" @click="emit('remove', item)">Löschen</button>
+                </div>
+                <ul class="d-facts" data-testid="media-uses">
+                    <template v-if="places.get(item.fileId)!.length">
+                        <li
+                            v-for="line in places.get(item.fileId)!.slice(0, SHOWN)"
+                            :key="line"
+                            :title="places.get(item.fileId)!.join('\n')"
+                        >
+                            <Icon :name="USE_ICON" :size="16" />
+                            <span>{{ line }}</span>
+                        </li>
+                        <li v-if="places.get(item.fileId)!.length > SHOWN" :title="places.get(item.fileId)!.join('\n')">
+                            <span class="more">und {{ places.get(item.fileId)!.length - SHOWN }} weitere</span>
+                        </li>
+                    </template>
+                    <li v-else>
+                        <Icon :name="USE_ICON" :size="16" />
+                        <span>Unbenutzt</span>
+                    </li>
+                </ul>
+                <ul v-if="uploads.get(item.fileId)" class="d-facts">
+                    <li
+                        v-if="uploads.get(item.fileId)?.when"
                         :title="uploads.get(item.fileId)!.whenTitle!"
                         data-testid="media-edited-at"
                     >
                         <Icon name="clock" :size="16" />
                         <span>{{ uploads.get(item.fileId)!.when }}</span>
-                    </span>
-                    <span
-                        v-if="uploads.get(item.fileId)!.by"
+                    </li>
+                    <li
+                        v-if="uploads.get(item.fileId)?.by"
                         :title="uploads.get(item.fileId)!.byTitle!"
                         data-testid="media-edited-by"
                     >
                         <Icon name="person" :size="16" />
                         <span>{{ uploads.get(item.fileId)!.by }}</span>
-                    </span>
-                </span>
+                    </li>
+                </ul>
             </figcaption>
         </figure>
     </div>
 </template>
 
 <style scoped>
-.media-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 14px;
-}
-/* A tile like those of the screens and playlists: picture on top, the facts below. */
-figure {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    margin: 0;
-    transition: box-shadow 0.15s, border-color 0.15s;
-}
-figure:hover {
-    border-color: var(--d-interactive);
-    box-shadow: 0 4px 12px -4px #0000001f;
-}
+/* The tile is `d-tile`; what only media tiles have follows. */
 figure.selected {
     border-color: var(--d-accent);
     box-shadow: 0 0 0 1px var(--d-accent);
 }
 .pick {
     position: relative;
-    display: block;
     width: 100%;
     padding: 0;
     border: 0;
-    border-radius: var(--d-radius-lg) var(--d-radius-lg) 0 0;
     background: var(--d-panel);
     cursor: pointer;
-    aspect-ratio: 16 / 9;
-    overflow: hidden;
 }
 .mark {
     position: absolute;
@@ -262,60 +253,22 @@ button.pick:hover img,
 button.pick:hover video {
     opacity: 0.85;
 }
-figcaption {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0 6px;
-    padding: 8px 14px 12px;
-    font-size: var(--d-size-sm);
+.title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
 }
-.name {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    font-weight: 700;
+.title-row .d-tile-title {
+    flex: 1;
+    min-width: 0;
 }
 .delete {
+    flex: none;
+    margin-top: 0.35em;
     border: 0;
     background: none;
     color: var(--d-danger);
     font: inherit;
     cursor: pointer;
-}
-.uses {
-    grid-column: 1 / -1;
-    display: grid;
-    min-width: 0;
-    color: var(--d-text-muted);
-}
-.use {
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-.unused {
-    font-style: italic;
-}
-/* One fact per line, as on the other tiles; a long name wraps under its own words, not under the icon. */
-.facts {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-    margin-top: 4px;
-    color: var(--d-text-muted);
-}
-.facts > span {
-    display: flex;
-    align-items: flex-start;
-    gap: 4px;
-    max-width: 100%;
-    min-width: 0;
-    overflow-wrap: anywhere;
-}
-.facts :deep(svg) {
-    flex: none;
-    margin-top: 0.1em;
 }
 </style>
