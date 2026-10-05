@@ -3,13 +3,16 @@
  * The administrators' part of a screen (Plan.md, F; Nächste Schritte 15):
  * name and overscan – out of the editor, where designers shape content.
  * Saved against the revision of the screen document only, so it never
- * collides with a designer saving slides at the same time.
+ * collides with a designer saving slides at the same time. `mode` `rename`: the name only,
+ * from the tile's menu (Plan.md 71).
  */
 import { computed, onMounted, ref } from 'vue';
 import type { ScreenDoc } from '../model/schema';
 import { ConflictError, type ScreenRepository } from '../store/screen-repository';
 
-const props = defineProps<{ screen: ScreenDoc; repository: ScreenRepository; author: string }>();
+const props = withDefaults(defineProps<{ screen: ScreenDoc; repository: ScreenRepository; author: string; mode?: 'settings' | 'rename' }>(), {
+    mode: 'settings',
+});
 const emit = defineEmits<{ close: []; saved: [] }>();
 
 const name = ref(props.screen.name);
@@ -21,7 +24,10 @@ const nameInput = ref<HTMLInputElement | null>(null);
 const portrait = computed(() => props.screen.stage.height > props.screen.stage.width);
 const canSave = computed(() => name.value.trim() !== '' && !busy.value);
 
-onMounted(() => nameInput.value?.focus());
+onMounted(() => {
+    nameInput.value?.focus();
+    if (props.mode === 'rename') nameInput.value?.select();
+});
 
 async function save(): Promise<void> {
     if (!canSave.value) return;
@@ -54,27 +60,27 @@ async function save(): Promise<void> {
             role="dialog"
             aria-modal="true"
             aria-labelledby="settings-title"
-            data-testid="screen-settings"
+            :data-testid="mode === 'rename' ? 'screen-rename' : 'screen-settings'"
             @submit.prevent="save"
         >
-            <h2 id="settings-title">Screen einstellen</h2>
+            <h2 id="settings-title">{{ mode === 'rename' ? 'Screen umbenennen' : 'Screen einstellen' }}</h2>
             <label class="d-field">
                 Name
                 <input ref="nameInput" v-model="name" type="text" maxlength="100" data-testid="settings-name">
                 <small v-if="!name.trim()" class="invalid">Ohne Namen lässt sich nicht speichern.</small>
             </label>
-            <label class="d-field">
+            <label v-if="mode === 'settings'" class="d-field">
                 Overscan-Korrektur (%)
                 <input v-model.number="overscan" type="number" min="0" max="20" data-testid="settings-overscan">
                 <small>Verkleinert die Bildfläche auf Fernsehern, die den Rand abschneiden.</small>
             </label>
-            <dl>
+            <dl v-if="mode === 'settings'">
                 <dt>Format</dt>
                 <dd>{{ portrait ? 'Hochkant' : 'Quer' }}, {{ screen.stage.width }} × {{ screen.stage.height }}</dd>
                 <dt>Adresse</dt>
                 <dd><code>{{ screen.slug }}</code></dd>
             </dl>
-            <p class="muted">Format und Adresse bleiben fest. Was der Screen zeigt, gestalten die Gestalter im Editor.</p>
+            <p v-if="mode === 'settings'" class="muted">Format und Adresse bleiben fest. Was der Screen zeigt, gestalten die Gestalter im Editor.</p>
             <p v-if="error" class="invalid" role="alert">{{ error }}</p>
             <div class="d-dialog-actions">
                 <button class="d-btn" type="button" @click="emit('close')">Abbrechen</button>

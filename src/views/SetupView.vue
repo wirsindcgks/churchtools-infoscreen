@@ -10,7 +10,7 @@ import { fetchCalendars, fetchResourceMasterdata, fetchServiceGroups, fetchServi
 import { serviceChoices, type ServiceInfo } from '../appointments/services';
 import { currentPerson, httpStatus, instanceBaseUrl, personUrl } from '../ct/client';
 import { playerUrl } from '../designer/player-url';
-import { settingsAbilities, type GroupPermissions, type SettingsButton } from '../setup/abilities';
+import { GROUP_RIGHT_NAMES, settingsAbilities, type GroupPermissions, type SettingsButton } from '../setup/abilities';
 import RefreshRightsDialog from '../designer/RefreshRightsDialog.vue';
 import RemoveSetupDialog, { type DeviceAccountInfo, type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
 import { createCategory, setCategoryInMenu, wikiRestoreLogLine, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
@@ -23,8 +23,8 @@ import {
     canViewWiki,
     churchToolsProvisionApi,
     deleteGroup,
-    findGroupTypeId,
     loadGroupPermissions,
+    loadGroupTypes,
     groupMemberNames,
     loadGroupRights,
     loadGroups,
@@ -39,7 +39,7 @@ import { createDeviceLogin } from '../setup/device-token';
 import {
     devicePasswordRecommendationLogLine,
     GROUP_NAMES,
-    GROUP_TYPE_NAME,
+    defaultGroupTypeId,
     planProvisioning,
     provision,
     applyRefresh,
@@ -50,6 +50,7 @@ import {
     REMOVE_SETUP_NEXT_STEPS_LOG_LINE,
     removeCreatedGroups,
     type GroupSpec,
+    type GroupTypeChoice,
 } from '../setup/provision';
 import { isAdministrator } from '../designer/administrator';
 import { getRepository } from '../store/backend';
@@ -159,13 +160,26 @@ const planProblem = ref<string | null>(null);
 const createdGroupIds = ref<number[]>([]);
 /** The group rights of this account (Plan.md 63); `undefined` while unknown or unreadable – then nothing is greyed out. */
 const groupPermissions = ref<GroupPermissions | undefined>(undefined);
-const merkmalTypeId = ref<number | null | undefined>(undefined);
+/** The group types of the instance (Plan.md 71); `undefined` while unknown, `null` when they could not be loaded. */
+const groupTypes = ref<GroupTypeChoice[] | null | undefined>(undefined);
+/** The type the administrator picks for the new groups – „Merkmal" where the instance has it. */
+const chosenTypeId = ref<number | null>(null);
+/** The type the assistant created its groups with: from the settings, else „Merkmal" (installations before 1.25). */
+const createdTypeId = ref<number | null>(null);
 const abilities = computed(() =>
-    settingsAbilities(merkmalTypeId.value === undefined ? undefined : groupPermissions.value, createdGroupIds.value, merkmalTypeId.value ?? null),
+    settingsAbilities(groupTypes.value === undefined || groupTypes.value === null ? undefined : groupPermissions.value, createdGroupIds.value, {
+        createTypeId: chosenTypeId.value,
+        createdTypeId: createdTypeId.value,
+    }),
 );
+const typeName = (id: number | null): string | undefined => groupTypes.value?.find((t) => t.id === id)?.name;
+const chosenTypeName = computed(() => typeName(chosenTypeId.value));
 function abilityHint(button: SettingsButton): string | null {
     const { allowed, missing } = abilities.value[button];
-    return allowed ? null : `Dafür fehlt dir in ChurchTools unter „Gruppen": ${missing.join(' und ')}. Oder alles zusammen: „Gruppen verwalten".`;
+    if (allowed) return null;
+    const typeRight = missing.some((m) => m === GROUP_RIGHT_NAMES.createType || m === GROUP_RIGHT_NAMES.viewType);
+    const forType = typeRight && chosenTypeName.value ? ` (für „${chosenTypeName.value}")` : '';
+    return `Dafür fehlt dir in ChurchTools unter „Gruppen": ${missing.join(' und ')}${forType}. Oder alles zusammen: „Gruppen verwalten".`;
 }
 /** The wiki category the assistant created itself – the only one it may ever delete (Plan.md, F). */
 const createdWikiCategoryId = ref<number | null>(null);
@@ -251,6 +265,7 @@ async function persistSettings(changes?: Partial<SettingsFields>): Promise<void>
                 designerGroupId: selected.designer ?? undefined,
                 deviceGroupId: selected.device ?? undefined,
                 createdGroupIds: createdGroupIds.value.length ? createdGroupIds.value : undefined,
+                createdGroupTypeId: createdGroupIds.value.length ? (createdTypeId.value ?? undefined) : undefined,
                 createdWikiCategoryId: createdWikiCategoryId.value ?? undefined,
             },
         ),
@@ -310,8 +325,10 @@ async function toggleAllowedService(id: number, on: boolean, box: HTMLInputEleme
 }
 
 async function runAssistant(): Promise<void> {
+    const groupTypeId = chosenTypeId.value;
+    if (groupTypeId === null) return;
     const question =
-        `Zwei Gruppen anlegen – „${GROUP_NAMES.designer}" und „${GROUP_NAMES.device}" – und ihren Rollen die Rechte geben?\n\n` +
+        `Zwei Gruppen vom Typ „${chosenTypeName.value}" anlegen – „${GROUP_NAMES.designer}" und „${GROUP_NAMES.device}" – und ihren Rollen die Rechte geben?\n\n` +
         'Bestehende Gruppen und Rollen bleiben unberührt. „Automatische Einrichtung rückgängig machen" nimmt es zurück.';
     if (!repository || !window.confirm(question)) return;
     assistant.running = true;
@@ -325,8 +342,6 @@ async function runAssistant(): Promise<void> {
             canViewWiki: await canViewWiki(),
         });
         if (!creation.create && creation.problem) throw new Error(creation.problem);
-        const groupTypeId = await findGroupTypeId(GROUP_TYPE_NAME);
-        if (groupTypeId === null) throw new Error(`Den Gruppentyp „${GROUP_TYPE_NAME}" gibt es auf dieser Instanz nicht.`);
         if (creation.create) {
             wikiCategory.value = await createCategory();
             wikiCategoryId = wikiCategory.value.id;
@@ -339,6 +354,7 @@ async function runAssistant(): Promise<void> {
         assistant.log.push(...result.log);
         assistant.error = result.error;
         createdGroupIds.value = [...createdGroupIds.value, ...Object.values(result.groupIds)];
+        createdTypeId.value = groupTypeId;
         selected.designer = result.groupIds.designer ?? selected.designer;
         selected.device = result.groupIds.device ?? selected.device;
         // Saved even after a failure: what was created must stay removable.
@@ -656,7 +672,7 @@ onMounted(async () => {
         repository = handle.repository;
         demo.value = handle.demo;
         if (page.value === 'services') void loadServices();
-        const [list, settings, wikiCategories, calendarList, used, screenList, masterdata, usedRooms, roomsAtAppointments, serviceCalendars, videos, permissions, typeId] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, used, screenList, masterdata, usedRooms, roomsAtAppointments, serviceCalendars, videos, permissions, types] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
@@ -669,10 +685,10 @@ onMounted(async () => {
             repository.serviceCalendarIdsInUse(),
             repository.videoInUse(),
             loadGroupPermissions(),
-            findGroupTypeId(GROUP_TYPE_NAME).catch(() => undefined),
+            loadGroupTypes().catch(() => null),
         ]);
         groupPermissions.value = permissions;
-        merkmalTypeId.value = typeId;
+        groupTypes.value = types;
         screens.value = screenList;
         device.slug = screenList[0]?.slug ?? '';
         groups.value = list;
@@ -690,6 +706,9 @@ onMounted(async () => {
         selected.designer = settings?.designerGroupId ?? null;
         selected.device = settings?.deviceGroupId ?? null;
         createdGroupIds.value = settings?.createdGroupIds ?? [];
+        const merkmal = types ? defaultGroupTypeId(types) : null;
+        createdTypeId.value = settings?.createdGroupTypeId ?? merkmal;
+        chosenTypeId.value = merkmal;
         createdWikiCategoryId.value = settings?.createdWikiCategoryId ?? null;
         if (!demo.value) {
             // Without these the assistant only explains; the page itself still works.
@@ -871,7 +890,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         </template>
                         <template v-else>
                             <p>
-                                Legt zwei leere Gruppen vom Typ „{{ GROUP_TYPE_NAME }}" an und gibt ihren Rollen die nötigen Rechte. Danach
+                                Legt zwei leere Gruppen vom gewählten Typ an und gibt ihren Rollen die nötigen Rechte. Danach
                                 müssen nur noch Personen in die Gruppen aufgenommen werden.
                             </p>
                             <p v-if="planProblem" class="muted">{{ planProblem }}</p>
@@ -889,12 +908,27 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                 </div>
                                 <p v-if="wikiMissing" class="muted small">Dazu wird der Wiki-Bereich „Infoscreen" für die Mediathek angelegt.</p>
                             </details>
+                            <label class="d-field">
+                                Gruppentyp
+                                <select
+                                    :value="chosenTypeId ?? ''"
+                                    data-testid="group-type"
+                                    @change="chosenTypeId = Number(($event.target as HTMLSelectElement).value) || null"
+                                >
+                                    <option v-if="chosenTypeId === null" value="">– bitte wählen –</option>
+                                    <option v-for="t in groupTypes ?? []" :key="t.id" :value="t.id">{{ t.name }}</option>
+                                </select>
+                            </label>
+                            <p v-if="groupTypes === null" class="muted small">Die Gruppentypen ließen sich nicht laden.</p>
+                            <p v-else class="muted small">
+                                Empfohlen: „Merkmal". Gestalter und Fernseher bekommen auch die Rechte, die dieser Typ seinen Rollen gibt – wähle einen Typ, der wenig mitbringt.
+                            </p>
                             <div class="actions">
                                 <button
                                     class="d-btn d-btn--primary"
                                     type="button"
                                     data-testid="run-assistant"
-                                    :disabled="!assistant.allowed || !plan || foreignGroups.length > 0 || assistant.running || !abilities.create.allowed"
+                                    :disabled="!assistant.allowed || !plan || foreignGroups.length > 0 || assistant.running || chosenTypeId === null || !abilities.create.allowed"
                                     @click="runAssistant"
                                 >
                                     Gruppen und Rechte anlegen

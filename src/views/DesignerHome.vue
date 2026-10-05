@@ -42,8 +42,8 @@ const creating = ref(false);
  * (Plan.md, F), not the ChurchTools admin right that opens the settings page.
  */
 const screensAdmin = ref(false);
-/** The screen whose settings dialog is open – administrators only. */
-const configuring = ref<ScreenDoc | null>(null);
+/** The screen whose settings or rename dialog is open – administrators only. */
+const configuring = ref<{ screen: ScreenDoc; mode: 'settings' | 'rename' } | null>(null);
 /** The screen whose schedule dialog is open – the designers' part (Plan.md, Nächste Schritte 17). */
 const scheduling = ref<string | null>(null);
 /** Administrators set the module up (role concept, Plan.md F); everyone else does not see the way there. */
@@ -237,7 +237,8 @@ async function remove(overview: ScreenOverview): Promise<void> {
                         :admin="screensAdmin"
                         :running="runningNow(o.screen, context)"
                         @remove="remove(o)"
-                        @settings="configuring = o.screen"
+                        @settings="configuring = { screen: o.screen, mode: 'settings' }"
+                        @rename="configuring = { screen: o.screen, mode: 'rename' }"
                         @schedule="scheduling = o.screen.slug"
                     />
                 </div>
@@ -255,7 +256,8 @@ async function remove(overview: ScreenOverview): Promise<void> {
         <template v-if="repository && author !== null">
             <ScreenSettingsDialog
                 v-if="configuring"
-                :screen="configuring"
+                :screen="configuring.screen"
+                :mode="configuring.mode"
                 :repository="repository"
                 :author="author"
                 @close="configuring = null"

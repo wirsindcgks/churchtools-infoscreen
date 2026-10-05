@@ -16,8 +16,21 @@ import type { AuthCatalog } from './catalog';
 import { ALL_DATA, AUTH, has, type Grant } from './checks';
 
 export const GROUP_NAMES = { designer: 'Infoscreen-Designer', device: 'Infoscreen-Devices' } as const;
-/** Group type of both groups, looked up by name: ids and names differ per instance. */
-export const GROUP_TYPE_NAME = 'Merkmal';
+/** The group type the assistant suggests, looked up by name: ids and names differ per instance, and a church may have removed it (Plan.md 71). */
+export const DEFAULT_GROUP_TYPE_NAME = 'Merkmal';
+
+export interface GroupTypeChoice {
+    id: number;
+    /** What the administrator sees – the translated name where there is one. */
+    name: string;
+    /** The name as stored, where it differs from `name`. */
+    rawName?: string;
+}
+
+/** The suggested group type among the ones the instance has – by its shown or its stored name – or null. */
+export function defaultGroupTypeId(types: readonly GroupTypeChoice[]): number | null {
+    return types.find((t) => t.name === DEFAULT_GROUP_TYPE_NAME || t.rawName === DEFAULT_GROUP_TYPE_NAME)?.id ?? null;
+}
 
 export type GroupKey = keyof typeof GROUP_NAMES;
 
@@ -176,7 +189,7 @@ export interface ProvisionResult {
 
 /**
  * Creates each group and grants every right to every role of it – with the
- * type "Merkmal" these are "Teilnehmer" and "Leiter", so whoever is added,
+ * group type ("Merkmal": "Teilnehmer" and "Leiter"), so whoever is added,
  * in whichever role, gets the same rights.
  */
 export async function provision(plan: GroupSpec[], groupTypeId: number, api: ProvisionApi): Promise<ProvisionResult> {

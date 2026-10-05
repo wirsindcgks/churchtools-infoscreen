@@ -158,6 +158,24 @@ test('an administrator renames a screen in its settings; an empty name is refuse
     await expect(page.getByTestId('screen-card')).not.toContainText('Demo – Foyer');
 });
 
+test('an administrator renames a screen from the tile menu (Plan.md 71)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('screen-menu').first().click();
+    await page.getByTestId('screen-rename-open').click();
+    const dialog = page.getByTestId('screen-rename');
+    await expect(dialog.getByRole('heading', { name: 'Screen umbenennen' })).toBeVisible();
+    await expect(page.getByTestId('settings-overscan')).toHaveCount(0);
+    const name = page.getByTestId('settings-name');
+    await expect(name).toBeFocused();
+    await name.fill('');
+    await expect(page.getByTestId('settings-save')).toBeDisabled();
+    await name.fill('Eingang');
+    await page.getByTestId('settings-save').click();
+    await expect(dialog).toHaveCount(0);
+    await expect(page.getByTestId('screen-card')).toContainText('Eingang');
+    await expect(page.getByTestId('screen-card')).not.toContainText('Demo – Foyer');
+});
+
 test('the editor saves content without touching the screen\'s settings', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();

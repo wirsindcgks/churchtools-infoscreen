@@ -15,6 +15,7 @@ const PATHS = {
     plus: ['M12 5v14', 'M5 12h14'],
     search: [circle(11, 11, 6.5), 'M16 16l4.5 4.5'],
     more: [circle(5, 12, 1), circle(12, 12, 1), circle(19, 12, 1)],
+    pencil: ['M4 20l1-4L16 5l3 3L8 19z', 'M14 7l3 3'],
     settings: ['M4 6h10', 'M18 6h2', circle(16, 6, 2), 'M4 12h4', 'M12 12h8', circle(10, 12, 2), 'M4 18h10', 'M18 18h2', circle(16, 18, 2)],
     tv: ['M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z', 'M8 21h8', 'M12 17v4'],
     slides: ['M7 7h13v11H7z', 'M4 4h13', 'M4 4v11'],

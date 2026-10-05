@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { GROUP_RIGHT_NAMES, settingsAbilities, type GroupPermissions } from './abilities';
 
 const TYPE = 4;
-const abilities = (section: GroupPermissions | undefined, created = [25, 28], type: number | null = TYPE) =>
-    settingsAbilities(section, created, type);
+const abilities = (section: GroupPermissions | undefined, created = [25, 28], type: number | null = TYPE, createdType: number | null = type) =>
+    settingsAbilities(section, created, { createTypeId: type, createdTypeId: createdType });
 
 describe('settingsAbilities (Plan.md 63)', () => {
     it('allows everything when the section is not readable', () => {
@@ -42,6 +42,20 @@ describe('settingsAbilities (Plan.md 63)', () => {
         const onlyView = abilities({ 'view groups of grouptype': [TYPE] }).create;
         expect(onlyView).toEqual({ allowed: false, missing: [GROUP_RIGHT_NAMES.createType] });
         expect(abilities({ 'create groups of grouptype': [9], 'view groups of grouptype': [9] }).create.allowed).toBe(false);
+    });
+
+    it('create counts the chosen type, not the one the groups were created with (Plan.md 71)', () => {
+        const section = { 'create groups of grouptype': [9], 'view groups of grouptype': [9] };
+        expect(abilities(section, [25], 9, TYPE).create.allowed).toBe(true);
+        expect(abilities(section, [25], TYPE, 9).create).toEqual({ allowed: false, missing: [GROUP_RIGHT_NAMES.createType, GROUP_RIGHT_NAMES.viewType] });
+    });
+
+    it('refresh and remove count the type the groups were created with, not the chosen one (Plan.md 71)', () => {
+        const section = { 'view groups of grouptype': [TYPE], 'delete groups of grouptype': [TYPE] };
+        const a = abilities(section, [25], 9, TYPE);
+        expect([a.refresh.allowed, a.remove.allowed]).toEqual([true, true]);
+        const b = abilities(section, [25], TYPE, 9);
+        expect([b.refresh.allowed, b.remove.allowed]).toEqual([false, false]);
     });
 
     it('without a type only "Gruppen verwalten" and the id lists count', () => {

@@ -42,6 +42,7 @@ test('only administrators see the settings and configure screens; everyone else 
     await page.getByTestId('screen-menu').first().click();
     await expect(page.getByTestId('open-player')).toBeVisible();
     await expect(page.getByTestId('screen-settings-open')).toHaveCount(0);
+    await expect(page.getByTestId('screen-rename-open')).toHaveCount(0);
     await expect(page.getByTestId('delete-screen')).toHaveCount(0);
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('open-editor').first()).toBeVisible();
