@@ -4,6 +4,14 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.8.1] – 2026-10-05
+
+### Behoben
+
+- **Video:** Wird bei einem laufenden Video der Ton eingeschaltet – etwa durch eine Änderung im Editor, während der
+  Fernseher läuft –, startet das Video neu, statt stehen zu bleiben. Lässt der Browser den Ton ohne Klick nicht zu,
+  läuft es stumm weiter.
+
 ## [0.8.0] – 2026-10-05
 
 ### Wichtig beim Update
@@ -667,6 +675,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.8.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.8.1
 [0.8.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.8.0
 [0.7.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.7.3
 [0.7.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.7.2
