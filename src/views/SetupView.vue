@@ -27,6 +27,7 @@ import {
     loadGroups,
     loadPersonGrants,
     personGroupIds,
+    personGroups,
     type GroupSummary,
 } from '../setup/load';
 import { settingsToSave, type SettingsFields } from '../setup/settings-doc';
@@ -259,6 +260,13 @@ async function loadServices(): Promise<void> {
 /** Saves at once; ids that are not a showable service any more drop out here, not before. */
 async function toggleAllowedService(id: number, on: boolean, box: HTMLInputElement): Promise<void> {
     if (!repository || !serviceList.value || servicesSaving.value) return;
+    if (on) {
+        const name = serviceList.value.find((s) => s.id === id)?.name ?? `Dienst ${id}`;
+        if (!window.confirm(`„${name}" freigeben? Die Namen der Eingeteilten stehen dann öffentlich auf den Fernsehern.`)) {
+            box.checked = false;
+            return;
+        }
+    }
     const known = new Set(serviceList.value.map((s) => s.id));
     const next = [...new Set(on ? [...allowedServices.value, id] : allowedServices.value.filter((a) => a !== id))]
         .filter((a) => known.has(a))
@@ -281,7 +289,7 @@ async function toggleAllowedService(id: number, on: boolean, box: HTMLInputEleme
 async function runAssistant(): Promise<void> {
     const question =
         `Zwei Gruppen anlegen – „${GROUP_NAMES.designer}" und „${GROUP_NAMES.device}" – und ihren Rollen die Rechte geben?\n\n` +
-        'Bestehende Gruppen und Rollen bleiben unberührt. „Einrichtung entfernen" macht es rückgängig.';
+        'Bestehende Gruppen und Rollen bleiben unberührt. „Automatische Einrichtung rückgängig machen" nimmt es zurück.';
     if (!repository || !window.confirm(question)) return;
     assistant.running = true;
     assistant.error = null;
@@ -342,7 +350,7 @@ async function updateRights(): Promise<void> {
 }
 
 /**
- * Opens the confirmation dialog for „Einrichtung entfernen" – but only
+ * Opens the confirmation dialog for „Automatische Einrichtung rückgängig machen" – but only
  * once this account has saved the settings unchanged: without that right
  * the deletion could never be recorded, and every retry would run into an
  * already-gone group and stop right there (Plan.md, F; gemessen 2026-09-28,
@@ -357,10 +365,10 @@ async function openRemoveSetup(): Promise<void> {
     } catch (e) {
         assistant.error =
             httpStatus(e) === 403
-                ? 'Entfernen nicht möglich: Du darfst die Einstellungen des Designers nicht ändern. Danach wüsste der ' +
+                ? 'Rückgängig machen nicht möglich: Du darfst die Einstellungen des Designers nicht ändern. Danach wüsste der ' +
                   'Designer nicht, dass die Gruppen gelöscht sind. Gib deiner Administratoren-Gruppe die Modulrechte ' +
                   '(Einrichtung, Schritt 2) und versuche es erneut.'
-                : `Entfernen nicht möglich: Die Einstellungen ließen sich nicht speichern (${explain(e)}).`;
+                : `Rückgängig machen nicht möglich: Die Einstellungen ließen sich nicht speichern (${explain(e)}).`;
         return;
     }
     const affected: RemoveGroupInfo[] = createdGroupIds.value.map((id) => {
@@ -393,7 +401,7 @@ async function openRemoveSetup(): Promise<void> {
 }
 
 /**
- * The device group's id for „Einrichtung entfernen" (Plan.md, F; G18): by
+ * The device group's id for „Automatische Einrichtung rückgängig machen" (Plan.md, F; G18): by
  * name where a group of that name is among the created ones, else by the
  * device side's own choice – but only if that choice is itself one of the
  * assistant's own groups. A group nobody can name anymore stays without
@@ -510,7 +518,11 @@ async function check(side: Side): Promise<void> {
             const members = await Promise.all(
                 rights.members.map(async (m) => {
                     const person = await loadPersonGrants(m.personId);
-                    return { label: person.label, grants: [...m.roleGrants, ...person.grants] };
+                    // Only the warning depends on this read: if it fails, the member is checked without it.
+                    const otherGroups = await personGroups(m.personId)
+                        .then((list) => list.filter((g) => g.id !== groupId).map((g) => g.name))
+                        .catch(() => undefined);
+                    return { label: person.label, grants: [...m.roleGrants, ...person.grants], otherGroups };
                 }),
             );
             checks.device = checkDeviceGroup({
@@ -785,7 +797,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                     Rechte aktualisieren
                                 </button>
                                 <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running" data-testid="remove-setup" @click="openRemoveSetup">
-                                    Einrichtung entfernen
+                                    Automatische Einrichtung rückgängig machen
                                 </button>
                             </div>
                         </template>
@@ -888,7 +900,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     </div>
                     <p class="muted small">
                         Geprüft werden die Rechte der Gruppenrollen und ihrer Gruppentyp-Rollen, bei Geräten dazu Personenstatus und
-                        direkt vergebene Rechte. Rechte aus anderen Gruppen zählen nicht mit.
+                        direkt vergebene Rechte. Weitere Gruppen eines Gerätekontos werden genannt, ihre Rechte aber nicht geprüft.
                     </p>
                 </template>
 
@@ -899,6 +911,10 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                             vorbeigehen. Hier legst du fest, welche Dienste Gestalter überhaupt wählen können. Ohne Auswahl
                             erscheint kein Dienst. Zur Wahl stehen nur Dienste, deren Dienstgruppe in ChurchTools „Ohne
                             Berechtigung einsehbar" ist und die Namen nicht verbergen.
+                        </p>
+                        <p class="warn" data-testid="allowed-services-warning">
+                            Wer hier einen Dienst freigibt, macht Namen öffentlich: Vor- und Nachname der Eingeteilten stehen im
+                            Foyer, für alle, die vorbeigehen – und für jeden, der die Adresse eines Fernsehers kennt.
                         </p>
                         <p v-if="servicesFailed" class="error" role="alert" data-testid="allowed-services-failed">
                             Dienste konnten nicht geladen werden.

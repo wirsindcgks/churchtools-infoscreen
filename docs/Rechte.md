@@ -71,6 +71,10 @@ Datei, und die verlangt dieses eine Recht – deshalb bekommt das Gerät „Wiki
 bevor ein Screen ein Video zeigt. Damit sieht das Gerät die Dateien dieses Bereichs. „Wiki" sehen und das Bearbeiten
 braucht ein Gerät nicht; die Einstellungsseite warnt, wenn es sie hat.
 
+**Das Bearbeiten des Wiki-Bereichs „Infoscreen" eng vergeben.** Wer es hat, kann im Wiki Bilder löschen – an der
+Warnung der Mediathek vorbei –, und auf den Fernsehern fehlen sie dann. Jedes Mitglied von „Infoscreen-Designer" hat
+dieses Recht; deshalb auch die Mitgliedschaft dort bewusst vergeben.
+
 ### Kalender – für Termine auf den Screens
 
 In der Rechteverwaltung unter **„Kalender"**.
@@ -149,4 +153,7 @@ warnt, wenn Gestalter mehr dürfen als vorgesehen.
   ([Einrichtung, Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)).
 - **Rechte addieren sich.** Was der **Personenstatus** oder eine andere Gruppe erlaubt, kommt dazu. Deshalb bekommt
   ein Geräte-Konto einen Status mit möglichst wenig Rechten.
+- **Ein Geräte-Konto ist kein echtes Personenkonto,** sondern eine eigene Person je Standort, und gehört in **keine
+  weitere Gruppe** als „Infoscreen-Devices". Rechte aus anderen Gruppen bekommt der Fernseher mit – und jeder, der
+  seine Adresse kennt. Die Prüfung sieht diese Rechte nicht; sie nennt seit Version 0.7.3 nur die Gruppen.
 - **Gruppenrechte wirken nur, solange die Gruppe den Status „aktiv" hat.**

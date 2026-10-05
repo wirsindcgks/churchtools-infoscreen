@@ -197,7 +197,7 @@ export interface RemovalResult {
 export type DeleteOutcome = 'deleted' | 'gone';
 
 /**
- * „Einrichtung entfernen" (Plan.md, F, 2026-09-28): deletes only the groups
+ * „Automatische Einrichtung rückgängig machen" (Plan.md, F, 2026-09-28): deletes only the groups
  * the assistant created itself, recognised by the id kept since creation,
  * never by name – a group an administrator chose is never touched, even if
  * it is currently selected. A group that turns out to be gone already counts

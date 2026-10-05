@@ -59,11 +59,11 @@ export async function setCategoryInMenu(category: WikiCategory, inMenu: boolean)
     });
 }
 
-/** What „Einrichtung entfernen" managed to do about the area's visibility. */
+/** What „Automatische Einrichtung rückgängig machen" managed to do about the area's visibility. */
 export type WikiRestoreOutcome = 'shown' | 'already-shown' | { error: string };
 
 /**
- * Wording for the log line after „Einrichtung entfernen" tries to put the
+ * Wording for the log line after „Automatische Einrichtung rückgängig machen" tries to put the
  * wiki area back among „Kategorien" (Plan.md, F, 2026-09-28): it is never
  * deleted, whether or not the assistant created it – only shown again, so
  * administrators without the removed groups still find the pictures.

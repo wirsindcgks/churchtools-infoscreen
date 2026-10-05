@@ -22,7 +22,7 @@ export function instanceBaseUrl(): string {
 
 /**
  * Where to see a person's details in ChurchTools – used for device accounts
- * in „Einrichtung entfernen" (Plan.md, F; G18). `/persons/{id}` itself shows
+ * in „Automatische Einrichtung rückgängig machen" (Plan.md, F; G18). `/persons/{id}` itself shows
  * no person; this address, measured 2026-09-28 on the test instance, opens
  * the person view with the given id selected.
  */

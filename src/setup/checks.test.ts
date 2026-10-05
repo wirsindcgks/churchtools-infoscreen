@@ -241,6 +241,18 @@ describe('checkDeviceGroup', () => {
         expect(check([], [])).toEqual([]);
     });
 
+    it('warns when a device account is also in other groups, naming them – and says nothing without', () => {
+        const check = (otherGroups?: string[]) =>
+            checkDeviceGroup({ statusId: 1, members: [{ label: 'Gerät A', grants: [], otherGroups }], calendars, usedCalendarIds: [], wikiCategoryId: WIKI }).filter(
+                (c) => c.category === 'rights',
+            );
+        const [warning] = check(['Gemeindeleitung', 'Küche']);
+        expect(warning).toMatchObject({ level: 'warn', text: 'Gerät A ist auch Mitglied in „Gemeindeleitung", „Küche".' });
+        expect(warning?.detail).toContain('Ein Gerätekonto gehört nur in „Infoscreen-Devices"');
+        expect(check([])).toEqual([]);
+        expect(check(undefined)).toEqual([]);
+    });
+
     it('adds no row for rooms at appointments when no block asks for them', () => {
         const checks = checkDeviceGroup({ statusId: 1, members: [{ label: 'G', grants: [] }], calendars, usedCalendarIds: [], rooms: [{ id: 1, name: 'Saal' }], wikiCategoryId: WIKI });
         expect(checks.some((c) => c.text.startsWith('Räume an Terminen'))).toBe(false);
