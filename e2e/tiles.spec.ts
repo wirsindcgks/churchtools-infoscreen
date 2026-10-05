@@ -1,7 +1,7 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 
 /**
- * One grid and one tile for screens, playlists and media (Plan.md 67), in demo mode: the same width in
+ * One grid and one tile for screens, playlists, media and schedules (Plan.md 67, 68), in demo mode: the same width in
  * every area, one column on a narrow phone, two on a wide one, and nothing on a tile cut off.
  */
 
@@ -9,6 +9,7 @@ const AREAS = [
     { name: 'Screens', menu: 'sidebar-screens', tile: 'screen-card' },
     { name: 'Playlists', menu: 'sidebar-playlists', tile: 'playlist-card' },
     { name: 'Mediathek', menu: 'sidebar-media', tile: 'media-item' },
+    { name: 'Zeitpläne', menu: 'sidebar-schedules', tile: 'schedule-row' },
 ] as const;
 
 /** Small marks that may stay one line with an ellipsis: the video length, the "Hinweis" flag, the number of a choice. */
@@ -40,9 +41,10 @@ test.describe('tiles of equal width', () => {
             const tiles = await open(page, area.menu, area.tile);
             widths.push((await tiles.first().boundingBox())!.width);
         }
-        const [screens, playlists, media] = widths as [number, number, number];
+        const [screens, playlists, media, schedules] = widths as [number, number, number, number];
         expect(Math.abs(screens - playlists)).toBeLessThanOrEqual(1);
         expect(Math.abs(screens - media)).toBeLessThanOrEqual(1);
+        expect(Math.abs(screens - schedules)).toBeLessThanOrEqual(1);
     });
 
     for (const area of AREAS) {

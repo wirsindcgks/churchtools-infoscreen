@@ -22,6 +22,8 @@ import {
     createTimeRule,
     dayTimeline,
     fromMinutes,
+    PALETTE,
+    playlistColors,
     scheduleProblems,
     WEEKDAYS,
     WINDOW_PRESETS,
@@ -156,10 +158,11 @@ async function createPlaylist(name: string): Promise<StagedPlaylist | null> {
     }
 }
 
-const PALETTE = ['#2563eb', '#16a34a', '#d97706', '#9333ea', '#db2777', '#0891b2', '#65a30d', '#dc2626'];
+const colors = computed(() =>
+    playlistColors(defaultPlaylistId.value, rules.value, new Set(allPlaylists.value.map((p) => p.id))),
+);
 function colorOf(playlistId: string): string {
-    const index = shown.value.findIndex((p) => p.id === playlistId);
-    return PALETTE[(index < 0 ? 0 : index) % PALETTE.length]!;
+    return colors.value.get(playlistId) ?? PALETTE[0]!;
 }
 function nameOf(playlistId: string): string {
     return allPlaylists.value.find((p) => p.id === playlistId)?.name || 'Playlist fehlt';

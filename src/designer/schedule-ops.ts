@@ -5,7 +5,7 @@
  * disagree with the TV.
  */
 import type { Appointment } from '../appointments/normalize';
-import { zonedTimeToInstant } from '../appointments/zoned';
+import { zonedParts, zonedTimeToInstant } from '../appointments/zoned';
 import { sameStage, type AppointmentPoint, type PlaylistDoc, type ScheduleRule, type ScreenDoc } from '../model/schema';
 import { matchingRuleIndex, ruleWindow } from '../player/schedule';
 
@@ -151,6 +151,50 @@ export function dayTimeline(
         else segments.push({ start: minute, end: minute + step, playlistId, ruleIndex });
     }
     return segments;
+}
+
+/** One local day of a week strip: its date, ISO weekday (1 = Monday) and what runs over it. */
+export interface WeekDay {
+    date: { year: number; month: number; day: number };
+    weekday: number;
+    segments: DaySegment[];
+}
+
+/**
+ * `dayTimeline` for `days` consecutive local days from `start` (day 0). The days are counted on the
+ * calendar and each resolved in the zone on its own, so a daylight saving change inside the week
+ * cannot shift a later day.
+ */
+export function weekTimeline(
+    screen: ScreenDoc,
+    start: { year: number; month: number; day: number },
+    days: number,
+    timeZone: string,
+    appointments: Appointment[],
+): WeekDay[] {
+    return Array.from({ length: days }, (_, offset) => {
+        // Date.UTC normalizes day overflow, so adding days across month ends is safe.
+        const counted = new Date(Date.UTC(start.year, start.month - 1, start.day + offset));
+        const date = { year: counted.getUTCFullYear(), month: counted.getUTCMonth() + 1, day: counted.getUTCDate() };
+        const weekday = zonedParts(zonedTimeToInstant({ ...date, hour: 12 }, timeZone), timeZone).weekday;
+        return { date, weekday, segments: dayTimeline(screen, date, timeZone, appointments) };
+    });
+}
+
+/** Colors for the playlists of a schedule, shared by the dialog and the schedules page. */
+export const PALETTE = ['#2563eb', '#16a34a', '#d97706', '#9333ea', '#db2777', '#0891b2', '#65a30d', '#dc2626'];
+
+/**
+ * A color per playlist: the default first, then the rules' playlists in order, each once, wrapping
+ * around the palette. Playlists outside `existing` (when given) take no color and no place in the order.
+ */
+export function playlistColors(
+    defaultPlaylistId: string,
+    rules: readonly { playlistId: string }[],
+    existing?: ReadonlySet<string>,
+): Map<string, string> {
+    const ids = [...new Set([defaultPlaylistId, ...rules.map((r) => r.playlistId)])].filter((id) => !existing || existing.has(id));
+    return new Map(ids.map((id, index) => [id, PALETTE[index % PALETTE.length]!]));
 }
 
 /** "Mo–Fr", "Sa, So", "täglich" – how the schedules page names the days of a rule. */

@@ -7,9 +7,12 @@ import {
     createAppointmentRule,
     createTimeRule,
     dayTimeline,
+    PALETTE,
+    playlistColors,
     ruleSummary,
     scheduleProblems,
     weekdaysLabel,
+    weekTimeline,
     windowPatch,
 } from './schedule-ops';
 
@@ -111,6 +114,75 @@ describe('dayTimeline', () => {
             { start: 720, end: 1200, playlistId: 'abend', ruleIndex: 1 },
             { start: 1200, end: 1440, playlistId: 'standard', ruleIndex: -1 },
         ]);
+    });
+});
+
+describe('weekTimeline', () => {
+    it('starts with the given day and counts weekdays on', () => {
+        const screen = makeScreen({ defaultPlaylistId: 'standard', schedule: [] });
+        const week = weekTimeline(screen, SUNDAY, 7, TZ, []);
+        expect(week).toHaveLength(7);
+        expect(week[0]!.date).toEqual(SUNDAY);
+        expect(week.map((d) => d.weekday)).toEqual([7, 1, 2, 3, 4, 5, 6]);
+        expect(week[6]!.date).toEqual({ year: 2026, month: 10, day: 3 }); // across the month end
+    });
+
+    it('shows a rule for Sundays on the Sunday only', () => {
+        const screen = makeScreen({ defaultPlaylistId: 'standard', schedule: [createTimeRule('gd')] });
+        const week = weekTimeline(screen, { ...SUNDAY, day: 24 }, 7, TZ, []); // Thursday to Wednesday
+        const withRule = week.filter((d) => d.segments.some((s) => s.ruleIndex === 0));
+        expect(withRule.map((d) => d.weekday)).toEqual([7]);
+    });
+
+    it('shows an appointment rule on the day of the appointment only', () => {
+        const service = appointment(
+            zonedTimeToInstant({ ...SUNDAY, day: 29, hour: 10 }, TZ),
+            zonedTimeToInstant({ ...SUNDAY, day: 29, hour: 11 }, TZ),
+        );
+        const screen = makeScreen({
+            defaultPlaylistId: 'standard',
+            schedule: [{ kind: 'appointment', playlistId: 'gd', calendarIds: [3], minutesBefore: 0, minutesAfter: 0 }],
+        });
+        const week = weekTimeline(screen, SUNDAY, 7, TZ, [service]);
+        expect(week.map((d) => d.segments.some((s) => s.ruleIndex === 0))).toEqual([false, false, true, false, false, false, false]);
+    });
+
+    it('keeps seven whole days over the end of daylight saving time', () => {
+        // 2026-10-25: the clocks go back in Europe/Berlin, the day has 25 hours.
+        const screen = makeScreen({ defaultPlaylistId: 'standard', schedule: [createTimeRule('gd')] });
+        const week = weekTimeline(screen, { year: 2026, month: 10, day: 22 }, 7, TZ, []);
+        expect(week.map((d) => d.date.day)).toEqual([22, 23, 24, 25, 26, 27, 28]);
+        for (const day of week) {
+            expect(day.segments[0]!.start).toBe(0);
+            expect(day.segments.at(-1)!.end).toBe(1440);
+            for (let i = 1; i < day.segments.length; i++) expect(day.segments[i]!.start).toBe(day.segments[i - 1]!.end);
+        }
+        expect(week[3]!.weekday).toBe(7);
+        expect(week[3]!.segments.map((s) => s.ruleIndex)).toEqual([-1, 0, -1]);
+    });
+});
+
+describe('playlistColors', () => {
+    it('colors the default first, then the rules in order, each playlist once', () => {
+        const colors = playlistColors('standard', [{ playlistId: 'a' }, { playlistId: 'standard' }, { playlistId: 'b' }, { playlistId: 'a' }]);
+        expect([...colors]).toEqual([
+            ['standard', PALETTE[0]],
+            ['a', PALETTE[1]],
+            ['b', PALETTE[2]],
+        ]);
+    });
+
+    it('wraps around the palette after eight', () => {
+        const rules = Array.from({ length: 9 }, (_, i) => ({ playlistId: `p${i}` }));
+        const colors = playlistColors('standard', rules);
+        expect(colors.size).toBe(10);
+        expect(colors.get('p6')).toBe(PALETTE[7]);
+        expect(colors.get('p7')).toBe(PALETTE[0]);
+    });
+
+    it('leaves out playlists that do not exist, and their place', () => {
+        const colors = playlistColors('gone', [{ playlistId: 'a' }], new Set(['a']));
+        expect([...colors]).toEqual([['a', PALETTE[0]]]);
     });
 });
 
