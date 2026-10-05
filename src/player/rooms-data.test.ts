@@ -175,6 +175,7 @@ describe('the rooms of appointments (Plan.md 50)', () => {
 
     function stub(masterdataAnswer: () => unknown): void {
         get.mockImplementation(async (path: string) => {
+            if (path === '/calendars') return [{ id: 2, name: 'Gottesdienst', isPublic: true }];
             if (path === '/resource/masterdata') return masterdataAnswer();
             if (path === '/calendars/appointments') return [appointment([booked(3), booked(1)])];
             throw new Error(`unexpected ${path}`);
@@ -190,8 +191,8 @@ describe('the rooms of appointments (Plan.md 50)', () => {
         get.mockClear();
         const without = await churchToolsPlayerData.appointments([2], FROM, TO, TZ);
         expect(without[0]!.rooms).toBeUndefined();
-        expect(get).toHaveBeenCalledTimes(1);
-        expect(get.mock.calls[0]![1]).not.toHaveProperty('include');
+        expect(get).toHaveBeenCalledTimes(2); // the calendars, then the appointments
+        expect(get.mock.calls[1]![1]).not.toHaveProperty('include');
     });
 
     it('shows the appointments without rooms when the stammdaten fail', async () => {

@@ -47,7 +47,7 @@ const top = ref(0);
 const allowedServices = ref<number[]>([]);
 
 const calendarIds = computed(() => editor.calendarIds);
-const { calendars, problem } = usePreview(
+const { calendars, hiddenCalendars, problem } = usePreview(
     calendarIds,
     computed(() => editor.media),
     computed(() => editor.theme),
@@ -647,7 +647,7 @@ function onKey(event: KeyboardEvent): void {
                     <span class="sheet-label">{{ sheetLabel }}</span>
                     <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
                 </button>
-                <Inspector id="inspector-panel" :calendars="calendars" :groups="groups" :homepages="homepages" :rooms="rooms" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" @pick-image="openLibrary" />
+                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :groups="groups" :homepages="homepages" :rooms="rooms" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" @pick-image="openLibrary" />
             </div>
         </div>
 

@@ -7,10 +7,14 @@ import {
     MissingAuthError,
     planProvisioning,
     provision,
-    refreshGrants,
+    applyRefresh,
+    planRefresh,
+    readRefresh,
+    refreshIsEmpty,
     REMOVE_SETUP_NEXT_STEPS_LOG_LINE,
     removeCreatedGroups,
     type ProvisionApi,
+    type RefreshItem,
 } from './provision';
 
 /** The module rights as the test instance numbered them (G33). */
@@ -191,50 +195,139 @@ describe('provision', () => {
     });
 });
 
-describe('refreshGrants', () => {
-    it('grants the current plan again to the groups the assistant created, and only to those', async () => {
+const held = (authId: number, dataId: number | null, type?: string) => ({ authId, dataId, ...(type ? { type } : {}) });
+const pairs = (items: RefreshItem[]) => items.map((i) => `${i.authId}:${i.dataId}`);
+
+describe('planRefresh (Plan.md 62)', () => {
+    const plan = planProvisioning(input); // device: 403 for 4, 5; 205 for 2; designer: 205 for 1, 2, 3
+    const known = { calendarIds: [1, 2, 3, 4, 5], roomIds: [1, 2, 3, 4] };
+    const device = (grants: ReturnType<typeof held>[][], k = known) => planRefresh(plan, { device: grants }, k).find((g) => g.key === 'device')!;
+
+    it('takes back a right for a calendar or room no screen needs any more – as far as the administrator sees it', () => {
+        const result = device([[held(403, 3), held(403, 4), held(306, 1), held(205, 4), held(205, 2)]]);
+        expect(pairs(result.remove)).toEqual(['403:3', '306:1', '205:4']);
+    });
+
+    it('names what falls away with the right and the name of the calendar or room', () => {
+        const names = { calendars: new Map([[3, 'Jugend']]), rooms: new Map([[4, 'Saal']]) };
+        const result = planRefresh(plan, { device: [[held(403, 3), held(205, 4), held(306, 9)]] }, { calendarIds: [3], roomIds: [4] }, names);
+        expect(result.find((g) => g.key === 'device')!.remove.map((i) => i.label)).toEqual(['Einzelnen Kalender sehen: Jugend', 'Ressource sehen: Saal']);
+    });
+
+    it('lists what is planned but missing on at least one role – each pair once', () => {
+        const result = device([
+            [held(403, 4), held(403, 5)],
+            [held(403, 4)], // the second role lacks calendar 5
+        ]);
+        expect(pairs(result.add)).toContain('403:5');
+        expect(pairs(result.add)).not.toContain('403:4');
+        expect(pairs(result.add).filter((p) => p === '403:5')).toHaveLength(1);
+    });
+
+    it('lists a right without data as missing with a null data id', () => {
+        const result = device([[]]);
+        expect(result.add.find((i) => i.dataId === null)).toBeTruthy();
+    });
+
+    it('leaves an id the administrator does not see', () => {
+        const result = device([[held(403, 99), held(306, 98)]]);
+        expect(result.remove).toEqual([]);
+    });
+
+    it('leaves rights the assistant does not manage, e.g. 502 for another wiki category', () => {
+        const result = device([[held(502, 7), held(403, 3)]]);
+        expect(pairs(result.remove)).toEqual(['403:3']);
+    });
+
+    it('takes no calendar from the designers – they manage only rooms (205)', () => {
+        const result = planRefresh(plan, { designer: [[held(403, 3), held(306, 3), held(205, 4)]] }, known).find((g) => g.key === 'designer')!;
+        expect(pairs(result.remove)).toEqual(['205:4']);
+    });
+
+    it('takes no room when the list of rooms is empty, e.g. after a failed load', () => {
+        const result = planRefresh(plan, { device: [[held(205, 4)]], designer: [[held(205, 4)]] }, { calendarIds: known.calendarIds, roomIds: [] });
+        expect(result.flatMap((g) => g.remove)).toEqual([]);
+    });
+
+    it('still takes back the writing rights on screens and settings, one data id at a time', () => {
+        const result = planRefresh(plan, { designer: [[held(2017, 1), held(2017, 4), held(2016, 4), held(2016, 13)]] }, known).find((g) => g.key === 'designer')!;
+        expect(pairs(result.remove)).toEqual(['2016:13', '2017:1']);
+    });
+
+    it('counts only assignments of type grant', () => {
+        const result = device([[held(403, 3, 'revoke'), held(2017, 1, 'revoke')]]);
+        expect(result.remove).toEqual([]);
+    });
+
+    it('lists each pair once, however many roles hold it', () => {
+        const result = device([[held(403, 3)], [held(403, 3)]]);
+        expect(pairs(result.remove)).toEqual(['403:3']);
+    });
+});
+
+describe('readRefresh and applyRefresh', () => {
+    const known = { calendarIds: [3, 4, 5], roomIds: [1, 2, 3] };
+    function fakeApi() {
         const calls: string[] = [];
         const api: ProvisionApi = {
             createGroup: async () => {
                 throw new Error('must not create');
             },
-            roleIds: async (groupId) => [groupId * 10],
+            roleIds: async (groupId) => [groupId * 10, groupId * 10 + 1],
             grant: async (roleId, authId, dataId) => {
-                calls.push(`${roleId}:${authId}:${dataId?.join(',') ?? ''}`);
+                calls.push(`grant ${roleId}:${authId}:${dataId?.join(',') ?? ''}`);
             },
-            grants: async () => [],
-            revoke: async () => {
-                throw new Error('nothing to revoke');
+            grants: async (roleId) => (roleId === 280 ? [held(403, 3), held(403, 4)] : [held(403, 4)]),
+            revoke: async (roleId, authId, dataId) => {
+                calls.push(`revoke ${roleId}:${authId}:${dataId.join(',')}`);
             },
         };
-        const result = await refreshGrants(planProvisioning(input), { device: 28 }, api);
-        expect(result.error).toBeNull();
-        expect(calls).toContain('280:403:4,5');
-        expect(calls.every((c) => c.startsWith('280:'))).toBe(true);
+        return { api, calls };
+    }
+
+    it('reads only the groups the assistant created and writes nothing', async () => {
+        const { api, calls } = fakeApi();
+        const state = await readRefresh(planProvisioning(input), { device: 28 }, known, {}, api);
+        expect(state.groups.map((g) => g.key)).toEqual(['device']);
+        expect(calls).toEqual([]);
     });
 
-    it('takes back the designers\' old right to write screens – only what is there, one data id at a time', async () => {
-        const revoked: string[] = [];
-        const api: ProvisionApi = {
-            createGroup: async () => {
-                throw new Error('must not create');
-            },
-            roleIds: async () => [250],
-            grant: async () => {},
-            // As the assistant granted it until 2026-09-25: edit on screens (1) and content; create on content only.
-            grants: async () => [
-                { authId: 2017, dataId: 1 },
-                { authId: 2017, dataId: 4 },
-                { authId: 2016, dataId: 4 },
-            ],
-            revoke: async (roleId, authId, dataId) => {
-                revoked.push(`${roleId}:${authId}:${dataId.join(',')}`);
-            },
-        };
-        const result = await refreshGrants(planProvisioning(input), { designer: 25 }, api);
+    it('grants the plan to every role and takes back each right from the roles that hold it', async () => {
+        const { api, calls } = fakeApi();
+        const plan = planProvisioning(input);
+        const state = await readRefresh(plan, { device: 28 }, known, {}, api);
+        const result = await applyRefresh(plan, state, api);
         expect(result.error).toBeNull();
-        expect(revoked).toEqual(['250:2017:1']);
-        expect(result.log[0]).toContain('1 Schreibrechte');
+        expect(calls).toContain('grant 280:403:4,5');
+        expect(calls).toContain('grant 281:403:4,5');
+        expect(calls.filter((c) => c.startsWith('revoke'))).toEqual(['revoke 280:403:3']);
+        expect(calls.every((c) => c.includes(' 28'))).toBe(true);
+        expect(result.log).toEqual(['„Infoscreen-Devices": 14 Rechte vergeben, 1 zurückgenommen.']);
+    });
+
+    it('says a group is up to date when nothing differs', async () => {
+        const plan = planProvisioning(input);
+        const api: ProvisionApi = {
+            createGroup: async () => 1,
+            roleIds: async () => [280],
+            grant: async () => {},
+            grants: async () => plan[1]!.grants.flatMap((g) => (g.dataId ?? [null]).map((d) => held(g.authId, d))),
+            revoke: async () => {},
+        };
+        const state = await readRefresh(plan, { device: 28 }, known, {}, api);
+        expect(refreshIsEmpty(state.groups)).toBe(true);
+        expect((await applyRefresh(plan, state, api)).log).toEqual(['Rechte von „Infoscreen-Devices" sind auf dem Stand.']);
+    });
+
+    it('stops at the first failure and says so', async () => {
+        const { api } = fakeApi();
+        api.revoke = async () => {
+            throw new Error('Forbidden');
+        };
+        const plan = planProvisioning(input);
+        const result = await applyRefresh(plan, await readRefresh(plan, { device: 28 }, known, {}, api), api);
+        expect(result.error).toBe('Forbidden');
+        expect(result.log.at(-1)).toContain('Abgebrochen');
     });
 });
 

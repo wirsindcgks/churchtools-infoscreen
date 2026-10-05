@@ -25,7 +25,7 @@ import { formatDuration } from '../media/video';
 import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
 
 /** `rooms`: the rooms the designer may see; null while they are not loaded yet. */
-const props = defineProps<{ calendars: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null; services?: ServiceInfo[] | null; allowedServices?: number[]; servicesFailed?: boolean }>();
+const props = defineProps<{ calendars: Calendar[]; hiddenCalendars?: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null; services?: ServiceInfo[] | null; allowedServices?: number[]; servicesFailed?: boolean }>();
 const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow' | 'video'] }>();
 
 /** Labels in the order of `GroupFields` itself, so the fieldset needs no list of its own (Plan.md 43). */
@@ -81,6 +81,12 @@ function toggleCalendar(id: number, on: boolean): void {
     const ids = [...new Set(next)].sort((a, b) => a - b);
     // A calendar that leaves the block leaves the list of those without rooms, too.
     setBlock({ calendarIds: ids, ...('roomsOffCalendarIds' in block.value ? { roomsOffCalendarIds: pruneRoomsOff(block.value.roomsOffCalendarIds, ids) } : {}) });
+}
+
+/** The chosen calendars a TV will not show, with names: not public (Plan.md 62). Ids in no list stay unnoticed. */
+function hiddenChosen(b: NonNullable<typeof block.value>): Calendar[] {
+    if (!('calendarIds' in b)) return [];
+    return (props.hiddenCalendars ?? []).filter((k) => b.calendarIds.includes(k.id));
 }
 
 /** The chosen calendars to switch rooms for: with "Raum zeigen" on and more than one calendar; else null. */
@@ -637,6 +643,7 @@ const LAYERS = [
 
                 <fieldset v-if="'calendarIds' in block">
                     <legend>Kalender</legend>
+                    <p class="hint">Zur Wahl stehen nur öffentliche Kalender.</p>
                     <label v-for="c in calendars" :key="c.id" class="check">
                         <input
                             type="checkbox"
@@ -647,6 +654,18 @@ const LAYERS = [
                         {{ c.name }}
                     </label>
                     <p v-if="!calendars.length" class="hint">Keine Kalender sichtbar.</p>
+                    <p v-for="c in hiddenChosen(block)" :key="c.id" class="hint hidden-calendar" :data-testid="`hidden-calendar-${c.id}`">
+                        {{ c.name }} – nicht öffentlich, erscheint auf keinem Fernseher
+                        <button
+                            class="d-btn"
+                            type="button"
+                            :disabled="block.calendarIds.length < 2"
+                            :title="block.calendarIds.length < 2 ? 'Wähle zuerst einen anderen Kalender.' : undefined"
+                            @click="toggleCalendar(c.id, false)"
+                        >
+                            Entfernen
+                        </button>
+                    </p>
                 </fieldset>
 
                 <!-- Plan.md, 32: the time until the next appointment of these calendars. -->
@@ -775,7 +794,7 @@ const LAYERS = [
                             Raum zeigen
                         </label>
                         <InfoHint>
-                            Zeigt die gebuchten Räume des Termins neben dem Ort – nur bestätigte Buchungen, keine, die noch warten. Damit der Fernseher sie sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, alle Räume zu sehen.
+                            Zeigt die gebuchten Räume des Termins neben dem Ort – nur bestätigte Buchungen, keine, die noch warten. Damit der Fernseher sie sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, alle Räume zu sehen; zeigt kein Screen mehr Räume an Terminen, nimmt „Rechte aktualisieren“ es zurück.
                         </InfoHint>
                     </div>
                     <!-- Plan.md, 51: rooms can be left out for single calendars. -->
@@ -799,7 +818,7 @@ const LAYERS = [
                         <legend class="legend-row">
                             Dienste zeigen
                             <InfoHint>
-                                Zeigt, wer den Dienst übernimmt – nur zugesagte Einteilungen und nur Dienste aus Dienstgruppen, die in ChurchTools ‚Ohne Berechtigung einsehbar‘ sind. Die Vorschau zeigt, was dein Konto sehen darf. Damit der Fernseher die Dienste sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, die Events dieser Kalender zu sehen.
+                                Zeigt, wer den Dienst übernimmt – nur zugesagte Einteilungen und nur Dienste aus Dienstgruppen, die in ChurchTools ‚Ohne Berechtigung einsehbar‘ sind. Die Vorschau zeigt, was dein Konto sehen darf. Damit der Fernseher die Dienste sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, die Events dieser Kalender zu sehen – und nimmt es zurück, wenn kein Baustein sie mehr braucht.
                             </InfoHint>
                         </legend>
                         <p v-if="servicesFailed" class="hint" data-testid="services-failed">Dienste konnten nicht geladen werden.</p>
@@ -1879,6 +1898,13 @@ legend {
 .lockable > :deep(.section) + :deep(.section) {
     margin-top: -10px;
 }
+.hidden-calendar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
 .hint {
     margin: 0;
     color: var(--d-text-muted);

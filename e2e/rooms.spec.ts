@@ -141,8 +141,8 @@ function scheduled(
         bookings: (extra.rooms ?? []).map((resourceId) => ({ base: { id: 100 + resourceId, resourceId, statusId: 2 } })),
     };
 }
-const GOTTESDIENSTE = { id: 1, name: 'Gottesdienste', color: '#2e7d8c' };
-const JUGEND = { id: 2, name: 'Jugend', color: '#b45309' };
+const GOTTESDIENSTE = { id: 1, name: 'Gottesdienste', color: '#2e7d8c', isPublic: true };
+const JUGEND = { id: 2, name: 'Jugend', color: '#b45309', isPublic: true };
 
 async function fakeChurch(page: Page, church: Church = { bookingRequests: [] }): Promise<Church> {
     await page.clock.setFixedTime(church.scene?.now ?? NOW);

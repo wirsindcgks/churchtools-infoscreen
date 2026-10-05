@@ -4,6 +4,35 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.8.0] – 2026-10-05
+
+### Wichtig beim Update
+
+Ein Screen, der einen **internen Kalender** (in ChurchTools nicht öffentlich) zeigt, zeigt dessen Termine nach dem
+Update nicht mehr. Das nächste „Rechte aktualisieren" nimmt der Gerätegruppe außerdem das Recht an diesem Kalender –
+mit Vorschau, bevor etwas geschrieben wird. Interne Termine öffentlicher Kalender („nur für angemeldete Benutzer")
+zeigt der Fernseher ebenfalls nicht mehr.
+
+### Geändert
+
+- **Fernseher:** Sie zeigen nur noch Termine aus öffentlichen Kalendern und keine internen Termine. Das gilt auch
+  dann, wenn das Gerätekonto über seinen Status oder eine andere Gruppe mehr lesen dürfte.
+- **Editor:** Zur Wahl stehen nur öffentliche Kalender. Hat ein Baustein schon einen nicht öffentlichen Kalender,
+  nennt ihn der Inspektor („nicht öffentlich, erscheint auf keinem Fernseher") und bietet „Entfernen" an; im
+  Zeitplan steht der Kalender als „nicht öffentlich – wird ignoriert".
+- **Einrichtungsassistent:** Er vergibt Rechte nur für öffentliche Kalender, die der Administrator selbst sieht.
+- **Prüfung der Gerätegruppe:** Sie warnt vor nicht öffentlichen Kalendern in Screens, vor Kalendern, die der
+  Administrator nicht sieht, und vor Gerätekonten, die einen internen Kalender lesen dürfen.
+
+### Neu
+
+- **Einstellungen:** Fehlen dir in ChurchTools Gruppenrechte, sind die Knöpfe unter „Gruppen und Rechte" („Gruppen und
+  Rechte anlegen", „Rechte aktualisieren", „Automatische Einrichtung rückgängig machen") ausgegraut und nennen, was
+  fehlt – statt erst beim Klicken zu scheitern.
+- **„Rechte aktualisieren" nimmt zurück:** Kalender, Dienste und Räume, die kein Screen mehr braucht, verlieren ihr
+  Recht an den Gruppen des Assistenten – nur für Kalender und Räume, die der Administrator sieht. Vorher zeigt eine
+  Vorschau je Gruppe, was dazukommt und was wegfällt; erst „Übernehmen" schreibt.
+
 ## [0.7.3] – 2026-10-05
 
 ### Geändert
@@ -638,6 +667,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.8.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.8.0
 [0.7.3]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.7.3
 [0.7.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.7.2
 [0.7.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.7.1

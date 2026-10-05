@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, excessRights, groupChecks, has, type Check, type Grant, type RoleRights } from './checks';
+import { ALL_DATA, AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, excessRights, groupChecks, has, type Check, type Grant, type RoleRights } from './checks';
 
 const grant = (authId: number, dataId: number | null = null): Grant => ({ authId, dataId, type: 'grant' });
 const WIKI = 1;
@@ -107,12 +107,12 @@ describe('checkDeviceGroup', () => {
     it('asks for the right on public calendars too – without it ChurchTools refuses with 403 (G35)', () => {
         const checks = checkDeviceGroup({
             statusId: 1,
-            members: [{ label: 'Minimal User', grants: [grant(AUTH.calendarView, 4)] }],
-            calendars,
-            usedCalendarIds: [2, 4],
+            members: [{ label: 'Minimal User', grants: [grant(AUTH.calendarView, 3)] }],
+            calendars: [...calendars, { id: 3, name: 'Jugend', isPublic: true }],
+            usedCalendarIds: [2, 3],
             wikiCategoryId: WIKI,
         });
-        expect(checks.find((c) => c.text.includes('Gemeindeleitung'))?.level).toBe('ok');
+        expect(checks.find((c) => c.text.includes('Jugend'))?.level).toBe('ok');
         const fail = checks.find((c) => c.text.includes('Gottesdienst'));
         expect(fail?.level).toBe('fail');
         expect(fail?.text).toContain('Minimal User');
@@ -121,12 +121,61 @@ describe('checkDeviceGroup', () => {
     it('counts rights from every source, e.g. the person status (G21: the base carries three calendars)', () => {
         const checks = checkDeviceGroup({
             statusId: 1,
-            members: [{ label: 'Minimal User', grants: [grant(AUTH.calendarView, 4)] }],
+            members: [{ label: 'Minimal User', grants: [grant(AUTH.calendarView, ALL_DATA)] }],
+            calendars,
+            usedCalendarIds: [2],
+            wikiCategoryId: WIKI,
+        });
+        expect(checks.find((c) => c.text.includes('Gottesdienst'))?.level).toBe('ok');
+    });
+
+    it('warns about a calendar in use that is not public – no TV shows it (Plan.md 62)', () => {
+        const checks = checkDeviceGroup({
+            statusId: 1,
+            members: [{ label: 'Minimal User', grants: [] }],
             calendars,
             usedCalendarIds: [4],
             wikiCategoryId: WIKI,
         });
-        expect(checks.find((c) => c.text.includes('Gemeindeleitung'))?.level).toBe('ok');
+        expect(checks.find((c) => c.category === 'calendars' && c.text.includes('Gemeindeleitung'))).toEqual({
+            level: 'warn',
+            category: 'calendars',
+            text: '„Gemeindeleitung" ist nicht öffentlich – kein Fernseher zeigt ihn.',
+            detail: 'Im Editor aus dem Baustein entfernen.',
+        });
+    });
+
+    it('warns about a calendar in use that the administrator does not see (Plan.md 62, G50)', () => {
+        const checks = checkDeviceGroup({
+            statusId: 1,
+            members: [{ label: 'Minimal User', grants: [] }],
+            calendars,
+            usedCalendarIds: [7],
+            wikiCategoryId: WIKI,
+        });
+        expect(checks.find((c) => c.text.startsWith('Kalender 7'))).toEqual({
+            level: 'warn',
+            category: 'calendars',
+            text: 'Kalender 7: Du siehst ihn nicht, deshalb vergibt „Rechte aktualisieren" kein Recht dafür.',
+            detail: 'Gib dir „Einzelnen Kalender sehen" für ihn.',
+        });
+    });
+
+    it('warns when a device account may read an internal calendar (Plan.md 62)', () => {
+        const checks = checkDeviceGroup({
+            statusId: 1,
+            members: [{ label: 'Minimal User', grants: [grant(AUTH.calendarView, 4)] }],
+            calendars,
+            usedCalendarIds: [2],
+            wikiCategoryId: WIKI,
+        });
+        const warning = checks.find((c) => c.text.includes('internen Kalender'));
+        expect(warning).toMatchObject({
+            level: 'warn',
+            category: 'rights',
+            text: 'Minimal User darf den internen Kalender „Gemeindeleitung" lesen.',
+        });
+        expect(warning?.detail).toContain('wer seine Adresse kennt');
     });
 
     it('warns about wiki rights a device does not need (least privilege)', () => {

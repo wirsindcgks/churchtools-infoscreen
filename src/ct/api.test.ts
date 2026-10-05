@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fetchGroupHomepage, fetchGroupHomepageList } from './api';
+import { fetchGroupHomepage, fetchGroupHomepageList, isShowableCalendar } from './api';
 
 const BASE = 'https://example.church.tools';
 
@@ -28,5 +28,18 @@ describe('group homepages are read anonymously (Plan.md 43)', () => {
     it('fails with the status, so that a 429 is recognised', async () => {
         const fetcher = vi.fn<typeof fetch>(async () => answer(null, 429));
         await expect(fetchGroupHomepageList(BASE, fetcher)).rejects.toMatchObject({ response: { status: 429 } });
+    });
+});
+
+describe('isShowableCalendar (Plan.md 62)', () => {
+    it('wants a public calendar that is not private', () => {
+        expect(isShowableCalendar({ isPublic: true })).toBe(true);
+        expect(isShowableCalendar({ isPublic: true, isPrivate: false })).toBe(true);
+    });
+
+    it('rejects a missing field, a private and a non-public calendar', () => {
+        expect(isShowableCalendar({})).toBe(false);
+        expect(isShowableCalendar({ isPublic: true, isPrivate: true })).toBe(false);
+        expect(isShowableCalendar({ isPublic: false })).toBe(false);
     });
 });

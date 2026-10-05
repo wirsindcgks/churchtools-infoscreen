@@ -5,7 +5,7 @@
  * calendars the screen uses.
  */
 import { onBeforeUnmount, reactive, ref, watch, type Ref } from 'vue';
-import { fetchCalendars, type Calendar } from '../ct/api';
+import { fetchCalendars, isShowableCalendar, type Calendar } from '../ct/api';
 import type { MediaDoc, ThemeDoc } from '../model/schema';
 import { provideStageContext, type StageContext } from '../player/context';
 import { appointmentWindow, churchToolsPlayerData, mergePosts } from '../player/data';
@@ -37,7 +37,9 @@ export function usePreview(
     });
     provideStageContext(context);
 
+    /** Only calendars a TV may show; the others the account sees are in `hiddenCalendars` (Plan.md 62). */
     const calendars = ref<Calendar[]>([]);
+    const hiddenCalendars = ref<Calendar[]>([]);
     const problem = ref<string | null>(null);
 
     async function loadBasics(): Promise<void> {
@@ -49,7 +51,8 @@ export function usePreview(
                 churchToolsPlayerData.churchLogo().catch(() => null),
             ]);
             Object.assign(context, { timeZone, churchName, churchLogo });
-            calendars.value = list;
+            calendars.value = list.filter(isShowableCalendar);
+            hiddenCalendars.value = list.filter((c) => !isShowableCalendar(c));
         } catch (error) {
             problem.value = error instanceof Error ? error.message : String(error);
         }
@@ -143,5 +146,5 @@ export function usePreview(
     const ticker = setInterval(() => (context.now = new Date()), 30_000);
     onBeforeUnmount(() => clearInterval(ticker));
 
-    return { context, calendars, problem };
+    return { context, calendars, hiddenCalendars, problem };
 }

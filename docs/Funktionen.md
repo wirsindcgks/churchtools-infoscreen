@@ -20,7 +20,9 @@ Editor; Adresse, Zeitplan und Player stecken im Menü „…". Filter trennen Qu
 Slides gestalten wie in einem Folienprogramm: links die Slides, oben „+ Baustein" (alle Bausteine, alphabetisch), in der
 Mitte die Bildfläche, rechts der Inspektor: oben der Inhalt des gewählten Bausteins, darunter aufklappbare Bereiche.
 Ziehen, an den Griffen skalieren, am Raster ausrichten, sperren, rückgängig machen. Termine kommen live aus den
-Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe.
+Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe. **Zur Wahl stehen nur öffentliche
+Kalender,** und interne Termine (nur für angemeldete Benutzer) zeigt kein Fernseher. Hat ein Baustein einen Kalender, der
+nicht öffentlich ist, nennt ihn der Editor und bietet an, ihn zu entfernen.
 
 ![Editor mit einer Terminliste als Karten, darüber Gemeindename und Uhr](bilder/editor.png)
 

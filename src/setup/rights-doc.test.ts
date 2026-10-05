@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { CATEGORIES } from '../store/screen-repository';
 import { catalogFrom } from './catalog';
 import { AUTH } from './checks';
-import { planProvisioning } from './provision';
+import { MANAGED_RIGHTS, planProvisioning } from './provision';
 
 // Tests run from the repository root (jsdom's import.meta.url is no file URL).
 const doc = fs.readFileSync(path.resolve('docs/Rechte.md'), 'utf8');
@@ -46,6 +46,14 @@ describe('docs/Rechte.md', () => {
         const labels = new Set(plan.flatMap((g) => [...g.grants, ...g.forbidden]).map((g) => g.label));
         const missing = [...labels].filter((label) => !doc.includes(label));
         expect(missing).toEqual([]);
+    });
+
+    it('names what „Rechte aktualisieren" takes back per calendar and room, in the section on taking back', () => {
+        const from = doc.indexOf('## Was „Rechte aktualisieren" zurücknimmt');
+        expect(from).toBeGreaterThan(-1);
+        const section = doc.slice(from, doc.indexOf('\n## ', from + 1));
+        const managed = Object.values(MANAGED_RIGHTS).flat();
+        expect(managed.filter((m) => !section.includes(m.label) || !section.includes(String(m.authId)))).toEqual([]);
     });
 
     it('names every permission key of the module and the core rights by number', () => {

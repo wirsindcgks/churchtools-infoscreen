@@ -1,11 +1,13 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { makeScreen, makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
 import type { Post } from '../posts/normalize';
 import * as api from '../ct/api';
 import { appointmentNeeds, churchToolsPlayerData, groupNeeds, mergePosts, postNeeds, readableAppointments } from './data';
 
-vi.mock('../ct/api', () => ({
+vi.mock('../ct/api', async (importActual) => ({
+    isShowableCalendar: (await importActual<typeof import('../ct/api')>()).isShowableCalendar,
+    fetchCalendars: vi.fn(),
     fetchAppointments: vi.fn(),
     fetchEvents: vi.fn(),
     fetchServices: vi.fn(),
@@ -18,6 +20,16 @@ vi.mock('../ct/api', () => ({
     fetchPosts: vi.fn(),
     fetchTimeZone: vi.fn(),
 }));
+
+const calendar = (id: number, extra: { isPublic?: boolean; isPrivate?: boolean } = { isPublic: true }) => ({
+    id,
+    name: `Kalender ${id}`,
+    ...extra,
+});
+
+beforeEach(() => {
+    vi.mocked(api.fetchCalendars).mockResolvedValue([calendar(2), calendar(3)]);
+});
 
 const forbidden = () => Object.assign(new Error('403'), { response: { status: 403 } });
 
@@ -252,5 +264,36 @@ describe('churchToolsPlayerData.appointments – services (Plan.md 51)', () => {
         vi.mocked(api.fetchEvents).mockClear();
         await churchToolsPlayerData.appointments([2], from, to, 'Europe/Berlin', { services: [] });
         expect(api.fetchEvents).not.toHaveBeenCalled();
+    });
+});
+
+describe('churchToolsPlayerData.appointments – only public calendars (Plan.md 62)', () => {
+    const from = new Date('2026-10-01T00:00:00Z');
+    const to = new Date('2026-10-30T00:00:00Z');
+
+    it('asks only for public calendars', async () => {
+        vi.mocked(api.fetchCalendars).mockResolvedValue([
+            calendar(2),
+            calendar(3, { isPublic: false }),
+            calendar(4, { isPublic: true, isPrivate: true }),
+            { id: 5, name: 'Ohne Feld' },
+        ]);
+        vi.mocked(api.fetchAppointments).mockClear();
+        vi.mocked(api.fetchAppointments).mockResolvedValue([]);
+        await churchToolsPlayerData.appointments([2, 3, 4, 5, 9], from, to, 'Europe/Berlin');
+        expect(api.fetchAppointments).toHaveBeenCalledTimes(1);
+        expect(vi.mocked(api.fetchAppointments).mock.calls[0]![0]).toEqual([2]);
+    });
+
+    it('makes no appointment request without a public calendar', async () => {
+        vi.mocked(api.fetchCalendars).mockResolvedValue([calendar(3, { isPublic: false })]);
+        vi.mocked(api.fetchAppointments).mockClear();
+        expect(await churchToolsPlayerData.appointments([3], from, to, 'Europe/Berlin')).toEqual([]);
+        expect(api.fetchAppointments).not.toHaveBeenCalled();
+    });
+
+    it('fails when the calendars cannot be read', async () => {
+        vi.mocked(api.fetchCalendars).mockRejectedValue(new Error('offline'));
+        await expect(churchToolsPlayerData.appointments([2], from, to, 'Europe/Berlin')).rejects.toThrow('offline');
     });
 });

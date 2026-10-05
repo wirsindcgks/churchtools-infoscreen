@@ -9,6 +9,7 @@
  * of the extension itself exist only once it is installed.
  */
 
+import { isShowableCalendar } from '../ct/api';
 import type { RoomInfo } from '../rooms/normalize';
 
 /** Core permission ids (G30). */
@@ -205,6 +206,7 @@ export interface CalendarInfo {
     id: number;
     name: string;
     isPublic?: boolean;
+    isPrivate?: boolean;
 }
 
 export interface DeviceGroupInput {
@@ -280,7 +282,22 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
     for (const id of input.usedCalendarIds) {
         const calendar = byId.get(id);
         if (!calendar) {
-            checks.push({ level: 'warn', category: 'calendars', text: `Kalender ${id} wird verwendet, ist aber nicht (mehr) zu finden.` });
+            // The administrator does not see it: "Rechte aktualisieren" grants nothing for it (Plan.md 62, G50).
+            checks.push({
+                level: 'warn',
+                category: 'calendars',
+                text: `Kalender ${id}: Du siehst ihn nicht, deshalb vergibt „Rechte aktualisieren" kein Recht dafür.`,
+                detail: 'Gib dir „Einzelnen Kalender sehen" für ihn.',
+            });
+            continue;
+        }
+        if (!isShowableCalendar(calendar)) {
+            checks.push({
+                level: 'warn',
+                category: 'calendars',
+                text: `„${calendar.name}" ist nicht öffentlich – kein Fernseher zeigt ihn.`,
+                detail: 'Im Editor aus dem Baustein entfernen.',
+            });
             continue;
         }
         const blind = input.members.filter((m) => !has(m.grants, AUTH.calendarView, id)).map((m) => m.label);
@@ -294,6 +311,20 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                   }
                 : { level: 'ok', category: 'calendars', text: `„${calendar.name}" ist sichtbar.` },
         );
+    }
+
+    // A device account that may read an internal calendar: the TV does not show it, but its address reads it (Plan.md 62).
+    for (const calendar of input.calendars.filter((c) => !isShowableCalendar(c))) {
+        for (const member of input.members.filter((m) => has(m.grants, AUTH.calendarView, calendar.id))) {
+            checks.push({
+                level: 'warn',
+                category: 'rights',
+                text: `${member.label} darf den internen Kalender „${calendar.name}" lesen.`,
+                detail:
+                    'Der Fernseher zeigt ihn nicht, aber wer seine Adresse kennt, kann ihn lesen. ' +
+                    'Das Recht kommt aus Status oder einer anderen Gruppe des Kontos.',
+            });
+        }
     }
 
     const roomsById = new Map((input.rooms ?? []).map((r) => [r.id, r]));
@@ -335,7 +366,11 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         }
     }
 
-    const serviceCalendarIds = input.serviceCalendarIds ?? [];
+    // Only calendars the assistant grants anything for: known and public (Plan.md 62); the others are named above.
+    const serviceCalendarIds = (input.serviceCalendarIds ?? []).filter((id) => {
+        const calendar = byId.get(id);
+        return calendar !== undefined && isShowableCalendar(calendar);
+    });
     if (serviceCalendarIds.length) {
         const blind = input.members
             .filter((m) => !serviceCalendarIds.every((id) => has(m.grants, AUTH.eventView, id)))

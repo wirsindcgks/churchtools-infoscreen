@@ -5,9 +5,9 @@ test.use({ viewport: { width: 1440, height: 900 } });
 
 // ChurchTools sends `black` for a calendar set to black (measured on the test instance), not #000000.
 const CALENDARS = [
-    { id: 1, name: 'Jugend', color: '#16a765' },
-    { id: 2, name: 'Gottesdienst', color: 'black' },
-    { id: 3, name: 'Bandproben', color: '#b99aff' },
+    { id: 1, name: 'Jugend', color: '#16a765', isPublic: true },
+    { id: 2, name: 'Gottesdienst', color: 'black', isPublic: true },
+    { id: 3, name: 'Bandproben', color: '#b99aff', isPublic: true },
 ];
 
 function appointments(): unknown[] {
