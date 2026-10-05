@@ -4,6 +4,27 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.12.0] – 2026-10-05
+
+### Neu
+
+- **Zeitpläne mit Zeitleiste:** Jeder Screen ist eine Kachel mit einer Zeitleiste über die nächsten sieben Tage –
+  heute oben, mit einer Nadel für jetzt, jede Playlist in ihrer Farbe wie im Zeitplan-Dialog. Darunter stehen die
+  Regeln in denselben Farben. Fahrt ihr über eine Regel, leuchten ihre Zeiten auf; ein Klick auf eine Regel oder
+  einen Abschnitt zeigt deren Playlist im Bild. Eine Regel für Sonntag ist so auch am Montag zu sehen.
+- **Hinweise mit Zeitleiste:** Jeder Hinweis ist eine Kachel mit derselben Zeitleiste. Sie zeigt, wann er
+  tatsächlich am Fernseher steht – wann eine seiner Playlists laut Zeitplan auf einem Screen läuft, bis zu seinem
+  Ende. Jeder Screen steht in einer eigenen Zeile; fahrt ihr darüber, leuchten seine Zeiten auf. Steht ein Hinweis
+  in den nächsten sieben Tagen auf keinem Fernseher, sagt die Kachel das. In der Vorschau steht das Band still.
+
+### Geändert
+
+- **Einheitliche Kacheln:** Screens, Playlists, Zeitpläne, Hinweise und Mediathek zeigen dieselben Kacheln in
+  derselben Breite (mindestens 240 px, auf schmalen Bildschirmen 200 px, auf dem Handy eine Spalte). Lange Namen
+  brechen um, nichts wird mehr mit „…" abgeschnitten.
+- **Mediathek:** Der Dateiname steht als Titel wie auf den anderen Kacheln; jede Verwendung ist eine eigene Zeile mit
+  Symbol, „Unbenutzt" nicht mehr kursiv. Der Auswahl-Dialog im Editor zeigt dieselben Kacheln.
+
 ## [0.11.0] – 2026-10-05
 
 ### Neu
@@ -737,6 +758,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.12.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.12.0
 [0.11.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.11.0
 [0.10.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.10.1
 [0.10.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.10.0
