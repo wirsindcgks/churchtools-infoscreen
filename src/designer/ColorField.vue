@@ -10,12 +10,18 @@
  */
 import { ref, watch } from 'vue';
 import { parseHex, pickerValue } from './color';
-import { usePalette } from './palette';
+import { usePalette, type PaletteColor } from './palette';
 
 const props = defineProps<{ modelValue: string; label: string; testid?: string }>();
 const emit = defineEmits<{ 'update:modelValue': [string]; focus: []; blur: [] }>();
 
 const lists = usePalette();
+
+/** Name and hex value; a colour without a name of its own is just its hex value. */
+function swatchLabel(entry: PaletteColor): string {
+    const hex = entry.color.toUpperCase();
+    return entry.name.toLowerCase() === entry.color.toLowerCase() ? hex : `${entry.name} (${hex})`;
+}
 
 const draft = ref(props.modelValue);
 const invalid = ref(false);
@@ -89,8 +95,8 @@ function onTextBlur(): void {
                     type="button"
                     class="swatch"
                     :style="{ background: entry.color }"
-                    :title="`${entry.name} (${entry.color.toUpperCase()})`"
-                    :aria-label="`${entry.name} (${entry.color.toUpperCase()})`"
+                    :title="swatchLabel(entry)"
+                    :aria-label="swatchLabel(entry)"
                     :aria-pressed="entry.color.toLowerCase() === modelValue.toLowerCase()"
                     :data-testid="testid ? `${testid}-swatch` : 'color-swatch'"
                     @click="emit('update:modelValue', entry.color)"
@@ -106,8 +112,8 @@ function onTextBlur(): void {
                     type="button"
                     class="swatch"
                     :style="{ background: entry.color }"
-                    :title="`${entry.name} (${entry.color.toUpperCase()})`"
-                    :aria-label="`${entry.name} (${entry.color.toUpperCase()})`"
+                    :title="swatchLabel(entry)"
+                    :aria-label="swatchLabel(entry)"
                     :aria-pressed="entry.color.toLowerCase() === modelValue.toLowerCase()"
                     :data-testid="testid ? `${testid}-swatch` : 'color-swatch'"
                     @click="emit('update:modelValue', entry.color)"

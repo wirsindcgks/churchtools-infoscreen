@@ -3,8 +3,7 @@
  * theme's accent, text and background, then the church's palette. A page
  * provides the theme; `ColorField` asks for the list. Without a provider
  * (the Design page itself) a field shows no swatches. Where a page also
- * provides the slide, the colours it uses beyond the palette form a second
- * group (Plan.md 65).
+ * provides the slide, the colours it uses form a second group (Plan.md 65).
  */
 import { computed, inject, provide, type ComputedRef, type InjectionKey, type Ref } from 'vue';
 import type { SlideDoc, ThemeDoc } from '../model/schema';
@@ -69,12 +68,21 @@ export function slideColors(slide: SlideDoc | null | undefined, exclude: readonl
     return found;
 }
 
+/**
+ * The group „Auf der Slide": every colour the slide uses, approved or not – a colour from the palette keeps its
+ * name there (wish of the user, 2026-10-05: the group must not vanish when a slide only uses approved colours).
+ */
+export function slideSwatches(slide: SlideDoc | null | undefined, palette: readonly PaletteColor[]): PaletteColor[] {
+    const names = new Map(palette.map((c) => [c.color.toLowerCase(), c.name]));
+    return slideColors(slide, []).map((c) => ({ name: names.get(c.color) ?? c.name, color: c.color }));
+}
+
 export function providePalette(theme: Ref<ThemeDoc | null | undefined>, slide?: Ref<SlideDoc | null | undefined>): void {
     provide(
         KEY,
         computed(() => {
             const palette = paletteColors(theme.value);
-            return { palette, slide: slideColors(slide?.value, palette.map((c) => c.color)) };
+            return { palette, slide: slideSwatches(slide?.value, palette) };
         }),
     );
 }

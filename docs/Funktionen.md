@@ -26,8 +26,8 @@ nicht öffentlich ist, nennt ihn der Editor und bietet an, ihn zu entfernen.
 
 **Farben aus der Palette:** An jedem Farbfeld des Editors stehen kleine Tupfer in zwei Gruppen. Zuerst die
 **„Farbpalette"** – Akzent, Text und Hintergrund des Designs, dann die Palette (Seite „Design"); das ist das
-Freigegebene. Darunter **„Auf der Slide"** – Farben, die die gerade bearbeitete Slide benutzt, die aber nicht in der
-Farbpalette stehen; so fällt auf, was vom Freigegebenen abweicht. Eine leere Gruppe erscheint nicht; Farbwähler und
+Freigegebene. Darunter **„Auf der Slide"** – alle Farben, die die gerade bearbeitete Slide benutzt; eine freigegebene
+trägt dort ihren Namen aus der Palette, eine abweichende nur ihren Hex-Wert. Eine leere Gruppe erscheint nicht; Farbwähler und
 Hex-Feld bleiben, abweichen geht weiter. Ein Klick setzt den Hex-Wert, beim Darüberfahren steht der Name.
 Die Farbe wird **kopiert**: Ändert ihr eine Palettenfarbe später, färbt das bestehende Slides nicht um.
 

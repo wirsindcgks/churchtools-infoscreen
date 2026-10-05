@@ -62,7 +62,7 @@ test('a swatch sets the hex value of a text colour and of a fill (Plan.md 64)', 
     await expect(page.getByTestId('fill-color')).toHaveValue('#1d4ed8');
 });
 
-test('the swatches stand in two groups: the palette, and what the slide uses beyond it (Plan.md 65)', async ({ page }) => {
+test('the swatches stand in two groups: the palette, and every colour the slide uses (Plan.md 65)', async ({ page }) => {
     await makePalette(page);
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
@@ -74,11 +74,10 @@ test('the swatches stand in two groups: the palette, and what the slide uses bey
     await expect(palette).toContainText('Farbpalette');
     await expect(palette.getByRole('group', { name: 'Farbe: Farbpalette' })).toBeVisible();
 
-    // A palette colour in use stays under "Farbpalette" only.
+    // A palette colour in use also stands under "Auf der Slide", under its palette name.
     await page.getByRole('button', { name: 'Sonnengelb (#F5B301)' }).first().click();
     await expect(page.getByTestId('text-color')).toHaveValue('#f5b301');
-    await expect(onSlide.getByRole('button', { name: 'Sonnengelb (#F5B301)' })).toHaveCount(0);
-    await expect(onSlide.getByRole('button', { name: /#F5B301/i })).toHaveCount(0);
+    await expect(onSlide.getByRole('button', { name: 'Sonnengelb (#F5B301)' })).toHaveAttribute('aria-pressed', 'true');
     await expect(palette.getByRole('button', { name: 'Sonnengelb (#F5B301)' })).toHaveAttribute('aria-pressed', 'true');
 
     // A free colour, set through the hex field, shows up under "Auf der Slide".
@@ -87,7 +86,7 @@ test('the swatches stand in two groups: the palette, and what the slide uses bey
     await expect(onSlide).toBeVisible();
     await expect(onSlide).toContainText('Auf der Slide');
     await expect(onSlide.getByRole('group', { name: 'Farbe: auf der Slide' })).toBeVisible();
-    await expect(onSlide.getByRole('button', { name: '#12ab34 (#12AB34)' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(onSlide.getByRole('button', { name: '#12AB34', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(palette.getByRole('button', { name: /#12AB34/ })).toHaveCount(0);
 });
 

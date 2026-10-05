@@ -4,6 +4,15 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.10.1] – 2026-10-05
+
+### Geändert
+
+- **Farbtupfer:** „Auf der Slide" zeigt jetzt alle Farben der Slide, auch freigegebene – eine Farbe aus der Palette
+  trägt dort ihren Namen. Bisher fehlte die Gruppe, sobald eine Slide nur freigegebene Farben nutzte.
+- **Schrift:** „Großbuchstaben" steht vor der Farbe; die Farbe hat mit ihren Tupfern die volle Breite.
+- **Farbtupfer:** Eine Farbe ohne Namen heißt beim Darüberfahren nur noch nach ihrem Hex-Wert.
+
 ## [0.10.0] – 2026-10-05
 
 ### Neu
@@ -709,6 +718,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.10.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.10.1
 [0.10.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.10.0
 [0.9.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.9.0
 [0.8.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.8.1
