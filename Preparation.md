@@ -409,7 +409,7 @@ hängt nie an der Testinstanz, auch nicht mit Testinhalten (Entscheidung des Nut
 
 | Wer | Was | Wo im Code |
 | --- | --- | --- |
-| Einrichtungsassistent | legt **zwei Gruppen** an (Typ „Merkmal"), setzt Rechte an deren Rollen und nimmt sie zurück; „Einrichtung entfernen" löscht die Gruppen | `src/setup/provision.ts`, `src/setup/load.ts` |
+| Einrichtungsassistent | legt **zwei Gruppen** an (Typ wählbar, vorgewählt „Merkmal"; seit `v0.14.0`), setzt Rechte an deren Rollen und nimmt sie zurück; „Einrichtung entfernen" löscht die Gruppen | `src/setup/provision.ts`, `src/setup/load.ts` |
 | Mediathek | legt Seiten im Wiki-Bereich „Infoscreen" an und ändert sie; lädt Dateien hoch und löscht sie | `src/media/wiki.ts` |
 | Einstellungen | erzeugt den Login-Token des Geräte-Benutzers (`POST /login/token`) | `src/setup/device-token.ts` |
 | Designer | schreibt und löscht Werte im eigenen Speicher der Extension | `src/store/churchtools-kv.ts` |

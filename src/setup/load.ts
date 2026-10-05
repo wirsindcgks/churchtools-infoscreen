@@ -7,7 +7,7 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import type { GroupPermissions } from './abilities';
 import type { Grant, RoleRights } from './checks';
-import type { ProvisionApi } from './provision';
+import type { GroupTypeChoice, ProvisionApi } from './provision';
 
 export interface GroupSummary {
     id: number;
@@ -119,10 +119,12 @@ export async function groupMemberNames(groupId: number): Promise<{ personId: num
     );
 }
 
-/** The group type of the module's groups, by name – ids and names differ per instance. */
-export async function findGroupTypeId(name: string): Promise<number | null> {
-    const types = await churchtoolsClient.get<{ id: number; name: string; nameTranslated?: string }[]>('/group/grouptypes');
-    return types.find((t) => t.name === name || t.nameTranslated === name)?.id ?? null;
+/** The group types of the instance, as the assistant offers them – ordered like ChurchTools does, else by name. */
+export async function loadGroupTypes(): Promise<GroupTypeChoice[]> {
+    const types = await churchtoolsClient.get<{ id: number; name: string; nameTranslated?: string; sortKey?: number }[]>('/group/grouptypes');
+    return [...types]
+        .sort((a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0) || (a.nameTranslated || a.name).localeCompare(b.nameTranslated || b.name, 'de'))
+        .map((t) => ({ id: t.id, name: t.nameTranslated || t.name, rawName: t.name }));
 }
 
 /** Only for groups the assistant created itself (Plan.md, 9). Their roles and rights go with them. */

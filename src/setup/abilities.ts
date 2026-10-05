@@ -32,26 +32,32 @@ export const GROUP_RIGHT_NAMES = {
 
 const ALLOWED: Ability = { allowed: true, missing: [] };
 
+/** The group types the rights are counted for: creating uses the chosen one, refreshing and removing the one the groups were created with. */
+export interface GroupTypeIds {
+    createTypeId: number | null;
+    createdTypeId: number | null;
+}
+
 /**
- * `section` undefined: not readable – everything stays allowed, as before. `groupTypeId` null: the type „Merkmal"
- * was not found, so only `administer groups` and the id lists count.
+ * `section` undefined: not readable – everything stays allowed, as before. A type id null: no such type is known
+ * (none chosen yet, or „Merkmal" of an old installation was not found), so only `administer groups` and the id lists count.
  */
 export function settingsAbilities(
     section: GroupPermissions | undefined,
     createdGroupIds: readonly number[],
-    groupTypeId: number | null,
+    { createTypeId, createdTypeId }: GroupTypeIds,
 ): Record<SettingsButton, Ability> {
     if (!section) return { refresh: ALLOWED, remove: ALLOWED, create: ALLOWED };
     const list = (key: Exclude<keyof GroupPermissions, 'administer groups'>): number[] =>
         Array.isArray(section[key]) ? section[key]! : [];
     const admin = section['administer groups'] === true;
-    const ofType = (key: Exclude<keyof GroupPermissions, 'administer groups'>): boolean =>
-        groupTypeId !== null && list(key).includes(groupTypeId);
+    const ofType = (key: Exclude<keyof GroupPermissions, 'administer groups'>, typeId: number | null): boolean =>
+        typeId !== null && list(key).includes(typeId);
 
-    const canView = (id: number): boolean => admin || list('view group').includes(id) || ofType('view groups of grouptype');
-    const canDelete = (id: number): boolean => admin || list('delete group').includes(id) || ofType('delete groups of grouptype');
-    const canViewType = admin || ofType('view groups of grouptype');
-    const canCreateType = admin || ofType('create groups of grouptype');
+    const canView = (id: number): boolean => admin || list('view group').includes(id) || ofType('view groups of grouptype', createdTypeId);
+    const canDelete = (id: number): boolean => admin || list('delete group').includes(id) || ofType('delete groups of grouptype', createdTypeId);
+    const canViewType = admin || ofType('view groups of grouptype', createTypeId);
+    const canCreateType = admin || ofType('create groups of grouptype', createTypeId);
 
     const refresh = createdGroupIds.every(canView);
     const remove = createdGroupIds.every(canDelete);

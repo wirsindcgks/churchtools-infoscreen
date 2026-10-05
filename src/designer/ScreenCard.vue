@@ -19,7 +19,7 @@ import SlideThumb from './SlideThumb.vue';
  * `running`: what the schedule shows now (Plan.md 17); without it, the default playlist.
  */
 const props = defineProps<{ overview: ScreenOverview; admin?: boolean; running?: Running }>();
-const emit = defineEmits<{ remove: []; settings: []; schedule: [] }>();
+const emit = defineEmits<{ remove: []; settings: []; rename: []; schedule: [] }>();
 
 const screen = computed(() => props.overview.screen);
 const context = useStageContext();
@@ -66,6 +66,11 @@ const scheduleLabel = computed(() => {
 function schedule(): void {
     menuOpen.value = false;
     emit('schedule');
+}
+
+function rename(): void {
+    menuOpen.value = false;
+    emit('rename');
 }
 
 function settings(): void {
@@ -119,6 +124,9 @@ function settings(): void {
                         </button>
                         <button role="menuitem" type="button" data-testid="screen-schedule-open" @click="schedule">
                             <Icon name="calendar" :size="16" /> Zeitplan
+                        </button>
+                        <button v-if="admin" role="menuitem" type="button" data-testid="screen-rename-open" @click="rename">
+                            <Icon name="pencil" :size="16" /> Umbenennen
                         </button>
                         <button v-if="admin" role="menuitem" type="button" data-testid="screen-settings-open" @click="settings">
                             <Icon name="settings" :size="16" /> Einstellungen

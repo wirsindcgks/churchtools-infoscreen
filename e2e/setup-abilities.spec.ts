@@ -53,3 +53,29 @@ test('"Gruppen verwalten" greys out nothing', async ({ page }) => {
     await expect(page.getByTestId('ability-hint-refresh')).toHaveCount(0);
     await expect(page.getByTestId('ability-hint-remove')).toHaveCount(0);
 });
+
+/** Plan.md 71: the group type of the assistant is chosen, not assumed. `/group/grouptypes` is answered here, nothing is written. */
+async function answerGroupTypes(page: Page, names: string[]): Promise<void> {
+    await page.route('**/api/group/grouptypes', (route) =>
+        route.fulfill({ json: { data: names.map((name, i) => ({ id: i + 1, name, sortKey: i })) } }),
+    );
+}
+
+test('the group type is preselected with „Merkmal"', async ({ page }) => {
+    await answerGroupTypes(page, ['Kleingruppe', 'Dienst', 'Merkmal']);
+    await page.goto('./einstellungen/gruppen');
+    const select = page.getByTestId('group-type');
+    await expect(select.locator('option')).toHaveText(['Kleingruppe', 'Dienst', 'Merkmal']);
+    await expect(select.locator('option:checked')).toHaveText('Merkmal');
+});
+
+test('without „Merkmal" nothing is preselected until a type is chosen', async ({ page }) => {
+    await answerGroupTypes(page, ['Kleingruppe', 'Dienst']);
+    await page.goto('./einstellungen/gruppen');
+    const select = page.getByTestId('group-type');
+    await expect(select.locator('option:checked')).toHaveText('– bitte wählen –');
+    await expect(page.getByTestId('run-assistant')).toBeDisabled();
+    await select.selectOption({ label: 'Dienst' });
+    await expect(select.locator('option:checked')).toHaveText('Dienst');
+    await expect(select.locator('option')).toHaveText(['Kleingruppe', 'Dienst']);
+});

@@ -35,8 +35,8 @@ Kurzfassung je Rolle steht im [Onboarding](Onboarding.md), alle Rechte als Tabel
   es bei euch geht, siehst du daran, dass es die Extension-Verwaltung gibt (Schritt 1). Sonst bei ChurchTools
   anfragen.
 - **Ein Administrator-Konto**, das Berechtigungen verwalten darf – und unter „Gruppen" die Gruppen des Assistenten
-  sehen, anlegen und löschen: „Gruppen eines Gruppentyps erstellen" und „… sehen" für „Merkmal" („Gruppe inkl. ihrer
-  Gruppenmitglieder sehen" je Gruppe tut es auch), „Gruppe löschen" bzw. „Gruppen eines Gruppentyps löschen" – oder
+  sehen, anlegen und löschen: „Gruppen eines Gruppentyps erstellen" und „… sehen" für den Gruppentyp, den du in Schritt 4 wählst
+  – vorgewählt ist „Merkmal" („Gruppe inkl. ihrer Gruppenmitglieder sehen" je Gruppe tut es auch), „Gruppe löschen" bzw. „Gruppen eines Gruppentyps löschen" – oder
   alles zusammen „Gruppen verwalten". Fehlt eines, graut die Einstellungsseite den Knopf aus und nennt es. Ein
   Super-Admin hat das alles und braucht auch die Modulrechte aus Schritt 2 nicht ausdrücklich
   (Einzelheiten in [Rechte](Rechte.md#churchtools-selbst--nur-für-administratoren)).
@@ -65,17 +65,21 @@ Administratoren ohnehin sind – so bleibt es nachvollziehbar
 
 1. **Rechteverwaltung** öffnen, Reiter **Gruppen**, eure Administratoren-Gruppe anklicken.
 2. Unter der Rolle, in der du Mitglied bist, auf **Bearbeiten** klicken.
-3. Im Berechtigungsbaum **„Infoscreen Designer"** aufklappen und diese Haken setzen:
+3. Im Berechtigungsbaum **„Infoscreen Designer"** aufklappen und so einstellen – alle neun Zeilen des Baums:
 
-   | Berechtigung | Auswahl |
+   | Berechtigung | Einstellung |
    | --- | --- |
-   | „Infoscreen Designer" sehen | – |
-   | Kategorien sehen | alle |
-   | Kategorien erstellen | – |
-   | Daten in Kategorie sehen | alle |
-   | Daten in Kategorie erstellen | alle |
-   | Daten in Kategorie bearbeiten | alle |
-   | Daten in Kategorie löschen | alle |
+   | „Infoscreen Designer" sehen | ✓ Haken setzen |
+   | Kategorien sehen | Haken setzen, Auswahl „alle" |
+   | Kategorien erstellen | ✓ Haken setzen |
+   | Kategorien bearbeiten | kein Haken – braucht niemand |
+   | Kategorien löschen | kein Haken – braucht niemand |
+   | Daten in Kategorie sehen | Haken setzen, Auswahl „alle" |
+   | Daten in Kategorie erstellen | Haken setzen, Auswahl „alle" |
+   | Daten in Kategorie bearbeiten | Haken setzen, Auswahl „alle" |
+   | Daten in Kategorie löschen | Haken setzen, Auswahl „alle" |
+
+   „Infoscreen Designer" sehen und „Kategorien erstellen" haben keine Auswahl, nur den Haken.
 
 4. **Speichern.**
 
@@ -93,9 +97,14 @@ Die Rechteverwaltung von ChurchTools ist fein, aber aufwendig. Deshalb erledigt 
 
 1. Im Designer oben auf **Einstellungen → Gruppen und Rechte**.
 2. In der Karte **„Automatisch einrichten"** unter „Was genau passiert" nachlesen, was angelegt wird.
-3. **„Gruppen und Rechte anlegen"** klicken.
+3. Den **Gruppentyp** wählen. Vorgewählt ist „Merkmal", wenn es ihn bei euch gibt. Gemeinden dürfen Gruppentypen
+   umbenennen und löschen; fehlt „Merkmal", nimm einen Typ für Gruppen, die eine Funktion in der Gemeinde abbilden,
+   etwa „Dienst". **Achte darauf, was der Typ mitbringt:** Rechte, die ein Gruppentyp seinen Rollen gibt, gelten in
+   jeder Gruppe dieses Typs – Gestalter und Fernseher bekämen sie mit. Ein Typ, der wenig mitbringt, ist der richtige
+   ([Academy: Gruppentypen](https://churchtools.academy/de/help/app/rund-ums-gruppenmodul/37-was-sind-gruppentypen-und-wofur-kann-ich-sie-benutzen/)).
+4. **„Gruppen und Rechte anlegen"** klicken.
 
-Der Assistent legt zwei **leere, aktive Gruppen vom Typ „Merkmal"** an und gibt allen ihren Rollen die nötigen
+Der Assistent legt zwei **leere, aktive Gruppen vom gewählten Typ** an und gibt allen ihren Rollen die nötigen
 Rechte:
 
 - **„Infoscreen-Designer"** – das Modul sehen und seine Inhalte bearbeiten, dazu den Wiki-Bereich „Infoscreen", in
@@ -126,8 +135,8 @@ unter **Einstellungen → Mediathek im Wiki**.
 Der Assistent legt den Wiki-Bereich nur an, wenn du das Wiki sehen darfst; ohne dieses Recht bricht er ab, bevor er etwas anlegt. Einen fremden Bereich gleichen Namens, den du nicht sehen darfst, kann er nicht erkennen.
 
 **Screens legst du als Administrator an:** auf der Startseite des Designers **„+ Screen erstellen"** – Name, Adresse
-und Format. Name und Overscan änderst du später über das Menü **„…" der Kachel → „Einstellungen"**; was der Screen
-zeigt, gestalten die Gestalter.
+und Format. Den Namen änderst du später über das Menü **„…" der Kachel → „Umbenennen"**, den Overscan über **„…" →
+„Einstellungen"**; was der Screen zeigt, gestalten die Gestalter.
 
 *Eigene Gruppen statt der automatischen?* Weiter unten auf **Einstellungen → Gruppen und Rechte** lassen sich
 vorhandene Gruppen für Gestalter und Geräte wählen; die Seite prüft dann, was ihnen fehlt, und ändert selbst nichts.
@@ -350,7 +359,9 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | Kein Menüpunkt „Infoscreen Designer", auch nicht als Administrator | Modulrecht „sehen" fehlt | Schritt 2; Gruppe muss „aktiv" sein |
 | Startseite des Designers: „Dir fehlen Rechte …" | Person ist nicht (aktiv) in „Infoscreen-Designer" | Schritt 5; die Liste nennt das fehlende Recht |
 | Kein „Einstellungen" in der Kopfzeile des Designers | Du bist kein Administrator | Einstellungen sind Administratoren vorbehalten |
-| Kein „+ Screen erstellen", kein „Einstellungen" im Menü der Kachel | Dir fehlt das Recht, Screens anzulegen, zu bearbeiten und zu löschen – auch Administratoren brauchen es | Schritt 2: die drei „Daten in Kategorie …"-Rechte für alle Kategorien |
+| Kein „+ Screen erstellen", kein „Umbenennen" und kein „Einstellungen" im Menü der Kachel | Dir fehlt das Recht, Screens anzulegen, zu bearbeiten und zu löschen – auch Administratoren brauchen es | Schritt 2: die drei „Daten in Kategorie …"-Rechte für alle Kategorien |
+| Assistent bricht ab: „Den Gruppentyp „Merkmal" gibt es auf dieser Instanz nicht." | Version vor `v0.14.0` auf einer Instanz ohne diesen Gruppentyp | aktuelle Version installieren und in Schritt 4 einen Gruppentyp wählen |
+| „Gruppen und Rechte anlegen" bleibt grau, ohne Hinweis auf fehlende Rechte | Kein Gruppentyp gewählt | in Schritt 4 einen Gruppentyp wählen |
 | „Adresse erzeugen" meldet „Anmeldung fehlgeschlagen" | meist fehlt dem Geräte-Konto der **Benutzername** | Schritt 6, Punkt 2 |
 | Fernseher: „Dieser Fernseher ist nicht bei ChurchTools angemeldet" | Adresse ohne Anmeldung, oder das Passwort des Geräte-Kontos wurde geändert | unter Einstellungen → Adressen für die Fernseher eine neue Adresse erzeugen |
 | Player im Tab neben ChurchTools: fragt nach Anmeldung oder zeigt keine Termine | Im selben Browser ist jemand anderes angemeldet – ChurchTools kennt je Browser nur eine Anmeldung | Player in einem Inkognito-Fenster oder eigenen Browserprofil öffnen |

@@ -1,6 +1,6 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { groupMemberNames, personGroupIds } from './load';
+import { groupMemberNames, loadGroupTypes, personGroupIds } from './load';
 
 describe('personGroupIds', () => {
     afterEach(() => vi.restoreAllMocks());
@@ -27,6 +27,25 @@ describe('groupMemberNames (Plan.md, F; G18: names collected before the device g
         expect(await groupMemberNames(28)).toEqual([
             { personId: 22, name: 'Minimal User' },
             { personId: 16, name: 'Infoscreen Foyer' },
+        ]);
+    });
+});
+
+describe('loadGroupTypes (Plan.md 71)', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    it('shows the translated name, orders by sortKey and then by name', async () => {
+        vi.spyOn(churchtoolsClient, 'get').mockResolvedValue([
+            { id: 3, name: 'Zeta' },
+            { id: 4, name: 'merkmal', nameTranslated: 'Attribute', sortKey: 1 },
+            { id: 1, name: 'Alpha' },
+            { id: 2, name: 'Beta', sortKey: 2 },
+        ]);
+        expect(await loadGroupTypes()).toEqual([
+            { id: 1, name: 'Alpha', rawName: 'Alpha' },
+            { id: 3, name: 'Zeta', rawName: 'Zeta' },
+            { id: 4, name: 'Attribute', rawName: 'merkmal' },
+            { id: 2, name: 'Beta', rawName: 'Beta' },
         ]);
     });
 });

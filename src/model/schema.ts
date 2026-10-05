@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 24 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 25 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -573,6 +573,11 @@ export const SettingsDoc = v.object({
     deviceGroupId: v.optional(v.pipe(v.number(), v.integer())),
     /** Groups the setup assistant created – the only ones it may change or delete. */
     createdGroupIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
+    /**
+     * Since 1.25: the group type the assistant created its groups with (Plan.md 71) – chosen by the
+     * administrator, since a church may have deleted or renamed „Merkmal". Missing means „Merkmal", as before.
+     */
+    createdGroupTypeId: v.optional(v.pipe(v.number(), v.integer())),
     /**
      * The wiki category the setup assistant created – the only one the module
      * may ever delete. Absent for a category it found, and for installations

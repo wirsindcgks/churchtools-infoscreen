@@ -28,6 +28,17 @@ ChurchTools ohnehin öffentlich zeigt.
 
 ## Rechte je Rolle
 
+> **Diese Rechte vergibt niemand von Hand an Personen.** Der Assistent legt die Gruppen „Infoscreen-Designer" und
+> „Infoscreen-Devices" an und gibt ihnen die Rechte ([Einrichtung, Schritt 4](Einrichtung.md#4-gruppen-und-rechte-anlegen-lassen));
+> danach nimmst du nur noch Personen in die passende Gruppe auf – oder nimmst sie wieder heraus. Wer gestaltet, wird
+> Mitglied von „Infoscreen-Designer"; jeder Fernseher bekommt ein Konto in „Infoscreen-Devices". Ausnahme sind die
+> Modulrechte der Administratoren ([Einrichtung, Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)), und
+> auch die gehören an die Rolle einer Admin-Gruppe, nicht an die Person. Wer kein Recht hat, Rechte zu vergeben,
+> lässt das einen Administrator machen. ChurchTools selbst rät dazu: Rechte direkt an einen Benutzer nur im
+> Ausnahmefall, weil die Rechte sonst schnell unübersichtlich werden
+> ([Academy](https://churchtools.academy/en/help/permissions-management/basics-understanding-permissions/21-useful-permissions-management-from-high-level-to-subtle-details/)).
+> Die Tabellen unten sind zum Nachschlagen und Prüfen da.
+
 **Kategorien** sind die Ablagen des Moduls in ChurchTools: **Screens**, **Playlists**, **Slides**, **Medien** und
 **Einstellungen**. Die Datenrechte werden je Kategorie vergeben.
 
@@ -127,9 +138,9 @@ ist es nicht.
 | --- | --- | --- | --- |
 | Administration | „Erweiterungen verwalten" | Die Extension hochladen und aktualisieren | Katalog |
 | Administration | „Berechtigungen verwalten" | Einstellungsseite des Designers öffnen; der Assistent vergibt damit die Rechte der beiden Gruppen; sich selbst die Modulrechte geben ([Einrichtung, Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)) | gemessen |
-| Gruppen | „Gruppen eines Gruppentyps erstellen" **und** „Gruppen eines Gruppentyps sehen", je für „Merkmal" | „Gruppen und Rechte anlegen" – ohne Sehen bräche der Assistent nach dem Anlegen ab | gemessen |
-| Gruppen | „Gruppen eines Gruppentyps löschen" für „Merkmal" (oder „Gruppe löschen" je Gruppe) | „Automatische Einrichtung rückgängig machen" | gemessen |
-| Gruppen | „Gruppenmitgliedschaften von Gruppen eines Gruppentyps bearbeiten" für „Merkmal" | Gestalter und Gerätekonten in die beiden Gruppen aufnehmen | Katalog |
+| Gruppen | „Gruppen eines Gruppentyps erstellen" **und** „Gruppen eines Gruppentyps sehen", je für den Gruppentyp, den du im Assistenten wählst (vorgewählt „Merkmal") | „Gruppen und Rechte anlegen" – ohne Sehen bräche der Assistent nach dem Anlegen ab | gemessen |
+| Gruppen | „Gruppen eines Gruppentyps löschen" für diesen Typ (oder „Gruppe löschen" je Gruppe) | „Automatische Einrichtung rückgängig machen" | gemessen |
+| Gruppen | „Gruppenmitgliedschaften von Gruppen eines Gruppentyps bearbeiten" für diesen Typ | Gestalter und Gerätekonten in die beiden Gruppen aufnehmen | Katalog |
 | Gruppen | statt der vier Zeilen oben: „Gruppen verwalten" | alles davon auf einmal | gemessen (ersetzt die Gruppenrechte) |
 | Wiki | „„Wiki" sehen" **und** „Stammdaten bearbeiten" | Der Assistent legt den Wiki-Bereich „Infoscreen" an | Katalog (API-Spezifikation) |
 | Personen | „Personen erstellen" und „Personen bearbeiten" | Das Gerätekonto anlegen und ihm einen Status geben | Katalog |
@@ -143,7 +154,7 @@ ist es nicht.
 | Kalender | „Einzelnen Kalender sehen" für jeden Kalender, den die Fernseher zeigen sollen | „Rechte aktualisieren" vergibt nur Kalender, die du selbst siehst – **auch als Super-Admin nötig** | gemessen |
 | Ressourcen | „Ressource sehen" für die Räume | Gestalter bekommen die Räume, die du siehst | gemessen |
 | Administration | „Berechtigungen verwalten" (siehe oben) | Einstellungen: „Rechte aktualisieren", Adressen für Fernseher, Dienste freigeben | gemessen |
-| Gruppen | „Gruppen eines Gruppentyps sehen" für „Merkmal" (siehe oben) | „Rechte aktualisieren" und die Prüfung der Gruppen | gemessen |
+| Gruppen | „Gruppen eines Gruppentyps sehen" für den Typ der beiden Gruppen (siehe oben) | „Rechte aktualisieren" und die Prüfung der Gruppen | gemessen |
 
 **„Berechtigungen verwalten" ist ein mächtiges Recht:** Wer es hat, kann sich jedes andere Recht selbst geben. Wo es nur
 für die Einrichtung vergeben werden soll, kann ein Super-Admin die einmaligen Schritte selbst übernehmen oder das Recht
@@ -201,13 +212,14 @@ warnt, wenn Gestalter mehr dürfen als vorgesehen.
 
 ## Woher die Rechte kommen
 
-- **Über die Gruppen des Assistenten** – der empfohlene Weg. Alle Rollen einer Gruppe („Teilnehmer", „Leiter")
-  bekommen dieselben Rechte; wer Mitglied wird, hat sie. Nach einem Update der Extension einmal **„Rechte
+- **Über die Gruppen des Assistenten** – der empfohlene Weg, und für Gestalter und Geräte der einzige. Alle Rollen
+  einer Gruppe (bei „Merkmal" „Teilnehmer" und „Leiter") bekommen dieselben Rechte; wer Mitglied wird, hat sie. Nach einem Update der Extension einmal **„Rechte
   aktualisieren"**.
 - **Administratoren** geben sich die Modulrechte einmal selbst, am besten über die Rolle ihrer Admin-Gruppe
   ([Einrichtung, Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)).
-- **Rechte addieren sich.** Was der **Personenstatus** oder eine andere Gruppe erlaubt, kommt dazu. Deshalb bekommt
-  ein Geräte-Konto einen Status mit möglichst wenig Rechten.
+- **Rechte addieren sich.** Was der **Personenstatus**, der **Gruppentyp** der beiden Gruppen oder eine andere Gruppe
+  erlaubt, kommt dazu. Deshalb bekommt ein Geräte-Konto einen Status mit möglichst wenig Rechten, und für die beiden
+  Gruppen taugt ein Gruppentyp, der seinen Rollen wenig mitgibt.
 - **Ein Geräte-Konto ist kein echtes Personenkonto,** sondern eine eigene Person je Standort, und gehört in **keine
   weitere Gruppe** als „Infoscreen-Devices". Rechte aus anderen Gruppen bekommt der Fernseher mit – und jeder, der
   seine Adresse kennt. Die Prüfung sieht diese Rechte nicht; sie nennt seit Version 0.7.3 nur die Gruppen.

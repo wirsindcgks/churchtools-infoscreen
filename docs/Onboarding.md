@@ -23,8 +23,8 @@ Etwa eine halbe Stunde, den Fernseher nicht mitgezählt.
 - [ ] **Designer einmal öffnen** – er legt dabei seine Ablage an.
 - [ ] **Einstellungen → Gruppen und Rechte → „Gruppen und Rechte anlegen"** – der Assistent legt „Infoscreen-Designer" und
       „Infoscreen-Devices" samt Rechten an ([Schritt 4](Einrichtung.md#4-gruppen-und-rechte-anlegen-lassen)).
-- [ ] **Screens anlegen:** Startseite → **„+ Screen erstellen"**, je Fernseher einer. Name und Overscan später über
-      „…" → „Einstellungen".
+- [ ] **Screens anlegen:** Startseite → **„+ Screen erstellen"**, je Fernseher einer. Umbenennen später über „…" →
+      „Umbenennen", den Overscan über „…" → „Einstellungen".
 - [ ] **Gestalter aufnehmen:** in die Gruppe „Infoscreen-Designer", egal in welcher Rolle.
 - [ ] **Je Fernseher ein Geräte-Konto** mit Benutzername und Passwort, Personenstatus mit wenig Rechten, Mitglied
       von „Infoscreen-Devices" ([Schritt 6](Einrichtung.md#6-geräte-benutzer-anlegen)).

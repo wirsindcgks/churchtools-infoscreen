@@ -4,6 +4,28 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.14.0] – 2026-10-05
+
+### Neu
+
+- **„Umbenennen" im Menü der Screen-Kachel:** Administratoren ändern den Namen eines Screens direkt über „…" →
+  „Umbenennen", ohne Umweg über „Einstellungen".
+- **Datenmodell:** Schema 1.25 (`createdGroupTypeId` in den Einstellungen). Ältere Einrichtungen gelten weiter als
+  „Merkmal".
+
+### Behoben
+
+- **Einrichtung ohne Gruppentyp „Merkmal":** Der Assistent brach auf Instanzen, die diesen Gruppentyp gelöscht oder
+  umbenannt haben, mit „Den Gruppentyp „Merkmal" gibt es auf dieser Instanz nicht." ab. Den Gruppentyp wählt der
+  Administrator jetzt selbst; vorgewählt ist „Merkmal", wenn es ihn gibt, darunter steht, worauf es bei der Wahl ankommt.
+
+### Dokumentation
+
+- **Einrichtung, Schritt 2:** Die Tabelle nennt alle neun Rechte des Moduls, auch „Kategorien bearbeiten" und
+  „Kategorien löschen" (beides braucht niemand). Rechte ohne Auswahl stehen als „✓ Haken setzen" statt „–".
+- **Rechte:** Vor den Tabellen steht, dass die Rechte nur über die Gruppen des Assistenten vergeben werden und danach
+  nur noch Personen aufgenommen werden – nie Rechte direkt an Personen.
+
 ## [0.13.0] – 2026-10-05
 
 ### Neu
@@ -768,6 +790,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.14.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.14.0
 [0.13.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.13.0
 [0.12.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.12.0
 [0.11.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.11.0
