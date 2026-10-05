@@ -4,7 +4,7 @@ import { selectUpcoming } from '../../appointments/normalize';
 import { showsRoomsAt } from '../../appointments/rooms';
 import type { Block } from '../../model/schema';
 import { themeOf, useStageContext } from '../context';
-import { formatDate, placeLine, servicesLine, sizedImageUrl, textStyle, timeRange } from '../format';
+import { formatDate, placeLine, servicesLine, sizedImageUrl, textStyle, timeRange, verticalAlignOf, verticalStyle } from '../format';
 import { imageBox, nextLayout } from '../theme';
 import CalendarBadge from './CalendarBadge.vue';
 import DateTile from './DateTile.vue';
@@ -32,6 +32,9 @@ const classicPlace = computed(() => (next.value && showsRoomsAt(props.block, nex
 /** Who takes the services the block chose, in its own line under the place. */
 const people = computed(() => (next.value ? servicesLine(next.value, props.block.services) : null));
 
+/** Image and text place themselves with automatic margins, never with `align-items` (Plan.md 70). */
+const vertical = computed(() => verticalStyle(verticalAlignOf(props.block) ?? 'middle'));
+
 const card = computed(() => nextLayout(props.block, themeOf(context)) === 'card');
 
 /** Room for the image: beside the text, inside the card's padding (0.8em). */
@@ -57,7 +60,7 @@ const imageStyle = computed(() =>
     <!-- The highlighted event of the WordPress plugin (Plan.md, 20): tile, badge, title, text, time, place, image. -->
     <div v-if="card" class="hero" :class="{ 'hero--image': image }" :style="textStyle(block.style)" data-testid="next-card">
         <template v-if="next">
-            <div class="hero-text">
+            <div class="hero-text" :style="vertical">
                 <div class="hero-head">
                     <DateTile :start="next.start" :time-zone="context.timeZone" :color="next.color" />
                     <div class="hero-titles">
@@ -86,13 +89,13 @@ const imageStyle = computed(() =>
                     </span>
                 </div>
             </div>
-            <img v-if="image" class="hero-image" :src="image" :style="imageStyle" alt="" data-testid="next-image">
+            <img v-if="image" class="hero-image" :src="image" :style="{ ...imageStyle, ...vertical }" alt="" data-testid="next-image">
         </template>
-        <div v-else class="hero-text hero-subtitle">Derzeit ist kein Termin geplant.</div>
+        <div v-else class="hero-text hero-subtitle" :style="vertical">Derzeit ist kein Termin geplant.</div>
     </div>
     <div v-else class="next" :class="{ 'next--image': image }" :style="textStyle(block.style)">
-        <img v-if="image" class="image" :src="image" :style="imageStyle" alt="" data-testid="next-image">
-        <div v-if="next" class="text">
+        <img v-if="image" class="image" :src="image" :style="{ ...imageStyle, ...vertical }" alt="" data-testid="next-image">
+        <div v-if="next" class="text" :style="vertical">
             <div class="label">Nächster Termin</div>
             <div class="title">{{ next.title }}</div>
             <div class="meta">{{ formatDate(next.start, context.timeZone) }}</div>
@@ -107,7 +110,7 @@ const imageStyle = computed(() =>
                 <span>{{ people }}</span>
             </div>
         </div>
-        <div v-else class="text meta">Derzeit ist kein Termin geplant.</div>
+        <div v-else class="text meta" :style="vertical">Derzeit ist kein Termin geplant.</div>
     </div>
 </template>
 
@@ -115,7 +118,7 @@ const imageStyle = computed(() =>
 .next {
     display: flex;
     gap: 60px;
-    align-items: center;
+    align-items: flex-start;
     width: 100%;
     height: 100%;
 }
@@ -177,10 +180,11 @@ const imageStyle = computed(() =>
     display: flex;
     flex: 1;
     flex-direction: column;
-    /* Too little room: the overflow goes down, not over the badge at the top. */
-    justify-content: safe center;
+    /* Placed by the margins; too little room: the overflow goes down, not over the badge at the top. */
+    align-self: flex-start;
     gap: 0.6em;
     min-width: 0;
+    max-height: 100%;
 }
 .hero-head {
     display: flex;
@@ -266,7 +270,7 @@ const imageStyle = computed(() =>
     flex: 0 0 42%;
     min-width: 0;
     max-height: 100%;
-    align-self: center;
+    align-self: flex-start;
     object-fit: cover;
     border-radius: var(--isd-radius, 0.3em);
 }

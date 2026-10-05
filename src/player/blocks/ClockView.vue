@@ -2,7 +2,7 @@
 import { computed } from 'vue';
 import type { Block } from '../../model/schema';
 import { useStageContext } from '../context';
-import { formatDate, formatTime, textStyle } from '../format';
+import { formatDate, formatTime, textStyle, verticalAlignOf, verticalStyle } from '../format';
 
 const props = defineProps<{ block: Extract<Block, { type: 'clock' }> }>();
 const context = useStageContext();
@@ -17,13 +17,20 @@ const text = computed(() => {
 </script>
 
 <template>
-    <div class="clock" :style="textStyle(block.style)">{{ text }}</div>
+    <div class="clock" :style="textStyle(block.style)">
+        <div class="clock-inner" :style="verticalStyle(verticalAlignOf(block) ?? 'top')">{{ text }}</div>
+    </div>
 </template>
 
 <style scoped>
 .clock {
+    display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100%;
     font-variant-numeric: tabular-nums;
+}
+.clock-inner {
+    flex: none;
 }
 </style>

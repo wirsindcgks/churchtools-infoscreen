@@ -8,7 +8,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import type { Block } from '../../model/schema';
 import { useStageContext } from '../context';
 import { countdownTo } from '../countdown';
-import { formatDate, textStyle } from '../format';
+import { formatDate, textStyle, verticalAlignOf, verticalStyle } from '../format';
 
 const props = defineProps<{ block: Extract<Block, { type: 'countdown' }> }>();
 const context = useStageContext();
@@ -35,20 +35,22 @@ const state = computed(() =>
 
 <template>
     <div class="countdown" :style="textStyle(block.style)" data-testid="countdown">
-        <template v-if="state.kind === 'until'">
-            <div class="caption">
-                {{ block.showTitle ? `${state.appointment.title} beginnt in` : 'Beginnt in' }}
-            </div>
-            <div class="time" data-testid="countdown-time">{{ state.text }}</div>
-            <div class="when">
-                {{ formatDate(state.appointment.start, context.timeZone) }}, {{ state.appointment.startTime }} Uhr
-            </div>
-        </template>
-        <template v-else-if="state.kind === 'running'">
-            <div v-if="block.showTitle" class="caption">{{ state.appointment.title }}</div>
-            <div class="running" data-testid="countdown-running">{{ block.runningText }}</div>
-        </template>
-        <div v-else class="none">Kein Termin in Sicht</div>
+        <div class="countdown-inner" :style="verticalStyle(verticalAlignOf(block) ?? 'middle')">
+            <template v-if="state.kind === 'until'">
+                <div class="caption">
+                    {{ block.showTitle ? `${state.appointment.title} beginnt in` : 'Beginnt in' }}
+                </div>
+                <div class="time" data-testid="countdown-time">{{ state.text }}</div>
+                <div class="when">
+                    {{ formatDate(state.appointment.start, context.timeZone) }}, {{ state.appointment.startTime }} Uhr
+                </div>
+            </template>
+            <template v-else-if="state.kind === 'running'">
+                <div v-if="block.showTitle" class="caption">{{ state.appointment.title }}</div>
+                <div class="running" data-testid="countdown-running">{{ block.runningText }}</div>
+            </template>
+            <div v-else class="none">Kein Termin in Sicht</div>
+        </div>
     </div>
 </template>
 
@@ -56,10 +58,12 @@ const state = computed(() =>
 .countdown {
     display: flex;
     flex-direction: column;
-    justify-content: center;
     width: 100%;
     height: 100%;
     line-height: 1.1;
+}
+.countdown-inner {
+    flex: none;
 }
 .caption,
 .when {

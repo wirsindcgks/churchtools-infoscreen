@@ -1,5 +1,5 @@
 /** Display helpers for the stage: fonts, image addresses, German dates. */
-import type { TextStyle } from '../model/schema';
+import type { Block, TextStyle } from '../model/schema';
 import { fontStack } from './fonts';
 import { GROUP_COLORS } from './palette';
 
@@ -12,6 +12,34 @@ export function textStyle(style: TextStyle): Record<string, string> {
         textAlign: style.align,
         ...(style.uppercase === true && { textTransform: 'uppercase' }),
     };
+}
+
+type Vertical = NonNullable<TextStyle['verticalAlign']>;
+
+/** Where each block with a vertical choice puts its content when none is set: what it did before schema 1.24 (Plan.md 70). */
+export const VERTICAL_DEFAULTS: Partial<Record<Block['type'], Vertical>> = {
+    text: 'top',
+    clock: 'top',
+    countdown: 'middle',
+    'next-appointment': 'middle',
+    'church-header': 'middle',
+};
+
+/** The effective vertical alignment of a block, or null for blocks that have none (lists, banner, media). */
+export function verticalAlignOf(block: Block): Vertical | null {
+    const fallback = VERTICAL_DEFAULTS[block.type];
+    if (!fallback) return null;
+    return ('style' in block ? block.style.verticalAlign : undefined) ?? fallback;
+}
+
+/**
+ * Style for the content inside a full-height flex column. Automatic margins
+ * share out the free room and drop to 0 when the content overflows, so too
+ * much content starts at the top; `justify-content: center` would cut its
+ * start off.
+ */
+export function verticalStyle(align: Vertical): Record<string, string> {
+    return align === 'middle' ? { marginBlock: 'auto' } : align === 'bottom' ? { marginTop: 'auto' } : {};
 }
 
 /**

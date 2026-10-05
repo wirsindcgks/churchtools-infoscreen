@@ -6,7 +6,7 @@ import type { Block, Fill, GroupFields, RoomEntry, TextStyle } from '../model/sc
 import { bannerShown } from '../player/banner';
 import { themeOf, useStageContext } from '../player/context';
 import { fontDef, FONTS } from '../player/fonts';
-import { calendarColor, sizedImageUrl } from '../player/format';
+import { calendarColor, sizedImageUrl, verticalAlignOf } from '../player/format';
 import { GROUP_SECONDS, PAGE_SECONDS, POST_SECONDS, slideSeconds } from '../player/paging';
 import { qrShape } from '../player/qr';
 import { listLayout } from '../player/theme';
@@ -1403,17 +1403,31 @@ const LAYERS = [
                         @blur="edit.onBlur"
                         @update:model-value="setStyle({ color: $event })"
                     />
-                    <label class="d-field">
-                        Ausrichtung
-                        <select
-                            :value="block.style.align"
-                            @change="setStyle({ align: ($event.target as HTMLSelectElement).value as 'left' })"
-                        >
-                            <option value="left">Links</option>
-                            <option value="center">Mittig</option>
-                            <option value="right">Rechts</option>
-                        </select>
-                    </label>
+                    <div class="grid2">
+                        <label class="d-field">
+                            Ausrichtung
+                            <select
+                                :value="block.style.align"
+                                @change="setStyle({ align: ($event.target as HTMLSelectElement).value as 'left' })"
+                            >
+                                <option value="left">Links</option>
+                                <option value="center">Mittig</option>
+                                <option value="right">Rechts</option>
+                            </select>
+                        </label>
+                        <label v-if="verticalAlignOf(block)" class="d-field">
+                            Vertikal
+                            <select
+                                :value="verticalAlignOf(block)"
+                                data-testid="text-vertical-align"
+                                @change="setStyle({ verticalAlign: ($event.target as HTMLSelectElement).value as 'top' })"
+                            >
+                                <option value="top">Oben</option>
+                                <option value="middle">Mittig</option>
+                                <option value="bottom">Unten</option>
+                            </select>
+                        </label>
+                    </div>
                 </InspectorSection>
 
                 <InspectorSection id="position" title="Position &amp; Ebene" :summary="positionSummary">

@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { isVideo, type Block } from '../../model/schema';
 import { imageSource, useStageContext } from '../context';
 import { fillStyle } from '../fill';
-import { textStyle } from '../format';
+import { textStyle, verticalAlignOf, verticalStyle } from '../format';
 import { blockImageUrl, headerLogoUrl } from '../images';
 import { qrShape } from '../qr';
 import { webFrame } from '../web';
@@ -37,6 +37,9 @@ const logoUrl = computed(() => {
 /** Logo and name sit side by side; the block's alignment places the pair. */
 const JUSTIFY = { left: 'flex-start', center: 'center', right: 'flex-end' } as const;
 
+/** Margins for the content of a block with a vertical choice (Plan.md 70). */
+const vertical = computed(() => verticalStyle(verticalAlignOf(props.block) ?? 'top'));
+
 const web = computed(() => (props.block.type === 'web' ? webFrame(props.block.url, window.location.origin) : null));
 /** The page laid out at block size ÷ zoom and scaled back up: zoom 2 shows a phone page twice as large. */
 const webStyle = computed(() => {
@@ -59,7 +62,9 @@ const imageUrl = computed(() => {
 
 <template>
     <div class="block" :class="`block--${block.type}`" :style="frame">
-        <div v-if="block.type === 'text'" class="text" :style="textStyle(block.style)">{{ block.text }}</div>
+        <div v-if="block.type === 'text'" class="text" :style="textStyle(block.style)">
+            <div class="text-inner" :style="vertical" data-testid="text-inner">{{ block.text }}</div>
+        </div>
 
         <div
             v-else-if="block.type === 'shape'"
@@ -78,8 +83,8 @@ const imageUrl = computed(() => {
             class="header"
             :style="{ ...textStyle(block.style), justifyContent: JUSTIFY[block.style.align] }"
         >
-            <img v-if="logoUrl" class="logo" :class="{ 'logo--beside-name': block.showName }" :src="logoUrl" alt="">
-            <span v-if="block.showName" class="name">{{ context.churchName }}</span>
+            <img v-if="logoUrl" class="logo" :class="{ 'logo--beside-name': block.showName }" :style="vertical" :src="logoUrl" alt="">
+            <span v-if="block.showName" class="name" :style="vertical">{{ context.churchName }}</span>
         </div>
 
         <template v-else-if="block.type === 'web'">
@@ -129,14 +134,21 @@ const imageUrl = computed(() => {
     overflow: hidden;
 }
 .text {
+    display: flex;
+    flex-direction: column;
     width: 100%;
     height: 100%;
+    overflow: hidden;
     white-space: pre-wrap;
     overflow-wrap: break-word;
 }
+/* The item keeps the full width, so the text's own alignment works; the margins place it. */
+.text-inner {
+    flex: none;
+}
 .header {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 0.5em;
     width: 100%;
     height: 100%;
