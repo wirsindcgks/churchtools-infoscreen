@@ -267,6 +267,23 @@ describe('readSlide – capitals (schema 1.22, Plan.md 65)', () => {
     });
 });
 
+describe('readSlide – vertical alignment (schema 1.24, Plan.md 70)', () => {
+    const style = { fontFamily: 'sans', fontSize: 64, color: '#ffffff' };
+    const slide = (extra: object) => ({ ...makeSlide(), blocks: [{ ...textBlock('a'), style: { ...style, ...extra } }] });
+    const styleOf = (raw: unknown) => (readSlide(raw).doc.blocks[0] as { style: { verticalAlign?: string } }).style;
+
+    it('reads a style from before 1.24 without the field – the block keeps its own default', () => {
+        expect(styleOf(slide({})).verticalAlign).toBeUndefined();
+    });
+
+    it('reads top, middle and bottom; a block with anything else is left out with an issue', () => {
+        for (const value of ['top', 'middle', 'bottom']) expect(styleOf(slide({ verticalAlign: value })).verticalAlign).toBe(value);
+        const read = readSlide(slide({ verticalAlign: 'center' }));
+        expect(read.doc.blocks).toHaveLength(0);
+        expect(read.issues).toHaveLength(1);
+    });
+});
+
 describe('serialize – strict towards what we write', () => {
     it('rejects an invalid document', () => {
         expect(() => serialize({ ...makeScreen(), slug: 'Foyer Links' })).toThrow(InvalidDocumentError);

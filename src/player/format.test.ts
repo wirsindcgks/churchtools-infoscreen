@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { TextStyle } from '../model/schema';
-import { textStyle, calendarColor, formatDate, formatShortDate, formatTime, servicesLine, sizedImageUrl, WIDEST_DATE, textOn } from './format';
+import type { Block, TextStyle } from '../model/schema';
+import { textStyle, calendarColor, formatDate, formatShortDate, formatTime, servicesLine, sizedImageUrl, WIDEST_DATE, textOn, VERTICAL_DEFAULTS, verticalAlignOf, verticalStyle } from './format';
 
 describe('sizedImageUrl', () => {
     it('always sets both dimensions, because w alone yields a 150 px high image (G14)', () => {
@@ -118,5 +118,42 @@ describe('textStyle', () => {
         expect(textStyle(style)).not.toHaveProperty('textTransform');
         expect(textStyle({ ...style, uppercase: false })).not.toHaveProperty('textTransform');
         expect(textStyle({ ...style, uppercase: true }).textTransform).toBe('uppercase');
+    });
+});
+
+describe('vertical alignment (Plan.md 70)', () => {
+    const style: TextStyle = { fontFamily: 'sans', fontSize: 40, fontWeight: 400, color: '#ffffff', align: 'left' };
+    const frame = { id: 'b', x: 0, y: 0, width: 100, height: 100, z: 0 };
+    // Only `type` and `style` matter here; the rest of a block is beside the point.
+    const block = (type: string, verticalAlign?: TextStyle['verticalAlign']) =>
+        ({ ...frame, type, style: { ...style, verticalAlign } }) as unknown as Block;
+
+    it('keeps what each block did before: text and clock on top, the rest in the middle', () => {
+        expect(VERTICAL_DEFAULTS).toEqual({
+            text: 'top',
+            clock: 'top',
+            countdown: 'middle',
+            'next-appointment': 'middle',
+            'church-header': 'middle',
+        });
+        expect(verticalAlignOf(block('text'))).toBe('top');
+        expect(verticalAlignOf(block('clock'))).toBe('top');
+        expect(verticalAlignOf(block('church-header'))).toBe('middle');
+    });
+
+    it('lets a set value beat the default', () => {
+        expect(verticalAlignOf(block('text', 'bottom'))).toBe('bottom');
+        expect(verticalAlignOf(block('countdown', 'top'))).toBe('top');
+    });
+
+    it('is null for blocks without a vertical choice', () => {
+        expect(verticalAlignOf(block('appointment-list'))).toBeNull();
+        expect(verticalAlignOf(block('shape'))).toBeNull();
+    });
+
+    it('places the content with automatic margins, never with centring', () => {
+        expect(verticalStyle('top')).toEqual({});
+        expect(verticalStyle('middle')).toEqual({ marginBlock: 'auto' });
+        expect(verticalStyle('bottom')).toEqual({ marginTop: 'auto' });
     });
 });

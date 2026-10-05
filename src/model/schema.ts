@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 23 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 24 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -41,6 +41,11 @@ export const TextStyle = v.object({
     align: v.optional(v.picklist(['left', 'center', 'right']), 'left'),
     /** Since 1.22: shown in capitals; the stored text stays as typed (Plan.md 65). Older players ignore it. */
     uppercase: v.optional(v.boolean()),
+    /**
+     * Since 1.24: where the content sits in a box taller than it (Plan.md 70). Missing means what the
+     * block did before – each block's default lives in the player; older players ignore the field.
+     */
+    verticalAlign: v.optional(v.picklist(['top', 'middle', 'bottom'])),
 });
 
 const BlockFrame = {
