@@ -456,6 +456,7 @@ test('services only after an administrator allowed them: the inspector offers ex
     await expect(page.getByRole('checkbox', { name: 'Ton' })).toHaveCount(0);
     await expect(page.getByTestId('allowed-service').first()).not.toBeChecked();
     await expect(page.getByTestId('allowed-services-warning')).toContainText('macht Namen öffentlich');
+    await expect(page.getByTestId('allowed-services-warning')).toContainText('mit der Gemeindeleitung ab');
 
     // Ticking asks first; "Abbrechen" leaves the box empty and saves nothing.
     const asked: string[] = [];
@@ -468,6 +469,7 @@ test('services only after an administrator allowed them: the inspector offers ex
     await expect(page.getByRole('checkbox', { name: 'Moderation' })).not.toBeChecked();
     await expect(page.getByTestId('allowed-services-saved')).toHaveCount(0);
     expect(asked[0]).toContain('„Moderation" freigeben?');
+    expect(asked[0]).toContain('Gemeindeleitung');
     answer.accept = true;
     await page.getByRole('checkbox', { name: 'Moderation' }).check();
     await expect(page.getByTestId('allowed-services-saved')).toHaveText('Gespeichert');

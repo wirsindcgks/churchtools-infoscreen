@@ -50,8 +50,20 @@ Kurzfassung je Rolle steht im [Onboarding](Onboarding.md), alle Rechte als Tabel
 1. Lade das neueste Paket `churchtools-infoscreen-vX.Y.Z.zip` von der
    [Release-Seite](https://github.com/wirsindcgks/churchtools-infoscreen/releases) herunter. **Nicht entpacken.**
 2. Öffne in ChurchTools die Extension-Verwaltung: `https://<eure-instanz>.church.tools/custom/modules/overview`.
-3. Lade dort das ZIP hoch. Fragt ChurchTools nach einem Kurzbezeichner, trage **exakt** `infoscreen-designer` ein –
-   sonst stimmen die Adressen nicht.
+3. **„Erweiterung hinzufügen"** öffnet eine Maske; ChurchTools füllt darin nichts vor:
+
+   | Feld | Eintrag |
+   | --- | --- |
+   | Name | `Infoscreen Designer` |
+   | Kürzel | **exakt** `infoscreen-designer` – mit Bindestrich, alles klein |
+   | Beschreibung | frei, etwa `Gestaltung und Ausspielung der Infoscreens` (Pflichtfeld) |
+   | Sortierung | frei |
+   | Im Menü anzeigen | Haken lassen |
+   | ZIP-Datei | das heruntergeladene ZIP |
+
+   **Das Kürzel muss stimmen.** Der Designer findet seine Dateien und seine Daten nur unter diesem Namen. Mit einem
+   anderen Kürzel installiert ChurchTools die Extension ohne Fehlermeldung, aber der Menüpunkt öffnet eine weiße
+   Seite.
 
 Danach ist die Extension installiert, **aber noch für niemanden sichtbar – auch nicht für dich.** Das ist kein
 Fehler, sondern die Rechteverwaltung von ChurchTools: Administratorrechte schließen die Rechte an einer Extension
@@ -319,7 +331,8 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
   Baustein nur für Dienste, die ein Administrator unter **Einstellungen → Dienste auf Screens** freigegeben hat –
   etwa nur „Predigt". Ohne Freigabe erscheint kein Dienst. Zur Wahl stehen ohnehin nur Dienste, deren Dienstgruppe
   in ChurchTools „Ohne Berechtigung einsehbar" ist und die Namen nicht verbergen; gezeigt werden Vor- und Nachname
-  zugesagter Einteilungen, nichts sonst von einer Person.
+  zugesagter Einteilungen, nichts sonst von einer Person. **Stimmt die Freigabe vorher mit der Gemeindeleitung
+  ab** – die Seite und die Rückfrage beim Ankreuzen erinnern daran.
 - **Buchungstitel der Raumbelegung lassen sich je Raum abschalten.** Ein Titel wie „Gespräch Familie X" verrät
   mehr, als ein Türschild soll; ohne Titel steht dort „Belegt".
 - **Die Bilder der Mediathek und das Gemeindelogo sind über ihre Adresse ohne Anmeldung abrufbar.** So liefert
@@ -357,6 +370,7 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | Was du siehst | Woran es liegt | Was hilft |
 | --- | --- | --- |
 | Kein Menüpunkt „Infoscreen Designer", auch nicht als Administrator | Modulrecht „sehen" fehlt | Schritt 2; Gruppe muss „aktiv" sein |
+| Menüpunkt öffnet eine weiße Seite; die Browser-Konsole meldet `404` für `…/ccm/infoscreen-designer/assets/app-….js` | Das Kürzel der Extension ist nicht `infoscreen-designer` (die Adresse in der Adresszeile zeigt das tatsächliche) | Schritt 1: Extension mit dem Kürzel `infoscreen-designer` anlegen. Vor der Einrichtung geht beim Löschen der falsch benannten nichts verloren |
 | Startseite des Designers: „Dir fehlen Rechte …" | Person ist nicht (aktiv) in „Infoscreen-Designer" | Schritt 5; die Liste nennt das fehlende Recht |
 | Kein „Einstellungen" in der Kopfzeile des Designers | Du bist kein Administrator | Einstellungen sind Administratoren vorbehalten |
 | Kein „+ Screen erstellen", kein „Umbenennen" und kein „Einstellungen" im Menü der Kachel | Dir fehlt das Recht, Screens anzulegen, zu bearbeiten und zu löschen – auch Administratoren brauchen es | Schritt 2: die drei „Daten in Kategorie …"-Rechte für alle Kategorien |

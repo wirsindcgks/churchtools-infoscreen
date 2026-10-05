@@ -300,7 +300,7 @@ async function toggleAllowedService(id: number, on: boolean, box: HTMLInputEleme
     if (!repository || !serviceList.value || servicesSaving.value) return;
     if (on) {
         const name = serviceList.value.find((s) => s.id === id)?.name ?? `Dienst ${id}`;
-        if (!window.confirm(`„${name}" freigeben? Die Namen der Eingeteilten stehen dann öffentlich auf den Fernsehern.`)) {
+        if (!window.confirm(`„${name}" freigeben? Die Namen der Eingeteilten stehen dann öffentlich auf den Fernsehern. Ist das mit der Gemeindeleitung abgestimmt?`)) {
             box.checked = false;
             return;
         }
@@ -1009,15 +1009,20 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 
                 <template v-if="page === 'services'">
                     <section class="d-card card" data-testid="allowed-services">
+                        <!-- Before the list, not beside it: releasing a service publishes names (Plan.md 58). -->
+                        <div class="privacy-alert" role="note" data-testid="allowed-services-warning">
+                            <h2>Datenschutz beachten</h2>
+                            <p>
+                                Wer hier einen Dienst freigibt, macht Namen öffentlich: Vor- und Nachname der Eingeteilten stehen im
+                                Foyer, für alle, die vorbeigehen – und für jeden, der die Adresse eines Fernsehers kennt.
+                            </p>
+                            <p><strong>Stimmt die Freigabe vorher mit der Gemeindeleitung ab.</strong></p>
+                        </div>
                         <p class="lead">
                             Dienste zeigen, wer eingeteilt ist – mit Vor- und Nachnamen, für alle sichtbar, die am Fernseher
                             vorbeigehen. Hier legst du fest, welche Dienste Gestalter überhaupt wählen können. Ohne Auswahl
                             erscheint kein Dienst. Zur Wahl stehen nur Dienste, deren Dienstgruppe in ChurchTools „Ohne
                             Berechtigung einsehbar" ist und die Namen nicht verbergen.
-                        </p>
-                        <p class="warn" data-testid="allowed-services-warning">
-                            Wer hier einen Dienst freigibt, macht Namen öffentlich: Vor- und Nachname der Eingeteilten stehen im
-                            Foyer, für alle, die vorbeigehen – und für jeden, der die Adresse eines Fernsehers kennt.
                         </p>
                         <p v-if="servicesFailed" class="error" role="alert" data-testid="allowed-services-failed">
                             Dienste konnten nicht geladen werden.
@@ -1372,6 +1377,23 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 }
 .error {
     color: var(--d-danger);
+}
+.privacy-alert {
+    padding: 14px 16px;
+    border: 1px solid var(--d-danger);
+    border-left-width: 4px;
+    border-radius: var(--d-radius);
+    background: var(--d-danger-pale);
+}
+.privacy-alert h2 {
+    margin: 0 0 6px;
+    color: var(--d-danger);
+}
+.privacy-alert p {
+    margin: 0;
+}
+.privacy-alert p + p {
+    margin-top: 6px;
 }
 .actions {
     flex-wrap: wrap;
