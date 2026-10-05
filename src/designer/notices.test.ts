@@ -49,6 +49,23 @@ describe('groupBanners (Plan.md, Nächste Schritte 34)', () => {
         expect(groups.map((g) => g.banner.text).sort()).toEqual(['Kirchencafé heute im Foyer', 'Parkplatz gesperrt']);
     });
 
+    it('groups bands that differ only in their stamp and shows the newest one (Plan.md 66)', () => {
+        const overviews = [
+            overview({ id: 'a', banner: banner({ updatedAt: '2026-01-01T08:00:00.000Z', updatedBy: 'Anna' }) }),
+            overview({ id: 'b', banner: banner({ updatedAt: '2026-01-01T09:00:00.000Z', updatedBy: 'Ben' }) }),
+            overview({ id: 'c', banner: banner() }), // saved before schema 1.23
+        ];
+        const groups = groupBanners(overviews, new Date('2026-01-01T10:00:00Z'), TZ);
+        expect(groups).toHaveLength(1);
+        expect(groups[0]).toMatchObject({ updatedAt: '2026-01-01T09:00:00.000Z', updatedBy: 'Ben' });
+    });
+
+    it('leaves the stamp out for bands saved before schema 1.23', () => {
+        const groups = groupBanners([overview({ id: 'a', banner: banner() })], new Date('2026-01-01T10:00:00Z'), TZ);
+        expect(groups[0]?.updatedAt).toBeUndefined();
+        expect(groups[0]?.updatedBy).toBeUndefined();
+    });
+
     it('marks a band whose "until" has passed as expired, apart from a running one', () => {
         // "Vorbei" lies within the 7-day grace period of Plan.md 38 – it still shows, just as expired.
         const overviews = [

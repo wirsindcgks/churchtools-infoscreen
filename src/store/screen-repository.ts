@@ -32,6 +32,7 @@ import {
     sameStage,
     SCHEMA_VERSION,
     scheduleIdFor,
+    stampBanner,
     withPlaylistDefaults,
     withSchedule,
     type AnyDoc,
@@ -167,7 +168,7 @@ export interface PlaylistOverview {
      * of its slides through another playlist (Plan.md 49). Null before any.
      */
     editedAt: string | null;
-    /** Who saved then – unknown where a linked slide was saved elsewhere since. */
+    /** Who saved then – for a linked slide saved elsewhere since, who saved it there; null for documents without a name. */
     editedBy: string | null;
 }
 
@@ -494,7 +495,10 @@ export class ScreenRepository {
                 media: [] as MediaDoc[],
                 screens: screensShowing(doc.id, screens),
                 editedAt: editedAt || null,
-                editedBy: (editedAt === (doc.updatedAt ?? '') && doc.updatedBy) || null,
+                // savePlaylist stamps a playlist and its slides alike – a newer slide names the playlist it was saved from.
+                editedBy:
+                    (doc.updatedAt === editedAt ? doc : running.playlists.find((p) => p.doc.updatedAt === editedAt)?.doc)?.updatedBy ||
+                    null,
             };
         });
         const mediaIds = new Set(overviews.flatMap((o) => (o.firstSlide ? referencedMedia(o.firstSlide) : [])));
@@ -654,6 +658,7 @@ export class ScreenRepository {
             updatedBy: options.updatedBy,
             updatedAt: now,
         };
+        if (bundle.playlist.banner) playlist.banner = stampBanner(stored.doc.banner, bundle.playlist.banner, options.updatedBy, now);
         const changed = options.changedSlideIds ? new Set(options.changedSlideIds) : null;
         const toWrite = bundle.slides.filter((doc) => !changed || changed.has(doc.id));
 
@@ -723,7 +728,7 @@ export class ScreenRepository {
                 updatedBy: options.updatedBy,
                 updatedAt: now,
             };
-            if (change.banner) playlist.banner = change.banner;
+            if (change.banner) playlist.banner = stampBanner(stored.doc.banner, change.banner, options.updatedBy, now);
             else delete playlist.banner;
             await this.kv.updateValue(ids.playlists, stored.valueId, serialize(playlist));
             saved.push(playlist);

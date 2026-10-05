@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 22 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 23 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -379,6 +379,14 @@ export const Banner = v.object({
      * device's. Empty or missing: until someone removes it.
      */
     until: v.optional(v.pipe(v.string(), v.maxLength(40))),
+    /**
+     * Since 1.23: when and by whom the band itself last changed (Plan.md 66) –
+     * the playlist's own stamp also moves when only a slide changes. Set by
+     * the repository (`stampBanner`), never by the editors; not part of what
+     * makes two bands the same (`bannerKey`).
+     */
+    updatedAt: v.optional(v.string()),
+    updatedBy: v.optional(v.string()),
 });
 
 const Background = v.variant('kind', [
@@ -644,6 +652,32 @@ export function withSchedule(screen: ScreenDoc, schedule: ScheduleDoc | null | u
         defaultPlaylistId: schedule.defaultPlaylistId,
         schedule: schedule.rules,
         ...(later ? { updatedAt: schedule.updatedAt, updatedBy: schedule.updatedBy } : {}),
+    };
+}
+
+function withoutStamp(banner: Banner): Banner {
+    const content = { ...banner };
+    delete content.updatedAt;
+    delete content.updatedBy;
+    return content;
+}
+
+/** What makes two bands the same notice: everything but the stamp of who changed it last. */
+export function bannerKey(banner: Banner): string {
+    return JSON.stringify(withoutStamp(banner));
+}
+
+/**
+ * The band as it is to be stored: a changed or new one carries this save's
+ * stamp, an unchanged one keeps the stamp it had – so saving a playlist for a
+ * slide does not make its notice look edited.
+ */
+export function stampBanner(previous: Banner | undefined, next: Banner, updatedBy: string, now: string): Banner {
+    if (!previous || bannerKey(previous) !== bannerKey(next)) return { ...withoutStamp(next), updatedAt: now, updatedBy };
+    return {
+        ...withoutStamp(next),
+        ...(previous.updatedAt ? { updatedAt: previous.updatedAt } : {}),
+        ...(previous.updatedBy ? { updatedBy: previous.updatedBy } : {}),
     };
 }
 

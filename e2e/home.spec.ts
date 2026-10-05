@@ -27,6 +27,13 @@ test.describe('start page on a desktop', () => {
         await expect(tile.getByText('Herzlich willkommen!')).toBeVisible();
         await expect(tile).toContainText('Quer');
         await expect(tile).toContainText('demo');
+        // When and by whom, each on a line of its own (Plan.md 66); the demo seed is saved by "Demo".
+        await expect(tile.getByTestId('screen-edited-at')).toHaveText(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
+        await expect(tile.getByTestId('screen-edited-by')).toHaveText('Demo');
+        await expect(tile.getByTestId('screen-edited-by')).toHaveAttribute('title', 'Zuletzt geändert von Demo');
+        const at = (await tile.getByTestId('screen-edited-at').boundingBox())!;
+        const by = (await tile.getByTestId('screen-edited-by').boundingBox())!;
+        expect(by.y).toBeGreaterThanOrEqual(at.y + at.height - 1);
 
         await createScreen(page, 'Eingang hochkant', 'Hochkant');
         await expect(page.getByTestId('screen-card')).toHaveCount(2);

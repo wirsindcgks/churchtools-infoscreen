@@ -36,3 +36,26 @@ test('a new notice: empty text blocks saving, the preview shows it once typed, p
     await expect(dialog).toBeHidden();
     await expect(page.getByText('Gerade läuft kein Hinweis.')).toBeVisible();
 });
+
+test('a saved notice shows when and by whom it was last changed, one fact per line (Plan.md 66)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('sidebar-notices').click();
+    await page.getByTestId('new-notice').click();
+    const dialog = page.getByTestId('notice-dialog');
+    await dialog.getByTestId('banner-text').fill('Heute Parkplatz gesperrt');
+    await dialog.getByTestId('notice-save').click();
+    await expect(dialog).toBeHidden();
+
+    const card = page.getByTestId('notice-card').first();
+    await expect(card).toContainText('Parkplatz gesperrt');
+    await expect(card.getByTestId('notice-edited-at')).toHaveText(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
+    await expect(card.getByTestId('notice-edited-at')).toHaveAttribute('title', /^Zuletzt geändert am .+ um \d{2}:\d{2}$/);
+    // The signed-in test user's name, whoever that is.
+    await expect(card.getByTestId('notice-edited-by')).toHaveText(/\S/);
+    await expect(card.getByTestId('notice-edited-by')).toHaveAttribute('title', /^Zuletzt geändert von /);
+    // Under each other: the date's line lies above the name's line.
+    const at = (await card.getByTestId('notice-edited-at').boundingBox())!;
+    const by = (await card.getByTestId('notice-edited-by').boundingBox())!;
+    expect(by.y).toBeGreaterThanOrEqual(at.y + at.height - 1);
+    await page.screenshot({ path: 'test-results/notices-edited.png' });
+});

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * A playlist on the playlists page (Plan.md, Nächste Schritte 19): its first
- * slide, name, format, when it was last edited, and on which screens it runs. The tile opens the
+ * slide, name, format, when and by whom it was last edited, and on which screens it runs. The tile opens the
  * editor; duplicating copies its slides too; deleting waits until no screen
  * shows it.
  */
@@ -10,6 +10,7 @@ import { bannerShown } from '../player/banner';
 import { useStageContext } from '../player/context';
 import type { PlaylistOverview } from '../store/screen-repository';
 import Icon from './Icon.vue';
+import { lastEdited } from './last-edited';
 import SlideThumb from './SlideThumb.vue';
 
 const props = defineProps<{ overview: PlaylistOverview }>();
@@ -22,18 +23,8 @@ const inUse = computed(() => props.overview.screens.length > 0);
 /** A band is running (Plan.md, Nächste Schritte 34) – not one that only sits there, expired. */
 const hasBanner = computed(() => bannerShown(playlist.value.banner, context.now, context.timeZone));
 
-/** "28.09.2026" on the tile, with time and name in the tooltip – in the church's time zone, like every time here. */
-const edited = computed(() => {
-    const at = props.overview.editedAt ? new Date(props.overview.editedAt) : null;
-    if (!at || Number.isNaN(at.getTime())) return null;
-    const format = (options: Intl.DateTimeFormatOptions) =>
-        new Intl.DateTimeFormat('de-DE', { timeZone: context.timeZone, ...options }).format(at);
-    const by = props.overview.editedBy ? ` von ${props.overview.editedBy}` : '';
-    return {
-        date: format({ day: '2-digit', month: '2-digit', year: 'numeric' }),
-        title: `Zuletzt bearbeitet am ${format({ dateStyle: 'long', timeStyle: 'short' })}${by}`,
-    };
-});
+/** When and by whom it was last edited – in the church's time zone, like every time here. */
+const edited = computed(() => lastEdited(props.overview.editedAt, props.overview.editedBy, context.timeZone));
 
 const menuOpen = ref(false);
 const root = ref<HTMLElement | null>(null);
@@ -114,26 +105,28 @@ function duplicate(): void {
                     </div>
                 </div>
             </div>
-            <p class="facts">
-                <span :title="portrait ? 'Hochkant' : 'Quer'">
+            <ul class="facts">
+                <li :title="portrait ? 'Hochkant' : 'Quer'">
                     <Icon :name="portrait ? 'portrait' : 'landscape'" :size="16" />
                     {{ portrait ? 'Hochkant' : 'Quer' }}
-                </span>
-                <span title="Slides">
+                </li>
+                <li title="Slides">
                     <Icon name="slides" :size="16" />
                     {{ overview.slideCount }}
-                </span>
-                <span v-if="edited" :title="edited.title" data-testid="playlist-edited">
-                    <Icon name="clock" :size="16" />
-                    {{ edited.date }}
-                </span>
-            </p>
-            <p class="facts muted" data-testid="playlist-screens">
-                <span :title="inUse ? 'Läuft auf diesen Screens' : 'Noch kein Screen zeigt sie'">
+                </li>
+                <li :title="inUse ? 'Läuft auf diesen Screens' : 'Noch kein Screen zeigt sie'" data-testid="playlist-screens">
                     <Icon name="tv" :size="16" />
                     {{ inUse ? overview.screens.map((s) => s.name).join(', ') : 'auf keinem Screen' }}
-                </span>
-            </p>
+                </li>
+                <li v-if="edited?.when" :title="edited.whenTitle!" data-testid="playlist-edited">
+                    <Icon name="clock" :size="16" />
+                    <span data-testid="playlist-edited-at">{{ edited.when }}</span>
+                </li>
+                <li v-if="edited?.by" :title="edited.byTitle!" data-testid="playlist-edited-by">
+                    <Icon name="person" :size="16" />
+                    <span>{{ edited.by }}</span>
+                </li>
+            </ul>
         </div>
     </article>
 </template>
@@ -182,22 +175,29 @@ function duplicate(): void {
     color: inherit;
     text-decoration: none;
 }
+/* One fact per line; a long value wraps under its own words, not under the icon. */
 .facts {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 14px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
     margin: 0;
+    padding: 0;
+    list-style: none;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
-.facts span {
-    display: inline-flex;
-    align-items: center;
+.facts li {
+    display: flex;
+    align-items: flex-start;
     gap: 4px;
-}
-.facts code {
+    max-width: 100%;
+    min-width: 0;
     overflow-wrap: anywhere;
+}
+.facts li :deep(svg) {
+    flex: none;
+    margin-top: 0.1em;
 }
 .banner-flag {
     display: inline-flex;

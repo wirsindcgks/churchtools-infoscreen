@@ -294,8 +294,8 @@ describe('ScreenRepository', () => {
                 { playlist, slides },
                 { expectedRevision: playlist.revision, updatedBy: 'Ben', now: new Date('2026-09-03T08:00:00Z') },
             );
-            // The slide is shown by both: the first playlist changed too, but nobody saved it itself.
-            expect(await find(made.id)).toMatchObject({ editedAt: '2026-09-03T08:00:00.000Z', editedBy: null });
+            // The slide is shown by both: the first playlist changed too – by Ben, who saved the slide from the twin (Plan.md 66).
+            expect(await find(made.id)).toMatchObject({ editedAt: '2026-09-03T08:00:00.000Z', editedBy: 'Ben' });
             expect(await find(twin.id)).toMatchObject({ editedAt: '2026-09-03T08:00:00.000Z', editedBy: 'Ben' });
         });
 
@@ -374,6 +374,30 @@ describe('ScreenRepository', () => {
                 const [loadedFirst, loadedSecond] = await Promise.all([repo.loadPlaylist(first), repo.loadPlaylist(second)]);
                 expect(loadedFirst.playlist.banner).toBeUndefined();
                 expect(loadedSecond.playlist.banner?.text).toBe('Heute Parkplatz gesperrt');
+            });
+
+            it('stamps a band when it changes, not when only the playlist is saved (Plan.md 66)', async () => {
+                const { first } = await twoPlaylists();
+                await repo.saveBanners([{ playlistId: first, expectedRevision: 0, banner: banner() }], {
+                    updatedBy: 'Anna',
+                    now: new Date('2026-10-05T08:00:00Z'),
+                });
+                const stamped = { updatedAt: '2026-10-05T08:00:00.000Z', updatedBy: 'Anna' };
+                expect((await repo.loadPlaylist(first)).playlist.banner).toMatchObject(stamped);
+
+                // Ben saves the playlist for a slide – the band stays as Anna left it.
+                const loaded = await repo.loadPlaylist(first);
+                await repo.savePlaylist(loaded, { expectedRevision: 1, updatedBy: 'Ben', now: new Date('2026-10-05T09:00:00Z') });
+                expect((await repo.loadPlaylist(first)).playlist.banner).toMatchObject(stamped);
+
+                // Ben changes the text in the editor – now the band is his.
+                const edited = await repo.loadPlaylist(first);
+                edited.playlist.banner = { ...edited.playlist.banner!, text: 'Parkplatz wieder frei' };
+                await repo.savePlaylist(edited, { expectedRevision: 2, updatedBy: 'Ben', now: new Date('2026-10-05T10:00:00Z') });
+                expect((await repo.loadPlaylist(first)).playlist.banner).toMatchObject({
+                    updatedAt: '2026-10-05T10:00:00.000Z',
+                    updatedBy: 'Ben',
+                });
             });
 
             it('writes nothing when one of several revisions is stale', async () => {

@@ -41,7 +41,7 @@ export interface WikiFile {
     fileUrl?: string | null;
     size?: number | null;
     imageMetadata?: { width?: number; height?: number } | null;
-    meta?: { createdDate?: string };
+    meta?: { createdDate?: string; createdPerson?: { title?: string } | null };
 }
 
 /**

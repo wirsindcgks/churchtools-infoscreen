@@ -7,7 +7,7 @@
  * to the wiki page "Mediathek"; the wiki category stays the storage behind
  * it (G8).
  */
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import FilterChips from '../designer/FilterChips.vue';
 import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
@@ -18,9 +18,19 @@ import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import SearchField from '../designer/SearchField.vue';
 import { useMediaLibrary } from '../designer/useMediaLibrary';
+import { churchToolsPlayerData } from '../player/data';
 import { filterMedia, MEDIA_PAGE as GENERAL, type MediaItem, type MediaShow } from '../media/library';
 
 const { items, loading, busy, problem, dragOver, dropZone, upload, removeMany, reload, accept } = useMediaLibrary(() => GENERAL);
+
+/** For the upload times; the church's own, once known – a failure leaves the browser's (Plan.md 66). */
+const timeZone = ref(Intl.DateTimeFormat().resolvedOptions().timeZone);
+onMounted(() => {
+    churchToolsPlayerData.timeZone().then(
+        (zone) => (timeZone.value = zone),
+        () => undefined,
+    );
+});
 
 const query = ref('');
 const show = ref<MediaShow>('all');
@@ -153,6 +163,8 @@ async function picked(): Promise<void> {
                 <MediaGrid
                     :items="shown"
                     selectable
+                    details
+                    :time-zone="timeZone"
                     :selected="selected"
                     @toggle="toggle"
                     @preview="previewId = $event.fileId"

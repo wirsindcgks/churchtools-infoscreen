@@ -828,6 +828,10 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await expect(page.getByTestId('playlist-card')).toHaveCount(1);
     await expect(page.getByTestId('playlist-card')).toContainText('Wochenüberblick');
     await expect(page.getByTestId('playlist-card').getByTestId('playlist-screens')).toHaveText('Demo – Foyer');
+    // When and by whom it was last edited, each on a line of its own (Plan.md 66).
+    const demoCard = page.getByTestId('playlist-card');
+    await expect(demoCard.getByTestId('playlist-edited-at')).toHaveText(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
+    await expect(demoCard.getByTestId('playlist-edited')).toHaveAttribute('title', /^Zuletzt geändert am .+ um \d{2}:\d{2}$/);
 
     // A new playlist runs nowhere yet; it opens straight in the editor.
     await page.getByTestId('new-playlist').click();
@@ -883,6 +887,11 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await page.getByTestId('sidebar-playlists').click();
     const worship = page.getByTestId('playlist-card').filter({ hasText: 'Gottesdienst' });
     await expect(worship.getByTestId('playlist-screens')).toHaveText('Demo – Foyer');
+    // Created just now by the test user: the name is there, on the line below the date.
+    await expect(worship.getByTestId('playlist-edited-by')).toHaveText(/\S/);
+    const editedAt = (await worship.getByTestId('playlist-edited').boundingBox())!;
+    const editedBy = (await worship.getByTestId('playlist-edited-by').boundingBox())!;
+    expect(editedBy.y).toBeGreaterThanOrEqual(editedAt.y + editedAt.height - 1);
     await worship.getByTestId('playlist-menu').click();
     await expect(worship.getByTestId('delete-playlist')).toBeDisabled();
 
@@ -895,6 +904,12 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await expect(row.getByTestId('schedule-default-line')).toContainText('Wochenüberblick');
     await expect(row.getByTestId('schedule-now')).toContainText(/Gottesdienst|Wochenüberblick/);
     await expect(page.getByTestId('sidebar-schedules')).toHaveAttribute('aria-current', 'page');
+    // When and by whom the schedule was last saved, below the rules, each on a line of its own (Plan.md 66).
+    await expect(row.getByTestId('schedule-edited-at')).toHaveText(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
+    await expect(row.getByTestId('schedule-edited-by')).toHaveText(/\S/);
+    const scheduleAt = (await row.getByTestId('schedule-edited-at').boundingBox())!;
+    const scheduleBy = (await row.getByTestId('schedule-edited-by').boundingBox())!;
+    expect(scheduleBy.y).toBeGreaterThanOrEqual(scheduleAt.y + scheduleAt.height - 1);
     await page.screenshot({ path: 'test-results/schedules.png' });
     await row.getByTestId('schedule-edit').click();
     await expect(page.getByTestId('schedule-dialog').getByTestId('schedule-rule')).toHaveCount(1);
