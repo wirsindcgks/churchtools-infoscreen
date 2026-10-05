@@ -340,6 +340,27 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     origin = new URL(baseURL!).origin;
     await fakeChurch(page);
 
+    // Services appear only once an administrator allows them (0.6.0): the demo store gets settings that allow both.
+    await page.goto('./'); // seeds the demo store
+    await page.evaluate(() => {
+        const key = 'infoscreen-designer.demo-store';
+        const state = JSON.parse(localStorage.getItem(key)!) as {
+            nextId: number;
+            categories: { id: number; shorty: string }[];
+            values: [number, { id: number; value: string }[]][];
+        };
+        const category = state.categories.find((c) => c.shorty === 'settings')!;
+        const schema = (JSON.parse(state.values.flatMap(([, list]) => list)[0]!.value) as { schema: unknown }).schema;
+        let entry = state.values.find(([id]) => id === category.id);
+        if (!entry) state.values.push((entry = [category.id, []]));
+        const existing = entry[1][0];
+        const settings = existing ? (JSON.parse(existing.value) as Record<string, unknown>) : { schema, id: 'settings', kind: 'settings' };
+        settings.allowedServiceIds = [1, 2];
+        if (existing) existing.value = JSON.stringify(settings);
+        else entry[1].push({ id: state.nextId++, value: JSON.stringify(settings) });
+        localStorage.setItem(key, JSON.stringify(state));
+    });
+
     // The look first: large appointments, so that the pictures show the cards.
     await page.goto('design');
     await page.getByTestId('appointments-large').check();

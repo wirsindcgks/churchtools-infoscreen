@@ -34,6 +34,12 @@ const silenced = computed(() => context.silent === true);
 const muted = ref(!props.block.sound || silenced.value);
 
 watch([() => props.block.sound, silenced], () => (muted.value = !props.block.sound || silenced.value));
+// Sound switched on while the video runs – e.g. the fresh state after the cached one: start again, so that a refused
+// unmuted start falls back to muted. Only unmuting the running element would make the browser pause it (Plan.md 60).
+watch(
+    () => props.block.sound,
+    () => void nextTick(start),
+);
 watch(src, () => {
     failed.value = false;
     void nextTick(start);

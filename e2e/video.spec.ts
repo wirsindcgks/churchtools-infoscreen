@@ -185,7 +185,9 @@ test('the player loops the video from its download address, muted unless the blo
     await expect.poll(() => downloads.length).toBeGreaterThan(0);
 
     // With sound on the block asks to start unmuted. Whether the browser lets it is its own business: without a
-    // click it refuses, and the video then runs on muted – so what is looked at is how `play()` was first called.
+    // click it refuses, and the video then runs on muted – so what is looked at is how `play()` was called. Not
+    // the first call: the player starts from its cached state – here still the video without sound – and only
+    // then shows the fresh one; in WebKit the cached video sometimes starts first (Plan.md 60).
     await page.getByTestId('video-sound').check();
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
@@ -200,7 +202,7 @@ test('the player loops the video from its download address, muted unless the blo
     });
     await playerPage.goto('./player?screen=demo');
     await expect(playerPage.getByTestId('video')).toBeVisible();
-    await expect.poll(() => playerPage.evaluate(() => (window as unknown as { plays: boolean[] }).plays[0])).toBe(false);
+    await expect.poll(() => playerPage.evaluate(() => (window as unknown as { plays: boolean[] }).plays.includes(false))).toBe(true);
     release();
     releasePlayer();
 });
