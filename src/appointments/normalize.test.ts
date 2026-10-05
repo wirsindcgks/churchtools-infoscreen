@@ -39,6 +39,18 @@ describe('normalizeAppointments', () => {
         expect(new Set(list.map((a) => a.baseId))).toEqual(new Set([4]));
     });
 
+    it('drops internal appointments (Plan.md 62)', () => {
+        const list = normalizeAppointments(
+            [
+                response(1, '2026-10-04T09:00:00Z', '2026-10-04T10:30:00Z', { isInternal: true }),
+                response(2, '2026-10-04T09:00:00Z', '2026-10-04T10:30:00Z', { isInternal: false }),
+                response(3, '2026-10-04T09:00:00Z', '2026-10-04T10:30:00Z'),
+            ],
+            BERLIN,
+        );
+        expect(list.map((a) => a.baseId)).toEqual([2, 3]);
+    });
+
     it('shows local times', () => {
         const [a] = normalizeAppointments([response(1, '2026-10-25T10:00:00Z', '2026-10-25T11:30:00Z')], BERLIN);
         expect([a?.startTime, a?.endTime]).toEqual(['11:00', '12:30']);

@@ -5,6 +5,7 @@
  * calls answer 403, which the page names instead of showing empty lights.
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
+import type { GroupPermissions } from './abilities';
 import type { Grant, RoleRights } from './checks';
 import type { ProvisionApi } from './provision';
 
@@ -133,6 +134,19 @@ export async function deleteGroup(groupId: number): Promise<void> {
 export async function canManagePermissions(): Promise<boolean> {
     const global = await churchtoolsClient.get<{ churchcore?: Record<string, unknown> }>('/permissions/global');
     return global.churchcore?.['administer persons'] === true;
+}
+
+/**
+ * The `churchgroup` section of `/permissions/global` – the group rights of the signed-in person, ids already
+ * resolved (G50) – for `settingsAbilities`. `undefined` when it cannot be read: then nothing is greyed out.
+ */
+export async function loadGroupPermissions(): Promise<GroupPermissions | undefined> {
+    try {
+        const global = await churchtoolsClient.get<{ churchgroup?: GroupPermissions }>('/permissions/global');
+        return global.churchgroup;
+    } catch {
+        return undefined;
+    }
 }
 
 /** Whether the signed-in person may see the wiki (`churchwiki: view`) – the same source as the designer's rights check. */

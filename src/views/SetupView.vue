@@ -6,10 +6,12 @@ import { EXTENSION_KEY } from '../config';
 import Icon, { type IconName } from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
-import { fetchCalendars, fetchResourceMasterdata, fetchServiceGroups, fetchServices, type Calendar } from '../ct/api';
+import { fetchCalendars, fetchResourceMasterdata, fetchServiceGroups, fetchServices, isShowableCalendar, type Calendar } from '../ct/api';
 import { serviceChoices, type ServiceInfo } from '../appointments/services';
 import { currentPerson, httpStatus, instanceBaseUrl, personUrl } from '../ct/client';
 import { playerUrl } from '../designer/player-url';
+import { settingsAbilities, type GroupPermissions, type SettingsButton } from '../setup/abilities';
+import RefreshRightsDialog from '../designer/RefreshRightsDialog.vue';
 import RemoveSetupDialog, { type DeviceAccountInfo, type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
 import { createCategory, setCategoryInMenu, wikiRestoreLogLine, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
 import type { ScreenDoc } from '../model/schema';
@@ -22,6 +24,7 @@ import {
     churchToolsProvisionApi,
     deleteGroup,
     findGroupTypeId,
+    loadGroupPermissions,
     groupMemberNames,
     loadGroupRights,
     loadGroups,
@@ -39,7 +42,11 @@ import {
     GROUP_TYPE_NAME,
     planProvisioning,
     provision,
-    refreshGrants,
+    applyRefresh,
+    readRefresh,
+    refreshIsEmpty,
+    refreshLogLine,
+    type RefreshState,
     REMOVE_SETUP_NEXT_STEPS_LOG_LINE,
     removeCreatedGroups,
     type GroupSpec,
@@ -150,6 +157,16 @@ const demo = ref(false);
 const plan = ref<GroupSpec[] | null>(null);
 const planProblem = ref<string | null>(null);
 const createdGroupIds = ref<number[]>([]);
+/** The group rights of this account (Plan.md 63); `undefined` while unknown or unreadable – then nothing is greyed out. */
+const groupPermissions = ref<GroupPermissions | undefined>(undefined);
+const merkmalTypeId = ref<number | null | undefined>(undefined);
+const abilities = computed(() =>
+    settingsAbilities(merkmalTypeId.value === undefined ? undefined : groupPermissions.value, createdGroupIds.value, merkmalTypeId.value ?? null),
+);
+function abilityHint(button: SettingsButton): string | null {
+    const { allowed, missing } = abilities.value[button];
+    return allowed ? null : `Dafür fehlt dir in ChurchTools unter „Gruppen": ${missing.join(' und ')}. Oder alles zusammen: „Gruppen verwalten".`;
+}
 /** The wiki category the assistant created itself – the only one it may ever delete (Plan.md, F). */
 const createdWikiCategoryId = ref<number | null>(null);
 const assistant = reactive({ allowed: false, running: false, log: [] as string[], error: null as string | null });
@@ -185,6 +202,12 @@ function moduleRights(side: Side): RequiredRight[] | null {
     return spec ? spec.grants.filter((g) => !NOT_MODULE.includes(g.authId)) : null;
 }
 
+/** Only calendars the administrator sees and a TV may show get a right; the rest is named by the check (Plan.md 62). */
+function grantableCalendars(ids: number[]): number[] {
+    const showable = new Set(calendars.filter(isShowableCalendar).map((c) => c.id));
+    return ids.filter((id) => showable.has(id));
+}
+
 function computePlan(): void {
     plan.value = null;
     planProblem.value = null;
@@ -207,11 +230,11 @@ function computePlan(): void {
             moduleKey: EXTENSION_KEY,
             categories: categories as Record<CategoryKey, number>,
             wikiCategoryId,
-            calendarIds: usedCalendarIds,
+            calendarIds: grantableCalendars(usedCalendarIds),
             roomIds: rooms.map((r) => r.id),
             usedRoomIds,
             appointmentRooms,
-            serviceCalendarIds,
+            serviceCalendarIds: grantableCalendars(serviceCalendarIds),
         });
     } catch (e) {
         planProblem.value = explain(e);
@@ -330,7 +353,14 @@ async function runAssistant(): Promise<void> {
     }
 }
 
-/** Grants the current plan again to the groups the assistant created – e.g. for a calendar a screen now shows. */
+/** What „Rechte aktualisieren" found, while the dialog asks (Plan.md 62). */
+const refreshDialog = ref<{ state: RefreshState; unchecked: number[] } | null>(null);
+
+/**
+ * First step of „Rechte aktualisieren": reads what the created groups hold and plans. Changes show in a dialog
+ * before anything is written; without changes the log just says so. Only calendars and rooms the administrator
+ * sees can be taken back (Plan.md 62).
+ */
 async function updateRights(): Promise<void> {
     if (!plan.value) return;
     const groupIds = {
@@ -340,7 +370,38 @@ async function updateRights(): Promise<void> {
     assistant.running = true;
     assistant.error = null;
     try {
-        const result = await refreshGrants(plan.value, groupIds, churchToolsProvisionApi);
+        const known = { calendarIds: calendars.map((c) => c.id), roomIds: rooms.map((r) => r.id) };
+        const names = {
+            calendars: new Map(calendars.map((c) => [c.id, c.name] as const)),
+            rooms: new Map(rooms.map((r) => [r.id, r.name] as const)),
+        };
+        const state = await readRefresh(plan.value, groupIds, known, names, churchToolsProvisionApi);
+        if (refreshIsEmpty(state.groups)) {
+            assistant.log = state.groups.map(refreshLogLine);
+            return;
+        }
+        const seen = new Set(known.calendarIds);
+        refreshDialog.value = {
+            state,
+            unchecked: [...new Set([...usedCalendarIds, ...serviceCalendarIds])].filter((id) => !seen.has(id)).sort((a, b) => a - b),
+        };
+    } catch (e) {
+        assistant.error = explain(e);
+        assistant.log = [`Abgebrochen: ${assistant.error}`];
+    } finally {
+        assistant.running = false;
+    }
+}
+
+/** Second step, after „Übernehmen": writes what the dialog showed. */
+async function confirmRefresh(): Promise<void> {
+    const open = refreshDialog.value;
+    refreshDialog.value = null;
+    if (!open || !plan.value) return;
+    assistant.running = true;
+    assistant.error = null;
+    try {
+        const result = await applyRefresh(plan.value, open.state, churchToolsProvisionApi);
         assistant.log = result.log;
         assistant.error = result.error;
         await Promise.all([check('designer'), check('device')]);
@@ -595,7 +656,7 @@ onMounted(async () => {
         repository = handle.repository;
         demo.value = handle.demo;
         if (page.value === 'services') void loadServices();
-        const [list, settings, wikiCategories, calendarList, used, screenList, masterdata, usedRooms, roomsAtAppointments, serviceCalendars, videos] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, used, screenList, masterdata, usedRooms, roomsAtAppointments, serviceCalendars, videos, permissions, typeId] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
@@ -607,7 +668,11 @@ onMounted(async () => {
             repository.appointmentRoomsInUse(),
             repository.serviceCalendarIdsInUse(),
             repository.videoInUse(),
+            loadGroupPermissions(),
+            findGroupTypeId(GROUP_TYPE_NAME).catch(() => undefined),
         ]);
+        groupPermissions.value = permissions;
+        merkmalTypeId.value = typeId;
         screens.value = screenList;
         device.slug = screenList[0]?.slug ?? '';
         groups.value = list;
@@ -784,22 +849,25 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                 die Konten der Fernseher in „{{ GROUP_NAMES.device }}" – mehr ist nicht zu tun.
                             </p>
                             <p class="muted small">
-                                Zeigt ein Screen einen weiteren Kalender, bringt „Rechte aktualisieren" die Gruppen auf den Stand.
+                                Zeigt ein Screen einen weiteren Kalender, bringt „Rechte aktualisieren" die Gruppen auf den Stand – und nimmt zurück, was kein Screen mehr braucht. Vorher zeigt eine Vorschau, was sich ändert; geändert werden nur Rechte an Kalendern und Räumen, die du selbst siehst.
                             </p>
                             <div class="actions">
                                 <button
                                     class="d-btn d-btn--primary"
                                     type="button"
-                                    :disabled="!assistant.allowed || !plan || assistant.running"
+                                    :disabled="!assistant.allowed || !plan || assistant.running || !abilities.refresh.allowed"
                                     data-testid="update-rights"
                                     @click="updateRights"
                                 >
                                     Rechte aktualisieren
                                 </button>
-                                <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running" data-testid="remove-setup" @click="openRemoveSetup">
+                                <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running || !abilities.remove.allowed" data-testid="remove-setup" @click="openRemoveSetup">
                                     Automatische Einrichtung rückgängig machen
                                 </button>
                             </div>
+                            <p v-for="button in (['refresh', 'remove'] as const).filter((b) => abilityHint(b))" :key="button" class="muted small" :data-testid="`ability-hint-${button}`">
+                                {{ abilityHint(button) }}
+                            </p>
                         </template>
                         <template v-else>
                             <p>
@@ -826,13 +894,14 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                     class="d-btn d-btn--primary"
                                     type="button"
                                     data-testid="run-assistant"
-                                    :disabled="!assistant.allowed || !plan || foreignGroups.length > 0 || assistant.running"
+                                    :disabled="!assistant.allowed || !plan || foreignGroups.length > 0 || assistant.running || !abilities.create.allowed"
                                     @click="runAssistant"
                                 >
                                     Gruppen und Rechte anlegen
                                 </button>
                                 <span v-if="assistant.running" class="muted">Arbeitet …</span>
                             </div>
+                            <p v-if="abilityHint('create')" class="muted small" data-testid="ability-hint-create">{{ abilityHint('create') }}</p>
                         </template>
                         <ul v-if="assistant.log.length" class="log" data-testid="assistant-log">
                             <li v-for="(line, i) in assistant.log" :key="i">{{ line }}</li>
@@ -1040,6 +1109,13 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
             </p>
         </div>
 
+        <RefreshRightsDialog
+            v-if="refreshDialog"
+            :groups="refreshDialog.state.groups"
+            :unchecked="refreshDialog.unchecked"
+            @close="refreshDialog = null"
+            @confirm="confirmRefresh"
+        />
         <RemoveSetupDialog
             v-if="removeDialog"
             :groups="removeDialog.groups"

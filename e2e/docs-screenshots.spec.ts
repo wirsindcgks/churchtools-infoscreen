@@ -15,10 +15,10 @@ test.skip(!process.env.DOCS_SCREENSHOTS, 'Nur mit npm run docs:screenshots.');
 test.use({ viewport: { width: 1440, height: 900 } });
 
 const CALENDARS = [
-    { id: 1, name: 'Gottesdienste', color: '#2e7d8c' },
-    { id: 2, name: 'Jugend', color: '#c0613f' },
-    { id: 3, name: 'Gemeindeleben', color: '#4c9a5f' },
-    { id: 4, name: 'Musik', color: '#5c6bc0' },
+    { id: 1, name: 'Gottesdienste', color: '#2e7d8c', isPublic: true },
+    { id: 2, name: 'Jugend', color: '#c0613f', isPublic: true },
+    { id: 3, name: 'Gemeindeleben', color: '#4c9a5f', isPublic: true },
+    { id: 4, name: 'Musik', color: '#5c6bc0', isPublic: true },
 ];
 
 /**

@@ -21,6 +21,8 @@ export interface AppointmentResponse {
             description?: string | null;
             link?: string | null;
             allDay: boolean;
+            /** "Only for signed-in users": the device is signed in, so these are left out (Plan.md 62, G49). */
+            isInternal?: boolean;
             calendar: { id: number; name: string; color?: string | null };
             image?: { imageUrl?: string | null } | null;
             /** The place; ChurchTools composes the line itself, from separate fields. */
@@ -110,6 +112,7 @@ export function normalizeAppointments(
 
 function normalizeOne(response: AppointmentResponse, timeZone: string, rooms: RoomInfo[]): Appointment | null {
     const { base, calculated } = response.appointment;
+    if (base.isInternal === true) return null;
     const start = parseInstant(calculated.startDate, timeZone);
     const endRaw = parseInstant(calculated.endDate, timeZone);
     if (!start || !endRaw) return null;

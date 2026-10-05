@@ -13,13 +13,29 @@
  */
 import type { CategoryKey } from '../store/screen-repository';
 import type { AuthCatalog } from './catalog';
-import { AUTH, type Grant } from './checks';
+import { ALL_DATA, AUTH, has, type Grant } from './checks';
 
 export const GROUP_NAMES = { designer: 'Infoscreen-Designer', device: 'Infoscreen-Devices' } as const;
 /** Group type of both groups, looked up by name: ids and names differ per instance. */
 export const GROUP_TYPE_NAME = 'Merkmal';
 
 export type GroupKey = keyof typeof GROUP_NAMES;
+
+/** The core rights the assistant grants per calendar or room, as it labels them – and takes back again (Plan.md 62). */
+const RIGHT_LABELS = {
+    [AUTH.calendarView]: 'Einzelnen Kalender sehen',
+    [AUTH.eventView]: 'Events von einzelnen Kalendern sehen',
+    [AUTH.resourceView]: 'Ressource sehen',
+} as const;
+
+/**
+ * What "Rechte aktualisieren" takes back besides the writing rights, by group: rights per calendar or room, but
+ * only for those the administrator sees (`planRefresh`). Everything else on these groups stays.
+ */
+export const MANAGED_RIGHTS: Record<GroupKey, { authId: number; label: string }[]> = {
+    device: [AUTH.calendarView, AUTH.eventView, AUTH.resourceView].map((authId) => ({ authId, label: RIGHT_LABELS[authId] })),
+    designer: [{ authId: AUTH.resourceView, label: RIGHT_LABELS[AUTH.resourceView] }],
+};
 
 export interface GrantSpec {
     authId: number;
@@ -48,8 +64,8 @@ export interface PlanInput {
     categories: Record<CategoryKey, number>;
     wikiCategoryId: number | null;
     /**
-     * Every calendar the screens use. Public ones too: a signed-in account
-     * without the right gets 403 for the whole request (G35).
+     * Every public calendar the screens use that the administrator sees (Plan.md 62). Public ones need the
+     * right too: a signed-in account without it gets 403 for the whole request (G35).
      */
     calendarIds: number[];
     /**
@@ -99,7 +115,7 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     ];
     // "Ressource sehen" per room (205) is enough; "Ressourcen sehen" (201) nobody needs (G45).
     if (input.roomIds.length) {
-        designer.push({ authId: AUTH.resourceView, dataId: input.roomIds, label: 'Ressource sehen' });
+        designer.push({ authId: AUTH.resourceView, dataId: input.roomIds, label: RIGHT_LABELS[AUTH.resourceView] });
     }
     if (input.wikiCategoryId !== null) {
         designer.push(
@@ -114,7 +130,7 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
         device.push({ authId: AUTH.wikiCategoryView, dataId: [input.wikiCategoryId], label: 'Wiki-Bereich „Infoscreen" sehen' });
     }
     if (input.calendarIds.length) {
-        device.push({ authId: AUTH.calendarView, dataId: input.calendarIds, label: 'Einzelnen Kalender sehen' });
+        device.push({ authId: AUTH.calendarView, dataId: input.calendarIds, label: RIGHT_LABELS[AUTH.calendarView] });
     }
     // One entry: every room when appointments show theirs, plus what the rooms blocks use.
     const deviceRooms =
@@ -122,11 +138,11 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
             ? [...new Set([...input.roomIds, ...input.usedRoomIds])].sort((a, b) => a - b)
             : input.usedRoomIds;
     if (deviceRooms.length) {
-        device.push({ authId: AUTH.resourceView, dataId: deviceRooms, label: 'Ressource sehen' });
+        device.push({ authId: AUTH.resourceView, dataId: deviceRooms, label: RIGHT_LABELS[AUTH.resourceView] });
     }
 
     if (input.serviceCalendarIds.length) {
-        device.push({ authId: AUTH.eventView, dataId: input.serviceCalendarIds, label: 'Events von einzelnen Kalendern sehen' });
+        device.push({ authId: AUTH.eventView, dataId: input.serviceCalendarIds, label: RIGHT_LABELS[AUTH.eventView] });
     }
 
     const writing = (['create custom data', 'edit custom data', 'delete custom data'] as const).map((auth) => ({
@@ -262,44 +278,164 @@ export function devicePasswordRecommendationLogLine(names: string[]): string {
     return `Passwörter ändern empfohlen für: ${names.join(', ')} – dann funktionieren die Adressen der Fernseher nicht mehr.`;
 }
 
+export interface RefreshItem {
+    authId: number;
+    /** `null` for a right without data. */
+    dataId: number | null;
+    label: string;
+}
+
+export interface RefreshGroup {
+    key: GroupKey;
+    name: string;
+    /** Planned, but missing on at least one role. */
+    add: RefreshItem[];
+    /** Held, managed by the assistant, no longer planned, and known to the administrator. */
+    remove: RefreshItem[];
+}
+
+/** What the administrator sees – only for these an unplanned right is taken back (Plan.md 62). */
+export interface KnownData {
+    calendarIds: number[];
+    roomIds: number[];
+}
+
+/** Names of calendars and rooms for the labels; an id without a name is labelled by its number. */
+export interface DataNames {
+    calendars?: ReadonlyMap<number, string>;
+    rooms?: ReadonlyMap<number, string>;
+}
+
 /**
- * Brings the rights of groups the assistant created up to the current plan,
- * e.g. after a screen started to show another calendar. A grant is a PUT that
- * creates or updates, so granting again what exists changes nothing.
- * Rights that are no longer planned stay – removing is left to people.
+ * What "Rechte aktualisieren" would change, before anything is written (Plan.md 62). `held` is what the roles
+ * of each group hold now, one list per role. Taken back is only what the assistant manages (`MANAGED_RIGHTS`)
+ * and only for calendars and rooms in `known` – an id the administrator does not see stays untouched, and an
+ * empty list of rooms, e.g. after a failed load, takes none. Plus the writing rights the groups must not have.
  */
-export async function refreshGrants(
+export function planRefresh(
     plan: GroupSpec[],
-    groupIds: Partial<Record<GroupKey, number>>,
-    api: ProvisionApi,
-): Promise<ProvisionResult> {
-    const result: ProvisionResult = { groupIds, log: [], error: null };
-    try {
-        for (const spec of plan) {
-            const groupId = groupIds[spec.key];
-            if (groupId === undefined) continue;
-            const roles = await api.roleIds(groupId);
-            let revoked = 0;
-            for (const roleId of roles) {
-                for (const g of spec.grants) await api.grant(roleId, g.authId, g.dataId);
-                // Only what is there is taken back, one data id at a time, and only rights this assistant plans away.
-                const held = await api.grants(roleId);
-                for (const f of spec.forbidden) {
-                    for (const dataId of f.dataId ?? []) {
-                        if (!held.some((g) => g.authId === f.authId && g.dataId === dataId && (g.type ?? 'grant') === 'grant')) continue;
-                        await api.revoke(roleId, f.authId, [dataId]);
-                        revoked++;
+    held: Partial<Record<GroupKey, Grant[][]>>,
+    known: KnownData,
+    names: DataNames = {},
+): RefreshGroup[] {
+    const nameOf = (authId: number, dataId: number): string | undefined =>
+        authId === AUTH.resourceView ? names.rooms?.get(dataId) : names.calendars?.get(dataId);
+    const named = (authId: number, dataId: number, label: string): string => {
+        const name = nameOf(authId, dataId);
+        return name ? `${label}: ${name}` : `${label}: ${authId === AUTH.resourceView ? 'Raum' : 'Kalender'} ${dataId}`;
+    };
+    const knownIds = (authId: number): Set<number> => new Set(authId === AUTH.resourceView ? known.roomIds : known.calendarIds);
+
+    return plan.map((spec) => {
+        const roles = held[spec.key] ?? [];
+        const add: RefreshItem[] = [];
+        const seenAdd = new Set<string>();
+        for (const g of spec.grants) {
+            for (const dataId of g.dataId ?? [null]) {
+                const pair = `${g.authId}:${dataId}`;
+                if (seenAdd.has(pair)) continue;
+                if (roles.length && roles.every((grants) => has(grants, g.authId, dataId ?? undefined))) continue;
+                seenAdd.add(pair);
+                add.push({ authId: g.authId, dataId, label: dataId !== null && g.authId in RIGHT_LABELS ? named(g.authId, dataId, g.label) : g.label });
+            }
+        }
+
+        const remove: RefreshItem[] = [];
+        const seenRemove = new Set<string>();
+        const takeBack = (item: RefreshItem): void => {
+            const pair = `${item.authId}:${item.dataId}`;
+            if (seenRemove.has(pair)) return;
+            seenRemove.add(pair);
+            remove.push(item);
+        };
+        const planned = (authId: number, dataId: number): boolean =>
+            spec.grants.some((g) => g.authId === authId && (g.dataId ?? []).includes(dataId));
+        for (const grants of roles) {
+            for (const g of grants) {
+                if ((g.type ?? 'grant') !== 'grant' || g.dataId === null || g.dataId === ALL_DATA) continue;
+                const managed = MANAGED_RIGHTS[spec.key].find((m) => m.authId === g.authId);
+                if (!managed || planned(g.authId, g.dataId) || !knownIds(g.authId).has(g.dataId)) continue;
+                takeBack({ authId: g.authId, dataId: g.dataId, label: named(g.authId, g.dataId, managed.label) });
+            }
+            for (const f of spec.forbidden) {
+                for (const dataId of f.dataId ?? []) {
+                    if (grants.some((g) => g.authId === f.authId && g.dataId === dataId && (g.type ?? 'grant') === 'grant')) {
+                        takeBack({ authId: f.authId, dataId, label: f.label });
                     }
                 }
             }
-            result.log.push(
-                `Rechte von „${spec.name}" auf den aktuellen Stand gebracht` +
-                    (revoked ? ` – ${revoked} Schreibrechte auf Screens oder Einstellungen zurückgenommen.` : '.'),
-            );
+        }
+        return { key: spec.key, name: spec.name, add, remove };
+    });
+}
+
+/** What `readRefresh` found: the plan of changes, and the roles it was made from – `applyRefresh` writes against exactly these. */
+export interface RefreshState {
+    groups: RefreshGroup[];
+    roles: Partial<Record<GroupKey, { roleId: number; grants: Grant[] }[]>>;
+}
+
+/**
+ * First step of "Rechte aktualisieren": reads the roles of the groups the assistant created and what they hold,
+ * and plans (`planRefresh`). Writes nothing – the page shows the plan before `applyRefresh` runs.
+ */
+export async function readRefresh(
+    plan: GroupSpec[],
+    groupIds: Partial<Record<GroupKey, number>>,
+    known: KnownData,
+    names: DataNames,
+    api: ProvisionApi,
+): Promise<RefreshState> {
+    const roles: RefreshState['roles'] = {};
+    for (const spec of plan) {
+        const groupId = groupIds[spec.key];
+        if (groupId === undefined) continue;
+        roles[spec.key] = await Promise.all(
+            (await api.roleIds(groupId)).map(async (roleId) => ({ roleId, grants: await api.grants(roleId) })),
+        );
+    }
+    const held = Object.fromEntries(Object.entries(roles).map(([key, list]) => [key, list.map((r) => r.grants)]));
+    const groups = planRefresh(plan, held, known, names).filter((g) => roles[g.key] !== undefined);
+    return { groups, roles };
+}
+
+/**
+ * Second step: grants the whole plan again – a grant is a PUT that creates or updates, so what exists stays – and
+ * takes back each right of `remove` from every role that holds it, one data id at a time, as ChurchTools stores
+ * them (G34, G48). Stops at the first failure and says so.
+ */
+export async function applyRefresh(plan: GroupSpec[], state: RefreshState, api: ProvisionApi): Promise<ProvisionResult> {
+    const result: ProvisionResult = { groupIds: {}, log: [], error: null };
+    try {
+        for (const spec of plan) {
+            const roles = state.roles[spec.key];
+            const change = state.groups.find((g) => g.key === spec.key);
+            if (!roles || !change) continue;
+            for (const { roleId, grants } of roles) {
+                for (const g of spec.grants) await api.grant(roleId, g.authId, g.dataId);
+                for (const item of change.remove) {
+                    if (item.dataId === null) continue;
+                    if (!grants.some((g) => g.authId === item.authId && g.dataId === item.dataId && (g.type ?? 'grant') === 'grant')) continue;
+                    await api.revoke(roleId, item.authId, [item.dataId]);
+                }
+            }
+            result.log.push(refreshLogLine(change));
         }
     } catch (e) {
         result.error = e instanceof Error ? e.message : String(e);
         result.log.push(`Abgebrochen: ${result.error}`);
     }
     return result;
+}
+
+/** The log line of one group: what was granted and taken back, or that it is up to date. */
+export function refreshLogLine(change: RefreshGroup): string {
+    return change.add.length || change.remove.length
+        ? `„${change.name}": ${change.add.length} Rechte vergeben, ${change.remove.length} zurückgenommen.`
+        : `Rechte von „${change.name}" sind auf dem Stand.`;
+}
+
+/** Nothing to add and nothing to take back anywhere: no dialog, no writing. */
+export function refreshIsEmpty(groups: RefreshGroup[]): boolean {
+    return groups.every((g) => !g.add.length && !g.remove.length);
 }

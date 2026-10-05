@@ -34,7 +34,7 @@ Etwa eine halbe Stunde, den Fernseher nicht mitgezählt.
 **Danach gelegentlich:**
 
 - **Nach jedem Update** und wenn ein Screen einen neuen Kalender zeigt: Einstellungen → Gruppen und Rechte →
-  **„Rechte aktualisieren"**.
+  **„Rechte aktualisieren"** (eine Vorschau zeigt vorher, was sich ändert; was kein Screen mehr braucht, fällt weg).
 - **Gerät verloren?** Passwort des Geräte-Kontos ändern, neue Adresse erzeugen
   ([Notbremse](Einrichtung.md#wenn-ein-gerät-verloren-geht--die-notbremse)).
 - **Jemand hört auf zu gestalten?** Aus der Gruppe „Infoscreen-Designer" nehmen – die Rechte gehen mit.
@@ -149,7 +149,7 @@ behalten auch ihre Schrift.
 - **Speichert jemand anderes gleichzeitig dieselbe Playlist**, fragt der Editor, welche Fassung gelten soll.
 - **Neuer Kalender auf einem Screen** – in einer Terminliste, einem Countdown oder einer Termin-Regel? Dann einem
   Administrator Bescheid geben: Er klickt einmal „Rechte aktualisieren", damit die Fernseher den Kalender lesen
-  dürfen.
+  dürfen. Zur Wahl stehen nur öffentliche Kalender; ein interner Kalender erscheint auf keinem Fernseher.
 - **Sagt die Startseite „Dir fehlen Rechte"**, nennt sie das Recht – gib die Meldung an einen Administrator weiter.
 - **Was neu ist**, steht unter **„Über & Neuigkeiten"** unten in der Seitenleiste; ein blauer Punkt zeigt eine neue
   Version an.

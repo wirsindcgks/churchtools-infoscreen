@@ -73,7 +73,7 @@ const canSave = computed(() => dirty.value && !problems.value.length && !saving.
 const ruleCalendarIds = computed(() => [
     ...new Set(rules.value.flatMap((r) => (r.kind === 'appointment' ? r.calendarIds : []))),
 ]);
-const { context, calendars } = usePreview(
+const { context, calendars, hiddenCalendars } = usePreview(
     ruleCalendarIds,
     computed(() => []),
 );
@@ -231,7 +231,12 @@ function toggleCalendar(index: number, rule: AppointmentRule, id: number, on: bo
 }
 
 function calendarName(id: number): string {
-    return calendars.value.find((c) => c.id === id)?.name ?? `Kalender ${id}`;
+    return [...calendars.value, ...hiddenCalendars.value].find((c) => c.id === id)?.name ?? `Kalender ${id}`;
+}
+
+/** A chosen calendar a TV does not show: the account sees it, but it is not public (Plan.md 62). */
+function isHidden(id: number): boolean {
+    return hiddenCalendars.value.some((c) => c.id === id);
 }
 
 // Preview
@@ -450,7 +455,7 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                                         {{ c.name }}
                                     </label>
                                     <span v-for="id in rule.calendarIds.filter((i) => !calendars.some((c) => c.id === i))" :key="id" class="muted small">
-                                        {{ calendarName(id) }} (nicht sichtbar)
+                                        {{ calendarName(id) }} {{ isHidden(id) ? '(nicht öffentlich – wird ignoriert)' : '(nicht sichtbar)' }}
                                     </span>
                                 </div>
                             </div>

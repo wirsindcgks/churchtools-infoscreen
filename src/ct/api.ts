@@ -110,6 +110,15 @@ export interface Calendar {
     name: string;
     color?: string | null;
     isPublic?: boolean;
+    isPrivate?: boolean;
+}
+
+/**
+ * Whether a TV may show the calendar: public and not private (Plan.md 62). A missing field counts as
+ * not public. The one place that rule lives.
+ */
+export function isShowableCalendar(c: { isPublic?: boolean; isPrivate?: boolean }): boolean {
+    return c.isPublic === true && c.isPrivate !== true;
 }
 
 /** Calendars the signed-in person may see; the device user sees what its group grants (G21). */

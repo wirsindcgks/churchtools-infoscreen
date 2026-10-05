@@ -38,7 +38,7 @@ const ready = computed(() => author.value !== null && repository.value !== null)
 const chosen = reactive(new Map<string, string>());
 
 // Appointments of the rule calendars, for "läuft jetzt", and of the previews' slides; the calendars' names for the rules in words.
-const { context, calendars } = usePreview(
+const { context, calendars, hiddenCalendars } = usePreview(
     computed(() => [
         ...new Set([
             ...ruleCalendarIds(screens.value),
@@ -68,7 +68,7 @@ function playlistName(id: string): string {
 }
 
 function calendarName(id: number): string {
-    return calendars.value.find((c) => c.id === id)?.name ?? `Kalender ${id}`;
+    return [...calendars.value, ...hiddenCalendars.value].find((c) => c.id === id)?.name ?? `Kalender ${id}`;
 }
 
 /** What runs now: the rule that decides, -1 for the default playlist. */

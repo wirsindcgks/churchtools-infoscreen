@@ -34,7 +34,12 @@ Kurzfassung je Rolle steht im [Onboarding](Onboarding.md), alle Rechte als Tabel
 - **Extensions (Custom Modules) müssen für deine Instanz freigeschaltet sein.** Das ist nicht überall der Fall; ob
   es bei euch geht, siehst du daran, dass es die Extension-Verwaltung gibt (Schritt 1). Sonst bei ChurchTools
   anfragen.
-- **Ein Administrator-Konto**, das Berechtigungen verwalten darf.
+- **Ein Administrator-Konto**, das Berechtigungen verwalten darf – und unter „Gruppen" die Gruppen des Assistenten
+  sehen, anlegen und löschen: „Gruppen eines Gruppentyps erstellen" und „… sehen" für „Merkmal" („Gruppe inkl. ihrer
+  Gruppenmitglieder sehen" je Gruppe tut es auch), „Gruppe löschen" bzw. „Gruppen eines Gruppentyps löschen" – oder
+  alles zusammen „Gruppen verwalten". Fehlt eines, graut die Einstellungsseite den Knopf aus und nennt es. Ein
+  Super-Admin hat das alles und braucht auch die Modulrechte aus Schritt 2 nicht ausdrücklich
+  (Einzelheiten in [Rechte](Rechte.md#churchtools-selbst--nur-für-administratoren)).
 - **Pro Fernseher ein Gerät mit Browser**, das im Vollbild dauerhaft eine Webseite zeigt – etwa ein Raspberry Pi,
   ein Mini-PC oder ein Smart-TV mit Kiosk-Browser. Näheres in Schritt 7.
 
@@ -96,7 +101,7 @@ Rechte:
 - **„Infoscreen-Designer"** – das Modul sehen und seine Inhalte bearbeiten, dazu den Wiki-Bereich „Infoscreen", in
   dem die Bilder der Mediathek liegen. Fehlt er, legt ihn der Assistent an; gibt es schon einen Bereich dieses
   Namens, benutzt er ihn mit. Die Mediathek selbst legt keinen an – sie ist erst nach diesem Schritt nutzbar.
-- **„Infoscreen-Devices"** – das Modul und seine Daten sehen, **jeden Kalender, den ein Screen zeigt**, **jeden
+- **„Infoscreen-Devices"** – das Modul und seine Daten sehen, **jeden öffentlichen Kalender, den ein Screen zeigt**, **jeden
   Raum, den ein Screen zeigt**, und den Wiki-Bereich „Infoscreen" (nur sehen) – Videos laufen nur über die
   Download-Adresse ihrer Datei, und die verlangt dieses Recht. Die Gestalter sehen dazu alle Räume, damit sie im Baustein „Raumbelegung" wählen können.
 
@@ -105,8 +110,15 @@ schon Gruppen mit diesen Namen, hält er an.
 
 **Später wiederkommen:** Zeigt ein Screen einen weiteren Kalender, klicke in **Einstellungen → Gruppen und Rechte**
 auf **„Rechte aktualisieren"** – sonst fehlen dessen Termine auf dem Fernseher. Zeigt ein Screen neue Räume, ebenfalls
-einmal „Rechte aktualisieren". Entfernt man einen Raum, kann ein Fernseher ihn noch bis zu einer Dreiviertelstunde
-zeigen, weil ChurchTools Rechte zwischenspeichert. „Automatische Einrichtung rückgängig machen" löscht die
+einmal „Rechte aktualisieren". **Der Knopf nimmt auch zurück,** was kein Screen mehr braucht: Kalender, Dienste und
+Räume, die kein Screen mehr zeigt, verlieren ihr Recht an den Gruppen des Assistenten. Vorher öffnet sich eine
+**Vorschau** – je Gruppe, was dazukommt und was wegfällt, dazu die Kalender, die du selbst nicht siehst und für die
+der Assistent deshalb nichts tut. Erst „Übernehmen" schreibt; ohne Änderung meldet der Knopf nur, dass alles auf dem
+Stand ist. Ein entzogenes Recht wirkt bei ChurchTools noch bis zu einer Dreiviertelstunde nach, weil ChurchTools Rechte
+zwischenspeichert. Von Hand an diesen Gruppen ergänzte Rechte an Kalendern und Räumen nähme der Knopf ebenfalls zurück
+([Rechte](Rechte.md#was-rechte-aktualisieren-zurücknimmt)). **Nur öffentliche Kalender:** Der Assistent vergibt kein
+Recht an einem nicht öffentlichen Kalender, und der Fernseher zeigt nur öffentliche Kalender – und von diesen keine
+internen Termine. „Automatische Einrichtung rückgängig machen" löscht die
 beiden Gruppen wieder – **nur die, die der Assistent selbst angelegt hat**. Vorhandene Gruppen, die du gewählt hast,
 bleiben, ebenso der Wiki-Bereich mit den Bildern. Ob der Bereich vom Designer angelegt wurde oder schon da war, steht
 unter **Einstellungen → Mediathek im Wiki**.
@@ -148,7 +160,7 @@ Standort** („Infoscreen Foyer", „Infoscreen Café") – dann lässt sich ein
    sieht die Prüfung nicht; sie nennt seit Version 0.7.3 nur die Gruppen.
 
 Einrichtung prüfen: Unter **Einstellungen → Gruppen und Rechte** die Gruppe „Infoscreen-Devices" wählen – die
-Prüfung zeigt je Mitglied, ob die Kalender der Screens lesbar sind, und nennt jedes Recht des Kontos, das ein Gerät
+Prüfung zeigt je Mitglied, ob die (öffentlichen) Kalender der Screens lesbar sind, warnt vor nicht öffentlichen Kalendern in Screens und vor Konten, die einen internen Kalender lesen dürfen, und nennt jedes Recht des Kontos, das ein Gerät
 nicht braucht. Steht dort eine Warnung, dem Konto einen Personenstatus ohne diese Rechte geben: Wer die Adresse des
 Fernsehers kennt, hat sie sonst auch. Ist das Konto noch in weiteren Gruppen, nennt die Prüfung sie mit Namen.
 
@@ -343,7 +355,7 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | Fernseher: „Dieser Fernseher ist nicht bei ChurchTools angemeldet" | Adresse ohne Anmeldung, oder das Passwort des Geräte-Kontos wurde geändert | unter Einstellungen → Adressen für die Fernseher eine neue Adresse erzeugen |
 | Player im Tab neben ChurchTools: fragt nach Anmeldung oder zeigt keine Termine | Im selben Browser ist jemand anderes angemeldet – ChurchTools kennt je Browser nur eine Anmeldung | Player in einem Inkognito-Fenster oder eigenen Browserprofil öffnen |
 | Fernseher: „Es gibt keinen Screen „…"" | Adresse vertippt oder Screen gelöscht | Adresse neu kopieren |
-| Fernseher: Termine eines Kalenders fehlen | Gerät darf den Kalender nicht lesen | Einstellungen → Gruppen und Rechte → „Rechte aktualisieren" |
+| Fernseher: Termine eines Kalenders fehlen | Gerät darf den Kalender nicht lesen – oder der Kalender ist nicht öffentlich (dann zeigt ihn kein Fernseher) | Einstellungen → Gruppen und Rechte → „Rechte aktualisieren"; bei einem nicht öffentlichen Kalender im Editor entfernen |
 | Fernseher: Ein Raum fehlt in der Raumbelegung | Gerät darf den Raum nicht sehen | Einstellungen → Gruppen und Rechte → „Rechte aktualisieren" |
 | Fernseher: Bild fehlt, Platzhalter statt Bild | Bild im Wiki gelöscht | im Designer ein neues Bild wählen |
 | Baustein „Gruppen": „Noch keine Gruppen-Homepage" | In ChurchTools gibt es keine Gruppen-Homepage | an der Obergruppe: Einstellungen → Allgemein → Außendarstellung → „Gruppenhomepage erstellen" |
