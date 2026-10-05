@@ -161,10 +161,9 @@ figure.selected {
     width: 28px;
     height: 28px;
     margin: 0;
-    border-radius: var(--d-radius);
-    background: rgba(255, 255, 255, 0.85);
     cursor: pointer;
 }
+/* No box around it (wish of the user, 2026-10-05): a shadow keeps it visible on light and dark pictures alike. */
 .tile-check input {
     position: static;
     flex: none;
@@ -173,6 +172,7 @@ figure.selected {
     margin: 0;
     padding: 0;
     accent-color: var(--d-accent);
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
     cursor: pointer;
 }
 /* The eye sits on the figure, over the picture, top right – the running number is top left. */

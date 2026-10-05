@@ -231,6 +231,27 @@ describe('readTheme – the font new blocks start with (schema 1.13, Plan.md 40)
     });
 });
 
+describe('readTheme – the palette (schema 1.21, Plan.md 64)', () => {
+    const theme = { schema: { ...SCHEMA_VERSION }, kind: 'theme', id: THEME_ID };
+    const entry = (i: number) => ({ name: `Farbe ${i}`, color: '#1d4ed8' });
+
+    it('reads a theme from before 1.21 without a palette', () => {
+        expect(readTheme({ ...theme, schema: { major: 1, minor: 20 } }).palette).toBeUndefined();
+    });
+
+    it('reads the palette, an empty name included', () => {
+        const palette = [{ name: 'Gemeindeblau', color: '#1d4ed8' }, { name: '', color: '#f5b301' }];
+        expect(readTheme({ ...theme, palette }).palette).toEqual(palette);
+    });
+
+    it('takes 12 colours and refuses 13, or a name over 40 characters', () => {
+        expect(readTheme({ ...theme, palette: Array.from({ length: 12 }, (_, i) => entry(i)) }).palette).toHaveLength(12);
+        expect(() => readTheme({ ...theme, palette: Array.from({ length: 13 }, (_, i) => entry(i)) })).toThrow();
+        expect(() => readTheme({ ...theme, palette: [{ name: 'x'.repeat(41), color: '#fff' }] })).toThrow();
+        expect(readTheme({ ...theme, palette: [{ name: 'x'.repeat(40), color: '#fff' }] }).palette).toHaveLength(1);
+    });
+});
+
 describe('serialize – strict towards what we write', () => {
     it('rejects an invalid document', () => {
         expect(() => serialize({ ...makeScreen(), slug: 'Foyer Links' })).toThrow(InvalidDocumentError);

@@ -4,12 +4,17 @@
  * 11): the swatch opens the browser's picker, the text field takes a hex
  * code from the church's style guide. Only a valid code is taken over; while
  * typing, the field keeps what was typed and marks it until it is one.
+ * Where a page provides the theme (the editor), swatches of the theme's
+ * colours and the palette stand below (Plan.md 64): a click copies the value.
  */
 import { ref, watch } from 'vue';
 import { parseHex, pickerValue } from './color';
+import { usePalette } from './palette';
 
 const props = defineProps<{ modelValue: string; label: string; testid?: string }>();
 const emit = defineEmits<{ 'update:modelValue': [string]; focus: []; blur: [] }>();
+
+const palette = usePalette();
 
 const draft = ref(props.modelValue);
 const invalid = ref(false);
@@ -74,6 +79,20 @@ function onTextBlur(): void {
                 @input="onText(($event.target as HTMLInputElement).value)"
             >
         </div>
+        <div v-if="palette && palette.length" class="palette-swatches" role="group" :aria-label="`${label}: Farbpalette`">
+            <button
+                v-for="entry in palette"
+                :key="entry.color"
+                type="button"
+                class="swatch"
+                :style="{ background: entry.color }"
+                :title="`${entry.name} (${entry.color.toUpperCase()})`"
+                :aria-label="`${entry.name} (${entry.color.toUpperCase()})`"
+                :aria-pressed="entry.color.toLowerCase() === modelValue.toLowerCase()"
+                :data-testid="testid ? `${testid}-swatch` : 'color-swatch'"
+                @click="emit('update:modelValue', entry.color)"
+            />
+        </div>
     </div>
 </template>
 
@@ -96,5 +115,25 @@ function onTextBlur(): void {
 .hex.invalid {
     border-color: var(--d-danger);
     outline-color: var(--d-danger);
+}
+.palette-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+.swatch {
+    flex: none;
+    box-sizing: border-box;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border: 1px solid var(--d-divider);
+    border-radius: 50%;
+    cursor: pointer;
+}
+.swatch[aria-pressed='true'] {
+    border: 2px solid var(--d-text);
+    outline: 2px solid var(--d-interactive);
+    outline-offset: 1px;
 }
 </style>

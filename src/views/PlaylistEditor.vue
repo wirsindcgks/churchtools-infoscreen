@@ -9,6 +9,7 @@ import EditorStage from '../designer/EditorStage.vue';
 import { useEditorStore } from '../designer/editor-store';
 import Icon from '../designer/Icon.vue';
 import Inspector from '../designer/Inspector.vue';
+import { providePalette } from '../designer/palette';
 import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
 import { BLOCK_LABELS } from '../designer/ops';
 import PlaylistPreview from '../designer/PlaylistPreview.vue';
@@ -45,6 +46,8 @@ const top = ref(0);
 
 /** The services an administrator allows on screens (Plan.md 58); none until loaded, and where the settings cannot be read. */
 const allowedServices = ref<number[]>([]);
+
+providePalette(computed(() => editor.theme));
 
 const calendarIds = computed(() => editor.calendarIds);
 const { calendars, hiddenCalendars, problem } = usePreview(

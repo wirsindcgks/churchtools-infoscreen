@@ -12,6 +12,7 @@ import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import { type BannerGroup, groupBanners, untilLabel } from '../designer/notices';
+import { providePalette } from '../designer/palette';
 import NoticeDialog from '../designer/NoticeDialog.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import { usePreview } from '../designer/usePreview';
@@ -35,6 +36,7 @@ const editingBanner = ref<Banner | null>(null);
 const { context } = usePreview(ref([]), ref([]), theme);
 /** The dialog and new notices need an actual theme – without one yet, the defaults apply (Plan.md 27). */
 const themeOrDefault = computed(() => theme.value ?? DEFAULT_THEME);
+providePalette(themeOrDefault);
 
 const groups = computed(() => groupBanners(overviews.value, context.now, context.timeZone));
 const running = computed(() => groups.value.filter((g) => !g.expired));

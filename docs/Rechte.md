@@ -117,17 +117,37 @@ Recht an den Dienstgruppen selbst bekommt das Gerät nicht.
 
 ### ChurchTools selbst – nur für Administratoren
 
-| Recht in ChurchTools | Wofür |
-| --- | --- |
-| „Berechtigungen verwalten" (`churchcore`) | Einstellungsseite des Designers öffnen und Rechte schreiben |
-| unter „Gruppen": „Gruppe inkl. ihrer Gruppenmitglieder sehen" (je Gruppe) **oder** „Gruppen eines Gruppentyps sehen" (für „Merkmal") | „Rechte aktualisieren" und die Prüfung: ohne sie sieht der Administrator die eingeschränkt sichtbaren Gruppen des Assistenten nicht |
-| unter „Gruppen": „Gruppen eines Gruppentyps erstellen" (für „Merkmal") **und** „Gruppen eines Gruppentyps sehen" | „Gruppen und Rechte anlegen" – eine selbst angelegte Gruppe sieht man sonst nicht und der Assistent bräche ab |
-| unter „Gruppen": „Gruppe löschen" (je Gruppe) **oder** „Gruppen eines Gruppentyps löschen" | „Automatische Einrichtung rückgängig machen" |
-| unter „Gruppen": „Gruppen verwalten" | ersetzt alle Gruppenrechte oben auf einmal |
-| „Erweiterungen verwalten" (`churchcore`) | Die Extension installieren und aktualisieren (Name aus dem Rechtekatalog; nicht eigens gemessen) |
-| unter „Wiki": „Wiki" sehen **und** „Stammdaten bearbeiten" | Der Assistent legt den Wiki-Bereich „Infoscreen" an (Anlegen eines Bereichs verlangt laut API-Spezifikation „Stammdaten bearbeiten") |
-| unter „Kalender": „Einzelnen Kalender sehen" für jeden Kalender, den die Fernseher zeigen sollen | Der Assistent vergibt Rechte nur für Kalender, die du selbst siehst – **auch als Super-Admin nötig** |
-| unter „Ressourcen": „Ressource sehen" für die Räume | Gestalter bekommen die Räume, die du siehst |
+Wer das Modul installiert und einrichtet, braucht diese Rechte. „Gemessen" heißt: auf der Testinstanz ausprobiert;
+„Katalog" heißt: der Name steht so in der Rechteverwaltung bzw. die API-Spezifikation der Instanz verlangt es, ausprobiert
+ist es nicht.
+
+**Einmalig – Installation und Einrichtung**
+
+| Bereich in der Rechteverwaltung | Recht | Wofür | Beleg |
+| --- | --- | --- | --- |
+| Administration | „Erweiterungen verwalten" | Die Extension hochladen und aktualisieren | Katalog |
+| Administration | „Berechtigungen verwalten" | Einstellungsseite des Designers öffnen; der Assistent vergibt damit die Rechte der beiden Gruppen; sich selbst die Modulrechte geben ([Einrichtung, Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)) | gemessen |
+| Gruppen | „Gruppen eines Gruppentyps erstellen" **und** „Gruppen eines Gruppentyps sehen", je für „Merkmal" | „Gruppen und Rechte anlegen" – ohne Sehen bräche der Assistent nach dem Anlegen ab | gemessen |
+| Gruppen | „Gruppen eines Gruppentyps löschen" für „Merkmal" (oder „Gruppe löschen" je Gruppe) | „Automatische Einrichtung rückgängig machen" | gemessen |
+| Gruppen | „Gruppenmitgliedschaften von Gruppen eines Gruppentyps bearbeiten" für „Merkmal" | Gestalter und Gerätekonten in die beiden Gruppen aufnehmen | Katalog |
+| Gruppen | statt der vier Zeilen oben: „Gruppen verwalten" | alles davon auf einmal | gemessen (ersetzt die Gruppenrechte) |
+| Wiki | „„Wiki" sehen" **und** „Stammdaten bearbeiten" | Der Assistent legt den Wiki-Bereich „Infoscreen" an | Katalog (API-Spezifikation) |
+| Personen | „Personen erstellen" und „Personen bearbeiten" | Das Gerätekonto anlegen und ihm einen Status geben | Katalog |
+| Administration | „Personen simulieren, Passwort ändern und Zugang sperren" | Dem Gerätekonto Benutzername und Passwort setzen | Katalog |
+
+**Dauerhaft – Screens betreuen**
+
+| Bereich in der Rechteverwaltung | Recht | Wofür | Beleg |
+| --- | --- | --- | --- |
+| Infoscreen Designer | alle Rechte, die Datenrechte für alle Kategorien (Tabelle oben, Spalte „Administrator") | Screens anlegen, einstellen, löschen | gemessen |
+| Kalender | „Einzelnen Kalender sehen" für jeden Kalender, den die Fernseher zeigen sollen | „Rechte aktualisieren" vergibt nur Kalender, die du selbst siehst – **auch als Super-Admin nötig** | gemessen |
+| Ressourcen | „Ressource sehen" für die Räume | Gestalter bekommen die Räume, die du siehst | gemessen |
+| Administration | „Berechtigungen verwalten" (siehe oben) | Einstellungen: „Rechte aktualisieren", Adressen für Fernseher, Dienste freigeben | gemessen |
+| Gruppen | „Gruppen eines Gruppentyps sehen" für „Merkmal" (siehe oben) | „Rechte aktualisieren" und die Prüfung der Gruppen | gemessen |
+
+**„Berechtigungen verwalten" ist ein mächtiges Recht:** Wer es hat, kann sich jedes andere Recht selbst geben. Wo es nur
+für die Einrichtung vergeben werden soll, kann ein Super-Admin die einmaligen Schritte selbst übernehmen oder das Recht
+danach wieder entziehen – „Rechte aktualisieren" und die Adressen für neue Fernseher brauchen es dann wieder.
 
 Fehlt ein Gruppenrecht, graut die Einstellungsseite den Knopf aus und nennt darunter, was fehlt (gemessen am 2026-10-05).
 
