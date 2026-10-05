@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 21 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 22 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -39,6 +39,8 @@ export const TextStyle = v.object({
     fontWeight: v.optional(v.picklist([400, 600, 700]), 400),
     color: Color,
     align: v.optional(v.picklist(['left', 'center', 'right']), 'left'),
+    /** Since 1.22: shown in capitals; the stored text stays as typed (Plan.md 65). Older players ignore it. */
+    uppercase: v.optional(v.boolean()),
 });
 
 const BlockFrame = {

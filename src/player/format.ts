@@ -10,6 +10,7 @@ export function textStyle(style: TextStyle): Record<string, string> {
         fontWeight: String(style.fontWeight),
         color: style.color,
         textAlign: style.align,
+        ...(style.uppercase === true && { textTransform: 'uppercase' }),
     };
 }
 

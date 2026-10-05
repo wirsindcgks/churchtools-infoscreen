@@ -1681,3 +1681,20 @@ test('with a scrollbar that takes space, every thumbnail stays inside its tile',
         .toBe(true);
     await page.locator('.slide-list').screenshot({ path: 'test-results/slide-list-scrollbar.png' });
 });
+
+test('capitals show on the stage while the stored text stays as typed (Plan.md 65)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await addBlock(page, 'text');
+    await page.getByTestId('text-input').fill('Gemeindefest am Samstag');
+    const shown = page.locator('.editor-stage').getByText('Gemeindefest am Samstag');
+    await expect(shown).toHaveCSS('text-transform', 'none');
+
+    await openSection(page, 'font');
+    await page.getByTestId('text-uppercase').check();
+    await expect(shown).toHaveCSS('text-transform', 'uppercase');
+    await expect(page.getByTestId('text-input')).toHaveValue('Gemeindefest am Samstag');
+
+    await page.getByTestId('text-uppercase').uncheck();
+    await expect(shown).toHaveCSS('text-transform', 'none');
+});
