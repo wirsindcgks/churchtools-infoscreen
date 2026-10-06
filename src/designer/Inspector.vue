@@ -144,10 +144,10 @@ const groupsHomepageMissing = computed(() => {
     return !props.homepages.some((h) => h.parentGroupId === parentGroupId);
 });
 
-/** Empty `groupIds` means "every group, by weekday"; switching it off starts from all of them, in that order. */
+/** Empty `groupIds` means "every group, in the chosen order"; switching it off starts from all of them, in that order. */
 function toggleAllGroups(checked: boolean): void {
     if (!block.value || block.value.type !== 'groups') return;
-    setBlock({ groupIds: checked ? [] : selectGroups(homepageGroupList.value, []).map((g) => g.id) });
+    setBlock({ groupIds: checked ? [] : selectGroups(homepageGroupList.value, [], block.value.sort).map((g) => g.id) });
 }
 
 /** Adds or removes a group from the explicit choice; order is preserved, new ones join at the end. */
@@ -965,7 +965,19 @@ const LAYERS = [
                             data-testid="groups-all"
                             @change="toggleAllGroups(($event.target as HTMLInputElement).checked)"
                         >
-                        Alle Gruppen der Homepage, nach Wochentag
+                        Alle Gruppen der Homepage
+                    </label>
+                    <label v-if="block.groupIds.length === 0" class="d-field">
+                        Reihenfolge
+                        <select
+                            :value="block.sort"
+                            data-testid="groups-sort"
+                            @change="setBlock({ sort: ($event.target as HTMLSelectElement).value })"
+                        >
+                            <option value="weekday">Nach Wochentag (Montag zuerst)</option>
+                            <option value="name-asc">Name A–Z</option>
+                            <option value="name-desc">Name Z–A</option>
+                        </select>
                     </label>
 
                     <fieldset v-if="block.groupIds.length">

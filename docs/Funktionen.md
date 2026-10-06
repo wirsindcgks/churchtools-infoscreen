@@ -72,7 +72,8 @@ am Video schaltet den Ton zu. Auf einem Kiosk-Gerät noch nicht im Dauerbetrieb 
 Was es in der Gemeinde für Gruppen gibt – direkt aus einer **Gruppen-Homepage** von ChurchTools, ohne doppelte
 Pflege. Je Gruppe Name, Bild, Wochentag und Uhrzeit, Zielgruppe, Kategorie, Beschreibung, freie Plätze, auf Wunsch
 die Leitung mit Bild und ein **QR-Code auf die öffentliche Gruppenseite** zum Anmelden. Jede Angabe lässt sich
-einzeln abschalten; ein bis vier Gruppen je Seite, oder als Liste.
+einzeln abschalten; ein bis vier Gruppen je Seite, oder als Liste. Die Gruppen stehen nach Wochentag (Montag zuerst)
+oder nach Name, auf- oder absteigend – oder in einer eigenen Auswahl und Reihenfolge.
 
 ![Editor mit dem Baustein „Gruppen": zwei Karten nebeneinander, rechts die Schalter für jede Angabe](bilder/gruppen.png)
 

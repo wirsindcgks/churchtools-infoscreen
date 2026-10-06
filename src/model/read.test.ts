@@ -95,6 +95,7 @@ describe('readSlide – tolerant towards newer data', () => {
             layout: 'card',
             show: { name: true, image: true, when: true, targetGroup: true, category: true, note: true, leaders: false, places: true, qr: true },
         });
+        expect(doc.blocks[0]).toMatchObject({ sort: 'weekday' }); // 1.26 – older data has none
         expect(doc.blocks[0]).not.toHaveProperty('parentGroupId');
         expect(doc.blocks[1]).toMatchObject({ show: { name: true, leaders: true, qr: false } });
     });

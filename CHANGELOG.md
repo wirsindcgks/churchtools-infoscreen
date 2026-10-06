@@ -4,6 +4,16 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.15.0] – 2026-10-06
+
+### Neu
+
+- **Reihenfolge im Baustein „Gruppen":** Sind alle Gruppen der Homepage gewählt, legt das neue Feld „Reihenfolge" fest,
+  wie sie nacheinander erscheinen: nach Wochentag (Montag zuerst, wie bisher), Name A–Z oder Name Z–A. Zahlen im
+  Namen zählen als Zahlen – „Hauskreis 2" steht vor „Hauskreis 10". Wer Gruppen einzeln auswählt, ordnet sie weiter
+  von Hand; die Auswahl beginnt in der zuletzt gewählten Reihenfolge.
+- **Datenmodell:** Schema 1.26 (`sort` am Baustein „Gruppen"). Ältere Bausteine sortieren weiter nach Wochentag.
+
 ## [0.14.1] – 2026-10-05
 
 ### Geändert
@@ -805,6 +815,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.15.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.15.0
 [0.14.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.14.1
 [0.14.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.14.0
 [0.13.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.13.0

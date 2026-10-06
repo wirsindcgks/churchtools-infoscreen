@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 25 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 26 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -251,8 +251,13 @@ export const GroupsBlock = v.object({
     ...BlockFrame,
     type: v.literal('groups'),
     parentGroupId: v.optional(v.pipe(v.number(), v.integer())),
-    /** Empty: every group of the homepage, by weekday; else exactly these, in this order. */
+    /** Empty: every group of the homepage, in `sort` order; else exactly these, in this order. */
     groupIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(100)),
+    /**
+     * Since 1.26: the order of every group when none are chosen (Plan.md 72) – by weekday (Monday first, as
+     * before), or by name A–Z or Z–A. A choice keeps its own order. Older players ignore it and sort by weekday.
+     */
+    sort: v.optional(v.picklist(['weekday', 'name-asc', 'name-desc']), 'weekday'),
     /** `card` – one group after the other, with its QR code; `list` – rows, page by page. */
     layout: v.optional(v.picklist(['card', 'list']), 'card'),
     /**
@@ -591,6 +596,7 @@ export const SettingsDoc = v.object({
 export type Fill = v.InferOutput<typeof Fill>;
 export type TextStyle = v.InferOutput<typeof TextStyle>;
 export type Block = v.InferOutput<typeof Block>;
+export type GroupSort = NonNullable<v.InferOutput<typeof GroupsBlock>['sort']>;
 export type GroupFields = v.InferOutput<typeof GroupFields>;
 export type RoomEntry = v.InferOutput<typeof RoomEntry>;
 export type BlockType = Block['type'];

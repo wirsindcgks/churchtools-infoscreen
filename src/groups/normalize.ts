@@ -10,6 +10,7 @@
  * the person's id and addresses) never leaves this file, although
  * ChurchTools sends it anonymously.
  */
+import type { GroupSort } from '../model/schema';
 import { groupColor } from '../posts/normalize';
 
 /** An entry of `GET /grouphomepages`, as far as this code reads it. */
@@ -205,15 +206,23 @@ export function normalizeHomepage(raw: unknown, baseUrl: string): Group[] {
 export const GROUPS_CAP = 50;
 
 /**
- * What a `groups` block shows. Without a choice every group, by weekday
- * (Monday first, `sortKey`), then meeting time, then name – groups without a
- * weekday last. With a choice exactly those, in that order; a chosen group
- * the homepage no longer holds is gone (Plan.md 43, g).
+ * What a `groups` block shows. Without a choice every group, in `sort` order
+ * (Plan.md 72): by weekday (Monday first, `sortKey`), then meeting time, then
+ * name – groups without a weekday last – or by name, A–Z or Z–A, numbers as
+ * numbers ("Hauskreis 2" before "Hauskreis 10"), equal names by id. With a
+ * choice exactly those, in that order, `sort` ignored; a chosen group the
+ * homepage no longer holds is gone (Plan.md 43, g).
  */
-export function selectGroups(groups: readonly Group[], groupIds: readonly number[]): Group[] {
+export function selectGroups(groups: readonly Group[], groupIds: readonly number[], sort: GroupSort = 'weekday'): Group[] {
     if (groupIds.length) {
         const byId = new Map(groups.map((g) => [g.id, g]));
         return groupIds.map((id) => byId.get(id)).filter((g): g is Group => g !== undefined).slice(0, GROUPS_CAP);
+    }
+    if (sort !== 'weekday') {
+        const direction = sort === 'name-desc' ? -1 : 1;
+        return [...groups]
+            .sort((a, b) => direction * a.name.localeCompare(b.name, 'de', { numeric: true }) || a.id - b.id)
+            .slice(0, GROUPS_CAP);
     }
     return [...groups]
         .sort(

@@ -239,6 +239,36 @@ describe('selectGroups', () => {
     it('with a choice: exactly those, in that order; one no longer on the homepage is gone', () => {
         expect(selectGroups([g(1, 0), g(2, 1), g(3, 2)], [3, 99, 1]).map((x) => x.id)).toEqual([3, 1]);
     });
+
+    const named = [
+        g(1, 0, '', 'Ökumene'),
+        g(2, 0, '', 'Alphakurs'),
+        g(3, 0, '', 'Hauskreis 10'),
+        g(4, 0, '', 'Hauskreis 2'),
+        g(5, 0, '', 'Zeltlager'),
+    ];
+
+    it('without a choice, by name A–Z: German order, numbers as numbers, equal names by id (Plan.md 72)', () => {
+        expect(selectGroups(named, [], 'name-asc').map((x) => x.id)).toEqual([2, 4, 3, 1, 5]);
+        expect(selectGroups([g(9, 0, '', 'Chor'), g(7, 0, '', 'Chor'), g(8, 0, '', 'Abend')], [], 'name-asc').map((x) => x.id)).toEqual([8, 7, 9]);
+    });
+
+    it('without a choice, by name Z–A: the names reversed, equal names still by id (Plan.md 72)', () => {
+        expect(selectGroups(named, [], 'name-desc').map((x) => x.id)).toEqual([5, 1, 3, 4, 2]);
+        expect(selectGroups([g(9, 0, '', 'Chor'), g(7, 0, '', 'Chor'), g(8, 0, '', 'Abend')], [], 'name-desc').map((x) => x.id)).toEqual([7, 9, 8]);
+    });
+
+    it('with a choice the order is ignored (Plan.md 72)', () => {
+        expect(selectGroups(named, [5, 2, 4], 'name-asc').map((x) => x.id)).toEqual([5, 2, 4]);
+        expect(selectGroups(named, [5, 2, 4], 'name-desc').map((x) => x.id)).toEqual([5, 2, 4]);
+    });
+
+    it('cuts at the cap after sorting, not before (Plan.md 72)', () => {
+        const many = Array.from({ length: 60 }, (_, i) => g(i + 1, 0, '', `Gruppe ${String(i + 1).padStart(2, '0')}`));
+        const shown = selectGroups(many, [], 'name-desc');
+        expect(shown).toHaveLength(50);
+        expect(shown.map((x) => x.id)).toEqual(Array.from({ length: 50 }, (_, i) => 60 - i));
+    });
 });
 
 describe('homepageGroups', () => {
