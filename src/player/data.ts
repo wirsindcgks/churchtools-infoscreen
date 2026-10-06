@@ -9,7 +9,7 @@ import { allowedServiceIds, appointmentServicesInUse } from '../appointments/ser
 import { startOfZonedDay } from '../appointments/zoned';
 import {
     fetchAppointments,
-    fetchCalendars,
+    fetchPublicCalendars,
     fetchBookings,
     fetchChurchLogoUrl,
     fetchEvents,
@@ -20,7 +20,6 @@ import {
     fetchServiceGroups,
     fetchServices,
     fetchTimeZone,
-    isShowableCalendar,
 } from '../ct/api';
 import { ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
 import { normalizeHomepage, type HomepageGroups } from '../groups/normalize';
@@ -108,8 +107,8 @@ export const churchToolsPlayerData: PlayerData = {
     async appointments(calendarIds, from, to, timeZone, options = {}) {
         const wantsRooms = options.rooms === true;
         const serviceIds = options.services ?? [];
-        // Only public calendars, even where the account may read more (Plan.md 62, G49). A failure here fails the fetch.
-        const showable = new Set((await withTimeout(fetchCalendars())).filter(isShowableCalendar).map((c) => c.id));
+        // Only what the public user sees, even where the account may read more (Plan.md 73, G53). A failure here fails the fetch.
+        const showable = new Set((await withTimeout(fetchPublicCalendars(instanceBaseUrl()))).map((c) => c.id));
         const wanted = calendarIds.filter((id) => showable.has(id));
         if (!wanted.length) return [];
         const [raw, rooms, serviceInput] = await Promise.all([

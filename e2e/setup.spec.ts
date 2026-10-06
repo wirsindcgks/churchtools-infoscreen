@@ -61,7 +61,7 @@ test('the checks of a group are folded by category, and the head names what is n
         await expect(calendars).not.toHaveAttribute('open', '');
         await calendars.locator('summary').click();
         await expect(calendars).toHaveAttribute('open', '');
-        await expect(calendars).toContainText(/ist sichtbar\./);
+        await expect(calendars).toContainText(/ist öffentlich\./);
     }
 
     // A group with a warning says so in its head – in a word, not with the line itself.

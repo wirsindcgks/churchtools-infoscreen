@@ -5,7 +5,8 @@
  * calendars the screen uses.
  */
 import { onBeforeUnmount, reactive, ref, watch, type Ref } from 'vue';
-import { fetchCalendars, isShowableCalendar, type Calendar } from '../ct/api';
+import { fetchCalendars, fetchPublicCalendars, type Calendar } from '../ct/api';
+import { instanceBaseUrl } from '../ct/client';
 import type { MediaDoc, ThemeDoc } from '../model/schema';
 import { provideStageContext, type StageContext } from '../player/context';
 import { appointmentWindow, churchToolsPlayerData, mergePosts } from '../player/data';
@@ -37,22 +38,26 @@ export function usePreview(
     });
     provideStageContext(context);
 
-    /** Only calendars a TV may show; the others the account sees are in `hiddenCalendars` (Plan.md 62). */
+    /** Only public calendars; the others the account sees are in `hiddenCalendars` (Plan.md 73). */
     const calendars = ref<Calendar[]>([]);
     const hiddenCalendars = ref<Calendar[]>([]);
     const problem = ref<string | null>(null);
 
     async function loadBasics(): Promise<void> {
         try {
-            const [timeZone, churchName, list, churchLogo] = await Promise.all([
+            const [timeZone, churchName, own, publicList, churchLogo] = await Promise.all([
                 churchToolsPlayerData.timeZone(),
                 churchToolsPlayerData.churchName(),
                 fetchCalendars(),
+                fetchPublicCalendars(instanceBaseUrl()),
                 churchToolsPlayerData.churchLogo().catch(() => null),
             ]);
             Object.assign(context, { timeZone, churchName, churchLogo });
-            calendars.value = list.filter(isShowableCalendar);
-            hiddenCalendars.value = list.filter((c) => !isShowableCalendar(c));
+            const publicIds = new Set(publicList.map((c) => c.id));
+            const ownIds = new Set(own.map((c) => c.id));
+            // The order of the signed-in list where possible; public calendars it lacks come last.
+            calendars.value = [...own.filter((c) => publicIds.has(c.id)), ...publicList.filter((c) => !ownIds.has(c.id))];
+            hiddenCalendars.value = own.filter((c) => !publicIds.has(c.id));
         } catch (error) {
             problem.value = error instanceof Error ? error.message : String(error);
         }

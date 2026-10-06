@@ -10,8 +10,6 @@ import type { RefreshGroup, RefreshItem } from '../setup/provision';
 
 const props = defineProps<{
     groups: RefreshGroup[];
-    /** Calendars the screens use that the administrator does not see. */
-    unchecked: number[];
 }>();
 const emit = defineEmits<{ close: []; confirm: [] }>();
 
@@ -49,14 +47,6 @@ function lines(items: RefreshItem[]): string[] {
                         <li v-for="line in lines(g.remove)" :key="line">{{ line }}</li>
                     </ul>
                 </template>
-            </section>
-            <section v-if="props.unchecked.length" data-testid="refresh-unchecked">
-                <p class="heading">Nicht geprüft</p>
-                <p>
-                    Du siehst {{ props.unchecked.length === 1 ? 'diesen Kalender' : 'diese Kalender' }} nicht – dafür vergibt
-                    und nimmt der Assistent kein Recht:
-                    {{ props.unchecked.map((id) => `Kalender ${id}`).join(', ') }}.
-                </p>
             </section>
             <p class="muted">Ein entzogenes Recht wirkt bei ChurchTools noch bis zu einer Dreiviertelstunde nach.</p>
             <div class="d-dialog-actions">

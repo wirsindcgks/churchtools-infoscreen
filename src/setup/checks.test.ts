@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_DATA, AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, excessRights, groupChecks, has, type Check, type Grant, type RoleRights } from './checks';
+import { AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, excessRights, groupChecks, has, type Check, type Grant, type RoleRights } from './checks';
+import { PUBLIC_CALENDAR_PATH } from '../ct/api';
 
 const grant = (authId: number, dataId: number | null = null): Grant => ({ authId, dataId, type: 'grant' });
 const WIKI = 1;
@@ -95,69 +96,73 @@ describe('checkDesignerGroup', () => {
 
 describe('checkDeviceGroup', () => {
     const calendars = [
-        { id: 2, name: 'Gottesdienst', isPublic: true },
-        { id: 4, name: 'Gemeindeleitung', isPublic: false },
+        { id: 2, name: 'Gottesdienst' },
+        { id: 4, name: 'Gemeindeleitung' },
     ];
 
     it('warns without a device account, like an empty designer group – the next step, not a fault', () => {
-        const checks = checkDeviceGroup({ statusId: 1, members: [], calendars, usedCalendarIds: [4], wikiCategoryId: WIKI });
+        const checks = checkDeviceGroup({ statusId: 1, members: [], calendars, usedCalendarIds: [4], publicCalendarIds: [2], wikiCategoryId: WIKI });
         expect(checks.at(-1)).toMatchObject({ level: 'warn', text: 'Noch kein Geräte-Benutzer in der Gruppe.' });
     });
 
-    it('asks for the right on public calendars too – without it ChurchTools refuses with 403 (G35)', () => {
+    it('names a public calendar in use as public – the device needs no right of its own (Plan.md 73, G53)', () => {
         const checks = checkDeviceGroup({
             statusId: 1,
-            members: [{ label: 'Minimal User', grants: [grant(AUTH.calendarView, 3)] }],
-            calendars: [...calendars, { id: 3, name: 'Jugend', isPublic: true }],
-            usedCalendarIds: [2, 3],
-            wikiCategoryId: WIKI,
-        });
-        expect(checks.find((c) => c.text.includes('Jugend'))?.level).toBe('ok');
-        const fail = checks.find((c) => c.text.includes('Gottesdienst'));
-        expect(fail?.level).toBe('fail');
-        expect(fail?.text).toContain('Minimal User');
-    });
-
-    it('counts rights from every source, e.g. the person status (G21: the base carries three calendars)', () => {
-        const checks = checkDeviceGroup({
-            statusId: 1,
-            members: [{ label: 'Minimal User', grants: [grant(AUTH.calendarView, ALL_DATA)] }],
+            members: [{ label: 'Minimal User', grants: [] }],
             calendars,
             usedCalendarIds: [2],
+            publicCalendarIds: [2],
             wikiCategoryId: WIKI,
         });
-        expect(checks.find((c) => c.text.includes('Gottesdienst'))?.level).toBe('ok');
+        expect(checks.find((c) => c.category === 'calendars')).toEqual({ level: 'ok', category: 'calendars', text: '„Gottesdienst" ist öffentlich.' });
     });
 
-    it('warns about a calendar in use that is not public – no TV shows it (Plan.md 62)', () => {
+    it('shows the calendar section without a device account', () => {
+        const checks = checkDeviceGroup({ statusId: 1, members: [], calendars, usedCalendarIds: [2, 4], publicCalendarIds: [2], wikiCategoryId: WIKI });
+        expect(checks.filter((c) => c.category === 'calendars').map((c) => c.level)).toEqual(['ok', 'warn']);
+        expect(checkDeviceGroup({ statusId: 1, members: [], calendars, usedCalendarIds: [], publicCalendarIds: [], wikiCategoryId: WIKI })).toContainEqual({
+            level: 'info',
+            category: 'calendars',
+            text: 'Noch zeigt kein Screen Termine.',
+        });
+    });
+
+    it('names a public calendar the administrator does not see by its number', () => {
+        const checks = checkDeviceGroup({ statusId: 1, members: [], calendars, usedCalendarIds: [9], publicCalendarIds: [9], wikiCategoryId: WIKI });
+        expect(checks.find((c) => c.category === 'calendars')?.text).toBe('„Kalender 9" ist öffentlich.');
+    });
+
+    it('warns about a calendar in use that is not public – no TV shows it, and where to release it (Plan.md 73)', () => {
         const checks = checkDeviceGroup({
             statusId: 1,
             members: [{ label: 'Minimal User', grants: [] }],
             calendars,
             usedCalendarIds: [4],
+            publicCalendarIds: [2],
             wikiCategoryId: WIKI,
         });
         expect(checks.find((c) => c.category === 'calendars' && c.text.includes('Gemeindeleitung'))).toEqual({
             level: 'warn',
             category: 'calendars',
             text: '„Gemeindeleitung" ist nicht öffentlich – kein Fernseher zeigt ihn.',
-            detail: 'Im Editor aus dem Baustein entfernen.',
+            detail: `Freigeben: ${PUBLIC_CALENDAR_PATH}. Oder im Editor aus dem Baustein entfernen.`,
         });
     });
 
-    it('warns about a calendar in use that the administrator does not see (Plan.md 62, G50)', () => {
+    it('warns about a calendar in use that is neither public nor visible to the administrator', () => {
         const checks = checkDeviceGroup({
             statusId: 1,
             members: [{ label: 'Minimal User', grants: [] }],
             calendars,
             usedCalendarIds: [7],
+            publicCalendarIds: [2],
             wikiCategoryId: WIKI,
         });
         expect(checks.find((c) => c.text.startsWith('Kalender 7'))).toEqual({
             level: 'warn',
             category: 'calendars',
-            text: 'Kalender 7: Du siehst ihn nicht, deshalb vergibt „Rechte aktualisieren" kein Recht dafür.',
-            detail: 'Gib dir „Einzelnen Kalender sehen" für ihn.',
+            text: 'Kalender 7 ist nicht öffentlich oder gelöscht – kein Fernseher zeigt ihn.',
+            detail: 'Im Editor aus dem Baustein entfernen.',
         });
     });
 
@@ -166,7 +171,7 @@ describe('checkDeviceGroup', () => {
             statusId: 1,
             members: [{ label: 'Minimal User', grants: [grant(AUTH.calendarView, 4)] }],
             calendars,
-            usedCalendarIds: [2],
+            usedCalendarIds: [2], publicCalendarIds: [2],
             wikiCategoryId: WIKI,
         });
         const warning = checks.find((c) => c.text.includes('internen Kalender'));
@@ -183,7 +188,7 @@ describe('checkDeviceGroup', () => {
             statusId: 1,
             members: [{ label: 'Minimal User', grants: [grant(AUTH.wikiView)] }],
             calendars,
-            usedCalendarIds: [],
+            usedCalendarIds: [], publicCalendarIds: [2],
             wikiCategoryId: WIKI,
         });
         expect(checks.find((c) => c.text.includes('Wiki-Rechte'))?.level).toBe('warn');
@@ -191,7 +196,7 @@ describe('checkDeviceGroup', () => {
 
     it('warns about "Wiki" and editing, but no longer about seeing the category – videos need that (Plan.md 52)', () => {
         const check = (grants: Grant[]) =>
-            checkDeviceGroup({ statusId: 1, members: [{ label: 'Gerät A', grants }], calendars, usedCalendarIds: [], wikiCategoryId: WIKI }).filter((c) =>
+            checkDeviceGroup({ statusId: 1, members: [{ label: 'Gerät A', grants }], calendars, usedCalendarIds: [], publicCalendarIds: [2], wikiCategoryId: WIKI }).filter((c) =>
                 c.text.includes('Wiki-Rechte'),
             );
         expect(check([grant(AUTH.wikiCategoryView, WIKI)])).toEqual([]);
@@ -205,7 +210,7 @@ describe('checkDeviceGroup', () => {
                 statusId: 1,
                 members: [{ label: 'Gerät A', grants }],
                 calendars,
-                usedCalendarIds: [],
+                usedCalendarIds: [], publicCalendarIds: [2],
                 videoInUse,
                 wikiCategoryId,
             }).filter((c) => c.text.includes('Wiki-Bereich „Infoscreen"'));
@@ -230,7 +235,7 @@ describe('checkDeviceGroup', () => {
             statusId: 1,
             members: [{ label: 'Minimal User', grants: [grant(AUTH.resourceView, 3)] }],
             calendars,
-            usedCalendarIds: [],
+            usedCalendarIds: [], publicCalendarIds: [2],
             rooms,
             usedRoomIds: [1, 3],
             wikiCategoryId: WIKI,
@@ -252,7 +257,7 @@ describe('checkDeviceGroup', () => {
                 statusId: 1,
                 members: [{ label: 'Gerät A', grants }],
                 calendars,
-                usedCalendarIds: [],
+                usedCalendarIds: [], publicCalendarIds: [2],
                 rooms,
                 usedRoomIds: [],
                 appointmentRooms: true,
@@ -277,7 +282,7 @@ describe('checkDeviceGroup', () => {
                 statusId: 1,
                 members: [{ label: 'Gerät A', grants }],
                 calendars,
-                usedCalendarIds: [],
+                usedCalendarIds: [], publicCalendarIds: [2],
                 serviceCalendarIds,
                 wikiCategoryId: WIKI,
             }).filter((c) => c.text.startsWith('Dienste an Terminen'));
@@ -292,7 +297,7 @@ describe('checkDeviceGroup', () => {
 
     it('warns when a device account is also in other groups, naming them – and says nothing without', () => {
         const check = (otherGroups?: string[]) =>
-            checkDeviceGroup({ statusId: 1, members: [{ label: 'Gerät A', grants: [], otherGroups }], calendars, usedCalendarIds: [], wikiCategoryId: WIKI }).filter(
+            checkDeviceGroup({ statusId: 1, members: [{ label: 'Gerät A', grants: [], otherGroups }], calendars, usedCalendarIds: [], publicCalendarIds: [2], wikiCategoryId: WIKI }).filter(
                 (c) => c.category === 'rights',
             );
         const [warning] = check(['Gemeindeleitung', 'Küche']);
@@ -303,15 +308,15 @@ describe('checkDeviceGroup', () => {
     });
 
     it('adds no row for rooms at appointments when no block asks for them', () => {
-        const checks = checkDeviceGroup({ statusId: 1, members: [{ label: 'G', grants: [] }], calendars, usedCalendarIds: [], rooms: [{ id: 1, name: 'Saal' }], wikiCategoryId: WIKI });
+        const checks = checkDeviceGroup({ statusId: 1, members: [{ label: 'G', grants: [] }], calendars, usedCalendarIds: [], publicCalendarIds: [2], rooms: [{ id: 1, name: 'Saal' }], wikiCategoryId: WIKI });
         expect(checks.some((c) => c.text.startsWith('Räume an Terminen'))).toBe(false);
     });
 
     it('warns about a room a screen uses that is not to be found, and adds no row without used rooms', () => {
         const members = [{ label: 'Gerät', grants: [] }];
-        const unknown = checkDeviceGroup({ statusId: 1, members, calendars, usedCalendarIds: [], rooms: [], usedRoomIds: [42], wikiCategoryId: WIKI });
+        const unknown = checkDeviceGroup({ statusId: 1, members, calendars, usedCalendarIds: [], publicCalendarIds: [2], rooms: [], usedRoomIds: [42], wikiCategoryId: WIKI });
         expect(unknown.find((c) => c.text.includes('42'))?.level).toBe('warn');
-        const none = checkDeviceGroup({ statusId: 1, members, calendars, usedCalendarIds: [], rooms: [{ id: 1, name: 'Saal' }], usedRoomIds: [], wikiCategoryId: WIKI });
+        const none = checkDeviceGroup({ statusId: 1, members, calendars, usedCalendarIds: [], publicCalendarIds: [2], rooms: [{ id: 1, name: 'Saal' }], usedRoomIds: [], wikiCategoryId: WIKI });
         expect(none.some((c) => c.text.includes('Saal') || c.text.includes('Raum'))).toBe(false);
     });
 
@@ -320,7 +325,7 @@ describe('checkDeviceGroup', () => {
             statusId: 1,
             members: [{ label: 'Gerät', grants: [] }],
             calendars,
-            usedCalendarIds: [99],
+            usedCalendarIds: [99], publicCalendarIds: [2],
             wikiCategoryId: WIKI,
         });
         expect(checks.find((c) => c.text.includes('99'))?.level).toBe('warn');
@@ -328,19 +333,20 @@ describe('checkDeviceGroup', () => {
 });
 
 describe('rights a device does not need (Plan.md 58 E)', () => {
-    const planned = [2010, AUTH.calendarView, AUTH.wikiCategoryView];
+    const planned = [2010, AUTH.wikiCategoryView];
     const device = (grants: Grant[], extra: object = {}) =>
         checkDeviceGroup({
             statusId: 1,
             members: [{ label: 'Gerät A', grants }],
             calendars: [],
-            usedCalendarIds: [],
+            usedCalendarIds: [], publicCalendarIds: [2],
             wikiCategoryId: WIKI,
             ...extra,
         }).filter((c) => c.text.includes('nicht braucht:'));
 
     it('counts a right once, whatever data it is for, and leaves planned and revoked ones out', () => {
         const grants = [grant(2010), grant(AUTH.calendarView, 1), grant(AUTH.calendarView, 2), grant(101, 3), grant(101, 4), grant(7)];
+        // A calendar right from status or group is never excess; a non-public calendar it reads has its own line.
         expect(excessRights(grants, planned)).toEqual([7, 101]);
         expect(excessRights([...grants, { authId: 7, dataId: null, type: 'revoke' }], planned)).toEqual([101]);
         // Seeing the own person data comes with the usual person status; editing it is a right to change something.
@@ -390,7 +396,7 @@ describe('module rights, as the assistant grants them', () => {
             statusId: 1,
             members: [{ label: 'Gerät', grants: [grant(2010), grant(2017, -1)] }],
             calendars: [],
-            usedCalendarIds: [],
+            usedCalendarIds: [], publicCalendarIds: [2],
             wikiCategoryId: WIKI,
             moduleRights: required,
         });

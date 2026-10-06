@@ -4,6 +4,32 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.15.1] – 2026-10-06
+
+### Behoben
+
+- **Nur wirklich öffentliche Kalender:** Bisher galt jeder Gemeindekalender als öffentlich – auch interne wie ein
+  „Interner Kalender", die Besucher in ChurchTools nicht sehen. Der Editor bot sie zur Wahl an, und die Einstellungen
+  hätten sie den Fernsehern freigegeben. Öffentlich ist jetzt, was ChurchTools ohne Anmeldung zeigt, also was der
+  „Öffentliche Benutzer" sehen darf. Editor, Zeitpläne, Einstellungen und Fernseher halten sich alle daran.
+
+### Geändert
+
+- **Fernseher brauchen kein Kalenderrecht mehr:** Öffentliche Kalender sieht das Gerätekonto ohnehin. „Rechte
+  aktualisieren" vergibt „Einzelnen Kalender sehen" nicht mehr und nimmt es der Gerätegruppe zurück. Einmal klicken,
+  nachdem die neue Version installiert ist.
+- **Wo man einen Kalender freigibt:** Am Kalender-Feld im Editor erklärt ein (i), was „öffentlich" heißt; ist kein
+  Kalender öffentlich, steht der Weg direkt da: Berechtigungen → Benutzer → „Öffentlicher Benutzer" → Kalender →
+  „Einzelnen Kalender sehen". Das darf, wer in ChurchTools Berechtigungen verwalten darf.
+- **Prüfung der Gerätegruppe:** sagt je Kalender der Screens, ob er öffentlich ist, und nennt sonst den Weg zur
+  Freigabe – jetzt auch, solange noch kein Geräte-Benutzer in der Gruppe ist. Die Vorschau von „Rechte aktualisieren"
+  nennt keine „nicht geprüften" Kalender mehr.
+
+### Dokumentation
+
+- **Einrichtung, Schritt 4:** neuer Absatz „Welche Kalender öffentlich sind"; „Rechte" und „Wenn etwas nicht klappt"
+  entsprechend angepasst.
+
 ## [0.15.0] – 2026-10-06
 
 ### Neu
@@ -815,6 +841,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.15.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.15.1
 [0.15.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.15.0
 [0.14.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.14.1
 [0.14.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.14.0

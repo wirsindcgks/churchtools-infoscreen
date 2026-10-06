@@ -9,7 +9,7 @@
  * of the extension itself exist only once it is installed.
  */
 
-import { isShowableCalendar } from '../ct/api';
+import { PUBLIC_CALENDAR_PATH } from '../ct/api';
 import type { RoomInfo } from '../rooms/normalize';
 
 /** Core permission ids (G30). */
@@ -205,8 +205,6 @@ export interface DeviceMember {
 export interface CalendarInfo {
     id: number;
     name: string;
-    isPublic?: boolean;
-    isPrivate?: boolean;
 }
 
 export interface DeviceGroupInput {
@@ -214,6 +212,8 @@ export interface DeviceGroupInput {
     members: DeviceMember[];
     calendars: CalendarInfo[];
     usedCalendarIds: number[];
+    /** The calendars the public user sees – that is "public" (Plan.md 73, G53). */
+    publicCalendarIds: number[];
     /** The rooms the administrator sees, to name the used ones. */
     rooms?: RoomInfo[];
     usedRoomIds?: number[];
@@ -242,16 +242,43 @@ const EXCESS_NAMED = 6;
  * address of a TV carries its account's login token (Plan.md, D): who has the address has these rights.
  * Wiki rights have their own line in `checkDeviceGroup`. Seeing the own person data does not count: it reaches
  * no further than the device account's own record, and the usual person status brings it along. Editing it
- * does count, like every right that changes something – a device only reads (user, 2026-10-02).
+ * does count, like every right that changes something – a device only reads (user, 2026-10-02). A calendar right
+ * from status or group is no excess right either: if it reads a calendar that is not public, its own line warns.
  */
 export function excessRights(grants: Grant[], plannedAuthIds: readonly number[]): number[] {
-    const planned = new Set<number>([...plannedAuthIds, AUTH.wikiView, AUTH.wikiCategoryEdit, AUTH.ownDataView]);
+    const planned = new Set<number>([...plannedAuthIds, AUTH.wikiView, AUTH.wikiCategoryEdit, AUTH.ownDataView, AUTH.calendarView]);
     const held = [...new Set(grants.map((g) => g.authId))].filter((authId) => has(grants, authId));
     return held.filter((authId) => !planned.has(authId)).sort((a, b) => a - b);
 }
 
 export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
     const checks: Check[] = [checkStatus(input.statusId)];
+    const publicIds = new Set(input.publicCalendarIds);
+    const byId = new Map(input.calendars.map((c) => [c.id, c]));
+    if (!input.usedCalendarIds.length) {
+        checks.push({ level: 'info', category: 'calendars', text: 'Noch zeigt kein Screen Termine.' });
+    }
+    for (const id of input.usedCalendarIds) {
+        const calendar = byId.get(id);
+        if (publicIds.has(id)) {
+            checks.push({ level: 'ok', category: 'calendars', text: `„${calendar?.name ?? `Kalender ${id}`}" ist öffentlich.` });
+        } else if (calendar) {
+            checks.push({
+                level: 'warn',
+                category: 'calendars',
+                text: `„${calendar.name}" ist nicht öffentlich – kein Fernseher zeigt ihn.`,
+                detail: `Freigeben: ${PUBLIC_CALENDAR_PATH}. Oder im Editor aus dem Baustein entfernen.`,
+            });
+        } else {
+            checks.push({
+                level: 'warn',
+                category: 'calendars',
+                text: `Kalender ${id} ist nicht öffentlich oder gelöscht – kein Fernseher zeigt ihn.`,
+                detail: 'Im Editor aus dem Baustein entfernen.',
+            });
+        }
+    }
+
     if (!input.members.length) {
         // Like an empty designer group: right after the assistant this is the next step, not a fault.
         checks.push({
@@ -275,46 +302,8 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         });
     }
 
-    if (!input.usedCalendarIds.length) {
-        checks.push({ level: 'info', category: 'calendars', text: 'Noch zeigt kein Screen Termine.' });
-    }
-    const byId = new Map(input.calendars.map((c) => [c.id, c]));
-    for (const id of input.usedCalendarIds) {
-        const calendar = byId.get(id);
-        if (!calendar) {
-            // The administrator does not see it: "Rechte aktualisieren" grants nothing for it (Plan.md 62, G50).
-            checks.push({
-                level: 'warn',
-                category: 'calendars',
-                text: `Kalender ${id}: Du siehst ihn nicht, deshalb vergibt „Rechte aktualisieren" kein Recht dafür.`,
-                detail: 'Gib dir „Einzelnen Kalender sehen" für ihn.',
-            });
-            continue;
-        }
-        if (!isShowableCalendar(calendar)) {
-            checks.push({
-                level: 'warn',
-                category: 'calendars',
-                text: `„${calendar.name}" ist nicht öffentlich – kein Fernseher zeigt ihn.`,
-                detail: 'Im Editor aus dem Baustein entfernen.',
-            });
-            continue;
-        }
-        const blind = input.members.filter((m) => !has(m.grants, AUTH.calendarView, id)).map((m) => m.label);
-        checks.push(
-            blind.length
-                ? {
-                      level: 'fail',
-                      category: 'calendars',
-                      text: `„${calendar.name}" ist für ${blind.join(', ')} nicht sichtbar.`,
-                      detail: 'Recht „Einzelnen Kalender sehen" für diesen Kalender an die Rolle der Gerätegruppe geben.',
-                  }
-                : { level: 'ok', category: 'calendars', text: `„${calendar.name}" ist sichtbar.` },
-        );
-    }
-
-    // A device account that may read an internal calendar: the TV does not show it, but its address reads it (Plan.md 62).
-    for (const calendar of input.calendars.filter((c) => !isShowableCalendar(c))) {
+    // A device account that may read an internal calendar (one the public user does not see): the TV does not show it, but its address reads it (Plan.md 62).
+    for (const calendar of input.calendars.filter((c) => !publicIds.has(c.id))) {
         for (const member of input.members.filter((m) => has(m.grants, AUTH.calendarView, calendar.id))) {
             checks.push({
                 level: 'warn',
@@ -366,11 +355,8 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         }
     }
 
-    // Only calendars the assistant grants anything for: known and public (Plan.md 62); the others are named above.
-    const serviceCalendarIds = (input.serviceCalendarIds ?? []).filter((id) => {
-        const calendar = byId.get(id);
-        return calendar !== undefined && isShowableCalendar(calendar);
-    });
+    // Only public calendars get a right for their events (Plan.md 73); the others are named above.
+    const serviceCalendarIds = (input.serviceCalendarIds ?? []).filter((id) => publicIds.has(id));
     if (serviceCalendarIds.length) {
         const blind = input.members
             .filter((m) => !serviceCalendarIds.every((id) => has(m.grants, AUTH.eventView, id)))

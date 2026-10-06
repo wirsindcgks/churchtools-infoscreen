@@ -34,7 +34,7 @@ const catalog = catalogFrom({
     ),
 });
 const categories = { screens: 1, playlists: 4, slides: 7, media: 10, settings: 13 };
-const input = { catalog, moduleKey: 'infoscreen-designer', categories, wikiCategoryId: 1, calendarIds: [4, 5], roomIds: [1, 2, 3], usedRoomIds: [2], appointmentRooms: false, serviceCalendarIds: [] as number[] };
+const input = { catalog, moduleKey: 'infoscreen-designer', categories, wikiCategoryId: 1, roomIds: [1, 2, 3], usedRoomIds: [2], appointmentRooms: false, serviceCalendarIds: [] as number[] };
 
 describe('the catalogue', () => {
     it('names a right by its id – in the words of ChurchTools, else as module and API name', () => {
@@ -75,9 +75,8 @@ describe('planProvisioning', () => {
         expect(designer!.grants.find((g) => g.authId === AUTH.wikiCategoryEdit)?.dataId).toEqual([1]);
     });
 
-    it('lets devices only read: the module, its data, every calendar of the screens, public ones too (G35), and the wiki category for videos (G47)', () => {
-        expect(device!.grants.map((g) => g.authId).sort((a, b) => a - b)).toEqual([205, 403, 502, 2010, 2011, 2015]);
-        expect(device!.grants.find((g) => g.authId === AUTH.calendarView)?.dataId).toEqual([4, 5]);
+    it('lets devices only read: the module, its data, the rooms and the wiki category for videos (G47) – no calendar, they see public ones through the public user (Plan.md 73, G53)', () => {
+        expect(device!.grants.map((g) => g.authId).sort((a, b) => a - b)).toEqual([205, 502, 2010, 2011, 2015]);
     });
 
     it('gives devices the wiki category to see – always, but never "Wiki" itself or the right to edit (Plan.md 52)', () => {
@@ -141,9 +140,10 @@ describe('planProvisioning', () => {
         expect(ids).not.toContain(2014);
     });
 
-    it('asks for no calendar right before a screen shows appointments, and no wiki category before it exists', () => {
-        const [d, v] = planProvisioning({ ...input, wikiCategoryId: null, calendarIds: [] });
+    it('asks for no calendar right, and no wiki category before it exists', () => {
+        const [d, v] = planProvisioning({ ...input, wikiCategoryId: null });
         expect(d!.grants.some((g) => g.authId === AUTH.wikiCategoryEdit)).toBe(false);
+        expect(d!.grants.some((g) => g.authId === AUTH.calendarView)).toBe(false);
         expect(v!.grants.some((g) => g.authId === AUTH.calendarView)).toBe(false);
     });
 
@@ -199,13 +199,19 @@ const held = (authId: number, dataId: number | null, type?: string) => ({ authId
 const pairs = (items: RefreshItem[]) => items.map((i) => `${i.authId}:${i.dataId}`);
 
 describe('planRefresh (Plan.md 62)', () => {
-    const plan = planProvisioning(input); // device: 403 for 4, 5; 205 for 2; designer: 205 for 1, 2, 3
+    const plan = planProvisioning(input); // device: no 403; 205 for 2; designer: 205 for 1, 2, 3
     const known = { calendarIds: [1, 2, 3, 4, 5], roomIds: [1, 2, 3, 4] };
     const device = (grants: ReturnType<typeof held>[][], k = known) => planRefresh(plan, { device: grants }, k).find((g) => g.key === 'device')!;
 
     it('takes back a right for a calendar or room no screen needs any more – as far as the administrator sees it', () => {
         const result = device([[held(403, 3), held(403, 4), held(306, 1), held(205, 4), held(205, 2)]]);
-        expect(pairs(result.remove)).toEqual(['403:3', '306:1', '205:4']);
+        expect(pairs(result.remove)).toEqual(['403:3', '403:4', '306:1', '205:4']);
+    });
+
+    it('takes back a calendar right the device still holds from before – always, for a calendar the administrator sees (Plan.md 73)', () => {
+        const result = device([[held(403, 3)]]);
+        expect(pairs(result.remove)).toEqual(['403:3']);
+        expect(result.add.some((i) => i.authId === AUTH.calendarView)).toBe(false);
     });
 
     it('names what falls away with the right and the name of the calendar or room', () => {
@@ -216,12 +222,10 @@ describe('planRefresh (Plan.md 62)', () => {
 
     it('lists what is planned but missing on at least one role – each pair once', () => {
         const result = device([
-            [held(403, 4), held(403, 5)],
-            [held(403, 4)], // the second role lacks calendar 5
+            [held(205, 2)],
+            [], // the second role lacks room 2
         ]);
-        expect(pairs(result.add)).toContain('403:5');
-        expect(pairs(result.add)).not.toContain('403:4');
-        expect(pairs(result.add).filter((p) => p === '403:5')).toHaveLength(1);
+        expect(pairs(result.add).filter((p) => p === '205:2')).toHaveLength(1);
     });
 
     it('lists a right without data as missing with a null data id', () => {
@@ -298,11 +302,10 @@ describe('readRefresh and applyRefresh', () => {
         const state = await readRefresh(plan, { device: 28 }, known, {}, api);
         const result = await applyRefresh(plan, state, api);
         expect(result.error).toBeNull();
-        expect(calls).toContain('grant 280:403:4,5');
-        expect(calls).toContain('grant 281:403:4,5');
-        expect(calls.filter((c) => c.startsWith('revoke'))).toEqual(['revoke 280:403:3']);
+        expect(calls).toContain('grant 280:205:2');
+        expect(calls.filter((c) => c.startsWith('revoke'))).toEqual(['revoke 280:403:3', 'revoke 280:403:4', 'revoke 281:403:4']);
         expect(calls.every((c) => c.includes(' 28'))).toBe(true);
-        expect(result.log).toEqual(['„Infoscreen-Devices": 14 Rechte vergeben, 1 zurückgenommen.']);
+        expect(result.log).toEqual(['„Infoscreen-Devices": 13 Rechte vergeben, 2 zurückgenommen.']);
     });
 
     it('says a group is up to date when nothing differs', async () => {
