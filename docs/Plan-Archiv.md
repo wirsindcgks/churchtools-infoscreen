@@ -382,6 +382,12 @@ zweiten Liste unten.
     - **Bau:** Doku und Schema durch Opus, (2) und (3) durch den Umsetzer; Durchsicht mit Screenshots durch Opus.
     - **Gebaut vom Umsetzer (Schema und Doku durch Opus), durchgesehen von Opus und veröffentlicht als `v0.14.0` am 2026-10-05.** Geprüft mit nachgestellten Antworten von ChurchTools (`e2e/setup-abilities.spec.ts`); ob der Assistent mit einem anderen Typ als „Merkmal" durchläuft, zeigt erst eine echte Instanz. Die Zeile in `e2e/rights.spec.ts` (kein „Umbenennen" für Nicht-Admins) braucht die Testinstanz und ist nicht gelaufen.
 
+72. **Reihenfolge im Baustein „Gruppen"** *(Nutzer, 2026-10-06: „Können wir hier eine Sortierung Aufsteigend, Absteigend, Nach ID einbauen?" – entschieden: „Dann lassen wir ID raus und nehmen den Vorschlag mit wann in der Woche. Unsere Wochen beginnen Montag und ja, alphabetisch auf-/absteigend")*. Vorgezogen trotz Feature-Stopp wie die Punkte 64 bis 71. Release `v0.15.0` (Schema 1.26).
+    - **Schema.** `sort` am `GroupsBlock`: `weekday` (Standard, wie bisher: Wochentag über `sortKey` mit Montag zuerst, dann Treffzeit, dann Name; ohne Wochentag ans Ende), `name-asc`, `name-desc`. Ältere Player kennen das Feld nicht und sortieren nach Wochentag.
+    - **Regel.** `sort` wirkt nur, wenn alle Gruppen der Homepage gezeigt werden. Eine eigene Auswahl behält ihre Reihenfolge von Hand (↑/↓); wer sie beginnt, startet in der gerade gewählten Reihenfolge. Namen vergleicht `localeCompare('de', { numeric: true })` – Umlaute nach deutscher Ordnung, „Hauskreis 2" vor „Hauskreis 10"; gleiche Namen nach id, in beiden Richtungen. Gekappt auf 50 wird nach dem Sortieren.
+    - **Verworfen.** Sortierung nach id – sie entspricht ungefähr der Reihenfolge des Anlegens und sagt vor dem Fernseher nichts. Ein Knopf, der die eigene Auswahl einmal neu ordnet – nicht gefragt.
+    - **Gebaut vom Umsetzer, durchgesehen von Opus, veröffentlicht als `v0.15.0` am 2026-10-06.** `selectGroups` in `src/groups/normalize.ts`; Feld „Reihenfolge" im Inspektor; Unit-Tests und ein e2e-Test mit nachgestellter Homepage, der ohne Testinstanz läuft.
+
 ## Funktionsumfang – Später – Stand bis zum 2026-10-01
 
 Die Liste stand im Plan unter „Funktionsumfang" und ist am 2026-10-01 aufgelöst worden: Gebautes ist gestrichen,

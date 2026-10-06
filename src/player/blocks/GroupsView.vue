@@ -20,7 +20,7 @@ const props = defineProps<{ block: Extract<Block, { type: 'groups' }>; slideSeco
 const context = useStageContext();
 
 const items = computed(() =>
-    selectGroups(homepageGroups(context.groupHomepages, props.block.parentGroupId), props.block.groupIds),
+    selectGroups(homepageGroups(context.groupHomepages, props.block.parentGroupId), props.block.groupIds, props.block.sort),
 );
 
 /** As calm as "Keine aktuellen Beiträge" – before a homepage is chosen, and after it turns out empty. */

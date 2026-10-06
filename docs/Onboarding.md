@@ -95,7 +95,7 @@ Außendarstellung → „Gruppenhomepage erstellen"**
 ([Academy](https://churchtools.academy/de/help/churchtools-module/einstellungen-gruppen/wie-passe-ich-die-gruppenhomepage-meiner-obergruppe-an/)).
 Darauf erscheinen die Untergruppen, deren öffentliche Seite eingeschaltet ist.
 
-- **Im Inspektor** die Homepage wählen; dann **alle Gruppen** (nach Wochentag) oder eine **Auswahl** in eigener
+- **Im Inspektor** die Homepage wählen; dann **alle Gruppen** (nach Wochentag, Name A–Z oder Z–A) oder eine **Auswahl** in eigener
   Reihenfolge (↑/↓). Eine Gruppe allein ist ein Highlight – daneben ein zweiter Baustein mit den übrigen.
 - **Darstellung:** Karten mit **ein bis vier Gruppen je Seite** oder eine Liste. Jede Karte trägt einen **QR-Code**
   auf die öffentliche Gruppenseite, über den man sich anmelden kann.

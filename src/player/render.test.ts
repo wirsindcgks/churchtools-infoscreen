@@ -309,6 +309,7 @@ describe('rendering groups (Plan.md 43)', () => {
         height: 700,
         parentGroupId: 10,
         groupIds: [],
+        sort: 'weekday',
         layout: 'card',
         perPage: 1,
         show: DEFAULT_SHOW,

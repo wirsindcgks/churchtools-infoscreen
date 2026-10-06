@@ -71,6 +71,7 @@ const groupsBlock: Block = {
     height: 700,
     parentGroupId: 10,
     groupIds: [],
+    sort: 'weekday',
     layout: 'card',
     perPage: 1,
     show: { name: true, image: true, when: true, targetGroup: true, category: true, note: true, leaders: false, leaderImages: false, places: true, qr: true },

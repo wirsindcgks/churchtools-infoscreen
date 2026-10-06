@@ -1751,3 +1751,84 @@ test('capitals show on the stage while the stored text stays as typed (Plan.md 6
     await page.getByTestId('text-uppercase').uncheck();
     await expect(shown).toHaveCSS('text-transform', 'none');
 });
+
+// A made-up homepage, so that it runs without the test instance: three groups, weekdays against names.
+test('a groups block sorts every group by weekday, name A–Z or Z–A, until a choice is made (Plan.md 72)', async ({ page }) => {
+    const group = (id: number, name: string, weekday: { id: number; name: string; sortKey: number }) => ({
+        id,
+        name,
+        maxMemberCount: null,
+        currentMemberCount: 0,
+        requestedSeatsCount: 0,
+        allowWaitinglist: false,
+        information: {
+            note: '',
+            imageUrl: null,
+            meetingTime: '19:00',
+            weekday: { ...weekday, nameTranslated: weekday.name },
+            leader: [],
+        },
+    });
+    await page.route('**/api/**', (route) => {
+        const path = new URL(route.request().url()).pathname.replace(/^.*?\/api/, '');
+        const json = (data: unknown) => route.fulfill({ json: { data } });
+        if (route.request().method() !== 'GET') return json({});
+        if (path === '/grouphomepages') {
+            return json([
+                {
+                    domainType: 'grouphomepage',
+                    domainIdentifier: '1',
+                    title: 'Kleingruppen',
+                    apiUrl: 'http://localhost/api/grouphomepages/kleingruppen',
+                    domainAttributes: { parentGroupId: 40, childGroupIds: [41, 42, 43] },
+                },
+            ]);
+        }
+        if (path === '/grouphomepages/kleingruppen') {
+            return json({
+                showLeaders: false,
+                showGroupImages: false,
+                groups: [
+                    group(41, 'Chor', { id: 4, name: 'Donnerstag', sortKey: 3 }),
+                    group(42, 'Bibelkreis', { id: 1, name: 'Montag', sortKey: 0 }),
+                    group(43, 'Zeltlager', { id: 3, name: 'Mittwoch', sortKey: 2 }),
+                ],
+            });
+        }
+        return route.continue();
+    });
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await page.getByTestId('add-slide').click();
+    await addBlock(page, 'groups');
+    const inspector = page.getByTestId('block-inspector');
+    await inspector.getByTestId('groups-homepage').selectOption('40');
+    await inspector.getByTestId('groups-layout').selectOption('list');
+
+    const rows = page.locator('.editor-stage').getByTestId('group-row');
+    const sort = inspector.getByTestId('groups-sort');
+    await expect(sort).toHaveValue('weekday');
+    await expect(rows).toHaveCount(3);
+    await expect(rows.nth(0)).toContainText('Bibelkreis');
+    await expect(rows.nth(2)).toContainText('Chor');
+
+    await sort.selectOption('name-asc');
+    await expect(rows.nth(0)).toContainText('Bibelkreis');
+    await expect(rows.nth(1)).toContainText('Chor');
+    await expect(rows.nth(2)).toContainText('Zeltlager');
+
+    await sort.selectOption('name-desc');
+    await expect(rows.nth(0)).toContainText('Zeltlager');
+    await expect(rows.nth(1)).toContainText('Chor');
+    await expect(rows.nth(2)).toContainText('Bibelkreis');
+
+    // Choosing one by one starts in the order just seen; the select has no place there.
+    await inspector.getByTestId('groups-all').uncheck();
+    await expect(sort).toHaveCount(0);
+    const picks = inspector.locator('.group-row');
+    await expect(picks).toHaveCount(3);
+    await expect(picks.nth(0)).toContainText('Zeltlager');
+    await expect(picks.nth(1)).toContainText('Chor');
+    await expect(picks.nth(2)).toContainText('Bibelkreis');
+});
