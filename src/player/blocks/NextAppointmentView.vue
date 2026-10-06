@@ -174,7 +174,7 @@ const imageStyle = computed(() =>
     height: 100%;
     padding: 0.8em;
     border-radius: var(--isd-radius, 0.4em);
-    background: color-mix(in srgb, currentColor 7%, transparent);
+    background: var(--isd-card, color-mix(in srgb, currentColor 7%, transparent));
 }
 .hero-text {
     display: flex;

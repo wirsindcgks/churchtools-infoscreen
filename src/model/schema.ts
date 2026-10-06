@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 26 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 27 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -540,6 +540,15 @@ export const ThemeDoc = v.object({
     font: v.optional(v.string(), 'lato'),
     /** Since 1.21: the church's named colours (Plan.md 64), offered at every colour field in the editor; copied on use, so none is referenced. */
     palette: v.optional(v.pipe(v.array(v.object({ name: v.pipe(v.string(), v.maxLength(40)), color: Color })), v.maxLength(12))),
+    /**
+     * Since 1.27: the surface of the blocks' cards (Plan.md 74) – the card of „Nächster Termin", „Beiträge" and
+     * „Gruppen", and the door of „Raumbelegung". `tint`: the text colour at 7 %, as before, so it shows on light
+     * and dark slides alike; `none`: no surface; `color`: `cardColor` at `cardOpacity` per cent. Colours that mean
+     * something – calendars, the accent of what is running – stay as they are. Older players ignore it and tint.
+     */
+    cards: v.optional(v.picklist(['tint', 'none', 'color']), 'tint'),
+    cardColor: v.optional(Color, '#1e293b'),
+    cardOpacity: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0), v.maxValue(100)), 80),
     revision: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
     updatedBy: v.optional(v.string()),
 });

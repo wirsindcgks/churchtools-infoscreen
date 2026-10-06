@@ -1284,6 +1284,40 @@ test('the design page sets the look of all screens: corners, large appointments,
     await expect(page.getByTestId('playlist-preview').locator('.slide').first()).toHaveAttribute('style', /--isd-accent: #e11d48/);
 });
 
+test('the design page sets the card surface (Plan.md 74)', async ({ page, browserName }) => {
+    await mockAppointments(page);
+    await page.goto('./');
+    await page.getByTestId('sidebar-design').click();
+    await expect(page.getByTestId('design-heading')).toBeVisible();
+    await page.getByTestId('appointments-large').check();
+    const card = page.getByTestId('theme-preview').getByTestId('next-card');
+    await expect(card).toBeVisible();
+    const surface = () => card.evaluate((el) => getComputedStyle(el).backgroundColor);
+
+    await page.getByTestId('cards-color').check();
+    // The card colour offers the palette – at least accent, text and background of the design –, the other fields of the page none.
+    expect(await page.getByTestId('theme-card-color-swatch').count()).toBeGreaterThanOrEqual(3);
+    await expect(page.getByTestId('theme-accent-swatch')).toHaveCount(0);
+    await page.getByTestId('theme-card-color').fill('#ff0000');
+    await page.getByTestId('theme-card-color').blur();
+    await page.getByTestId('theme-card-opacity').fill('50');
+    await expect(page.getByTestId('theme-card-opacity')).toHaveValue('50');
+    // `color-mix` comes back as `color(srgb 1 0 0 / 0.5)` or `rgba(255, 0, 0, 0.5)`, depending on the browser.
+    await expect.poll(async () => {
+        const numbers = (await surface()).match(/[\d.]+/g)?.map(Number) ?? [];
+        const [r = 0, g = 1, b = 1, alpha = 1] = numbers.slice(-4);
+        return r > 0.9 && g < 0.1 && b < 0.1 && Math.abs(alpha - 0.5) < 0.05;
+    }).toBe(true);
+    if (browserName === 'chromium') {
+        await page.locator('#box-cards').evaluate((el) => el.scrollIntoView({ block: 'start' }));
+        await page.waitForTimeout(500);
+        await page.screenshot({ path: 'test-results/design-cards.png' });
+    }
+
+    await page.getByTestId('cards-none').check();
+    await expect.poll(surface).toBe('rgba(0, 0, 0, 0)');
+});
+
 test('the design page sets the font new blocks start with; blocks that exist keep theirs (Plan.md 40)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('sidebar-design').click();

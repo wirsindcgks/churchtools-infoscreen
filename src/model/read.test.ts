@@ -232,6 +232,13 @@ describe('readTheme – the font new blocks start with (schema 1.13, Plan.md 40)
     });
 });
 
+describe('readTheme – the card surface (schema 1.27, Plan.md 74)', () => {
+    it('reads a theme from before 1.27 as lightly tinted', () => {
+        const doc = readTheme({ schema: { major: 1, minor: 26 }, kind: 'theme', id: THEME_ID });
+        expect(doc).toMatchObject({ cards: 'tint', cardColor: '#1e293b', cardOpacity: 80 });
+    });
+});
+
 describe('readTheme – the palette (schema 1.21, Plan.md 64)', () => {
     const theme = { schema: { ...SCHEMA_VERSION }, kind: 'theme', id: THEME_ID };
     const entry = (i: number) => ({ name: `Farbe ${i}`, color: '#1d4ed8' });

@@ -178,7 +178,9 @@ dabei aussparen („Nur unbenutzte löschen").
 
 Einmal für alle Screens: Ecken, Akzentfarbe, Farben und Schrift für neue Bausteine, Termine schlicht oder als Karten,
 das Format der Bilder – mit Vorschau. Dazu eine **Farbpalette**: bis zu zwölf Farben der Gemeinde mit Namen
-(„Gemeindeblau"), in einer Reihenfolge, die ihr selbst bestimmt.
+(„Gemeindeblau"), in einer Reihenfolge, die ihr selbst bestimmt. Der **Kartenhintergrund** – leicht getönt, ohne oder
+in einer eigenen Farbe mit Deckkraft – gilt für die Karten von „Nächster Termin" (Form „Modern"), „Beiträge" und
+„Gruppen" sowie die Tür-Anzeige der Raumbelegung.
 
 ![Design: Einstellungen links, Vorschau rechts](bilder/design.png)
 

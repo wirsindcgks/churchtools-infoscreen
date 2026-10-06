@@ -217,7 +217,7 @@ onBeforeUnmount(() => clearInterval(timer));
     padding: 0.3em 0.6em 0.4em;
     border-left: 0.25em solid currentColor;
     border-radius: 0 var(--isd-radius, 0.3em) var(--isd-radius, 0.3em) 0;
-    background: color-mix(in srgb, currentColor 8%, transparent);
+    background: var(--isd-card, color-mix(in srgb, currentColor 7%, transparent));
 }
 .door-state--busy {
     border-left-color: var(--isd-accent, currentColor);

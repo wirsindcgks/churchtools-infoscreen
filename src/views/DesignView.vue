@@ -15,6 +15,7 @@ import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import { usePreview } from '../designer/usePreview';
 import { createBlock, createSlide } from '../designer/ops';
+import PaletteScope from '../designer/PaletteScope.vue';
 import { DEFAULT_THEME, type Block, type SlideDoc, type ThemeDoc } from '../model/schema';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
@@ -23,7 +24,7 @@ import { fitStage } from '../player/stage';
 import { getRepository } from '../store/backend';
 import { ConflictError, type ScreenRepository } from '../store/screen-repository';
 
-type Look = Pick<ThemeDoc, 'corners' | 'accent' | 'text' | 'background' | 'font' | 'appointments' | 'imageRatio'> & Required<Pick<ThemeDoc, 'palette'>>;
+type Look = Pick<ThemeDoc, 'corners' | 'accent' | 'text' | 'background' | 'font' | 'appointments' | 'imageRatio' | 'cards' | 'cardColor' | 'cardOpacity'> & Required<Pick<ThemeDoc, 'palette'>>;
 
 const repository = shallowRef<ScreenRepository | null>(null);
 const author = ref<string | null>(null);
@@ -36,8 +37,8 @@ const status = ref<'idle' | 'saving' | 'saved' | 'conflict' | 'error'>('idle');
 const message = ref<string | null>(null);
 
 function pick(theme: ThemeDoc): Look {
-    const { corners, accent, text, background, font, appointments, imageRatio } = theme;
-    return { corners, accent, text, background, font, appointments, imageRatio, palette: theme.palette ?? [] };
+    const { corners, accent, text, background, font, appointments, imageRatio, cards, cardColor, cardOpacity } = theme;
+    return { corners, accent, text, background, font, appointments, imageRatio, cards, cardColor, cardOpacity, palette: theme.palette ?? [] };
 }
 
 /** The palette is a list: a copy must not share it, or editing `look` would change `saved`, too. */
@@ -215,6 +216,36 @@ function observe(el: unknown): void {
                         <ColorField v-model="look.background" label="Hintergrund" testid="theme-background" />
                     </div>
                     <p class="hint">Text und Hintergrund gelten für neue Slides und Bausteine; bestehende bleiben, wie sie sind.</p>
+                </section>
+
+                <section class="box" aria-labelledby="box-cards">
+                    <h2 id="box-cards">Kartenhintergrund</h2>
+                    <div class="choice" role="radiogroup" aria-labelledby="box-cards">
+                        <label class="option option--wide" :class="{ on: look.cards === 'tint' }">
+                            <input v-model="look.cards" type="radio" name="cards" value="tint" data-testid="cards-tint">
+                            <span><strong>Leicht getönt</strong><br><small>Die Textfarbe scheint leicht durch – passt auf helle und dunkle Slides.</small></span>
+                        </label>
+                        <label class="option option--wide" :class="{ on: look.cards === 'none' }">
+                            <input v-model="look.cards" type="radio" name="cards" value="none" data-testid="cards-none">
+                            <span><strong>Ohne</strong><br><small>Die Karten liegen direkt auf der Slide.</small></span>
+                        </label>
+                        <label class="option option--wide" :class="{ on: look.cards === 'color' }">
+                            <input v-model="look.cards" type="radio" name="cards" value="color" data-testid="cards-color">
+                            <span><strong>Eigene Farbe</strong><br><small>Eine Farbe mit eigener Deckkraft.</small></span>
+                        </label>
+                    </div>
+                    <template v-if="look.cards === 'color'">
+                        <!-- Only this field offers the palette, as it is being edited; the page shows no swatches elsewhere (e2e/palette.spec.ts). -->
+                        <PaletteScope :theme="theme">
+                            <ColorField v-model="look.cardColor" label="Farbe" testid="theme-card-color" />
+                        </PaletteScope>
+                        <label class="d-field">
+                            Deckkraft
+                            <input v-model.number="look.cardOpacity" type="range" min="0" max="100" step="5" data-testid="theme-card-opacity">
+                            <output>{{ look.cardOpacity }} %</output>
+                        </label>
+                    </template>
+                    <p class="hint">Für die Karte von „Nächster Termin“ (Form „Modern“), für „Beiträge“ und „Gruppen“ sowie die Tür-Anzeige der Raumbelegung. Kalender- und Akzentfarben bleiben, wie sie sind.</p>
                 </section>
 
                 <section class="box" aria-labelledby="box-palette">

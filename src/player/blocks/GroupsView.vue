@@ -452,7 +452,7 @@ onMounted(() => {
     height: 100%;
     overflow: hidden;
     border-radius: var(--isd-radius, 0.4em);
-    background: color-mix(in srgb, currentColor 7%, transparent);
+    background: var(--isd-card, color-mix(in srgb, currentColor 7%, transparent));
 }
 /* Bar, then image and text – side by side in landscape, one above the other in portrait. */
 .hero-content {
