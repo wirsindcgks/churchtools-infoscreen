@@ -88,15 +88,16 @@ In der Rechteverwaltung unter **„Kalender"**.
 
 | Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
 | --- | --- | --- | --- | --- |
-| Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | für die Vorschau | für die Vorschau | **jeden Kalender, den ein Screen zeigt** ³ |
+| Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | für die Vorschau | für die Vorschau | –, sieht öffentliche Kalender über den öffentlichen Benutzer ³ |
 
-³ **Nur öffentliche Kalender.** Ein Fernseher zeigt nur Termine aus Kalendern, die in ChurchTools öffentlich sind
-(und nicht privat), und von diesen **nie interne Termine** („nur für angemeldete Benutzer"). Der Assistent vergibt das
-Recht deshalb nur für öffentliche Kalender, und der Fernseher fragt nur diese ab – auch dann nicht andere, wenn sein
-Konto sie über Status oder eine andere Gruppe lesen dürfte. Gestalter können nur öffentliche Kalender wählen.
-Das Recht gilt **auch für öffentliche Kalender:** Ein angemeldetes Konto ohne dieses Recht bekommt für die ganze
-Terminabfrage einen Fehler. Zeigt ein Screen einen weiteren Kalender, einmal „Rechte aktualisieren". Kalender, die du
-selbst nicht siehst, kann der Assistent nicht beurteilen: Gib dir „Einzelnen Kalender sehen" für sie.
+³ **Nur öffentliche Kalender.** Ein Fernseher zeigt nur Termine aus Kalendern, die der **öffentliche Benutzer** sehen
+darf – Kalender, die in ChurchTools auch ohne Anmeldung sichtbar sind, nicht jeder Gemeindekalender – und von diesen
+**nie interne Termine** („nur für angemeldete Benutzer"). Freigeben kann, wer in ChurchTools Berechtigungen verwalten
+darf: Berechtigungen → Benutzer → „Öffentlicher Benutzer" → Kalender → „Einzelnen Kalender sehen". „Kalender sehen"
+braucht es dafür nicht. Das Gerät braucht **kein eigenes Kalenderrecht:** Jedes angemeldete Konto sieht mit, was der
+öffentliche Benutzer sieht. Der Fernseher fragt nur öffentliche Kalender ab – auch dann nicht andere, wenn sein Konto sie
+über Status oder eine andere Gruppe lesen dürfte. Gestalter können nur öffentliche Kalender wählen. Welche Kalender
+öffentlich sind, entscheidet die Gemeinde; es gilt auch für die Website und den öffentlichen Kalender.
 
 ### Ressourcen – für die Raumbelegung
 
@@ -151,7 +152,7 @@ ist es nicht.
 | Bereich in der Rechteverwaltung | Recht | Wofür | Beleg |
 | --- | --- | --- | --- |
 | Infoscreen Designer | alle Rechte, die Datenrechte für alle Kategorien (Tabelle oben, Spalte „Administrator") | Screens anlegen, einstellen, löschen | gemessen |
-| Kalender | „Einzelnen Kalender sehen" für jeden Kalender, den die Fernseher zeigen sollen | „Rechte aktualisieren" vergibt nur Kalender, die du selbst siehst – **auch als Super-Admin nötig** | gemessen |
+| Kalender | „Einzelnen Kalender sehen" für die Kalender, die du in der Vorschau sehen willst | Nur für die Vorschau; die Fernseher brauchen kein Kalenderrecht (³ oben) | gemessen |
 | Ressourcen | „Ressource sehen" für die Räume | Gestalter bekommen die Räume, die du siehst | gemessen |
 | Administration | „Berechtigungen verwalten" (siehe oben) | Einstellungen: „Rechte aktualisieren", Adressen für Fernseher, Dienste freigeben | gemessen |
 | Gruppen | „Gruppen eines Gruppentyps sehen" für den Typ der beiden Gruppen (siehe oben) | „Rechte aktualisieren" und die Prüfung der Gruppen | gemessen |
@@ -163,7 +164,7 @@ danach wieder entziehen – „Rechte aktualisieren" und die Adressen für neue 
 Fehlt ein Gruppenrecht, graut die Einstellungsseite den Knopf aus und nennt darunter, was fehlt (gemessen am 2026-10-05).
 
 **Ein Super-Admin hat all das – nur Kalender nicht:** „Einzelnen Kalender sehen" bekommt er nur für Kalender, die ihm
-Status oder Person geben. Die Modulrechte des Designers braucht er nicht ausdrücklich. Einen Administrator über
+Status oder Person geben; für die Vorschau im Designer sieht er trotzdem alle öffentlichen. Die Modulrechte des Designers braucht er nicht ausdrücklich. Einen Administrator über
 Gruppen (ohne Super-Admin) trifft das nicht: Er hat, was seine Gemeinde ihm gibt.
 
 ## Was „Rechte aktualisieren" zurücknimmt
@@ -174,8 +175,8 @@ der Assistent selbst angelegt hat**, und nur das, was er selbst verwaltet:
 
 | Im Assistenten | In der Rechteverwaltung (API) | Gruppe | Wann es wegfällt |
 | --- | --- | --- | --- |
-| Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | Gerät | Kein Screen zeigt den Kalender mehr, oder er ist nicht öffentlich |
-| Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | Gerät | Kein Baustein zeigt mehr Dienste dieses Kalenders, oder er ist nicht öffentlich |
+| Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | Gerät | Immer: Geräte sehen öffentliche Kalender über den öffentlichen Benutzer |
+| Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | Gerät | Kein Baustein zeigt mehr Dienste dieses Kalenders |
 | Ressource sehen | Ressource sehen (`view resource`, 205) | Gerät, Gestalter | Der Raum ist kein Raum mehr in dem, was die Gruppe haben soll |
 | Anlegen von Screens und Einstellungen | `create custom data` | Gestalter, Gerät | immer – das ist Sache der Administratoren |
 | Bearbeiten von Screens und Einstellungen | `edit custom data` | Gestalter, Gerät | immer |
@@ -201,7 +202,7 @@ will, nimmt eine eigene Gruppe.
 | Bilder und Videos hochladen | Gestalter | „Wiki" sehen und Wiki-Bereich „Infoscreen" sehen / bearbeiten, dazu Medien schreiben |
 | einen Screen anlegen, umbenennen, löschen | Administrator | Daten in Kategorie erstellen / bearbeiten / löschen für **Screens** |
 | die Einstellungen öffnen | Administrator | „Personen administrieren" |
-| dass der Fernseher Termine zeigt | Gerät | Einzelnen Kalender sehen für jeden **öffentlichen** Kalender des Screens |
+| dass der Fernseher Termine zeigt | – | der Kalender muss **öffentlich** sein (³ oben); das Gerät braucht kein Recht |
 | dass der Fernseher Videos abspielt | Gerät | Wiki-Bereich „Infoscreen" sehen |
 | dass der Fernseher die Raumbelegung zeigt | Gerät | Ressource sehen für jeden Raum des Screens |
 | dass der Fernseher den Raum am Termin zeigt | Gerät | Ressource sehen für alle Räume |

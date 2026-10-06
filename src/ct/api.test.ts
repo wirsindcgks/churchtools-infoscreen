@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { fetchGroupHomepage, fetchGroupHomepageList, isShowableCalendar } from './api';
+import { fetchGroupHomepage, fetchGroupHomepageList, fetchPublicCalendars } from './api';
 
 const BASE = 'https://example.church.tools';
 
@@ -31,15 +31,11 @@ describe('group homepages are read anonymously (Plan.md 43)', () => {
     });
 });
 
-describe('isShowableCalendar (Plan.md 62)', () => {
-    it('wants a public calendar that is not private', () => {
-        expect(isShowableCalendar({ isPublic: true })).toBe(true);
-        expect(isShowableCalendar({ isPublic: true, isPrivate: false })).toBe(true);
-    });
-
-    it('rejects a missing field, a private and a non-public calendar', () => {
-        expect(isShowableCalendar({})).toBe(false);
-        expect(isShowableCalendar({ isPublic: true, isPrivate: true })).toBe(false);
-        expect(isShowableCalendar({ isPublic: false })).toBe(false);
+describe('fetchPublicCalendars (Plan.md 73, G53)', () => {
+    it('asks without the session and marks the request as anonymous', async () => {
+        const fetcher = vi.fn<typeof fetch>(async () => answer([{ id: 2, name: 'Gottesdienst' }]));
+        expect(await fetchPublicCalendars(BASE, fetcher)).toEqual([{ id: 2, name: 'Gottesdienst' }]);
+        expect(fetcher).toHaveBeenCalledWith(`${BASE}/api/calendars`, expect.objectContaining({ credentials: 'omit' }));
+        expect(fetcher.mock.calls[0]![1]!.headers).toMatchObject({ 'X-Infoscreen-Anonymous': '1' });
     });
 });

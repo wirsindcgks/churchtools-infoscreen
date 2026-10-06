@@ -19,7 +19,7 @@ const groups: RefreshGroup[] = [
 
 describe('RefreshRightsDialog (Plan.md 62)', () => {
     it('lists what comes in and what falls away per group, each wording once, and leaves out a group without change', () => {
-        const wrapper = mount(RefreshRightsDialog, { props: { groups, unchecked: [] } });
+        const wrapper = mount(RefreshRightsDialog, { props: { groups } });
         expect(wrapper.text()).toContain('Rechte aktualisieren');
         expect(wrapper.get('[data-testid="refresh-group-device"]').text()).toContain('Infoscreen-Devices');
         expect(wrapper.get('[data-testid="refresh-add"]').text()).toBe('Einzelnen Kalender sehen: Bandproben');
@@ -31,15 +31,8 @@ describe('RefreshRightsDialog (Plan.md 62)', () => {
         expect(wrapper.text()).toContain('Ein entzogenes Recht wirkt bei ChurchTools noch bis zu einer Dreiviertelstunde nach.');
     });
 
-    it('names the calendars it did not check – and only then', () => {
-        expect(mount(RefreshRightsDialog, { props: { groups, unchecked: [] } }).find('[data-testid="refresh-unchecked"]').exists()).toBe(false);
-        const wrapper = mount(RefreshRightsDialog, { props: { groups, unchecked: [4, 7] } });
-        expect(wrapper.get('[data-testid="refresh-unchecked"]').text()).toContain('Nicht geprüft');
-        expect(wrapper.get('[data-testid="refresh-unchecked"]').text()).toContain('Kalender 4, Kalender 7');
-    });
-
     it('confirms with "Übernehmen" and closes on cancel and on Escape', async () => {
-        const wrapper = mount(RefreshRightsDialog, { props: { groups, unchecked: [] } });
+        const wrapper = mount(RefreshRightsDialog, { props: { groups } });
         await wrapper.get('form').trigger('submit');
         expect(wrapper.emitted('confirm')).toHaveLength(1);
         expect(wrapper.get('[data-testid="refresh-rights-confirm"]').text()).toBe('Übernehmen');

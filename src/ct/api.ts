@@ -109,17 +109,10 @@ export interface Calendar {
     id: number;
     name: string;
     color?: string | null;
-    isPublic?: boolean;
-    isPrivate?: boolean;
 }
 
-/**
- * Whether a TV may show the calendar: public and not private (Plan.md 62). A missing field counts as
- * not public. The one place that rule lives.
- */
-export function isShowableCalendar(c: { isPublic?: boolean; isPrivate?: boolean }): boolean {
-    return c.isPublic === true && c.isPrivate !== true;
-}
+/** Where a church releases a calendar to the public user; shown wherever a calendar is missing (Plan.md 73, G53). */
+export const PUBLIC_CALENDAR_PATH = 'Berechtigungen → Benutzer → „Öffentlicher Benutzer" → Kalender → „Einzelnen Kalender sehen"';
 
 /** Calendars the signed-in person may see; the device user sees what its group grants (G21). */
 export function fetchCalendars(): Promise<Calendar[]> {
@@ -157,6 +150,9 @@ export async function fetchPostGroups(): Promise<PostGroup[]> {
         .sort((a, b) => a.name.localeCompare(b.name, 'de'));
 }
 
+/** The header that marks a request of `getAnonymously`; the dev proxy sends such requests without the login token. */
+export const ANONYMOUS_HEADER = 'X-Infoscreen-Anonymous';
+
 /**
  * Group homepages are read anonymously, with the browser's cookies left out –
  * the device then shows exactly what any visitor sees (G40). And in German:
@@ -171,7 +167,9 @@ async function getAnonymously<T>(baseUrl: string, path: string, fetcher: typeof 
     const response = await fetcher(`${baseUrl}/api${path}`, {
         cache: 'no-store',
         credentials: 'omit',
-        headers: { Accept: 'application/json', 'Accept-Language': 'de' },
+        // Marks the request as anonymous, for the dev proxy and the e2e tests; ChurchTools ignores the header (G53).
+        // Not `X-OnlyAuthenticated`: ChurchTools answers 401 to any value of it, `0` included.
+        headers: { Accept: 'application/json', 'Accept-Language': 'de', [ANONYMOUS_HEADER]: '1' },
     });
     if (!response.ok) {
         throw Object.assign(new Error(`${path}: HTTP ${response.status}`), {
@@ -179,6 +177,14 @@ async function getAnonymously<T>(baseUrl: string, path: string, fetcher: typeof 
         });
     }
     return ((await response.json()) as { data: T }).data;
+}
+
+/**
+ * The calendars the public user may see – that is what "public" means (Plan.md 73, G53). Every signed-in
+ * account sees them too. The one place that rule lives.
+ */
+export function fetchPublicCalendars(baseUrl: string, fetcher: typeof fetch = fetch): Promise<Calendar[]> {
+    return getAnonymously<Calendar[]>(baseUrl, '/calendars', fetcher);
 }
 
 /** The enabled group homepages, each with its parent group, its title and the hash to fetch it by. */

@@ -147,9 +147,10 @@ behalten auch ihre Schrift.
 
 - **Rückgängig** mit ⌘Z / Strg+Z; ein Ziehen ist ein Schritt.
 - **Speichert jemand anderes gleichzeitig dieselbe Playlist**, fragt der Editor, welche Fassung gelten soll.
-- **Neuer Kalender auf einem Screen** – in einer Terminliste, einem Countdown oder einer Termin-Regel? Dann einem
-  Administrator Bescheid geben: Er klickt einmal „Rechte aktualisieren", damit die Fernseher den Kalender lesen
-  dürfen. Zur Wahl stehen nur öffentliche Kalender; ein interner Kalender erscheint auf keinem Fernseher.
+- **Neuer Kalender auf einem Screen** – in einer Terminliste, einem Countdown oder einer Termin-Regel? Zur Wahl
+  stehen nur öffentliche Kalender, also solche, die man in ChurchTools auch ohne Anmeldung sieht; die zeigen die
+  Fernseher ohne weiteren Handgriff. Fehlt einer, kann ihn ein Administrator freigeben – den Weg nennt das (i) am
+  Kalender-Feld. Ein interner Kalender erscheint auf keinem Fernseher.
 - **Sagt die Startseite „Dir fehlen Rechte"**, nennt sie das Recht – gib die Meldung an einen Administrator weiter.
 - **Was neu ist**, steht unter **„Über & Neuigkeiten"** unten in der Seitenleiste; ein blauer Punkt zeigt eine neue
   Version an.

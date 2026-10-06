@@ -6,7 +6,7 @@ import { EXTENSION_KEY } from '../config';
 import Icon, { type IconName } from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
-import { fetchCalendars, fetchResourceMasterdata, fetchServiceGroups, fetchServices, isShowableCalendar, type Calendar } from '../ct/api';
+import { fetchCalendars, fetchPublicCalendars, fetchResourceMasterdata, fetchServiceGroups, fetchServices, type Calendar } from '../ct/api';
 import { serviceChoices, type ServiceInfo } from '../appointments/services';
 import { currentPerson, httpStatus, instanceBaseUrl, personUrl } from '../ct/client';
 import { playerUrl } from '../designer/player-url';
@@ -140,6 +140,8 @@ async function toggleWikiMenu(): Promise<void> {
     }
 }
 let calendars: Calendar[] = [];
+/** The calendars the public user sees – "public" (Plan.md 73, G53). */
+let publicCalendarIds: number[] = [];
 let usedCalendarIds: number[] = [];
 /** Rooms the administrator sees; empty when the master data is unreadable – the page runs on (G45). */
 let rooms: RoomInfo[] = [];
@@ -216,9 +218,9 @@ function moduleRights(side: Side): RequiredRight[] | null {
     return spec ? spec.grants.filter((g) => !NOT_MODULE.includes(g.authId)) : null;
 }
 
-/** Only calendars the administrator sees and a TV may show get a right; the rest is named by the check (Plan.md 62). */
+/** Only public calendars get a right for their events; the rest is named by the check (Plan.md 73). */
 function grantableCalendars(ids: number[]): number[] {
-    const showable = new Set(calendars.filter(isShowableCalendar).map((c) => c.id));
+    const showable = new Set(publicCalendarIds);
     return ids.filter((id) => showable.has(id));
 }
 
@@ -244,7 +246,6 @@ function computePlan(): void {
             moduleKey: EXTENSION_KEY,
             categories: categories as Record<CategoryKey, number>,
             wikiCategoryId,
-            calendarIds: grantableCalendars(usedCalendarIds),
             roomIds: rooms.map((r) => r.id),
             usedRoomIds,
             appointmentRooms,
@@ -370,7 +371,7 @@ async function runAssistant(): Promise<void> {
 }
 
 /** What „Rechte aktualisieren" found, while the dialog asks (Plan.md 62). */
-const refreshDialog = ref<{ state: RefreshState; unchecked: number[] } | null>(null);
+const refreshDialog = ref<{ state: RefreshState } | null>(null);
 
 /**
  * First step of „Rechte aktualisieren": reads what the created groups hold and plans. Changes show in a dialog
@@ -396,11 +397,7 @@ async function updateRights(): Promise<void> {
             assistant.log = state.groups.map(refreshLogLine);
             return;
         }
-        const seen = new Set(known.calendarIds);
-        refreshDialog.value = {
-            state,
-            unchecked: [...new Set([...usedCalendarIds, ...serviceCalendarIds])].filter((id) => !seen.has(id)).sort((a, b) => a - b),
-        };
+        refreshDialog.value = { state };
     } catch (e) {
         assistant.error = explain(e);
         assistant.log = [`Abgebrochen: ${assistant.error}`];
@@ -607,6 +604,7 @@ async function check(side: Side): Promise<void> {
                 members,
                 calendars,
                 usedCalendarIds,
+                publicCalendarIds,
                 rooms,
                 usedRoomIds,
                 appointmentRooms,
@@ -672,11 +670,12 @@ onMounted(async () => {
         repository = handle.repository;
         demo.value = handle.demo;
         if (page.value === 'services') void loadServices();
-        const [list, settings, wikiCategories, calendarList, used, screenList, masterdata, usedRooms, roomsAtAppointments, serviceCalendars, videos, permissions, types] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, masterdata, usedRooms, roomsAtAppointments, serviceCalendars, videos, permissions, types] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
             fetchCalendars(),
+            fetchPublicCalendars(instanceBaseUrl()),
             repository.calendarIdsInUse(),
             repository.listScreens(),
             fetchResourceMasterdata().catch(() => null),
@@ -697,6 +696,7 @@ onMounted(async () => {
         wikiCategoryIdKnown.value = wikiCategoryId !== null;
         settingsLoaded.value = true;
         calendars = calendarList;
+        publicCalendarIds = publicCalendars.map((c) => c.id);
         usedCalendarIds = used;
         rooms = masterdata ? roomsOf(masterdata) : [];
         usedRoomIds = usedRooms;
@@ -1151,7 +1151,6 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
         <RefreshRightsDialog
             v-if="refreshDialog"
             :groups="refreshDialog.state.groups"
-            :unchecked="refreshDialog.unchecked"
             @close="refreshDialog = null"
             @confirm="confirmRefresh"
         />

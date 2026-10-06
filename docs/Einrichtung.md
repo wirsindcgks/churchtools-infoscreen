@@ -105,6 +105,11 @@ erstellen" aus Schritt 2. Niemand sonst braucht dieses Recht.
 
 ## 4. Gruppen und Rechte anlegen lassen
 
+**Welche Kalender öffentlich sind.** Fernseher zeigen nur Kalender, die der öffentliche Benutzer sehen darf – also
+auch ohne Anmeldung sichtbare. Das prüfst und änderst du in ChurchTools unter Berechtigungen → Benutzer →
+„Öffentlicher Benutzer" → Kalender → „Einzelnen Kalender sehen". Das ist eine Entscheidung der Gemeinde und gilt auch
+für die Website und den öffentlichen Kalender; der Designer ändert daran nichts.
+
 Die Rechteverwaltung von ChurchTools ist fein, aber aufwendig. Deshalb erledigt der Designer den Rest selbst:
 
 1. Im Designer oben auf **Einstellungen → Gruppen und Rechte**.
@@ -122,24 +127,22 @@ Rechte:
 - **„Infoscreen-Designer"** – das Modul sehen und seine Inhalte bearbeiten, dazu den Wiki-Bereich „Infoscreen", in
   dem die Bilder der Mediathek liegen. Fehlt er, legt ihn der Assistent an; gibt es schon einen Bereich dieses
   Namens, benutzt er ihn mit. Die Mediathek selbst legt keinen an – sie ist erst nach diesem Schritt nutzbar.
-- **„Infoscreen-Devices"** – das Modul und seine Daten sehen, **jeden öffentlichen Kalender, den ein Screen zeigt**, **jeden
-  Raum, den ein Screen zeigt**, und den Wiki-Bereich „Infoscreen" (nur sehen) – Videos laufen nur über die
-  Download-Adresse ihrer Datei, und die verlangt dieses Recht. Die Gestalter sehen dazu alle Räume, damit sie im Baustein „Raumbelegung" wählen können.
+- **„Infoscreen-Devices"** – das Modul und seine Daten sehen, **jeden Raum, den ein Screen zeigt**, und den
+  Wiki-Bereich „Infoscreen" (nur sehen) – Videos laufen nur über die Download-Adresse ihrer Datei, und die verlangt
+  dieses Recht. Öffentliche Kalender sieht das Gerät ohne eigenes Recht. Die Gestalter sehen dazu alle Räume, damit sie im Baustein „Raumbelegung" wählen können.
 
 Der Assistent fasst **nur Gruppen an, die er selbst angelegt hat**, und ändert keine bestehenden Rollen. Gibt es
 schon Gruppen mit diesen Namen, hält er an.
 
-**Später wiederkommen:** Zeigt ein Screen einen weiteren Kalender, klicke in **Einstellungen → Gruppen und Rechte**
-auf **„Rechte aktualisieren"** – sonst fehlen dessen Termine auf dem Fernseher. Zeigt ein Screen neue Räume, ebenfalls
-einmal „Rechte aktualisieren". **Der Knopf nimmt auch zurück,** was kein Screen mehr braucht: Kalender, Dienste und
+**Später wiederkommen:** Zeigt ein Screen einen weiteren Kalender, muss der Kalender nur öffentlich sein – ein
+„Rechte aktualisieren" braucht es dafür nicht. Zeigt ein Screen neue Räume, klicke in **Einstellungen → Gruppen und
+Rechte** auf **„Rechte aktualisieren"**. **Der Knopf nimmt auch zurück,** was kein Screen mehr braucht: Kalender, Dienste und
 Räume, die kein Screen mehr zeigt, verlieren ihr Recht an den Gruppen des Assistenten. Vorher öffnet sich eine
-**Vorschau** – je Gruppe, was dazukommt und was wegfällt, dazu die Kalender, die du selbst nicht siehst und für die
-der Assistent deshalb nichts tut. Erst „Übernehmen" schreibt; ohne Änderung meldet der Knopf nur, dass alles auf dem
+**Vorschau** – je Gruppe, was dazukommt und was wegfällt. Erst „Übernehmen" schreibt; ohne Änderung meldet der Knopf nur, dass alles auf dem
 Stand ist. Ein entzogenes Recht wirkt bei ChurchTools noch bis zu einer Dreiviertelstunde nach, weil ChurchTools Rechte
 zwischenspeichert. Von Hand an diesen Gruppen ergänzte Rechte an Kalendern und Räumen nähme der Knopf ebenfalls zurück
-([Rechte](Rechte.md#was-rechte-aktualisieren-zurücknimmt)). **Nur öffentliche Kalender:** Der Assistent vergibt kein
-Recht an einem nicht öffentlichen Kalender, und der Fernseher zeigt nur öffentliche Kalender – und von diesen keine
-internen Termine. „Automatische Einrichtung rückgängig machen" löscht die
+([Rechte](Rechte.md#was-rechte-aktualisieren-zurücknimmt)). **Nur öffentliche Kalender:** Der Fernseher zeigt nur
+öffentliche Kalender – und von diesen keine internen Termine. „Automatische Einrichtung rückgängig machen" löscht die
 beiden Gruppen wieder – **nur die, die der Assistent selbst angelegt hat**. Vorhandene Gruppen, die du gewählt hast,
 bleiben, ebenso der Wiki-Bereich mit den Bildern. Ob der Bereich vom Designer angelegt wurde oder schon da war, steht
 unter **Einstellungen → Mediathek im Wiki**.
@@ -181,7 +184,7 @@ Standort** („Infoscreen Foyer", „Infoscreen Café") – dann lässt sich ein
    sieht die Prüfung nicht; sie nennt seit Version 0.7.3 nur die Gruppen.
 
 Einrichtung prüfen: Unter **Einstellungen → Gruppen und Rechte** die Gruppe „Infoscreen-Devices" wählen – die
-Prüfung zeigt je Mitglied, ob die (öffentlichen) Kalender der Screens lesbar sind, warnt vor nicht öffentlichen Kalendern in Screens und vor Konten, die einen internen Kalender lesen dürfen, und nennt jedes Recht des Kontos, das ein Gerät
+Prüfung zeigt je Kalender der Screens, ob er öffentlich ist – auch ohne Geräte-Benutzer –, warnt vor nicht öffentlichen Kalendern in Screens und vor Konten, die einen internen Kalender lesen dürfen, und nennt jedes Recht des Kontos, das ein Gerät
 nicht braucht. Steht dort eine Warnung, dem Konto einen Personenstatus ohne diese Rechte geben: Wer die Adresse des
 Fernsehers kennt, hat sie sonst auch. Ist das Konto noch in weiteren Gruppen, nennt die Prüfung sie mit Namen.
 
@@ -380,7 +383,7 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | Fernseher: „Dieser Fernseher ist nicht bei ChurchTools angemeldet" | Adresse ohne Anmeldung, oder das Passwort des Geräte-Kontos wurde geändert | unter Einstellungen → Adressen für die Fernseher eine neue Adresse erzeugen |
 | Player im Tab neben ChurchTools: fragt nach Anmeldung oder zeigt keine Termine | Im selben Browser ist jemand anderes angemeldet – ChurchTools kennt je Browser nur eine Anmeldung | Player in einem Inkognito-Fenster oder eigenen Browserprofil öffnen |
 | Fernseher: „Es gibt keinen Screen „…"" | Adresse vertippt oder Screen gelöscht | Adresse neu kopieren |
-| Fernseher: Termine eines Kalenders fehlen | Gerät darf den Kalender nicht lesen – oder der Kalender ist nicht öffentlich (dann zeigt ihn kein Fernseher) | Einstellungen → Gruppen und Rechte → „Rechte aktualisieren"; bei einem nicht öffentlichen Kalender im Editor entfernen |
+| Fernseher: Termine eines Kalenders fehlen | Der Kalender ist nicht öffentlich (dann zeigt ihn kein Fernseher) | in ChurchTools freigeben: Berechtigungen → Benutzer → „Öffentlicher Benutzer" → Kalender → „Einzelnen Kalender sehen" – oder im Editor aus dem Baustein entfernen |
 | Fernseher: Ein Raum fehlt in der Raumbelegung | Gerät darf den Raum nicht sehen | Einstellungen → Gruppen und Rechte → „Rechte aktualisieren" |
 | Fernseher: Bild fehlt, Platzhalter statt Bild | Bild im Wiki gelöscht | im Designer ein neues Bild wählen |
 | Baustein „Gruppen": „Noch keine Gruppen-Homepage" | In ChurchTools gibt es keine Gruppen-Homepage | an der Obergruppe: Einstellungen → Allgemein → Außendarstellung → „Gruppenhomepage erstellen" |

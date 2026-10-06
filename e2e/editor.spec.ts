@@ -780,7 +780,7 @@ test('greeting before the service: a window from 30 min before to 10 min after t
     sunday.setHours(10, 0, 0, 0);
     const end = new Date(sunday.getTime() + 90 * 60_000);
     await page.route(/\/api\/calendars(\?|$)/, (route) =>
-        route.fulfill({ json: { data: [{ id: 901, name: 'Gottesdienste', isPublic: true }] } }),
+        route.fulfill({ json: { data: [{ id: 901, name: 'Gottesdienste' }] } }),
     );
     await page.route(/\/api\/calendars\/appointments/, (route) =>
         route.fulfill({

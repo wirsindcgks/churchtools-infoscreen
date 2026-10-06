@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import type { Calendar, PostGroup } from '../ct/api';
+import { PUBLIC_CALENDAR_PATH, type Calendar, type PostGroup } from '../ct/api';
 import { homepageGroups, selectGroups, type Group, type HomepageEntry } from '../groups/normalize';
 import type { Block, Fill, GroupFields, RoomEntry, TextStyle } from '../model/schema';
 import { bannerShown } from '../player/banner';
@@ -645,7 +645,13 @@ const LAYERS = [
 
                 <fieldset v-if="'calendarIds' in block">
                     <legend>Kalender</legend>
-                    <p class="hint">Zur Wahl stehen nur öffentliche Kalender.</p>
+                    <div class="hint-row">
+                        <span class="hint">Zur Wahl stehen nur öffentliche Kalender.</span>
+                        <InfoHint>
+                            Öffentlich ist ein Kalender, den man in ChurchTools auch ohne Anmeldung sieht. Fehlt einer, gibt ihn frei, wer in
+                            ChurchTools Berechtigungen verwalten darf: {{ PUBLIC_CALENDAR_PATH }}.
+                        </InfoHint>
+                    </div>
                     <label v-for="c in calendars" :key="c.id" class="check">
                         <input
                             type="checkbox"
@@ -655,7 +661,12 @@ const LAYERS = [
                         <span class="swatch" :style="{ background: calendarColor(c.color) ?? 'transparent' }" />
                         {{ c.name }}
                     </label>
-                    <p v-if="!calendars.length" class="hint">Keine Kalender sichtbar.</p>
+                    <template v-if="!calendars.length">
+                        <p class="hint">Kein Kalender ist öffentlich.</p>
+                        <p class="hint" data-testid="no-public-calendars">
+                            Freigeben kann, wer in ChurchTools Berechtigungen verwalten darf: {{ PUBLIC_CALENDAR_PATH }}.
+                        </p>
+                    </template>
                     <p v-for="c in hiddenChosen(block)" :key="c.id" class="hint hidden-calendar" :data-testid="`hidden-calendar-${c.id}`">
                         {{ c.name }} – nicht öffentlich, erscheint auf keinem Fernseher
                         <button

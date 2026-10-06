@@ -77,11 +77,6 @@ export interface PlanInput {
     categories: Record<CategoryKey, number>;
     wikiCategoryId: number | null;
     /**
-     * Every public calendar the screens use that the administrator sees (Plan.md 62). Public ones need the
-     * right too: a signed-in account without it gets 403 for the whole request (G35).
-     */
-    calendarIds: number[];
-    /**
      * Every room the administrator sees: designers may choose among all of
      * them (Plan.md 46; G45). Type room only – no items or vehicles.
      */
@@ -142,9 +137,7 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     if (input.wikiCategoryId !== null) {
         device.push({ authId: AUTH.wikiCategoryView, dataId: [input.wikiCategoryId], label: 'Wiki-Bereich „Infoscreen" sehen' });
     }
-    if (input.calendarIds.length) {
-        device.push({ authId: AUTH.calendarView, dataId: input.calendarIds, label: RIGHT_LABELS[AUTH.calendarView] });
-    }
+    // The device sees calendars through the public user; it needs no right of its own (Plan.md 73, G53).
     // One entry: every room when appointments show theirs, plus what the rooms blocks use.
     const deviceRooms =
         input.appointmentRooms && input.roomIds.length

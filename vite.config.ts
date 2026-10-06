@@ -38,8 +38,6 @@ export default defineConfig(({ mode }) => {
         server: {
             proxy: env.CT_BASE_URL
                 ? {
-                      // Group homepages go anonymous, as the module asks for them (Plan.md 43) – first, so /api does not catch them.
-                      '/api/grouphomepages': devProxy(env.CT_BASE_URL, undefined),
                       '/api': devProxy(env.CT_BASE_URL, env.CT_LOGIN_TOKEN),
                       // The image service is anonymous (G14); proxied only because the instance sends no CORS headers.
                       '/images': devProxy(env.CT_BASE_URL, undefined),
@@ -196,6 +194,10 @@ function devProxy(target: string, loginToken: string | undefined): ProxyOptions 
         changeOrigin: true,
         headers: loginToken ? { Authorization: `Login ${loginToken}` } : {},
         configure(proxy) {
+            // Anonymous requests of the module (getAnonymously) go without the login token, as in real ChurchTools (Plan.md 73).
+            proxy.on('proxyReq', (proxyReq, req) => {
+                if (req.headers['x-infoscreen-anonymous'] === '1') proxyReq.removeHeader('authorization');
+            });
             proxy.on('proxyRes', (res) => {
                 delete res.headers['set-cookie'];
                 // Keep redirects on the proxy: the instance itself would refuse the browser (no CORS).

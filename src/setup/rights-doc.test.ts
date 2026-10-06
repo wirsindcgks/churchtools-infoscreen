@@ -34,7 +34,6 @@ const plan = [true, false].flatMap((appointmentRooms) => planProvisioning({
     moduleKey: 'infoscreen-designer',
     categories: { screens: 1, playlists: 4, slides: 7, media: 10, settings: 13 },
     wikiCategoryId: 1,
-    calendarIds: [1],
     roomIds: [1],
     usedRoomIds: [1],
     appointmentRooms,
