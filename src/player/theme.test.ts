@@ -7,7 +7,7 @@ import { DEFAULT_THEME, type Block, type SlideDoc } from '../model/schema';
 import { provideStageContext, type StageContext } from './context';
 import { qrShape } from './qr';
 import SlideView from './SlideView.vue';
-import { imageBox, listLayout, themeVars } from './theme';
+import { cardBackground, imageBox, listLayout, themeVars } from './theme';
 import { embedAddress, webFrame, webRefusal, withScheme } from './web';
 
 const BERLIN = 'Europe/Berlin';
@@ -131,9 +131,19 @@ describe('the theme on the stage (Plan.md 27)', () => {
             '--isd-accent': '#e11d48',
             '--isd-radius': '0',
             '--isd-pill': '0',
+            '--isd-card': 'color-mix(in srgb, currentColor 7%, transparent)',
         });
         const slide = render(makeSlide({ blocks: [] }), { theme: { ...DEFAULT_THEME, corners: 'square' } }).find('.slide');
         expect(slide.attributes('style')).toContain('--isd-radius: 0');
+    });
+
+    it('sets the card surface by the theme (Plan.md 74)', () => {
+        expect(cardBackground(DEFAULT_THEME)).toBe('color-mix(in srgb, currentColor 7%, transparent)');
+        expect(cardBackground({ ...DEFAULT_THEME, cards: 'none' })).toBe('transparent');
+        expect(cardBackground({ ...DEFAULT_THEME, cards: 'color', cardColor: '#ff0000', cardOpacity: 50 })).toBe(
+            'color-mix(in srgb, #ff0000 50%, transparent)',
+        );
+        expect(themeVars({ ...DEFAULT_THEME, cards: 'none' })['--isd-card']).toBe('transparent');
     });
 
     it('lets a block without its own layout follow the theme', () => {

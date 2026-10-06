@@ -4,6 +4,22 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.16.0] – 2026-10-06
+
+### Neu
+
+- **Kartenhintergrund im Design:** Ein neuer Kasten auf der Design-Seite steuert für alle Screens die Fläche hinter
+  den Karten – „Leicht getönt" (wie bisher: die Textfarbe scheint leicht durch), „Ohne" oder „Eigene Farbe" mit
+  Farbfeld samt Palette und einem Regler für die Deckkraft. Er gilt für die Karte von „Nächster Termin" (Form
+  „Modern"), für „Beiträge" und „Gruppen" sowie die Tür-Anzeige der Raumbelegung. Kalender- und Akzentfarben bleiben,
+  wie sie sind.
+- **Datenmodell:** Schema 1.27 (`cards`, `cardColor`, `cardOpacity` im Design). Ältere Player tönen weiter wie bisher.
+
+### Geändert
+
+- Die Tür-Anzeige der Raumbelegung ist mit „Leicht getönt" einen Hauch heller (7 statt 8 %) – eine Fläche für alle
+  Karten.
+
 ## [0.15.1] – 2026-10-06
 
 ### Behoben
@@ -841,6 +857,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.16.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.16.0
 [0.15.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.15.1
 [0.15.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.15.0
 [0.14.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.14.1

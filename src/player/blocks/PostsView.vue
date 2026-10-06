@@ -190,7 +190,7 @@ onMounted(() => {
     height: 100%;
     overflow: hidden;
     border-radius: var(--isd-radius, 0.4em);
-    background: color-mix(in srgb, currentColor 7%, transparent);
+    background: var(--isd-card, color-mix(in srgb, currentColor 7%, transparent));
 }
 .hero--landscape {
     flex-direction: row;
