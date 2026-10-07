@@ -86,5 +86,7 @@ dieses Repositorys.
 
 ## Lizenz
 
+© 2026 Tobias Nikola für CG Kraichgau-Stromberg e. V.
+
 [GPL-3.0-or-later](LICENSE). Die mitgelieferten Schriften stehen unter der SIL Open Font License; ihre Lizenztexte
 liegen dem Paket bei, ebenso die der gebündelten Bibliotheken (`licenses/THIRD-PARTY-NOTICES.txt`).
