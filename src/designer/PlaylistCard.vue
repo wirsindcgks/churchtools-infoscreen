@@ -114,15 +114,15 @@ function duplicate(): void {
                     <Icon name="slides" :size="16" />
                     {{ overview.slideCount }}
                 </li>
-                <li :title="inUse ? 'Läuft auf diesen Screens' : 'Noch kein Screen zeigt sie'" data-testid="playlist-screens">
+                <li class="d-facts-gap" :title="inUse ? 'Läuft auf diesen Screens' : 'Noch kein Screen zeigt sie'" data-testid="playlist-screens">
                     <Icon name="tv" :size="16" />
                     {{ inUse ? overview.screens.map((s) => s.name).join(', ') : 'auf keinem Screen' }}
                 </li>
-                <li v-if="edited?.when" :title="edited.whenTitle!" data-testid="playlist-edited">
+                <li v-if="edited?.when" class="d-facts-gap" :title="edited.whenTitle!" data-testid="playlist-edited">
                     <Icon name="clock" :size="16" />
                     <span data-testid="playlist-edited-at">{{ edited.when }}</span>
                 </li>
-                <li v-if="edited?.by" :title="edited.byTitle!" data-testid="playlist-edited-by">
+                <li v-if="edited?.by" :class="{ 'd-facts-gap': !edited.when }" :title="edited.byTitle!" data-testid="playlist-edited-by">
                     <Icon name="person" :size="16" />
                     <span>{{ edited.by }}</span>
                 </li>

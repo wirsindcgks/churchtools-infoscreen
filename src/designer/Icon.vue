@@ -21,6 +21,9 @@ const PATHS = {
     slides: ['M7 7h13v11H7z', 'M4 4h13', 'M4 4v11'],
     person: [circle(12, 8, 3.5), 'M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6'],
     copy: ['M9 9h11v11H9z', 'M5 15H4V4h11v1'],
+    // Address of a screen: a hash sign. Heartbeat: rising signal bars.
+    id: ['M9.5 4L7.5 20', 'M16.5 4l-2 16', 'M4.5 9h15.5', 'M4 15h15.5'],
+    signal: ['M5 19v-3', 'M10 19v-6', 'M15 19v-9', 'M20 19V5'],
     // Linked slides (Plan.md 49): two chain links.
     link: ['M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1', 'M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1'],
     trash: ['M4 7h16', 'M10 11v6', 'M14 11v6', 'M6 7l1 13h10l1-13', 'M9 7V4h6v3'],

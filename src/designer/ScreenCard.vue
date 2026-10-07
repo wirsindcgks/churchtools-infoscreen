@@ -141,19 +141,21 @@ function settings(): void {
             </div>
             <ul class="d-facts">
                 <li v-if="alive" :title="alive.title" data-testid="screen-alive" :data-alive="alive.kind">
+                    <Icon name="signal" :size="16" />
                     <span class="alive-dot" :class="`is-${alive.kind}`" aria-hidden="true" />
                     <span>{{ alive.text }}</span>
+                </li>
+                <li>
+                    <Icon name="id" :size="16" />
+                    <code :title="`Adresse für das Gerät: ${screen.slug}`">{{ screen.slug }}</code>
                 </li>
                 <li :title="portrait ? 'Hochkant' : 'Quer'">
                     <Icon :name="portrait ? 'portrait' : 'landscape'" :size="16" />
                     {{ portrait ? 'Hochkant' : 'Quer' }}
                 </li>
-                <li>
-                    <code :title="`Adresse für das Gerät: ${screen.slug}`">{{ screen.slug }}</code>
-                </li>
                 <li
                     :title="byRule ? `Läuft jetzt nach Zeitplan – ${shown?.slideCount ?? 0} Slides` : `Standard-Playlist – ${shown?.slideCount ?? 0} Slides`"
-                    :class="{ 'by-rule': byRule }"
+                    :class="['d-facts-gap', { 'by-rule': byRule }]"
                     data-testid="screen-playlist"
                 >
                     <Icon name="list" :size="16" />
@@ -174,11 +176,11 @@ function settings(): void {
                         {{ scheduleLabel }}
                     </button>
                 </li>
-                <li v-if="edited?.when" :title="edited.whenTitle!" data-testid="screen-edited-at">
+                <li v-if="edited?.when" class="d-facts-gap" :title="edited.whenTitle!" data-testid="screen-edited-at">
                     <Icon name="clock" :size="16" />
                     <span>{{ edited.when }}</span>
                 </li>
-                <li v-if="edited?.by" :title="edited.byTitle!" data-testid="screen-edited-by">
+                <li v-if="edited?.by" :class="{ 'd-facts-gap': !edited.when }" :title="edited.byTitle!" data-testid="screen-edited-by">
                     <Icon name="person" :size="16" />
                     <span>{{ edited.by }}</span>
                 </li>

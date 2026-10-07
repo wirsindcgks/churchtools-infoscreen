@@ -233,9 +233,15 @@
     min-width: 0;
     overflow-wrap: anywhere;
 }
-.infoscreen-designer :where(.d-facts > li > svg) {
+/* Groups of facts that belong together are set apart by a little space, not by rules. */
+.infoscreen-designer :where(.d-facts > li.d-facts-gap) {
+    margin-top: 6px;
+}
+/* The icon is the anchor of a line: in the text colour, while the words beside it stay muted. */
+.infoscreen-designer :where(.d-facts svg) {
     flex: none;
     margin-top: 0.1em;
+    color: var(--d-text);
 }
 
 .infoscreen-designer :where(.d-banner) {

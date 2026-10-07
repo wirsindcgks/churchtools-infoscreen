@@ -410,9 +410,9 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await page.getByTestId('slide-item').nth(2).click();
     await page.getByTestId('frame-appointment-list').first().click();
-    // The rooms beside the place (Plan.md 50): the list as cards shows them on request.
+    // The place goes before the room (0.17.1): where the appointment has a place, only that stands.
     await page.getByTestId('show-rooms').check();
-    await expect(page.locator('.editor-stage').getByTestId('list-place').first()).toContainText('Saal');
+    await expect(page.locator('.editor-stage').getByTestId('list-place').first()).toContainText('Kirchsaal');
     await shoot(page, 'editor');
 
     // Groups of a group homepage: two a page, with leaders and their pictures (Plan.md 43).
