@@ -465,6 +465,10 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
       sprechender Name wie „Infoscreen Foyer" und ein Status mit wenig Rechten. **Bei P8 einmal wiederholen:** nach
       der Einrichtung auf der Produktivinstanz mit einem typischen Mitgliedskonto in Web und App nach „Infoscreen"
       und nach dem Geräte-Benutzer suchen (fünf Minuten, durch den Administrator).
+      **→ Auf der Produktivinstanz bestanden am 2026-10-07** (Nutzer, im Web als simulierter Benutzer mit Status
+      „Mitglied"): kein Designer im Menü (die direkte Adresse meldet „Keine ausreichende Berechtigung"), weder
+      „Infoscreen-Designer" noch „Infoscreen-Devices" in der Gruppensuche, kein Wiki-Bereich, das Geräte-Konto in der
+      Personensuche nicht auffindbar. Die App kennt keine Simulation und ist nicht geprüft.
 - [ ] **P4 · Erstes Gerät, auf der Produktivinstanz** *(nach P8)* – Das echte Gerät mit Kiosk-Browser läuft
       mehrere Tage fehlerfrei, zuerst mit Testinhalten in einer eigenen Playlist, einschließlich des nächtlichen
       Neuladens und eines Netzausfalls (E5). Bis dahin hängt kein Gerät an einer Instanz.
@@ -491,8 +495,9 @@ Der Player schreibt nichts nach ChurchTools, sondern nur in den Speicher des eig
       *Ursprüngliche Frage:* Gleich unter dem echten Key, der danach bleibt? Oder unter
       `infoscreen-designer-test`, der sich spurlos wieder entfernen lässt, aber für den Betrieb neu eingerichtet
       werden muss?
-- [ ] **P8 · Freigabe** – **Der Ablauf in Stufen steht seit dem 2026-10-01 in `Plan.md`, Punkt 57.** *Wartet seit dem 2026-09-28 auf die Klärung des Nutzers mit dem Administrator der
-      Produktivinstanz.* Nach der Installation dort P3 mit einem typischen Mitgliedskonto wiederholen.
+- [ ] **P8 · Freigabe** – **Der Ablauf in Stufen steht seit dem 2026-10-01 in `Plan.md`, Punkt 57.** *Installiert am 2026-10-05, seit dem 2026-10-07 mit
+      `v0.18.1` und aktualisierten Rechten; abgehakt wird mit P4 (Punkt 57, „Bestanden").* P3 dort wiederholt und bestanden
+      am 2026-10-07.
       Die Installation auf der Produktivinstanz wird mit dem Nutzer abgesprochen. Erst
       dann wird die Regel „gegen die Produktivinstanz nur lesen" in `AGENTS.md` für dieses Modul angepasst.
 
