@@ -4,6 +4,24 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.17.0] – 2026-10-07
+
+### Neu
+
+- **Lebenszeichen der Screens:** Jede Kachel auf der Startseite zeigt in der ersten Zeile, ob der Fernseher läuft –
+  **„online"** (grün), **„nicht online seit …"** (rot, mit dem Zeitpunkt der letzten Meldung) oder **„noch nie
+  abgerufen"** (grau). Der Tooltip nennt Zeitpunkt und Player-Version. Ein Fernseher meldet sich alle fünf Minuten;
+  „online" heißt, die letzte Meldung ist höchstens 15 Minuten alt. Das tut nur ein Fernseher mit seiner Adresse aus den
+  Einstellungen – wer den Player im eigenen Browser öffnet, meldet nichts. Ein Fehler beim Melden stört die Anzeige nie.
+- **Neue Kategorie „Status"** für diese Meldungen. Sie legt ein Administrator an, wenn er die Startseite öffnet.
+
+### Geändert
+
+- **Das Gerät bekommt sein erstes Schreibrecht:** „Daten in Kategorie erstellen" und „bearbeiten", nur in „Status".
+  Screens, Playlists, Slides, Medien und Einstellungen bleiben für Geräte nur lesbar. Nach dem Update einmal die
+  Startseite öffnen und in den Einstellungen **„Rechte aktualisieren"** – am Fernseher ist nichts zu tun, er holt den
+  neuen Player beim nächtlichen Neuladen.
+
 ## [0.16.0] – 2026-10-06
 
 ### Neu
@@ -857,6 +875,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.17.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.17.0
 [0.16.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.16.0
 [0.15.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.15.1
 [0.15.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.15.0

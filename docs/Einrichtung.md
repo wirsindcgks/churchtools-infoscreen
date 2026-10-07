@@ -27,7 +27,7 @@ Kurzfassung je Rolle steht im [Onboarding](Onboarding.md), alle Rechte als Tabel
 | --- | --- | --- |
 | **Administrator** | wer in ChurchTools Berechtigungen verwalten darf | installieren, die **Einstellungen** des Designers öffnen, Gruppen und Rechte anlegen; **Screens anlegen, einstellen (Name, Overscan) und löschen** – ein Screen steht für ein Gerät im Haus |
 | **Gestalter** | Mitglieder der Gruppe „Infoscreen-Designer" | gestalten, was die Screens zeigen: Slides, Playlists, Zeitpläne und Bilder anlegen, ändern und löschen – nicht die Screens selbst und nicht die Einstellungen |
-| **Gerät** | Mitglieder der Gruppe „Infoscreen-Devices" | nur lesen: die Screens, die Kalender und Räume, die sie zeigen, und die Videos der Mediathek |
+| **Gerät** | Mitglieder der Gruppe „Infoscreen-Devices" | nur lesen: die Screens, die Kalender und Räume, die sie zeigen, und die Videos der Mediathek; schreiben nur ihr Lebenszeichen |
 
 ### Voraussetzungen
 
@@ -167,7 +167,7 @@ Gestalter sehen die Einstellungen nicht. Fehlt ihnen ein Recht, sagt die Startse
 
 ## 6. Geräte-Benutzer anlegen
 
-Der Fernseher meldet sich mit einem **eigenen ChurchTools-Konto** an, das nur lesen darf. Empfehlung: **ein Konto je
+Der Fernseher meldet sich mit einem **eigenen ChurchTools-Konto** an, das nur lesen darf – bis auf sein Lebenszeichen. Empfehlung: **ein Konto je
 Standort** („Infoscreen Foyer", „Infoscreen Café") – dann lässt sich ein einzelnes Gerät sperren (siehe
 [Notbremse](#wenn-ein-gerät-verloren-geht--die-notbremse)).
 
@@ -201,7 +201,7 @@ Anmeldung von Hand im Browser genügt nicht: Auch mit „Angemeldet bleiben" mel
 
 Das Passwort wird nirgends gespeichert; es dient nur dazu, bei ChurchTools den **Login-Token** des Geräte-Kontos
 abzuholen, der in der Adresse steht. **Die Adresse ist deshalb ein Schlüssel:** Wer sie hat, sieht ChurchTools mit
-den Rechten des Geräte-Kontos – nur lesend, aber ohne Passwort. Gib sie nicht per E-Mail oder Chat weiter, sondern
+den Rechten des Geräte-Kontos – nur lesend bis auf sein Lebenszeichen, aber ohne Passwort. Gib sie nicht per E-Mail oder Chat weiter, sondern
 trag sie direkt am Gerät ein. Ungültig wird sie, sobald das Passwort des Geräte-Kontos geändert wird. Die Adresse
 bleibt auch in der Adresszeile des Browsers stehen – nicht fotografieren oder abfilmen, wenn sie zu sehen ist.
 
@@ -247,6 +247,12 @@ die Bildfläche rückt dann um so viel Prozent nach innen.
 - Er **lädt jede Nacht zwischen 3 und 4 Uhr neu** und nach **30 Minuten ununterbrochener Fehler** – auch ohne Netz,
   sobald er die Seite auf dem Gerät hat. Dabei meldet er sich jedes Mal frisch an; läuft die Anmeldung zwischendurch
   ab, erneuert er sie selbst.
+- Er **meldet sich alle fünf Minuten** – ein Lebenszeichen, das ChurchTools in der Kategorie „Status" ablegt. Auf der
+  Startseite des Designers zeigt jede Kachel daraus „online", „nicht online seit …" oder „noch nie abgerufen"
+  („online" heißt: Der Browser des Geräts läuft und erreicht ChurchTools, höchstens 15 Minuten her). Das tut nur ein
+  Fernseher mit der Adresse aus Schritt 7; wer den Player über „Player öffnen" im eigenen Browser ansieht, meldet nichts.
+  Fehlt dem Gerät das Recht dafür, läuft die Anzeige unverändert weiter, und die Kachel steht auf „noch nie abgerufen".
+  Sieht jemand die Kategorie „Status" nicht, fehlt die Zeile auf der Kachel.
 
 ## Updates
 
@@ -262,6 +268,12 @@ erhalten.
 **Nach einem Update einmal „Rechte aktualisieren"** (Designer → Einstellungen → Gruppen und Rechte). Neue
 Fassungen können die Rechte der beiden Gruppen ändern – etwa seit Version 0.1: Gestalter gestalten Inhalte, die
 Screens selbst legt und stellt ein Administrator ein; ältere Gruppen verlieren dabei ihr Schreibrecht auf Screens.
+
+**Seit Version 0.17.0 (Lebenszeichen der Screens):** Ein Administrator mit dem Recht „Kategorien erstellen"
+([Schritt 2](#2-dir-selbst-die-modulrechte-geben)) öffnet einmal die **Startseite** des Designers – sie legt die Kategorie
+„Status" an – und klickt danach in den Einstellungen auf **„Rechte aktualisieren"**; der Dialog
+zeigt die neuen Rechte der Geräte unter „Kommt dazu". Am Gerät ist nichts zu tun: Der Fernseher holt den neuen Player beim
+nächsten nächtlichen Neuladen und meldet sich danach selbst.
 
 ## Den Designer wieder entfernen
 

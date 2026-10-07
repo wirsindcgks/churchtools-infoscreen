@@ -153,7 +153,8 @@ let serviceCalendarIds: number[] = [];
 /** A screen shows a video (Plan.md 52). */
 let videoInUse = false;
 let catalog: AuthCatalog | null = null;
-let categories: Partial<Record<CategoryKey, number>> = {};
+/** `status` is the category of the signs of life (Plan.md 59), no required one: the plan takes it when it is there. */
+let categories: Partial<Record<CategoryKey, number>> & { status?: number } = {};
 
 /** The setup assistant (Plan.md, 9): what it would do, and what it did. */
 const demo = ref(false);
@@ -244,7 +245,7 @@ function computePlan(): void {
         plan.value = planProvisioning({
             catalog,
             moduleKey: EXTENSION_KEY,
-            categories: categories as Record<CategoryKey, number>,
+            categories: categories as Record<CategoryKey, number> & { status?: number },
             wikiCategoryId,
             roomIds: rooms.map((r) => r.id),
             usedRoomIds,
@@ -712,10 +713,12 @@ onMounted(async () => {
         createdWikiCategoryId.value = settings?.createdWikiCategoryId ?? null;
         if (!demo.value) {
             // Without these the assistant only explains; the page itself still works.
-            [categories, catalog] = await Promise.all([
-                repository.visibleCategories(),
-                loadAuthCatalog().catch(() => null),
-            ]);
+            // An administrator's visit creates the category of the signs of life, if it is missing (Plan.md 59).
+            const statusId = (admin.value ? repository.ensureStatusCategory() : repository.statusCategoryId()).catch(() => null);
+            let visible: Partial<Record<CategoryKey, number>>;
+            [visible, catalog] = await Promise.all([repository.visibleCategories(), loadAuthCatalog().catch(() => null)]);
+            const status = await statusId;
+            categories = status === null ? visible : { ...visible, status };
             assistant.allowed = true;
         }
         computePlan();
@@ -1135,7 +1138,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         </button>
                         <p class="d-banner d-banner--warning small">
                             <strong>Diese Adresse ist ein Schlüssel.</strong> Wer sie hat, sieht ChurchTools mit den Rechten
-                            des Geräte-Kontos (Person {{ device.personId }}) – nur lesend, aber ohne Passwort. Nicht per
+                            des Geräte-Kontos (Person {{ device.personId }}) – nur lesend bis auf sein Lebenszeichen, aber ohne Passwort. Nicht per
                             E-Mail oder Chat weitergeben. Ungültig wird sie, sobald das Passwort des Kontos geändert wird.
                         </p>
                     </div>

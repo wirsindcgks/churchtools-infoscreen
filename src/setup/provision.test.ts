@@ -152,6 +152,34 @@ describe('planProvisioning', () => {
     });
 });
 
+describe('planProvisioning with the status category (Plan.md 59)', () => {
+    const [designer, device] = planProvisioning({ ...input, categories: { ...categories, status: 22 } });
+
+    it('lets everyone see it, as the other categories', () => {
+        expect(designer!.grants.find((g) => g.label === 'Kategorien sehen')?.dataId).toEqual([1, 4, 7, 10, 13, 22]);
+        expect(device!.grants.find((g) => g.label === 'Daten in Kategorie sehen')?.dataId).toEqual([1, 4, 7, 10, 13, 22]);
+    });
+
+    it('lets a device create and edit there – and nowhere else, and never delete', () => {
+        const writing = device!.grants.filter((g) => [2016, 2017, 2018].includes(g.authId));
+        expect(writing.map((g) => [g.authId, g.dataId])).toEqual([
+            [2016, [22]],
+            [2017, [22]],
+        ]);
+    });
+
+    it('gives designers only the seeing, and still forbids devices the writing of screens and settings', () => {
+        expect(designer!.grants.find((g) => g.authId === 2017)?.dataId).toEqual([4, 7, 10]);
+        expect(designer!.grants.find((g) => g.authId === 2016)?.dataId).toEqual([4, 7, 10]);
+        expect(device!.forbidden[0]?.dataId).toEqual([1, 13]);
+    });
+
+    it('plans as before without it', () => {
+        const [, without] = planProvisioning(input);
+        expect(without!.grants.map((g) => g.authId).sort((a, b) => a - b)).toEqual([205, 502, 2010, 2011, 2015]);
+    });
+});
+
 describe('provision', () => {
     function fakeApi(failOnGrant?: number) {
         const calls: string[] = [];

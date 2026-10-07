@@ -48,7 +48,7 @@ eine erfundene Gemeinde.
 
 In ChurchTools oben auf **„Infoscreen Designer"**. Die Startseite zeigt jeden Fernseher als Kachel – mit dem, was er
 **gerade** zeigt. Ein Klick auf die Kachel öffnet diese Playlist im Editor; Adresse, Zeitplan und Player stecken im
-Menü „…". Neue Screens legt ein Administrator an.
+Menü „…". Die erste Zeile sagt, ob der Fernseher gerade **„online"** ist. Neue Screens legt ein Administrator an.
 
 ![Startseite mit zwei Screens als Kacheln](bilder/startseite.png)
 

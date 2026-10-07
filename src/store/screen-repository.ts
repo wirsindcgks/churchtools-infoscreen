@@ -15,6 +15,8 @@
  */
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { appointmentServiceIds } from '../appointments/services';
+import { httpStatus } from '../ct/client';
+import { heartbeatTime, readHeartbeat, type HeartbeatDoc } from '../model/heartbeat';
 import {
     readMedia,
     withOwnAddresses,
@@ -60,6 +62,17 @@ export const CATEGORIES = {
 } as const;
 
 export type CategoryKey = keyof typeof CATEGORIES;
+
+/**
+ * The signs of life of the screens (Plan.md 59). Not in {@link CATEGORIES} on purpose: those are created
+ * by whoever opens the designer or player first, and a device without the right to create categories
+ * would get a `403` and stand still. This one is found by its shorty and created only by an administrator.
+ */
+export const STATUS_CATEGORY = {
+    shorty: 'status',
+    name: 'Status',
+    description: 'Infoscreen: ein Lebenszeichen je Screen',
+} as const;
 
 /** The one settings document of a module. */
 const SETTINGS_ID = 'settings';
@@ -252,6 +265,10 @@ export interface SaveOptions {
 
 export class ScreenRepository {
     private categoryIds: Promise<Record<CategoryKey, number>> | null = null;
+    /** The `status` category, once found; a missing one is looked for again – it may appear later. */
+    private statusId: number | null = null;
+    /** Value ids of the signs of life by slug, to spare the read. */
+    private readonly heartbeatValueIds = new Map<string, number>();
 
     /**
      * `mediaOrigins`: the origins media addresses may point to – the instance's own (`withOwnAddresses`).
@@ -288,6 +305,88 @@ export class ScreenRepository {
             if (found) result[key] = found.id;
         }
         return result;
+    }
+
+    /** The id of the `status` category, or null while this person cannot see one. Creates nothing. */
+    async statusCategoryId(): Promise<number | null> {
+        if (this.statusId !== null) return this.statusId;
+        const found = (await this.kv.listCategories()).find((c) => c.shorty === STATUS_CATEGORY.shorty);
+        this.statusId = found?.id ?? null;
+        return this.statusId;
+    }
+
+    /**
+     * Like {@link statusCategoryId}, but creates the category when it is missing. Meant for an administrator;
+     * without the right to create categories it gives null instead of failing.
+     */
+    async ensureStatusCategory(): Promise<number | null> {
+        try {
+            const existing = await this.statusCategoryId();
+            if (existing !== null) return existing;
+            this.statusId = (await this.kv.createCategory({ ...STATUS_CATEGORY })).id;
+            return this.statusId;
+        } catch (error) {
+            console.warn('Die Kategorie „Status" konnte nicht angelegt werden:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Writes the sign of life of a screen: changes its value, or creates it when there is none yet.
+     * Does nothing without the category. Errors are the caller's – the player swallows them.
+     */
+    async writeHeartbeat(doc: HeartbeatDoc): Promise<void> {
+        const categoryId = await this.statusCategoryId();
+        if (categoryId === null) return;
+        const text = JSON.stringify(doc);
+        const known = this.heartbeatValueIds.get(doc.screen);
+        if (known !== undefined) {
+            try {
+                await this.kv.updateValue(categoryId, known, text);
+                return;
+            } catch (error) {
+                // How ChurchTools answers for a deleted value is unmeasured beyond 404: look it up afresh next time.
+                this.heartbeatValueIds.delete(doc.screen);
+                if (httpStatus(error) !== 404) throw error;
+            }
+        }
+        const current = (await this.readHeartbeats(categoryId)).get(doc.screen);
+        if (current) {
+            this.heartbeatValueIds.set(doc.screen, current.valueId);
+            await this.kv.updateValue(categoryId, current.valueId, text);
+            return;
+        }
+        this.heartbeatValueIds.set(doc.screen, (await this.kv.createValue(categoryId, text)).id);
+    }
+
+    /**
+     * The latest sign of life per screen slug; null when this person cannot see the category –
+     * the start page then shows nothing instead of a wrong "never".
+     */
+    async listHeartbeats(): Promise<Map<string, HeartbeatDoc> | null> {
+        const categoryId = await this.statusCategoryId();
+        if (categoryId === null) return null;
+        const latest = await this.readHeartbeats(categoryId);
+        return new Map([...latest].map(([slug, { doc }]) => [slug, doc]));
+    }
+
+    /** By slug, the value with the latest `at`; values that are not signs of life are skipped. */
+    private async readHeartbeats(categoryId: number): Promise<Map<string, { valueId: number; doc: HeartbeatDoc }>> {
+        const latest = new Map<string, { valueId: number; doc: HeartbeatDoc }>();
+        for (const value of await this.kv.listValues(categoryId)) {
+            let doc: HeartbeatDoc | null;
+            try {
+                doc = readHeartbeat(JSON.parse(value.value));
+            } catch {
+                continue;
+            }
+            if (!doc) continue;
+            const before = latest.get(doc.screen);
+            // An unreadable time loses against any readable one.
+            const newer = !before || (heartbeatTime(doc) || -Infinity) > (heartbeatTime(before.doc) || -Infinity);
+            if (newer) latest.set(doc.screen, { valueId: value.id, doc });
+        }
+        return latest;
     }
 
     /** The screens as they run – with their schedules applied – sorted by name. */

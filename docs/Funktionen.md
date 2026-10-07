@@ -12,7 +12,9 @@ nichts davon stammt aus einer echten ChurchTools-Instanz. Die Bilder entstehen a
 
 Jeder Fernseher ist eine Kachel – mit dem, was er **gerade** zeigt. Ein Klick öffnet die laufende Playlist im
 Editor; Adresse, Zeitplan und Player stecken im Menü „…", für Administratoren dazu „Umbenennen" und „Einstellungen". Filter trennen Quer- und Hochformat. Die Angaben der
-Kachel stehen untereinander, zuletzt wann und von wem sie oder ihr Zeitplan zuletzt geändert wurde. Alle Bereiche –
+Kachel stehen untereinander: zuerst, ob der Fernseher **„online"** ist – er meldet sich alle fünf Minuten –, sonst
+**„nicht online seit …"** oder **„noch nie abgerufen"**; zuletzt wann und von wem sie oder ihr Zeitplan zuletzt geändert
+wurde. Alle Bereiche –
 Screens, Playlists, Zeitpläne, Hinweise und Mediathek – zeigen dieselben Kacheln in derselben Breite; lange Namen
 brechen um, nichts wird abgeschnitten.
 
