@@ -1,59 +1,72 @@
 # ChurchTools Infoscreen Designer
 
-Eine Extension für [ChurchTools](https://church.tools), mit der eine Gemeinde die Bildschirme in ihrem Foyer selbst
-gestaltet – im Browser, ohne Programmierkenntnisse. Termine kommen live aus ChurchTools, Bilder aus der eigenen
-Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
+[![Release](https://img.shields.io/github/v/release/wirsindcgks/churchtools-infoscreen)](https://github.com/wirsindcgks/churchtools-infoscreen/releases)
+[![Lizenz: GPL v3](https://img.shields.io/github/license/wirsindcgks/churchtools-infoscreen)](LICENSE)
+[![Mit KI entwickelt](https://img.shields.io/badge/mit_KI_entwickelt-Claude_Code-8A2BE2)](AGENTS.md)
+
+Mit dem Infoscreen Designer gestaltet eure Gemeinde die Bildschirme im Foyer selbst – im Browser, direkt in
+[ChurchTools](https://church.tools) und ohne Programmierkenntnisse. Termine, Gruppen und Räume kommen live aus
+ChurchTools und erscheinen von selbst auf dem Bildschirm. Ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
 
 ![Der Editor: Slides, Bausteine, Bildfläche und Inspektor](docs/bilder/editor.png)
 
-## Was es kann
+## Was ihr damit macht
 
-- **Gestalten wie in einem Folien-Editor:** Slides mit Text, Bild, Fläche, Uhr, Terminliste, nächstem Termin,
-  Countdown, Gemeindekopf mit Logo, Webseite, QR-Code, Beiträgen, Gruppen und einer Galerie; ziehen, skalieren, am Raster
-  ausrichten, sperren; Rückgängig/Wiederholen. Die Vorschau ist genau das, was der Fernseher zeigt.
-- **Termine live aus den Kalendern von ChurchTools** – was dort eingetragen wird, erscheint von selbst im Foyer, als
-  schlichte Liste oder als Karten mit Datumskachel.
-- **Gruppen und Beiträge aus ChurchTools:** die Gruppen einer Gruppen-Homepage mit Treffzeit, freien Plätzen und
-  einem QR-Code zum Anmelden, die neuesten Beiträge öffentlicher Gruppen – nur, was ChurchTools ohnehin öffentlich
-  zeigt.
-- **Playlists und Zeitpläne:** Eine Playlist kann auf mehreren Screens laufen; Regeln nach Uhrzeit oder rund um
-  Termine schalten um, etwa „30 Minuten vor dem Gottesdienst die Begrüßung". Die Startseite zeigt, was jeder
-  Fernseher gerade zeigt.
-- **Hinweise:** eine Laufschrift oder ein stehender Hinweis über allen Slides, der zur eingestellten Zeit von
-  selbst verschwindet.
-- **Mediathek und Design:** Bilder einmal hochladen und überall verwenden, mit der Angabe, wo sie laufen; Ecken,
-  Farben und Darstellung der Termine einmal für alle Screens festlegen.
-- **Mehrere Screens**, quer oder hochkant, jeder unter einer festen Adresse.
-- **Auch am Handy und auf dem Tablet:** Übersicht, Menü und Editor passen sich an – Slides gestalten mit dem Finger,
-  die Einstellungen eines Bausteins als Blatt am unteren Rand oder als Spalte daneben, die ganze Slide im Blick. Am
-  Rechner lassen sich Slides und Einstellungen einklappen.
-- **Fernseher, die sich selbst helfen:** Sie melden sich selbst an, holen Änderungen in etwa 20 Sekunden, halten
-  Daten und Bilder auf dem Gerät, überstehen Netzausfälle und laden nach Fehlern und jede Nacht neu.
-- **Rechte mit einem Knopf:** Ein Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an.
-- **Datensparsam:** Zehn freie Schriften kommen von der eigenen Instanz, kein Aufruf an Dritte; das Gerät hat ein
-  eigenes Konto, das nur lesen darf (bis auf sein Lebenszeichen, das die Startseite als „online" zeigt); seine Adresse trägt statt eines Passworts einen Login-Token, den ein
-  Passwortwechsel ungültig macht.
+- **Slides gestalten wie in einem Folien-Editor:** Text, Bilder, Uhr, Countdown, QR-Code, Galerie, Video und mehr
+  per Drag and drop. Die Vorschau zeigt genau das, was der Fernseher zeigt – auch am Handy und auf dem Tablet.
+- **Inhalte aus ChurchTools zeigen:** Termine als Liste oder als Karten (auf Wunsch mit Ort, Raum und Diensten),
+  den nächsten Termin, Gruppen mit Treffzeit und QR-Code zur Anmeldung, aktuelle Beiträge und die Raumbelegung.
+  Was in ChurchTools geändert wird, steht nach etwa 20 Sekunden auf dem Bildschirm.
+- **Wechseln nach Plan:** Mehrere Slides laufen als Playlist. Zeitpläne schalten um, etwa „30 Minuten vor dem
+  Gottesdienst die Begrüßung". Hinweise und Laufschrift liegen über allen Slides und verschwinden zur eingestellten
+  Zeit von selbst.
+- **Mehrere Bildschirme:** quer oder hochkant, jeder unter einer festen Adresse. Die Startseite zeigt, was jeder
+  Bildschirm gerade zeigt und ob er online ist.
+- **Einheitliches Aussehen:** Farben, Schriften und Darstellung der Termine legt ihr einmal für alle Screens fest.
+  Bilder lädt ihr einmal in die Mediathek und nutzt sie überall.
 
-**Mehr Bilder** – Gruppen, Vorschau, Beiträge, Hinweise, Zeitpläne, Mediathek, Design und der Designer am Handy –
-zeigt die Übersicht [**Der Designer in Bildern**](docs/Funktionen.md).
+Mehr Bilder zeigt [**Der Designer in Bildern**](docs/Funktionen.md).
 
-## Installieren
+## Was ihr braucht
 
-- **[Der Designer in Bildern](docs/Funktionen.md)** – was er kann, in Screenshots.
+- eine ChurchTools-Instanz, auf der **Extensions (Custom Modules)** freigeschaltet sind,
+- einen Administrator, der das Modul einmal einrichtet,
+- für jeden Bildschirm einen Fernseher oder Mini-PC mit aktuellem Browser im Kiosk-Modus.
+
+## Loslegen
+
+1. **Paket laden:** das ZIP unter [Releases](https://github.com/wirsindcgks/churchtools-infoscreen/releases)
+   herunterladen.
+2. **Hochladen:** in ChurchTools in der Extension-Verwaltung hochladen.
+3. **Einrichten:** Ein Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an – mit einem Knopf.
+4. **Gestalten:** Slides bauen, Playlist und Screen zusammenstellen, die Adresse des Screens im Kiosk-Browser
+   des Fernsehers eintragen.
+
+Probiert es bitte **zuerst in einer Test- oder Demo-Instanz** aus und nicht direkt in eurer produktiven Umgebung:
+Der Assistent legt Gruppen und Rechte an. Die Adresse eines Fernsehers enthält einen Login-Token; behandelt sie
+wie ein Passwort.
+
+Die Anleitungen:
+
 - **[Onboarding](docs/Onboarding.md)** – der Einstieg je Rolle: Administrator, Gestalter, Gerät.
-- **[Einrichtungsanleitung für ChurchTools-Administratoren](docs/Einrichtung.md)** – Installation, Rechte,
-  Geräte-Benutzer, Kiosk-Browser, Updates und Datenschutz.
+- **[Einrichtung für Administratoren](docs/Einrichtung.md)** – Installation, Rechte, Geräte-Benutzer, Kiosk-Browser,
+  Updates und Datenschutz.
 - **[Rechte-Übersicht](docs/Rechte.md)** – wer welche Rechte braucht, als Tabelle.
 
-Das Paket zum Hochladen liegt unter [Releases](https://github.com/wirsindcgks/churchtools-infoscreen/releases).
-Voraussetzung ist eine ChurchTools-Instanz, auf der Extensions (Custom Modules) freigeschaltet sind.
+## Datenschutz
+
+Die zehn mitgelieferten Schriften kommen von eurer eigenen Instanz, es gibt keinen Aufruf an Dritte. Der Fernseher
+hat ein eigenes Konto, das nur lesen darf – bis auf sein Lebenszeichen, das die Startseite als „online" zeigt. Seine
+Adresse trägt statt eines Passworts einen Login-Token, den ein Passwortwechsel ungültig macht. Gruppen und Beiträge
+erscheinen nur, wenn ChurchTools sie ohnehin öffentlich zeigt, und Namen von Diensten nur nach Freigabe durch einen
+Administrator.
 
 ## Stand
 
-Aktuell ist Version 0.16.0 (6. Oktober 2026) – der Hintergrund der Karten lässt sich im Design für alle Screens einstellen: getönt, ohne oder in eigener Farbe –, davor 0.15.1, in dem Fernseher nur Kalender zeigen, die ChurchTools auch ohne Anmeldung zeigt, 0.15.0, in dem der Baustein „Gruppen" nach Wochentag oder nach Name sortiert, auf- oder absteigend, 0.14.1 mit einem deutlichen Datenschutz-Hinweis, bevor ein Administrator Dienste mit Namen freigibt, 0.14.0, in dem der Einrichtungsassistent den Gruppentyp wählen lässt und sich Screens direkt umbenennen lassen, 0.13.0, in dem sich Bausteine vertikal ausrichten lassen, 0.12.0 mit einheitlichen Kacheln in allen Bereichen und Zeitplänen und Hinweisen mit einer Zeitleiste über sieben Tage, 0.11.0, in dem jede Kachel zeigt, wann und von wem zuletzt etwas geändert wurde, 0.10.1, in dem „Auf der Slide" alle Farben der Slide zeigt, 0.10.0 mit Großbuchstaben als Schrift-Option und Farbtupfer in zwei Gruppen, „Farbpalette" und „Auf der Slide" –, davor 0.9.0 mit einer Farbpalette im Design, deren Farben der Editor an jedem Farbfeld zum Anklicken anbietet, 0.8.1 mit einem Video, das nicht mehr stehen bleibt, wenn sein Ton eingeschaltet wird, 0.8.0: Fernseher zeigen nur öffentliche Kalender, und „Rechte aktualisieren" nimmt mit Vorschau zurück, was kein Screen mehr braucht, und die Knöpfe der Einstellungen sind ausgegraut, wenn Gruppenrechte fehlen –, davor 0.7.3 mit klareren Hinweisen in den Einstellungen, 0.7.2 mit dem Kästchen zur Auswahl in der Mediathek, das auch in ChurchTools auf dem Bild liegt, 0.7.1 mit einem ersten Versuch dazu, 0.7.0 mit Playlist-Kacheln, die zeigen, wann sie zuletzt bearbeitet wurden, und einer Mediathek, die mehrere Dateien auf einmal löscht, mit Hinweis auf jede Stelle, an der eine noch läuft, 0.6.4 mit zugeklappten Bereichen der Prüfung, die nur noch zeigen, wie viel in ihnen wartet, 0.6.3 mit einer behobenen doppelten Warnung in dieser Prüfung, 0.6.2 mit dieser Prüfung nach Bereichen klappbar, 0.6.1 mit einem behobenen Fehler in der Slide-Liste des Editors und den Rechten der Gerätekonten in Klartext, 0.6.0 nach einer Durchsicht auf Sicherheit und Datenschutz – Dienste erscheinen nur noch nach Freigabe durch einen Administrator –, davor 0.5.0 mit Bewegung in der Galerie und dem Einbettungscode im Baustein „Webseite", 0.4.2 – das Bild bei den Zeitplänen öffnet den Zeitplan –, 0.4.1 mit der Vorschau in der Mediathek, 0.4.0 mit dem Baustein „Video", 0.3.9 mit den Diensten am Termin und einer neu geordneten Terminliste, 0.3.8 mit der Raumbelegung und dem Raum am Termin, 0.3.7 mit verknüpften Slides, 0.3.6 mit dem Baustein „Galerie", seit 0.3.2 mit einem ruhigeren Editor, davor 0.3.1 mit dem Designer auf dem Tablet; das erste Release war 0.1.0 am
-25. September 2026. Der Designer läuft auf einer Testinstanz (ChurchTools 3.136, Build 32882); der erste Fernseher
-im Foyer steht aus.
-Was als Nächstes kommt, steht in [`Plan.md`](Plan.md); Änderungen je Version in [`CHANGELOG.md`](CHANGELOG.md).
+Aktuell ist Version 0.17.1. Bei uns zeigen seit dem 6. Oktober 2026 zwei Fernseher im Foyer ihre Slides damit;
+getestet ist es auf ChurchTools 3.136. Was sich je Version geändert hat, steht im
+[Changelog](CHANGELOG.md), was als Nächstes kommt, in [`Plan.md`](Plan.md). Fehler und Wünsche gerne im
+[Issue-Tracker](https://github.com/wirsindcgks/churchtools-infoscreen/issues).
 
 ## Mitentwickeln
 
