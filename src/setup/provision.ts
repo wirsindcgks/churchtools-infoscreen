@@ -73,8 +73,12 @@ export interface GroupSpec {
 export interface PlanInput {
     catalog: AuthCatalog;
     moduleKey: string;
-    /** Ids of the module's data categories, as they exist after the first start. */
-    categories: Record<CategoryKey, number>;
+    /**
+     * Ids of the module's data categories, as they exist after the first start. `status` (Plan.md 59) is not
+     * one of them: it is there only once an administrator opened the start page; without it the plan leaves
+     * the signs of life out.
+     */
+    categories: Record<CategoryKey, number> & { status?: number };
     wikiCategoryId: number | null;
     /**
      * Every room the administrator sees: designers may choose among all of
@@ -103,7 +107,9 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
         return id;
     };
     // Explicit category ids, as ChurchTools itself stores them (G33); "all" by omission is unmeasured (G34).
-    const all = Object.values(input.categories).sort((a, b) => a - b);
+    const all = Object.values(input.categories)
+        .filter((id): id is number => id !== undefined)
+        .sort((a, b) => a - b);
     // Designers write content; the screens themselves and the settings belong to the administrators (F).
     const written = (['playlists', 'slides', 'media'] as const).map((k) => input.categories[k]);
     const adminOnly = (['screens', 'settings'] as const).map((k) => input.categories[k]);
@@ -133,6 +139,14 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     }
 
     const device: GrantSpec[] = [...readModule];
+    // The one thing a device writes: its sign of life (Plan.md 59). No "delete" – ChurchTools checks "edit" for that (G54).
+    if (input.categories.status !== undefined) {
+        const status = [input.categories.status];
+        device.push(
+            { authId: moduleRight('create custom data'), dataId: status, label: 'Lebenszeichen schreiben (Kategorie „Status")' },
+            { authId: moduleRight('edit custom data'), dataId: status, label: 'Lebenszeichen ändern (Kategorie „Status")' },
+        );
+    }
     // Videos come only through the download address, which wants this one right; "Wiki" sehen (501) a device does not need (G47, Plan.md 52).
     if (input.wikiCategoryId !== null) {
         device.push({ authId: AUTH.wikiCategoryView, dataId: [input.wikiCategoryId], label: 'Wiki-Bereich „Infoscreen" sehen' });

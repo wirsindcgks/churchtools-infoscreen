@@ -23,6 +23,7 @@ import {
 } from '../ct/api';
 import { ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
 import { normalizeHomepage, type HomepageGroups } from '../groups/normalize';
+import type { HeartbeatDoc } from '../model/heartbeat';
 import type { ScreenDoc, SlideDoc } from '../model/schema';
 import { normalizePosts, type Post } from '../posts/normalize';
 import { normalizeBookings, roomsOf, type RoomBookings } from '../rooms/normalize';
@@ -68,6 +69,11 @@ export interface PlayerData {
      * that is no room drops out; other errors fail.
      */
     rooms(resourceIds: number[], from: Date, to: Date, timeZone: string): Promise<RoomBookings[]>;
+    /**
+     * Writes the sign of life of this screen (Plan.md 59). Only a TV with a device login does; for anyone else
+     * this does nothing. Fails without the right to write it – the caller must not let that touch the display.
+     */
+    reportAlive(doc: HeartbeatDoc): Promise<void>;
 }
 
 /** Data from ChurchTools; with `login`, only for that device account. */
@@ -77,10 +83,17 @@ export function createChurchToolsPlayerData(login?: TokenLogin): PlayerData {
         async assertSignedIn() {
             await withTimeout(ensureSignedIn(login));
         },
+        // A person who opens the player in their own browser is not a TV: only the device login reports.
+        async reportAlive(doc) {
+            if (!login) return;
+            const { repository } = await withTimeout(getRepository());
+            await withTimeout(repository.writeHeartbeat(doc));
+        },
     };
 }
 
 export const churchToolsPlayerData: PlayerData = {
+    reportAlive: () => Promise.resolve(),
     async assertSignedIn() {
         await withTimeout(ensureSignedIn());
     },

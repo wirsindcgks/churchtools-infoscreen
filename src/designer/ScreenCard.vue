@@ -9,6 +9,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useStageContext } from '../player/context';
 import type { ScreenOverview } from '../store/screen-repository';
 import Icon from './Icon.vue';
+import type { AliveState } from './alive';
 import { lastEdited } from './last-edited';
 import type { Running } from './running';
 import { copyPlayerUrl } from './player-url';
@@ -17,8 +18,9 @@ import SlideThumb from './SlideThumb.vue';
 /**
  * `admin`: configure and delete are the administrators' (Plan.md, F).
  * `running`: what the schedule shows now (Plan.md 17); without it, the default playlist.
+ * `alive`: the sign of life (Plan.md 59); null while this person cannot see it – then the tile has no line for it.
  */
-const props = defineProps<{ overview: ScreenOverview; admin?: boolean; running?: Running }>();
+const props = defineProps<{ overview: ScreenOverview; admin?: boolean; running?: Running; alive?: AliveState | null }>();
 const emit = defineEmits<{ remove: []; settings: []; rename: []; schedule: [] }>();
 
 const screen = computed(() => props.overview.screen);
@@ -138,6 +140,10 @@ function settings(): void {
                 </div>
             </div>
             <ul class="d-facts">
+                <li v-if="alive" :title="alive.title" data-testid="screen-alive" :data-alive="alive.kind">
+                    <span class="alive-dot" :class="`is-${alive.kind}`" aria-hidden="true" />
+                    <span>{{ alive.text }}</span>
+                </li>
                 <li :title="portrait ? 'Hochkant' : 'Quer'">
                     <Icon :name="portrait ? 'portrait' : 'landscape'" :size="16" />
                     {{ portrait ? 'Hochkant' : 'Quer' }}
@@ -198,6 +204,20 @@ function settings(): void {
 .d-tile-title a {
     color: inherit;
     text-decoration: none;
+}
+.alive-dot {
+    flex: none;
+    width: 0.65em;
+    height: 0.65em;
+    margin-top: 0.4em;
+    border-radius: 50%;
+    background: var(--d-text-muted);
+}
+.alive-dot.is-online {
+    background: var(--d-success);
+}
+.alive-dot.is-offline {
+    background: var(--d-danger);
 }
 .by-rule {
     color: var(--d-text);

@@ -430,7 +430,7 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                     `${member.label} hat ${excess.length === 1 ? 'ein Recht' : `${excess.length} Rechte`}, ` +
                     `${excess.length === 1 ? 'das' : 'die'} ein Gerät nicht braucht: ${names.join(', ')}${more > 0 ? ` und ${more} weitere` : ''}.`,
                 detail:
-                    'Ein Gerät soll nur lesen, und nur, was seine Screens zeigen: Wer die Adresse des Fernsehers kennt, hat diese ' +
+                    'Ein Gerät soll nur lesen – bis auf sein Lebenszeichen –, und nur, was seine Screens zeigen: Wer die Adresse des Fernsehers kennt, hat diese ' +
                     'Rechte auch. Meist kommen sie aus dem Personenstatus oder einer anderen Gruppe des Kontos. Die Namen sind die ' +
                     'der Rechteverwaltung von ChurchTools; dort der Person einen Status ohne diese Rechte geben.',
             });

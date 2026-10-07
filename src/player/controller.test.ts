@@ -145,6 +145,7 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
         posts: vi.fn(async () => []),
         groupHomepages: vi.fn(async () => []),
         rooms: vi.fn(async () => []),
+        reportAlive: vi.fn(async () => {}),
         ...overrides,
     };
 }
@@ -662,6 +663,67 @@ describe('player controller', () => {
         const calls = loadScreen.mock.calls.length;
         await vi.advanceTimersByTimeAsync(2.5 * 60_000);
         expect(loadScreen.mock.calls.length).toBe(calls + 1);
+        player.stop();
+    });
+});
+
+describe('the sign of life (Plan.md 59)', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    const forbidden = () => Object.assign(new Error('Request failed with status code 403'), { response: { status: 403 } });
+
+    it('reports once the configuration is loaded, then every five minutes', async () => {
+        const reportAlive = vi.fn<PlayerData['reportAlive']>(async () => {});
+        const player = createPlayer('demo', fakeData({ reportAlive }), fakeDeps());
+        await player.start();
+        expect(reportAlive).toHaveBeenCalledTimes(1);
+        const doc = reportAlive.mock.calls[0]![0];
+        expect(doc).toMatchObject({ kind: 'heartbeat', screen: 'demo', playlistId: 'demo-playlist', clockConfirmed: true });
+        expect(doc.version).toBe(__APP_VERSION__);
+
+        await vi.advanceTimersByTimeAsync(INTERVALS.aliveMs * 1.3);
+        expect(reportAlive).toHaveBeenCalledTimes(2);
+        await vi.advanceTimersByTimeAsync(INTERVALS.aliveMs * 1.3);
+        expect(reportAlive).toHaveBeenCalledTimes(3);
+        player.stop();
+        await vi.advanceTimersByTimeAsync(INTERVALS.aliveMs * 3);
+        expect(reportAlive).toHaveBeenCalledTimes(3);
+    });
+
+    it('stamps the time of ChurchTools: device clock plus the skew', async () => {
+        const server = new Date(NOW.getTime() + 90_000); // the device runs 90 s behind
+        const reportAlive = vi.fn<PlayerData['reportAlive']>(async () => {});
+        const player = createPlayer('demo', fakeData({ reportAlive, serverDate: async () => server.toUTCString() }), fakeDeps());
+        await player.start();
+        expect(reportAlive.mock.calls[0]![0].at).toBe(server.toISOString());
+        player.stop();
+    });
+
+    it('changes nothing on the display when it fails, and does not reload', async () => {
+        const reportAlive = vi.fn<PlayerData['reportAlive']>().mockRejectedValue(new Error('Network Error'));
+        const deps = fakeDeps();
+        const player = createPlayer('demo', fakeData({ reportAlive }), deps);
+        await player.start();
+        await vi.advanceTimersByTimeAsync(2 * 60 * 60_000);
+        expect(reportAlive.mock.calls.length).toBeGreaterThan(2);
+        expect(player.state.phase).toBe('running');
+        expect(player.state.error).toBeNull();
+        expect(player.state.staleSince).toBeNull();
+        expect(deps.reload).not.toHaveBeenCalled();
+        expect(vi.mocked(deps.canReload)).not.toHaveBeenCalled();
+        player.stop();
+    });
+
+    it('waits half an hour after a 403, and goes on with the normal beat after other errors', async () => {
+        const reportAlive = vi.fn<PlayerData['reportAlive']>().mockRejectedValueOnce(forbidden()).mockResolvedValue();
+        const player = createPlayer('demo', fakeData({ reportAlive }), fakeDeps());
+        await player.start();
+        expect(reportAlive).toHaveBeenCalledTimes(1);
+        await vi.advanceTimersByTimeAsync(29 * 60_000);
+        expect(reportAlive).toHaveBeenCalledTimes(1);
+        await vi.advanceTimersByTimeAsync(2 * 60_000);
+        expect(reportAlive).toHaveBeenCalledTimes(2);
         player.stop();
     });
 });

@@ -15,6 +15,10 @@ export const INTERVALS = {
     quickCheckMs: 20_000,
     /** ChurchTools data. */
     dataMs: 10 * 60_000,
+    /** The sign of life of a TV with a device login (Plan.md 59); the designer calls a screen online for 15 minutes after it. */
+    aliveMs: 5 * 60_000,
+    /** Pause after a `403` on the sign of life: the right is not granted yet, so asking every five minutes helps nobody. */
+    aliveForbiddenMs: 30 * 60_000,
     requestTimeoutMs: 20_000,
     maxBackoffMs: 30 * 60_000,
     /** Failing this long without a break, the player starts afresh – if the page itself can load. */

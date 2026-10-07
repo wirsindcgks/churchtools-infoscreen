@@ -31,7 +31,7 @@ Mediathek; ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
   Daten und Bilder auf dem Gerät, überstehen Netzausfälle und laden nach Fehlern und jede Nacht neu.
 - **Rechte mit einem Knopf:** Ein Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an.
 - **Datensparsam:** Zehn freie Schriften kommen von der eigenen Instanz, kein Aufruf an Dritte; das Gerät hat ein
-  eigenes Konto, das nur lesen darf; seine Adresse trägt statt eines Passworts einen Login-Token, den ein
+  eigenes Konto, das nur lesen darf (bis auf sein Lebenszeichen, das die Startseite als „online" zeigt); seine Adresse trägt statt eines Passworts einen Login-Token, den ein
   Passwortwechsel ungültig macht.
 
 **Mehr Bilder** – Gruppen, Vorschau, Beiträge, Hinweise, Zeitpläne, Mediathek, Design und der Designer am Handy –

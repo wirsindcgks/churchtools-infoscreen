@@ -14,7 +14,7 @@ Rolle zeigt das [Onboarding](Onboarding.md).
 | --- | --- | --- | --- |
 | **Administrator** | ChurchTools-Admins mit „Personen administrieren" | Extension installieren, **Einstellungen** öffnen (Assistent, Rechte prüfen, Adressen für Fernseher), **Screens anlegen, einstellen, löschen** | – |
 | **Gestalter** | Mitglieder der Gruppe **„Infoscreen-Designer"** | gestalten, was die Screens zeigen: Slides, Playlists, Zeitpläne, Bilder in der Mediathek | Screens anlegen, einstellen, löschen; Einstellungen |
-| **Gerät** | Konten der Fernseher, Mitglieder von **„Infoscreen-Devices"** | nur lesen: die Screens, die Kalender und die Räume, die sie zeigen – und die Videos der Mediathek | alles andere |
+| **Gerät** | Konten der Fernseher, Mitglieder von **„Infoscreen-Devices"** | nur lesen: die Screens, die Kalender und die Räume, die sie zeigen – und die Videos der Mediathek; schreiben nur ihr Lebenszeichen („Status") | alles andere |
 
 **Die Sperre sitzt bei ChurchTools, nicht im Designer.** ChurchTools prüft bei jedem Lesen und Speichern das Recht;
 der Designer blendet nur aus, was ohnehin scheitern würde. Auch Administratoren über Gruppen brauchen die Rechte am
@@ -40,7 +40,7 @@ ChurchTools ohnehin öffentlich zeigt.
 > Die Tabellen unten sind zum Nachschlagen und Prüfen da.
 
 **Kategorien** sind die Ablagen des Moduls in ChurchTools: **Screens**, **Playlists**, **Slides**, **Medien** und
-**Einstellungen**. Die Datenrechte werden je Kategorie vergeben.
+**Einstellungen** – dazu **Status**, in der die Fernseher ihr Lebenszeichen ablegen. Die Datenrechte werden je Kategorie vergeben.
 
 ### Modul „Infoscreen Designer"
 
@@ -52,12 +52,19 @@ In der Rechteverwaltung unter **„Infoscreen Designer"**.
 | Kategorien sehen | `view custom category` | alle | alle | alle |
 | – | `create custom category` | ✓ ¹ | – | – |
 | Daten in Kategorie sehen | `view custom data` | alle | alle | alle |
-| Daten in Kategorie erstellen | `create custom data` | alle | Playlists, Slides, Medien | – |
-| Daten in Kategorie bearbeiten | `edit custom data` | alle | Playlists, Slides, Medien | – |
+| Daten in Kategorie erstellen | `create custom data` | alle | Playlists, Slides, Medien | Status |
+| Daten in Kategorie bearbeiten | `edit custom data` | alle | Playlists, Slides, Medien | Status |
 | Daten in Kategorie löschen | `delete custom data` | alle | Playlists, Slides, Medien | – |
 | – | `edit custom category`, `delete custom category` | – | – | – |
 
-¹ Nur für den allerersten Start: Beim ersten Öffnen legt der Designer seine Kategorien an.
+¹ Nur für den allerersten Start: Beim ersten Öffnen legt der Designer seine Kategorien an. Die Kategorie „Status" legt ein
+Administrator an, wenn er die Startseite öffnet.
+
+**„Alle" schließt „Status" ein:** Auch Gestalter und Geräte sehen die Kategorie – Gestalter, damit die Kacheln zeigen, ob
+ein Screen online ist, Geräte, weil sie ihren Wert dort lesen, bevor sie ihn ändern. **Schreiben darf nur das Gerät, und nur
+in „Status":** sein Lebenszeichen, alle fünf Minuten. **Ein Löschrecht bekommt es nicht, weil es überflüssig wäre:**
+ChurchTools prüft beim Löschen eines Werts „bearbeiten" (Befunde G54) – wer bearbeiten darf, darf auch löschen. Wer die
+Adresse eines Fernsehers kennt, kann also Lebenszeichen fälschen oder löschen, sonst nichts.
 
 **Ausdrücklich nicht für Gestalter und Geräte:** das Anlegen, Bearbeiten und Löschen von Screens und Einstellungen.
 Der Assistent nimmt diese Rechte zurück, wenn eine seiner Gruppen sie noch hat – siehe

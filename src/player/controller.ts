@@ -7,7 +7,7 @@
  */
 import { reactive } from 'vue';
 import type { Appointment } from '../appointments/normalize';
-import { NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/client';
+import { httpStatus, NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import type { HomepageGroups } from '../groups/normalize';
 import { revivePosts, type Post } from '../posts/normalize';
@@ -16,6 +16,7 @@ import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '.
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
 import { appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, postNeeds, roomNeeds, type PlayerData } from './data';
+import { activePlaylistId } from './schedule';
 import { askServiceWorkerHasPage } from './service-worker';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
 
@@ -128,6 +129,9 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
      * the error. Only a successful configuration refresh lifts it.
      */
     let blocked = false;
+    /** Server time minus device time from the last clock check; 0 while none is known. */
+    let clockSkewMs = 0;
+    let aliveStarted = false;
     /** Start of the current run of failures, per cycle; null while it succeeds. */
     const failingSince: Record<'config' | 'data', Date | null> = { config: null, data: null };
 
@@ -244,6 +248,8 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             data.churchLogo().catch(() => state.churchLogo),
         ]);
         const now = deps.now();
+        const clock = checkClock(serverDate, now);
+        clockSkewMs = clock.skewMs ?? 0;
         const needs = appointmentNeeds(state.screen.screen, state.screen.slides, state.screen.allowedServiceIds ?? []);
         const window = appointmentWindow(now, timeZone, needs.days);
         const appointments = needs.calendarIds.length
@@ -285,7 +291,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             posts,
             groupHomepages,
             rooms,
-            clockConfirmed: checkClock(serverDate, now).confirmed,
+            clockConfirmed: clock.confirmed,
             phase: 'running',
             staleSince: null,
             error: null,
@@ -312,7 +318,12 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             const recovered = blocked;
             blocked = false;
             // A new revision may reference other calendars, and a lifted block shows content again: fetch data now.
-            if (recovered || configVersion(state.screen) !== before) await refreshData();
+            try {
+                if (recovered || configVersion(state.screen) !== before) await refreshData();
+            } finally {
+                // The configuration is there; whether the calendar data came is none of the sign of life's business.
+                startAlive();
+            }
             scheduleConfig(withJitter(INTERVALS.configMs));
         } catch (error) {
             configFailures++;
@@ -320,6 +331,44 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             scheduleConfig(backoffDelay(30_000, configFailures, retryAfterMs(error)));
             await noteFailure('config');
         }
+    }
+
+    /**
+     * The sign of life (Plan.md 59). Whatever goes wrong here touches nothing else: no state, no error
+     * message, no reload, no backoff of the other cycles – the TV keeps showing its content.
+     */
+    async function aliveCycle(): Promise<void> {
+        let wait = withJitter(INTERVALS.aliveMs);
+        try {
+            const loaded = state.screen;
+            if (loaded && !blocked) {
+                const now = deps.now();
+                const playlistId = activePlaylistId(loaded.screen, {
+                    now,
+                    timeZone: state.timeZone,
+                    clockConfirmed: state.clockConfirmed,
+                    appointments: state.appointments,
+                });
+                await data.reportAlive({
+                    kind: 'heartbeat',
+                    screen: slug,
+                    at: new Date(now.getTime() + clockSkewMs).toISOString(),
+                    version: __APP_VERSION__,
+                    playlistId,
+                    clockConfirmed: state.clockConfirmed,
+                });
+            }
+        } catch (error) {
+            // 403: the right to write it is not granted yet – no point in asking every five minutes.
+            if (httpStatus(error) === 403) wait = INTERVALS.aliveForbiddenMs;
+        }
+        later(wait, aliveCycle);
+    }
+
+    function startAlive(): void {
+        if (aliveStarted || stopped) return;
+        aliveStarted = true;
+        void aliveCycle();
     }
 
     async function dataCycle(): Promise<void> {
