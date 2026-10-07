@@ -436,7 +436,7 @@ zweiten Liste unten.
     - **Tests** *(seit dem 2026-10-07 im selben PR, `AGENTS.md`)*. Die `data-testid`-Namen bleiben. Vor dem Bau per `grep` die Unit-Tests der Karten (`ScreenCard.test.ts` u. a.) und die e2e-Tests mit `d-facts`-Zeilen suchen; prüft einer die Reihenfolge, wird die Erwartung angepasst, nicht die Logik.
     - **Bilder.** Danach `npm run docs:screenshots` (liest nur) – es erzeugt `docs/bilder/` neu, mit dem Inspektor aus Punkt 75 und den neuen Kacheln.
     - **Fertig,** wenn jede Angabe jeder Kachel ein schwarzes Icon trägt, alle fünf Bereiche demselben Schema folgen, Typprüfung, Lint, Unit-Tests und die betroffenen e2e-Tests grün sind und die Bilder neu sind.
-    - **Gebaut vom Umsetzer, durchgesehen von Opus mit Bild und veröffentlicht als `v0.18.1` am 2026-10-07.** Abweichung, bewusst: Die Regelzeilen der Zeitpläne behalten Farbfeld und Rang statt eines Icons – sie sind die Legende der Wochen-Zeitleiste. Mit dem Release entstanden alle Bilder in `docs/bilder/` neu.
+    - **Gebaut vom Umsetzer, durchgesehen von Opus mit Bild und veröffentlicht als `v0.18.1` am 2026-10-07.** Beim Durchsehen entschieden (Nutzer, 2026-10-07: „Zeitplan-Regeln und Status behalten die farbigen Icons"): Die Regelzeilen der Zeitpläne behalten Farbfeld und Rang – sie sind die Legende der Wochen-Zeitleiste –, und das Lebenszeichen behält seinen farbigen Punkt ohne zusätzliches Signal-Icon. Mit dem Release entstanden alle Bilder in `docs/bilder/` neu.
 
 ## Funktionsumfang – Später – Stand bis zum 2026-10-01
 

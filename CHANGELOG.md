@@ -9,8 +9,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 ### Geändert
 
 - **Die Kacheln lesen sich schneller.** Jede Angabe auf den Kacheln der Screens, Playlists, Zeitpläne, Hinweise und
-  der Mediathek hat jetzt ein Icon in Textfarbe davor – neu auch die Adresse eines Screens („#") und sein
-  Lebenszeichen. Zusammengehöriges steht beieinander, durch einen kleinen Abstand getrennt: am Screen erst das Gerät
+  der Mediathek hat jetzt ein Icon in Textfarbe davor – neu auch die Adresse eines Screens („#"). Das Lebenszeichen
+  und die Regeln der Zeitpläne behalten ihre Farbe als Zeichen. Zusammengehöriges steht beieinander, durch einen kleinen Abstand getrennt: am Screen erst das Gerät
   (Lebenszeichen, Adresse, Format), dann der Inhalt (Playlist, Zeitplan), zuletzt wer wann geändert hat.
 
 ## [0.18.0] – 2026-10-07

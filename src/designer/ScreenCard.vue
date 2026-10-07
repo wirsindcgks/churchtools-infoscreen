@@ -141,7 +141,6 @@ function settings(): void {
             </div>
             <ul class="d-facts">
                 <li v-if="alive" :title="alive.title" data-testid="screen-alive" :data-alive="alive.kind">
-                    <Icon name="signal" :size="16" />
                     <span class="alive-dot" :class="`is-${alive.kind}`" aria-hidden="true" />
                     <span>{{ alive.text }}</span>
                 </li>
@@ -211,7 +210,8 @@ function settings(): void {
     flex: none;
     width: 0.65em;
     height: 0.65em;
-    margin-top: 0.4em;
+    /* Centred in the 16 px of an icon, so the text lines up with the lines below (Plan.md 76). */
+    margin: 0.4em calc((16px - 0.65em) / 2) 0;
     border-radius: 50%;
     background: var(--d-text-muted);
 }

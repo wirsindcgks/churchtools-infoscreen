@@ -669,11 +669,16 @@ describe('player controller', () => {
 
 describe('the sign of life (Plan.md 59)', () => {
     beforeEach(() => vi.useFakeTimers());
-    afterEach(() => vi.useRealTimers());
+    afterEach(() => {
+        vi.useRealTimers();
+        vi.restoreAllMocks();
+    });
 
     const forbidden = () => Object.assign(new Error('Request failed with status code 403'), { response: { status: 403 } });
 
     it('reports once the configuration is loaded, then every five minutes', async () => {
+        // No jitter: three short beats of 0.8 × five minutes would fit into the 2.6 × window below.
+        vi.spyOn(Math, 'random').mockReturnValue(0.5);
         const reportAlive = vi.fn<PlayerData['reportAlive']>(async () => {});
         const player = createPlayer('demo', fakeData({ reportAlive }), fakeDeps());
         await player.start();
