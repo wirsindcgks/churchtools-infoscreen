@@ -140,6 +140,7 @@ test('add a video: the library shows only videos, the inspector names the one ch
     await expect(page.getByTestId('pick-video')).toHaveText('Anderes Video …');
     await expect(page.getByTestId('video-sound')).not.toBeChecked();
     await expect(page.getByTestId('video-fit')).toHaveValue('contain');
+    await inspector.getByRole('button', { name: 'Erklärung' }).last().click();
     await expect(inspector.getByText('Die Slide dauert mindestens so lange wie das Video.')).toBeVisible();
     // On the designer's stage only a still: no sound, no playing.
     const onStage = page.locator('.editor-stage').getByTestId('video');

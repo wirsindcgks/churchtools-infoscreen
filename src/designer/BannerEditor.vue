@@ -10,6 +10,7 @@ import type { Banner } from '../model/schema';
 import { wallTime } from '../player/banner';
 import { fontDef, FONTS } from '../player/fonts';
 import ColorField from './ColorField.vue';
+import HintRow from './HintRow.vue';
 
 const props = withDefaults(defineProps<{ modelValue: Banner; timeZone: string; now?: Date }>(), {
     now: () => new Date(),
@@ -150,19 +151,21 @@ function setFontSize(value: string): void {
                 @update:model-value="update({ style: { ...modelValue.style, color: $event } })"
             />
         </div>
-        <label class="d-field">
-            Zeigen bis
-            <input
-                type="datetime-local"
-                :value="modelValue.until ?? ''"
-                data-testid="banner-until"
-                @change="update({ until: ($event.target as HTMLInputElement).value || undefined })"
-            >
-        </label>
+        <HintRow>
+            <label class="d-field">
+                Zeigen bis
+                <input
+                    type="datetime-local"
+                    :value="modelValue.until ?? ''"
+                    data-testid="banner-until"
+                    @change="update({ until: ($event.target as HTMLInputElement).value || undefined })"
+                >
+            </label>
+            <template #info>Leer: bis du es abschaltest. Die Zeit gilt für die Gemeinde, nicht für das Gerät.</template>
+        </HintRow>
         <p v-if="expired" class="hint hint--warn" data-testid="banner-expired">
             Abgelaufen – die Fernseher zeigen das Band nicht mehr.
         </p>
-        <p v-else class="hint">Leer: bis du es abschaltest. Die Zeit gilt für die Gemeinde, nicht für das Gerät.</p>
     </div>
 </template>
 

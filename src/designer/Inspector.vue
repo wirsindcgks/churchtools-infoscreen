@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { PUBLIC_CALENDAR_PATH, type Calendar, type PostGroup } from '../ct/api';
+import type { Calendar, PostGroup } from '../ct/api';
 import { homepageGroups, selectGroups, type Group, type HomepageEntry } from '../groups/normalize';
 import type { Block, Fill, GroupFields, RoomEntry, TextStyle } from '../model/schema';
 import { bannerShown } from '../player/banner';
 import { themeOf, useStageContext } from '../player/context';
 import { fontDef, FONTS } from '../player/fonts';
-import { calendarColor, sizedImageUrl, verticalAlignOf } from '../player/format';
+import { sizedImageUrl, verticalAlignOf } from '../player/format';
 import { GROUP_SECONDS, PAGE_SECONDS, POST_SECONDS, slideSeconds } from '../player/paging';
 import { qrShape } from '../player/qr';
 import { listLayout } from '../player/theme';
@@ -16,8 +16,10 @@ import type { RoomInfo } from '../rooms/normalize';
 import { effectiveMotion, effectiveTransition } from '../player/slideshow';
 import { embedAddress, webRefusal, withScheme } from '../player/web';
 import { useEditorStore } from './editor-store';
+import CalendarField from './CalendarField.vue';
 import ColorField from './ColorField.vue';
 import FillEditor from './FillEditor.vue';
+import HintRow from './HintRow.vue';
 import Icon from './Icon.vue';
 import InfoHint from './InfoHint.vue';
 import InspectorSection from './InspectorSection.vue';
@@ -95,6 +97,13 @@ function roomsFor(b: NonNullable<typeof block.value>): Calendar[] | null {
     if (!b.showRooms || b.calendarIds.length < 2) return null;
     if (b.type === 'appointment-list' && listLayout(b, themeOf(stage)) !== 'cards') return null;
     return props.calendars.filter((k) => b.calendarIds.includes(k.id));
+}
+
+function roomsForSummary(b: NonNullable<typeof block.value>): string {
+    const shown = roomsFor(b) ?? [];
+    const off = 'roomsOffCalendarIds' in b ? (b.roomsOffCalendarIds ?? []) : [];
+    const count = shown.filter((k) => !off.includes(k.id)).length;
+    return count === shown.length ? 'alle' : `${count} von ${shown.length}`;
 }
 
 function toggleRoomsFor(calendarId: number, shown: boolean): void {
@@ -198,6 +207,11 @@ function shownServiceCount(chosen: number[] | undefined): number {
 function toggleService(id: number, on: boolean): void {
     if (!block.value || (block.value.type !== 'next-appointment' && block.value.type !== 'appointment-list')) return;
     setBlock({ services: toggleServiceIds(block.value.services, id, on, choosableServices.value && !props.servicesFailed ? choosableServices.value : null) });
+}
+
+function servicesSummary(chosen: number[] | undefined): string {
+    const count = shownServiceCount(chosen);
+    return count ? `${count} gewählt` : 'keine';
 }
 
 /** Most rooms a block holds – the schema's limit. */
@@ -465,7 +479,7 @@ const LAYERS = [
                         @blur="edit.onBlur"
                         @update:model-value="setBlock({ fill: $event })"
                     />
-                    <label class="d-field">
+                    <label class="d-field d-field--inline">
                         Ecken abrunden (px)
                         <input
                             type="number"
@@ -485,7 +499,7 @@ const LAYERS = [
                             Bild wählen …
                         </button>
                     </div>
-                    <label class="d-field">
+                    <label class="d-field d-field--inline">
                         Einpassen
                         <select :value="block.fit" @change="setBlock({ fit: ($event.target as HTMLSelectElement).value })">
                             <option value="contain">Ganz zeigen</option>
@@ -504,7 +518,7 @@ const LAYERS = [
                             {{ block.mediaId ? 'Anderes Video …' : 'Video wählen …' }}
                         </button>
                     </div>
-                    <div class="hint-row hint-row--check">
+                    <HintRow>
                         <label class="check">
                             <input
                                 type="checkbox"
@@ -514,24 +528,38 @@ const LAYERS = [
                             >
                             Ton
                         </label>
-                        <InfoHint>Ton startet nur, wenn der Browser des Fernsehers es erlaubt – sonst läuft das Video stumm.</InfoHint>
-                    </div>
-                    <label class="d-field">
+                        <template #info>Ton startet nur, wenn der Browser des Fernsehers es erlaubt – sonst läuft das Video stumm.</template>
+                    </HintRow>
+                    <label class="d-field d-field--inline">
                         Einpassen
                         <select :value="block.fit ?? 'contain'" data-testid="video-fit" @change="setBlock({ fit: ($event.target as HTMLSelectElement).value })">
                             <option value="contain">Ganz zeigen</option>
                             <option value="cover">Fläche füllen</option>
                         </select>
                     </label>
-                    <p class="hint">Die Slide dauert mindestens so lange wie das Video. Ohne Netz zeigt der Fernseher an dieser Stelle nichts.</p>
+                    <HintRow caption>
+                        <span>Laufzeit</span>
+                        <template #info>Die Slide dauert mindestens so lange wie das Video. Ohne Netz zeigt der Fernseher an dieser Stelle nichts.</template>
+                    </HintRow>
                 </template>
 
                 <!-- Plan.md, 46: library pictures one after the other. -->
                 <template v-if="block.type === 'slideshow'">
-                    <fieldset class="slideshow-images">
-                        <legend>Bilder</legend>
-                        <p v-if="!block.mediaIds.length" class="hint">Noch keine Bilder gewählt.</p>
-                        <ol v-else class="slideshow-list" data-testid="slideshow-list">
+                    <div class="slideshow-add">
+                        <button
+                            class="d-btn"
+                            type="button"
+                            :disabled="block.mediaIds.length >= SLIDESHOW_MAX"
+                            data-testid="pick-slideshow"
+                            @click="emit('pick-image', 'slideshow')"
+                        >
+                            + Bilder
+                        </button>
+                        <span class="hint" data-testid="slideshow-count">{{ block.mediaIds.length }} von {{ SLIDESHOW_MAX }}</span>
+                    </div>
+                    <p v-if="!block.mediaIds.length" class="hint">Noch keine Bilder gewählt.</p>
+                    <InspectorSection v-else id="slideshow-images" title="Bilder" :summary="`${block.mediaIds.length} Bilder`">
+                        <ol class="slideshow-list" data-testid="slideshow-list">
                             <li v-for="(id, index) in block.mediaIds" :key="`${id}-${index}`" class="slideshow-row" data-testid="slideshow-row">
                                 <img v-if="mediaUrl(id)" :src="mediaUrl(id)!" alt="">
                                 <span v-else class="slideshow-missing" />
@@ -570,21 +598,9 @@ const LAYERS = [
                                 </button>
                             </li>
                         </ol>
-                        <div class="slideshow-add">
-                            <button
-                                class="d-btn"
-                                type="button"
-                                :disabled="block.mediaIds.length >= SLIDESHOW_MAX"
-                                data-testid="pick-slideshow"
-                                @click="emit('pick-image', 'slideshow')"
-                            >
-                                + Bilder
-                            </button>
-                            <span class="hint" data-testid="slideshow-count">{{ block.mediaIds.length }} von {{ SLIDESHOW_MAX }}</span>
-                        </div>
-                    </fieldset>
-                    <label class="d-field">
-                        Dauer je Bild (Sekunden)
+                    </InspectorSection>
+                    <label class="d-field d-field--inline">
+                        Dauer je Bild (s)
                         <input
                             type="number"
                             min="3"
@@ -595,14 +611,14 @@ const LAYERS = [
                             @input="setSlideshowSeconds(($event.target as HTMLInputElement).value)"
                         >
                     </label>
-                    <label class="d-field">
+                    <label class="d-field d-field--inline">
                         Einpassen
                         <select :value="block.fit ?? 'cover'" data-testid="slideshow-fit" @change="setBlock({ fit: ($event.target as HTMLSelectElement).value })">
                             <option value="contain">Ganz zeigen</option>
                             <option value="cover">Fläche füllen</option>
                         </select>
                     </label>
-                    <label class="d-field">
+                    <label class="d-field d-field--inline">
                         Übergang
                         <select
                             :value="effectiveTransition(block)"
@@ -615,7 +631,7 @@ const LAYERS = [
                             <option value="none">Ohne</option>
                         </select>
                     </label>
-                    <label class="d-field">
+                    <label class="d-field d-field--inline">
                         Bewegung
                         <select
                             :value="effectiveMotion(block)"
@@ -628,13 +644,13 @@ const LAYERS = [
                             <option value="alternate">Abwechselnd</option>
                         </select>
                     </label>
-                    <div class="hint-row">
+                    <HintRow caption>
                         <span>Laufzeit</span>
-                        <InfoHint>Die Slide läuft so lange, bis jedes Bild einmal zu sehen war.</InfoHint>
-                    </div>
+                        <template #info>Die Slide läuft so lange, bis jedes Bild einmal zu sehen war.</template>
+                    </HintRow>
                 </template>
 
-                <label v-if="block.type === 'clock'" class="d-field">
+                <label v-if="block.type === 'clock'" class="d-field d-field--inline">
                     Anzeige
                     <select :value="block.format" @change="setBlock({ format: ($event.target as HTMLSelectElement).value })">
                         <option value="time">Uhrzeit</option>
@@ -643,43 +659,13 @@ const LAYERS = [
                     </select>
                 </label>
 
-                <fieldset v-if="'calendarIds' in block">
-                    <legend>Kalender</legend>
-                    <div class="hint-row">
-                        <span class="hint">Zur Wahl stehen nur öffentliche Kalender.</span>
-                        <InfoHint>
-                            Öffentlich ist ein Kalender, den man in ChurchTools auch ohne Anmeldung sieht. Fehlt einer, gibt ihn frei, wer in
-                            ChurchTools Berechtigungen verwalten darf: {{ PUBLIC_CALENDAR_PATH }}.
-                        </InfoHint>
-                    </div>
-                    <label v-for="c in calendars" :key="c.id" class="check">
-                        <input
-                            type="checkbox"
-                            :checked="block.calendarIds.includes(c.id)"
-                            @change="toggleCalendar(c.id, ($event.target as HTMLInputElement).checked)"
-                        >
-                        <span class="swatch" :style="{ background: calendarColor(c.color) ?? 'transparent' }" />
-                        {{ c.name }}
-                    </label>
-                    <template v-if="!calendars.length">
-                        <p class="hint">Kein Kalender ist öffentlich.</p>
-                        <p class="hint" data-testid="no-public-calendars">
-                            Freigeben kann, wer in ChurchTools Berechtigungen verwalten darf: {{ PUBLIC_CALENDAR_PATH }}.
-                        </p>
-                    </template>
-                    <p v-for="c in hiddenChosen(block)" :key="c.id" class="hint hidden-calendar" :data-testid="`hidden-calendar-${c.id}`">
-                        {{ c.name }} – nicht öffentlich, erscheint auf keinem Fernseher
-                        <button
-                            class="d-btn"
-                            type="button"
-                            :disabled="block.calendarIds.length < 2"
-                            :title="block.calendarIds.length < 2 ? 'Wähle zuerst einen anderen Kalender.' : undefined"
-                            @click="toggleCalendar(c.id, false)"
-                        >
-                            Entfernen
-                        </button>
-                    </p>
-                </fieldset>
+                <CalendarField
+                    v-if="'calendarIds' in block"
+                    :calendars="calendars"
+                    :chosen-ids="block.calendarIds"
+                    :hidden="hiddenChosen(block)"
+                    @toggle="toggleCalendar"
+                />
 
                 <!-- Plan.md, 32: the time until the next appointment of these calendars. -->
                 <template v-if="block.type === 'countdown'">
@@ -692,7 +678,7 @@ const LAYERS = [
                         >
                         Titel des Termins zeigen
                     </label>
-                    <label class="d-field">
+                    <label class="d-field d-field--inline">
                         Während des Termins
                         <input
                             type="text"
@@ -704,18 +690,18 @@ const LAYERS = [
                             @input="setBlock({ runningText: ($event.target as HTMLInputElement).value })"
                         >
                     </label>
-                    <div class="hint-row">
+                    <HintRow caption>
                         <span>Zählweise</span>
-                        <InfoHint>
+                        <template #info>
                             Zählt bis zum Beginn des nächsten Termins dieser Kalender; ganztägige Termine zählen nicht mit.
                             Passt gut auf eine Playlist, die ein Zeitplan „30 Minuten vor Beginn“ einschaltet.
-                        </InfoHint>
-                    </div>
+                        </template>
+                    </HintRow>
                 </template>
 
                 <template v-if="block.type === 'appointment-list' || block.type === 'next-appointment'">
                     <!-- Plan.md, 20: the look of the WordPress plugin's list and highlighted event. -->
-                    <label class="d-field">
+                    <label class="d-field d-field--inline">
                         Darstellung
                         <select
                             v-if="block.type === 'appointment-list'"
@@ -796,7 +782,7 @@ const LAYERS = [
                         Terminbild zeigen
                     </label>
                     <!-- Plan.md, 50: the booked rooms where no place is entered; the list shows them as cards only. -->
-                    <div v-if="block.type === 'next-appointment' || listLayout(block, themeOf(stage)) === 'cards'" class="hint-row hint-row--check">
+                    <HintRow v-if="block.type === 'next-appointment' || listLayout(block, themeOf(stage)) === 'cards'">
                         <label class="check">
                             <input
                                 type="checkbox"
@@ -806,34 +792,43 @@ const LAYERS = [
                             >
                             Raum zeigen
                         </label>
-                        <InfoHint>
+                        <template #info>
                             Zeigt die gebuchten Räume des Termins, wo kein Ort eingetragen ist – ein eingetragener Ort geht vor, damit nichts doppelt steht. Nur bestätigte Buchungen, keine, die noch warten. Damit der Fernseher sie sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, alle Räume zu sehen; zeigt kein Screen mehr Räume an Terminen, nimmt „Rechte aktualisieren“ es zurück.
-                        </InfoHint>
-                    </div>
+                        </template>
+                    </HintRow>
                     <!-- Plan.md, 51: rooms can be left out for single calendars. -->
-                    <fieldset v-if="roomsFor(block)" class="rooms-for" data-testid="rooms-for">
-                        <legend>Räume zeigen für:</legend>
-                        <label v-for="c in roomsFor(block)" :key="c.id" class="check">
-                            <input
-                                type="checkbox"
-                                :checked="!(block.roomsOffCalendarIds ?? []).includes(c.id)"
-                                :data-testid="`rooms-calendar-${c.id}`"
-                                @change="toggleRoomsFor(c.id, ($event.target as HTMLInputElement).checked)"
-                            >
-                            {{ c.name }}
-                        </label>
-                    </fieldset>
+                    <InspectorSection v-if="roomsFor(block)" id="rooms-for" title="Räume zeigen für" :summary="roomsForSummary(block)">
+                        <div class="list" data-testid="rooms-for">
+                            <label v-for="c in roomsFor(block)" :key="c.id" class="check">
+                                <input
+                                    type="checkbox"
+                                    :checked="!(block.roomsOffCalendarIds ?? []).includes(c.id)"
+                                    :data-testid="`rooms-calendar-${c.id}`"
+                                    @change="toggleRoomsFor(c.id, ($event.target as HTMLInputElement).checked)"
+                                >
+                                {{ c.name }}
+                            </label>
+                        </div>
+                    </InspectorSection>
                     <!-- Plan.md, 51: who takes a service – only accepted assignments of services in groups open to all. -->
-                    <fieldset
-                        v-if="block.type === 'next-appointment' || listLayout(block, themeOf(stage)) === 'cards'"
-                        data-testid="services-fieldset"
-                    >
-                        <legend class="legend-row">
-                            Dienste zeigen
-                            <InfoHint>
+                    <template v-if="block.type === 'next-appointment' || listLayout(block, themeOf(stage)) === 'cards'">
+                        <InspectorSection id="services" title="Dienste zeigen" :summary="servicesSummary(block.services)">
+                            <template #info>
                                 Zeigt, wer den Dienst übernimmt – nur zugesagte Einteilungen und nur Dienste aus Dienstgruppen, die in ChurchTools ‚Ohne Berechtigung einsehbar‘ sind. Die Vorschau zeigt, was dein Konto sehen darf. Damit der Fernseher die Dienste sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, die Events dieser Kalender zu sehen – und nimmt es zurück, wenn kein Baustein sie mehr braucht.
-                            </InfoHint>
-                        </legend>
+                            </template>
+                            <div class="list" data-testid="services-fieldset">
+                                <label v-for="s in choosableServices ?? []" :key="s.id" class="check">
+                                    <input
+                                        type="checkbox"
+                                        :checked="(block.services ?? []).includes(s.id)"
+                                        :disabled="!(block.services ?? []).includes(s.id) && shownServiceCount(block.services) >= SERVICES_MAX"
+                                        :data-testid="`service-${s.id}`"
+                                        @change="toggleService(s.id, ($event.target as HTMLInputElement).checked)"
+                                    >
+                                    {{ s.name }}
+                                </label>
+                            </div>
+                        </InspectorSection>
                         <p v-if="servicesFailed" class="hint" data-testid="services-failed">Dienste konnten nicht geladen werden.</p>
                         <p v-else-if="services && !services.length" class="hint" data-testid="services-none">
                             Keine Dienste verfügbar – in ChurchTools ist keine Dienstgruppe ‚Ohne Berechtigung einsehbar‘.
@@ -841,23 +836,13 @@ const LAYERS = [
                         <p v-else-if="choosableServices && !choosableServices.length" class="hint" data-testid="services-not-allowed">
                             Noch kein Dienst freigegeben – ein Administrator legt in den Einstellungen unter „Dienste auf Screens“ fest, welche gezeigt werden dürfen.
                         </p>
-                        <label v-for="s in choosableServices ?? []" :key="s.id" class="check">
-                            <input
-                                type="checkbox"
-                                :checked="(block.services ?? []).includes(s.id)"
-                                :disabled="!(block.services ?? []).includes(s.id) && shownServiceCount(block.services) >= SERVICES_MAX"
-                                :data-testid="`service-${s.id}`"
-                                @change="toggleService(s.id, ($event.target as HTMLInputElement).checked)"
-                            >
-                            {{ s.name }}
-                        </label>
-                    </fieldset>
+                    </template>
                 </template>
 
                 <!-- Plan.md, 33: posts of ChurchTools groups, after the terminlists' cards. -->
                 <template v-if="block.type === 'posts'">
-                    <fieldset>
-                        <legend>Gruppen</legend>
+                    <InspectorSection id="post-groups" title="Gruppen" :summary="block.groupIds.length ? `${block.groupIds.length} gewählt` : 'keine'">
+                        <template #info>Zeigt die neuesten Beiträge der gewählten Gruppen; abgelaufene nie.</template>
                         <label v-for="g in groups" :key="g.id" class="check">
                             <input
                                 type="checkbox"
@@ -869,7 +854,7 @@ const LAYERS = [
                             <span v-if="g.visibility !== 'public'" class="dimmed">nicht öffentlich</span>
                         </label>
                         <p v-if="!groups.length" class="hint">Keine Gruppe mit Beiträgen sichtbar.</p>
-                    </fieldset>
+                    </InspectorSection>
                     <p
                         v-if="block.groupIds.some((id) => groups.find((g) => g.id === id)?.visibility !== 'public')"
                         class="hint"
@@ -878,7 +863,7 @@ const LAYERS = [
                         Der Fernseher zeigt nur Beiträge öffentlicher Gruppen. Die Vorschau hier zeigt mehr, weil sie mit
                         deinen Rechten liest.
                     </p>
-                    <label class="d-field">
+                    <label class="d-field d-field--inline">
                         Darstellung
                         <select
                             :value="block.layout"
@@ -913,7 +898,7 @@ const LAYERS = [
                             >
                         </label>
                     </div>
-                    <label v-if="block.layout === 'card'" class="d-field">
+                    <label v-if="block.layout === 'card'" class="d-field d-field--inline">
                         Sekunden je Beitrag
                         <input
                             type="number"
@@ -941,28 +926,30 @@ const LAYERS = [
                         >
                         Namen der Autorin oder des Autors zeigen
                     </label>
-                    <div class="hint-row">
-                        <span>Auswahl der Beiträge</span>
-                        <InfoHint>Zeigt die neuesten Beiträge der gewählten Gruppen; abgelaufene nie.</InfoHint>
-                    </div>
                 </template>
 
                 <!-- Plan.md, 43: groups of a ChurchTools group homepage, one at a time with a QR code or as a list. -->
                 <template v-if="block.type === 'groups'">
-                    <label class="d-field">
-                        Gruppen-Homepage
-                        <select
-                            :value="block.parentGroupId ?? ''"
-                            data-testid="groups-homepage"
-                            @change="setGroupsHomepage(($event.target as HTMLSelectElement).value)"
-                        >
-                            <option value="">– wählen –</option>
-                            <option v-for="h in homepages" :key="h.parentGroupId" :value="h.parentGroupId">{{ h.title }}</option>
-                            <option v-if="groupsHomepageMissing" :value="block.parentGroupId">
-                                (nicht mehr vorhanden)
-                            </option>
-                        </select>
-                    </label>
+                    <HintRow>
+                        <label class="d-field d-field--inline">
+                            Gruppen-Homepage
+                            <select
+                                :value="block.parentGroupId ?? ''"
+                                data-testid="groups-homepage"
+                                @change="setGroupsHomepage(($event.target as HTMLSelectElement).value)"
+                            >
+                                <option value="">– wählen –</option>
+                                <option v-for="h in homepages" :key="h.parentGroupId" :value="h.parentGroupId">{{ h.title }}</option>
+                                <option v-if="groupsHomepageMissing" :value="block.parentGroupId">
+                                    (nicht mehr vorhanden)
+                                </option>
+                            </select>
+                        </label>
+                        <template #info>
+                            Zeigt nur Gruppen, die ChurchTools auf der Homepage öffentlich zeigt – mit und ohne Anmeldung
+                            dieselben.
+                        </template>
+                    </HintRow>
                     <p v-if="!homepages.length" class="hint">
                         Noch keine Gruppen-Homepage. In ChurchTools die Obergruppe öffnen, dann Einstellungen →
                         Allgemein → Außendarstellung → „Gruppenhomepage erstellen".
@@ -978,7 +965,7 @@ const LAYERS = [
                         >
                         Alle Gruppen der Homepage
                     </label>
-                    <label v-if="block.groupIds.length === 0" class="d-field">
+                    <label v-if="block.groupIds.length === 0" class="d-field d-field--inline">
                         Reihenfolge
                         <select
                             :value="block.sort"
@@ -991,8 +978,7 @@ const LAYERS = [
                         </select>
                     </label>
 
-                    <fieldset v-if="block.groupIds.length">
-                        <legend>Gruppen</legend>
+                    <InspectorSection v-if="block.groupIds.length" id="group-list" title="Gruppen" :summary="`${block.groupIds.length} gewählt`">
                         <div v-for="(id, index) in block.groupIds" :key="id" class="group-row">
                             <template v-if="homepageGroupList.find((g) => g.id === id)">
                                 <label class="check">
@@ -1045,9 +1031,9 @@ const LAYERS = [
                             >
                             {{ g.name }}
                         </label>
-                    </fieldset>
+                    </InspectorSection>
 
-                    <label class="d-field">
+                    <label class="d-field d-field--inline">
                         Darstellung
                         <select
                             :value="block.layout"
@@ -1058,21 +1044,23 @@ const LAYERS = [
                             <option value="list">Liste – mehrere untereinander</option>
                         </select>
                     </label>
-                    <label v-if="block.layout === 'card'" class="d-field">
-                        Gruppen je Seite
-                        <select
-                            :value="block.perPage"
-                            data-testid="groups-per-page"
-                            @change="setBlock({ perPage: Number(($event.target as HTMLSelectElement).value) })"
-                        >
-                            <option v-for="n in 4" :key="n" :value="n">{{ n }}</option>
-                        </select>
-                    </label>
-                    <p v-if="block.layout === 'card' && block.perPage > 1" class="hint">
-                        {{ block.width >= block.height ? 'Nebeneinander' : 'Untereinander' }}; jede Karte richtet sich nach
-                        ihrer eigenen Form – zwei in einem breiten Baustein stehen hochkant.
-                    </p>
-                    <label class="d-field">
+                    <HintRow v-if="block.layout === 'card'">
+                        <label class="d-field d-field--inline">
+                            Gruppen je Seite
+                            <select
+                                :value="block.perPage"
+                                data-testid="groups-per-page"
+                                @change="setBlock({ perPage: Number(($event.target as HTMLSelectElement).value) })"
+                            >
+                                <option v-for="n in 4" :key="n" :value="n">{{ n }}</option>
+                            </select>
+                        </label>
+                        <template v-if="block.perPage > 1" #info>
+                            {{ block.width >= block.height ? 'Nebeneinander' : 'Untereinander' }}; jede Karte richtet sich nach
+                            ihrer eigenen Form – zwei in einem breiten Baustein stehen hochkant.
+                        </template>
+                    </HintRow>
+                    <label class="d-field d-field--inline">
                         {{ block.layout === 'card' && block.perPage === 1 ? 'Sekunden je Gruppe' : 'Sekunden je Seite' }}
                         <input
                             type="number"
@@ -1085,14 +1073,12 @@ const LAYERS = [
                         >
                     </label>
 
-                    <div class="hint-row">
-                        <span>Sichtbarkeit</span>
-                        <InfoHint>
-                            Zeigt nur Gruppen, die ChurchTools auf der Homepage öffentlich zeigt – mit und ohne Anmeldung
-                            dieselben.
-                        </InfoHint>
-                    </div>
                     <InspectorSection id="fields" title="Angaben" :summary="fieldsSummary">
+                        <template #info>
+                            Beschreibung, QR-Code und Bild der Leitung gibt es nur in der Darstellung „Hervorgehoben". Namen der
+                            Leitung erscheinen nur, wenn die Gruppen-Homepage in ChurchTools die Leiter zeigt – dann sind sie
+                            ohnehin öffentlich.
+                        </template>
                         <label v-for="key in GROUP_SHOW_KEYS" :key="key" class="check">
                             <input
                                 type="checkbox"
@@ -1103,19 +1089,12 @@ const LAYERS = [
                             >
                             {{ GROUP_SHOW_LABELS[key] }}
                         </label>
-                        <p v-if="block.layout === 'list'" class="hint">
-                            Beschreibung und QR-Code nur in der Darstellung „Hervorgehoben".
-                        </p>
-                        <p v-if="block.show.leaders" class="hint">
-                            Namen erscheinen nur, wenn die Gruppen-Homepage in ChurchTools die Leiter zeigt – dann sind sie
-                            ohnehin öffentlich.
-                        </p>
                     </InspectorSection>
                 </template>
 
                 <!-- Plan.md, 46: which rooms are taken today – an overview or the door sign of the first room. -->
                 <template v-if="block.type === 'rooms'">
-                    <label class="d-field">
+                    <label class="d-field d-field--inline">
                         Anordnung
                         <select
                             :value="block.layout"
@@ -1126,7 +1105,7 @@ const LAYERS = [
                             <option value="door">Türschild – der erste Raum</option>
                         </select>
                     </label>
-                    <label class="d-field">
+                    <label class="d-field d-field--inline">
                         Tage
                         <select
                             :value="block.days"
@@ -1137,7 +1116,7 @@ const LAYERS = [
                             <option :value="2">Heute und morgen</option>
                         </select>
                     </label>
-                    <label v-if="block.layout === 'overview'" class="d-field">
+                    <label v-if="block.layout === 'overview'" class="d-field d-field--inline">
                         Sekunden je Seite
                         <input
                             type="number"
@@ -1153,10 +1132,35 @@ const LAYERS = [
                         Das Türschild zeigt den ersten Raum der Liste.
                     </p>
 
-                    <fieldset class="rooms-list">
-                        <legend>Räume</legend>
-                        <p class="hint" data-testid="rooms-confirmed-hint">Gezeigt werden nur bestätigte Buchungen, keine, die noch warten.</p>
-                        <p v-if="!block.rooms.length" class="hint">Noch keine Räume gewählt.</p>
+                    <p v-if="rooms && !rooms.length" class="hint" data-testid="rooms-none">
+                        Keine Räume sichtbar. Ein Administrator gibt der Gruppe „Infoscreen-Designer" unter Einstellungen
+                        mit „Rechte aktualisieren" das Recht, Räume zu sehen.
+                    </p>
+                    <div v-else-if="rooms" class="room-add">
+                        <select
+                            :disabled="!pickableRooms.length || block.rooms.length >= ROOMS_MAX"
+                            value=""
+                            aria-label="Raum hinzufügen"
+                            data-testid="rooms-add"
+                            @change="pickRoom($event.target as HTMLSelectElement)"
+                        >
+                            <option value="">+ Raum</option>
+                            <option v-for="r in pickableRooms" :key="r.id" :value="r.id">{{ r.name }}</option>
+                        </select>
+                        <button
+                            class="d-btn"
+                            type="button"
+                            :disabled="!pickableRooms.length || block.rooms.length >= ROOMS_MAX"
+                            data-testid="rooms-add-all"
+                            @click="addRooms(pickableRooms)"
+                        >
+                            Alle Räume hinzufügen
+                        </button>
+                    </div>
+                    <span v-if="rooms?.length" class="hint" data-testid="rooms-count">{{ block.rooms.length }} von {{ ROOMS_MAX }}</span>
+                    <p v-if="!block.rooms.length" class="hint">Noch keine Räume gewählt.</p>
+                    <InspectorSection v-else id="room-list" title="Räume" :summary="`${block.rooms.length} Räume`">
+                        <template #info>Gezeigt werden nur bestätigte Buchungen, keine, die noch warten.</template>
                         <div v-for="(entry, index) in block.rooms" :key="entry.resourceId" class="room-entry" data-testid="room-entry">
                             <div class="room-head">
                                 <span v-if="roomName(entry.resourceId)" class="room-name" :title="roomName(entry.resourceId)!" data-testid="room-name">
@@ -1196,7 +1200,7 @@ const LAYERS = [
                                     <Icon name="close" :size="14" />
                                 </button>
                             </div>
-                            <label class="d-field">
+                            <label class="d-field d-field--inline">
                                 Wegweiser
                                 <input
                                     type="text"
@@ -1208,7 +1212,7 @@ const LAYERS = [
                                     @input="setRoom(index, { hint: ($event.target as HTMLInputElement).value })"
                                 >
                             </label>
-                            <div class="hint-row hint-row--check">
+                            <HintRow>
                                 <label class="check">
                                     <input
                                         type="checkbox"
@@ -1218,39 +1222,13 @@ const LAYERS = [
                                     >
                                     Titel zeigen
                                 </label>
-                                <InfoHint>
+                                <template #info>
                                     Buchungstitel können Namen enthalten, etwa „Gespräch Familie X". Für solche Räume den Titel
                                     ausschalten – dann steht dort „Belegt".
-                                </InfoHint>
-                            </div>
+                                </template>
+                            </HintRow>
                         </div>
-                        <p v-if="rooms && !rooms.length" class="hint" data-testid="rooms-none">
-                            Keine Räume sichtbar. Ein Administrator gibt der Gruppe „Infoscreen-Designer" unter Einstellungen
-                            mit „Rechte aktualisieren" das Recht, Räume zu sehen.
-                        </p>
-                        <div v-else-if="rooms" class="room-add">
-                            <select
-                                :disabled="!pickableRooms.length || block.rooms.length >= ROOMS_MAX"
-                                value=""
-                                aria-label="Raum hinzufügen"
-                                data-testid="rooms-add"
-                                @change="pickRoom($event.target as HTMLSelectElement)"
-                            >
-                                <option value="">+ Raum</option>
-                                <option v-for="r in pickableRooms" :key="r.id" :value="r.id">{{ r.name }}</option>
-                            </select>
-                            <button
-                                class="d-btn"
-                                type="button"
-                                :disabled="!pickableRooms.length || block.rooms.length >= ROOMS_MAX"
-                                data-testid="rooms-add-all"
-                                @click="addRooms(pickableRooms)"
-                            >
-                                Alle Räume hinzufügen
-                            </button>
-                        </div>
-                        <span v-if="rooms?.length" class="hint" data-testid="rooms-count">{{ block.rooms.length }} von {{ ROOMS_MAX }}</span>
-                    </fieldset>
+                    </InspectorSection>
                 </template>
 
                 <template v-if="block.type === 'church-header'">
@@ -1262,15 +1240,18 @@ const LAYERS = [
                         >
                         Gemeindenamen zeigen
                     </label>
-                    <label class="check">
-                        <input
-                            type="checkbox"
-                            data-testid="show-logo"
-                            :checked="block.showLogo"
-                            @change="setBlock({ showLogo: ($event.target as HTMLInputElement).checked })"
-                        >
-                        Logo zeigen
-                    </label>
+                    <HintRow>
+                        <label class="check">
+                            <input
+                                type="checkbox"
+                                data-testid="show-logo"
+                                :checked="block.showLogo"
+                                @change="setBlock({ showLogo: ($event.target as HTMLInputElement).checked })"
+                            >
+                            Logo zeigen
+                        </label>
+                        <template #info>Ein eigenes Logo hilft, wenn das aus ChurchTools auf dem Hintergrund nicht zu sehen ist.</template>
+                    </HintRow>
                     <div v-if="block.showLogo" class="media-pick">
                         <img v-if="mediaUrl(block.logoMediaId, 'max')" class="logo-preview" :src="mediaUrl(block.logoMediaId, 'max')!" alt="">
                         <p v-else class="hint">Das Logo aus den Gemeindeinfos von ChurchTools.</p>
@@ -1286,25 +1267,21 @@ const LAYERS = [
                         >
                             Logo aus ChurchTools verwenden
                         </button>
-                        <div class="hint-row">
-                            <span>Eigenes Logo</span>
-                            <InfoHint>Ein eigenes Logo hilft, wenn das aus ChurchTools auf dem Hintergrund nicht zu sehen ist.</InfoHint>
-                        </div>
                     </div>
                 </template>
 
                 <!-- Plan.md, 28: another website in a frame – a page of the church website, a widget. -->
                 <template v-if="block.type === 'web'">
                     <div class="d-field">
-                        <div class="hint-row">
+                        <HintRow>
                             <label for="web-url-input">Adresse oder Einbettungscode</label>
-                            <InfoHint>
-                                Statt der Adresse geht auch der Einbettungscode („iframe"), den Karten, Umfragen oder Pinnwände
+                            <template #info>
+                                Mit Enter übernehmen – erst dann lädt die Seite. Statt der Adresse geht auch der Einbettungscode („iframe"), den Karten, Umfragen oder Pinnwände
                                 anbieten – übernommen wird nur die Adresse darin. Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer. Viele große Seiten
                                 wie Google verbieten das Einbetten – der Rahmen zeigt dann einen Fehler. Eigene Seiten, etwa die
                                 der Gemeinde-Website, gehen meist.
-                            </InfoHint>
-                        </div>
+                            </template>
+                        </HintRow>
                         <input
                             id="web-url-input"
                             type="text"
@@ -1315,10 +1292,9 @@ const LAYERS = [
                             @change="setWebUrl($event.target as HTMLInputElement)"
                         >
                     </div>
-                    <p class="hint" data-testid="web-enter-hint">Mit Enter übernehmen – erst dann lädt die Seite.</p>
                     <p v-if="embedProblemBlock === block.id" class="hint" data-testid="web-problem">Im Einbettungscode steht keine Adresse.</p>
                     <p v-else-if="webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
-                    <label class="d-field">
+                    <label class="d-field d-field--inline">
                         Größe der Seite
                         <select :value="block.zoom" data-testid="web-zoom" @change="setNumber('zoom', ($event.target as HTMLSelectElement).value)">
                             <option :value="0.5">50 % – mehr passt hinein</option>
@@ -1332,11 +1308,11 @@ const LAYERS = [
                 </template>
 
                 <template v-if="block.type === 'qr'">
-                    <label class="d-field">
-                        Inhalt – meist eine Adresse
+                    <label class="d-field d-field--inline">
+                        Inhalt
                         <input
                             type="text"
-                            placeholder="https://…"
+                            placeholder="meist eine Adresse, https://…"
                             maxlength="1000"
                             :value="block.data"
                             data-testid="qr-data"
@@ -1345,10 +1321,10 @@ const LAYERS = [
                         >
                     </label>
                     <p v-if="block.data.trim() && !qrShape(block.data)" class="hint">Zu lang für einen QR-Code.</p>
-                    <div class="hint-row">
+                    <HintRow caption>
                         <span>Farben</span>
-                        <InfoHint>Dunkel auf hell lesen alle Handykameras am sichersten.</InfoHint>
-                    </div>
+                        <template #info>Dunkel auf hell lesen alle Handykameras am sichersten.</template>
+                    </HintRow>
                     <div class="grid2">
                         <ColorField
                             label="Farbe"
@@ -1371,19 +1347,19 @@ const LAYERS = [
                     <template #summary-extra>
                         <span class="swatch" :style="{ background: block.style.color }" />
                     </template>
+                    <label class="d-field d-field--inline">
+                        Schriftart
+                        <select
+                            data-testid="font-family"
+                            :value="fontDef(block.style.fontFamily).key"
+                            @change="setStyle({ fontFamily: ($event.target as HTMLSelectElement).value })"
+                        >
+                            <option v-for="f in FONTS" :key="f.key" :value="f.key" :style="{ fontFamily: `'${f.family}'` }">
+                                {{ f.label }}
+                            </option>
+                        </select>
+                    </label>
                     <div class="grid2">
-                        <label class="d-field wide">
-                            Schriftart
-                            <select
-                                data-testid="font-family"
-                                :value="fontDef(block.style.fontFamily).key"
-                                @change="setStyle({ fontFamily: ($event.target as HTMLSelectElement).value })"
-                            >
-                                <option v-for="f in FONTS" :key="f.key" :value="f.key" :style="{ fontFamily: `'${f.family}'` }">
-                                    {{ f.label }}
-                                </option>
-                            </select>
-                        </label>
                         <label class="d-field">
                             Größe (px)
                             <input
@@ -1420,6 +1396,7 @@ const LAYERS = [
                     </label>
                     <ColorField
                         label="Farbe"
+                        inline
                         testid="text-color"
                         :model-value="block.style.color"
                         @focus="edit.onFocus"
@@ -1490,7 +1467,7 @@ const LAYERS = [
         <!-- Slide and screen -->
         <template v-else>
             <section v-if="slide" data-testid="slide-inspector">
-                <label class="d-field">
+                <label class="d-field d-field--inline">
                     Name
                     <input
                         type="text"
@@ -1546,7 +1523,7 @@ const LAYERS = [
                     <template #summary-extra>
                         <span v-for="(color, i) in backgroundColors" :key="i" class="swatch" :style="{ background: color }" />
                     </template>
-                    <label class="d-field">
+                    <label class="d-field d-field--inline">
                         Hintergrund aus
                         <select
                             :value="slide.background.kind === 'media' ? 'media' : 'fill'"
@@ -1575,7 +1552,7 @@ const LAYERS = [
             <section v-if="editor.draft">
                 <InspectorSection id="playlist" title="Playlist" :summary="playlistSummary">
                     <div data-testid="playlist-info" class="playlist-info">
-                        <label class="d-field">
+                        <label class="d-field d-field--inline">
                             Name
                             <input
                                 type="text"
@@ -1595,13 +1572,13 @@ const LAYERS = [
                             <dt>Läuft auf</dt>
                             <dd data-testid="playlist-screens">{{ playlistSummary }}</dd>
                         </dl>
-                        <div class="hint-row">
+                        <HintRow caption>
                             <span>Zeitplan</span>
-                            <InfoHint>
+                            <template #info>
                                 Auf welchem Screen sie wann läuft, legt der Zeitplan des Screens fest – unter „Zeitpläne" oder an
                                 der Kachel des Screens. Speichern ändert alle Screens, die sie zeigen.
-                            </InfoHint>
-                        </div>
+                            </template>
+                        </HintRow>
                         <p v-if="bannerRunning" class="hint" data-testid="banner-status">
                             Hinweisband: „{{ editor.draft.playlist.banner!.text }}" – bearbeiten unter
                             <RouterLink :to="{ name: 'notices' }">Hinweise</RouterLink>
@@ -1656,30 +1633,16 @@ fieldset {
     padding: 0;
     border: 0;
 }
-.legend-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    box-sizing: border-box;
-    width: 100%;
-}
-.rooms-for {
-    margin-left: 1.6em;
-}
-legend {
-    padding: 0;
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
+/* A checkbox list inside a section; the section brings the gap. */
+.list {
+    display: grid;
+    gap: 8px;
 }
 .grid2 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
     align-items: end;
-}
-.grid2 .wide {
-    grid-column: 1 / -1;
 }
 .grid4 {
     display: grid;
@@ -1710,9 +1673,6 @@ legend {
     flex: 1;
 }
 /* The rooms of a block: name with reorder buttons, way-finder, title switch (Plan.md 46). Nothing may widen the column. */
-.rooms-list {
-    grid-template-columns: minmax(0, 1fr);
-}
 .room-entry {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -1746,10 +1706,6 @@ legend {
     min-width: 0;
 }
 /* The pictures of a slideshow: thumbnail, file name, reorder and remove (Plan.md 46). */
-.slideshow-images {
-    /* A long file name must not widen the column: the track may shrink below its content. */
-    grid-template-columns: minmax(0, 1fr);
-}
 .slideshow-list {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
@@ -1792,21 +1748,6 @@ legend {
     height: 10px;
     border-radius: 50%;
     border: 1px solid var(--d-divider);
-}
-/* A small caption with its (i) at the end, the explanation opening below (Plan.md 47). */
-.hint-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 4px;
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
-}
-/* A switch with its info circle: the switch reads like the other switches, not like a field label. */
-.hint-row--check {
-    color: inherit;
-    font-size: inherit;
 }
 .layer-row {
     display: flex;
@@ -1946,13 +1887,6 @@ legend {
 .lockable > :deep(.section) + :deep(.section) {
     margin-top: -10px;
 }
-.hidden-calendar {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
 .hint {
     margin: 0;
     color: var(--d-text-muted);

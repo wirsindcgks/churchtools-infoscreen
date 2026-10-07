@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addBlock } from './helpers';
+import { addBlock, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -110,6 +110,7 @@ test('build a slideshow with several pictures, keep it, and see it in the librar
     await library.getByTestId('media-add').click();
     await expect(library).toBeHidden();
 
+    await openSection(page, 'slideshow-images');
     const rows = page.getByTestId('slideshow-row');
     await expect(rows).toHaveCount(3);
     await expect(rows.nth(0)).toContainText('bild-03');
@@ -157,6 +158,7 @@ test('build a slideshow with several pictures, keep it, and see it in the librar
     await page.getByTestId('open-editor').first().click();
     await page.getByTestId('slide-item').nth(1).click();
     await page.getByTestId('frame-slideshow').first().click();
+    await openSection(page, 'slideshow-images');
     await expect(page.getByTestId('slideshow-row')).toHaveCount(2);
     await expect(page.getByTestId('slideshow-row').nth(0)).toContainText('bild-02');
     await expect(page.getByTestId('slideshow-row').nth(1)).toContainText('bild-03');
@@ -244,6 +246,7 @@ for (const [transition] of TRANSITIONS) {
         const library = page.getByTestId('media-library');
         for (const name of ['bild-01', 'bild-02']) await library.getByTestId('media-item').filter({ hasText: name }).locator('button.pick').click();
         await library.getByTestId('media-add').click();
+        await openSection(page, 'slideshow-images');
         await expect(page.getByTestId('slideshow-row')).toHaveCount(2);
         await page.getByTestId('slideshow-seconds').fill('3');
         await page.getByTestId('slideshow-seconds').blur();
@@ -283,6 +286,7 @@ async function twoPictures(page: Page, baseURL: string | undefined): Promise<voi
     const library = page.getByTestId('media-library');
     for (const name of ['bild-01', 'bild-02']) await library.getByTestId('media-item').filter({ hasText: name }).locator('button.pick').click();
     await library.getByTestId('media-add').click();
+    await openSection(page, 'slideshow-images');
     await expect(page.getByTestId('slideshow-row')).toHaveCount(2);
     await page.getByTestId('slideshow-seconds').fill('3');
     await page.getByTestId('slideshow-seconds').blur();
@@ -371,6 +375,7 @@ for (const size of [
         const library = page.getByTestId('media-library');
         for (const name of ['e2e-chromium', 'bild-02']) await library.getByTestId('media-item').filter({ hasText: name }).locator('button.pick').click();
         await library.getByTestId('media-add').click();
+        await openSection(page, 'slideshow-images');
         await expect(page.getByTestId('slideshow-row')).toHaveCount(2);
         const inspector = page.locator('aside.inspector');
         const remove = page.getByTestId('slideshow-remove').first();
