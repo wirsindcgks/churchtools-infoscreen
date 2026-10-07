@@ -121,6 +121,18 @@
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
+/* A one-line control: label left, control right (the inspector's 295 px; a select may shrink and ellipsize). */
+.infoscreen-designer :where(.d-field--inline) {
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 0 0.6em;
+}
+/* A dropdown shows its whole text: label above, the select over the full width. */
+.infoscreen-designer :where(.d-field--inline:has(> select)) {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 4px 0;
+}
 
 .infoscreen-designer :where(button.d-btn--create) {
     border-color: var(--d-create);

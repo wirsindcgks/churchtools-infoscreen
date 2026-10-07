@@ -230,6 +230,7 @@ test('choose rooms, see the bookings, and keep the titles private where asked', 
     await add.selectOption('2');
     await expect(page.getByTestId('room-entry')).toHaveCount(1);
     await page.getByTestId('rooms-add-all').click();
+    await openSection(page, 'room-list');
     await expect(page.getByTestId('room-name')).toHaveText(['Gruppenraum 1', 'Saal', 'Jugendkeller']);
     await expect(page.getByTestId('rooms-count')).toHaveText('3 von 30');
     await expect(page.getByTestId('rooms-add')).toBeDisabled();
@@ -274,6 +275,7 @@ test('the door sign shows the first room: now, then what follows – or free', a
     await newRoomsBlock(page);
     await page.getByTestId('rooms-add-all').click();
     await page.getByTestId('rooms-layout').selectOption('door');
+    await openSection(page, 'room-list');
     await expect(page.getByTestId('rooms-door-hint')).toHaveText('Das Türschild zeigt den ersten Raum der Liste.');
 
     const door = stage(page).getByTestId('rooms-door');
@@ -349,6 +351,7 @@ for (const size of [
             await page.getByTestId(size.width === 390 ? 'inspector-sheet-toggle' : 'tablet-inspector-toggle').click();
         }
         await page.getByTestId('rooms-add-all').click();
+        await openSection(page, 'room-list');
         await page.getByTestId('room-entry').first().getByTestId('room-hint').fill('z'.repeat(100));
         await page.getByTestId('room-entry').first().locator('.info-btn').click();
         await expect(page.getByTestId('room-entry')).toHaveCount(3);
@@ -424,6 +427,7 @@ test('the services at an appointment: only open ones are offered, only accepted 
 
     // Off until chosen; "Ton" is in a group that is not open to all and is not offered.
     await expect(stage(page).getByTestId('next-services')).toHaveCount(0);
+    await openSection(page, 'services');
     await expect(page.getByTestId('service-1')).toBeVisible();
     await expect(page.getByTestId('service-2')).toBeVisible();
     await expect(page.getByTestId('service-3')).toHaveCount(0);
@@ -480,6 +484,7 @@ test('services only after an administrator allowed them: the inspector offers ex
     await newBlock(page, 'next-appointment');
     await page.getByTestId('next-layout').selectOption('card');
     await expect(page.getByTestId('services-not-allowed')).toHaveCount(0);
+    await openSection(page, 'services');
     await expect(page.getByTestId('service-2')).toBeVisible();
     await expect(page.getByTestId('service-1')).toHaveCount(0);
     await page.getByTestId('service-2').check();
@@ -491,6 +496,7 @@ test('the services in the list of appointments: as cards, not as rows', async ({
     await allowServices(page, 'Predigt');
     await newBlock(page, 'appointment-list');
     await page.getByTestId('list-layout').selectOption('cards');
+    await openSection(page, 'services');
     await page.getByTestId('service-1').check();
     await expect(stage(page).getByTestId('list-services')).toHaveText('Predigt: Anna Beispiel');
 
@@ -506,6 +512,7 @@ test('rooms can be left out for single calendars: the room goes, the place stays
     const places = stage(page).getByTestId('list-place');
     await expect(places).toHaveText(['Kirchsaal · Saal', 'Jugendhaus · Gruppenraum 1']);
 
+    await openSection(page, 'rooms-for');
     await expect(page.getByTestId('rooms-calendar-1')).toBeChecked();
     await page.getByTestId('rooms-calendar-2').uncheck();
     await expect(places).toHaveText(['Kirchsaal · Saal', 'Jugendhaus']);
@@ -547,6 +554,8 @@ test('the cards of the list: date column of one width, place under the date, thr
         await allowServices(page, 'Predigt');
         await newBlock(page, 'appointment-list');
         await page.getByTestId('list-layout').selectOption('cards');
+        await openSection(page, 'services');
+        await openSection(page, 'rooms-for');
         await page.getByTestId('service-1').check();
         // Tall enough for all four cards on one page.
         await openSection(page, 'position');

@@ -24,7 +24,7 @@ function setStop(index: number, color: string): void {
 
 <template>
     <div class="fill-editor">
-        <label class="d-field">
+        <label class="d-field d-field--inline">
             Art
             <select :value="modelValue.kind" @change="setKind(($event.target as HTMLSelectElement).value)">
                 <option value="solid">Farbe</option>
@@ -34,6 +34,7 @@ function setStop(index: number, color: string): void {
         <ColorField
             v-if="modelValue.kind === 'solid'"
             label="Farbe"
+            inline
             testid="fill-color"
             :model-value="modelValue.color"
             @focus="emit('focus')"

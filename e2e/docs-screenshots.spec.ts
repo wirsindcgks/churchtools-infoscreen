@@ -441,6 +441,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     }
     await library.getByTestId('media-add').click();
     await expect(library).toBeHidden();
+    await openSection(page, 'slideshow-images');
     await expect(page.getByTestId('slideshow-row')).toHaveCount(3);
     await page.getByTestId('slideshow-seconds').fill('8');
     await page.getByTestId('slideshow-seconds').blur();
@@ -462,6 +463,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await addBlock(page, 'rooms');
     await frame(page, { x: 160, y: 140, width: 1600, height: 800 });
     await page.getByTestId('rooms-add-all').click();
+    await openSection(page, 'room-list');
     await page.getByTestId('room-entry').nth(0).getByTestId('room-hint').fill('Erdgeschoss');
     await page.getByTestId('room-entry').nth(1).getByTestId('room-hint').fill('1. OG, links');
     await page.getByTestId('room-entry').nth(2).getByTestId('room-hint').fill('Untergeschoss');
@@ -471,6 +473,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     // Posts of ChurchTools groups (Plan.md 33).
     await page.getByTestId('add-slide').click();
     await addBlock(page, 'posts');
+    await openSection(page, 'post-groups');
     await page.getByTestId('post-group-42').check();
     await page.getByTestId('post-group-44').check();
     await frame(page, { x: 160, y: 140, width: 1600, height: 800 });

@@ -4,6 +4,18 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.18.0] – 2026-10-07
+
+### Geändert
+
+- **Der Inspektor ist kürzer und einheitlicher.** Lange Listen – Kalender, „Räume zeigen für", Dienste, Gruppen,
+  Räume, Slideshow-Bilder – sind jetzt aufklappbar und zeigen zugeklappt in einem Wort, was gewählt ist („3 von 13").
+  Das gilt für alle Bausteine gleich; ob ein Bereich offen ist, merkt sich der Browser.
+- **Info-Icons stehen immer am Zeilenende,** der Erklärtext klappt darunter auf. Dauerhafte Erklärsätze wie „Zur Wahl
+  stehen nur öffentliche Kalender" liegen jetzt hinter dem Icon; Fehler und Statusmeldungen bleiben sichtbar.
+- **Einzeilige Felder in einer Zeile:** Zahlen, Farben und kurze Texte stehen mit der Beschriftung links. Auswahllisten
+  bekommen die volle Breite, damit ihr Text lesbar bleibt.
+
 ## [0.17.1] – 2026-10-07
 
 ### Behoben
@@ -884,6 +896,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.18.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.18.0
 [0.17.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.17.1
 [0.17.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.17.0
 [0.16.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.16.0

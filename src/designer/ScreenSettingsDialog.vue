@@ -7,6 +7,7 @@
  * from the tile's menu (Plan.md 71).
  */
 import { computed, onMounted, ref } from 'vue';
+import HintRow from './HintRow.vue';
 import type { ScreenDoc } from '../model/schema';
 import { ConflictError, type ScreenRepository } from '../store/screen-repository';
 
@@ -69,11 +70,13 @@ async function save(): Promise<void> {
                 <input ref="nameInput" v-model="name" type="text" maxlength="100" data-testid="settings-name">
                 <small v-if="!name.trim()" class="invalid">Ohne Namen lässt sich nicht speichern.</small>
             </label>
-            <label v-if="mode === 'settings'" class="d-field">
-                Overscan-Korrektur (%)
-                <input v-model.number="overscan" type="number" min="0" max="20" data-testid="settings-overscan">
-                <small>Verkleinert die Bildfläche auf Fernsehern, die den Rand abschneiden.</small>
-            </label>
+            <HintRow v-if="mode === 'settings'">
+                <label class="d-field">
+                    Overscan-Korrektur (%)
+                    <input v-model.number="overscan" type="number" min="0" max="20" data-testid="settings-overscan">
+                </label>
+                <template #info>Verkleinert die Bildfläche auf Fernsehern, die den Rand abschneiden.</template>
+            </HintRow>
             <dl v-if="mode === 'settings'">
                 <dt>Format</dt>
                 <dd>{{ portrait ? 'Hochkant' : 'Quer' }}, {{ screen.stage.width }} × {{ screen.stage.height }}</dd>

@@ -1,17 +1,20 @@
 <script setup lang="ts">
 /**
  * A small (i) that unfolds an explanation below its row (Plan.md 47) – no popover, nothing floats over the stage.
- * The button belongs beside a label; the text (the slot) is `.hint`, placed by the parent under the row.
+ * The button always sits at the end of its row (`margin-left: auto`); the text (the slot) is `.hint`, over the full
+ * width below it. `HintRow` is the usual row around it. `part` splits the two for a parent that places them apart
+ * (a section: the button in its title line, the text in its body) – it then owns `open`.
  */
-import { ref } from 'vue';
 import Icon from './Icon.vue';
 
-const open = ref(false);
+defineProps<{ part?: 'button' | 'text' }>();
+const open = defineModel<boolean>('open', { default: false });
 </script>
 
 <template>
     <span class="info-hint">
         <button
+            v-if="part !== 'text'"
             class="d-btn d-btn--icon info-btn"
             type="button"
             aria-label="Erklärung"
@@ -21,7 +24,7 @@ const open = ref(false);
         >
             <Icon name="info" :size="14" />
         </button>
-        <span v-if="open" class="hint" role="note"><slot /></span>
+        <span v-if="part !== 'button' && open" class="hint" role="note"><slot /></span>
     </span>
 </template>
 
@@ -31,6 +34,7 @@ const open = ref(false);
 }
 .info-btn {
     min-width: 0;
+    margin-left: auto;
     padding: 0.15em;
     border-color: transparent;
     background: none;

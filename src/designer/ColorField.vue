@@ -12,7 +12,7 @@ import { ref, watch } from 'vue';
 import { parseHex, pickerValue } from './color';
 import { usePalette, type PaletteColor } from './palette';
 
-const props = defineProps<{ modelValue: string; label: string; testid?: string }>();
+const props = defineProps<{ modelValue: string; label: string; testid?: string; inline?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [string]; focus: []; blur: [] }>();
 
 const lists = usePalette();
@@ -56,7 +56,7 @@ function onTextBlur(): void {
 </script>
 
 <template>
-    <div class="d-field color-field">
+    <div class="d-field color-field" :class="{ 'color-field--inline': inline }">
         <span>{{ label }}</span>
         <div class="row">
             <input
@@ -124,6 +124,15 @@ function onTextBlur(): void {
 </template>
 
 <style scoped>
+/* Alone on its line the label stands left of the swatch and the hex value; the swatch groups keep the full width below. */
+.color-field--inline {
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: 6px 0.6em;
+}
+.color-field--inline > :nth-child(n + 3) {
+    grid-column: 1 / -1;
+}
 .row {
     display: flex;
     gap: 4px;

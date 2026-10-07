@@ -1859,6 +1859,7 @@ test('a groups block sorts every group by weekday, name A–Z or Z–A, until a 
 
     // Choosing one by one starts in the order just seen; the select has no place there.
     await inspector.getByTestId('groups-all').uncheck();
+    await openSection(page, 'group-list');
     await expect(sort).toHaveCount(0);
     const picks = inspector.locator('.group-row');
     await expect(picks).toHaveCount(3);
