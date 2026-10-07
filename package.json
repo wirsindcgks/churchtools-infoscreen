@@ -4,6 +4,7 @@
   "version": "0.18.1",
   "type": "module",
   "license": "GPL-3.0-or-later",
+  "author": "Tobias Nikola für CG Kraichgau-Stromberg e. V.",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build && node scripts/check-dist.js",
