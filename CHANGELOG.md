@@ -884,6 +884,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.17.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.17.1
 [0.17.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.17.0
 [0.16.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.16.0
 [0.15.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.15.1
