@@ -251,7 +251,7 @@ onMounted(async () => {
                                     <Icon :name="screen.stage.height > screen.stage.width ? 'portrait' : 'landscape'" :size="16" />
                                     {{ screen.stage.height > screen.stage.width ? 'Hochkant' : 'Quer' }}
                                 </li>
-                                <li data-testid="schedule-now">
+                                <li class="d-facts-gap" data-testid="schedule-now">
                                     <Icon name="list" :size="16" />
                                     <span>Jetzt: <strong class="now">{{ playlistName(running(screen).playlistId) }}</strong></span>
                                 </li>
@@ -303,11 +303,11 @@ onMounted(async () => {
                                         </span>
                                     </button>
                                 </li>
-                                <li v-if="edited(screen)?.when" :title="edited(screen)!.whenTitle!" data-testid="schedule-edited-at">
+                                <li v-if="edited(screen)?.when" class="d-facts-gap" :title="edited(screen)!.whenTitle!" data-testid="schedule-edited-at">
                                     <Icon name="clock" :size="16" />
                                     <span>{{ edited(screen)!.when }}</span>
                                 </li>
-                                <li v-if="edited(screen)?.by" :title="edited(screen)!.byTitle!" data-testid="schedule-edited-by">
+                                <li v-if="edited(screen)?.by" :class="{ 'd-facts-gap': !edited(screen)?.when }" :title="edited(screen)!.byTitle!" data-testid="schedule-edited-by">
                                     <Icon name="person" :size="16" />
                                     <span>{{ edited(screen)!.by }}</span>
                                 </li>

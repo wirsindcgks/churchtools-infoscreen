@@ -119,7 +119,7 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                         <span>Unbenutzt</span>
                     </li>
                 </ul>
-                <ul v-if="uploads.get(item.fileId)" class="d-facts">
+                <ul v-if="uploads.get(item.fileId)" class="d-facts upload-facts">
                     <li
                         v-if="uploads.get(item.fileId)?.when"
                         :title="uploads.get(item.fileId)!.whenTitle!"
@@ -144,6 +144,10 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
 
 <style scoped>
 /* The tile is `d-tile`; what only media tiles have follows. */
+/* Upkeep (who, when) is its own group below the uses, set apart by a little space like in the other tiles. */
+.upload-facts {
+    margin-top: 6px;
+}
 figure.selected {
     border-color: var(--d-accent);
     box-shadow: 0 0 0 1px var(--d-accent);

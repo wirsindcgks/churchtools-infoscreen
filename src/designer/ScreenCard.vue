@@ -144,16 +144,17 @@ function settings(): void {
                     <span class="alive-dot" :class="`is-${alive.kind}`" aria-hidden="true" />
                     <span>{{ alive.text }}</span>
                 </li>
+                <li>
+                    <Icon name="id" :size="16" />
+                    <code :title="`Adresse für das Gerät: ${screen.slug}`">{{ screen.slug }}</code>
+                </li>
                 <li :title="portrait ? 'Hochkant' : 'Quer'">
                     <Icon :name="portrait ? 'portrait' : 'landscape'" :size="16" />
                     {{ portrait ? 'Hochkant' : 'Quer' }}
                 </li>
-                <li>
-                    <code :title="`Adresse für das Gerät: ${screen.slug}`">{{ screen.slug }}</code>
-                </li>
                 <li
                     :title="byRule ? `Läuft jetzt nach Zeitplan – ${shown?.slideCount ?? 0} Slides` : `Standard-Playlist – ${shown?.slideCount ?? 0} Slides`"
-                    :class="{ 'by-rule': byRule }"
+                    :class="['d-facts-gap', { 'by-rule': byRule }]"
                     data-testid="screen-playlist"
                 >
                     <Icon name="list" :size="16" />
@@ -174,11 +175,11 @@ function settings(): void {
                         {{ scheduleLabel }}
                     </button>
                 </li>
-                <li v-if="edited?.when" :title="edited.whenTitle!" data-testid="screen-edited-at">
+                <li v-if="edited?.when" class="d-facts-gap" :title="edited.whenTitle!" data-testid="screen-edited-at">
                     <Icon name="clock" :size="16" />
                     <span>{{ edited.when }}</span>
                 </li>
-                <li v-if="edited?.by" :title="edited.byTitle!" data-testid="screen-edited-by">
+                <li v-if="edited?.by" :class="{ 'd-facts-gap': !edited.when }" :title="edited.byTitle!" data-testid="screen-edited-by">
                     <Icon name="person" :size="16" />
                     <span>{{ edited.by }}</span>
                 </li>
@@ -209,7 +210,8 @@ function settings(): void {
     flex: none;
     width: 0.65em;
     height: 0.65em;
-    margin-top: 0.4em;
+    /* Centred in the 16 px of an icon, so the text lines up with the lines below (Plan.md 76). */
+    margin: 0.4em calc((16px - 0.65em) / 2) 0;
     border-radius: 50%;
     background: var(--d-text-muted);
 }

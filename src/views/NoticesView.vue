@@ -239,7 +239,7 @@ async function end(group: BannerGroup): Promise<void> {
                                     <Icon name="timer" :size="16" />
                                     <span>{{ endLabel(group) }}</span>
                                 </li>
-                                <li>
+                                <li class="d-facts-gap">
                                     <Icon name="list" :size="16" />
                                     <span>{{ group.playlists.map((o) => o.playlist.name).join(', ') }}</span>
                                 </li>
@@ -261,11 +261,11 @@ async function end(group: BannerGroup): Promise<void> {
                                     <Icon name="tv" :size="16" />
                                     <span>auf keinem Screen</span>
                                 </li>
-                                <li v-if="edited(group)?.when" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
+                                <li v-if="edited(group)?.when" class="d-facts-gap" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
                                     <Icon name="clock" :size="16" />
                                     <span>{{ edited(group)!.when }}</span>
                                 </li>
-                                <li v-if="edited(group)?.by" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
+                                <li v-if="edited(group)?.by" :class="{ 'd-facts-gap': !edited(group)?.when }" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
                                     <Icon name="person" :size="16" />
                                     <span>{{ edited(group)!.by }}</span>
                                 </li>
@@ -306,7 +306,7 @@ async function end(group: BannerGroup): Promise<void> {
                                     <Icon name="timer" :size="16" />
                                     <span>{{ endLabel(group) }}</span>
                                 </li>
-                                <li>
+                                <li class="d-facts-gap">
                                     <Icon name="list" :size="16" />
                                     <span>{{ group.playlists.map((o) => o.playlist.name).join(', ') }}</span>
                                 </li>
@@ -318,11 +318,11 @@ async function end(group: BannerGroup): Promise<void> {
                                     <Icon name="tv" :size="16" />
                                     <span>auf keinem Screen</span>
                                 </li>
-                                <li v-if="edited(group)?.when" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
+                                <li v-if="edited(group)?.when" class="d-facts-gap" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
                                     <Icon name="clock" :size="16" />
                                     <span>{{ edited(group)!.when }}</span>
                                 </li>
-                                <li v-if="edited(group)?.by" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
+                                <li v-if="edited(group)?.by" :class="{ 'd-facts-gap': !edited(group)?.when }" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
                                     <Icon name="person" :size="16" />
                                     <span>{{ edited(group)!.by }}</span>
                                 </li>

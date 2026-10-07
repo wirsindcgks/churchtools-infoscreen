@@ -424,6 +424,20 @@ zweiten Liste unten.
     - Die Kalenderauswahl steht in allen Bausteinen über eine Komponente (`CalendarField.vue`).
     - **Gebaut vom Umsetzer, durchgesehen von Opus mit Bild und veröffentlicht als `v0.18.0` am 2026-10-07.** Beim Durchsehen fiel auf, dass vier Tests in `e2e/rooms.spec.ts` seit `v0.17.1` („Ort geht vor Raum") die alte Regel erwarteten – die Pflichtprüfung fährt keine e2e-Tests. Nachgezogen im Aufräumen danach; seither steht in `AGENTS.md`, dass betroffene e2e-Tests im selben PR mitgehen.
 
+76. **Metadaten der Kacheln: jede Angabe mit Icon, zusammengehörige nebeneinander** *(Nutzer, 2026-10-07: „Um die Lesbarkeit noch zu verbessern, sollen alle Metadaten Icons bekommen und das Icon jeweils in Schwarz davor platziert sein. Die ID des Screens hat beispielsweise noch kein Icon. Passe auch gerne die Sortierung an, dass die Inhalte, die zusammen gehören, beieinander stehen")*. Vorgezogen wie die Punkte 64 bis 75; nur Darstellung – kein Schema, keine Rechte, kein Eingriff in ChurchTools. Gebaut vom Umsetzer, Opus sieht durch.
+    - **Wo.** Alle Kacheln teilen die Liste `d-facts` (`theme.css`): `ScreenCard.vue`, `PlaylistCard.vue`, `SchedulesView.vue`, `NoticesView.vue` und die Angaben unter den Medien in `MediaGrid.vue`. Eine gemeinsame Regel statt fünf Einzelfassungen (Punkt 67).
+    - **Icon in Schwarz.** Heute erbt das Icon die gedämpfte Textfarbe der Zeile. Neu steht es in der Textfarbe des Designers (`--d-text`, im Dunkelmodus entsprechend hell), der Text daneben bleibt gedämpft. Jede Angabe hat ein Icon; einzige Ausnahme ist „und N weitere" unter den Medien, das die Zeile darüber fortsetzt.
+    - **Was fehlt.** Am Screen die **Adresse** (das Kürzel der Player-Adresse, heute ein `<code>` ohne Icon): ein neues Icon „#" (`id`; `link` ist bei den verknüpften Slides vergeben). Und das **Lebenszeichen** (Punkt 59), das nur einen farbigen Punkt hat: ein Signal-Icon in Schwarz davor; der farbige Punkt bleibt als Zustand.
+    - **Reihenfolge nach Zusammengehörigem,** die Gruppen durch einen kleinen Abstand getrennt, nicht durch Linien:
+      1. **Screen:** *Gerät* (Lebenszeichen, Adresse, Format) – *Inhalt* (Playlist, Zeitplan) – *Pflege* (zuletzt geändert, von wem).
+      2. **Playlist:** *Aufbau* (Format, Zahl der Slides) – *Einsatz* (Screens) – *Pflege*.
+      3. **Zeitplan, Hinweis, Medium:** nach demselben Dreiklang *Was – Wo/Wann – Pflege*; Abweichungen gibt der Umsetzer zurück.
+    - **Entschieden (Opus, 2026-10-07; der Nutzer kann widersprechen).** Der farbige Punkt des Lebenszeichens bleibt neben dem Icon – Farbe allein trägt keine Rot-Grün-Schwäche, der Text schon, der Punkt ist der schnelle Blick. „Pflege" bleibt zweizeilig: Kacheln sind schmal, eine umbrechende Zeile wäre unruhiger als zwei feste.
+    - **Tests** *(seit dem 2026-10-07 im selben PR, `AGENTS.md`)*. Die `data-testid`-Namen bleiben. Vor dem Bau per `grep` die Unit-Tests der Karten (`ScreenCard.test.ts` u. a.) und die e2e-Tests mit `d-facts`-Zeilen suchen; prüft einer die Reihenfolge, wird die Erwartung angepasst, nicht die Logik.
+    - **Bilder.** Danach `npm run docs:screenshots` (liest nur) – es erzeugt `docs/bilder/` neu, mit dem Inspektor aus Punkt 75 und den neuen Kacheln.
+    - **Fertig,** wenn jede Angabe jeder Kachel ein schwarzes Icon trägt, alle fünf Bereiche demselben Schema folgen, Typprüfung, Lint, Unit-Tests und die betroffenen e2e-Tests grün sind und die Bilder neu sind.
+    - **Gebaut vom Umsetzer, durchgesehen von Opus mit Bild und veröffentlicht als `v0.18.1` am 2026-10-07.** Beim Durchsehen entschieden (Nutzer, 2026-10-07: „Zeitplan-Regeln und Status behalten die farbigen Icons"): Die Regelzeilen der Zeitpläne behalten Farbfeld und Rang – sie sind die Legende der Wochen-Zeitleiste –, und das Lebenszeichen behält seinen farbigen Punkt ohne zusätzliches Signal-Icon. Mit dem Release entstanden alle Bilder in `docs/bilder/` neu.
+
 ## Funktionsumfang – Später – Stand bis zum 2026-10-01
 
 Die Liste stand im Plan unter „Funktionsumfang" und ist am 2026-10-01 aufgelöst worden: Gebautes ist gestrichen,
