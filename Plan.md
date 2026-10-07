@@ -12,7 +12,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 
 1. **Ein Gerät auf der Produktivinstanz ans Laufen bringen** – **der Ablauf in Stufen steht in Punkt 57** (freigegeben am 2026-10-01); bis das Gerät bestanden hat, gilt ein Feature-Stopp, nur Fehlerbehebungen. Ein Gerät hängt nie an der Testinstanz (entschieden am 2026-09-28, F1). **Erledigt:** Vorprüfung, Installation (2026-10-05), Einspielen von `v0.18.1` samt „Rechte aktualisieren" (2026-10-07, Nutzer). Offen, in dieser Reihenfolge:
    1. **P3 wiederholen** mit einem typischen Mitgliedskonto (auf der Testinstanz bestanden am 2026-09-28).
-   2. **P4, ein Raspberry über mehrere Tage** – zuerst mit Testinhalten in einer eigenen Playlist. Dabei ansehen:
+   2. **P4 läuft seit dem 2026-10-06, 22:30: zwei Raspberry an zwei Fernsehern**, jeder zeigt eine Präsentation der Produktivinstanz (Nutzer). Der Nutzer ist nicht vor Ort im Netz; Rückmeldung gibt zuerst das Lebenszeichen. **Erste Prüfung am 2026-10-08:** Nach dem nächtlichen Neuladen holen die Pis `v0.18.1` und melden sich zum ersten Mal – beide Kacheln sollten „online" zeigen. Die drei Nächte aus Punkt 57, Stufe 6, zählen ab dieser Nacht. Dabei ansehen:
       - Laufschrift, nächtliches Neuladen, ein Netzausfall;
       - ein Beiträge-Block in der Test-Playlist (Archiv, Punkt 33);
       - der Service Worker: ob die Skripte der ChurchTools-Seite ohne Netz stören und was bei einem langen Ausfall mit abgelaufener Sitzung passiert (Archiv, Punkt 37; Risiko 2);
