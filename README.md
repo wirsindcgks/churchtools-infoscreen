@@ -1,11 +1,7 @@
 # ChurchTools Infoscreen Designer
 
-[![CI](https://github.com/wirsindcgks/churchtools-infoscreen/actions/workflows/ci.yml/badge.svg)](https://github.com/wirsindcgks/churchtools-infoscreen/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/wirsindcgks/churchtools-infoscreen)](https://github.com/wirsindcgks/churchtools-infoscreen/releases)
 [![Lizenz: GPL v3](https://img.shields.io/github/license/wirsindcgks/churchtools-infoscreen)](LICENSE)
-[![Downloads](https://img.shields.io/github/downloads/wirsindcgks/churchtools-infoscreen/total)](https://github.com/wirsindcgks/churchtools-infoscreen/releases)
-[![Letzter Commit](https://img.shields.io/github/last-commit/wirsindcgks/churchtools-infoscreen)](https://github.com/wirsindcgks/churchtools-infoscreen/commits/main)
-[![Für ChurchTools](https://img.shields.io/badge/f%C3%BCr-ChurchTools-1f6feb)](https://church.tools)
 [![Mit KI entwickelt](https://img.shields.io/badge/mit_KI_entwickelt-Claude_Code-8A2BE2)](AGENTS.md)
 
 Eine Extension für [ChurchTools](https://church.tools), mit der eine Gemeinde die Bildschirme in ihrem Foyer selbst
