@@ -99,12 +99,12 @@ Weil ein Titel Namen enthalten kann („Gespräch Familie X"), lässt er sich **
 
 ## Der Raum am Termin
 
-Beim **Nächsten Termin** und bei der **Terminliste als Karten** zeigt der Schalter **„Raum zeigen"** die gebuchten Räume
-neben dem Ort, mit der Pin-Nadel: „Gemeindezentrum · Saal". Nur bestätigte Buchungen von Räumen zählen, und am Termin
+Beim **Nächsten Termin** und bei der **Terminliste als Karten** zeigt der Schalter **„Raum zeigen"** die gebuchten Räume,
+mit der Pin-Nadel: „Saal, Raum 01". Ist am Termin ein Ort eingetragen, steht nur dieser – wie im WordPress-Plugin, damit
+nichts doppelt steht; die Räume springen ein, wo kein Ort gepflegt ist. Nur bestätigte Buchungen von Räumen zählen, und am Termin
 steht nur der Raumname, nie ein Buchungstitel. Das Gerät braucht dafür das Recht, alle Räume zu sehen – „Rechte
 aktualisieren" gibt es ihm (siehe [Rechte](Rechte.md)). Hat ein Baustein mehrere Kalender, lässt sich
-„Räume zeigen für:" je Kalender abschalten – etwa wo für einen Termin viele Räume gebucht werden; ein eingetragener Ort
-bleibt stehen.
+„Räume zeigen für:" je Kalender abschalten – etwa wo für einen Termin viele Räume gebucht werden.
 
 ## Die Dienste am Termin
 
