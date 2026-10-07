@@ -795,7 +795,7 @@ const LAYERS = [
                         >
                         Terminbild zeigen
                     </label>
-                    <!-- Plan.md, 50: the booked rooms beside the place; the list shows them as cards only. -->
+                    <!-- Plan.md, 50: the booked rooms where no place is entered; the list shows them as cards only. -->
                     <div v-if="block.type === 'next-appointment' || listLayout(block, themeOf(stage)) === 'cards'" class="hint-row hint-row--check">
                         <label class="check">
                             <input
@@ -807,7 +807,7 @@ const LAYERS = [
                             Raum zeigen
                         </label>
                         <InfoHint>
-                            Zeigt die gebuchten Räume des Termins neben dem Ort – nur bestätigte Buchungen, keine, die noch warten. Damit der Fernseher sie sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, alle Räume zu sehen; zeigt kein Screen mehr Räume an Terminen, nimmt „Rechte aktualisieren“ es zurück.
+                            Zeigt die gebuchten Räume des Termins, wo kein Ort eingetragen ist – ein eingetragener Ort geht vor, damit nichts doppelt steht. Nur bestätigte Buchungen, keine, die noch warten. Damit der Fernseher sie sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, alle Räume zu sehen; zeigt kein Screen mehr Räume an Terminen, nimmt „Rechte aktualisieren“ es zurück.
                         </InfoHint>
                     </div>
                     <!-- Plan.md, 51: rooms can be left out for single calendars. -->

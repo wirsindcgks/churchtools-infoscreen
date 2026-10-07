@@ -4,6 +4,15 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.17.1] – 2026-10-07
+
+### Behoben
+
+- **Ort und Raum stehen am Termin nicht mehr doppelt.** Bisher zeigten „Nächster Termin" und die Terminliste als Karten
+  Ort und gebuchten Raum nebeneinander – hießen beide „Eventhalle", stand dort „Eventhalle · Eventhalle". Es gilt jetzt
+  die Regel des WordPress-Plugins: Ist am Termin ein Ort eingetragen, steht nur dieser; die gebuchten Räume springen
+  ein, wo kein Ort gepflegt ist. Die Einstellung „Raum zeigen" bleibt, wie sie ist.
+
 ## [0.17.0] – 2026-10-07
 
 ### Neu
@@ -875,6 +884,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.17.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.17.1
 [0.17.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.17.0
 [0.16.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.16.0
 [0.15.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.15.1

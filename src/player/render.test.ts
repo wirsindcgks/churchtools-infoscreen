@@ -510,11 +510,17 @@ describe('the room at an appointment (Plan.md 50)', () => {
     const place = (block: Block, appointments: ReturnType<typeof appointment>, testid: string) =>
         render(makeSlide({ blocks: [block] }), { appointments }).find(`[data-testid="${testid}"]`);
 
-    it('puts the room after the place in one line, several rooms separated by commas', () => {
+    it('shows the place alone where one is entered – the booked rooms do not double it', () => {
         const place_ = { name: 'Gemeindezentrum' };
-        expect(place(next('card'), appointment(place_, booked(1)), 'next-place').text()).toBe('Gemeindezentrum · Saal');
-        expect(place(next('classic'), appointment(place_, booked(1, 3)), 'next-place').text()).toBe('Gemeindezentrum · Saal, Raum 01');
-        expect(place(list('cards'), appointment(place_, booked(1, 3)), 'list-place').text()).toBe('Gemeindezentrum · Saal, Raum 01');
+        expect(place(next('card'), appointment(place_, booked(1)), 'next-place').text()).toBe('Gemeindezentrum');
+        expect(place(next('classic'), appointment(place_, booked(1, 3)), 'next-place').text()).toBe('Gemeindezentrum');
+        expect(place(list('cards'), appointment(place_, booked(1, 3)), 'list-place').text()).toBe('Gemeindezentrum');
+        expect(place(list('cards'), appointment({ name: 'Saal' }, booked(1)), 'list-place').text()).toBe('Saal');
+    });
+
+    it('fills in the rooms where no place is entered, several separated by commas', () => {
+        expect(place(next('card'), appointment(null, booked(1, 3)), 'next-place').text()).toBe('Saal, Raum 01');
+        expect(place(list('cards'), appointment(null, booked(1, 3)), 'list-place').text()).toBe('Saal, Raum 01');
     });
 
     it('shows the room alone without a place, and the place alone without a room', () => {
@@ -533,8 +539,9 @@ describe('the room at an appointment (Plan.md 50)', () => {
         expect(place({ ...next('card'), roomsOffCalendarIds: [2] } as Block, appointment(place_, booked(1)), 'next-place').text()).toBe('Gemeindezentrum');
         // The plain layout shows the place only with rooms: a calendar left out has none.
         expect(place({ ...next('classic'), roomsOffCalendarIds: [2] } as Block, appointment(place_, booked(1)), 'next-place').exists()).toBe(false);
-        // Another calendar is left out: the rooms stay.
-        expect(place({ ...list('cards'), roomsOffCalendarIds: [9] } as Block, appointment(place_, booked(1)), 'list-place').text()).toBe('Gemeindezentrum · Saal');
+        // Without a place, a calendar left out has no line; another calendar is left out: the rooms stay.
+        expect(place({ ...list('cards'), roomsOffCalendarIds: [2] } as Block, appointment(null, booked(1)), 'list-place').exists()).toBe(false);
+        expect(place({ ...list('cards'), roomsOffCalendarIds: [9] } as Block, appointment(null, booked(1)), 'list-place').text()).toBe('Saal');
     });
 
     it('shows no room where the block does not ask, and none in the list of rows', () => {
