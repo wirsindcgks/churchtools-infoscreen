@@ -48,7 +48,8 @@ const BOOKINGS: Record<number, unknown[]> = {
 
 /**
  * An appointment as `/calendars/appointments` sends it with `include[]=bookings`: the bookings beside `base`,
- * with fields that must never show – a confirmed room, a confirmed item, a waiting room.
+ * with fields that must never show – a confirmed room, a confirmed item, a waiting room. No place is entered,
+ * so the booked room fills in (Plan.md 50; a place wins since `v0.17.1`).
  */
 const APPOINTMENT = {
     appointment: {
@@ -57,7 +58,7 @@ const APPOINTMENT = {
             title: 'Sonntagsgottesdienst',
             allDay: false,
             calendar: { id: 1, name: 'Gottesdienste', color: '#2e7d8c' },
-            address: { name: 'Kirchsaal' },
+            address: null,
         },
         calculated: { startDate: '2026-10-04T08:00:00Z', endDate: '2026-10-04T09:30:00Z' },
     },
@@ -373,7 +374,7 @@ for (const size of [
     });
 }
 
-test('the room at an appointment: beside the place, in both layouts of the next appointment', async ({ page }) => {
+test('the room at an appointment without a place, in both layouts of the next appointment', async ({ page }) => {
     const church = await fakeChurch(page, { bookingRequests: [], appointmentRequests: [] });
     await newBlock(page, 'next-appointment');
 
@@ -381,7 +382,7 @@ test('the room at an appointment: beside the place, in both layouts of the next 
     await expect.poll(() => church.appointmentRequests!.some((r) => r.getAll('include[]').includes('bookings'))).toBe(true);
     const place = stage(page).getByTestId('next-place');
     await page.getByTestId('next-layout').selectOption('card');
-    await expect(place).toHaveText('Kirchsaal · Saal');
+    await expect(place).toHaveText('Saal');
     await page.screenshot({ path: 'test-results/rooms-at-appointment.png' });
     // "Raum zeigen" reads like "Terminbild zeigen" above it – same size, same colour (wish of the user, 2026-09-30).
     const look = (text: string) =>
@@ -391,17 +392,17 @@ test('the room at an appointment: beside the place, in both layouts of the next 
         });
     expect(await look('Raum zeigen')).toBe(await look('Terminbild zeigen'));
     await page.getByTestId('next-layout').selectOption('classic');
-    await expect(place).toHaveText('Kirchsaal · Saal');
+    await expect(place).toHaveText('Saal');
     await expect(stage(page)).not.toContainText('Geheimer Buchungstitel');
     await expect(stage(page)).not.toContainText('Beamer');
 
-    // Off: the card shows the place alone, the plain layout none – as before.
+    // Off: without a place there is nothing to say, in both layouts.
     await page.getByTestId('show-rooms').uncheck();
     await expect(place).toHaveCount(0);
     await page.getByTestId('next-layout').selectOption('card');
-    await expect(place).toHaveText('Kirchsaal');
+    await expect(place).toHaveCount(0);
     await page.getByTestId('show-rooms').check();
-    await expect(place).toHaveText('Kirchsaal · Saal');
+    await expect(place).toHaveText('Saal');
 });
 
 test('the room in the list of appointments: as cards, not as rows', async ({ page }) => {
@@ -409,7 +410,7 @@ test('the room in the list of appointments: as cards, not as rows', async ({ pag
     await newBlock(page, 'appointment-list');
 
     await page.getByTestId('list-layout').selectOption('cards');
-    await expect(stage(page).getByTestId('list-place')).toHaveText('Kirchsaal · Saal');
+    await expect(stage(page).getByTestId('list-place')).toHaveText('Saal');
     await expect(page.getByTestId('show-rooms')).toBeVisible();
 
     await page.getByTestId('list-layout').selectOption('rows');
@@ -505,23 +506,23 @@ test('the services in the list of appointments: as cards, not as rows', async ({
     await expect(stage(page)).not.toContainText('Anna Beispiel');
 });
 
-test('rooms can be left out for single calendars: the room goes, the place stays', async ({ page }) => {
+test('rooms can be left out for single calendars: the room goes, an entered place stays', async ({ page }) => {
     await fakeChurch(page, { bookingRequests: [], second: true });
     await newBlock(page, 'appointment-list');
     await page.getByTestId('list-layout').selectOption('cards');
     const places = stage(page).getByTestId('list-place');
-    await expect(places).toHaveText(['Kirchsaal · Saal', 'Jugendhaus · Gruppenraum 1']);
+    // The first has no place, its room fills in; the second has one, and it wins over its room (v0.17.1).
+    await expect(places).toHaveText(['Saal', 'Jugendhaus']);
 
     await openSection(page, 'rooms-for');
     await expect(page.getByTestId('rooms-calendar-1')).toBeChecked();
     await page.getByTestId('rooms-calendar-2').uncheck();
-    await expect(places).toHaveText(['Kirchsaal · Saal', 'Jugendhaus']);
+    await expect(places).toHaveText(['Saal', 'Jugendhaus']);
     await page.getByTestId('rooms-calendar-2').check();
-    await expect(places).toHaveText(['Kirchsaal · Saal', 'Jugendhaus · Gruppenraum 1']);
 
-    // The other way round: the room of the first calendar goes.
+    // The room of the first calendar goes – and with it the only line of that card.
     await page.getByTestId('rooms-calendar-1').uncheck();
-    await expect(places).toHaveText(['Kirchsaal', 'Jugendhaus · Gruppenraum 1']);
+    await expect(places).toHaveText(['Jugendhaus']);
 });
 
 /** A list of cards in four states of the day: with everything, a very long place, none, and a Thursday in September. */
@@ -567,8 +568,8 @@ test('the cards of the list: date column of one width, place under the date, thr
     };
 
     await open('normal');
-    // Place and room stand in the date column and never widen it; the long place ends with an ellipsis.
-    await expect(stage(page).getByTestId('list-card').first().locator('.card-when').getByTestId('list-place')).toHaveText('Kirchsaal · Saal');
+    // The place stands in the date column and never widens it – it wins over the booked room; a long one ends with an ellipsis.
+    await expect(stage(page).getByTestId('list-card').first().locator('.card-when').getByTestId('list-place')).toHaveText('Kirchsaal');
     const clipped = stage(page).getByTestId('list-place').nth(1);
     expect(await clipped.locator('.meta-text').evaluate((el) => el.scrollWidth > el.clientWidth)).toBe(true);
     const widths = await stage(page).getByTestId('list-card').locator('.card-when').evaluateAll((els) => els.map((el) => Math.round(el.getBoundingClientRect().width)));

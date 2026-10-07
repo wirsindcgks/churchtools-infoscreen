@@ -69,6 +69,9 @@ kommt als eigene Zeile in „Auf einen Blick".
 - **Bei Opus bleibt,** was Urteil braucht: Messungen an ChurchTools samt Academy-Recherche, Schemaänderungen,
   Rechte, alles, was die Testinstanz berührt, und die Durchsicht des Ergebnisses.
 - **Wer beim Umsetzen auf eine offene Frage stößt, gibt sie zurück,** statt zu raten.
+- **Tests gehen mit der Änderung.** Wer Verhalten ändert, passt im selben PR die Tests an, die es prüfen – auch die
+  e2e-Tests, die die Pflichtprüfung `check` nicht fährt: per `grep` in `e2e/` nach testids und Texten suchen und die
+  Treffer lokal laufen lassen. *(Seit 2026-10-07: `v0.17.1` ließ vier Tests in `e2e/rooms.spec.ts` unbemerkt rot.)*
 
 ## Geheimnisse und Fixtures
 
