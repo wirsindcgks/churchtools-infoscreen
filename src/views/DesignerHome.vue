@@ -5,10 +5,11 @@
  * on the left, search, tiles with the first slide of each screen. Below
  * 48rem the filters become a row to swipe and the tiles one or two columns.
  */
-import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
+import { computed, onMounted, ref, shallowRef } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName, NotAuthenticatedError } from '../ct/client';
 import { aliveState } from '../designer/alive';
+import { useHeartbeats } from '../designer/useHeartbeats';
 import CreateScreenDialog from '../designer/CreateScreenDialog.vue';
 import { FILTERS, formatFilter } from '../designer/format-filter';
 import GroupCard from '../designer/GroupCard.vue';
@@ -21,7 +22,6 @@ import SearchField from '../designer/SearchField.vue';
 import ScreenCard from '../designer/ScreenCard.vue';
 import ScheduleDialog from '../designer/ScheduleDialog.vue';
 import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
-import type { HeartbeatDoc } from '../model/heartbeat';
 import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { ruleCalendarIds, runningNow } from '../designer/running';
@@ -71,18 +71,7 @@ const current = computed(() => FILTERS.find((f) => f.key === filter.value)!);
 const theme = ref<ThemeDoc | null>(null);
 
 /** The signs of life by screen slug (Plan.md 59); null while this person cannot see them or loading failed. */
-const heartbeats = ref<Map<string, HeartbeatDoc> | null>(null);
-/** The clock the tiles compare with – moved along with the minutely reload. */
-const now = ref(new Date());
-const ALIVE_REFRESH_MS = 60_000;
-let aliveTimer: ReturnType<typeof setInterval> | undefined;
-
-/** A failure leaves the line out without a message. */
-async function refreshHeartbeats(): Promise<void> {
-    if (!repository.value) return;
-    heartbeats.value = await repository.value.listHeartbeats().catch(() => null);
-    now.value = new Date();
-}
+const { heartbeats, now, refreshHeartbeats } = useHeartbeats(repository);
 
 const aliveOf = (slug: string) =>
     heartbeats.value ? aliveState(heartbeats.value.get(slug), now.value, context.timeZone) : null;
@@ -145,7 +134,6 @@ onMounted(async () => {
         // An administrator's visit creates the category of the signs of life; nobody else may (Plan.md 59).
         if (isAdmin) await handle.repository.ensureStatusCategory().catch(() => null);
         repository.value = handle.repository;
-        aliveTimer = setInterval(() => void refreshHeartbeats(), ALIVE_REFRESH_MS);
         try {
             await refresh();
         } catch (e) {
@@ -160,8 +148,6 @@ onMounted(async () => {
                 : `ChurchTools ist gerade nicht erreichbar${e instanceof Error ? ` (${e.message})` : ''}.`;
     }
 });
-
-onBeforeUnmount(() => clearInterval(aliveTimer));
 
 /** A new screen comes with its own playlist, named after it: straight into its editor. */
 async function created(playlistId: string): Promise<void> {
