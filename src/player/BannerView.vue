@@ -3,7 +3,7 @@
  * The band over every slide of a playlist (schema 1.10, Plan.md 32): running
  * text or a standing notice. It lies on the stage beside the slides, so a
  * change of slide does not start it over. It runs by a CSS transform only –
- * the compositor moves one layer, as for the hourglass, which a Pi manages.
+ * the compositor moves one layer, as for the loading screen, which a Pi manages.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import type { Banner } from '../model/schema';
