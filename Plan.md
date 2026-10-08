@@ -38,6 +38,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 
 - **Format einer Playlist nachträglich wechseln** (quer ↔ hoch), als Umrechnung mit Vorschau – heute wird das Format nur beim Anlegen gewählt. *Nutzer: „könnte ich mir vorstellen, dass es benötigt wird."*
 - **Export und Import** einer Playlist als JSON, etwa um sie von der Testinstanz auf die Produktivinstanz zu bringen; dazu Vorlagen für neue Playlists oder Slides. *Nutzer: wie oben.*
+- **Hinweis „läuft gerade auf einem Fernseher“** an den Playlist-Kacheln und beim Bearbeiten, damit man merkt, dass eine Änderung sofort wirkt. *Nutzer, 2026-10-08.* Braucht vermutlich keine neuen Daten: Das Lebenszeichen (Punkt 59) trägt schon die `playlistId`, die zur Zeit läuft; „live“ wäre eine Playlist, wenn ein Screen online ist (`aliveState`) und diese Id meldet. Das Lebenszeichen ist bis zu 15 Minuten alt (`ALIVE_WINDOW_MS`), der Hinweis darf also nur „läuft auf …“ sagen, nicht „läuft jetzt“. Offen: Wortlaut, ob er auch beim Bearbeiten einzelner Slides erscheint, und der Fall, dass ein Zeitplan die Playlist erst später aufruft. Reine Darstellung, kein Schema; wartet auf das Ende des Feature-Stopps (P4).
 
 **Gestrichen am 2026-10-01 (Nutzer):** der Umschalter „läuft gerade" auf der Kachel (der Zeitplan ist seit `v0.4.2` einen Klick aufs Bild entfernt), die Warnung bei schlechter Lesbarkeit (die Vorschau zeigt es), die Vorschau in einem stilisierten Bildschirm (reine Optik), eigene Skripte in einem Web-Code-Block (trägt unter der CSP nicht, G15) und Auswertungen.
 
