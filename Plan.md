@@ -410,6 +410,7 @@ Hier stehen nur Punkte, die noch nicht veröffentlicht sind, mit vollem Text. Di
     - **Zeitpunkt.** Ändert den Player – genau das, was P4 gerade prüft. Deshalb Entwurfs-PR, gemergt und veröffentlicht erst nach P4, zusammen mit Punkt 77 als `v0.19.0`.
     - **Beim Release:** `CHANGELOG.md`; vor dem Mergen auf den dann aktuellen `main` bringen und `player.spec.ts` erneut laufen lassen.
     - **Am Pi ansehen, nach dem Einspielen:** ob die Szene beim Start und beim nächtlichen Neuladen flüssig läuft; ob der Chromium des Pi `color-mix` kennt (ab Version 111, `chrome://version`) – sonst fehlen Flächen der Szene.
+    - **Keine Mindestdauer** *(Nutzer, 2026-10-08: „wir bauen sie ein, verändern allerdings nicht an der Anzeigedauer“)*. Auf der Testinstanz lief die Szene so kurz, dass man nichts erkannte; trotzdem wartet der Player nicht künstlich – nach einem Fehler mitten in einer Veranstaltung kämen die Inhalte sonst über fünf Sekunden später, und neun e2e-Dateien erwarten den Player binnen fünf Sekunden. Zum Ansehen hält man die Antwort von ChurchTools zurück wie `e2e/player.spec.ts`; ein Vorschau-Parameter, der den Ladebildschirm stehen lässt, wäre ein eigener Punkt nach P4.
     - **Offen, Nutzer:** Statt „Lade „…“ …“ steht nur noch der Name. Hängt ein Gerät dauerhaft im Laden, fehlt das Wort „Lade“ als Hinweis; die Animation trägt die Aussage. Belassen, bis jemand es vermisst.
 
 ### Verzeichnis der erledigten Punkte
