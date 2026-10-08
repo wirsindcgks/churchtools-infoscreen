@@ -14,6 +14,7 @@ import { useRotation } from '../player/rotation';
 import { activePlaylistId } from '../player/schedule';
 import { registerPlayerServiceWorker } from '../player/service-worker';
 import { fitStage } from '../player/stage';
+import { loadingVars } from '../player/theme';
 import { bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
 import SlideView from '../player/SlideView.vue';
@@ -162,6 +163,10 @@ watch(
 );
 
 const viewport = reactive({ width: window.innerWidth, height: window.innerHeight });
+/** The church's colours while loading, once the device knows them. */
+const loadingStyle = computed(() => loadingVars(state?.screen?.theme));
+/** The screen's name once the device knows it, its address before. */
+const loadingName = computed(() => state?.screen?.screen.name || slug);
 const stage = computed(() => state?.screen?.screen.stage ?? { width: 1920, height: 1080 });
 const fit = computed(() => fitStage(viewport, stage.value, state?.screen?.screen.overscanPercent ?? 0));
 function onResize(): void {
@@ -192,16 +197,37 @@ onBeforeUnmount(() => {
         <p v-if="!slug" class="message" role="alert">Kein Screen angegeben (Parameter „screen" fehlt).</p>
         <!--
             Loading – also while a screen with rules waits a moment for the clock check,
-            instead of showing the wrong playlist. The hourglass turns by a CSS transform
-            only: the compositor moves one layer, nothing is painted again, and it is gone
-            once the screen shows.
+            instead of showing the wrong playlist. A small scene tells what happens: slides
+            are gathered, a title, an image and lines of text are set on a screen, then a
+            shine polishes it for the TV; below, only the screen's name. In the church's colours (theme accent, text and
+            background) as soon as the device knows them. Everything moves by transform and
+            opacity only: the compositor moves layers painted once, which a Pi manages. All
+            parts share one cycle, so they stay in step; the scene fades in after a short
+            pause, so a quick load does not flash.
         -->
-        <div v-else-if="!state || state.phase === 'loading'" class="message loading" data-testid="player-loading">
-            <svg class="hourglass" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 2h12M6 22h12M7 2c0 5 5 7 5 10s-5 5-5 10M17 2c0 5-5 7-5 10s5 5 5 10" />
-                <path class="sand" d="M9.5 19.5h5l-2.5-3z" />
-            </svg>
-            <span>Lade „{{ slug }}“ …</span>
+        <div
+            v-else-if="!state || state.phase === 'loading'"
+            class="message loading"
+            :style="loadingStyle"
+            data-testid="player-loading"
+        >
+            <div class="loading-inner">
+                <div class="scene" aria-hidden="true">
+                    <span class="card card-back" />
+                    <span class="card card-mid" />
+                    <div class="screen">
+                        <span class="piece title" />
+                        <span class="piece image" />
+                        <span class="piece line line-1" />
+                        <span class="piece line line-2" />
+                        <span class="piece line line-3" />
+                        <span class="shine" />
+                    </div>
+                    <span class="sparkle" />
+                    <span class="stand" />
+                </div>
+                <span class="label">{{ loadingName }}</span>
+            </div>
         </div>
         <p v-else-if="state.phase === 'error'" class="message" role="alert">{{ state.error }}</p>
         <template v-else>
@@ -233,38 +259,309 @@ onBeforeUnmount(() => {
     overflow: hidden;
     cursor: none;
 }
-.loading {
+.message.loading {
+    --load-cycle: 5.6s;
+    background: var(--load-bg);
+    color: var(--load-text);
+}
+.loading-inner {
+    display: flex;
     flex-direction: column;
-    gap: 0.6em;
+    align-items: center;
+    /* Opacity only, like everything below: a quick load shows nothing at all. */
+    animation: loading-in 0.8s ease-out 0.4s both;
 }
-.hourglass {
-    width: 2.2em;
-    height: 2.2em;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.5;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    animation: hourglass-turn 2.4s ease-in-out infinite;
+.scene {
+    position: relative;
+    width: 7em;
+    height: 4.6em;
+    margin-bottom: 1.1em;
 }
-.hourglass .sand {
-    fill: currentColor;
-    stroke: none;
-    opacity: 0.8;
+/* The slides gathered behind the screen. */
+.card,
+.screen {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 7em;
+    height: 3.94em;
+    border-radius: 0.22em;
 }
-/* Rest, then turn over – like a real one. Transform only: no layout, no repaint. */
-@keyframes hourglass-turn {
-    0%,
-    60% {
-        transform: rotate(0deg);
+.card {
+    background: color-mix(in srgb, var(--load-text) 6%, transparent);
+    box-shadow: inset 0 0 0 0.05em color-mix(in srgb, var(--load-text) 18%, transparent);
+}
+.card-back {
+    animation: card-back var(--load-cycle) cubic-bezier(0.2, 0.7, 0.2, 1) infinite;
+}
+.card-mid {
+    animation: card-mid var(--load-cycle) cubic-bezier(0.2, 0.7, 0.2, 1) infinite;
+}
+.screen {
+    overflow: hidden;
+    background: color-mix(in srgb, var(--load-text) 5%, var(--load-bg));
+    box-shadow:
+        inset 0 0 0 0.08em color-mix(in srgb, var(--load-text) 40%, transparent),
+        0 0.3em 0.9em color-mix(in srgb, #000 22%, transparent);
+}
+.stand {
+    position: absolute;
+    left: 50%;
+    top: 4.12em;
+    width: 1.6em;
+    height: 0.08em;
+    margin-left: -0.8em;
+    border-radius: 0.04em;
+    background: color-mix(in srgb, var(--load-text) 40%, transparent);
+}
+/* What the slide is made of, set in one by one. */
+.piece {
+    position: absolute;
+    border-radius: 0.06em;
+}
+.title {
+    left: 8%;
+    top: 13%;
+    width: 50%;
+    height: 11%;
+    background: var(--load-accent);
+    transform-origin: left center;
+    animation: piece-title var(--load-cycle) cubic-bezier(0.2, 0.7, 0.2, 1) infinite;
+}
+.image {
+    right: 8%;
+    top: 34%;
+    width: 34%;
+    height: 52%;
+    border-radius: 0.1em;
+    background: linear-gradient(
+        150deg,
+        color-mix(in srgb, var(--load-accent) 70%, transparent),
+        color-mix(in srgb, var(--load-accent) 25%, transparent)
+    );
+    animation: piece-image var(--load-cycle) cubic-bezier(0.2, 0.7, 0.2, 1) infinite;
+}
+.line {
+    left: 8%;
+    height: 6%;
+    background: color-mix(in srgb, var(--load-text) 35%, transparent);
+    transform-origin: left center;
+}
+.line-1 {
+    top: 39%;
+    width: 44%;
+    animation: piece-line-1 var(--load-cycle) cubic-bezier(0.2, 0.7, 0.2, 1) infinite;
+}
+.line-2 {
+    top: 54%;
+    width: 38%;
+    animation: piece-line-2 var(--load-cycle) cubic-bezier(0.2, 0.7, 0.2, 1) infinite;
+}
+.line-3 {
+    top: 69%;
+    width: 26%;
+    animation: piece-line-3 var(--load-cycle) cubic-bezier(0.2, 0.7, 0.2, 1) infinite;
+}
+/* The polish: a soft band of light sweeps across once the slide is complete. */
+.shine {
+    position: absolute;
+    top: -20%;
+    left: 0;
+    width: 30%;
+    height: 140%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        color-mix(in srgb, color-mix(in srgb, var(--load-accent) 25%, #fff) 55%, transparent),
+        transparent
+    );
+    transform: translateX(-150%) skewX(-18deg);
+    animation: shine var(--load-cycle) ease-in-out infinite;
+}
+.sparkle {
+    position: absolute;
+    right: -0.55em;
+    top: -0.6em;
+    width: 1.1em;
+    height: 1.1em;
+    background: var(--load-accent);
+    /* A four-pointed star. */
+    clip-path: polygon(50% 0, 61% 39%, 100% 50%, 61% 61%, 50% 100%, 39% 61%, 0 50%, 39% 39%);
+    opacity: 0;
+    animation: sparkle var(--load-cycle) ease-out infinite;
+}
+.label {
+    font-size: 0.75em;
+    letter-spacing: 0.04em;
+    opacity: 0.7;
+}
+/*
+ * One cycle, in steps: gather the slides (0–12 %), set title, image and lines
+ * (8–42 %), polish (46–66 %), hold, let it all go (86–96 %) and start over.
+ */
+@keyframes card-back {
+    0% {
+        opacity: 0;
+        transform: translate(1.4em, -0.1em);
     }
+    10%,
+    86% {
+        opacity: 1;
+        transform: translate(0.5em, -0.5em);
+    }
+    96%,
     100% {
-        transform: rotate(180deg);
+        opacity: 0;
+        transform: translate(0.5em, -0.5em);
     }
 }
+@keyframes card-mid {
+    0%,
+    4% {
+        opacity: 0;
+        transform: translate(1.4em, 0.1em);
+    }
+    14%,
+    86% {
+        opacity: 1;
+        transform: translate(0.25em, -0.25em);
+    }
+    96%,
+    100% {
+        opacity: 0;
+        transform: translate(0.25em, -0.25em);
+    }
+}
+@keyframes piece-title {
+    0%,
+    10% {
+        opacity: 0;
+        transform: scaleX(0);
+    }
+    18%,
+    86% {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+    96%,
+    100% {
+        opacity: 0;
+        transform: scaleX(1);
+    }
+}
+@keyframes piece-image {
+    0%,
+    18% {
+        opacity: 0;
+        transform: translateY(0.3em) scale(0.85);
+    }
+    28%,
+    86% {
+        opacity: 1;
+        transform: none;
+    }
+    96%,
+    100% {
+        opacity: 0;
+        transform: none;
+    }
+}
+@keyframes piece-line-1 {
+    0%,
+    24% {
+        opacity: 0;
+        transform: scaleX(0);
+    }
+    32%,
+    86% {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+    96%,
+    100% {
+        opacity: 0;
+        transform: scaleX(1);
+    }
+}
+@keyframes piece-line-2 {
+    0%,
+    29% {
+        opacity: 0;
+        transform: scaleX(0);
+    }
+    37%,
+    86% {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+    96%,
+    100% {
+        opacity: 0;
+        transform: scaleX(1);
+    }
+}
+@keyframes piece-line-3 {
+    0%,
+    34% {
+        opacity: 0;
+        transform: scaleX(0);
+    }
+    42%,
+    86% {
+        opacity: 1;
+        transform: scaleX(1);
+    }
+    96%,
+    100% {
+        opacity: 0;
+        transform: scaleX(1);
+    }
+}
+@keyframes shine {
+    0%,
+    46% {
+        transform: translateX(-150%) skewX(-18deg);
+    }
+    64%,
+    100% {
+        transform: translateX(420%) skewX(-18deg);
+    }
+}
+@keyframes sparkle {
+    0%,
+    58% {
+        opacity: 0;
+        transform: scale(0) rotate(0deg);
+    }
+    64% {
+        opacity: 1;
+        transform: scale(1) rotate(45deg);
+    }
+    76%,
+    100% {
+        opacity: 0;
+        transform: scale(0.2) rotate(90deg);
+    }
+}
+@keyframes loading-in {
+    from {
+        opacity: 0;
+    }
+}
+/* Less motion: the finished slide stands still. */
 @media (prefers-reduced-motion: reduce) {
-    .hourglass {
+    .loading-inner,
+    .card,
+    .piece,
+    .shine,
+    .sparkle {
         animation: none;
+    }
+    .card-back {
+        transform: translate(0.5em, -0.5em);
+    }
+    .card-mid {
+        transform: translate(0.25em, -0.25em);
     }
 }
 .message,

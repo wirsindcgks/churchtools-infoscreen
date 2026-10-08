@@ -117,14 +117,17 @@ test('digits on the stage have equal width, so a clock does not twitch', async (
     expect(Math.abs(widths[0]! - widths[1]!)).toBeLessThan(1);
 });
 
-test('while loading, an hourglass turns – and stands still for those who asked for less motion', async ({ page }) => {
+test('while loading, a slide is put together in the theme colours – and stands still for those who asked for less motion', async ({ page }) => {
     // ChurchTools does not answer yet: the player stays in its loading state.
     await page.route('**/api/whoami**', () => new Promise(() => {}));
     await page.goto('./player?screen=demo');
     const loading = page.getByTestId('player-loading');
-    await expect(loading).toContainText('Lade „demo“');
-    await expect(loading.locator('svg.hourglass')).toHaveCSS('animation-name', /^hourglass-turn/);
+    // The screen's name is not known yet: its address stands in.
+    await expect(loading).toHaveText('demo');
+    // No theme known yet on a first start: the theme's defaults.
+    await expect(loading).toHaveCSS('background-color', 'rgb(30, 41, 59)');
+    await expect(loading.locator('.piece.title')).toHaveCSS('animation-name', /^piece-title/);
     await page.screenshot({ path: 'test-results/player-loading.png' });
     await page.emulateMedia({ reducedMotion: 'reduce' });
-    await expect(loading.locator('svg.hourglass')).toHaveCSS('animation-name', 'none');
+    await expect(loading.locator('.piece.title')).toHaveCSS('animation-name', 'none');
 });
