@@ -44,7 +44,7 @@ function card(heartbeats: Map<string, HeartbeatDoc> | null | undefined) {
             return () => h(PlaylistCard, { overview, heartbeats, now: NOW });
         },
     });
-    return mount(Host, { global: { stubs: { RouterLink: true, SlideThumb: true } } });
+    return mount(Host, { global: { stubs: { RouterLink: { template: '<a><slot /></a>' }, SlideThumb: true } } });
 }
 
 describe('PlaylistCard – "Läuft gerade" (Plan.md 77)', () => {
@@ -52,6 +52,7 @@ describe('PlaylistCard – "Läuft gerade" (Plan.md 77)', () => {
         const flag = card(new Map([['foyer-links', beat()]])).get('[data-testid="playlist-live"]');
         expect(flag.text()).toBe('Läuft gerade');
         expect(flag.attributes('title')).toBe('Läuft gerade auf „Foyer links“ – laut Lebenszeichen von 14:32');
+        expect(flag.classes()).toContain('overlay');
         expect(flag.find('.alive-dot').classes()).toContain('is-online');
     });
 

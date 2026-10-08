@@ -71,6 +71,13 @@ function duplicate(): void {
             data-testid="open-playlist"
         >
             <SlideThumb :slide="overview.firstSlide" :stage="playlist.stage" />
+            <LiveFlag
+                v-if="live.length"
+                overlay
+                :live="live"
+                :time-zone="context.timeZone"
+                data-testid="playlist-live"
+            />
         </RouterLink>
         <div class="d-tile-body">
             <div class="title-row">
@@ -79,7 +86,6 @@ function duplicate(): void {
                         {{ playlist.name || 'Ohne Namen' }}
                     </RouterLink>
                 </h3>
-                <LiveFlag v-if="live.length" :live="live" :time-zone="context.timeZone" data-testid="playlist-live" />
                 <span
                     v-if="hasBanner"
                     class="banner-flag"
@@ -146,6 +152,9 @@ function duplicate(): void {
 </template>
 
 <style scoped>
+.open {
+    position: relative;
+}
 .open:focus-visible {
     outline: 2px solid var(--d-accent);
     outline-offset: 2px;
