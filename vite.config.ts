@@ -1,6 +1,8 @@
 /// <reference types="vitest/config" />
 import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
 import path from 'node:path';
 import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from 'vite';
 import vue from '@vitejs/plugin-vue';
@@ -183,6 +185,18 @@ function sourceHeader(dir: string, entry: string | undefined): string {
     }
 }
 
+let sharedAgent: http.Agent | undefined;
+
+/**
+ * One connection pool for all proxied paths. Without an agent the proxy closes every connection and looks
+ * the instance up anew for each request – some 1400 lookups per e2e run, and a lookup that fails now and
+ * then (`ENOTFOUND`) reaches the page as a 502 and fails a random test (measured 2026-10-08).
+ */
+function keepAliveAgent(target: string): http.Agent {
+    sharedAgent ??= target.startsWith('https:') ? new https.Agent({ keepAlive: true }) : new http.Agent({ keepAlive: true });
+    return sharedAgent;
+}
+
 /**
  * Forwards /api to the test instance and authenticates there with the login
  * token as a header. The browser never sees a credential or a cookie, which
@@ -192,6 +206,7 @@ function devProxy(target: string, loginToken: string | undefined): ProxyOptions 
     return {
         target,
         changeOrigin: true,
+        agent: keepAliveAgent(target),
         headers: loginToken ? { Authorization: `Login ${loginToken}` } : {},
         configure(proxy) {
             // Anonymous requests of the module (getAnonymously) go without the login token, as in real ChurchTools (Plan.md 73).
