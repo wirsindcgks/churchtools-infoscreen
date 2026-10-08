@@ -1,6 +1,10 @@
 /// <reference types="vitest/config" />
 import { execFileSync } from 'node:child_process';
+import dns from 'node:dns';
 import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
+import type { LookupFunction } from 'node:net';
 import path from 'node:path';
 import { defineConfig, loadEnv, type Plugin, type ProxyOptions } from 'vite';
 import vue from '@vitejs/plugin-vue';
@@ -183,6 +187,34 @@ function sourceHeader(dir: string, entry: string | undefined): string {
     }
 }
 
+/** The last addresses each host resolved to – the fallback when a lookup fails. */
+const resolved = new Map<string, dns.LookupAddress[]>();
+
+/**
+ * Looks the instance up as usual, but when a lookup fails (`ENOTFOUND` now and then) answers with the
+ * address it had last. Without it, a failed lookup reaches the page as a 502 and fails a random e2e test
+ * (measured 2026-10-08: some 1400 lookups per run, one to three failed). Deliberately no keep-alive: it
+ * made the tests faster than the instance's 600 requests a minute and drew `429`.
+ */
+const lookupWithFallback: LookupFunction = (hostname, options, callback) => {
+    dns.lookup(hostname, { ...options, all: true }, (error, addresses) => {
+        if (!error) resolved.set(hostname, addresses);
+        const list = error ? resolved.get(hostname) : addresses;
+        if (!list?.length) return callback(error, '', 0);
+        if (options.all) return (callback as unknown as (e: null, a: dns.LookupAddress[]) => void)(null, list);
+        callback(null, list[0]!.address, list[0]!.family);
+    });
+};
+
+let sharedAgent: http.Agent | undefined;
+
+/** One agent for all proxied paths, so they share the fallback addresses. */
+function proxyAgent(target: string): http.Agent {
+    const options = { lookup: lookupWithFallback };
+    sharedAgent ??= target.startsWith('https:') ? new https.Agent(options) : new http.Agent(options);
+    return sharedAgent;
+}
+
 /**
  * Forwards /api to the test instance and authenticates there with the login
  * token as a header. The browser never sees a credential or a cookie, which
@@ -192,6 +224,7 @@ function devProxy(target: string, loginToken: string | undefined): ProxyOptions 
     return {
         target,
         changeOrigin: true,
+        agent: proxyAgent(target),
         headers: loginToken ? { Authorization: `Login ${loginToken}` } : {},
         configure(proxy) {
             // Anonymous requests of the module (getAnonymously) go without the login token, as in real ChurchTools (Plan.md 73).
