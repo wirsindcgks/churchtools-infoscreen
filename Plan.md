@@ -18,7 +18,9 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
       - der Baustein „Video": Dauerlauf über eine Nacht und Ton (Archiv, Punkt 52). Der Nutzer will ihn danach gegebenenfalls schärfen;
       - das Lebenszeichen (Archiv, Punkt 59): Die Kachel des Screens sollte nach dem nächtlichen Neuladen „online" zeigen und es über Tage bleiben; ob ChurchTools dabei etwas auffällig macht (G54 hat nur Minuten gemessen);
       - in der Prüfung der Gerätegruppe: Jeder Kalender der Screens meldet „ist öffentlich" (Archiv, Punkt 73).
-2. **Hinweis „Läuft gerade“ an Playlist und Editor** (Punkt 77) – geplant am 2026-10-08, freigegeben vom Nutzer; der Umsetzer baut jetzt auf einem Branch, gemergt und veröffentlicht als `v0.19.0` erst nach P4.
+2. **Nach P4 als `v0.19.0`** – beide vorbereitet als Entwurfs-PR, gemergt und veröffentlicht erst, wenn P4 bestanden ist (Nutzer, 2026-10-08):
+   - **Hinweis „Läuft gerade“ an Playlist und Editor** (Punkt 77) – gebaut, Entwurfs-PR #73.
+   - **Neue Ladeanimation im Player** (Punkt 78) – gebaut, Entwurfs-PR folgt.
 3. **Erst messen, dann planen** (Opus, nach dem Gerätetest P4): **Videos ohne Netz** (Punkt 46.7 – ob der Service Worker ein Video samt Bereichsanfragen aus dem Cache liefern kann) und **eine eigene hochgeladene Schrift** (ob die Download-Adresse einer Schriftdatei unter der CSP trägt; bräuchte ein Schema-Feld).
 4. **Vorschau in einem zweiten Fenster** (Punkt 56) – skizziert, noch nicht gewählt.
 5. **Teststrategie prüfen – keine doppelten Prüfungen** (Punkt 60) – vom Nutzer gewünscht am 2026-10-02; eine Durchsicht, noch nicht begonnen.
@@ -402,6 +404,13 @@ Hier stehen nur Punkte, die noch nicht veröffentlicht sind, mit vollem Text. Di
     - **Mitziehen:** `docs/Funktionen.md` (Abschnitt Playlists und Editor, ein Satz je Stelle), `CHANGELOG.md`, danach `npm run docs:screenshots` (liest nur).
     - **Fertig,** wenn Kachel und Editor die Marke genau dann zeigen, wenn ein zugeordneter Screen online ist und diese Playlist meldet, ohne Lesbarkeit von `status` nichts erscheint, die Startseite unverändert arbeitet, Typprüfung, Lint, Unit-Tests und die betroffenen e2e-Tests grün sind und die Bilder neu sind. Release als `v0.19.0`.
     - **Zeitpunkt** *(Nutzer, 2026-10-08: „Ja lass es uns vorbereiten und nach P4 dann als Release einbauen")*. Gebaut wird sofort, auf einem eigenen Branch mit offenem PR. **Gemergt und veröffentlicht wird erst, wenn P4 bestanden ist** (Punkt 57, „Bestanden“): Bis dahin bleibt `main` frei für ein Patch-Release, falls der Dauerlauf einen Fehler zeigt. Version, `CHANGELOG.md`-Eintrag und Bilder kommen erst beim Release dazu.
+
+78. **Ladeanimation im Player** *(Nutzer, 2026-10-08: „Parallel habe ich hier eine neue Animation fürs laden der Screens erstellen lassen. Schaue dir die Daten mal an und prüfe, wie wir das integriert bekommen“ – „So machen wir es, vorbereiten, damit wir nach dem Dauertest weiterentwickeln können“)*. Statt der Sanduhr eine kleine Szene: Folien stapeln sich, auf einem Bildschirm setzen sich Titel, Bild und Zeilen ein, ein Glanz zieht darüber, ein Stern blitzt auf; darunter der Name des Screens, solange er unbekannt ist, seine Adresse. Farben aus dem Design (`loadingVars` in `src/player/theme.ts`), auf einem Gerät ohne gespeicherten Stand die Vorgaben. Nur `transform` und `opacity`, ein gemeinsamer Zyklus von 5,6 s, Einblenden nach 0,4 s; bei „weniger Bewegung“ steht die fertige Folie. Gebaut außerhalb dieser Sitzung, Branch `ladeanimation` (ein Commit auf `a7ee536`).
+    - **Durchgesehen von Opus am 2026-10-08:** Typprüfung, Lint, 825 Unit-Tests und `e2e/player.spec.ts` (9) grün; Einzelbilder des Zyklus angesehen.
+    - **Zeitpunkt.** Ändert den Player – genau das, was P4 gerade prüft. Deshalb Entwurfs-PR, gemergt und veröffentlicht erst nach P4, zusammen mit Punkt 77 als `v0.19.0`.
+    - **Beim Release:** `CHANGELOG.md`; vor dem Mergen auf den dann aktuellen `main` bringen und `player.spec.ts` erneut laufen lassen.
+    - **Am Pi ansehen, nach dem Einspielen:** ob die Szene beim Start und beim nächtlichen Neuladen flüssig läuft; ob der Chromium des Pi `color-mix` kennt (ab Version 111, `chrome://version`) – sonst fehlen Flächen der Szene.
+    - **Offen, Nutzer:** Statt „Lade „…“ …“ steht nur noch der Name. Hängt ein Gerät dauerhaft im Laden, fehlt das Wort „Lade“ als Hinweis; die Animation trägt die Aussage. Belassen, bis jemand es vermisst.
 
 ### Verzeichnis der erledigten Punkte
 
