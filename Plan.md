@@ -20,7 +20,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
       - in der Prüfung der Gerätegruppe: Jeder Kalender der Screens meldet „ist öffentlich" (Archiv, Punkt 73).
 2. **Nach P4 als `v0.19.0`** – beide vorbereitet als Entwurfs-PR, gemergt und veröffentlicht erst, wenn P4 bestanden ist (Nutzer, 2026-10-08):
    - **Hinweis „Läuft gerade“ an Playlist und Editor** (Punkt 77) – gebaut, Entwurfs-PR #73.
-   - **Neue Ladeanimation im Player** (Punkt 78) – gebaut, Entwurfs-PR folgt.
+   - **Neue Ladeanimation im Player** (Punkt 78) – gebaut, Entwurfs-PR #75.
 3. **Erst messen, dann planen** (Opus, nach dem Gerätetest P4): **Videos ohne Netz** (Punkt 46.7 – ob der Service Worker ein Video samt Bereichsanfragen aus dem Cache liefern kann) und **eine eigene hochgeladene Schrift** (ob die Download-Adresse einer Schriftdatei unter der CSP trägt; bräuchte ein Schema-Feld).
 4. **Vorschau in einem zweiten Fenster** (Punkt 56) – skizziert, noch nicht gewählt.
 5. **Teststrategie prüfen – keine doppelten Prüfungen** (Punkt 60) – vom Nutzer gewünscht am 2026-10-02; eine Durchsicht, noch nicht begonnen.
