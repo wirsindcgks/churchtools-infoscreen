@@ -37,6 +37,14 @@ test('edit a slide: add text, type, drag, undo, save', async ({ page }) => {
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
 });
 
+test('the bar says nothing about a running playlist without a sign of life (Plan.md 77)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('save-status')).toHaveText('Alles gespeichert');
+    await expect(page.getByTestId('editor-live')).toHaveCount(0);
+    await expect(page.getByTestId('save')).not.toHaveAttribute('title', /Läuft gerade/);
+});
+
 test('the inspector head says which slide this is, and the slide inspector has no heading of its own', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();

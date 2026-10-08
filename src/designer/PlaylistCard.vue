@@ -6,14 +6,22 @@
  * shows it.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import type { HeartbeatDoc } from '../model/heartbeat';
 import { bannerShown } from '../player/banner';
 import { useStageContext } from '../player/context';
 import type { PlaylistOverview } from '../store/screen-repository';
+import { liveScreens } from './alive';
 import Icon from './Icon.vue';
 import { lastEdited } from './last-edited';
+import LiveFlag from './LiveFlag.vue';
 import SlideThumb from './SlideThumb.vue';
 
-const props = defineProps<{ overview: PlaylistOverview }>();
+const props = defineProps<{
+    overview: PlaylistOverview;
+    /** The signs of life by screen slug; null where they cannot be read – then no hint (Plan.md 77). */
+    heartbeats?: Map<string, HeartbeatDoc> | null;
+    now?: Date;
+}>();
 const emit = defineEmits<{ remove: []; duplicate: [] }>();
 
 const context = useStageContext();
@@ -22,6 +30,11 @@ const portrait = computed(() => playlist.value.stage.height > playlist.value.sta
 const inUse = computed(() => props.overview.screens.length > 0);
 /** A band is running (Plan.md, Nächste Schritte 34) – not one that only sits there, expired. */
 const hasBanner = computed(() => bannerShown(playlist.value.banner, context.now, context.timeZone));
+
+/** The screens that show it right now, by their own signs of life (Plan.md 77). */
+const live = computed(() =>
+    liveScreens(playlist.value.id, props.overview.screens, props.heartbeats ?? null, props.now ?? context.now),
+);
 
 /** When and by whom it was last edited – in the church's time zone, like every time here. */
 const edited = computed(() => lastEdited(props.overview.editedAt, props.overview.editedBy, context.timeZone));
@@ -66,6 +79,7 @@ function duplicate(): void {
                         {{ playlist.name || 'Ohne Namen' }}
                     </RouterLink>
                 </h3>
+                <LiveFlag v-if="live.length" :live="live" :time-zone="context.timeZone" data-testid="playlist-live" />
                 <span
                     v-if="hasBanner"
                     class="banner-flag"

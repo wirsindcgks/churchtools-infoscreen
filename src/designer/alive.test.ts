@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { HeartbeatDoc } from '../model/heartbeat';
-import { ALIVE_WINDOW_MS, aliveState } from './alive';
+import type { ScreenRef } from '../store/screen-repository';
+import { ALIVE_WINDOW_MS, aliveState, liveSaveTitle, liveScreens, liveTitle } from './alive';
 
 const AT = '2026-10-05T12:32:00Z';
 const beat = (overrides: Partial<HeartbeatDoc> = {}): HeartbeatDoc => ({
@@ -49,6 +50,49 @@ describe('aliveState (Plan.md 59)', () => {
     it('leaves out the version when there is none', () => {
         expect(aliveState(beat({ version: '' }), after(0), 'Europe/Berlin').title).toBe(
             'Letztes Lebenszeichen am 5. Oktober 2026 um 14:32',
+        );
+    });
+});
+
+describe('liveScreens (Plan.md 77)', () => {
+    const left: ScreenRef = { id: 's1', slug: 'foyer-links', name: 'Foyer links' };
+    const right: ScreenRef = { id: 's2', slug: 'foyer-rechts', name: 'Foyer rechts' };
+    const map = (...beats: HeartbeatDoc[]) => new Map(beats.map((b) => [b.screen, b]));
+
+    it('lists an online screen that reports this playlist, with the time of its sign', () => {
+        const beats = map(beat({ screen: 'foyer-links', playlistId: 'p1' }));
+        expect(liveScreens('p1', [left, right], beats, after(60_000))).toEqual([{ screen: left, at: AT }]);
+    });
+
+    it('skips an online screen that shows another playlist', () => {
+        const beats = map(beat({ screen: 'foyer-links', playlistId: 'p2' }), beat({ screen: 'foyer-rechts', playlistId: null }));
+        expect(liveScreens('p1', [left, right], beats, after(60_000))).toEqual([]);
+    });
+
+    it('skips a screen whose sign is older than the window', () => {
+        const beats = map(beat({ screen: 'foyer-links', playlistId: 'p1' }));
+        expect(liveScreens('p1', [left], beats, after(ALIVE_WINDOW_MS)).length).toBe(1);
+        expect(liveScreens('p1', [left], beats, after(ALIVE_WINDOW_MS + 1))).toEqual([]);
+    });
+
+    it('skips a screen without a sign of life', () => {
+        expect(liveScreens('p1', [left, right], map(beat({ screen: 'other', playlistId: 'p1' })), after(0))).toEqual([]);
+    });
+
+    it('gives nothing where the signs cannot be read', () => {
+        expect(liveScreens('p1', [left], null, after(0))).toEqual([]);
+    });
+
+    it('words the tooltips: all names, the youngest time in the given zone, and the delay of a save', () => {
+        const live = [
+            { screen: left, at: '2026-10-05T12:30:00Z' },
+            { screen: right, at: AT },
+        ];
+        expect(liveTitle(live, 'Europe/Berlin')).toBe(
+            'Läuft gerade auf „Foyer links“, „Foyer rechts“ – laut Lebenszeichen von 14:32',
+        );
+        expect(liveSaveTitle(live.slice(0, 1))).toBe(
+            'Läuft gerade auf „Foyer links“ – nach dem Speichern dort in etwa 20 Sekunden zu sehen',
         );
     });
 });
