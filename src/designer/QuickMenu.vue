@@ -32,6 +32,14 @@ provide(QUICK_OPEN, openField);
 
 const root = ref<HTMLElement | null>(null);
 const fields = ref<HTMLElement | null>(null);
+/** Whether the fields of the bar run on past its left or right edge – there they fade out. */
+const more = reactive({ start: false, end: false });
+function onFieldsScroll(): void {
+    const el = fields.value;
+    if (!bar || !el) return;
+    more.start = el.scrollLeft > 1;
+    more.end = el.scrollLeft + el.clientWidth < el.scrollWidth - 1;
+}
 
 // Where the menu stands: from the block's frame and its own size – and not moving while someone works in it.
 const size = reactive({ width: 0, height: 0 });
@@ -59,9 +67,13 @@ let observer: ResizeObserver | undefined;
 onMounted(() => {
     measure();
     place();
+    onFieldsScroll();
     ready.value = true;
     if (typeof ResizeObserver !== 'undefined' && root.value) {
-        observer = new ResizeObserver(measure);
+        observer = new ResizeObserver(() => {
+            measure();
+            onFieldsScroll();
+        });
         observer.observe(root.value);
     }
 });
@@ -203,8 +215,14 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
             <Icon :name="BLOCK_ICONS[block.type]" :size="20" />
         </span>
         <template v-if="!block.locked">
-            <div ref="fields" class="quick-fields">
-                <component :is="BLOCK_INSPECTORS[block.type]" :block="block" />
+            <div class="quick-scroll">
+                <div ref="fields" class="quick-fields" @scroll.passive="onFieldsScroll">
+                    <component :is="BLOCK_INSPECTORS[block.type]" :block="block" />
+                </div>
+                <template v-if="bar">
+                    <span class="quick-fade quick-fade--start" :class="{ on: more.start }" aria-hidden="true" data-testid="quick-fade-start" />
+                    <span class="quick-fade quick-fade--end" :class="{ on: more.end }" aria-hidden="true" data-testid="quick-fade-end" />
+                </template>
             </div>
             <span v-if="!bar" class="quick-divider" aria-hidden="true" />
         </template>
@@ -478,7 +496,40 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
     width: 24px;
     height: 24px;
 }
-/* The fields scroll; a field cut off at the edge says there is more. No mask here: the sheet of a field hangs inside. */
+/* Only the bar needs a frame around the fields: for the fades at its edges. */
+.quick-scroll {
+    display: contents;
+}
+.quick-menu--bar .quick-scroll {
+    position: relative;
+    display: flex;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    align-items: center;
+}
+/* The fields scroll and fade out at an edge where there is more. No mask: the sheet of a field hangs inside; the fades lie above the fields, below the sheet. */
+.quick-fade {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    z-index: 1;
+    width: 32px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s;
+}
+.quick-fade.on {
+    opacity: 1;
+}
+.quick-fade--start {
+    left: 0;
+    background: linear-gradient(to right, var(--d-panel), transparent);
+}
+.quick-fade--end {
+    right: 0;
+    background: linear-gradient(to left, var(--d-panel), transparent);
+}
 .quick-menu--bar .quick-fields {
     flex: 1;
     min-width: 0;

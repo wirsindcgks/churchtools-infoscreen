@@ -17,6 +17,19 @@ async function expectStageClear(page: Page): Promise<void> {
     expect(stage!.y + stage!.height).toBeLessThanOrEqual(bar!.y + 1);
 }
 
+/** The stage stands in the middle of the room between the notice above and both rows of the bar below, chosen block or not (user, 2026-10-09). */
+async function expectStageCentered(page: Page): Promise<void> {
+    const [notice, stage, slideRow] = await Promise.all([
+        page.getByTestId('demo-notice-editor').boundingBox(),
+        page.locator('.editor-stage').boundingBox(),
+        page.getByTestId('phone-slide-row').boundingBox(),
+    ]);
+    const above = stage!.y - (notice!.y + notice!.height);
+    const below = slideRow!.y - 56 - (stage!.y + stage!.height);
+    expect(above).toBeGreaterThan(40);
+    expect(Math.abs(above - below)).toBeLessThanOrEqual(12);
+}
+
 test('without a block the bar shows the slide; nothing stands above the stage any more', async ({ page }) => {
     await openEditor(page);
     const bar = page.getByTestId('phone-bar');
@@ -30,8 +43,7 @@ test('without a block the bar shows the slide; nothing stands above the stage an
     await expect(page.getByTestId('slides-toggle')).toHaveCount(0);
     await expect(page.getByTestId('add-block-menu')).toHaveCount(1);
     await expect(page.getByTestId('grid-size')).toHaveCount(0);
-    const [notice, stage] = await Promise.all([page.getByTestId('demo-notice-editor').boundingBox(), page.locator('.editor-stage').boundingBox()]);
-    expect(stage!.y - (notice!.y + notice!.height)).toBeLessThanOrEqual(12); // the stage follows right on
+    await expectStageCentered(page);
     // Without a block the bar is the one row of 56 px (plus the safe area) at the bottom edge.
     const box = (await bar.boundingBox())!;
     expect(box.height).toBeGreaterThanOrEqual(56);
@@ -84,6 +96,7 @@ test('a block shows two rows; "Auswahl aufheben" lets go of it and leaves the sl
     const [upper, lower] = await Promise.all([blockRow.boundingBox(), slideRow.boundingBox()]);
     expect(Math.round(upper!.y + upper!.height)).toBeLessThanOrEqual(Math.round(lower!.y));
     expect(Math.round(upper!.height)).toBe(56);
+    await expectStageCentered(page);
     const deselect = bar.getByTestId('quick-deselect');
     await expect(deselect).toHaveAttribute('aria-label', 'Auswahl aufheben');
     const d = (await deselect.boundingBox())!;
@@ -93,6 +106,23 @@ test('a block shows two rows; "Auswahl aufheben" lets go of it and leaves the sl
     await expect(blockRow).toHaveCount(0);
     await expect(bar.getByTestId('quick-menu')).toHaveCount(0);
     await expect(bar.getByTestId('phone-slides')).toBeVisible();
+});
+
+test('the fields fade out at an edge only where more of them lie beyond it', async ({ page }) => {
+    await openEditor(page);
+    await page.getByTestId('frame-text').first().tap();
+    const row = page.getByTestId('phone-block-row');
+    const fields = row.locator('.quick-fields');
+    const start = row.getByTestId('quick-fade-start');
+    const end = row.getByTestId('quick-fade-end');
+    const overflows = await fields.evaluate((el) => el.scrollWidth > el.clientWidth + 1);
+    expect(overflows).toBe(true);
+    await expect(start).not.toHaveClass(/\bon\b/);
+    await expect(end).toHaveClass(/\bon\b/);
+    await fields.evaluate((el) => el.scrollTo({ left: el.scrollWidth }));
+    await expect(start).toHaveClass(/\bon\b/);
+    await expect(end).not.toHaveClass(/\bon\b/);
+    await page.screenshot({ path: 'test-results/c4d-phone-fade.png' });
 });
 
 test('with a block chosen the slide row still works: another slide drops the block and its row', async ({ page }) => {
