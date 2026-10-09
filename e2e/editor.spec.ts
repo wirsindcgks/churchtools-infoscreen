@@ -2109,6 +2109,56 @@ test('an empty slide says so, and its button opens the same sheet as "+ Baustein
     await expect(page.getByTestId('empty-slide')).toHaveCount(0);
 });
 
+test('the "+ Baustein" sheet describes each block and searches name and sentence (Plan.md 79, C7)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await page.getByTestId('add-block-menu').click();
+    const sheet = page.getByTestId('block-sheet');
+    const search = page.getByTestId('block-search');
+    await expect(search).toBeFocused();
+    await expect(search).toHaveValue('');
+    await expect(sheet.getByTestId('sheet-add-rooms')).toContainText('Wer heute welchen Raum belegt');
+
+    // "ae" finds the "ä" of "Nächster Termin" and of "Fläche".
+    await search.fill('naechster');
+    await expect(sheet.locator('[data-testid^="sheet-add-"]')).toHaveCount(1);
+    await expect(sheet.getByTestId('sheet-add-next-appointment')).toBeVisible();
+    await search.fill('FLAECHE');
+    await expect(sheet.getByTestId('sheet-add-shape')).toBeVisible();
+    // The sentence is searched, too.
+    await search.fill('kalender');
+    await expect(sheet.getByTestId('sheet-add-appointment-list')).toBeVisible();
+
+    await search.fill('xyzzy');
+    await expect(sheet.locator('[data-testid^="sheet-add-"]')).toHaveCount(0);
+    await expect(page.getByTestId('block-search-empty')).toHaveText('Kein Baustein gefunden');
+
+    // Escape in the field closes the sheet; the next opening starts with an empty search.
+    await page.keyboard.press('Escape');
+    await expect(sheet).toHaveCount(0);
+    await page.getByTestId('add-block-menu').click();
+    await expect(page.getByTestId('block-search')).toHaveValue('');
+    await expect(page.getByTestId('block-sheet').locator('[data-testid^="sheet-add-"]')).toHaveCount(15);
+});
+
+test('a new text begins as a heading; the text level sets size and weight in one step (Plan.md 79, C8)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await addBlock(page, 'text');
+    const level = page.getByTestId('text-level');
+    await expect(level.locator('input[value="heading"]')).toBeChecked();
+    await openSection(page, 'font');
+    await expect(page.getByTestId('font-size').locator('input').or(page.getByTestId('font-size'))).toHaveValue('96');
+
+    await choose(page, 'text-level', 'body');
+    await expect(level.locator('input[value="body"]')).toBeChecked();
+    await expect(page.getByTestId('font-size').locator('input').or(page.getByTestId('font-size'))).toHaveValue('44');
+    await expect(page.getByTestId('font-weight').locator('input[value="400"]')).toBeChecked();
+
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(level.locator('input[value="heading"]')).toBeChecked();
+});
+
 test.describe('on a phone (Plan.md 79)', () => {
     test.use({ viewport: { width: 390, height: 844 } });
 

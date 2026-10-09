@@ -3,6 +3,7 @@
  * a name is a function. No library. The player never imports this file – what it shows lives in `player.ts`, and
  * what the store tells the designer in `repository.ts`.
  */
+import type { BlockType } from '../model/schema';
 
 /** The heading of the settings page for services, which the inspector names, too. */
 const SERVICES_TITLE = 'Dienste auf Bildschirmen';
@@ -194,6 +195,26 @@ export const t = {
             guidesTitle: 'Hilfslinien: Bausteine rasten ein; mit gedrückter Alt-Taste frei platzieren',
             gridOff: 'aus',
             insertBlock: 'Baustein einfügen',
+            searchBlock: 'Baustein suchen',
+            noBlockFound: 'Kein Baustein gefunden',
+            /** One sentence under each block in the "+ Baustein" sheet (Plan.md 79, C7); the sheet searches them, too. */
+            descriptions: {
+                text: 'Überschrift, Untertitel oder ein paar Zeilen',
+                image: 'Ein Bild aus der Mediathek',
+                shape: 'Eine farbige Fläche, etwa hinter einem Text',
+                clock: 'Uhrzeit oder Datum, immer aktuell',
+                'appointment-list': 'Termine aus euren Kalendern als Liste',
+                'next-appointment': 'Der nächste Termin groß, auf Wunsch mit Bild',
+                'church-header': 'Name und Logo eurer Gemeinde',
+                web: 'Eine Webseite oder ein eingebetteter Inhalt',
+                qr: 'Ein QR-Code, etwa zu einer Anmeldung',
+                countdown: 'Zählt bis zum nächsten Termin herunter',
+                posts: 'Beiträge aus einer Gruppe in ChurchTools',
+                groups: 'Gruppen einer Gruppen-Homepage, etwa Hauskreise',
+                slideshow: 'Mehrere Bilder nacheinander',
+                rooms: 'Wer heute welchen Raum belegt',
+                video: 'Ein Video aus der Mediathek',
+            } satisfies Record<BlockType, string>,
             paste: 'Einfügen',
             pasteWhat: (label: string) => `${label} einfügen`,
         },
@@ -444,6 +465,8 @@ export const t = {
         allFonts: 'Alle Schriften',
         fontSize: 'Größe',
         fontWeight: 'Stärke',
+        textLevel: 'Textstufe',
+        textLevels: { heading: 'Überschrift', subtitle: 'Untertitel', body: 'Text' },
         weights: { normal: 'Normal', semibold: 'Halbfett', bold: 'Fett' },
         uppercase: 'Großbuchstaben',
         align: 'Ausrichtung',

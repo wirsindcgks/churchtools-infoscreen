@@ -14,7 +14,7 @@ import { BLOCK_INSPECTORS } from '.';
  * will show, in the order of the inspector.
  */
 const QUICK: Record<BlockType, string[]> = {
-    text: ['Farbe', 'Ausrichtung'],
+    text: ['Textstufe', 'Farbe', 'Ausrichtung'],
     image: ['Bild wählen', 'Einpassen'], // "Bild tauschen" once a picture is in
     shape: ['Farbe', 'Ecken'],
     slideshow: ['Bilder hinzufügen', 'Übergang'],
