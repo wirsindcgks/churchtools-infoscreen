@@ -69,7 +69,9 @@ test('duplicate and lock from the short menu; locked, only unlock and "⋯" are 
     await expect(menu.getByTestId('quick-chip')).toHaveCount(0);
     await menu.getByTestId('quick-more').click();
     const list = page.getByTestId('quick-more-list');
-    await expect(list.getByRole('menuitem')).toHaveCount(2);
+    // The copy lies under it (C3): the list offers to choose that one.
+    await expect(list.getByRole('menuitem')).toHaveCount(3);
+    await expect(list.getByTestId('quick-select-below')).toHaveText('Darunterliegenden wählen');
     await expect(list.getByTestId('quick-copy')).toBeVisible();
     await expect(list.getByTestId('quick-all-settings')).toBeVisible();
     await page.keyboard.press('Escape');

@@ -62,6 +62,21 @@ test('choosing a block shows its menu in the bar; the big sheet stays shut and t
     await page.screenshot({ path: 'test-results/c2-phone-block.png' });
 });
 
+test('the left button of the bar lets go of the block and shows the slide again', async ({ page }) => {
+    await openEditor(page);
+    await page.getByTestId('frame-text').first().tap();
+    const bar = page.getByTestId('phone-bar');
+    const back = bar.getByTestId('phone-back-to-slide');
+    await expect(back).toHaveAttribute('aria-label', 'Zurück zur Folie');
+    await expect(back).toContainText('Folie 1 von 3');
+    expect((await back.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await expect(bar.getByTestId('phone-slides')).toHaveCount(0);
+    await page.screenshot({ path: 'test-results/c3-phone-back.png' });
+    await back.tap();
+    await expect(bar.getByTestId('phone-slides')).toBeVisible();
+    await expect(bar.getByTestId('quick-menu')).toHaveCount(0);
+});
+
 test('a field opens as a sheet from below over the bar; a tap beside, a swipe down or Escape closes it', async ({ page }) => {
     await openEditor(page);
     await page.getByTestId('frame-text').first().tap();

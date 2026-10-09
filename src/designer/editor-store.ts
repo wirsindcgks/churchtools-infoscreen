@@ -348,14 +348,25 @@ export const useEditorStore = defineStore('editor', () => {
     /**
      * Puts copies of the given blocks on the current slide as one step: new ids, not locked, otherwise as they were.
      * They keep their place unless a block sits there already; one too big for this stage shrinks to fit. The last is chosen.
+     * With `at` (stage pixels) the group's middle goes there instead, pulled back onto the stage, and stays even over a block.
      */
-    function place(sources: Block[]): void {
+    function place(sources: Block[], at?: { x: number; y: number }): void {
         const target = slide.value;
         if (!target || !sources.length) return;
         const slideId = target.id;
         const placed: Block[] = [];
+        let shift = { x: 0, y: 0 };
+        if (at) {
+            const left = Math.min(...sources.map((x) => x.x));
+            const top = Math.min(...sources.map((x) => x.y));
+            const right = Math.max(...sources.map((x) => x.x + x.width));
+            const bottom = Math.max(...sources.map((x) => x.y + x.height));
+            shift = { x: at.x - (left + right) / 2, y: at.y - (top + bottom) / 2 };
+        }
         for (const source of sources) {
             const copy = cloneJson(source);
+            copy.x += shift.x;
+            copy.y += shift.y;
             delete copy.locked;
             const fitted = fitToStage({ ...copy, id: newId() }, stage.value);
             // A block from another stage may stick out of this one: pull it back in where it fits.
@@ -364,15 +375,15 @@ export const useEditorStore = defineStore('editor', () => {
                 x: Math.max(0, Math.min(fitted.x, stage.value.width - fitted.width)),
                 y: Math.max(0, Math.min(fitted.y, stage.value.height - fitted.height)),
             };
-            const spot = freeSpot(inside, [...target.blocks, ...placed], stage.value);
+            const spot = at ? inside : freeSpot(inside, [...target.blocks, ...placed], stage.value);
             placed.push({ ...spot, ...clampFrame(spot, stage.value) });
         }
         change((b) => slideIn(b, slideId)?.blocks.push(...placed));
         selectedBlockId.value = placed[placed.length - 1]!.id;
     }
 
-    function pasteBlocks(): void {
-        place(clipboard.value);
+    function pasteBlocks(at?: { x: number; y: number }): void {
+        place(clipboard.value, at);
     }
 
     /** Copy and paste in one, without touching the clipboard. */
