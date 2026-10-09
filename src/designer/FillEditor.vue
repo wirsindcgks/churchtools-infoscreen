@@ -39,7 +39,6 @@ function setStop(index: number, color: string): void {
             v-if="modelValue.kind === 'solid'"
             quick
             :label="t.common.fill.solid"
-            inline
             testid="fill-color"
             :model-value="modelValue.color"
             @focus="emit('focus')"

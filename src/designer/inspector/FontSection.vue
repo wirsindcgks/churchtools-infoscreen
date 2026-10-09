@@ -6,14 +6,14 @@
  */
 import { computed } from 'vue';
 import { t } from '../../i18n/designer';
-import { fontDef, FONTS } from '../../player/fonts';
+import { fontDef } from '../../player/fonts';
 import { verticalAlignOf } from '../../player/format';
 import ColorField from '../ColorField.vue';
 import InspectorSection from '../InspectorSection.vue';
 import { useEdit } from './edit';
 import NumberField from './fields/NumberField.vue';
 import SegmentField from './fields/SegmentField.vue';
-import SelectField from './fields/SelectField.vue';
+import FontField from './fields/FontField.vue';
 import ToggleField from './fields/ToggleField.vue';
 import { useBlockEdit, type StyledBlock } from './use-block';
 
@@ -22,7 +22,6 @@ const edit = useEdit();
 const { setStyle } = useBlockEdit(() => props.block);
 
 const style = computed(() => props.block.style);
-const fonts = FONTS.map((f) => ({ value: f.key, label: f.label, style: { fontFamily: `'${f.family}'` } }));
 const weights = [
     { value: 400, label: t.inspector.weights.normal },
     { value: 600, label: t.inspector.weights.semibold },
@@ -48,13 +47,7 @@ const summary = computed(() => t.inspector.fontSummary(fontDef(style.value.fontF
         <template #summary-extra>
             <span class="swatch" :style="{ background: style.color }" />
         </template>
-        <SelectField
-            :model-value="fontDef(style.fontFamily).key"
-            :options="fonts"
-            :label="t.inspector.fontFamily"
-            testid="font-family"
-            @update:model-value="setStyle({ fontFamily: String($event) })"
-        />
+        <FontField :model-value="style.fontFamily" :label="t.inspector.fontFamily" testid="font-family" @update:model-value="setStyle({ fontFamily: $event })" />
         <NumberField :model-value="style.fontSize" :label="t.inspector.fontSize" unit="px" :min="8" testid="font-size" @update:model-value="setStyle({ fontSize: $event })" />
         <SegmentField
             :model-value="style.fontWeight"
@@ -67,7 +60,6 @@ const summary = computed(() => t.inspector.fontSummary(fontDef(style.value.fontF
         <ToggleField :model-value="style.uppercase ?? false" :label="t.inspector.uppercase" testid="text-uppercase" @update:model-value="setStyle({ uppercase: $event })" />
         <ColorField
             :label="t.common.fill.solid"
-            inline
             quick
             testid="text-color"
             :model-value="style.color"

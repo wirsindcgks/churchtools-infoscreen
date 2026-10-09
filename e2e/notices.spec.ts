@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { chooseFont } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -19,7 +20,7 @@ test('a new notice: empty text blocks saving, the preview shows it once typed, p
     await dialog.getByTestId('banner-text').fill('Heute Parkplatz gesperrt – bitte in der Schulstraße parken');
     await expect(dialog.getByTestId('notice-preview').getByTestId('banner')).toContainText('Parkplatz gesperrt');
     // A font of its own, bundled like the blocks' fonts, reaches the preview.
-    await dialog.getByTestId('banner-font').selectOption('oswald');
+    await chooseFont(dialog, 'banner-font', 'oswald');
     await dialog.getByTestId('banner-weight').selectOption('700');
     const text = dialog.getByTestId('notice-preview').getByTestId('banner').getByText('Parkplatz gesperrt');
     await expect(text).toHaveCSS('font-family', /Oswald/);

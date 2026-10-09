@@ -36,3 +36,16 @@ export async function chosen(scope: Page | Locator, testid: string): Promise<str
     const checked = control.locator('input:checked');
     return (await checked.count()) ? checked.getAttribute('value') : null;
 }
+
+/** The hex field of a colour field: „Eigene Farbe" is unfolded first where it is folded (Plan.md 79, B2, design first). */
+export async function customColor(scope: Page | Locator, testid: string): Promise<Locator> {
+    const toggle = scope.getByTestId(`${testid}-custom`);
+    if ((await toggle.count()) > 0 && (await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
+    return scope.getByTestId(testid);
+}
+
+/** Picks a font from the list of a font field by its key. */
+export async function chooseFont(scope: Page | Locator, testid: string, key: string): Promise<void> {
+    await scope.getByTestId(testid).click();
+    await scope.getByTestId(`${testid}-${key}`).click();
+}

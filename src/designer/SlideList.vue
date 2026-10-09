@@ -167,7 +167,7 @@ function removeCurrent(): void {
                 :disabled="!editor.slide"
                 @click="editor.duplicateCurrentSlide()"
             >
-                <Icon name="copy" :size="16" />
+                <Icon name="duplicate" :size="16" />
             </button>
             <button
                 class="d-btn d-btn--icon"
@@ -238,7 +238,7 @@ function removeCurrent(): void {
                         :aria-label="t.editor.slideList.duplicate"
                         @click="editor.duplicateCurrentSlide()"
                     >
-                        <Icon name="copy" :size="16" />
+                        <Icon name="duplicate" :size="16" />
                     </button>
                     <button
                         class="d-btn d-btn--icon"

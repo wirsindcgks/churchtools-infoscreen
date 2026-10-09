@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { addBlock, chosen, choose, openSection } from './helpers';
+import { addBlock, chooseFont, chosen, choose, customColor, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -136,7 +136,7 @@ test('a chosen font comes from the own server, and nothing else is asked for (da
     await page.getByTestId('frame-text').first().click();
     await expect(page.getByTestId('text-input')).toHaveValue('Herzlich willkommen!');
     await openSection(page, 'font');
-    await page.getByTestId('font-family').selectOption('barlow-semi-condensed');
+    await chooseFont(page, 'font-family', 'barlow-semi-condensed');
     const title = page.locator('.editor-stage .block--text').filter({ hasText: 'Herzlich willkommen!' });
     // WebKit reports the name without quotes.
     await expect(title.locator('.text')).toHaveCSS('font-family', /^"?ISD Barlow Semi Condensed"?, sans-serif$/);
@@ -216,7 +216,7 @@ test('colours take a hex value; a half-typed one is marked and not taken over (P
     await page.getByTestId('text-input').fill('Farbprobe');
     const text = page.locator('.editor-stage').getByText('Farbprobe');
     await openSection(page, 'font');
-    const hex = page.getByTestId('text-color');
+    const hex = await customColor(page, 'text-color');
 
     await hex.fill('#1E3A5F');
     await expect(text).toHaveCSS('color', 'rgb(30, 58, 95)');
@@ -1306,8 +1306,9 @@ test('the design page sets the card surface (Plan.md 74)', async ({ page, browse
     // The card colour offers the palette – at least accent, text and background of the design –, the other fields of the page none.
     expect(await page.getByTestId('theme-card-color-swatch').count()).toBeGreaterThanOrEqual(3);
     await expect(page.getByTestId('theme-accent-swatch')).toHaveCount(0);
-    await page.getByTestId('theme-card-color').fill('#ff0000');
-    await page.getByTestId('theme-card-color').blur();
+    const cardColor = await customColor(page, 'theme-card-color');
+    await cardColor.fill('#ff0000');
+    await cardColor.blur();
     await page.getByTestId('theme-card-opacity').fill('50');
     await expect(page.getByTestId('theme-card-opacity')).toHaveValue('50');
     // `color-mix` comes back as `color(srgb 1 0 0 / 0.5)` or `rgba(255, 0, 0, 0.5)`, depending on the browser.
@@ -1329,7 +1330,7 @@ test('the design page sets the card surface (Plan.md 74)', async ({ page, browse
 test('the design page sets the font new blocks start with; blocks that exist keep theirs (Plan.md 40)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('sidebar-design').click();
-    await page.getByTestId('theme-font').selectOption('oswald');
+    await chooseFont(page, 'theme-font', 'oswald');
     await page.getByTestId('theme-save').click();
     await expect(page.getByTestId('theme-saved')).toBeVisible();
 
@@ -1340,7 +1341,7 @@ test('the design page sets the font new blocks start with; blocks that exist kee
     const welcome = stage.locator('.block--text').filter({ hasText: 'Herzlich willkommen!' });
     await expect(welcome.locator('.text')).toHaveCSS('font-family', /^"?ISD Lato"?, sans-serif$/);
     await addBlock(page, 'text');
-    await expect(page.getByTestId('font-family')).toHaveValue('oswald');
+    await expect(page.getByTestId('font-family')).toHaveAttribute('data-value', 'oswald');
     await expect(stage.locator('.block--text').last().locator('.text')).toHaveCSS('font-family', /^"?ISD Oswald"?, sans-serif$/);
 });
 

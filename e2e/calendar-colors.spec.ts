@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openSection } from './helpers';
+import { customColor, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -54,7 +54,7 @@ async function whiteModern(page: Page, positions: number[]): Promise<void> {
     for (const position of positions) {
         await page.getByTestId('slide-item').nth(position).click();
         await openSection(page, 'background');
-        const hex = page.getByTestId('fill-color');
+        const hex = await customColor(page, 'fill-color');
         await hex.fill('#ffffff');
         await hex.blur();
     }
@@ -93,12 +93,12 @@ test('a calendar in black keeps its badge and date tile on a white slide', async
 async function colourSlide(page: Page, position: number, background: string, text: string): Promise<void> {
     await page.getByTestId('slide-item').nth(position).click();
     await openSection(page, 'background');
-    const hex = page.getByTestId('fill-color');
+    const hex = await customColor(page, 'fill-color');
     await hex.fill(background);
     await hex.blur();
     await page.getByTestId('frame-appointment-list').first().click();
     await openSection(page, 'font');
-    const colour = page.getByTestId('text-color');
+    const colour = await customColor(page, 'text-color');
     await colour.fill(text);
     await colour.blur();
 }

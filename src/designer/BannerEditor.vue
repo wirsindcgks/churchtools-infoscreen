@@ -9,9 +9,9 @@ import { computed } from 'vue';
 import { t } from '../i18n/designer';
 import type { Banner } from '../model/schema';
 import { wallTime } from '../player/banner';
-import { fontDef, FONTS } from '../player/fonts';
 import ColorField from './ColorField.vue';
 import HintRow from './HintRow.vue';
+import FontField from './inspector/fields/FontField.vue';
 
 const props = withDefaults(defineProps<{ modelValue: Banner; timeZone: string; now?: Date }>(), {
     now: () => new Date(),
@@ -111,18 +111,12 @@ function setFontSize(value: string): void {
                 >
             </label>
             <!-- The fonts the blocks offer: bundled with the module, never from a foreign server. -->
-            <label class="d-field">
-                {{ t.inspector.fontFamily }}
-                <select
-                    data-testid="banner-font"
-                    :value="fontDef(modelValue.style.fontFamily).key"
-                    @change="update({ style: { ...modelValue.style, fontFamily: ($event.target as HTMLSelectElement).value } })"
-                >
-                    <option v-for="f in FONTS" :key="f.key" :value="f.key" :style="{ fontFamily: `'${f.family}'` }">
-                        {{ f.label }}
-                    </option>
-                </select>
-            </label>
+            <FontField
+                :model-value="modelValue.style.fontFamily"
+                :label="t.inspector.fontFamily"
+                testid="banner-font"
+                @update:model-value="update({ style: { ...modelValue.style, fontFamily: $event } })"
+            />
             <label class="d-field">
                 {{ t.inspector.fontWeight }}
                 <select
