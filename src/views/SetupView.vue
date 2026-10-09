@@ -1185,7 +1185,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 .settings-card-body h2 {
     margin: 0;
     font-size: 1.15em;
-    font-weight: 800;
+    font-weight: var(--d-weight-heading);
 }
 .settings-card-body p {
     margin: 0;
@@ -1222,7 +1222,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
     padding: 3px 10px;
     border-radius: 999px;
     font-size: var(--d-size-sm);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .status--ok {
     background: color-mix(in oklab, var(--d-success) 16%, var(--d-surface));
@@ -1250,7 +1250,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 .card h2 {
     margin: 0;
     font-size: 1.15em;
-    font-weight: 800;
+    font-weight: var(--d-weight-heading);
 }
 .card p {
     margin: 0;
@@ -1330,7 +1330,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
     border-radius: 50%;
     color: #fff;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .check--ok .symbol {
     background: var(--d-success);

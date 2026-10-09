@@ -44,7 +44,7 @@ defineProps<{ icon: IconName; title: string; testid: string }>();
 h1 {
     margin: 0;
     font-size: 1.85em;
-    font-weight: 800;
+    font-weight: var(--d-weight-heading);
     line-height: 1.2;
 }
 .intro {

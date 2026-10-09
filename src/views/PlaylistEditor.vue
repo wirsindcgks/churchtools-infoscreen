@@ -501,6 +501,7 @@ function onKey(event: KeyboardEvent): void {
         :class="{ 'sheet-open': inspectorOpen }"
         :style="{
             height: `calc(100vh - ${top}px)`,
+            '--editor-top': `${top}px`,
             '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}`,
             '--stage-max': stageMax === null ? undefined : `${stageMax}px`,
         }"
@@ -515,27 +516,29 @@ function onKey(event: KeyboardEvent): void {
             >
                 <Icon name="back" :size="18" /><span class="back-label">{{ back.label }}</span>
             </RouterLink>
-            <span class="heading">
-                <strong class="title">{{ editor.draft?.playlist.name || t.editor.playlistFallback }}</strong>
-                <span class="status-line">
-                    <LiveFlag
-                        v-if="live.length"
-                        class="live"
-                        :live="live"
-                        :time-zone="context.timeZone"
-                        data-testid="editor-live"
-                    />
-                    <span class="status" :class="`status--${editor.status}`" data-testid="save-status">{{ statusText }}</span>
-                    <!-- The TVs check every 20 s for what was saved (Plan.md, 26); in demo mode an open player takes it at once. -->
-                    <span
-                        v-if="editor.status === 'saved' && editor.screens.length && !demo"
-                        class="status status-hint"
-                        data-testid="save-hint"
-                    >
-                        {{ t.editor.savedHint(editor.screens.length) }}
+            <template #title>
+                <span class="heading">
+                    <strong class="title">{{ editor.draft?.playlist.name || t.editor.playlistFallback }}</strong>
+                    <span class="status-line">
+                        <LiveFlag
+                            v-if="live.length"
+                            class="live"
+                            :live="live"
+                            :time-zone="context.timeZone"
+                            data-testid="editor-live"
+                        />
+                        <span class="status" :class="`status--${editor.status}`" data-testid="save-status">{{ statusText }}</span>
+                        <!-- The TVs check every 20 s for what was saved (Plan.md, 26); in demo mode an open player takes it at once. -->
+                        <span
+                            v-if="editor.status === 'saved' && editor.screens.length && !demo"
+                            class="status status-hint"
+                            data-testid="save-hint"
+                        >
+                            {{ t.editor.savedHint(editor.screens.length) }}
+                        </span>
                     </span>
                 </span>
-            </span>
+            </template>
             <template #actions>
                 <button
                     v-tip="withKeys(t.editor.undo, KEYS.undo)"
@@ -802,6 +805,15 @@ function onKey(event: KeyboardEvent): void {
     /* The calm ground the cards and the stage lie on (Plan.md 79, B3). */
     background: var(--d-workspace);
 }
+@media (min-width: 48.0625rem) {
+    .heading {
+        align-items: center;
+        text-align: center;
+    }
+    .status-line {
+        justify-content: center;
+    }
+}
 /* A link that looks like a button: the way back and the player. */
 .link-btn {
     display: inline-flex;
@@ -815,7 +827,7 @@ function onKey(event: KeyboardEvent): void {
     border-radius: var(--d-radius-lg);
     background: var(--d-surface);
     color: var(--d-text);
-    font-weight: 700;
+    font-weight: var(--d-weight-button);
     text-decoration: none;
     white-space: nowrap;
     transition: background-color var(--d-transition), border-color var(--d-transition);
@@ -828,7 +840,7 @@ function onKey(event: KeyboardEvent): void {
 .back {
     padding: 0 var(--d-space-3) 0 var(--d-space-2);
 }
-/* Title above, the state of the save below it, small. */
+/* Title above, the state of the save below it, small – in the middle of the bar above 48rem (AppBar.vue). */
 .heading {
     display: flex;
     flex-direction: column;
@@ -838,6 +850,7 @@ function onKey(event: KeyboardEvent): void {
 .title {
     overflow: hidden;
     font-size: 1.2em;
+    font-weight: var(--d-weight-heading);
     white-space: nowrap;
     text-overflow: ellipsis;
 }
@@ -907,7 +920,7 @@ function onKey(event: KeyboardEvent): void {
     grid-template-columns: var(--slides-w) minmax(0, 1fr) var(--inspector-w);
     /* Cards and stage lie on the workspace with 12 px of air all around (Plan.md 79, B3). */
     column-gap: var(--d-space-3);
-    padding: 0 var(--d-space-3) var(--d-space-3);
+    padding: 0 var(--d-gutter) var(--d-space-3);
     min-height: 0;
 }
 /* The stage a little in from the cards, so its shadow has room. */
@@ -1009,7 +1022,7 @@ function onKey(event: KeyboardEvent): void {
         background: none;
         color: var(--d-text);
         font: inherit;
-        font-weight: 700;
+        font-weight: var(--d-weight-heading);
         text-align: left;
         cursor: pointer;
     }
@@ -1047,11 +1060,16 @@ function onKey(event: KeyboardEvent): void {
  * at the bottom, and the header into one row (Plan.md 44, M2–M4).
  */
 @media (max-width: 48rem) {
+    /* The height follows the content, but the grey ground reaches down to the window's lower edge. */
     .editor {
+        box-sizing: border-box;
         height: auto !important;
-        min-height: 0;
+        min-height: calc(100vh - var(--editor-top, 0px));
+        min-height: calc(100dvh - var(--editor-top, 0px));
     }
     .columns {
+        /* The rows keep their own height where the editor is taller than its content (min-height above). */
+        align-content: start;
         grid-template-columns: minmax(0, 1fr);
         column-gap: 0;
         padding: 0;
@@ -1179,7 +1197,7 @@ function onKey(event: KeyboardEvent): void {
     }
     .tablet-number {
         font-size: 11px;
-        font-weight: 700;
+        font-weight: var(--d-weight-normal);
         line-height: 1;
     }
     .collapse-icon {
@@ -1277,6 +1295,7 @@ function onKey(event: KeyboardEvent): void {
     }
     .drawer-title {
         overflow: hidden;
+        font-weight: var(--d-weight-heading);
         white-space: nowrap;
         text-overflow: ellipsis;
     }

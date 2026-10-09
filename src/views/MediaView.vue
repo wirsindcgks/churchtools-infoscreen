@@ -218,7 +218,7 @@ async function picked(): Promise<void> {
 }
 .picked {
     margin-left: auto;
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .empty {
     margin: 0;

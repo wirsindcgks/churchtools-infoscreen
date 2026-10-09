@@ -59,13 +59,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
 <template>
     <div class="block-palette">
         <button
-            class="d-btn"
+            class="d-btn d-btn--create"
             type="button"
+            :aria-label="t.editor.palette.addBlock"
             :disabled="!editor.slide"
             data-testid="add-block-menu"
             @click="openSheet"
         >
-            <Icon name="plus" :size="16" /> {{ t.editor.palette.addBlock }}
+            <Icon name="plus" :size="16" /> <span class="create-label">{{ t.editor.palette.addBlock }}</span>
         </button>
         <button
             v-if="editor.clipboard.length"

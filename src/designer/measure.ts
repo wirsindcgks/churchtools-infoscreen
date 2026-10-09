@@ -127,3 +127,30 @@ export function gapsBetween(frames: readonly Frame[], axis: Axis): Measure[] {
     }
     return result.filter((m) => m.value > 0);
 }
+
+/** Where the size label of a dragged block goes (A1), by what lies around it. */
+export type SizeLabelPlace = 'below' | 'inside-bottom' | 'above' | 'inside-top';
+
+/** The label's height and the air between it and the block, in screen pixels. */
+const LABEL_HEIGHT = 24;
+const LABEL_AIR = 8;
+/** A block at least this tall on screen has room for the label inside, at its lower edge. */
+const INSIDE_MIN_HEIGHT = 48;
+
+/**
+ * The top of the size label, in stage pixels, and the side it sits on. Below the block – unless a distance runs
+ * down from its lower edge, that is where the label would hide it – and where the stage has room below. Else inside
+ * at the lower edge if the block is tall enough on screen, else above it, and inside at the upper edge where the stage
+ * ends there, too. Screen pixels are converted by `scale`.
+ */
+export function sizeLabelPlace(frame: Frame, measures: readonly Measure[], stage: Size, scale: number): { top: number; place: SizeLabelPlace } {
+    const unit = 1 / scale;
+    const bottom = frame.y + frame.height;
+    const below = bottom + LABEL_AIR * unit;
+    const hangsBelow = measures.some((m) => m.axis === 'y' && Math.abs(m.from - bottom) < 1);
+    if (!hangsBelow && below + LABEL_HEIGHT * unit <= stage.height) return { top: below, place: 'below' };
+    if (frame.height * scale >= INSIDE_MIN_HEIGHT) return { top: bottom - (LABEL_AIR + LABEL_HEIGHT) * unit, place: 'inside-bottom' };
+    const above = frame.y - (LABEL_AIR + LABEL_HEIGHT) * unit;
+    if (above >= 0) return { top: above, place: 'above' };
+    return { top: frame.y + LABEL_AIR * unit, place: 'inside-top' };
+}

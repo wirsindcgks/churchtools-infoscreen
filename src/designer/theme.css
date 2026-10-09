@@ -53,11 +53,21 @@
     /* The calm ground around cards and the sidebar: a touch darker than the panel, from the host's own colours. */
     --d-workspace: color-mix(in oklab, var(--d-panel) 96%, var(--d-text));
     --d-transition: 150ms ease;
+    /* Bold is spare (Plan.md 79): text is regular, buttons a little firmer, only headings are semi-bold. */
+    --d-weight-normal: 400;
+    --d-weight-button: 500;
+    --d-weight-heading: 600;
+    /* The side margin of the editor's bar and its columns: back and save stand flush with the cards below. */
+    --d-gutter: var(--d-space-3);
 
     font-family: var(--d-font);
     font-size: var(--d-size);
     line-height: 1.45;
     color: var(--d-text);
+}
+/* Headings and `strong` are semi-bold, never bold – whether the host resets them (Tailwind) or not. */
+.infoscreen-designer :where(h1, h2, h3, h4, strong, b) {
+    font-weight: var(--d-weight-heading);
 }
 
 .infoscreen-designer :where(button.d-btn, a.d-btn) {
@@ -73,7 +83,7 @@
     background: var(--d-surface);
     color: var(--d-text);
     font: inherit;
-    font-weight: 700;
+    font-weight: var(--d-weight-button);
     cursor: pointer;
     transition: background-color var(--d-transition), border-color var(--d-transition);
 }
@@ -92,6 +102,7 @@
     border-color: var(--d-accent);
     background: var(--d-accent);
     color: var(--d-accent-text);
+    font-weight: var(--d-weight-button);
 }
 .infoscreen-designer :where(button.d-btn--primary:hover:not(:disabled)) {
     border-color: var(--d-accent-strong);
@@ -169,7 +180,7 @@
     border-color: var(--d-create);
     background: var(--d-create);
     color: var(--d-create-text);
-    font-weight: 700;
+    font-weight: var(--d-weight-button);
 }
 .infoscreen-designer :where(button.d-btn--create:hover:not(:disabled)) {
     border-color: var(--d-create);
@@ -274,14 +285,14 @@
     box-shadow: var(--d-shadow);
     color: var(--d-accent);
     font-size: var(--d-size-sm);
-    font-weight: 600;
+    font-weight: var(--d-weight-normal);
     white-space: nowrap;
 }
 .infoscreen-designer :where(.d-tile-title) {
     margin: 0;
     padding-top: 0.35em;
     font-size: 1.15em;
-    font-weight: 700;
+    font-weight: var(--d-weight-heading);
     hyphens: auto;
     overflow-wrap: anywhere;
 }
@@ -405,7 +416,7 @@
     background: #0f172a;
     color: #fff;
     font-size: 12.5px;
-    font-weight: 600;
+    font-weight: var(--d-weight-normal);
     line-height: 1.35;
     box-shadow: var(--d-shadow);
     pointer-events: none;

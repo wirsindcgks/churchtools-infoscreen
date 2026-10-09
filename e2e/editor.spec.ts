@@ -2242,3 +2242,44 @@ test.describe('sorting slides on a phone (Plan.md 79, D7)', () => {
         await expect.poll(() => slideNames(page)).toEqual([b, c, a]);
     });
 });
+
+test.describe('the bar of the editor stands flush with the cards (third round of looks)', () => {
+    test('desktop: back, save and title line up with the columns below', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        const back = (await page.getByTestId('leave-editor').boundingBox())!;
+        const slides = (await page.locator('.slide-list').boundingBox())!;
+        const save = (await page.getByTestId('save').boundingBox())!;
+        const inspector = (await page.getByTestId('inspector-sheet').boundingBox())!;
+        expect(Math.abs(back.x - slides.x)).toBeLessThanOrEqual(1);
+        expect(Math.abs(save.x + save.width - (inspector.x + inspector.width))).toBeLessThanOrEqual(1);
+        // The title and the state of the save stand in the middle of the window.
+        const title = (await page.locator('.d-appbar .heading').boundingBox())!;
+        expect(Math.abs(title.x + title.width / 2 - 1440 / 2)).toBeLessThanOrEqual(2);
+        // Nothing overlaps: back, title, actions in a row.
+        expect(back.x + back.width).toBeLessThanOrEqual(title.x);
+        expect(title.x + title.width).toBeLessThanOrEqual((await page.getByTestId('save').boundingBox())!.x);
+        await page.screenshot({ path: 'test-results/look3-editor-desktop.png' });
+    });
+
+    test('phone: the grey ground reaches the lower edge of the window', async ({ browser }) => {
+        const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
+        const page = await context.newPage();
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        const reach = await page.evaluate(() => ({
+            bottom: document.querySelector('.editor')!.getBoundingClientRect().bottom + window.scrollY,
+            inner: window.innerHeight,
+            scroll: document.documentElement.scrollHeight,
+            // The demo page has the browser's 8 px margin around its body, as the desktop height does.
+            margin: parseFloat(getComputedStyle(document.body).marginBottom),
+        }));
+        expect(reach.bottom).toBeGreaterThanOrEqual(reach.inner - 1);
+        // Not a pixel more than needed: the page does not scroll for it, beyond what lies below the editor anyway.
+        expect(reach.scroll).toBeLessThanOrEqual(reach.bottom + reach.margin + 1);
+        await page.screenshot({ path: 'test-results/look3-editor-phone.png' });
+        await context.close();
+    });
+});

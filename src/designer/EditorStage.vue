@@ -10,7 +10,7 @@ import { fitStage } from '../player/stage';
 import { t } from '../i18n/designer';
 import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
-import { neighbourGaps, pairGaps, type Measure } from './measure';
+import { neighbourGaps, pairGaps, sizeLabelPlace, type Measure } from './measure';
 import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, clampFrame } from './ops';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 
@@ -180,13 +180,11 @@ function measureStyle(m: Measure): Record<string, string> {
         : { left: `${m.at}px`, top: `${m.from}px`, height: `${m.to - m.from}px` };
 }
 
-/** The size under the block while it is dragged or resized (A1): below it, or inside at the bottom where the stage ends. */
+/** The size beside the block while it is dragged or resized (A1): where `sizeLabelPlace` puts it, clear of the distances. */
 const sizeLabel = computed(() => {
     const b = blocks.value.find((x) => x.id === dragId.value);
     if (!b) return null;
-    const unit = 1 / fit.value.scale;
-    const below = b.y + b.height + 8 * unit;
-    const top = below + 24 * unit > editor.stage.height ? b.y + b.height - 32 * unit : below;
+    const { top } = sizeLabelPlace(b, drawn.value, editor.stage, fit.value.scale);
     return { text: t.editor.stage.size(b.width, b.height), style: { left: `${b.x + b.width / 2}px`, top: `${top}px` } };
 });
 
@@ -302,7 +300,7 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
         >
             <div class="empty-slide-box" data-testid="empty-slide" @pointerdown.stop>
                 <p>{{ t.editor.stage.emptySlide }}</p>
-                <button class="d-btn" type="button" data-testid="empty-slide-add" @click="editor.blockSheetOpen = true">
+                <button class="d-btn d-btn--create" type="button" data-testid="empty-slide-add" @click="editor.blockSheetOpen = true">
                     <Icon name="plus" :size="16" /> {{ t.editor.palette.addBlock }}
                 </button>
             </div>
@@ -396,7 +394,7 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
     border-radius: calc(var(--s) * 3);
     background: var(--d-measure);
     color: #fff;
-    font: 600 calc(var(--s) * 11) / 1.2 var(--d-font);
+    font: var(--d-weight-normal) calc(var(--s) * 11) / 1.2 var(--d-font);
     white-space: nowrap;
 }
 .measure-label {
@@ -407,7 +405,8 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
 }
 .frame-size {
     position: absolute;
-    z-index: 2;
+    /* Below the distances (z-index 2), should the two touch. */
+    z-index: 1;
     pointer-events: none;
     transform: translateX(-50%);
 }
@@ -440,7 +439,7 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
     border-radius: calc(var(--s) * 3);
     background: rgb(59, 130, 246);
     color: #fff;
-    font: 600 calc(var(--s) * 12) / 1.2 var(--d-font);
+    font: var(--d-weight-normal) calc(var(--s) * 12) / 1.2 var(--d-font);
     white-space: nowrap;
     pointer-events: none;
 }

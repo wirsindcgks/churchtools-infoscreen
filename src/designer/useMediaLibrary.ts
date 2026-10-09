@@ -11,6 +11,7 @@ import { looksLikeVideo, videoProblem } from '../media/video';
 import { ensureOverviewPage } from '../media/wiki';
 import type { MediaDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
+import { setSectionCount } from './section-counts';
 import { useConfirm } from './useConfirm';
 
 /** What an upload takes: the dialog for a block takes the kind the block needs, the library page both. */
@@ -39,6 +40,7 @@ export function useMediaLibrary(
     async function reload(): Promise<void> {
         if (!library) return;
         items.value = await library.list();
+        setSectionCount('media', items.value.length);
     }
 
     onMounted(async () => {

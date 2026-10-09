@@ -78,7 +78,7 @@ function lines(items: RefreshItem[]): string[] {
     padding-left: 20px;
 }
 .heading {
-    font-weight: 600;
+    font-weight: var(--d-weight-heading);
 }
 .muted {
     color: var(--d-text-muted);

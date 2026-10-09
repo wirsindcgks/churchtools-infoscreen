@@ -310,7 +310,7 @@ h3 {
     margin: 0;
 }
 .check .name {
-    font-weight: 600;
+    font-weight: var(--d-weight-normal);
 }
 .warn {
     color: var(--d-danger);

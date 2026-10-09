@@ -25,6 +25,7 @@ import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
+import { bumpSectionCount, setSectionCount } from '../designer/section-counts';
 import { useConfirm } from '../designer/useConfirm';
 
 const { confirm, notice } = useConfirm();
@@ -85,6 +86,7 @@ async function refresh(): Promise<void> {
         refreshHeartbeats(),
     ]);
     overviews.value = list;
+    setSectionCount('playlists', list.length);
     theme.value = stored;
 }
 
@@ -101,6 +103,7 @@ onMounted(async () => {
 
 async function created(id: string): Promise<void> {
     creating.value = false;
+    bumpSectionCount('playlists', 1);
     await router.push({ name: 'editor', params: { id } });
 }
 
@@ -119,6 +122,7 @@ async function duplicate(overview: PlaylistOverview, linked: boolean): Promise<v
     if (!repository.value || author.value === null) return;
     try {
         const copy = await repository.value.duplicatePlaylist(overview.playlist.id, author.value, new Date(), { linked });
+        bumpSectionCount('playlists', 1);
         await router.push({ name: 'editor', params: { id: copy.id } });
     } catch (e) {
         await notice(e instanceof Error ? e.message : String(e));
