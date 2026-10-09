@@ -25,10 +25,14 @@ function withContext(component: unknown, props: Record<string, unknown>) {
 }
 
 describe('calendar colours on badge and date tile', () => {
-    it('tints the badge with the colour itself, also when ChurchTools sends a name', () => {
-        const badge = withContext(CalendarBadge, { name: 'Gottesdienst', color: 'black' }).find('.badge');
-        expect(badge.attributes('style')).toContain('color-mix(in srgb, black 90%, transparent)');
-        expect(badge.attributes('style')).toContain('color: rgb(255, 255, 255)'); // white on black
+    it('frames the badge in the colour itself, with a dot in it; the name keeps the text colour (Plan.md 79)', () => {
+        const wrapper = withContext(CalendarBadge, { name: 'Gottesdienst', color: 'black' });
+        const style = wrapper.find('.badge').attributes('style');
+        expect(style).toContain('border-color: color-mix(in srgb, black 60%, transparent)');
+        expect(style).toContain('color-mix(in srgb, black 14%, transparent)');
+        expect(style).not.toMatch(/(^|;)\s*color:/);
+        expect(wrapper.find('.dot').attributes('style')).toContain('background: black');
+        expect(wrapper.find('.name').text()).toBe('Gottesdienst');
     });
 
     it('tints the date tile with the colour itself, also when ChurchTools sends a name', () => {
