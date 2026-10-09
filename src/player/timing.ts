@@ -5,6 +5,8 @@
  * request – the test instance once took 25 seconds for `whoami`.
  */
 
+import { tp } from '../i18n/player';
+
 export const INTERVALS = {
     /** Screen configuration: short, so a designer sees the change before leaving. */
     configMs: 2 * 60_000,
@@ -38,7 +40,7 @@ export function backoffDelay(baseMs: number, failures: number, retryAfterMs?: nu
 
 export class TimeoutError extends Error {
     constructor(ms: number) {
-        super(`Keine Antwort nach ${Math.round(ms / 1000)} Sekunden.`);
+        super(tp.noAnswer(Math.round(ms / 1000)));
         this.name = 'TimeoutError';
     }
 }

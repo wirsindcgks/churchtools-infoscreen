@@ -1,5 +1,6 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import type { Person } from './types';
+import { tp } from '../i18n/player';
 
 declare global {
     interface Window {
@@ -117,10 +118,7 @@ export class WrongPersonError extends Error {
         readonly signedInId: number,
         readonly expectedId: number,
     ) {
-        super(
-            `Angemeldet ist Person ${signedInId}, nicht der Geräte-Benutzer (Person ${expectedId}). ` +
-                'Die Anmeldung mit dem Token aus der Adresse ist gescheitert – login_token und user_id prüfen.',
-        );
+        super(tp.wrongPerson(signedInId, expectedId));
         this.name = 'WrongPersonError';
     }
 }

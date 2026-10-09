@@ -2,6 +2,7 @@
 import type { Block, TextStyle } from '../model/schema';
 import { fontStack } from './fonts';
 import { GROUP_COLORS } from './palette';
+import { LOCALE, tp } from '../i18n/player';
 
 export function textStyle(style: TextStyle): Record<string, string> {
     return {
@@ -57,43 +58,41 @@ export function sizedImageUrl(url: string, width: number, height: number, fit: '
 }
 
 export function formatTime(instant: Date, timeZone: string): string {
-    return new Intl.DateTimeFormat('de-DE', { timeZone, hour: '2-digit', minute: '2-digit' }).format(instant);
+    return new Intl.DateTimeFormat(LOCALE, { timeZone, hour: '2-digit', minute: '2-digit' }).format(instant);
 }
 
 /** The widest date `formatDate` makes in German: a Thursday in September (30th, the longest weekday and month). */
 export const WIDEST_DATE = new Date('2027-09-30T12:00:00Z');
 
 export function formatDate(instant: Date, timeZone: string): string {
-    return new Intl.DateTimeFormat('de-DE', { timeZone, weekday: 'long', day: 'numeric', month: 'long' }).format(
+    return new Intl.DateTimeFormat(LOCALE, { timeZone, weekday: 'long', day: 'numeric', month: 'long' }).format(
         instant,
     );
 }
 
 export function formatShortDate(instant: Date, timeZone: string): string {
-    return new Intl.DateTimeFormat('de-DE', { timeZone, weekday: 'short', day: '2-digit', month: '2-digit' }).format(
+    return new Intl.DateTimeFormat(LOCALE, { timeZone, weekday: 'short', day: '2-digit', month: '2-digit' }).format(
         instant,
     );
 }
 
-const MONTHS = ['JAN', 'FEB', 'MÄR', 'APR', 'MAI', 'JUN', 'JUL', 'AUG', 'SEP', 'OKT', 'NOV', 'DEZ'];
-
 /** Day and month for a date tile: "6" and "SEP", as the WordPress plugin shows them. */
 export function dateTile(instant: Date, timeZone: string): { day: string; month: string } {
-    const parts = new Intl.DateTimeFormat('de-DE', { timeZone, day: 'numeric', month: 'numeric' }).formatToParts(instant);
+    const parts = new Intl.DateTimeFormat(LOCALE, { timeZone, day: 'numeric', month: 'numeric' }).formatToParts(instant);
     const day = parts.find((p) => p.type === 'day')?.value ?? '';
     const month = Number(parts.find((p) => p.type === 'month')?.value ?? 1);
-    return { day, month: MONTHS[month - 1] ?? '' };
+    return { day, month: tp.time.months[month - 1] ?? '' };
 }
 
 /** "So" – the short weekday. */
 export function formatWeekday(instant: Date, timeZone: string): string {
-    return new Intl.DateTimeFormat('de-DE', { timeZone, weekday: 'short' }).format(instant).replace('.', '');
+    return new Intl.DateTimeFormat(LOCALE, { timeZone, weekday: 'short' }).format(instant).replace('.', '');
 }
 
 /** "10:00–11:30 Uhr", "10:00 Uhr" or "ganztägig". */
 export function timeRange(a: { allDay: boolean; startTime: string | null; endTime: string | null; multiDay: boolean }): string {
-    if (a.allDay || !a.startTime) return 'ganztägig';
-    return a.endTime && !a.multiDay && a.endTime !== a.startTime ? `${a.startTime}–${a.endTime} Uhr` : `${a.startTime} Uhr`;
+    if (a.allDay || !a.startTime) return tp.time.allDay;
+    return a.endTime && !a.multiDay && a.endTime !== a.startTime ? tp.time.range(a.startTime, a.endTime) : tp.time.clock(a.startTime);
 }
 
 /**

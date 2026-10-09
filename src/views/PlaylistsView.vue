@@ -23,6 +23,7 @@ import { blockCalendarIds, type ThemeDoc } from '../model/schema';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
+import { LOCALE } from '../i18n/player';
 
 const router = useRouter();
 const repository = shallowRef<ScreenRepository | null>(null);
@@ -39,12 +40,12 @@ const FORMATS = FILTERS.map((f) => ({ key: f.key, label: f.key === 'all' ? 'Alle
 const isPortrait = (o: PlaylistOverview) => o.playlist.stage.height > o.playlist.stage.width;
 
 const shown = computed(() => {
-    const needle = query.value.trim().toLocaleLowerCase('de');
+    const needle = query.value.trim().toLocaleLowerCase(LOCALE);
     return overviews.value.filter(
         (o) =>
             (format.value === 'all' || (format.value === 'portrait') === isPortrait(o)) &&
             (!needle ||
-                `${o.playlist.name} ${o.screens.map((s) => s.name).join(' ')}`.toLocaleLowerCase('de').includes(needle)),
+                `${o.playlist.name} ${o.screens.map((s) => s.name).join(' ')}`.toLocaleLowerCase(LOCALE).includes(needle)),
     );
 });
 

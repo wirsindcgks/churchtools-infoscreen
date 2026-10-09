@@ -9,6 +9,7 @@ import type { Block } from '../../model/schema';
 import { useStageContext } from '../context';
 import { countdownTo } from '../countdown';
 import { formatDate, textStyle, verticalAlignOf, verticalStyle } from '../format';
+import { tp } from '../../i18n/player';
 
 const props = defineProps<{ block: Extract<Block, { type: 'countdown' }> }>();
 const context = useStageContext();
@@ -38,18 +39,18 @@ const state = computed(() =>
         <div class="countdown-inner" :style="verticalStyle(verticalAlignOf(block) ?? 'middle')">
             <template v-if="state.kind === 'until'">
                 <div class="caption">
-                    {{ block.showTitle ? `${state.appointment.title} beginnt in` : 'Beginnt in' }}
+                    {{ block.showTitle ? tp.countdown.titleStartsIn(state.appointment.title) : tp.countdown.startsIn }}
                 </div>
                 <div class="time" data-testid="countdown-time">{{ state.text }}</div>
                 <div class="when">
-                    {{ formatDate(state.appointment.start, context.timeZone) }}, {{ state.appointment.startTime }} Uhr
+                    {{ formatDate(state.appointment.start, context.timeZone) }}, {{ tp.time.clock(state.appointment.startTime) }}
                 </div>
             </template>
             <template v-else-if="state.kind === 'running'">
                 <div v-if="block.showTitle" class="caption">{{ state.appointment.title }}</div>
                 <div class="running" data-testid="countdown-running">{{ block.runningText }}</div>
             </template>
-            <div v-else class="none">Kein Termin in Sicht</div>
+            <div v-else class="none">{{ tp.countdown.none }}</div>
         </div>
     </div>
 </template>

@@ -9,6 +9,7 @@
  * reach neither the screen nor the offline copy. Only confirmed bookings
  * count, whatever the server was asked for.
  */
+import { LOCALE, tp } from '../i18n/player';
 
 /** `statusId` of a confirmed booking (G45: 1 waits, 2 confirmed, 3 rejected). */
 export const BOOKING_CONFIRMED = 2;
@@ -74,8 +75,8 @@ export function roomsOf(masterdata: unknown): RoomInfo[] {
     );
     return (data.resources ?? [])
         .filter((r) => typeof r?.id === 'number' && r.resourceTypeId != null && roomTypeIds.has(r.resourceTypeId))
-        .sort((a, b) => (a.sortKey ?? Infinity) - (b.sortKey ?? Infinity) || (a.name ?? '').localeCompare(b.name ?? '', 'de'))
-        .map((r) => ({ id: r.id!, name: (r.nameTranslated ?? r.name ?? '').trim() || `Raum ${r.id}` }));
+        .sort((a, b) => (a.sortKey ?? Infinity) - (b.sortKey ?? Infinity) || (a.name ?? '').localeCompare(b.name ?? '', LOCALE))
+        .map((r) => ({ id: r.id!, name: (r.nameTranslated ?? r.name ?? '').trim() || tp.rooms.fallbackName(r.id!) }));
 }
 
 /**

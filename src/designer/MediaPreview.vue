@@ -19,6 +19,7 @@ import { sizedImageUrl } from '../player/format';
 import { videoSrc } from '../player/video';
 import FilterChips from './FilterChips.vue';
 import Icon from './Icon.vue';
+import { LOCALE } from '../i18n/player';
 
 const props = defineProps<{ items: MediaItem[]; fileId: number; actionLabel?: string; notice?: string }>();
 const emit = defineEmits<{ 'update:fileId': [number]; action: [MediaItem]; close: [] }>();
@@ -36,7 +37,7 @@ const size = computed(() => (item.value?.width && item.value.height ? `${item.va
 const duration = computed(() => (item.value?.kind === 'video' ? formatDuration(item.value.durationSeconds) : ''));
 const uploaded = computed(() => {
     const date = item.value?.createdAt ? new Date(item.value.createdAt) : null;
-    return date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+    return date && !Number.isNaN(date.getTime()) ? date.toLocaleDateString(LOCALE, { day: 'numeric', month: 'long', year: 'numeric' }) : '';
 });
 
 // The file is gone from the list (deleted, or a filter dropped it): nothing left to look at.
