@@ -11,6 +11,7 @@
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { EXTENSION_KEY } from '../config';
+import { t } from '../i18n/designer';
 import { WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
 import { CATEGORIES, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
 
@@ -56,10 +57,10 @@ const ALL = Object.keys(CATEGORIES) as CategoryKey[];
 const WRITTEN: CategoryKey[] = ['playlists', 'slides', 'media'];
 
 const DATA_RIGHTS: [keyof ModulePermissions, string, CategoryKey[]][] = [
-    ['view custom data', 'Daten ansehen', ALL],
-    ['create custom data', 'Daten anlegen', WRITTEN],
-    ['edit custom data', 'Daten bearbeiten', WRITTEN],
-    ['delete custom data', 'Daten löschen', WRITTEN],
+    ['view custom data', t.setup.designerRights.viewData, ALL],
+    ['create custom data', t.setup.designerRights.createData, WRITTEN],
+    ['edit custom data', t.setup.designerRights.editData, WRITTEN],
+    ['delete custom data', t.setup.designerRights.deleteData, WRITTEN],
 ];
 
 const names = (keys: CategoryKey[]) => keys.map((k) => CATEGORIES[k].name).join(', ');
@@ -71,20 +72,19 @@ export function missingDesignerRights(input: RightsInput): MissingRight[] {
 function missingModuleRights({ module, categories }: RightsInput): MissingRight[] {
     if (module === undefined) return [];
     const missing = (text: string, key?: string, detail?: string): MissingRight => ({ area: 'module', text, key, detail });
-    if (module === null) return [missing('Keine Rechte am Modul „Infoscreen Designer"')];
+    if (module === null) return [missing(t.setup.designerRights.noModule)];
 
     const result: MissingRight[] = [];
-    if (!module.view) result.push(missing('Modul ansehen', 'view'));
+    if (!module.view) result.push(missing(t.setup.designerRights.viewModule, 'view'));
 
     const hidden = ALL.filter((key) => categories[key] === undefined);
     if (hidden.length && !module['create custom category']) {
         // Not visible can mean "not created yet" or "not allowed to see" – both are named.
         result.push(
             missing(
-                'Kategorien sehen',
+                t.setup.designerRights.viewCategories,
                 'view custom category',
-                `${names(hidden)} – oder das Modul wurde noch nie von jemandem geöffnet, ` +
-                    'der Kategorien anlegen darf (create custom category).',
+                t.setup.designerRights.hiddenDetail(names(hidden)),
             ),
         );
     }
@@ -99,22 +99,22 @@ function missingModuleRights({ module, categories }: RightsInput): MissingRight[
 
 function missingWikiRights({ wiki, wikiCategoryId }: RightsInput): MissingRight[] {
     const missing = (text: string, key?: string, detail?: string): MissingRight => ({ area: 'wiki', text, key, detail });
-    if (!wiki?.view) return [missing('Wiki ansehen', 'churchwiki: view', 'für die Mediathek')];
+    if (!wiki?.view) return [missing(t.setup.designerRights.wikiView, 'churchwiki: view', t.setup.designerRights.forMedia)];
     if (wikiCategoryId === null) {
         return [
             missing(
-                `Wiki-Bereich „${WIKI_CATEGORY_NAME}" ansehen`,
+                t.setup.designerRights.categoryView(WIKI_CATEGORY_NAME),
                 'view category',
-                'Der Bereich ist nicht sichtbar – entweder fehlt dieses Recht, oder er entsteht erst beim ersten Bild-Upload.',
+                t.setup.designerRights.categoryHidden,
             ),
         ];
     }
     const result: MissingRight[] = [];
     if (!wiki['view category']?.includes(wikiCategoryId)) {
-        result.push(missing(`Wiki-Bereich „${WIKI_CATEGORY_NAME}" ansehen`, 'view category', 'für die Mediathek'));
+        result.push(missing(t.setup.designerRights.categoryView(WIKI_CATEGORY_NAME), 'view category', t.setup.designerRights.forMedia));
     }
     if (!wiki['edit category']?.includes(wikiCategoryId)) {
-        result.push(missing(`Wiki-Bereich „${WIKI_CATEGORY_NAME}" bearbeiten`, 'edit category', 'für Bild-Uploads'));
+        result.push(missing(t.setup.designerRights.categoryEdit(WIKI_CATEGORY_NAME), 'edit category', t.setup.designerRights.forUploads));
     }
     return result;
 }

@@ -12,9 +12,9 @@ Rolle zeigt das [Onboarding](Onboarding.md).
 
 | Rolle | Wer | Darf | Darf nicht |
 | --- | --- | --- | --- |
-| **Administrator** | ChurchTools-Admins mit „Personen administrieren" | Extension installieren, **Einstellungen** öffnen (Assistent, Rechte prüfen, Adressen für Fernseher), **Screens anlegen, einstellen, löschen** | – |
-| **Gestalter** | Mitglieder der Gruppe **„Infoscreen-Designer"** | gestalten, was die Screens zeigen: Slides, Playlists, Zeitpläne, Bilder in der Mediathek | Screens anlegen, einstellen, löschen; Einstellungen |
-| **Gerät** | Konten der Fernseher, Mitglieder von **„Infoscreen-Devices"** | nur lesen: die Screens, die Kalender und die Räume, die sie zeigen – und die Videos der Mediathek; schreiben nur ihr Lebenszeichen („Status") | alles andere |
+| **Administrator** | ChurchTools-Admins mit „Personen administrieren" | Extension installieren, **Einstellungen** öffnen (Assistent, Rechte prüfen, Adressen für Fernseher), **Bildschirme anlegen, einstellen, löschen** | – |
+| **Gestalter** | Mitglieder der Gruppe **„Infoscreen-Designer"** | gestalten, was die Bildschirme zeigen: Folien, Präsentationen, Zeitpläne, Bilder in der Mediathek | Bildschirme anlegen, einstellen, löschen; Einstellungen |
+| **Gerät** | Konten der Fernseher, Mitglieder von **„Infoscreen-Devices"** | nur lesen: die Bildschirme, die Kalender und die Räume, die sie zeigen – und die Videos der Mediathek; schreiben nur ihr Lebenszeichen („Status") | alles andere |
 
 **Die Sperre sitzt bei ChurchTools, nicht im Designer.** ChurchTools prüft bei jedem Lesen und Speichern das Recht;
 der Designer blendet nur aus, was ohnehin scheitern würde. Auch Administratoren über Gruppen brauchen die Rechte am
@@ -61,12 +61,12 @@ In der Rechteverwaltung unter **„Infoscreen Designer"**.
 Administrator an, wenn er die Startseite öffnet.
 
 **„Alle" schließt „Status" ein:** Auch Gestalter und Geräte sehen die Kategorie – Gestalter, damit die Kacheln zeigen, ob
-ein Screen online ist, Geräte, weil sie ihren Wert dort lesen, bevor sie ihn ändern. **Schreiben darf nur das Gerät, und nur
+ein Bildschirm online ist, Geräte, weil sie ihren Wert dort lesen, bevor sie ihn ändern. **Schreiben darf nur das Gerät, und nur
 in „Status":** sein Lebenszeichen, alle fünf Minuten. **Ein Löschrecht bekommt es nicht, weil es überflüssig wäre:**
 ChurchTools prüft beim Löschen eines Werts „bearbeiten" (Befunde G54) – wer bearbeiten darf, darf auch löschen. Wer die
 Adresse eines Fernsehers kennt, kann also Lebenszeichen fälschen oder löschen, sonst nichts.
 
-**Ausdrücklich nicht für Gestalter und Geräte:** das Anlegen, Bearbeiten und Löschen von Screens und Einstellungen.
+**Ausdrücklich nicht für Gestalter und Geräte:** das Anlegen, Bearbeiten und Löschen von Bildschirmen und Einstellungen.
 Der Assistent nimmt diese Rechte zurück, wenn eine seiner Gruppen sie noch hat – siehe
 [„Was „Rechte aktualisieren" zurücknimmt"](#was-rechte-aktualisieren-zurücknimmt).
 
@@ -82,14 +82,14 @@ Bilder und Videos der Mediathek liegen im Wiki-Bereich **„Infoscreen"**. In de
 
 ² Bilder kommen ohne Anmeldung über den Bilddienst von ChurchTools. Videos gibt es nur über die Download-Adresse der
 Datei, und die verlangt dieses eine Recht – deshalb bekommt das Gerät „Wiki-Bereich „Infoscreen" sehen", immer, auch
-bevor ein Screen ein Video zeigt. Damit sieht das Gerät die Dateien dieses Bereichs. „Wiki" sehen und das Bearbeiten
+bevor ein Bildschirm ein Video zeigt. Damit sieht das Gerät die Dateien dieses Bereichs. „Wiki" sehen und das Bearbeiten
 braucht ein Gerät nicht; die Einstellungsseite warnt, wenn es sie hat.
 
 **Das Bearbeiten des Wiki-Bereichs „Infoscreen" eng vergeben.** Wer es hat, kann im Wiki Bilder löschen – an der
 Warnung der Mediathek vorbei –, und auf den Fernsehern fehlen sie dann. Jedes Mitglied von „Infoscreen-Designer" hat
 dieses Recht; deshalb auch die Mitgliedschaft dort bewusst vergeben.
 
-### Kalender – für Termine auf den Screens
+### Kalender – für Termine auf den Bildschirmen
 
 In der Rechteverwaltung unter **„Kalender"**.
 
@@ -112,11 +112,11 @@ In der Rechteverwaltung unter **„Ressourcen"**.
 
 | Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
 | --- | --- | --- | --- | --- |
-| Ressource sehen | Ressource sehen (`view resource`, 205) | für die Vorschau | **alle Räume** | **jeden Raum, den ein Screen zeigt** – und **alle Räume**, sobald ein Termin-Baustein „Raum zeigen" an hat ⁴ |
+| Ressource sehen | Ressource sehen (`view resource`, 205) | für die Vorschau | **alle Räume** | **jeden Raum, den ein Bildschirm zeigt** – und **alle Räume**, sobald ein Termin-Baustein „Raum zeigen" an hat ⁴ |
 
 ⁴ **Nur Räume,** nicht Gegenstände und Fahrzeuge. Das Recht „„Ressourcen" sehen" (201) braucht niemand – das Recht
 je Ressource genügt. Gestalter sehen nur Räume, für die sie das Recht haben; fehlt es, steht der Raum im Baustein
-„Raumbelegung" nicht zur Auswahl. Zeigt ein Screen einen weiteren Raum, einmal „Rechte aktualisieren".
+„Raumbelegung" nicht zur Auswahl. Zeigt ein Bildschirm einen weiteren Raum, einmal „Rechte aktualisieren".
 **Raum am Termin:** Welche Räume künftige Termine buchen, weiß der Assistent nicht vorher – deshalb bekommt das Gerät
 „Ressource sehen" für alle Räume, sobald ein „Nächster Termin" oder eine Terminliste (als Karten) „Raum zeigen" an hat.
 Am Termin steht nur der Raumname, nie ein Buchungstitel.
@@ -154,11 +154,11 @@ ist es nicht.
 | Personen | „Personen erstellen" und „Personen bearbeiten" | Das Gerätekonto anlegen und ihm einen Status geben | Katalog |
 | Administration | „Personen simulieren, Passwort ändern und Zugang sperren" | Dem Gerätekonto Benutzername und Passwort setzen | Katalog |
 
-**Dauerhaft – Screens betreuen**
+**Dauerhaft – Bildschirme betreuen**
 
 | Bereich in der Rechteverwaltung | Recht | Wofür | Beleg |
 | --- | --- | --- | --- |
-| Infoscreen Designer | alle Rechte, die Datenrechte für alle Kategorien (Tabelle oben, Spalte „Administrator") | Screens anlegen, einstellen, löschen | gemessen |
+| Infoscreen Designer | alle Rechte, die Datenrechte für alle Kategorien (Tabelle oben, Spalte „Administrator") | Bildschirme anlegen, einstellen, löschen | gemessen |
 | Kalender | „Einzelnen Kalender sehen" für die Kalender, die du in der Vorschau sehen willst | Nur für die Vorschau; die Fernseher brauchen kein Kalenderrecht (³ oben) | gemessen |
 | Ressourcen | „Ressource sehen" für die Räume | Gestalter bekommen die Räume, die du siehst | gemessen |
 | Administration | „Berechtigungen verwalten" (siehe oben) | Einstellungen: „Rechte aktualisieren", Adressen für Fernseher, Dienste freigeben | gemessen |
@@ -176,7 +176,7 @@ Gruppen (ohne Super-Admin) trifft das nicht: Er hat, was seine Gemeinde ihm gibt
 
 ## Was „Rechte aktualisieren" zurücknimmt
 
-„Rechte aktualisieren" vergibt nicht nur, was fehlt, sondern nimmt auch zurück, was kein Screen mehr braucht. Vorher zeigt
+„Rechte aktualisieren" vergibt nicht nur, was fehlt, sondern nimmt auch zurück, was kein Bildschirm mehr braucht. Vorher zeigt
 ein Fenster, was dazukommt und was wegfällt; erst „Übernehmen" schreibt. Zurückgenommen wird **nur an den Gruppen, die
 der Assistent selbst angelegt hat**, und nur das, was er selbst verwaltet:
 
@@ -185,16 +185,16 @@ der Assistent selbst angelegt hat**, und nur das, was er selbst verwaltet:
 | Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | Gerät | Immer: Geräte sehen öffentliche Kalender über den öffentlichen Benutzer |
 | Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | Gerät | Kein Baustein zeigt mehr Dienste dieses Kalenders |
 | Ressource sehen | Ressource sehen (`view resource`, 205) | Gerät, Gestalter | Der Raum ist kein Raum mehr in dem, was die Gruppe haben soll |
-| Anlegen von Screens und Einstellungen | `create custom data` | Gestalter, Gerät | immer – das ist Sache der Administratoren |
-| Bearbeiten von Screens und Einstellungen | `edit custom data` | Gestalter, Gerät | immer |
-| Löschen von Screens und Einstellungen | `delete custom data` | Gestalter, Gerät | immer |
+| Anlegen von Bildschirmen und Einstellungen | `create custom data` | Gestalter, Gerät | immer – das ist Sache der Administratoren |
+| Bearbeiten von Bildschirmen und Einstellungen | `edit custom data` | Gestalter, Gerät | immer |
+| Löschen von Bildschirmen und Einstellungen | `delete custom data` | Gestalter, Gerät | immer |
 
 **Nur was der Administrator sieht.** Ein Recht an einem Kalender oder Raum, den der Administrator selbst nicht sieht, bleibt
 unangetastet – der Assistent weiß nicht, ob es dort gebraucht wird. Das gilt auch, wenn die Raumliste nicht lädt: Dann
 nimmt er keinem Gestalter einen Raum. Alle anderen Rechte an diesen Gruppen bleiben, auch fremde Gruppen werden nicht angefasst.
 
 **An den Gruppen des Assistenten nichts von Hand ergänzen.** Was dort an Kalendern, Events oder Räumen von Hand vergeben
-wurde, nimmt „Rechte aktualisieren" bei der nächsten Gelegenheit zurück, sobald es kein Screen braucht. Wer mehr vergeben
+wurde, nimmt „Rechte aktualisieren" bei der nächsten Gelegenheit zurück, sobald es kein Bildschirm braucht. Wer mehr vergeben
 will, nimmt eine eigene Gruppe.
 
 **Ein entzogenes Recht wirkt bei ChurchTools noch bis zu einer Dreiviertelstunde nach.**
@@ -204,14 +204,14 @@ will, nimmt eine eigene Gruppe.
 | Ich will … | Rolle | Fehlt es, dann … |
 | --- | --- | --- |
 | den Menüpunkt „Infoscreen Designer" sehen | alle | „Infoscreen Designer" sehen |
-| Screens auf der Startseite sehen | alle | Kategorien sehen, Daten in Kategorie sehen |
-| Slides gestalten und speichern | Gestalter | Daten in Kategorie erstellen / bearbeiten / löschen für Playlists und Slides |
+| Bildschirme auf der Startseite sehen | alle | Kategorien sehen, Daten in Kategorie sehen |
+| Folien gestalten und speichern | Gestalter | Daten in Kategorie erstellen / bearbeiten / löschen für Playlists und Slides |
 | Bilder und Videos hochladen | Gestalter | „Wiki" sehen und Wiki-Bereich „Infoscreen" sehen / bearbeiten, dazu Medien schreiben |
-| einen Screen anlegen, umbenennen, löschen | Administrator | Daten in Kategorie erstellen / bearbeiten / löschen für **Screens** |
+| einen Bildschirm anlegen, umbenennen, löschen | Administrator | Daten in Kategorie erstellen / bearbeiten / löschen für **Screens** |
 | die Einstellungen öffnen | Administrator | „Personen administrieren" |
 | dass der Fernseher Termine zeigt | – | der Kalender muss **öffentlich** sein (³ oben); das Gerät braucht kein Recht |
 | dass der Fernseher Videos abspielt | Gerät | Wiki-Bereich „Infoscreen" sehen |
-| dass der Fernseher die Raumbelegung zeigt | Gerät | Ressource sehen für jeden Raum des Screens |
+| dass der Fernseher die Raumbelegung zeigt | Gerät | Ressource sehen für jeden Raum des Bildschirms |
 | dass der Fernseher den Raum am Termin zeigt | Gerät | Ressource sehen für alle Räume |
 | Räume im Baustein „Raumbelegung" wählen | Gestalter | Ressource sehen für die Räume |
 

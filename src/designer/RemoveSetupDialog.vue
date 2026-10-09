@@ -13,6 +13,7 @@
  */
 import { computed, onMounted, ref } from 'vue';
 import { REPOSITORY_URL } from '../about/changelog';
+import { t } from '../i18n/designer';
 import { GROUP_NAMES } from '../setup/provision';
 
 export interface RemoveGroupInfo {
@@ -49,7 +50,7 @@ const emit = defineEmits<{ close: []; confirm: [] }>();
 
 const confirmText = ref('');
 const confirmInput = ref<HTMLInputElement | null>(null);
-const canConfirm = computed(() => confirmText.value.trim().toLowerCase() === 'entfernen');
+const canConfirm = computed(() => confirmText.value.trim().toLowerCase() === t.setup.remove.confirmWord);
 
 onMounted(() => confirmInput.value?.focus());
 
@@ -69,83 +70,59 @@ function confirm(): void {
             data-testid="remove-setup-dialog"
             @submit.prevent="confirm"
         >
-            <h2 id="remove-setup-title">Automatische Einrichtung rückgängig machen</h2>
-            <p>Das wird gelöscht:</p>
+            <h2 id="remove-setup-title">{{ t.setup.remove.title }}</h2>
+            <p>{{ t.setup.remove.willBeDeleted }}</p>
             <ul class="groups">
                 <li v-for="g in props.groups" :key="g.id">
                     <template v-if="g.name">
                         „{{ g.name }}"<template v-if="g.memberCount !== undefined">
-                            – {{ g.memberCount }} {{ g.memberCount === 1 ? 'Mitglied' : 'Mitglieder' }}
+                            – {{ g.memberCount }} {{ t.setup.remove.member(g.memberCount) }}
                         </template>
                     </template>
-                    <template v-else>Gruppe {{ g.id }} (gibt es nicht mehr)</template>
+                    <template v-else>{{ t.setup.remove.groupGone(g.id) }}</template>
                 </li>
             </ul>
-            <p v-if="props.wikiCategoryName">
-                Gestalter kommen nicht mehr in den Designer. Fernseher, deren Konto in „{{ GROUP_NAMES.device }}" ist,
-                bekommen keine neuen Inhalte mehr. Screens, Playlists und Bilder bleiben erhalten; der Wiki-Bereich
-                „{{ props.wikiCategoryName }}" mit den Bildern wird wieder im Wiki angezeigt, damit Administratoren
-                sie sichern können. Neu einrichten geht jederzeit.
-            </p>
-            <p v-else>
-                Gestalter kommen nicht mehr in den Designer. Fernseher, deren Konto in „{{ GROUP_NAMES.device }}" ist,
-                bekommen keine neuen Inhalte mehr. Screens, Playlists und Bilder bleiben erhalten; neu einrichten geht
-                jederzeit.
-            </p>
+            <p>{{ t.setup.remove.consequences(GROUP_NAMES.device, props.wikiCategoryName || null) }}</p>
             <section
                 v-if="props.deviceAccounts.length"
                 class="d-banner d-banner--warning device-accounts"
                 data-testid="remove-setup-device-accounts"
             >
-                <strong>Gerätekonten</strong>
+                <strong>{{ t.setup.remove.deviceAccounts }}</strong>
                 <ul>
                     <li v-for="a in props.deviceAccounts" :key="a.personId">
                         <a :href="a.url" target="_blank" rel="noopener">{{ a.name }}</a>
                     </li>
                 </ul>
-                <p>
-                    Empfehlung: Ändere danach die Passwörter dieser Konten in ChurchTools oder lösche die Konten. Erst
-                    dann funktionieren die Adressen der Fernseher nicht mehr – sie enthalten die Anmeldung dieser
-                    Konten. Der Designer kann das nicht selbst tun.
-                </p>
+                <p>{{ t.setup.remove.deviceAccountsAdvice }}</p>
             </section>
             <details data-testid="remove-setup-overview">
-                <summary>Was beim Abbau sonst passiert und was bleibt</summary>
+                <summary>{{ t.setup.remove.overview }}</summary>
                 <div>
-                    <strong>Dieser Schritt</strong>
+                    <strong>{{ t.setup.remove.thisStep }}</strong>
                     <ul>
-                        <li>Die oben genannten Gruppen werden mit Rollen, Rechten und Mitgliedschaften gelöscht.</li>
-                        <li>Selbst gewählte Gruppen bleiben unberührt.</li>
-                        <li>Screens, Playlists, Slides, Hinweise und Design bleiben.</li>
-                        <li v-if="props.wikiCategoryName">
-                            Der Wiki-Bereich bleibt und wird wieder im Wiki angezeigt, damit du die Bilder dort sichern
-                            kannst.
-                        </li>
-                        <li v-else>Der Wiki-Bereich bleibt.</li>
+                        <li>{{ t.setup.remove.groupsDeleted }}</li>
+                        <li>{{ t.setup.remove.ownGroupsStay }}</li>
+                        <li>{{ t.setup.remove.dataStays }}</li>
+                        <li v-if="props.wikiCategoryName">{{ t.setup.remove.wikiStaysShown }}</li>
+                        <li v-else>{{ t.setup.remove.wikiStays }}</li>
                     </ul>
                 </div>
                 <div>
-                    <strong>Danach in der Extension-Verwaltung von ChurchTools – „Infoscreen Designer" löschen</strong>
+                    <strong>{{ t.setup.remove.afterwards }}</strong>
                     <ul>
-                        <li>Screens, Playlists, Slides, Hinweise, Design und Einstellungen werden gelöscht.</li>
-                        <li>Die Rechte am Modul werden an allen Rollen entfernt, auch an der Administratoren-Gruppe.</li>
-                        <li>Das hochgeladene ZIP wird gelöscht.</li>
-                        <li>Eine Neuinstallation beginnt leer.</li>
+                        <li>{{ t.setup.remove.extensionDeletes }}</li>
+                        <li>{{ t.setup.remove.moduleRights }}</li>
+                        <li>{{ t.setup.remove.zipDeleted }}</li>
+                        <li>{{ t.setup.remove.freshStart }}</li>
                     </ul>
                 </div>
                 <div>
-                    <strong>Bleibt, von Hand zu erledigen</strong>
+                    <strong>{{ t.setup.remove.byHand }}</strong>
                     <ul>
-                        <li>
-                            Der Wiki-Bereich mit den Bildern: sichern, dann im Wiki löschen oder behalten. Die
-                            Adressen der Bilder bleiben ohne Anmeldung erreichbar, bis das Bild gelöscht ist.
-                        </li>
-                        <li>
-                            Der Geräte-Benutzer: Passwort ändern (empfohlen) oder die Person löschen – sein
-                            Login-Token steckt in den Adressen der Fernseher und gilt bis dahin weiter. Archivieren
-                            kannst du ihn danach.
-                        </li>
-                        <li>Die Kiosk-Browser der Fernseher: umstellen oder ausschalten.</li>
+                        <li>{{ t.setup.remove.wikiByHand }}</li>
+                        <li>{{ t.setup.remove.deviceByHand }}</li>
+                        <li>{{ t.setup.remove.kioskByHand }}</li>
                     </ul>
                 </div>
                 <p>
@@ -153,16 +130,14 @@ function confirm(): void {
                         :href="`${REPOSITORY_URL}/blob/main/docs/Einrichtung.md#was-beim-abbau-passiert--auf-einen-blick`"
                         target="_blank"
                         rel="noopener"
-                    >Ausführlich in der Anleitung</a>
+                    >{{ t.setup.remove.guide }}</a>
                 </p>
             </details>
             <p v-if="props.ownMemberOf.length" class="d-banner d-banner--warning" data-testid="remove-setup-own-warning">
-                Du bist selbst Mitglied in {{ props.ownMemberOf.map((n) => `„${n}"`).join(' und ') }}. Hast du die Rechte
-                am Designer nur über diese Gruppe, kommst du danach nicht mehr hinein – prüfe vorher Schritt 2 der
-                Einrichtung.
+                {{ t.setup.remove.ownWarning(props.ownMemberOf.map((n) => `„${n}"`).join(' und ')) }}
             </p>
             <label class="d-field">
-                Zum Bestätigen <strong>entfernen</strong> eintippen
+                {{ t.setup.remove.confirmBefore }} <strong>{{ t.setup.remove.confirmWord }}</strong> {{ t.setup.remove.confirmAfter }}
                 <input
                     ref="confirmInput"
                     v-model="confirmText"
@@ -174,9 +149,9 @@ function confirm(): void {
                 >
             </label>
             <div class="d-dialog-actions">
-                <button class="d-btn" type="button" @click="emit('close')">Abbrechen</button>
+                <button class="d-btn" type="button" @click="emit('close')">{{ t.common.cancel }}</button>
                 <button class="d-btn d-btn--danger" type="submit" :disabled="!canConfirm" data-testid="remove-setup-confirm">
-                    Automatische Einrichtung rückgängig machen
+                    {{ t.setup.remove.title }}
                 </button>
             </div>
         </form>

@@ -2,8 +2,11 @@
  * Every text of the designer, in one place (Plan.md 79, B1). German values, English keys; a text with a number or
  * a name is a function. No library. The player never imports this file – what it shows lives in `player.ts`, and
  * what the store tells the designer in `repository.ts`.
- * The parts of B1 fill the areas below.
  */
+
+/** The heading of the settings page for services, which the inspector names, too. */
+const SERVICES_TITLE = 'Dienste auf Bildschirmen';
+
 export const t = {
     /** What the editor and the other pages share. */
     common: {
@@ -309,7 +312,7 @@ export const t = {
         servicesFailed: 'Dienste konnten nicht geladen werden.',
         servicesNone: 'Keine Dienste verfügbar – in ChurchTools ist keine Dienstgruppe ‚Ohne Berechtigung einsehbar‘.',
         servicesNotAllowed:
-            'Noch kein Dienst freigegeben – ein Administrator legt in den Einstellungen unter „Dienste auf Bildschirmen“ fest, welche gezeigt werden dürfen.',
+            `Noch kein Dienst freigegeben – ein Administrator legt in den Einstellungen unter „${SERVICES_TITLE}“ fest, welche gezeigt werden dürfen.`,
         groups: 'Gruppen',
         postGroupsInfo: 'Zeigt die neuesten Beiträge der gewählten Gruppen; abgelaufene nie.',
         notPublic: 'nicht öffentlich',
@@ -932,5 +935,349 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         newTitle: 'Neue Version – noch nicht angesehen',
     },
 
-    setup: {},
+    /** The settings: groups and rights, addresses of the TVs, the media library in the wiki, the services. */
+    setup: {
+        adminsOnly: {
+            title: 'Die Einstellungen sind Sache der ChurchTools-Administratoren.',
+            text: 'Sie legen die Gruppen für Gestalter und Geräte an und vergeben deren Rechte. Wer Infoscreens gestaltet, braucht diese Seite nicht – fehlt dir ein Recht, wende dich an einen Administrator deiner Gemeinde.',
+        },
+        overview: {
+            intro: 'Hier verwalten ChurchTools-Administratoren die Gruppen und Rechte für Gestalter und Geräte, die Adressen der Fernseher und die Mediathek im Wiki.',
+        },
+        groups: {
+            title: 'Gruppen und Rechte',
+            intro: 'Der Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an; hier prüfst und aktualisierst du sie oder entfernst die Einrichtung.',
+            lead: 'Rechte vergibt ChurchTools an Rollen in Gruppen. Am einfachsten legt der Assistent die beiden Gruppen samt Rechten an. Wer eigene Gruppen nutzt, wählt sie unten aus – die Prüfung sagt, was fehlt, und ändert nichts.',
+            assistant: 'Automatisch einrichten',
+            done: (designer: string, device: string) =>
+                `Die Gruppen des Infoscreens sind eingerichtet. Wer gestalten soll, wird Mitglied in „${designer}", die Konten der Fernseher in „${device}" – mehr ist nicht zu tun.`,
+            doneHint:
+                'Zeigt ein Bildschirm einen weiteren Kalender, bringt „Rechte aktualisieren" die Gruppen auf den Stand – und nimmt zurück, was kein Bildschirm mehr braucht. Vorher zeigt eine Vorschau, was sich ändert; geändert werden nur Rechte an Kalendern und Räumen, die du selbst siehst.',
+            updateRights: 'Rechte aktualisieren',
+            removeSetup: 'Automatische Einrichtung rückgängig machen',
+            fresh: 'Legt zwei leere Gruppen vom gewählten Typ an und gibt ihren Rollen die nötigen Rechte. Danach müssen nur noch Personen in die Gruppen aufgenommen werden.',
+            foreign: (names: string) =>
+                `Es gibt schon ${names}. Der Assistent übernimmt keine fremden Gruppen – wähle sie unten aus und prüfe ihre Rechte.`,
+            whatHappens: 'Was genau passiert',
+            allRoles: 'an allen Rollen:',
+            wikiWillBeCreated: 'Dazu wird der Wiki-Bereich „Infoscreen" für die Mediathek angelegt.',
+            type: 'Gruppentyp',
+            pleaseChoose: '– bitte wählen –',
+            typesFailed: 'Die Gruppentypen ließen sich nicht laden.',
+            typeRecommended:
+                'Empfohlen: „Merkmal". Gestalter und Fernseher bekommen auch die Rechte, die dieser Typ seinen Rollen gibt – wähle einen Typ, der wenig mitbringt.',
+            create: 'Gruppen und Rechte anlegen',
+            working: 'Arbeitet …',
+            group: 'Gruppe',
+            noneChosen: '– keine gewählt –',
+            loadingGroups: 'Lade Gruppen …',
+            noSuitable: 'Keine passende Gruppe? In ChurchTools unter „Gruppen" eine anlegen, auf „aktiv" stellen und hier wählen.',
+            checking: 'Prüfe …',
+            saveSelection: 'Auswahl speichern',
+            saved: 'Gespeichert.',
+            saving: 'Speichert …',
+            checkNote:
+                'Geprüft werden die Rechte der Gruppenrollen und ihrer Gruppentyp-Rollen, bei Geräten dazu Personenstatus und direkt vergebene Rechte. Weitere Gruppen eines Gerätekontos werden genannt, ihre Rechte aber nicht geprüft.',
+            sameGroup: 'Gestalter und Geräte sind dieselbe Gruppe.',
+            sameGroupDetail: 'Dann bekommen die Geräte die Rechte der Gestalter – mehr, als ein unbeaufsichtigtes Gerät haben sollte.',
+            checkFailed: 'Prüfen nicht möglich.',
+            designer: {
+                title: 'Gestalter',
+                purpose: 'Wer Infoscreens gestaltet. Die Gruppe braucht die Rechte am Modul und am Wiki-Bereich „Infoscreen" für die Mediathek.',
+            },
+            device: {
+                title: 'Geräte',
+                purpose:
+                    'Die Konten, mit denen sich die Fernseher anmelden. Sie brauchen nur Leserechte: auf die Kalender ihrer Bildschirme und, für Videos, auf den Wiki-Bereich „Infoscreen" – sonst nichts.',
+            },
+        },
+        plan: {
+            demo: 'Im Demo-Modus nicht verfügbar: Die Bildschirme liegen hier nur im Browser, nicht in ChurchTools.',
+            catalog: 'Der Rechtekatalog von ChurchTools ist nicht lesbar.',
+            categories: 'Die Datenkategorien des Moduls fehlen noch – einmal die Startseite des Designers öffnen.',
+            none: 'Kein Plan.',
+        },
+        abilityHint: (missing: string[], typeName: string | undefined) =>
+            `Dafür fehlt dir in ChurchTools unter „Gruppen": ${missing.join(' und ')}${typeName ? ` (für „${typeName}")` : ''}. Oder alles zusammen: „Gruppen verwalten".`,
+        assistantRun: {
+            question: (typeName: string | undefined, designer: string, device: string) =>
+                `Zwei Gruppen vom Typ „${typeName}" anlegen – „${designer}" und „${device}" – und ihren Rollen die Rechte geben?\n\n` +
+                'Bestehende Gruppen und Rollen bleiben unberührt. „Automatische Einrichtung rückgängig machen" nimmt es zurück.',
+            wikiCreated: (name: string) => `Wiki-Bereich „${name}" angelegt.`,
+            aborted: (reason: string) => `Abgebrochen: ${reason}`,
+        },
+        removeNotAllowed403:
+            'Rückgängig machen nicht möglich: Du darfst die Einstellungen des Designers nicht ändern. Danach wüsste der Designer nicht, dass die Gruppen gelöscht sind. Gib deiner Administratoren-Gruppe die Modulrechte (Einrichtung, Schritt 2) und versuche es erneut.',
+        removeNotSaved: (reason: string) => `Rückgängig machen nicht möglich: Die Einstellungen ließen sich nicht speichern (${reason}).`,
+        /** The wording of ChurchTools' own group rights, as the permission management names them. */
+        groupRights: {
+            view: 'Gruppe inkl. ihrer Gruppenmitglieder sehen',
+            viewType: 'Gruppen eines Gruppentyps sehen',
+            delete: 'Gruppe löschen',
+            createType: 'Gruppen eines Gruppentyps erstellen',
+        },
+        groupFallback: (id: number) => `Gruppe ${id}`,
+        rightsOfOthers: 'Rechte anderer lesen darf nur, wer in ChurchTools Berechtigungen verwalten darf. Diese Seite ist für Administratoren.',
+        services: {
+            title: SERVICES_TITLE,
+            intro: 'Welche Dienste mit Namen auf einem Fernseher erscheinen dürfen.',
+            privacyTitle: 'Datenschutz beachten',
+            privacy:
+                'Wer hier einen Dienst freigibt, macht Namen öffentlich: Vor- und Nachname der Eingeteilten stehen im Foyer, für alle, die vorbeigehen – und für jeden, der die Adresse eines Fernsehers kennt.',
+            privacyAsk: 'Stimmt die Freigabe vorher mit der Gemeindeleitung ab.',
+            lead: 'Dienste zeigen, wer eingeteilt ist – mit Vor- und Nachnamen, für alle sichtbar, die am Fernseher vorbeigehen. Hier legst du fest, welche Dienste Gestalter überhaupt wählen können. Ohne Auswahl erscheint kein Dienst. Zur Wahl stehen nur Dienste, deren Dienstgruppe in ChurchTools „Ohne Berechtigung einsehbar" ist und die Namen nicht verbergen.',
+            failed: 'Dienste konnten nicht geladen werden.',
+            none: 'In ChurchTools gibt es keinen Dienst, der gezeigt werden könnte.',
+            saved: 'Gespeichert',
+            fallbackName: (id: number) => `Dienst ${id}`,
+            confirm: (name: string) =>
+                `„${name}" freigeben? Die Namen der Eingeteilten stehen dann öffentlich auf den Fernsehern. Ist das mit der Gemeindeleitung abgestimmt?`,
+        },
+        wiki: {
+            title: 'Mediathek im Wiki',
+            intro: 'Wo die Bilder der Mediathek im Wiki stehen.',
+            text: (name: string) =>
+                `Die Bilder der Mediathek liegen im Wiki-Bereich „${name}". Gepflegt werden sie im Designer; im Wiki lässt sich der Bereich unter „Ausgeblendet" aus dem Blick räumen. Er bleibt dort erreichbar – verborgen im strengen Sinn wird er nicht.`,
+            stateBefore: 'Im Wiki steht er zurzeit',
+            stateHidden: 'unter „Ausgeblendet"',
+            stateShown: 'unter „Kategorien"',
+            ownerCreated: 'Angelegt vom Infoscreen Designer.',
+            ownerForeign:
+                'Nicht als vom Designer angelegt vermerkt – etwa weil es ihn schon gab. Er gehört damit der Gemeinde und wird vom Designer nie gelöscht.',
+            showAgain: 'Wieder unter „Kategorien" zeigen',
+            hide: 'Unter „Ausgeblendet" führen',
+            demo: 'Im Demo-Modus nicht verfügbar.',
+            missing: (name: string) => `Es gibt noch keinen Wiki-Bereich „${name}" – der Assistent legt ihn unter „Gruppen und Rechte" an.`,
+        },
+        tv: {
+            title: 'Adressen für die Fernseher',
+            intro: 'Erzeugt die Adresse, mit der sich ein Fernseher selbst anmeldet.',
+            formTitle: 'Adresse für einen Fernseher',
+            text: 'Mit dieser Adresse meldet sich der Fernseher bei jedem Start selbst als Geräte-Benutzer an – eine Anmeldung im Browser hielte nur 24 Stunden. Trag sie als Startseite des Kiosk-Browsers ein.',
+            noScreens: 'Noch keine Bildschirme angelegt.',
+            screen: 'Bildschirm',
+            username: 'Benutzername des Geräte-Kontos',
+            password: 'Passwort des Geräte-Kontos',
+            create: 'Adresse erzeugen',
+            signingIn: 'Meldet an …',
+            note: 'Passwort und Adresse werden nirgends gespeichert. Das Passwort dient nur dazu, bei ChurchTools den Login-Token des Geräte-Kontos abzuholen.',
+            copy: 'Kopieren',
+            copied: 'Kopiert',
+            keyTitle: 'Diese Adresse ist ein Schlüssel.',
+            keyText: (personId: number | null) =>
+                `Wer sie hat, sieht ChurchTools mit den Rechten des Geräte-Kontos (Person ${personId}) – nur lesend bis auf sein Lebenszeichen, aber ohne Passwort. Nicht per E-Mail oder Chat weitergeben. Ungültig wird sie, sobald das Passwort des Kontos geändert wird.`,
+        },
+        version: {
+            before: (version: string) => `Infoscreen Designer ${version} – was neu ist, steht unter`,
+            after: '. Neuere Fassungen stehen unter „Releases" auf GitHub und werden in der Extension-Verwaltung von ChurchTools als ZIP hochgeladen.',
+        },
+        refresh: {
+            title: 'Rechte aktualisieren',
+            adds: 'Kommt dazu',
+            removes: 'Fällt weg',
+            delay: 'Ein entzogenes Recht wirkt bei ChurchTools noch bis zu einer Dreiviertelstunde nach.',
+            apply: 'Übernehmen',
+            logLine: (name: string, added: number, removed: number) =>
+                added || removed ? `„${name}": ${added} Rechte vergeben, ${removed} zurückgenommen.` : `Rechte von „${name}" sind auf dem Stand.`,
+        },
+        remove: {
+            title: 'Automatische Einrichtung rückgängig machen',
+            willBeDeleted: 'Das wird gelöscht:',
+            member: (n: number) => (n === 1 ? 'Mitglied' : 'Mitglieder'),
+            groupGone: (id: number) => `Gruppe ${id} (gibt es nicht mehr)`,
+            consequences: (deviceGroup: string, wikiName: string | null) =>
+                `Gestalter kommen nicht mehr in den Designer. Fernseher, deren Konto in „${deviceGroup}" ist, bekommen keine neuen Inhalte mehr. Bildschirme, Präsentationen und Bilder bleiben erhalten; ` +
+                (wikiName
+                    ? `der Wiki-Bereich „${wikiName}" mit den Bildern wird wieder im Wiki angezeigt, damit Administratoren sie sichern können. Neu einrichten geht jederzeit.`
+                    : 'neu einrichten geht jederzeit.'),
+            deviceAccounts: 'Gerätekonten',
+            deviceAccountsAdvice:
+                'Empfehlung: Ändere danach die Passwörter dieser Konten in ChurchTools oder lösche die Konten. Erst dann funktionieren die Adressen der Fernseher nicht mehr – sie enthalten die Anmeldung dieser Konten. Der Designer kann das nicht selbst tun.',
+            overview: 'Was beim Abbau sonst passiert und was bleibt',
+            thisStep: 'Dieser Schritt',
+            groupsDeleted: 'Die oben genannten Gruppen werden mit Rollen, Rechten und Mitgliedschaften gelöscht.',
+            ownGroupsStay: 'Selbst gewählte Gruppen bleiben unberührt.',
+            dataStays: 'Bildschirme, Präsentationen, Folien, Hinweise und Design bleiben.',
+            wikiStaysShown: 'Der Wiki-Bereich bleibt und wird wieder im Wiki angezeigt, damit du die Bilder dort sichern kannst.',
+            wikiStays: 'Der Wiki-Bereich bleibt.',
+            afterwards: 'Danach in der Extension-Verwaltung von ChurchTools – „Infoscreen Designer" löschen',
+            extensionDeletes: 'Bildschirme, Präsentationen, Folien, Hinweise, Design und Einstellungen werden gelöscht.',
+            moduleRights: 'Die Rechte am Modul werden an allen Rollen entfernt, auch an der Administratoren-Gruppe.',
+            zipDeleted: 'Das hochgeladene ZIP wird gelöscht.',
+            freshStart: 'Eine Neuinstallation beginnt leer.',
+            byHand: 'Bleibt, von Hand zu erledigen',
+            wikiByHand: 'Der Wiki-Bereich mit den Bildern: sichern, dann im Wiki löschen oder behalten. Die Adressen der Bilder bleiben ohne Anmeldung erreichbar, bis das Bild gelöscht ist.',
+            deviceByHand:
+                'Der Geräte-Benutzer: Passwort ändern (empfohlen) oder die Person löschen – sein Login-Token steckt in den Adressen der Fernseher und gilt bis dahin weiter. Archivieren kannst du ihn danach.',
+            kioskByHand: 'Die Kiosk-Browser der Fernseher: umstellen oder ausschalten.',
+            guide: 'Ausführlich in der Anleitung',
+            ownWarning: (names: string) =>
+                `Du bist selbst Mitglied in ${names}. Hast du die Rechte am Designer nur über diese Gruppe, kommst du danach nicht mehr hinein – prüfe vorher Schritt 2 der Einrichtung.`,
+            confirmBefore: 'Zum Bestätigen',
+            confirmWord: 'entfernen',
+            confirmAfter: 'eintippen',
+            groupsDeletedLog: (n: number) => `${n} Gruppen gelöscht.`,
+            goneLog: (id: number) => `Gruppe ${id} gab es nicht mehr – aus den Einstellungen entfernt.`,
+            nextSteps:
+                'Als Nächstes: den Designer in der Extension-Verwaltung von ChurchTools löschen, falls er ganz weg soll. ' +
+                'Danach von Hand: die Passwörter der Gerätekonten ändern oder die Konten löschen (sonst gelten die Adressen ' +
+                'der Fernseher weiter), Wiki-Bereich sichern und löschen oder behalten.',
+            passwordsLog: (names: string[]) =>
+                `Passwörter ändern empfohlen für: ${names.join(', ')} – dann funktionieren die Adressen der Fernseher nicht mehr.`,
+        },
+        provision: {
+            missingAuth: (auth: string) => `Das Recht „${auth}" fehlt im Rechtekatalog – ist die Extension installiert?`,
+            groupCreated: (name: string) => `Gruppe „${name}" angelegt.`,
+            rightsGranted: (rights: number, roles: number, name: string) => `${rights} Rechte an ${roles} Rollen von „${name}" vergeben.`,
+            aborted: (reason: string) => `Abgebrochen: ${reason}`,
+            roomFallback: (label: string, id: number) => `${label}: Raum ${id}`,
+            calendarFallback: (label: string, id: number) => `${label}: Kalender ${id}`,
+            /** The wording of ChurchTools' own right, as the assistant labels it. */
+            rightLabels: {
+                calendarView: 'Einzelnen Kalender sehen',
+                eventView: 'Events von einzelnen Kalendern sehen',
+                resourceView: 'Ressource sehen',
+            },
+            grants: {
+                viewModule: '„Infoscreen Designer" sehen',
+                viewCategories: 'Kategorien sehen',
+                viewData: 'Daten in Kategorie sehen',
+                createData: 'Daten in Kategorie erstellen',
+                editData: 'Daten in Kategorie bearbeiten',
+                deleteData: 'Daten in Kategorie löschen',
+                viewWiki: '„Wiki" sehen',
+                viewWikiCategory: 'Wiki-Bereich „Infoscreen" sehen',
+                editWikiCategory: 'Wiki-Bereich „Infoscreen" bearbeiten',
+                writeStatus: 'Lebenszeichen schreiben (Kategorie „Status")',
+                editStatus: 'Lebenszeichen ändern (Kategorie „Status")',
+                createAdminData: 'Anlegen von Bildschirmen und Einstellungen',
+                editAdminData: 'Bearbeiten von Bildschirmen und Einstellungen',
+                deleteAdminData: 'Löschen von Bildschirmen und Einstellungen',
+            },
+            named: (label: string, name: string) => `${label}: ${name}`,
+        },
+        deviceLogin: {
+            unreachable: 'ChurchTools ist gerade nicht erreichbar.',
+            failed:
+                'Anmeldung fehlgeschlagen. Stimmen Benutzername und Passwort? Hat das Konto überhaupt einen Benutzernamen – ein Passwort allein genügt nicht.',
+            tooMany: 'Zu viele Versuche. Bitte in ein paar Minuten noch einmal.',
+            error: (status: number) => `ChurchTools antwortet mit Fehler ${status}.`,
+            noToken: 'ChurchTools hat keinen Login-Token geliefert.',
+        },
+        wikiCreation: {
+            notVisible: (name: string) =>
+                `Der Wiki-Bereich „${name}" wurde schon angelegt, ist für Sie aber nicht sichtbar – lassen Sie sich das Recht geben, ihn zu sehen.`,
+            noRight: 'Ihnen fehlt das Recht, das Wiki zu sehen; ohne es lässt sich nicht prüfen, ob es den Bereich schon gibt.',
+        },
+        catalogUnreadable: 'Der Rechtekatalog von ChurchTools ist nicht lesbar.',
+        /** The traffic lights of the groups (`checks.ts`). */
+        checks: {
+            status: {
+                active: 'Die Gruppe ist aktiv.',
+                finished: 'Die Gruppe ist beendet.',
+                finishedDetail: 'Ihre Rechte wirken noch, aber beendete Gruppen geraten leicht aus dem Blick.',
+                draft: 'Die Gruppe ist ein Entwurf.',
+                draftDetail: 'Rechte wirken erst, wenn sie aktiv ist.',
+                archived: 'Die Gruppe ist archiviert.',
+                archivedDetail: 'Die Rechte ihrer Mitglieder wirken nicht mehr.',
+                unknown: (id: number | null | undefined) => `Unbekannter Gruppenstatus (${id ?? 'keiner'}).`,
+            },
+            moduleUnknown: 'Rechte am Modul lassen sich hier nicht prüfen.',
+            moduleUnknownDetail: 'Der Rechtekatalog ist nur innerhalb von ChurchTools lesbar, nicht in der lokalen Entwicklung.',
+            members: (n: number) => `${n} ${n === 1 ? 'Mitglied' : 'Mitglieder'}.`,
+            nobody: 'Noch niemand in der Gruppe.',
+            nobodyDetail: 'Wer Infoscreens gestalten soll, wird hier Mitglied.',
+            wikiMissing: 'Der Wiki-Bereich „Infoscreen" ist noch nicht da.',
+            wikiMissingDetail: 'Er entsteht beim ersten Bild-Upload in der Mediathek; danach lassen sich die Rechte hier prüfen.',
+            wikiSee: '„Wiki" sehen',
+            wikiCategorySee: 'Wiki-Bereich „Infoscreen" sehen',
+            wikiCategoryEdit: 'Wiki-Bereich „Infoscreen" bearbeiten',
+            roleLacksMedia: (role: string, lacking: string) => `Rolle „${role}": für die Mediathek fehlt ${lacking}.`,
+            roleMayUpload: (role: string) => `Rolle „${role}" darf Bilder in die Mediathek laden.`,
+            roleLacksModule: (role: string, lacking: string) => `Rolle „${role}": am Modul fehlt ${lacking}.`,
+            roleMayDesign: (role: string) => `Rolle „${role}" darf Bildschirme gestalten.`,
+            roleTooMuch: (role: string) => `Rolle „${role}" darf Bildschirme oder Einstellungen ändern – das ist Sache der Administratoren.`,
+            roleTooMuchDetail:
+                '„Rechte aktualisieren" nimmt das bei den Gruppen des Assistenten zurück; bei eigenen Gruppen in der Rechteverwaltung von ChurchTools entfernen.',
+            roleRooms: (role: string) => `Rolle „${role}" sieht nicht alle Räume.`,
+            roleRoomsDetail: 'Dann fehlen sie im Baustein „Raumbelegung". „Rechte aktualisieren" gibt sie den Gruppen des Assistenten.',
+            noAppointments: 'Noch zeigt kein Bildschirm Termine.',
+            calendarPublic: (name: string) => `„${name}" ist öffentlich.`,
+            calendarFallback: (id: number) => `Kalender ${id}`,
+            calendarNotPublic: (name: string) => `„${name}" ist nicht öffentlich – kein Fernseher zeigt ihn.`,
+            calendarNotPublicDetail: (path: string) => `Freigeben: ${path}. Oder im Editor aus dem Baustein entfernen.`,
+            calendarGone: (id: number) => `Kalender ${id} ist nicht öffentlich oder gelöscht – kein Fernseher zeigt ihn.`,
+            calendarGoneDetail: 'Im Editor aus dem Baustein entfernen.',
+            noDevice: 'Noch kein Geräte-Benutzer in der Gruppe.',
+            noDeviceDetail: 'Das Konto, mit dem sich die Fernseher anmelden, gehört hierher.',
+            devices: (n: number) => `${n} Geräte-Benutzer.`,
+            otherGroups: (label: string, groups: string) => `${label} ist auch Mitglied in ${groups}.`,
+            otherGroupsDetail:
+                'Rechte aus diesen Gruppen bekommt auch der Fernseher – und jeder, der seine Adresse kennt. Die Prüfung sieht sie nicht. Ein Gerätekonto gehört nur in „Infoscreen-Devices".',
+            internalCalendar: (label: string, calendar: string) => `${label} darf den internen Kalender „${calendar}" lesen.`,
+            internalCalendarDetail:
+                'Der Fernseher zeigt ihn nicht, aber wer seine Adresse kennt, kann ihn lesen. Das Recht kommt aus Status oder einer anderen Gruppe des Kontos.',
+            roomUnknown: (id: number) => `Raum ${id} wird verwendet, ist aber nicht (mehr) zu finden.`,
+            roomBlind: (room: string, labels: string) => `„${room}" ist für ${labels} nicht sichtbar.`,
+            roomBlindDetail: 'Recht „Ressource sehen" für diesen Raum an die Rolle der Gerätegruppe geben – oder „Rechte aktualisieren".',
+            roomVisible: (room: string) => `„${room}" ist sichtbar.`,
+            appointmentRoomsBlind: (label: string, unseen: number, total: number) =>
+                `Räume an Terminen: ${label} sieht ${unseen} von ${total} Räumen nicht.`,
+            appointmentRoomsBlindDetail: '„Rechte aktualisieren" gibt der Gerätegruppe das Recht „Ressource sehen" für alle Räume.',
+            appointmentRoomsVisible: 'Räume an Terminen sind sichtbar.',
+            servicesBlind: (labels: string) => `Dienste an Terminen: ${labels} sieht die Events der Kalender nicht.`,
+            servicesBlindDetail:
+                '„Rechte aktualisieren" gibt der Gerätegruppe das Recht „Events von einzelnen Kalendern sehen" für diese Kalender.',
+            servicesVisible: 'Dienste an Terminen sind sichtbar.',
+            deviceLacksModule: (label: string, lacking: string) => `${label}: am Modul fehlt ${lacking}.`,
+            deviceMayRead: (label: string) => `${label} darf die Bildschirme lesen.`,
+            videoSubject: (labels: string, n: number) => `${labels} ${n === 1 ? 'darf' : 'dürfen'} den Wiki-Bereich „Infoscreen" nicht sehen`,
+            videoBlind: (subject: string) => `${subject} – Videos laufen nicht.`,
+            videoBlindDetail: '„Rechte aktualisieren" gibt der Gerätegruppe das Recht „Einzelne Wiki-Kategorien sehen" für den Bereich.',
+            videoWouldBlind: (subject: string) => `${subject} – Videos würden nicht laufen.`,
+            videoWouldBlindDetail: '„Rechte aktualisieren" vergibt es.',
+            videoOk: 'Videos können laufen: der Wiki-Bereich „Infoscreen" ist sichtbar.',
+            wikiHolders: (labels: string, n: number) => `${labels} ${n === 1 ? 'hat' : 'haben'} Wiki-Rechte, die ein Gerät nicht braucht.`,
+            wikiHoldersDetail:
+                'Bilder lädt der Fernseher ohne Anmeldung, zum Abspielen von Videos genügt „Wiki-Bereich Infoscreen sehen". Weniger Rechte heißt weniger Schaden, wenn ein Gerät verloren geht.',
+            excess: (label: string, count: number, names: string, more: number) =>
+                `${label} hat ${count === 1 ? 'ein Recht' : `${count} Rechte`}, ${count === 1 ? 'das' : 'die'} ein Gerät nicht braucht: ${names}${more > 0 ? ` und ${more} weitere` : ''}.`,
+            excessFallback: (id: number) => `Recht ${id}`,
+            excessDetail:
+                'Ein Gerät soll nur lesen – bis auf sein Lebenszeichen –, und nur, was seine Bildschirme zeigen: Wer die Adresse des Fernsehers kennt, hat diese Rechte auch. Meist kommen sie aus dem Personenstatus oder einer anderen Gruppe des Kontos. Die Namen sind die der Rechteverwaltung von ChurchTools; dort der Person einen Status ohne diese Rechte geben.',
+            categories: {
+                group: 'Gruppe',
+                calendars: 'Kalender',
+                rooms: 'Räume',
+                services: 'Dienste',
+                module: 'Infoscreen Designer',
+                media: 'Mediathek und Videos',
+                rights: 'Weitere Rechte',
+            },
+            counted: {
+                fail: ['Fehler', 'Fehler'],
+                warn: ['Warnung', 'Warnungen'],
+                info: ['Hinweis', 'Hinweise'],
+            },
+            allWell: (ok: number, total: number) => (total === 1 ? 'In Ordnung' : `${ok} von ${total} in Ordnung`),
+        },
+        /** What the designer says to a person who lacks rights (`rights.ts`). */
+        designerRights: {
+            noModule: 'Keine Rechte am Modul „Infoscreen Designer"',
+            viewModule: 'Modul ansehen',
+            viewCategories: 'Kategorien sehen',
+            hiddenDetail: (names: string) =>
+                `${names} – oder das Modul wurde noch nie von jemandem geöffnet, der Kategorien anlegen darf (create custom category).`,
+            viewData: 'Daten ansehen',
+            createData: 'Daten anlegen',
+            editData: 'Daten bearbeiten',
+            deleteData: 'Daten löschen',
+            wikiView: 'Wiki ansehen',
+            forMedia: 'für die Mediathek',
+            categoryView: (name: string) => `Wiki-Bereich „${name}" ansehen`,
+            categoryEdit: (name: string) => `Wiki-Bereich „${name}" bearbeiten`,
+            categoryHidden: 'Der Bereich ist nicht sichtbar – entweder fehlt dieses Recht, oder er entsteht erst beim ersten Bild-Upload.',
+            forUploads: 'für Bild-Uploads',
+        },
+    },
 } as const;

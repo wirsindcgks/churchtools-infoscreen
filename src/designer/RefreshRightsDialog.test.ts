@@ -10,8 +10,8 @@ const groups: RefreshGroup[] = [
         add: [{ authId: 403, dataId: 5, label: 'Einzelnen Kalender sehen: Bandproben' }],
         remove: [
             { authId: 403, dataId: 3, label: 'Einzelnen Kalender sehen: Jugend' },
-            { authId: 2016, dataId: 1, label: 'Anlegen von Screens und Einstellungen' },
-            { authId: 2016, dataId: 13, label: 'Anlegen von Screens und Einstellungen' },
+            { authId: 2016, dataId: 1, label: 'Anlegen von Bildschirmen und Einstellungen' },
+            { authId: 2016, dataId: 13, label: 'Anlegen von Bildschirmen und Einstellungen' },
         ],
     },
     { key: 'designer', name: 'Infoscreen-Designer', add: [], remove: [] },
@@ -25,7 +25,7 @@ describe('RefreshRightsDialog (Plan.md 62)', () => {
         expect(wrapper.get('[data-testid="refresh-add"]').text()).toBe('Einzelnen Kalender sehen: Bandproben');
         expect(wrapper.findAll('[data-testid="refresh-remove"] li').map((li) => li.text())).toEqual([
             'Einzelnen Kalender sehen: Jugend',
-            'Anlegen von Screens und Einstellungen',
+            'Anlegen von Bildschirmen und Einstellungen',
         ]);
         expect(wrapper.find('[data-testid="refresh-group-designer"]').exists()).toBe(false);
         expect(wrapper.text()).toContain('Ein entzogenes Recht wirkt bei ChurchTools noch bis zu einer Dreiviertelstunde nach.');

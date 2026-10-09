@@ -6,6 +6,7 @@
  * once it emits `confirm`. No word to type: the preview is the safeguard, and a refresh is no deletion.
  */
 import { onMounted, ref } from 'vue';
+import { t } from '../i18n/designer';
 import type { RefreshGroup, RefreshItem } from '../setup/provision';
 
 const props = defineProps<{
@@ -32,27 +33,27 @@ function lines(items: RefreshItem[]): string[] {
             data-testid="refresh-rights-dialog"
             @submit.prevent="emit('confirm')"
         >
-            <h2 id="refresh-rights-title">Rechte aktualisieren</h2>
+            <h2 id="refresh-rights-title">{{ t.setup.refresh.title }}</h2>
             <section v-for="g in props.groups.filter((x) => x.add.length || x.remove.length)" :key="g.key" :data-testid="`refresh-group-${g.key}`">
                 <strong>{{ g.name }}</strong>
                 <template v-if="g.add.length">
-                    <p class="heading">Kommt dazu</p>
+                    <p class="heading">{{ t.setup.refresh.adds }}</p>
                     <ul data-testid="refresh-add">
                         <li v-for="line in lines(g.add)" :key="line">{{ line }}</li>
                     </ul>
                 </template>
                 <template v-if="g.remove.length">
-                    <p class="heading">Fällt weg</p>
+                    <p class="heading">{{ t.setup.refresh.removes }}</p>
                     <ul data-testid="refresh-remove">
                         <li v-for="line in lines(g.remove)" :key="line">{{ line }}</li>
                     </ul>
                 </template>
             </section>
-            <p class="muted">Ein entzogenes Recht wirkt bei ChurchTools noch bis zu einer Dreiviertelstunde nach.</p>
+            <p class="muted">{{ t.setup.refresh.delay }}</p>
             <div class="d-dialog-actions">
-                <button class="d-btn" type="button" @click="emit('close')">Abbrechen</button>
+                <button class="d-btn" type="button" @click="emit('close')">{{ t.common.cancel }}</button>
                 <button ref="confirmButton" class="d-btn d-btn--primary" type="submit" data-testid="refresh-rights-confirm">
-                    Übernehmen
+                    {{ t.setup.refresh.apply }}
                 </button>
             </div>
         </form>

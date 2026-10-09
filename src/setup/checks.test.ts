@@ -123,7 +123,7 @@ describe('checkDeviceGroup', () => {
         expect(checkDeviceGroup({ statusId: 1, members: [], calendars, usedCalendarIds: [], publicCalendarIds: [], wikiCategoryId: WIKI })).toContainEqual({
             level: 'info',
             category: 'calendars',
-            text: 'Noch zeigt kein Screen Termine.',
+            text: 'Noch zeigt kein Bildschirm Termine.',
         });
     });
 
