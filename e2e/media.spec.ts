@@ -59,7 +59,8 @@ test('upload an image, place it, and get warned before deleting it', async ({ pa
     const mine = page.getByTestId('media-item').filter({ hasText: name });
     await expect(mine).toHaveCount(1);
     await page.screenshot({ path: 'test-results/media-library.png' });
-    await mine.getByRole('button', { name: 'Löschen' }).click();
+    await mine.getByRole('button', { name: /^Aktionen/ }).click();
+    await mine.getByRole('menuitem', { name: 'Löschen' }).click();
     await expect(page.getByTestId('confirm-dialog')).toContainText('aus ChurchTools löschen?');
     await page.getByTestId('confirm-ok').click();
     await expect(page.getByTestId('confirm-dialog')).toBeVisible();

@@ -1015,16 +1015,18 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await row.getByTestId('schedule-rule-line').hover();
     await expect(ruleSegments.first()).toHaveAttribute('data-dim', 'false');
     await expect(row.locator('[data-testid="week-segment"][data-key="default"]').first()).toHaveAttribute('data-dim', 'true');
-    await row.getByTestId('schedule-edit').hover();
+    await row.getByTestId('schedule-menu').hover();
     await expect(row.locator('[data-testid="week-segment"][data-key="default"]').first()).toHaveAttribute('data-dim', 'false');
     await ruleSegments.first().hover();
     await expect(row.getByTestId('schedule-rule-line')).toHaveClass(/linked/);
     await ruleSegments.first().click(); // chooses the preview like a click on the line
     await expect(row.getByTestId('schedule-rule-line').getByRole('button')).toHaveAttribute('aria-pressed', 'true');
-    await expect(row.getByTestId('schedule-playlist')).toHaveText('Gottesdienst');
+    await expect(row.getByTestId('schedule-mark')).toHaveText(/^(Läuft jetzt|Vorschau: Regel 1)$/);
     await row.locator('[data-testid="week-segment"][data-key="default"]').first().click();
-    await expect(row.getByTestId('schedule-playlist')).toHaveText('Wochenüberblick');
+    await expect(row.getByTestId('schedule-mark')).toHaveText(/^(Läuft jetzt|Vorschau: Standard)$/);
+    await expect(row.getByTestId('schedule-playlist')).toHaveText(/Gottesdienst|Wochenüberblick/);
 
+    await row.getByTestId('schedule-menu').click();
     await row.getByTestId('schedule-edit').click();
     await expect(page.getByTestId('schedule-dialog').getByTestId('schedule-rule')).toHaveCount(1);
     await page.getByTestId('schedule-cancel').click();

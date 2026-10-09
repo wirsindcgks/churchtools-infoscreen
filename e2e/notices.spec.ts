@@ -144,5 +144,6 @@ test('an expired notice has no strip and says when it ended (Plan.md 69)', async
     const card = page.getByTestId('notice-card-expired').first();
     await expect(card).toContainText('abgelaufen am');
     await expect(card.getByTestId('week-timeline')).toHaveCount(0);
+    await card.getByTestId('notice-menu').click();
     await expect(card.getByTestId('notice-remove')).toBeVisible();
 });
