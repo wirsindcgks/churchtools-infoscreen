@@ -18,7 +18,7 @@ const { confirm } = useConfirm();
 
 /**
  * `sheet`: the list stands in the sheet of a phone (Plan.md 79, C2) – as a grid of two columns with bigger pictures,
- * without the buttons of the chosen one and without sorting, which `useSortable` does not carry in a grid.
+ * without the buttons of the chosen one and without handles: the mouse takes the whole tile, a finger holds it, and `useSortable` sorts on the grid.
  */
 const props = defineProps<{ sheet?: boolean }>();
 const emit = defineEmits<{ collapse: [] }>();
@@ -70,7 +70,8 @@ const importing = ref(false);
 useSortable({
     container: list,
     onMove: (from, to) => editor.moveSlide(from, to),
-    fixed: () => !!props.sheet,
+    grid: () => !!props.sheet,
+    mouseOnRow: () => !!props.sheet,
     touchOnRow: true,
 });
 

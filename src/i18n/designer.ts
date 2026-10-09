@@ -206,6 +206,9 @@ export const t = {
         blockNamed: (label: string) => `Baustein: ${label}`,
         /** The head of the inspector and of the short menu while several blocks are chosen (Plan.md 79, D5). */
         blocksCount: (n: number) => `${n} Bausteine`,
+        /** The mode "Mehrere auswählen" (Plan.md 79, D6): its entry in the menus and the bar that counts. */
+        multiSelect: 'Mehrere auswählen',
+        selectedCount: (n: number) => `${n} gewählt`,
         discardChanges: 'Ungespeicherte Änderungen verwerfen?',
         slideConflict: {
             title: 'Eine verknüpfte Folie wurde inzwischen geändert',
@@ -575,6 +578,9 @@ export const t = {
         measures: 'Genaue Maße',
         frameFields: { x: 'X', y: 'Y', width: 'Breite', height: 'Höhe' },
         layerOf: (n: number, total: number) => `Ebene ${n} von ${total}`,
+        /** The list of the slide's blocks above the slide's settings (Plan.md 79, D6). */
+        slideBlocks: 'Bausteine dieser Folie',
+        topIsFront: 'oben = vorne',
         linkedAlso: (names: string) => `Auch in: ${names}`,
         linkedPending: 'ab dem Veröffentlichen',
         linkedInfo:

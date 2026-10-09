@@ -103,7 +103,7 @@ describe('QuickMenu (Plan.md 79, C1)', () => {
         expect(wrapper.find('[data-testid="quick-duplicate"]').exists()).toBe(false);
         await wrapper.find('[data-testid="quick-more"]').trigger('click');
         const items = wrapper.findAll('[data-testid="quick-more-list"] [role="menuitem"]').map((b) => b.attributes('data-testid'));
-        expect(items).toEqual(['quick-lock', 'quick-duplicate', 'quick-copy', 'quick-cut', 'quick-all-settings', 'quick-delete']);
+        expect(items).toEqual(['quick-lock', 'quick-duplicate', 'quick-copy', 'quick-cut', 'quick-multi-select', 'quick-all-settings', 'quick-delete']);
         wrapper.unmount();
     });
 });

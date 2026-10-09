@@ -5,7 +5,7 @@
  * Without a block the slide and the playlist show instead. What a block shows lives in
  * `inspector/blocks/`, one component per type.
  */
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import type { Calendar, PostGroup } from '../ct/api';
 import { t } from '../i18n/designer';
 import type { HomepageEntry } from '../groups/normalize';
@@ -19,15 +19,16 @@ import { BLOCK_INSPECTORS } from './inspector/blocks';
 import { provideInspectorContext } from './inspector/context';
 import NumberField from './inspector/fields/NumberField.vue';
 import SlideInspector from './inspector/SlideInspector.vue';
-import { layerRows, blockSummary } from './layers';
+import LayerList from './LayerList.vue';
+import { layerRows } from './layers';
 import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
 import { KEYS, withKeys } from './shortcuts';
 import { vTip } from './tip';
-import { useSortable } from './useSortable';
 
 /** `rooms`: the rooms the designer may see; null while they are not loaded yet. */
 const props = defineProps<{ calendars: Calendar[]; hiddenCalendars?: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null; services?: ServiceInfo[] | null; allowedServices?: number[]; servicesFailed?: boolean }>();
-const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow' | 'video'] }>();
+/** `picked`: a block was chosen from the list of the slide's blocks (on a phone the sheet closes then). */
+const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow' | 'video']; picked: [] }>();
 
 // The inspectors below read the lists through getters, so they follow the props.
 provideInspectorContext(() => props, (kind) => emit('pick-image', kind));
@@ -51,23 +52,9 @@ const positionSummary = computed(() =>
     block.value ? `${block.value.x}, ${block.value.y} · ${block.value.width} × ${block.value.height}` : '',
 );
 
-/** The layers, top first; a drag reorders them in the slide (a locked block keeps its place). */
+/** The layers, top first. */
 const rows = computed(() => layerRows(editor.slide?.blocks ?? []));
-const layerList = ref<HTMLElement | null>(null);
-const isLockedAt = (index: number): boolean => !!editor.slide?.blocks[index]?.locked;
-// The list shows the array backwards: place d of the list is place n - 1 - d of the slide.
-useSortable({
-    container: layerList,
-    fixed: (index) => isLockedAt(rows.value.length - 1 - index),
-    onMove: (from, to) => editor.moveBlockLayer(rows.value.length - 1 - from, rows.value.length - 1 - to),
-});
 const layerNumber = computed(() => (block.value ? (editor.slide?.blocks.findIndex((b) => b.id === block.value!.id) ?? -1) + 1 : 0));
-const lookup = {
-    mediaName: (id: string) => editor.media.find((m) => m.id === id)?.name,
-    calendarName: (id: number) => [...props.calendars, ...(props.hiddenCalendars ?? [])].find((c) => c.id === id)?.name,
-    roomName: (id: number) => props.rooms?.find((r) => r.id === id)?.name,
-};
-
 const LAYERS = [
     { where: 'front', icon: 'layer-front', label: t.inspector.layers.front },
     { where: 'forward', icon: 'layer-forward', label: t.inspector.layers.forward },
@@ -147,33 +134,7 @@ const LAYERS = [
                 <InspectorSection id="arrange" :title="t.inspector.arrange" default-open>
                     <ArrangeField />
                     <p v-if="block" class="layer-position" data-testid="layer-position">{{ t.inspector.layerOf(layerNumber, rows.length) }}</p>
-                    <ol ref="layerList" class="layer-list" data-testid="layer-list">
-                        <li
-                            v-for="row in rows"
-                            :key="row.block.id"
-                            class="layer-item"
-                            :class="{ 'layer-item--on': editor.isSelected(row.block.id) }"
-                            data-sort-item
-                            data-testid="layer-row"
-                            @click="editor.selectBlock(row.block.id)"
-                        >
-                            <button
-                                class="layer-handle"
-                                type="button"
-                                data-sort-handle
-                                :disabled="!!row.block.locked"
-                                :aria-label="t.common.dragToSort"
-                                data-testid="layer-handle"
-                                @click.stop
-                            >
-                                <Icon name="grip" :size="14" />
-                            </button>
-                            <Icon :name="BLOCK_ICONS[row.block.type]" :size="16" class="layer-icon" />
-                            <span class="layer-name">{{ BLOCK_LABELS[row.block.type] }}</span>
-                            <span class="layer-sub">{{ blockSummary(row.block, lookup) }}</span>
-                            <Icon v-if="row.block.locked" name="lock" :size="14" class="layer-lock" :data-testid="`layer-lock`" />
-                        </li>
-                    </ol>
+                    <LayerList @picked="emit('picked')" />
                     <div class="layer-buttons">
                         <button
                             v-for="layer in LAYERS"
@@ -208,8 +169,15 @@ const LAYERS = [
             </fieldset>
         </section>
 
-        <!-- Slide and playlist -->
-        <SlideInspector v-else />
+        <template v-else>
+            <!-- Without a block chosen the slide's blocks come first, for the finger and for blocks hidden under others. -->
+            <InspectorSection v-if="rows.length" id="slide-blocks" :title="t.inspector.slideBlocks" default-open class="slide-blocks" data-testid="slide-blocks">
+                <p class="layer-position">{{ t.inspector.topIsFront }}</p>
+                <LayerList @picked="emit('picked')" />
+            </InspectorSection>
+            <!-- Slide and playlist -->
+            <SlideInspector />
+        </template>
     </aside>
 </template>
 
@@ -248,68 +216,11 @@ h3 {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
-/* The layers, top first: symbol, name and short content; the chosen one on the accent's pale ground. */
-.layer-list {
-    display: grid;
-    gap: 2px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-.layer-item {
-    display: flex;
-    align-items: center;
-    gap: var(--d-space-2);
-    min-width: 0;
-    min-height: 36px;
-    padding: 0 var(--d-space-2);
-    border-radius: var(--d-radius);
-    cursor: pointer;
-    user-select: none;
-    -webkit-touch-callout: none;
-}
-.layer-item:hover {
-    background: var(--d-panel);
-}
-.layer-item--on,
-.layer-item--on:hover {
-    background: var(--d-accent-pale);
-    color: var(--d-accent-strong);
-}
-.layer-handle {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 20px;
-    height: 32px;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--d-text-faint);
-    cursor: grab;
-}
-.layer-handle:disabled {
-    opacity: 0.3;
-    cursor: default;
-}
-.layer-icon,
-.layer-lock {
-    flex: none;
-    color: var(--d-text-muted);
-}
-.layer-name {
-    flex: none;
-    font-size: var(--d-size-sm);
-    font-weight: var(--d-weight-normal);
-}
-.layer-sub {
-    min-width: 0;
-    flex: 1;
-    overflow: hidden;
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+/* The first part of the inspector: no line above it, one below, then the slide's own fields. */
+.inspector .slide-blocks {
+    margin-bottom: var(--d-space-3);
+    border-top: 0;
+    border-bottom: 1px solid var(--d-divider);
 }
 .layer-buttons {
     display: flex;

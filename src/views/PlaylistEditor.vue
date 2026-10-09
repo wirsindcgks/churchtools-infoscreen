@@ -605,6 +605,9 @@ function onKey(event: KeyboardEvent): void {
         // Writes the chosen text on the stage (Plan.md 79, C4); the key must not reach the new field as a line break.
         event.preventDefault();
         editor.startTextEdit(editor.block.id);
+    } else if (event.key === 'Escape' && editor.multiSelect) {
+        // The mode ends, the choice stays (D6).
+        editor.endMultiSelect();
     } else if (event.key === 'Escape') {
         editor.selectBlock(null);
         inspectorOpen.value = false;
@@ -628,7 +631,7 @@ function onKey(event: KeyboardEvent): void {
             height: `calc(100vh - ${top}px)`,
             '--editor-top': `${top}px`,
             '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}`,
-            '--d-phone-bar': phone && editor.selection.length ? '112px' : '56px',
+            '--d-phone-bar': phone && (editor.selection.length || editor.multiSelect) ? '112px' : '56px',
             '--stage-max': stageMax === null ? undefined : `${stageMax}px`,
         }"
     >
@@ -882,7 +885,7 @@ function onKey(event: KeyboardEvent): void {
                     <span class="sheet-label">{{ sheetLabel }}</span>
                     <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
                 </button>
-                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :groups="groups" :homepages="homepages" :rooms="rooms" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" @pick-image="openLibrary" />
+                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :groups="groups" :homepages="homepages" :rooms="rooms" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" @pick-image="openLibrary" @picked="phone && (inspectorOpen = false)" />
             </div>
         </div>
 
@@ -892,6 +895,7 @@ function onKey(event: KeyboardEvent): void {
             ref="phoneBar"
             @slides="slidesSheetOpen = true"
             @edit-slide="inspectorOpen = true"
+            @blocks="editor.selectBlock(null); inspectorOpen = true"
             @all-settings="showAllSettings"
         />
         <div

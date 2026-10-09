@@ -10,6 +10,10 @@
  * The composable moves nothing in the data: it reports `onMove(from, to)` once per move – a single step in the
  * history. Items are the direct children of the container marked `[data-sort-item]`. `fixed` names rows that stay where
  * they are (a locked block): they cannot be dragged, the others pass them by.
+ *
+ * In a grid (`grid`, the sheet of slides on a phone) the rows are measured as places (x and y); the dragged row follows
+ * the pointer in both directions, lands on the place whose centre is nearest to its own, and the others move onto
+ * the places they take.
  */
 import { nextTick, onBeforeUnmount, ref, watch, type Ref } from 'vue';
 import { reorderAround } from './ops';
@@ -38,6 +42,8 @@ export interface SortableOptions {
     touchOnRow?: boolean;
     /** The mouse grabs the whole row, not only the handle. */
     mouseOnRow?: () => boolean;
+    /** The rows form a grid (rows of several columns): places count in x and y, and the arrows move in both axes. */
+    grid?: () => boolean;
 }
 
 interface Drag {
@@ -48,6 +54,8 @@ interface Drag {
     spans: { start: number; size: number }[];
     gap: number;
     horizontal: boolean;
+    /** The place of each row in a grid, in the coordinates of the scrolled content; empty outside a grid. */
+    places: { x: number; y: number; width: number; height: number }[];
     scroller: HTMLElement | null;
     /** The pointer at the start and now, in client coordinates. */
     from: { x: number; y: number };
@@ -118,11 +126,18 @@ export function useSortable(options: SortableOptions): { dragging: Ref<number | 
         const horizontal = options.horizontal?.() ?? false;
         const scroller = scrollerOf(container);
         const scrollFrom = { x: scroller ? scroller.scrollLeft : window.scrollX, y: scroller ? scroller.scrollTop : window.scrollY };
+        const grid = options.grid?.() ?? false;
+        const places = grid
+            ? elements.map((el) => {
+                  const rect = el.getBoundingClientRect();
+                  return { x: rect.left + scrollFrom.x, y: rect.top + scrollFrom.y, width: rect.width, height: rect.height };
+              })
+            : [];
         const spans = elements.map((el) => {
             const rect = el.getBoundingClientRect();
             return horizontal ? { start: rect.left + scrollFrom.x, size: rect.width } : { start: rect.top + scrollFrom.y, size: rect.height };
         });
-        const gap = elements.length < 2 ? 0 : wait.index < elements.length - 1 ? spans[wait.index + 1]!.start - spans[wait.index]!.start - spans[wait.index]!.size : spans[wait.index]!.start - spans[wait.index - 1]!.start - spans[wait.index - 1]!.size;
+        const gap = grid || elements.length < 2 ? 0 : wait.index < elements.length - 1 ? spans[wait.index + 1]!.start - spans[wait.index]!.start - spans[wait.index]!.size : spans[wait.index]!.start - spans[wait.index - 1]!.start - spans[wait.index - 1]!.size;
         drag = {
             index: wait.index,
             pointerId: wait.pointerId,
@@ -130,6 +145,7 @@ export function useSortable(options: SortableOptions): { dragging: Ref<number | 
             spans,
             gap,
             horizontal,
+            places,
             scroller,
             from: { x, y },
             at: { x, y },
@@ -157,6 +173,10 @@ export function useSortable(options: SortableOptions): { dragging: Ref<number | 
         const d = drag;
         if (!d) return;
         const scroll = scrollNow(d);
+        if (d.places.length) {
+            updateGrid(d, scroll);
+            return;
+        }
         const delta = d.horizontal ? d.at.x + scroll.x - (d.from.x + d.scrollFrom.x) : d.at.y + scroll.y - (d.from.y + d.scrollFrom.y);
         const own = d.spans[d.index]!;
         const centre = own.start + own.size / 2 + delta;
@@ -171,6 +191,35 @@ export function useSortable(options: SortableOptions): { dragging: Ref<number | 
             el.style.transition = row === d.index ? 'none' : '';
             el.style.transform = shift ? (d.horizontal ? `translateX(${shift}px)` : `translateY(${shift}px)`) : '';
             cursor += span.size + d.gap;
+        });
+    }
+
+    /** The grid: the dragged row goes with the pointer, the others onto the places of the order it would make. */
+    function updateGrid(d: Drag, scroll: { x: number; y: number }): void {
+        const dx = d.at.x + scroll.x - (d.from.x + d.scrollFrom.x);
+        const dy = d.at.y + scroll.y - (d.from.y + d.scrollFrom.y);
+        const own = d.places[d.index]!;
+        const cx = own.x + own.width / 2 + dx;
+        const cy = own.y + own.height / 2 + dy;
+        let to = d.index;
+        let best = Infinity;
+        d.places.forEach((place, i) => {
+            const distance = Math.hypot(place.x + place.width / 2 - cx, place.y + place.height / 2 - cy);
+            if (distance < best) {
+                best = distance;
+                to = i;
+            }
+        });
+        d.to = to;
+        d.order = reorderAround(d.elements.length, d.index, to, options.fixed);
+        d.order.forEach((row, place) => {
+            const el = d.elements[row]!;
+            const from = d.places[row]!;
+            const target = d.places[place]!;
+            const x = row === d.index ? dx : target.x - from.x;
+            const y = row === d.index ? dy : target.y - from.y;
+            el.style.transition = row === d.index ? 'none' : '';
+            el.style.transform = x || y ? `translate(${x}px, ${y}px)` : '';
         });
     }
 
@@ -281,13 +330,14 @@ export function useSortable(options: SortableOptions): { dragging: Ref<number | 
         const item = handle?.closest<HTMLElement>(ITEM);
         if (!handle || !item || item.parentElement !== options.container.value) return;
         const horizontal = options.horizontal?.() ?? false;
-        const forward = horizontal ? 'ArrowRight' : 'ArrowDown';
-        const back = horizontal ? 'ArrowLeft' : 'ArrowUp';
-        if (event.key !== forward && event.key !== back) return;
+        const grid = options.grid?.() ?? false;
+        const forwardKeys = grid ? ['ArrowRight', 'ArrowDown'] : [horizontal ? 'ArrowRight' : 'ArrowDown'];
+        const backKeys = grid ? ['ArrowLeft', 'ArrowUp'] : [horizontal ? 'ArrowLeft' : 'ArrowUp'];
+        if (!forwardKeys.includes(event.key) && !backKeys.includes(event.key)) return;
         event.preventDefault();
         const list = rows();
         const from = list.indexOf(item);
-        const step = event.key === forward ? 1 : -1;
+        const step = forwardKeys.includes(event.key) ? 1 : -1;
         if (from < 0 || options.fixed?.(from)) return;
         for (let to = from + step; to >= 0 && to < list.length; to += step) {
             const order = reorderAround(list.length, from, to, options.fixed);
