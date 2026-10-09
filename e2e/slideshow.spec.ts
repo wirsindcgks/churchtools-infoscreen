@@ -77,13 +77,6 @@ async function newSlideWithSlideshow(page: Page, ownSlide = true): Promise<void>
 test('build a slideshow with several pictures, keep it, and see it in the library', async ({ page, baseURL }) => {
     test.setTimeout(90_000);
     await fakeLibrary(page, baseURL, 4);
-    const dialogs: string[] = [];
-    page.on('dialog', (dialog) => {
-        dialogs.push(dialog.message());
-        // Agree to deleting, refuse the second question that names where it is still shown.
-        if (dialog.message().includes('aus ChurchTools löschen')) void dialog.accept();
-        else void dialog.dismiss();
-    });
     await newSlideWithSlideshow(page);
     const inspector = page.getByTestId('block-inspector');
     await expect(inspector.getByText('Noch keine Bilder gewählt.')).toBeVisible();

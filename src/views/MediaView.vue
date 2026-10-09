@@ -86,32 +86,31 @@ async function picked(): Promise<void> {
 </script>
 
 <template>
-    <ModulePage current="media">
-        <template #actions>
-            <button
-                class="d-btn d-btn--create"
-                type="button"
-                :aria-label="t.media.uploadAria"
-                :disabled="!!busy || loading"
-                data-testid="media-upload-button"
-                @click="input?.click()"
-            >
-                <Icon name="plus" />
-                <span class="create-label">{{ t.media.upload }}</span>
-            </button>
-            <input
-                ref="input"
-                type="file"
-                :accept="accept"
-                multiple
-                hidden
-                data-testid="media-upload"
-                @change="picked"
-            >
-        </template>
-
+    <ModulePage>
         <PageHeader icon="image" :title="t.media.title" testid="media-heading">
             {{ t.media.intro }}
+            <template #actions>
+                <button
+                    class="d-btn d-btn--create"
+                    type="button"
+                    :aria-label="t.media.uploadAria"
+                    :disabled="!!busy || loading"
+                    data-testid="media-upload-button"
+                    @click="input?.click()"
+                >
+                    <Icon name="plus" />
+                    <span class="create-label">{{ t.media.upload }}</span>
+                </button>
+                <input
+                    ref="input"
+                    type="file"
+                    :accept="accept"
+                    multiple
+                    hidden
+                    data-testid="media-upload"
+                    @change="picked"
+                >
+            </template>
         </PageHeader>
 
         <SearchField

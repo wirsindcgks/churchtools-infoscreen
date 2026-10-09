@@ -10,6 +10,9 @@ import { fitStage } from '../player/stage';
 import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
 import SlideImportDialog from './SlideImportDialog.vue';
+import { useConfirm } from './useConfirm';
+
+const { confirm } = useConfirm();
 
 const emit = defineEmits<{ collapse: [] }>();
 const editor = useEditorStore();
@@ -112,8 +115,8 @@ function linkedLabel(id: string): string {
     return t.editor.slideList.linkedWith(editor.linkedIn(id).map((p) => p.name).join(', '));
 }
 
-function remove(id: string, name: string): void {
-    if (window.confirm(t.editor.slideList.confirmRemove(name))) editor.removeSlide(id);
+async function remove(id: string, name: string): Promise<void> {
+    if (await confirm({ message: t.editor.slideList.confirmRemove(name), confirmLabel: t.common.remove, danger: true })) editor.removeSlide(id);
 }
 
 function removeCurrent(): void {

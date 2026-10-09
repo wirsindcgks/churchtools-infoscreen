@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * The head of every module page: symbol, title, and a line on what the page
- * is for. The line runs as wide as the content below it – no narrower column
- * that breaks it early.
+ * The head of every module page: symbol, title, a line on what the page is for – and the page's actions
+ * ("Bildschirm erstellen" …) on the right (Plan.md 79, B3). The line runs as wide as the room beside the
+ * actions allows.
  */
 import Icon, { type IconName } from './Icon.vue';
 
@@ -11,41 +11,52 @@ defineProps<{ icon: IconName; title: string; testid: string }>();
 
 <template>
     <div class="page-head">
-        <div class="page-title">
-            <span class="title-icon"><Icon :name="icon" :size="20" /></span>
+        <span class="title-icon"><Icon :name="icon" :size="22" /></span>
+        <div class="page-text">
             <h1 :data-testid="testid">{{ title }}</h1>
+            <p v-if="$slots.default" class="intro"><slot /></p>
         </div>
-        <p v-if="$slots.default" class="intro"><slot /></p>
+        <div v-if="$slots.actions" class="page-actions"><slot name="actions" /></div>
     </div>
 </template>
 
 <style scoped>
 .page-head {
-    display: grid;
-    gap: 6px;
-}
-.page-title {
     display: flex;
-    align-items: center;
-    gap: 12px;
-}
-h1 {
-    margin: 0;
-    font-size: 1.8em;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--d-space-3) var(--d-space-4);
 }
 .title-icon {
     display: grid;
+    flex: none;
     place-items: center;
-    width: 40px;
-    height: 40px;
+    width: 44px;
+    height: 44px;
     border-radius: var(--d-radius-lg);
     background: var(--d-accent-pale);
     color: var(--d-accent);
 }
-.intro {
+.page-text {
+    flex: 1 1 16rem;
+    min-width: 0;
+}
+h1 {
     margin: 0;
+    font-size: 1.85em;
+    font-weight: 800;
+    line-height: 1.2;
+}
+.intro {
+    margin: var(--d-space-1) 0 0;
     color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
+}
+.page-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--d-space-2);
 }
 @media (max-width: 48rem) {
     h1 {
@@ -53,6 +64,9 @@ h1 {
     }
     .title-icon {
         display: none;
+    }
+    .page-text {
+        flex-basis: 10rem;
     }
 }
 </style>

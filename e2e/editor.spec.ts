@@ -406,7 +406,6 @@ test.describe('with a finger, in both browsers', () => {
     });
 
     test('duplicate and remove the current slide from the phone header (Plan.md 44)', async ({ page }) => {
-        page.on('dialog', (dialog) => void dialog.accept());
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
         await expect(page.getByTestId('slide-item')).toHaveCount(3);
@@ -415,6 +414,10 @@ test.describe('with a finger, in both browsers', () => {
         await expect(page.getByTestId('slide-item')).toHaveCount(4);
 
         await page.getByTestId('slide-remove-phone').click();
+        // Our own question with a red "Entfernen" (Plan.md 79, B3).
+        await expect(page.getByTestId('confirm-dialog')).toContainText('aus dieser Präsentation entfernen?');
+        await expect(page.getByTestId('confirm-ok')).toHaveText('Entfernen');
+        await page.getByTestId('confirm-ok').click();
         await expect(page.getByTestId('slide-item')).toHaveCount(3);
     });
 
@@ -870,7 +873,7 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await expect(page.getByTestId('playlist-card')).toHaveCount(2);
 
     // The screen chooses it on Sundays 9–12.
-    await page.getByTestId('nav-screens').click();
+    await page.getByTestId('sidebar-screens').click();
     const card = page.getByTestId('screen-card').first();
     await expect(card.getByTestId('screen-playlist')).toHaveText('Wochenüberblick');
     await expect(card.getByTestId('open-schedule')).toHaveText('Zeitplan');
@@ -962,7 +965,7 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await page.getByTestId('schedule-cancel').click();
 
     // "Slides bearbeiten" in the schedule opens the playlist's editor.
-    await page.getByTestId('nav-screens').click();
+    await page.getByTestId('sidebar-screens').click();
     await card.getByTestId('open-schedule').click();
     await dialog.getByTestId('playlist-edit').last().click();
     await expect(page.getByTestId('playlist-name-input')).toHaveValue('Gottesdienst');

@@ -21,13 +21,16 @@ const query = defineModel<string>({ required: true });
 .search-icon {
     position: absolute;
     top: 50%;
-    left: 12px;
+    left: var(--d-space-3);
     color: var(--d-text-muted);
     transform: translateY(-50%);
 }
+/* A white field with a soft shadow on the workspace, not a frame (Plan.md 79, B3). */
 input {
     min-height: 44px;
     padding-left: 40px;
+    border-color: transparent;
     border-radius: var(--d-radius-lg);
+    box-shadow: var(--d-shadow-card);
 }
 </style>

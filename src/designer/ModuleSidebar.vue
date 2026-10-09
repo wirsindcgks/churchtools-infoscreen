@@ -1,40 +1,36 @@
 <script setup lang="ts">
 /**
- * The left column of the module, as in "Gruppen" of ChurchTools: the same on
- * the start page and in the settings. Filters are links with the format in
- * the query, so they work from any page and survive going back. Below 48rem
- * this used to turn into one row to swipe – seven of its ten entries sat
- * unseen to the right (Plan.md 44, M1). Now a button names the current page
- * and opens a panel with the same list as on a desktop, stacked vertically;
- * the format filters stay a swipeable row, but only on "Screens", where they
- * belong. "Einstellungen" (administrators only) moved into the header bar
- * (Plan.md 36); this column no longer needs to know who is one.
+ * The left column of the module: a light card with a soft shadow on the workspace, one entry per area with
+ * its symbol in a small field (Plan.md 79, B3). The format filters left it – they stand beside the search
+ * of the pages that filter. "Einstellungen" is the last entry after a rule, for administrators only (role
+ * concept, Plan.md F). Below 48rem this used to turn into one row to swipe – seven of its ten entries sat
+ * unseen to the right (Plan.md 44, M1). Now a button names the current page and opens a panel with the same
+ * list as on a desktop, stacked vertically.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { t } from '../i18n/designer';
-import { FILTERS, formatFilter } from './format-filter';
+import { administrator, isAdministrator } from './administrator';
 import { ensureScreenCounts, screenCounts } from './screen-counts';
 import { unseenRelease } from '../about/seen';
 import Icon, { type IconName } from './Icon.vue';
 
 const route = useRoute();
-onMounted(() => void ensureScreenCounts());
-const active = computed(() => (route.name === 'designer' ? formatFilter(route.query.format) : null));
-/** Below 48rem the format filters only make sense on "Screens" itself. */
-const onScreens = computed(() => route.name === 'designer');
+onMounted(() => {
+    void ensureScreenCounts();
+    void isAdministrator();
+});
+const admin = computed(() => administrator.value === true);
 
 interface PageLink {
     name: string;
     label: string;
     icon: IconName;
     testid: string;
-    /** "Screens" stands for what the filters do at a desktop – only shown below 48rem. */
-    phoneOnly?: boolean;
 }
 
 const PAGES: PageLink[] = [
-    { name: 'designer', label: t.common.screens, icon: 'tv', testid: 'sidebar-screens', phoneOnly: true },
+    { name: 'designer', label: t.common.screens, icon: 'tv', testid: 'sidebar-screens' },
     { name: 'schedules', label: t.schedules.title, icon: 'calendar', testid: 'sidebar-schedules' },
     { name: 'notices', label: t.notices.title, icon: 'megaphone', testid: 'sidebar-notices' },
     { name: 'playlists', label: t.common.playlists, icon: 'list', testid: 'sidebar-playlists' },
@@ -42,12 +38,14 @@ const PAGES: PageLink[] = [
     { name: 'design', label: t.design.title, icon: 'palette', testid: 'sidebar-design' },
 ];
 const ABOUT: PageLink = { name: 'about', label: t.about.title, icon: 'info', testid: 'sidebar-about' };
+/** The four settings routes are one entry. */
+const SETUP: PageLink = { name: 'setup', label: t.common.settings, icon: 'settings', testid: 'sidebar-setup' };
+const isSetup = computed(() => String(route.name ?? '').startsWith('setup'));
 
 /** What the phone's menu button shows: icon and name of the page open right now. */
-const SETUP: Pick<PageLink, 'label' | 'icon'> = { label: t.common.settings, icon: 'settings' };
 const currentPage = computed(() => {
     const name = String(route.name ?? '');
-    return [...PAGES, ABOUT].find((p) => p.name === name) ?? (name.startsWith('setup') ? SETUP : { label: t.sidebar.pages, icon: 'list' as IconName });
+    return [...PAGES, ABOUT].find((p) => p.name === name) ?? (isSetup.value ? SETUP : { label: t.sidebar.pages, icon: 'list' as IconName });
 });
 
 const menuOpen = ref(false);
@@ -107,23 +105,9 @@ watch(
             <span v-if="unseenRelease" class="new" aria-hidden="true" data-testid="page-menu-new" />
             <Icon name="chevron-down" :size="16" :class="['page-menu-chevron', { open: menuOpen }]" />
         </button>
-        <ul class="filters" :class="{ 'on-screens': onScreens }">
-            <li v-for="f in FILTERS" :key="f.key">
-                <RouterLink
-                    :to="{ name: 'designer', query: f.key === 'all' ? {} : { format: f.key } }"
-                    :class="{ active: active === f.key }"
-                    :aria-current="active === f.key ? 'page' : undefined"
-                    :data-testid="`filter-${f.key}`"
-                >
-                    <span class="nav-icon"><Icon :name="f.icon" :size="16" /></span>
-                    {{ f.label }}
-                    <span v-if="screenCounts" class="count">{{ screenCounts[f.key] }}</span>
-                </RouterLink>
-            </li>
-        </ul>
         <div id="module-pages" :class="{ open: menuOpen }">
             <ul class="library">
-                <li v-for="p in PAGES" :key="p.name" :class="{ 'phone-only': p.phoneOnly }">
+                <li v-for="p in PAGES" :key="p.name">
                     <RouterLink
                         :to="{ name: p.name }"
                         :class="{ active: route.name === p.name }"
@@ -132,10 +116,11 @@ watch(
                     >
                         <span class="nav-icon"><Icon :name="p.icon" :size="16" /></span>
                         {{ p.label }}
+                        <span v-if="p.name === 'designer' && screenCounts" class="count" data-testid="sidebar-screens-count">{{ screenCounts.all }}</span>
                     </RouterLink>
                 </li>
             </ul>
-            <ul class="library about">
+            <ul class="library last">
                 <li>
                     <RouterLink
                         :to="{ name: ABOUT.name }"
@@ -155,6 +140,17 @@ watch(
                         />
                     </RouterLink>
                 </li>
+                <li v-if="admin">
+                    <RouterLink
+                        :to="{ name: SETUP.name }"
+                        :class="{ active: isSetup }"
+                        :aria-current="isSetup ? 'page' : undefined"
+                        :data-testid="SETUP.testid"
+                    >
+                        <span class="nav-icon"><Icon :name="SETUP.icon" :size="16" /></span>
+                        {{ SETUP.label }}
+                    </RouterLink>
+                </li>
             </ul>
         </div>
     </nav>
@@ -163,16 +159,25 @@ watch(
 <style scoped>
 .module-sidebar {
     position: sticky;
-    top: 0;
-    padding: 16px 10px;
+    top: var(--d-space-4);
+    box-sizing: border-box;
+    padding: var(--d-space-3);
+    border-radius: var(--d-radius-lg);
+    background: var(--d-surface);
+    box-shadow: var(--d-shadow-card);
 }
 .page-menu {
     display: none;
 }
 ul.library {
-    margin-top: 12px;
-    padding-top: 12px;
+    margin-top: var(--d-space-2);
+    padding-top: var(--d-space-2);
     border-top: 1px solid var(--d-divider);
+}
+ul.library:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
 }
 ul {
     display: grid;
@@ -185,26 +190,34 @@ a {
     box-sizing: border-box;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--d-space-3);
     width: 100%;
-    min-height: 36px;
-    padding: 6px 10px;
+    min-height: 44px;
+    padding: 0 var(--d-space-3);
     border-radius: var(--d-radius-lg);
     color: var(--d-text);
+    font-weight: 700;
     text-decoration: none;
+    transition: background-color var(--d-transition);
 }
 a:hover {
-    background: var(--d-surface);
+    background: var(--d-panel);
 }
 a.active {
-    background: var(--d-accent-pale);
+    background: color-mix(in oklab, var(--d-accent-pale) 45%, var(--d-surface));
+    color: var(--d-accent-strong);
 }
 .nav-icon {
     display: grid;
+    flex: none;
     place-items: center;
-    width: 24px;
-    height: 24px;
+    width: 30px;
+    height: 30px;
     border-radius: var(--d-radius);
+    background: var(--d-workspace);
+    color: var(--d-text-muted);
+}
+a.active .nav-icon {
     background: var(--d-accent-pale);
     color: var(--d-accent);
 }
@@ -218,40 +231,35 @@ a.active {
 }
 .count {
     margin-left: auto;
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
-}
-.phone-only {
-    display: none;
+    color: var(--d-text-faint);
+    font-weight: 400;
 }
 
 @media (max-width: 48rem) {
     .module-sidebar {
         position: relative;
         top: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 12px 12px 0;
+        padding: 0;
+        background: none;
+        box-shadow: none;
     }
     .page-menu {
         box-sizing: border-box;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: var(--d-space-3);
         width: 100%;
         height: 44px;
-        padding: 0 10px;
-        border: 1px solid var(--d-divider);
+        padding: 0 var(--d-space-3);
+        border: 0;
         border-radius: var(--d-radius-lg);
         background: var(--d-surface);
+        box-shadow: var(--d-shadow-card);
         color: var(--d-text);
         font: inherit;
+        font-weight: 700;
         text-align: left;
         cursor: pointer;
-    }
-    .page-menu:hover {
-        border-color: var(--d-interactive);
     }
     .page-menu-label {
         flex: 1;
@@ -261,29 +269,10 @@ a.active {
     }
     .page-menu-chevron {
         flex: none;
-        transition: transform 0.15s;
+        transition: transform var(--d-transition);
     }
     .page-menu-chevron.open {
         transform: rotate(180deg);
-    }
-    .filters {
-        display: none;
-    }
-    .filters.on-screens {
-        display: flex;
-        gap: 6px;
-        overflow-x: auto;
-    }
-    .filters a {
-        width: auto;
-        border: 1px solid var(--d-divider);
-        border-radius: 999px;
-        background: var(--d-surface);
-        white-space: nowrap;
-    }
-    .filters a.active {
-        border-color: var(--d-accent);
-        background: var(--d-accent-pale);
     }
     /* Closed: nothing; open: a panel right below the button, like a menu (below the 1100 of dialogs). */
     #module-pages {
@@ -292,35 +281,14 @@ a.active {
     #module-pages.open {
         display: block;
         position: absolute;
-        top: 64px;
-        left: 12px;
-        right: 12px;
+        top: calc(44px + var(--d-space-2));
+        left: 0;
+        right: 0;
         z-index: 1000;
-        padding: 6px;
-        border: 1px solid var(--d-divider);
+        padding: var(--d-space-2);
         border-radius: var(--d-radius-lg);
         background: var(--d-surface);
         box-shadow: var(--d-shadow);
-    }
-    #module-pages a {
-        min-height: 44px;
-    }
-    /* In the panel nothing stands above the first list that a line would divide it from. */
-    #module-pages ul.library:first-child {
-        margin-top: 0;
-        padding-top: 0;
-        border-top: 0;
-    }
-    .phone-only {
-        display: block;
-    }
-    .nav-icon {
-        width: 20px;
-        height: 20px;
-        background: none;
-    }
-    .count {
-        margin-left: 2px;
     }
 }
 </style>

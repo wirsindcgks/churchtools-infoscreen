@@ -32,8 +32,8 @@ test('a new notice: empty text blocks saving, the preview shows it once typed, p
     await page.screenshot({ path: 'test-results/notices-dialog.png' });
 
     // Close without saving: nothing is written.
-    page.once('dialog', (d) => d.accept());
     await dialog.getByTestId('notice-cancel').click();
+    await page.getByTestId('confirm-ok').click(); // "Änderungen am Hinweis verwerfen?"
     await expect(dialog).toBeHidden();
     await expect(page.getByText('Gerade läuft kein Hinweis.')).toBeVisible();
 });
@@ -91,7 +91,7 @@ async function addNotice(page: Page, text: string, playlists: string[], until?: 
 async function sundayAndSecondScreen(page: Page): Promise<void> {
     await page.goto('./');
     await addPlaylist(page, 'Gottesdienst');
-    await page.getByTestId('nav-screens').click();
+    await page.getByTestId('sidebar-screens').click();
     await page.getByTestId('screen-card').first().getByTestId('open-schedule').click();
     const dialog = page.getByTestId('schedule-dialog');
     await dialog.getByTestId('add-time-rule').click();

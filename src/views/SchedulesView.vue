@@ -184,7 +184,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <ModulePage current="schedules">
+    <ModulePage>
         <PageHeader icon="calendar" :title="t.schedules.title" testid="schedules-heading">
             {{ t.schedules.intro }}
         </PageHeader>

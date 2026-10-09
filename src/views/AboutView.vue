@@ -27,7 +27,7 @@ onMounted(markReleaseSeen);
 </script>
 
 <template>
-    <ModulePage current="about">
+    <ModulePage>
         <PageHeader icon="info" :title="t.about.title" testid="about-heading">
             {{ t.about.intro }}
         </PageHeader>

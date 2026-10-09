@@ -1,41 +1,14 @@
 <script setup lang="ts">
 /**
- * The bar below the ChurchTools navigation, built after the one of "Gruppen"
- * ("Gruppen | Einstellungen" left, "+ Gruppe erstellen" right): the same
- * place for the same things on every page of the module. With `current` it
- * shows the two sections – "Einstellungen" only to administrators, whose job
- * it is (role concept, Plan.md F); the editor puts its own title in the
- * default slot.
+ * The bar of the editor below the ChurchTools navigation: its own title in the default slot, its actions on
+ * the right. The overview pages have none – their sidebar carries the sections and their page head the
+ * actions (Plan.md 79, B3).
  */
-import { t } from '../i18n/designer';
-import Icon from './Icon.vue';
-
-withDefaults(defineProps<{ current?: 'screens' | 'schedules' | 'notices' | 'playlists' | 'media' | 'design' | 'about' | 'setup'; showSetup?: boolean }>(), { current: undefined, showSetup: true });
 </script>
 
 <template>
     <header class="d-appbar">
-        <nav v-if="current" class="sections" :aria-label="t.common.moduleName">
-            <Icon name="tv" class="module-icon" :size="20" />
-            <RouterLink
-                :to="{ name: 'designer' }"
-                :class="{ active: current === 'screens' }"
-                :aria-current="current === 'screens' ? 'page' : undefined"
-                data-testid="nav-screens"
-            >
-                {{ t.common.screens }}
-            </RouterLink>
-            <RouterLink
-                v-if="showSetup"
-                :to="{ name: 'setup' }"
-                :class="{ active: current === 'setup' }"
-                :aria-current="current === 'setup' ? 'page' : undefined"
-                data-testid="open-setup"
-            >
-                {{ t.common.settings }}
-            </RouterLink>
-        </nav>
-        <div v-else class="start"><slot /></div>
+        <div class="start"><slot /></div>
         <div class="end"><slot name="actions" /></div>
     </header>
 </template>
@@ -52,7 +25,6 @@ withDefaults(defineProps<{ current?: 'screens' | 'schedules' | 'notices' | 'play
     border-bottom: 1px solid var(--d-divider);
     background: var(--d-surface);
 }
-.sections,
 .start,
 .end {
     display: flex;
@@ -68,36 +40,9 @@ withDefaults(defineProps<{ current?: 'screens' | 'schedules' | 'notices' | 'play
     flex-wrap: wrap;
     justify-content: flex-end;
 }
-.module-icon {
-    color: var(--d-text-muted);
-}
-.sections a {
-    padding: 4px 10px;
-    color: var(--d-text-muted);
-    font-size: 1.15em;
-    text-decoration: none;
-    white-space: nowrap;
-}
-.sections a + a {
-    border-left: 1px solid var(--d-divider);
-}
-.sections a:hover {
-    color: var(--d-text);
-}
-.sections a.active {
-    color: var(--d-text);
-    font-weight: 700;
-}
 @media (max-width: 40rem) {
     .d-appbar {
         padding: 6px 12px;
-    }
-    .module-icon {
-        display: none;
-    }
-    .sections a {
-        padding: 4px 8px;
-        font-size: 1em;
     }
 }
 </style>

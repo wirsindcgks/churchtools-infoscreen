@@ -187,9 +187,15 @@ function duplicate(): void {
 }
 .menu {
     position: relative;
-    margin: 0 -8px 0 0;
+    margin: calc(var(--d-space-1) * -1) calc(var(--d-space-2) * -1) 0 0;
 }
+/* The "…" is a 36 px square, quiet until the pointer comes (Plan.md 79, B3). */
 .menu-button {
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0;
     border-color: transparent;
     background: transparent;
     color: var(--d-text-muted);
@@ -201,8 +207,7 @@ function duplicate(): void {
     z-index: 10;
     display: grid;
     min-width: 190px;
-    padding: 4px;
-    border: 1px solid var(--d-divider);
+    padding: var(--d-space-1);
     border-radius: var(--d-radius-lg);
     background: var(--d-surface);
     box-shadow: var(--d-shadow);
@@ -212,8 +217,8 @@ function duplicate(): void {
     display: flex;
     align-items: center;
     gap: 8px;
-    min-height: 36px;
-    padding: 6px 10px;
+    min-height: 40px;
+    padding: 0 var(--d-space-3);
     border: 0;
     border-radius: var(--d-radius);
     background: none;
@@ -225,7 +230,7 @@ function duplicate(): void {
 }
 .menu-list a:hover,
 .menu-list button:hover {
-    background: var(--d-panel);
+    background: var(--d-workspace);
 }
 .menu-list button:disabled {
     cursor: not-allowed;

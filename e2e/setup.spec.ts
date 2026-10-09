@@ -5,7 +5,7 @@ test.use({ viewport: { width: 1280, height: 900 } });
 // Reads groups and rights of the test instance; saving writes only the demo store of this browser.
 test('the setup page checks the chosen groups and keeps the choice', async ({ page }) => {
     await page.goto('./');
-    await page.getByTestId('open-setup').click();
+    await page.getByTestId('sidebar-setup').click();
     await expect(page.getByTestId('setup-heading')).toHaveText('Einstellungen');
     // An overview of cards (Plan.md 36): each "settings-card-…" leads to a page of its own.
     await expect(page.getByTestId('settings-card-groups')).toBeVisible();

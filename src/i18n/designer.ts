@@ -15,7 +15,12 @@ export const t = {
         settings: 'Einstellungen',
         save: 'Speichern',
         cancel: 'Abbrechen',
+        ok: 'OK',
+        open: 'Öffnen',
+        discard: 'Verwerfen',
         close: 'Schließen',
+        /** The own question dialog instead of the browser's (Plan.md 79, B3). */
+        dialog: { confirmTitle: 'Bitte bestätigen', noticeTitle: 'Hinweis' },
         remove: 'Entfernen',
         delete: 'Löschen',
         duplicate: 'Duplizieren',
@@ -38,7 +43,7 @@ export const t = {
         portrait: 'Hochkant',
         landscape: 'Quer',
         screenCount: (n: number) => `${n} ${n === 1 ? 'Bildschirm' : 'Bildschirme'}`,
-        filters: { allShort: 'Alle', all: 'Alle Bildschirme', landscape: 'Querformat', portrait: 'Hochformat' },
+        filters: { allShort: 'Alle', all: 'Alle Bildschirme', landscape: 'Querformat', portrait: 'Hochformat', landscapeShort: 'Quer', portraitShort: 'Hoch' },
         edited: {
             changed: 'Zuletzt geändert',
             uploaded: 'Hochgeladen',
@@ -951,6 +956,16 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         },
         overview: {
             intro: 'Hier verwalten ChurchTools-Administratoren die Gruppen und Rechte für Gestalter und Geräte, die Adressen der Bildschirme und die Mediathek im Wiki.',
+            /** The marks on the cards (Plan.md 79, B3): only what the page knows without a request of its own. */
+            status: {
+                allWell: 'Alles in Ordnung',
+                notSet: 'Nicht eingerichtet',
+                groupMissing: 'Eine Gruppe fehlt',
+                toCheck: (n: number) => `${n} ${n === 1 ? 'Punkt' : 'Punkte'} zu prüfen`,
+                done: 'Eingerichtet',
+                released: (n: number) => `${n} freigegeben`,
+                noneReleased: 'Keine freigegeben',
+            },
         },
         groups: {
             title: 'Gruppen und Rechte',
@@ -1038,6 +1053,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             none: 'In ChurchTools gibt es keinen Dienst, der gezeigt werden könnte.',
             saved: 'Gespeichert',
             fallbackName: (id: number) => `Dienst ${id}`,
+            release: 'Freigeben',
             confirm: (name: string) =>
                 `„${name}" freigeben? Die Namen der Eingeteilten stehen dann öffentlich auf den Fernsehern. Ist das mit der Gemeindeleitung abgestimmt?`,
         },

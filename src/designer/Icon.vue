@@ -39,6 +39,7 @@ const PATHS = {
     redo: ['M15 14l5-5-5-5', 'M20 9H9a5 5 0 0 0 0 10h3'],
     external: ['M14 4h6v6', 'M20 4l-9 9', 'M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5'],
     close: ['M6 6l12 12', 'M18 6L6 18'],
+    check: ['M5 12l5 5L20 7'],
     // Block types (Plan.md, Nächste Schritte 11)
     text: ['M5 7V5h14v2', 'M12 5v14', 'M9 19h6'],
     image: ['M4 5h16v14H4z', circle(9, 10, 1.5), 'M4 17l5-5 4 4 3-3 4 4'],

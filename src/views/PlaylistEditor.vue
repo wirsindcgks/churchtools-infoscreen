@@ -30,6 +30,9 @@ import { getRepository } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
+import { useConfirm } from '../designer/useConfirm';
+
+const { confirm } = useConfirm();
 
 const route = useRoute();
 const playlistId = String(route.params.id);
@@ -402,7 +405,9 @@ onBeforeUnmount(() => {
     document.removeEventListener('pointerdown', closeMoreMenuOnOutside);
 });
 
-onBeforeRouteLeave(() => !editor.dirty || window.confirm(t.editor.discardChanges));
+onBeforeRouteLeave(
+    async () => !editor.dirty || (await confirm({ message: t.editor.discardChanges, confirmLabel: t.common.discard, danger: true })),
+);
 
 function onBeforeUnload(event: BeforeUnloadEvent): void {
     if (editor.dirty) event.preventDefault();

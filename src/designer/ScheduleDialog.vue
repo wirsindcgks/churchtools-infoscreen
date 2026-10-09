@@ -17,6 +17,7 @@ import { cloneJson } from './ops';
 import AppointmentPointField from './AppointmentPointField.vue';
 import Icon from './Icon.vue';
 import PlaylistPicker from './PlaylistPicker.vue';
+import { useConfirm } from './useConfirm';
 import { usePreview } from './usePreview';
 import {
     createAppointmentRule,
@@ -37,6 +38,7 @@ const props = defineProps<{ slug: string; repository: ScreenRepository; author: 
 const emit = defineEmits<{ close: []; saved: [] }>();
 
 const router = useRouter();
+const { confirm } = useConfirm();
 const dialog = ref<HTMLElement | null>(null);
 const loading = ref(true);
 const loadError = ref<string | null>(null);
@@ -135,8 +137,8 @@ async function saveAndClose(expectedRevision = scheduleRevision.value): Promise<
     if (await save(expectedRevision)) emit('saved');
 }
 
-function close(): void {
-    if (dirty.value && !window.confirm(t.schedules.dialog.discard)) return;
+async function close(): Promise<void> {
+    if (dirty.value && !(await confirm({ message: t.schedules.dialog.discard, confirmLabel: t.common.discard, danger: true }))) return;
     emit('close');
 }
 

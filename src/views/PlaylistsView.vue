@@ -10,7 +10,7 @@ import { useRouter } from 'vue-router';
 import { currentPerson, displayName } from '../ct/client';
 import CreatePlaylistDialog from '../designer/CreatePlaylistDialog.vue';
 import FilterChips from '../designer/FilterChips.vue';
-import { FILTERS, type FormatFilter } from '../designer/format-filter';
+import { FILTERS, FORMAT_SEGMENTS, type FormatFilter } from '../designer/format-filter';
 import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
@@ -25,6 +25,9 @@ import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
+import { useConfirm } from '../designer/useConfirm';
+
+const { confirm, notice } = useConfirm();
 
 const router = useRouter();
 const repository = shallowRef<ScreenRepository | null>(null);
@@ -36,7 +39,6 @@ const creating = ref(false);
 const ready = computed(() => author.value !== null && repository.value !== null);
 const query = ref('');
 const format = ref<FormatFilter>('all');
-const FORMATS = FILTERS.map((f) => ({ key: f.key, label: f.key === 'all' ? t.common.filters.allShort : f.label }));
 
 const isPortrait = (o: PlaylistOverview) => o.playlist.stage.height > o.playlist.stage.width;
 
@@ -112,50 +114,53 @@ async function duplicate(overview: PlaylistOverview, linked: boolean): Promise<v
         const copy = await repository.value.duplicatePlaylist(overview.playlist.id, author.value, new Date(), { linked });
         await router.push({ name: 'editor', params: { id: copy.id } });
     } catch (e) {
-        window.alert(e instanceof Error ? e.message : String(e));
+        await notice(e instanceof Error ? e.message : String(e));
     }
 }
 
 async function remove(overview: PlaylistOverview): Promise<void> {
-    if (!repository.value || !window.confirm(t.playlists.deleteConfirm(overview.playlist.name))) return;
+    if (!repository.value) return;
+    if (!(await confirm({ message: t.playlists.deleteConfirm(overview.playlist.name), confirmLabel: t.common.delete, danger: true }))) return;
     try {
         await repository.value.deletePlaylist(overview.playlist.id);
     } catch (e) {
-        window.alert(e instanceof Error ? e.message : String(e));
+        await notice(e instanceof Error ? e.message : String(e));
     }
     await refresh();
 }
 </script>
 
 <template>
-    <ModulePage current="playlists">
-        <template #actions>
-            <button
-                class="d-btn d-btn--create"
-                type="button"
-                :aria-label="t.playlists.create.title"
-                :disabled="!ready"
-                data-testid="new-playlist"
-                @click="creating = true"
-            >
-                <Icon name="plus" />
-                <span class="create-label">{{ t.playlists.create.title }}</span>
-            </button>
-        </template>
-
+    <ModulePage>
         <PageHeader icon="list" :title="t.common.playlists" testid="playlists-heading">
             {{ t.playlists.intro }}
+            <template #actions>
+                <button
+                    class="d-btn d-btn--create"
+                    type="button"
+                    :aria-label="t.playlists.create.title"
+                    :disabled="!ready"
+                    data-testid="new-playlist"
+                    @click="creating = true"
+                >
+                    <Icon name="plus" />
+                    <span class="create-label">{{ t.playlists.create.title }}</span>
+                </button>
+            </template>
         </PageHeader>
 
         <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
         <p v-else-if="!ready" class="empty">{{ t.common.loading }}</p>
         <template v-else>
-            <SearchField
-                v-model="query"
-                :placeholder="t.playlists.searchPlaceholder"
-                :label="t.playlists.searchLabel"
-                testid="playlist-search"
-            />
+            <div class="d-toolbar">
+                <SearchField
+                    v-model="query"
+                    :placeholder="t.playlists.searchPlaceholder"
+                    :label="t.playlists.searchLabel"
+                    testid="playlist-search"
+                />
+                <FilterChips v-model="format" :options="FORMAT_SEGMENTS" :label="t.common.format" testid="playlist-filter" />
+            </div>
 
             <GroupCard
                 icon="list"
@@ -163,9 +168,6 @@ async function remove(overview: PlaylistOverview): Promise<void> {
                 :count="t.playlists.count(shown.length)"
                 heading-id="playlists-group"
             >
-                <template #tools>
-                    <FilterChips v-model="format" :options="FORMATS" :label="t.common.format" testid="playlist-filter" />
-                </template>
                 <div v-if="shown.length" class="d-tiles">
                     <PlaylistCard
                         v-for="o in shown"
