@@ -404,7 +404,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await addBlock(page, 'countdown');
     await frame(page, { x: 60, y: 900, width: 960, height: 520 });
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
 
     // The first screen's playlist.
     await page.goto('./');
@@ -482,7 +482,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await expect(page.locator('.editor-stage').getByTestId('posts-card')).toContainText('Sommerfreizeit');
     await shoot(page, 'beitraege');
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
 
     // A rule for Sunday morning.
     await page.goto('./');

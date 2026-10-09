@@ -10,7 +10,6 @@ const change = (overrides: Partial<Parameters<DraftStore['save']>[0]> = {}) => (
     name: 'Sonntag',
     slideIds: ['s1', 's2'],
     slides: [makeSlide({ id: 's1' }), makeSlide({ id: 's2', name: 'Termine' })],
-    dropSlideIds: [],
     ...overrides,
 });
 const anna = { expectedRevision: 0, updatedBy: 'Anna', now: new Date('2026-10-10T10:00:00Z') };
@@ -64,17 +63,19 @@ describe('DraftStore', () => {
         expect((await drafts.save(change(), { ...anna, expectedRevision: 1, updatedBy: 'Ben' })).revision).toBe(2);
     });
 
-    it('deletes the slide drafts it is told to drop', async () => {
+    it('replaces the whole draft: a slide draft not in the change is deleted, other playlists keep theirs', async () => {
         await drafts.save(change(), anna);
-        await drafts.save(change({ slides: [], dropSlideIds: ['s1'] }), { ...anna, expectedRevision: 1 });
+        await drafts.save(change({ playlistId: 'p2', slideIds: ['s1'], slides: [makeSlide({ id: 's1', name: 'Fremd' })] }), anna);
+        await drafts.save(change({ slides: [makeSlide({ id: 's2', name: 'Termine' })] }), { ...anna, expectedRevision: 1 });
         const loaded = await drafts.load('p1');
         expect(loaded?.slides.map((s) => s.id)).toEqual(['s2']);
+        expect((await drafts.load('p2'))?.slides.map((s) => s.id)).toEqual(['s1']);
     });
 
     it('writes the playlist draft last', async () => {
         await drafts.save(change(), anna);
         kv.writes.length = 0;
-        await drafts.save(change({ slides: [makeSlide({ id: 's1', name: 'Neu' })], dropSlideIds: ['s2'] }), {
+        await drafts.save(change({ slides: [makeSlide({ id: 's1', name: 'Neu' })] }), {
             ...anna,
             expectedRevision: 1,
         });

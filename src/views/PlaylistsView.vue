@@ -34,6 +34,8 @@ const router = useRouter();
 const repository = shallowRef<ScreenRepository | null>(null);
 const author = ref<string | null>(null);
 const overviews = ref<PlaylistOverview[]>([]);
+/** Who saved a draft, and when, by playlist id (Plan.md 79, Paket E). */
+const drafts = ref(new Map<string, { updatedBy: string; updatedAt: string }>());
 const error = ref<string | null>(null);
 const creating = ref(false);
 /** Loaded: the page shows its frame before, and its content from then on. */
@@ -79,13 +81,16 @@ usePreview(
 
 async function refresh(): Promise<void> {
     if (!repository.value) return;
-    const [list, stored] = await Promise.all([
+    const [list, stored, drafted] = await Promise.all([
         repository.value.listPlaylists(),
         // The tiles show the theme; without it they show the defaults.
         repository.value.loadTheme().catch(() => null),
+        // Without drafts (no category, no right) the tiles simply carry no mark.
+        repository.value.drafts.list().catch(() => new Map<string, { updatedBy: string; updatedAt: string }>()),
         refreshHeartbeats(),
     ]);
     overviews.value = list;
+    drafts.value = drafted;
     setSectionCount('playlists', list.length);
     theme.value = stored;
 }
@@ -187,6 +192,7 @@ async function remove(overview: PlaylistOverview): Promise<void> {
                         :overview="o"
                         :heartbeats="heartbeats"
                         :now="now"
+                        :draft="drafts.get(o.playlist.id) ?? null"
                         @remove="remove(o)"
                         @duplicate="askDuplicate(o)"
                     />

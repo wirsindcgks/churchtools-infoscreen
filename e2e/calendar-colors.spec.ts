@@ -59,7 +59,7 @@ async function whiteModern(page: Page, positions: number[]): Promise<void> {
         await hex.blur();
     }
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
 }
 
 /** Red, green, blue (0–1) and alpha of a computed colour: Chromium answers `color(srgb …)`, WebKit `rgba(…)`. */
@@ -118,7 +118,7 @@ test('the dividing lines follow the text colour: dark on a light slide, light on
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await colourSlide(page, 2, '#ffffff', '#1a1a1a');
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
     await page.goto('./player?screen=demo');
     const row = page.locator('.row:visible').first();
     await expect(row).toBeVisible({ timeout: 30_000 });
@@ -130,7 +130,7 @@ test('the dividing lines follow the text colour: dark on a light slide, light on
     await page.getByTestId('open-editor').first().click();
     await colourSlide(page, 2, '#101820', '#f5f5f5');
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
     await page.goto('./player?screen=demo');
     const dark = page.locator('.row:visible').first();
     await expect(dark).toBeVisible({ timeout: 30_000 });

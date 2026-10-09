@@ -609,8 +609,11 @@ export class ScreenRepository {
         return overviews.sort((a, b) => a.playlist.name.localeCompare(b.playlist.name, LOCALE));
     }
 
-    /** One playlist with its slides and media – what the editor opens. */
-    async loadPlaylist(id: string): Promise<LoadedPlaylist> {
+    /**
+     * One playlist with its slides and media – what the editor opens. `extraSlideIds` are slides of a draft that
+     * are not published yet (linked ones taken over): `sharedWith` is worked out for them as well.
+     */
+    async loadPlaylist(id: string, extraSlideIds: string[] = []): Promise<LoadedPlaylist> {
         const running = await this.readRunningScreens();
         const stored = running.playlists.find((p) => p.doc.id === id);
         if (!stored) throw new PlaylistNotFoundError(id);
@@ -629,7 +632,7 @@ export class ScreenRepository {
         const mediaRead = mediaIds.size ? await this.readAll('media', this.readOwnMedia) : { docs: [], issues: [] };
         const media = mediaRead.docs.map((m) => m.doc).filter((m) => mediaIds.has(m.id));
         const sharedWith: LoadedPlaylist['sharedWith'] = {};
-        for (const sid of stored.doc.slideIds) {
+        for (const sid of new Set([...stored.doc.slideIds, ...extraSlideIds])) {
             const others = running.playlists
                 .filter((p) => p.doc.id !== id && p.doc.slideIds.includes(sid))
                 .map((p) => ({ id: p.doc.id, name: withPlaylistDefaults(p.doc, screens).name }))

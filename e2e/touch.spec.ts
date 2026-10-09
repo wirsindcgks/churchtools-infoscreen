@@ -8,7 +8,7 @@ type Point = { x: number; y: number };
 async function openEditor(page: Page): Promise<void> {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
-    await expect(page.getByTestId('save-status')).toHaveText('Alles gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Alles veröffentlicht');
 }
 
 /** A fresh, empty slide so nothing else stands on the stage. On a phone it is added from the sheet of slides. */

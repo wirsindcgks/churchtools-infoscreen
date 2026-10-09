@@ -4,6 +4,7 @@ import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName, instanceBaseUrl } from '../ct/client';
 import { fetchGroupHomepageList, fetchPostGroups, fetchResourceMasterdata, fetchServiceGroups, fetchServices, type PostGroup } from '../ct/api';
 import { liveSaveTitle, liveScreens } from '../designer/alive';
+import { clockTime, relativeWhen } from '../designer/last-edited';
 import AppBar from '../designer/AppBar.vue';
 import BlockPalette from '../designer/BlockPalette.vue';
 import EditorStage from '../designer/EditorStage.vue';
@@ -357,38 +358,66 @@ const currentMediaId = computed(() => {
     return bg?.kind === 'media' ? bg.mediaId : undefined;
 });
 
+/** The class of the status: what publishing is doing, and while it does nothing, what the draft is doing. */
+const statusClass = computed(() => (editor.status === 'idle' ? `draft-${editor.draftStatus}` : editor.status));
+
 const statusText = computed(() => {
     switch (editor.status) {
-        case 'saving':
-            return t.editor.status.saving;
-        case 'saved':
-            return t.editor.status.saved;
+        case 'publishing':
+            return t.editor.status.publishing;
+        case 'published':
+            return t.editor.status.published;
         case 'conflict':
             return t.editor.status.conflict;
         case 'error':
             return t.editor.status.error;
+    }
+    switch (editor.draftStatus) {
+        case 'off':
+            return editor.dirty ? t.editor.status.unpublished : t.editor.status.allPublished;
+        case 'pending':
+        case 'saving':
+            return t.editor.status.draftSaving;
+        case 'saved': {
+            const info = editor.draftInfo;
+            if (!info) return t.editor.status.allPublished;
+            return editor.draftFromOpen
+                ? t.editor.status.draftFromOpen(info.updatedBy, relativeWhen(info.updatedAt, context.timeZone))
+                : t.editor.status.draftSaved(clockTime(info.updatedAt, context.timeZone));
+        }
+        case 'conflict':
+            return t.editor.status.draftConflict;
+        case 'error':
+            return t.editor.status.draftRetry;
         default:
-            return editor.dirty ? t.editor.status.unsaved : t.editor.status.allSaved;
+            return t.editor.status.allPublished;
     }
 });
 
-/** After a save that wrote linked slides (Plan.md 49): which, and where else they now look the same. */
-const linkedNotice = computed(() => {
-    const saved = editor.linkedSaved;
-    if (!saved.length) return '';
+/** Before publishing: the linked slides it writes, and where else they run (Plan.md 49). */
+const linkedPublishText = computed(() => {
+    const linked = editor.linkedToPublish;
+    if (!linked.length) return '';
     const quote = (names: string[]) => names.map((n) => `„${n}"`).join(', ');
-    if (saved.length === 1) {
-        return t.editor.linkedSavedOne(quote([saved[0]!.name]), quote(saved[0]!.playlists));
+    if (linked.length === 1) return t.editor.linkedPublishOne(quote([linked[0]!.name]), quote(linked[0]!.playlists));
+    return t.editor.linkedPublishMany(linked.length, quote([...new Set(linked.flatMap((l) => l.playlists))]));
+});
+
+const saveTitle = computed(() => {
+    const name = live.value.length ? liveSaveTitle(live.value) : t.editor.publishTitle;
+    return editor.draftsOn ? name : withKeys(name, KEYS.save);
+});
+
+async function publishWithCheck(): Promise<void> {
+    if (!editor.draft || editor.status === 'publishing') return;
+    if (
+        linkedPublishText.value &&
+        !(await confirm({ title: t.editor.linkedPublishTitle, message: linkedPublishText.value, confirmLabel: t.editor.publish }))
+    ) {
+        return;
     }
-    const playlists = [...new Set(saved.flatMap((s) => s.playlists))];
-    return t.editor.linkedSavedMany(saved.length, quote(playlists));
-});
-const LINKED_NOTICE_MS = 8000;
-let linkedNoticeTimer: ReturnType<typeof setTimeout> | undefined;
-watch(linkedNotice, (text) => {
-    clearTimeout(linkedNoticeTimer);
-    if (text) linkedNoticeTimer = setTimeout(() => (editor.linkedSaved = []), LINKED_NOTICE_MS);
-});
+    void editor.publish();
+}
 
 /** Where, by whom and when a linked slide was saved in between (Plan.md 49) – as much as is known. */
 const slideConflictText = computed(() => {
@@ -402,6 +431,7 @@ onMounted(async () => {
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', onResize);
     window.addEventListener('beforeunload', onBeforeUnload);
+    document.addEventListener('visibilitychange', onVisibilityChange);
     // Capture phase (see the comment on `pointerDown` above): it must run before a block's own
     // `pointerdown` handler can stop the event from bubbling any further.
     window.addEventListener('pointerdown', onPointerDown, true);
@@ -413,7 +443,7 @@ onMounted(async () => {
         loadSettings = () => handle.repository.loadSettings();
         author.value = displayName(person);
         demo.value = handle.demo;
-        editor.attach(handle.repository);
+        editor.attach(handle.repository, author.value);
         repository.value = handle.repository;
         await editor.open(playlistId);
         void refreshHeartbeats();
@@ -455,23 +485,49 @@ onBeforeUnmount(() => {
     window.removeEventListener('keydown', onKey);
     window.removeEventListener('resize', onResize);
     window.removeEventListener('beforeunload', onBeforeUnload);
+    document.removeEventListener('visibilitychange', onVisibilityChange);
     window.removeEventListener('pointerdown', onPointerDown, true);
     window.removeEventListener('pointerup', onPointerUpOrCancel, true);
     window.removeEventListener('pointercancel', onPointerUpOrCancel, true);
     document.removeEventListener('pointerdown', closeMoreMenuOnOutside);
 });
 
-onBeforeRouteLeave(
-    async () => !editor.dirty || (await confirm({ message: t.editor.discardChanges, confirmLabel: t.common.discard, danger: true })),
-);
+onBeforeRouteLeave(async () => {
+    if (editor.draftsOn) {
+        // The draft is saved on the way out; only when that fails the old question comes (Plan.md 79, Paket E).
+        if (editor.unsavedDraft) await editor.flushDraft();
+        if (!editor.unsavedDraft && editor.draftStatus !== 'conflict') return true;
+        return confirm({ message: t.editor.discardChanges, confirmLabel: t.common.discard, danger: true });
+    }
+    return !editor.dirty || (await confirm({ message: t.editor.discardChanges, confirmLabel: t.common.discard, danger: true }));
+});
 
 function onBeforeUnload(event: BeforeUnloadEvent): void {
-    if (editor.dirty) event.preventDefault();
+    if (editor.draftsOn) {
+        if (!editor.unsavedDraft) return;
+        void editor.flushDraft();
+        event.preventDefault();
+    } else if (editor.dirty) {
+        event.preventDefault();
+    }
 }
 
-function save(): void {
-    if (editor.draft && editor.status !== 'saving') void editor.save(author.value);
+function onVisibilityChange(): void {
+    if (document.visibilityState === 'hidden' && editor.unsavedDraft) void editor.flushDraft();
 }
+
+async function discardDraft(): Promise<void> {
+    moreMenuOpen.value = false;
+    if (await confirm({ message: t.editor.discardDraftQuestion, confirmLabel: t.editor.discardDraftConfirm, danger: true })) {
+        void editor.discardAndReload();
+    }
+}
+
+/** When a draft conflict names who continued the draft, and when. */
+const draftConflictWhen = computed(() => {
+    const c = editor.draftConflict;
+    return c?.updatedAt ? relativeWhen(c.updatedAt, context.timeZone) : '';
+});
 
 function onKey(event: KeyboardEvent): void {
     // The "…" menu blocks other keys while open, like the dialogs below: only Escape does anything.
@@ -502,7 +558,8 @@ function onKey(event: KeyboardEvent): void {
     const choosing = !!typing && target instanceof HTMLInputElement && (target.type === 'checkbox' || target.type === 'radio');
     if (mod && event.key.toLowerCase() === 's') {
         event.preventDefault();
-        save();
+        if (editor.draftsOn) void editor.flushDraft();
+        else void publishWithCheck();
         return;
     }
     if (typing && !(choosing && mod)) return;
@@ -586,10 +643,21 @@ function onKey(event: KeyboardEvent): void {
                             :time-zone="context.timeZone"
                             data-testid="editor-live"
                         />
-                        <span class="status" :class="`status--${editor.status}`" data-testid="save-status">{{ statusText }}</span>
-                        <!-- The TVs check every 20 s for what was saved (Plan.md, 26); in demo mode an open player takes it at once. -->
+                        <span class="status" :class="`status--${statusClass}`" data-testid="save-status">
+                            <button
+                                v-if="editor.status === 'idle' && editor.draftStatus === 'error'"
+                                class="status-retry"
+                                type="button"
+                                data-testid="draft-retry"
+                                @click="editor.flushDraft()"
+                            >
+                                {{ statusText }}
+                            </button>
+                            <template v-else>{{ statusText }}</template>
+                        </span>
+                        <!-- The TVs check every 20 s for what was published (Plan.md, 26); in demo mode an open player takes it at once. -->
                         <span
-                            v-if="editor.status === 'saved' && editor.screens.length && !demo"
+                            v-if="editor.status === 'published' && editor.screens.length && !demo"
                             class="status status-hint"
                             data-testid="save-hint"
                         >
@@ -651,7 +719,7 @@ function onKey(event: KeyboardEvent): void {
                 >
                     ?
                 </button>
-                <!-- Below 48rem "Vorschau" and "Player" move in here – Rückgängig/Wiederholen and Speichern stay outside (Plan.md 44, M2). -->
+                <!-- Below 48rem "Vorschau" and "Player" move in here – Rückgängig/Wiederholen and Veröffentlichen stay outside (Plan.md 44, M2); "Entwurf verwerfen" is in it at any width. -->
                 <div ref="moreMenuRoot" class="more-menu">
                     <button
                         class="d-btn d-btn--icon"
@@ -668,6 +736,7 @@ function onKey(event: KeyboardEvent): void {
                         <button
                             role="menuitem"
                             type="button"
+                            class="more-narrow"
                             data-testid="more-preview"
                             :disabled="!editor.slides.length"
                             @click="openPreviewFromMenu"
@@ -678,6 +747,7 @@ function onKey(event: KeyboardEvent): void {
                             v-for="s in editor.screens.slice(0, 1)"
                             :key="s.id"
                             role="menuitem"
+                            class="more-narrow"
                             :to="{ name: 'player', query: { screen: s.slug } }"
                             target="_blank"
                             data-testid="more-player"
@@ -685,17 +755,27 @@ function onKey(event: KeyboardEvent): void {
                         >
                             <Icon name="play" :size="16" /> {{ t.editor.player }}
                         </RouterLink>
+                        <button
+                            v-if="editor.draftsOn"
+                            role="menuitem"
+                            type="button"
+                            data-testid="more-discard-draft"
+                            :disabled="!editor.dirty && editor.draftRevision === 0"
+                            @click="discardDraft"
+                        >
+                            <Icon name="trash" :size="16" /> {{ t.editor.discardDraft }}
+                        </button>
                     </div>
                 </div>
                 <button
                     class="d-btn d-btn--primary"
                     type="button"
                     data-testid="save"
-                    :title="withKeys(live.length ? liveSaveTitle(live) : t.common.save, KEYS.save)"
-                    :disabled="!editor.dirty || editor.status === 'saving'"
-                    @click="save"
+                    :title="saveTitle"
+                    :disabled="!editor.dirty || editor.status === 'publishing'"
+                    @click="publishWithCheck"
                 >
-                    {{ t.common.save }}
+                    {{ t.editor.publish }}
                 </button>
             </template>
         </AppBar>
@@ -703,7 +783,11 @@ function onKey(event: KeyboardEvent): void {
         <p v-if="demo" class="d-banner d-banner--warning banner" data-testid="demo-notice-editor">
             {{ t.editor.demoNotice }}
         </p>
+        <p v-if="!editor.draftsOn && !demo && editor.draft" class="d-banner d-banner--warning banner" data-testid="drafts-off">
+            {{ t.editor.draftsOff }}
+        </p>
         <p v-if="editor.error" class="d-banner d-banner--error banner" role="alert">{{ editor.error }}</p>
+        <p v-if="editor.draftError" class="d-banner d-banner--error banner" role="alert">{{ editor.draftError }}</p>
         <p v-if="problem" class="d-banner d-banner--error banner" role="alert">{{ t.editor.previewData(problem) }}</p>
 
         <p v-if="loadError" class="d-banner d-banner--error banner" role="alert">{{ loadError }}</p>
@@ -732,14 +816,6 @@ function onKey(event: KeyboardEvent): void {
             <SlideList v-if="!phone" :class="{ 'drawer-open': slidesDrawerOpen }" @click="closeSlidesDrawerOnPick" @collapse="collapseSlides" />
             <div class="stage-column">
                 <BlockPalette />
-                <!-- Floats over the middle of the stage instead of pushing it down; goes by itself (Plan.md 49). -->
-                <div v-if="linkedNotice" class="d-banner linked-notice" role="status" data-testid="linked-save-notice">
-                    <Icon name="link" :size="16" />
-                    <span>{{ linkedNotice }}</span>
-                    <button class="d-btn d-btn--icon" type="button" :aria-label="t.editor.closeNotice" @click="editor.linkedSaved = []">
-                        <Icon name="close" :size="16" />
-                    </button>
-                </div>
                 <EditorStage @all-settings="showAllSettings" @open-content="openContent" @open-more="openMore" />
             </div>
             <!-- Below 48rem and upright above it this becomes a sheet at the bottom; otherwise a column beside the stage (Plan.md 44, M4; 45). -->
@@ -851,8 +927,33 @@ function onKey(event: KeyboardEvent): void {
                     <button class="d-btn d-btn--primary" type="button" data-testid="slide-conflict-reload" @click="editor.discardAndReload()">
                         {{ t.editor.slideConflict.reload }}
                     </button>
-                    <button class="d-btn" type="button" data-testid="slide-conflict-keep" @click="editor.keepAsCopy(author)">
+                    <button class="d-btn" type="button" data-testid="slide-conflict-keep" @click="editor.keepAsCopy()">
                         {{ t.editor.slideConflict.keepCopy }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div v-if="editor.draftStatus === 'conflict' && editor.draftConflict" class="d-dialog-backdrop" role="dialog" aria-modal="true">
+            <div class="d-dialog" data-testid="draft-conflict-dialog">
+                <h2>{{ t.editor.draftConflict.title }}</h2>
+                <p>
+                    {{
+                        editor.draftConflict.revision > 0
+                            ? t.editor.draftConflict.text(editor.draftConflict.updatedBy, draftConflictWhen)
+                            : t.editor.draftConflict.gone
+                    }}
+                </p>
+                <div class="d-dialog-actions">
+                    <button class="d-btn" type="button" data-testid="draft-conflict-load" @click="editor.reloadDraft()">
+                        {{
+                            editor.draftConflict.revision > 0
+                                ? t.editor.draftConflict.load(editor.draftConflict.updatedBy)
+                                : t.editor.draftConflict.loadPublished
+                        }}
+                    </button>
+                    <button class="d-btn d-btn--primary" type="button" data-testid="draft-conflict-keep" @click="editor.keepMyDraft()">
+                        {{ t.editor.draftConflict.keep }}
                     </button>
                 </div>
             </div>
@@ -873,7 +974,7 @@ function onKey(event: KeyboardEvent): void {
                 <p>{{ t.editor.conflict.question }}</p>
                 <div class="d-dialog-actions">
                     <button class="d-btn" type="button" @click="editor.discardAndReload()">{{ t.editor.conflict.loadOther }}</button>
-                    <button class="d-btn d-btn--primary" type="button" @click="editor.overwrite(author)">
+                    <button class="d-btn d-btn--primary" type="button" @click="editor.overwrite()">
                         {{ t.editor.conflict.keepMine }}
                     </button>
                 </div>
@@ -963,30 +1064,21 @@ function onKey(event: KeyboardEvent): void {
 .status--error {
     color: var(--d-danger);
 }
-.status--saved {
+.status--published {
     color: var(--d-success);
 }
-.linked-notice {
-    position: absolute;
-    bottom: 16px;
-    left: 50%;
-    /* Above the stage and its handles. */
-    z-index: 20;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: max-content;
-    max-width: calc(100% - 32px);
-    transform: translateX(-50%);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
-    font-size: var(--d-size-sm);
+.status--draft-conflict,
+.status--draft-error {
+    color: var(--d-danger);
 }
-.linked-notice > span {
-    min-width: 0;
-    overflow-wrap: anywhere;
-}
-.linked-notice .d-icon {
-    flex: none;
+.status-retry {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
 }
 .banner {
     margin: 0 var(--d-space-3) var(--d-space-3);
@@ -1025,9 +1117,11 @@ function onKey(event: KeyboardEvent): void {
     display: none;
 }
 
-/* The "…" menu (Plan.md 44, M2), after the one of a screen tile – only shown below 48rem. */
+/* The "…" menu (Plan.md 44, M2), after the one of a screen tile; "Vorschau" and "Player" are in it only below 48rem. */
 .more-menu {
     position: relative;
+}
+.more-menu-list .more-narrow {
     display: none;
 }
 .more-menu-list {
@@ -1228,8 +1322,8 @@ function onKey(event: KeyboardEvent): void {
     .player-link {
         display: none;
     }
-    .more-menu {
-        display: block;
+    .more-menu-list .more-narrow {
+        display: flex;
     }
 
     /* The stage no taller than the room above the open sheet (showStageAboveSheet). */

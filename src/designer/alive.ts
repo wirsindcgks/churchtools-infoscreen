@@ -66,7 +66,7 @@ export function liveTitle(live: LiveScreen[], timeZone: string): string {
     return t.common.runningOn(quoted(live), time);
 }
 
-/** The tooltip of "Speichern" while the playlist runs: where the change will show up, and when. */
+/** The tooltip of "Veröffentlichen" while the playlist runs: where the change will show up, and when. */
 export function liveSaveTitle(live: LiveScreen[]): string {
     return t.editor.saveOnLive(quoted(live));
 }

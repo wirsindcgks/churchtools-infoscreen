@@ -140,7 +140,7 @@ test('build a slideshow with several pictures, keep it, and see it in the librar
     expect(await onStage.getAttribute('src')).toBe(first);
 
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
 
     // The preview runs it: the picture on show changes after the time set.
     await page.getByTestId('open-preview').click();
@@ -338,7 +338,7 @@ test('a saved block with the old transition "zoom" shows as fade with zooming in
     test.setTimeout(60_000);
     await twoPictures(page, baseURL);
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
     // Turn what was saved into what 1.18 wrote.
     const turned = await page.evaluate(() => {
         const key = 'infoscreen-designer.demo-store';
@@ -361,7 +361,7 @@ test('a saved block with the old transition "zoom" shows as fade with zooming in
     await choose(page, 'slideshow-transition', 'slide');
     await expect.poll(() => chosen(page, 'slideshow-motion')).toBe('in');
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
     expect(await page.evaluate(() => (localStorage.getItem('infoscreen-designer.demo-store') ?? '').includes('zoom\\"'))).toBe(false);
 });
 

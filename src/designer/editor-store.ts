@@ -18,17 +18,26 @@ import {
     type ScreenRepository,
     type SlideConflictInfo,
 } from '../store/screen-repository';
+import { DraftConflictError, DraftsUnavailableError, type DraftConflictInfo } from '../store/drafts';
 import { t } from '../i18n/designer';
 import { tr } from '../i18n/repository';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
 import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, fitToStage, freeSpot, move, moveAround, newId, reorder, type Layer } from './ops';
 
-export type SaveStatus = 'idle' | 'saving' | 'saved' | 'conflict' | 'error';
+/** Publishing (Plan.md 79, Paket E): what the button "Veröffentlichen" is doing. */
+export type SaveStatus = 'idle' | 'publishing' | 'published' | 'conflict' | 'error';
+/** The draft that is saved on its own: `off` = no category or no right, the editor publishes directly. */
+export type DraftStatus = 'off' | 'clean' | 'pending' | 'saving' | 'saved' | 'conflict' | 'error';
+
+/** The draft is saved 2 s after the last change, and at the earliest 5 s after the start of the last save. */
+export const DRAFT_DELAY_MS = 2000;
+export const DRAFT_INTERVAL_MS = 5000;
 
 export const useEditorStore = defineStore('editor', () => {
     const repository = shallowRef<ScreenRepository | null>(null);
     const draft = ref<PlaylistBundle | null>(null);
+    /** The published state of the draft as JSON (loaded or published last) – `dirty` and publishing hang on it. */
     const savedJson = ref('');
     /** Revision of the playlist the draft started from – what the save is checked against. */
     const revision = ref(0);
@@ -45,9 +54,24 @@ export const useEditorStore = defineStore('editor', () => {
      * removed – undoing "Verknüpfung lösen" brings the old id back, and it is linked again.
      */
     const sharedWith = ref<LoadedPlaylist['sharedWith']>({});
-    /** Linked slides the last save wrote, with where else they run – the editor tells the designer (Plan.md 49). */
-    const linkedSaved = ref<{ name: string; playlists: string[] }[]>([]);
-    /** Each slide as last loaded or saved, as JSON – what `save()` compares to write only changed slides. */
+    /** Who is editing: `updatedBy` of the playlist and of the drafts. */
+    const author = ref('');
+    /** Drafts are available: the category exists and this person may write there. */
+    const draftsOn = ref(false);
+    const draftStatus = ref<DraftStatus>('off');
+    /** The bundle as last saved as a draft, as JSON; without a draft it is `savedJson`. */
+    const draftJson = ref('');
+    /** Revision of the saved draft; 0 = there is none. */
+    const draftRevision = ref(0);
+    const draftInfo = ref<{ updatedBy: string; updatedAt: string } | null>(null);
+    /** The draft came with opening and has not been saved from here since. */
+    const draftFromOpen = ref(false);
+    const draftConflict = ref<DraftConflictInfo | null>(null);
+    const draftError = ref<string | null>(null);
+    let draftTimer: ReturnType<typeof setTimeout> | null = null;
+    let draftSaving: Promise<void> | null = null;
+    let lastDraftStart = 0;
+    /** Each slide as last loaded or published, as JSON – what `publish()` compares to write only changed slides. */
     let baseline = new Map<string, string>();
     const error = ref<string | null>(null);
     /** Grid size in stage pixels, 0 = off. A preference of this browser, not part of the playlist. */
@@ -68,7 +92,9 @@ export const useEditorStore = defineStore('editor', () => {
     let gestureOpen = false;
     let gestureRecorded = false;
 
-    const dirty = computed(() => !!draft.value && JSON.stringify(draft.value) !== savedJson.value);
+    const bundleJson = computed(() => (draft.value ? JSON.stringify(draft.value) : ''));
+    const dirty = computed(() => !!draft.value && bundleJson.value !== savedJson.value);
+    const unsavedDraft = computed(() => draftsOn.value && !!draft.value && bundleJson.value !== draftJson.value);
     const canUndo = computed(() => historyVersion.value >= 0 && history.canUndo);
     const canRedo = computed(() => historyVersion.value >= 0 && history.canRedo);
     const stage = computed(() => draft.value?.playlist.stage ?? { width: 1920, height: 1080 });
@@ -86,8 +112,9 @@ export const useEditorStore = defineStore('editor', () => {
         ...new Set(draft.value?.slides.flatMap((s) => s.blocks.flatMap(blockCalendarIds)) ?? []),
     ]);
 
-    function attach(repo: ScreenRepository): void {
+    function attach(repo: ScreenRepository, name = ''): void {
         repository.value = repo;
+        author.value = name;
     }
 
     function setGridSize(size: number): void {
@@ -123,8 +150,16 @@ export const useEditorStore = defineStore('editor', () => {
         status.value = 'idle';
         conflict.value = null;
         slideConflict.value = null;
-        linkedSaved.value = [];
         error.value = null;
+        // Without a draft: the draft state is the published one. `open()` puts a draft over it.
+        clearDraftTimer();
+        draftJson.value = savedJson.value;
+        draftRevision.value = 0;
+        draftInfo.value = null;
+        draftFromOpen.value = false;
+        draftConflict.value = null;
+        draftError.value = null;
+        draftStatus.value = draftsOn.value ? 'clean' : 'off';
         if (!slides.value.some((s) => s.id === selectedSlideId.value)) {
             selectedSlideId.value = slides.value[0]?.id ?? null;
             selectedBlockId.value = null;
@@ -132,15 +167,47 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     async function open(playlistId: string): Promise<void> {
-        if (!repository.value) throw new Error(t.defaults.noStorage);
-        const [loaded, stored] = await Promise.all([
-            repository.value.loadPlaylist(playlistId),
+        const repo = repository.value;
+        if (!repo) throw new Error(t.defaults.noStorage);
+        draftsOn.value = await repo.drafts.categoryId().then((id) => id !== null, () => false);
+        let stored: Awaited<ReturnType<typeof repo.drafts.load>> = null;
+        if (draftsOn.value) {
+            try {
+                stored = await repo.drafts.load(playlistId);
+            } catch (e) {
+                if (!(e instanceof DraftsUnavailableError)) throw e;
+                draftsOn.value = false;
+            }
+        }
+        const [loaded, storedTheme] = await Promise.all([
+            repo.loadPlaylist(playlistId, stored?.playlist.slideIds ?? []),
             // A theme that cannot be read leaves the defaults; it must not keep the playlist closed.
-            repository.value.loadTheme().catch(() => null),
+            repo.loadTheme().catch(() => null),
         ]);
-        theme.value = stored ?? DEFAULT_THEME;
+        theme.value = storedTheme ?? DEFAULT_THEME;
         screens.value = loaded.screens;
         reset({ playlist: loaded.playlist, slides: loaded.slides }, loaded.playlist.revision, loaded.sharedWith);
+        if (!stored || !draft.value) return;
+        // The draft over the published state: name and order from the draft, a slide from the draft where it has one.
+        const drafted = new Map(stored.slides.map((s) => [s.id, s]));
+        const published = new Map(loaded.slides.map((s) => [s.id, s]));
+        const ids = stored.playlist.slideIds.filter((id) => drafted.has(id) || published.has(id));
+        const wanted = new Set(ids);
+        // Published slides keep their place in the array, new ones follow: undoing everything gives the same JSON.
+        const composed = [
+            ...loaded.slides.filter((s) => wanted.has(s.id)).map((s) => drafted.get(s.id) ?? s),
+            ...ids.filter((id) => !published.has(id)).map((id) => drafted.get(id)!),
+        ];
+        draft.value = cloneJson({ playlist: { ...loaded.playlist, name: stored.playlist.name, slideIds: ids }, slides: composed });
+        draftJson.value = bundleJson.value;
+        draftRevision.value = stored.playlist.revision;
+        draftInfo.value = { updatedBy: stored.playlist.updatedBy, updatedAt: stored.playlist.updatedAt };
+        draftFromOpen.value = true;
+        draftStatus.value = 'saved';
+        if (!slides.value.some((s) => s.id === selectedSlideId.value)) {
+            selectedSlideId.value = slides.value[0]?.id ?? null;
+            selectedBlockId.value = null;
+        }
     }
 
     /**
@@ -156,8 +223,7 @@ export const useEditorStore = defineStore('editor', () => {
             gestureRecorded = gestureOpen;
         }
         mutate(draft.value);
-        linkedSaved.value = [];
-        if (status.value === 'saved') status.value = 'idle';
+        if (status.value === 'published') status.value = 'idle';
     }
 
     function beginGesture(): void {
@@ -260,6 +326,14 @@ export const useEditorStore = defineStore('editor', () => {
     function linkedIn(slideId: string): { id: string; name: string }[] {
         return sharedWith.value[slideId] ?? [];
     }
+
+    /** The linked slides publishing would write, with where else they run – asked before, not told after (Plan.md 49). */
+    const linkedToPublish = computed(() => {
+        void savedJson.value; // the baseline is not reactive; it changes together with the saved state
+        return slides.value
+            .filter((s) => (baseline.get(s.id) !== JSON.stringify(s) || linkPending(s.id)) && linkedIn(s.id).length)
+            .map((s) => ({ name: s.name, playlists: linkedIn(s.id).map((p) => p.name) }));
+    });
 
     /**
      * Slides from another playlist, after the current one. By default copies,
@@ -452,44 +526,168 @@ export const useEditorStore = defineStore('editor', () => {
         });
     }
 
+    function clearDraftTimer(): void {
+        if (draftTimer) clearTimeout(draftTimer);
+        draftTimer = null;
+    }
+
+    function draftSaveAllowed(): boolean {
+        return draftsOn.value && draftStatus.value !== 'conflict' && status.value !== 'publishing';
+    }
+
+    /** 2 s after this change, and 5 s after the start of the last save at the earliest. */
+    function scheduleDraft(): void {
+        clearDraftTimer();
+        const wait = Math.max(DRAFT_DELAY_MS, lastDraftStart + DRAFT_INTERVAL_MS - Date.now());
+        draftTimer = setTimeout(() => {
+            draftTimer = null;
+            void saveDraft();
+        }, wait);
+    }
+
+    watch(bundleJson, (json) => {
+        if (!draft.value || !draftSaveAllowed()) return;
+        if (json !== draftJson.value) {
+            draftStatus.value = 'pending';
+            scheduleDraft();
+        } else if (draftStatus.value === 'pending') {
+            clearDraftTimer();
+            draftStatus.value = draftRevision.value > 0 ? 'saved' : 'clean';
+        }
+    });
+
     /**
+     * Saves the bundle as a draft: only the slides that differ from the published state. Equal to the published
+     * state (everything undone, or just published) there is no draft – a saved one is discarded instead.
+     */
+    function saveDraft(): Promise<boolean> {
+        if (!repository.value || !draft.value || !draftSaveAllowed()) return Promise.resolve(false);
+        if (draftSaving) {
+            return draftSaving.then(() => {
+                if (unsavedDraft.value && draftSaveAllowed()) scheduleDraft();
+                return !unsavedDraft.value && (draftStatus.value === 'saved' || draftStatus.value === 'clean');
+            });
+        }
+        if (!unsavedDraft.value) {
+            clearDraftTimer();
+            if (draftStatus.value === 'error' || draftStatus.value === 'pending') {
+                draftStatus.value = draftRevision.value > 0 ? 'saved' : 'clean';
+            }
+            return Promise.resolve(true);
+        }
+        clearDraftTimer();
+        lastDraftStart = Date.now();
+        const run = writeDraft(repository.value, draft.value).finally(() => {
+            draftSaving = null;
+        });
+        draftSaving = run.then(
+            () => undefined,
+            () => undefined,
+        );
+        return run;
+    }
+
+    async function writeDraft(repo: ScreenRepository, bundle: PlaylistBundle): Promise<boolean> {
+        const json = bundleJson.value;
+        const playlistId = bundle.playlist.id;
+        draftStatus.value = 'saving';
+        draftError.value = null;
+        try {
+            if (json === savedJson.value) {
+                if (draftRevision.value > 0 || draftJson.value !== savedJson.value) await repo.drafts.discard(playlistId);
+                draftRevision.value = 0;
+                draftInfo.value = null;
+                draftFromOpen.value = false;
+                draftJson.value = json;
+                draftStatus.value = bundleJson.value !== json ? 'pending' : 'clean';
+                return true;
+            }
+            const published = savedSlideIds.value;
+            const changed = bundle.slides.filter((s) => baseline.get(s.id) !== JSON.stringify(s) || !published.has(s.id));
+            const saved = await repo.drafts.save(
+                { playlistId, name: bundle.playlist.name, slideIds: [...bundle.playlist.slideIds], slides: cloneJson(changed) },
+                { expectedRevision: draftRevision.value, updatedBy: author.value },
+            );
+            draftRevision.value = saved.revision;
+            draftInfo.value = { updatedBy: saved.updatedBy, updatedAt: saved.updatedAt };
+            draftFromOpen.value = false;
+            // Changes made while saving stay unsaved.
+            draftJson.value = json;
+            draftStatus.value = bundleJson.value !== json ? 'pending' : 'saved';
+            return true;
+        } catch (e) {
+            if (e instanceof DraftConflictError) {
+                draftConflict.value = e.current;
+                draftStatus.value = 'conflict';
+            } else if (e instanceof DraftsUnavailableError) {
+                draftsOn.value = false;
+                draftStatus.value = 'off';
+            } else {
+                draftError.value = e instanceof Error ? e.message : String(e);
+                draftStatus.value = 'error';
+            }
+            return false;
+        }
+    }
+
+    /** Save the draft now (Ctrl+S, leaving the page, a hidden tab): waits for a running save first. */
+    async function flushDraft(): Promise<boolean> {
+        clearDraftTimer();
+        if (draftSaving) await draftSaving;
+        return saveDraft();
+    }
+
+    /** Draft conflict: keep my version and save it over the other one, knowingly. */
+    async function keepMyDraft(): Promise<boolean> {
+        if (!draftConflict.value) return false;
+        draftRevision.value = draftConflict.value.revision;
+        draftConflict.value = null;
+        draftStatus.value = 'pending';
+        draftJson.value = ''; // whatever is stored now, my state is to be written
+        return flushDraft();
+    }
+
+    /** Draft conflict: take the draft as it is stored now (or the published state, when it is gone). */
+    async function reloadDraft(): Promise<void> {
+        if (draft.value) await open(draft.value.playlist.id);
+    }
+
+    /**
+     * Publishes: the playlist and its slides go to the screens, then the draft is dropped (Plan.md 79, Paket E).
      * `mine`: the knowing overwrite after a playlist conflict – every slide of this playlist
      * alone is written as the draft has it, not only the changed ones; linked slides still only when changed.
      */
-    async function save(updatedBy: string, options: { mine?: boolean } = {}): Promise<boolean> {
+    async function publish(options: { mine?: boolean } = {}): Promise<boolean> {
         if (!repository.value || !draft.value) return false;
         if (!draft.value.playlist.name.trim()) {
             error.value = t.defaults.playlistNeedsName;
             status.value = 'error';
             return false;
         }
-        status.value = 'saving';
+        status.value = 'publishing';
         error.value = null;
+        clearDraftTimer();
+        if (draftSaving) await draftSaving;
+        clearDraftTimer();
         try {
             // The playlist and its slides – screens and schedules stay as they are (Plan.md, F).
-            // Only changed slides are written: a linked slide may have been saved from another playlist since.
+            // Only changed slides are written: a linked slide may have been published from another playlist since.
             const changedSlideIds = draft.value.slides
                 .filter((s) => baseline.get(s.id) !== JSON.stringify(s) || (options.mine && !linkedIn(s.id).length))
                 .map((s) => s.id);
-            // Links taken over since the last save come into being now – the other playlists learn of them.
-            const newlyLinked = draft.value.slides.filter((s) => linkPending(s.id)).map((s) => s.id);
             const saved = await repository.value.savePlaylist(draft.value, {
                 expectedRevision: revision.value,
-                updatedBy,
+                updatedBy: author.value,
                 changedSlideIds,
             });
             revision.value = saved.revision;
             draft.value.playlist.revision = saved.revision;
             draft.value.playlist.updatedBy = saved.updatedBy;
             draft.value.playlist.updatedAt = saved.updatedAt;
-            // The written slides now carry the save's time – the next save of a shared one compares against it.
+            // The written slides now carry the publishing time – the next one of a shared slide compares against it.
             for (const s of draft.value.slides) if (changedSlideIds.includes(s.id)) s.updatedAt = saved.updatedAt;
             markSaved();
-            linkedSaved.value = slides.value
-                .filter((s) => (changedSlideIds.includes(s.id) || newlyLinked.includes(s.id)) && linkedIn(s.id).length)
-                .map((s) => ({ name: s.name, playlists: linkedIn(s.id).map((p) => p.name) }));
-            status.value = 'saved';
-            return true;
+            status.value = 'published';
         } catch (e) {
             if (e instanceof SlideConflictError) {
                 slideConflict.value = e.current;
@@ -504,27 +702,61 @@ export const useEditorStore = defineStore('editor', () => {
             }
             return false;
         }
+        if (draftsOn.value) {
+            try {
+                await repository.value.drafts.discard(draft.value.playlist.id);
+                clearDraftTimer();
+                draftRevision.value = 0;
+                draftInfo.value = null;
+                draftFromOpen.value = false;
+                draftConflict.value = null;
+                draftError.value = null;
+                draftJson.value = savedJson.value;
+                draftStatus.value = 'clean';
+            } catch {
+                // Nothing changes: the next save sees "same as published" and discards then.
+            }
+            // A change made while publishing was not scheduled – the draft was not to be saved then.
+            if (unsavedDraft.value && draftSaveAllowed()) {
+                draftStatus.value = 'pending';
+                scheduleDraft();
+            }
+        }
+        return true;
     }
 
     /** Conflict: keep my version and write it over the newer one, knowingly. */
-    async function overwrite(updatedBy: string): Promise<boolean> {
+    async function overwrite(): Promise<boolean> {
         if (!conflict.value) return false;
         revision.value = conflict.value.revision;
         conflict.value = null;
-        return save(updatedBy, { mine: true });
+        return publish({ mine: true });
     }
 
-    /** Slide conflict: keep my version of the slide as a copy of my own and save again. */
-    async function keepAsCopy(updatedBy: string): Promise<boolean> {
+    /** Slide conflict: keep my version of the slide as a copy of my own and publish again. */
+    async function keepAsCopy(): Promise<boolean> {
         if (!slideConflict.value) return false;
         unlinkSlide(slideConflict.value.slide.id);
         slideConflict.value = null;
-        return save(updatedBy);
+        return publish();
     }
 
-    /** Conflict: drop my changes and load what is stored now. */
+    /** Drop the draft and my changes, and load what is published now. */
     async function discardAndReload(): Promise<void> {
-        if (draft.value) await open(draft.value.playlist.id);
+        if (!draft.value || !repository.value) return;
+        const id = draft.value.playlist.id;
+        if (draftsOn.value) {
+            clearDraftTimer();
+            if (draftSaving) await draftSaving;
+            try {
+                await repository.value.drafts.discard(id);
+            } catch (e) {
+                draftError.value = e instanceof Error ? e.message : String(e);
+                draftStatus.value = 'error';
+                return;
+            }
+        }
+        await open(id);
     }
 
     return {
@@ -549,7 +781,7 @@ export const useEditorStore = defineStore('editor', () => {
         conflict,
         slideConflict,
         sharedWith,
-        linkedSaved,
+        linkedToPublish,
         linkedIn,
         linkPending,
         error,
@@ -586,7 +818,20 @@ export const useEditorStore = defineStore('editor', () => {
         pasteBlocks,
         duplicateBlock,
         setLocked,
-        save,
+        publish,
+        saveDraft,
+        flushDraft,
+        keepMyDraft,
+        reloadDraft,
+        author,
+        draftsOn,
+        draftStatus,
+        draftRevision,
+        draftInfo,
+        draftFromOpen,
+        draftConflict,
+        draftError,
+        unsavedDraft,
         overwrite,
         keepAsCopy,
         discardAndReload,

@@ -92,7 +92,7 @@ describe('liveScreens (Plan.md 77)', () => {
             'Läuft gerade auf „Foyer links“, „Foyer rechts“ – laut Lebenszeichen von 14:32',
         );
         expect(liveSaveTitle(live.slice(0, 1))).toBe(
-            'Läuft gerade auf „Foyer links“ – nach dem Speichern dort in etwa 20 Sekunden zu sehen',
+            'Läuft gerade auf „Foyer links“ – nach dem Veröffentlichen dort in etwa 20 Sekunden zu sehen',
         );
     });
 });
