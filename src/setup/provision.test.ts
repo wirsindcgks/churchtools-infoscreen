@@ -455,3 +455,29 @@ describe('devicePasswordRecommendationLogLine (G18: a login token is only invali
         );
     });
 });
+
+describe('planProvisioning with the drafts category (Plan.md 79)', () => {
+    const [designer, device] = planProvisioning({ ...input, categories: { ...categories, drafts: 28 } });
+    const [plainDesigner, plainDevice] = planProvisioning(input);
+
+    it('gives designers the five rights on it', () => {
+        expect(designer!.grants.find((g) => g.label === 'Kategorien sehen')?.dataId).toEqual([1, 4, 7, 10, 13, 28]);
+        expect(designer!.grants.find((g) => g.label === 'Daten in Kategorie sehen')?.dataId).toEqual([1, 4, 7, 10, 13, 28]);
+        for (const authId of [2016, 2017, 2018]) {
+            expect(designer!.grants.find((g) => g.authId === authId)?.dataId).toEqual([4, 7, 10, 28]);
+        }
+    });
+
+    it('gives a device nothing on it, not even the seeing', () => {
+        const ids = device!.grants.flatMap((g) => g.dataId ?? []);
+        expect(ids).not.toContain(28);
+        expect(device!.grants.find((g) => g.label === 'Kategorien sehen')?.dataId).toEqual([1, 4, 7, 10, 13]);
+    });
+
+    it('stays as it was without it', () => {
+        const [d, v] = planProvisioning({ ...input, categories });
+        expect(d).toEqual(plainDesigner);
+        expect(v).toEqual(plainDevice);
+        expect(plainDesigner!.grants.flatMap((g) => g.dataId ?? [])).not.toContain(28);
+    });
+});

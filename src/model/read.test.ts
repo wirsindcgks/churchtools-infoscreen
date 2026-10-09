@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
     InvalidDocumentError,
     MAX_VALUE_LENGTH,
+    readDraft,
     readScreen,
     readSettings,
     readSlide,
@@ -13,7 +14,7 @@ import {
     withOwnAddresses,
 } from './read';
 import { DEFAULT_FONT } from '../player/fonts';
-import { isVideo, MediaDoc, SCHEMA_VERSION, THEME_ID } from './schema';
+import { isVideo, MediaDoc, SCHEMA_VERSION, THEME_ID, type SlideDoc } from './schema';
 import { makeSlide, makeScreen, textBlock } from './testing';
 
 describe('readSlide – tolerant towards newer data', () => {
@@ -394,5 +395,48 @@ describe('readSettings – allowed services (schema 1.20, Plan.md 58)', () => {
         expect(() => readSettings({ ...base, allowedServiceIds: ['3'] })).toThrow();
         expect(() => readSettings({ ...base, allowedServiceIds: [1.5] })).toThrow();
         expect(() => readSettings({ ...base, allowedServiceIds: Array.from({ length: 51 }, (_, i) => i) })).toThrow();
+    });
+});
+
+describe('readDraft and serialize – drafts (schema 1.28, Plan.md 79)', () => {
+    const at = '2026-10-10T10:00:00.000Z';
+    const playlistDraft = {
+        schema: { ...SCHEMA_VERSION },
+        kind: 'playlist-draft' as const,
+        id: 'p1',
+        name: 'Sonntag',
+        slideIds: ['slide-1'],
+        revision: 1,
+        updatedBy: 'Anna',
+        updatedAt: at,
+    };
+    const slideDraft = (slide: SlideDoc) => ({
+        schema: { ...SCHEMA_VERSION },
+        kind: 'slide-draft' as const,
+        id: 'p1/slide-1',
+        playlistId: 'p1',
+        slide,
+        updatedBy: 'Anna',
+        updatedAt: at,
+    });
+
+    it('reads and serializes both kinds', () => {
+        expect(readDraft(JSON.parse(serialize(playlistDraft))).doc).toEqual(playlistDraft);
+        const draft = slideDraft(makeSlide({ blocks: [textBlock('a')] }));
+        expect(readDraft(JSON.parse(serialize(draft))).doc).toEqual(draft);
+    });
+
+    it('treats the slide inside like a slide: broken blocks are skipped and reported', () => {
+        const raw = slideDraft({ ...makeSlide(), blocks: [textBlock('a'), { id: 'x', type: 'hologram' } as never] });
+        const { doc, issues } = readDraft(raw);
+        expect((doc as { slide: { blocks: unknown[] } }).slide.blocks).toHaveLength(1);
+        expect(issues).toHaveLength(1);
+    });
+
+    it('rejects a revision below 1, an unknown kind and a draft that is too large', () => {
+        expect(() => readDraft({ ...playlistDraft, revision: 0 })).toThrow(InvalidDocumentError);
+        expect(() => readDraft({ ...playlistDraft, kind: 'slide' })).toThrow(InvalidDocumentError);
+        const big = slideDraft(makeSlide({ blocks: [textBlock('a', 'x'.repeat(MAX_VALUE_LENGTH))] }));
+        expect(() => serialize(big)).toThrow(ValueTooLargeError);
     });
 });

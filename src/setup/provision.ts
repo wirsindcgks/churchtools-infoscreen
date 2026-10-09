@@ -77,9 +77,9 @@ export interface PlanInput {
     /**
      * Ids of the module's data categories, as they exist after the first start. `status` (Plan.md 59) is not
      * one of them: it is there only once an administrator opened the start page; without it the plan leaves
-     * the signs of life out.
+     * the signs of life out. The same goes for `drafts` (Plan.md 79): designers get it, devices never.
      */
-    categories: Record<CategoryKey, number> & { status?: number };
+    categories: Record<CategoryKey, number> & { status?: number; drafts?: number };
     wikiCategoryId: number | null;
     /**
      * Every room the administrator sees: designers may choose among all of
@@ -108,7 +108,8 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
         return id;
     };
     // Explicit category ids, as ChurchTools itself stores them (G33); "all" by omission is unmeasured (G34).
-    const all = Object.values(input.categories)
+    const { drafts, ...others } = input.categories;
+    const all = Object.values(others)
         .filter((id): id is number => id !== undefined)
         .sort((a, b) => a - b);
     // Designers write content; the screens themselves and the settings belong to the administrators (F).
@@ -121,11 +122,17 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
         { authId: moduleRight('view custom data'), dataId: all, label: t.setup.provision.grants.viewData },
     ];
 
+    // The drafts are the designers' alone (Plan.md 79): a device gets no right on them, not even to see.
+    const designerAll = drafts === undefined ? all : [...all, drafts].sort((a, b) => a - b);
+    const designerWritten = drafts === undefined ? written : [...written, drafts];
+
     const designer: GrantSpec[] = [
-        ...readModule,
-        { authId: moduleRight('create custom data'), dataId: written, label: t.setup.provision.grants.createData },
-        { authId: moduleRight('edit custom data'), dataId: written, label: t.setup.provision.grants.editData },
-        { authId: moduleRight('delete custom data'), dataId: written, label: t.setup.provision.grants.deleteData },
+        { authId: moduleRight('view'), label: t.setup.provision.grants.viewModule },
+        { authId: moduleRight('view custom category'), dataId: designerAll, label: t.setup.provision.grants.viewCategories },
+        { authId: moduleRight('view custom data'), dataId: designerAll, label: t.setup.provision.grants.viewData },
+        { authId: moduleRight('create custom data'), dataId: designerWritten, label: t.setup.provision.grants.createData },
+        { authId: moduleRight('edit custom data'), dataId: designerWritten, label: t.setup.provision.grants.editData },
+        { authId: moduleRight('delete custom data'), dataId: designerWritten, label: t.setup.provision.grants.deleteData },
         { authId: AUTH.wikiView, label: t.setup.provision.grants.viewWiki },
     ];
     // "Ressource sehen" per room (205) is enough; "Ressourcen sehen" (201) nobody needs (G45).
