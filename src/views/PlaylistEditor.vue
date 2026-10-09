@@ -1180,8 +1180,20 @@ function onKey(event: KeyboardEvent): void {
         aspect-ratio: var(--stage-aspect);
         max-height: 70vh;
     }
-    /* Standing in the middle, the same air above as below – else the stage sits 8 px high. */
+    /*
+     * Not above an open sheet, the stage's frame fills the room between the head and the slide row, and the slide stands
+     * in its middle – zoomed in, it reaches into that room instead of being cut off at its own edges (user, 2026-10-09).
+     * The same air above as below.
+     */
+    .editor:not(.sheet-open) .columns {
+        align-content: stretch;
+        grid-template-rows: minmax(0, 1fr);
+    }
     .editor:not(.sheet-open) .stage-column > :last-child {
+        flex: 1;
+        min-height: 0;
+        max-height: none;
+        aspect-ratio: auto;
         margin-top: var(--d-space-2);
     }
 
@@ -1373,14 +1385,13 @@ function onKey(event: KeyboardEvent): void {
         position: relative;
         --slides-w: 53px;
     }
-    /* The slide stands in the middle of the room below "+ Baustein", upright and lying down (user, 2026-10-09). */
+    /*
+     * The stage's frame fills the room below "+ Baustein", and the slide stands in its middle, upright and lying down –
+     * zoomed in, it reaches into that room (user, 2026-10-09).
+     */
     .stage-column > :last-child {
-        margin-block: auto;
         margin-inline: 0;
-        flex: 0 1 auto;
-        height: auto;
         min-height: 0;
-        aspect-ratio: var(--stage-aspect);
     }
     /* Beside the rail card: its 12 px of padding, the 53 px, and the 12 px gap. */
     .columns .slide-list {

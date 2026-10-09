@@ -827,9 +827,10 @@ function onEmptyAction(b: Block): void {
     font-family: var(--d-font);
     white-space: nowrap;
 }
+/* Top right: at the bottom of the frame, a phone's block row lies over it. */
 .zoom-reset {
+    top: 8px;
     right: 8px;
-    bottom: 8px;
 }
 .stage-shadow {
     position: absolute;

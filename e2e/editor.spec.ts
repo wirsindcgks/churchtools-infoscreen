@@ -567,7 +567,7 @@ test.describe('on a tablet (Plan.md 45)', () => {
 
     /** The slide stands in the middle of the room between "+ Baustein" and what lies below it (user, 2026-10-09). */
     async function expectStageCentered(page: Page, bottom: number): Promise<void> {
-        const [head, stage] = await Promise.all([page.getByTestId('add-block-menu').boundingBox(), page.locator('.editor-stage').boundingBox()]);
+        const [head, stage] = await Promise.all([page.getByTestId('add-block-menu').boundingBox(), page.locator('.editor-stage .stage').first().boundingBox()]);
         const above = stage!.y - (head!.y + head!.height);
         const below = bottom - (stage!.y + stage!.height);
         expect(above).toBeGreaterThan(20);
