@@ -5,6 +5,7 @@
  * width below it. `HintRow` is the usual row around it. `part` splits the two for a parent that places them apart
  * (a section: the button in its title line, the text in its body) – it then owns `open`.
  */
+import { t } from '../i18n/designer';
 import Icon from './Icon.vue';
 
 defineProps<{ part?: 'button' | 'text' }>();
@@ -17,8 +18,8 @@ const open = defineModel<boolean>('open', { default: false });
             v-if="part !== 'text'"
             class="d-btn d-btn--icon info-btn"
             type="button"
-            aria-label="Erklärung"
-            title="Erklärung"
+            :aria-label="t.common.explanation"
+            :title="t.common.explanation"
             :aria-expanded="open"
             @click="open = !open"
         >

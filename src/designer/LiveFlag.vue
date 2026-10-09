@@ -4,6 +4,7 @@
  * life. On a tile's picture and in the editor's bar; the tooltip names the screens and the time of the sign.
  */
 import { computed } from 'vue';
+import { t } from '../i18n/designer';
 import { liveTitle, type LiveScreen } from './alive';
 
 const props = defineProps<{ live: LiveScreen[]; timeZone: string; overlay?: boolean }>();
@@ -12,9 +13,9 @@ const title = computed(() => liveTitle(props.live, props.timeZone));
 </script>
 
 <template>
-    <span class="live-flag" :class="{ overlay }" role="img" :title="title" :aria-label="`Läuft gerade – ${title}`">
+    <span class="live-flag" :class="{ overlay }" role="img" :title="title" :aria-label="t.common.runningAria(title)">
         <span class="alive-dot is-online" aria-hidden="true" />
-        <span class="live-text">Läuft gerade</span>
+        <span class="live-text">{{ t.common.running }}</span>
     </span>
 </template>
 

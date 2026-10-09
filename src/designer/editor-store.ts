@@ -18,6 +18,8 @@ import {
     type ScreenRepository,
     type SlideConflictInfo,
 } from '../store/screen-repository';
+import { t } from '../i18n/designer';
+import { tr } from '../i18n/repository';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
 import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, move, reorder, type Layer } from './ops';
@@ -120,7 +122,7 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     async function open(playlistId: string): Promise<void> {
-        if (!repository.value) throw new Error('Kein Speicher angebunden.');
+        if (!repository.value) throw new Error(t.defaults.noStorage);
         const [loaded, stored] = await Promise.all([
             repository.value.loadPlaylist(playlistId),
             // A theme that cannot be read leaves the defaults; it must not keep the playlist closed.
@@ -189,7 +191,7 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     function addSlide(): void {
-        const created = createSlide('Neue Slide', theme.value);
+        const created = createSlide(tr.newSlide, theme.value);
         change((b) => {
             b.slides.push(created);
             const at = b.playlist.slideIds.indexOf(slide.value?.id ?? '') + 1;
@@ -349,7 +351,7 @@ export const useEditorStore = defineStore('editor', () => {
     async function save(updatedBy: string, options: { mine?: boolean } = {}): Promise<boolean> {
         if (!repository.value || !draft.value) return false;
         if (!draft.value.playlist.name.trim()) {
-            error.value = 'Die Playlist braucht einen Namen.';
+            error.value = t.defaults.playlistNeedsName;
             status.value = 'error';
             return false;
         }

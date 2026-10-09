@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { t } from '../i18n/designer';
 import type { SlideDoc } from '../model/schema';
 import { useStageContext } from '../player/context';
 import { slideSeconds } from '../player/paging';
@@ -108,11 +109,11 @@ function drop(index: number): void {
 
 /** What the chain symbol says: the other playlists showing the slide (Plan.md 49). */
 function linkedLabel(id: string): string {
-    return `Verknüpft mit: ${editor.linkedIn(id).map((p) => p.name).join(', ')}`;
+    return t.editor.slideList.linkedWith(editor.linkedIn(id).map((p) => p.name).join(', '));
 }
 
 function remove(id: string, name: string): void {
-    if (window.confirm(`Slide „${name}" aus dieser Playlist entfernen?`)) editor.removeSlide(id);
+    if (window.confirm(t.editor.slideList.confirmRemove(name))) editor.removeSlide(id);
 }
 
 function removeCurrent(): void {
@@ -124,15 +125,15 @@ function removeCurrent(): void {
     <aside class="slide-list">
         <header class="header-desktop">
             <span class="title">
-                <strong>Slides</strong>
+                <strong>{{ t.editor.slideList.title }}</strong>
                 <span class="count">{{ editor.slides.length }}</span>
             </span>
             <!-- Over 75rem the column folds into a rail, below it the drawer closes (Plan.md 45); the phone has its own header. -->
             <button
                 type="button"
                 class="d-btn d-btn--icon collapse-btn"
-                title="Slides einklappen"
-                aria-label="Slides einklappen"
+                :title="t.editor.slideList.collapse"
+                :aria-label="t.editor.slideList.collapse"
                 data-testid="slides-collapse"
                 @click="emit('collapse')"
             >
@@ -150,7 +151,7 @@ function removeCurrent(): void {
                 @click="toggleOpen"
             >
                 <span class="toggle-label">
-                    Slides <span class="count">{{ editor.slides.length }}</span>
+                    {{ t.editor.slideList.title }} <span class="count">{{ editor.slides.length }}</span>
                     <span v-if="!open && editor.slide" class="current" data-testid="slides-current">
                         · {{ selectedIndex }}. {{ editor.slide.name }}
                     </span>
@@ -160,8 +161,8 @@ function removeCurrent(): void {
             <button
                 class="d-btn d-btn--icon"
                 type="button"
-                title="Slide duplizieren"
-                aria-label="Slide duplizieren"
+                :title="t.editor.slideList.duplicateSlide"
+                :aria-label="t.editor.slideList.duplicateSlide"
                 data-testid="slide-duplicate-phone"
                 :disabled="!editor.slide"
                 @click="editor.duplicateCurrentSlide()"
@@ -171,8 +172,8 @@ function removeCurrent(): void {
             <button
                 class="d-btn d-btn--icon"
                 type="button"
-                title="Slide entfernen"
-                aria-label="Slide entfernen"
+                :title="t.editor.slideList.removeSlide"
+                :aria-label="t.editor.slideList.removeSlide"
                 data-testid="slide-remove-phone"
                 :disabled="!editor.slide || editor.slides.length <= 1"
                 @click="removeCurrent"
@@ -223,18 +224,18 @@ function removeCurrent(): void {
                     <span
                         class="duration"
                         :class="{ longer: runs(slide).longer }"
-                        :title="runs(slide).longer ? `Eingestellt ${slide.durationSeconds} s – die Terminliste braucht ${runs(slide).seconds} s für alle Seiten` : undefined"
+                        :title="runs(slide).longer ? t.editor.slideList.runsLonger(slide.durationSeconds, runs(slide).seconds) : undefined"
                         data-testid="slide-duration"
                     >
-                        <template v-if="runs(slide).longer">{{ slide.durationSeconds }} → </template>{{ runs(slide).seconds }} s{{ slide.enabled ? '' : ' · aus' }}
+                        <template v-if="runs(slide).longer">{{ slide.durationSeconds }} → </template>{{ runs(slide).seconds }} s{{ slide.enabled ? '' : t.editor.slideList.off }}
                     </span>
                 </div>
                 <div v-if="slide.id === editor.slide?.id" class="actions" @click.stop>
                     <button
                         class="d-btn d-btn--icon"
                         type="button"
-                        title="Duplizieren"
-                        aria-label="Duplizieren"
+                        :title="t.editor.slideList.duplicate"
+                        :aria-label="t.editor.slideList.duplicate"
                         @click="editor.duplicateCurrentSlide()"
                     >
                         <Icon name="copy" :size="16" />
@@ -242,8 +243,8 @@ function removeCurrent(): void {
                     <button
                         class="d-btn d-btn--icon"
                         type="button"
-                        title="Entfernen"
-                        aria-label="Entfernen"
+                        :title="t.editor.slideList.remove"
+                        :aria-label="t.editor.slideList.remove"
                         :disabled="editor.slides.length <= 1"
                         @click="remove(slide.id, slide.name)"
                     >
@@ -261,26 +262,26 @@ function removeCurrent(): void {
                 <button
                     class="add"
                     type="button"
-                    title="Neue Slide"
-                    aria-label="Neue Slide"
+                    :title="t.editor.slideList.newSlide"
+                    :aria-label="t.editor.slideList.newSlide"
                     data-testid="add-slide"
                     :style="phone ? { width: `${tileWidth}px`, height: `${thumb.height}px` } : { minHeight: `${thumb.height}px` }"
                     @click="editor.addSlide()"
                 >
                     <Icon name="plus" :size="22" />
-                    <span class="add-label">Neue Slide</span>
+                    <span class="add-label">{{ t.editor.slideList.newSlide }}</span>
                 </button>
                 <button
                     class="import"
                     type="button"
-                    title="Slides aus anderer Playlist übernehmen"
-                    aria-label="Slides aus anderer Playlist übernehmen"
+                    :title="t.editor.slideList.importTitle"
+                    :aria-label="t.editor.slideList.importTitle"
                     data-testid="import-slides"
                     :style="phone ? { width: `${tileWidth}px`, height: `${thumb.height}px` } : undefined"
                     @click="importing = true"
                 >
                     <Icon name="copy" :size="16" />
-                    <span class="import-label">Aus anderer Playlist …</span>
+                    <span class="import-label">{{ t.editor.slideList.importLabel }}</span>
                 </button>
             </li>
         </ol>
