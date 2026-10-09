@@ -20,7 +20,7 @@ import PaletteScope from '../designer/PaletteScope.vue';
 import { DEFAULT_THEME, type Block, type SlideDoc, type ThemeDoc } from '../model/schema';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
-import { fontDef, FONTS } from '../player/fonts';
+import FontField from '../designer/inspector/fields/FontField.vue';
 import { fitStage } from '../player/stage';
 import { getRepository } from '../store/backend';
 import { ConflictError, type ScreenRepository } from '../store/screen-repository';
@@ -314,20 +314,8 @@ function observe(el: unknown): void {
 
                 <section class="box" aria-labelledby="box-font">
                     <h2 id="box-font">{{ t.design.font.title }}</h2>
-                    <label class="d-field">
-                        {{ t.inspector.fontFamily }}
-                        <!-- An unknown key stays stored until someone picks a font; it draws as Lato meanwhile. -->
-                        <select
-                            data-testid="theme-font"
-                            :value="fontDef(look.font).key"
-                            :style="{ fontFamily: `'${fontDef(look.font).family}'` }"
-                            @change="look.font = ($event.target as HTMLSelectElement).value"
-                        >
-                            <option v-for="f in FONTS" :key="f.key" :value="f.key" :style="{ fontFamily: `'${f.family}'` }">
-                                {{ f.label }}
-                            </option>
-                        </select>
-                    </label>
+                    <!-- An unknown key stays stored until someone picks a font; it draws as Lato meanwhile. -->
+                    <FontField :model-value="look.font" :label="t.inspector.fontFamily" testid="theme-font" @update:model-value="look.font = $event" />
                     <p class="hint">{{ t.design.font.hint }}</p>
                 </section>
 

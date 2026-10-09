@@ -1,20 +1,21 @@
 <script setup lang="ts">
 /**
- * A colour as swatch and hex value side by side (Plan.md, Nächste Schritte
- * 11): the swatch opens the browser's picker, the text field takes a hex
- * code from the church's style guide. Only a valid code is taken over; while
- * typing, the field keeps what was typed and marks it until it is one.
- * Where a page provides the theme (the editor), swatches stand below in two
- * groups (Plan.md 64, 65): the palette – the theme's colours and the church's
- * – and the colours the slide uses beyond it. A click copies the value.
+ * A colour, design first (Plan.md 79, B2, decision 7). Where a page provides the theme (the editor), large swatches
+ * stand in this order (Plan.md 64, 65): the palette – the theme's colours and the church's –, the colours the slide
+ * uses beyond it, and last the button „Eigene Farbe", which unfolds the browser's picker and a hex field for a code
+ * from the church's style guide. The button is folded while the colour is one of the palette's, open when it is a
+ * free one. Only a valid hex code is taken over; while typing, the field keeps what was typed and marks it until it
+ * is one. Without a provider (the Design page, where the palette is defined) picker and hex field stand alone.
+ * A click on a swatch copies the value.
  */
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
+import Icon from './Icon.vue';
 import { useFieldVisible } from './inspector/mode';
 import { parseHex, pickerValue } from './color';
 import { usePalette, type PaletteColor } from './palette';
 
-const props = defineProps<{ modelValue: string; label: string; testid?: string; inline?: boolean; quick?: boolean }>();
+const props = defineProps<{ modelValue: string; label: string; testid?: string; quick?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [string]; focus: []; blur: [] }>();
 
 const lists = usePalette();
@@ -25,6 +26,17 @@ function swatchLabel(entry: PaletteColor): string {
     const hex = entry.color.toUpperCase();
     return entry.name.toLowerCase() === entry.color.toLowerCase() ? hex : `${entry.name} (${hex})`;
 }
+
+/** Whether the colour is one of the palette's – then „Eigene Farbe" stays folded. */
+const inPalette = computed(() => !!lists && lists.value.palette.some((entry) => entry.color.toLowerCase() === props.modelValue.toLowerCase()));
+/** Without swatches there is nothing to fold away. */
+const showsSwatches = computed(() => !!lists && (lists.value.palette.length > 0 || lists.value.slide.length > 0));
+const customOpen = ref(!inPalette.value);
+/** A free colour opens the fold; a palette colour never closes it again under the user's hands (typing may pass one). */
+watch(inPalette, (known) => {
+    if (!known) customOpen.value = true;
+});
+const customShown = computed(() => !showsSwatches.value || customOpen.value);
 
 const draft = ref(props.modelValue);
 const invalid = ref(false);
@@ -59,36 +71,8 @@ function onTextBlur(): void {
 </script>
 
 <template>
-    <div v-if="visible" class="d-field color-field" :class="{ 'color-field--inline': inline }">
+    <div v-if="visible" class="d-field color-field">
         <span>{{ label }}</span>
-        <div class="row">
-            <input
-                type="color"
-                :value="pickerValue(modelValue)"
-                :aria-label="t.common.color.pick(label)"
-                :data-testid="testid ? `${testid}-picker` : undefined"
-                @focus="emit('focus')"
-                @blur="emit('blur')"
-                @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-            >
-            <input
-                type="text"
-                class="hex"
-                :class="{ invalid }"
-                :value="draft"
-                maxlength="9"
-                spellcheck="false"
-                autocapitalize="off"
-                autocomplete="off"
-                :aria-label="t.common.color.asHex(label)"
-                :aria-invalid="invalid"
-                :title="invalid ? t.common.color.invalidHex : undefined"
-                :data-testid="testid"
-                @focus="onTextFocus"
-                @blur="onTextBlur"
-                @input="onText(($event.target as HTMLInputElement).value)"
-            >
-        </div>
         <div v-if="lists && lists.palette.length" class="swatch-group" data-testid="palette-group">
             <span class="swatch-caption">{{ t.common.color.palette }}</span>
             <div class="palette-swatches" role="group" :aria-label="t.common.color.paletteOf(label)">
@@ -123,19 +107,49 @@ function onTextBlur(): void {
                 />
             </div>
         </div>
+        <button
+            v-if="showsSwatches"
+            type="button"
+            class="custom-toggle"
+            :aria-expanded="customOpen"
+            :data-testid="testid ? `${testid}-custom` : 'color-custom'"
+            @click="customOpen = !customOpen"
+        >
+            <Icon name="chevron-down" :size="14" :class="['custom-chevron', { open: customOpen }]" />
+            {{ t.common.color.custom }}
+        </button>
+        <div v-if="customShown" class="row">
+            <input
+                type="color"
+                :value="pickerValue(modelValue)"
+                :aria-label="t.common.color.pick(label)"
+                :data-testid="testid ? `${testid}-picker` : undefined"
+                @focus="emit('focus')"
+                @blur="emit('blur')"
+                @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+            >
+            <input
+                type="text"
+                class="hex"
+                :class="{ invalid }"
+                :value="draft"
+                maxlength="9"
+                spellcheck="false"
+                autocapitalize="off"
+                autocomplete="off"
+                :aria-label="t.common.color.asHex(label)"
+                :aria-invalid="invalid"
+                :title="invalid ? t.common.color.invalidHex : undefined"
+                :data-testid="testid"
+                @focus="onTextFocus"
+                @blur="onTextBlur"
+                @input="onText(($event.target as HTMLInputElement).value)"
+            >
+        </div>
     </div>
 </template>
 
 <style scoped>
-/* Alone on its line the label stands left of the swatch and the hex value; the swatch groups keep the full width below. */
-.color-field--inline {
-    grid-template-columns: 7.5rem minmax(0, 1fr);
-    align-items: center;
-    gap: 6px 0.6em;
-}
-.color-field--inline > :nth-child(n + 3) {
-    grid-column: 1 / -1;
-}
 .row {
     display: flex;
     gap: 4px;
@@ -158,7 +172,7 @@ function onTextBlur(): void {
 .swatch-group {
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 4px;
 }
 .swatch-caption {
     color: var(--d-text-muted);
@@ -167,21 +181,52 @@ function onTextBlur(): void {
 .palette-swatches {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
+    gap: 8px;
 }
 .swatch {
+    position: relative;
     flex: none;
     box-sizing: border-box;
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     padding: 0;
     border: 1px solid var(--d-divider);
     border-radius: 50%;
     cursor: pointer;
 }
+/* On a finger the hit area grows to 44 px; the gap of 8 px keeps neighbours from overlapping. */
+@media (pointer: coarse) {
+    .swatch::after {
+        content: '';
+        position: absolute;
+        inset: -8px;
+    }
+}
 .swatch[aria-pressed='true'] {
-    border: 2px solid var(--d-text);
-    outline: 2px solid var(--d-interactive);
-    outline-offset: 1px;
+    border-color: var(--d-surface);
+    box-shadow: 0 0 0 2px var(--d-accent);
+}
+.custom-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    justify-self: start;
+    min-height: 28px;
+    padding: 0 2px;
+    border: 0;
+    background: none;
+    color: var(--d-text-muted);
+    font: inherit;
+    cursor: pointer;
+}
+.custom-toggle:hover {
+    color: var(--d-text);
+}
+.custom-chevron {
+    transform: rotate(-90deg);
+    transition: transform 0.12s;
+}
+.custom-chevron.open {
+    transform: none;
 }
 </style>
