@@ -1082,8 +1082,9 @@ function onKey(event: KeyboardEvent): void {
  * a tablet has the inspector as a column beside the stage instead.
  */
 @media (max-width: 48rem), (min-width: 48.0625rem) and (max-width: 75rem) and (orientation: portrait) {
+    /* Room for both rows of the bar, chosen block or not: the stage, standing in the middle, keeps its place when a block's row comes. */
     .editor {
-        padding-bottom: calc(var(--d-phone-bar, 56px) + env(safe-area-inset-bottom));
+        padding-bottom: calc(112px + env(safe-area-inset-bottom));
     }
 
     /* Sheet: a 56 px bar, and the inspector itself only while open. */
@@ -1159,8 +1160,8 @@ function onKey(event: KeyboardEvent): void {
         min-height: calc(100dvh - var(--editor-top, 0px));
     }
     .columns {
-        /* The rows keep their own height where the editor is taller than its content (min-height above). */
-        align-content: start;
+        /* The rows keep their own height where the editor is taller than its content (min-height above); the stage stands in the middle of the room between the head and the bars (user, 2026-10-09). */
+        align-content: center;
         grid-template-columns: minmax(0, 1fr);
         column-gap: 0;
         padding: 0;
@@ -1214,6 +1215,10 @@ function onKey(event: KeyboardEvent): void {
     /* The stage no taller than the room above the open sheet (showStageAboveSheet). */
     .editor.sheet-open .stage-column > :last-child {
         max-height: var(--stage-max, 40vh);
+    }
+    /* Above the open sheet it stays on top, where showStageAboveSheet measured it. */
+    .editor.sheet-open .columns {
+        align-content: start;
     }
 
     /* The big sheet (C2): shut it is gone – the bar stands in its place – and open it has a head with the title and "Schließen" instead of the bar. */
