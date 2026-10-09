@@ -5,7 +5,7 @@
  * shows it – name and the facts below, one per line. The tile opens that playlist in
  * the editor; the rest is in the "…" menu.
  */
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { t } from '../i18n/designer';
 import { useStageContext } from '../player/context';
 import type { ScreenOverview } from '../store/screen-repository';
@@ -15,6 +15,7 @@ import { lastEdited } from './last-edited';
 import type { Running } from './running';
 import { copyPlayerUrl } from './player-url';
 import SlideThumb from './SlideThumb.vue';
+import Tile from './Tile.vue';
 
 /**
  * `admin`: configure and delete are the administrators' (Plan.md, F).
@@ -37,27 +38,12 @@ const shown = computed(() => {
 /** A rule decides right now – the tile says so, since it shows another playlist than the default. */
 const byRule = computed(() => (props.running?.ruleIndex ?? -1) >= 0);
 
-const menuOpen = ref(false);
 const copied = ref(false);
-const root = ref<HTMLElement | null>(null);
 
-function closeOnOutside(event: Event): void {
-    if (!root.value?.contains(event.target as Node)) menuOpen.value = false;
-}
-watch(menuOpen, (open) => {
-    if (open) document.addEventListener('pointerdown', closeOnOutside);
-    else document.removeEventListener('pointerdown', closeOnOutside);
-});
-onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside));
-
-async function copy(): Promise<void> {
+/** Stays open for a moment to say "Kopiert", then closes. */
+async function copy(close: () => void): Promise<void> {
     copied.value = await copyPlayerUrl(screen.value.slug);
-    if (copied.value) setTimeout(() => ((copied.value = false), (menuOpen.value = false)), 1200);
-}
-
-function remove(): void {
-    menuOpen.value = false;
-    emit('remove');
+    if (copied.value) setTimeout(() => ((copied.value = false), close()), 1200);
 }
 
 /** What the tile says about the schedule; the designers' part (Plan.md, Nächste Schritte 17). */
@@ -65,86 +51,61 @@ const scheduleLabel = computed(() => {
     const rules = screen.value.schedule.length;
     return rules ? t.home.card.rules(rules) : t.home.card.schedule;
 });
-
-function schedule(): void {
-    menuOpen.value = false;
-    emit('schedule');
-}
-
-function rename(): void {
-    menuOpen.value = false;
-    emit('rename');
-}
-
-function settings(): void {
-    menuOpen.value = false;
-    emit('settings');
-}
 </script>
 
 <template>
-    <article ref="root" class="d-card d-tile" data-testid="screen-card" @keydown.esc="menuOpen = false">
-        <RouterLink
-            class="open d-tile-media"
-            :to="{ name: 'editor', params: { id: shown?.id ?? screen.defaultPlaylistId } }"
-            :aria-label="t.home.card.edit(shown?.name ?? screen.name)"
-            data-testid="open-editor"
-        >
-            <SlideThumb :slide="shown?.firstSlide ?? null" :stage="screen.stage" />
-        </RouterLink>
-        <div class="d-tile-body">
-            <div class="title-row">
-                <h3 class="d-tile-title">
-                    <RouterLink :to="{ name: 'editor', params: { id: shown?.id ?? screen.defaultPlaylistId } }" tabindex="-1">
-                        {{ screen.name || t.home.card.unnamed }}
-                    </RouterLink>
-                </h3>
-                <div class="menu">
-                    <button
-                        class="d-btn d-btn--icon menu-button"
-                        type="button"
-                        :aria-expanded="menuOpen"
-                        aria-haspopup="menu"
-                        :aria-label="t.home.card.actionsFor(screen.name)"
-                        :title="t.home.card.actions"
-                        data-testid="screen-menu"
-                        @click="menuOpen = !menuOpen"
-                    >
-                        <Icon name="more" />
-                    </button>
-                    <div v-if="menuOpen" class="menu-list" role="menu">
-                        <RouterLink
-                            role="menuitem"
-                            :to="{ name: 'player', query: { screen: screen.slug } }"
-                            target="_blank"
-                            data-testid="open-player"
-                            @click="menuOpen = false"
-                        >
-                            <Icon name="play" :size="16" /> {{ t.home.card.openPlayer }}
-                        </RouterLink>
-                        <button role="menuitem" type="button" data-testid="copy-address" @click="copy">
-                            <Icon name="copy" :size="16" /> {{ copied ? t.home.card.copied : t.home.card.copy }}
-                        </button>
-                        <button role="menuitem" type="button" data-testid="screen-schedule-open" @click="schedule">
-                            <Icon name="calendar" :size="16" /> {{ t.home.card.schedule }}
-                        </button>
-                        <button v-if="admin" role="menuitem" type="button" data-testid="screen-rename-open" @click="rename">
-                            <Icon name="pencil" :size="16" /> {{ t.home.card.rename }}
-                        </button>
-                        <button v-if="admin" role="menuitem" type="button" data-testid="screen-settings-open" @click="settings">
-                            <Icon name="settings" :size="16" /> {{ t.common.settings }}
-                        </button>
-                        <button v-if="admin" role="menuitem" type="button" class="danger" data-testid="delete-screen" @click="remove">
-                            <Icon name="trash" :size="16" /> {{ t.common.delete }}
-                        </button>
-                    </div>
-                </div>
-            </div>
+    <Tile data-testid="screen-card" :menu-label="t.home.card.actionsFor(screen.name)" menu-testid="screen-menu">
+        <template #media>
+            <RouterLink
+                class="open d-tile-media"
+                :to="{ name: 'editor', params: { id: shown?.id ?? screen.defaultPlaylistId } }"
+                :aria-label="t.home.card.edit(shown?.name ?? screen.name)"
+                data-testid="open-editor"
+            >
+                <SlideThumb :slide="shown?.firstSlide ?? null" :stage="screen.stage" />
+            </RouterLink>
+        </template>
+        <template #title>
+            <RouterLink :to="{ name: 'editor', params: { id: shown?.id ?? screen.defaultPlaylistId } }" tabindex="-1">
+                {{ screen.name || t.home.card.unnamed }}
+            </RouterLink>
+        </template>
+        <template #menu="{ close }">
+            <RouterLink
+                role="menuitem"
+                :to="{ name: 'player', query: { screen: screen.slug } }"
+                target="_blank"
+                data-testid="open-player"
+                @click="close"
+            >
+                <Icon name="play" :size="16" /> {{ t.home.card.openPlayer }}
+            </RouterLink>
+            <button role="menuitem" type="button" data-testid="copy-address" @click="copy(close)">
+                <Icon name="copy" :size="16" /> {{ copied ? t.home.card.copied : t.home.card.copy }}
+            </button>
+            <button role="menuitem" type="button" data-testid="screen-schedule-open" @click="close(); emit('schedule')">
+                <Icon name="calendar" :size="16" /> {{ t.home.card.schedule }}
+            </button>
+            <button v-if="admin" role="menuitem" type="button" data-testid="screen-rename-open" @click="close(); emit('rename')">
+                <Icon name="pencil" :size="16" /> {{ t.home.card.rename }}
+            </button>
+            <button v-if="admin" role="menuitem" type="button" data-testid="screen-settings-open" @click="close(); emit('settings')">
+                <Icon name="settings" :size="16" /> {{ t.common.settings }}
+            </button>
+            <button v-if="admin" role="menuitem" type="button" class="danger" data-testid="delete-screen" @click="close(); emit('remove')">
+                <Icon name="trash" :size="16" /> {{ t.common.delete }}
+            </button>
+        </template>
+        <section v-if="alive" class="d-tile-section">
             <ul class="d-facts">
-                <li v-if="alive" :title="alive.title" data-testid="screen-alive" :data-alive="alive.kind">
+                <li :title="alive.title" data-testid="screen-alive" :data-alive="alive.kind">
                     <span class="alive-dot" :class="`is-${alive.kind}`" aria-hidden="true" />
                     <span>{{ alive.text }}</span>
                 </li>
+            </ul>
+        </section>
+        <section class="d-tile-section">
+            <ul class="d-facts">
                 <li>
                     <Icon name="id" :size="16" />
                     <code :title="t.home.card.addressTitle(screen.slug)">{{ screen.slug }}</code>
@@ -153,9 +114,13 @@ function settings(): void {
                     <Icon :name="portrait ? 'portrait' : 'landscape'" :size="16" />
                     {{ portrait ? t.common.portrait : t.common.landscape }}
                 </li>
+            </ul>
+        </section>
+        <section class="d-tile-section">
+            <ul class="d-facts">
                 <li
                     :title="byRule ? t.home.card.byRuleTitle(shown?.slideCount ?? 0) : t.home.card.defaultTitle(shown?.slideCount ?? 0)"
-                    :class="['d-facts-gap', { 'by-rule': byRule }]"
+                    :class="{ 'by-rule': byRule }"
                     data-testid="screen-playlist"
                 >
                     <Icon name="list" :size="16" />
@@ -170,38 +135,33 @@ function settings(): void {
                         type="button"
                         :title="screen.schedule.length ? t.home.card.scheduleTitle : t.home.card.scheduleCreateTitle"
                         data-testid="open-schedule"
-                        @click="schedule"
+                        @click="emit('schedule')"
                     >
                         <Icon name="calendar" :size="16" />
                         {{ scheduleLabel }}
                     </button>
                 </li>
-                <li v-if="edited?.when" class="d-facts-gap" :title="edited.whenTitle!" data-testid="screen-edited-at">
+            </ul>
+        </section>
+        <template v-if="edited" #foot>
+            <ul class="d-facts">
+                <li v-if="edited.when" :title="edited.whenTitle!" data-testid="screen-edited-at">
                     <Icon name="clock" :size="16" />
                     <span>{{ edited.when }}</span>
                 </li>
-                <li v-if="edited?.by" :class="{ 'd-facts-gap': !edited.when }" :title="edited.byTitle!" data-testid="screen-edited-by">
+                <li v-if="edited.by" :title="edited.byTitle!" data-testid="screen-edited-by">
                     <Icon name="person" :size="16" />
                     <span>{{ edited.by }}</span>
                 </li>
             </ul>
-        </div>
-    </article>
+        </template>
+    </Tile>
 </template>
 
 <style scoped>
 .open:focus-visible {
     outline: 2px solid var(--d-accent);
     outline-offset: 2px;
-}
-.title-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 4px;
-}
-.title-row .d-tile-title {
-    flex: 1;
-    min-width: 0;
 }
 .d-tile-title a {
     color: inherit;
@@ -251,55 +211,5 @@ function settings(): void {
 .schedule-link:hover {
     background: var(--d-accent-pale);
     text-decoration: underline;
-}
-.menu {
-    position: relative;
-    margin: calc(var(--d-space-1) * -1) calc(var(--d-space-2) * -1) 0 0;
-}
-/* The "…" is a 36 px square, quiet until the pointer comes (Plan.md 79, B3). */
-.menu-button {
-    width: 36px;
-    min-width: 36px;
-    height: 36px;
-    min-height: 36px;
-    padding: 0;
-    border-color: transparent;
-    background: transparent;
-    color: var(--d-text-muted);
-}
-.menu-list {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 4px);
-    z-index: 10;
-    display: grid;
-    min-width: 190px;
-    padding: var(--d-space-1);
-    border-radius: var(--d-radius-lg);
-    background: var(--d-surface);
-    box-shadow: var(--d-shadow);
-}
-.menu-list a,
-.menu-list button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 40px;
-    padding: 0 var(--d-space-3);
-    border: 0;
-    border-radius: var(--d-radius);
-    background: none;
-    color: var(--d-text);
-    font: inherit;
-    text-align: left;
-    text-decoration: none;
-    cursor: pointer;
-}
-.menu-list a:hover,
-.menu-list button:hover {
-    background: var(--d-workspace);
-}
-.menu-list .danger {
-    color: var(--d-danger);
 }
 </style>

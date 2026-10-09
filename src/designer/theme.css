@@ -248,8 +248,29 @@
 }
 .infoscreen-designer :where(.d-tile-body) {
     display: grid;
-    gap: var(--d-space-1);
+    gap: var(--d-space-2);
     padding: var(--d-space-2) var(--d-space-4) var(--d-space-4);
+}
+/* What belongs together stands in one section; a hairline sets it apart from the next (Plan.md 79, B3). */
+.infoscreen-designer :where(.d-tile-section) {
+    display: grid;
+    gap: var(--d-space-1);
+    padding-top: var(--d-space-2);
+    border-top: 1px solid var(--d-divider);
+}
+/* A mark on the picture: opaque, so it reads on any slide background. */
+.infoscreen-designer :where(.d-tile-mark) {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: var(--d-surface);
+    box-shadow: var(--d-shadow);
+    color: var(--d-accent);
+    font-size: var(--d-size-sm);
+    font-weight: 600;
+    white-space: nowrap;
 }
 .infoscreen-designer :where(.d-tile-title) {
     margin: 0;
@@ -278,10 +299,6 @@
     max-width: 100%;
     min-width: 0;
     overflow-wrap: anywhere;
-}
-/* Groups of facts that belong together are set apart by a little space, not by rules. */
-.infoscreen-designer :where(.d-facts > li.d-facts-gap) {
-    margin-top: 6px;
 }
 /* The icon is the anchor of a line: in the text colour, while the words beside it stay muted. */
 .infoscreen-designer :where(.d-facts svg) {

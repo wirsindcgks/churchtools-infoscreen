@@ -5,7 +5,7 @@
  * editor; duplicating copies its slides too; deleting waits until no screen
  * shows it.
  */
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed } from 'vue';
 import { t } from '../i18n/designer';
 import type { HeartbeatDoc } from '../model/heartbeat';
 import { bannerShown } from '../player/banner';
@@ -16,6 +16,7 @@ import Icon from './Icon.vue';
 import { lastEdited } from './last-edited';
 import LiveFlag from './LiveFlag.vue';
 import SlideThumb from './SlideThumb.vue';
+import Tile from './Tile.vue';
 
 const props = defineProps<{
     overview: PlaylistOverview;
@@ -39,93 +40,53 @@ const live = computed(() =>
 
 /** When and by whom it was last edited – in the church's time zone, like every time here. */
 const edited = computed(() => lastEdited(props.overview.editedAt, props.overview.editedBy, context.timeZone));
-
-const menuOpen = ref(false);
-const root = ref<HTMLElement | null>(null);
-
-function closeOnOutside(event: Event): void {
-    if (!root.value?.contains(event.target as Node)) menuOpen.value = false;
-}
-watch(menuOpen, (open) => {
-    if (open) document.addEventListener('pointerdown', closeOnOutside);
-    else document.removeEventListener('pointerdown', closeOnOutside);
-});
-onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside));
-
-function remove(): void {
-    menuOpen.value = false;
-    emit('remove');
-}
-
-function duplicate(): void {
-    menuOpen.value = false;
-    emit('duplicate');
-}
 </script>
 
 <template>
-    <article ref="root" class="d-card d-tile" data-testid="playlist-card" @keydown.esc="menuOpen = false">
-        <RouterLink
-            class="open d-tile-media"
-            :to="{ name: 'editor', params: { id: playlist.id } }"
-            :aria-label="t.home.card.edit(playlist.name)"
-            data-testid="open-playlist"
-        >
-            <SlideThumb :slide="overview.firstSlide" :stage="playlist.stage" />
-            <LiveFlag
-                v-if="live.length"
-                overlay
-                :live="live"
-                :time-zone="context.timeZone"
-                data-testid="playlist-live"
-            />
-        </RouterLink>
-        <div class="d-tile-body">
-            <div class="title-row">
-                <h3 class="d-tile-title">
-                    <RouterLink :to="{ name: 'editor', params: { id: playlist.id } }" tabindex="-1">
-                        {{ playlist.name || t.home.card.unnamed }}
-                    </RouterLink>
-                </h3>
-                <span
-                    v-if="hasBanner"
-                    class="banner-flag"
-                    :title="t.playlists.card.bannerTitle(playlist.banner!.text)"
-                    data-testid="playlist-banner"
-                >
-                    <Icon name="megaphone" :size="14" /> {{ t.playlists.card.banner }}
-                </span>
-                <div class="menu">
-                    <button
-                        class="d-btn d-btn--icon menu-button"
-                        type="button"
-                        :aria-expanded="menuOpen"
-                        aria-haspopup="menu"
-                        :aria-label="t.home.card.actionsFor(playlist.name)"
-                        :title="t.home.card.actions"
-                        data-testid="playlist-menu"
-                        @click="menuOpen = !menuOpen"
-                    >
-                        <Icon name="more" />
-                    </button>
-                    <div v-if="menuOpen" class="menu-list" role="menu">
-                        <button role="menuitem" type="button" data-testid="duplicate-playlist" @click="duplicate">
-                            <Icon name="copy" :size="16" /> {{ t.playlists.card.duplicate }}
-                        </button>
-                        <button
-                            role="menuitem"
-                            type="button"
-                            class="danger"
-                            :disabled="inUse"
-                            :title="inUse ? t.playlists.card.deleteBlocked : undefined"
-                            data-testid="delete-playlist"
-                            @click="remove"
-                        >
-                            <Icon name="trash" :size="16" /> {{ t.common.delete }}
-                        </button>
-                    </div>
-                </div>
-            </div>
+    <Tile data-testid="playlist-card" :menu-label="t.home.card.actionsFor(playlist.name)" menu-testid="playlist-menu">
+        <template #media>
+            <RouterLink
+                class="open d-tile-media"
+                :to="{ name: 'editor', params: { id: playlist.id } }"
+                :aria-label="t.home.card.edit(playlist.name)"
+                data-testid="open-playlist"
+            >
+                <SlideThumb :slide="overview.firstSlide" :stage="playlist.stage" />
+            </RouterLink>
+        </template>
+        <template v-if="live.length || hasBanner" #marks>
+            <LiveFlag v-if="live.length" overlay :live="live" :time-zone="context.timeZone" data-testid="playlist-live" />
+            <span
+                v-if="hasBanner"
+                class="d-tile-mark"
+                :title="t.playlists.card.bannerTitle(playlist.banner!.text)"
+                data-testid="playlist-banner"
+            >
+                <Icon name="megaphone" :size="14" /> {{ t.playlists.card.banner }}
+            </span>
+        </template>
+        <template #title>
+            <RouterLink :to="{ name: 'editor', params: { id: playlist.id } }" tabindex="-1">
+                {{ playlist.name || t.home.card.unnamed }}
+            </RouterLink>
+        </template>
+        <template #menu="{ close }">
+            <button role="menuitem" type="button" data-testid="duplicate-playlist" @click="close(); emit('duplicate')">
+                <Icon name="copy" :size="16" /> {{ t.playlists.card.duplicate }}
+            </button>
+            <button
+                role="menuitem"
+                type="button"
+                class="danger"
+                :disabled="inUse"
+                :title="inUse ? t.playlists.card.deleteBlocked : undefined"
+                data-testid="delete-playlist"
+                @click="close(); emit('remove')"
+            >
+                <Icon name="trash" :size="16" /> {{ t.common.delete }}
+            </button>
+        </template>
+        <section class="d-tile-section">
             <ul class="d-facts">
                 <li :title="portrait ? t.common.portrait : t.common.landscape">
                     <Icon :name="portrait ? 'portrait' : 'landscape'" :size="16" />
@@ -135,108 +96,38 @@ function duplicate(): void {
                     <Icon name="slides" :size="16" />
                     {{ overview.slideCount }}
                 </li>
-                <li class="d-facts-gap" :title="inUse ? t.playlists.card.runsOn : t.playlists.card.runsNowhere" data-testid="playlist-screens">
+            </ul>
+        </section>
+        <section class="d-tile-section">
+            <ul class="d-facts">
+                <li :title="inUse ? t.playlists.card.runsOn : t.playlists.card.runsNowhere" data-testid="playlist-screens">
                     <Icon name="tv" :size="16" />
                     {{ inUse ? overview.screens.map((s) => s.name).join(', ') : t.common.onNoScreen }}
                 </li>
-                <li v-if="edited?.when" class="d-facts-gap" :title="edited.whenTitle!" data-testid="playlist-edited">
+            </ul>
+        </section>
+        <template v-if="edited" #foot>
+            <ul class="d-facts">
+                <li v-if="edited.when" :title="edited.whenTitle!" data-testid="playlist-edited">
                     <Icon name="clock" :size="16" />
                     <span data-testid="playlist-edited-at">{{ edited.when }}</span>
                 </li>
-                <li v-if="edited?.by" :class="{ 'd-facts-gap': !edited.when }" :title="edited.byTitle!" data-testid="playlist-edited-by">
+                <li v-if="edited.by" :title="edited.byTitle!" data-testid="playlist-edited-by">
                     <Icon name="person" :size="16" />
                     <span>{{ edited.by }}</span>
                 </li>
             </ul>
-        </div>
-    </article>
+        </template>
+    </Tile>
 </template>
 
 <style scoped>
-.open {
-    position: relative;
-}
 .open:focus-visible {
     outline: 2px solid var(--d-accent);
     outline-offset: 2px;
 }
-.title-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 4px;
-}
-.title-row .d-tile-title {
-    flex: 1;
-    min-width: 0;
-}
 .d-tile-title a {
     color: inherit;
     text-decoration: none;
-}
-.banner-flag {
-    display: inline-flex;
-    flex: none;
-    align-items: center;
-    gap: 3px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    background: var(--d-accent-pale);
-    color: var(--d-accent);
-    font-size: var(--d-size-sm);
-    font-weight: 600;
-}
-.menu {
-    position: relative;
-    margin: calc(var(--d-space-1) * -1) calc(var(--d-space-2) * -1) 0 0;
-}
-/* The "…" is a 36 px square, quiet until the pointer comes (Plan.md 79, B3). */
-.menu-button {
-    width: 36px;
-    min-width: 36px;
-    height: 36px;
-    min-height: 36px;
-    padding: 0;
-    border-color: transparent;
-    background: transparent;
-    color: var(--d-text-muted);
-}
-.menu-list {
-    position: absolute;
-    right: 0;
-    top: calc(100% + 4px);
-    z-index: 10;
-    display: grid;
-    min-width: 190px;
-    padding: var(--d-space-1);
-    border-radius: var(--d-radius-lg);
-    background: var(--d-surface);
-    box-shadow: var(--d-shadow);
-}
-.menu-list a,
-.menu-list button {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-height: 40px;
-    padding: 0 var(--d-space-3);
-    border: 0;
-    border-radius: var(--d-radius);
-    background: none;
-    color: var(--d-text);
-    font: inherit;
-    text-align: left;
-    text-decoration: none;
-    cursor: pointer;
-}
-.menu-list a:hover,
-.menu-list button:hover {
-    background: var(--d-workspace);
-}
-.menu-list button:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-}
-.menu-list .danger {
-    color: var(--d-danger);
 }
 </style>
