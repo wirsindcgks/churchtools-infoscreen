@@ -12,6 +12,7 @@ import QuickMenu from './QuickMenu.vue';
 import { GRID_SIZES } from './snap';
 import { KEYS, keyLabel } from './shortcuts';
 import { useConfirm } from './useConfirm';
+import { useKeyboardInset } from './usePhone';
 
 const emit = defineEmits<{ slides: []; 'edit-slide': []; 'all-settings': [] }>();
 
@@ -23,7 +24,12 @@ const quickMenu = ref<InstanceType<typeof QuickMenu> | null>(null);
 function openFirst(): boolean {
     return quickMenu.value?.openFirst() ?? false;
 }
-defineExpose({ openFirst });
+/** Long press on a block (C3): opens the "⋯" of the block's bar. */
+function openMore(): void {
+    quickMenu.value?.openMore();
+}
+defineExpose({ openFirst, openMore });
+const keyboard = useKeyboardInset();
 
 const slideIndex = computed(() => (editor.slide ? editor.slides.indexOf(editor.slide) + 1 : 0));
 
@@ -57,7 +63,7 @@ async function removeSlide(): Promise<void> {
 </script>
 
 <template>
-    <div class="phone-bar" data-testid="phone-bar">
+    <div class="phone-bar" :style="keyboard ? { bottom: `${keyboard}px` } : undefined" data-testid="phone-bar">
         <QuickMenu v-if="editor.block" ref="quickMenu" :key="editor.block.id" :block="editor.block" variant="bar" @all-settings="emit('all-settings')" />
         <template v-else>
             <button

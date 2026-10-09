@@ -229,6 +229,8 @@ export const t = {
             /** Writing text on the stage (Plan.md 79, C4): the label of the field and the pale hint in an empty text. */
             textEdit: 'Text bearbeiten',
             textPlaceholder: 'Text eingeben',
+            /** The button that brings the whole slide back after zooming (C3). */
+            zoomReset: 'Ganze Folie',
         },
         previewDialog: {
             label: 'Vorschau der Präsentation',
@@ -290,6 +292,14 @@ export const t = {
         /** The short words of a switch in the menu, where the full label is too long. */
         short: { name: 'Name', logo: 'Logo', title: 'Titel', image: 'Bild' },
         unlock: 'Entsperren',
+        /** The left button of the phone bar: lets go of the block and shows the slide again. */
+        backToSlide: 'Zurück zur Folie',
+        /** In "⋯": chooses the block that lies under the chosen one (C3). */
+        selectBelow: 'Darunterliegenden wählen',
+        /** In "⋯" of the phone bar: starts the writing on the stage (C4). */
+        editText: 'Text bearbeiten',
+        /** The menu a long press on the empty stage opens (C3). */
+        pasteHere: 'Einfügen',
         /** Ends the writing on the stage. */
         done: 'Fertig',
         allSettings: 'Alle Einstellungen',

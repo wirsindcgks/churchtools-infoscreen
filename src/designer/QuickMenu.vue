@@ -13,7 +13,7 @@ import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
 import { BLOCK_INSPECTORS } from './inspector/blocks';
 import { INSPECTOR_MODE, QUICK_OPEN, QUICK_VARIANT } from './inspector/mode';
-import { BLOCK_ICONS, BLOCK_LABELS, type Layer } from './ops';
+import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, type Layer } from './ops';
 import { quickMenuPlace, type Rect, type Size } from './quick-menu';
 import { KEYS, keyLabel, withKeys } from './shortcuts';
 import { vTip } from './tip';
@@ -164,10 +164,25 @@ function openFirst(): boolean {
     first?.click();
     return !!first;
 }
-defineExpose({ openFirst });
+/** Long press on a block (C3): the list behind "⋯" opens. */
+function openMore(): void {
+    moreOpen.value = true;
+}
+defineExpose({ openFirst, openMore });
 
 /** The block is being written on the stage (Plan.md 79, C4): the menu keeps its fields and offers "Fertig" instead of the actions. */
 const writing = computed(() => editor.editingTextId === props.block.id);
+const slideIndex = computed(() => (editor.slide ? editor.slides.indexOf(editor.slide) + 1 : 0));
+/** The bar's way back to the slide: writing ends first, then the block is let go. */
+function backToSlide(): void {
+    if (editor.editingTextId) editor.endTextEdit();
+    editor.selectBlock(null);
+}
+/** The block that lies under the chosen one in its middle, if there is one – for blocks that others cover. */
+const below = computed(() => {
+    const b = props.block;
+    return blockBelow(editor.slide?.blocks ?? [], b, { x: b.x + b.width / 2, y: b.y + b.height / 2 });
+});
 const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common.lock));
 </script>
 
@@ -185,9 +200,23 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
         @focusin="focusInside = true"
         @focusout="onFocusOut"
     >
-        <span v-if="bar" class="quick-kind" role="img" :aria-label="BLOCK_LABELS[block.type]" data-testid="quick-kind">
-            <Icon :name="BLOCK_ICONS[block.type]" :size="20" />
-        </span>
+        <button
+            v-if="bar"
+            class="quick-back"
+            type="button"
+            :aria-label="t.quick.backToSlide"
+            data-testid="phone-back-to-slide"
+            data-quick-stop
+            @click="backToSlide"
+        >
+            <span class="quick-back-row">
+                <Icon name="chevron-down" :size="14" class="quick-back-chevron" />
+                <span class="quick-kind" role="img" :aria-label="BLOCK_LABELS[block.type]" data-testid="quick-kind">
+                    <Icon :name="BLOCK_ICONS[block.type]" :size="20" />
+                </span>
+            </span>
+            <span class="quick-back-slide">{{ t.editor.slideOf(slideIndex, editor.slides.length) }}</span>
+        </button>
         <template v-if="!block.locked">
             <div ref="fields" class="quick-fields">
                 <component :is="BLOCK_INSPECTORS[block.type]" :block="block" />
@@ -267,6 +296,15 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                         {{ lockLabel }}
                     </button>
                     <hr v-if="bar" role="separator">
+                    <button
+                        v-if="bar && block.type === 'text' && !block.locked"
+                        role="menuitem"
+                        type="button"
+                        data-testid="quick-edit-text"
+                        @click="choose(() => editor.startTextEdit(block.id))"
+                    >
+                        {{ t.quick.editText }}
+                    </button>
                     <button role="menuitem" type="button" data-testid="quick-copy" @click="choose(() => editor.copyBlock(block.id))">
                         {{ t.quick.copy }}<kbd>{{ keyLabel(KEYS.copy) }}</kbd>
                     </button>
@@ -292,6 +330,9 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                             {{ layer.label }}
                         </button>
                     </template>
+                    <button v-if="below" role="menuitem" type="button" data-testid="quick-select-below" @click="choose(() => editor.selectBlock(below!.id))">
+                        {{ t.quick.selectBelow }}
+                    </button>
                     <hr role="separator">
                     <button role="menuitem" type="button" data-testid="quick-all-settings" @click="choose(() => emit('all-settings'))">
                         {{ t.quick.allSettings }}
@@ -418,13 +459,45 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
     background: none;
     box-shadow: none;
 }
+.quick-back {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 44px;
+    padding: 0 var(--d-space-1);
+    border: 0;
+    border-radius: var(--d-radius);
+    background: none;
+    color: var(--d-text-muted);
+    font: inherit;
+    cursor: pointer;
+}
+.quick-back:hover,
+.quick-back:focus-visible {
+    background: var(--d-panel);
+}
+.quick-back-row {
+    display: flex;
+    align-items: center;
+}
+/* The "‹": the chevron of the icon set, turned to point left. */
+.quick-back-chevron {
+    transform: rotate(90deg);
+}
+.quick-back-slide {
+    font-size: 10px;
+    line-height: 1;
+    white-space: nowrap;
+}
 .quick-kind {
     display: grid;
     flex: none;
     place-items: center;
-    width: 36px;
-    height: 44px;
-    color: var(--d-text-muted);
+    width: 24px;
+    height: 24px;
 }
 .quick-menu--bar .quick-fields {
     flex: 1;

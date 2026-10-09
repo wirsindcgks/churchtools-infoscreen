@@ -285,6 +285,12 @@ function openContent(): void {
     if (!phoneBar.value?.openFirst()) showAllSettings();
 }
 
+/** A long press on a block of a phone (C3): the "⋯" of the bar opens, once the bar has shown the block's menu. */
+async function openMore(): Promise<void> {
+    await nextTick();
+    phoneBar.value?.openMore();
+}
+
 /** "Alle Einstellungen" in the short menu (Plan.md 79, C1): the column opens, even when it was folded, and rolls to the block's settings. */
 function showAllSettings(): void {
     if (desktop.value) desktopInspectorOpen.value = true;
@@ -733,7 +739,7 @@ function onKey(event: KeyboardEvent): void {
                         <Icon name="close" :size="16" />
                     </button>
                 </div>
-                <EditorStage @all-settings="showAllSettings" @open-content="openContent" />
+                <EditorStage @all-settings="showAllSettings" @open-content="openContent" @open-more="openMore" />
             </div>
             <!-- Below 48rem and upright above it this becomes a sheet at the bottom; otherwise a column beside the stage (Plan.md 44, M4; 45). -->
             <div class="tablet-rail tablet-rail--inspector">

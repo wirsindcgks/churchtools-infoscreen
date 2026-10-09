@@ -12,12 +12,15 @@ import { t } from '../i18n/designer';
 import { useEditorStore } from './editor-store';
 import { centerCovered, emptyAction } from './empty-block';
 import Icon from './Icon.vue';
+import { isDoubleTap, longPress, TAP_SLOP, type Tap } from './gestures';
+import { handlesOutside } from './handles';
 import { neighbourGaps, pairGaps, sizeLabelPlace, type Measure } from './measure';
 import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, clampFrame } from './ops';
 import QuickMenu from './QuickMenu.vue';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
+import { clampPan, viewOnto, WHOLE, zoomAt, zoomedFit, type View } from './stage-zoom';
 
-const emit = defineEmits<{ 'all-settings': []; 'open-content': [] }>();
+const emit = defineEmits<{ 'all-settings': []; 'open-content': []; 'open-more': [] }>();
 const editor = useEditorStore();
 const stage = useStageContext();
 // The designer shows what the TV shows (Plan.md 38): a band past its "until" no longer draws here either.
@@ -28,7 +31,23 @@ const banner = computed(() => {
 const host = ref<HTMLElement | null>(null);
 const overlay = ref<HTMLElement | null>(null);
 const size = reactive({ width: 800, height: 450 });
-const fit = computed(() => fitStage(size, editor.stage));
+/** The whole slide in the host, and how far the editor has zoomed into it (Plan.md 79, C3): everything on the stage computes with `fit`. */
+const baseFit = computed(() => fitStage(size, editor.stage));
+const view = ref<View>({ ...WHOLE });
+const fit = computed(() => zoomedFit(baseFit.value, view.value));
+function setView(next: View): void {
+    view.value = clampPan(baseFit.value, next, size);
+}
+// Another window size or stage keeps the zoomed slide over the host; another slide starts whole again.
+watch(baseFit, () => setView(view.value));
+watch(
+    () => editor.slide?.id,
+    () => {
+        view.value = { ...WHOLE };
+        viewBeforeWriting = null;
+        pasteMenu.value = null;
+    },
+);
 
 let observer: ResizeObserver | undefined;
 onMounted(() => {
@@ -40,6 +59,25 @@ onMounted(() => {
     if (host.value) observer.observe(host.value);
 });
 onBeforeUnmount(() => observer?.disconnect());
+
+// The on-screen keyboard shrinks the visual viewport: the field being written stays in sight above it (C4).
+function keepFieldInSight(): void {
+    if (!editor.editingTextId) return;
+    textArea.value?.scrollIntoView({ block: 'nearest' });
+    // The host clips at zoom; never let it scroll away from the stage it maps.
+    if (host.value) {
+        host.value.scrollTop = 0;
+        host.value.scrollLeft = 0;
+    }
+}
+onMounted(() => {
+    host.value?.addEventListener('wheel', onWheel, { passive: false });
+    window.visualViewport?.addEventListener('resize', keepFieldInSight);
+});
+onBeforeUnmount(() => {
+    host.value?.removeEventListener('wheel', onWheel);
+    window.visualViewport?.removeEventListener('resize', keepFieldInSight);
+});
 
 /** Alt held and the pointer over another block: the distances between it and the chosen one (Plan.md 79, A2). */
 const altDown = ref(false);
@@ -69,6 +107,8 @@ interface Drag {
     startX: number;
     startY: number;
     frame: { x: number; y: number; width: number; height: number };
+    /** Snap targets come closer than this many screen pixels: a fingertip is less exact than a mouse. */
+    snapPx: number;
 }
 let drag: Drag | null = null;
 const guides = ref<Guide[]>([]);
@@ -78,8 +118,9 @@ const dragId = ref<string | null>(null);
 const measures = ref<Measure[]>([]);
 const spacings = ref<Measure[]>([]);
 
-/** Snap targets come closer than 8 screen pixels – independent of the zoom. */
+/** Snap targets come closer than 8 screen pixels (12 at a finger) – independent of the zoom. */
 const SNAP_SCREEN_PX = 8;
+const SNAP_SCREEN_PX_TOUCH = 12;
 
 /** Where on the stage a pointer is, in stage pixels. */
 function stagePoint(event: PointerEvent): { x: number; y: number } | null {
@@ -94,7 +135,12 @@ function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): vo
     // A locked block lets a click through to an unlocked one below it; with Alt it takes the click itself.
     const point = handle === 'move' && clicked.locked && !event.altKey ? stagePoint(event) : null;
     const block = (point && blockBelow(blocks.value, clicked, point)) || clicked;
+    const wasChosen = editor.selectedBlockId === block.id;
     editor.selectBlock(block.id);
+    const touch = event.pointerType === 'touch';
+    if (touch) showName(block.id);
+    // A finger first chooses (C3): a swipe over an unchosen block scrolls the page. Only the chosen block is moved.
+    if (touch && !wasChosen) return;
     // Locked (Plan.md, 25): it can be chosen – to unlock it in the inspector – but not moved.
     if (block.locked) return;
     drag = {
@@ -103,6 +149,7 @@ function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): vo
         startX: event.clientX,
         startY: event.clientY,
         frame: { x: block.x, y: block.y, width: block.width, height: block.height },
+        snapPx: touch ? SNAP_SCREEN_PX_TOUCH : SNAP_SCREEN_PX,
     };
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
 }
@@ -144,7 +191,7 @@ function moveTo(event: PointerEvent): void {
     }
     const options = {
         grid: editor.gridSize,
-        threshold: SNAP_SCREEN_PX / fit.value.scale,
+        threshold: drag.snapPx / fit.value.scale,
         stage: editor.stage,
         others,
     };
@@ -235,6 +282,195 @@ const emptyButtons = computed(() =>
     }),
 );
 
+/** The name of a block stays over it for a moment after a touch – there is no hovering with a finger (C3). */
+const touchNameId = ref<string | null>(null);
+let touchNameTimer: ReturnType<typeof setTimeout> | undefined;
+function showName(id: string): void {
+    touchNameId.value = id;
+    clearTimeout(touchNameTimer);
+    touchNameTimer = setTimeout(() => (touchNameId.value = null), 1500);
+}
+
+/** Handles of a small block stand outside its frame where a finger is the pointer, so the corners and middles do not fall together (C3). */
+const coarseQuery = window.matchMedia('(pointer: coarse)');
+const coarse = ref(coarseQuery.matches);
+function onCoarseChange(event: MediaQueryListEvent): void {
+    coarse.value = event.matches;
+}
+coarseQuery.addEventListener('change', onCoarseChange);
+onBeforeUnmount(() => {
+    coarseQuery.removeEventListener('change', onCoarseChange);
+    clearTimeout(touchNameTimer);
+});
+function tight(b: Block): boolean {
+    return coarse.value && handlesOutside({ width: b.width * fit.value.scale, height: b.height * fit.value.scale });
+}
+
+/** Where a pointer is in the host, in host pixels. */
+function hostPoint(event: { clientX: number; clientY: number }): { x: number; y: number } {
+    const rect = host.value?.getBoundingClientRect();
+    return { x: event.clientX - (rect?.left ?? 0), y: event.clientY - (rect?.top ?? 0) };
+}
+
+// Zoom (C3): two fingers, or Strg/⌘ with the wheel (also the trackpad's pinch). The point under them stays where it is.
+const pinching = ref(false);
+const touches = new Map<number, { x: number; y: number }>();
+let pinch: { dist: number; mid: { x: number; y: number }; view: View } | null = null;
+function twoFingers(): [{ x: number; y: number }, { x: number; y: number }] {
+    const [a, b] = [...touches.values()];
+    return [a!, b!];
+}
+function beginPinch(): void {
+    // The one-finger run before ends: a drag that moved already stands as its own step, one that did not leaves none.
+    if (drag) {
+        if (dragId.value) end();
+        else drag = null;
+    }
+    press.cancel();
+    tapDown = null;
+    lastTap = null;
+    panStart = null;
+    const [a, b] = twoFingers();
+    pinch = { dist: Math.hypot(b.x - a.x, b.y - a.y) || 1, mid: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }, view: { ...view.value } };
+    pinching.value = true;
+}
+function updatePinch(): void {
+    if (!pinch) return;
+    const [a, b] = twoFingers();
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    const zoomed = zoomAt(baseFit.value, pinch.view, pinch.mid, Math.hypot(b.x - a.x, b.y - a.y) / pinch.dist);
+    setView({ ...zoomed, panX: zoomed.panX + mid.x - pinch.mid.x, panY: zoomed.panY + mid.y - pinch.mid.y });
+}
+function onWheel(event: WheelEvent): void {
+    const lines = event.deltaMode === 1 ? 33 : 1;
+    if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+        setView(zoomAt(baseFit.value, view.value, hostPoint(event), Math.exp(-event.deltaY * lines * 0.0025)));
+    } else if (view.value.zoom > 1) {
+        event.preventDefault();
+        setView({ ...view.value, panX: view.value.panX - event.deltaX * lines, panY: view.value.panY - event.deltaY * lines });
+    }
+}
+function resetZoom(): void {
+    view.value = { ...WHOLE };
+}
+
+// Taps and long presses of a finger (C3): on a block or on the empty stage; the menus and buttons in the host are none of it.
+const NOT_STAGE = '[data-testid="quick-menu"], [data-testid="text-edit"], .empty-action, .zoom-reset, .empty-slide-box, .paste-menu';
+function tapTarget(el: EventTarget | null): string | null {
+    const e = el as Element | null;
+    if (!e || !host.value?.contains(e) || e.closest(NOT_STAGE)) return null;
+    return e.closest<HTMLElement>('[data-block-id]')?.dataset.blockId ?? 'empty';
+}
+let tapDown: { x: number; y: number; target: string } | null = null;
+let lastTap: Tap | null = null;
+/** Zoomed in, one finger on the empty stage or an unchosen block moves the stage like a map (C3). */
+let panStart: { x: number; y: number; view: View } | null = null;
+let lastTouchDouble = 0;
+/** A touch is on the glass or has just left it – then the browser's context menu is none of ours. */
+let touchLive = false;
+let touchLiveTimer: ReturnType<typeof setTimeout> | undefined;
+const pasteMenu = ref<{ left: number; top: number; at: { x: number; y: number } } | null>(null);
+const press = longPress(onLongPress);
+let pressPoint = { x: 0, y: 0 };
+
+async function onLongPress(): Promise<void> {
+    const down = tapDown;
+    if (!down) return;
+    tapDown = null;
+    lastTap = null;
+    if (down.target === 'empty') {
+        // Something to paste: a small menu at the finger; it pastes there.
+        if (!editor.clipboard.length) return;
+        const p = hostPoint({ clientX: pressPoint.x, clientY: pressPoint.y });
+        const { scale, offsetX, offsetY } = fit.value;
+        pasteMenu.value = {
+            left: Math.max(8, Math.min(p.x, size.width - 120)),
+            top: Math.max(8, p.y - 56),
+            at: { x: (p.x - offsetX) / scale, y: (p.y - offsetY) / scale },
+        };
+        return;
+    }
+    if (!editor.selectedBlockId) editor.selectBlock(down.target);
+    await nextTick();
+    if (quickMenu.value) quickMenu.value.openMore();
+    else if (!wide.value) emit('open-more');
+}
+function pasteHere(): void {
+    const at = pasteMenu.value?.at;
+    pasteMenu.value = null;
+    if (at) editor.pasteBlocks(at);
+}
+function onHostDownCapture(event: PointerEvent): void {
+    if (pasteMenu.value && !(event.target as Element | null)?.closest('.paste-menu')) pasteMenu.value = null;
+    if (event.pointerType !== 'touch') return;
+    touchLive = true;
+    clearTimeout(touchLiveTimer);
+    touches.set(event.pointerId, hostPoint(event));
+    if (touches.size >= 2) {
+        // The second finger belongs to the zoom, not to a block under it.
+        event.stopPropagation();
+        beginPinch();
+        return;
+    }
+    const target = tapTarget(event.target);
+    tapDown = target ? { x: event.clientX, y: event.clientY, target } : null;
+    pressPoint = { x: event.clientX, y: event.clientY };
+    panStart = target && (target === 'empty' || target !== editor.selectedBlockId) ? { x: event.clientX, y: event.clientY, view: { ...view.value } } : null;
+    press.cancel();
+    if (target) press.start(event.clientX, event.clientY);
+}
+function onHostMoveCapture(event: PointerEvent): void {
+    if (event.pointerType !== 'touch' || !touches.has(event.pointerId)) return;
+    touches.set(event.pointerId, hostPoint(event));
+    if (pinch) updatePinch();
+    else {
+        press.move(event.clientX, event.clientY);
+        if (panStart && view.value.zoom > 1) {
+            const dx = event.clientX - panStart.x;
+            const dy = event.clientY - panStart.y;
+            if (Math.hypot(dx, dy) > TAP_SLOP) setView({ ...panStart.view, panX: panStart.view.panX + dx, panY: panStart.view.panY + dy });
+        }
+    }
+}
+function onHostUpCapture(event: PointerEvent): void {
+    if (event.pointerType !== 'touch') return;
+    const known = touches.delete(event.pointerId);
+    clearTimeout(touchLiveTimer);
+    touchLiveTimer = setTimeout(() => (touchLive = false), 1000);
+    press.cancel();
+    panStart = null;
+    if (pinch && touches.size < 2) {
+        pinch = null;
+        pinching.value = false;
+    }
+    const down = tapDown;
+    tapDown = null;
+    if (!known || event.type === 'pointercancel' || !down || Math.hypot(event.clientX - down.x, event.clientY - down.y) > TAP_SLOP) return;
+    const tap: Tap = { x: event.clientX, y: event.clientY, time: event.timeStamp, target: down.target };
+    if (isDoubleTap(lastTap, tap)) {
+        lastTap = null;
+        lastTouchDouble = performance.now();
+        if (down.target === 'empty') resetZoom();
+        else onDoubleClick();
+        return;
+    }
+    lastTap = tap;
+    // A tap on the empty stage lets go of the block (the mouse does it on press; a finger may be the start of a zoom).
+    if (down.target === 'empty') editor.selectBlock(null);
+}
+function onHostDown(event: PointerEvent): void {
+    if (event.pointerType !== 'touch') editor.selectBlock(null);
+}
+function onContextMenu(event: Event): void {
+    if (touchLive) event.preventDefault();
+}
+/** The browser may make a `dblclick` of two taps as well – the double tap has done its work then. */
+function onFrameDoubleClick(): void {
+    if (performance.now() - lastTouchDouble < 700) return;
+    onDoubleClick();
+}
+
 /** Leads to the content of the chosen block: its menu opens its first field – on a phone the editor's bar does (C5, C6). */
 async function openContent(): Promise<void> {
     await nextTick();
@@ -286,14 +522,23 @@ function endOnOutside(event: PointerEvent): void {
     if (target?.closest('[data-testid="text-edit"], [data-testid="quick-menu"]')) return;
     editor.endTextEdit();
 }
+/** The view before a phone zoomed onto the block being written (C4); it comes back when the writing ends. */
+let viewBeforeWriting: View | null = null;
 watch(
     () => editor.editingTextId,
     async (id) => {
         if (!id) {
             document.removeEventListener('pointerdown', endOnOutside, true);
+            if (viewBeforeWriting) setView(viewBeforeWriting);
+            viewBeforeWriting = null;
             return;
         }
         document.addEventListener('pointerdown', endOnOutside, true);
+        const writing = blocks.value.find((b) => b.id === id);
+        if (!wide.value && writing) {
+            viewBeforeWriting = { ...view.value };
+            setView(viewOnto(baseFit.value, writing, size, 0.9, 16));
+        }
         await nextTick();
         const el = textArea.value;
         if (!el) return;
@@ -319,7 +564,18 @@ function onEmptyAction(b: Block): void {
 </script>
 
 <template>
-    <div ref="host" class="editor-stage" data-quick-host @pointerdown="editor.selectBlock(null)">
+    <div
+        ref="host"
+        class="editor-stage"
+        :class="{ 'editor-stage--zoomed': view.zoom > 1, 'editor-stage--pinching': pinching }"
+        data-quick-host
+        @pointerdown.capture="onHostDownCapture"
+        @pointermove.capture="onHostMoveCapture"
+        @pointerup.capture="onHostUpCapture"
+        @pointercancel.capture="onHostUpCapture"
+        @pointerdown="onHostDown"
+        @contextmenu="onContextMenu"
+    >
         <!-- The soft shadow of the stage on the workspace (Plan.md 79, B3): the stage itself is clipped, so it lies beside it. -->
         <div
             v-if="editor.slide"
@@ -368,7 +624,7 @@ function onEmptyAction(b: Block): void {
                     v-for="block in blocks"
                     :key="block.id"
                     class="frame"
-                    :class="{ 'frame--selected': block.id === editor.selectedBlockId, 'frame--locked': block.locked }"
+                    :class="{ 'frame--selected': block.id === editor.selectedBlockId, 'frame--locked': block.locked, 'frame--tight': tight(block) }"
                     :style="{
                         left: `${block.x}px`,
                         top: `${block.y}px`,
@@ -379,16 +635,17 @@ function onEmptyAction(b: Block): void {
                     }"
                     :title="block.locked ? t.editor.stage.lockedTitle(BLOCK_LABELS[block.type]) : undefined"
                     :data-testid="`frame-${block.type}`"
+                    :data-block-id="block.id"
                     @pointerdown="start($event, block, 'move')"
                     @pointermove="moveTo"
                     @pointerup="end"
                     @pointercancel="end"
                     @pointerenter="hoveredId = block.id"
                     @pointerleave="hoveredId = null"
-                    @dblclick="onDoubleClick"
+                    @dblclick="onFrameDoubleClick"
                 >
                     <!-- Shown by CSS where there is a pointer to hover with, never on the chosen block or while dragging (A4). -->
-                    <span class="frame-name" :class="{ 'frame-name--inside': block.y < 32 / fit.scale }">
+                    <span class="frame-name" :class="{ 'frame-name--inside': block.y < 32 / fit.scale, 'frame-name--touch': block.id === touchNameId && !dragId }">
                         <Icon :name="BLOCK_ICONS[block.type]" :size="14" />{{ BLOCK_LABELS[block.type] }}
                     </span>
                     <span
@@ -454,6 +711,13 @@ function onEmptyAction(b: Block): void {
         >
             {{ item.text }}
         </button>
+        <!-- A long press on the empty stage with something copied (C3): paste right there. -->
+        <div v-if="pasteMenu" class="paste-menu" :style="{ left: `${pasteMenu.left}px`, top: `${pasteMenu.top}px` }" @pointerdown.stop>
+            <button class="d-btn" type="button" data-testid="paste-here" @click="pasteHere">{{ t.quick.pasteHere }}</button>
+        </div>
+        <button v-if="view.zoom > 1" class="d-btn zoom-reset" type="button" data-testid="zoom-reset" @pointerdown.stop @click="resetZoom">
+            <Icon name="frame-fit" :size="16" /> {{ t.editor.stage.zoomReset }}
+        </button>
         <QuickMenu
             v-if="quickBlock && quickFrame"
             :key="quickBlock.id"
@@ -489,6 +753,26 @@ function onEmptyAction(b: Block): void {
     overflow: visible;
     /* A finger on the empty stage scrolls the page (phone, Plan.md 11); on a block it moves the block. */
     touch-action: pan-x pan-y;
+}
+/* Zoomed in (C3): the host clips, and a finger moves the stage, not the page – as long as two fingers lie, too. */
+.editor-stage--zoomed {
+    overflow: hidden;
+    touch-action: none;
+}
+.editor-stage--pinching {
+    touch-action: none;
+}
+.zoom-reset,
+.paste-menu {
+    position: absolute;
+    z-index: 15;
+    box-shadow: var(--d-shadow);
+    font-family: var(--d-font);
+    white-space: nowrap;
+}
+.zoom-reset {
+    right: 8px;
+    bottom: 8px;
 }
 .stage-shadow {
     position: absolute;
@@ -633,12 +917,17 @@ function onEmptyAction(b: Block): void {
 .frame {
     position: absolute;
     box-sizing: border-box;
-    touch-action: none;
+    /* Only the chosen block takes a finger's drag; a swipe over the others scrolls the page (C3). */
+    touch-action: pan-x pan-y;
     cursor: move;
     outline: var(--line) dashed rgba(148, 163, 184, 0.55);
 }
 .frame:hover {
     outline-color: rgba(96, 165, 250, 0.9);
+}
+.frame--selected,
+.handle {
+    touch-action: none;
 }
 .frame--selected {
     outline: calc(var(--line) * 1.5) solid rgb(59, 130, 246);
@@ -671,6 +960,9 @@ function onEmptyAction(b: Block): void {
 .frame-name :deep(svg) {
     width: calc(var(--s) * 14);
     height: calc(var(--s) * 14);
+}
+.frame-name--touch {
+    display: inline-flex;
 }
 @media (hover: hover) {
     .overlay:not(.overlay--dragging) .frame:hover:not(.frame--selected) .frame-name {
@@ -722,7 +1014,26 @@ function onEmptyAction(b: Block): void {
         height: calc(var(--handle) * 2);
         margin: calc(var(--handle) * -1);
     }
+    /* The area that catches a fingertip: 44 × 44 screen pixels around the middle of the handle. */
+    .handle::before {
+        content: '';
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: calc(var(--s) * 44);
+        height: calc(var(--s) * 44);
+        transform: translate(-50%, -50%);
+    }
 }
+/* On a block smaller than three fingertips the handles stand outside, half a hit area away (handlesOutside). */
+.frame--tight .handle--nw { transform: translate(calc(var(--s) * -22), calc(var(--s) * -22)); }
+.frame--tight .handle--n { transform: translateY(calc(var(--s) * -22)); }
+.frame--tight .handle--ne { transform: translate(calc(var(--s) * 22), calc(var(--s) * -22)); }
+.frame--tight .handle--e { transform: translateX(calc(var(--s) * 22)); }
+.frame--tight .handle--se { transform: translate(calc(var(--s) * 22), calc(var(--s) * 22)); }
+.frame--tight .handle--s { transform: translateY(calc(var(--s) * 22)); }
+.frame--tight .handle--sw { transform: translate(calc(var(--s) * -22), calc(var(--s) * 22)); }
+.frame--tight .handle--w { transform: translateX(calc(var(--s) * -22)); }
 /* What an empty block lacks (C6): a white button with a shadow, in screen pixels, in the middle of the block. */
 .empty-action {
     position: absolute;
