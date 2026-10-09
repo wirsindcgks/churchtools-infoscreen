@@ -1,20 +1,12 @@
 /**
  * Every text a person reads comes from the text files in `src/i18n` (Plan.md 79, B1). This test reads each
  * component with the Vue compiler and reports text nodes and static `title`/`aria-label`/`placeholder`/
- * `label`/`alt` attributes that hold letters. `PENDING` lists the components that still carry text; it
- * shrinks until it is empty, and a file in it that is already clean fails, too.
+ * `label`/`alt` attributes that hold letters.
  */
 import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from '@vue/compiler-sfc';
 import { describe, expect, it } from 'vitest';
-
-/** Components still to convert in the last part of B1: the settings. */
-const PENDING: string[] = [
-    'designer/RefreshRightsDialog.vue',
-    'designer/RemoveSetupDialog.vue',
-    'views/SetupView.vue',
-];
 
 /** Texts that are no wording: unit symbols and the like. Each entry with its reason. */
 const ALLOWED: string[] = [
@@ -68,16 +60,8 @@ describe('no bare text in templates (Plan.md 79, B1)', () => {
         expect(files.length).toBeGreaterThan(20);
     });
 
-    it('lists only existing files in PENDING', () => {
-        expect(PENDING.filter((file) => !files.includes(file))).toEqual([]);
-    });
-
-    it('no component outside PENDING holds text', () => {
-        const dirty = files.filter((file) => !PENDING.includes(file) && report.get(file)!.length > 0);
+    it('no component holds text', () => {
+        const dirty = files.filter((file) => report.get(file)!.length > 0);
         expect(dirty.map((file) => `${file}: ${report.get(file)!.slice(0, 3).join(' | ')}`)).toEqual([]);
-    });
-
-    it('every file in PENDING still holds text', () => {
-        expect(PENDING.filter((file) => report.get(file)?.length === 0)).toEqual([]);
     });
 });

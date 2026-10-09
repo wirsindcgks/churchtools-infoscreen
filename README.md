@@ -8,21 +8,21 @@ Mit dem Infoscreen Designer gestaltet eure Gemeinde die Bildschirme im Foyer sel
 [ChurchTools](https://church.tools) und ohne Programmierkenntnisse. Termine, Gruppen und Räume kommen live aus
 ChurchTools und erscheinen von selbst auf dem Bildschirm. Ein Fernseher mit Kiosk-Browser zeigt das Ergebnis.
 
-![Der Editor: Slides, Bausteine, Bildfläche und Inspektor](docs/bilder/editor.png)
+![Der Editor: Folien, Bausteine, Bildfläche und Inspektor](docs/bilder/editor.png)
 
 ## Was ihr damit macht
 
-- **Slides gestalten wie in einem Folien-Editor:** Text, Bilder, Uhr, Countdown, QR-Code, Galerie, Video und mehr
+- **Folien gestalten wie in einem Folien-Editor:** Text, Bilder, Uhr, Countdown, QR-Code, Galerie, Video und mehr
   per Drag and drop. Die Vorschau zeigt genau das, was der Fernseher zeigt – auch am Handy und auf dem Tablet.
 - **Inhalte aus ChurchTools zeigen:** Termine als Liste oder als Karten (auf Wunsch mit Ort, Raum und Diensten),
   den nächsten Termin, Gruppen mit Treffzeit und QR-Code zur Anmeldung, aktuelle Beiträge und die Raumbelegung.
   Was in ChurchTools geändert wird, steht nach etwa 20 Sekunden auf dem Bildschirm.
-- **Wechseln nach Plan:** Mehrere Slides laufen als Playlist. Zeitpläne schalten um, etwa „30 Minuten vor dem
-  Gottesdienst die Begrüßung". Hinweise und Laufschrift liegen über allen Slides und verschwinden zur eingestellten
+- **Wechseln nach Plan:** Mehrere Folien laufen als Präsentation. Zeitpläne schalten um, etwa „30 Minuten vor dem
+  Gottesdienst die Begrüßung". Hinweise und Laufschrift liegen über allen Folien und verschwinden zur eingestellten
   Zeit von selbst.
 - **Mehrere Bildschirme:** quer oder hochkant, jeder unter einer festen Adresse. Die Startseite zeigt, was jeder
   Bildschirm gerade zeigt und ob er online ist.
-- **Einheitliches Aussehen:** Farben, Schriften und Darstellung der Termine legt ihr einmal für alle Screens fest.
+- **Einheitliches Aussehen:** Farben, Schriften und Darstellung der Termine legt ihr einmal für alle Bildschirme fest.
   Bilder lädt ihr einmal in die Mediathek und nutzt sie überall.
 
 Mehr Bilder zeigt [**Der Designer in Bildern**](docs/Funktionen.md).
@@ -39,7 +39,7 @@ Mehr Bilder zeigt [**Der Designer in Bildern**](docs/Funktionen.md).
    herunterladen.
 2. **Hochladen:** in ChurchTools in der Extension-Verwaltung hochladen.
 3. **Einrichten:** Ein Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an – mit einem Knopf.
-4. **Gestalten:** Slides bauen, Playlist und Screen zusammenstellen, die Adresse des Screens im Kiosk-Browser
+4. **Gestalten:** Folien bauen, Präsentation und Bildschirm zusammenstellen, die Adresse des Bildschirms im Kiosk-Browser
    des Fernsehers eintragen.
 
 Probiert es bitte **zuerst in einer Test- oder Demo-Instanz** aus und nicht direkt in eurer produktiven Umgebung:
@@ -63,7 +63,7 @@ Administrator.
 
 ## Stand
 
-Aktuell ist Version 0.17.1. Bei uns zeigen seit dem 6. Oktober 2026 zwei Fernseher im Foyer ihre Slides damit;
+Aktuell ist Version 0.17.1. Bei uns zeigen seit dem 6. Oktober 2026 zwei Fernseher im Foyer ihre Folien damit;
 getestet ist es auf ChurchTools 3.136. Was sich je Version geändert hat, steht im
 [Changelog](CHANGELOG.md), was als Nächstes kommt, in [`Plan.md`](Plan.md). Fehler und Wünsche gerne im
 [Issue-Tracker](https://github.com/wirsindcgks/churchtools-infoscreen/issues).

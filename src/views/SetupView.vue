@@ -3,6 +3,7 @@ import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { EXTENSION_KEY } from '../config';
+import { t } from '../i18n/designer';
 import Icon, { type IconName } from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
@@ -83,32 +84,28 @@ const page = computed<SetupPage>(() => {
 const HEADERS: Record<SetupPage, { icon: IconName; title: string; intro: string }> = {
     overview: {
         icon: 'settings',
-        title: 'Einstellungen',
-        intro:
-            'Hier verwalten ChurchTools-Administratoren die Gruppen und Rechte für Gestalter und Geräte, die Adressen ' +
-            'der Fernseher und die Mediathek im Wiki.',
+        title: t.common.settings,
+        intro: t.setup.overview.intro,
     },
     groups: {
         icon: 'person',
-        title: 'Gruppen und Rechte',
-        intro:
-            'Der Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an; hier prüfst und aktualisierst du ' +
-            'sie oder entfernst die Einrichtung.',
+        title: t.setup.groups.title,
+        intro: t.setup.groups.intro,
     },
     tv: {
         icon: 'tv',
-        title: 'Adressen für die Fernseher',
-        intro: 'Erzeugt die Adresse, mit der sich ein Fernseher selbst anmeldet.',
+        title: t.setup.tv.title,
+        intro: t.setup.tv.intro,
     },
     wiki: {
         icon: 'image',
-        title: 'Mediathek im Wiki',
-        intro: 'Wo die Bilder der Mediathek im Wiki stehen.',
+        title: t.setup.wiki.title,
+        intro: t.setup.wiki.intro,
     },
     services: {
         icon: 'person',
-        title: 'Dienste auf Screens',
-        intro: 'Welche Dienste mit Namen auf einem Fernseher erscheinen dürfen.',
+        title: t.setup.services.title,
+        intro: t.setup.services.intro,
     },
 };
 const header = computed(() => HEADERS[page.value]);
@@ -175,14 +172,13 @@ const abilities = computed(() =>
         createdTypeId: createdTypeId.value,
     }),
 );
-const typeName = (id: number | null): string | undefined => groupTypes.value?.find((t) => t.id === id)?.name;
+const typeName = (id: number | null): string | undefined => groupTypes.value?.find((type) => type.id === id)?.name;
 const chosenTypeName = computed(() => typeName(chosenTypeId.value));
 function abilityHint(button: SettingsButton): string | null {
     const { allowed, missing } = abilities.value[button];
     if (allowed) return null;
     const typeRight = missing.some((m) => m === GROUP_RIGHT_NAMES.createType || m === GROUP_RIGHT_NAMES.viewType);
-    const forType = typeRight && chosenTypeName.value ? ` (für „${chosenTypeName.value}")` : '';
-    return `Dafür fehlt dir in ChurchTools unter „Gruppen": ${missing.join(' und ')}${forType}. Oder alles zusammen: „Gruppen verwalten".`;
+    return t.setup.abilityHint(missing, typeRight ? chosenTypeName.value : undefined);
 }
 /** The wiki category the assistant created itself – the only one it may ever delete (Plan.md, F). */
 const createdWikiCategoryId = ref<number | null>(null);
@@ -229,16 +225,16 @@ function computePlan(): void {
     plan.value = null;
     planProblem.value = null;
     if (demo.value) {
-        planProblem.value = 'Im Demo-Modus nicht verfügbar: Die Screens liegen hier nur im Browser, nicht in ChurchTools.';
+        planProblem.value = t.setup.plan.demo;
         return;
     }
     if (!catalog) {
-        planProblem.value = 'Der Rechtekatalog von ChurchTools ist nicht lesbar.';
+        planProblem.value = t.setup.plan.catalog;
         return;
     }
     const keys = Object.keys(CATEGORIES) as CategoryKey[];
     if (keys.some((k) => categories[k] === undefined)) {
-        planProblem.value = 'Die Datenkategorien des Moduls fehlen noch – einmal die Startseite des Designers öffnen.';
+        planProblem.value = t.setup.plan.categories;
         return;
     }
     try {
@@ -301,8 +297,8 @@ async function loadServices(): Promise<void> {
 async function toggleAllowedService(id: number, on: boolean, box: HTMLInputElement): Promise<void> {
     if (!repository || !serviceList.value || servicesSaving.value) return;
     if (on) {
-        const name = serviceList.value.find((s) => s.id === id)?.name ?? `Dienst ${id}`;
-        if (!window.confirm(`„${name}" freigeben? Die Namen der Eingeteilten stehen dann öffentlich auf den Fernsehern. Ist das mit der Gemeindeleitung abgestimmt?`)) {
+        const name = serviceList.value.find((s) => s.id === id)?.name ?? t.setup.services.fallbackName(id);
+        if (!window.confirm(t.setup.services.confirm(name))) {
             box.checked = false;
             return;
         }
@@ -329,9 +325,7 @@ async function toggleAllowedService(id: number, on: boolean, box: HTMLInputEleme
 async function runAssistant(): Promise<void> {
     const groupTypeId = chosenTypeId.value;
     if (groupTypeId === null) return;
-    const question =
-        `Zwei Gruppen vom Typ „${chosenTypeName.value}" anlegen – „${GROUP_NAMES.designer}" und „${GROUP_NAMES.device}" – und ihren Rollen die Rechte geben?\n\n` +
-        'Bestehende Gruppen und Rollen bleiben unberührt. „Automatische Einrichtung rückgängig machen" nimmt es zurück.';
+    const question = t.setup.assistantRun.question(chosenTypeName.value, GROUP_NAMES.designer, GROUP_NAMES.device);
     if (!repository || !window.confirm(question)) return;
     assistant.running = true;
     assistant.error = null;
@@ -348,10 +342,10 @@ async function runAssistant(): Promise<void> {
             wikiCategory.value = await createCategory();
             wikiCategoryId = wikiCategory.value.id;
             createdWikiCategoryId.value = wikiCategory.value.id;
-            assistant.log.push(`Wiki-Bereich „${WIKI_CATEGORY_NAME}" angelegt.`);
+            assistant.log.push(t.setup.assistantRun.wikiCreated(WIKI_CATEGORY_NAME));
         }
         computePlan();
-        if (!plan.value) throw new Error(planProblem.value ?? 'Kein Plan.');
+        if (!plan.value) throw new Error(planProblem.value ?? t.setup.plan.none);
         const result = await provision(plan.value, groupTypeId, churchToolsProvisionApi);
         assistant.log.push(...result.log);
         assistant.error = result.error;
@@ -365,7 +359,7 @@ async function runAssistant(): Promise<void> {
         await Promise.all([check('designer'), check('device')]);
     } catch (e) {
         assistant.error = explain(e);
-        assistant.log.push(`Abgebrochen: ${assistant.error}`);
+        assistant.log.push(t.setup.assistantRun.aborted(assistant.error));
     } finally {
         assistant.running = false;
     }
@@ -401,7 +395,7 @@ async function updateRights(): Promise<void> {
         refreshDialog.value = { state };
     } catch (e) {
         assistant.error = explain(e);
-        assistant.log = [`Abgebrochen: ${assistant.error}`];
+        assistant.log = [t.setup.assistantRun.aborted(assistant.error)];
     } finally {
         assistant.running = false;
     }
@@ -439,11 +433,7 @@ async function openRemoveSetup(): Promise<void> {
         await persistSettings();
     } catch (e) {
         assistant.error =
-            httpStatus(e) === 403
-                ? 'Rückgängig machen nicht möglich: Du darfst die Einstellungen des Designers nicht ändern. Danach wüsste der ' +
-                  'Designer nicht, dass die Gruppen gelöscht sind. Gib deiner Administratoren-Gruppe die Modulrechte ' +
-                  '(Einrichtung, Schritt 2) und versuche es erneut.'
-                : `Rückgängig machen nicht möglich: Die Einstellungen ließen sich nicht speichern (${explain(e)}).`;
+            httpStatus(e) === 403 ? t.setup.removeNotAllowed403 : t.setup.removeNotSaved(explain(e));
         return;
     }
     const affected: RemoveGroupInfo[] = createdGroupIds.value.map((id) => {
@@ -470,7 +460,7 @@ async function openRemoveSetup(): Promise<void> {
     }
     removeDialog.value = {
         groups: affected,
-        ownMemberOf: affected.filter((g) => ownGroupIds.includes(g.id)).map((g) => g.name ?? `Gruppe ${g.id}`),
+        ownMemberOf: affected.filter((g) => ownGroupIds.includes(g.id)).map((g) => g.name ?? t.setup.groupFallback(g.id)),
         deviceAccounts,
     };
 }
@@ -567,7 +557,7 @@ async function confirmRemoveSetup(): Promise<void> {
 
 function explain(e: unknown): string {
     if (httpStatus(e) === 403) {
-        return 'Rechte anderer lesen darf nur, wer in ChurchTools Berechtigungen verwalten darf. Diese Seite ist für Administratoren.';
+        return t.setup.rightsOfOthers;
     }
     return e instanceof Error ? e.message : String(e);
 }
@@ -622,12 +612,12 @@ async function check(side: Side): Promise<void> {
             checks[side]!.unshift({
                 level: 'warn',
                 category: 'group',
-                text: 'Gestalter und Geräte sind dieselbe Gruppe.',
-                detail: 'Dann bekommen die Geräte die Rechte der Gestalter – mehr, als ein unbeaufsichtigtes Gerät haben sollte.',
+                text: t.setup.groups.sameGroup,
+                detail: t.setup.groups.sameGroupDetail,
             });
         }
     } catch (e) {
-        checks[side] = [{ level: 'fail', category: 'group', text: 'Prüfen nicht möglich.', detail: explain(e) }];
+        checks[side] = [{ level: 'fail', category: 'group', text: t.setup.groups.checkFailed, detail: explain(e) }];
     } finally {
         busy[side] = false;
     }
@@ -783,13 +773,13 @@ const SYMBOL = { ok: '✓', warn: '!', fail: '✗', info: 'i' } as const;
 const SIDES: { side: Side; title: string; purpose: string }[] = [
     {
         side: 'designer',
-        title: 'Gestalter',
-        purpose: 'Wer Infoscreens gestaltet. Die Gruppe braucht die Rechte am Modul und am Wiki-Bereich „Infoscreen" für die Mediathek.',
+        title: t.setup.groups.designer.title,
+        purpose: t.setup.groups.designer.purpose,
     },
     {
         side: 'device',
-        title: 'Geräte',
-        purpose: 'Die Konten, mit denen sich die Fernseher anmelden. Sie brauchen nur Leserechte: auf die Kalender ihrer Screens und, für Videos, auf den Wiki-Bereich „Infoscreen" – sonst nichts.',
+        title: t.setup.groups.device.title,
+        purpose: t.setup.groups.device.purpose,
     },
 ];
 </script>
@@ -798,18 +788,15 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
     <ModulePage current="setup">
         <div class="setup">
             <RouterLink v-if="page !== 'overview'" class="back" :to="{ name: 'setup' }" data-testid="settings-back">
-                <Icon name="back" :size="16" /> Einstellungen
+                <Icon name="back" :size="16" /> {{ t.common.settings }}
             </RouterLink>
             <PageHeader :icon="header.icon" :title="header.title" testid="setup-heading">
                 {{ header.intro }}
             </PageHeader>
-            <p v-if="admin === null" class="empty">Lade …</p>
+            <p v-if="admin === null" class="empty">{{ t.common.loading }}</p>
             <section v-else-if="!admin" class="d-banner d-banner--warning" data-testid="setup-admins-only">
-                <strong>Die Einstellungen sind Sache der ChurchTools-Administratoren.</strong>
-                <p>
-                    Sie legen die Gruppen für Gestalter und Geräte an und vergeben deren Rechte. Wer Infoscreens gestaltet,
-                    braucht diese Seite nicht – fehlt dir ein Recht, wende dich an einen Administrator deiner Gemeinde.
-                </p>
+                <strong>{{ t.setup.adminsOnly.title }}</strong>
+                <p>{{ t.setup.adminsOnly.text }}</p>
             </section>
             <template v-else>
                 <p v-if="error" class="error" role="alert">{{ error }}</p>
@@ -818,19 +805,16 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     <RouterLink class="d-card settings-card" :to="{ name: 'setup-groups' }" data-testid="settings-card-groups">
                         <span class="settings-card-icon"><Icon name="person" :size="20" /></span>
                         <span class="settings-card-body">
-                            <h2>Gruppen und Rechte</h2>
-                            <p class="muted">
-                                Der Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an; hier prüfst und
-                                aktualisierst du sie oder entfernst die Einrichtung.
-                            </p>
+                            <h2>{{ t.setup.groups.title }}</h2>
+                            <p class="muted">{{ t.setup.groups.intro }}</p>
                         </span>
                         <Icon name="forward" class="settings-card-forward" />
                     </RouterLink>
                     <RouterLink class="d-card settings-card" :to="{ name: 'setup-tv' }" data-testid="settings-card-tv">
                         <span class="settings-card-icon"><Icon name="tv" :size="20" /></span>
                         <span class="settings-card-body">
-                            <h2>Adressen für die Fernseher</h2>
-                            <p class="muted">Erzeugt die Adresse, mit der sich ein Fernseher selbst anmeldet.</p>
+                            <h2>{{ t.setup.tv.title }}</h2>
+                            <p class="muted">{{ t.setup.tv.intro }}</p>
                         </span>
                         <Icon name="forward" class="settings-card-forward" />
                     </RouterLink>
@@ -842,37 +826,29 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     >
                         <span class="settings-card-icon"><Icon name="image" :size="20" /></span>
                         <span class="settings-card-body">
-                            <h2>Mediathek im Wiki</h2>
-                            <p class="muted">Wo die Bilder der Mediathek im Wiki stehen.</p>
+                            <h2>{{ t.setup.wiki.title }}</h2>
+                            <p class="muted">{{ t.setup.wiki.intro }}</p>
                         </span>
                         <Icon name="forward" class="settings-card-forward" />
                     </RouterLink>
                     <RouterLink class="d-card settings-card" :to="{ name: 'setup-services' }" data-testid="settings-card-services">
                         <span class="settings-card-icon"><Icon name="person" :size="20" /></span>
                         <span class="settings-card-body">
-                            <h2>Dienste auf Screens</h2>
-                            <p class="muted">Welche Dienste mit Namen auf einem Fernseher erscheinen dürfen.</p>
+                            <h2>{{ t.setup.services.title }}</h2>
+                            <p class="muted">{{ t.setup.services.intro }}</p>
                         </span>
                         <Icon name="forward" class="settings-card-forward" />
                     </RouterLink>
                 </div>
 
                 <template v-if="page === 'groups'">
-                    <p class="lead">
-                        Rechte vergibt ChurchTools an Rollen in Gruppen. Am einfachsten legt der Assistent die beiden Gruppen samt
-                        Rechten an. Wer eigene Gruppen nutzt, wählt sie unten aus – die Prüfung sagt, was fehlt, und ändert nichts.
-                    </p>
+                    <p class="lead">{{ t.setup.groups.lead }}</p>
 
                     <section class="d-card card assistant" data-testid="assistant">
-                        <h2>Automatisch einrichten</h2>
+                        <h2>{{ t.setup.groups.assistant }}</h2>
                         <template v-if="createdGroupIds.length">
-                            <p>
-                                Die Gruppen des Infoscreens sind eingerichtet. Wer gestalten soll, wird Mitglied in „{{ GROUP_NAMES.designer }}",
-                                die Konten der Fernseher in „{{ GROUP_NAMES.device }}" – mehr ist nicht zu tun.
-                            </p>
-                            <p class="muted small">
-                                Zeigt ein Screen einen weiteren Kalender, bringt „Rechte aktualisieren" die Gruppen auf den Stand – und nimmt zurück, was kein Screen mehr braucht. Vorher zeigt eine Vorschau, was sich ändert; geändert werden nur Rechte an Kalendern und Räumen, die du selbst siehst.
-                            </p>
+                            <p>{{ t.setup.groups.done(GROUP_NAMES.designer, GROUP_NAMES.device) }}</p>
+                            <p class="muted small">{{ t.setup.groups.doneHint }}</p>
                             <div class="actions">
                                 <button
                                     class="d-btn d-btn--primary"
@@ -881,10 +857,10 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                     data-testid="update-rights"
                                     @click="updateRights"
                                 >
-                                    Rechte aktualisieren
+                                    {{ t.setup.groups.updateRights }}
                                 </button>
                                 <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running || !abilities.remove.allowed" data-testid="remove-setup" @click="openRemoveSetup">
-                                    Automatische Einrichtung rückgängig machen
+                                    {{ t.setup.groups.removeSetup }}
                                 </button>
                             </div>
                             <p v-for="button in (['refresh', 'remove'] as const).filter((b) => abilityHint(b))" :key="button" class="muted small" :data-testid="`ability-hint-${button}`">
@@ -892,40 +868,34 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                             </p>
                         </template>
                         <template v-else>
-                            <p>
-                                Legt zwei leere Gruppen vom gewählten Typ an und gibt ihren Rollen die nötigen Rechte. Danach
-                                müssen nur noch Personen in die Gruppen aufgenommen werden.
-                            </p>
+                            <p>{{ t.setup.groups.fresh }}</p>
                             <p v-if="planProblem" class="muted">{{ planProblem }}</p>
                             <p v-else-if="foreignGroups.length" class="warn">
-                                Es gibt schon {{ foreignGroups.map((g) => `„${g.name}"`).join(' und ') }}. Der Assistent übernimmt keine
-                                fremden Gruppen – wähle sie unten aus und prüfe ihre Rechte.
+                                {{ t.setup.groups.foreign(foreignGroups.map((g) => `„${g.name}"`).join(' und ')) }}
                             </p>
                             <details v-if="plan" class="plan">
-                                <summary>Was genau passiert</summary>
+                                <summary>{{ t.setup.groups.whatHappens }}</summary>
                                 <div v-for="group in plan" :key="group.key">
-                                    <strong>{{ group.name }}</strong> – an allen Rollen:
+                                    <strong>{{ group.name }}</strong> – {{ t.setup.groups.allRoles }}
                                     <ul>
                                         <li v-for="grant in group.grants" :key="`${grant.authId}`">{{ grant.label }}</li>
                                     </ul>
                                 </div>
-                                <p v-if="wikiMissing" class="muted small">Dazu wird der Wiki-Bereich „Infoscreen" für die Mediathek angelegt.</p>
+                                <p v-if="wikiMissing" class="muted small">{{ t.setup.groups.wikiWillBeCreated }}</p>
                             </details>
                             <label class="d-field">
-                                Gruppentyp
+                                {{ t.setup.groups.type }}
                                 <select
                                     :value="chosenTypeId ?? ''"
                                     data-testid="group-type"
                                     @change="chosenTypeId = Number(($event.target as HTMLSelectElement).value) || null"
                                 >
-                                    <option v-if="chosenTypeId === null" value="">– bitte wählen –</option>
-                                    <option v-for="t in groupTypes ?? []" :key="t.id" :value="t.id">{{ t.name }}</option>
+                                    <option v-if="chosenTypeId === null" value="">{{ t.setup.groups.pleaseChoose }}</option>
+                                    <option v-for="type in groupTypes ?? []" :key="type.id" :value="type.id">{{ type.name }}</option>
                                 </select>
                             </label>
-                            <p v-if="groupTypes === null" class="muted small">Die Gruppentypen ließen sich nicht laden.</p>
-                            <p v-else class="muted small">
-                                Empfohlen: „Merkmal". Gestalter und Fernseher bekommen auch die Rechte, die dieser Typ seinen Rollen gibt – wähle einen Typ, der wenig mitbringt.
-                            </p>
+                            <p v-if="groupTypes === null" class="muted small">{{ t.setup.groups.typesFailed }}</p>
+                            <p v-else class="muted small">{{ t.setup.groups.typeRecommended }}</p>
                             <div class="actions">
                                 <button
                                     class="d-btn d-btn--primary"
@@ -934,9 +904,9 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                     :disabled="!assistant.allowed || !plan || foreignGroups.length > 0 || assistant.running || chosenTypeId === null || !abilities.create.allowed"
                                     @click="runAssistant"
                                 >
-                                    Gruppen und Rechte anlegen
+                                    {{ t.setup.groups.create }}
                                 </button>
-                                <span v-if="assistant.running" class="muted">Arbeitet …</span>
+                                <span v-if="assistant.running" class="muted">{{ t.setup.groups.working }}</span>
                             </div>
                             <p v-if="abilityHint('create')" class="muted small" data-testid="ability-hint-create">{{ abilityHint('create') }}</p>
                         </template>
@@ -951,22 +921,20 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                             <h2>{{ title }}</h2>
                             <p class="muted">{{ purpose }}</p>
                             <label class="d-field">
-                                Gruppe
+                                {{ t.setup.groups.group }}
                                 <select
                                     :value="selected[side] ?? ''"
                                     :data-testid="`group-${side}`"
                                     @change="choose(side, ($event.target as HTMLSelectElement).value)"
                                 >
-                                    <option value="">– keine gewählt –</option>
+                                    <option value="">{{ t.setup.groups.noneChosen }}</option>
                                     <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
                                 </select>
                             </label>
-                            <p v-if="!groups.length && !error" class="muted">Lade Gruppen …</p>
-                            <p class="muted small">
-                                Keine passende Gruppe? In ChurchTools unter „Gruppen" eine anlegen, auf „aktiv" stellen und hier wählen.
-                            </p>
+                            <p v-if="!groups.length && !error" class="muted">{{ t.setup.groups.loadingGroups }}</p>
+                            <p class="muted small">{{ t.setup.groups.noSuitable }}</p>
 
-                            <p v-if="busy[side]" class="muted">Prüfe …</p>
+                            <p v-if="busy[side]" class="muted">{{ t.setup.groups.checking }}</p>
                             <div v-else-if="checks[side]" class="checks" :data-testid="`checks-${side}`">
                                 <details
                                     v-for="group in groupChecks(checks[side]!)"
@@ -1000,39 +968,28 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     </div>
 
                     <div class="actions">
-                        <button class="d-btn d-btn--primary" type="button" data-testid="save-setup" @click="save">Auswahl speichern</button>
-                        <span v-if="saveState === 'saved'" class="muted" data-testid="setup-saved">Gespeichert.</span>
-                        <span v-else-if="saveState === 'saving'" class="muted">Speichert …</span>
+                        <button class="d-btn d-btn--primary" type="button" data-testid="save-setup" @click="save">{{ t.setup.groups.saveSelection }}</button>
+                        <span v-if="saveState === 'saved'" class="muted" data-testid="setup-saved">{{ t.setup.groups.saved }}</span>
+                        <span v-else-if="saveState === 'saving'" class="muted">{{ t.setup.groups.saving }}</span>
                     </div>
-                    <p class="muted small">
-                        Geprüft werden die Rechte der Gruppenrollen und ihrer Gruppentyp-Rollen, bei Geräten dazu Personenstatus und
-                        direkt vergebene Rechte. Weitere Gruppen eines Gerätekontos werden genannt, ihre Rechte aber nicht geprüft.
-                    </p>
+                    <p class="muted small">{{ t.setup.groups.checkNote }}</p>
                 </template>
 
                 <template v-if="page === 'services'">
                     <section class="d-card card" data-testid="allowed-services">
                         <!-- Before the list, not beside it: releasing a service publishes names (Plan.md 58). -->
                         <div class="privacy-alert" role="note" data-testid="allowed-services-warning">
-                            <h2>Datenschutz beachten</h2>
-                            <p>
-                                Wer hier einen Dienst freigibt, macht Namen öffentlich: Vor- und Nachname der Eingeteilten stehen im
-                                Foyer, für alle, die vorbeigehen – und für jeden, der die Adresse eines Fernsehers kennt.
-                            </p>
-                            <p><strong>Stimmt die Freigabe vorher mit der Gemeindeleitung ab.</strong></p>
+                            <h2>{{ t.setup.services.privacyTitle }}</h2>
+                            <p>{{ t.setup.services.privacy }}</p>
+                            <p><strong>{{ t.setup.services.privacyAsk }}</strong></p>
                         </div>
-                        <p class="lead">
-                            Dienste zeigen, wer eingeteilt ist – mit Vor- und Nachnamen, für alle sichtbar, die am Fernseher
-                            vorbeigehen. Hier legst du fest, welche Dienste Gestalter überhaupt wählen können. Ohne Auswahl
-                            erscheint kein Dienst. Zur Wahl stehen nur Dienste, deren Dienstgruppe in ChurchTools „Ohne
-                            Berechtigung einsehbar" ist und die Namen nicht verbergen.
-                        </p>
+                        <p class="lead">{{ t.setup.services.lead }}</p>
                         <p v-if="servicesFailed" class="error" role="alert" data-testid="allowed-services-failed">
-                            Dienste konnten nicht geladen werden.
+                            {{ t.setup.services.failed }}
                         </p>
-                        <p v-else-if="!serviceList" class="empty">Lade …</p>
+                        <p v-else-if="!serviceList" class="empty">{{ t.common.loading }}</p>
                         <p v-else-if="!serviceList.length" class="muted" data-testid="allowed-services-none">
-                            In ChurchTools gibt es keinen Dienst, der gezeigt werden könnte.
+                            {{ t.setup.services.none }}
                         </p>
                         <template v-else>
                             <label v-for="s in serviceList" :key="s.id" class="check">
@@ -1045,62 +1002,49 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                 >
                                 {{ s.name }}
                             </label>
-                            <p v-if="servicesSaved" class="muted small" role="status" data-testid="allowed-services-saved">Gespeichert</p>
+                            <p v-if="servicesSaved" class="muted small" role="status" data-testid="allowed-services-saved">{{ t.setup.services.saved }}</p>
                         </template>
                     </section>
                 </template>
 
                 <template v-if="page === 'wiki'">
                     <section v-if="wikiCategory && !demo" class="d-card card" data-testid="wiki-menu">
-                        <h2>Mediathek im Wiki</h2>
-                        <p class="muted">
-                            Die Bilder der Mediathek liegen im Wiki-Bereich „{{ WIKI_CATEGORY_NAME }}". Gepflegt werden sie im
-                            Designer; im Wiki lässt sich der Bereich unter „Ausgeblendet" aus dem Blick räumen. Er bleibt dort
-                            erreichbar – verborgen im strengen Sinn wird er nicht.
-                        </p>
+                        <h2>{{ t.setup.wiki.title }}</h2>
+                        <p class="muted">{{ t.setup.wiki.text(WIKI_CATEGORY_NAME) }}</p>
                         <p data-testid="wiki-menu-state">
-                            Im Wiki steht er zurzeit
-                            <strong>{{ wikiCategory.inMenu === false ? 'unter „Ausgeblendet"' : 'unter „Kategorien"' }}</strong>.
+                            {{ t.setup.wiki.stateBefore }}
+                            <strong>{{ wikiCategory.inMenu === false ? t.setup.wiki.stateHidden : t.setup.wiki.stateShown }}</strong>.
                         </p>
                         <p data-testid="wiki-owner" class="muted small">
-                            <template v-if="wikiCategory.id === createdWikiCategoryId">Angelegt vom Infoscreen Designer.</template>
-                            <template v-else>
-                                Nicht als vom Designer angelegt vermerkt – etwa weil es ihn schon gab. Er gehört damit der Gemeinde und
-                                wird vom Designer nie gelöscht.
-                            </template>
+                            <template v-if="wikiCategory.id === createdWikiCategoryId">{{ t.setup.wiki.ownerCreated }}</template>
+                            <template v-else>{{ t.setup.wiki.ownerForeign }}</template>
                         </p>
                         <div class="actions">
                             <button class="d-btn" type="button" :disabled="wikiBusy" data-testid="wiki-menu-toggle" @click="toggleWikiMenu">
-                                {{ wikiCategory.inMenu === false ? 'Wieder unter „Kategorien" zeigen' : 'Unter „Ausgeblendet" führen' }}
+                                {{ wikiCategory.inMenu === false ? t.setup.wiki.showAgain : t.setup.wiki.hide }}
                             </button>
                         </div>
                         <p v-if="wikiError" class="error" role="alert">{{ wikiError }}</p>
                     </section>
                     <p v-else class="empty" data-testid="wiki-empty">
-                        <template v-if="demo">Im Demo-Modus nicht verfügbar.</template>
-                        <template v-else>
-                            Es gibt noch keinen Wiki-Bereich „{{ WIKI_CATEGORY_NAME }}" – der Assistent legt ihn unter „Gruppen und
-                            Rechte" an.
-                        </template>
+                        <template v-if="demo">{{ t.setup.wiki.demo }}</template>
+                        <template v-else>{{ t.setup.wiki.missing(WIKI_CATEGORY_NAME) }}</template>
                     </p>
                 </template>
 
                 <section v-if="page === 'tv'" class="d-card card tv" data-testid="tv-address">
-                    <h2>Adresse für einen Fernseher</h2>
-                    <p class="muted">
-                        Mit dieser Adresse meldet sich der Fernseher bei jedem Start selbst als Geräte-Benutzer an – eine
-                        Anmeldung im Browser hielte nur 24 Stunden. Trag sie als Startseite des Kiosk-Browsers ein.
-                    </p>
-                    <p v-if="!screens.length" class="muted small">Noch keine Screens angelegt.</p>
+                    <h2>{{ t.setup.tv.formTitle }}</h2>
+                    <p class="muted">{{ t.setup.tv.text }}</p>
+                    <p v-if="!screens.length" class="muted small">{{ t.setup.tv.noScreens }}</p>
                     <form v-else class="tv-form" autocomplete="off" @submit.prevent="createTvAddress">
                         <label class="d-field">
-                            Screen
+                            {{ t.setup.tv.screen }}
                             <select v-model="device.slug" data-testid="tv-screen">
                                 <option v-for="screen in screens" :key="screen.id" :value="screen.slug">{{ screen.name }}</option>
                             </select>
                         </label>
                         <label class="d-field">
-                            Benutzername des Geräte-Kontos
+                            {{ t.setup.tv.username }}
                             <input
                                 v-model="device.username"
                                 type="text"
@@ -1111,7 +1055,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                             >
                         </label>
                         <label class="d-field">
-                            Passwort des Geräte-Kontos
+                            {{ t.setup.tv.password }}
                             <input v-model="device.password" type="password" autocomplete="new-password" data-testid="tv-password">
                         </label>
                         <div class="actions tv-actions">
@@ -1121,33 +1065,27 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                 :disabled="device.busy || !device.username.trim() || !device.password"
                                 data-testid="tv-create"
                             >
-                                Adresse erzeugen
+                                {{ t.setup.tv.create }}
                             </button>
-                            <span v-if="device.busy" class="muted">Meldet an …</span>
+                            <span v-if="device.busy" class="muted">{{ t.setup.tv.signingIn }}</span>
                         </div>
                     </form>
-                    <p class="muted small">
-                        Passwort und Adresse werden nirgends gespeichert. Das Passwort dient nur dazu, bei ChurchTools den
-                        Login-Token des Geräte-Kontos abzuholen.
-                    </p>
+                    <p class="muted small">{{ t.setup.tv.note }}</p>
                     <p v-if="device.error" class="error" role="alert" data-testid="tv-error">{{ device.error }}</p>
                     <div v-if="device.url" class="tv-result" data-testid="tv-result">
                         <code class="url">{{ device.url }}</code>
                         <button class="d-btn" type="button" data-testid="tv-copy" @click="copyTvAddress">
-                            {{ device.copied ? 'Kopiert' : 'Kopieren' }}
+                            {{ device.copied ? t.setup.tv.copied : t.setup.tv.copy }}
                         </button>
                         <p class="d-banner d-banner--warning small">
-                            <strong>Diese Adresse ist ein Schlüssel.</strong> Wer sie hat, sieht ChurchTools mit den Rechten
-                            des Geräte-Kontos (Person {{ device.personId }}) – nur lesend bis auf sein Lebenszeichen, aber ohne Passwort. Nicht per
-                            E-Mail oder Chat weitergeben. Ungültig wird sie, sobald das Passwort des Kontos geändert wird.
+                            <strong>{{ t.setup.tv.keyTitle }}</strong> {{ t.setup.tv.keyText(device.personId) }}
                         </p>
                     </div>
                 </section>
             </template>
             <p v-if="page === 'overview'" class="muted small version" data-testid="app-version">
-                Infoscreen Designer {{ APP_VERSION }} – was neu ist, steht unter
-                <RouterLink :to="{ name: 'about' }">Über &amp; Neuigkeiten</RouterLink>. Neuere Fassungen stehen unter
-                „Releases" auf GitHub und werden in der Extension-Verwaltung von ChurchTools als ZIP hochgeladen.
+                {{ t.setup.version.before(APP_VERSION) }}
+                <RouterLink :to="{ name: 'about' }">{{ t.about.title }}</RouterLink>{{ t.setup.version.after }}
             </p>
         </div>
 

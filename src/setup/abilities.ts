@@ -4,6 +4,7 @@
  * from anyone without the group rights. A pure function over the `churchgroup` section of `/permissions/global`,
  * where "all" already comes as the list of all ids (G50). Only reading: nothing is tried out by writing.
  */
+import { t } from '../i18n/designer';
 
 /** The `churchgroup` section of `/permissions/global`, as far as read here. */
 export interface GroupPermissions {
@@ -23,12 +24,7 @@ export interface Ability {
     missing: string[];
 }
 
-export const GROUP_RIGHT_NAMES = {
-    view: 'Gruppe inkl. ihrer Gruppenmitglieder sehen',
-    viewType: 'Gruppen eines Gruppentyps sehen',
-    delete: 'Gruppe löschen',
-    createType: 'Gruppen eines Gruppentyps erstellen',
-} as const;
+export const GROUP_RIGHT_NAMES = t.setup.groupRights;
 
 const ALLOWED: Ability = { allowed: true, missing: [] };
 

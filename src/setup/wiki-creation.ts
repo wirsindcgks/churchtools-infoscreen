@@ -3,6 +3,7 @@
  * administrator who cannot see the area takes it for missing, and the assistant would create a second one – so it
  * creates only if no area is saved as created and the administrator may see the wiki at all.
  */
+import { t } from '../i18n/designer';
 import { WIKI_CATEGORY_NAME } from '../media/wiki';
 
 export interface WikiCreationInput {
@@ -21,13 +22,13 @@ export function wikiCategoryCreation({ visibleCategoryId, createdCategoryId, can
     if (createdCategoryId !== null) {
         return {
             create: false,
-            problem: `Der Wiki-Bereich „${WIKI_CATEGORY_NAME}" wurde schon angelegt, ist für Sie aber nicht sichtbar – lassen Sie sich das Recht geben, ihn zu sehen.`,
+            problem: t.setup.wikiCreation.notVisible(WIKI_CATEGORY_NAME),
         };
     }
     if (!canViewWiki) {
         return {
             create: false,
-            problem: 'Ihnen fehlt das Recht, das Wiki zu sehen; ohne es lässt sich nicht prüfen, ob es den Bereich schon gibt.',
+            problem: t.setup.wikiCreation.noRight,
         };
     }
     return { create: true };

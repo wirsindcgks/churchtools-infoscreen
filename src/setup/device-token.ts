@@ -7,6 +7,7 @@
  * never touch the administrator's own session in this browser.
  */
 import type { TokenLogin } from '../ct/client';
+import { t } from '../i18n/designer';
 
 export class DeviceLoginError extends Error {
     constructor(message: string) {
@@ -30,21 +31,18 @@ export async function createDeviceLogin(
             body: JSON.stringify({ username: username.trim(), password }),
         });
     } catch {
-        throw new DeviceLoginError('ChurchTools ist gerade nicht erreichbar.');
+        throw new DeviceLoginError(t.setup.deviceLogin.unreachable);
     }
     if (response.status === 400) {
         // The most common cause is measured: a person without user name cannot log in, whatever the password (G21).
-        throw new DeviceLoginError(
-            'Anmeldung fehlgeschlagen. Stimmen Benutzername und Passwort? Hat das Konto überhaupt einen Benutzernamen – ' +
-                'ein Passwort allein genügt nicht.',
-        );
+        throw new DeviceLoginError(t.setup.deviceLogin.failed);
     }
-    if (response.status === 429) throw new DeviceLoginError('Zu viele Versuche. Bitte in ein paar Minuten noch einmal.');
-    if (!response.ok) throw new DeviceLoginError(`ChurchTools antwortet mit Fehler ${response.status}.`);
+    if (response.status === 429) throw new DeviceLoginError(t.setup.deviceLogin.tooMany);
+    if (!response.ok) throw new DeviceLoginError(t.setup.deviceLogin.error(response.status));
     const body = (await response.json()) as { data?: { personId?: unknown; token?: unknown } };
     const { personId, token } = body.data ?? {};
     if (typeof token !== 'string' || !token || typeof personId !== 'number') {
-        throw new DeviceLoginError('ChurchTools hat keinen Login-Token geliefert.');
+        throw new DeviceLoginError(t.setup.deviceLogin.noToken);
     }
     return { loginToken: token, personId };
 }
