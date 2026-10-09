@@ -26,7 +26,7 @@ async function expectStageCentered(page: Page): Promise<void> {
     const blockRow = page.getByTestId('phone-block-row');
     const [columns, stage, slideRow, blockBox] = await Promise.all([
         page.locator('.columns').boundingBox(),
-        page.locator('.editor-stage').boundingBox(),
+        page.locator('.editor-stage .stage').first().boundingBox(),
         page.getByTestId('phone-slide-row').boundingBox(),
         blockRow.count().then((n) => (n ? blockRow.boundingBox() : null)),
     ]);
