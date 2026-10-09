@@ -11,6 +11,9 @@ export const INSPECTOR_MODE: InjectionKey<MaybeRef<InspectorMode>> = Symbol('ins
 /** The one open field of the short menu (Plan.md 79, C1): the id of its `QuickField`, or null. The menu provides it. */
 export const QUICK_OPEN: InjectionKey<Ref<string | null>> = Symbol('quick-open');
 
+/** Where the short menu stands (Plan.md 79, C2): `float` above the block, `bar` at the bottom of a phone, where the open field is a sheet from below. */
+export const QUICK_VARIANT: InjectionKey<'float' | 'bar'> = Symbol('quick-variant');
+
 /** Set inside the open field of the short menu: a foldable section there shows its content without the fold. */
 export const IN_QUICK_FIELD: InjectionKey<Readonly<Ref<boolean>>> = Symbol('in-quick-field');
 

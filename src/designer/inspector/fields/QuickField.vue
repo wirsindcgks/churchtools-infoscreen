@@ -5,13 +5,15 @@
  * stands in the menu itself (its visible label gone, kept for a screen reader); otherwise it is a chip with a short
  * `face` (or a round `swatch`), and a click opens the field itself in a small panel below – always in `full` mode, so it is
  * the very field of the inspector. Only one panel is open at a time (the menu provides the shared state).
+ * In the bar of a phone (Plan.md 79, C2) the panel is a sheet from below over the bar: a grip and the label on top,
+ * a swipe down or a tap beside closes it.
  */
 import { computed, inject, nextTick, onBeforeUnmount, provide, ref, useId, watch } from 'vue';
 import { t } from '../../../i18n/designer';
 import Icon from '../../Icon.vue';
 import { quickFieldPlace } from '../../quick-menu';
 import { vTip } from '../../tip';
-import { IN_QUICK_FIELD, INSPECTOR_MODE, QUICK_OPEN, useInspectorMode } from '../mode';
+import { IN_QUICK_FIELD, INSPECTOR_MODE, QUICK_OPEN, QUICK_VARIANT, useInspectorMode } from '../mode';
 
 const props = defineProps<{ quick?: boolean; label: string; face?: string; swatch?: string; inline?: boolean }>();
 defineSlots<{ default(): unknown }>();
@@ -32,6 +34,7 @@ const chipName = computed(() => (props.swatch || !props.face ? props.label : pro
 
 const id = useId();
 const shared = inject(QUICK_OPEN, null) ?? ref<string | null>(null);
+const sheet = inject(QUICK_VARIANT, 'float') === 'bar';
 const open = computed(() => asChip.value && shared.value === id);
 
 const root = ref<HTMLElement | null>(null);
@@ -62,11 +65,29 @@ function onOutside(event: PointerEvent): void {
 }
 
 function place(): void {
+    if (sheet) return;
     const host = root.value?.closest<HTMLElement>('[data-quick-host]');
     const menu = root.value?.closest<HTMLElement>('[data-testid="quick-menu"]');
     if (!host || !menu || !chip.value || !panel.value) return;
     const size = { width: panel.value.offsetWidth, height: panel.value.offsetHeight };
     placement.value = quickFieldPlace(chip.value.getBoundingClientRect(), menu.getBoundingClientRect(), size, host.getBoundingClientRect());
+}
+
+/** A swipe down on the grip or the head closes the sheet from this distance on; until then the sheet follows the finger. */
+const SWIPE_CLOSE = 60;
+const swipe = ref<{ id: number; from: number; dy: number } | null>(null);
+function onGripDown(event: PointerEvent): void {
+    swipe.value = { id: event.pointerId, from: event.clientY, dy: 0 };
+    (event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId);
+}
+function onGripMove(event: PointerEvent): void {
+    if (swipe.value?.id === event.pointerId) swipe.value.dy = Math.max(0, event.clientY - swipe.value.from);
+}
+function onGripUp(event: PointerEvent): void {
+    const current = swipe.value;
+    if (current?.id !== event.pointerId) return;
+    swipe.value = null;
+    if (event.clientY - current.from > SWIPE_CLOSE) close();
 }
 
 const FOCUSABLE = 'input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
@@ -120,17 +141,33 @@ onBeforeUnmount(() => {
             <span v-else class="quick-face">{{ face ?? label }}</span>
             <Icon name="chevron-down" :size="12" />
         </button>
+        <!-- Catches the tap beside the sheet, so it closes the sheet and does nothing else; the bar below stays reachable. -->
+        <div v-if="open && sheet" class="quick-backdrop" data-testid="quick-backdrop" @click="close()" />
         <div
             v-if="open"
             ref="panel"
             class="quick-panel"
-            :class="{ 'quick-panel--above': placement.above }"
-            :style="{ left: `${placement.dx}px` }"
+            :class="{ 'quick-panel--above': placement.above, 'quick-panel--sheet': sheet }"
+            :style="sheet ? (swipe?.dy ? { transform: `translateY(${swipe.dy}px)` } : undefined) : { left: `${placement.dx}px` }"
             role="dialog"
             :aria-label="label"
             data-testid="quick-popover"
         >
-            <slot />
+            <template v-if="sheet">
+                <div
+                    class="quick-sheet-head"
+                    data-testid="quick-sheet-grip"
+                    @pointerdown="onGripDown"
+                    @pointermove="onGripMove"
+                    @pointerup="onGripUp"
+                    @pointercancel="swipe = null"
+                >
+                    <span class="quick-sheet-grip" aria-hidden="true" />
+                    <span class="quick-sheet-title">{{ label }}</span>
+                </div>
+                <div class="quick-sheet-body"><slot /></div>
+            </template>
+            <slot v-else />
         </div>
     </div>
 </template>
@@ -164,6 +201,54 @@ onBeforeUnmount(() => {
 .quick-panel--above {
     top: auto;
     bottom: calc(100% + 8px);
+}
+/* The sheet of a phone's bar: full width over the bar, the grip and the label on top, the field scrolling under them. */
+.quick-backdrop {
+    position: fixed;
+    inset: 0 0 calc(56px + env(safe-area-inset-bottom));
+    z-index: 4;
+}
+.quick-panel--sheet {
+    position: fixed;
+    inset: auto 0 calc(56px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: auto;
+    max-height: 60vh;
+    padding: 0;
+    overflow: hidden;
+    border-radius: var(--d-radius-lg) var(--d-radius-lg) 0 0;
+    border-top: 1px solid var(--d-divider);
+}
+.quick-sheet-head {
+    display: flex;
+    flex: none;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--d-space-2);
+    padding: 8px var(--d-space-4) var(--d-space-2);
+    /* The finger drags the sheet here instead of scrolling the page. */
+    touch-action: none;
+    cursor: grab;
+}
+.quick-sheet-grip {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--d-interactive);
+}
+.quick-sheet-title {
+    align-self: flex-start;
+    font-weight: var(--d-weight-heading);
+}
+.quick-sheet-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--d-space-3);
+    min-height: 0;
+    padding: 0 var(--d-space-4) var(--d-space-4);
+    overflow-y: auto;
 }
 /* In the menu itself: the field stands there without its label (the screen reader keeps it) and without the room a row needs. */
 .quick-inline {

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addBlock } from './helpers';
+import { addBlock, openSlides } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -246,14 +246,15 @@ test('the arrows hop between the buttons of the menu and do not move the block (
     expect(await frame.boundingBox()).toEqual(before);
 });
 
-test('a window narrower than 48rem has no short menu yet (Plan.md 79, C1; the phone bar comes with C2)', async ({ page }) => {
+test('a window narrower than 48rem has no short menu over the block: it stands in the bar at the bottom (Plan.md 79, C1, C2)', async ({ page }) => {
     await page.setViewportSize({ width: 700, height: 900 });
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
-    await page.getByTestId('add-slide').click();
+    await (await openSlides(page)).getByTestId('add-slide').click();
     await addBlock(page, 'shape');
-    await expect(page.getByTestId('block-inspector')).toBeAttached();
-    await expect(page.getByTestId('quick-menu')).toHaveCount(0);
+    await expect(page.locator('[data-quick-host]').getByTestId('quick-menu')).toHaveCount(0);
+    await expect(page.getByTestId('phone-bar').getByTestId('quick-menu')).toBeVisible();
+    await expect(page.getByTestId('quick-menu')).toHaveCount(1);
 });
 
 /** The text as the stage draws it (the thumbnails of the slide list draw it too). */

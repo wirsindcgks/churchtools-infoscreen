@@ -211,12 +211,9 @@ test.describe('on a phone', () => {
     test('the editor stacks slides, stage and inspector', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
-        const [slides, stage] = await Promise.all([
-            page.getByTestId('slide-item').first().boundingBox(),
-            page.locator('.editor-stage').boundingBox(),
-        ]);
-        expect(stage!.y).toBeGreaterThan(slides!.y); // stage below the slides, not beside them
+        await expect(page.getByTestId('phone-slides')).toContainText('von 3');
+        const [bar, stage] = await Promise.all([page.getByTestId('phone-bar').boundingBox(), page.locator('.editor-stage').boundingBox()]);
+        expect(bar!.y).toBeGreaterThan(stage!.y); // the bar below the stage, not beside it; the slides are a sheet
         expect(stage!.width).toBeGreaterThan(300);
         expect(stage!.height).toBeGreaterThan(150);
         await expectNoSidewaysScroll(page);

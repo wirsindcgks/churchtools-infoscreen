@@ -16,34 +16,21 @@ import { vTip } from './tip';
 
 const { confirm } = useConfirm();
 
+/**
+ * `sheet`: the list stands in the sheet of a phone (Plan.md 79, C2) – as a grid of two columns with bigger pictures,
+ * without the buttons of the chosen one and without sorting, which `useSortable` does not carry in a grid.
+ */
+const props = defineProps<{ sheet?: boolean }>();
 const emit = defineEmits<{ collapse: [] }>();
 const editor = useEditorStore();
 /** The preview's stage context: paged lists report their pages there (Plan.md, 23). */
 const stage = useStageContext();
 const THUMB_WIDTH = 176;
-/**
- * On a phone the row is one line tall instead of a filmstrip beside the stage
- * (Plan.md 44). Shrunk again after the second phone test: 64 px still left
- * only three-and-a-bit tiles on screen at once (Plan.md 44).
- */
-const THUMB_HEIGHT_PHONE = 36;
-/** A touch target stays reachable even for a portrait screen's narrow thumbnail (Plan.md 44). */
-const PHONE_TILE_MIN_WIDTH = 56;
-
 /** How long the slide really runs: longer than set when a paged list needs the time. */
 function runs(slide: SlideDoc): { seconds: number; longer: boolean } {
     const seconds = slideSeconds(slide, stage.pages ?? {});
     return { seconds, longer: seconds > slide.durationSeconds };
 }
-
-/** Reactive, unlike a CSS media query alone: the thumbnail's own size follows it in script. */
-const phoneQuery = window.matchMedia('(max-width: 48rem)');
-const phone = ref(phoneQuery.matches);
-function onPhoneChange(event: MediaQueryListEvent): void {
-    phone.value = event.matches;
-}
-phoneQuery.addEventListener('change', onPhoneChange);
-onBeforeUnmount(() => phoneQuery.removeEventListener('change', onPhoneChange));
 
 /**
  * The room the list really has. A scrollbar that takes space – a mouse on a Mac, most of Windows – narrows
@@ -56,65 +43,35 @@ const listWidth = ref(0);
 const NUMBER_COLUMN = 24;
 const TILE_CHROME = 2 * (8 + 6 + 2) + NUMBER_COLUMN;
 const THUMB_MIN_WIDTH = 96;
+/** The sheet's grid: the list's side padding on both sides and the gap between the two columns. */
+const SHEET_PADDING = 2 * 16;
+const SHEET_GAP = 12;
 let listObserver: ResizeObserver | undefined;
 onMounted(() => {
     if (!list.value || typeof ResizeObserver === 'undefined') return;
-    listObserver = new ResizeObserver(() => (listWidth.value = list.value?.clientWidth ?? 0));
+    // Measured a frame later: the pictures follow the width, and their height resizes the list again within the same frame.
+    listObserver = new ResizeObserver(() => requestAnimationFrame(() => (listWidth.value = list.value?.clientWidth ?? 0)));
     listObserver.observe(list.value);
 });
 onBeforeUnmount(() => listObserver?.disconnect());
 
 const thumb = computed(() => {
-    if (phone.value) {
-        const height = THUMB_HEIGHT_PHONE;
-        const width = Math.round((height * editor.stage.width) / editor.stage.height);
-        return { width, height, fit: fitStage({ width, height }, editor.stage) };
-    }
     const room = listWidth.value > 0 ? Math.max(THUMB_MIN_WIDTH, listWidth.value - TILE_CHROME) : THUMB_WIDTH;
-    const width = Math.min(THUMB_WIDTH, room);
+    const width = props.sheet
+        ? Math.floor(((listWidth.value || 340) - SHEET_PADDING - SHEET_GAP) / 2)
+        : Math.min(THUMB_WIDTH, room);
     const height = Math.round((width * editor.stage.height) / editor.stage.width);
     return { width, height, fit: fitStage({ width, height }, editor.stage) };
 });
-/**
- * The tile is exactly as wide as its thumbnail on a phone – the name that
- * used to widen it is gone there (Plan.md 44, second phone test); only a
- * portrait thumbnail's narrow width still needs a floor to stay tappable.
- */
-const tileWidth = computed(() => (phone.value ? Math.max(PHONE_TILE_MIN_WIDTH, thumb.value.width) : null));
-
-/** Whether the row is open, kept per viewer; without storage it simply defaults to open (Plan.md 44). */
-const OPEN_KEY = 'infoscreen-designer:slides-open';
-function storedOpen(): boolean {
-    try {
-        return window.localStorage.getItem(OPEN_KEY) !== '0';
-    } catch {
-        return true;
-    }
-}
-const open = ref(storedOpen());
-function toggleOpen(): void {
-    open.value = !open.value;
-    try {
-        window.localStorage.setItem(OPEN_KEY, open.value ? '1' : '0');
-    } catch {
-        // Private window or blocked storage: it just opens by default again next time.
-    }
-}
-
-const selectedIndex = computed(() => editor.slides.findIndex((s) => s.id === editor.slide?.id) + 1);
 
 const importing = ref(false);
 
-/**
- * Dragging replaces the browser's own drag and drop, which a finger cannot use (Plan.md 79, D7): the handle for the
- * mouse, a held tile for the finger – and on a phone's narrow row, where there is no room for a handle, for the mouse too.
- */
+/** Dragging replaces the browser's own drag and drop, which a finger cannot use (Plan.md 79, D7): the handle for the mouse, a held tile for the finger. */
 useSortable({
     container: list,
     onMove: (from, to) => editor.moveSlide(from, to),
-    horizontal: () => phone.value,
+    fixed: () => !!props.sheet,
     touchOnRow: true,
-    mouseOnRow: () => phone.value,
 });
 
 /** What the chain symbol says: the other playlists showing the slide (Plan.md 49). */
@@ -125,20 +82,16 @@ function linkedLabel(id: string): string {
 async function remove(id: string, name: string): Promise<void> {
     if (await confirm({ message: t.editor.slideList.confirmRemove(name), confirmLabel: t.common.remove, danger: true })) editor.removeSlide(id);
 }
-
-function removeCurrent(): void {
-    if (editor.slide) remove(editor.slide.id, editor.slide.name);
-}
 </script>
 
 <template>
-    <aside class="slide-list">
-        <header class="header-desktop">
+    <aside class="slide-list" :class="{ 'slide-list--sheet': sheet }">
+        <header v-if="!sheet" class="header-desktop">
             <span class="title">
                 <strong>{{ t.editor.slideList.title }}</strong>
                 <span class="count">{{ editor.slides.length }}</span>
             </span>
-            <!-- Over 75rem the column folds into a rail, below it the drawer closes (Plan.md 45); the phone has its own header. -->
+            <!-- Over 75rem the column folds into a rail, below it the drawer closes (Plan.md 45). -->
             <button
                 v-tip="t.editor.slideList.collapse"
                 type="button"
@@ -150,49 +103,7 @@ function removeCurrent(): void {
                 <Icon name="chevron-down" :size="16" class="collapse-icon" />
             </button>
         </header>
-        <!-- Phone: a collapsible row instead of a header, with the current slide's actions beside it (Plan.md 44). -->
-        <div class="header-phone">
-            <button
-                type="button"
-                class="toggle"
-                data-testid="slides-toggle"
-                :aria-expanded="open"
-                aria-controls="slide-list-ol"
-                @click="toggleOpen"
-            >
-                <span class="toggle-label">
-                    {{ t.editor.slideList.title }} <span class="count">{{ editor.slides.length }}</span>
-                    <span v-if="!open && editor.slide" class="current" data-testid="slides-current">
-                        · {{ selectedIndex }}. {{ editor.slide.name }}
-                    </span>
-                </span>
-                <Icon name="chevron-down" :size="16" :class="['toggle-chevron', { open }]" />
-            </button>
-            <button
-                v-tip="t.editor.slideList.duplicateSlide"
-                class="d-btn d-btn--icon"
-                type="button"
-                :aria-label="t.editor.slideList.duplicateSlide"
-                data-testid="slide-duplicate-phone"
-                :disabled="!editor.slide"
-                @click="editor.duplicateCurrentSlide()"
-            >
-                <Icon name="duplicate" :size="16" />
-            </button>
-            <button
-                v-tip="t.editor.slideList.removeSlide"
-                class="d-btn d-btn--icon"
-                type="button"
-                :aria-label="t.editor.slideList.removeSlide"
-                data-testid="slide-remove-phone"
-                :disabled="!editor.slide || editor.slides.length <= 1"
-                @click="removeCurrent"
-            >
-                <Icon name="trash" :size="16" class="danger-icon" />
-            </button>
-        </div>
-        <!-- Collapsed only on a phone: CSS, not v-show – a desktop-wide window always shows the slides. -->
-        <ol id="slide-list-ol" ref="list" :class="{ collapsed: !open }">
+        <ol id="slide-list-ol" ref="list">
             <li
                 v-for="(slide, index) in editor.slides"
                 :key="slide.id"
@@ -200,7 +111,6 @@ function removeCurrent(): void {
                     active: slide.id === editor.slide?.id,
                     disabled: !slide.enabled,
                 }"
-                :style="{ width: tileWidth ? `${tileWidth}px` : undefined }"
                 :title="`${index + 1}. ${slide.name}`"
                 :aria-label="`${index + 1}. ${slide.name}`"
                 data-sort-item
@@ -229,8 +139,6 @@ function removeCurrent(): void {
                 </div>
                 <div class="meta">
                     <span class="name">{{ slide.name }}</span>
-                    <!-- On a phone the name sits in the header and the sheet's bar already; here it would not fit next to the duration (Plan.md 44, second phone test). -->
-                    <span class="index-num">{{ index + 1 }} ·</span>
                     <span
                         class="duration"
                         :class="{ longer: runs(slide).longer }"
@@ -240,7 +148,7 @@ function removeCurrent(): void {
                         <template v-if="runs(slide).longer">{{ slide.durationSeconds }} → </template>{{ runs(slide).seconds }} s{{ slide.enabled ? '' : t.editor.slideList.off }}
                     </span>
                 </div>
-                <div v-if="slide.id === editor.slide?.id" class="actions" @click.stop>
+                <div v-if="!sheet && slide.id === editor.slide?.id" class="actions" @click.stop>
                     <button
                         v-tip="t.editor.slideList.duplicate"
                         class="d-btn d-btn--icon"
@@ -262,12 +170,7 @@ function removeCurrent(): void {
                     </button>
                 </div>
             </li>
-            <!--
-                Where one looks for the next slide: below the last (Plan.md, Nächste Schritte 11). On a
-                phone both tiles shrink to icon-only, image-sized squares beside the slides themselves
-                instead of stacking full-width below them (Plan.md 44, second phone test) – the same two
-                buttons, only restyled by the media query below, not duplicated.
-            -->
+            <!-- Where one looks for the next slide: below the last (Plan.md, Nächste Schritte 11); in the sheet a tile of the grid. -->
             <li class="add-item">
                 <button
                     class="add"
@@ -275,7 +178,7 @@ function removeCurrent(): void {
                     :title="t.editor.slideList.newSlide"
                     :aria-label="t.editor.slideList.newSlide"
                     data-testid="add-slide"
-                    :style="phone ? { width: `${tileWidth}px`, height: `${thumb.height}px` } : { minHeight: `${thumb.height}px` }"
+                    :style="{ minHeight: `${thumb.height}px` }"
                     @click="editor.addSlide()"
                 >
                     <Icon name="plus" :size="22" />
@@ -287,7 +190,6 @@ function removeCurrent(): void {
                     :title="t.editor.slideList.importTitle"
                     :aria-label="t.editor.slideList.importTitle"
                     data-testid="import-slides"
-                    :style="phone ? { width: `${tileWidth}px`, height: `${thumb.height}px` } : undefined"
                     @click="importing = true"
                 >
                     <Icon name="copy" :size="16" />
@@ -329,10 +231,6 @@ function removeCurrent(): void {
 }
 .collapse-icon {
     transform: rotate(90deg);
-}
-/* Phone: a collapsible row replaces the header (Plan.md 44); hidden at a desktop width. */
-.header-phone {
-    display: none;
 }
 ol {
     flex: 1;
@@ -501,11 +399,6 @@ li.disabled .thumb {
     white-space: nowrap;
     text-overflow: ellipsis;
 }
-/* Replaces `.name` on a phone, where the tile has no room left for it (Plan.md 44, second phone test). */
-.index-num {
-    display: none;
-    color: var(--d-text-muted);
-}
 .duration.longer {
     color: var(--d-accent-strong);
 }
@@ -525,155 +418,51 @@ li.disabled .thumb {
 .danger-icon {
     color: var(--d-danger);
 }
-/*
- * Phone: the slides become a row to swipe above the stage (Plan.md, 10), collapsible and
- * with smaller tiles, so it does not push the stage far down (Plan.md 44, feedback from the
- * phone after v0.2.9: the row alone took ~245 px).
- */
-@media (max-width: 48rem) {
-    .slide-list {
-        overflow: visible;
-        border-radius: 0;
-        background: none;
-        box-shadow: none;
-    }
-    .header-desktop {
-        display: none;
-    }
-    .header-phone {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        min-height: 44px;
-        padding: 2px var(--d-space-3);
-    }
-    /* Same look as the page menu's own button (`ModuleSidebar.vue`) – a frame makes it obvious this collapses (Plan.md 44, second phone test). */
-    .toggle {
-        display: flex;
-        flex: 1;
-        min-width: 0;
-        align-items: center;
-        justify-content: space-between;
-        gap: 6px;
-        padding: 0 10px;
-        border: 1px solid var(--d-divider);
-        border-radius: var(--d-radius-lg);
-        background: var(--d-surface);
-        color: var(--d-text);
-        font: inherit;
-        font-weight: var(--d-weight-heading);
-        text-align: left;
-        cursor: pointer;
-    }
-    .toggle:hover {
-        border-color: var(--d-interactive);
-    }
-    .toggle-label {
-        overflow: hidden;
-        min-width: 0;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-    .current {
-        font-weight: 400;
-        color: var(--d-text-muted);
-    }
-    .toggle-chevron {
-        flex: none;
-        transition: transform 0.15s;
-    }
-    .toggle-chevron.open {
-        transform: rotate(180deg);
-    }
-    /*
-     * No horizontal padding and no gap: at 390 px the three demo slides plus the two tiles
-     * (78 px each, landscape) already fill the row exactly – any padding or gap would force
-     * it to scroll (Plan.md 44, second phone test, „Ziel“).
-     */
-    ol {
-        display: flex;
-        align-items: flex-start;
-        gap: 6px;
-        padding: 6px 8px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        scrollbar-gutter: auto;
-    }
-    /*
-     * `min-width: 104px` is gone: the tile is exactly as wide as its thumbnail now (`tileWidth`
-     * in the script), padding and border are gone too, so nothing but the thumbnail itself
-     * decides the outer width – a border would otherwise widen the box even with
-     * `box-sizing: border-box`, because the thumbnail inside is not itself shrunk.
-     */
-    li {
-        display: block;
-        box-sizing: border-box;
-        flex: none;
-        padding: 0;
-        border: 0;
-    }
-    .lead {
-        display: none;
-    }
-    li.active .thumb {
-        outline: 0;
-    }
-    /* Outside the tile, into the gap: a frame inside would cover the small thumbnail. */
-    li.active {
-        outline: 2px solid var(--d-accent);
-        outline-offset: 3px;
-    }
-    /* The two tiles below sit side by side here instead of stacked full-width (Plan.md 44). */
-    li.add-item {
-        display: flex;
-        box-sizing: border-box;
-        flex: none;
-        gap: 6px;
-        padding: 0;
-    }
-    .thumb {
-        /* Centres a portrait thumbnail, which is narrower than the tile's own minimum width. */
-        margin: 0 auto;
-    }
-    .meta {
-        justify-content: flex-start;
-        gap: 2px;
-        margin-top: 3px;
-        overflow: hidden;
-        white-space: nowrap;
-    }
-    .name {
-        display: none;
-    }
-    .index-num {
-        display: inline;
-    }
-    /* Icon only, no label underneath – the name is reachable via `title`/`aria-label` instead. */
-    .add-label,
-    .import-label {
-        display: none;
-    }
-    .add {
-        padding: 0;
-    }
-    .import {
-        box-sizing: border-box;
-        margin-top: 0;
-        padding: 0;
-        border: 2px dashed var(--d-interactive);
-        border-radius: var(--d-radius);
-    }
-    .import:hover {
-        border-color: var(--d-accent);
-    }
-    .actions {
-        display: none;
-    }
-    li + li {
-        margin-top: 0;
-    }
-    ol.collapsed {
-        display: none;
-    }
+/* In the sheet of a phone (Plan.md 79, C2): two columns of pictures, name and time below, no number and no handle. */
+.slide-list--sheet {
+    flex: 1;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+}
+.slide-list--sheet ol {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 16px 12px;
+    padding: 4px 16px 16px;
+    /* Kept free as in the column: a scrollbar that comes and goes would resize the pictures again and again. */
+    scrollbar-gutter: stable;
+}
+.slide-list--sheet li {
+    display: block;
+    padding: 0;
+    border: 0;
+}
+.slide-list--sheet li:hover {
+    background: none;
+}
+.slide-list--sheet li + li {
+    margin-top: 0;
+}
+.slide-list--sheet .lead {
+    display: none;
+}
+.slide-list--sheet .meta {
+    justify-content: space-between;
+    margin-top: 6px;
+}
+.slide-list--sheet li.add-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.slide-list--sheet .import {
+    margin-top: 0;
+    min-height: 44px;
+    text-align: center;
+}
+.slide-list--sheet .add {
+    padding: 8px;
 }
 </style>

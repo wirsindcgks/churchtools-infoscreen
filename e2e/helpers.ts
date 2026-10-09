@@ -80,3 +80,42 @@ export async function dragRow(page: Page, grip: Locator, target: Locator, horizo
     await page.mouse.move(start.x + (horizontal ? reach : 0), start.y + (horizontal ? 0 : reach), { steps: 12 });
     await page.mouse.up();
 }
+
+/**
+ * Opens the big sheet of the inspector on a phone (Plan.md 79, C2): with a block chosen through "⋯ → Alle Einstellungen" of its
+ * bar, else through "⋯ → Folie bearbeiten" of the slide's bar. The sheet does not open by itself there any more.
+ */
+export async function openInspector(page: Page): Promise<void> {
+    const sheet = page.getByTestId('inspector-sheet');
+    if (await sheet.evaluate((element) => element.classList.contains('open'))) return;
+    const bar = page.getByTestId('phone-bar');
+    if (await bar.getByTestId('quick-menu').count()) {
+        await bar.getByTestId('quick-more').click();
+        await bar.getByTestId('quick-all-settings').click();
+    } else {
+        await bar.getByTestId('phone-slide-more').click();
+        await page.getByTestId('phone-slide-edit').click();
+    }
+    await expect(sheet).toHaveClass(/open/);
+}
+
+/** Opens the sheet of slides on a phone ("Folie 2 von 5" in the bar); a tap on a slide in it chooses it and closes it. */
+export async function openSlides(page: Page): Promise<Locator> {
+    await page.getByTestId('phone-slides').click();
+    const sheet = page.getByTestId('slides-sheet');
+    await expect(sheet).toBeVisible();
+    return sheet;
+}
+
+/** The editor stands with its slides: three in the list, or "Folie 1 von 3" in the bar of a phone, where the list is a sheet. */
+export async function expectSlides(page: Page, count = 3): Promise<void> {
+    const phone = page.getByTestId('phone-slides');
+    await expect(page.getByTestId('slide-item').first().or(phone)).toBeAttached();
+    if (await phone.count()) await expect(phone).toContainText(`von ${count}`);
+    else await expect(page.getByTestId('slide-item')).toHaveCount(count);
+}
+
+/** On a phone the inspector is a sheet that opens on request (Plan.md 79, C2); elsewhere it is there or opens by itself. */
+export async function openInspectorOnPhone(page: Page): Promise<void> {
+    if (await page.getByTestId('phone-bar').count()) await openInspector(page);
+}

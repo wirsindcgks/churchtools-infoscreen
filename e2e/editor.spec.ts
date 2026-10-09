@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { addBlock, dragRow, nudgeRow, chooseFont, chosen, choose, customColor, openSection } from './helpers';
+import { addBlock, dragRow, nudgeRow, chooseFont, chosen, choose, customColor, openInspector, openSection, openSlides } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -349,7 +349,7 @@ test.describe('with a finger, in both browsers', () => {
     test('the header fits in one line, and "…" replaces Vorschau/Player (Plan.md 44, M2)', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('phone-slides')).toContainText('von 3');
         const bar = (await page.locator('.d-appbar').boundingBox())!;
         expect(bar.height).toBeLessThanOrEqual(100);
         await expect(page.getByTestId('save')).toBeVisible();
@@ -368,10 +368,10 @@ test.describe('with a finger, in both browsers', () => {
         await expect(page.getByTestId('playlist-preview')).toHaveCount(0);
     });
 
-    test('"+ Baustein" opens a sheet with every block, and the inspector opens as its own sheet (Plan.md 44, M3, M4)', async ({ page }) => {
+    test('"+ Baustein" opens a sheet with every block, and the inspector is its own sheet on request (Plan.md 44, M3, M4; 79, C2)', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('phone-slides')).toContainText('von 3');
 
         await page.getByTestId('add-block-menu').click();
         const sheet = page.getByTestId('block-sheet');
@@ -380,9 +380,11 @@ test.describe('with a finger, in both browsers', () => {
         await sheet.getByTestId('sheet-add-qr').click();
         await expect(sheet).toHaveCount(0);
 
+        // The new block is chosen and its menu stands in the bar; the big sheet stays shut until it is asked for.
         const inspectorSheet = page.getByTestId('inspector-sheet');
-        await expect(inspectorSheet).toHaveClass(/open/);
-        await expect(page.getByTestId('inspector-sheet-toggle')).toContainText('Baustein: QR-Code');
+        await expect(page.getByTestId('phone-bar').getByTestId('quick-kind')).toHaveAttribute('aria-label', 'QR-Code');
+        await expect(inspectorSheet).toBeHidden();
+        await openInspector(page);
 
         await openSection(page, 'measures');
         await page.getByTestId('inspector-x').fill('100');
@@ -402,100 +404,81 @@ test.describe('with a finger, in both browsers', () => {
             .toBe(true);
         await expectNoSidewaysScroll(page);
 
-        await page.getByTestId('inspector-sheet-toggle').click();
-        await expect(inspectorSheet).not.toHaveClass(/open/);
+        await page.getByTestId('inspector-sheet-close').click();
+        await expect(inspectorSheet).toBeHidden();
         await expect(page.getByTestId('block-inspector')).toBeHidden();
-        await expect(page.getByTestId('inspector-sheet-toggle')).toBeVisible();
+        await expect(page.getByTestId('phone-bar')).toBeVisible();
     });
 
-    test('Escape closes the "+ Baustein" sheet without deselecting the block (Plan.md 44, M3)', async ({ page }) => {
+    test('Escape closes the "+ Baustein" sheet and leaves the bar as it was (Plan.md 44, M3)', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
-        await page.getByTestId('add-block-menu').click();
-        await page.getByTestId('sheet-add-text').click();
-        await expect(page.getByTestId('inspector-sheet-toggle')).toContainText('Baustein: Text');
-
-        // The open inspector sheet lies over the lower part of the page – collapse it to reach "+ Baustein" again.
-        await page.getByTestId('inspector-sheet-toggle').click();
+        await expect(page.getByTestId('phone-slides')).toContainText('von 3');
         await page.getByTestId('add-block-menu').click();
         await expect(page.getByTestId('block-sheet')).toBeVisible();
         await page.keyboard.press('Escape');
         await expect(page.getByTestId('block-sheet')).toHaveCount(0);
-        await expect(page.getByTestId('inspector-sheet-toggle')).toContainText('Baustein: Text'); // still selected
+        await expect(page.getByTestId('phone-slides')).toBeVisible();
+
+        // With a block chosen the bar is its menu; Escape ends the choice, and the slide's bar is back.
+        await page.getByTestId('add-block-menu').click();
+        await page.getByTestId('sheet-add-text').click();
+        await expect(page.getByTestId('phone-bar').getByTestId('quick-menu')).toBeVisible();
+        await page.keyboard.press('Escape');
+        await expect(page.getByTestId('phone-slides')).toBeVisible();
     });
 
-    test('the slide row is collapsible and small on a phone (Plan.md 44)', async ({ page }) => {
+    test('the slides are a sheet from the bar, not a row above the stage (Plan.md 44; 79, C2)', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('phone-slides')).toContainText('Folie 1 von 3');
+        await expect(page.getByTestId('slide-item')).toHaveCount(0);
+        await expectNoSidewaysScroll(page);
 
-        // Open by default: at most 120 px tall, and the thumbnail is 36 px (Plan.md 44, second phone test).
-        let listBox = (await page.locator('.slide-list').boundingBox())!;
-        expect(listBox.height).toBeLessThanOrEqual(120);
-        const thumbBox = (await page.locator('.thumb').first().boundingBox())!;
-        expect(Math.abs(thumbBox.height - 36)).toBeLessThanOrEqual(1);
+        const sheet = await openSlides(page);
+        await expect(sheet.getByTestId('slide-item')).toHaveCount(3);
+        await expectNoSidewaysScroll(page);
+        const grid = (await sheet.locator('ol').boundingBox())!;
+        expect(grid.x + grid.width).toBeLessThanOrEqual(390);
+        await page.keyboard.press('Escape');
 
-        // Three slides and both tiles fit side by side within the phone's width; more would scroll within the row.
-        const tiles = await Promise.all([
-            ...(await page.getByTestId('slide-item').all()).map((t) => t.boundingBox()),
-            page.getByTestId('add-slide').boundingBox(),
-            page.getByTestId('import-slides').boundingBox(),
-        ]);
-        for (let i = 1; i < tiles.length; i++) expect(tiles[i]!.x).toBeGreaterThan(tiles[i - 1]!.x + tiles[i - 1]!.width);
-        expect(tiles.at(-1)!.x + tiles.at(-1)!.width).toBeLessThanOrEqual(390);
-        await expectNoSidewaysScroll(page); // the row scrolls within itself; the page around it does not
-
-        // Collapsed: the row is gone, the toggle names the selected slide, at most 52 px tall.
-        await page.getByTestId('slides-toggle').click();
-        await expect(page.getByTestId('slide-item').first()).toBeHidden();
-        await expect(page.getByTestId('slides-current')).toContainText('Willkommen');
-        listBox = (await page.locator('.slide-list').boundingBox())!;
-        expect(listBox.height).toBeLessThanOrEqual(52);
-
-        // The choice survives a reload – kept per viewer in localStorage.
-        await page.reload();
-        await expect(page.getByTestId('leave-editor')).toBeVisible();
-        await expect(page.getByTestId('slides-toggle')).toHaveAttribute('aria-expanded', 'false');
-        await expect(page.getByTestId('slide-item').first()).toBeHidden();
-
-        // Collapsing is a phone thing: a window pulled wide again shows the slides (seen by the user, v0.2.10).
+        // The slides belong to the phone: a window pulled wide again shows its column, a narrow one the bar.
         await page.setViewportSize({ width: 1440, height: 900 });
         await expect(page.getByTestId('slide-item')).toHaveCount(3);
         await expect(page.getByTestId('slide-item').first()).toBeVisible();
+        await expect(page.getByTestId('phone-bar')).toHaveCount(0);
         await page.setViewportSize({ width: 390, height: 844 });
-        await expect(page.getByTestId('slide-item').first()).toBeHidden();
-
-        await page.getByTestId('slides-toggle').click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
-        await expectNoSidewaysScroll(page);
+        await expect(page.getByTestId('slide-item')).toHaveCount(0);
+        await expect(page.getByTestId('phone-bar')).toBeVisible();
     });
 
-    test('duplicate and remove the current slide from the phone header (Plan.md 44)', async ({ page }) => {
+    test('duplicate and remove the current slide from the phone bar (Plan.md 44; 79, C2)', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('phone-slides')).toContainText('von 3');
 
+        await page.getByTestId('phone-slide-more').click();
         await page.getByTestId('slide-duplicate-phone').click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(4);
+        await expect(page.getByTestId('phone-slides')).toContainText('von 4');
 
+        await page.getByTestId('phone-slide-more').click();
         await page.getByTestId('slide-remove-phone').click();
         // Our own question with a red "Entfernen" (Plan.md 79, B3).
         await expect(page.getByTestId('confirm-dialog')).toContainText('aus dieser Präsentation entfernen?');
         await expect(page.getByTestId('confirm-ok')).toHaveText('Entfernen');
         await page.getByTestId('confirm-ok').click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('phone-slides')).toContainText('von 3');
     });
 
     test('with the sheet open only the stage stands above it (Plan.md 44, second phone test)', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('phone-slides')).toContainText('von 3');
 
         await page.getByTestId('add-block-menu').click();
         await page.getByTestId('sheet-add-text').click();
-        await expect(page.getByTestId('inspector-sheet')).toHaveClass(/open/);
-        await expect(page.getByTestId('slide-item').first()).not.toBeVisible();
+        await openInspector(page);
+        await expect(page.getByTestId('phone-bar')).toHaveCount(0);
         await expect(page.getByTestId('add-block-menu')).not.toBeVisible();
         await expect(page.locator('.editor-stage')).toBeVisible();
         const sheetBox = (await page.getByTestId('inspector-sheet').boundingBox())!;
@@ -507,20 +490,19 @@ test.describe('with a finger, in both browsers', () => {
             })
             .toBe(true);
 
-        // Tapping the bar closes the sheet again – both come back.
-        await page.getByTestId('inspector-sheet-toggle').click();
-        await expect(page.getByTestId('slide-item').first()).toBeVisible();
-        await expect(page.getByTestId('add-block-menu')).toBeVisible();
+        // Its own button closes the sheet again – the bar comes back, with the menu of the chosen block.
+        await page.getByTestId('inspector-sheet-close').click();
+        await expect(page.getByTestId('phone-bar').getByTestId('quick-menu')).toBeVisible();
     });
 
     test('on a low window the sheet takes at most half, and the whole slide shrinks to fit above it (Plan.md 44, third phone test)', async ({ page }) => {
         await page.setViewportSize({ width: 390, height: 560 });
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('phone-slides')).toContainText('von 3');
 
-        // Opened from its bar, without a block: the slide's own settings.
-        await page.getByTestId('inspector-sheet-toggle').click();
+        // Without a block: the slide's own settings.
+        await openInspector(page);
         await expect(page.getByTestId('slide-inspector')).toBeVisible();
         const sheetBox = (await page.getByTestId('inspector-sheet').boundingBox())!;
         expect(sheetBox.height).toBeLessThanOrEqual(560 * 0.5 + 1);
@@ -535,30 +517,24 @@ test.describe('with a finger, in both browsers', () => {
         await page.screenshot({ path: 'test-results/sheet-low-window.png' });
     });
 
-    test('a drag that starts by choosing a block only opens the sheet once the finger lifts (Plan.md 44, second phone test)', async ({ page }) => {
+    test('choosing a block and dragging it leaves the big sheet shut, and the block moves (Plan.md 44, second phone test; 79, C2)', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('phone-slides')).toContainText('von 3');
 
         const frame = page.getByTestId('frame-text').first();
         const box = (await frame.boundingBox())!;
-        // The block's stage x before the drag – read from its screen position, as in the snap test above,
-        // because the inspector (and with it `inspector-x`) is not even in the DOM's visible part yet.
-        const stage = (await page.locator('.editor-stage .stage').boundingBox())!;
-        const scale = stage.width / 1920;
-        const beforeX = (box.x - stage.x) / scale;
-
         await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
         await page.mouse.down();
         await page.mouse.move(box.x + box.width / 2 + 60, box.y + box.height / 2, { steps: 5 });
-        // Mid-drag: the block is chosen, but the sheet must not have opened and shoved the stage around yet.
-        await expect(page.getByTestId('inspector-sheet-toggle')).toContainText('Baustein: Text');
-        await expect(page.getByTestId('inspector-sheet')).not.toHaveClass(/open/);
+        // Mid-drag the block is chosen and its menu stands in the bar; nothing moves the stage around.
+        await expect(page.getByTestId('phone-bar').getByTestId('quick-menu')).toBeVisible();
+        await expect(page.getByTestId('inspector-sheet')).toBeHidden();
 
         await page.mouse.up();
-        await expect(page.getByTestId('inspector-sheet')).toHaveClass(/open/);
-        const afterX = Number(await page.getByTestId('inspector-x').inputValue());
-        expect(afterX).toBeGreaterThan(beforeX);
+        await expect(page.getByTestId('inspector-sheet')).toBeHidden();
+        await expect.poll(async () => (await frame.boundingBox())!.x).toBeGreaterThan(box.x + 40);
+        expect(Math.abs((await frame.boundingBox())!.y - box.y)).toBeLessThanOrEqual(1);
     });
 });
 
@@ -2168,13 +2144,14 @@ test.describe('on a phone (Plan.md 79)', () => {
     test('the empty slide fits the stage, and the inspector head has the four buttons as symbols with names', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
-        await page.getByTestId('add-slide').click();
+        await (await openSlides(page)).getByTestId('add-slide').click();
         const [stage, empty] = await Promise.all([page.locator('.editor-stage').boundingBox(), page.getByTestId('empty-slide').boundingBox()]);
         expect(empty!.x).toBeGreaterThanOrEqual(stage!.x - 1);
         expect(empty!.x + empty!.width).toBeLessThanOrEqual(stage!.x + stage!.width + 1);
         expect(empty!.y + empty!.height).toBeLessThanOrEqual(stage!.y + stage!.height + 1);
         await page.getByTestId('empty-slide-add').click();
         await page.getByTestId('sheet-add-text').click();
+        await openInspector(page);
         await expect(page.getByTestId('block-inspector')).toBeVisible();
         for (const [id, name] of [
             ['lock-toggle', 'Sperren'],
@@ -2252,47 +2229,21 @@ test.describe('sorting by dragging (Plan.md 79, D7)', () => {
 test.describe('sorting slides on a phone (Plan.md 79, D7)', () => {
     test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
-    test('a mouse takes a tile as a whole where there is no room for a handle', async ({ page }) => {
+    test('the sheet of slides has no handles: its grid is not sorted by dragging', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        const sheet = await openSlides(page);
+        await expect(sheet.getByTestId('slide-item')).toHaveCount(3);
+        await expect(sheet.getByTestId('slide-handle').first()).toBeHidden();
         const [a, b, c] = await slideNames(page);
-        await dragRow(page, page.getByTestId('slide-item').first(), page.getByTestId('slide-item').nth(2), true);
-        await expect.poll(() => slideNames(page)).toEqual([b, c, a]);
-    });
-
-    test('a finger scrolls the row until it has held a tile for 300 ms, then drags it', async ({ page, browserName }) => {
-        test.skip(browserName !== 'chromium', 'Touch events can be sent by the protocol in Chromium only');
-        await page.goto('./');
-        await page.getByTestId('open-editor').first().click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
-        const [a, b, c] = await slideNames(page);
-        const cdp = await page.context().newCDPSession(page);
-        const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', x: number, y: number) =>
-            cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
-        /** A finger path from the first tile to a little beyond the centre of the third, measured where they stand now. */
-        const path = async () => {
-            const first = (await page.getByTestId('slide-item').first().boundingBox())!;
-            const third = (await page.getByTestId('slide-item').nth(2).boundingBox())!;
-            const from = first.x + first.width / 2;
-            return { y: first.y + first.height / 2, from, to: third.x + third.width / 2 + 6 };
-        };
-
-        // Moving at once: the row scrolls (or stays), nothing is sorted.
-        let { y, from, to } = await path();
-        await touch('touchStart', from, y);
-        for (let i = 1; i <= 8; i++) await touch('touchMove', from + ((to - from) * i) / 8, y);
-        await touch('touchEnd', to, y);
+        const box = (await sheet.getByTestId('slide-item').first().boundingBox())!;
+        const target = (await sheet.getByTestId('slide-item').nth(2).boundingBox())!;
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2 + 10, { steps: 8 });
+        await page.mouse.up();
+        await expect(page.getByTestId('save-status')).toHaveText('Alles gespeichert');
         expect(await slideNames(page)).toEqual([a, b, c]);
-        await page.waitForTimeout(500); // the browser's own scroll gesture ends
-
-        // Held first: the tile comes loose and follows the finger.
-        ({ y, from, to } = await path());
-        await touch('touchStart', from, y);
-        await page.waitForTimeout(400);
-        for (let i = 1; i <= 8; i++) await touch('touchMove', from + ((to - from) * i) / 8, y);
-        await touch('touchEnd', to, y);
-        await expect.poll(() => slideNames(page)).toEqual([b, c, a]);
     });
 });
 
@@ -2321,7 +2272,7 @@ test.describe('the bar of the editor stands flush with the cards (third round of
         const page = await context.newPage();
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('phone-slides')).toContainText('von 3');
         const reach = await page.evaluate(() => ({
             bottom: document.querySelector('.editor')!.getBoundingClientRect().bottom + window.scrollY,
             inner: window.innerHeight,
