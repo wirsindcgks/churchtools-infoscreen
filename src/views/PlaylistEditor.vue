@@ -309,6 +309,10 @@ watch(moreMenuOpen, (open) => {
     if (open) document.addEventListener('pointerdown', closeMoreMenuOnOutside);
     else document.removeEventListener('pointerdown', closeMoreMenuOnOutside);
 });
+function redoFromMenu(): void {
+    moreMenuOpen.value = false;
+    editor.redo();
+}
 function openPreviewFromMenu(): void {
     moreMenuOpen.value = false;
     previewing.value = true;
@@ -679,7 +683,7 @@ function onKey(event: KeyboardEvent): void {
                 </button>
                 <button
                     v-tip="withKeys(t.editor.redo, KEYS.redo)"
-                    class="d-btn d-btn--icon d-btn--ghost"
+                    class="d-btn d-btn--icon d-btn--ghost redo-btn"
                     type="button"
                     :aria-label="t.editor.redo"
                     :disabled="!editor.canRedo"
@@ -733,6 +737,17 @@ function onKey(event: KeyboardEvent): void {
                         <Icon name="more" />
                     </button>
                     <div v-if="moreMenuOpen" class="more-menu-list" role="menu">
+                        <!-- Below 48rem "Wiederholen" lives here, so that the title and the draft status keep some room. -->
+                        <button
+                            role="menuitem"
+                            type="button"
+                            class="more-narrow"
+                            data-testid="more-redo"
+                            :disabled="!editor.canRedo"
+                            @click="redoFromMenu"
+                        >
+                            <Icon name="redo" :size="16" /> {{ t.editor.redo }}
+                        </button>
                         <button
                             role="menuitem"
                             type="button"
@@ -1319,7 +1334,8 @@ function onKey(event: KeyboardEvent): void {
         display: none;
     }
     .preview-btn,
-    .player-link {
+    .player-link,
+    .redo-btn {
         display: none;
     }
     .more-menu-list .more-narrow {

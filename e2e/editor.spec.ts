@@ -780,7 +780,7 @@ test('at 1440px the phone sheets are gone, the inspector stands beside the stage
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await expect(page.getByTestId('inspector-sheet-toggle')).not.toBeVisible();
-    await expect(page.getByTestId('editor-more')).not.toBeVisible();
+    await expect(page.getByTestId('editor-more')).toBeVisible(); // "Entwurf verwerfen" lives there on every width (Plan.md 79, E)
     await expect(page.getByTestId('add-block-menu')).toBeVisible(); // "+ Baustein" on every width (Plan.md 47)
     await expect(page.getByTestId('open-preview')).toBeVisible();
     // The phone-only slide row header and its actions are gone; the selected tile keeps its own (Plan.md 44).
