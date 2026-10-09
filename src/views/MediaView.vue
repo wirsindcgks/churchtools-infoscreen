@@ -46,6 +46,11 @@ const SHOW = [
     { key: 'unused', label: t.media.show.unused, title: t.media.show.unusedTitle },
 ] as const;
 
+/** The numbers on the segment: the files each option would show, whatever the search says. */
+const showOptions = computed(() =>
+    SHOW.map((s) => ({ ...s, count: items.value.filter((i) => s.key === 'all' || (s.key === 'used') === i.uses.length > 0).length })),
+);
+
 /** File ids picked by their checkbox. A file hidden by search or filter stays picked – and is named in the dialog. */
 const selected = ref<number[]>([]);
 const picks = computed(() => items.value.filter((i) => selected.value.includes(i.fileId)));
@@ -113,26 +118,27 @@ async function picked(): Promise<void> {
             </template>
         </PageHeader>
 
-        <SearchField
-            v-model="query"
-            :placeholder="t.media.searchPlaceholder"
-            :label="t.media.searchLabel"
-            testid="media-search"
-        />
+        <div class="d-toolbar">
+            <SearchField
+                v-model="query"
+                :placeholder="t.media.searchPlaceholder"
+                :label="t.media.searchLabel"
+                testid="media-search"
+            />
+            <FilterChips v-model="show" :options="showOptions" :label="t.media.show.label" testid="media-filter" />
+        </div>
 
         <GroupCard
             icon="image"
             :title="SHOW.find((s) => s.key === show)!.title"
             :count="t.media.count(shown.length)"
             heading-id="media-group"
+            hide-heading
             class="library"
             :class="{ 'library--drop': dragOver }"
             data-testid="media-library"
             v-on="dropZone"
         >
-            <template #tools>
-                <FilterChips v-model="show" :options="SHOW" :label="t.media.show.label" testid="media-filter" />
-            </template>
             <p v-if="busy" class="d-banner">{{ busy }}</p>
             <p v-if="problem" class="d-banner d-banner--error" role="alert">{{ problem }}</p>
             <p v-if="loading" class="empty">{{ t.media.loading }}</p>

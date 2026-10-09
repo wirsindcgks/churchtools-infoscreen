@@ -832,7 +832,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 <template>
     <ModulePage>
         <div class="setup">
-            <RouterLink v-if="page !== 'overview'" class="back" :to="{ name: 'setup' }" data-testid="settings-back">
+            <RouterLink v-if="page !== 'overview'" class="d-btn back" :to="{ name: 'setup' }" data-testid="settings-back">
                 <Icon name="back" :size="16" /> {{ t.common.settings }}
             </RouterLink>
             <PageHeader :icon="header.icon" :title="header.title" testid="setup-heading">
@@ -1237,21 +1237,8 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
     color: var(--d-text-muted);
 }
 .back {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
-    text-decoration: none;
-}
-.back:hover {
-    color: var(--d-text);
-    text-decoration: underline;
-}
-.back:focus-visible {
-    outline: 2px solid var(--d-accent);
-    outline-offset: 2px;
-    border-radius: var(--d-radius);
+    justify-self: start;
+    padding: 0 var(--d-space-3) 0 var(--d-space-2);
 }
 .card {
     display: grid;

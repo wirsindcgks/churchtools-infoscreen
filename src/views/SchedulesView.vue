@@ -212,6 +212,7 @@ onMounted(async () => {
                 :title="t.schedules.all"
                 :count="t.schedules.count(shown.length)"
                 heading-id="schedules-group"
+                hide-heading
             >
                 <ul v-if="shown.length" class="d-tiles">
                     <Tile

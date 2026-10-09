@@ -215,6 +215,7 @@ async function end(group: BannerGroup): Promise<void> {
                 :title="t.notices.running"
                 :count="t.notices.count(running.length)"
                 heading-id="notices-running"
+                :hide-heading="!expired.length"
             >
                 <ul v-if="running.length" class="d-tiles">
                     <Tile

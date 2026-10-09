@@ -249,6 +249,7 @@ async function remove(overview: ScreenOverview): Promise<void> {
                 :title="current.label"
                 :count="t.common.screenCount(shown.length)"
                 :heading-id="`group-${current.key}`"
+                hide-heading
             >
                 <div v-if="shown.length" class="d-tiles">
                     <ScreenCard
