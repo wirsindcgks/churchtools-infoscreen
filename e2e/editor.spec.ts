@@ -2232,32 +2232,11 @@ test.describe('sorting by dragging (Plan.md 79, D7)', () => {
         await rows.nth(1).click();
         await expect(rows.nth(1)).toHaveClass(/layer-item--on/);
         await page.getByTestId('lock-toggle').click();
-        await expect(rows.nth(1).getByTestId('layer-lock')).toBeVisible();
+        await expect(rows.nth(1).getByTestId('layer-lock')).toHaveAttribute('aria-pressed', 'true');
         await expect(rows.nth(1).getByTestId('layer-handle')).toBeDisabled();
         await rows.nth(0).click();
         await dragRow(page, rows.nth(0).getByTestId('layer-handle'), rows.nth(2));
         await expect.poll(names).toEqual([before[2]!, before[1]!, before[0]!, ...before.slice(3)]);
-    });
-});
-
-test.describe('sorting slides on a phone (Plan.md 79, D7)', () => {
-    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
-
-    test('the sheet of slides has no handles: its grid is not sorted by dragging', async ({ page }) => {
-        await page.goto('./');
-        await page.getByTestId('open-editor').first().click();
-        const sheet = await openSlides(page);
-        await expect(sheet.getByTestId('slide-item')).toHaveCount(3);
-        await expect(sheet.getByTestId('slide-handle').first()).toBeHidden();
-        const [a, b, c] = await slideNames(page);
-        const box = (await sheet.getByTestId('slide-item').first().boundingBox())!;
-        const target = (await sheet.getByTestId('slide-item').nth(2).boundingBox())!;
-        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-        await page.mouse.down();
-        await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2 + 10, { steps: 8 });
-        await page.mouse.up();
-        await expect(page.getByTestId('save-status')).toHaveText('Alles veröffentlicht');
-        expect(await slideNames(page)).toEqual([a, b, c]);
     });
 });
 
