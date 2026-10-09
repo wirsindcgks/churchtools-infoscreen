@@ -21,6 +21,7 @@ test('without a block the bar shows the slide; nothing stands above the stage an
     await openEditor(page);
     const bar = page.getByTestId('phone-bar');
     await expect(bar).toBeVisible();
+    await expect(page.getByTestId('phone-block-row')).toHaveCount(0);
     await expect(page.getByTestId('phone-slides')).toContainText('Folie 1 von 3');
     await expect(bar.getByTestId('add-block-menu')).toBeVisible();
     await expect(bar.getByTestId('phone-slide-more')).toBeVisible();
@@ -28,13 +29,13 @@ test('without a block the bar shows the slide; nothing stands above the stage an
     await expect(page.getByTestId('slide-item')).toHaveCount(0);
     await expect(page.getByTestId('slides-toggle')).toHaveCount(0);
     await expect(page.getByTestId('add-block-menu')).toHaveCount(1);
-    await page.screenshot({ path: 'test-results/c2-phone-slide.png' });
     await expect(page.getByTestId('grid-size')).toHaveCount(0);
     const [notice, stage] = await Promise.all([page.getByTestId('demo-notice-editor').boundingBox(), page.locator('.editor-stage').boundingBox()]);
     expect(stage!.y - (notice!.y + notice!.height)).toBeLessThanOrEqual(12); // the stage follows right on
-    // The bar is 56 px (plus the safe area), white, at the bottom edge.
+    // Without a block the bar is the one row of 56 px (plus the safe area) at the bottom edge.
     const box = (await bar.boundingBox())!;
     expect(box.height).toBeGreaterThanOrEqual(56);
+    expect(box.height).toBeLessThan(80);
     expect(Math.round(box.y + box.height)).toBe(844);
     await expectStageClear(page);
 });
@@ -50,10 +51,12 @@ test('choosing a block shows its menu in the bar; the big sheet stays shut and t
     await expect(page.getByTestId('inspector-sheet')).toBeHidden();
     await expect(page.getByTestId('inspector-sheet-toggle')).toBeHidden();
     await expectStageClear(page);
+    // Two rows of 56 px (plus the safe area) at the bottom edge.
+    expect(Math.round((await bar.boundingBox())!.height)).toBeGreaterThanOrEqual(112);
     // Every button of the bar is at least a fingertip.
     // Duplicate and delete live in "⋯" on a phone: the fields keep the room.
     await expect(menu.getByTestId('quick-duplicate')).toHaveCount(0);
-    for (const id of ['phone-back-to-slide', 'quick-more']) {
+    for (const id of ['quick-deselect', 'quick-more']) {
         const b = (await menu.getByTestId(id).boundingBox())!;
         expect(b.width).toBeGreaterThanOrEqual(44);
         expect(b.height).toBeGreaterThanOrEqual(44);
@@ -61,26 +64,46 @@ test('choosing a block shows its menu in the bar; the big sheet stays shut and t
     for (const chip of await menu.getByTestId('quick-chip').all()) expect((await chip.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     const full = (await bar.boundingBox())!;
     expect(full.x + full.width).toBeLessThanOrEqual(390);
-    await page.screenshot({ path: 'test-results/c2-phone-block.png' });
+    await page.screenshot({ path: 'test-results/c4c-phone-block.png' });
     await menu.getByTestId('quick-more').tap();
     await expect(menu.getByTestId('quick-duplicate')).toBeVisible();
     await expect(menu.getByTestId('quick-delete')).toBeVisible();
     await menu.getByTestId('quick-more').tap();
 });
 
-test('the left button of the bar lets go of the block and shows the slide again', async ({ page }) => {
+test('a block shows two rows; "Auswahl aufheben" lets go of it and leaves the slide row', async ({ page }) => {
     await openEditor(page);
     await page.getByTestId('frame-text').first().tap();
     const bar = page.getByTestId('phone-bar');
-    const back = bar.getByTestId('phone-back-to-slide');
-    await expect(back).toHaveAttribute('aria-label', 'Zurück zur Folie');
-    await expect(back).toContainText('Folie 1 von 3');
-    expect((await back.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    await expect(bar.getByTestId('phone-slides')).toHaveCount(0);
-    await page.screenshot({ path: 'test-results/c3-phone-back.png' });
-    await back.tap();
-    await expect(bar.getByTestId('phone-slides')).toBeVisible();
+    const slideRow = bar.getByTestId('phone-slide-row');
+    const blockRow = bar.getByTestId('phone-block-row');
+    await expect(slideRow).toBeVisible();
+    await expect(blockRow).toBeVisible();
+    await expect(bar.getByTestId('phone-slides')).toContainText('Folie 1 von 3');
+    await expect(bar.getByTestId('phone-back-to-slide')).toHaveCount(0);
+    const [upper, lower] = await Promise.all([blockRow.boundingBox(), slideRow.boundingBox()]);
+    expect(Math.round(upper!.y + upper!.height)).toBeLessThanOrEqual(Math.round(lower!.y));
+    expect(Math.round(upper!.height)).toBe(56);
+    const deselect = bar.getByTestId('quick-deselect');
+    await expect(deselect).toHaveAttribute('aria-label', 'Auswahl aufheben');
+    const d = (await deselect.boundingBox())!;
+    expect(d.width).toBeGreaterThanOrEqual(44);
+    expect(d.height).toBeGreaterThanOrEqual(44);
+    await deselect.tap();
+    await expect(blockRow).toHaveCount(0);
     await expect(bar.getByTestId('quick-menu')).toHaveCount(0);
+    await expect(bar.getByTestId('phone-slides')).toBeVisible();
+});
+
+test('with a block chosen the slide row still works: another slide drops the block and its row', async ({ page }) => {
+    await openEditor(page);
+    await page.getByTestId('frame-text').first().tap();
+    await expect(page.getByTestId('phone-block-row')).toBeVisible();
+    await expect(page.getByTestId('add-block-menu')).toBeEnabled();
+    const sheet = await openSlides(page);
+    await sheet.getByTestId('slide-item').nth(1).tap();
+    await expect(page.getByTestId('phone-slides')).toContainText('Folie 2 von 3');
+    await expect(page.getByTestId('phone-block-row')).toHaveCount(0);
 });
 
 test('a field opens as a sheet from below over the bar; a tap beside, a swipe down or Escape closes it', async ({ page }) => {
@@ -93,7 +116,7 @@ test('a field opens as a sheet from below over the bar; a tap beside, a swipe do
     await chip.tap();
     await expect(popover).toBeVisible();
     const box = (await popover.boundingBox())!;
-    const bar = (await page.getByTestId('phone-bar').boundingBox())!;
+    const bar = (await page.getByTestId('phone-block-row').boundingBox())!;
     expect(box.x).toBe(0);
     expect(box.width).toBe(390);
     expect(Math.round(box.y + box.height)).toBe(Math.round(bar.y));
@@ -102,7 +125,7 @@ test('a field opens as a sheet from below over the bar; a tap beside, a swipe do
     const grip = (await page.locator('.quick-sheet-grip').boundingBox())!;
     expect(Math.round(grip.width)).toBe(36);
     expect(Math.round(grip.height)).toBe(4);
-    await page.screenshot({ path: 'test-results/c2-phone-field.png' });
+    await page.screenshot({ path: 'test-results/c4c-phone-field.png' });
     // The block stays chosen and the big sheet shut.
     await expect(page.getByTestId('inspector-sheet')).toBeHidden();
 

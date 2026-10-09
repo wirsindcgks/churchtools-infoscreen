@@ -202,15 +202,15 @@ onBeforeUnmount(() => {
     top: auto;
     bottom: calc(100% + 8px);
 }
-/* The sheet of a phone's bar: full width over the bar, the grip and the label on top, the field scrolling under them. */
+/* The sheet of a phone's bar: full width over the bar (over its upper row, when a block is chosen), the grip and the label on top, the field scrolling under them. */
 .quick-backdrop {
     position: fixed;
-    inset: 0 0 calc(56px + env(safe-area-inset-bottom));
+    inset: 0 0 calc(var(--d-phone-bar, 56px) + env(safe-area-inset-bottom));
     z-index: 4;
 }
 .quick-panel--sheet {
     position: fixed;
-    inset: auto 0 calc(56px + env(safe-area-inset-bottom));
+    inset: auto 0 calc(var(--d-phone-bar, 56px) + env(safe-area-inset-bottom));
     display: flex;
     flex-direction: column;
     gap: 0;

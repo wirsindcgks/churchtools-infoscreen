@@ -25,13 +25,13 @@ function withContext(component: unknown, props: Record<string, unknown>) {
 }
 
 describe('calendar colours on badge and date tile', () => {
-    it('frames the badge in the colour itself, with a dot in it; the name keeps the text colour (Plan.md 79)', () => {
+    it('frames the badge in the colour itself, the name keeps the text colour (Plan.md 79)', () => {
         const wrapper = withContext(CalendarBadge, { name: 'Gottesdienst', color: 'black' });
         const style = wrapper.find('.badge').attributes('style');
         expect(style).toContain('border-color: color-mix(in srgb, black 60%, transparent)');
         expect(style).toContain('color-mix(in srgb, black 14%, transparent)');
         expect(style).not.toMatch(/(^|;)\s*color:/);
-        expect(wrapper.find('.dot').attributes('style')).toContain('background: black');
+        expect(wrapper.find('.dot').exists()).toBe(false);
         expect(wrapper.find('.name').text()).toBe('Gottesdienst');
     });
 

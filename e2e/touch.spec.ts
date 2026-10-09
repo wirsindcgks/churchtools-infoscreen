@@ -13,7 +13,7 @@ async function openEditor(page: Page): Promise<void> {
 
 /** A fresh, empty slide so nothing else stands on the stage. On a phone it is added from the sheet of slides. */
 async function openFreshSlide(page: Page): Promise<void> {
-    if (await page.getByTestId('phone-back-to-slide').count()) await page.getByTestId('phone-back-to-slide').tap();
+    if (await page.getByTestId('quick-deselect').count()) await page.getByTestId('quick-deselect').tap();
     if (await page.getByTestId('phone-bar').count()) {
         await page.getByTestId('phone-slides').tap();
         await page.getByTestId('add-slide').tap();
@@ -54,7 +54,7 @@ test.describe('on a phone', () => {
         await openEditor(page);
         await openFreshSlide(page);
         await addBlock(page, 'shape');
-        await page.getByTestId('phone-back-to-slide').tap();
+        await page.getByTestId('quick-deselect').tap();
         await expect(page.getByTestId('phone-slides')).toBeVisible();
         const frame = page.getByTestId('frame-shape');
         await expect(frame).toHaveCSS('touch-action', 'pan-x pan-y');
@@ -91,7 +91,7 @@ test.describe('on a phone', () => {
         await openEditor(page);
         await openFreshSlide(page);
         await addBlock(page, 'image');
-        await page.getByTestId('phone-back-to-slide').tap();
+        await page.getByTestId('quick-deselect').tap();
         const box = (await page.getByTestId('frame-image').boundingBox())!;
         const x = box.x + 10;
         const y = box.y + 10;
@@ -142,7 +142,7 @@ test.describe('on a phone', () => {
         await finger.up();
         await expect(page.getByTestId('zoom-reset')).toBeVisible();
         // The first finger of the zoom may have chosen a block; let it go.
-        if (await page.getByTestId('phone-back-to-slide').count()) await page.getByTestId('phone-back-to-slide').tap();
+        if (await page.getByTestId('quick-deselect').count()) await page.getByTestId('quick-deselect').tap();
         const before = (await stage.boundingBox())!;
         const blocks = await page.getByTestId('frame-text').first().evaluate((el) => (el as HTMLElement).style.left);
         // Over the middle of the host, wherever the zoom has put the blocks: an unchosen one or the empty stage – the stage moves.
@@ -159,17 +159,19 @@ test.describe('on a phone', () => {
         await openEditor(page);
         await openFreshSlide(page);
         await addBlock(page, 'shape');
-        await page.getByTestId('phone-back-to-slide').tap();
+        await page.getByTestId('quick-deselect').tap();
         const at = await center(page, 'frame-shape');
         const finger = await fingers(page);
         await finger.down(at);
         await page.waitForTimeout(700);
+        // The list of the bar opens over the finger; it lifts beside it, as a click on the list is no part of this gesture.
+        await finger.move({ x: 4, y: at.y });
         await finger.up();
         await expect(page.getByTestId('phone-bar').getByTestId('quick-more-list')).toBeVisible();
 
         // Copy it, then press on the empty stage: "Einfügen" appears and pastes there.
         await page.getByTestId('quick-copy').tap();
-        await page.getByTestId('phone-back-to-slide').tap();
+        await page.getByTestId('quick-deselect').tap();
         const stage = (await page.locator('.editor-stage .stage').first().boundingBox())!;
         const spot = { x: stage.x + stage.width - 30, y: stage.y + stage.height - 20 };
         await finger.down(spot);

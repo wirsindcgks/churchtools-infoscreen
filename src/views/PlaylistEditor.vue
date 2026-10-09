@@ -561,6 +561,7 @@ function onKey(event: KeyboardEvent): void {
             height: `calc(100vh - ${top}px)`,
             '--editor-top': `${top}px`,
             '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}`,
+            '--d-phone-bar': phone && editor.block ? '112px' : '56px',
             '--stage-max': stageMax === null ? undefined : `${stageMax}px`,
         }"
     >
@@ -1082,7 +1083,7 @@ function onKey(event: KeyboardEvent): void {
  */
 @media (max-width: 48rem), (min-width: 48.0625rem) and (max-width: 75rem) and (orientation: portrait) {
     .editor {
-        padding-bottom: calc(56px + env(safe-area-inset-bottom));
+        padding-bottom: calc(var(--d-phone-bar, 56px) + env(safe-area-inset-bottom));
     }
 
     /* Sheet: a 56 px bar, and the inspector itself only while open. */

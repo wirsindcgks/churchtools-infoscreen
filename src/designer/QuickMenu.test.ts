@@ -61,10 +61,12 @@ describe('QuickMenu (Plan.md 79, C1)', () => {
         expect((menu.element as HTMLElement).style.left).toBe('');
         expect(menu.classes()).toContain('quick-menu--bar');
         expect(wrapper.find('[data-testid="quick-kind"]').attributes('aria-label')).toBe('Uhr');
-        // Duplicate and delete stay in the bar; lock and unlock move into the list behind "⋯".
-        expect(wrapper.find('[data-testid="quick-duplicate"]').exists()).toBe(true);
+        // Duplicate, delete, lock and unlock move into the list behind "⋯"; "Auswahl aufheben" stays in the bar.
+        expect(wrapper.find('[data-testid="quick-deselect"]').attributes('aria-label')).toBe('Auswahl aufheben');
+        expect(wrapper.find('[data-testid="quick-duplicate"]').exists()).toBe(false);
         expect(wrapper.find('[data-testid="quick-lock"]').exists()).toBe(false);
         await wrapper.find('[data-testid="quick-more"]').trigger('click');
+        expect(wrapper.find('[data-testid="quick-duplicate"]').exists()).toBe(true);
         expect(wrapper.find('[data-testid="quick-lock"]').text()).toBe('Sperren');
         expect(wrapper.find('[data-testid="quick-all-settings"]').exists()).toBe(true);
         wrapper.unmount();

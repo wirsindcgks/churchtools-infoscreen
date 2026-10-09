@@ -4,7 +4,7 @@
  * the actions lock, duplicate, delete and "⋯". It stands in the host of the stage, outside the scaled stage, in screen pixels,
  * so text and buttons keep their size at every zoom. A locked block shows only "Entsperren" and "⋯".
  * `variant="bar"` (C2) is the same menu as the bar at the bottom of a phone: the block's symbol, the fields in a row to
- * scroll, then duplicate, delete and "⋯" – which also holds lock/unlock there. An open field is a sheet from below.
+ * scroll, then "⋯" (which also holds duplicate, delete and lock/unlock there) and "Auswahl aufheben". An open field is a sheet from below.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, reactive, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
@@ -172,9 +172,8 @@ defineExpose({ openFirst, openMore });
 
 /** The block is being written on the stage (Plan.md 79, C4): the menu keeps its fields and offers "Fertig" instead of the actions. */
 const writing = computed(() => editor.editingTextId === props.block.id);
-const slideIndex = computed(() => (editor.slide ? editor.slides.indexOf(editor.slide) + 1 : 0));
-/** The bar's way back to the slide: writing ends first, then the block is let go. */
-function backToSlide(): void {
+/** The bar's "Auswahl aufheben": writing ends first, then the block is let go. */
+function deselect(): void {
     if (editor.editingTextId) editor.endTextEdit();
     editor.selectBlock(null);
 }
@@ -200,23 +199,9 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
         @focusin="focusInside = true"
         @focusout="onFocusOut"
     >
-        <button
-            v-if="bar"
-            class="quick-back"
-            type="button"
-            :aria-label="t.quick.backToSlide"
-            data-testid="phone-back-to-slide"
-            data-quick-stop
-            @click="backToSlide"
-        >
-            <span class="quick-back-row">
-                <Icon name="chevron-down" :size="14" class="quick-back-chevron" />
-                <span class="quick-kind" role="img" :aria-label="BLOCK_LABELS[block.type]" data-testid="quick-kind">
-                    <Icon :name="BLOCK_ICONS[block.type]" :size="20" />
-                </span>
-            </span>
-            <span class="quick-back-slide">{{ t.editor.slideOf(slideIndex, editor.slides.length) }}</span>
-        </button>
+        <span v-if="bar" class="quick-kind" role="img" :aria-label="BLOCK_LABELS[block.type]" data-testid="quick-kind">
+            <Icon :name="BLOCK_ICONS[block.type]" :size="20" />
+        </span>
         <template v-if="!block.locked">
             <div ref="fields" class="quick-fields">
                 <component :is="BLOCK_INSPECTORS[block.type]" :block="block" />
@@ -355,6 +340,17 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                     </template>
                 </div>
             </div>
+            <button
+                v-if="bar"
+                class="d-btn d-btn--icon d-btn--ghost quick-action"
+                type="button"
+                :aria-label="t.quick.deselect"
+                data-testid="quick-deselect"
+                data-quick-stop
+                @click="deselect"
+            >
+                <Icon name="close" :size="20" />
+            </button>
         </div>
     </div>
 </template>
@@ -463,7 +459,7 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
     border: 0;
     border-top: 1px solid var(--d-divider);
 }
-/* The bar at the bottom of a phone (C2): one row of 56 px – symbol, fields to scroll, then the actions, each at least 44 × 44. */
+/* The bar at the bottom of a phone (C2): the upper row of 56 px – symbol, fields to scroll, then the actions and "Auswahl aufheben", each at least 44 × 44. */
 .quick-menu--bar {
     position: relative;
     z-index: auto;
@@ -474,39 +470,6 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
     border-radius: 0;
     background: none;
     box-shadow: none;
-}
-.quick-back {
-    display: flex;
-    flex: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-width: 44px;
-    height: 44px;
-    padding: 0 var(--d-space-1);
-    border: 0;
-    border-radius: var(--d-radius);
-    background: none;
-    color: var(--d-text-muted);
-    font: inherit;
-    cursor: pointer;
-}
-.quick-back:hover,
-.quick-back:focus-visible {
-    background: var(--d-panel);
-}
-.quick-back-row {
-    display: flex;
-    align-items: center;
-}
-/* The "‹": the chevron of the icon set, turned to point left. */
-.quick-back-chevron {
-    transform: rotate(90deg);
-}
-.quick-back-slide {
-    font-size: 10px;
-    line-height: 1;
-    white-space: nowrap;
 }
 .quick-kind {
     display: grid;

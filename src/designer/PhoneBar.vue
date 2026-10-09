@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * The one bar at the bottom of a phone (Plan.md 79, C2). Nothing chosen: the slide – "Folie 2 von 5" opens the sheet of
- * slides, "+ Baustein" the sheet of blocks, "⋯" holds what belongs to the slide. A block chosen: the short menu of the block
- * in its bar form (`QuickMenu`, `variant="bar"`). The sheets themselves belong to the editor; this bar only asks for them.
+ * The two rows at the bottom of a phone (Plan.md 79, C2). The lower one is always there: the slide – "Folie 2 von 5" opens the
+ * sheet of slides, "+ Baustein" the sheet of blocks, "⋯" holds what belongs to the slide. A block chosen adds the upper row:
+ * the short menu of the block in its bar form (`QuickMenu`, `variant="bar"`). The sheets themselves belong to the editor; this bar only asks for them.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
@@ -64,8 +64,10 @@ async function removeSlide(): Promise<void> {
 
 <template>
     <div class="phone-bar" :style="keyboard ? { bottom: `${keyboard}px` } : undefined" data-testid="phone-bar">
-        <QuickMenu v-if="editor.block" ref="quickMenu" :key="editor.block.id" :block="editor.block" variant="bar" @all-settings="emit('all-settings')" />
-        <template v-else>
+        <div v-if="editor.block" class="block-row" data-testid="phone-block-row">
+            <QuickMenu ref="quickMenu" :key="editor.block.id" :block="editor.block" variant="bar" @all-settings="emit('all-settings')" />
+        </div>
+        <div class="slide-row" data-testid="phone-slide-row">
             <button
                 class="slides-btn"
                 type="button"
@@ -130,7 +132,7 @@ async function removeSlide(): Promise<void> {
                     </label>
                 </div>
             </div>
-        </template>
+        </div>
     </div>
 </template>
 
@@ -143,15 +145,29 @@ async function removeSlide(): Promise<void> {
     z-index: 900;
     box-sizing: border-box;
     display: flex;
-    align-items: center;
-    gap: var(--d-space-2);
-    height: calc(56px + env(safe-area-inset-bottom));
-    padding: 0 var(--d-space-2) env(safe-area-inset-bottom) var(--d-space-3);
-    border-top: 1px solid var(--d-divider);
-    background: var(--d-surface);
+    flex-direction: column;
     color: var(--d-text);
     font-family: var(--d-font);
     font-size: var(--d-size);
+}
+.slide-row,
+.block-row {
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: var(--d-space-2);
+    height: 56px;
+    border-top: 1px solid var(--d-divider);
+}
+.slide-row {
+    height: calc(56px + env(safe-area-inset-bottom));
+    padding: 0 var(--d-space-2) env(safe-area-inset-bottom) var(--d-space-3);
+    background: var(--d-surface);
+}
+/* One step set off from the slide row below. */
+.block-row {
+    padding: 0;
+    background: var(--d-panel);
 }
 .slides-btn {
     display: flex;
