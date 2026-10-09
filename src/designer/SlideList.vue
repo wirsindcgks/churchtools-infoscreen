@@ -324,6 +324,9 @@ function removeCurrent(): void {
     align-items: baseline;
     gap: 6px;
 }
+.title strong {
+    font-weight: var(--d-weight-heading);
+}
 .collapse-icon {
     transform: rotate(90deg);
 }
@@ -402,7 +405,7 @@ li {
 }
 li.active .num {
     color: var(--d-accent);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 /* The chosen slide: a ring of 2 px in the accent around its picture, 3 px off it. */
 li.active .thumb {
@@ -558,7 +561,7 @@ li.disabled .thumb {
         background: var(--d-surface);
         color: var(--d-text);
         font: inherit;
-        font-weight: 700;
+        font-weight: var(--d-weight-heading);
         text-align: left;
         cursor: pointer;
     }

@@ -27,6 +27,7 @@ import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
+import { setScreenCounts } from '../designer/section-counts';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 
@@ -173,6 +174,7 @@ async function refresh(): Promise<void> {
         repository.value.loadTheme().catch(() => null),
     ]);
     screens.value = list;
+    setScreenCounts(list);
     playlists.value = new Map(overviews.map((o) => [o.playlist.id, o]));
     theme.value = stored;
     // A saved schedule may have fewer lines than the one clicked before.
@@ -388,7 +390,7 @@ ul.d-tiles {
 }
 .now {
     color: var(--d-success);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
     text-decoration: none;
 }
 .rule-line {
@@ -435,7 +437,7 @@ ul.d-tiles {
     height: 1.5em;
     border-radius: 50%;
     background: var(--d-panel);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .text {
     display: flex;

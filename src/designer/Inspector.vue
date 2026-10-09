@@ -313,7 +313,7 @@ h3 {
 .layer-name {
     flex: none;
     font-size: var(--d-size-sm);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .layer-sub {
     min-width: 0;

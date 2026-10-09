@@ -685,7 +685,7 @@ ol {
     background: var(--rule-color);
     color: #fff;
     font-size: var(--d-size-sm);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .spacer {
     flex: 1;
@@ -708,7 +708,7 @@ ol {
     border-color: var(--rule-color);
     background: var(--rule-color);
     color: #fff;
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .appointment {
     display: grid;
@@ -737,7 +737,7 @@ ol {
     border-color: var(--rule-color);
     background: var(--rule-color);
     color: #fff;
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .calendars {
     display: flex;

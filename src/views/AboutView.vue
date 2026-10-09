@@ -121,7 +121,7 @@ a {
     background: var(--d-panel);
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .badge--installed {
     background: var(--d-accent-pale);

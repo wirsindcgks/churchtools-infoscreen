@@ -174,7 +174,7 @@ figure.selected {
     background: var(--d-accent);
     color: #fff;
     font-size: var(--d-size-sm);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
     line-height: 20px;
     text-align: center;
 }
@@ -254,7 +254,7 @@ figure:focus-within .look,
     background: rgba(15, 23, 42, 0.75);
     color: #fff;
     font-size: var(--d-size-sm);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
     line-height: 20px;
 }
 button.pick:hover img,

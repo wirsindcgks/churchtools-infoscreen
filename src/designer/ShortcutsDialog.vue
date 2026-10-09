@@ -62,7 +62,7 @@ h3 {
     margin: 0 0 var(--d-space-1);
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
-    font-weight: 700;
+    font-weight: var(--d-weight-heading);
 }
 dl {
     margin: 0;
@@ -90,7 +90,7 @@ kbd {
     background: var(--d-panel);
     font: inherit;
     font-size: var(--d-size-sm);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
     white-space: nowrap;
 }
 </style>

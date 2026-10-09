@@ -103,7 +103,7 @@ const name = useId();
 }
 .tile:has(input:checked) .tile-word {
     color: var(--d-accent-strong);
-    font-weight: 600;
+    font-weight: var(--d-weight-normal);
 }
 .tile:has(input:focus-visible) .tile-face {
     outline: 2px solid var(--d-accent);

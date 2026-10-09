@@ -53,7 +53,7 @@ const value = defineModel<T>({ required: true });
     background: transparent;
     color: var(--d-text-muted);
     font: inherit;
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
     cursor: pointer;
     transition: background-color var(--d-transition), color var(--d-transition);
 }

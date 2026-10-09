@@ -184,7 +184,7 @@ const scheduleLabel = computed(() => {
 }
 .by-rule {
     color: var(--d-text);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .now-tag {
     padding: 0 6px;
@@ -192,7 +192,7 @@ const scheduleLabel = computed(() => {
     background: var(--d-success);
     color: var(--d-accent-text);
     font-size: 0.85em;
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .schedule-link {
     display: inline-flex;

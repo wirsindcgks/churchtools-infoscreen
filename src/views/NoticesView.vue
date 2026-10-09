@@ -6,7 +6,8 @@
  * "Beenden" and "Entfernen" clear it from every playlist of the group at
  * once, checked against every revision before anything is written.
  */
-import { computed, onMounted, ref, shallowRef } from 'vue';
+import { computed, onMounted, ref, shallowRef, watch } from 'vue';
+import { setSectionCount } from '../designer/section-counts';
 import { zonedDateKey, zonedParts } from '../appointments/zoned';
 import { currentPerson, displayName } from '../ct/client';
 import GroupCard from '../designer/GroupCard.vue';
@@ -54,6 +55,12 @@ providePalette(themeOrDefault);
 const groups = computed(() => groupBanners(overviews.value, context.now, context.timeZone));
 const running = computed(() => groups.value.filter((g) => !g.expired));
 const expired = computed(() => groups.value.filter((g) => g.expired));
+/** The number in the sidebar: the running notices, also when one expires while the page stands open. */
+let counted = false;
+watch(
+    () => running.value.length,
+    (n) => counted && setSectionCount('notices', n),
+);
 
 function modeLabel(banner: Banner): string {
     return banner.mode === 'static' ? t.notices.modeStatic : t.notices.modeTicker;
@@ -84,6 +91,9 @@ async function refresh(): Promise<void> {
     overviews.value = list;
     screens.value = screenList;
     theme.value = stored;
+    counted = true;
+    setSectionCount('playlists', list.length);
+    setSectionCount('notices', running.value.length);
 }
 
 onMounted(async () => {

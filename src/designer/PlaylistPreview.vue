@@ -257,7 +257,7 @@ onBeforeUnmount(() => {
     border-radius: 999px;
     background: #f59e0b;
     color: #111;
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
     white-space: nowrap;
 }
 .where {

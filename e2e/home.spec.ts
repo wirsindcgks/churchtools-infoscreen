@@ -335,3 +335,39 @@ test.describe('the number of screens in the sidebar (Plan.md 47)', () => {
         await expect(count).toHaveText(start);
     });
 });
+
+test.describe('the numbers in the sidebar (third round of looks)', () => {
+    test.use({ viewport: { width: 1280, height: 900 } });
+
+    test('every area with a list shows its number, design, about and settings do not', async ({ page }) => {
+        // The media library reads the wiki: a made-up one, so nothing reaches the instance.
+        await page.route('**/api/**', (route) => {
+            const path = new URL(route.request().url()).pathname.replace(/^.*?\/api/, '');
+            const json = (data: unknown) => route.fulfill({ json: { data } });
+            if (path === '/wiki/categories') return json([{ id: 50, name: 'Infoscreen', inMenu: false }]);
+            if (path === '/wiki/categories/50/pages') return json([{ guid: 'p-media', title: 'mediathek' }]);
+            if (path === '/files/wiki_50/p-media') {
+                return json([
+                    { id: 1, name: 'a.png', imageUrl: 'http://localhost/a.png', imageMetadata: { width: 10, height: 10 }, meta: {} },
+                    { id: 2, name: 'b.png', imageUrl: 'http://localhost/b.png', imageMetadata: { width: 10, height: 10 }, meta: {} },
+                ]);
+            }
+            return route.fallback();
+        });
+        // Start on the design page: no list of its own sets a number, the sidebar loads them all.
+        await page.goto('design');
+        for (const area of ['screens', 'schedules', 'notices', 'playlists', 'media']) {
+            await expect(page.getByTestId(`sidebar-${area}-count`)).toHaveText(/^\d+$/);
+        }
+        await expect(page.getByTestId('sidebar-media-count')).toHaveText('2');
+        await expect(page.getByTestId('sidebar-screens-count')).toHaveText(await page.getByTestId('sidebar-schedules-count').innerText());
+        for (const area of ['design', 'about', 'setup']) {
+            await expect(page.getByTestId(`sidebar-${area}-count`)).toHaveCount(0);
+        }
+
+        // The page's own list agrees with its number.
+        await page.getByTestId('sidebar-playlists').click();
+        const count = Number(await page.getByTestId('sidebar-playlists-count').innerText());
+        await expect(page.getByTestId('playlist-card')).toHaveCount(count);
+    });
+});

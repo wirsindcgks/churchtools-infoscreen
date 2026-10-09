@@ -105,7 +105,7 @@ const name = useId();
 .segment-option:has(input:checked) .segment-face {
     background: var(--d-accent-pale);
     color: var(--d-accent-strong);
-    font-weight: 600;
+    font-weight: var(--d-weight-normal);
 }
 .segment-option:has(input:focus-visible) {
     outline: 2px solid var(--d-accent);

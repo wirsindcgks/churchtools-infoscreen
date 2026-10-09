@@ -26,7 +26,7 @@ import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
 import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { ruleCalendarIds, runningNow } from '../designer/running';
-import { screenCounts, setScreenCounts } from '../designer/screen-counts';
+import { screenCounts, setScreenCounts } from '../designer/section-counts';
 import { usePreview } from '../designer/usePreview';
 import { getRepository, resetDemoStore } from '../store/backend';
 import type { ScreenOverview, ScreenRepository } from '../store/screen-repository';

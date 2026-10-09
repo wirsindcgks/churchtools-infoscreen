@@ -30,7 +30,7 @@ const title = computed(() => liveTitle(props.live, props.timeZone));
     background: var(--d-accent-pale);
     color: var(--d-accent);
     font-size: var(--d-size-sm);
-    font-weight: 600;
+    font-weight: var(--d-weight-normal);
     white-space: nowrap;
 }
 .live-flag.overlay {

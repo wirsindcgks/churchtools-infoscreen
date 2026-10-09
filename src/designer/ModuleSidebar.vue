@@ -12,13 +12,13 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { t } from '../i18n/designer';
 import { administrator, isAdministrator } from './administrator';
-import { ensureScreenCounts, screenCounts } from './screen-counts';
+import { ensureSectionCounts, sectionCounts, type Section } from './section-counts';
 import { unseenRelease } from '../about/seen';
 import Icon, { type IconName } from './Icon.vue';
 
 const route = useRoute();
 onMounted(() => {
-    void ensureScreenCounts();
+    void ensureSectionCounts();
     void isAdministrator();
 });
 const admin = computed(() => administrator.value === true);
@@ -28,14 +28,16 @@ interface PageLink {
     label: string;
     icon: IconName;
     testid: string;
+    /** The area whose number stands behind the entry (`section-counts.ts`); none for design, about and settings. */
+    count?: Section;
 }
 
 const PAGES: PageLink[] = [
-    { name: 'designer', label: t.common.screens, icon: 'tv', testid: 'sidebar-screens' },
-    { name: 'schedules', label: t.schedules.title, icon: 'calendar', testid: 'sidebar-schedules' },
-    { name: 'notices', label: t.notices.title, icon: 'megaphone', testid: 'sidebar-notices' },
-    { name: 'playlists', label: t.common.playlists, icon: 'list', testid: 'sidebar-playlists' },
-    { name: 'media', label: t.media.title, icon: 'image', testid: 'sidebar-media' },
+    { name: 'designer', label: t.common.screens, icon: 'tv', testid: 'sidebar-screens', count: 'screens' },
+    { name: 'schedules', label: t.schedules.title, icon: 'calendar', testid: 'sidebar-schedules', count: 'schedules' },
+    { name: 'notices', label: t.notices.title, icon: 'megaphone', testid: 'sidebar-notices', count: 'notices' },
+    { name: 'playlists', label: t.common.playlists, icon: 'list', testid: 'sidebar-playlists', count: 'playlists' },
+    { name: 'media', label: t.media.title, icon: 'image', testid: 'sidebar-media', count: 'media' },
     { name: 'design', label: t.design.title, icon: 'palette', testid: 'sidebar-design' },
 ];
 const ABOUT: PageLink = { name: 'about', label: t.about.title, icon: 'info', testid: 'sidebar-about' };
@@ -117,7 +119,7 @@ watch(
                     >
                         <span class="nav-icon"><Icon :name="p.icon" :size="16" /></span>
                         {{ p.label }}
-                        <span v-if="p.name === 'designer' && screenCounts" class="count" data-testid="sidebar-screens-count">{{ screenCounts.all }}</span>
+                        <span v-if="p.count && sectionCounts[p.count] !== undefined" class="count" :data-testid="`${p.testid}-count`">{{ sectionCounts[p.count] }}</span>
                     </RouterLink>
                 </li>
             </ul>
@@ -207,7 +209,7 @@ a:hover {
     background: var(--d-panel);
 }
 a.active {
-    font-weight: 600;
+    font-weight: var(--d-weight-heading);
     background: color-mix(in oklab, var(--d-accent-pale) 45%, var(--d-surface));
     color: var(--d-accent-strong);
 }
@@ -280,7 +282,7 @@ a.active .nav-icon {
         box-shadow: var(--d-shadow-card);
         color: var(--d-text);
         font: inherit;
-        font-weight: 600;
+        font-weight: var(--d-weight-heading);
         text-align: left;
         cursor: pointer;
     }

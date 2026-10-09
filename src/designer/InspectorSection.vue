@@ -68,7 +68,7 @@ summary::-webkit-details-marker {
     transform: rotate(-90deg);
 }
 .title {
-    font-weight: 600;
+    font-weight: var(--d-weight-heading);
 }
 .summary-text {
     display: flex;
