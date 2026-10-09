@@ -11,6 +11,7 @@ import { looksLikeVideo, videoProblem } from '../media/video';
 import { ensureOverviewPage } from '../media/wiki';
 import type { MediaDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
+import { useConfirm } from './useConfirm';
 
 /** What an upload takes: the dialog for a block takes the kind the block needs, the library page both. */
 export type MediaKinds = 'image' | 'video' | 'all';
@@ -27,6 +28,7 @@ export function useMediaLibrary(
     uploaded?: (docs: MediaDoc[]) => void,
     kinds: MediaKinds = 'all',
 ) {
+    const { confirm } = useConfirm();
     const items = ref<MediaItem[]>([]);
     const loading = ref(true);
     const busy = ref<string | null>(null);
@@ -104,7 +106,7 @@ export function useMediaLibrary(
         if (!library) return;
         problem.value = null;
         try {
-            if (!window.confirm(t.media.library.deleteConfirm(item.name))) return;
+            if (!(await confirm({ message: t.media.library.deleteConfirm(item.name), confirmLabel: t.common.delete, danger: true }))) return;
             await library.remove(item);
         } catch (e) {
             if (!(e instanceof MediaInUseError)) {
@@ -112,7 +114,7 @@ export function useMediaLibrary(
                 return;
             }
             const where = e.usage.map((u) => `• ${u.playlist} › ${u.slide}`).join('\n');
-            if (!window.confirm(t.media.library.stillShown(t.media.kindName[item.kind], where))) return;
+            if (!(await confirm({ message: t.media.library.stillShown(t.media.kindName[item.kind], where), confirmLabel: t.common.delete, danger: true }))) return;
             await library.remove(item, true);
         }
         await reload();

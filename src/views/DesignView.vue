@@ -165,25 +165,24 @@ function observe(el: unknown): void {
 </script>
 
 <template>
-    <ModulePage current="design">
-        <template #actions>
-            <span v-if="status === 'saved' && !dirty" class="ok" data-testid="theme-saved">
-                {{ t.design.savedHint }}
-            </span>
-            <button class="d-btn" type="button" :disabled="!dirty" @click="look = copyLook(saved)">{{ t.design.discard }}</button>
-            <button
-                class="d-btn d-btn--primary"
-                type="button"
-                :disabled="!dirty || status === 'saving'"
-                data-testid="theme-save"
-                @click="save"
-            >
-                {{ status === 'saving' ? t.design.saving : t.common.save }}
-            </button>
-        </template>
-
+    <ModulePage>
         <PageHeader icon="palette" :title="t.design.title" testid="design-heading">
             {{ t.design.intro }}
+            <template #actions>
+                <span v-if="status === 'saved' && !dirty" class="ok" data-testid="theme-saved">
+                    {{ t.design.savedHint }}
+                </span>
+                <button class="d-btn" type="button" :disabled="!dirty" @click="look = copyLook(saved)">{{ t.design.discard }}</button>
+                <button
+                    class="d-btn d-btn--primary"
+                    type="button"
+                    :disabled="!dirty || status === 'saving'"
+                    data-testid="theme-save"
+                    @click="save"
+                >
+                    {{ status === 'saving' ? t.design.saving : t.common.save }}
+                </button>
+            </template>
         </PageHeader>
 
         <p v-if="message" class="d-banner d-banner--error" role="alert">

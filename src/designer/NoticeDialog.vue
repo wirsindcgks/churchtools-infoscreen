@@ -18,6 +18,9 @@ import { ConflictError, type ConflictInfo, type PlaylistOverview, type ScreenRep
 import BannerEditor from './BannerEditor.vue';
 import Icon from './Icon.vue';
 import { cloneJson, createBanner } from './ops';
+import { useConfirm } from './useConfirm';
+
+const { confirm } = useConfirm();
 
 const props = defineProps<{
     repository: ScreenRepository;
@@ -128,8 +131,8 @@ async function save(): Promise<void> {
     }
 }
 
-function close(): void {
-    if (dirty.value && !window.confirm(t.notices.dialog.discard)) return;
+async function close(): Promise<void> {
+    if (dirty.value && !(await confirm({ message: t.notices.dialog.discard, confirmLabel: t.common.discard, danger: true }))) return;
     emit('close');
 }
 

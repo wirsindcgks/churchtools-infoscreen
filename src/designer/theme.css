@@ -34,6 +34,21 @@
     --d-shadow: var(--shadow-lg, 0 10px 15px -3px #0000001a, 0 4px 6px -4px #0000001a);
     --d-size: var(--text-base, 0.875rem);
     --d-size-sm: var(--text-sm, 0.8125rem);
+    /* The scale of distances (Plan.md 79, B3): 4, 8, 12, 16, 24, 32 px. */
+    --d-space-1: 4px;
+    --d-space-2: 8px;
+    --d-space-3: 12px;
+    --d-space-4: 16px;
+    --d-space-5: 24px;
+    --d-space-6: 32px;
+    /* One height for buttons and fields; a finger gets 44 px (below). */
+    --d-control-h: 40px;
+    /* Cards sit on the workspace with a soft shadow, not a frame. */
+    --d-shadow-card: 0 1px 3px #0f172a14, 0 6px 16px #0f172a0d;
+    --d-shadow-card-hover: 0 2px 6px #0f172a1a, 0 10px 24px #0f172a14;
+    /* The calm ground around cards and the sidebar: a touch darker than the panel, from the host's own colours. */
+    --d-workspace: color-mix(in oklab, var(--d-panel) 96%, var(--d-text));
+    --d-transition: 150ms ease;
 
     font-family: var(--d-font);
     font-size: var(--d-size);
@@ -44,15 +59,19 @@
 .infoscreen-designer :where(button.d-btn) {
     display: inline-flex;
     align-items: center;
-    gap: 0.4em;
-    padding: 0.4em 0.9em;
+    justify-content: center;
+    gap: var(--d-space-2);
+    box-sizing: border-box;
+    min-height: var(--d-control-h);
+    padding: 0 var(--d-space-4);
     border: 1px solid var(--d-divider);
-    border-radius: var(--d-radius);
+    border-radius: var(--d-radius-lg);
     background: var(--d-surface);
     color: var(--d-text);
     font: inherit;
+    font-weight: 700;
     cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s;
+    transition: background-color var(--d-transition), border-color var(--d-transition);
 }
 .infoscreen-designer :where(button.d-btn:hover:not(:disabled)) {
     border-color: var(--d-interactive);
@@ -77,16 +96,18 @@
 .infoscreen-designer :where(input, select, textarea) {
     box-sizing: border-box;
     width: 100%;
-    padding: 0.35em 0.5em;
+    padding: var(--d-space-2) var(--d-space-3);
     border: 1px solid var(--d-divider);
-    border-radius: var(--d-radius);
+    border-radius: var(--d-radius-lg);
     background: var(--d-surface);
     color: var(--d-text);
     font: inherit;
+    transition: border-color var(--d-transition);
 }
 /* One height for text fields and selects – browsers draw a select lower by default. */
 .infoscreen-designer :where(input:not([type='checkbox'], [type='radio'], [type='color']), select) {
-    min-height: 2.3em;
+    min-height: var(--d-control-h);
+    padding-block: 0;
 }
 /*
  * Safari draws a select natively and ignores height and padding: it stood
@@ -95,13 +116,13 @@
  * colour, so it follows a dark theme too.
  */
 .infoscreen-designer :where(select:not([multiple])) {
-    padding-right: 1.9em;
+    padding-right: 2.2em;
     background-image:
         linear-gradient(45deg, transparent 50%, currentColor 50%),
         linear-gradient(135deg, currentColor 50%, transparent 50%);
     background-position:
-        calc(100% - 1.05em) 50%,
-        calc(100% - 0.7em) 50%;
+        calc(100% - 1.25em) 50%,
+        calc(100% - 0.9em) 50%;
     background-size: 0.35em 0.35em;
     background-repeat: no-repeat;
     appearance: none;
@@ -113,13 +134,14 @@
     height: 2em;
     padding: 0.1em;
 }
-.infoscreen-designer :where(input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible) {
+/* A visible frame wherever the keyboard stands. */
+.infoscreen-designer :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
     outline: 2px solid var(--d-accent);
-    outline-offset: 1px;
+    outline-offset: 2px;
 }
 .infoscreen-designer :where(.d-field) {
     display: grid;
-    gap: 0.2em;
+    gap: var(--d-space-1);
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
@@ -150,14 +172,26 @@
 /* Square button with a symbol only; the label goes into aria-label and title. */
 .infoscreen-designer :where(button.d-btn--icon) {
     justify-content: center;
-    min-width: 2.4em;
-    padding: 0.4em;
+    min-width: var(--d-control-h);
+    padding: 0;
 }
 
 .infoscreen-designer :where(.d-card) {
-    border: 1px solid var(--d-divider);
+    border: 1px solid transparent;
     border-radius: var(--d-radius-lg);
     background: var(--d-surface);
+    box-shadow: var(--d-shadow-card);
+}
+
+/* Search left, the segment of filters beside it; the segment wraps under the search on a phone. */
+.infoscreen-designer :where(.d-toolbar) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--d-space-3);
+}
+.infoscreen-designer :where(.d-toolbar > :first-child) {
+    flex: 1 1 16rem;
 }
 
 /*
@@ -168,12 +202,12 @@
 .infoscreen-designer :where(.d-tiles) {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-    gap: 14px;
+    gap: var(--d-space-4);
 }
 @media (max-width: 48rem) {
     .infoscreen-designer :where(.d-tiles) {
         grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 10px;
+        gap: var(--d-space-3);
     }
 }
 /* One column on a narrow phone – two would squeeze names unreadably thin. */
@@ -189,11 +223,10 @@
     min-width: 0;
     margin: 0;
     overflow: visible;
-    transition: box-shadow 0.15s, border-color 0.15s;
+    transition: box-shadow var(--d-transition);
 }
 .infoscreen-designer :where(.d-tile:hover) {
-    border-color: var(--d-interactive);
-    box-shadow: 0 4px 12px -4px #0000001f;
+    box-shadow: var(--d-shadow-card-hover);
 }
 /* The picture on top, 16:9, with the round corners of the tile. */
 .infoscreen-designer :where(.d-tile-media) {
@@ -204,13 +237,13 @@
 }
 .infoscreen-designer :where(.d-tile-body) {
     display: grid;
-    gap: 4px;
-    padding: 6px 14px 12px;
+    gap: var(--d-space-1);
+    padding: var(--d-space-2) var(--d-space-4) var(--d-space-4);
 }
 .infoscreen-designer :where(.d-tile-title) {
     margin: 0;
     padding-top: 0.35em;
-    font-size: 1em;
+    font-size: 1.15em;
     font-weight: 700;
     hyphens: auto;
     overflow-wrap: anywhere;
@@ -277,27 +310,27 @@
     width: min(460px, 100%);
     max-height: calc(100vh - 32px);
     overflow-y: auto;
-    padding: 20px 24px;
+    padding: var(--d-space-5);
     border-radius: var(--d-radius-lg);
     background: var(--d-surface);
     box-shadow: var(--d-shadow);
 }
 .infoscreen-designer :where(.d-dialog h2) {
-    margin: 0 0 12px;
+    margin: 0 0 var(--d-space-3);
     font-size: 1.2em;
 }
 .infoscreen-designer :where(.d-dialog-actions) {
     display: flex;
     flex-wrap: wrap;
     justify-content: flex-end;
-    gap: 8px;
-    margin-top: 20px;
+    gap: var(--d-space-2);
+    margin-top: var(--d-space-5);
 }
 
 /* Fingers need bigger targets than a mouse pointer (Plan.md, 10). */
 @media (pointer: coarse) {
-    .infoscreen-designer :where(button.d-btn, input:not([type='checkbox'], [type='radio']), select) {
-        min-height: 40px;
+    .infoscreen-designer {
+        --d-control-h: 44px;
     }
     /*
      * iOS zooms into a field whose text is smaller than 16px as soon as it is
@@ -316,5 +349,15 @@
 @media (max-width: 40rem) {
     .infoscreen-designer :where(button.d-btn--create .create-label) {
         display: none;
+    }
+}
+
+/* Less motion on request: no transitions at all (Plan.md 79, B3). */
+@media (prefers-reduced-motion: reduce) {
+    .infoscreen-designer,
+    .infoscreen-designer *,
+    .infoscreen-designer *::before,
+    .infoscreen-designer *::after {
+        transition: none !important;
     }
 }

@@ -27,6 +27,9 @@ import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
+import { useConfirm } from '../designer/useConfirm';
+
+const { confirm, notice } = useConfirm();
 
 const repository = shallowRef<ScreenRepository | null>(null);
 const author = ref<string | null>(null);
@@ -173,35 +176,34 @@ async function clear(group: BannerGroup): Promise<void> {
             { updatedBy: author.value ?? '' },
         );
     } catch (e) {
-        window.alert(e instanceof Error ? e.message : String(e));
+        await notice(e instanceof Error ? e.message : String(e));
     }
     await refresh();
 }
 
 async function end(group: BannerGroup): Promise<void> {
-    if (!window.confirm(t.notices.endConfirm(group.banner.text))) return;
+    if (!(await confirm({ message: t.notices.endConfirm(group.banner.text), confirmLabel: t.notices.end, danger: true }))) return;
     await clear(group);
 }
 </script>
 
 <template>
-    <ModulePage current="notices">
-        <template #actions>
-            <button
-                class="d-btn d-btn--create"
-                type="button"
-                :aria-label="t.notices.new"
-                :disabled="!ready"
-                data-testid="new-notice"
-                @click="openNew"
-            >
-                <Icon name="plus" />
-                <span class="create-label">{{ t.notices.new }}</span>
-            </button>
-        </template>
-
+    <ModulePage>
         <PageHeader icon="megaphone" :title="t.notices.title" testid="notices-heading">
             {{ t.notices.intro }}
+            <template #actions>
+                <button
+                    class="d-btn d-btn--create"
+                    type="button"
+                    :aria-label="t.notices.new"
+                    :disabled="!ready"
+                    data-testid="new-notice"
+                    @click="openNew"
+                >
+                    <Icon name="plus" />
+                    <span class="create-label">{{ t.notices.new }}</span>
+                </button>
+            </template>
         </PageHeader>
 
         <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>

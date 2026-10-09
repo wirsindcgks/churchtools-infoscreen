@@ -150,8 +150,7 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
     margin-top: 6px;
 }
 figure.selected {
-    border-color: var(--d-accent);
-    box-shadow: 0 0 0 1px var(--d-accent);
+    box-shadow: 0 0 0 2px var(--d-accent);
 }
 .pick {
     position: relative;

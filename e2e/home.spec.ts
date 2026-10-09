@@ -72,19 +72,33 @@ test.describe('start page on a desktop', () => {
         await expect(tile.getByTestId('copy-address')).toHaveCount(0); // the menu closes by itself
 
         await tile.getByTestId('screen-menu').click();
-        page.once('dialog', (d) => void d.accept());
         await tile.getByTestId('delete-screen').click();
+        // Our own question, not the browser's: red "Löschen", the focus on "Abbrechen" (Plan.md 79, B3).
+        const question = page.getByTestId('confirm-dialog');
+        await expect(question).toContainText('Bildschirm „Wegwerf" löschen?');
+        await expect(page.getByTestId('confirm-cancel')).toBeFocused();
+        await page.getByTestId('confirm-cancel').click();
+        await expect(question).toBeHidden();
+        await expect(page.getByTestId('screen-card')).toHaveCount(2);
+        await tile.getByTestId('screen-menu').click();
+        await tile.getByTestId('delete-screen').click();
+        await page.getByTestId('confirm-ok').click();
         await expect(page.getByTestId('screen-card')).toHaveCount(1);
     });
 
-    test('the phone menu button does not show – the sidebar is a column already', async ({ page }) => {
+    test('the phone menu button does not show – the sidebar is a column already, Bildschirme is an entry like the others', async ({ page }) => {
         await page.goto('./');
         await expect(page.getByTestId('page-menu')).not.toBeVisible();
-        await expect(page.getByTestId('sidebar-screens')).not.toBeVisible();
+        await expect(page.getByTestId('sidebar-screens')).toBeVisible();
+        await expect(page.getByTestId('sidebar-screens')).toHaveAttribute('aria-current', 'page');
+
+        // The format filter is a segment beside the search of the pages that filter, not part of the sidebar (Plan.md 79, B3).
+        await expect(page.getByTestId('sidebar-screens').locator('.count')).toBeVisible();
+        await expect(page.locator('nav [data-testid="filter-portrait"]')).toHaveCount(0);
 
         await page.getByTestId('sidebar-playlists').click();
         await expect(page.getByTestId('playlists-heading')).toBeVisible();
-        await expect(page.getByTestId('filter-portrait')).toBeVisible();
+        await expect(page.getByTestId('playlist-filter-portrait')).toBeVisible();
     });
 });
 
@@ -141,8 +155,11 @@ test.describe('media library as a section of its own (Plan.md 16)', () => {
         await expect(page).toHaveURL(/\/mediathek$/);
         await expect(page.getByTestId('media-heading')).toHaveText('Mediathek');
         const library = page.getByTestId('media-library');
-        // Upload sits where "Screen erstellen" and "Playlist erstellen" sit: top right in the bar.
-        await expect(page.locator('.d-appbar').getByTestId('media-upload-button')).toBeEnabled();
+        // Upload sits where "Bildschirm erstellen" and "Präsentation erstellen" sit: right of the page title.
+        await expect(page.getByTestId('media-upload-button')).toBeEnabled();
+        const head = (await page.getByTestId('media-heading').boundingBox())!;
+        const upload = (await page.getByTestId('media-upload-button').boundingBox())!;
+        expect(upload.x).toBeGreaterThan(head.x + head.width - 1);
         await expect(library.getByText('Lade Bilder …')).toHaveCount(0);
         // Pictures here are managed, not chosen: a click looks at one (Plan.md 53), a checkbox picks it for deleting.
         await expect(library.getByTestId('media-item').first()).toBeVisible();
@@ -170,12 +187,13 @@ test.describe('sections on a phone', () => {
 
     test('every section is reachable through the page menu, and the filters only show on Bildschirme', async ({ page }) => {
         await page.goto('./');
-        await expect(page.getByTestId('filter-portrait')).toBeVisible(); // Bildschirme: the filters stand in for a menu of their own
+        await expect(page.getByTestId('filter-portrait')).toBeVisible(); // Bildschirme: the segment beside the search
 
         await gotoViaMenu(page, 'sidebar-playlists');
         await expect(page.getByTestId('playlists-heading')).toBeVisible();
         await expect(page.getByTestId('page-menu')).toContainText('Präsentationen');
         await expect(page.getByTestId('filter-portrait')).not.toBeVisible();
+        await expect(page.getByTestId('playlist-filter-portrait')).toBeVisible();
         await expect(page.getByTestId('sidebar-schedules')).not.toBeVisible(); // menu closed again
 
         await gotoViaMenu(page, 'sidebar-schedules');
@@ -224,15 +242,18 @@ test.describe('the number of screens in the sidebar (Plan.md 47)', () => {
 
     test('stays when going to another section, and appears after a reload there', async ({ page }) => {
         await page.goto('./');
-        await expect(page.getByTestId('filter-all').locator('.count')).toBeVisible();
-        const start = await page.getByTestId('filter-all').locator('.count').innerText();
+        const count = page.getByTestId('sidebar-screens-count');
+        await expect(count).toBeVisible();
+        const start = await count.innerText();
+        // The same numbers stand in the segment beside the search.
+        await expect(page.getByTestId('filter-all').locator('.count')).toHaveText(start);
+        await expect(page.getByTestId('filter-portrait').locator('.count')).toBeVisible();
 
         await page.getByTestId('sidebar-design').click();
         await expect(page).toHaveURL(/design/);
-        await expect(page.getByTestId('filter-all').locator('.count')).toHaveText(start);
+        await expect(count).toHaveText(start);
 
         await page.reload();
-        await expect(page.getByTestId('filter-all').locator('.count')).toHaveText(start);
-        await expect(page.getByTestId('filter-portrait').locator('.count')).toBeVisible();
+        await expect(count).toHaveText(start);
     });
 });

@@ -214,8 +214,8 @@ async function allowServices(page: Page, ...names: string[]): Promise<void> {
         const box = page.getByRole('checkbox', { name });
         await expect(box).toBeVisible();
         if (await box.isChecked()) continue; // allowed by an earlier visit: the demo store lives on
-        page.once('dialog', (dialog) => void dialog.accept()); // the confirmation before releasing a service
         await box.check();
+        await page.getByTestId('confirm-ok').click(); // the confirmation before releasing a service
         await expect(page.getByTestId('allowed-services-saved')).toBeVisible();
     }
 }
@@ -464,19 +464,15 @@ test('services only after an administrator allowed them: the inspector offers ex
     await expect(page.getByTestId('allowed-services-warning')).toContainText('mit der Gemeindeleitung ab');
 
     // Ticking asks first; "Abbrechen" leaves the box empty and saves nothing.
-    const asked: string[] = [];
-    const answer = { accept: false };
-    page.on('dialog', (dialog) => {
-        asked.push(dialog.message());
-        void (answer.accept ? dialog.accept() : dialog.dismiss());
-    });
     await page.getByRole('checkbox', { name: 'Moderation' }).click();
+    const asked = page.getByTestId('confirm-dialog');
+    await expect(asked).toContainText('„Moderation" freigeben?');
+    await expect(asked).toContainText('Gemeindeleitung');
+    await page.getByTestId('confirm-cancel').click();
     await expect(page.getByRole('checkbox', { name: 'Moderation' })).not.toBeChecked();
     await expect(page.getByTestId('allowed-services-saved')).toHaveCount(0);
-    expect(asked[0]).toContain('„Moderation" freigeben?');
-    expect(asked[0]).toContain('Gemeindeleitung');
-    answer.accept = true;
     await page.getByRole('checkbox', { name: 'Moderation' }).check();
+    await page.getByTestId('confirm-ok').click();
     await expect(page.getByTestId('allowed-services-saved')).toHaveText('Gespeichert');
 
     // The choice survives a reload, and the inspector offers just that one.
