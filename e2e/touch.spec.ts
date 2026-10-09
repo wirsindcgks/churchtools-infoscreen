@@ -114,7 +114,7 @@ test.describe('on a phone', () => {
         const reset = page.getByTestId('zoom-reset');
         await expect(reset).toBeVisible();
         await expect(reset).toHaveText(/Ganze Folie/);
-        expect((await stage.boundingBox())!.width).toBeGreaterThan(whole.width * 1.5);
+        expect((await stage.boundingBox())!.width).toBeGreaterThan(whole.width * 1.2);
         await reset.tap();
         await expect(reset).toHaveCount(0);
         expect((await stage.boundingBox())!.width).toBeCloseTo(whole.width, 0);
@@ -183,13 +183,24 @@ test.describe('on a phone', () => {
         await expect(page.getByTestId('paste-here')).toHaveCount(0);
     });
 
-    test('"Text bearbeiten" zooms onto the text; Escape brings the zoom back', async ({ page }) => {
+    test('writing zooms only as far as the letters need: a heading not, body text yes; Escape brings the zoom back', async ({ page }) => {
         await openEditor(page);
         await openFreshSlide(page);
         await addBlock(page, 'text');
         const stage = page.locator('.editor-stage .stage').first();
         const whole = (await stage.boundingBox())!;
         const bar = page.getByTestId('phone-bar');
+        // A heading is readable on the phone already: no zoom (user at the phone, 2026-10-09: "ein wilder Zoom").
+        await bar.getByTestId('quick-more').tap();
+        await bar.getByTestId('quick-edit-text').tap();
+        await expect(page.getByTestId('text-edit')).toBeVisible();
+        await expect(page.getByTestId('zoom-reset')).toHaveCount(0);
+        await page.keyboard.press('Escape');
+        await expect(page.getByTestId('text-edit')).toHaveCount(0);
+        // Body text is not: the stage grows until it is.
+        await bar.getByTestId('quick-chip').and(page.getByLabel(/Textstufe/)).tap();
+        await page.getByTestId('quick-popover').getByTestId('text-level').locator('input[value="body"]').check({ force: true });
+        await page.keyboard.press('Escape');
         await bar.getByTestId('quick-more').tap();
         await bar.getByTestId('quick-edit-text').tap();
         await expect(page.getByTestId('text-edit')).toBeVisible();
@@ -218,7 +229,7 @@ test.describe('at a desktop', () => {
         const reset = page.getByTestId('zoom-reset');
         await expect(reset).toBeVisible();
         const zoomed = (await stage.boundingBox())!;
-        expect(zoomed.width).toBeGreaterThan(whole.width * 1.5);
+        expect(zoomed.width).toBeGreaterThan(whole.width * 1.2);
         // The spot under the pointer stayed under it.
         expect((pointer.x - zoomed.x) / zoomed.width).toBeCloseTo((pointer.x - whole.x) / whole.width, 1);
         expect((pointer.y - zoomed.y) / zoomed.height).toBeCloseTo((pointer.y - whole.y) / whole.height, 1);
