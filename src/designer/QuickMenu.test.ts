@@ -96,15 +96,14 @@ describe('QuickMenu (Plan.md 79, C1)', () => {
         wrapper.unmount();
     });
 
-    it('of several blocks as the bar of a phone: the count, and lock, duplicate and delete inside "⋯"', async () => {
+    it('of several blocks as the bar of a phone: the count, and lock, duplicate, delete and all settings inside "⋯"', async () => {
         const { wrapper } = mountMenu('bar', false, 2);
         expect(wrapper.find('[data-testid="quick-count"]').text()).toBe('2 Bausteine');
         expect(wrapper.find('[data-testid="quick-deselect"]').exists()).toBe(true);
         expect(wrapper.find('[data-testid="quick-duplicate"]').exists()).toBe(false);
         await wrapper.find('[data-testid="quick-more"]').trigger('click');
         const items = wrapper.findAll('[data-testid="quick-more-list"] [role="menuitem"]').map((b) => b.attributes('data-testid'));
-        expect(items).toEqual(['quick-lock', 'quick-duplicate', 'quick-copy', 'quick-cut', 'quick-delete']);
-        expect(wrapper.find('[data-testid="quick-all-settings"]').exists()).toBe(false);
+        expect(items).toEqual(['quick-lock', 'quick-duplicate', 'quick-copy', 'quick-cut', 'quick-all-settings', 'quick-delete']);
         wrapper.unmount();
     });
 });
