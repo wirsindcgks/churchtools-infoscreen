@@ -854,21 +854,21 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         :to="{ name: card.route }"
                         :data-testid="`settings-card-${card.key}`"
                     >
-                        <span class="settings-card-head">
-                            <span class="settings-card-icon"><Icon :name="card.icon" :size="18" /></span>
+                        <span class="settings-card-icon"><Icon :name="card.icon" :size="20" /></span>
+                        <span class="settings-card-body">
                             <h2>{{ card.title }}</h2>
-                            <span
-                                v-if="card.status"
-                                class="status"
-                                :class="`status--${card.status.tone}`"
-                                :data-testid="`settings-status-${card.key}`"
-                            >
-                                <Icon v-if="card.status.tone === 'ok'" name="check" :size="12" />
-                                {{ card.status.text }}
-                            </span>
+                            <p class="muted">{{ card.intro }}</p>
                         </span>
-                        <p class="muted">{{ card.intro }}</p>
-                        <span class="settings-card-open">{{ t.common.open }} <Icon name="forward" :size="16" /></span>
+                        <span
+                            v-if="card.status"
+                            class="status"
+                            :class="`status--${card.status.tone}`"
+                            :data-testid="`settings-status-${card.key}`"
+                        >
+                            <Icon v-if="card.status.tone === 'ok'" name="check" :size="12" />
+                            {{ card.status.text }}
+                        </span>
+                        <Icon name="forward" class="settings-card-forward" />
                     </RouterLink>
                 </div>
 
@@ -1148,18 +1148,18 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
     grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
     gap: var(--d-space-4);
 }
-/* Two cards to a row where they fit, as in the draft. */
+/* One column of whole rows: symbol, title and sentence, the mark, the arrow. */
 .cards {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr));
-    gap: var(--d-space-4);
-    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--d-space-3);
 }
 .settings-card {
-    display: flex;
-    flex-direction: column;
-    gap: var(--d-space-3);
-    padding: var(--d-space-5);
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--d-space-3) var(--d-space-4);
+    padding: var(--d-space-4) var(--d-space-5);
     color: inherit;
     text-decoration: none;
     transition: box-shadow var(--d-transition);
@@ -1167,46 +1167,58 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 .settings-card:hover {
     box-shadow: var(--d-shadow-card-hover);
 }
-.settings-card-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--d-space-2) var(--d-space-3);
-}
 .settings-card-icon {
     display: grid;
-    flex: none;
     place-items: center;
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
     border-radius: var(--d-radius-lg);
     background: var(--d-accent-pale);
     color: var(--d-accent);
 }
-.settings-card h2 {
-    flex: 1 1 auto;
+.settings-card-body {
+    display: grid;
+    flex: 1;
+    gap: var(--d-space-1);
     min-width: 0;
+}
+.settings-card-body h2 {
     margin: 0;
-    font-size: 1.2em;
+    font-size: 1.15em;
     font-weight: 800;
 }
-.settings-card p {
+.settings-card-body p {
     margin: 0;
 }
-.settings-card-open {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--d-space-1);
-    margin-top: auto;
-    color: var(--d-accent-strong);
-    font-weight: 700;
+.settings-card-forward {
+    flex: none;
+    color: var(--d-text-muted);
+}
+/* A phone has no room for the mark beside the words: it stands under them. */
+@media (max-width: 40rem) {
+    .settings-card {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        padding: var(--d-space-4);
+    }
+    .settings-card-icon {
+        grid-row: 1 / span 2;
+    }
+    .settings-card .status {
+        grid-column: 2;
+        grid-row: 2;
+        justify-self: start;
+    }
+    .settings-card-forward {
+        grid-column: 3;
+        grid-row: 1 / span 2;
+    }
 }
 /* The mark beside a card's title: calm green, amber where names go public or something waits, grey otherwise. */
 .status {
     display: inline-flex;
     align-items: center;
+    flex: none;
     gap: 6px;
-    margin-left: auto;
     padding: 3px 10px;
     border-radius: 999px;
     font-size: var(--d-size-sm);

@@ -30,6 +30,7 @@ export const t = {
         name: 'Name',
         moveUp: 'Nach oben',
         moveDown: 'Nach unten',
+        dragToSort: 'Ziehen zum Sortieren',
         explanation: 'Erklärung',
         countOf: (n: number, total: number) => `${n} von ${total}`,
         chosen: (n: number) => `${n} gewählt`,
@@ -452,7 +453,7 @@ export const t = {
         arrange: 'Anordnen',
         measures: 'Genaue Maße',
         frameFields: { x: 'X', y: 'Y', width: 'Breite', height: 'Höhe' },
-        layer: 'Ebene',
+        layerOf: (n: number, total: number) => `Ebene ${n} von ${total}`,
         linkedAlso: (names: string) => `Auch in: ${names}`,
         linkedPending: 'ab dem Speichern',
         linkedInfo:

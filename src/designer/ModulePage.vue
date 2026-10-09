@@ -15,19 +15,31 @@ import ModuleSidebar from './ModuleSidebar.vue';
  */
 const root = ref<HTMLElement | null>(null);
 const top = ref(0);
+/** How much of the host page's navigation still stands above the module in the window: the sidebar ends at the window's lower edge. */
+const visibleTop = ref(0);
 function measure(): void {
-    if (root.value) top.value = Math.max(0, root.value.getBoundingClientRect().top + window.scrollY);
+    if (!root.value) return;
+    const rect = root.value.getBoundingClientRect();
+    top.value = Math.max(0, rect.top + window.scrollY);
+    visibleTop.value = Math.max(0, rect.top);
+}
+function follow(): void {
+    if (root.value) visibleTop.value = Math.max(0, root.value.getBoundingClientRect().top);
 }
 onMounted(() => {
     measure();
     window.addEventListener('resize', measure);
+    window.addEventListener('scroll', follow, { passive: true });
 });
-onBeforeUnmount(() => window.removeEventListener('resize', measure));
+onBeforeUnmount(() => {
+    window.removeEventListener('resize', measure);
+    window.removeEventListener('scroll', follow);
+});
 </script>
 
 <template>
     <!-- "de": names on a tile may need to hyphenate (Plan.md 44, M5) – we do not know what the host page sets. -->
-    <div ref="root" :lang="LOCALE" class="infoscreen-designer module-page" :style="{ minHeight: `calc(100vh - ${top}px)` }">
+    <div ref="root" :lang="LOCALE" class="infoscreen-designer module-page" :style="{ minHeight: `calc(100vh - ${top}px)`, '--page-top': `${visibleTop}px` }">
         <div class="layout">
             <ModuleSidebar />
             <main class="content"><slot /></main>
@@ -51,11 +63,20 @@ onBeforeUnmount(() => window.removeEventListener('resize', measure));
 .module-page :deep(.module-sidebar) {
     align-self: start;
 }
+/* The page lies on a light surface like the sidebar (Plan.md 79, B3); the tiles in it get a quieter shadow and a thin edge. */
 .content {
+    --d-shadow-card: 0 1px 2px #0f172a14, 0 2px 8px #0f172a0d;
     display: grid;
+    min-width: 0;
     align-content: start;
     gap: var(--d-space-4);
-    padding-bottom: var(--d-space-6);
+    padding: var(--d-space-5);
+    border-radius: var(--d-radius-lg);
+    background: var(--d-surface);
+    box-shadow: var(--d-shadow-card);
+}
+.content :deep(.d-card) {
+    border-color: var(--d-divider);
 }
 @media (max-width: 48rem) {
     .layout {
@@ -64,7 +85,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', measure));
         padding: var(--d-space-3);
     }
     .content {
-        padding-bottom: var(--d-space-5);
+        padding: var(--d-space-4);
     }
 }
 </style>

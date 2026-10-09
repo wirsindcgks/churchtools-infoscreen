@@ -45,7 +45,7 @@
     --d-control-h: 40px;
     /* Cards sit on the workspace with a soft shadow, not a frame. */
     --d-shadow-card: 0 1px 3px #0f172a14, 0 6px 16px #0f172a0d;
-    --d-shadow-card-hover: 0 2px 6px #0f172a1a, 0 10px 24px #0f172a14;
+    --d-shadow-card-hover: 0 3px 8px #0f172a26, 0 14px 30px #0f172a1f;
     /* The stage lies on the workspace, a little deeper than a card. */
     --d-shadow-stage: 0 4px 18px #0f172a33;
     /* The calm ground around cards and the sidebar: a touch darker than the panel, from the host's own colours. */
@@ -371,4 +371,33 @@
     .infoscreen-designer *::after {
         transition: none !important;
     }
+}
+
+/* The hint of a symbol button (tip.ts): a small dark face, on top of dialogs too. */
+.infoscreen-designer .d-tip {
+    position: fixed;
+    z-index: 1200;
+    max-width: min(20rem, calc(100vw - 16px));
+    padding: 5px 10px;
+    border-radius: var(--d-radius);
+    background: #0f172a;
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    line-height: 1.35;
+    box-shadow: var(--d-shadow);
+    pointer-events: none;
+}
+
+/* A row of a sortable list in the hand (useSortable.ts): lifted above the others, which slide aside. */
+.infoscreen-designer [data-sort-item] {
+    transition: transform var(--d-transition);
+}
+.infoscreen-designer [data-sort-item][data-sort-dragging] {
+    position: relative;
+    z-index: 2;
+    border-radius: var(--d-radius-lg);
+    background: var(--d-surface);
+    box-shadow: var(--d-shadow);
+    cursor: grabbing;
 }

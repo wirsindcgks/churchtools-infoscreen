@@ -11,6 +11,8 @@ import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
 import SlideImportDialog from './SlideImportDialog.vue';
 import { useConfirm } from './useConfirm';
+import { useSortable } from './useSortable';
+import { vTip } from './tip';
 
 const { confirm } = useConfirm();
 
@@ -102,14 +104,18 @@ function toggleOpen(): void {
 const selectedIndex = computed(() => editor.slides.findIndex((s) => s.id === editor.slide?.id) + 1);
 
 const importing = ref(false);
-const dragging = ref<number | null>(null);
-const over = ref<number | null>(null);
 
-function drop(index: number): void {
-    if (dragging.value !== null) editor.moveSlide(dragging.value, index);
-    dragging.value = null;
-    over.value = null;
-}
+/**
+ * Dragging replaces the browser's own drag and drop, which a finger cannot use (Plan.md 79, D7): the handle for the
+ * mouse, a held tile for the finger – and on a phone's narrow row, where there is no room for a handle, for the mouse too.
+ */
+useSortable({
+    container: list,
+    onMove: (from, to) => editor.moveSlide(from, to),
+    horizontal: () => phone.value,
+    touchOnRow: true,
+    mouseOnRow: () => phone.value,
+});
 
 /** What the chain symbol says: the other playlists showing the slide (Plan.md 49). */
 function linkedLabel(id: string): string {
@@ -134,9 +140,9 @@ function removeCurrent(): void {
             </span>
             <!-- Over 75rem the column folds into a rail, below it the drawer closes (Plan.md 45); the phone has its own header. -->
             <button
+                v-tip="t.editor.slideList.collapse"
                 type="button"
                 class="d-btn d-btn--icon collapse-btn"
-                :title="t.editor.slideList.collapse"
                 :aria-label="t.editor.slideList.collapse"
                 data-testid="slides-collapse"
                 @click="emit('collapse')"
@@ -163,9 +169,9 @@ function removeCurrent(): void {
                 <Icon name="chevron-down" :size="16" :class="['toggle-chevron', { open }]" />
             </button>
             <button
+                v-tip="t.editor.slideList.duplicateSlide"
                 class="d-btn d-btn--icon"
                 type="button"
-                :title="t.editor.slideList.duplicateSlide"
                 :aria-label="t.editor.slideList.duplicateSlide"
                 data-testid="slide-duplicate-phone"
                 :disabled="!editor.slide"
@@ -174,9 +180,9 @@ function removeCurrent(): void {
                 <Icon name="duplicate" :size="16" />
             </button>
             <button
+                v-tip="t.editor.slideList.removeSlide"
                 class="d-btn d-btn--icon"
                 type="button"
-                :title="t.editor.slideList.removeSlide"
                 :aria-label="t.editor.slideList.removeSlide"
                 data-testid="slide-remove-phone"
                 :disabled="!editor.slide || editor.slides.length <= 1"
@@ -193,21 +199,20 @@ function removeCurrent(): void {
                 :class="{
                     active: slide.id === editor.slide?.id,
                     disabled: !slide.enabled,
-                    over: over === index && dragging !== index,
                 }"
                 :style="{ width: tileWidth ? `${tileWidth}px` : undefined }"
                 :title="`${index + 1}. ${slide.name}`"
                 :aria-label="`${index + 1}. ${slide.name}`"
-                draggable="true"
+                data-sort-item
                 data-testid="slide-item"
                 @click="editor.selectSlide(slide.id)"
-                @dragstart="dragging = index"
-                @dragover.prevent="over = index"
-                @dragleave="over = null"
-                @drop.prevent="drop(index)"
-                @dragend="dragging = null; over = null"
             >
-                <span class="num">{{ index + 1 }}</span>
+                <div class="lead">
+                    <span class="num">{{ index + 1 }}</span>
+                    <button class="grip" type="button" data-sort-handle :aria-label="t.common.dragToSort" data-testid="slide-handle" @click.stop>
+                        <Icon name="grip" :size="14" />
+                    </button>
+                </div>
                 <div class="thumb" :style="{ width: `${thumb.width}px`, height: `${thumb.height}px` }">
                     <StageView :width="editor.stage.width" :height="editor.stage.height" :fit="thumb.fit">
                         <SlideView :slide="slide" :width="editor.stage.width" :height="editor.stage.height" />
@@ -237,18 +242,18 @@ function removeCurrent(): void {
                 </div>
                 <div v-if="slide.id === editor.slide?.id" class="actions" @click.stop>
                     <button
+                        v-tip="t.editor.slideList.duplicate"
                         class="d-btn d-btn--icon"
                         type="button"
-                        :title="t.editor.slideList.duplicate"
                         :aria-label="t.editor.slideList.duplicate"
                         @click="editor.duplicateCurrentSlide()"
                     >
                         <Icon name="duplicate" :size="16" />
                     </button>
                     <button
+                        v-tip="t.editor.slideList.remove"
                         class="d-btn d-btn--icon"
                         type="button"
-                        :title="t.editor.slideList.remove"
                         :aria-label="t.editor.slideList.remove"
                         :disabled="editor.slides.length <= 1"
                         @click="remove(slide.id, slide.name)"
@@ -347,7 +352,7 @@ li {
     cursor: pointer;
     transition: background-color var(--d-transition);
 }
-li > :not(.num) {
+li > :not(.lead) {
     grid-column: 2;
 }
 li + li {
@@ -356,20 +361,53 @@ li + li {
 li:hover {
     background: var(--d-panel);
 }
+.lead {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
 .num {
     padding-top: 2px;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
-    text-align: right;
+}
+/* The handle sits under the number; a finger holds the whole tile instead (useSortable). */
+.grip {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--d-radius);
+    background: none;
+    color: var(--d-text-faint);
+    cursor: grab;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+li:hover .grip,
+.grip:focus-visible {
+    color: var(--d-text-muted);
+}
+.grip:hover {
+    background: var(--d-workspace);
+    color: var(--d-text);
+}
+/* A held tile must not select its text or open the system menu. */
+li {
+    user-select: none;
+    -webkit-touch-callout: none;
 }
 li.active .num {
     color: var(--d-accent);
     font-weight: 700;
 }
-/* The chosen slide: a ring of 2 px in the accent around its picture. */
+/* The chosen slide: a ring of 2 px in the accent around its picture, 3 px off it. */
 li.active .thumb {
     outline: 2px solid var(--d-accent);
-    outline-offset: 1px;
+    outline-offset: 3px;
 }
 .count {
     color: var(--d-text-muted);
@@ -414,7 +452,7 @@ li.add-item:hover {
     width: 100%;
     min-height: var(--d-control-h);
     margin-top: var(--d-space-2);
-    padding: 6px;
+    padding: 6px 12px;
     border: 0;
     border-radius: var(--d-radius);
     background: none;
@@ -425,10 +463,6 @@ li.add-item:hover {
 }
 .import:hover {
     background: var(--d-accent-pale);
-}
-li.over {
-    border-style: dashed;
-    border-color: var(--d-accent);
 }
 li.disabled .thumb {
     opacity: 0.4;
@@ -575,7 +609,7 @@ li.disabled .thumb {
         padding: 0;
         border: 0;
     }
-    .num {
+    .lead {
         display: none;
     }
     li.active .thumb {
@@ -584,11 +618,7 @@ li.disabled .thumb {
     /* Outside the tile, into the gap: a frame inside would cover the small thumbnail. */
     li.active {
         outline: 2px solid var(--d-accent);
-        outline-offset: 1px;
-    }
-    li.over {
-        outline-style: dashed;
-        outline-color: var(--d-accent);
+        outline-offset: 3px;
     }
     /* The two tiles below sit side by side here instead of stacked full-width (Plan.md 44). */
     li.add-item {

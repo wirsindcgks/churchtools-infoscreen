@@ -19,6 +19,7 @@ import TileField from '../fields/TileField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import FontSection from '../FontSection.vue';
 import { GROUPS_TILES } from '../layouts';
+import { move as moveItem } from '../../ops';
 import { useBlockEdit } from '../use-block';
 
 /** Labels in the order of `GroupFields` itself, so the fieldset needs no list of its own (Plan.md 43). */
@@ -93,9 +94,7 @@ function removeAt(index: number): void {
 
 function move(from: number, to: number): void {
     if (to < 0 || to >= props.block.groupIds.length) return;
-    const ids = [...props.block.groupIds];
-    [ids[from], ids[to]] = [ids[to]!, ids[from]!];
-    setBlock({ groupIds: ids });
+    setBlock({ groupIds: moveItem(props.block.groupIds, from, to) });
 }
 
 /** Folded sections say what is set inside (Plan.md 47). */

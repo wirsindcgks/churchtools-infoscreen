@@ -1,9 +1,10 @@
 <script setup lang="ts">
 /**
  * The left column of the module: a light card with a soft shadow on the workspace, one entry per area with
- * its symbol in a small field (Plan.md 79, B3). The format filters left it – they stand beside the search
- * of the pages that filter. "Einstellungen" is the last entry after a rule, for administrators only (role
- * concept, Plan.md F). Below 48rem this used to turn into one row to swipe – seven of its ten entries sat
+ * its symbol in a small field (Plan.md 79, B3). It reaches down to the lower edge of the window and stays there while
+ * the page scrolls; "Über & Neuigkeiten" and "Einstellungen" (the latter for administrators only, role concept,
+ * Plan.md F) stand at its end after a rule. The format filters left it – they stand beside the search of the pages
+ * that filter. Below 48rem this used to turn into one row to swipe – seven of its ten entries sat
  * unseen to the right (Plan.md 44, M1). Now a button names the current page and opens a panel with the same
  * list as on a desktop, stacked vertically.
  */
@@ -120,7 +121,7 @@ watch(
                     </RouterLink>
                 </li>
             </ul>
-            <ul class="library last">
+            <ul class="library last" data-testid="sidebar-last">
                 <li>
                     <RouterLink
                         :to="{ name: ABOUT.name }"
@@ -161,6 +162,8 @@ watch(
     position: sticky;
     top: var(--d-space-4);
     box-sizing: border-box;
+    /* To the window's lower edge, whatever of the host's navigation still stands above (`--page-top`, ModulePage). */
+    height: calc(100vh - var(--page-top, 0px) - 2 * var(--d-space-4));
     padding: var(--d-space-3);
     border-radius: var(--d-radius-lg);
     background: var(--d-surface);
@@ -235,10 +238,29 @@ a.active .nav-icon {
     font-weight: 400;
 }
 
+@media (min-width: 48.0625rem) {
+    .module-sidebar {
+        display: flex;
+        flex-direction: column;
+    }
+    #module-pages {
+        display: flex;
+        flex: 1;
+        flex-direction: column;
+        gap: var(--d-space-2);
+        min-height: 0;
+        overflow-y: auto;
+    }
+    ul.library.last {
+        margin-top: auto;
+    }
+}
+
 @media (max-width: 48rem) {
     .module-sidebar {
         position: relative;
         top: auto;
+        height: auto;
         padding: 0;
         background: none;
         box-shadow: none;
