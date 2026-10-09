@@ -372,6 +372,8 @@ let touchLive = false;
 let touchLiveTimer: ReturnType<typeof setTimeout> | undefined;
 const pasteMenu = ref<{ left: number; top: number; at: { x: number; y: number } } | null>(null);
 const press = longPress(onLongPress);
+/** The block a long press has just caught: it flashes, so the finger knows something happened (user at the phone, 2026-10-09). */
+const pressedId = ref<string | null>(null);
 let pressPoint = { x: 0, y: 0 };
 
 async function onLongPress(): Promise<void> {
@@ -391,6 +393,9 @@ async function onLongPress(): Promise<void> {
         };
         return;
     }
+    pressedId.value = down.target;
+    setTimeout(() => (pressedId.value = null), 300);
+    navigator.vibrate?.(15);
     if (!editor.selectedBlockId) editor.selectBlock(down.target);
     await nextTick();
     if (quickMenu.value) quickMenu.value.openMore();
@@ -522,6 +527,8 @@ function endOnOutside(event: PointerEvent): void {
     if (target?.closest('[data-testid="text-edit"], [data-testid="quick-menu"]')) return;
     editor.endTextEdit();
 }
+/** Letters this size on the screen are readable while writing; smaller ones the phone zooms up to it (C4). */
+const READABLE_PX = 16;
 /** The view before a phone zoomed onto the block being written (C4); it comes back when the writing ends. */
 let viewBeforeWriting: View | null = null;
 watch(
@@ -535,9 +542,16 @@ watch(
         }
         document.addEventListener('pointerdown', endOnOutside, true);
         const writing = blocks.value.find((b) => b.id === id);
-        if (!wide.value && writing) {
-            viewBeforeWriting = { ...view.value };
-            setView(viewOnto(baseFit.value, writing, size, 0.9, 16));
+        // Only as far as the letters become readable, never more than the block's width – a bigger jump, together with the
+        // keyboard coming, threw the slide about (user at the phone, 2026-10-09). Readable already: no zoom at all.
+        if (!wide.value && writing?.type === 'text') {
+            const onScreen = writing.style.fontSize * fit.value.scale;
+            if (onScreen < READABLE_PX) {
+                const zoom = (view.value.zoom * READABLE_PX) / onScreen;
+                const fill = Math.min(0.9, (zoom * writing.width * baseFit.value.scale) / size.width);
+                viewBeforeWriting = { ...view.value };
+                setView(viewOnto(baseFit.value, writing, size, fill, 16));
+            }
         }
         await nextTick();
         const el = textArea.value;
@@ -624,7 +638,7 @@ function onEmptyAction(b: Block): void {
                     v-for="block in blocks"
                     :key="block.id"
                     class="frame"
-                    :class="{ 'frame--selected': block.id === editor.selectedBlockId, 'frame--locked': block.locked, 'frame--tight': tight(block) }"
+                    :class="{ 'frame--selected': block.id === editor.selectedBlockId, 'frame--locked': block.locked, 'frame--tight': tight(block), 'frame--pressed': block.id === pressedId }"
                     :style="{
                         left: `${block.x}px`,
                         top: `${block.y}px`,
@@ -1007,12 +1021,24 @@ function onEmptyAction(b: Block): void {
 .handle--s { left: 50%; top: 100%; cursor: ns-resize; }
 .handle--sw { left: 0; top: 100%; cursor: nesw-resize; }
 .handle--w { left: 0; top: 50%; cursor: ew-resize; }
-/* A fingertip needs a bigger grip than a mouse pointer. */
+/* A long press caught the block: a short flash of the frame. */
+.frame--pressed {
+    animation: frame-pressed 0.3s ease-out;
+}
+@keyframes frame-pressed {
+    from {
+        background: rgba(59, 130, 246, 0.35);
+    }
+    to {
+        background: transparent;
+    }
+}
+/* A fingertip needs a bigger grip than a mouse pointer – but the grip is the hit area below; seen, 16 screen pixels are enough (user at the phone, 2026-10-09: 24 were too big). */
 @media (pointer: coarse) {
     .handle {
-        width: calc(var(--handle) * 2);
-        height: calc(var(--handle) * 2);
-        margin: calc(var(--handle) * -1);
+        width: calc(var(--handle) * 4 / 3);
+        height: calc(var(--handle) * 4 / 3);
+        margin: calc(var(--handle) * -2 / 3);
     }
     /* The area that catches a fingertip: 44 × 44 screen pixels around the middle of the handle. */
     .handle::before {
