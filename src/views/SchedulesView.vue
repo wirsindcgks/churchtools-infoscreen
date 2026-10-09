@@ -201,8 +201,8 @@ onMounted(async () => {
 
             <GroupCard
                 icon="calendar"
-                :title="t.common.filters.all"
-                :count="t.common.screenCount(shown.length)"
+                :title="t.schedules.all"
+                :count="t.schedules.count(shown.length)"
                 heading-id="schedules-group"
             >
                 <ul v-if="shown.length" class="d-tiles">

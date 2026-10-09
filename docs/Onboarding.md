@@ -28,7 +28,7 @@ Etwa eine halbe Stunde, den Fernseher nicht mitgezählt.
 - [ ] **Gestalter aufnehmen:** in die Gruppe „Infoscreen-Designer", egal in welcher Rolle.
 - [ ] **Je Fernseher ein Geräte-Konto** mit Benutzername und Passwort, Personenstatus mit wenig Rechten, Mitglied
       von „Infoscreen-Devices" ([Schritt 6](Einrichtung.md#6-geräte-benutzer-anlegen)).
-- [ ] **Adresse für den Fernseher erzeugen:** Einstellungen → Adressen für die Fernseher
+- [ ] **Adresse für den Fernseher erzeugen:** Einstellungen → Adressen der Bildschirme
       ([Schritt 7](Einrichtung.md#7-den-fernseher-einrichten)).
 
 **Danach gelegentlich:**
@@ -161,7 +161,7 @@ behalten auch ihre Schrift.
 
 Das Gerät tut nichts selbst; es braucht nur einmal die richtige Adresse.
 
-- [ ] Ein Administrator hat ein **Geräte-Konto** angelegt und unter **Einstellungen → Adressen für die Fernseher die Adresse** erzeugt.
+- [ ] Ein Administrator hat ein **Geräte-Konto** angelegt und unter **Einstellungen → Adressen der Bildschirme die Adresse** erzeugt.
 - [ ] Die Adresse ist die **Startseite des Kiosk-Browsers**, im Vollbild; auf einem Raspberry Pi mit FullPageOS in
       `fullpageos.txt`. Tastatur und Maus braucht es nicht.
 - [ ] **Bildschirmschoner und Energiesparen aus.**
