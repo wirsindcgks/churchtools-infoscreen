@@ -51,7 +51,9 @@ test('choosing a block shows its menu in the bar; the big sheet stays shut and t
     await expect(page.getByTestId('inspector-sheet-toggle')).toBeHidden();
     await expectStageClear(page);
     // Every button of the bar is at least a fingertip.
-    for (const id of ['quick-duplicate', 'quick-delete', 'quick-more']) {
+    // Duplicate and delete live in "⋯" on a phone: the fields keep the room.
+    await expect(menu.getByTestId('quick-duplicate')).toHaveCount(0);
+    for (const id of ['phone-back-to-slide', 'quick-more']) {
         const b = (await menu.getByTestId(id).boundingBox())!;
         expect(b.width).toBeGreaterThanOrEqual(44);
         expect(b.height).toBeGreaterThanOrEqual(44);
@@ -60,6 +62,10 @@ test('choosing a block shows its menu in the bar; the big sheet stays shut and t
     const full = (await bar.boundingBox())!;
     expect(full.x + full.width).toBeLessThanOrEqual(390);
     await page.screenshot({ path: 'test-results/c2-phone-block.png' });
+    await menu.getByTestId('quick-more').tap();
+    await expect(menu.getByTestId('quick-duplicate')).toBeVisible();
+    await expect(menu.getByTestId('quick-delete')).toBeVisible();
+    await menu.getByTestId('quick-more').tap();
 });
 
 test('the left button of the bar lets go of the block and shows the slide again', async ({ page }) => {

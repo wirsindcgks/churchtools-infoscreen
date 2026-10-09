@@ -243,7 +243,8 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
             >
                 <Icon :name="block.locked ? 'lock' : 'unlock'" :size="18" />
             </button>
-            <template v-if="!block.locked">
+            <!-- On a phone they move into "⋯": the bar keeps its width for the fields (user at the test instance, 2026-10-09). -->
+            <template v-if="!block.locked && !bar">
                 <button
                     v-tip="withKeys(t.common.duplicate, KEYS.duplicate)"
                     class="d-btn d-btn--icon d-btn--ghost quick-action"
@@ -305,6 +306,15 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                     >
                         {{ t.quick.editText }}
                     </button>
+                    <button
+                        v-if="bar && !block.locked"
+                        role="menuitem"
+                        type="button"
+                        data-testid="quick-duplicate"
+                        @click="choose(() => editor.duplicateBlock(block.id))"
+                    >
+                        {{ t.common.duplicate }}
+                    </button>
                     <button role="menuitem" type="button" data-testid="quick-copy" @click="choose(() => editor.copyBlock(block.id))">
                         {{ t.quick.copy }}<kbd>{{ keyLabel(KEYS.copy) }}</kbd>
                     </button>
@@ -337,6 +347,12 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                     <button role="menuitem" type="button" data-testid="quick-all-settings" @click="choose(() => emit('all-settings'))">
                         {{ t.quick.allSettings }}
                     </button>
+                    <template v-if="bar && !block.locked">
+                        <hr role="separator">
+                        <button role="menuitem" type="button" class="quick-more-danger" data-testid="quick-delete" @click="choose(() => editor.removeBlock(block.id))">
+                            {{ t.common.delete }}
+                        </button>
+                    </template>
                 </div>
             </div>
         </div>
@@ -499,6 +515,7 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
     width: 24px;
     height: 24px;
 }
+/* The fields scroll; a field cut off at the edge says there is more. No mask here: the sheet of a field hangs inside. */
 .quick-menu--bar .quick-fields {
     flex: 1;
     min-width: 0;
@@ -525,8 +542,21 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
     padding: 0 var(--d-space-4);
 }
 .quick-menu--bar .quick-fields :deep(button.quick-chip) {
+    flex: none;
     height: 44px;
     min-width: 44px;
+    max-width: 150px;
+}
+.quick-menu--bar .quick-fields :deep(.quick-face) {
+    white-space: nowrap;
+}
+/* A hairline between the fields and "⋯". */
+.quick-menu--bar .quick-actions {
+    padding-left: var(--d-space-1);
+    border-left: 1px solid var(--d-divider);
+}
+.quick-more-danger {
+    color: var(--d-danger);
 }
 .quick-menu--bar .quick-fields :deep(.segment-face) {
     min-width: 44px;
