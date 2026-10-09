@@ -321,7 +321,7 @@ async function fakeChurch(page: Page): Promise<void> {
 
 /** Place the chosen block by the inspector's fields. */
 async function frame(page: Page, box: { x: number; y: number; width: number; height: number }): Promise<void> {
-    await openSection(page, 'position');
+    await openSection(page, 'measures');
     for (const [key, value] of Object.entries(box)) {
         const field = page.getByTestId(`inspector-${key}`);
         await field.fill(String(value));
@@ -423,7 +423,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await page.getByTestId('groups-per-page').selectOption('2');
     // A font as a church would set it for two cards a page; the default (56 px) is meant for one.
     await openSection(page, 'font');
-    await page.getByTestId('block-inspector').getByLabel('Größe (px)').fill('44');
+    await page.getByTestId('font-size').fill('44');
     await openSection(page, 'fields');
     await page.getByTestId('group-show-leaders').check();
     await page.getByTestId('group-show-leaderImages').check();

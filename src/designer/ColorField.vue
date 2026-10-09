@@ -10,13 +10,15 @@
  */
 import { ref, watch } from 'vue';
 import { t } from '../i18n/designer';
+import { useFieldVisible } from './inspector/mode';
 import { parseHex, pickerValue } from './color';
 import { usePalette, type PaletteColor } from './palette';
 
-const props = defineProps<{ modelValue: string; label: string; testid?: string; inline?: boolean }>();
+const props = defineProps<{ modelValue: string; label: string; testid?: string; inline?: boolean; quick?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [string]; focus: []; blur: [] }>();
 
 const lists = usePalette();
+const visible = useFieldVisible(() => props.quick);
 
 /** Name and hex value; a colour without a name of its own is just its hex value. */
 function swatchLabel(entry: PaletteColor): string {
@@ -57,7 +59,7 @@ function onTextBlur(): void {
 </script>
 
 <template>
-    <div class="d-field color-field" :class="{ 'color-field--inline': inline }">
+    <div v-if="visible" class="d-field color-field" :class="{ 'color-field--inline': inline }">
         <span>{{ label }}</span>
         <div class="row">
             <input

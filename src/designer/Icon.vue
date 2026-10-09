@@ -75,6 +75,13 @@ const PATHS = {
     'layer-forward': ['M12 19V6', 'M7 11l5-5 5 5'],
     'layer-backward': ['M12 5v13', 'M7 13l5 5 5-5'],
     'layer-back': ['M12 5v11', 'M7 12l5 5 5-5', 'M5 20h14'],
+    // Text alignment and vertical position in a box (Plan.md 79, B2): lines of text, or a block against a line.
+    'align-left': ['M4 6h16', 'M4 10h10', 'M4 14h16', 'M4 18h10'],
+    'align-center': ['M4 6h16', 'M7 10h10', 'M4 14h16', 'M7 18h10'],
+    'align-right': ['M4 6h16', 'M10 10h10', 'M4 14h16', 'M10 18h10'],
+    'valign-top': ['M4 4h16', 'M8 8h8v8H8z'],
+    'valign-middle': ['M4 12h16', 'M9 6h6v12H9z'],
+    'valign-bottom': ['M4 20h16', 'M8 8h8v8H8z'],
 } as const;
 
 export type IconName = keyof typeof PATHS;

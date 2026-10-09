@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { addBlock, openSection } from './helpers';
+import { addBlock, chosen, choose, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -11,7 +11,7 @@ async function openEditor(page: Page): Promise<void> {
 
 async function setHeight(page: Page, height: number): Promise<void> {
     const inspector = page.getByTestId('block-inspector');
-    await openSection(page, 'position');
+    await openSection(page, 'measures');
     // Inside the slide, so a screenshot shows the whole box.
     await inspector.getByTestId('inspector-y').fill('40');
     await inspector.getByTestId('inspector-height').fill(String(height));
@@ -34,13 +34,12 @@ test('a text block sits at the top, middle or bottom of a tall box (Plan.md 70)'
     const stage = page.locator('.editor-stage');
     const frame = stage.locator('.block--text').last();
     const inner = frame.getByTestId('text-inner');
-    const select = page.getByTestId('text-vertical-align');
-    await expect(select).toHaveValue('top'); // the default shows as the effective value
+    await expect.poll(() => chosen(page, 'text-vertical-align')).toBe('top'); // the default shows as the effective value
     await expect(frame).toBeVisible();
 
     for (const [value, name] of [['top', 'oben'], ['middle', 'mitte'], ['bottom', 'unten']] as const) {
-        await select.selectOption(value);
-        await expect(select).toHaveValue(value);
+        await choose(page, 'text-vertical-align', value);
+        await expect.poll(() => chosen(page, 'text-vertical-align')).toBe(value);
         await page.waitForTimeout(200);
         const f = await box(frame);
         const t = await box(inner);
@@ -50,9 +49,9 @@ test('a text block sits at the top, middle or bottom of a tall box (Plan.md 70)'
         await page.screenshot({ path: `test-results/vertical-text-${name}.png` });
     }
 
-    // Undo takes the choice back like any other style change.
+    // Undo takes the choice back like any other style change – right after the click, with the segment still focused.
     await page.keyboard.press('ControlOrMeta+z');
-    await expect(select).toHaveValue('middle');
+    await expect.poll(() => chosen(page, 'text-vertical-align')).toBe('middle');
 });
 
 test('text that does not fit starts at the top even when set to "Unten"', async ({ page }) => {
@@ -62,7 +61,7 @@ test('text that does not fit starts at the top even when set to "Unten"', async 
     await page.getByTestId('text-input').blur();
     await setHeight(page, 200);
     await openSection(page, 'font');
-    await page.getByTestId('text-vertical-align').selectOption('bottom');
+    await choose(page, 'text-vertical-align', 'bottom');
 
     const frame = page.locator('.editor-stage .block--text').last();
     const f = await box(frame);
@@ -96,19 +95,19 @@ test('a countdown and a clock keep their old place and can be moved', async ({ p
     await openSection(page, 'font');
     const countdown = stage.locator('.block--countdown').last();
     const content = countdown.locator('.countdown-inner');
-    await expect(page.getByTestId('text-vertical-align')).toHaveValue('middle');
+    await expect.poll(() => chosen(page, 'text-vertical-align')).toBe('middle');
     let f = await box(countdown);
     let c = await box(content);
     expect(Math.abs((c.top + c.bottom) / 2 - (f.top + f.bottom) / 2)).toBeLessThan(3);
     await page.getByTestId('text-vertical-align').scrollIntoViewIfNeeded();
     await page.screenshot({ path: 'test-results/vertical-countdown-mitte.png' });
-    await page.getByTestId('text-vertical-align').selectOption('bottom');
+    await choose(page, 'text-vertical-align', 'bottom');
     await page.waitForTimeout(200);
     f = await box(countdown);
     c = await box(content);
     expect(Math.abs(c.bottom - f.bottom)).toBeLessThan(3);
     await page.screenshot({ path: 'test-results/vertical-countdown-unten.png' });
-    await page.getByTestId('text-vertical-align').selectOption('top');
+    await choose(page, 'text-vertical-align', 'top');
     await page.waitForTimeout(200);
     c = await box(content);
     expect(Math.abs(c.top - (await box(countdown)).top)).toBeLessThan(3);
@@ -117,7 +116,7 @@ test('a countdown and a clock keep their old place and can be moved', async ({ p
     await setHeight(page, 600);
     await openSection(page, 'font');
     const clock = stage.locator('.block--clock').last();
-    await expect(inspector.getByTestId('text-vertical-align')).toHaveValue('top');
+    await expect.poll(() => chosen(inspector, 'text-vertical-align')).toBe('top');
     expect(Math.abs((await box(clock.locator('.clock-inner'))).top - (await box(clock)).top)).toBeLessThan(3);
 
 });
@@ -130,14 +129,14 @@ test('a next appointment places image and text together', async ({ page }) => {
     await setHeight(page, 700);
     await openSection(page, 'font');
     const next = stage.locator('.block--next-appointment').last();
-    await expect(inspector.getByTestId('text-vertical-align')).toHaveValue('middle');
+    await expect.poll(() => chosen(inspector, 'text-vertical-align')).toBe('middle');
     const text = next.locator('.hero-text, .text').first();
     await expect(text).toBeVisible();
     let f = await box(next);
     let c = await box(text);
     expect(Math.abs((c.top + c.bottom) / 2 - (f.top + f.bottom) / 2)).toBeLessThan(5);
     await page.screenshot({ path: 'test-results/vertical-next-mitte.png' });
-    await inspector.getByTestId('text-vertical-align').selectOption('bottom');
+    await choose(inspector, 'text-vertical-align', 'bottom');
     await page.waitForTimeout(200);
     f = await box(next);
     c = await box(text);
