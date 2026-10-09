@@ -208,6 +208,51 @@ test('the short menu of several: lock for all, delete for all, and "⋯" lets go
     await expect(frames(page)).toHaveCount(3);
 });
 
+async function tops(page: Page): Promise<number[]> {
+    return Promise.all([0, 1, 2].map(async (i) => (await frames(page).nth(i).boundingBox())!.y));
+}
+
+test('"Ausrichten" in the inspector lines three blocks up on the left, "Senkrecht verteilen" evens the gaps (Plan.md 79, D4)', async ({ page }) => {
+    await openWithThree(page);
+    await page.keyboard.press('ControlOrMeta+a');
+    await openSection(page, 'arrange');
+    const inspector = page.locator('[data-testid="section-arrange"]');
+    await inspector.getByTestId('distribute-y').click();
+    // a 200..400 and c 600..800 stay, b (200..400) moves between them: free 200 - 200 = 0, so no gap at all.
+    const [a, b, c] = await frames(page).evaluateAll((els) => els.map((el) => el.getBoundingClientRect()));
+    expect(Math.abs(b!.top - a!.bottom)).toBeLessThan(2);
+    expect(Math.abs(c!.top - b!.bottom)).toBeLessThan(2);
+    await inspector.getByTestId('arrange-left').click();
+    const xs = await lefts(page);
+    expect(Math.abs(xs[1]! - xs[0]!)).toBeLessThan(1);
+    expect(Math.abs(xs[2]! - xs[0]!)).toBeLessThan(1);
+    await page.keyboard.press('ControlOrMeta+z');
+    expect((await lefts(page))[2]! - (await lefts(page))[0]!).toBeGreaterThan(100);
+});
+
+test('"Verteilen" is off below three blocks and says why (Plan.md 79, D4)', async ({ page }) => {
+    await openWithThree(page);
+    await frames(page).nth(0).click();
+    await frames(page).nth(1).click({ modifiers: ['Shift'] });
+    await openSection(page, 'arrange');
+    const button = page.locator('[data-testid="section-arrange"]').getByTestId('distribute-x');
+    await expect(button).toHaveAttribute('aria-disabled', 'true');
+    await button.hover();
+    await expect(page.getByTestId('tip')).toHaveText('Verteilen ab drei Bausteinen');
+});
+
+test('the chip "Ausrichten" of the short menu lines two blocks up at the top (Plan.md 79, D4)', async ({ page }) => {
+    await openWithThree(page);
+    await frames(page).nth(0).click();
+    await frames(page).nth(2).click({ modifiers: ['Shift'] });
+    const menu = page.getByTestId('quick-menu');
+    await menu.getByTestId('quick-chip').click();
+    await menu.getByTestId('arrange-top').click();
+    const ys = await tops(page);
+    expect(Math.abs(ys[2]! - ys[0]!)).toBeLessThan(1);
+    expect(ys[1]! - ys[0]!).toBeLessThan(1);
+});
+
 test('"?" names Ctrl+A and the Shift-click (Plan.md 79, D2)', async ({ page }) => {
     await openWithThree(page);
     await page.keyboard.press('Shift+?');
