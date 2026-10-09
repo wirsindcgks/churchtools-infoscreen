@@ -5,6 +5,8 @@
  * The button opens a sheet with all blocks, alphabetical, as symbol, name and a sentence, with a search above:
  * at the bottom below 48rem, a dialog in the middle above (Plan.md 44, M3; 45).
  * The grid choice sits beside it – it is about the stage, too.
+ * On a phone the bar above the stage is gone (Plan.md 79, C2): "+ Baustein", "Einfügen" and the guides live in the bar at
+ * the bottom (`PhoneBar.vue`); only the sheet stays here.
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
@@ -16,8 +18,10 @@ import { BLOCK_ICONS, BLOCK_LABELS, PALETTE } from './ops';
 import SearchField from './SearchField.vue';
 import { KEYS, withKeys } from './shortcuts';
 import { GRID_SIZES } from './snap';
+import { usePhone } from './usePhone';
 
 const editor = useEditorStore();
+const phone = usePhone();
 
 /** The sheet's state lives in the store: the button on an empty slide opens it, too (Plan.md 79, A7). */
 const sheetOpen = computed(() => editor.blockSheetOpen);
@@ -71,6 +75,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
 <template>
     <div class="block-palette">
         <button
+            v-if="!phone"
             class="d-btn d-btn--create"
             type="button"
             :aria-label="t.editor.palette.addBlock"
@@ -81,7 +86,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
             <Icon name="plus" :size="16" /> <span class="create-label">{{ t.editor.palette.addBlock }}</span>
         </button>
         <button
-            v-if="editor.clipboard.length"
+            v-if="!phone && editor.clipboard.length"
             class="d-btn"
             type="button"
             :disabled="!editor.slide"
@@ -92,7 +97,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
             {{ t.editor.palette.paste }}
         </button>
         <!-- The symbol alone was not recognised (Plan.md 47): the word stays beside it. -->
-        <label class="grid-select" :title="t.editor.palette.guidesTitle">
+        <label v-if="!phone" class="grid-select" :title="t.editor.palette.guidesTitle">
             <Icon name="grid" :size="16" />
             <span class="grid-label">{{ t.editor.palette.guides }}</span>
             <select
@@ -245,6 +250,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
 }
 /* Below 48rem the backdrop of the "+ Baustein" sheet sits at the bottom, not centred. */
 @media (max-width: 48rem) {
+    .block-palette {
+        padding: 0;
+    }
     .block-sheet-backdrop {
         align-items: end;
     }

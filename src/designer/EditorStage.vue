@@ -17,7 +17,7 @@ import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, clampFrame } from './ops';
 import QuickMenu from './QuickMenu.vue';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 
-const emit = defineEmits<{ 'all-settings': [] }>();
+const emit = defineEmits<{ 'all-settings': []; 'open-content': [] }>();
 const editor = useEditorStore();
 const stage = useStageContext();
 // The designer shows what the TV shows (Plan.md 38): a band past its "until" no longer draws here either.
@@ -206,7 +206,7 @@ const gridStyle = computed(() => {
 
 const blocks = computed(() => editor.slide?.blocks ?? []);
 
-/** The short menu (Plan.md 79, C1) stands from 48rem up – a phone gets its own bar in C2; reactive, because the window may be resized. */
+/** The short menu (Plan.md 79, C1) stands from 48rem up – a phone has its bar at the bottom instead (C2); reactive, because the window may be resized. */
 const wideQuery = window.matchMedia('(min-width: 48.0625rem)');
 const wide = ref(wideQuery.matches);
 function onWideChange(event: MediaQueryListEvent): void {
@@ -235,13 +235,13 @@ const emptyButtons = computed(() =>
     }),
 );
 
-/** Leads to the content of the chosen block: its menu opens its first field; without a menu, all the settings open (C5, C6). */
+/** Leads to the content of the chosen block: its menu opens its first field – on a phone the editor's bar does (C5, C6). */
 async function openContent(): Promise<void> {
     await nextTick();
     const b = editor.block;
     if (!b || b.locked) return;
     if (quickMenu.value) quickMenu.value.openFirst();
-    else if (!wide.value) emit('all-settings');
+    else if (!wide.value) emit('open-content');
 }
 /** A double click: a text block is written on the stage (C4), any other leads to its content (C5). */
 function onDoubleClick(): void {

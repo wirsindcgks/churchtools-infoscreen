@@ -3,6 +3,8 @@
  * The short menu above the chosen block (Plan.md 79, C1): on the left the block's marked fields in their compact form, then
  * the actions lock, duplicate, delete and "⋯". It stands in the host of the stage, outside the scaled stage, in screen pixels,
  * so text and buttons keep their size at every zoom. A locked block shows only "Entsperren" and "⋯".
+ * `variant="bar"` (C2) is the same menu as the bar at the bottom of a phone: the block's symbol, the fields in a row to
+ * scroll, then duplicate, delete and "⋯" – which also holds lock/unlock there. An open field is a sheet from below.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, reactive, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
@@ -10,18 +12,20 @@ import type { Block } from '../model/schema';
 import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
 import { BLOCK_INSPECTORS } from './inspector/blocks';
-import { INSPECTOR_MODE, QUICK_OPEN } from './inspector/mode';
-import { BLOCK_LABELS, type Layer } from './ops';
+import { INSPECTOR_MODE, QUICK_OPEN, QUICK_VARIANT } from './inspector/mode';
+import { BLOCK_ICONS, BLOCK_LABELS, type Layer } from './ops';
 import { quickMenuPlace, type Rect, type Size } from './quick-menu';
 import { KEYS, keyLabel, withKeys } from './shortcuts';
 import { vTip } from './tip';
 
-/** `frame`: the block's rectangle in host pixels; `host`: the size of the host. */
-const props = defineProps<{ block: Block; frame: Rect; host: Size }>();
+/** `frame`: the block's rectangle in host pixels; `host`: the size of the host – both only for the menu above the block. */
+const props = defineProps<{ block: Block; frame?: Rect; host?: Size; variant?: 'float' | 'bar' }>();
 const emit = defineEmits<{ 'all-settings': [] }>();
 
 const editor = useEditorStore();
+const bar = props.variant === 'bar';
 provide(INSPECTOR_MODE, 'quick');
+provide(QUICK_VARIANT, bar ? 'bar' : 'float');
 /** Only one field is open at a time. */
 const openField = ref<string | null>(null);
 provide(QUICK_OPEN, openField);
@@ -31,11 +35,11 @@ const fields = ref<HTMLElement | null>(null);
 
 // Where the menu stands: from the block's frame and its own size – and not moving while someone works in it.
 const size = reactive({ width: 0, height: 0 });
-const ready = ref(false);
+const ready = ref(bar);
 const focusInside = ref(false);
 const placed = ref({ left: 0, top: 0 });
 function place(): void {
-    if (focusInside.value) return;
+    if (bar || focusInside.value || !props.frame || !props.host) return;
     const { left, top } = quickMenuPlace(props.frame, size, props.host);
     placed.value = { left, top };
 }
@@ -84,10 +88,11 @@ watch(moreOpen, async (open) => {
     openField.value = null;
     document.addEventListener('pointerdown', closeMoreOnOutside, true);
     await nextTick();
+    moreAbove.value = bar;
     const host = root.value?.closest<HTMLElement>('[data-quick-host]')?.getBoundingClientRect();
     const menu = root.value?.getBoundingClientRect();
     const list = moreList.value;
-    if (host && menu && list) {
+    if (!bar && host && menu && list) {
         const below = host.bottom - menu.bottom;
         moreAbove.value = list.offsetHeight + 8 > below && menu.top - host.top > below;
     }
@@ -170,7 +175,8 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
     <div
         ref="root"
         class="quick-menu"
-        :style="{ left: `${placed.left}px`, top: `${placed.top}px`, visibility: ready ? undefined : 'hidden' }"
+        :class="{ 'quick-menu--bar': bar }"
+        :style="bar ? undefined : { left: `${placed.left}px`, top: `${placed.top}px`, visibility: ready ? undefined : 'hidden' }"
         role="toolbar"
         :aria-label="t.quick.label(BLOCK_LABELS[block.type])"
         data-testid="quick-menu"
@@ -179,11 +185,14 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
         @focusin="focusInside = true"
         @focusout="onFocusOut"
     >
+        <span v-if="bar" class="quick-kind" role="img" :aria-label="BLOCK_LABELS[block.type]" data-testid="quick-kind">
+            <Icon :name="BLOCK_ICONS[block.type]" :size="20" />
+        </span>
         <template v-if="!block.locked">
             <div ref="fields" class="quick-fields">
                 <component :is="BLOCK_INSPECTORS[block.type]" :block="block" />
             </div>
-            <span class="quick-divider" aria-hidden="true" />
+            <span v-if="!bar" class="quick-divider" aria-hidden="true" />
         </template>
         <div v-if="writing" class="quick-actions">
             <button class="d-btn d-btn--primary quick-done" type="button" data-testid="quick-done" data-quick-stop @click="editor.endTextEdit()">
@@ -192,6 +201,7 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
         </div>
         <div v-else class="quick-actions">
             <button
+                v-if="!bar"
                 v-tip="lockLabel"
                 class="d-btn d-btn--icon d-btn--ghost quick-action"
                 :class="{ 'quick-action--on': block.locked }"
@@ -214,7 +224,7 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                     data-quick-stop
                     @click="editor.duplicateBlock(block.id)"
                 >
-                    <Icon name="duplicate" :size="18" />
+                    <Icon name="duplicate" :size="bar ? 20 : 18" />
                 </button>
                 <button
                     v-tip="withKeys(t.common.delete, KEYS.delete)"
@@ -225,7 +235,7 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                     data-quick-stop
                     @click="editor.removeBlock(block.id)"
                 >
-                    <Icon name="trash" :size="18" />
+                    <Icon name="trash" :size="bar ? 20 : 18" />
                 </button>
             </template>
             <div ref="moreWrap" class="quick-more">
@@ -242,7 +252,7 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                     data-quick-stop
                     @click="moreOpen = !moreOpen"
                 >
-                    <Icon name="more" :size="18" />
+                    <Icon name="more" :size="bar ? 20 : 18" />
                 </button>
                 <div
                     v-if="moreOpen"
@@ -253,6 +263,10 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                     data-testid="quick-more-list"
                     @keydown="onMoreKey"
                 >
+                    <button v-if="bar" role="menuitem" type="button" data-testid="quick-lock" @click="choose(() => editor.setLocked(block.id, !block.locked))">
+                        {{ lockLabel }}
+                    </button>
+                    <hr v-if="bar" role="separator">
                     <button role="menuitem" type="button" data-testid="quick-copy" @click="choose(() => editor.copyBlock(block.id))">
                         {{ t.quick.copy }}<kbd>{{ keyLabel(KEYS.copy) }}</kbd>
                     </button>
@@ -391,5 +405,65 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
     margin: 4px 0;
     border: 0;
     border-top: 1px solid var(--d-divider);
+}
+/* The bar at the bottom of a phone (C2): one row of 56 px – symbol, fields to scroll, then the actions, each at least 44 × 44. */
+.quick-menu--bar {
+    position: relative;
+    z-index: auto;
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    padding: 0 var(--d-space-2);
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+}
+.quick-kind {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 36px;
+    height: 44px;
+    color: var(--d-text-muted);
+}
+.quick-menu--bar .quick-fields {
+    flex: 1;
+    min-width: 0;
+    padding: 0 var(--d-space-1);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.quick-menu--bar .quick-fields::-webkit-scrollbar {
+    display: none;
+}
+.quick-menu--bar .quick-actions {
+    flex: none;
+    margin-left: auto;
+}
+.quick-menu--bar .quick-action,
+.quick-menu--bar .quick-done {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+}
+.quick-menu--bar .quick-done {
+    width: auto;
+    padding: 0 var(--d-space-4);
+}
+.quick-menu--bar .quick-fields :deep(button.quick-chip) {
+    height: 44px;
+    min-width: 44px;
+}
+.quick-menu--bar .quick-fields :deep(.segment-face) {
+    min-width: 44px;
+    min-height: 44px;
+}
+.quick-menu--bar .quick-more-list {
+    top: auto;
+    bottom: calc(100% + 8px);
+}
+.quick-menu--bar .quick-more-list button {
+    min-height: 44px;
 }
 </style>

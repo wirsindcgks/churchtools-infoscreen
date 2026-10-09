@@ -7,16 +7,16 @@ import { INSPECTOR_CONTEXT } from './inspector/context';
 import { createBlock } from './ops';
 import QuickMenu from './QuickMenu.vue';
 
-function mountMenu() {
+function mountMenu(variant?: 'bar', locked = false) {
     const pinia = createPinia();
     setActivePinia(pinia);
-    const block = createBlock('clock', { width: 1920, height: 1080 }, [1]);
+    const block = { ...createBlock('clock', { width: 1920, height: 1080 }, [1]), locked };
     const frame = ref({ left: 400, top: 300, width: 200, height: 100 });
     const Host = defineComponent({
         setup() {
             provideStageContext({ now: new Date(), timeZone: 'Europe/Berlin', clockConfirmed: true, churchName: '', appointments: [], media: new Map() });
             provide(INSPECTOR_CONTEXT, { pickImage: () => undefined, calendars: [], groups: [], homepages: [], rooms: [] });
-            return () => h(QuickMenu, { block, frame: frame.value, host: { width: 1000, height: 600 } });
+            return () => h(QuickMenu, variant ? { block, variant } : { block, frame: frame.value, host: { width: 1000, height: 600 } });
         },
     });
     const wrapper = mount(Host, { attachTo: document.body, global: { plugins: [pinia] } });
@@ -52,6 +52,32 @@ describe('QuickMenu (Plan.md 79, C1)', () => {
         await wrapper.find('[data-testid="quick-lock"]').trigger('keydown', { key: 'Delete' });
         await wrapper.find('[data-testid="quick-lock"]').trigger('keydown', { key: 'a' });
         expect(reached).toEqual(['a']);
+        wrapper.unmount();
+    });
+
+    it('as the bar of a phone: the symbol of the block, lock and unlock inside "⋯" and no place of its own', async () => {
+        const { wrapper } = mountMenu('bar');
+        const menu = wrapper.find('[data-testid="quick-menu"]');
+        expect((menu.element as HTMLElement).style.left).toBe('');
+        expect(menu.classes()).toContain('quick-menu--bar');
+        expect(wrapper.find('[data-testid="quick-kind"]').attributes('aria-label')).toBe('Uhr');
+        // Duplicate and delete stay in the bar; lock and unlock move into the list behind "⋯".
+        expect(wrapper.find('[data-testid="quick-duplicate"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="quick-lock"]').exists()).toBe(false);
+        await wrapper.find('[data-testid="quick-more"]').trigger('click');
+        expect(wrapper.find('[data-testid="quick-lock"]').text()).toBe('Sperren');
+        expect(wrapper.find('[data-testid="quick-all-settings"]').exists()).toBe(true);
+        wrapper.unmount();
+    });
+
+    it('as the bar of a phone, a locked block keeps only its symbol and "⋯" with "Entsperren"', async () => {
+        const { wrapper } = mountMenu('bar', true);
+        expect(wrapper.find('[data-testid="quick-kind"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="quick-duplicate"]').exists()).toBe(false);
+        expect(wrapper.find('.quick-fields').exists()).toBe(false);
+        await wrapper.find('[data-testid="quick-more"]').trigger('click');
+        expect(wrapper.find('[data-testid="quick-lock"]').text()).toBe('Entsperren');
+        expect(wrapper.find('[data-testid="quick-layer-front"]').exists()).toBe(false);
         wrapper.unmount();
     });
 });

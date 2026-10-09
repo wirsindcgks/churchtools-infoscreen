@@ -169,6 +169,8 @@ export const t = {
         slide: 'Folie',
         slideNamed: (name: string) => `Folie: ${name}`,
         slideOf: (index: number, total: number) => `Folie ${index} von ${total}`,
+        /** The bar at the bottom of a phone (Plan.md 79, C2). */
+        phone: { editSlide: 'Folie bearbeiten' },
         blockNamed: (label: string) => `Baustein: ${label}`,
         discardChanges: 'Ungespeicherte Änderungen verwerfen?',
         linkedSavedOne: (name: string, where: string) => `Verknüpfte Folie ${name} gespeichert – gilt auch in ${where}.`,

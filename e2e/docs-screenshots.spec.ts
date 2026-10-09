@@ -7,7 +7,7 @@
  * never reaches the instance. Skipped in the normal test run.
  */
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addBlock, choose, openSection } from './helpers';
+import { addBlock, choose, openInspector, openSection, openSlides } from './helpers';
 
 const OUT = 'docs/bilder';
 
@@ -534,10 +534,10 @@ test.describe('on a phone', () => {
         await fakeChurch(page);
         await page.goto('./');
         await page.getByTestId('screen-card').filter({ hasText: 'Foyer' }).getByTestId('open-editor').click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
-        await page.getByTestId('slide-item').nth(2).click(); // the appointments
+        const sh = await openSlides(page);
+        await sh.getByTestId('slide-item').nth(2).click(); // the appointments
         await page.getByTestId('frame-appointment-list').first().click();
-        await expect(page.getByTestId('inspector-sheet')).toHaveClass(/open/);
+        await openInspector(page);
         await shoot(page, 'handy');
     });
 });

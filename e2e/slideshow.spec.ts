@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addBlock, chosen, choose, dragRow, nudgeRow, openSection } from './helpers';
+import { addBlock, chosen, choose, dragRow, expectSlides, nudgeRow, openInspectorOnPhone, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -68,9 +68,10 @@ async function fakeLibrary(page: Page, baseURL: string | undefined, count: numbe
 async function newSlideWithSlideshow(page: Page, ownSlide = true): Promise<void> {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
-    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await expectSlides(page);
     if (ownSlide) await page.getByTestId('add-slide').click();
     await addBlock(page, 'slideshow');
+    await openInspectorOnPhone(page);
     await expect(page.getByTestId('block-inspector')).toBeVisible();
 }
 

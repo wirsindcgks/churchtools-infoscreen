@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addBlock, choose, nudgeRow, openSection } from './helpers';
+import { addBlock, choose, expectSlides, nudgeRow, openInspectorOnPhone, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -189,9 +189,10 @@ async function fakeChurch(page: Page, church: Church = { bookingRequests: [] }):
 async function newRoomsBlock(page: Page, ownSlide = true): Promise<void> {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
-    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await expectSlides(page);
     if (ownSlide) await page.getByTestId('add-slide').click();
     await addBlock(page, 'rooms');
+    await openInspectorOnPhone(page);
     await expect(page.getByTestId('block-inspector')).toBeVisible();
 }
 
@@ -347,10 +348,8 @@ for (const size of [
         await page.setViewportSize(size);
         // The slide list is folded away on a tablet and a phone: the block goes onto the first slide.
         await newRoomsBlock(page, size.width === 1440);
-        // Where the inspector is folded away, open it – as a sheet on the phone, as a column on the tablet.
-        if (!(await page.getByTestId('rooms-add-all').isVisible())) {
-            await page.getByTestId(size.width === 390 ? 'inspector-sheet-toggle' : 'tablet-inspector-toggle').click();
-        }
+        // Where the inspector is folded away, open it as a column – the phone's sheet is opened by `newRoomsBlock`.
+        if (!(await page.getByTestId('rooms-add-all').isVisible())) await page.getByTestId('tablet-inspector-toggle').click();
         await page.getByTestId('rooms-add-all').click();
         await openSection(page, 'room-list');
         await page.getByTestId('room-entry').first().getByTestId('room-hint').fill('z'.repeat(100));
