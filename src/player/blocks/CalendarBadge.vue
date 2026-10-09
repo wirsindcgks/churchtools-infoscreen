@@ -1,9 +1,8 @@
 <script setup lang="ts">
 /**
  * The calendar as a small label (Plan.md, 20), drawn like the calendar label of the WordPress plugin of the same
- * makers (Plan.md 79): an outlined pill with a dot, both in the calendar's colour, the name in capitals. The name keeps
- * the block's own text colour – a calendar colour as text would vanish on a slide of a similar tone; the dot and the
- * frame carry the calendar.
+ * makers (Plan.md 79): an outlined pill in the calendar's colour, the name in capitals. The name keeps the block's own
+ * text colour – a calendar colour as text would vanish on a slide of a similar tone; the frame carries the calendar.
  */
 import { computed } from 'vue';
 import { themeOf, useStageContext } from '../context';
@@ -21,7 +20,6 @@ const style = computed(() => ({
 
 <template>
     <span class="badge" :style="style">
-        <span class="dot" :style="{ background: base }" aria-hidden="true" />
         <span class="name">{{ name }}</span>
     </span>
 </template>
@@ -30,7 +28,6 @@ const style = computed(() => ({
 .badge {
     display: inline-flex;
     align-items: center;
-    gap: 0.4em;
     flex: none;
     max-width: 12em;
     padding: 0.2em 0.65em;
@@ -43,12 +40,6 @@ const style = computed(() => ({
     text-transform: uppercase;
     white-space: nowrap;
     vertical-align: middle;
-}
-.dot {
-    flex: none;
-    width: 0.6em;
-    height: 0.6em;
-    border-radius: 50%;
 }
 .name {
     overflow: hidden;

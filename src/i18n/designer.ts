@@ -292,8 +292,8 @@ export const t = {
         /** The short words of a switch in the menu, where the full label is too long. */
         short: { name: 'Name', logo: 'Logo', title: 'Titel', image: 'Bild' },
         unlock: 'Entsperren',
-        /** The left button of the phone bar: lets go of the block and shows the slide again. */
-        backToSlide: 'Zurück zur Folie',
+        /** The right button of the phone bar's upper row: lets go of the block. */
+        deselect: 'Auswahl aufheben',
         /** In "⋯": chooses the block that lies under the chosen one (C3). */
         selectBelow: 'Darunterliegenden wählen',
         /** In "⋯" of the phone bar: starts the writing on the stage (C4). */
