@@ -47,6 +47,10 @@ export const useEditorStore = defineStore('editor', () => {
     const selectedSlideId = ref<string | null>(null);
     /** The chosen blocks (Plan.md 79, D1); `selection` has them in layer order, only those the slide still has. */
     const selectedBlockIds = ref<string[]>([]);
+    /** "Mehrere auswählen" (Plan.md 79, D6): while on, every tap on a block adds it to the choice or takes it out. */
+    const multiSelect = ref(false);
+    /** The block whose layer row the mouse is over; the stage outlines its frame. Not a step in the history. */
+    const hoveredBlockId = ref<string | null>(null);
     const status = ref<SaveStatus>('idle');
     const conflict = ref<ConflictInfo | null>(null);
     /** A slide another playlist saved in between (Plan.md 49); set instead of `conflict`. */
@@ -289,6 +293,17 @@ export const useEditorStore = defineStore('editor', () => {
     function selectSlide(id: string): void {
         selectedSlideId.value = id;
         selectedBlockIds.value = [];
+        multiSelect.value = false;
+        hoveredBlockId.value = null;
+    }
+
+    /** Starts the mode and keeps what is chosen. */
+    function startMultiSelect(): void {
+        multiSelect.value = true;
+    }
+
+    function endMultiSelect(): void {
+        multiSelect.value = false;
     }
 
     function selectBlock(id: string | null): void {
@@ -889,6 +904,10 @@ export const useEditorStore = defineStore('editor', () => {
         block,
         calendarIds,
         selectedBlockIds,
+        multiSelect,
+        hoveredBlockId,
+        startMultiSelect,
+        endMultiSelect,
         selection,
         isSelected,
         editingTextId,

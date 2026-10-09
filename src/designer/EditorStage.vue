@@ -117,6 +117,8 @@ interface Drag {
 let drag: Drag | null = null;
 /** A press on one of several chosen blocks keeps the choice for a group drag; let go unmoved, it picks that block alone. */
 let soloPending: string | null = null;
+/** In the mode "Mehrere auswählen" (D6) the same for a chosen block: let go unmoved, the press takes it out of the choice. */
+let togglePending: string | null = null;
 /**
  * Zoomed in, a finger on the chosen block first waits (C3; user at the phone, 2026-10-09): moved at once, it moves the
  * stage like a map; held still for {@link HOLD_MS}, the block lifts and follows the finger.
@@ -155,13 +157,20 @@ function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): vo
     const point = handle === 'move' && clicked.locked && !event.altKey ? stagePoint(event) : null;
     const block = (point && blockBelow(blocks.value, clicked, point)) || clicked;
     soloPending = null;
+    togglePending = null;
+    // In the mode "Mehrere auswählen" (D6) a press adds an unchosen block and starts no drag; a chosen one is dragged with the group.
+    if (handle === 'move' && editor.multiSelect && !editor.isSelected(block.id)) {
+        editor.toggleBlock(block.id);
+        return;
+    }
     // Shift, Ctrl or ⌘ adds the block to the choice or takes it out, and starts no drag (D2).
     if (handle === 'move' && (event.shiftKey || event.ctrlKey || event.metaKey)) {
         editor.toggleBlock(block.id);
         return;
     }
     const wasChosen = editor.isSelected(block.id);
-    if (handle === 'move' && wasChosen && editor.selectedBlockIds.length > 1) soloPending = block.id;
+    if (handle === 'move' && editor.multiSelect) togglePending = block.id;
+    else if (handle === 'move' && wasChosen && editor.selectedBlockIds.length > 1) soloPending = block.id;
     else editor.selectBlock(block.id);
     const touch = event.pointerType === 'touch';
     if (touch) showName(block.id);
@@ -169,7 +178,12 @@ function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): vo
     if (touch && !wasChosen) return;
     // Locked (Plan.md, 25): it can be chosen – to unlock it in the inspector – but not moved. In a group the locked stay and the rest goes.
     const moving = handle === 'move' ? editor.selection.filter((b) => !b.locked) : block.locked ? [] : [block];
-    if (!moving.length) return;
+    if (!moving.length) {
+        // Nothing to carry (a locked block): the press can only toggle.
+        if (togglePending) editor.toggleBlock(togglePending);
+        togglePending = null;
+        return;
+    }
     const ready: Drag = {
         id: block.id,
         ids: moving.map((b) => b.id),
@@ -215,6 +229,7 @@ function moveTo(event: PointerEvent): void {
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
     editor.beginGesture();
     soloPending = null;
+    togglePending = null;
     dragId.value = drag.id;
     dragIds.value = drag.ids;
     const f = { ...drag.frame };
@@ -281,6 +296,10 @@ function end(): void {
     if (soloPending) {
         editor.selectBlock(soloPending);
         soloPending = null;
+    }
+    if (togglePending) {
+        editor.toggleBlock(togglePending);
+        togglePending = null;
     }
 }
 
@@ -432,7 +451,7 @@ function resetZoom(): void {
 }
 
 // Taps and long presses of a finger (C3): on a block or on the empty stage; the menus and buttons in the host are none of it.
-const NOT_STAGE = '[data-testid="quick-menu"], [data-testid="text-edit"], .empty-action, .zoom-reset, .empty-slide-box, .paste-menu';
+const NOT_STAGE = '[data-testid="quick-menu"], [data-testid="text-edit"], .empty-action, .zoom-reset, .empty-slide-box, .paste-menu, .multi-pill';
 function tapTarget(el: EventTarget | null): string | null {
     const e = el as Element | null;
     if (!e || !host.value?.contains(e) || e.closest(NOT_STAGE)) return null;
@@ -457,6 +476,8 @@ async function onLongPress(): Promise<void> {
     if (!down) return;
     tapDown = null;
     lastTap = null;
+    // In the mode "Mehrere auswählen" (D6) a press is a tap, not a call for a menu.
+    if (editor.multiSelect) return;
     if (down.target === 'empty') {
         // Something to paste: a small menu at the finger; it pastes there.
         if (!editor.clipboard.length) return;
@@ -542,7 +563,7 @@ function onHostUpCapture(event: PointerEvent): void {
     }
     lastTap = tap;
     // A tap on the empty stage lets go of the block (the mouse does it on press; a finger may be the start of a zoom).
-    if (down.target === 'empty') editor.selectBlock(null);
+    if (down.target === 'empty' && !editor.multiSelect) editor.selectBlock(null);
 }
 /**
  * A press on the empty stage with a mouse lets go of the blocks and – dragged more than 3 px – draws the selection rectangle
@@ -562,7 +583,8 @@ const MARQUEE_SLOP = 3;
 const noSelect = (event: Event): void => event.preventDefault();
 function onHostDown(event: PointerEvent): void {
     if (event.pointerType === 'touch') return;
-    const add = event.shiftKey || event.ctrlKey || event.metaKey;
+    // In the mode "Mehrere auswählen" (D6) the mouse adds like with Shift pressed.
+    const add = event.shiftKey || event.ctrlKey || event.metaKey || editor.multiSelect;
     if (!add) editor.selectBlock(null);
     const point = event.button === 0 && editor.slide ? stagePoint(event) : null;
     if (!point) return;
@@ -625,6 +647,8 @@ async function openContent(): Promise<void> {
 }
 /** A double click: a text block is written on the stage (C4), any other leads to its content (C5). */
 function onDoubleClick(): void {
+    // In the mode "Mehrere auswählen" (D6) two taps are two toggles, not a call for the content.
+    if (editor.multiSelect) return;
     const chosen = editor.block;
     if (chosen?.type === 'text') {
         if (!chosen.locked) editor.startTextEdit(chosen.id);
@@ -777,7 +801,7 @@ function onEmptyAction(b: Block): void {
                     v-for="block in blocks"
                     :key="block.id"
                     class="frame"
-                    :class="{ 'frame--selected': editor.isSelected(block.id), 'frame--locked': block.locked, 'frame--tight': tight(block), 'frame--pressed': block.id === pressedId, 'frame--lifted': block.id === liftedId }"
+                    :class="{ 'frame--selected': editor.isSelected(block.id), 'frame--locked': block.locked, 'frame--tight': tight(block), 'frame--pressed': block.id === pressedId, 'frame--lifted': block.id === liftedId, 'frame--hinted': block.id === editor.hoveredBlockId && !editor.isSelected(block.id) }"
                     :style="{
                         left: `${block.x}px`,
                         top: `${block.y}px`,
@@ -883,6 +907,11 @@ function onEmptyAction(b: Block): void {
         <button v-if="view.zoom > 1" class="d-btn zoom-reset" type="button" data-testid="zoom-reset" @pointerdown.stop @click="resetZoom">
             <Icon name="frame-fit" :size="16" /> {{ t.editor.stage.zoomReset }}
         </button>
+        <!-- Wider than a phone the mode counts here, over the stage in screen pixels; a phone's bar does it there (D6). -->
+        <div v-if="wide && editor.multiSelect" class="multi-pill" data-testid="multi-select-bar" @pointerdown.stop>
+            <span>{{ t.editor.selectedCount(editor.selectedBlockIds.length) }}</span>
+            <button class="d-btn" type="button" data-testid="multi-select-done" @click="editor.endMultiSelect()">{{ t.quick.done }}</button>
+        </div>
         <QuickMenu
             v-if="quickBlocks.length && quickFrame"
             :key="quickBlocks.map((b) => b.id).join()"
@@ -928,12 +957,28 @@ function onEmptyAction(b: Block): void {
     touch-action: none;
 }
 .zoom-reset,
-.paste-menu {
+.paste-menu,
+.multi-pill {
     position: absolute;
     z-index: 15;
     box-shadow: var(--d-shadow);
     font-family: var(--d-font);
     white-space: nowrap;
+}
+/* Top, centred: "3 gewählt · Fertig" while the mode "Mehrere auswählen" is on. */
+.multi-pill {
+    top: 8px;
+    left: 50%;
+    display: flex;
+    align-items: center;
+    gap: var(--d-space-3);
+    padding: var(--d-space-1) var(--d-space-1) var(--d-space-1) var(--d-space-4);
+    transform: translateX(-50%);
+    border: 1px solid var(--d-edge);
+    border-radius: 999px;
+    background: var(--d-surface);
+    color: var(--d-text);
+    font-size: var(--d-size-sm);
 }
 /* Top right: at the bottom of the frame, a phone's block row lies over it. */
 .zoom-reset {
@@ -1088,7 +1133,8 @@ function onEmptyAction(b: Block): void {
     cursor: move;
     outline: var(--line) dashed rgba(148, 163, 184, 0.55);
 }
-.frame:hover {
+.frame:hover,
+.frame--hinted {
     outline-color: rgba(96, 165, 250, 0.9);
 }
 .frame--selected,

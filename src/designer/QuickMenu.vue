@@ -97,6 +97,8 @@ const moreAbove = ref(false);
 const moreWrap = ref<HTMLElement | null>(null);
 const moreButton = ref<HTMLButtonElement | null>(null);
 const moreList = ref<HTMLElement | null>(null);
+/** A finger is the pointer (read when the list opens): only then "Mehrere auswählen" is offered here, a mouse has Shift. */
+const coarse = ref(false);
 
 function closeMoreOnOutside(event: PointerEvent): void {
     if (!moreWrap.value?.contains(event.target as Node)) moreOpen.value = false;
@@ -107,6 +109,7 @@ watch(moreOpen, async (open) => {
         return;
     }
     openField.value = null;
+    coarse.value = window.matchMedia?.('(pointer: coarse)').matches ?? false;
     document.addEventListener('pointerdown', closeMoreOnOutside, true);
     await nextTick();
     moreAbove.value = bar;
@@ -362,6 +365,9 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
                     </template>
                     <button v-if="below" role="menuitem" type="button" data-testid="quick-select-below" @click="choose(() => editor.selectBlock(below!.id))">
                         {{ t.quick.selectBelow }}
+                    </button>
+                    <button v-if="(bar || coarse) && !editor.multiSelect" role="menuitem" type="button" data-testid="quick-multi-select" @click="choose(() => editor.startMultiSelect())">
+                        {{ t.editor.multiSelect }}
                     </button>
                     <template v-if="many && !bar">
                         <hr role="separator">

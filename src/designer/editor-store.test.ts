@@ -744,6 +744,22 @@ describe('selecting several blocks (Plan.md 79, D1)', () => {
         expect(editor.selection).toEqual([]);
     });
 
+    it('keeps the choice when the mode "Mehrere auswählen" starts, and ends it with a change of slide, which also clears the hint', async () => {
+        const { editor, ids } = await three();
+        editor.selectBlock(ids[0]);
+        editor.startMultiSelect();
+        expect(editor.multiSelect).toBe(true);
+        expect(editor.selectedBlockIds).toEqual([ids[0]]);
+        editor.endMultiSelect();
+        expect(editor.multiSelect).toBe(false);
+        expect(editor.selectedBlockIds).toEqual([ids[0]]);
+        editor.startMultiSelect();
+        editor.hoveredBlockId = ids[1];
+        editor.selectSlide(editor.slide!.id);
+        expect(editor.multiSelect).toBe(false);
+        expect(editor.hoveredBlockId).toBeNull();
+    });
+
     it('selects what a rectangle touches, or adds it to the choice', async () => {
         const { editor, ids } = await three();
         editor.selectArea({ x: 250, y: 120, width: 200, height: 20 });
