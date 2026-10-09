@@ -73,6 +73,24 @@ kommt als eigene Zeile in „Auf einen Blick".
   e2e-Tests, die die Pflichtprüfung `check` nicht fährt: per `grep` in `e2e/` nach testids und Texten suchen und die
   Treffer lokal laufen lassen. *(Seit 2026-10-07: `v0.17.1` ließ vier Tests in `e2e/rooms.spec.ts` unbemerkt rot.)*
 
+### Sparsam arbeiten
+
+*Seit 2026-10-09 (Nutzer: „Sonst kommen wir zu schnell an die Limits und das bremst uns aus").* Das meiste verbrauchen
+nicht die Änderungen, sondern lange Sitzungen, Testläufe, Bilder und Berichte.
+
+- **Eine Sitzung je Paket.** `Plan.md` ist das Gedächtnis: Am Ende einer Sitzung steht dort der Stand, die nächste
+  beginnt mit „Plan.md, Punkt …, Paket …" statt mit dem alten Verlauf.
+- **Je Runde prüfen:** Typprüfung, Lint und Unit-Tests ganz (sie sind schnell); von den e2e-Tests **nur die betroffenen**
+  (`-g` bzw. Zeile), **nur Chromium**, mit `--reporter=line`, die Ausgabe in eine Datei und davon nur die Zusammenfassung
+  lesen.
+- **Am Ende eines Pakets, vor dem Merge:** die betroffenen e2e-Dateien ganz, in Chromium und WebKit, und
+  `npm run docs:screenshots` – nicht in jeder Runde.
+- **Ein roter Test wird einmal einzeln wiederholt,** nicht die ganze Datei. Die Testinstanz bremst über 600 Anfragen je
+  Minute (`429`, G16); `editor.spec.ts` am Stück stößt daran.
+- **Berichte des Umsetzers höchstens 25 Zeilen:** was gebaut, was vom Auftrag abweicht, was rot ist, offene Fragen.
+- **Bilder sparsam:** je Runde höchstens ein Bild ansehen, das die Änderung zeigt.
+- **Rückmeldungen gebündelt:** eine Liste je Runde statt einzelner Wünsche nacheinander.
+
 ## Geheimnisse und Fixtures
 
 - **Keine Zugangsdaten und keine Instanz-URL ins Repo.** `.env` ist ignoriert. Instanz-URL und Login-Token
