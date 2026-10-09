@@ -1,16 +1,17 @@
 <script setup lang="ts">
-/** An on/off setting as a switch (Plan.md 79, B2, Entscheidung 15): label left, switch right. Still a checkbox for assistive technology and tests. */
+/** An on/off setting as a switch (Plan.md 79, B2, Entscheidung 15): label left with the room it needs, switch right. Still a checkbox for assistive technology and tests. */
 import { useId } from 'vue';
 import FieldRow from './FieldRow.vue';
 
 defineProps<{ modelValue: boolean; label: string; testid?: string; disabled?: boolean; quick?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [boolean] }>();
-defineSlots<{ info?(): unknown }>();
+defineSlots<{ info?(): unknown; before?(): unknown }>();
 const id = useId();
 </script>
 
 <template>
-    <FieldRow :label="label" :for="id" end :quick="quick">
+    <FieldRow :label="label" :for="id" end wide :quick="quick">
+        <template v-if="$slots.before" #before><slot name="before" /></template>
         <input
             :id="id"
             class="switch"

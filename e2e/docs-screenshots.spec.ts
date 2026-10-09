@@ -7,7 +7,7 @@
  * never reaches the instance. Skipped in the normal test run.
  */
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addBlock, openSection } from './helpers';
+import { addBlock, choose, openSection } from './helpers';
 
 const OUT = 'docs/bilder';
 
@@ -420,7 +420,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await addBlock(page, 'groups');
     await page.getByTestId('groups-homepage').selectOption('40');
     await frame(page, { x: 60, y: 60, width: 1800, height: 960 });
-    await page.getByTestId('groups-per-page').selectOption('2');
+    await choose(page, 'groups-per-page', '2');
     // A font as a church would set it for two cards a page; the default (56 px) is meant for one.
     await openSection(page, 'font');
     await page.getByTestId('font-size').fill('44');

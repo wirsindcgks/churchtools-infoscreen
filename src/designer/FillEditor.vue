@@ -3,20 +3,16 @@ import { t } from '../i18n/designer';
 import type { Fill } from '../model/schema';
 import ColorField from './ColorField.vue';
 import SegmentField from './inspector/fields/SegmentField.vue';
+import { fillOfKind } from './fill-kind';
 import { useFieldVisible } from './inspector/mode';
 
-const props = defineProps<{ modelValue: Fill; quick?: boolean }>();
+/** `noKind` leaves out the choice between colour and gradient, where the page offers it itself (the slide's background). */
+const props = defineProps<{ modelValue: Fill; noKind?: boolean; quick?: boolean }>();
 const visible = useFieldVisible(() => props.quick);
 const emit = defineEmits<{ 'update:modelValue': [Fill]; focus: []; blur: [] }>();
 
 function setKind(kind: string): void {
-    const base = props.modelValue.kind === 'solid' ? props.modelValue.color : props.modelValue.stops[0]!.color;
-    emit(
-        'update:modelValue',
-        kind === 'solid'
-            ? { kind: 'solid', color: base }
-            : { kind: 'linear-gradient', angle: 135, stops: [{ color: base, at: 0 }, { color: '#000000', at: 1 }] },
-    );
+    emit('update:modelValue', fillOfKind(props.modelValue, kind as Fill['kind']));
 }
 
 function setStop(index: number, color: string): void {
@@ -29,6 +25,7 @@ function setStop(index: number, color: string): void {
 <template>
     <div v-if="visible" class="fill-editor">
         <SegmentField
+            v-if="!noKind"
             :model-value="modelValue.kind"
             :options="[
                 { value: 'solid', label: t.common.fill.solid },
@@ -40,6 +37,7 @@ function setStop(index: number, color: string): void {
         />
         <ColorField
             v-if="modelValue.kind === 'solid'"
+            quick
             :label="t.common.fill.solid"
             inline
             testid="fill-color"
@@ -53,6 +51,7 @@ function setStop(index: number, color: string): void {
                 <ColorField
                     v-for="(stop, i) in modelValue.stops"
                     :key="i"
+                    quick
                     :label="i === 0 ? t.common.fill.from : t.common.fill.to"
                     :testid="`fill-stop-${i}`"
                     :model-value="stop.color"

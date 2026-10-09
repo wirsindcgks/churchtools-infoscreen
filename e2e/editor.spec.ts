@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { addBlock, openSection } from './helpers';
+import { addBlock, chosen, choose, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -1233,7 +1233,7 @@ test('list and next appointment in the look of the WordPress plugin: tile, label
 
     await page.getByTestId('slide-item').nth(2).click();
     await page.getByTestId('frame-appointment-list').first().click();
-    await page.getByTestId('list-layout').selectOption('cards');
+    await choose(page, 'list-layout', 'cards');
     const stage = page.locator('.editor-stage');
     // Rows as tall as the plugin's: only those that fit whole – none cut off at the bottom.
     await expectWholeCards(stage);
@@ -1244,7 +1244,7 @@ test('list and next appointment in the look of the WordPress plugin: tile, label
 
     await page.getByTestId('slide-item').nth(1).click();
     await page.getByTestId('frame-next-appointment').first().click();
-    await page.getByTestId('next-layout').selectOption('card');
+    await choose(page, 'next-layout', 'card');
     await expect(stage.getByTestId('next-card')).toContainText('Gottesdienst');
     await expect(stage.getByTestId('next-card')).toContainText('Gemeindezentrum, Saal');
     await expect(stage.getByTestId('next-card')).toContainText('anschließendem Kirchencafé');
@@ -1283,8 +1283,8 @@ test('the design page sets the look of all screens: corners, large appointments,
     // Rows as tall as the plugin's: only those that fit whole – none cut off at the bottom.
     await expectWholeCards(stage);
     await page.getByTestId('frame-appointment-list').first().click();
-    await expect(page.getByTestId('list-layout')).toHaveValue('');
-    await page.getByTestId('list-layout').selectOption('rows');
+    await expect.poll(() => chosen(page, 'list-layout')).toBe('');
+    await choose(page, 'list-layout', 'rows');
     await expect(stage.getByTestId('list-card')).toHaveCount(0);
 
     // The preview plays in the theme too – its page bar in the accent colour (seen missing, 2026-09-25).
@@ -1409,9 +1409,10 @@ test('a posts block shows a public group\'s posts, as a card and as a list (Plan
 
     await addBlock(page, 'posts');
     const inspector = page.getByTestId('block-inspector');
-    const group = inspector.locator('label.check', { hasText: 'ISD-Beitragstest' });
+    await openSection(page, 'post-groups');
+    const group = inspector.getByRole('switch', { name: /ISD-Beitragstest/ });
     await expect(group).toBeVisible({ timeout: 15_000 }); // the group list comes from ChurchTools
-    await group.locator('input[type="checkbox"]').check();
+    await group.check();
 
     const stage = page.locator('.editor-stage');
     const card = stage.getByTestId('posts-card');
@@ -1435,14 +1436,14 @@ test('a posts block shows a public group\'s posts, as a card and as a list (Plan
     await inspector.getByTestId('inspector-width').fill('1400');
     await inspector.getByTestId('inspector-height').fill('700');
     await inspector.getByTestId('inspector-height').blur();
-    const showImage = inspector.locator('label.check', { hasText: 'Bild zeigen' });
-    await showImage.locator('input[type="checkbox"]').uncheck();
+    const showImage = inspector.getByTestId('posts-image');
+    await showImage.uncheck();
     await expect(card.getByTestId('post-image')).toHaveCount(0);
     await page.waitForTimeout(300);
     await card.screenshot({ path: `test-results/posts-card-text.png` });
-    await showImage.locator('input[type="checkbox"]').check();
+    await showImage.check();
 
-    await inspector.getByTestId('posts-layout').selectOption('list');
+    await choose(inspector, 'posts-layout', 'list');
     await expect(stage.getByTestId('posts-list')).toBeVisible();
     await expect(stage.getByTestId('post-row').first()).toBeVisible();
     await page.waitForTimeout(300);
@@ -1497,7 +1498,7 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await inspector.getByTestId('inspector-width').fill('1600');
     await inspector.getByTestId('inspector-height').fill('900');
     await inspector.getByTestId('inspector-height').blur();
-    await inspector.getByTestId('groups-per-page').selectOption('2');
+    await choose(inspector, 'groups-per-page', '2');
     await expect(groupCard.first()).toHaveClass(/hero--portrait/);
     const shownCards = await groupCard.count();
     expect(shownCards).toBeGreaterThanOrEqual(1);
@@ -1515,12 +1516,12 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await inspector.getByTestId('group-show-leaderImages').check();
     // One to four a page, for comparing them side by side (third test, 2026-09-29).
     for (const perPage of ['1', '2', '3', '4']) {
-        await inspector.getByTestId('groups-per-page').selectOption(perPage);
+        await choose(inspector, 'groups-per-page', perPage);
         await page.waitForTimeout(600);
         await card.screenshot({ path: `test-results/groups-card-${perPage}-a-page.png` });
     }
 
-    await inspector.getByTestId('groups-layout').selectOption('list');
+    await choose(inspector, 'groups-layout', 'list');
     const list = stage.getByTestId('groups-list');
     await expect(list).toBeVisible();
     await expect(stage.getByTestId('group-row').filter({ hasText: 'Kinderkirche' })).toBeVisible();
@@ -1851,30 +1852,30 @@ test('a groups block sorts every group by weekday, name A–Z or Z–A, until a 
     await addBlock(page, 'groups');
     const inspector = page.getByTestId('block-inspector');
     await inspector.getByTestId('groups-homepage').selectOption('40');
-    await inspector.getByTestId('groups-layout').selectOption('list');
+    await choose(inspector, 'groups-layout', 'list');
 
     const rows = page.locator('.editor-stage').getByTestId('group-row');
     const sort = inspector.getByTestId('groups-sort');
-    await expect(sort).toHaveValue('weekday');
+    await expect.poll(() => chosen(inspector, 'groups-sort')).toBe('weekday');
     await expect(rows).toHaveCount(3);
     await expect(rows.nth(0)).toContainText('Bibelkreis');
     await expect(rows.nth(2)).toContainText('Chor');
 
-    await sort.selectOption('name-asc');
+    await choose(inspector, 'groups-sort', 'name-asc');
     await expect(rows.nth(0)).toContainText('Bibelkreis');
     await expect(rows.nth(1)).toContainText('Chor');
     await expect(rows.nth(2)).toContainText('Zeltlager');
 
-    await sort.selectOption('name-desc');
+    await choose(inspector, 'groups-sort', 'name-desc');
     await expect(rows.nth(0)).toContainText('Zeltlager');
     await expect(rows.nth(1)).toContainText('Chor');
     await expect(rows.nth(2)).toContainText('Bibelkreis');
 
-    // Choosing one by one starts in the order just seen; the select has no place there.
+    // Choosing one by one starts in the order just seen; the order control has no place there.
     await inspector.getByTestId('groups-all').uncheck();
     await openSection(page, 'group-list');
     await expect(sort).toHaveCount(0);
-    const picks = inspector.locator('.group-row');
+    const picks = inspector.getByTestId('group-row');
     await expect(picks).toHaveCount(3);
     await expect(picks.nth(0)).toContainText('Zeltlager');
     await expect(picks.nth(1)).toContainText('Chor');

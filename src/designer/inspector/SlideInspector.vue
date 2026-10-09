@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
- * The inspector while no block is chosen: the slide (name, duration, background) and the playlist. Moved out of
- * `Inspector.vue` unchanged (Plan.md 79, B2, part 1).
+ * The inspector while no block is chosen: the slide (name, duration, whether it shows, background) and the playlist
+ * (Plan.md 79, B2). The background is one segment, "Farbe · Verlauf · Bild".
  */
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { t } from '../../i18n/designer';
 import type { Fill } from '../../model/schema';
 import { bannerShown } from '../../player/banner';
@@ -11,6 +11,7 @@ import { useStageContext } from '../../player/context';
 import { sizedImageUrl } from '../../player/format';
 import { slideSeconds } from '../../player/paging';
 import { useEditorStore } from '../editor-store';
+import { fillOfKind } from '../fill-kind';
 import FillEditor from '../FillEditor.vue';
 import HintRow from '../HintRow.vue';
 import Icon from '../Icon.vue';
@@ -18,6 +19,11 @@ import InfoHint from '../InfoHint.vue';
 import InspectorSection from '../InspectorSection.vue';
 import { useInspectorContext } from './context';
 import { useEdit } from './edit';
+import MediaField from './fields/MediaField.vue';
+import NumberField from './fields/NumberField.vue';
+import SegmentField from './fields/SegmentField.vue';
+import TextField from './fields/TextField.vue';
+import ToggleField from './fields/ToggleField.vue';
 
 const editor = useEditorStore();
 /** The preview's stage context: paged lists report their page count there. */
@@ -47,24 +53,42 @@ const runsLonger = computed(() => {
     return seconds > slide.value.durationSeconds ? seconds : 0;
 });
 
-function setSlideNumber(value: string): void {
-    const n = Number(value);
-    if (n >= 1 && n <= 3600) editor.updateSlide({ durationSeconds: n });
-}
-
 function mediaUrl(id: string | undefined, fit: 'crop' | 'max' = 'crop'): string | null {
     const media = id ? editor.media.find((m) => m.id === id) : undefined;
     return media ? sizedImageUrl(media.imageUrl, 272, 153, fit) : null;
 }
 
-function setBackgroundKind(kind: string): void {
-    if (kind === 'media') context.pickImage('background');
-    else editor.updateSlide({ background: slideFill.value });
-}
-
 const slideFill = computed<Fill>(() =>
     slide.value && slide.value.background.kind !== 'media' ? slide.value.background : { kind: 'solid', color: '#000000' },
 );
+
+const backgroundKinds = [
+    { value: 'solid', label: t.inspector.backgroundKind.solid },
+    { value: 'linear-gradient', label: t.inspector.backgroundKind.gradient },
+    { value: 'media', label: t.inspector.backgroundKind.image },
+];
+
+/**
+ * "Bild" was chosen but no picture is in yet: the segment and the picture field show it, while the slide keeps its fill
+ * until a picture is picked – cancelling the library loses nothing, and "Farbe" shows the old fill again.
+ */
+const wantsImage = ref(false);
+watch(() => `${slide.value?.id}|${slide.value?.background.kind}`, () => {
+    wantsImage.value = false;
+});
+const backgroundKind = computed(() => (wantsImage.value ? 'media' : (slide.value?.background.kind ?? 'solid')));
+
+function setBackgroundKind(kind: string): void {
+    if (!slide.value) return;
+    if (kind === 'media') {
+        wantsImage.value = true;
+        if (slide.value.background.kind !== 'media') context.pickImage('background');
+        return;
+    }
+    wantsImage.value = false;
+    const next = fillOfKind(slideFill.value, kind as Fill['kind']);
+    if (next !== slide.value.background) editor.updateSlide({ background: next });
+}
 
 const playlistSummary = computed(() =>
     editor.screens.length ? editor.screens.map((s) => s.name).join(', ') : t.inspector.noScreen,
@@ -84,16 +108,7 @@ const backgroundColors = computed(() => {
 
 <template>
     <section v-if="slide" data-testid="slide-inspector">
-        <label class="d-field d-field--inline">
-            {{ t.common.name }}
-            <input
-                type="text"
-                maxlength="100"
-                :value="slide.name"
-                v-on="edit"
-                @input="editor.updateSlide({ name: ($event.target as HTMLInputElement).value })"
-            >
-        </label>
+        <TextField :model-value="slide.name" :label="t.common.name" :maxlength="100" testid="slide-name" @update:model-value="editor.updateSlide({ name: $event })" />
         <!-- A slide that other playlists show too (Plan.md 49): changes here count there as well. -->
         <div v-if="linkedNames" class="linked" data-testid="slide-linked">
             <span class="linked-text" :title="t.inspector.linkedAlso(linkedNames)" data-testid="slide-linked-in">
@@ -110,28 +125,16 @@ const backgroundColors = computed(() => {
                 {{ t.inspector.unlink }}
             </button>
         </div>
-        <div class="grid2">
-            <label class="d-field">
-                {{ t.inspector.displaySeconds }}
-                <input
-                    type="number"
-                    min="1"
-                    max="3600"
-                    :value="slide.durationSeconds"
-                    data-testid="duration-input"
-                    v-on="edit"
-                    @input="setSlideNumber(($event.target as HTMLInputElement).value)"
-                >
-            </label>
-            <label class="check check--inline">
-                <input
-                    type="checkbox"
-                    :checked="slide.enabled"
-                    @change="editor.updateSlide({ enabled: ($event.target as HTMLInputElement).checked })"
-                >
-                {{ t.inspector.enabled }}
-            </label>
-        </div>
+        <NumberField
+            :model-value="slide.durationSeconds"
+            :label="t.inspector.displaySeconds"
+            :unit="t.inspector.unitSeconds"
+            :min="1"
+            :max="3600"
+            testid="duration-input"
+            @update:model-value="editor.updateSlide({ durationSeconds: $event })"
+        />
+        <ToggleField :model-value="slide.enabled" :label="t.inspector.enabled" testid="slide-enabled" @update:model-value="editor.updateSlide({ enabled: $event })" />
         <p v-if="runsLonger" class="hint" data-testid="duration-hint">
             {{ t.inspector.runsLonger(runsLonger) }}
         </p>
@@ -139,23 +142,25 @@ const backgroundColors = computed(() => {
             <template #summary-extra>
                 <span v-for="(color, i) in backgroundColors" :key="i" class="swatch" :style="{ background: color }" />
             </template>
-            <label class="d-field d-field--inline">
-                {{ t.inspector.backgroundFrom }}
-                <select
-                    :value="slide.background.kind === 'media' ? 'media' : 'fill'"
-                    data-testid="background-kind"
-                    @change="setBackgroundKind(($event.target as HTMLSelectElement).value)"
-                >
-                    <option value="fill">{{ t.inspector.backgroundFill }}</option>
-                    <option value="media">{{ t.inspector.backgroundImage }}</option>
-                </select>
-            </label>
-            <div v-if="slide.background.kind === 'media'" class="media-pick">
-                <img v-if="mediaUrl(slide.background.mediaId)" :src="mediaUrl(slide.background.mediaId)!" alt="">
-                <button class="d-btn" type="button" @click="context.pickImage('background')">{{ t.inspector.otherImage }}</button>
-            </div>
+            <SegmentField
+                :model-value="backgroundKind"
+                :options="backgroundKinds"
+                :label="t.common.fill.kind"
+                testid="background-kind"
+                @update:model-value="setBackgroundKind(String($event))"
+            />
+            <MediaField
+                v-if="backgroundKind === 'media'"
+                :filled="slide.background.kind === 'media'"
+                :pick-label="t.inspector.pickImage"
+                :swap-label="t.inspector.swapImage"
+                :preview-url="slide.background.kind === 'media' ? mediaUrl(slide.background.mediaId) : null"
+                testid="pick-background"
+                @pick="context.pickImage('background')"
+            />
             <FillEditor
                 v-else
+                no-kind
                 :model-value="slideFill"
                 @focus="edit.onFocus"
                 @blur="edit.onBlur"
@@ -168,17 +173,13 @@ const backgroundColors = computed(() => {
     <section v-if="editor.draft">
         <InspectorSection id="playlist" :title="t.inspector.playlist" :summary="playlistSummary">
             <div data-testid="playlist-info" class="playlist-info">
-                <label class="d-field d-field--inline">
-                    {{ t.common.name }}
-                    <input
-                        type="text"
-                        maxlength="100"
-                        :value="editor.draft.playlist.name"
-                        data-testid="playlist-name-input"
-                        v-on="edit"
-                        @input="editor.renamePlaylist(($event.target as HTMLInputElement).value)"
-                    >
-                </label>
+                <TextField
+                    :model-value="editor.draft.playlist.name"
+                    :label="t.common.name"
+                    :maxlength="100"
+                    testid="playlist-name-input"
+                    @update:model-value="editor.renamePlaylist($event)"
+                />
                 <dl>
                     <dt>{{ t.inspector.format }}</dt>
                     <dd>
@@ -211,20 +212,6 @@ section {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 10px;
-}
-.grid2 {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    align-items: end;
-}
-.check {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.check--inline {
-    padding-bottom: 0.4em;
 }
 .swatch {
     width: 10px;
@@ -262,22 +249,6 @@ section {
 .playlist-info {
     display: grid;
     gap: 10px;
-}
-.media-pick {
-    display: grid;
-    gap: 6px;
-}
-.video-name {
-    margin: 0;
-    overflow-wrap: anywhere;
-    font-weight: 700;
-}
-.media-pick img {
-    width: 100%;
-    aspect-ratio: 16 / 9;
-    object-fit: cover;
-    border-radius: var(--d-radius);
-    background: var(--d-panel);
 }
 .hint {
     margin: 0;

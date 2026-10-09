@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * Two to four possibilities as picture tiles (Plan.md 79, B2, Entscheidung 16): a small pictogram and a word beneath.
- * The same group of radio buttons as `SegmentField`; the label stands above, the tiles take the full width.
+ * The same group of radio buttons as `SegmentField`; the label stands above, the tiles take the full width – four tiles in two rows,
+ * so a word like "Hineinzoomen" keeps its room.
  */
 import { useId } from 'vue';
 import FieldRow from './FieldRow.vue';
@@ -23,7 +24,7 @@ const name = useId();
 
 <template>
     <FieldRow :label="label" :label-id="labelId" stacked :quick="quick">
-        <div class="tiles" role="radiogroup" :aria-labelledby="labelId" :data-testid="testid">
+        <div class="tiles" :class="{ 'tiles--four': options.length > 3 }" role="radiogroup" :aria-labelledby="labelId" :data-testid="testid">
             <label v-for="option in options" :key="option.value" class="tile">
                 <input
                     type="radio"
@@ -51,6 +52,10 @@ const name = useId();
     grid-auto-flow: column;
     gap: 6px;
     min-width: 0;
+}
+.tiles--four {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .tile {
     position: relative;
