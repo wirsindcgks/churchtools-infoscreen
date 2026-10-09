@@ -75,14 +75,21 @@ test('a calendar in black keeps its badge and date tile on a white slide', async
     await page.goto('./player?screen=demo');
     const badge = page.locator('.badge', { hasText: 'Gottesdienst' }).first();
     await expect(badge).toBeVisible({ timeout: 30_000 });
+    // Drawn like the calendar label of the WordPress plugin (Plan.md 79): frame and dot in black, the name in the block's text colour.
     const look = await badge.evaluate((el) => {
         const style = getComputedStyle(el);
-        return { background: style.backgroundColor, color: style.color };
+        return {
+            border: style.borderTopColor,
+            dot: getComputedStyle(el.querySelector('.dot')!).backgroundColor,
+            color: style.color,
+            text: getComputedStyle(el.parentElement!).color,
+        };
     });
-    const [r, g, b, alpha] = channels(look.background);
+    const [r, g, b, alpha] = channels(look.border);
     expect(r + g + b).toBeLessThan(0.3);
-    expect(alpha).toBeGreaterThan(0.85);
-    expect(channels(look.color).slice(0, 3)).toEqual([1, 1, 1]);
+    expect(alpha).toBeGreaterThan(0.5);
+    expect(channels(look.dot).slice(0, 3)).toEqual([0, 0, 0]);
+    expect(look.color).toBe(look.text);
     const tile = await page.locator('.tile').first().evaluate((el) => getComputedStyle(el).backgroundColor);
     const [tr, tg, tb, tAlpha] = channels(tile);
     expect(tr + tg + tb).toBeLessThan(0.3);
