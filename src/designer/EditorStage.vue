@@ -10,7 +10,8 @@ import { fitStage } from '../player/stage';
 import { t } from '../i18n/designer';
 import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
-import { BLOCK_LABELS, blockBelow } from './ops';
+import { neighbourGaps, pairGaps, type Measure } from './measure';
+import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, clampFrame } from './ops';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 
 const editor = useEditorStore();
@@ -36,6 +37,26 @@ onMounted(() => {
 });
 onBeforeUnmount(() => observer?.disconnect());
 
+/** Alt held and the pointer over another block: the distances between it and the chosen one (Plan.md 79, A2). */
+const altDown = ref(false);
+const hoveredId = ref<string | null>(null);
+function onAltKey(event: KeyboardEvent): void {
+    if (event.key === 'Alt') altDown.value = event.type === 'keydown';
+}
+function onWindowBlur(): void {
+    altDown.value = false;
+}
+onMounted(() => {
+    window.addEventListener('keydown', onAltKey);
+    window.addEventListener('keyup', onAltKey);
+    window.addEventListener('blur', onWindowBlur);
+});
+onBeforeUnmount(() => {
+    window.removeEventListener('keydown', onAltKey);
+    window.removeEventListener('keyup', onAltKey);
+    window.removeEventListener('blur', onWindowBlur);
+});
+
 const HANDLES: Handle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
 interface Drag {
@@ -47,6 +68,11 @@ interface Drag {
 }
 let drag: Drag | null = null;
 const guides = ref<Guide[]>([]);
+/** The block being dragged or resized – set with the first movement, not with a click. */
+const dragId = ref<string | null>(null);
+/** Distances to the neighbours while dragging (A1) and the equal gaps the drag snapped to (A3). */
+const measures = ref<Measure[]>([]);
+const spacings = ref<Measure[]>([]);
 
 /** Snap targets come closer than 8 screen pixels – independent of the zoom. */
 const SNAP_SCREEN_PX = 8;
@@ -84,6 +110,7 @@ function moveTo(event: PointerEvent): void {
     const dy = (event.clientY - drag.startY) / fit.value.scale;
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
     editor.beginGesture();
+    dragId.value = drag.id;
     const f = { ...drag.frame };
     const h = drag.handle;
     if (h === 'move') {
@@ -101,29 +128,67 @@ function moveTo(event: PointerEvent): void {
             f.height -= dy;
         }
     }
-    // Alt/Option suspends snapping for fine placement.
+    const id = drag.id;
+    const others = blocks.value.filter((b) => b.id !== id);
+    // Alt/Option suspends snapping for fine placement – the distances still show.
     if (event.altKey) {
         guides.value = [];
+        spacings.value = [];
+        measures.value = neighbourGaps(clampFrame(f, editor.stage), others, editor.stage);
         editor.updateBlock(drag.id, f);
         return;
     }
-    const id = drag.id;
     const options = {
         grid: editor.gridSize,
         threshold: SNAP_SCREEN_PX / fit.value.scale,
         stage: editor.stage,
-        others: blocks.value.filter((b) => b.id !== id),
+        others,
     };
     const snapped = h === 'move' ? snapMove(f, options) : snapResize(f, h, options);
     guides.value = snapped.guides;
+    spacings.value = snapped.spacings;
+    measures.value = neighbourGaps(clampFrame(snapped.frame, editor.stage), others, editor.stage);
     editor.updateBlock(id, snapped.frame);
 }
 
 function end(): void {
     drag = null;
+    dragId.value = null;
     guides.value = [];
+    measures.value = [];
+    spacings.value = [];
     editor.endGesture();
 }
+
+type Drawn = Measure & { kind: 'measure' | 'spacing' };
+/** Everything drawn in orange: the neighbour distances, the pair under Alt, and the equal gaps without doubles. */
+const drawn = computed<Drawn[]>(() => {
+    const chosen = editor.block;
+    const hovered = blocks.value.find((b) => b.id === hoveredId.value);
+    const pair = altDown.value && !dragId.value && chosen && hovered && chosen.id !== hovered.id ? pairGaps(chosen, hovered) : [];
+    const key = (m: Measure) => `${m.axis}:${m.from}:${m.to}:${m.at}`;
+    const seen = new Set([...measures.value, ...pair].map(key));
+    return [
+        ...[...measures.value, ...pair].map((m): Drawn => ({ ...m, kind: 'measure' })),
+        ...spacings.value.filter((m) => !seen.has(key(m))).map((m): Drawn => ({ ...m, kind: 'spacing' })),
+    ];
+});
+
+function measureStyle(m: Measure): Record<string, string> {
+    return m.axis === 'x'
+        ? { left: `${m.from}px`, top: `${m.at}px`, width: `${m.to - m.from}px` }
+        : { left: `${m.at}px`, top: `${m.from}px`, height: `${m.to - m.from}px` };
+}
+
+/** The size under the block while it is dragged or resized (A1): below it, or inside at the bottom where the stage ends. */
+const sizeLabel = computed(() => {
+    const b = blocks.value.find((x) => x.id === dragId.value);
+    if (!b) return null;
+    const unit = 1 / fit.value.scale;
+    const below = b.y + b.height + 8 * unit;
+    const top = below + 24 * unit > editor.stage.height ? b.y + b.height - 32 * unit : below;
+    return { text: t.editor.stage.size(b.width, b.height), style: { left: `${b.x + b.width / 2}px`, top: `${top}px` } };
+});
 
 const gridStyle = computed(() => {
     const size = editor.gridSize;
@@ -145,7 +210,13 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
             <SlideView :slide="editor.slide" :width="editor.stage.width" :height="editor.stage.height" />
             <!-- The playlist's band lies over every slide (Plan.md 32); clicks go through to the blocks. -->
             <BannerView v-if="banner" class="stage-banner" :banner="banner" :stage-width="editor.stage.width" />
-            <div ref="overlay" class="overlay" :style="gridStyle" data-testid="grid">
+            <div
+                ref="overlay"
+                class="overlay"
+                :class="{ 'overlay--dragging': dragId }"
+                :style="{ ...gridStyle, '--s': `${1 / fit.scale}px` }"
+                data-testid="grid"
+            >
                 <div
                     v-for="(guide, i) in guides"
                     :key="i"
@@ -157,6 +228,17 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
                     }"
                     data-testid="guide"
                 />
+                <div
+                    v-for="(m, i) in drawn"
+                    :key="`m${i}`"
+                    class="measure"
+                    :class="`measure--${m.axis}`"
+                    :style="measureStyle(m)"
+                    :data-testid="m.kind"
+                >
+                    <span class="measure-label">{{ m.value }}</span>
+                </div>
+                <div v-if="sizeLabel" class="frame-size" :style="sizeLabel.style" data-testid="frame-size">{{ sizeLabel.text }}</div>
                 <div
                     v-for="block in blocks"
                     :key="block.id"
@@ -170,13 +252,19 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
                         '--handle': `${12 / fit.scale}px`,
                         '--line': `${1.5 / fit.scale}px`,
                     }"
-                    :title="block.locked ? t.editor.stage.lockedTitle(BLOCK_LABELS[block.type]) : BLOCK_LABELS[block.type]"
+                    :title="block.locked ? t.editor.stage.lockedTitle(BLOCK_LABELS[block.type]) : undefined"
                     :data-testid="`frame-${block.type}`"
                     @pointerdown="start($event, block, 'move')"
                     @pointermove="moveTo"
                     @pointerup="end"
                     @pointercancel="end"
+                    @pointerenter="hoveredId = block.id"
+                    @pointerleave="hoveredId = null"
                 >
+                    <!-- Shown by CSS where there is a pointer to hover with, never on the chosen block or while dragging (A4). -->
+                    <span class="frame-name" :class="{ 'frame-name--inside': block.y < 32 / fit.scale }">
+                        <Icon :name="BLOCK_ICONS[block.type]" :size="14" />{{ BLOCK_LABELS[block.type] }}
+                    </span>
                     <span
                         v-if="block.locked && block.id === editor.selectedBlockId"
                         class="lock"
@@ -200,7 +288,20 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
                 </div>
             </div>
         </StageView>
-        <p v-else class="empty">{{ t.editor.stage.empty }}</p>
+        <!-- Only in the editor, never in the player (A7): over the stage, in screen pixels, below the blocks' reach. -->
+        <div
+            v-if="editor.slide && !blocks.length"
+            class="empty-slide"
+            :style="{ left: `${fit.offsetX}px`, top: `${fit.offsetY}px`, width: `${editor.stage.width * fit.scale}px`, height: `${editor.stage.height * fit.scale}px` }"
+        >
+            <div class="empty-slide-box" data-testid="empty-slide" @pointerdown.stop>
+                <p>{{ t.editor.stage.emptySlide }}</p>
+                <button class="d-btn" type="button" data-testid="empty-slide-add" @click="editor.blockSheetOpen = true">
+                    <Icon name="plus" :size="16" /> {{ t.editor.palette.addBlock }}
+                </button>
+            </div>
+        </div>
+        <p v-else-if="!editor.slide" class="empty">{{ t.editor.stage.empty }}</p>
     </div>
 </template>
 
@@ -237,6 +338,64 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
     right: 0;
     height: var(--line);
 }
+/* Distances (Plan.md 79, A1): a line with a tick at each end and a label with the number; all sized by --s, one screen pixel. */
+.measure {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+    background: var(--d-measure);
+}
+.measure--x {
+    height: var(--s);
+}
+.measure--y {
+    width: var(--s);
+}
+.measure::before,
+.measure::after {
+    content: '';
+    position: absolute;
+    background: var(--d-measure);
+}
+.measure--x::before,
+.measure--x::after {
+    top: 50%;
+    width: var(--s);
+    height: calc(var(--s) * 7);
+    transform: translateY(-50%);
+}
+.measure--x::before { left: 0; }
+.measure--x::after { right: 0; }
+.measure--y::before,
+.measure--y::after {
+    left: 50%;
+    width: calc(var(--s) * 7);
+    height: var(--s);
+    transform: translateX(-50%);
+}
+.measure--y::before { top: 0; }
+.measure--y::after { bottom: 0; }
+.measure-label,
+.frame-size {
+    padding: calc(var(--s) * 2) calc(var(--s) * 5);
+    border-radius: calc(var(--s) * 3);
+    background: var(--d-measure);
+    color: #fff;
+    font: 600 calc(var(--s) * 11) / 1.2 var(--d-font);
+    white-space: nowrap;
+}
+.measure-label {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+.frame-size {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+    transform: translateX(-50%);
+}
 .frame {
     position: absolute;
     box-sizing: border-box;
@@ -249,6 +408,40 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
 }
 .frame--selected {
     outline: calc(var(--line) * 1.5) solid rgb(59, 130, 246);
+    /* Half the line inwards: it lies on the edge, and the handles, centred on the edge, sit on it. */
+    outline-offset: calc(var(--line) * -0.75);
+}
+/* Name of the block under the pointer (A4); only where a pointer can hover. */
+.frame-name {
+    display: none;
+    position: absolute;
+    left: 0;
+    bottom: 100%;
+    z-index: 3;
+    align-items: center;
+    gap: calc(var(--s) * 4);
+    margin-bottom: calc(var(--s) * 4);
+    padding: calc(var(--s) * 2) calc(var(--s) * 6);
+    border-radius: calc(var(--s) * 3);
+    background: rgb(59, 130, 246);
+    color: #fff;
+    font: 600 calc(var(--s) * 12) / 1.2 var(--d-font);
+    white-space: nowrap;
+    pointer-events: none;
+}
+.frame-name--inside {
+    bottom: auto;
+    top: 0;
+    margin: calc(var(--s) * 4);
+}
+.frame-name :deep(svg) {
+    width: calc(var(--s) * 14);
+    height: calc(var(--s) * 14);
+}
+@media (hover: hover) {
+    .overlay:not(.overlay--dragging) .frame:hover:not(.frame--selected) .frame-name {
+        display: inline-flex;
+    }
 }
 .frame--locked {
     cursor: default;
@@ -295,6 +488,30 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
         height: calc(var(--handle) * 2);
         margin: calc(var(--handle) * -1);
     }
+}
+/* The sentence on an empty slide: a quiet card in the middle of the stage, in screen pixels (A7). */
+.empty-slide {
+    position: absolute;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+}
+.empty-slide-box {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    max-width: 90%;
+    padding: 12px 16px;
+    border-radius: var(--d-radius-lg);
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: var(--d-shadow);
+    color: var(--d-text-muted);
+    font-family: var(--d-font);
+    text-align: center;
+    pointer-events: auto;
+}
+.empty-slide-box p {
+    margin: 0;
 }
 .empty {
     display: grid;

@@ -24,7 +24,7 @@ brechen um, nichts wird abgeschnitten.
 
 Folien gestalten wie in einem Folienprogramm: links die Folien, oben „+ Baustein" (alle Bausteine, alphabetisch), in der
 Mitte die Bildfläche, rechts der Inspektor: oben der Inhalt des gewählten Bausteins, darunter aufklappbare Bereiche.
-Ziehen, an den Griffen skalieren, am Raster ausrichten, sperren, rückgängig machen. Termine kommen live aus den
+Ziehen, an den Griffen skalieren, am Raster ausrichten, sperren, rückgängig machen. **Beim Ziehen zeigt die Bildfläche die Abstände** zu den Nachbarn und zum Rand in Orange, dazu die Größe; kommt ein Abstand einem schon vorhandenen nahe, rastet er ein, und beide gleichen Abstände sind markiert. Mit gedrückter Alt-Taste über einem anderen Baustein stehen die Abstände zwischen beiden. **Kopieren, Einfügen, Duplizieren** gehen mit Strg/⌘ + C, V, D oder den Knöpfen im Inspektor und neben „+ Baustein" – eingefügt wird an derselben Stelle, auch auf einer anderen Folie. Termine kommen live aus den
 Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe. **Zur Wahl stehen nur öffentliche
 Kalender** – solche, die man in ChurchTools auch ohne Anmeldung sieht; ein „Rechte aktualisieren" braucht es dafür nicht.
 Interne Termine (nur für angemeldete Benutzer) zeigt kein Fernseher. Hat ein Baustein einen Kalender, der nicht

@@ -70,7 +70,7 @@ Menü „…". Die erste Zeile sagt, ob der Fernseher gerade **„online"** ist.
   Bereiche – **Schrift** und **Position & Ebene**, bei Gruppen auch **Angaben**. Zugeklappt zeigt jeder Bereich in
   einer Zeile, was eingestellt ist; was du einmal aufklappst, bleibt offen. Im Kopf des Inspektors stehen
   **„Sperren"** – damit ein Logo oder Hintergrund nicht verrutscht, ein Klick darauf erreicht dann den Baustein
-  darunter, mit gedrückter Alt-Taste (Mac: Option) den gesperrten selbst – und **„Löschen"**. Ein **ⓘ** klappt eine
+  darunter, mit gedrückter Alt-Taste (Mac: Option) den gesperrten selbst –, **„Duplizieren"**, **„Kopieren"** und **„Löschen"**. Eine Kopie fügst du mit **„Einfügen"** neben „+ Baustein" oder Strg/⌘ + V an derselben Stelle ein, auch auf einer anderen Folie; Strg/⌘ + D dupliziert. Ein **ⓘ** klappt eine
   Erklärung auf. Folien und Inspektor lassen sich einklappen, damit die Bildfläche mehr Platz bekommt; auf dem
   Tablet sind sie das von Anfang an.
 - **Hinweise** haben eine eigene Seite in der Seitenleiste: ein Band über allen Folien der gewählten Präsentationen – als

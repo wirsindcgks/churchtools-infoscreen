@@ -1729,7 +1729,7 @@ test.describe('the slides "<" and the two-line block head (Plan.md 47)', () => {
         });
     }
 
-    test('at a desktop, "Sperren" and "Löschen" stand side by side, equally wide, below the name', async ({ page }) => {
+    test('at a desktop, "Sperren", "Duplizieren", "Kopieren" and "Löschen" stand side by side, equally wide, below the name (Plan.md 79)', async ({ page }) => {
         await openEditor(page);
         await page.getByTestId('add-block-menu').click();
         await page.getByTestId('sheet-add-next-appointment').click();
@@ -1739,15 +1739,19 @@ test.describe('the slides "<" and the two-line block head (Plan.md 47)', () => {
                 await page.getByTestId('add-block-menu').click();
                 await page.getByTestId('sheet-add-text').click();
             }
-            const [h3, lock, del] = await Promise.all([
-                page.locator('.block-head h3').boundingBox(),
-                page.getByTestId('lock-toggle').boundingBox(),
-                page.getByTestId('block-delete').boundingBox(),
-            ]);
+            const buttons = ['lock-toggle', 'block-duplicate', 'block-copy', 'block-delete'].map((id) => page.getByTestId(id));
+            const [h3, ...boxes] = await Promise.all([page.locator('.block-head h3').boundingBox(), ...buttons.map((b) => b.boundingBox())]);
             const mid = (b: { y: number; height: number }) => b.y + b.height / 2;
-            expect(Math.abs(mid(lock!) - mid(del!))).toBeLessThanOrEqual(1);
-            expect(mid(lock!)).toBeGreaterThan(h3!.y + h3!.height);
-            expect(Math.abs(lock!.width - del!.width)).toBeLessThanOrEqual(1);
+            for (const box of boxes) {
+                expect(Math.abs(mid(box!) - mid(boxes[0]!))).toBeLessThanOrEqual(1);
+                expect(Math.abs(box!.width - boxes[0]!.width)).toBeLessThanOrEqual(1);
+            }
+            expect(mid(boxes[0]!)).toBeGreaterThan(h3!.y + h3!.height);
+            // The words fit into their buttons.
+            for (const button of buttons) {
+                const fits = await button.evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
+                expect(fits).toBe(true);
+            }
         }
     });
 });
@@ -1874,4 +1878,143 @@ test('a groups block sorts every group by weekday, name A–Z or Z–A, until a 
     await expect(picks.nth(0)).toContainText('Zeltlager');
     await expect(picks.nth(1)).toContainText('Chor');
     await expect(picks.nth(2)).toContainText('Bibelkreis');
+});
+
+test('Ctrl+D lays a copy beside the block; Ctrl+C on one slide and Ctrl+V on another put it on the same spot (Plan.md 79, A5)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await addBlock(page, 'shape');
+    const frames = page.getByTestId('frame-shape');
+    const before = await frames.count();
+    const first = (await frames.last().boundingBox())!;
+
+    await page.keyboard.press('ControlOrMeta+d');
+    await expect(frames).toHaveCount(before + 1);
+    const copy = (await frames.last().boundingBox())!;
+    expect(copy.x).toBeGreaterThan(first.x + 5);
+    expect(copy.y).toBeGreaterThan(first.y + 5);
+    await expect(frames.last()).toHaveClass(/frame--selected/);
+
+    // The first copy is gone from the slide by an undo; copy the original and paste on another slide.
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(frames).toHaveCount(before);
+    await frames.last().click();
+    await page.keyboard.press('ControlOrMeta+c');
+    await expect(page.getByTestId('paste-block')).toBeVisible();
+    await page.getByTestId('slide-item').nth(1).click();
+    const onSecond = await page.getByTestId('frame-shape').count();
+    await page.keyboard.press('ControlOrMeta+v');
+    await expect(page.getByTestId('frame-shape')).toHaveCount(onSecond + 1);
+    const pasted = (await page.getByTestId('frame-shape').last().boundingBox())!;
+    expect(Math.abs(pasted.x - first.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(pasted.y - first.y)).toBeLessThanOrEqual(1);
+
+    // The same with the buttons: "Einfügen" above the stage, "Duplizieren" in the inspector.
+    await page.getByTestId('paste-block').click();
+    await expect(page.getByTestId('frame-shape')).toHaveCount(onSecond + 2);
+    await page.getByTestId('block-duplicate').click();
+    await expect(page.getByTestId('frame-shape')).toHaveCount(onSecond + 3);
+});
+
+test('a second "+ Text" does not land on the first (Plan.md 79, A6)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await page.getByTestId('add-slide').click();
+    await addBlock(page, 'text');
+    await addBlock(page, 'text');
+    const frames = page.getByTestId('frame-text');
+    await expect(frames).toHaveCount(2);
+    const [a, b] = [(await frames.first().boundingBox())!, (await frames.last().boundingBox())!];
+    expect(b.x - a.x).toBeGreaterThan(5);
+    expect(b.y - a.y).toBeGreaterThan(5);
+});
+
+test('the distances show while a block is dragged and are gone afterwards, the same size at any zoom (Plan.md 79, A1)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await page.getByTestId('add-slide').click();
+    await addBlock(page, 'text');
+    await expect(page.getByTestId('measure')).toHaveCount(0);
+    const heights: number[] = [];
+    for (const width of [1440, 1100]) {
+        await page.setViewportSize({ width, height: 900 });
+        const box = (await page.getByTestId('frame-text').boundingBox())!;
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        await page.mouse.down();
+        await page.mouse.move(box.x + box.width / 2 + 30, box.y + box.height / 2 + 20, { steps: 4 });
+        await expect(page.getByTestId('measure').first()).toBeVisible();
+        await expect(page.getByTestId('frame-size')).toContainText(' × ');
+        heights.push((await page.getByTestId('frame-size').boundingBox())!.height);
+        await page.mouse.up();
+        await expect(page.getByTestId('measure')).toHaveCount(0);
+        await expect(page.getByTestId('frame-size')).toHaveCount(0);
+    }
+    expect(Math.abs(heights[0]! - heights[1]!)).toBeLessThanOrEqual(1.5);
+});
+
+test('with Alt held over another block, the distances between it and the chosen one show (Plan.md 79, A2)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await page.getByTestId('add-slide').click();
+    await addBlock(page, 'qr');
+    const qr = (await page.getByTestId('frame-qr').boundingBox())!;
+    await addBlock(page, 'clock');
+    await expect(page.getByTestId('measure')).toHaveCount(0);
+    // Both lie around the middle; move the clock to the right edge so they stand beside each other.
+    const clock = page.getByTestId('frame-clock');
+    const cbox = (await clock.boundingBox())!;
+    await page.mouse.move(cbox.x + cbox.width / 2, cbox.y + cbox.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(cbox.x + cbox.width / 2 + qr.width + 120, cbox.y + cbox.height / 2 + 60, { steps: 5 });
+    await page.mouse.up();
+    await page.getByTestId('frame-qr').click({ position: { x: 4, y: 4 } });
+    await page.getByTestId('frame-clock').hover();
+    await page.keyboard.down('Alt');
+    await expect(page.getByTestId('measure').first()).toBeVisible();
+    await page.keyboard.up('Alt');
+    await expect(page.getByTestId('measure')).toHaveCount(0);
+});
+
+test('an empty slide says so, and its button opens the same sheet as "+ Baustein" (Plan.md 79, A7)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('empty-slide')).toHaveCount(0);
+    await page.getByTestId('add-slide').click();
+    const empty = page.getByTestId('empty-slide');
+    await expect(empty).toContainText('Diese Folie ist noch leer.');
+    await page.getByTestId('empty-slide-add').click();
+    await expect(page.getByTestId('block-sheet')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('block-sheet')).toHaveCount(0);
+    await expect(empty).toBeVisible();
+    await page.getByTestId('empty-slide-add').click();
+    await page.getByTestId('sheet-add-text').click();
+    await expect(page.getByTestId('empty-slide')).toHaveCount(0);
+});
+
+test.describe('on a phone (Plan.md 79)', () => {
+    test.use({ viewport: { width: 390, height: 844 } });
+
+    test('the empty slide fits the stage, and the inspector head has the four buttons as symbols with names', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await page.getByTestId('add-slide').click();
+        const [stage, empty] = await Promise.all([page.locator('.editor-stage').boundingBox(), page.getByTestId('empty-slide').boundingBox()]);
+        expect(empty!.x).toBeGreaterThanOrEqual(stage!.x - 1);
+        expect(empty!.x + empty!.width).toBeLessThanOrEqual(stage!.x + stage!.width + 1);
+        expect(empty!.y + empty!.height).toBeLessThanOrEqual(stage!.y + stage!.height + 1);
+        await page.getByTestId('empty-slide-add').click();
+        await page.getByTestId('sheet-add-text').click();
+        await expect(page.getByTestId('block-inspector')).toBeVisible();
+        for (const [id, name] of [
+            ['lock-toggle', 'Sperren'],
+            ['block-duplicate', 'Baustein duplizieren'],
+            ['block-copy', 'Baustein kopieren'],
+            ['block-delete', 'Baustein löschen'],
+        ]) {
+            await expect(page.getByTestId(id!)).toHaveAccessibleName(name!);
+            await expect(page.getByTestId(id!)).toBeVisible();
+        }
+    });
 });

@@ -259,6 +259,41 @@ export function createBanner(theme: ThemeDoc = DEFAULT_THEME): Banner {
     };
 }
 
+/** How far a new block steps down and right when another one already sits on its spot (Plan.md 79, A6). */
+export const SPOT_STEP = 40;
+
+/**
+ * Where a new block goes so that none lies exactly on another: if a block has the same top left corner, the
+ * frame steps 40 px down and right, as often as needed; at the stage edge it starts again at the top left, 40 px in.
+ */
+export function freeSpot<T extends { x: number; y: number; width: number; height: number }>(
+    frame: T,
+    blocks: readonly { x: number; y: number }[],
+    stage: { width: number; height: number },
+): T {
+    let { x, y } = frame;
+    let wrapped = false;
+    while (blocks.some((b) => b.x === x && b.y === y)) {
+        x += SPOT_STEP;
+        y += SPOT_STEP;
+        if (x + frame.width > stage.width || y + frame.height > stage.height) {
+            // A second time at the edge: the stage is full of stacked blocks; stay on the corner.
+            if (wrapped) return { ...frame, x: SPOT_STEP, y: SPOT_STEP };
+            wrapped = true;
+            x = SPOT_STEP;
+            y = SPOT_STEP;
+        }
+    }
+    return { ...frame, x, y };
+}
+
+/** A block that does not fit the stage (copied from landscape to portrait) shrinks in its aspect ratio until it does. */
+export function fitToStage<T extends { width: number; height: number }>(frame: T, stage: { width: number; height: number }): T {
+    const scale = Math.min(1, stage.width / frame.width, stage.height / frame.height);
+    if (scale >= 1) return frame;
+    return { ...frame, width: Math.floor(frame.width * scale), height: Math.floor(frame.height * scale) };
+}
+
 export const MIN_BLOCK_SIZE = 20;
 
 /**

@@ -435,6 +435,28 @@ const LAYERS = [
                     <button
                         class="d-btn lock-toggle"
                         type="button"
+                        :title="t.inspector.duplicateBlock"
+                        :aria-label="t.inspector.duplicateBlock"
+                        data-testid="block-duplicate"
+                        @click="editor.duplicateBlock(block.id)"
+                    >
+                        <Icon name="duplicate" :size="16" />
+                        <span class="btn-word">{{ t.common.duplicate }}</span>
+                    </button>
+                    <button
+                        class="d-btn lock-toggle"
+                        type="button"
+                        :title="t.inspector.copyBlock"
+                        :aria-label="t.inspector.copyBlock"
+                        data-testid="block-copy"
+                        @click="editor.copyBlock(block.id)"
+                    >
+                        <Icon name="copy" :size="16" />
+                        <span class="btn-word">{{ t.common.copy }}</span>
+                    </button>
+                    <button
+                        class="d-btn lock-toggle"
+                        type="button"
                         :title="t.inspector.deleteBlock"
                         :aria-label="t.inspector.deleteBlock"
                         :disabled="!!block.locked"
@@ -1806,7 +1828,7 @@ fieldset {
     display: flex;
     gap: 6px;
 }
-/* Over 48rem always two lines, whatever the name's length: name, then two equal buttons (Plan.md 47). */
+/* Over 48rem always two lines, whatever the name's length: name, then four equal buttons – symbol over word (Plan.md 47, 79). */
 @media (min-width: 48.0625rem) {
     .block-head {
         display: grid;
@@ -1815,11 +1837,16 @@ fieldset {
     }
     .head-actions {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 8px;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 6px;
     }
     .head-actions .lock-toggle {
+        flex-direction: column;
         justify-content: center;
+        gap: 2px;
+        min-width: 0;
+        padding-inline: 2px;
+        font-size: 12px;
     }
 }
 .lock-toggle {

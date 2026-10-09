@@ -22,7 +22,7 @@ import { t } from '../i18n/designer';
 import { tr } from '../i18n/repository';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
-import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, move, reorder, type Layer } from './ops';
+import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, fitToStage, freeSpot, move, newId, reorder, type Layer } from './ops';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'conflict' | 'error';
 
@@ -56,6 +56,13 @@ export const useEditorStore = defineStore('editor', () => {
     const media = ref<MediaDoc[]>([]);
     /** The look of all screens (Plan.md, 27): new slides and blocks start in its colours, the preview shows it. */
     const theme = ref<ThemeDoc>(DEFAULT_THEME);
+    /**
+     * Copied blocks (Plan.md 79, A5): of this session only, not in `localStorage` and not the system clipboard.
+     * `reset()` leaves it alone, so it survives a change of slide and of playlist.
+     */
+    const clipboard = ref<Block[]>([]);
+    /** The "+ Baustein" sheet is open – the button above the stage and the one on an empty slide both open it (A7). */
+    const blockSheetOpen = ref(false);
     const history = new History<PlaylistBundle>();
     const historyVersion = ref(0); // makes canUndo/canRedo reactive
     let gestureOpen = false;
@@ -290,10 +297,58 @@ export const useEditorStore = defineStore('editor', () => {
 
     function addBlock(type: BlockType): void {
         if (!slide.value) return;
-        const created = createBlock(type, stage.value, calendarIds.value, theme.value);
+        const created = freeSpot(createBlock(type, stage.value, calendarIds.value, theme.value), slide.value.blocks, stage.value);
         const id = slide.value.id;
         change((b) => slideIn(b, id)?.blocks.push(created));
         selectedBlockId.value = created.id;
+    }
+
+    function copyBlock(id: string): void {
+        const source = slide.value?.blocks.find((x) => x.id === id);
+        if (source) clipboard.value = [cloneJson(source)];
+    }
+
+    /** Copy and delete in one step; a locked block stays where it is. */
+    function cutBlock(id: string): void {
+        if (isLocked(id)) return;
+        copyBlock(id);
+        removeBlock(id);
+    }
+
+    /**
+     * Puts copies of the given blocks on the current slide as one step: new ids, not locked, otherwise as they were.
+     * They keep their place unless a block sits there already; one too big for this stage shrinks to fit. The last is chosen.
+     */
+    function place(sources: Block[]): void {
+        const target = slide.value;
+        if (!target || !sources.length) return;
+        const slideId = target.id;
+        const placed: Block[] = [];
+        for (const source of sources) {
+            const copy = cloneJson(source);
+            delete copy.locked;
+            const fitted = fitToStage({ ...copy, id: newId() }, stage.value);
+            // A block from another stage may stick out of this one: pull it back in where it fits.
+            const inside = {
+                ...fitted,
+                x: Math.max(0, Math.min(fitted.x, stage.value.width - fitted.width)),
+                y: Math.max(0, Math.min(fitted.y, stage.value.height - fitted.height)),
+            };
+            const spot = freeSpot(inside, [...target.blocks, ...placed], stage.value);
+            placed.push({ ...spot, ...clampFrame(spot, stage.value) });
+        }
+        change((b) => slideIn(b, slideId)?.blocks.push(...placed));
+        selectedBlockId.value = placed[placed.length - 1]!.id;
+    }
+
+    function pasteBlocks(): void {
+        place(clipboard.value);
+    }
+
+    /** Copy and paste in one, without touching the clipboard. */
+    function duplicateBlock(id: string): void {
+        const source = slide.value?.blocks.find((x) => x.id === id);
+        if (source) place([source]);
     }
 
     /** A locked block (Plan.md, 25) takes no change – from the stage, the keys or the inspector. */
@@ -467,6 +522,12 @@ export const useEditorStore = defineStore('editor', () => {
         updateBlock,
         removeBlock,
         layerBlock,
+        clipboard,
+        blockSheetOpen,
+        copyBlock,
+        cutBlock,
+        pasteBlocks,
+        duplicateBlock,
         setLocked,
         save,
         overwrite,

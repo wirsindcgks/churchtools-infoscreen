@@ -309,4 +309,117 @@ describe('linked slides (Plan.md 49)', () => {
         expect(editor.slide!.id).toBe(oldId);
         expect(editor.linkedIn(oldId)).toHaveLength(1);
     });
+
+    describe('copy and paste (Plan.md 79, A5)', () => {
+        it('copies a block over to another slide and pastes it on the same spot', async () => {
+            const { editor } = await setup();
+            editor.addBlock('text');
+            const original = { ...editor.block! };
+            editor.copyBlock(original.id);
+            editor.addSlide();
+            expect(editor.slide?.blocks).toHaveLength(0);
+            editor.pasteBlocks();
+            const pasted = editor.block!;
+            expect(pasted.id).not.toBe(original.id);
+            expect([pasted.x, pasted.y, pasted.width, pasted.height]).toEqual([original.x, original.y, original.width, original.height]);
+            expect(pasted.type === 'text' && pasted.text).toBe(original.type === 'text' && original.text);
+            expect(editor.slide?.blocks).toHaveLength(1);
+        });
+
+        it('steps a paste aside on the same slide, and the pasted block is chosen', async () => {
+            const { editor } = await setup();
+            editor.addBlock('shape');
+            const original = editor.block!;
+            editor.copyBlock(original.id);
+            editor.pasteBlocks();
+            expect(editor.slide?.blocks).toHaveLength(2);
+            expect([editor.block!.x, editor.block!.y]).toEqual([original.x + 40, original.y + 40]);
+            expect(editor.block!.id).not.toBe(original.id);
+        });
+
+        it('makes a locked block loose again in the copy', async () => {
+            const { editor } = await setup();
+            editor.addBlock('shape');
+            const id = editor.block!.id;
+            editor.setLocked(id, true);
+            editor.duplicateBlock(id);
+            expect(editor.slide?.blocks[0]?.locked).toBe(true);
+            expect(editor.block?.locked).toBeUndefined();
+            expect(editor.block?.id).not.toBe(id);
+        });
+
+        it('duplicates in one step and leaves the clipboard alone', async () => {
+            const { editor } = await setup();
+            editor.addBlock('text');
+            editor.addBlock('shape');
+            editor.copyBlock(editor.slide!.blocks[0]!.id);
+            const copied = editor.clipboard[0]!.id;
+            editor.duplicateBlock(editor.slide!.blocks[1]!.id);
+            expect(editor.slide?.blocks).toHaveLength(3);
+            expect(editor.clipboard[0]?.id).toBe(copied);
+            editor.undo();
+            expect(editor.slide?.blocks).toHaveLength(2);
+        });
+
+        it('pastes as one step in the history', async () => {
+            const { editor } = await setup();
+            editor.addBlock('text');
+            editor.copyBlock(editor.block!.id);
+            editor.pasteBlocks();
+            expect(editor.slide?.blocks).toHaveLength(2);
+            editor.undo();
+            expect(editor.slide?.blocks).toHaveLength(1);
+        });
+
+        it('cuts: copy and delete as one step; a locked block stays', async () => {
+            const { editor } = await setup();
+            editor.addBlock('text');
+            const id = editor.block!.id;
+            editor.setLocked(id, true);
+            editor.cutBlock(id);
+            expect(editor.slide?.blocks).toHaveLength(1);
+            expect(editor.clipboard).toHaveLength(0);
+            editor.setLocked(id, false);
+            editor.cutBlock(id);
+            expect(editor.slide?.blocks).toHaveLength(0);
+            expect(editor.clipboard).toHaveLength(1);
+            editor.undo();
+            expect(editor.slide?.blocks).toHaveLength(1);
+        });
+
+        it('shrinks a block pasted from landscape onto a portrait stage', async () => {
+            const { editor, repository } = await setup();
+            editor.addBlock('appointment-list');
+            editor.copyBlock(editor.block!.id);
+            const portrait = createScreenBundle({ name: 'Flur', slug: 'flur', orientation: 'portrait' });
+            await repository.saveScreen(portrait, { expectedRevision: null, updatedBy: 'Anna' });
+            await editor.open(portrait.screen.defaultPlaylistId);
+            editor.pasteBlocks();
+            const b = editor.block!;
+            expect(b.x + b.width).toBeLessThanOrEqual(1080);
+            expect(b.y + b.height).toBeLessThanOrEqual(1920);
+            expect(b.width / b.height).toBeCloseTo(1400 / 600, 1);
+        });
+
+        it('keeps the clipboard when another playlist is opened', async () => {
+            const { editor, repository } = await setup();
+            editor.addBlock('text');
+            editor.copyBlock(editor.block!.id);
+            const other = createScreenBundle({ name: 'Flur', slug: 'flur', orientation: 'landscape' });
+            await repository.saveScreen(other, { expectedRevision: null, updatedBy: 'Anna' });
+            await editor.open(other.screen.defaultPlaylistId);
+            expect(editor.clipboard).toHaveLength(1);
+            editor.pasteBlocks();
+            expect(editor.slide?.blocks).toHaveLength(1);
+        });
+
+        it('puts new blocks of one kind in different places (A6)', async () => {
+            const { editor } = await setup();
+            editor.addBlock('text');
+            editor.addBlock('text');
+            editor.addBlock('text');
+            const spots = editor.slide!.blocks.map((b) => [b.x, b.y]);
+            expect(new Set(spots.map(String)).size).toBe(3);
+        });
+    });
 });
