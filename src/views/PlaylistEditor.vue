@@ -1176,6 +1176,10 @@ function onKey(event: KeyboardEvent): void {
         aspect-ratio: var(--stage-aspect);
         max-height: 70vh;
     }
+    /* Standing in the middle, the same air above as below – else the stage sits 8 px high. */
+    .editor:not(.sheet-open) .stage-column > :last-child {
+        margin-top: var(--d-space-2);
+    }
 
     /* Header: back link loses its label, title and status stack, "…" replaces Vorschau/Player. */
     .editor :deep(.start) {

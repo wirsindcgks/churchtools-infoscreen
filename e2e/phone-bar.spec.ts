@@ -17,17 +17,20 @@ async function expectStageClear(page: Page): Promise<void> {
     expect(stage!.y + stage!.height).toBeLessThanOrEqual(bar!.y + 1);
 }
 
-/** The stage stands in the middle of the room between the notice above and both rows of the bar below, chosen block or not (user, 2026-10-09). */
+/**
+ * The stage stands in the middle of the room between what lies above it and both rows of the bar below, chosen block
+ * or not (user, 2026-10-09). Measured from the top of the columns: the demo notice and its margin exist only in the mock.
+ */
 async function expectStageCentered(page: Page): Promise<void> {
-    const [notice, stage, slideRow] = await Promise.all([
-        page.getByTestId('demo-notice-editor').boundingBox(),
+    const [columns, stage, slideRow] = await Promise.all([
+        page.locator('.columns').boundingBox(),
         page.locator('.editor-stage').boundingBox(),
         page.getByTestId('phone-slide-row').boundingBox(),
     ]);
-    const above = stage!.y - (notice!.y + notice!.height);
+    const above = stage!.y - columns!.y;
     const below = slideRow!.y - 56 - (stage!.y + stage!.height);
     expect(above).toBeGreaterThan(40);
-    expect(Math.abs(above - below)).toBeLessThanOrEqual(12);
+    expect(Math.abs(above - below)).toBeLessThanOrEqual(3);
 }
 
 test('without a block the bar shows the slide; nothing stands above the stage any more', async ({ page }) => {
