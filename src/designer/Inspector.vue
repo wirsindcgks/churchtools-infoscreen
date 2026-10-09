@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
  * The frame of the inspector (Plan.md 79, B2): the head with its four buttons, the inspector of the chosen block, then
- * "Anordnen" and "Genaue Maße". Without a block the slide and the playlist show instead. What a block shows lives in
+ * "Anordnen" and "Genaue Maße". With several blocks chosen (D5) the head says "3 Bausteine" and only "Anordnen" follows.
+ * Without a block the slide and the playlist show instead. What a block shows lives in
  * `inspector/blocks/`, one component per type.
  */
 import { computed, ref } from 'vue';
@@ -32,6 +33,10 @@ provideInspectorContext(() => props, (kind) => emit('pick-image', kind));
 
 const editor = useEditorStore();
 const block = computed(() => editor.block);
+const selection = computed(() => editor.selection);
+const ids = computed(() => editor.selectedBlockIds);
+const allLocked = computed(() => selection.value.length > 0 && selection.value.every((b) => b.locked));
+const many = computed(() => selection.value.length > 1);
 
 const FRAME_FIELDS = [
     { key: 'x', min: undefined },
@@ -72,74 +77,80 @@ const LAYERS = [
 
 <template>
     <aside class="inspector">
-        <section v-if="block" data-testid="block-inspector">
+        <section v-if="selection.length" data-testid="block-inspector">
             <div class="block-head">
                 <h3>
-                    <Icon :name="BLOCK_ICONS[block.type]" :size="18" />
-                    {{ BLOCK_LABELS[block.type] }}
+                    <template v-if="block">
+                        <Icon :name="BLOCK_ICONS[block.type]" :size="18" />
+                        {{ BLOCK_LABELS[block.type] }}
+                    </template>
+                    <template v-else>
+                        <Icon name="grid" :size="18" />
+                        <span data-testid="multi-title">{{ t.editor.blocksCount(selection.length) }}</span>
+                    </template>
                 </h3>
                 <div class="head-actions">
                     <!-- Plan.md, 25: locked, the whole block stays as it is until unlocked. -->
                     <button
-                        v-tip="block.locked ? t.inspector.lockedTitle : t.inspector.lockTitle"
+                        v-tip="many ? (allLocked ? t.inspector.unlockBlocksTitle : t.inspector.lockBlocksTitle) : allLocked ? t.inspector.lockedTitle : t.inspector.lockTitle"
                         class="d-btn d-btn--icon"
-                        :class="{ 'lock-toggle--on': block.locked }"
+                        :class="{ 'lock-toggle--on': allLocked }"
                         type="button"
-                        :aria-pressed="!!block.locked"
-                        :aria-label="block.locked ? t.common.locked : t.common.lock"
+                        :aria-pressed="allLocked"
+                        :aria-label="allLocked ? t.common.locked : t.common.lock"
                         data-testid="lock-toggle"
-                        @click="editor.setLocked(block.id, !block.locked)"
+                        @click="editor.setLocked(ids, !allLocked)"
                     >
-                        <Icon :name="block.locked ? 'lock' : 'unlock'" :size="18" />
+                        <Icon :name="allLocked ? 'lock' : 'unlock'" :size="18" />
                     </button>
                     <button
-                        v-tip="withKeys(t.inspector.duplicateBlock, KEYS.duplicate)"
+                        v-tip="withKeys(many ? t.inspector.duplicateBlocks : t.inspector.duplicateBlock, KEYS.duplicate)"
                         class="d-btn d-btn--icon"
                         type="button"
-                        :aria-label="t.inspector.duplicateBlock"
+                        :aria-label="many ? t.inspector.duplicateBlocks : t.inspector.duplicateBlock"
                         data-testid="block-duplicate"
-                        @click="editor.duplicateBlock(block.id)"
+                        @click="editor.duplicateBlocks(ids)"
                     >
                         <Icon name="duplicate" :size="18" />
                     </button>
                     <button
-                        v-tip="withKeys(t.inspector.copyBlock, KEYS.copy)"
+                        v-tip="withKeys(many ? t.inspector.copyBlocks : t.inspector.copyBlock, KEYS.copy)"
                         class="d-btn d-btn--icon"
                         type="button"
-                        :aria-label="t.inspector.copyBlock"
+                        :aria-label="many ? t.inspector.copyBlocks : t.inspector.copyBlock"
                         data-testid="block-copy"
-                        @click="editor.copyBlock(block.id)"
+                        @click="editor.copyBlocks(ids)"
                     >
                         <Icon name="copy" :size="18" />
                     </button>
                     <button
-                        v-tip="withKeys(t.inspector.deleteBlock, KEYS.delete)"
+                        v-tip="withKeys(many ? t.inspector.deleteBlocks : t.inspector.deleteBlock, KEYS.delete)"
                         class="d-btn d-btn--icon d-btn--danger delete-btn"
                         type="button"
-                        :aria-label="t.inspector.deleteBlock"
-                        :disabled="!!block.locked"
+                        :aria-label="many ? t.inspector.deleteBlocks : t.inspector.deleteBlock"
+                        :disabled="allLocked"
                         data-testid="block-delete"
-                        @click="editor.removeBlock(block.id)"
+                        @click="editor.removeBlocks(ids)"
                     >
                         <Icon name="trash" :size="18" />
                     </button>
                 </div>
             </div>
-            <p v-if="block.locked" class="hint" data-testid="locked-hint">
+            <p v-if="block?.locked" class="hint" data-testid="locked-hint">
                 {{ t.inspector.lockedHint }}
             </p>
             <!-- A disabled fieldset disables every field and button inside it at once; a summary is none, so sections still fold. -->
-            <fieldset class="lockable" :disabled="!!block.locked">
-                <component :is="BLOCK_INSPECTORS[block.type]" :block="block" />
+            <fieldset class="lockable" :disabled="!!block?.locked">
+                <component :is="BLOCK_INSPECTORS[block.type]" v-if="block" :block="block" />
 
                 <InspectorSection id="arrange" :title="t.inspector.arrange" default-open>
-                    <p class="layer-position" data-testid="layer-position">{{ t.inspector.layerOf(layerNumber, rows.length) }}</p>
+                    <p v-if="block" class="layer-position" data-testid="layer-position">{{ t.inspector.layerOf(layerNumber, rows.length) }}</p>
                     <ol ref="layerList" class="layer-list" data-testid="layer-list">
                         <li
                             v-for="row in rows"
                             :key="row.block.id"
                             class="layer-item"
-                            :class="{ 'layer-item--on': row.block.id === block.id }"
+                            :class="{ 'layer-item--on': editor.isSelected(row.block.id) }"
                             data-sort-item
                             data-testid="layer-row"
                             @click="editor.selectBlock(row.block.id)"
@@ -170,14 +181,14 @@ const LAYERS = [
                             type="button"
                             :aria-label="layer.label"
                             :data-testid="`layer-${layer.where}`"
-                            @click="editor.layerBlock(block.id, layer.where)"
+                            @click="editor.layerBlocks(ids, layer.where)"
                         >
                             <Icon :name="layer.icon" :size="16" />
                         </button>
                     </div>
                 </InspectorSection>
 
-                <InspectorSection id="measures" :title="t.inspector.measures" :summary="positionSummary">
+                <InspectorSection v-if="block" id="measures" :title="t.inspector.measures" :summary="positionSummary">
                     <div class="measures">
                         <NumberField
                             v-for="field in FRAME_FIELDS"

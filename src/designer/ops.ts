@@ -354,6 +354,43 @@ export function reorder<T>(items: T[], index: number, layer: Layer): T[] {
     return result;
 }
 
+/**
+ * The layers of several blocks at once (Plan.md 79, D1): `indices` are the places in `items` that move. To the front or
+ * the back they keep their order among themselves; a step forward or back moves each one place, but none passes another
+ * chosen block – a group at the top stays where it is when it is sent forward.
+ */
+export function reorderMany<T>(items: readonly T[], indices: readonly number[], layer: Layer): T[] {
+    const chosen = new Set(indices.filter((i) => i >= 0 && i < items.length));
+    if (!chosen.size) return [...items];
+    if (layer === 'front' || layer === 'back') {
+        const picked = items.filter((_, i) => chosen.has(i));
+        const rest = items.filter((_, i) => !chosen.has(i));
+        return layer === 'front' ? [...rest, ...picked] : [...picked, ...rest];
+    }
+    const result = [...items];
+    const flags = items.map((_, i) => chosen.has(i));
+    const swap = (a: number, b: number) => {
+        [result[a], result[b]] = [result[b]!, result[a]!];
+        [flags[a], flags[b]] = [flags[b]!, flags[a]!];
+    };
+    if (layer === 'forward') {
+        for (let i = result.length - 2; i >= 0; i--) if (flags[i] && !flags[i + 1]) swap(i, i + 1);
+    } else {
+        for (let i = 1; i < result.length; i++) if (flags[i] && !flags[i - 1]) swap(i, i - 1);
+    }
+    return result;
+}
+
+/** The smallest rectangle around the given frames (Plan.md 79, D3); null for none. */
+export function boundingBox(frames: readonly { x: number; y: number; width: number; height: number }[]): { x: number; y: number; width: number; height: number } | null {
+    if (!frames.length) return null;
+    const left = Math.min(...frames.map((f) => f.x));
+    const top = Math.min(...frames.map((f) => f.y));
+    const right = Math.max(...frames.map((f) => f.x + f.width));
+    const bottom = Math.max(...frames.map((f) => f.y + f.height));
+    return { x: left, y: top, width: right - left, height: bottom - top };
+}
+
 export function move<T>(items: T[], from: number, to: number): T[] {
     const result = [...items];
     const [item] = result.splice(from, 1);

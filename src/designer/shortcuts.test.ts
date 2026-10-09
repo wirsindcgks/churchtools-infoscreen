@@ -35,6 +35,7 @@ describe('shortcuts (Plan.md 79, B3: Tastenkürzel an einer Stelle)', () => {
             'Rückgängig: Strg+Z',
             'Wiederholen: Strg+Umschalt+Z',
             'Auswahl aufheben: Esc',
+            'Alle Bausteine wählen: Strg+A',
             'Diese Übersicht: ?',
             'Kopieren: Strg+C',
             'Ausschneiden: Strg+X',
@@ -43,6 +44,7 @@ describe('shortcuts (Plan.md 79, B3: Tastenkürzel an einer Stelle)', () => {
             'Löschen: Entf',
             'Um 1 Pixel verschieben: Pfeiltasten',
             'Um 10 Pixel verschieben: Umschalt+Pfeiltasten',
+            'Baustein zur Auswahl hinzufügen oder wegnehmen: Umschalt+Klick',
             'Beim Ziehen gedrückt halten: frei platzieren, ohne Einrasten: Alt',
             'Über einem Baustein gedrückt halten: Abstände zum gewählten zeigen: Alt',
         ]);
@@ -50,6 +52,8 @@ describe('shortcuts (Plan.md 79, B3: Tastenkürzel an einer Stelle)', () => {
         expect(mac).toContain('Entwurf sofort sichern: ⌘S');
         expect(mac).toContain('Wiederholen: ⇧⌘Z');
         expect(mac).toContain('Um 10 Pixel verschieben: ⇧ Pfeiltasten');
+        expect(mac).toContain('Alle Bausteine wählen: ⌘A');
+        expect(mac).toContain('Baustein zur Auswahl hinzufügen oder wegnehmen: ⇧ Klick');
         expect(mac).toContain('⌥');
         expect(mac).not.toContain('Strg');
     });

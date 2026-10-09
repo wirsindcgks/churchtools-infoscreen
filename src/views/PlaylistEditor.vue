@@ -220,7 +220,7 @@ function onPointerUpOrCancel(): void {
 }
 
 watch(
-    () => editor.selectedBlockId,
+    () => editor.selection.map((b) => b.id).join() || null,
     (id) => {
         if (id === null) return; // deselecting does not close it again
         // On a phone the bar shows the block's short menu and the slide stays in sight: the sheet opens on request only (C2).
@@ -272,6 +272,7 @@ function onResize(): void {
 /** The name the sheet's bar and the "…" menu don't have room for otherwise. */
 const sheetLabel = computed(() => {
     if (editor.block) return t.editor.blockNamed(BLOCK_LABELS[editor.block.type]);
+    if (editor.selection.length > 1) return t.editor.blocksCount(editor.selection.length);
     return editor.slide?.name ? t.editor.slideNamed(editor.slide.name) : t.editor.slide;
 });
 
@@ -577,6 +578,10 @@ function onKey(event: KeyboardEvent): void {
     } else if (mod && event.key.toLowerCase() === 'y') {
         event.preventDefault();
         editor.redo();
+    } else if (mod && !editor.blockSheetOpen && event.key.toLowerCase() === 'a') {
+        // All blocks of the slide (Plan.md 79, D2); the page's own "select all" would mark its texts.
+        event.preventDefault();
+        editor.selectAll();
     } else if (mod && !editor.blockSheetOpen && 'cxvd'.includes(event.key.toLowerCase()) && event.key.length === 1) {
         // Copy, cut, paste, duplicate (Plan.md 79, A5); D would otherwise set a bookmark.
         const key = event.key.toLowerCase();
@@ -584,17 +589,18 @@ function onKey(event: KeyboardEvent): void {
             if (!editor.clipboard.length) return;
             event.preventDefault();
             editor.pasteBlocks();
-        } else if (editor.block) {
+        } else if (editor.selection.length) {
             // Text marked on the page (a hint, a name) is copied as text, as anywhere else.
             if ((key === 'c' || key === 'x') && window.getSelection()?.toString()) return;
             event.preventDefault();
-            if (key === 'c') editor.copyBlock(editor.block.id);
-            else if (key === 'x') editor.cutBlock(editor.block.id);
-            else editor.duplicateBlock(editor.block.id);
+            const ids = editor.selectedBlockIds;
+            if (key === 'c') editor.copyBlocks(ids);
+            else if (key === 'x') editor.cutBlocks(ids);
+            else editor.duplicateBlocks(ids);
         }
-    } else if (editor.block && (event.key === 'Delete' || event.key === 'Backspace')) {
+    } else if (editor.selection.length && (event.key === 'Delete' || event.key === 'Backspace')) {
         event.preventDefault();
-        editor.removeBlock(editor.block.id);
+        editor.removeBlocks(editor.selectedBlockIds);
     } else if (event.key === 'Enter' && !mod && editor.block?.type === 'text' && !editor.block.locked && !editor.blockSheetOpen && !target?.closest('button, a, summary')) {
         // Writes the chosen text on the stage (Plan.md 79, C4); the key must not reach the new field as a line break.
         event.preventDefault();
@@ -602,12 +608,12 @@ function onKey(event: KeyboardEvent): void {
     } else if (event.key === 'Escape') {
         editor.selectBlock(null);
         inspectorOpen.value = false;
-    } else if (editor.block && event.key.startsWith('Arrow')) {
+    } else if (editor.selection.length && event.key.startsWith('Arrow')) {
         event.preventDefault();
         const step = event.shiftKey ? 10 : 1;
         const dx = { ArrowLeft: -step, ArrowRight: step }[event.key] ?? 0;
         const dy = { ArrowUp: -step, ArrowDown: step }[event.key] ?? 0;
-        editor.updateBlock(editor.block.id, { x: editor.block.x + dx, y: editor.block.y + dy });
+        editor.moveBlocks(editor.selectedBlockIds, dx, dy);
     }
 }
 
@@ -622,7 +628,7 @@ function onKey(event: KeyboardEvent): void {
             height: `calc(100vh - ${top}px)`,
             '--editor-top': `${top}px`,
             '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}`,
-            '--d-phone-bar': phone && editor.block ? '112px' : '56px',
+            '--d-phone-bar': phone && editor.selection.length ? '112px' : '56px',
             '--stage-max': stageMax === null ? undefined : `${stageMax}px`,
         }"
     >

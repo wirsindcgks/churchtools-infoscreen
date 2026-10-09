@@ -5,6 +5,7 @@
  * so text and buttons keep their size at every zoom. A locked block shows only "Entsperren" and "⋯".
  * `variant="bar"` (C2) is the same menu as the bar at the bottom of a phone: the block's symbol, the fields in a row to
  * scroll, then "⋯" (which also holds duplicate, delete and lock/unlock there) and "Auswahl aufheben". An open field is a sheet from below.
+ * With several blocks chosen (D5) it stands over their box and shows "3 Bausteine", lock, duplicate, delete and "⋯" (copy, cut, let go).
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, reactive, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
@@ -18,12 +19,18 @@ import { quickMenuPlace, type Rect, type Size } from './quick-menu';
 import { KEYS, keyLabel, withKeys } from './shortcuts';
 import { vTip } from './tip';
 
-/** `frame`: the block's rectangle in host pixels; `host`: the size of the host – both only for the menu above the block. */
-const props = defineProps<{ block: Block; frame?: Rect; host?: Size; variant?: 'float' | 'bar' }>();
+/** `frame`: the rectangle of the block (of the box around several) in host pixels; `host`: the size of the host – both only for the menu above. */
+const props = defineProps<{ blocks: Block[]; frame?: Rect; host?: Size; variant?: 'float' | 'bar' }>();
 const emit = defineEmits<{ 'all-settings': [] }>();
 
 const editor = useEditorStore();
 const bar = props.variant === 'bar';
+/** The one chosen block; null with several – then the menu has no fields of its own. */
+const block = computed(() => (props.blocks.length === 1 ? props.blocks[0]! : null));
+const many = computed(() => props.blocks.length > 1);
+const ids = computed(() => props.blocks.map((b) => b.id));
+const allLocked = computed(() => props.blocks.every((b) => b.locked));
+const title = computed(() => (block.value ? BLOCK_LABELS[block.value.type] : t.editor.blocksCount(props.blocks.length)));
 provide(INSPECTOR_MODE, 'quick');
 provide(QUICK_VARIANT, bar ? 'bar' : 'float');
 /** Only one field is open at a time. */
@@ -183,7 +190,7 @@ function openMore(): void {
 defineExpose({ openFirst, openMore });
 
 /** The block is being written on the stage (Plan.md 79, C4): the menu keeps its fields and offers "Fertig" instead of the actions. */
-const writing = computed(() => editor.editingTextId === props.block.id);
+const writing = computed(() => !!block.value && editor.editingTextId === block.value.id);
 /** The bar's "Auswahl aufheben": writing ends first, then the block is let go. */
 function deselect(): void {
     if (editor.editingTextId) editor.endTextEdit();
@@ -191,10 +198,11 @@ function deselect(): void {
 }
 /** The block that lies under the chosen one in its middle, if there is one – for blocks that others cover. */
 const below = computed(() => {
-    const b = props.block;
+    const b = block.value;
+    if (!b) return null;
     return blockBelow(editor.slide?.blocks ?? [], b, { x: b.x + b.width / 2, y: b.y + b.height / 2 });
 });
-const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common.lock));
+const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lock));
 </script>
 
 <template>
@@ -204,17 +212,19 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
         :class="{ 'quick-menu--bar': bar }"
         :style="bar ? undefined : { left: `${placed.left}px`, top: `${placed.top}px`, visibility: ready ? undefined : 'hidden' }"
         role="toolbar"
-        :aria-label="t.quick.label(BLOCK_LABELS[block.type])"
+        :aria-label="t.quick.label(title)"
         data-testid="quick-menu"
         @pointerdown.stop
         @keydown="onKeydown"
         @focusin="focusInside = true"
         @focusout="onFocusOut"
     >
-        <span v-if="bar" class="quick-kind" role="img" :aria-label="BLOCK_LABELS[block.type]" data-testid="quick-kind">
-            <Icon :name="BLOCK_ICONS[block.type]" :size="20" />
+        <span v-if="bar" class="quick-kind" role="img" :aria-label="title" data-testid="quick-kind">
+            <Icon :name="block ? BLOCK_ICONS[block.type] : 'grid'" :size="20" />
         </span>
-        <template v-if="!block.locked">
+        <span v-if="many" class="quick-count" data-testid="quick-count">{{ title }}</span>
+        <span v-if="many && !bar" class="quick-divider" aria-hidden="true" />
+        <template v-if="block && !block.locked">
             <div class="quick-scroll">
                 <div ref="fields" class="quick-fields" @scroll.passive="onFieldsScroll">
                     <component :is="BLOCK_INSPECTORS[block.type]" :block="block" />
@@ -236,18 +246,18 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                 v-if="!bar"
                 v-tip="lockLabel"
                 class="d-btn d-btn--icon d-btn--ghost quick-action"
-                :class="{ 'quick-action--on': block.locked }"
+                :class="{ 'quick-action--on': allLocked }"
                 type="button"
                 :aria-label="t.common.lock"
-                :aria-pressed="!!block.locked"
+                :aria-pressed="allLocked"
                 data-testid="quick-lock"
                 data-quick-stop
-                @click="editor.setLocked(block.id, !block.locked)"
+                @click="editor.setLocked(ids, !allLocked)"
             >
-                <Icon :name="block.locked ? 'lock' : 'unlock'" :size="18" />
+                <Icon :name="allLocked ? 'lock' : 'unlock'" :size="18" />
             </button>
             <!-- On a phone they move into "⋯": the bar keeps its width for the fields (user at the test instance, 2026-10-09). -->
-            <template v-if="!block.locked && !bar">
+            <template v-if="!allLocked && !bar">
                 <button
                     v-tip="withKeys(t.common.duplicate, KEYS.duplicate)"
                     class="d-btn d-btn--icon d-btn--ghost quick-action"
@@ -255,7 +265,7 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                     :aria-label="t.common.duplicate"
                     data-testid="quick-duplicate"
                     data-quick-stop
-                    @click="editor.duplicateBlock(block.id)"
+                    @click="editor.duplicateBlocks(ids)"
                 >
                     <Icon name="duplicate" :size="bar ? 20 : 18" />
                 </button>
@@ -266,7 +276,7 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                     :aria-label="t.common.delete"
                     data-testid="quick-delete"
                     data-quick-stop
-                    @click="editor.removeBlock(block.id)"
+                    @click="editor.removeBlocks(ids)"
                 >
                     <Icon name="trash" :size="bar ? 20 : 18" />
                 </button>
@@ -296,32 +306,35 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                     data-testid="quick-more-list"
                     @keydown="onMoreKey"
                 >
-                    <button v-if="bar" role="menuitem" type="button" data-testid="quick-lock" @click="choose(() => editor.setLocked(block.id, !block.locked))">
+                    <button v-if="bar" role="menuitem" type="button" data-testid="quick-lock" @click="choose(() => editor.setLocked(ids, !allLocked))">
                         {{ lockLabel }}
                     </button>
                     <hr v-if="bar" role="separator">
                     <button
-                        v-if="bar && block.type === 'text' && !block.locked"
+                        v-if="bar && block && block.type === 'text' && !block.locked"
                         role="menuitem"
                         type="button"
                         data-testid="quick-edit-text"
-                        @click="choose(() => editor.startTextEdit(block.id))"
+                        @click="choose(() => editor.startTextEdit(block!.id))"
                     >
                         {{ t.quick.editText }}
                     </button>
                     <button
-                        v-if="bar && !block.locked"
+                        v-if="bar && !allLocked"
                         role="menuitem"
                         type="button"
                         data-testid="quick-duplicate"
-                        @click="choose(() => editor.duplicateBlock(block.id))"
+                        @click="choose(() => editor.duplicateBlocks(ids))"
                     >
                         {{ t.common.duplicate }}
                     </button>
-                    <button role="menuitem" type="button" data-testid="quick-copy" @click="choose(() => editor.copyBlock(block.id))">
+                    <button role="menuitem" type="button" data-testid="quick-copy" @click="choose(() => editor.copyBlocks(ids))">
                         {{ t.quick.copy }}<kbd>{{ keyLabel(KEYS.copy) }}</kbd>
                     </button>
-                    <template v-if="!block.locked">
+                    <button v-if="many && !allLocked" role="menuitem" type="button" data-testid="quick-cut" @click="choose(() => editor.cutBlocks(ids))">
+                        {{ t.quick.cut }}<kbd>{{ keyLabel(KEYS.cut) }}</kbd>
+                    </button>
+                    <template v-if="block && !block.locked">
                         <button
                             role="menuitem"
                             type="button"
@@ -338,7 +351,7 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                             role="menuitem"
                             type="button"
                             :data-testid="`quick-layer-${layer.where}`"
-                            @click="choose(() => editor.layerBlock(block.id, layer.where))"
+                            @click="choose(() => editor.layerBlocks(ids, layer.where))"
                         >
                             {{ layer.label }}
                         </button>
@@ -346,13 +359,21 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
                     <button v-if="below" role="menuitem" type="button" data-testid="quick-select-below" @click="choose(() => editor.selectBlock(below!.id))">
                         {{ t.quick.selectBelow }}
                     </button>
-                    <hr role="separator">
-                    <button role="menuitem" type="button" data-testid="quick-all-settings" @click="choose(() => emit('all-settings'))">
-                        {{ t.quick.allSettings }}
-                    </button>
-                    <template v-if="bar && !block.locked">
+                    <template v-if="many && !bar">
                         <hr role="separator">
-                        <button role="menuitem" type="button" class="quick-more-danger" data-testid="quick-delete" @click="choose(() => editor.removeBlock(block.id))">
+                        <button role="menuitem" type="button" data-testid="quick-deselect" @click="choose(deselect)">
+                            {{ t.quick.deselect }}
+                        </button>
+                    </template>
+                    <template v-if="block">
+                        <hr role="separator">
+                        <button role="menuitem" type="button" data-testid="quick-all-settings" @click="choose(() => emit('all-settings'))">
+                            {{ t.quick.allSettings }}
+                        </button>
+                    </template>
+                    <template v-if="bar && !allLocked">
+                        <hr role="separator">
+                        <button role="menuitem" type="button" class="quick-more-danger" data-testid="quick-delete" @click="choose(() => editor.removeBlocks(ids))">
                             {{ t.common.delete }}
                         </button>
                     </template>
@@ -396,6 +417,15 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
     display: flex;
     align-items: center;
     gap: var(--d-space-1);
+}
+/* "3 Bausteine": the menu of several has no fields, only this name. */
+.quick-count {
+    flex: none;
+    padding: 0 var(--d-space-2);
+    font-weight: var(--d-weight-normal);
+}
+.quick-menu--bar .quick-count {
+    flex: 1;
 }
 .quick-divider {
     flex: none;

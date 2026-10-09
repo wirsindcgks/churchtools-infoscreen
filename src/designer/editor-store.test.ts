@@ -85,13 +85,13 @@ describe('editor store', () => {
         editor.addBlock('text');
         const id = editor.block!.id;
         editor.startTextEdit(id);
-        editor.setLocked(id, true);
+        editor.setLocked([id], true);
         expect(editor.editingTextId).toBeNull();
         editor.startTextEdit(id);
         expect(editor.editingTextId).toBeNull();
-        editor.setLocked(id, false);
+        editor.setLocked([id], false);
         editor.startTextEdit(id);
-        editor.removeBlock(id);
+        editor.removeBlocks([id]);
         expect(editor.editingTextId).toBeNull();
         editor.addBlock('shape');
         editor.startTextEdit(editor.block!.id);
@@ -209,12 +209,12 @@ describe('editor store', () => {
         const id = editor.block!.id;
         editor.addBlock('text');
         const x = editor.slide!.blocks[0]!.x;
-        editor.setLocked(id, true);
+        editor.setLocked([id], true);
         editor.updateBlock(id, { x: x + 100 });
-        editor.layerBlock(id, 'front');
-        editor.removeBlock(id);
+        editor.layerBlocks([id], 'front');
+        editor.removeBlocks([id]);
         expect(editor.slide!.blocks[0]).toMatchObject({ id, x, locked: true });
-        editor.setLocked(id, false);
+        editor.setLocked([id], false);
         expect(editor.slide!.blocks[0]!.locked).toBeUndefined();
         editor.updateBlock(id, { x: x + 100 });
         expect(editor.slide!.blocks[0]!.x).toBe(x + 100);
@@ -228,9 +228,9 @@ describe('editor store', () => {
         editor.addBlock('shape');
         const shape = editor.block!.id;
         editor.addBlock('text');
-        editor.layerBlock(shape, 'front');
+        editor.layerBlocks([shape], 'front');
         expect(editor.slide?.blocks.at(-1)?.id).toBe(shape);
-        editor.removeBlock(shape);
+        editor.removeBlocks([shape]);
         expect(editor.slide?.blocks).toHaveLength(1);
     });
 });
@@ -359,7 +359,7 @@ describe('linked slides (Plan.md 49)', () => {
             const { editor } = await setup();
             editor.addBlock('text');
             const original = { ...editor.block! };
-            editor.copyBlock(original.id);
+            editor.copyBlocks([original.id]);
             editor.addSlide();
             expect(editor.slide?.blocks).toHaveLength(0);
             editor.pasteBlocks();
@@ -374,7 +374,7 @@ describe('linked slides (Plan.md 49)', () => {
             const { editor } = await setup();
             editor.addBlock('shape');
             const original = editor.block!;
-            editor.copyBlock(original.id);
+            editor.copyBlocks([original.id]);
             editor.pasteBlocks();
             expect(editor.slide?.blocks).toHaveLength(2);
             expect([editor.block!.x, editor.block!.y]).toEqual([original.x + 40, original.y + 40]);
@@ -385,8 +385,8 @@ describe('linked slides (Plan.md 49)', () => {
             const { editor } = await setup();
             editor.addBlock('shape');
             const id = editor.block!.id;
-            editor.setLocked(id, true);
-            editor.duplicateBlock(id);
+            editor.setLocked([id], true);
+            editor.duplicateBlocks([id]);
             expect(editor.slide?.blocks[0]?.locked).toBe(true);
             expect(editor.block?.locked).toBeUndefined();
             expect(editor.block?.id).not.toBe(id);
@@ -396,9 +396,9 @@ describe('linked slides (Plan.md 49)', () => {
             const { editor } = await setup();
             editor.addBlock('text');
             editor.addBlock('shape');
-            editor.copyBlock(editor.slide!.blocks[0]!.id);
+            editor.copyBlocks([editor.slide!.blocks[0]!.id]);
             const copied = editor.clipboard[0]!.id;
-            editor.duplicateBlock(editor.slide!.blocks[1]!.id);
+            editor.duplicateBlocks([editor.slide!.blocks[1]!.id]);
             expect(editor.slide?.blocks).toHaveLength(3);
             expect(editor.clipboard[0]?.id).toBe(copied);
             editor.undo();
@@ -408,7 +408,7 @@ describe('linked slides (Plan.md 49)', () => {
         it('pastes as one step in the history', async () => {
             const { editor } = await setup();
             editor.addBlock('text');
-            editor.copyBlock(editor.block!.id);
+            editor.copyBlocks([editor.block!.id]);
             editor.pasteBlocks();
             expect(editor.slide?.blocks).toHaveLength(2);
             editor.undo();
@@ -419,12 +419,12 @@ describe('linked slides (Plan.md 49)', () => {
             const { editor } = await setup();
             editor.addBlock('text');
             const id = editor.block!.id;
-            editor.setLocked(id, true);
-            editor.cutBlock(id);
+            editor.setLocked([id], true);
+            editor.cutBlocks([id]);
             expect(editor.slide?.blocks).toHaveLength(1);
             expect(editor.clipboard).toHaveLength(0);
-            editor.setLocked(id, false);
-            editor.cutBlock(id);
+            editor.setLocked([id], false);
+            editor.cutBlocks([id]);
             expect(editor.slide?.blocks).toHaveLength(0);
             expect(editor.clipboard).toHaveLength(1);
             editor.undo();
@@ -434,7 +434,7 @@ describe('linked slides (Plan.md 49)', () => {
         it('shrinks a block pasted from landscape onto a portrait stage', async () => {
             const { editor, repository } = await setup();
             editor.addBlock('appointment-list');
-            editor.copyBlock(editor.block!.id);
+            editor.copyBlocks([editor.block!.id]);
             const portrait = createScreenBundle({ name: 'Flur', slug: 'flur', orientation: 'portrait' });
             await repository.saveScreen(portrait, { expectedRevision: null, updatedBy: 'Anna' });
             await editor.open(portrait.screen.defaultPlaylistId);
@@ -448,7 +448,7 @@ describe('linked slides (Plan.md 49)', () => {
         it('keeps the clipboard when another playlist is opened', async () => {
             const { editor, repository } = await setup();
             editor.addBlock('text');
-            editor.copyBlock(editor.block!.id);
+            editor.copyBlocks([editor.block!.id]);
             const other = createScreenBundle({ name: 'Flur', slug: 'flur', orientation: 'landscape' });
             await repository.saveScreen(other, { expectedRevision: null, updatedBy: 'Anna' });
             await editor.open(other.screen.defaultPlaylistId);
@@ -475,7 +475,7 @@ describe('linked slides (Plan.md 49)', () => {
         editor.addBlock('qr');
         const types = () => editor.slide!.blocks.map((b) => b.type);
         expect(types()).toEqual(['text', 'shape', 'clock', 'qr']);
-        editor.setLocked(editor.slide!.blocks[1]!.id, true);
+        editor.setLocked([editor.slide!.blocks[1]!.id], true);
         editor.moveBlockLayer(0, 2);
         // The text passes the locked shape, which stays at place 1.
         expect(types()).toEqual(['clock', 'shape', 'text', 'qr']);
@@ -708,5 +708,165 @@ describe('drafts (Plan.md 79, Paket E)', () => {
         await nextTick();
         expect(await editor.flushDraft()).toBe(false);
         expect(editor.draftConflict).toEqual({ revision: 0, updatedBy: '', updatedAt: '' });
+    });
+});
+
+describe('selecting several blocks (Plan.md 79, D1)', () => {
+    /** Three shapes at known places, bottom to top: a (100,100), b (400,100), c (700,400), each 200 × 100. */
+    async function three() {
+        const { editor } = await setup();
+        const ids: string[] = [];
+        for (const [x, y] of [[100, 100], [400, 100], [700, 400]] as const) {
+            editor.addBlock('shape');
+            editor.updateBlock(editor.block!.id, { x, y, width: 200, height: 100 });
+            ids.push(editor.block!.id);
+        }
+        editor.selectBlock(null);
+        return { editor, ids: ids as [string, string, string] };
+    }
+
+    it('toggles, selects all (locked too) and keeps `block` for exactly one', async () => {
+        const { editor, ids } = await three();
+        editor.setLocked([ids[2]], true);
+        editor.toggleBlock(ids[0]);
+        expect(editor.block?.id).toBe(ids[0]);
+        editor.toggleBlock(ids[1]);
+        expect(editor.block).toBeNull();
+        expect(editor.selection.map((b) => b.id)).toEqual([ids[0], ids[1]]);
+        expect(editor.isSelected(ids[1])).toBe(true);
+        editor.toggleBlock(ids[0]);
+        expect(editor.block?.id).toBe(ids[1]);
+        editor.selectAll();
+        expect(editor.selection).toHaveLength(3);
+        editor.selectBlock(ids[2]);
+        expect(editor.selectedBlockIds).toEqual([ids[2]]);
+        editor.selectBlock(null);
+        expect(editor.selection).toEqual([]);
+    });
+
+    it('selects what a rectangle touches, or adds it to the choice', async () => {
+        const { editor, ids } = await three();
+        editor.selectArea({ x: 250, y: 120, width: 200, height: 20 });
+        expect(editor.selectedBlockIds).toEqual([ids[0], ids[1]]);
+        editor.selectArea({ x: 750, y: 450, width: 10, height: 10 });
+        expect(editor.selectedBlockIds).toEqual([ids[2]]);
+        editor.selectArea({ x: 100, y: 100, width: 5, height: 5 }, true);
+        expect(editor.selectedBlockIds).toEqual([ids[2], ids[0]]);
+        editor.selectArea({ x: 1500, y: 900, width: 50, height: 50 });
+        expect(editor.selection).toEqual([]);
+    });
+
+    it('takes vanished blocks out of the choice on undo and on delete', async () => {
+        const { editor, ids } = await three();
+        editor.selectAll();
+        editor.removeBlocks([ids[2]]);
+        expect(editor.selectedBlockIds).toEqual([ids[0], ids[1]]);
+        editor.undo();
+        // The block is back, but it is not chosen again.
+        expect(editor.slide!.blocks).toHaveLength(3);
+        expect(editor.selectedBlockIds).toEqual([ids[0], ids[1]]);
+        editor.selectAll();
+        editor.undo(); // the third block is gone again: it was added and moved before
+        editor.undo();
+        expect(editor.slide!.blocks).toHaveLength(2);
+        expect(editor.selectedBlockIds).toEqual([ids[0], ids[1]]);
+    });
+
+    it('moves the unlocked ones together as one step; the locked stay', async () => {
+        const { editor, ids } = await three();
+        editor.setLocked([ids[1]], true);
+        const steps = () => editor.canUndo;
+        editor.moveBlocks(ids, 30, 20);
+        const [a, b, c] = editor.slide!.blocks;
+        expect([a!.x, a!.y, b!.x, b!.y, c!.x, c!.y]).toEqual([130, 120, 400, 100, 730, 420]);
+        expect(steps()).toBe(true);
+        editor.undo();
+        expect(editor.slide!.blocks[0]!.x).toBe(100);
+        expect(editor.slide!.blocks[2]!.x).toBe(700);
+    });
+
+    it('clamps the box of the moved ones, so the group keeps its shape at the edge', async () => {
+        const { editor, ids } = await three();
+        editor.moveBlocks([ids[0], ids[2]], 5000, 0);
+        const [a, , c] = editor.slide!.blocks;
+        // The box (100..900) may go as far as 20 px inside the stage (1920): both moved by the same amount.
+        expect(c!.x - a!.x).toBe(600);
+        expect(a!.x).toBe(1920 - 20);
+        editor.moveBlocks(ids, 0, 0);
+        expect(editor.slide!.blocks[0]!.x).toBe(1900);
+    });
+
+    it('deletes, locks and layers several as one step each; the locked are left out of delete and layer', async () => {
+        const { editor, ids } = await three();
+        editor.setLocked([ids[0]], true);
+        editor.selectAll();
+        editor.layerBlocks(ids, 'back');
+        // `a` is locked and stays; the others go behind it, keeping their order.
+        expect(editor.slide!.blocks.map((b) => b.id)).toEqual([ids[1], ids[2], ids[0]]);
+        editor.undo();
+        editor.removeBlocks(ids);
+        expect(editor.slide!.blocks.map((b) => b.id)).toEqual([ids[0]]);
+        expect(editor.selectedBlockIds).toEqual([ids[0]]);
+        editor.undo();
+        expect(editor.slide!.blocks).toHaveLength(3);
+        editor.setLocked(ids, false);
+        expect(editor.slide!.blocks.some((b) => b.locked)).toBe(false);
+        editor.undo();
+        expect(editor.slide!.blocks[0]!.locked).toBe(true);
+        editor.setLocked(ids, true);
+        expect(editor.slide!.blocks.every((b) => b.locked)).toBe(true);
+    });
+
+    it('copies with the locked, cuts without them, duplicates as loose copies', async () => {
+        const { editor, ids } = await three();
+        editor.setLocked([ids[0]], true);
+        editor.copyBlocks(ids);
+        expect(editor.clipboard.map((b) => b.id)).toEqual(ids);
+        editor.cutBlocks(ids);
+        expect(editor.slide!.blocks.map((b) => b.id)).toEqual([ids[0]]);
+        expect(editor.clipboard.map((b) => b.id)).toEqual([ids[1], ids[2]]);
+        editor.undo();
+        editor.duplicateBlocks(ids);
+        expect(editor.slide!.blocks).toHaveLength(6);
+        expect(editor.slide!.blocks.slice(3).some((b) => b.locked)).toBe(false);
+        expect(editor.selection).toHaveLength(3);
+        editor.undo();
+        expect(editor.slide!.blocks).toHaveLength(3);
+    });
+
+    it('pastes a group as a whole: same places to each other, all chosen, one step', async () => {
+        const { editor, ids } = await three();
+        editor.copyBlocks(ids);
+        editor.pasteBlocks();
+        const pasted = editor.slide!.blocks.slice(3);
+        expect(pasted).toHaveLength(3);
+        expect(editor.selection.map((b) => b.id)).toEqual(pasted.map((b) => b.id));
+        // The box (100..900, 100..500) was taken: the group steps on by 40 – all of it, not block by block.
+        expect(pasted.map((b) => [b.x - 40, b.y - 40])).toEqual([[100, 100], [400, 100], [700, 400]]);
+        editor.undo();
+        expect(editor.slide!.blocks).toHaveLength(3);
+    });
+
+    it('pastes a group at a point with its middle there', async () => {
+        const { editor, ids } = await three();
+        editor.copyBlocks(ids);
+        editor.pasteBlocks({ x: 960, y: 540 });
+        const pasted = editor.slide!.blocks.slice(3);
+        // The box is 800 × 400: its middle (960, 540) means a top left of (560, 340).
+        expect([pasted[0]!.x, pasted[0]!.y]).toEqual([560, 340]);
+        expect([pasted[2]!.x, pasted[2]!.y]).toEqual([1160, 640]);
+    });
+
+    it('shrinks a group too big for the stage as a whole', async () => {
+        const { editor, ids } = await three();
+        editor.copyBlocks(ids);
+        // A narrower stage: the box (800 wide) no longer fits into 600.
+        editor.draft!.playlist.stage = { width: 600, height: 1080 };
+        editor.pasteBlocks();
+        const [a, , c] = editor.selection;
+        expect([a!.width, a!.height]).toEqual([150, 75]);
+        expect([a!.x, c!.x]).toEqual([0, 450]);
+        expect(c!.x + c!.width).toBe(600);
+        expect(c!.y - a!.y).toBe(225);
     });
 });
