@@ -352,6 +352,21 @@ export const t = {
         },
     },
 
+    /** Aligning and distributing several blocks (Plan.md 79, D4). */
+    arrange: {
+        label: 'Ausrichten',
+        left: 'Links ausrichten',
+        center: 'Waagrecht mittig ausrichten',
+        right: 'Rechts ausrichten',
+        top: 'Oben ausrichten',
+        middle: 'Senkrecht mittig ausrichten',
+        bottom: 'Unten ausrichten',
+        distributeX: 'Waagrecht verteilen',
+        distributeY: 'Senkrecht verteilen',
+        few: 'Verteilen ab drei Bausteinen',
+        locked: 'Ein gesperrter Baustein liegt dazwischen',
+    },
+
     /** The inspector beside the stage. */
     inspector: {
         groupShow: {
