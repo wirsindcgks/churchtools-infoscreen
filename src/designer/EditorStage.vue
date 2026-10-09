@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import type { Block } from '../model/schema';
 import { bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
@@ -9,11 +9,14 @@ import StageView from '../player/StageView.vue';
 import { fitStage } from '../player/stage';
 import { t } from '../i18n/designer';
 import { useEditorStore } from './editor-store';
+import { centerCovered, emptyAction } from './empty-block';
 import Icon from './Icon.vue';
 import { neighbourGaps, pairGaps, sizeLabelPlace, type Measure } from './measure';
 import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, clampFrame } from './ops';
+import QuickMenu from './QuickMenu.vue';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 
+const emit = defineEmits<{ 'all-settings': [] }>();
 const editor = useEditorStore();
 const stage = useStageContext();
 // The designer shows what the TV shows (Plan.md 38): a band past its "until" no longer draws here either.
@@ -200,10 +203,57 @@ const gridStyle = computed(() => {
 });
 
 const blocks = computed(() => editor.slide?.blocks ?? []);
+
+/** The short menu (Plan.md 79, C1) stands from 48rem up – a phone gets its own bar in C2; reactive, because the window may be resized. */
+const wideQuery = window.matchMedia('(min-width: 48.0625rem)');
+const wide = ref(wideQuery.matches);
+function onWideChange(event: MediaQueryListEvent): void {
+    wide.value = event.matches;
+}
+wideQuery.addEventListener('change', onWideChange);
+onBeforeUnmount(() => wideQuery.removeEventListener('change', onWideChange));
+
+/** A block's frame in host pixels (the menu and the buttons on empty blocks live outside the scaled stage). */
+function hostFrame(b: Block): { left: number; top: number; width: number; height: number } {
+    const { scale, offsetX, offsetY } = fit.value;
+    return { left: offsetX + b.x * scale, top: offsetY + b.y * scale, width: b.width * scale, height: b.height * scale };
+}
+const quickBlock = computed(() => (wide.value && !dragId.value && fit.value.scale > 0 ? editor.block : null));
+const quickFrame = computed(() => (quickBlock.value ? hostFrame(quickBlock.value) : null));
+const quickMenu = ref<InstanceType<typeof QuickMenu> | null>(null);
+
+/** The buttons on blocks that lack their content (C6): only where they fit, never on a locked block, the one being dragged or one whose middle another block covers. */
+const BUTTON_MIN = { width: 120, height: 40 };
+const emptyButtons = computed(() =>
+    blocks.value.flatMap((b) => {
+        const text = emptyAction(b);
+        const frame = hostFrame(b);
+        if (!text || b.locked || b.id === dragId.value || frame.width < BUTTON_MIN.width || frame.height < BUTTON_MIN.height || centerCovered(b, blocks.value)) return [];
+        return [{ block: b, text, left: frame.left + frame.width / 2, top: frame.top + frame.height / 2 }];
+    }),
+);
+
+/** Leads to the content of the chosen block: its menu opens its first field; without a menu, all the settings open (C5, C6). */
+async function openContent(): Promise<void> {
+    await nextTick();
+    const b = editor.block;
+    if (!b || b.locked) return;
+    if (quickMenu.value) quickMenu.value.openFirst();
+    else if (!wide.value) emit('all-settings');
+}
+/** A double click: the text block gets its own editing on the stage in C4, until then it does nothing. */
+function onDoubleClick(): void {
+    if (editor.block?.type === 'text') return;
+    void openContent();
+}
+function onEmptyAction(b: Block): void {
+    editor.selectBlock(b.id);
+    void openContent();
+}
 </script>
 
 <template>
-    <div ref="host" class="editor-stage" @pointerdown="editor.selectBlock(null)">
+    <div ref="host" class="editor-stage" data-quick-host @pointerdown="editor.selectBlock(null)">
         <!-- The soft shadow of the stage on the workspace (Plan.md 79, B3): the stage itself is clipped, so it lies beside it. -->
         <div
             v-if="editor.slide"
@@ -264,6 +314,7 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
                     @pointercancel="end"
                     @pointerenter="hoveredId = block.id"
                     @pointerleave="hoveredId = null"
+                    @dblclick="onDoubleClick"
                 >
                     <!-- Shown by CSS where there is a pointer to hover with, never on the chosen block or while dragging (A4). -->
                     <span class="frame-name" :class="{ 'frame-name--inside': block.y < 32 / fit.scale }">
@@ -292,6 +343,29 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
                 </div>
             </div>
         </StageView>
+        <!-- Only in the editor, never in the player (C6): what a block still lacks, as a button in its middle. -->
+        <button
+            v-for="item in emptyButtons"
+            :key="item.block.id"
+            class="d-btn empty-action"
+            type="button"
+            :style="{ left: `${item.left}px`, top: `${item.top}px` }"
+            :data-block-type="item.block.type"
+            data-testid="empty-block-action"
+            @pointerdown.stop
+            @click="onEmptyAction(item.block)"
+        >
+            {{ item.text }}
+        </button>
+        <QuickMenu
+            v-if="quickBlock && quickFrame"
+            :key="quickBlock.id"
+            ref="quickMenu"
+            :block="quickBlock"
+            :frame="quickFrame"
+            :host="size"
+            @all-settings="emit('all-settings')"
+        />
         <!-- Only in the editor, never in the player (A7): over the stage, in screen pixels, below the blocks' reach. -->
         <div
             v-if="editor.slide && !blocks.length"
@@ -502,6 +576,15 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
         height: calc(var(--handle) * 2);
         margin: calc(var(--handle) * -1);
     }
+}
+/* What an empty block lacks (C6): a white button with a shadow, in screen pixels, in the middle of the block. */
+.empty-action {
+    position: absolute;
+    z-index: 10;
+    transform: translate(-50%, -50%);
+    box-shadow: var(--d-shadow);
+    font-family: var(--d-font);
+    white-space: nowrap;
 }
 /* The sentence on an empty slide: a quiet card in the middle of the stage, in screen pixels (A7). */
 .empty-slide {

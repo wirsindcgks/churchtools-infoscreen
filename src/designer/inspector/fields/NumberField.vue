@@ -5,7 +5,7 @@
  * field limits it to them – so a half-typed "1" on the way to "120" never lands in the document. A field is a gesture:
  * all its changes are one undo step.
  */
-import { ref, useId, watch } from 'vue';
+import { computed, ref, useId, watch } from 'vue';
 import { useEdit } from '../edit';
 import FieldRow from './FieldRow.vue';
 
@@ -24,6 +24,8 @@ const emit = defineEmits<{ 'update:modelValue': [number] }>();
 defineSlots<{ info?(): unknown }>();
 
 const id = useId();
+/** What the chip of the short menu shows: "Ecken 12 px". */
+const face = computed(() => [props.label, props.modelValue, props.unit].filter((part) => part !== undefined).join(' '));
 const edit = useEdit();
 const draft = ref(String(props.modelValue));
 let typing = false;
@@ -80,7 +82,7 @@ function onBlur(): void {
 </script>
 
 <template>
-    <FieldRow :label="label" :for="id" :stacked="stacked" :quick="quick">
+    <FieldRow :label="label" :for="id" :stacked="stacked" :quick="quick" :face="face">
         <div class="number-box">
             <input
                 :id="id"

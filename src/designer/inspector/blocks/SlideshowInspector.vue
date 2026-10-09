@@ -19,11 +19,14 @@ import TileField from '../fields/TileField.vue';
 import { MOTION_TILES, TRANSITION_TILES } from '../layouts';
 import { move as moveItem } from '../../ops';
 import { useBlockEdit } from '../use-block';
+import { useInspectorMode } from '../mode';
 
 /** Most pictures a gallery holds – the schema's limit. */
 const SLIDESHOW_MAX = 30;
 
 const props = defineProps<{ block: Extract<Block, { type: 'slideshow' }> }>();
+/** Only fields stand in the short menu; a hint or a line of text belongs to the inspector. */
+const mode = useInspectorMode();
 const { editor, setBlock, mediaUrl } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
 
@@ -68,7 +71,7 @@ function remove(index: number): void {
         testid="pick-slideshow"
         @pick="context.pickImage('slideshow')"
     />
-    <p v-if="!block.mediaIds.length" class="hint">{{ t.inspector.noImages }}</p>
+    <p v-if="mode === 'full' && !block.mediaIds.length" class="hint">{{ t.inspector.noImages }}</p>
     <InspectorSection v-else id="slideshow-images" :title="t.inspector.images" :summary="t.inspector.imageCount(block.mediaIds.length)">
         <SortList :items="items" :remove-label="t.inspector.removeImage" testid="slideshow" @move="move" @remove="remove" />
     </InspectorSection>
@@ -99,7 +102,7 @@ function remove(index: number): void {
         />
         <SegmentField :model-value="block.fit ?? 'cover'" :options="fits" :label="t.inspector.fit" testid="slideshow-fit" @update:model-value="setBlock({ fit: $event })" />
     </InspectorSection>
-    <HintRow caption>
+    <HintRow v-if="mode === 'full'" caption>
         <span>{{ t.inspector.runtime }}</span>
         <template #info>{{ t.inspector.slideshowRuntimeInfo }}</template>
     </HintRow>

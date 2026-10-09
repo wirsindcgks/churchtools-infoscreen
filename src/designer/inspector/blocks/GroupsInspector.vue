@@ -21,12 +21,15 @@ import FontSection from '../FontSection.vue';
 import { GROUPS_TILES } from '../layouts';
 import { move as moveItem } from '../../ops';
 import { useBlockEdit } from '../use-block';
+import { useInspectorMode } from '../mode';
 
 /** Labels in the order of `GroupFields` itself, so the fieldset needs no list of its own (Plan.md 43). */
 const GROUP_SHOW_LABELS: Record<keyof GroupFields, string> = t.inspector.groupShow;
 const GROUP_SHOW_KEYS = Object.keys(GROUP_SHOW_LABELS) as (keyof GroupFields)[];
 
 const props = defineProps<{ block: Extract<Block, { type: 'groups' }> }>();
+/** Only fields stand in the short menu; a hint or a line of text belongs to the inspector. */
+const mode = useInspectorMode();
 const { setBlock } = useBlockEdit(() => props.block);
 /** The preview's stage context: the homepage's groups come from its live data. */
 const stage = useStageContext();
@@ -113,7 +116,7 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
     >
         <template #info>{{ t.inspector.homepageInfo }}</template>
     </SelectField>
-    <p v-if="!context.homepages.length" class="hint">
+    <p v-if="mode === 'full' && !context.homepages.length" class="hint">
         {{ t.inspector.noHomepage }}
     </p>
 

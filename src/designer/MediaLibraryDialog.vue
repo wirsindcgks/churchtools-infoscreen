@@ -79,6 +79,12 @@ async function addMarked(): Promise<void> {
     if (docs.length) emit('chooseMany', docs);
 }
 
+/** A click on the backdrop closes; the second click of a double click (on the button that opened the library) does not. */
+function onBackdrop(event: MouseEvent): void {
+    if (event.detail > 1) return;
+    emit('close');
+}
+
 const input = ref<HTMLInputElement | null>(null);
 async function picked(): Promise<void> {
     await upload(input.value?.files ?? null);
@@ -87,7 +93,7 @@ async function picked(): Promise<void> {
 </script>
 
 <template>
-    <div class="backdrop" role="dialog" aria-modal="true" :aria-label="t.media.title" @click.self="emit('close')">
+    <div class="backdrop" role="dialog" aria-modal="true" :aria-label="t.media.title" @click.self="onBackdrop">
         <div class="library" :class="{ 'library--drop': dragOver }" data-testid="media-library" v-on="dropZone">
             <header>
                 <h2>{{ t.media.title }}</h2>

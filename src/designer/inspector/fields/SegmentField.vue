@@ -25,6 +25,9 @@ const labelId = useId();
 const CHAR_WIDTH = 7;
 const FACE_PADDING = 20;
 const ROW_ROOM = 150;
+/** In the short menu (Plan.md 79, C1) symbols stand there as they are; words become a chip that shows the chosen one. */
+const withSymbols = computed(() => props.options.some((o) => o.icon));
+const face = computed(() => props.options.find((o) => o.value === props.modelValue)?.label);
 const stackedNow = computed(
     () =>
         props.stacked ||
@@ -34,7 +37,7 @@ const name = useId();
 </script>
 
 <template>
-    <FieldRow :label="label" :label-id="labelId" :stacked="stackedNow" :quick="quick">
+    <FieldRow :label="label" :label-id="labelId" :stacked="stackedNow" :quick="quick" :face="face" :inline="withSymbols">
         <div class="segment" role="radiogroup" :aria-labelledby="labelId" :data-testid="testid">
             <label v-for="option in options" :key="option.value" class="segment-option" :title="option.icon ? option.label : undefined">
                 <input

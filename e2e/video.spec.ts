@@ -97,7 +97,7 @@ async function slideWithVideo(page: Page, name = 'Predigtreihe'): Promise<void> 
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await addBlock(page, 'video');
     await expect(page.getByTestId('block-inspector')).toBeVisible();
-    await page.getByTestId('pick-video').click();
+    await page.getByTestId('block-inspector').getByTestId('pick-video').click();
     const library = page.getByTestId('media-library');
     await library.getByTestId('media-item').filter({ hasText: name }).locator('button.pick').click();
     await expect(library).toBeHidden();
@@ -112,11 +112,11 @@ test('add a video: the library shows only videos, the inspector names the one ch
     await addBlock(page, 'video');
     const inspector = page.getByTestId('block-inspector');
     await expect(inspector.getByText('Noch kein Video gewählt.')).toBeVisible();
-    await expect(page.getByTestId('pick-video')).toHaveText('Video wählen');
+    await expect(page.getByTestId('block-inspector').getByTestId('pick-video')).toHaveText('Video wählen');
     // The designer's stage says what is missing.
     await expect(page.locator('.editor-stage').getByTestId('video-placeholder')).toHaveText('Video wählen');
 
-    await page.getByTestId('pick-video').click();
+    await page.getByTestId('block-inspector').getByTestId('pick-video').click();
     const library = page.getByTestId('media-library');
     await expect(library.getByText('Lade Videos …')).toHaveCount(0);
     const items = library.getByTestId('media-item');
@@ -137,8 +137,8 @@ test('add a video: the library shows only videos, the inspector names the one ch
     await items.filter({ hasText: 'Predigtreihe.mp4' }).locator('button.pick').click();
     await expect(library).toBeHidden();
     await expect(page.getByTestId('video-name')).toContainText('Predigtreihe.mp4');
-    await expect(page.getByTestId('pick-video')).toHaveText('Video tauschen');
-    await expect(page.getByTestId('video-sound')).not.toBeChecked();
+    await expect(page.getByTestId('block-inspector').getByTestId('pick-video')).toHaveText('Video tauschen');
+    await expect(page.getByTestId('block-inspector').getByTestId('video-sound')).not.toBeChecked();
     await openSection(page, 'appearance');
     await expect.poll(() => chosen(page, 'video-fit')).toBe('contain');
     await inspector.getByRole('button', { name: 'Erklärung' }).last().click();
@@ -157,7 +157,7 @@ test('a picture block is offered pictures only, never a video', async ({ page, b
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await addBlock(page, 'image');
-    await page.getByTestId('pick-image').click();
+    await page.getByTestId('block-inspector').getByTestId('pick-image').click();
     const library = page.getByTestId('media-library');
     const items = library.getByTestId('media-item');
     await expect(items).toHaveCount(2);
@@ -190,7 +190,7 @@ test('the player loops the video from its download address, muted unless the blo
     // click it refuses, and the video then runs on muted – so what is looked at is how `play()` was called. Not
     // the first call: the player starts from its cached state – here still the video without sound – and only
     // then shows the fresh one; in WebKit the cached video sometimes starts first (Plan.md 60).
-    await page.getByTestId('video-sound').check();
+    await page.getByTestId('block-inspector').getByTestId('video-sound').check();
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
     await playerPage.addInitScript(() => {
@@ -232,7 +232,7 @@ test('the preview plays videos muted and offers the sound on a button', async ({
     test.setTimeout(60_000);
     const { release } = await fakeLibrary(page, baseURL, 'hold');
     await slideWithVideo(page);
-    await page.getByTestId('video-sound').check();
+    await page.getByTestId('block-inspector').getByTestId('video-sound').check();
     await page.getByTestId('open-preview').click();
     const preview = page.getByTestId('playlist-preview');
     const video = preview.getByTestId('video');

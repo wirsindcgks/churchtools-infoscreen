@@ -8,8 +8,11 @@ import InspectorSection from '../../InspectorSection.vue';
 import { useEdit } from '../edit';
 import TextField from '../fields/TextField.vue';
 import { useBlockEdit } from '../use-block';
+import { useInspectorMode } from '../mode';
 
 const props = defineProps<{ block: Extract<Block, { type: 'qr' }> }>();
+/** Only fields stand in the short menu; a hint or a line of text belongs to the inspector. */
+const mode = useInspectorMode();
 const { setBlock } = useBlockEdit(() => props.block);
 const edit = useEdit();
 </script>
@@ -25,7 +28,7 @@ const edit = useEdit();
         testid="qr-data"
         @update:model-value="setBlock({ data: $event })"
     />
-    <p v-if="block.data.trim() && !qrShape(block.data)" class="hint">{{ t.inspector.qrTooLong }}</p>
+    <p v-if="mode === 'full' && block.data.trim() && !qrShape(block.data)" class="hint">{{ t.inspector.qrTooLong }}</p>
     <InspectorSection id="appearance" :title="t.inspector.appearance">
         <template #info>{{ t.inspector.qrColorsInfo }}</template>
         <div class="colors">

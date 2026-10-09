@@ -275,6 +275,33 @@ export const t = {
         },
     },
 
+    /** The short menu above the chosen block (Plan.md 79, C1) and what an empty block says (C6). */
+    quick: {
+        label: (name: string) => `Kurzmenü: ${name}`,
+        /** The face of a chip that stands for a whole list: "Kalender · 3". */
+        count: (label: string, n: number) => `${label} · ${n}`,
+        /** The name of a chip for a screen reader: the field and what it holds now. */
+        chip: (label: string, face: string) => `${label}: ${face}`,
+        /** The short words of a switch in the menu, where the full label is too long. */
+        short: { name: 'Name', logo: 'Logo', title: 'Titel', image: 'Bild' },
+        unlock: 'Entsperren',
+        allSettings: 'Alle Einstellungen',
+        copy: 'Kopieren',
+        paste: 'Einfügen',
+        layers: { front: 'Ganz nach vorn', forward: 'Nach vorn', backward: 'Nach hinten', back: 'Ganz nach hinten' },
+        /** The button in the middle of a block that still lacks its content. */
+        empty: {
+            image: 'Bild wählen',
+            video: 'Video wählen',
+            slideshow: 'Bilder hinzufügen',
+            web: 'Adresse eingeben',
+            qr: 'Inhalt eingeben',
+            posts: 'Gruppen wählen',
+            groups: 'Homepage wählen',
+            rooms: 'Räume wählen',
+        },
+    },
+
     /** The inspector beside the stage. */
     inspector: {
         groupShow: {

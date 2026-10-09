@@ -174,7 +174,8 @@ test('the header block shows the church logo in the size of the block (G29)', as
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await page.getByTestId('frame-church-header').first().click();
-    await page.getByTestId('show-logo').check();
+    // The short menu above the block has this switch, too (Plan.md 79, C1); the inspector's is the one under test.
+    await page.getByTestId('block-inspector').getByTestId('show-logo').check();
     const logo = page.locator('.editor-stage .block--church-header img');
     await expect(logo).toBeVisible();
     // Not the 150×150 of /logo: the image service answers in the height of the block.
@@ -809,7 +810,7 @@ test('the media library in the editor lists pictures to choose from and closes a
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await addBlock(page, 'image');
-    await page.getByTestId('pick-image').click();
+    await page.getByTestId('block-inspector').getByTestId('pick-image').click();
     const library = page.getByTestId('media-library');
     await expect(library).toBeVisible();
     await expect(library.getByText('Lade Bilder …')).toHaveCount(0);
@@ -1238,7 +1239,7 @@ test('a countdown to the next appointment, and the band moved to "Hinweise" (Pla
     // The mocked appointments start tomorrow at the earliest: days and hours.
     await expect(stage.getByTestId('countdown-time')).toHaveText(/^\d+ Tag(e)? \d+ Std\.$|^\d+:\d{2}:\d{2}$/);
     await expect(stage.getByTestId('countdown')).toContainText('beginnt in');
-    await page.getByTestId('countdown-title').uncheck();
+    await page.getByTestId('block-inspector').getByTestId('countdown-title').uncheck();
     await expect(stage.getByTestId('countdown')).toContainText('Beginnt in');
     await page.waitForTimeout(500);
     await page.screenshot({ path: 'test-results/editor-countdown.png' });
@@ -2084,6 +2085,8 @@ test('with Alt held over another block, the distances between it and the chosen 
     await page.mouse.down();
     await page.mouse.move(cbox.x + cbox.width / 2 + qr.width + 120, cbox.y + cbox.height / 2 + 60, { steps: 5 });
     await page.mouse.up();
+    // The clock's short menu would cover the corner of the code: choose no block first.
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
     await page.getByTestId('frame-qr').click({ position: { x: 4, y: 4 } });
     await page.getByTestId('frame-clock').hover();
     await page.keyboard.down('Alt');

@@ -2,11 +2,12 @@
 /**
  * A medium of the library as one field (Plan.md 79, B2): the preview above, one button under it – "Bild wählen" while
  * empty, "Bild tauschen" once filled (the words come in as properties, so images, videos and logos share it). The
- * default slot takes further buttons, such as "Logo aus ChurchTools verwenden".
+ * default slot takes further buttons, such as "Logo aus ChurchTools verwenden". In the short menu (Plan.md 79, C1) it is
+ * only the button, a chip that opens the library.
  */
-import { useFieldVisible } from '../mode';
+import { useInspectorMode } from '../mode';
 
-const props = defineProps<{
+defineProps<{
     filled: boolean;
     pickLabel: string;
     swapLabel: string;
@@ -23,11 +24,25 @@ const props = defineProps<{
 }>();
 defineEmits<{ pick: [] }>();
 defineSlots<{ default?(): unknown }>();
-const visible = useFieldVisible(() => props.quick);
+const mode = useInspectorMode();
 </script>
 
 <template>
-    <div v-if="visible" class="media-field">
+    <template v-if="mode === 'quick'">
+        <button
+            v-if="quick"
+            class="quick-chip"
+            type="button"
+            :disabled="disabled"
+            :data-testid="testid"
+            data-quick-open
+            data-quick-stop
+            @click="$emit('pick')"
+        >
+            {{ filled ? swapLabel : pickLabel }}
+        </button>
+    </template>
+    <div v-else class="media-field">
         <img v-if="previewUrl" :class="{ 'media-preview--contain': contain }" :src="previewUrl" alt="">
         <p v-if="caption" :class="captionMuted ? 'hint' : 'media-name'" :data-testid="captionTestid">{{ caption }}</p>
         <button class="d-btn media-pick" type="button" :disabled="disabled" :data-testid="testid" @click="$emit('pick')">

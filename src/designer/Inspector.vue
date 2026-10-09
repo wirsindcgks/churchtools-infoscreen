@@ -4,7 +4,7 @@
  * "Anordnen" and "Genaue Maße". Without a block the slide and the playlist show instead. What a block shows lives in
  * `inspector/blocks/`, one component per type.
  */
-import { computed, provide, ref } from 'vue';
+import { computed, ref } from 'vue';
 import type { Calendar, PostGroup } from '../ct/api';
 import { t } from '../i18n/designer';
 import type { HomepageEntry } from '../groups/normalize';
@@ -14,7 +14,7 @@ import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
 import InspectorSection from './InspectorSection.vue';
 import { BLOCK_INSPECTORS } from './inspector/blocks';
-import { INSPECTOR_CONTEXT } from './inspector/context';
+import { provideInspectorContext } from './inspector/context';
 import NumberField from './inspector/fields/NumberField.vue';
 import SlideInspector from './inspector/SlideInspector.vue';
 import { layerRows, blockSummary } from './layers';
@@ -28,33 +28,7 @@ const props = defineProps<{ calendars: Calendar[]; hiddenCalendars?: Calendar[];
 const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow' | 'video'] }>();
 
 // The inspectors below read the lists through getters, so they follow the props.
-provide(INSPECTOR_CONTEXT, {
-    pickImage: (kind) => emit('pick-image', kind),
-    get calendars() {
-        return props.calendars;
-    },
-    get hiddenCalendars() {
-        return props.hiddenCalendars;
-    },
-    get groups() {
-        return props.groups;
-    },
-    get homepages() {
-        return props.homepages;
-    },
-    get rooms() {
-        return props.rooms;
-    },
-    get services() {
-        return props.services;
-    },
-    get allowedServices() {
-        return props.allowedServices;
-    },
-    get servicesFailed() {
-        return props.servicesFailed;
-    },
-});
+provideInspectorContext(() => props, (kind) => emit('pick-image', kind));
 
 const editor = useEditorStore();
 const block = computed(() => editor.block);

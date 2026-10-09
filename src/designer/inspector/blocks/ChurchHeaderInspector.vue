@@ -17,8 +17,8 @@ const context = useInspectorContext();
 </script>
 
 <template>
-    <ToggleField quick :model-value="block.showName" :label="t.inspector.showChurchName" testid="show-name" @update:model-value="setBlock({ showName: $event })" />
-    <ToggleField quick :model-value="block.showLogo" :label="t.inspector.showLogo" testid="show-logo" @update:model-value="setBlock({ showLogo: $event })">
+    <ToggleField quick :model-value="block.showName" :label="t.inspector.showChurchName" :quick-label="t.quick.short.name" testid="show-name" @update:model-value="setBlock({ showName: $event })" />
+    <ToggleField quick :model-value="block.showLogo" :label="t.inspector.showLogo" :quick-label="t.quick.short.logo" testid="show-logo" @update:model-value="setBlock({ showLogo: $event })">
         <template #info>{{ t.inspector.logoInfo }}</template>
     </ToggleField>
     <MediaField
