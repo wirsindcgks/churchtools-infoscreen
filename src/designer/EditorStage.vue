@@ -206,6 +206,12 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
 
 <template>
     <div ref="host" class="editor-stage" @pointerdown="editor.selectBlock(null)">
+        <!-- The soft shadow of the stage on the workspace (Plan.md 79, B3): the stage itself is clipped, so it lies beside it. -->
+        <div
+            v-if="editor.slide"
+            class="stage-shadow"
+            :style="{ left: `${fit.offsetX}px`, top: `${fit.offsetY}px`, width: `${editor.stage.width * fit.scale}px`, height: `${editor.stage.height * fit.scale}px` }"
+        />
         <StageView v-if="editor.slide" :width="editor.stage.width" :height="editor.stage.height" :fit="fit">
             <SlideView :slide="editor.slide" :width="editor.stage.width" :height="editor.stage.height" />
             <!-- The playlist's band lies over every slide (Plan.md 32); clicks go through to the blocks. -->
@@ -310,10 +316,19 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
     position: relative;
     min-height: 0;
     height: 100%;
-    overflow: hidden;
-    background: var(--d-panel);
+    /* The shadow of the stage reaches over the edge; the stage clips its own blocks. */
+    overflow: visible;
     /* A finger on the empty stage scrolls the page (phone, Plan.md 11); on a block it moves the block. */
     touch-action: pan-x pan-y;
+}
+.stage-shadow {
+    position: absolute;
+    border-radius: 4px;
+    box-shadow: var(--d-shadow-stage);
+    pointer-events: none;
+}
+.editor-stage :deep(.stage) {
+    border-radius: 4px;
 }
 .stage-banner {
     pointer-events: none;

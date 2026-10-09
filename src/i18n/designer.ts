@@ -105,6 +105,36 @@ export const t = {
         },
     },
 
+    /** The overview of the editor's handles behind the "?" (Plan.md 79, B3); Mac and other keyboards name the keys differently. */
+    shortcuts: {
+        button: 'Tastenkürzel',
+        title: 'Tastenkürzel',
+        intro: 'Diese Griffe gelten im Editor, solange du nicht in ein Feld schreibst.',
+        ctrl: 'Strg',
+        shift: 'Umschalt',
+        alt: 'Alt',
+        arrows: 'Pfeiltasten',
+        keys: { Delete: 'Entf', Escape: 'Esc' } as Record<string, string>,
+        macKeys: { Delete: '⌫' } as Record<string, string>,
+        groups: { general: 'Allgemein', block: 'Gewählter Baustein', stage: 'Beim Ziehen und Zeigen' },
+        rows: {
+            save: 'Speichern',
+            undo: 'Rückgängig',
+            redo: 'Wiederholen',
+            deselect: 'Auswahl aufheben',
+            help: 'Diese Übersicht',
+            copy: 'Kopieren',
+            cut: 'Ausschneiden',
+            paste: 'Einfügen',
+            duplicate: 'Duplizieren',
+            remove: 'Löschen',
+            nudge: 'Um 1 Pixel verschieben',
+            nudgeFar: 'Um 10 Pixel verschieben',
+            placeFree: 'Beim Ziehen gedrückt halten: frei platzieren, ohne Einrasten',
+            distances: 'Über einem Baustein gedrückt halten: Abstände zum gewählten zeigen',
+        },
+    },
+
     /** The editor around the stage: bar, list of slides, stage, preview, import. */
     editor: {
         backToScreens: 'Bildschirme',
@@ -122,9 +152,7 @@ export const t = {
         },
         savedHint: (screens: number) => `– ${screens === 1 ? 'der Fernseher zeigt' : 'die Fernseher zeigen'} es in etwa 20 s`,
         undo: 'Rückgängig',
-        undoTitle: 'Rückgängig (⌘Z)',
         redo: 'Wiederholen',
-        redoTitle: 'Wiederholen (⇧⌘Z)',
         preview: 'Vorschau',
         previewTitle: 'Die Präsentation abspielen wie auf dem Fernseher – mit allen Änderungen, ohne zu speichern',
         player: 'Player',

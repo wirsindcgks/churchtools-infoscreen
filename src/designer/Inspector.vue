@@ -18,6 +18,7 @@ import { INSPECTOR_CONTEXT } from './inspector/context';
 import NumberField from './inspector/fields/NumberField.vue';
 import SlideInspector from './inspector/SlideInspector.vue';
 import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
+import { KEYS, withKeys } from './shortcuts';
 
 /** `rooms`: the rooms the designer may see; null while they are not loaded yet. */
 const props = defineProps<{ calendars: Calendar[]; hiddenCalendars?: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null; services?: ServiceInfo[] | null; allowedServices?: number[]; servicesFailed?: boolean }>();
@@ -101,7 +102,7 @@ const LAYERS = [
                     <button
                         class="d-btn lock-toggle"
                         type="button"
-                        :title="t.inspector.duplicateBlock"
+                        :title="withKeys(t.inspector.duplicateBlock, KEYS.duplicate)"
                         :aria-label="t.inspector.duplicateBlock"
                         data-testid="block-duplicate"
                         @click="editor.duplicateBlock(block.id)"
@@ -112,7 +113,7 @@ const LAYERS = [
                     <button
                         class="d-btn lock-toggle"
                         type="button"
-                        :title="t.inspector.copyBlock"
+                        :title="withKeys(t.inspector.copyBlock, KEYS.copy)"
                         :aria-label="t.inspector.copyBlock"
                         data-testid="block-copy"
                         @click="editor.copyBlock(block.id)"
@@ -123,7 +124,7 @@ const LAYERS = [
                     <button
                         class="d-btn lock-toggle"
                         type="button"
-                        :title="t.inspector.deleteBlock"
+                        :title="withKeys(t.inspector.deleteBlock, KEYS.delete)"
                         :aria-label="t.inspector.deleteBlock"
                         :disabled="!!block.locked"
                         data-testid="block-delete"
@@ -188,9 +189,8 @@ const LAYERS = [
 .inspector {
     overflow-y: auto;
     min-height: 0;
-    padding: 12px 14px 24px;
-    border-left: 1px solid var(--d-divider);
-    background: var(--d-surface);
+    padding: var(--d-space-1) var(--d-space-4) var(--d-space-5);
+    /* The surface is the card around it (the editor's column, or the sheet at the bottom). */
 }
 /* Phone and tablet upright: in the editor's sheet now (Plan.md 44, M4; 45) – it owns the border and the max-height. */
 @media (max-width: 48rem), (min-width: 48.0625rem) and (max-width: 75rem) and (orientation: portrait) {
@@ -200,13 +200,13 @@ const LAYERS = [
         overflow-y: auto;
         /* The sheet scrolls up and down only; the fields follow the width of the phone (Plan.md 44). */
         overflow-x: hidden;
-        border-left: 0;
+        padding-top: var(--d-space-3);
     }
 }
 section {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
+    gap: var(--d-space-3);
 }
 h3 {
     display: flex;
@@ -289,7 +289,7 @@ h3 {
 .lockable {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
+    gap: var(--d-space-3);
     min-width: 0;
     margin: 0;
     padding: 0;
@@ -300,12 +300,12 @@ h3 {
 }
 /* Sections follow one another without the grid's gap; each brings its own divider line. */
 .lockable > :deep(.section) + :deep(.section) {
-    margin-top: -10px;
+    margin-top: calc(var(--d-space-3) * -1);
 }
 .measures {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px 12px;
+    gap: var(--d-space-2) var(--d-space-3);
 }
 .hint {
     margin: 0;

@@ -14,6 +14,18 @@ const OUT = 'docs/bilder';
 test.skip(!process.env.DOCS_SCREENSHOTS, 'Nur mit npm run docs:screenshots.');
 test.use({ viewport: { width: 1440, height: 900 } });
 
+// The pictures show the editor without guides – with the grid the stage looks busy (user, 2026-10-09).
+// The grid is a choice of the browser (`infoscreen-designer.grid`), so it is set off before each page loads.
+test.beforeEach(async ({ page }) => {
+    await page.addInitScript(() => {
+        try {
+            localStorage.setItem('infoscreen-designer.grid', '0');
+        } catch {
+            // No storage: the default grid shows.
+        }
+    });
+});
+
 const CALENDARS = [
     { id: 1, name: 'Gottesdienste', color: '#2e7d8c' },
     { id: 2, name: 'Jugend', color: '#c0613f' },
@@ -394,16 +406,6 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
 
-    // A band over every slide of the first screen – since 0.2.0 on its own page, "Hinweise" (Plan.md 34).
-    await page.goto('hinweise');
-    await page.getByTestId('new-notice').click();
-    const notice = page.getByTestId('notice-dialog');
-    await notice.getByTestId('banner-text').fill('Nach dem Gottesdienst: Kirchencafé im Foyer – herzlich willkommen!');
-    // Standing for the picture: running text would be caught halfway in the frame.
-    await notice.getByTestId('banner-mode').selectOption('static');
-    await notice.getByTestId('notice-save').click();
-    await expect(notice).toBeHidden();
-
     // The first screen's playlist.
     await page.goto('./');
     await page.getByTestId('screen-card').filter({ hasText: 'Foyer' }).getByTestId('open-editor').click();
@@ -510,7 +512,16 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await expect(page.getByTestId('media-uses').first()).toBeVisible();
     await shoot(page, 'mediathek');
 
-    await page.getByTestId('sidebar-notices').click();
+    // A band over every slide of the first screen – since 0.2.0 on its own page, "Hinweise" (Plan.md 34). Made only
+    // now: the band lies over every slide, and the other pictures show the editor without it (user, 2026-10-09).
+    await page.goto('hinweise');
+    await page.getByTestId('new-notice').click();
+    const notice = page.getByTestId('notice-dialog');
+    await notice.getByTestId('banner-text').fill('Nach dem Gottesdienst: Kirchencafé im Foyer – herzlich willkommen!');
+    // Standing for the picture: running text would be caught halfway in the frame.
+    await notice.getByTestId('banner-mode').selectOption('static');
+    await notice.getByTestId('notice-save').click();
+    await expect(notice).toBeHidden();
     await expect(page.getByTestId('notice-card').first()).toBeVisible();
     await shoot(page, 'hinweise');
 });

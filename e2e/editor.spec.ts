@@ -45,6 +45,39 @@ test('the bar says nothing about a running playlist without a sign of life (Plan
     await expect(page.getByTestId('save')).not.toHaveAttribute('title', /Läuft gerade/);
 });
 
+test('"?" opens the overview of the handles, Escape closes it, and the hints name their handle (Plan.md 79, B3)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    const mac = await page.evaluate(() => /^Mac|^iP(hone|ad|od)/.test(navigator.platform));
+    const ctrl = mac ? '⌘' : 'Strg+';
+
+    await page.getByTestId('shortcuts').click();
+    const dialog = page.getByTestId('shortcuts-dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Tastenkürzel' })).toBeVisible();
+    for (const text of ['Speichern', 'Rückgängig', 'Wiederholen', 'Kopieren', 'Ausschneiden', 'Einfügen', 'Duplizieren', 'Löschen', 'Pfeiltasten', 'Auswahl aufheben', 'frei platzieren', 'Abstände']) {
+        await expect(dialog).toContainText(text);
+    }
+    await expect(dialog).toContainText(`${ctrl}S`);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+
+    // The key does the same, but not in a field.
+    await page.keyboard.press('Shift+?');
+    await expect(dialog).toBeVisible();
+    await page.getByTestId('shortcuts-close').click();
+    await expect(dialog).toHaveCount(0);
+    await page.getByTestId('slide-name').focus();
+    await page.keyboard.press('Shift+?');
+    await expect(dialog).toHaveCount(0);
+
+    await expect(page.getByTestId('save')).toHaveAttribute('title', `Speichern (${ctrl}S)`);
+    await expect(page.getByRole('button', { name: 'Rückgängig' })).toHaveAttribute('title', `Rückgängig (${ctrl}Z)`);
+    await page.getByTestId('frame-text').first().click();
+    await expect(page.getByTestId('block-duplicate')).toHaveAttribute('title', `Baustein duplizieren (${ctrl}D)`);
+});
+
 test('the inspector head says which slide this is, and the slide inspector has no heading of its own', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
@@ -1642,7 +1675,7 @@ test.describe('the heads of the editor stand on one line (Plan.md 47)', () => {
         await expect(page.getByTestId('add-block-menu')).toBeVisible();
     }
 
-    test('at a desktop the slides head, "+ Baustein" and the inspector head are equally tall and their rules meet', async ({ page }) => {
+    test('at a desktop the slides head, "+ Baustein" and the inspector head are equally tall and flush; the columns are cards with air around them', async ({ page }) => {
         await openEditor(page);
         await page.getByTestId('frame-text').first().click();
         await expect(page.getByTestId('block-inspector')).toBeVisible();
@@ -1654,8 +1687,33 @@ test.describe('the heads of the editor stand on one line (Plan.md 47)', () => {
         expect(Math.abs(slides!.height - palette!.height)).toBeLessThanOrEqual(0.5);
         expect(Math.abs(inspector!.height - palette!.height)).toBeLessThanOrEqual(0.5);
         const bottom = (b: { y: number; height: number }) => b.y + b.height;
+        expect(Math.abs(slides!.y - palette!.y)).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(inspector!.y - palette!.y)).toBeLessThanOrEqual(0.5);
         expect(Math.abs(bottom(slides!) - bottom(palette!))).toBeLessThanOrEqual(0.5);
         expect(Math.abs(bottom(inspector!) - bottom(palette!))).toBeLessThanOrEqual(0.5);
+
+        // Plan.md 79, B3: no rules between the columns, but two cards on the workspace, 12 px from it and from the stage column.
+        const cards = await Promise.all([page.locator('.slide-list'), page.locator('.inspector-sheet'), page.locator('.editor')].map((l) => l.evaluate((el) => {
+            const style = getComputedStyle(el);
+            return { shadow: style.boxShadow, radius: style.borderTopLeftRadius, borderLeft: style.borderLeftWidth, borderRight: style.borderRightWidth, background: style.backgroundColor };
+        })));
+        for (const card of cards.slice(0, 2)) {
+            expect(card.shadow).not.toBe('none');
+            expect(parseFloat(card.radius)).toBeGreaterThan(0);
+            expect(card.borderLeft).toBe('0px');
+            expect(card.borderRight).toBe('0px');
+            expect(card.background).not.toBe(cards[2]!.background);
+        }
+        const [list, column, panel, root] = await Promise.all([
+            page.locator('.slide-list').boundingBox(),
+            page.locator('.stage-column').boundingBox(),
+            page.locator('.inspector-sheet').boundingBox(),
+            page.locator('.editor').boundingBox(),
+        ]);
+        expect(Math.abs(list!.x - root!.x - 12)).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(column!.x - (list!.x + list!.width) - 12)).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(panel!.x - (column!.x + column!.width) - 12)).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(root!.x + root!.width - (panel!.x + panel!.width) - 12)).toBeLessThanOrEqual(0.5);
     });
 
     test('"Einklappen" is a button with a name and no words', async ({ page }) => {
@@ -1683,7 +1741,7 @@ test.describe('the heads of the editor stand on one line (Plan.md 47)', () => {
             expect(b.height).toBe(36);
         }
         const railBox = (await page.locator('.tablet-rail--slides').boundingBox())!;
-        expect(railBox.width).toBe(53); // 8 + 36 + 8 and the rule
+        expect(railBox.width).toBe(53); // 8.5 + 36 + 8.5: a card as wide as the rail was
     });
 
     for (const [name, viewport] of [
@@ -1945,7 +2003,18 @@ test('the distances show while a block is dragged and are gone afterwards, the s
     const heights: number[] = [];
     for (const width of [1440, 1100]) {
         await page.setViewportSize({ width, height: 900 });
-        const box = (await page.getByTestId('frame-text').boundingBox())!;
+        // The stage refits a moment after the window changes (ResizeObserver); under load reading the box at once
+        // found the old place, the press missed the block and nothing was dragged. Wait until it stands still.
+        await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+        let box = (await page.getByTestId('frame-text').boundingBox())!;
+        await expect
+            .poll(async () => {
+                const next = (await page.getByTestId('frame-text').boundingBox())!;
+                const still = next.x === box.x && next.y === box.y && next.width === box.width;
+                box = next;
+                return still;
+            })
+            .toBe(true);
         await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
         await page.mouse.down();
         await page.mouse.move(box.x + box.width / 2 + 30, box.y + box.height / 2 + 20, { steps: 4 });

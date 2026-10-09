@@ -12,6 +12,7 @@ import type { BlockType } from '../model/schema';
 import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
 import { BLOCK_ICONS, BLOCK_LABELS, PALETTE } from './ops';
+import { KEYS, withKeys } from './shortcuts';
 import { GRID_SIZES } from './snap';
 
 const editor = useEditorStore();
@@ -71,7 +72,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
             class="d-btn"
             type="button"
             :disabled="!editor.slide"
-            :title="pasteTitle"
+            :title="withKeys(pasteTitle, KEYS.paste)"
             data-testid="paste-block"
             @click="editor.pasteBlocks()"
         >
@@ -130,10 +131,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
 .block-palette {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 6px 10px;
-    border-bottom: 1px solid var(--d-divider);
-    background: var(--d-surface);
+    gap: var(--d-space-2);
+    /* No surface of its own: the bar lies on the workspace above the stage (Plan.md 79, B3). */
+    padding: var(--d-space-2) var(--d-space-3);
 }
 .grid-select {
     flex: none;
@@ -142,6 +142,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
     gap: 6px;
     margin-left: auto;
     color: var(--d-text-muted);
+}
+.grid-select :deep(.d-icon) {
+    flex: none;
 }
 .grid-label {
     font-size: var(--d-size-sm);
@@ -199,7 +202,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
         box-sizing: border-box;
         flex: none;
         height: var(--editor-head-h);
-        padding: 0 12px;
+        padding: 0 var(--d-space-2);
     }
 }
 /* Below 48rem the backdrop of the "+ Baustein" sheet sits at the bottom, not centred. */
