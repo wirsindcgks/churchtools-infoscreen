@@ -2,8 +2,11 @@
 import { t } from '../i18n/designer';
 import type { Fill } from '../model/schema';
 import ColorField from './ColorField.vue';
+import SegmentField from './inspector/fields/SegmentField.vue';
+import { useFieldVisible } from './inspector/mode';
 
-const props = defineProps<{ modelValue: Fill }>();
+const props = defineProps<{ modelValue: Fill; quick?: boolean }>();
+const visible = useFieldVisible(() => props.quick);
 const emit = defineEmits<{ 'update:modelValue': [Fill]; focus: []; blur: [] }>();
 
 function setKind(kind: string): void {
@@ -24,14 +27,17 @@ function setStop(index: number, color: string): void {
 </script>
 
 <template>
-    <div class="fill-editor">
-        <label class="d-field d-field--inline">
-            {{ t.common.fill.kind }}
-            <select :value="modelValue.kind" @change="setKind(($event.target as HTMLSelectElement).value)">
-                <option value="solid">{{ t.common.fill.solid }}</option>
-                <option value="linear-gradient">{{ t.common.fill.gradient }}</option>
-            </select>
-        </label>
+    <div v-if="visible" class="fill-editor">
+        <SegmentField
+            :model-value="modelValue.kind"
+            :options="[
+                { value: 'solid', label: t.common.fill.solid },
+                { value: 'linear-gradient', label: t.common.fill.gradient },
+            ]"
+            :label="t.common.fill.kind"
+            testid="fill-kind"
+            @update:model-value="setKind(String($event))"
+        />
         <ColorField
             v-if="modelValue.kind === 'solid'"
             :label="t.common.fill.solid"

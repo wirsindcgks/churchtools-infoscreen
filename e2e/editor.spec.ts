@@ -82,7 +82,7 @@ test('blocks snap to the grid and to the stage centre with a guide line', async 
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await page.getByTestId('grid-size').selectOption('20');
     await addBlock(page, 'shape'); // created centred, 600 × 300
-    await openSection(page, 'position');
+    await openSection(page, 'measures');
     await page.getByTestId('inspector-x').fill('100');
     await page.getByTestId('inspector-x').blur();
 
@@ -318,7 +318,7 @@ test.describe('with a finger, in both browsers', () => {
         await expect(inspectorSheet).toHaveClass(/open/);
         await expect(page.getByTestId('inspector-sheet-toggle')).toContainText('Baustein: QR-Code');
 
-        await openSection(page, 'position');
+        await openSection(page, 'measures');
         await page.getByTestId('inspector-x').fill('100');
         await page.getByTestId('inspector-x').blur();
         await expect(page.getByTestId('inspector-x')).toHaveValue('100');
@@ -1423,7 +1423,7 @@ test('a posts block shows a public group\'s posts, as a card and as a list (Plan
     await card.screenshot({ path: `test-results/posts-card-landscape.png` });
 
     // Hochkant: the same post, now with its image above the text instead of beside it.
-    await openSection(page, 'position');
+    await openSection(page, 'measures');
     await inspector.getByTestId('inspector-width').fill('700');
     await inspector.getByTestId('inspector-height').fill('1000');
     await inspector.getByTestId('inspector-height').blur();
@@ -1479,7 +1479,7 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await card.screenshot({ path: `test-results/groups-card-landscape.png` });
 
     // Hochkant: the same group, now with its image above the text instead of beside it.
-    await openSection(page, 'position');
+    await openSection(page, 'measures');
     await inspector.getByTestId('inspector-width').fill('700');
     await inspector.getByTestId('inspector-height').fill('1000');
     await inspector.getByTestId('inspector-height').blur();
@@ -1561,23 +1561,23 @@ test('the blocks stand in German alphabetical order in the "+ Baustein" sheet; t
     ]);
 });
 
-test('"Position & Ebene" starts folded and stays open for the next block and after a reload (Plan.md 47)', async ({ page }) => {
+test('"Genaue Maße" starts folded and stays open for the next block and after a reload (Plan.md 47)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await addBlock(page, 'text');
-    await expect(page.getByTestId('section-position')).not.toHaveAttribute('open', '');
+    await expect(page.getByTestId('section-measures')).not.toHaveAttribute('open', '');
     await expect(page.getByTestId('inspector-x')).toBeHidden();
 
-    await openSection(page, 'position');
+    await openSection(page, 'measures');
     await expect(page.getByTestId('inspector-x')).toBeVisible();
     await addBlock(page, 'clock');
-    await expect(page.getByTestId('section-position')).toHaveAttribute('open', '');
+    await expect(page.getByTestId('section-measures')).toHaveAttribute('open', '');
     await expect(page.getByTestId('inspector-x')).toBeVisible();
 
     await page.reload();
     await expect(page.getByTestId('leave-editor')).toBeVisible();
     await page.getByTestId('frame-text').first().click();
-    await expect(page.getByTestId('section-position')).toHaveAttribute('open', '');
+    await expect(page.getByTestId('section-measures')).toHaveAttribute('open', '');
 });
 
 test('a locked block: delete is off, sections still fold, fields stay locked (Plan.md 47)', async ({ page }) => {
@@ -1588,17 +1588,18 @@ test('a locked block: delete is off, sections still fold, fields stay locked (Pl
     await page.getByTestId('lock-toggle').click();
     await expect(page.getByTestId('block-delete')).toBeDisabled();
 
-    await page.getByTestId('section-position-toggle').click();
-    await expect(page.getByTestId('section-position')).toHaveAttribute('open', '');
+    await page.getByTestId('section-measures-toggle').click();
+    await expect(page.getByTestId('section-measures')).toHaveAttribute('open', '');
     await expect(page.getByTestId('inspector-x')).toBeDisabled();
-    await page.getByTestId('section-position-toggle').click();
-    await expect(page.getByTestId('section-position')).not.toHaveAttribute('open', '');
+    await page.getByTestId('section-measures-toggle').click();
+    await expect(page.getByTestId('section-measures')).not.toHaveAttribute('open', '');
 });
 
 test('an explanation stays behind its (i) until asked for (Plan.md 47)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await addBlock(page, 'qr');
+    await openSection(page, 'appearance');
     const inspector = page.getByTestId('block-inspector');
     const hint = inspector.getByText('Dunkel auf hell lesen alle Handykameras am sichersten.');
     await expect(hint).toHaveCount(0);
@@ -1611,13 +1612,13 @@ test('an explanation stays behind its (i) until asked for (Plan.md 47)', async (
     await expect(hint).toHaveCount(0);
 });
 
-test('the block is layered from the position section and deleted from its header (Plan.md 47)', async ({ page }) => {
+test('the block is layered from the "Anordnen" section and deleted from its header (Plan.md 47, 79)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await addBlock(page, 'shape');
     const frames = page.getByTestId('frame-shape');
     const count = await frames.count();
-    await openSection(page, 'position');
+    await openSection(page, 'arrange');
     await page.getByTestId('layer-back').click();
     await page.getByTestId('block-delete').click();
     await expect(frames).toHaveCount(count - 1);

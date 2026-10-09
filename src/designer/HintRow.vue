@@ -20,7 +20,7 @@ defineProps<{ caption?: boolean }>();
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 4px 6px;
+    gap: 4px 8px;
     min-width: 0;
 }
 /* A field in the row takes the width, the (i) stands at its end. */

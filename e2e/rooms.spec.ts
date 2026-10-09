@@ -559,7 +559,7 @@ test('the cards of the list: date column of one width, place under the date, thr
         await openSection(page, 'rooms-for');
         await page.getByTestId('service-1').check();
         // Tall enough for all four cards on one page.
-        await openSection(page, 'position');
+        await openSection(page, 'measures');
         await page.getByTestId('inspector-height').fill('900');
         await page.getByTestId('inspector-height').blur();
         await expect(stage(page).getByTestId('list-card')).toHaveCount(4);
