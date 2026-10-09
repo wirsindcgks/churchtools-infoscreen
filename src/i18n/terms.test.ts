@@ -8,6 +8,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { t } from './designer';
 import { tp } from './player';
+import { tr } from './repository';
 
 const OLD_WORDS = /\b(Slides?|Playlists?|Screens?)\b/;
 
@@ -15,9 +16,17 @@ const OLD_WORDS = /\b(Slides?|Playlists?|Screens?)\b/;
 function texts(value: unknown, where: string): [string, string][] {
     if (typeof value === 'string') return [[where, value]];
     if (typeof value === 'function') {
-        return [1, 2].flatMap((n) => texts((value as (...args: unknown[]) => unknown)(n, n, n), `${where}(${n})`)).concat(
-            texts((value as (...args: unknown[]) => unknown)('X', 'X', 'X'), `${where}('X')`),
-        );
+        const call = (...args: unknown[]): unknown => {
+            try {
+                return (value as (...args: unknown[]) => unknown)(...args);
+            } catch {
+                return undefined;
+            }
+        };
+        return [1, 2]
+            .flatMap((n) => texts(call(n, n, n), `${where}(${n})`))
+            .concat(texts(call('X', 'X', 'X'), `${where}('X')`))
+            .concat(texts(call(['X', 'Y'], ['X'], ['X']), `${where}(['X'])`));
     }
     if (value && typeof value === 'object') {
         return Object.entries(value).flatMap(([key, child]) => texts(child, `${where}.${key}`));
@@ -39,7 +48,7 @@ describe('the words of the interface (Plan.md 79, B1)', () => {
     });
 
     it('no text says Slide, Playlist or Screen', () => {
-        const all = [...texts(t, 't'), ...texts(tp, 'tp')];
+        const all = [...texts(t, 't'), ...texts(tp, 'tp'), ...texts(tr, 'tr')];
         expect(all.filter(([, text]) => OLD_WORDS.test(text)).map(([where, text]) => `${where}: ${text}`)).toEqual([]);
     });
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { t } from '../i18n/designer';
 import type { Fill } from '../model/schema';
 import ColorField from './ColorField.vue';
 
@@ -25,15 +26,15 @@ function setStop(index: number, color: string): void {
 <template>
     <div class="fill-editor">
         <label class="d-field d-field--inline">
-            Art
+            {{ t.common.fill.kind }}
             <select :value="modelValue.kind" @change="setKind(($event.target as HTMLSelectElement).value)">
-                <option value="solid">Farbe</option>
-                <option value="linear-gradient">Verlauf</option>
+                <option value="solid">{{ t.common.fill.solid }}</option>
+                <option value="linear-gradient">{{ t.common.fill.gradient }}</option>
             </select>
         </label>
         <ColorField
             v-if="modelValue.kind === 'solid'"
-            label="Farbe"
+            :label="t.common.fill.solid"
             inline
             testid="fill-color"
             :model-value="modelValue.color"
@@ -46,7 +47,7 @@ function setStop(index: number, color: string): void {
                 <ColorField
                     v-for="(stop, i) in modelValue.stops"
                     :key="i"
-                    :label="i === 0 ? 'Von' : 'Nach'"
+                    :label="i === 0 ? t.common.fill.from : t.common.fill.to"
                     :testid="`fill-stop-${i}`"
                     :model-value="stop.color"
                     @focus="emit('focus')"
@@ -54,7 +55,7 @@ function setStop(index: number, color: string): void {
                     @update:model-value="setStop(i, $event)"
                 />
                 <label class="d-field">
-                    Winkel
+                    {{ t.common.fill.angle }}
                     <input
                         type="number"
                         min="0"

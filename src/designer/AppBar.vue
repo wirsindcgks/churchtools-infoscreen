@@ -7,6 +7,7 @@
  * it is (role concept, Plan.md F); the editor puts its own title in the
  * default slot.
  */
+import { t } from '../i18n/designer';
 import Icon from './Icon.vue';
 
 withDefaults(defineProps<{ current?: 'screens' | 'schedules' | 'notices' | 'playlists' | 'media' | 'design' | 'about' | 'setup'; showSetup?: boolean }>(), { current: undefined, showSetup: true });
@@ -14,7 +15,7 @@ withDefaults(defineProps<{ current?: 'screens' | 'schedules' | 'notices' | 'play
 
 <template>
     <header class="d-appbar">
-        <nav v-if="current" class="sections" aria-label="Infoscreen Designer">
+        <nav v-if="current" class="sections" :aria-label="t.common.moduleName">
             <Icon name="tv" class="module-icon" :size="20" />
             <RouterLink
                 :to="{ name: 'designer' }"
@@ -22,7 +23,7 @@ withDefaults(defineProps<{ current?: 'screens' | 'schedules' | 'notices' | 'play
                 :aria-current="current === 'screens' ? 'page' : undefined"
                 data-testid="nav-screens"
             >
-                Screens
+                {{ t.common.screens }}
             </RouterLink>
             <RouterLink
                 v-if="showSetup"
@@ -31,7 +32,7 @@ withDefaults(defineProps<{ current?: 'screens' | 'schedules' | 'notices' | 'play
                 :aria-current="current === 'setup' ? 'page' : undefined"
                 data-testid="open-setup"
             >
-                Einstellungen
+                {{ t.common.settings }}
             </RouterLink>
         </nav>
         <div v-else class="start"><slot /></div>

@@ -9,6 +9,7 @@
  * – and the colours the slide uses beyond it. A click copies the value.
  */
 import { ref, watch } from 'vue';
+import { t } from '../i18n/designer';
 import { parseHex, pickerValue } from './color';
 import { usePalette, type PaletteColor } from './palette';
 
@@ -62,7 +63,7 @@ function onTextBlur(): void {
             <input
                 type="color"
                 :value="pickerValue(modelValue)"
-                :aria-label="`${label}: Farbe wählen`"
+                :aria-label="t.common.color.pick(label)"
                 :data-testid="testid ? `${testid}-picker` : undefined"
                 @focus="emit('focus')"
                 @blur="emit('blur')"
@@ -77,9 +78,9 @@ function onTextBlur(): void {
                 spellcheck="false"
                 autocapitalize="off"
                 autocomplete="off"
-                :aria-label="`${label} als Hex-Wert`"
+                :aria-label="t.common.color.asHex(label)"
                 :aria-invalid="invalid"
-                :title="invalid ? 'Hex-Wert wie #1e3a5f oder #fff' : undefined"
+                :title="invalid ? t.common.color.invalidHex : undefined"
                 :data-testid="testid"
                 @focus="onTextFocus"
                 @blur="onTextBlur"
@@ -87,8 +88,8 @@ function onTextBlur(): void {
             >
         </div>
         <div v-if="lists && lists.palette.length" class="swatch-group" data-testid="palette-group">
-            <span class="swatch-caption">Farbpalette</span>
-            <div class="palette-swatches" role="group" :aria-label="`${label}: Farbpalette`">
+            <span class="swatch-caption">{{ t.common.color.palette }}</span>
+            <div class="palette-swatches" role="group" :aria-label="t.common.color.paletteOf(label)">
                 <button
                     v-for="entry in lists.palette"
                     :key="entry.color"
@@ -104,8 +105,8 @@ function onTextBlur(): void {
             </div>
         </div>
         <div v-if="lists && lists.slide.length" class="swatch-group" data-testid="slide-colors-group">
-            <span class="swatch-caption">Auf der Slide</span>
-            <div class="palette-swatches" role="group" :aria-label="`${label}: auf der Slide`">
+            <span class="swatch-caption">{{ t.common.color.onSlide }}</span>
+            <div class="palette-swatches" role="group" :aria-label="t.common.color.onSlideOf(label)">
                 <button
                     v-for="entry in lists.slide"
                     :key="entry.color"

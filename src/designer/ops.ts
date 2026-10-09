@@ -14,7 +14,9 @@ import {
     type TextStyle,
     type ThemeDoc,
 } from '../model/schema';
+import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
+import { tr } from '../i18n/repository';
 
 /** Deep copy of plain JSON data; unlike structuredClone it also accepts Vue proxies. */
 export function cloneJson<T>(value: T): T {
@@ -42,7 +44,7 @@ export function slugify(name: string): string {
 }
 
 /** New slides and blocks start in the theme's colours (Plan.md, 27). */
-export function createSlide(name = 'Neue Slide', theme: ThemeDoc = DEFAULT_THEME): SlideDoc {
+export function createSlide(name = tr.newSlide, theme: ThemeDoc = DEFAULT_THEME): SlideDoc {
     return {
         schema: { ...SCHEMA_VERSION },
         kind: 'slide',
@@ -60,7 +62,7 @@ export function createScreenBundle(options: {
     slug: string;
     orientation: keyof typeof STAGE_PRESETS;
 }): ScreenBundle {
-    const slide = createSlide('Willkommen');
+    const slide = createSlide(t.defaults.welcomeSlide);
     const playlistId = newId();
     return {
         screen: {
@@ -97,7 +99,7 @@ export function duplicateSlide(slide: SlideDoc): SlideDoc {
     return {
         ...copy,
         id: newId(),
-        name: `${slide.name} (Kopie)`,
+        name: tr.copyOf(slide.name),
         blocks: copy.blocks.map((b) => ({ ...b, id: newId() })),
     };
 }
@@ -112,21 +114,21 @@ const style = (fontFamily: string, fontSize: number, color: string, extra: Parti
 });
 
 export const BLOCK_LABELS: Record<BlockType, string> = {
-    text: 'Text',
-    image: 'Bild',
-    shape: 'Fläche',
-    clock: 'Uhr',
-    'appointment-list': 'Terminliste',
-    'next-appointment': 'Nächster Termin',
-    'church-header': 'Gemeindekopf',
-    web: 'Webseite',
-    qr: 'QR-Code',
-    countdown: 'Countdown',
-    posts: 'Beiträge',
-    groups: 'Gruppen',
-    slideshow: 'Galerie',
-    rooms: 'Raumbelegung',
-    video: 'Video',
+    text: t.blocks.text,
+    image: t.blocks.image,
+    shape: t.blocks.shape,
+    clock: t.blocks.clock,
+    'appointment-list': t.blocks['appointment-list'],
+    'next-appointment': t.blocks['next-appointment'],
+    'church-header': t.blocks['church-header'],
+    web: t.blocks.web,
+    qr: t.blocks.qr,
+    countdown: t.blocks.countdown,
+    posts: t.blocks.posts,
+    groups: t.blocks.groups,
+    slideshow: t.blocks.slideshow,
+    rooms: t.blocks.rooms,
+    video: t.blocks.video,
 };
 
 export const BLOCK_ICONS: Record<BlockType, IconName> = {
@@ -191,7 +193,7 @@ export function createBlock(
     const textStyle = (fontSize: number, extra: Partial<TextStyle> = {}) => style(theme.font, fontSize, ink, extra);
     switch (type) {
         case 'text':
-            return { ...frame, type, text: 'Text', style: textStyle(72) };
+            return { ...frame, type, text: t.blocks.defaultText, style: textStyle(72) };
         case 'image':
             return { ...frame, type, mediaId: '', fit: 'contain' };
         case 'shape':
@@ -215,7 +217,7 @@ export function createBlock(
                 type,
                 calendarIds: calendars,
                 showTitle: true,
-                runningText: 'Läuft gerade',
+                runningText: t.blocks.defaultRunningText,
                 style: textStyle(120, { fontWeight: 700, align: 'center' }),
             };
         case 'posts':

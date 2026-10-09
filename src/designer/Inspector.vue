@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
 import type { Calendar, PostGroup } from '../ct/api';
+import { t } from '../i18n/designer';
 import { homepageGroups, selectGroups, type Group, type HomepageEntry } from '../groups/normalize';
 import type { Block, Fill, GroupFields, RoomEntry, TextStyle } from '../model/schema';
 import { bannerShown } from '../player/banner';
@@ -31,18 +32,7 @@ const props = defineProps<{ calendars: Calendar[]; hiddenCalendars?: Calendar[];
 const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow' | 'video'] }>();
 
 /** Labels in the order of `GroupFields` itself, so the fieldset needs no list of its own (Plan.md 43). */
-const GROUP_SHOW_LABELS: Record<keyof GroupFields, string> = {
-    name: 'Name',
-    image: 'Bild',
-    when: 'Wochentag und Uhrzeit',
-    targetGroup: 'Zielgruppe',
-    category: 'Kategorie',
-    note: 'Beschreibung',
-    leaders: 'Leitung',
-    leaderImages: 'Bild der Leitung',
-    places: 'Freie Plätze',
-    qr: 'QR-Code zur Gruppenseite',
-};
+const GROUP_SHOW_LABELS: Record<keyof GroupFields, string> = t.inspector.groupShow;
 const GROUP_SHOW_KEYS = Object.keys(GROUP_SHOW_LABELS) as (keyof GroupFields)[];
 
 const editor = useEditorStore();
@@ -103,7 +93,7 @@ function roomsForSummary(b: NonNullable<typeof block.value>): string {
     const shown = roomsFor(b) ?? [];
     const off = 'roomsOffCalendarIds' in b ? (b.roomsOffCalendarIds ?? []) : [];
     const count = shown.filter((k) => !off.includes(k.id)).length;
-    return count === shown.length ? 'alle' : `${count} von ${shown.length}`;
+    return count === shown.length ? t.inspector.all : t.common.countOf(count, shown.length);
 }
 
 function toggleRoomsFor(calendarId: number, shown: boolean): void {
@@ -211,7 +201,7 @@ function toggleService(id: number, on: boolean): void {
 
 function servicesSummary(chosen: number[] | undefined): string {
     const count = shownServiceCount(chosen);
-    return count ? `${count} gewählt` : 'keine';
+    return count ? t.common.chosen(count) : t.common.none;
 }
 
 /** Most rooms a block holds – the schema's limit. */
@@ -284,13 +274,13 @@ function setPageSeconds(value: string): void {
 /** How a paged list will run – with the page count the stage preview measured. */
 function pageHint(list: Extract<Block, { type: 'appointment-list' }>): string {
     const pages = stage.pages?.[list.id] ?? 1;
-    if (pages < 2) return 'Alle Termine passen auf eine Seite.';
+    if (pages < 2) return t.inspector.pageHintOne;
     const perPage = list.pageSeconds ?? PAGE_SECONDS;
     const needed = pages * perPage;
     const duration = slide.value?.durationSeconds ?? 0;
     return needed > duration
-        ? `Ergibt ${pages} Seiten à ${perPage} s – die Slide läuft dafür ${needed} s statt ${duration} s.`
-        : `Ergibt ${pages} Seiten, je ${Math.round(duration / pages)} s.`;
+        ? t.inspector.pageHintLonger(pages, perPage, needed, duration)
+        : t.inspector.pageHintEven(pages, Math.round(duration / pages));
 }
 
 /** '' follows the theme (Plan.md, 27): the block then changes with it. */
@@ -299,14 +289,14 @@ function setLayout(value: string): void {
 }
 
 /** The theme's layout in words, for the option that follows it. */
-const themeLayout = computed(() => (themeOf(stage).appointments === 'large' ? 'modern' : 'nativ'));
+const themeLayout = computed(() => (themeOf(stage).appointments === 'large' ? t.inspector.layoutModern : t.inspector.layoutNative));
 
 /** Why an address is not shown – or null when it is. */
 function webProblem(url: string): string | null {
-    if (!url.trim()) return 'Noch keine Adresse – der Baustein bleibt leer.';
+    if (!url.trim()) return t.inspector.webEmpty;
     const refusal = webRefusal(url, window.location.origin);
-    if (refusal === 'own-instance') return 'Seiten des eigenen ChurchTools werden nicht eingebettet – dafür gibt es die Bausteine „Gruppen" und „QR-Code".';
-    return refusal ? 'Nur Adressen mit https:// werden gezeigt.' : null;
+    if (refusal === 'own-instance') return t.inspector.webOwnInstance;
+    return refusal ? t.inspector.webHttps : null;
 }
 
 /** The block whose pasted embed code held no address – shown until its next change. */
@@ -385,22 +375,22 @@ const slideFill = computed<Fill>(() =>
 /** Folded sections say what is set inside (Plan.md 47). */
 const fontSummary = computed(() =>
     block.value && 'style' in block.value
-        ? `${fontDef(block.value.style.fontFamily).label} · ${block.value.style.fontSize} px${block.value.style.uppercase ? ' · Großbuchstaben' : ''}`
+        ? t.inspector.fontSummary(fontDef(block.value.style.fontFamily).label, block.value.style.fontSize, !!block.value.style.uppercase)
         : '',
 );
 const positionSummary = computed(() =>
     block.value ? `${block.value.x}, ${block.value.y} · ${block.value.width} × ${block.value.height}` : '',
 );
 const fieldsSummary = computed(() =>
-    block.value?.type === 'groups' ? `${GROUP_SHOW_KEYS.filter((key) => block.value!.type === 'groups' && block.value.show[key]).length} von ${GROUP_SHOW_KEYS.length}` : '',
+    block.value?.type === 'groups' ? t.common.countOf(GROUP_SHOW_KEYS.filter((key) => block.value!.type === 'groups' && block.value.show[key]).length, GROUP_SHOW_KEYS.length) : '',
 );
 const playlistSummary = computed(() =>
-    editor.screens.length ? editor.screens.map((s) => s.name).join(', ') : 'noch keinem Screen',
+    editor.screens.length ? editor.screens.map((s) => s.name).join(', ') : t.inspector.noScreen,
 );
 const backgroundSummary = computed(() => {
     const background = slide.value?.background;
     if (!background) return '';
-    return background.kind === 'solid' ? 'Farbe' : background.kind === 'linear-gradient' ? 'Verlauf' : 'Bild';
+    return background.kind === 'solid' ? t.inspector.backgroundKind.solid : background.kind === 'linear-gradient' ? t.inspector.backgroundKind.gradient : t.inspector.backgroundKind.image;
 });
 /** The colours a fill shows, as swatches beside the folded summary. */
 const backgroundColors = computed(() => {
@@ -410,10 +400,10 @@ const backgroundColors = computed(() => {
 });
 
 const LAYERS = [
-    { where: 'front', icon: 'layer-front', label: 'Ganz nach vorn' },
-    { where: 'forward', icon: 'layer-forward', label: 'Eins vor' },
-    { where: 'backward', icon: 'layer-backward', label: 'Eins zurück' },
-    { where: 'back', icon: 'layer-back', label: 'Ganz nach hinten' },
+    { where: 'front', icon: 'layer-front', label: t.inspector.layers.front },
+    { where: 'forward', icon: 'layer-forward', label: t.inspector.layers.forward },
+    { where: 'backward', icon: 'layer-backward', label: t.inspector.layers.backward },
+    { where: 'back', icon: 'layer-back', label: t.inspector.layers.back },
 ] as const;
 
 </script>
@@ -434,35 +424,35 @@ const LAYERS = [
                         :class="{ 'lock-toggle--on': block.locked }"
                         type="button"
                         :aria-pressed="!!block.locked"
-                        :aria-label="block.locked ? 'Gesperrt' : 'Sperren'"
-                        :title="block.locked ? 'Entsperren, um den Baustein wieder zu bearbeiten' : 'Sperren: nicht mehr verschieben, ändern oder löschen'"
+                        :aria-label="block.locked ? t.common.locked : t.common.lock"
+                        :title="block.locked ? t.inspector.lockedTitle : t.inspector.lockTitle"
                         data-testid="lock-toggle"
                         @click="editor.setLocked(block.id, !block.locked)"
                     >
                         <Icon :name="block.locked ? 'lock' : 'unlock'" :size="16" />
-                        <span class="btn-word">{{ block.locked ? 'Gesperrt' : 'Sperren' }}</span>
+                        <span class="btn-word">{{ block.locked ? t.common.locked : t.common.lock }}</span>
                     </button>
                     <button
                         class="d-btn lock-toggle"
                         type="button"
-                        title="Baustein löschen"
-                        aria-label="Baustein löschen"
+                        :title="t.inspector.deleteBlock"
+                        :aria-label="t.inspector.deleteBlock"
                         :disabled="!!block.locked"
                         data-testid="block-delete"
                         @click="editor.removeBlock(block.id)"
                     >
                         <Icon name="trash" :size="16" class="danger-icon" />
-                        <span class="btn-word">Löschen</span>
+                        <span class="btn-word">{{ t.common.delete }}</span>
                     </button>
                 </div>
             </div>
             <p v-if="block.locked" class="hint" data-testid="locked-hint">
-                Gesperrt: Der Baustein lässt sich nicht verschieben, ändern oder löschen, bis du ihn entsperrst.
+                {{ t.inspector.lockedHint }}
             </p>
             <!-- A disabled fieldset disables every field and button inside it at once; a summary is none, so sections still fold. -->
             <fieldset class="lockable" :disabled="!!block.locked">
                 <label v-if="block.type === 'text'" class="d-field">
-                    Text
+                    {{ t.inspector.text }}
                     <textarea
                         rows="3"
                         :value="block.text"
@@ -480,7 +470,7 @@ const LAYERS = [
                         @update:model-value="setBlock({ fill: $event })"
                     />
                     <label class="d-field d-field--inline">
-                        Ecken abrunden (px)
+                        {{ t.inspector.cornerRadius }}
                         <input
                             type="number"
                             min="0"
@@ -494,16 +484,16 @@ const LAYERS = [
                 <template v-if="block.type === 'image'">
                     <div class="media-pick">
                         <img v-if="mediaUrl(block.mediaId)" :src="mediaUrl(block.mediaId)!" alt="">
-                        <p v-else class="hint">Noch kein Bild gewählt.</p>
+                        <p v-else class="hint">{{ t.inspector.noImage }}</p>
                         <button class="d-btn" type="button" data-testid="pick-image" @click="emit('pick-image', 'block')">
-                            Bild wählen …
+                            {{ t.inspector.pickImage }}
                         </button>
                     </div>
                     <label class="d-field d-field--inline">
-                        Einpassen
+                        {{ t.inspector.fit }}
                         <select :value="block.fit" @change="setBlock({ fit: ($event.target as HTMLSelectElement).value })">
-                            <option value="contain">Ganz zeigen</option>
-                            <option value="cover">Fläche füllen</option>
+                            <option value="contain">{{ t.inspector.fitContain }}</option>
+                            <option value="cover">{{ t.inspector.fitCover }}</option>
                         </select>
                     </label>
                 </template>
@@ -512,10 +502,10 @@ const LAYERS = [
                 <template v-if="block.type === 'video'">
                     <div class="media-pick">
                         <p v-if="videoLabel(block.mediaId)" class="video-name" data-testid="video-name">{{ videoLabel(block.mediaId) }}</p>
-                        <p v-else-if="block.mediaId" class="hint" data-testid="video-name">Video fehlt</p>
-                        <p v-else class="hint">Noch kein Video gewählt.</p>
+                        <p v-else-if="block.mediaId" class="hint" data-testid="video-name">{{ t.inspector.videoMissing }}</p>
+                        <p v-else class="hint">{{ t.inspector.noVideo }}</p>
                         <button class="d-btn" type="button" data-testid="pick-video" @click="emit('pick-image', 'video')">
-                            {{ block.mediaId ? 'Anderes Video …' : 'Video wählen …' }}
+                            {{ block.mediaId ? t.inspector.pickVideoOther : t.inspector.pickVideo }}
                         </button>
                     </div>
                     <HintRow>
@@ -526,20 +516,20 @@ const LAYERS = [
                                 data-testid="video-sound"
                                 @change="setBlock({ sound: ($event.target as HTMLInputElement).checked })"
                             >
-                            Ton
+                            {{ t.inspector.sound }}
                         </label>
-                        <template #info>Ton startet nur, wenn der Browser des Fernsehers es erlaubt – sonst läuft das Video stumm.</template>
+                        <template #info>{{ t.inspector.soundInfo }}</template>
                     </HintRow>
                     <label class="d-field d-field--inline">
-                        Einpassen
+                        {{ t.inspector.fit }}
                         <select :value="block.fit ?? 'contain'" data-testid="video-fit" @change="setBlock({ fit: ($event.target as HTMLSelectElement).value })">
-                            <option value="contain">Ganz zeigen</option>
-                            <option value="cover">Fläche füllen</option>
+                            <option value="contain">{{ t.inspector.fitContain }}</option>
+                            <option value="cover">{{ t.inspector.fitCover }}</option>
                         </select>
                     </label>
                     <HintRow caption>
-                        <span>Laufzeit</span>
-                        <template #info>Die Slide dauert mindestens so lange wie das Video. Ohne Netz zeigt der Fernseher an dieser Stelle nichts.</template>
+                        <span>{{ t.inspector.runtime }}</span>
+                        <template #info>{{ t.inspector.videoRuntimeInfo }}</template>
                     </HintRow>
                 </template>
 
@@ -553,22 +543,22 @@ const LAYERS = [
                             data-testid="pick-slideshow"
                             @click="emit('pick-image', 'slideshow')"
                         >
-                            + Bilder
+                            {{ t.inspector.addImages }}
                         </button>
-                        <span class="hint" data-testid="slideshow-count">{{ block.mediaIds.length }} von {{ SLIDESHOW_MAX }}</span>
+                        <span class="hint" data-testid="slideshow-count">{{ t.common.countOf(block.mediaIds.length, SLIDESHOW_MAX) }}</span>
                     </div>
-                    <p v-if="!block.mediaIds.length" class="hint">Noch keine Bilder gewählt.</p>
-                    <InspectorSection v-else id="slideshow-images" title="Bilder" :summary="`${block.mediaIds.length} Bilder`">
+                    <p v-if="!block.mediaIds.length" class="hint">{{ t.inspector.noImages }}</p>
+                    <InspectorSection v-else id="slideshow-images" :title="t.inspector.images" :summary="t.inspector.imageCount(block.mediaIds.length)">
                         <ol class="slideshow-list" data-testid="slideshow-list">
                             <li v-for="(id, index) in block.mediaIds" :key="`${id}-${index}`" class="slideshow-row" data-testid="slideshow-row">
                                 <img v-if="mediaUrl(id)" :src="mediaUrl(id)!" alt="">
                                 <span v-else class="slideshow-missing" />
-                                <span class="slideshow-name" :title="mediaName(id) ?? ''">{{ mediaName(id) ?? 'Bild fehlt' }}</span>
+                                <span class="slideshow-name" :title="mediaName(id) ?? ''">{{ mediaName(id) ?? t.inspector.imageMissing }}</span>
                                 <button
                                     class="d-btn d-btn--icon"
                                     type="button"
-                                    aria-label="Nach oben"
-                                    title="Nach oben"
+                                    :aria-label="t.common.moveUp"
+                                    :title="t.common.moveUp"
                                     :disabled="index === 0"
                                     data-testid="slideshow-up"
                                     @click="moveSlideshowImage(index, index - 1)"
@@ -578,8 +568,8 @@ const LAYERS = [
                                 <button
                                     class="d-btn d-btn--icon"
                                     type="button"
-                                    aria-label="Nach unten"
-                                    title="Nach unten"
+                                    :aria-label="t.common.moveDown"
+                                    :title="t.common.moveDown"
                                     :disabled="index === block.mediaIds.length - 1"
                                     data-testid="slideshow-down"
                                     @click="moveSlideshowImage(index, index + 1)"
@@ -589,8 +579,8 @@ const LAYERS = [
                                 <button
                                     class="d-btn d-btn--icon"
                                     type="button"
-                                    aria-label="Bild entfernen"
-                                    title="Bild entfernen"
+                                    :aria-label="t.inspector.removeImage"
+                                    :title="t.inspector.removeImage"
                                     data-testid="slideshow-remove"
                                     @click="removeSlideshowImage(index)"
                                 >
@@ -600,7 +590,7 @@ const LAYERS = [
                         </ol>
                     </InspectorSection>
                     <label class="d-field d-field--inline">
-                        Dauer je Bild (s)
+                        {{ t.inspector.secondsPerImage }}
                         <input
                             type="number"
                             min="3"
@@ -612,50 +602,50 @@ const LAYERS = [
                         >
                     </label>
                     <label class="d-field d-field--inline">
-                        Einpassen
+                        {{ t.inspector.fit }}
                         <select :value="block.fit ?? 'cover'" data-testid="slideshow-fit" @change="setBlock({ fit: ($event.target as HTMLSelectElement).value })">
-                            <option value="contain">Ganz zeigen</option>
-                            <option value="cover">Fläche füllen</option>
+                            <option value="contain">{{ t.inspector.fitContain }}</option>
+                            <option value="cover">{{ t.inspector.fitCover }}</option>
                         </select>
                     </label>
                     <label class="d-field d-field--inline">
-                        Übergang
+                        {{ t.inspector.transition }}
                         <select
                             :value="effectiveTransition(block)"
                             data-testid="slideshow-transition"
                             @change="setSlideshow({ transition: ($event.target as HTMLSelectElement).value })"
                         >
-                            <option value="fade">Überblenden</option>
-                            <option value="slide">Schieben</option>
-                            <option value="wipe">Aufdecken</option>
-                            <option value="none">Ohne</option>
+                            <option value="fade">{{ t.inspector.transitions.fade }}</option>
+                            <option value="slide">{{ t.inspector.transitions.slide }}</option>
+                            <option value="wipe">{{ t.inspector.transitions.wipe }}</option>
+                            <option value="none">{{ t.inspector.transitions.none }}</option>
                         </select>
                     </label>
                     <label class="d-field d-field--inline">
-                        Bewegung
+                        {{ t.inspector.motion }}
                         <select
                             :value="effectiveMotion(block)"
                             data-testid="slideshow-motion"
                             @change="setSlideshow({ motion: ($event.target as HTMLSelectElement).value })"
                         >
-                            <option value="none">Keine</option>
-                            <option value="in">Langsam hineinzoomen</option>
-                            <option value="out">Langsam herauszoomen</option>
-                            <option value="alternate">Abwechselnd</option>
+                            <option value="none">{{ t.inspector.motions.none }}</option>
+                            <option value="in">{{ t.inspector.motions.in }}</option>
+                            <option value="out">{{ t.inspector.motions.out }}</option>
+                            <option value="alternate">{{ t.inspector.motions.alternate }}</option>
                         </select>
                     </label>
                     <HintRow caption>
-                        <span>Laufzeit</span>
-                        <template #info>Die Slide läuft so lange, bis jedes Bild einmal zu sehen war.</template>
+                        <span>{{ t.inspector.runtime }}</span>
+                        <template #info>{{ t.inspector.slideshowRuntimeInfo }}</template>
                     </HintRow>
                 </template>
 
                 <label v-if="block.type === 'clock'" class="d-field d-field--inline">
-                    Anzeige
+                    {{ t.inspector.clockFormat }}
                     <select :value="block.format" @change="setBlock({ format: ($event.target as HTMLSelectElement).value })">
-                        <option value="time">Uhrzeit</option>
-                        <option value="date">Datum</option>
-                        <option value="datetime">Datum und Uhrzeit</option>
+                        <option value="time">{{ t.inspector.clockFormats.time }}</option>
+                        <option value="date">{{ t.inspector.clockFormats.date }}</option>
+                        <option value="datetime">{{ t.inspector.clockFormats.datetime }}</option>
                     </select>
                 </label>
 
@@ -676,25 +666,24 @@ const LAYERS = [
                             data-testid="countdown-title"
                             @change="setBlock({ showTitle: ($event.target as HTMLInputElement).checked })"
                         >
-                        Titel des Termins zeigen
+                        {{ t.inspector.showTitle }}
                     </label>
                     <label class="d-field d-field--inline">
-                        Während des Termins
+                        {{ t.inspector.duringAppointment }}
                         <input
                             type="text"
                             maxlength="200"
                             :value="block.runningText"
-                            placeholder="leer: zum nächsten Termin zählen"
+                            :placeholder="t.inspector.runningPlaceholder"
                             data-testid="countdown-running-text"
                             v-on="edit"
                             @input="setBlock({ runningText: ($event.target as HTMLInputElement).value })"
                         >
                     </label>
                     <HintRow caption>
-                        <span>Zählweise</span>
+                        <span>{{ t.inspector.countMode }}</span>
                         <template #info>
-                            Zählt bis zum Beginn des nächsten Termins dieser Kalender; ganztägige Termine zählen nicht mit.
-                            Passt gut auf eine Playlist, die ein Zeitplan „30 Minuten vor Beginn“ einschaltet.
+                            {{ t.inspector.countInfo }}
                         </template>
                     </HintRow>
                 </template>
@@ -702,16 +691,16 @@ const LAYERS = [
                 <template v-if="block.type === 'appointment-list' || block.type === 'next-appointment'">
                     <!-- Plan.md, 20: the look of the WordPress plugin's list and highlighted event. -->
                     <label class="d-field d-field--inline">
-                        Darstellung
+                        {{ t.inspector.appearance }}
                         <select
                             v-if="block.type === 'appointment-list'"
                             :value="block.layout ?? ''"
                             data-testid="list-layout"
                             @change="setLayout(($event.target as HTMLSelectElement).value)"
                         >
-                            <option value="">Wie im Design ({{ themeLayout }})</option>
-                            <option value="rows">Zeilen – Datum, Uhrzeit, Titel</option>
-                            <option value="cards">Karten – Datumskachel, Datum über Uhrzeit, Titel, Kategorie rechts</option>
+                            <option value="">{{ t.inspector.layoutTheme(themeLayout) }}</option>
+                            <option value="rows">{{ t.inspector.layoutRows }}</option>
+                            <option value="cards">{{ t.inspector.layoutCards }}</option>
                         </select>
                         <select
                             v-else
@@ -719,15 +708,15 @@ const LAYERS = [
                             data-testid="next-layout"
                             @change="setLayout(($event.target as HTMLSelectElement).value)"
                         >
-                            <option value="">Wie im Design ({{ themeLayout }})</option>
-                            <option value="classic">Schlicht</option>
-                            <option value="card">Hervorgehoben – Karte mit Beschreibung und Ort</option>
+                            <option value="">{{ t.inspector.layoutTheme(themeLayout) }}</option>
+                            <option value="classic">{{ t.inspector.layoutClassic }}</option>
+                            <option value="card">{{ t.inspector.layoutCard }}</option>
                         </select>
                     </label>
                     <template v-if="block.type === 'appointment-list'">
                         <div class="grid2">
                             <label class="d-field">
-                                Tage voraus
+                                {{ t.inspector.daysAhead }}
                                 <input
                                     type="number"
                                     min="1"
@@ -738,7 +727,7 @@ const LAYERS = [
                                 >
                             </label>
                             <label v-if="!block.showAll" class="d-field">
-                                Höchstens
+                                {{ t.inspector.atMost }}
                                 <input
                                     type="number"
                                     min="1"
@@ -749,7 +738,7 @@ const LAYERS = [
                                 >
                             </label>
                             <label v-else class="d-field">
-                                Sekunden je Seite
+                                {{ t.inspector.secondsPerPage }}
                                 <input
                                     type="number"
                                     min="3"
@@ -769,7 +758,7 @@ const LAYERS = [
                                 data-testid="show-all"
                                 @change="setBlock({ showAll: ($event.target as HTMLInputElement).checked })"
                             >
-                            Alle Termine zeigen, seitenweise
+                            {{ t.inspector.showAll }}
                         </label>
                         <p v-if="block.showAll" class="hint" data-testid="page-hint">{{ pageHint(block) }}</p>
                     </template>
@@ -779,7 +768,7 @@ const LAYERS = [
                             :checked="block.showImage"
                             @change="setBlock({ showImage: ($event.target as HTMLInputElement).checked })"
                         >
-                        Terminbild zeigen
+                        {{ t.inspector.showAppointmentImage }}
                     </label>
                     <!-- Plan.md, 50: the booked rooms where no place is entered; the list shows them as cards only. -->
                     <HintRow v-if="block.type === 'next-appointment' || listLayout(block, themeOf(stage)) === 'cards'">
@@ -790,14 +779,14 @@ const LAYERS = [
                                 data-testid="show-rooms"
                                 @change="setBlock({ showRooms: ($event.target as HTMLInputElement).checked })"
                             >
-                            Raum zeigen
+                            {{ t.inspector.showRoom }}
                         </label>
                         <template #info>
-                            Zeigt die gebuchten Räume des Termins, wo kein Ort eingetragen ist – ein eingetragener Ort geht vor, damit nichts doppelt steht. Nur bestätigte Buchungen, keine, die noch warten. Damit der Fernseher sie sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, alle Räume zu sehen; zeigt kein Screen mehr Räume an Terminen, nimmt „Rechte aktualisieren“ es zurück.
+                            {{ t.inspector.showRoomInfo }}
                         </template>
                     </HintRow>
                     <!-- Plan.md, 51: rooms can be left out for single calendars. -->
-                    <InspectorSection v-if="roomsFor(block)" id="rooms-for" title="Räume zeigen für" :summary="roomsForSummary(block)">
+                    <InspectorSection v-if="roomsFor(block)" id="rooms-for" :title="t.inspector.roomsFor" :summary="roomsForSummary(block)">
                         <div class="list" data-testid="rooms-for">
                             <label v-for="c in roomsFor(block)" :key="c.id" class="check">
                                 <input
@@ -812,9 +801,9 @@ const LAYERS = [
                     </InspectorSection>
                     <!-- Plan.md, 51: who takes a service – only accepted assignments of services in groups open to all. -->
                     <template v-if="block.type === 'next-appointment' || listLayout(block, themeOf(stage)) === 'cards'">
-                        <InspectorSection id="services" title="Dienste zeigen" :summary="servicesSummary(block.services)">
+                        <InspectorSection id="services" :title="t.inspector.servicesTitle" :summary="servicesSummary(block.services)">
                             <template #info>
-                                Zeigt, wer den Dienst übernimmt – nur zugesagte Einteilungen und nur Dienste aus Dienstgruppen, die in ChurchTools ‚Ohne Berechtigung einsehbar‘ sind. Die Vorschau zeigt, was dein Konto sehen darf. Damit der Fernseher die Dienste sieht, bekommt das Gerät mit „Rechte aktualisieren“ das Recht, die Events dieser Kalender zu sehen – und nimmt es zurück, wenn kein Baustein sie mehr braucht.
+                                {{ t.inspector.servicesInfo }}
                             </template>
                             <div class="list" data-testid="services-fieldset">
                                 <label v-for="s in choosableServices ?? []" :key="s.id" class="check">
@@ -829,20 +818,20 @@ const LAYERS = [
                                 </label>
                             </div>
                         </InspectorSection>
-                        <p v-if="servicesFailed" class="hint" data-testid="services-failed">Dienste konnten nicht geladen werden.</p>
+                        <p v-if="servicesFailed" class="hint" data-testid="services-failed">{{ t.inspector.servicesFailed }}</p>
                         <p v-else-if="services && !services.length" class="hint" data-testid="services-none">
-                            Keine Dienste verfügbar – in ChurchTools ist keine Dienstgruppe ‚Ohne Berechtigung einsehbar‘.
+                            {{ t.inspector.servicesNone }}
                         </p>
                         <p v-else-if="choosableServices && !choosableServices.length" class="hint" data-testid="services-not-allowed">
-                            Noch kein Dienst freigegeben – ein Administrator legt in den Einstellungen unter „Dienste auf Screens“ fest, welche gezeigt werden dürfen.
+                            {{ t.inspector.servicesNotAllowed }}
                         </p>
                     </template>
                 </template>
 
                 <!-- Plan.md, 33: posts of ChurchTools groups, after the terminlists' cards. -->
                 <template v-if="block.type === 'posts'">
-                    <InspectorSection id="post-groups" title="Gruppen" :summary="block.groupIds.length ? `${block.groupIds.length} gewählt` : 'keine'">
-                        <template #info>Zeigt die neuesten Beiträge der gewählten Gruppen; abgelaufene nie.</template>
+                    <InspectorSection id="post-groups" :title="t.inspector.groups" :summary="block.groupIds.length ? t.common.chosen(block.groupIds.length) : t.common.none">
+                        <template #info>{{ t.inspector.postGroupsInfo }}</template>
                         <label v-for="g in groups" :key="g.id" class="check">
                             <input
                                 type="checkbox"
@@ -851,32 +840,31 @@ const LAYERS = [
                                 @change="togglePostGroup(g.id, ($event.target as HTMLInputElement).checked)"
                             >
                             {{ g.name }}
-                            <span v-if="g.visibility !== 'public'" class="dimmed">nicht öffentlich</span>
+                            <span v-if="g.visibility !== 'public'" class="dimmed">{{ t.inspector.notPublic }}</span>
                         </label>
-                        <p v-if="!groups.length" class="hint">Keine Gruppe mit Beiträgen sichtbar.</p>
+                        <p v-if="!groups.length" class="hint">{{ t.inspector.noPostGroups }}</p>
                     </InspectorSection>
                     <p
                         v-if="block.groupIds.some((id) => groups.find((g) => g.id === id)?.visibility !== 'public')"
                         class="hint"
                         data-testid="posts-not-public"
                     >
-                        Der Fernseher zeigt nur Beiträge öffentlicher Gruppen. Die Vorschau hier zeigt mehr, weil sie mit
-                        deinen Rechten liest.
+                        {{ t.inspector.postsNotPublic }}
                     </p>
                     <label class="d-field d-field--inline">
-                        Darstellung
+                        {{ t.inspector.appearance }}
                         <select
                             :value="block.layout"
                             data-testid="posts-layout"
                             @change="setBlock({ layout: ($event.target as HTMLSelectElement).value })"
                         >
-                            <option value="card">Hervorgehoben – ein Beitrag nach dem anderen</option>
-                            <option value="list">Liste – mehrere untereinander</option>
+                            <option value="card">{{ t.inspector.postsLayoutCard }}</option>
+                            <option value="list">{{ t.inspector.layoutList }}</option>
                         </select>
                     </label>
                     <div class="grid2">
                         <label class="d-field">
-                            Anzahl
+                            {{ t.inspector.count }}
                             <input
                                 type="number"
                                 min="1"
@@ -887,7 +875,7 @@ const LAYERS = [
                             >
                         </label>
                         <label class="d-field">
-                            Nur der letzten … Tage
+                            {{ t.inspector.maxAgeDays }}
                             <input
                                 type="number"
                                 min="1"
@@ -899,7 +887,7 @@ const LAYERS = [
                         </label>
                     </div>
                     <label v-if="block.layout === 'card'" class="d-field d-field--inline">
-                        Sekunden je Beitrag
+                        {{ t.inspector.secondsPerPost }}
                         <input
                             type="number"
                             min="5"
@@ -916,7 +904,7 @@ const LAYERS = [
                             :checked="block.showImage"
                             @change="setBlock({ showImage: ($event.target as HTMLInputElement).checked })"
                         >
-                        Bild zeigen
+                        {{ t.inspector.showImage }}
                     </label>
                     <label class="check">
                         <input
@@ -924,7 +912,7 @@ const LAYERS = [
                             :checked="block.showAuthor"
                             @change="setBlock({ showAuthor: ($event.target as HTMLInputElement).checked })"
                         >
-                        Namen der Autorin oder des Autors zeigen
+                        {{ t.inspector.showAuthor }}
                     </label>
                 </template>
 
@@ -932,27 +920,25 @@ const LAYERS = [
                 <template v-if="block.type === 'groups'">
                     <HintRow>
                         <label class="d-field d-field--inline">
-                            Gruppen-Homepage
+                            {{ t.inspector.groupsHomepage }}
                             <select
                                 :value="block.parentGroupId ?? ''"
                                 data-testid="groups-homepage"
                                 @change="setGroupsHomepage(($event.target as HTMLSelectElement).value)"
                             >
-                                <option value="">– wählen –</option>
+                                <option value="">{{ t.inspector.choose }}</option>
                                 <option v-for="h in homepages" :key="h.parentGroupId" :value="h.parentGroupId">{{ h.title }}</option>
                                 <option v-if="groupsHomepageMissing" :value="block.parentGroupId">
-                                    (nicht mehr vorhanden)
+                                    {{ t.inspector.homepageGone }}
                                 </option>
                             </select>
                         </label>
                         <template #info>
-                            Zeigt nur Gruppen, die ChurchTools auf der Homepage öffentlich zeigt – mit und ohne Anmeldung
-                            dieselben.
+                            {{ t.inspector.homepageInfo }}
                         </template>
                     </HintRow>
                     <p v-if="!homepages.length" class="hint">
-                        Noch keine Gruppen-Homepage. In ChurchTools die Obergruppe öffnen, dann Einstellungen →
-                        Allgemein → Außendarstellung → „Gruppenhomepage erstellen".
+                        {{ t.inspector.noHomepage }}
                     </p>
 
                     <label class="check">
@@ -963,22 +949,22 @@ const LAYERS = [
                             data-testid="groups-all"
                             @change="toggleAllGroups(($event.target as HTMLInputElement).checked)"
                         >
-                        Alle Gruppen der Homepage
+                        {{ t.inspector.allGroups }}
                     </label>
                     <label v-if="block.groupIds.length === 0" class="d-field d-field--inline">
-                        Reihenfolge
+                        {{ t.inspector.order }}
                         <select
                             :value="block.sort"
                             data-testid="groups-sort"
                             @change="setBlock({ sort: ($event.target as HTMLSelectElement).value })"
                         >
-                            <option value="weekday">Nach Wochentag (Montag zuerst)</option>
-                            <option value="name-asc">Name A–Z</option>
-                            <option value="name-desc">Name Z–A</option>
+                            <option value="weekday">{{ t.inspector.sortWeekday }}</option>
+                            <option value="name-asc">{{ t.inspector.sortNameAsc }}</option>
+                            <option value="name-desc">{{ t.inspector.sortNameDesc }}</option>
                         </select>
                     </label>
 
-                    <InspectorSection v-if="block.groupIds.length" id="group-list" title="Gruppen" :summary="`${block.groupIds.length} gewählt`">
+                    <InspectorSection v-if="block.groupIds.length" id="group-list" :title="t.inspector.groups" :summary="t.common.chosen(block.groupIds.length)">
                         <div v-for="(id, index) in block.groupIds" :key="id" class="group-row">
                             <template v-if="homepageGroupList.find((g) => g.id === id)">
                                 <label class="check">
@@ -994,8 +980,8 @@ const LAYERS = [
                                 <button
                                     class="d-btn d-btn--icon"
                                     type="button"
-                                    aria-label="Nach oben"
-                                    title="Nach oben"
+                                    :aria-label="t.common.moveUp"
+                                    :title="t.common.moveUp"
                                     :disabled="index === 0"
                                     :data-testid="`group-up-${id}`"
                                     @click="moveGroupId(index, index - 1)"
@@ -1005,8 +991,8 @@ const LAYERS = [
                                 <button
                                     class="d-btn d-btn--icon"
                                     type="button"
-                                    aria-label="Nach unten"
-                                    title="Nach unten"
+                                    :aria-label="t.common.moveDown"
+                                    :title="t.common.moveDown"
                                     :disabled="index === block.groupIds.length - 1"
                                     :data-testid="`group-down-${id}`"
                                     @click="moveGroupId(index, index + 1)"
@@ -1014,12 +1000,12 @@ const LAYERS = [
                                     ↓
                                 </button>
                             </template>
-                            <span v-else-if="!homepageLoaded" class="dimmed">Gruppe {{ id }}</span>
+                            <span v-else-if="!homepageLoaded" class="dimmed">{{ t.inspector.groupNumber(id) }}</span>
                             <template v-else>
-                                <span class="dimmed">Gruppe {{ id }} – nicht mehr auf der Homepage</span>
+                                <span class="dimmed">{{ t.inspector.groupGone(id) }}</span>
                                 <span class="spacer" />
                                 <button class="d-btn" type="button" :data-testid="`group-missing-${id}`" @click="removeGroupId(id)">
-                                    Entfernen
+                                    {{ t.common.remove }}
                                 </button>
                             </template>
                         </div>
@@ -1034,19 +1020,19 @@ const LAYERS = [
                     </InspectorSection>
 
                     <label class="d-field d-field--inline">
-                        Darstellung
+                        {{ t.inspector.appearance }}
                         <select
                             :value="block.layout"
                             data-testid="groups-layout"
                             @change="setBlock({ layout: ($event.target as HTMLSelectElement).value })"
                         >
-                            <option value="card">Hervorgehoben – eine Gruppe nach der anderen</option>
-                            <option value="list">Liste – mehrere untereinander</option>
+                            <option value="card">{{ t.inspector.groupsLayoutCard }}</option>
+                            <option value="list">{{ t.inspector.layoutList }}</option>
                         </select>
                     </label>
                     <HintRow v-if="block.layout === 'card'">
                         <label class="d-field d-field--inline">
-                            Gruppen je Seite
+                            {{ t.inspector.groupsPerPage }}
                             <select
                                 :value="block.perPage"
                                 data-testid="groups-per-page"
@@ -1056,12 +1042,11 @@ const LAYERS = [
                             </select>
                         </label>
                         <template v-if="block.perPage > 1" #info>
-                            {{ block.width >= block.height ? 'Nebeneinander' : 'Untereinander' }}; jede Karte richtet sich nach
-                            ihrer eigenen Form – zwei in einem breiten Baustein stehen hochkant.
+                            {{ t.inspector.perPageInfo(block.width >= block.height) }}
                         </template>
                     </HintRow>
                     <label class="d-field d-field--inline">
-                        {{ block.layout === 'card' && block.perPage === 1 ? 'Sekunden je Gruppe' : 'Sekunden je Seite' }}
+                        {{ block.layout === 'card' && block.perPage === 1 ? t.inspector.secondsPerGroup : t.inspector.secondsPerPage }}
                         <input
                             type="number"
                             min="5"
@@ -1073,11 +1058,9 @@ const LAYERS = [
                         >
                     </label>
 
-                    <InspectorSection id="fields" title="Angaben" :summary="fieldsSummary">
+                    <InspectorSection id="fields" :title="t.inspector.details" :summary="fieldsSummary">
                         <template #info>
-                            Beschreibung, QR-Code und Bild der Leitung gibt es nur in der Darstellung „Hervorgehoben". Namen der
-                            Leitung erscheinen nur, wenn die Gruppen-Homepage in ChurchTools die Leiter zeigt – dann sind sie
-                            ohnehin öffentlich.
+                            {{ t.inspector.detailsInfo }}
                         </template>
                         <label v-for="key in GROUP_SHOW_KEYS" :key="key" class="check">
                             <input
@@ -1095,29 +1078,29 @@ const LAYERS = [
                 <!-- Plan.md, 46: which rooms are taken today – an overview or the door sign of the first room. -->
                 <template v-if="block.type === 'rooms'">
                     <label class="d-field d-field--inline">
-                        Anordnung
+                        {{ t.inspector.roomsLayout }}
                         <select
                             :value="block.layout"
                             data-testid="rooms-layout"
                             @change="setBlock({ layout: ($event.target as HTMLSelectElement).value })"
                         >
-                            <option value="overview">Übersicht – alle gewählten Räume</option>
-                            <option value="door">Türschild – der erste Raum</option>
+                            <option value="overview">{{ t.inspector.roomsOverview }}</option>
+                            <option value="door">{{ t.inspector.roomsDoor }}</option>
                         </select>
                     </label>
                     <label class="d-field d-field--inline">
-                        Tage
+                        {{ t.inspector.days }}
                         <select
                             :value="block.days"
                             data-testid="rooms-days"
                             @change="setBlock({ days: Number(($event.target as HTMLSelectElement).value) })"
                         >
-                            <option :value="1">Heute</option>
-                            <option :value="2">Heute und morgen</option>
+                            <option :value="1">{{ t.inspector.today }}</option>
+                            <option :value="2">{{ t.inspector.todayTomorrow }}</option>
                         </select>
                     </label>
                     <label v-if="block.layout === 'overview'" class="d-field d-field--inline">
-                        Sekunden je Seite
+                        {{ t.inspector.secondsPerPage }}
                         <input
                             type="number"
                             min="5"
@@ -1129,22 +1112,21 @@ const LAYERS = [
                         >
                     </label>
                     <p v-if="block.layout === 'door'" class="hint" data-testid="rooms-door-hint">
-                        Das Türschild zeigt den ersten Raum der Liste.
+                        {{ t.inspector.doorHint }}
                     </p>
 
                     <p v-if="rooms && !rooms.length" class="hint" data-testid="rooms-none">
-                        Keine Räume sichtbar. Ein Administrator gibt der Gruppe „Infoscreen-Designer" unter Einstellungen
-                        mit „Rechte aktualisieren" das Recht, Räume zu sehen.
+                        {{ t.inspector.noRooms }}
                     </p>
                     <div v-else-if="rooms" class="room-add">
                         <select
                             :disabled="!pickableRooms.length || block.rooms.length >= ROOMS_MAX"
                             value=""
-                            aria-label="Raum hinzufügen"
+                            :aria-label="t.inspector.addRoomLabel"
                             data-testid="rooms-add"
                             @change="pickRoom($event.target as HTMLSelectElement)"
                         >
-                            <option value="">+ Raum</option>
+                            <option value="">{{ t.inspector.addRoom }}</option>
                             <option v-for="r in pickableRooms" :key="r.id" :value="r.id">{{ r.name }}</option>
                         </select>
                         <button
@@ -1154,24 +1136,24 @@ const LAYERS = [
                             data-testid="rooms-add-all"
                             @click="addRooms(pickableRooms)"
                         >
-                            Alle Räume hinzufügen
+                            {{ t.inspector.addAllRooms }}
                         </button>
                     </div>
-                    <span v-if="rooms?.length" class="hint" data-testid="rooms-count">{{ block.rooms.length }} von {{ ROOMS_MAX }}</span>
-                    <p v-if="!block.rooms.length" class="hint">Noch keine Räume gewählt.</p>
-                    <InspectorSection v-else id="room-list" title="Räume" :summary="`${block.rooms.length} Räume`">
-                        <template #info>Gezeigt werden nur bestätigte Buchungen, keine, die noch warten.</template>
+                    <span v-if="rooms?.length" class="hint" data-testid="rooms-count">{{ t.common.countOf(block.rooms.length, ROOMS_MAX) }}</span>
+                    <p v-if="!block.rooms.length" class="hint">{{ t.inspector.noRoomsChosen }}</p>
+                    <InspectorSection v-else id="room-list" :title="t.inspector.rooms" :summary="t.inspector.roomCount(block.rooms.length)">
+                        <template #info>{{ t.inspector.roomsInfo }}</template>
                         <div v-for="(entry, index) in block.rooms" :key="entry.resourceId" class="room-entry" data-testid="room-entry">
                             <div class="room-head">
                                 <span v-if="roomName(entry.resourceId)" class="room-name" :title="roomName(entry.resourceId)!" data-testid="room-name">
                                     {{ roomName(entry.resourceId) }}
                                 </span>
-                                <span v-else class="room-name dimmed" data-testid="room-name">Raum {{ entry.resourceId }} – nicht sichtbar</span>
+                                <span v-else class="room-name dimmed" data-testid="room-name">{{ t.inspector.roomHidden(entry.resourceId) }}</span>
                                 <button
                                     class="d-btn d-btn--icon"
                                     type="button"
-                                    aria-label="Nach oben"
-                                    title="Nach oben"
+                                    :aria-label="t.common.moveUp"
+                                    :title="t.common.moveUp"
                                     :disabled="index === 0"
                                     data-testid="room-up"
                                     @click="moveRoom(index, index - 1)"
@@ -1181,8 +1163,8 @@ const LAYERS = [
                                 <button
                                     class="d-btn d-btn--icon"
                                     type="button"
-                                    aria-label="Nach unten"
-                                    title="Nach unten"
+                                    :aria-label="t.common.moveDown"
+                                    :title="t.common.moveDown"
                                     :disabled="index === block.rooms.length - 1"
                                     data-testid="room-down"
                                     @click="moveRoom(index, index + 1)"
@@ -1192,8 +1174,8 @@ const LAYERS = [
                                 <button
                                     class="d-btn d-btn--icon"
                                     type="button"
-                                    aria-label="Raum entfernen"
-                                    title="Raum entfernen"
+                                    :aria-label="t.inspector.removeRoom"
+                                    :title="t.inspector.removeRoom"
                                     data-testid="room-remove"
                                     @click="removeRoom(index)"
                                 >
@@ -1201,12 +1183,12 @@ const LAYERS = [
                                 </button>
                             </div>
                             <label class="d-field d-field--inline">
-                                Wegweiser
+                                {{ t.inspector.signpost }}
                                 <input
                                     type="text"
                                     maxlength="100"
                                     :value="entry.hint"
-                                    placeholder="z. B. 1. OG, links"
+                                    :placeholder="t.inspector.signpostPlaceholder"
                                     data-testid="room-hint"
                                     v-on="edit"
                                     @input="setRoom(index, { hint: ($event.target as HTMLInputElement).value })"
@@ -1220,11 +1202,10 @@ const LAYERS = [
                                         data-testid="room-titles"
                                         @change="setRoom(index, { showTitles: ($event.target as HTMLInputElement).checked })"
                                     >
-                                    Titel zeigen
+                                    {{ t.inspector.showTitles }}
                                 </label>
                                 <template #info>
-                                    Buchungstitel können Namen enthalten, etwa „Gespräch Familie X". Für solche Räume den Titel
-                                    ausschalten – dann steht dort „Belegt".
+                                    {{ t.inspector.showTitlesInfo }}
                                 </template>
                             </HintRow>
                         </div>
@@ -1238,7 +1219,7 @@ const LAYERS = [
                             :checked="block.showName"
                             @change="setBlock({ showName: ($event.target as HTMLInputElement).checked })"
                         >
-                        Gemeindenamen zeigen
+                        {{ t.inspector.showChurchName }}
                     </label>
                     <HintRow>
                         <label class="check">
@@ -1248,15 +1229,15 @@ const LAYERS = [
                                 :checked="block.showLogo"
                                 @change="setBlock({ showLogo: ($event.target as HTMLInputElement).checked })"
                             >
-                            Logo zeigen
+                            {{ t.inspector.showLogo }}
                         </label>
-                        <template #info>Ein eigenes Logo hilft, wenn das aus ChurchTools auf dem Hintergrund nicht zu sehen ist.</template>
+                        <template #info>{{ t.inspector.logoInfo }}</template>
                     </HintRow>
                     <div v-if="block.showLogo" class="media-pick">
                         <img v-if="mediaUrl(block.logoMediaId, 'max')" class="logo-preview" :src="mediaUrl(block.logoMediaId, 'max')!" alt="">
-                        <p v-else class="hint">Das Logo aus den Gemeindeinfos von ChurchTools.</p>
+                        <p v-else class="hint">{{ t.inspector.churchLogo }}</p>
                         <button class="d-btn" type="button" data-testid="pick-logo" @click="emit('pick-image', 'logo')">
-                            Eigenes Logo wählen …
+                            {{ t.inspector.pickLogo }}
                         </button>
                         <button
                             v-if="block.logoMediaId"
@@ -1265,7 +1246,7 @@ const LAYERS = [
                             data-testid="reset-logo"
                             @click="setBlock({ logoMediaId: undefined })"
                         >
-                            Logo aus ChurchTools verwenden
+                            {{ t.inspector.resetLogo }}
                         </button>
                     </div>
                 </template>
@@ -1274,12 +1255,9 @@ const LAYERS = [
                 <template v-if="block.type === 'web'">
                     <div class="d-field">
                         <HintRow>
-                            <label for="web-url-input">Adresse oder Einbettungscode</label>
+                            <label for="web-url-input">{{ t.inspector.webAddress }}</label>
                             <template #info>
-                                Mit Enter übernehmen – erst dann lädt die Seite. Statt der Adresse geht auch der Einbettungscode („iframe"), den Karten, Umfragen oder Pinnwände
-                                anbieten – übernommen wird nur die Adresse darin. Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer. Viele große Seiten
-                                wie Google verbieten das Einbetten – der Rahmen zeigt dann einen Fehler. Eigene Seiten, etwa die
-                                der Gemeinde-Website, gehen meist.
+                                {{ t.inspector.webInfo }}
                             </template>
                         </HintRow>
                         <input
@@ -1292,27 +1270,27 @@ const LAYERS = [
                             @change="setWebUrl($event.target as HTMLInputElement)"
                         >
                     </div>
-                    <p v-if="embedProblemBlock === block.id" class="hint" data-testid="web-problem">Im Einbettungscode steht keine Adresse.</p>
+                    <p v-if="embedProblemBlock === block.id" class="hint" data-testid="web-problem">{{ t.inspector.webNoAddressInCode }}</p>
                     <p v-else-if="webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
                     <label class="d-field d-field--inline">
-                        Größe der Seite
+                        {{ t.inspector.webSize }}
                         <select :value="block.zoom" data-testid="web-zoom" @change="setNumber('zoom', ($event.target as HTMLSelectElement).value)">
-                            <option :value="0.5">50 % – mehr passt hinein</option>
-                            <option :value="0.75">75 %</option>
-                            <option :value="1">100 %</option>
-                            <option :value="1.5">150 %</option>
-                            <option :value="2">200 % – für Seiten, die fürs Handy gemacht sind</option>
-                            <option :value="3">300 %</option>
+                            <option :value="0.5">{{ t.inspector.webZooms[50] }}</option>
+                            <option :value="0.75">{{ t.inspector.webZooms[75] }}</option>
+                            <option :value="1">{{ t.inspector.webZooms[100] }}</option>
+                            <option :value="1.5">{{ t.inspector.webZooms[150] }}</option>
+                            <option :value="2">{{ t.inspector.webZooms[200] }}</option>
+                            <option :value="3">{{ t.inspector.webZooms[300] }}</option>
                         </select>
                     </label>
                 </template>
 
                 <template v-if="block.type === 'qr'">
                     <label class="d-field d-field--inline">
-                        Inhalt
+                        {{ t.inspector.qrContent }}
                         <input
                             type="text"
-                            placeholder="meist eine Adresse, https://…"
+                            :placeholder="t.inspector.qrPlaceholder"
                             maxlength="1000"
                             :value="block.data"
                             data-testid="qr-data"
@@ -1320,21 +1298,21 @@ const LAYERS = [
                             @input="setBlock({ data: ($event.target as HTMLInputElement).value })"
                         >
                     </label>
-                    <p v-if="block.data.trim() && !qrShape(block.data)" class="hint">Zu lang für einen QR-Code.</p>
+                    <p v-if="block.data.trim() && !qrShape(block.data)" class="hint">{{ t.inspector.qrTooLong }}</p>
                     <HintRow caption>
-                        <span>Farben</span>
-                        <template #info>Dunkel auf hell lesen alle Handykameras am sichersten.</template>
+                        <span>{{ t.inspector.colors }}</span>
+                        <template #info>{{ t.inspector.qrColorsInfo }}</template>
                     </HintRow>
                     <div class="grid2">
                         <ColorField
-                            label="Farbe"
+                            :label="t.common.fill.solid"
                             :model-value="block.color"
                             @focus="edit.onFocus"
                             @blur="edit.onBlur"
                             @update:model-value="setBlock({ color: $event })"
                         />
                         <ColorField
-                            label="Hintergrund"
+                            :label="t.common.color.background"
                             :model-value="block.background"
                             @focus="edit.onFocus"
                             @blur="edit.onBlur"
@@ -1343,12 +1321,12 @@ const LAYERS = [
                     </div>
                 </template>
 
-                <InspectorSection v-if="'style' in block" id="font" title="Schrift" :summary="fontSummary">
+                <InspectorSection v-if="'style' in block" id="font" :title="t.inspector.font" :summary="fontSummary">
                     <template #summary-extra>
                         <span class="swatch" :style="{ background: block.style.color }" />
                     </template>
                     <label class="d-field d-field--inline">
-                        Schriftart
+                        {{ t.inspector.fontFamily }}
                         <select
                             data-testid="font-family"
                             :value="fontDef(block.style.fontFamily).key"
@@ -1361,7 +1339,7 @@ const LAYERS = [
                     </label>
                     <div class="grid2">
                         <label class="d-field">
-                            Größe (px)
+                            {{ t.inspector.fontSize }}
                             <input
                                 type="number"
                                 min="8"
@@ -1374,14 +1352,14 @@ const LAYERS = [
                             >
                         </label>
                         <label class="d-field">
-                            Stärke
+                            {{ t.inspector.fontWeight }}
                             <select
                                 :value="block.style.fontWeight"
                                 @change="setStyle({ fontWeight: Number(($event.target as HTMLSelectElement).value) as 400 })"
                             >
-                                <option :value="400">Normal</option>
-                                <option :value="600">Halbfett</option>
-                                <option :value="700">Fett</option>
+                                <option :value="400">{{ t.inspector.weights.normal }}</option>
+                                <option :value="600">{{ t.inspector.weights.semibold }}</option>
+                                <option :value="700">{{ t.inspector.weights.bold }}</option>
                             </select>
                         </label>
                     </div>
@@ -1392,10 +1370,10 @@ const LAYERS = [
                             data-testid="text-uppercase"
                             @change="setStyle({ uppercase: ($event.target as HTMLInputElement).checked })"
                         >
-                        Großbuchstaben
+                        {{ t.inspector.uppercase }}
                     </label>
                     <ColorField
-                        label="Farbe"
+                        :label="t.common.fill.solid"
                         inline
                         testid="text-color"
                         :model-value="block.style.color"
@@ -1405,35 +1383,35 @@ const LAYERS = [
                     />
                     <div class="grid2">
                         <label class="d-field">
-                            Ausrichtung
+                            {{ t.inspector.align }}
                             <select
                                 :value="block.style.align"
                                 @change="setStyle({ align: ($event.target as HTMLSelectElement).value as 'left' })"
                             >
-                                <option value="left">Links</option>
-                                <option value="center">Mittig</option>
-                                <option value="right">Rechts</option>
+                                <option value="left">{{ t.inspector.aligns.left }}</option>
+                                <option value="center">{{ t.inspector.aligns.center }}</option>
+                                <option value="right">{{ t.inspector.aligns.right }}</option>
                             </select>
                         </label>
                         <label v-if="verticalAlignOf(block)" class="d-field">
-                            Vertikal
+                            {{ t.inspector.vertical }}
                             <select
                                 :value="verticalAlignOf(block)"
                                 data-testid="text-vertical-align"
                                 @change="setStyle({ verticalAlign: ($event.target as HTMLSelectElement).value as 'top' })"
                             >
-                                <option value="top">Oben</option>
-                                <option value="middle">Mittig</option>
-                                <option value="bottom">Unten</option>
+                                <option value="top">{{ t.inspector.verticals.top }}</option>
+                                <option value="middle">{{ t.inspector.verticals.middle }}</option>
+                                <option value="bottom">{{ t.inspector.verticals.bottom }}</option>
                             </select>
                         </label>
                     </div>
                 </InspectorSection>
 
-                <InspectorSection id="position" title="Position &amp; Ebene" :summary="positionSummary">
+                <InspectorSection id="position" :title="t.inspector.positionLayer" :summary="positionSummary">
                     <div class="grid4">
                         <label v-for="key in ['x', 'y', 'width', 'height'] as const" :key="key" class="d-field">
-                            {{ { x: 'X', y: 'Y', width: 'Breite', height: 'Höhe' }[key] }}
+                            {{ t.inspector.frameFields[key] }}
                             <input
                                 type="number"
                                 :value="block[key]"
@@ -1444,7 +1422,7 @@ const LAYERS = [
                         </label>
                     </div>
                     <div class="layer-row">
-                        <span class="row-label">Ebene</span>
+                        <span class="row-label">{{ t.inspector.layer }}</span>
                         <div class="layer-buttons">
                             <button
                                 v-for="layer in LAYERS"
@@ -1468,7 +1446,7 @@ const LAYERS = [
         <template v-else>
             <section v-if="slide" data-testid="slide-inspector">
                 <label class="d-field d-field--inline">
-                    Name
+                    {{ t.common.name }}
                     <input
                         type="text"
                         maxlength="100"
@@ -1479,24 +1457,23 @@ const LAYERS = [
                 </label>
                 <!-- A slide that other playlists show too (Plan.md 49): changes here count there as well. -->
                 <div v-if="linkedNames" class="linked" data-testid="slide-linked">
-                    <span class="linked-text" :title="`Auch in: ${linkedNames}`" data-testid="slide-linked-in">
+                    <span class="linked-text" :title="t.inspector.linkedAlso(linkedNames)" data-testid="slide-linked-in">
                         <Icon name="link" :size="14" />
-                        <span class="linked-names">Auch in: {{ linkedNames }}</span>
+                        <span class="linked-names">{{ t.inspector.linkedAlso(linkedNames) }}</span>
                         <span v-if="editor.linkPending(slide.id)" class="linked-pending" data-testid="slide-link-pending">
-                            ab dem Speichern
+                            {{ t.inspector.linkedPending }}
                         </span>
                     </span>
                     <InfoHint>
-                        Änderungen an dieser Slide – auch Dauer und „Abgeschaltet" – gelten in allen genannten Playlists.
-                        „Verknüpfung lösen" macht daraus eine eigene Kopie nur für diese Playlist.
+                        {{ t.inspector.linkedInfo }}
                     </InfoHint>
                     <button class="d-btn" type="button" data-testid="slide-unlink" @click="editor.unlinkSlide(slide.id)">
-                        Verknüpfung lösen
+                        {{ t.inspector.unlink }}
                     </button>
                 </div>
                 <div class="grid2">
                     <label class="d-field">
-                        Anzeigedauer (s)
+                        {{ t.inspector.displaySeconds }}
                         <input
                             type="number"
                             min="1"
@@ -1513,30 +1490,30 @@ const LAYERS = [
                             :checked="slide.enabled"
                             @change="editor.updateSlide({ enabled: ($event.target as HTMLInputElement).checked })"
                         >
-                        Wird gezeigt
+                        {{ t.inspector.enabled }}
                     </label>
                 </div>
                 <p v-if="runsLonger" class="hint" data-testid="duration-hint">
-                    Läuft {{ runsLonger }} s – so lange braucht die Terminliste für alle Seiten.
+                    {{ t.inspector.runsLonger(runsLonger) }}
                 </p>
-                <InspectorSection id="background" title="Hintergrund" :summary="backgroundSummary">
+                <InspectorSection id="background" :title="t.inspector.background" :summary="backgroundSummary">
                     <template #summary-extra>
                         <span v-for="(color, i) in backgroundColors" :key="i" class="swatch" :style="{ background: color }" />
                     </template>
                     <label class="d-field d-field--inline">
-                        Hintergrund aus
+                        {{ t.inspector.backgroundFrom }}
                         <select
                             :value="slide.background.kind === 'media' ? 'media' : 'fill'"
                             data-testid="background-kind"
                             @change="setBackgroundKind(($event.target as HTMLSelectElement).value)"
                         >
-                            <option value="fill">Farbe oder Verlauf</option>
-                            <option value="media">Bild</option>
+                            <option value="fill">{{ t.inspector.backgroundFill }}</option>
+                            <option value="media">{{ t.inspector.backgroundImage }}</option>
                         </select>
                     </label>
                     <div v-if="slide.background.kind === 'media'" class="media-pick">
                         <img v-if="mediaUrl(slide.background.mediaId)" :src="mediaUrl(slide.background.mediaId)!" alt="">
-                        <button class="d-btn" type="button" @click="emit('pick-image', 'background')">Anderes Bild …</button>
+                        <button class="d-btn" type="button" @click="emit('pick-image', 'background')">{{ t.inspector.otherImage }}</button>
                     </div>
                     <FillEditor
                         v-else
@@ -1550,10 +1527,10 @@ const LAYERS = [
 
             <!-- The playlist is the designers' own (schema 1.4); where it runs, the screens' schedules decide. -->
             <section v-if="editor.draft">
-                <InspectorSection id="playlist" title="Playlist" :summary="playlistSummary">
+                <InspectorSection id="playlist" :title="t.inspector.playlist" :summary="playlistSummary">
                     <div data-testid="playlist-info" class="playlist-info">
                         <label class="d-field d-field--inline">
-                            Name
+                            {{ t.common.name }}
                             <input
                                 type="text"
                                 maxlength="100"
@@ -1564,27 +1541,26 @@ const LAYERS = [
                             >
                         </label>
                         <dl>
-                            <dt>Format</dt>
+                            <dt>{{ t.inspector.format }}</dt>
                             <dd>
-                                {{ editor.stage.height > editor.stage.width ? 'Hochkant' : 'Quer' }},
+                                {{ editor.stage.height > editor.stage.width ? t.inspector.portrait : t.inspector.landscape }},
                                 {{ editor.stage.width }} × {{ editor.stage.height }} px
                             </dd>
-                            <dt>Läuft auf</dt>
+                            <dt>{{ t.inspector.runsOn }}</dt>
                             <dd data-testid="playlist-screens">{{ playlistSummary }}</dd>
                         </dl>
                         <HintRow caption>
-                            <span>Zeitplan</span>
+                            <span>{{ t.inspector.schedule }}</span>
                             <template #info>
-                                Auf welchem Screen sie wann läuft, legt der Zeitplan des Screens fest – unter „Zeitpläne" oder an
-                                der Kachel des Screens. Speichern ändert alle Screens, die sie zeigen.
+                                {{ t.inspector.scheduleInfo }}
                             </template>
                         </HintRow>
                         <p v-if="bannerRunning" class="hint" data-testid="banner-status">
-                            Hinweisband: „{{ editor.draft.playlist.banner!.text }}" – bearbeiten unter
-                            <RouterLink :to="{ name: 'notices' }">Hinweise</RouterLink>
+                            {{ t.inspector.bannerRunningBefore(editor.draft.playlist.banner!.text) }}
+                            <RouterLink :to="{ name: 'notices' }">{{ t.inspector.bannerLink }}</RouterLink>
                         </p>
                         <p v-else class="hint" data-testid="banner-status">
-                            Kein Hinweisband – anlegen unter <RouterLink :to="{ name: 'notices' }">Hinweise</RouterLink>
+                            {{ t.inspector.bannerNoneBefore }} <RouterLink :to="{ name: 'notices' }">{{ t.inspector.bannerLink }}</RouterLink>
                         </p>
                     </div>
                 </InspectorSection>

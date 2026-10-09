@@ -84,8 +84,8 @@ test('the swatches stand in two groups: the palette, and every colour the slide 
     await page.getByTestId('text-color').fill('#12ab34');
     await expect(page.getByTestId('text-color')).toHaveValue('#12ab34');
     await expect(onSlide).toBeVisible();
-    await expect(onSlide).toContainText('Auf der Slide');
-    await expect(onSlide.getByRole('group', { name: 'Farbe: auf der Slide' })).toBeVisible();
+    await expect(onSlide).toContainText('Auf der Folie');
+    await expect(onSlide.getByRole('group', { name: 'Farbe: auf der Folie' })).toBeVisible();
     await expect(onSlide.getByRole('button', { name: '#12AB34', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(palette.getByRole('button', { name: /#12AB34/ })).toHaveCount(0);
 });

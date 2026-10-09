@@ -4,6 +4,7 @@
  * calendars. Status stays visible below it – no public calendar at all, and a chosen one that is not public.
  */
 import { computed } from 'vue';
+import { t } from '../i18n/designer';
 import { PUBLIC_CALENDAR_PATH, type Calendar } from '../ct/api';
 import { calendarColor } from '../player/format';
 import InspectorSection from './InspectorSection.vue';
@@ -11,15 +12,13 @@ import InspectorSection from './InspectorSection.vue';
 const props = defineProps<{ calendars: Calendar[]; chosenIds: number[]; hidden: Calendar[] }>();
 const emit = defineEmits<{ toggle: [id: number, on: boolean] }>();
 
-const summary = computed(() => `${props.calendars.filter((c) => props.chosenIds.includes(c.id)).length} von ${props.calendars.length}`);
+const summary = computed(() => t.common.countOf(props.calendars.filter((c) => props.chosenIds.includes(c.id)).length, props.calendars.length));
 </script>
 
 <template>
-    <InspectorSection id="calendars" title="Kalender" :summary="summary">
+    <InspectorSection id="calendars" :title="t.common.calendars.title" :summary="summary">
         <template #info>
-            Zur Wahl stehen nur öffentliche Kalender. Öffentlich ist ein Kalender, den man in ChurchTools auch ohne
-            Anmeldung sieht. Fehlt einer, gibt ihn frei, wer in ChurchTools Berechtigungen verwalten darf:
-            {{ PUBLIC_CALENDAR_PATH }}.
+            {{ t.common.calendars.info(PUBLIC_CALENDAR_PATH) }}
         </template>
         <label v-for="c in calendars" :key="c.id" class="check">
             <input
@@ -32,21 +31,21 @@ const summary = computed(() => `${props.calendars.filter((c) => props.chosenIds.
         </label>
     </InspectorSection>
     <template v-if="!calendars.length">
-        <p class="hint">Kein Kalender ist öffentlich.</p>
+        <p class="hint">{{ t.common.calendars.nonePublic }}</p>
         <p class="hint" data-testid="no-public-calendars">
-            Freigeben kann, wer in ChurchTools Berechtigungen verwalten darf: {{ PUBLIC_CALENDAR_PATH }}.
+            {{ t.common.calendars.release(PUBLIC_CALENDAR_PATH) }}
         </p>
     </template>
     <p v-for="c in hidden" :key="c.id" class="hint hidden-calendar" :data-testid="`hidden-calendar-${c.id}`">
-        {{ c.name }} – nicht öffentlich, erscheint auf keinem Fernseher
+        {{ t.common.calendars.notPublic(c.name) }}
         <button
             class="d-btn"
             type="button"
             :disabled="chosenIds.length < 2"
-            :title="chosenIds.length < 2 ? 'Wähle zuerst einen anderen Kalender.' : undefined"
+            :title="chosenIds.length < 2 ? t.common.calendars.chooseAnotherFirst : undefined"
             @click="emit('toggle', c.id, false)"
         >
-            Entfernen
+            {{ t.common.remove }}
         </button>
     </p>
 </template>

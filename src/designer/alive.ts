@@ -1,6 +1,7 @@
 import type { HeartbeatDoc } from '../model/heartbeat';
 import type { ScreenRef } from '../store/screen-repository';
 import { lastEdited } from './last-edited';
+import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 
 /**
@@ -65,10 +66,10 @@ const quoted = (live: LiveScreen[]) => live.map((l) => `„${l.screen.name}“`)
 export function liveTitle(live: LiveScreen[], timeZone: string): string {
     const youngest = Math.max(...live.map((l) => Date.parse(l.at)));
     const time = new Intl.DateTimeFormat(LOCALE, { timeZone, hour: '2-digit', minute: '2-digit' }).format(youngest);
-    return `Läuft gerade auf ${quoted(live)} – laut Lebenszeichen von ${time}`;
+    return t.common.runningOn(quoted(live), time);
 }
 
 /** The tooltip of "Speichern" while the playlist runs: where the change will show up, and when. */
 export function liveSaveTitle(live: LiveScreen[]): string {
-    return `Läuft gerade auf ${quoted(live)} – nach dem Speichern dort in etwa 20 Sekunden zu sehen`;
+    return t.editor.saveOnLive(quoted(live));
 }

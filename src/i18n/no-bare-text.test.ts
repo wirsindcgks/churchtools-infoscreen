@@ -11,19 +11,9 @@ import { describe, expect, it } from 'vitest';
 
 /** Components still to convert in the parts of B1 that follow: editor, areas, settings. */
 const PENDING: string[] = [
-    'designer/AppBar.vue',
-    'designer/AppointmentPointField.vue',
     'designer/BannerEditor.vue',
-    'designer/BlockPalette.vue',
-    'designer/CalendarField.vue',
-    'designer/ColorField.vue',
     'designer/CreatePlaylistDialog.vue',
     'designer/CreateScreenDialog.vue',
-    'designer/EditorStage.vue',
-    'designer/FillEditor.vue',
-    'designer/InfoHint.vue',
-    'designer/Inspector.vue',
-    'designer/LiveFlag.vue',
     'designer/MediaDeleteDialog.vue',
     'designer/MediaGrid.vue',
     'designer/MediaLibraryDialog.vue',
@@ -32,29 +22,27 @@ const PENDING: string[] = [
     'designer/NoticeDialog.vue',
     'designer/PlaylistCard.vue',
     'designer/PlaylistPicker.vue',
-    'designer/PlaylistPreview.vue',
     'designer/RefreshRightsDialog.vue',
     'designer/RemoveSetupDialog.vue',
     'designer/ScheduleDialog.vue',
     'designer/ScreenCard.vue',
     'designer/ScreenSettingsDialog.vue',
-    'designer/SlideImportDialog.vue',
-    'designer/SlideList.vue',
-    'designer/SlideThumb.vue',
     'views/AboutView.vue',
     'views/DesignView.vue',
     'views/DesignerHome.vue',
     'views/MediaView.vue',
     'views/NotFoundView.vue',
     'views/NoticesView.vue',
-    'views/PlaylistEditor.vue',
     'views/PlaylistsView.vue',
     'views/SchedulesView.vue',
     'views/SetupView.vue',
 ];
 
 /** Texts that are no wording: unit symbols and the like. Each entry with its reason. */
-const ALLOWED: string[] = [];
+const ALLOWED: string[] = [
+    // The unit of a size next to its number, in every language alike.
+    'px',
+];
 
 const ATTRIBUTES = ['title', 'aria-label', 'placeholder', 'label', 'alt'];
 

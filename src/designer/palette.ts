@@ -7,6 +7,7 @@
  */
 import { computed, inject, provide, type ComputedRef, type InjectionKey, type Ref } from 'vue';
 import type { SlideDoc, ThemeDoc } from '../model/schema';
+import { t } from '../i18n/designer';
 import { parseHex } from './color';
 
 export interface PaletteColor {
@@ -27,9 +28,9 @@ const MAX_SLIDE_COLORS = 12;
 export function paletteColors(theme: ThemeDoc | null | undefined): PaletteColor[] {
     if (!theme) return [];
     const all = [
-        { name: 'Akzent', color: theme.accent },
-        { name: 'Text', color: theme.text },
-        { name: 'Hintergrund', color: theme.background },
+        { name: t.common.color.accent, color: theme.accent },
+        { name: t.common.color.text, color: theme.text },
+        { name: t.common.color.background, color: theme.background },
         ...(theme.palette ?? []).map((p) => ({ name: p.name.trim() === '' ? p.color : p.name, color: p.color })),
     ];
     const seen = new Set<string>();
