@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils';
 import { createPinia } from 'pinia';
 import { describe, expect, it } from 'vitest';
 import { nextTick, ref, type Component } from 'vue';
+import CalendarField from '../../CalendarField.vue';
 import ColorField from '../../ColorField.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import { INSPECTOR_MODE, type InspectorMode } from '../mode';
@@ -28,6 +29,7 @@ const FIELDS: [string, Component, Record<string, unknown>][] = [
     ['MediaField', MediaField, { filled: false, pickLabel: 'Bild wählen', swapLabel: 'Bild tauschen' }],
     ['SortList', SortList, { items: [{ key: 1, label: 'Eins' }], removeLabel: 'Entfernen', testid: 'sort' }],
     ['ColorField', ColorField, { modelValue: '#ffffff', label: 'Farbe' }],
+    ['CalendarField', CalendarField, { calendars: [{ id: 1, name: 'Gottesdienst' }], chosenIds: [1], hidden: [] }],
 ];
 
 function draw(component: Component, props: Record<string, unknown>, mode?: InspectorMode) {

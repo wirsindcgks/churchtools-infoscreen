@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addBlock, openSection } from './helpers';
+import { addBlock, chosen, choose, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -250,9 +250,10 @@ for (const [transition] of TRANSITIONS) {
         await expect(page.getByTestId('slideshow-row')).toHaveCount(2);
         await page.getByTestId('slideshow-seconds').fill('3');
         await page.getByTestId('slideshow-seconds').blur();
-        const select = page.getByTestId('slideshow-transition');
-        expect(await select.locator('option').allTextContents()).toEqual(TRANSITIONS.map(([, label]) => label));
-        await select.selectOption(transition);
+        await openSection(page, 'appearance');
+        const tiles = page.getByTestId('slideshow-transition');
+        expect(await tiles.locator('.tile-word').allTextContents()).toEqual(TRANSITIONS.map(([, label]) => label));
+        await choose(page, 'slideshow-transition', transition);
         if (transition === 'fade') await page.screenshot({ path: 'test-results/galerie-transitions.png' });
 
         await page.getByTestId('open-preview').click();
@@ -290,15 +291,16 @@ async function twoPictures(page: Page, baseURL: string | undefined): Promise<voi
     await expect(page.getByTestId('slideshow-row')).toHaveCount(2);
     await page.getByTestId('slideshow-seconds').fill('3');
     await page.getByTestId('slideshow-seconds').blur();
+    await openSection(page, 'appearance');
 }
 
 test('the motion "Abwechselnd" zooms the first picture in and the next one out in the preview (schema 1.19)', async ({ page, baseURL }) => {
     test.setTimeout(60_000);
     await twoPictures(page, baseURL);
     const motion = page.getByTestId('slideshow-motion');
-    expect(await motion.locator('option').allTextContents()).toEqual(['Keine', 'Langsam hineinzoomen', 'Langsam herauszoomen', 'Abwechselnd']);
-    await expect(motion).toHaveValue('none');
-    await motion.selectOption('alternate');
+    expect(await motion.locator('.tile-word').allTextContents()).toEqual(['Keine', 'Hineinzoomen', 'Herauszoomen', 'Abwechselnd']);
+    expect(await chosen(page, 'slideshow-motion')).toBe('none');
+    await choose(page, 'slideshow-motion', 'alternate');
     await page.screenshot({ path: 'test-results/slideshow-motion.png' });
 
     // The stage of the editor stands still.
@@ -316,8 +318,8 @@ test('the motion "Abwechselnd" zooms the first picture in and the next one out i
 test('a motion goes with a push: the transition moves the layer, the zoom the picture (schema 1.19)', async ({ page, baseURL }) => {
     test.setTimeout(60_000);
     await twoPictures(page, baseURL);
-    await page.getByTestId('slideshow-transition').selectOption('slide');
-    await page.getByTestId('slideshow-motion').selectOption('out');
+    await choose(page, 'slideshow-transition', 'slide');
+    await choose(page, 'slideshow-motion', 'out');
     await page.getByTestId('open-preview').click();
     const layer = page.getByTestId('playlist-preview').getByTestId('slideshow').locator('[data-active]');
     await expect(layer).toBeVisible({ timeout: 15_000 });
@@ -348,12 +350,13 @@ test('a saved block with the old transition "zoom" shows as fade with zooming in
     await page.getByTestId('open-editor').first().click();
     await page.getByTestId('slide-item').nth(1).click();
     await page.getByTestId('frame-slideshow').first().click();
-    await expect(page.getByTestId('slideshow-transition')).toHaveValue('fade');
-    await expect(page.getByTestId('slideshow-motion')).toHaveValue('in');
-    await expect(page.getByTestId('slideshow-transition').locator('option')).toHaveCount(4);
+    await openSection(page, 'appearance');
+    await expect.poll(() => chosen(page, 'slideshow-transition')).toBe('fade');
+    await expect.poll(() => chosen(page, 'slideshow-motion')).toBe('in');
+    await expect(page.getByTestId('slideshow-transition').locator('input')).toHaveCount(4);
 
-    await page.getByTestId('slideshow-transition').selectOption('slide');
-    await expect(page.getByTestId('slideshow-motion')).toHaveValue('in');
+    await choose(page, 'slideshow-transition', 'slide');
+    await expect.poll(() => chosen(page, 'slideshow-motion')).toBe('in');
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
     expect(await page.evaluate(() => (localStorage.getItem('infoscreen-designer.demo-store') ?? '').includes('zoom\\"'))).toBe(false);

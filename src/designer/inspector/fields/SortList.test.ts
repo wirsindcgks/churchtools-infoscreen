@@ -36,4 +36,23 @@ describe('SortList', () => {
         expect(wrapper.emitted('move')).toEqual([[0, 1], [2, 1]]);
         expect(wrapper.emitted('remove')).toEqual([[1]]);
     });
+
+    it('names the label, renames the row and keeps the remove button off where asked', () => {
+        const wrapper = mount(SortList, {
+            props: { items: [{ key: 1, label: 'Saal', keep: true }, { key: 2, label: 'Keller' }], removeLabel: 'Raum entfernen', testid: 'room', rowTestid: 'room-entry' },
+        });
+        expect(wrapper.findAll('[data-testid="room-entry"]')).toHaveLength(2);
+        expect(wrapper.findAll('[data-testid="room-name"]').map((n) => n.text())).toEqual(['Saal', 'Keller']);
+        expect(wrapper.findAll('[data-testid="room-remove"]').map((b) => b.attributes('disabled') !== undefined)).toEqual([true, false]);
+    });
+
+    it('lets a row carry more fields under its line', () => {
+        const wrapper = mount(SortList, {
+            props: { items: [{ key: 1, label: 'Saal' }, { key: 2, label: 'Keller' }], removeLabel: 'Raum entfernen', testid: 'room' },
+            slots: { row: '<template #row="{ index }"><input :data-testid="`hint-${index}`"></template>' },
+        });
+        const rows = wrapper.findAll('[data-testid="room-row"]');
+        expect(rows[1]!.find('[data-testid="hint-1"]').exists()).toBe(true);
+        expect(rows[0]!.find('[data-testid="hint-1"]').exists()).toBe(false);
+    });
 });
