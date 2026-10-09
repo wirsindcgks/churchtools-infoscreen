@@ -478,7 +478,7 @@ describe('ScreenRepository', () => {
             await repo.drafts.ensureCategory();
             const made = await repo.createPlaylist({ name: 'Entwurf', stage: LANDSCAPE }, 'Anna');
             await repo.drafts.save(
-                { playlistId: made.id, name: 'Neu', slideIds: [], slides: [], dropSlideIds: [] },
+                { playlistId: made.id, name: 'Neu', slideIds: [], slides: [] },
                 { expectedRevision: 0, updatedBy: 'Anna' },
             );
             await repo.deletePlaylist(made.id);
@@ -712,6 +712,13 @@ describe('ScreenRepository', () => {
             const own = await repo.createPlaylist({ name: 'Allein', stage: { width: 1920, height: 1080 } }, 'Anna');
             expect((await repo.loadPlaylist(own.id)).sharedWith).toEqual({});
             expect((await repo.loadPlaylist(b)).sharedWith['slide-2']?.map((p) => p.id)).toContain(A);
+        });
+
+        it('works out sharedWith for extra slide ids of a draft as well', async () => {
+            await linkedPair();
+            const own = await repo.createPlaylist({ name: 'Allein', stage: { width: 1920, height: 1080 } }, 'Anna');
+            const loaded = await repo.loadPlaylist(own.id, ['slide-1']);
+            expect(loaded.sharedWith['slide-1']?.map((p) => p.id)).toContain(A);
         });
 
         it('duplicates linked: the same slide ids, no slide written; by default copies', async () => {

@@ -34,7 +34,7 @@ test('the inspector offers no calendar that is not public, and names one the blo
     await expect(hidden).toContainText('Gemeindeleitung – nicht öffentlich, erscheint auf keinem Fernseher');
     await hidden.getByRole('button', { name: 'Entfernen' }).click();
     await expect(hidden).toHaveCount(0);
-    await expect(page.getByTestId('save-status')).toHaveText('Ungespeicherte Änderungen');
+    await expect(page.getByTestId('save-status')).toHaveText(/Sichert …|Entwurf gesichert/);
 });
 
 test('the inspector says so, with the way to release one, when no calendar is public', async ({ page }) => {

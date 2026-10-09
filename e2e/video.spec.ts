@@ -172,7 +172,7 @@ test('the player loops the video from its download address, muted unless the blo
     const { release } = await fakeLibrary(page, baseURL, 'hold');
     await slideWithVideo(page);
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
 
     const playerPage = await context.newPage();
     const { downloads, release: releasePlayer } = await fakeLibrary(playerPage, baseURL, 'hold');
@@ -192,7 +192,7 @@ test('the player loops the video from its download address, muted unless the blo
     // then shows the fresh one; in WebKit the cached video sometimes starts first (Plan.md 60).
     await page.getByTestId('block-inspector').getByTestId('video-sound').check();
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
     await playerPage.addInitScript(() => {
         const plays: boolean[] = [];
         (window as unknown as { plays: boolean[] }).plays = plays;
@@ -214,7 +214,7 @@ test('when the file is refused with 403 the player shows a calm placeholder, and
     await fakeLibrary(page, baseURL, '403');
     await slideWithVideo(page);
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
 
     const playerPage = await context.newPage();
     await fakeLibrary(playerPage, baseURL, '403');

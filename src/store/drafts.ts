@@ -63,10 +63,8 @@ export interface DraftChange {
     playlistId: string;
     name: string;
     slideIds: string[];
-    /** The slides to write as drafts. */
+    /** The slides to write as drafts; every other slide draft of this playlist is deleted. */
     slides: SlideDoc[];
-    /** The slides whose drafts are to be deleted. */
-    dropSlideIds: string[];
 }
 
 export interface DraftSaveOptions {
@@ -141,7 +139,7 @@ export class DraftStore {
     }
 
     /**
-     * Writes the change as the next revision. Slide drafts first, the playlist draft last: only that one
+     * Writes the change as the next revision. Slide drafts first (those no longer in the change are deleted), the playlist draft last: only that one
      * carries the revision, and a save that broke off in between leaves the old revision to try again.
      */
     async save(change: DraftChange, options: DraftSaveOptions): Promise<PlaylistDraftDoc> {
@@ -190,10 +188,11 @@ export class DraftStore {
                 if (found) await this.kv.updateValue(categoryId, found.value.id, text);
                 else await this.kv.createValue(categoryId, text);
             }
-            for (const slideId of change.dropSlideIds) {
-                const id = `${change.playlistId}/${slideId}`;
-                const found = entries.find((e) => e.doc.kind === 'slide-draft' && e.doc.id === id);
-                if (found) await this.kv.deleteValue(categoryId, found.value.id);
+            const written = new Set(slideDocs.map((doc) => doc.id));
+            for (const entry of entries) {
+                if (entry.doc.kind === 'slide-draft' && entry.doc.playlistId === change.playlistId && !written.has(entry.doc.id)) {
+                    await this.kv.deleteValue(categoryId, entry.value.id);
+                }
             }
             if (existing) await this.kv.updateValue(categoryId, existing.value.id, playlistText);
             else await this.kv.createValue(categoryId, playlistText);

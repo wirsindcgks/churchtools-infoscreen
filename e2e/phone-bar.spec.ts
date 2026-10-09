@@ -7,7 +7,7 @@ test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 async function openEditor(page: Page): Promise<void> {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
-    await expect(page.getByTestId('save-status')).toHaveText('Alles gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Alles veröffentlicht');
 }
 
 /** The stage lies whole in the window and no bar covers any of it. */

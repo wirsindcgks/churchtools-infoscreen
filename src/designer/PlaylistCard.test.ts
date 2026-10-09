@@ -29,7 +29,7 @@ const beat = (overrides: Partial<HeartbeatDoc> = {}): HeartbeatDoc => ({
     ...overrides,
 });
 
-function card(heartbeats: Map<string, HeartbeatDoc> | null | undefined) {
+function card(heartbeats: Map<string, HeartbeatDoc> | null | undefined, draft?: { updatedBy: string; updatedAt: string } | null) {
     const context = reactive<StageContext>({
         now: NOW,
         timeZone: 'Europe/Berlin',
@@ -41,7 +41,7 @@ function card(heartbeats: Map<string, HeartbeatDoc> | null | undefined) {
     const Host = defineComponent({
         setup() {
             provideStageContext(context);
-            return () => h(PlaylistCard, { overview, heartbeats, now: NOW });
+            return () => h(PlaylistCard, { overview, heartbeats, now: NOW, draft });
         },
     });
     return mount(Host, { global: { stubs: { RouterLink: { template: '<a><slot /></a>' }, SlideThumb: true } } });
@@ -63,6 +63,19 @@ describe('PlaylistCard – "Läuft gerade" (Plan.md 77)', () => {
         expect(card(new Map()).find(none).exists()).toBe(false);
         expect(card(null).find(none).exists()).toBe(false);
         expect(card(undefined).find(none).exists()).toBe(false);
+    });
+});
+
+describe('PlaylistCard – "Entwurf" (Plan.md 79, Paket E)', () => {
+    it('carries the mark with who and when once a draft exists', () => {
+        const flag = card(null, { updatedBy: 'Anna', updatedAt: '2026-10-05T12:32:00Z' }).get('[data-testid="draft-flag"]');
+        expect(flag.text()).toBe('Entwurf');
+        expect(flag.attributes('title')).toBe('Entwurf von Anna, heute 14:32 – noch nicht veröffentlicht');
+    });
+
+    it('has no mark without a draft', () => {
+        expect(card(null).find('[data-testid="draft-flag"]').exists()).toBe(false);
+        expect(card(null, null).find('[data-testid="draft-flag"]').exists()).toBe(false);
     });
 });
 

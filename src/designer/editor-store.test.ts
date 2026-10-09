@@ -1,5 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { nextTick } from 'vue';
+import { DraftsUnavailableError } from '../store/drafts';
 import { MemoryKv } from '../store/memory-kv';
 import { ScreenRepository } from '../store/screen-repository';
 import { useEditorStore } from './editor-store';
@@ -12,7 +14,7 @@ async function setup() {
     await repository.saveScreen(bundle, { expectedRevision: null, updatedBy: 'Anna' });
     setActivePinia(createPinia());
     const editor = useEditorStore();
-    editor.attach(repository);
+    editor.attach(repository, 'Anna');
     const playlistId = bundle.screen.defaultPlaylistId;
     await editor.open(playlistId);
     return { editor, repository, playlistId, kv };
@@ -125,7 +127,7 @@ describe('editor store', () => {
     it('saves and reloads the same state', async () => {
         const { editor, repository, playlistId } = await setup();
         editor.addBlock('clock');
-        expect(await editor.save('Anna')).toBe(true);
+        expect(await editor.publish()).toBe(true);
         expect(editor.dirty).toBe(false);
         expect(editor.revision).toBe(2);
         const loaded = await repository.loadPlaylist(playlistId);
@@ -137,10 +139,10 @@ describe('editor store', () => {
     it('renames the playlist and refuses to save it without a name', async () => {
         const { editor, repository, playlistId } = await setup();
         editor.renamePlaylist('');
-        expect(await editor.save('Anna')).toBe(false);
+        expect(await editor.publish()).toBe(false);
         expect(editor.error).toMatch(/Namen/);
         editor.renamePlaylist('Gottesdienst');
-        expect(await editor.save('Anna')).toBe(true);
+        expect(await editor.publish()).toBe(true);
         expect((await repository.loadPlaylist(playlistId)).playlist.name).toBe('Gottesdienst');
     });
 
@@ -151,12 +153,12 @@ describe('editor store', () => {
         await repository.savePlaylist(other, { expectedRevision: 1, updatedBy: 'Ben' });
 
         editor.addBlock('text');
-        expect(await editor.save('Anna')).toBe(false);
+        expect(await editor.publish()).toBe(false);
         expect(editor.status).toBe('conflict');
         expect(editor.conflict?.updatedBy).toBe('Ben');
         expect(editor.dirty).toBe(true);
 
-        expect(await editor.overwrite('Anna')).toBe(true);
+        expect(await editor.overwrite()).toBe(true);
         expect((await repository.loadPlaylist(playlistId)).playlist.updatedBy).toBe('Anna');
     });
 
@@ -168,8 +170,8 @@ describe('editor store', () => {
         await repository.savePlaylist(other, { expectedRevision: 1, updatedBy: 'Ben' });
 
         editor.renamePlaylist('Annas Playlist');
-        expect(await editor.save('Anna')).toBe(false);
-        expect(await editor.overwrite('Anna')).toBe(true);
+        expect(await editor.publish()).toBe(false);
+        expect(await editor.overwrite()).toBe(true);
         const stored = await repository.loadPlaylist(playlistId);
         expect(stored.playlist.name).toBe('Annas Playlist');
         expect(stored.slides[0]?.name).toBe('Willkommen');
@@ -180,7 +182,7 @@ describe('editor store', () => {
         const other = await repository.loadPlaylist(playlistId);
         await repository.savePlaylist(other, { expectedRevision: 1, updatedBy: 'Ben' });
         editor.addBlock('text');
-        await editor.save('Anna');
+        await editor.publish();
         await editor.discardAndReload();
         expect(editor.slide?.blocks).toHaveLength(0);
         expect(editor.revision).toBe(2);
@@ -190,11 +192,11 @@ describe('editor store', () => {
         const { editor, repository } = await setup();
         const before = (await repository.listScreens())[0]!;
         editor.addBlock('clock');
-        expect(await editor.save('Anna')).toBe(true);
+        expect(await editor.publish()).toBe(true);
         // An administrator renames the screen meanwhile – against the screen's own revision, no conflict with content.
         await repository.saveScreenSettings(before.id, { name: 'Foyer links' }, { expectedRevision: before.revision, updatedBy: 'Admin' });
         editor.addBlock('text');
-        expect(await editor.save('Anna')).toBe(true);
+        expect(await editor.publish()).toBe(true);
         const loaded = await repository.loadScreen('foyer');
         expect(loaded.screen.name).toBe('Foyer links');
         expect(loaded.screen.revision).toBe(before.revision + 1);
@@ -266,34 +268,33 @@ describe('linked slides (Plan.md 49)', () => {
     it('writes only the slides that changed', async () => {
         const { editor, kv } = await setup();
         editor.addSlide();
-        await editor.save('Anna');
+        await editor.publish();
         kv.writes.length = 0;
         editor.updateSlide({ name: 'Zweite' });
-        expect(await editor.save('Anna')).toBe(true);
+        expect(await editor.publish()).toBe(true);
         expect(kv.writes).toHaveLength(2); // the changed slide and the playlist
     });
 
-    it('names the linked slides a save wrote, and forgets them with the next change', async () => {
+    it('names the linked slides publishing would write, before and not after', async () => {
         const { editor, b } = await linkedSetup();
+        expect(editor.linkedToPublish).toEqual([]);
         editor.addSlide();
-        expect(await editor.save('Anna')).toBe(true);
-        expect(editor.linkedSaved).toEqual([]); // only an own slide was new
+        expect(editor.linkedToPublish).toEqual([]); // only an own slide is new
         editor.selectSlide(editor.slides[0]!.id);
         editor.updateSlide({ name: 'Begrüßung' });
-        expect(await editor.save('Anna')).toBe(true);
-        expect(editor.linkedSaved).toEqual([{ name: 'Begrüßung', playlists: [b.name] }]);
-        editor.updateSlide({ name: 'Hallo' });
-        expect(editor.linkedSaved).toEqual([]);
+        expect(editor.linkedToPublish).toEqual([{ name: 'Begrüßung', playlists: [b.name] }]);
+        expect(await editor.publish()).toBe(true);
+        expect(editor.linkedToPublish).toEqual([]);
     });
 
     it('saves a linked slide twice in a row without a false conflict', async () => {
         const { editor, repository, playlistId, b } = await linkedSetup();
         expect(editor.linkedIn(editor.slide!.id).map((p) => p.id)).toEqual([b.id]);
         editor.updateSlide({ name: 'Eins' });
-        expect(await editor.save('Anna')).toBe(true);
+        expect(await editor.publish()).toBe(true);
         editor.updateSlide({ name: 'Zwei' });
-        expect(await editor.save('Anna')).toBe(true);
-        expect(editor.status).toBe('saved');
+        expect(await editor.publish()).toBe(true);
+        expect(editor.status).toBe('published');
         expect((await repository.loadPlaylist(b.id)).slides[0]?.name).toBe('Zwei');
         expect((await repository.loadPlaylist(playlistId)).slides[0]?.name).toBe('Zwei');
     });
@@ -306,13 +307,13 @@ describe('linked slides (Plan.md 49)', () => {
             { expectedRevision: inB.playlist.revision, updatedBy: 'Ben', now: inFuture(), changedSlideIds: [inB.slides[0]!.id] },
         );
         editor.updateSlide({ name: 'Von Anna' });
-        expect(await editor.save('Anna')).toBe(false);
+        expect(await editor.publish()).toBe(false);
         expect(editor.status).toBe('conflict');
         expect(editor.conflict).toBeNull();
         expect(editor.slideConflict).toMatchObject({ slide: { name: 'Von Ben' }, updatedBy: 'Ben' });
 
         const oldId = editor.slide!.id;
-        expect(await editor.keepAsCopy('Anna')).toBe(true);
+        expect(await editor.keepAsCopy()).toBe(true);
         expect(editor.slide!.id).not.toBe(oldId);
         expect(editor.slide!.name).toBe('Von Anna');
         expect(editor.linkedIn(editor.slide!.id)).toEqual([]);
@@ -331,12 +332,12 @@ describe('linked slides (Plan.md 49)', () => {
         expect(editor.slides).toHaveLength(2);
 
         kv.writes.length = 0;
-        expect(await editor.save('Anna')).toBe(true);
+        expect(await editor.publish()).toBe(true);
         expect(kv.writes).toHaveLength(1); // only the playlist
         editor.selectSlide(source[0]!.id);
         editor.updateSlide({ name: 'Geändert' });
         kv.writes.length = 0;
-        await editor.save('Anna');
+        await editor.publish();
         expect(kv.writes).toHaveLength(2);
     });
 
@@ -493,5 +494,219 @@ describe('linked slides (Plan.md 49)', () => {
         setActivePinia(createPinia());
         expect(useEditorStore().gridSize).toBe(0);
         localStorage.removeItem('infoscreen-designer.grid');
+    });
+});
+
+describe('drafts (Plan.md 79, Paket E)', () => {
+    beforeEach(() => vi.useFakeTimers());
+    afterEach(() => vi.useRealTimers());
+
+    async function draftSetup(options: { category?: boolean } = {}) {
+        const kv = new MemoryKv();
+        const repository = new ScreenRepository(kv);
+        if (options.category !== false) await repository.drafts.ensureCategory();
+        const bundle = createScreenBundle({ name: 'Foyer', slug: 'foyer', orientation: 'landscape' });
+        await repository.saveScreen(bundle, { expectedRevision: null, updatedBy: 'Anna' });
+        setActivePinia(createPinia());
+        const editor = useEditorStore();
+        editor.attach(repository, 'Anna');
+        const playlistId = bundle.screen.defaultPlaylistId;
+        await editor.open(playlistId);
+        return { editor, repository, playlistId, kv };
+    }
+    /** Lets the watch run and the clock move on. */
+    async function wait(ms: number) {
+        await nextTick();
+        await vi.advanceTimersByTimeAsync(ms);
+    }
+
+    it('is off without the category, and publishing goes as before', async () => {
+        const { editor } = await draftSetup({ category: false });
+        expect(editor.draftsOn).toBe(false);
+        expect(editor.draftStatus).toBe('off');
+        editor.updateSlide({ name: 'Neu' });
+        await wait(10_000);
+        expect(editor.draftStatus).toBe('off');
+        expect(await editor.publish()).toBe(true);
+        expect(editor.status).toBe('published');
+    });
+
+    it('starts clean and saves 2 s after the last change, only the differing slides', async () => {
+        const { editor, repository, playlistId } = await draftSetup();
+        expect(editor.draftStatus).toBe('clean');
+        editor.addSlide();
+        await wait(1500);
+        expect(editor.draftStatus).toBe('pending');
+        editor.updateSlide({ name: 'Zweite' });
+        await wait(1500);
+        expect(editor.draftStatus).toBe('pending'); // the change moved the time on
+        await wait(600);
+        expect(editor.draftStatus).toBe('saved');
+        const stored = await repository.drafts.load(playlistId);
+        expect(stored?.playlist.slideIds).toHaveLength(2);
+        expect(stored?.slides.map((s) => s.name)).toEqual(['Zweite']); // the first slide is as published
+        expect(stored?.playlist.updatedBy).toBe('Anna');
+        expect(editor.draftRevision).toBe(1);
+        expect(editor.draftInfo?.updatedBy).toBe('Anna');
+        expect(editor.unsavedDraft).toBe(false);
+    });
+
+    it('waits 5 s after the start of the last save at the earliest', async () => {
+        const { editor, repository, playlistId } = await draftSetup();
+        editor.addSlide();
+        await wait(2100);
+        expect(editor.draftRevision).toBe(1);
+        editor.updateSlide({ name: 'Eins' });
+        await wait(2100);
+        expect(editor.draftRevision).toBe(1); // 2 s are over, 5 s are not
+        await wait(3000);
+        expect(editor.draftRevision).toBe(2);
+        expect((await repository.drafts.load(playlistId))?.slides.some((s) => s.name === 'Eins')).toBe(true);
+    });
+
+    it('discards the draft when everything is undone', async () => {
+        const { editor, repository, playlistId } = await draftSetup();
+        editor.addSlide();
+        await wait(2100);
+        expect(await repository.drafts.load(playlistId)).not.toBeNull();
+        editor.undo();
+        await wait(5100);
+        expect(await repository.drafts.load(playlistId)).toBeNull();
+        expect(editor.draftRevision).toBe(0);
+        expect(editor.draftStatus).toBe('clean');
+        expect(editor.dirty).toBe(false);
+    });
+
+    it('opens the draft over the published state: name, order, changed and new slides', async () => {
+        const { editor, repository, playlistId } = await draftSetup();
+        editor.addSlide();
+        editor.renamePlaylist('Sonntag');
+        editor.selectSlide(editor.slides[0]!.id);
+        editor.updateSlide({ name: 'Anders' });
+        editor.moveSlide(0, 1);
+        const order = editor.playlist!.slideIds.slice();
+        await wait(2100);
+        await editor.open(playlistId);
+        expect(editor.playlist?.name).toBe('Sonntag');
+        expect(editor.playlist?.slideIds).toEqual(order);
+        expect(editor.slides.some((s) => s.name === 'Anders')).toBe(true);
+        expect(editor.slides).toHaveLength(2);
+        expect(editor.dirty).toBe(true);
+        expect(editor.draftFromOpen).toBe(true);
+        expect(editor.draftStatus).toBe('saved');
+        expect(editor.draftInfo?.updatedBy).toBe('Anna');
+        expect(editor.canUndo).toBe(false);
+        // the published state stays untouched
+        expect((await repository.loadPlaylist(playlistId)).playlist.name).not.toBe('Sonntag');
+    });
+
+    it('keeps a linked slide taken over and unchanged through saving and opening', async () => {
+        const { editor, repository, playlistId } = await draftSetup();
+        const other = await repository.createPlaylist({ name: 'Andere', stage: editor.stage }, 'Anna');
+        await editor.open(other.id);
+        const source = (await repository.loadPlaylist(playlistId)).slides;
+        editor.insertSlides(source, { linked: true, from: { id: playlistId, name: 'Foyer' } });
+        await wait(2100);
+        await editor.open(other.id);
+        expect(editor.slides.map((s) => s.id)).toContain(source[0]!.id);
+        expect(editor.linkedIn(source[0]!.id).map((p) => p.id)).toEqual([playlistId]);
+        expect(editor.linkedToPublish.map((l) => l.name)).toEqual([source[0]!.name]);
+    });
+
+    it('publishing drops the draft', async () => {
+        const { editor, repository, playlistId } = await draftSetup();
+        editor.updateSlide({ name: 'Neu' });
+        await wait(2100);
+        expect(await repository.drafts.load(playlistId)).not.toBeNull();
+        editor.updateSlide({ name: 'Neuer' });
+        expect(await editor.publish()).toBe(true);
+        expect(await repository.drafts.load(playlistId)).toBeNull();
+        expect(editor.draftStatus).toBe('clean');
+        expect(editor.draftRevision).toBe(0);
+        expect(editor.unsavedDraft).toBe(false);
+        await wait(10_000);
+        expect(editor.draftStatus).toBe('clean');
+        expect((await repository.loadPlaylist(playlistId)).slides[0]?.name).toBe('Neuer');
+    });
+
+    it('lets the next save drop the draft when dropping it after publishing failed', async () => {
+        const { editor, repository, playlistId } = await draftSetup();
+        editor.updateSlide({ name: 'Neu' });
+        await wait(2100);
+        const discard = vi.spyOn(repository.drafts, 'discard').mockRejectedValueOnce(new Error('weg'));
+        expect(await editor.publish()).toBe(true);
+        expect(discard).toHaveBeenCalledTimes(1);
+        expect(await repository.drafts.load(playlistId)).not.toBeNull();
+        await wait(5100);
+        expect(await repository.drafts.load(playlistId)).toBeNull();
+        expect(editor.draftStatus).toBe('clean');
+    });
+
+    it('reports a draft conflict and keeps my draft with the other revision', async () => {
+        const { editor, repository, playlistId } = await draftSetup();
+        editor.updateSlide({ name: 'Von Anna' });
+        await repository.drafts.save(
+            { playlistId, name: 'Fremd', slideIds: editor.playlist!.slideIds.slice(), slides: [] },
+            { expectedRevision: 0, updatedBy: 'Ben' },
+        );
+        await wait(2100);
+        expect(editor.draftStatus).toBe('conflict');
+        expect(editor.draftConflict).toMatchObject({ revision: 1, updatedBy: 'Ben' });
+        await wait(10_000);
+        expect(editor.draftStatus).toBe('conflict'); // no more tries
+        expect(await editor.keepMyDraft()).toBe(true);
+        expect(editor.draftStatus).toBe('saved');
+        expect(editor.draftRevision).toBe(2);
+        expect(editor.draftConflict).toBeNull();
+        expect((await repository.drafts.load(playlistId))?.slides[0]?.name).toBe('Von Anna');
+    });
+
+    it('turns the drafts off for good when the right is missing, and publishing still goes', async () => {
+        const { editor, repository } = await draftSetup();
+        vi.spyOn(repository.drafts, 'save').mockRejectedValue(new DraftsUnavailableError());
+        editor.updateSlide({ name: 'Neu' });
+        await wait(2100);
+        expect(editor.draftsOn).toBe(false);
+        expect(editor.draftStatus).toBe('off');
+        expect(await editor.publish()).toBe(true);
+    });
+
+    it('shows an error and tries again with the next change', async () => {
+        const { editor, repository } = await draftSetup();
+        const save = vi.spyOn(repository.drafts, 'save').mockRejectedValueOnce(new Error('kaputt'));
+        editor.updateSlide({ name: 'Neu' });
+        await wait(2100);
+        expect(editor.draftStatus).toBe('error');
+        expect(editor.draftError).toBe('kaputt');
+        editor.updateSlide({ name: 'Neuer' });
+        await wait(5100);
+        expect(save).toHaveBeenCalledTimes(2);
+        expect(editor.draftStatus).toBe('saved');
+        expect(editor.draftError).toBeNull();
+    });
+
+    it('discards the draft and loads the published state', async () => {
+        const { editor, repository, playlistId } = await draftSetup();
+        const before = editor.slide!.name;
+        editor.updateSlide({ name: 'Neu' });
+        await wait(2100);
+        await editor.discardAndReload();
+        expect(await repository.drafts.load(playlistId)).toBeNull();
+        expect(editor.slide!.name).toBe(before);
+        expect(editor.dirty).toBe(false);
+        expect(editor.draftStatus).toBe('clean');
+    });
+
+    it('flushes at once and reports a conflict without a name when the draft is gone', async () => {
+        const { editor, repository, playlistId } = await draftSetup();
+        editor.updateSlide({ name: 'Neu' });
+        await nextTick();
+        expect(await editor.flushDraft()).toBe(true);
+        expect(editor.draftRevision).toBe(1);
+        await repository.drafts.discard(playlistId);
+        editor.updateSlide({ name: 'Neuer' });
+        await nextTick();
+        expect(await editor.flushDraft()).toBe(false);
+        expect(editor.draftConflict).toEqual({ revision: 0, updatedBy: '', updatedAt: '' });
     });
 });

@@ -19,7 +19,7 @@ test('an open player follows what the designer saves, without reloading', async 
     await designer.getByTestId('text-input').fill('Willkommen zum Test');
     await designer.getByTestId('text-input').blur();
     await designer.getByTestId('save').click();
-    await expect(designer.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(designer.getByTestId('save-status')).toHaveText('Veröffentlicht');
     await expect(player.getByText('Willkommen zum Test')).toBeVisible({ timeout: 5_000 });
 
     // Slide 1 down to 2 seconds, and a new fourth slide with its own text.
@@ -32,7 +32,7 @@ test('an open player follows what the designer saves, without reloading', async 
     await designer.getByTestId('text-input').fill('Neue Slide 4');
     await designer.getByTestId('text-input').blur();
     await designer.getByTestId('save').click();
-    await expect(designer.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(designer.getByTestId('save-status')).toHaveText('Veröffentlicht');
 
     // The player keeps its position and reaches slide 4 within one round (2 + 10 + 12 s).
     await expect(player.getByText('Neue Slide 4')).toBeVisible({ timeout: 40_000 });
