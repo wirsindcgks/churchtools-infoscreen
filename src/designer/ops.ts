@@ -154,6 +154,28 @@ export const PALETTE: [BlockType, string][] = (Object.entries(BLOCK_LABELS) as [
     a[1].localeCompare(b[1], LOCALE),
 );
 
+export type TextLevel = 'heading' | 'subtitle' | 'body';
+
+/** The three text levels at a stage whose shorter side is 1080 px (Plan.md 79, C8). */
+const TEXT_LEVELS_1080: Record<TextLevel, { fontSize: number; fontWeight: 400 | 600 | 700 }> = {
+    heading: { fontSize: 96, fontWeight: 700 },
+    subtitle: { fontSize: 60, fontWeight: 600 },
+    body: { fontSize: 44, fontWeight: 400 },
+};
+
+/** Size and weight of each text level, scaled by the shorter side of the stage – the same for landscape and portrait. */
+export function textLevels(stage: { width: number; height: number }): Record<TextLevel, { fontSize: number; fontWeight: 400 | 600 | 700 }> {
+    const short = Math.min(stage.width, stage.height);
+    const level = (l: TextLevel) => ({ fontSize: Math.round((TEXT_LEVELS_1080[l].fontSize * short) / 1080), fontWeight: TEXT_LEVELS_1080[l].fontWeight });
+    return { heading: level('heading'), subtitle: level('subtitle'), body: level('body') };
+}
+
+/** The level whose size and weight both match exactly, or null. */
+export function levelOf(style: { fontSize: number; fontWeight: number }, stage: { width: number; height: number }): TextLevel | null {
+    const levels = textLevels(stage);
+    return (Object.keys(levels) as TextLevel[]).find((l) => levels[l].fontSize === style.fontSize && levels[l].fontWeight === style.fontWeight) ?? null;
+}
+
 /** A new block with sensible defaults, centred on the stage. */
 export function createBlock(
     type: BlockType,
@@ -193,7 +215,7 @@ export function createBlock(
     const textStyle = (fontSize: number, extra: Partial<TextStyle> = {}) => style(theme.font, fontSize, ink, extra);
     switch (type) {
         case 'text':
-            return { ...frame, type, text: t.blocks.defaultText, style: textStyle(72) };
+            return { ...frame, type, text: t.blocks.defaultText, style: textStyle(textLevels(stage).heading.fontSize, { fontWeight: textLevels(stage).heading.fontWeight }) };
         case 'image':
             return { ...frame, type, mediaId: '', fit: 'contain' };
         case 'shape':

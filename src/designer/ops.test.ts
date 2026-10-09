@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { serialize } from '../model/read';
 import { textBlock, makeSlide } from '../model/testing';
-import { BLOCK_LABELS, PALETTE, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, duplicateSlide, fitToStage, freeSpot, move, reorder, slugify } from './ops';
+import { BLOCK_LABELS, PALETTE, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, levelOf, textLevels, duplicateSlide, fitToStage, freeSpot, move, reorder, slugify } from './ops';
 import { History } from './history';
 import { DEFAULT_THEME, type Block, type BlockType } from '../model/schema';
 
@@ -231,5 +231,37 @@ describe('the palette (Plan.md 47)', () => {
         expect(fitted.width / fitted.height).toBeCloseTo(2, 1);
         const same = { width: 400, height: 300 };
         expect(fitToStage(same, stage)).toBe(same);
+    });
+});
+
+describe('text levels (Plan.md 79, C8)', () => {
+    it('are 96/700, 60/600 and 44/400 at 1080, landscape and portrait alike', () => {
+        const expected = {
+            heading: { fontSize: 96, fontWeight: 700 },
+            subtitle: { fontSize: 60, fontWeight: 600 },
+            body: { fontSize: 44, fontWeight: 400 },
+        };
+        expect(textLevels({ width: 1920, height: 1080 })).toEqual(expected);
+        expect(textLevels({ width: 1080, height: 1920 })).toEqual(expected);
+    });
+    it('scale with the shorter side', () => {
+        expect(textLevels({ width: 1280, height: 720 })).toEqual({
+            heading: { fontSize: 64, fontWeight: 700 },
+            subtitle: { fontSize: 40, fontWeight: 600 },
+            body: { fontSize: 29, fontWeight: 400 },
+        });
+    });
+    it('levelOf needs size and weight to fit', () => {
+        const stage = { width: 1920, height: 1080 };
+        expect(levelOf({ fontSize: 96, fontWeight: 700 }, stage)).toBe('heading');
+        expect(levelOf({ fontSize: 60, fontWeight: 600 }, stage)).toBe('subtitle');
+        expect(levelOf({ fontSize: 44, fontWeight: 400 }, stage)).toBe('body');
+        expect(levelOf({ fontSize: 45, fontWeight: 400 }, stage)).toBeNull();
+        expect(levelOf({ fontSize: 44, fontWeight: 600 }, stage)).toBeNull();
+        expect(levelOf({ fontSize: 64, fontWeight: 700 }, { width: 1280, height: 720 })).toBe('heading');
+    });
+    it('a new text block begins as a heading', () => {
+        const block = createBlock('text', { width: 1920, height: 1080 });
+        expect(block.type === 'text' && block.style).toMatchObject({ fontSize: 96, fontWeight: 700 });
     });
 });
