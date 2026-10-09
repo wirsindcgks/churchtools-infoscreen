@@ -14,6 +14,7 @@ import {
     type TextStyle,
     type ThemeDoc,
 } from '../model/schema';
+import { LOCALE } from '../i18n/player';
 
 /** Deep copy of plain JSON data; unlike structuredClone it also accepts Vue proxies. */
 export function cloneJson<T>(value: T): T {
@@ -148,7 +149,7 @@ export const BLOCK_ICONS: Record<BlockType, IconName> = {
 
 /** Every block type in German alphabetical order (Plan.md 47): new types find their place by their label. */
 export const PALETTE: [BlockType, string][] = (Object.entries(BLOCK_LABELS) as [BlockType, string][]).sort((a, b) =>
-    a[1].localeCompare(b[1], 'de'),
+    a[1].localeCompare(b[1], LOCALE),
 );
 
 /** A new block with sensible defaults, centred on the stage. */

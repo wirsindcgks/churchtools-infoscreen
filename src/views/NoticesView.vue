@@ -25,6 +25,7 @@ import WeekTimeline, { type TimelineDay } from '../designer/WeekTimeline.vue';
 import { bannerKey, DEFAULT_THEME, type Banner, type ScreenDoc, type ThemeDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
+import { LOCALE } from '../i18n/player';
 
 const repository = shallowRef<ScreenRepository | null>(null);
 const author = ref<string | null>(null);
@@ -103,7 +104,7 @@ const needle = computed(() => {
     return { dayIndex: 0, minute: p.hour * 60 + p.minute };
 });
 const dayFormat = computed(
-    () => new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' }),
+    () => new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' }),
 );
 /** The strips of the running notices; they change with the day, the screens and the appointments, not with the clock's tick. */
 const weeks = computed(

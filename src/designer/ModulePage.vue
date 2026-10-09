@@ -7,6 +7,7 @@
  * on every change of section.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { LOCALE } from '../i18n/player';
 import { administrator, isAdministrator } from './administrator';
 import AppBar from './AppBar.vue';
 import ModuleSidebar from './ModuleSidebar.vue';
@@ -35,7 +36,7 @@ onBeforeUnmount(() => window.removeEventListener('resize', measure));
 
 <template>
     <!-- "de": names on a tile may need to hyphenate (Plan.md 44, M5) – we do not know what the host page sets. -->
-    <div ref="root" lang="de" class="infoscreen-designer module-page" :style="{ minHeight: `calc(100vh - ${top}px)` }">
+    <div ref="root" :lang="LOCALE" class="infoscreen-designer module-page" :style="{ minHeight: `calc(100vh - ${top}px)` }">
         <AppBar :current="current" :show-setup="admin">
             <template #actions><slot name="actions" /></template>
         </AppBar>

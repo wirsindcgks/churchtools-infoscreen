@@ -13,6 +13,7 @@ import type { PreparedImage } from './scale';
 import { readVideoMetadata, videoProblem, type VideoMetadata } from './video';
 import * as wiki from './wiki';
 import type { WikiCategory, WikiFile, WikiPage } from './wiki';
+import { LOCALE } from '../i18n/player';
 
 export { VIDEO_MAX_BYTES, VIDEO_TYPES } from './video';
 
@@ -55,11 +56,11 @@ export function usageLines(uses: readonly MediaUse[]): string[] {
 
 /** The images that match the search – in their name or where they are shown – and the chosen chip. */
 export function filterMedia(items: readonly MediaItem[], query: string, show: MediaShow): MediaItem[] {
-    const needle = query.trim().toLocaleLowerCase('de');
+    const needle = query.trim().toLocaleLowerCase(LOCALE);
     return items.filter(
         (item) =>
             (show === 'all' || (show === 'used') === item.uses.length > 0) &&
-            (!needle || [item.name, ...usageLines(item.uses)].join(' ').toLocaleLowerCase('de').includes(needle)),
+            (!needle || [item.name, ...usageLines(item.uses)].join(' ').toLocaleLowerCase(LOCALE).includes(needle)),
     );
 }
 

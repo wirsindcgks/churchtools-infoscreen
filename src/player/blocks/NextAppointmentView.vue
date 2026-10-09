@@ -8,6 +8,7 @@ import { formatDate, placeLine, servicesLine, sizedImageUrl, textStyle, timeRang
 import { imageBox, nextLayout } from '../theme';
 import CalendarBadge from './CalendarBadge.vue';
 import DateTile from './DateTile.vue';
+import { tp } from '../../i18n/player';
 
 const props = defineProps<{ block: Extract<Block, { type: 'next-appointment' }> }>();
 const context = useStageContext();
@@ -91,15 +92,15 @@ const imageStyle = computed(() =>
             </div>
             <img v-if="image" class="hero-image" :src="image" :style="{ ...imageStyle, ...vertical }" alt="" data-testid="next-image">
         </template>
-        <div v-else class="hero-text hero-subtitle" :style="vertical">Derzeit ist kein Termin geplant.</div>
+        <div v-else class="hero-text hero-subtitle" :style="vertical">{{ tp.appointments.nonePlanned }}</div>
     </div>
     <div v-else class="next" :class="{ 'next--image': image }" :style="textStyle(block.style)">
         <img v-if="image" class="image" :src="image" :style="{ ...imageStyle, ...vertical }" alt="" data-testid="next-image">
         <div v-if="next" class="text" :style="vertical">
-            <div class="label">Nächster Termin</div>
+            <div class="label">{{ tp.appointments.nextLabel }}</div>
             <div class="title">{{ next.title }}</div>
             <div class="meta">{{ formatDate(next.start, context.timeZone) }}</div>
-            <div v-if="!next.allDay" class="meta">{{ next.startTime }} Uhr</div>
+            <div v-if="!next.allDay" class="meta">{{ tp.time.clock(next.startTime) }}</div>
             <div v-if="next.subtitle" class="meta">{{ next.subtitle }}</div>
             <div v-if="classicPlace" class="meta place" data-testid="next-place">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z" /><circle cx="12" cy="10" r="2.3" /></svg>
@@ -110,7 +111,7 @@ const imageStyle = computed(() =>
                 <span>{{ people }}</span>
             </div>
         </div>
-        <div v-else class="text meta" :style="vertical">Derzeit ist kein Termin geplant.</div>
+        <div v-else class="text meta" :style="vertical">{{ tp.appointments.nonePlanned }}</div>
     </div>
 </template>
 

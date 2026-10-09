@@ -8,6 +8,7 @@ import { startOfZonedDay } from '../appointments/zoned';
 import type { RoomEntry } from '../model/schema';
 import { formatTime } from '../player/format';
 import type { RoomBooking, RoomBookings } from './normalize';
+import { tp } from '../i18n/player';
 
 export interface RoomLine {
     key: string;
@@ -41,14 +42,14 @@ export interface DoorSign {
 export const DOOR_NEXT = 3;
 
 export function timeText(booking: Pick<RoomBooking, 'allDay' | 'start' | 'end'>, timeZone: string): string {
-    return booking.allDay ? 'ganztägig' : `${formatTime(booking.start, timeZone)}–${formatTime(booking.end, timeZone)}`;
+    return booking.allDay ? tp.time.allDay : `${formatTime(booking.start, timeZone)}–${formatTime(booking.end, timeZone)}`;
 }
 
 function lineOf(booking: RoomBooking, entry: RoomEntry, now: Date, timeZone: string, tomorrowStart: number): RoomLine {
     return {
         key: `${booking.resourceId}-${booking.id}-${booking.start.getTime()}`,
         time: timeText(booking, timeZone),
-        title: entry.showTitles && booking.title ? booking.title : 'Belegt',
+        title: entry.showTitles && booking.title ? booking.title : tp.rooms.busy,
         now: booking.start <= now && now < booking.end,
         tomorrow: booking.start.getTime() >= tomorrowStart,
     };
@@ -101,14 +102,14 @@ export function doorSign(
         name: room.name,
         hint: entry.hint.trim(),
         current: running
-            ? { ...lineOf(running, entry, now, timeZone, tomorrowStart), until: running.allDay ? 'ganztägig' : `bis ${formatTime(running.end, timeZone)}` }
+            ? { ...lineOf(running, entry, now, timeZone, tomorrowStart), until: running.allDay ? tp.time.allDay : tp.time.until(formatTime(running.end, timeZone)) }
             : null,
-        freeUntil: !running && nextToday ? `bis ${formatTime(nextToday.start, timeZone)}` : null,
+        freeUntil: !running && nextToday ? tp.time.until(formatTime(nextToday.start, timeZone)) : null,
         next: rest.slice(0, DOOR_NEXT).map((b) => lineOf(b, entry, now, timeZone, tomorrowStart)),
     };
 }
 
 /** What the overview says when no room has a booking left. */
 export function emptyText(days: 1 | 2): string {
-    return days === 2 ? 'Heute und morgen sind keine Räume belegt.' : 'Heute sind keine Räume belegt.';
+    return days === 2 ? tp.rooms.emptyTodayTomorrow : tp.rooms.emptyToday;
 }

@@ -5,6 +5,7 @@ import { zonedDateKey } from '../appointments/zoned';
 import { isValidHomepageHash, normalizeHomepageList, type HomepageEntry } from '../groups/normalize';
 import type { PostResponse } from '../posts/normalize';
 import { BOOKING_CONFIRMED, type ResourceMasterdata } from '../rooms/normalize';
+import { LOCALE } from '../i18n/player';
 
 /**
  * The instance time zone. Readable anonymously and therefore by the device
@@ -147,7 +148,7 @@ export async function fetchPostGroups(): Promise<PostGroup[]> {
     return groups
         .filter((g) => g.settings?.postsEnabled)
         .map((g) => ({ id: g.id, name: g.name, visibility: g.settings?.visibility ?? 'restricted' }))
-        .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+        .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
 }
 
 /** The header that marks a request of `getAnonymously`; the dev proxy sends such requests without the login token. */
@@ -169,7 +170,7 @@ async function getAnonymously<T>(baseUrl: string, path: string, fetcher: typeof 
         credentials: 'omit',
         // Marks the request as anonymous, for the dev proxy and the e2e tests; ChurchTools ignores the header (G53).
         // Not `X-OnlyAuthenticated`: ChurchTools answers 401 to any value of it, `0` included.
-        headers: { Accept: 'application/json', 'Accept-Language': 'de', [ANONYMOUS_HEADER]: '1' },
+        headers: { Accept: 'application/json', 'Accept-Language': LOCALE.split('-')[0]!, [ANONYMOUS_HEADER]: '1' },
     });
     if (!response.ok) {
         throw Object.assign(new Error(`${path}: HTTP ${response.status}`), {

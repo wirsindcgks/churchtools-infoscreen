@@ -52,6 +52,7 @@ import {
     type ThemeDoc,
 } from '../model/schema';
 import type { KvBackend, KvCategory, KvValue } from './kv';
+import { LOCALE, tp } from '../i18n/player';
 
 export const CATEGORIES = {
     screens: { name: 'Screens', description: 'Infoscreen: ein Index-Wert je Screen' },
@@ -82,7 +83,7 @@ export const ORPHAN_GRACE_MS = 60 * 60 * 1000;
 
 export class ScreenNotFoundError extends Error {
     constructor(readonly slug: string) {
-        super(`Es gibt keinen Screen „${slug}".`);
+        super(tp.screenNotFound(slug));
         this.name = 'ScreenNotFoundError';
     }
 }
@@ -392,7 +393,7 @@ export class ScreenRepository {
     /** The screens as they run – with their schedules applied – sorted by name. */
     async listScreens(): Promise<ScreenDoc[]> {
         const { screens } = await this.readRunningScreens();
-        return screens.map((s) => s.doc).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+        return screens.map((s) => s.doc).sort((a, b) => a.name.localeCompare(b.name, LOCALE));
     }
 
     /**
@@ -402,7 +403,7 @@ export class ScreenRepository {
      */
     async listScreenOverviews(): Promise<ScreenOverview[]> {
         const running = await this.readRunningScreens();
-        const screens = running.screens.map((s) => s.doc).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+        const screens = running.screens.map((s) => s.doc).sort((a, b) => a.name.localeCompare(b.name, LOCALE));
         if (!screens.length) return [];
         const playlists = new Map(running.playlists.map((p) => [p.doc.id, p.doc]));
         const slides = new Map((await this.readSlides()).docs.map((s) => [s.doc.id, s.doc]));
@@ -608,7 +609,7 @@ export class ScreenRepository {
                 o.media = media.filter((m) => ids.includes(m.id));
             }
         }
-        return overviews.sort((a, b) => a.playlist.name.localeCompare(b.playlist.name, 'de'));
+        return overviews.sort((a, b) => a.playlist.name.localeCompare(b.playlist.name, LOCALE));
     }
 
     /** One playlist with its slides and media – what the editor opens. */
@@ -635,7 +636,7 @@ export class ScreenRepository {
             const others = running.playlists
                 .filter((p) => p.doc.id !== id && p.doc.slideIds.includes(sid))
                 .map((p) => ({ id: p.doc.id, name: withPlaylistDefaults(p.doc, screens).name }))
-                .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+                .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
             if (others.length) sharedWith[sid] = others;
         }
         return {
@@ -1213,5 +1214,5 @@ function screensShowing(playlistId: string, screens: readonly ScreenDoc[]): Scre
     return screens
         .filter((s) => playlistIdsOf(s).includes(playlistId))
         .map((s) => ({ id: s.id, slug: s.slug, name: s.name }))
-        .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+        .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
 }

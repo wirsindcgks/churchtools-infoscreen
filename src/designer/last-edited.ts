@@ -1,3 +1,5 @@
+import { LOCALE } from '../i18n/player';
+
 /** What a tile says about the last change: when and by whom, each with a tooltip (Plan.md 66). */
 export interface LastEdited {
     /** "05.10.2026, 14:32"; null without a valid date. */
@@ -24,7 +26,7 @@ export function lastEdited(
     const name = by?.trim() || null;
     if (!valid && !name) return null;
     const format = (options: Intl.DateTimeFormatOptions) =>
-        new Intl.DateTimeFormat('de-DE', { timeZone, ...options }).format(date!);
+        new Intl.DateTimeFormat(LOCALE, { timeZone, ...options }).format(date!);
     return {
         when: valid
             ? format({ day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })

@@ -28,6 +28,7 @@ import { allowedServiceIds, appointmentServicesInUse, serviceChoices, type Servi
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
+import { LOCALE } from '../i18n/player';
 
 const route = useRoute();
 const playlistId = String(route.params.id);
@@ -334,7 +335,7 @@ const slideConflictText = computed(() => {
     if (!c) return '';
     const where = c.playlist ? ` in „${c.playlist}"` : '';
     const who = c.updatedBy ? ` von ${c.updatedBy}` : '';
-    const when = c.updatedAt ? ` (${new Date(c.updatedAt).toLocaleString('de-DE')})` : '';
+    const when = c.updatedAt ? ` (${new Date(c.updatedAt).toLocaleString(LOCALE)})` : '';
     return `„${c.slide.name}" wurde${where}${who} geändert${when}, während du sie bearbeitet hast. Gespeichert wurde nichts.`;
 });
 
@@ -719,7 +720,7 @@ function onKey(event: KeyboardEvent): void {
                     {{ editor.conflict.updatedBy ?? 'Jemand' }} hat „{{ editor.conflict.name }}" gespeichert, während du
                     ihn bearbeitet hast
                     <template v-if="editor.conflict.updatedAt">
-                        ({{ new Date(editor.conflict.updatedAt).toLocaleString('de-DE') }})
+                        ({{ new Date(editor.conflict.updatedAt).toLocaleString(LOCALE) }})
                     </template>.
                 </p>
                 <p>Beide Fassungen lassen sich nicht zusammenführen. Welche soll gelten?</p>

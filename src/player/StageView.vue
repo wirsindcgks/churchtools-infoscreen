@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
+import { LOCALE } from '../i18n/player';
 import type { StageFit } from './stage';
 
 const props = defineProps<{ width: number; height: number; fit: StageFit }>();
@@ -15,7 +16,7 @@ const style = computed(() => ({
     <div class="stage" :style="style">
         <!-- `all: initial` drops the page's language as well, and on the stage itself it outranks `lang`:
              set it again inside, or German titles do not hyphenate. -->
-        <div class="language" lang="de"><slot /></div>
+        <div class="language" :lang="LOCALE"><slot /></div>
     </div>
 </template>
 

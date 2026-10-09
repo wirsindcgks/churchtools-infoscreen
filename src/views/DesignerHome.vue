@@ -29,6 +29,7 @@ import { setScreenCounts } from '../designer/screen-counts';
 import { usePreview } from '../designer/usePreview';
 import { getRepository, resetDemoStore } from '../store/backend';
 import type { ScreenOverview, ScreenRepository } from '../store/screen-repository';
+import { LOCALE } from '../i18n/player';
 
 const router = useRouter();
 const route = useRoute();
@@ -58,11 +59,11 @@ const ready = computed(() => author.value !== null && repository.value !== null)
 const isPortrait = (o: ScreenOverview) => o.screen.stage.height > o.screen.stage.width;
 
 const shown = computed(() => {
-    const needle = query.value.trim().toLocaleLowerCase('de');
+    const needle = query.value.trim().toLocaleLowerCase(LOCALE);
     return overviews.value.filter(
         (o) =>
             (filter.value === 'all' || (filter.value === 'portrait') === isPortrait(o)) &&
-            (!needle || `${o.screen.name} ${o.screen.slug}`.toLocaleLowerCase('de').includes(needle)),
+            (!needle || `${o.screen.name} ${o.screen.slug}`.toLocaleLowerCase(LOCALE).includes(needle)),
     );
 });
 

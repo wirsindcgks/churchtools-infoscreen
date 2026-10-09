@@ -10,6 +10,7 @@ import type { Appointment } from '../../appointments/normalize';
 import { formatDate, formatShortDate, WIDEST_DATE, placeLine, servicesLine, timeRange } from '../format';
 import CalendarBadge from './CalendarBadge.vue';
 import DateTile from './DateTile.vue';
+import { tp } from '../../i18n/player';
 
 /** `measuring`: a row of the hidden copy – not to be found as one that shows. */
 const props = defineProps<{
@@ -64,7 +65,7 @@ const people = computed(() => servicesLine(props.appointment, props.services));
     </li>
     <li v-else class="row">
         <span class="when">{{ formatShortDate(appointment.start, timeZone) }}</span>
-        <span class="time">{{ appointment.allDay ? 'ganztägig' : appointment.startTime }}</span>
+        <span class="time">{{ appointment.allDay ? tp.time.allDay : appointment.startTime }}</span>
         <span class="title">{{ appointment.title }}</span>
     </li>
 </template>

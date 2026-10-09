@@ -14,6 +14,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Block } from '../../model/schema';
 import { useStageContext } from '../context';
 import { videoSrc } from '../video';
+import { tp } from '../../i18n/player';
 
 const props = defineProps<{ block: Extract<Block, { type: 'video' }> }>();
 const context = useStageContext();
@@ -123,12 +124,12 @@ onBeforeUnmount(() => {
             data-testid="video-sound-on"
             @click="soundOn"
         >
-            Ton an
+            {{ tp.video.soundOn }}
         </button>
     </div>
     <!-- A calm placeholder, never a broken player on a TV; the designer says what is missing. -->
     <div v-else class="placeholder" data-testid="video-placeholder">
-        <template v-if="!block.mediaId && !playing">Video wählen</template>
+        <template v-if="!block.mediaId && !playing">{{ tp.video.choose }}</template>
     </div>
 </template>
 

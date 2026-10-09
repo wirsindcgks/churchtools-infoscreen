@@ -1,6 +1,7 @@
 import type { HeartbeatDoc } from '../model/heartbeat';
 import type { ScreenRef } from '../store/screen-repository';
 import { lastEdited } from './last-edited';
+import { LOCALE } from '../i18n/player';
 
 /**
  * A screen counts as online while its last sign of life is at most this old: twice the longest jittered
@@ -63,7 +64,7 @@ const quoted = (live: LiveScreen[]) => live.map((l) => `„${l.screen.name}“`)
 /** "Läuft gerade auf „Foyer links“ – laut Lebenszeichen von 14:32"; with several screens, the youngest sign. */
 export function liveTitle(live: LiveScreen[], timeZone: string): string {
     const youngest = Math.max(...live.map((l) => Date.parse(l.at)));
-    const time = new Intl.DateTimeFormat('de-DE', { timeZone, hour: '2-digit', minute: '2-digit' }).format(youngest);
+    const time = new Intl.DateTimeFormat(LOCALE, { timeZone, hour: '2-digit', minute: '2-digit' }).format(youngest);
     return `Läuft gerade auf ${quoted(live)} – laut Lebenszeichen von ${time}`;
 }
 

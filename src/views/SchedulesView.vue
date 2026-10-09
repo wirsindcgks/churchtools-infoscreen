@@ -26,6 +26,7 @@ import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
+import { LOCALE } from '../i18n/player';
 
 const repository = shallowRef<ScreenRepository | null>(null);
 const author = ref<string | null>(null);
@@ -56,12 +57,12 @@ const { context, calendars, hiddenCalendars } = usePreview(
 );
 
 const shown = computed(() => {
-    const needle = query.value.trim().toLocaleLowerCase('de');
+    const needle = query.value.trim().toLocaleLowerCase(LOCALE);
     if (!needle) return screens.value;
     return screens.value.filter((s) =>
         [s.name, ...[s.defaultPlaylistId, ...s.schedule.map((r) => r.playlistId)].map(playlistName)]
             .join(' ')
-            .toLocaleLowerCase('de')
+            .toLocaleLowerCase(LOCALE)
             .includes(needle),
     );
 });
@@ -120,7 +121,7 @@ const weeks = computed(
         ),
 );
 const dayFormat = computed(
-    () => new Intl.DateTimeFormat('de-DE', { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' }),
+    () => new Intl.DateTimeFormat(LOCALE, { timeZone: 'UTC', weekday: 'long', day: 'numeric', month: 'long' }),
 );
 
 function colorOf(screen: ScreenDoc, playlistId: string): string {

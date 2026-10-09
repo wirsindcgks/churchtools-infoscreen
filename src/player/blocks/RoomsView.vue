@@ -13,6 +13,7 @@ import { useStageContext } from '../context';
 import { textStyle } from '../format';
 import { PAGE_SECONDS, pageInterval, paginateByHeight } from '../paging';
 import RoomRow from './RoomRow.vue';
+import { tp } from '../../i18n/player';
 
 const props = defineProps<{ block: Extract<Block, { type: 'rooms' }>; slideSeconds?: number }>();
 const context = useStageContext();
@@ -99,7 +100,7 @@ onBeforeUnmount(() => clearInterval(timer));
 <template>
     <!-- Nothing chosen yet: a calm placeholder, like the gallery. -->
     <div v-if="block.rooms.length === 0" class="placeholder" :style="textStyle(block.style)" data-testid="rooms-placeholder">
-        Räume wählen
+        {{ tp.rooms.choose }}
     </div>
 
     <div v-else-if="block.layout === 'door'" class="door" :style="textStyle(block.style)" data-testid="rooms-door">
@@ -107,28 +108,28 @@ onBeforeUnmount(() => clearInterval(timer));
             <div class="door-name" data-testid="door-name">{{ door.name }}</div>
             <div v-if="door.hint" class="door-hint" data-testid="door-hint">{{ door.hint }}</div>
             <div class="door-state" :class="door.current ? 'door-state--busy' : 'door-state--free'" data-testid="door-state">
-                <div class="door-label">Jetzt</div>
+                <div class="door-label">{{ tp.rooms.now }}</div>
                 <template v-if="door.current">
                     <div class="door-title" data-testid="door-current">{{ door.current.title }}</div>
                     <div class="door-until">{{ door.current.until }}</div>
                 </template>
                 <template v-else>
-                    <div class="door-title" data-testid="door-current">Frei</div>
+                    <div class="door-title" data-testid="door-current">{{ tp.rooms.free }}</div>
                     <div v-if="door.freeUntil" class="door-until">{{ door.freeUntil }}</div>
                 </template>
             </div>
             <div v-if="door.next.length" class="door-next" data-testid="door-next">
-                <div class="door-label">Danach</div>
+                <div class="door-label">{{ tp.rooms.next }}</div>
                 <ul class="door-list">
                     <li v-for="line in door.next" :key="line.key" class="door-line" data-testid="door-line">
-                        <span v-if="line.tomorrow" class="tomorrow">Morgen</span>
+                        <span v-if="line.tomorrow" class="tomorrow">{{ tp.time.tomorrow }}</span>
                         <span class="time">{{ line.time }}</span>
                         <span class="title">{{ line.title }}</span>
                     </li>
                 </ul>
             </div>
         </template>
-        <div v-else class="door-gone" data-testid="door-gone">Raum nicht verfügbar</div>
+        <div v-else class="door-gone" data-testid="door-gone">{{ tp.rooms.gone }}</div>
     </div>
 
     <div v-else class="paged" :style="textStyle(block.style)" data-testid="rooms-overview">
@@ -140,7 +141,7 @@ onBeforeUnmount(() => clearInterval(timer));
             <ul :key="page" class="list">
                 <RoomRow v-for="r in shown" :key="r.resourceId" :row="r" />
                 <!-- A day without bookings is a normal state and must look like one. -->
-                <li v-if="unreadable" class="empty" data-testid="rooms-unreadable">Raumbelegung nicht verfügbar</li>
+                <li v-if="unreadable" class="empty" data-testid="rooms-unreadable">{{ tp.rooms.unreadable }}</li>
                 <li v-else-if="rows.length === 0" class="empty" data-testid="rooms-empty">{{ emptyText(block.days) }}</li>
             </ul>
         </Transition>
