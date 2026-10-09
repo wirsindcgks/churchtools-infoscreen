@@ -4,42 +4,25 @@
  * (Plan.md 79, B3). The editor has its own frame – it needs the whole width. Pages show the frame at once and
  * load inside it: a page that shows "Lade …" instead would look like a reload on every change of section.
  */
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { ref } from 'vue';
 import { LOCALE } from '../i18n/player';
 import ModuleSidebar from './ModuleSidebar.vue';
+import { useOffsetTop } from './useOffsetTop';
 
 /**
  * The page background reaches the bottom of the window, below the navigation
  * of ChurchTools, however little the page holds. `100%` would need a height
- * on the host page's elements, which we do not style.
+ * on the host page's elements, which we do not style. The navigation stays
+ * where it is when the page scrolls, so the offset holds still (the sidebar
+ * reads it as `--page-top`).
  */
 const root = ref<HTMLElement | null>(null);
-const top = ref(0);
-/** How much of the host page's navigation still stands above the module in the window: the sidebar ends at the window's lower edge. */
-const visibleTop = ref(0);
-function measure(): void {
-    if (!root.value) return;
-    const rect = root.value.getBoundingClientRect();
-    top.value = Math.max(0, rect.top + window.scrollY);
-    visibleTop.value = Math.max(0, rect.top);
-}
-function follow(): void {
-    if (root.value) visibleTop.value = Math.max(0, root.value.getBoundingClientRect().top);
-}
-onMounted(() => {
-    measure();
-    window.addEventListener('resize', measure);
-    window.addEventListener('scroll', follow, { passive: true });
-});
-onBeforeUnmount(() => {
-    window.removeEventListener('resize', measure);
-    window.removeEventListener('scroll', follow);
-});
+const top = useOffsetTop(root);
 </script>
 
 <template>
     <!-- "de": names on a tile may need to hyphenate (Plan.md 44, M5) – we do not know what the host page sets. -->
-    <div ref="root" :lang="LOCALE" class="infoscreen-designer module-page" :style="{ minHeight: `calc(100vh - ${top}px)`, '--page-top': `${visibleTop}px` }">
+    <div ref="root" :lang="LOCALE" class="infoscreen-designer module-page" :style="{ minHeight: `calc(100vh - ${top}px)`, '--page-top': `${top}px` }">
         <div class="layout">
             <ModuleSidebar />
             <main class="content"><slot /></main>
@@ -76,7 +59,7 @@ onBeforeUnmount(() => {
     box-shadow: var(--d-shadow-card);
 }
 .content :deep(.d-card) {
-    border-color: var(--d-divider);
+    border-color: var(--d-edge);
 }
 @media (max-width: 48rem) {
     .layout {

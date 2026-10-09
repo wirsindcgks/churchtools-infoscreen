@@ -29,6 +29,7 @@ import { needsAppointmentRooms } from '../appointments/rooms';
 import { allowedServiceIds, appointmentServicesInUse, serviceChoices, type ServiceInfo } from '../appointments/services';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
+import { useOffsetTop } from '../designer/useOffsetTop';
 import type { ScreenRepository } from '../store/screen-repository';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
@@ -54,7 +55,7 @@ const loadError = ref<string | null>(null);
 const demo = ref(false);
 const author = ref('');
 const root = ref<HTMLElement | null>(null);
-const top = ref(0);
+const top = useOffsetTop(root);
 
 /** The services an administrator allows on screens (Plan.md 58); none until loaded, and where the settings cannot be read. */
 const allowedServices = ref<number[]>([]);
@@ -348,7 +349,6 @@ const slideConflictText = computed(() => {
 });
 
 onMounted(async () => {
-    top.value = root.value?.getBoundingClientRect().top ?? 0;
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', onResize);
     window.addEventListener('beforeunload', onBeforeUnload);
@@ -824,15 +824,9 @@ function onKey(event: KeyboardEvent): void {
     border-color: var(--d-interactive);
     background: var(--d-panel);
 }
-/* Quiet, with the arrow: it is not what you came for. */
+/* Like "Vorschau", with less room before the arrow. */
 .back {
     padding: 0 var(--d-space-3) 0 var(--d-space-2);
-    border-color: transparent;
-    background: transparent;
-}
-.back:hover {
-    border-color: transparent;
-    background: var(--d-surface);
 }
 /* Title above, the state of the save below it, small. */
 .heading {

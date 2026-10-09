@@ -14,6 +14,8 @@
     --d-surface: var(--color-basic-inverted, #fff);
     --d-panel: var(--color-basic-b-pale, oklch(98.4% 0.003 247.858));
     --d-divider: var(--color-basic-divider, oklch(92.9% 0.013 255.508));
+    /* A fine but visible edge for what stands on white: fields, tiles. */
+    --d-edge: color-mix(in oklab, var(--d-divider) 88%, var(--d-text));
     --d-interactive: var(--color-basic-interactive, oklch(86.9% 0.022 252.894));
     --d-accent: var(--color-accent-bright, oklch(54.6% 0.245 262.881));
     --d-accent-text: var(--color-accent-inverted, #fff);
@@ -58,7 +60,7 @@
     color: var(--d-text);
 }
 
-.infoscreen-designer :where(button.d-btn) {
+.infoscreen-designer :where(button.d-btn, a.d-btn) {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -75,7 +77,10 @@
     cursor: pointer;
     transition: background-color var(--d-transition), border-color var(--d-transition);
 }
-.infoscreen-designer :where(button.d-btn:hover:not(:disabled)) {
+.infoscreen-designer :where(a.d-btn) {
+    text-decoration: none;
+}
+.infoscreen-designer :where(button.d-btn:hover:not(:disabled), a.d-btn:hover) {
     border-color: var(--d-interactive);
     background: var(--d-panel);
 }

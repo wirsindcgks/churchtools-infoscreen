@@ -42,6 +42,13 @@ const format = ref<FormatFilter>('all');
 
 const isPortrait = (o: PlaylistOverview) => o.playlist.stage.height > o.playlist.stage.width;
 
+const formatOptions = computed(() =>
+    FORMAT_SEGMENTS.map((f) => ({
+        ...f,
+        count: overviews.value.filter((o) => f.key === 'all' || (f.key === 'portrait') === isPortrait(o)).length,
+    })),
+);
+
 const shown = computed(() => {
     const needle = query.value.trim().toLocaleLowerCase(LOCALE);
     return overviews.value.filter(
@@ -159,7 +166,7 @@ async function remove(overview: PlaylistOverview): Promise<void> {
                     :label="t.playlists.searchLabel"
                     testid="playlist-search"
                 />
-                <FilterChips v-model="format" :options="FORMAT_SEGMENTS" :label="t.common.format" testid="playlist-filter" />
+                <FilterChips v-model="format" :options="formatOptions" :label="t.common.format" testid="playlist-filter" />
             </div>
 
             <GroupCard
@@ -167,6 +174,7 @@ async function remove(overview: PlaylistOverview): Promise<void> {
                 :title="format === 'all' ? t.playlists.all : FILTERS.find((f) => f.key === format)!.label"
                 :count="t.playlists.count(shown.length)"
                 heading-id="playlists-group"
+                hide-heading
             >
                 <div v-if="shown.length" class="d-tiles">
                     <PlaylistCard

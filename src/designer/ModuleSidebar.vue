@@ -160,9 +160,9 @@ watch(
 <style scoped>
 .module-sidebar {
     position: sticky;
-    top: var(--d-space-4);
+    top: calc(var(--page-top, 0px) + var(--d-space-4));
     box-sizing: border-box;
-    /* To the window's lower edge, whatever of the host's navigation still stands above (`--page-top`, ModulePage). */
+    /* Below the host's navigation, which stays put, and down to the window's lower edge (`--page-top`, ModulePage). */
     height: calc(100vh - var(--page-top, 0px) - 2 * var(--d-space-4));
     padding: var(--d-space-3);
     border-radius: var(--d-radius-lg);
@@ -199,7 +199,7 @@ a {
     padding: 0 var(--d-space-3);
     border-radius: var(--d-radius-lg);
     color: var(--d-text);
-    font-weight: 700;
+    font-weight: 400;
     text-decoration: none;
     transition: background-color var(--d-transition);
 }
@@ -207,6 +207,7 @@ a:hover {
     background: var(--d-panel);
 }
 a.active {
+    font-weight: 600;
     background: color-mix(in oklab, var(--d-accent-pale) 45%, var(--d-surface));
     color: var(--d-accent-strong);
 }
@@ -279,7 +280,7 @@ a.active .nav-icon {
         box-shadow: var(--d-shadow-card);
         color: var(--d-text);
         font: inherit;
-        font-weight: 700;
+        font-weight: 600;
         text-align: left;
         cursor: pointer;
     }

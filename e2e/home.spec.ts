@@ -126,6 +126,58 @@ test.describe('start page on a desktop', () => {
         await expect(content).not.toHaveCSS('box-shadow', 'none');
         if (test.info().project.name === 'chromium') await page.screenshot({ path: 'test-results/home-surface.png' });
     });
+
+    test('with the host\'s navigation appearing after the module, nothing scrolls on the start page and the sidebar stands still (Plan.md 79, B3)', async ({ page }) => {
+        // ChurchTools' bar is sticky, 56 px high and renders only after the module has mounted (Befunde G55).
+        await page.addInitScript(() => {
+            document.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => {
+                    // The host's stylesheet (Tailwind) takes the body's margin away; the demo page has none of it.
+                    document.body.style.margin = '0';
+                    const bar = document.createElement('div');
+                    bar.id = 'navigation';
+                    bar.setAttribute('style', 'position:sticky;top:0;height:56px;z-index:10;background:#123');
+                    document.body.prepend(bar);
+                }, 300);
+            });
+        });
+        await page.goto('./');
+        await expect(page.locator('#navigation')).toBeAttached();
+        await expect(page.getByTestId('sidebar-setup')).toBeVisible();
+        const viewport = page.viewportSize()!;
+        await expect
+            .poll(() => page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight))
+            .toBeLessThanOrEqual(0);
+
+        const nav = (await page.locator('nav.module-sidebar').boundingBox())!;
+        expect(Math.abs(nav.y - (56 + 16))).toBeLessThanOrEqual(2);
+        expect(Math.abs(nav.y + nav.height - (viewport.height - 16))).toBeLessThanOrEqual(2);
+        const setup = (await page.getByTestId('sidebar-setup').boundingBox())!;
+        expect(setup.y + setup.height).toBeLessThanOrEqual(viewport.height);
+        if (test.info().project.name === 'chromium') await page.screenshot({ path: 'test-results/look2-home.png' });
+
+        // A long page: the sidebar keeps its box while the page scrolls.
+        await page.getByTestId('sidebar-about').click();
+        await expect(page.getByTestId('sidebar-about')).toHaveAttribute('aria-current', 'page');
+        await expect.poll(() => page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)).toBeGreaterThan(300);
+        const before = (await page.locator('nav.module-sidebar').boundingBox())!;
+        for (const y of [20, 40, 300]) {
+            await page.evaluate((to) => window.scrollTo(0, to), y);
+            await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(y);
+            const now = (await page.locator('nav.module-sidebar').boundingBox())!;
+            for (const key of ['x', 'y', 'width', 'height'] as const) expect(Math.abs(now[key] - before[key])).toBeLessThanOrEqual(1);
+        }
+    });
+
+    test('pictures of the redesigned pages (Plan.md 79, B3)', async ({ page }) => {
+        test.skip(test.info().project.name !== 'chromium', 'Aufnahmen nur in Chromium');
+        await page.goto('./einstellungen/gruppen');
+        await expect(page.getByTestId('settings-back')).toBeVisible();
+        await page.screenshot({ path: 'test-results/look2-setup.png' });
+        await page.goto('./playlists');
+        await expect(page.getByTestId('playlist-filter-all')).toBeVisible();
+        await page.screenshot({ path: 'test-results/look2-playlists.png' });
+    });
 });
 
 test.describe('on a phone', () => {
