@@ -20,9 +20,12 @@ Agent; du arbeitest den Auftrag ab.
 - **Kein Commit, kein Push.** Das entscheidet der Nutzer.
 - **Code englisch, Dokumentation und Oberfläche deutsch.** Code liest sich wie der umgebende: gleiche
   Kommentardichte, gleiche Benennung, gleiche Muster.
-- **Prüfen, bevor du fertig meldest:** `npx vue-tsc --noEmit`, `npx eslint .`, `npx vitest run`; bei Änderungen an
-  der Oberfläche die betroffenen e2e-Tests mit `npx playwright test <datei> --project=chromium`, dann WebKit.
-  Die gesamte Suite auf einmal bricht aus Speichergründen ab – je Datei oder Browser laufen lassen.
+- **Prüfen, bevor du fertig meldest – sparsam (`AGENTS.md`, „Sparsam arbeiten"):** `npx vue-tsc --noEmit`,
+  `npx eslint .`, `npx vitest run` ganz. Von den e2e-Tests **nur die betroffenen** (`-g "…"` oder `datei:zeile`), **nur
+  Chromium**, mit `--reporter=line`, Ausgabe in eine Datei umleiten und nur die Zusammenfassung lesen. Ganze e2e-Dateien,
+  WebKit und `npm run docs:screenshots` nur, wenn der Auftrag es ausdrücklich verlangt (am Ende eines Pakets). Ein roter
+  Test wird einmal einzeln wiederholt, nicht die ganze Datei; nie zwei Läufe gleichzeitig.
 
-**Deine Antwort** ist das Einzige, was der planende Agent sieht: welche Dateien geändert, was geprüft (mit
-Ergebnis, auch Fehlschläge), welche Fragen offen geblieben sind.
+**Deine Antwort** ist das Einzige, was der planende Agent sieht – **höchstens 25 Zeilen:** was gebaut, was vom Auftrag
+abweicht, was rot ist (mit der entscheidenden Zeile der Ausgabe), offene Fragen. Keine Aufzählung aller Dateien, keine
+Wiederholung des Auftrags.
