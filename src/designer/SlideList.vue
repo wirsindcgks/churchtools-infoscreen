@@ -50,8 +50,9 @@ onBeforeUnmount(() => phoneQuery.removeEventListener('change', onPhoneChange));
  */
 const list = ref<HTMLElement | null>(null);
 const listWidth = ref(0);
-/** What a tile takes beside its thumbnail: the list's padding, the tile's padding and its border, on both sides. */
-const TILE_CHROME = 2 * (8 + 8 + 2);
+/** What a tile takes beside its thumbnail: the list's padding, the tile's padding and border on both sides, and the column of the number. */
+const NUMBER_COLUMN = 24;
+const TILE_CHROME = 2 * (8 + 6 + 2) + NUMBER_COLUMN;
 const THUMB_MIN_WIDTH = 96;
 let listObserver: ResizeObserver | undefined;
 onMounted(() => {
@@ -206,6 +207,7 @@ function removeCurrent(): void {
                 @drop.prevent="drop(index)"
                 @dragend="dragging = null; over = null"
             >
+                <span class="num">{{ index + 1 }}</span>
                 <div class="thumb" :style="{ width: `${thumb.width}px`, height: `${thumb.height}px` }">
                     <StageView :width="editor.stage.width" :height="editor.stage.height" :fit="thumb.fit">
                         <SlideView :slide="slide" :width="editor.stage.width" :height="editor.stage.height" />
@@ -221,7 +223,7 @@ function removeCurrent(): void {
                     </span>
                 </div>
                 <div class="meta">
-                    <span class="name">{{ index + 1 }}. {{ slide.name }}</span>
+                    <span class="name">{{ slide.name }}</span>
                     <!-- On a phone the name sits in the header and the sheet's bar already; here it would not fit next to the duration (Plan.md 44, second phone test). -->
                     <span class="index-num">{{ index + 1 }} ·</span>
                     <span
@@ -297,8 +299,11 @@ function removeCurrent(): void {
     display: flex;
     flex-direction: column;
     min-height: 0;
-    border-right: 1px solid var(--d-divider);
+    /* A card on the workspace (Plan.md 79, B3). */
+    overflow: hidden;
+    border-radius: var(--d-radius-lg);
     background: var(--d-surface);
+    box-shadow: var(--d-shadow-card);
 }
 .header-desktop {
     display: flex;
@@ -307,8 +312,7 @@ function removeCurrent(): void {
     box-sizing: border-box;
     flex: none;
     height: var(--editor-head-h);
-    padding: 0 12px;
-    border-bottom: 1px solid var(--d-divider);
+    padding: 0 var(--d-space-3) 0 var(--d-space-4);
 }
 .title {
     display: flex;
@@ -329,31 +333,51 @@ ol {
        would make the list shorter, the scrollbar go, and the thumbnail grow again. */
     scrollbar-gutter: stable;
     margin: 0;
-    padding: 8px;
+    padding: 0 8px 8px;
     list-style: none;
 }
+/* The number left of the picture, the picture right of it; name and time below, the buttons of the chosen one last. */
 li {
-    padding: 8px;
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    column-gap: 8px;
+    padding: 6px;
     border: 2px solid transparent;
     border-radius: var(--d-radius-lg);
     cursor: pointer;
+    transition: background-color var(--d-transition);
+}
+li > :not(.num) {
+    grid-column: 2;
 }
 li + li {
-    margin-top: 6px;
+    margin-top: 4px;
 }
 li:hover {
     background: var(--d-panel);
 }
-li.active {
-    border-color: var(--d-accent);
-    background: var(--d-accent-pale);
+.num {
+    padding-top: 2px;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+    text-align: right;
+}
+li.active .num {
+    color: var(--d-accent);
+    font-weight: 700;
+}
+/* The chosen slide: a ring of 2 px in the accent around its picture. */
+li.active .thumb {
+    outline: 2px solid var(--d-accent);
+    outline-offset: 1px;
 }
 .count {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
 li.add-item {
-    padding: 8px;
+    display: block;
+    padding: 6px 8px 0 32px;
     border: 0;
     cursor: default;
 }
@@ -374,6 +398,7 @@ li.add-item:hover {
     color: var(--d-text-muted);
     font: inherit;
     cursor: pointer;
+    transition: background-color var(--d-transition), border-color var(--d-transition);
 }
 .add:hover {
     border-color: var(--d-accent);
@@ -387,7 +412,8 @@ li.add-item:hover {
     justify-content: center;
     gap: 6px;
     width: 100%;
-    margin-top: 6px;
+    min-height: var(--d-control-h);
+    margin-top: var(--d-space-2);
     padding: 6px;
     border: 0;
     border-radius: var(--d-radius);
@@ -469,8 +495,10 @@ li.disabled .thumb {
  */
 @media (max-width: 48rem) {
     .slide-list {
-        border-right: 0;
-        border-bottom: 1px solid var(--d-divider);
+        overflow: visible;
+        border-radius: 0;
+        background: none;
+        box-shadow: none;
     }
     .header-desktop {
         display: none;
@@ -480,8 +508,7 @@ li.disabled .thumb {
         align-items: center;
         gap: 6px;
         min-height: 44px;
-        padding: 2px 8px;
-        border-bottom: 1px solid var(--d-divider);
+        padding: 2px var(--d-space-3);
     }
     /* Same look as the page menu's own button (`ModuleSidebar.vue`) – a frame makes it obvious this collapses (Plan.md 44, second phone test). */
     .toggle {
@@ -542,10 +569,17 @@ li.disabled .thumb {
      * `box-sizing: border-box`, because the thumbnail inside is not itself shrunk.
      */
     li {
+        display: block;
         box-sizing: border-box;
         flex: none;
         padding: 0;
         border: 0;
+    }
+    .num {
+        display: none;
+    }
+    li.active .thumb {
+        outline: 0;
     }
     /* Outside the tile, into the gap: a frame inside would cover the small thumbnail. */
     li.active {

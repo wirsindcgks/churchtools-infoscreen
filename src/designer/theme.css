@@ -46,6 +46,8 @@
     /* Cards sit on the workspace with a soft shadow, not a frame. */
     --d-shadow-card: 0 1px 3px #0f172a14, 0 6px 16px #0f172a0d;
     --d-shadow-card-hover: 0 2px 6px #0f172a1a, 0 10px 24px #0f172a14;
+    /* The stage lies on the workspace, a little deeper than a card. */
+    --d-shadow-stage: 0 4px 18px #0f172a33;
     /* The calm ground around cards and the sidebar: a touch darker than the panel, from the host's own colours. */
     --d-workspace: color-mix(in oklab, var(--d-panel) 96%, var(--d-text));
     --d-transition: 150ms ease;
@@ -168,6 +170,15 @@
     border-color: var(--d-create);
     background: var(--d-create);
     filter: brightness(0.93);
+}
+/* No frame until pointed at: for the quiet actions on the workspace (Plan.md 79, B3). */
+.infoscreen-designer :where(button.d-btn--ghost) {
+    border-color: transparent;
+    background: transparent;
+}
+.infoscreen-designer :where(button.d-btn--ghost:hover:not(:disabled)) {
+    border-color: transparent;
+    background: var(--d-surface);
 }
 /* Square button with a symbol only; the label goes into aria-label and title. */
 .infoscreen-designer :where(button.d-btn--icon) {
