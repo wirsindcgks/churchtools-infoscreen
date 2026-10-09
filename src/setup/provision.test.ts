@@ -451,7 +451,7 @@ describe('REMOVE_SETUP_NEXT_STEPS_LOG_LINE', () => {
 describe('devicePasswordRecommendationLogLine (G18: a login token is only invalidated by a password change)', () => {
     it('names every collected account, comma-separated, with the recommendation', () => {
         expect(devicePasswordRecommendationLogLine(['Minimal User', 'Infoscreen Foyer'])).toBe(
-            'Passwörter ändern empfohlen für: Minimal User, Infoscreen Foyer – dann funktionieren die Adressen der Fernseher nicht mehr.',
+            'Passwörter ändern empfohlen für: Minimal User, Infoscreen Foyer – dann funktionieren die Adressen der Bildschirme nicht mehr.',
         );
     });
 });

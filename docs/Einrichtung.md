@@ -19,7 +19,7 @@ Kurzfassung je Rolle steht im [Onboarding](Onboarding.md), alle Rechte als Tabel
 | [4. Gruppen und Rechte anlegen lassen](#4-gruppen-und-rechte-anlegen-lassen) | Administrator | Designer → Einstellungen → Gruppen und Rechte |
 | [5. Gestalter aufnehmen](#5-gestalter-aufnehmen) | Administrator | Gruppe „Infoscreen-Designer" |
 | [6. Geräte-Benutzer anlegen](#6-geräte-benutzer-anlegen) | Administrator | Personen, Gruppe „Infoscreen-Devices" |
-| [7. Den Fernseher einrichten](#7-den-fernseher-einrichten) | Administrator, dann wer vor Ort ist | Designer → Einstellungen → Adressen für die Fernseher, Kiosk-Browser |
+| [7. Den Fernseher einrichten](#7-den-fernseher-einrichten) | Administrator, dann wer vor Ort ist | Designer → Einstellungen → Adressen der Bildschirme, Kiosk-Browser |
 
 ### Drei Rollen
 
@@ -195,7 +195,7 @@ Fernsehers kennt, hat sie sonst auch. Ist das Konto noch in weiteren Gruppen, ne
 Der Fernseher bekommt eine Adresse, mit der er sich **bei jedem Start selbst** als Geräte-Benutzer anmeldet. Eine
 Anmeldung von Hand im Browser genügt nicht: Auch mit „Angemeldet bleiben" meldet ChurchTools nach 24 Stunden ab.
 
-1. Im Designer auf **Einstellungen → Adressen für die Fernseher**.
+1. Im Designer auf **Einstellungen → Adressen der Bildschirme**.
 2. Den **Bildschirm** wählen, **Benutzername und Passwort des Geräte-Kontos** eingeben, **„Adresse erzeugen"**.
 3. **Kopieren** und als **Startseite des Kiosk-Browsers** eintragen. Anmelden musst du dich im Browser nicht.
 
@@ -296,7 +296,7 @@ Die Reihenfolge ist wichtig: **erst die Einrichtung, dann die Extension.**
    „Kategorien" an, damit du die Bilder dort sichern kannst. Hineinsehen kann nur, wer Rechte am Bereich hat –
    die Gestalter nicht mehr, ihre Rechte gingen mit der Gruppe.
 
-4. **Die Passwörter der Gerätekonten ändern – empfohlen** (oder die Konten löschen). Die Adressen der Fernseher
+4. **Die Passwörter der Gerätekonten ändern – empfohlen** (oder die Konten löschen). Die Adressen der Bildschirme
    enthalten den Login-Token dieser Konten; solange er gilt, meldet sich jeder damit bei ChurchTools an – auch
    ohne Designer. Ungültig wird er nur durch ein neues Passwort oder das Löschen der Person; von außen widerrufen
    lässt er sich nicht. Welche Konten das sind, nennt der Dialog von „Automatische Einrichtung rückgängig machen" mit Link zur Person
@@ -315,7 +315,7 @@ Die Reihenfolge ist wichtig: **erst die Einrichtung, dann die Extension.**
 | Wiki-Bereich „Infoscreen" mit den Bildern | **bleibt** und steht wieder unter „Kategorien" | bleibt | **von Hand**: sichern, dann im Wiki löschen oder behalten |
 | Adressen der Bilder | bleiben erreichbar | bleiben erreichbar | erreichbar, bis das Bild im Wiki gelöscht ist – ohne Anmeldung, wer die Adresse kennt |
 | Geräte-Benutzer (Person) | bleibt, ohne die Rechte aus „Infoscreen-Devices" | bleibt | **von Hand**: archivieren oder löschen |
-| Login-Token in den Adressen der Fernseher | bleibt gültig | bleibt gültig | **von Hand, empfohlen**: Passwörter der Gerätekonten ändern oder die Konten löschen |
+| Login-Token in den Adressen der Bildschirme | bleibt gültig | bleibt gültig | **von Hand, empfohlen**: Passwörter der Gerätekonten ändern oder die Konten löschen |
 | Fernseher | zeigen keine neuen Inhalte mehr | Der Designer ist nicht mehr erreichbar | Kiosk-Browser umstellen oder ausschalten; Bilder und letzter Stand liegen noch im Speicher des Browsers |
 
 Was ChurchTools beim Löschen der Extension abräumt, ist am 2026-09-28 gemessen (`Befunde.md`, G38). Eine Warnung
@@ -333,7 +333,7 @@ weg. Für eine neue Fassung siehe [Updates](#updates).
    in Schritt 6 ein Status mit wenig Rechten).
 2. **Sein Passwort in der ChurchTools-Oberfläche ändern.** Damit wird der Login-Token ungültig – die Adresse auf
    dem verlorenen Gerät meldet sich nicht mehr an.
-3. Für das Ersatzgerät unter **Einstellungen → Adressen für die Fernseher** eine **neue Adresse erzeugen** (mit dem neuen Passwort). Hängen weitere
+3. Für das Ersatzgerät unter **Einstellungen → Adressen der Bildschirme** eine **neue Adresse erzeugen** (mit dem neuen Passwort). Hängen weitere
    Fernseher am selben Konto, brauchen sie ebenfalls eine neue Adresse – ein Grund für ein Konto je Standort.
 
 Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Foyer ohnehin zu sehen ist.
@@ -392,7 +392,7 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | Assistent bricht ab: „Den Gruppentyp „Merkmal" gibt es auf dieser Instanz nicht." | Version vor `v0.14.0` auf einer Instanz ohne diesen Gruppentyp | aktuelle Version installieren und in Schritt 4 einen Gruppentyp wählen |
 | „Gruppen und Rechte anlegen" bleibt grau, ohne Hinweis auf fehlende Rechte | Kein Gruppentyp gewählt | in Schritt 4 einen Gruppentyp wählen |
 | „Adresse erzeugen" meldet „Anmeldung fehlgeschlagen" | meist fehlt dem Geräte-Konto der **Benutzername** | Schritt 6, Punkt 2 |
-| Fernseher: „Dieser Fernseher ist nicht bei ChurchTools angemeldet" | Adresse ohne Anmeldung, oder das Passwort des Geräte-Kontos wurde geändert | unter Einstellungen → Adressen für die Fernseher eine neue Adresse erzeugen |
+| Fernseher: „Dieser Fernseher ist nicht bei ChurchTools angemeldet" | Adresse ohne Anmeldung, oder das Passwort des Geräte-Kontos wurde geändert | unter Einstellungen → Adressen der Bildschirme eine neue Adresse erzeugen |
 | Player im Tab neben ChurchTools: fragt nach Anmeldung oder zeigt keine Termine | Im selben Browser ist jemand anderes angemeldet – ChurchTools kennt je Browser nur eine Anmeldung | Player in einem Inkognito-Fenster oder eigenen Browserprofil öffnen |
 | Fernseher: „Es gibt keinen Bildschirm „…"" | Adresse vertippt oder Bildschirm gelöscht | Adresse neu kopieren |
 | Fernseher: Termine eines Kalenders fehlen | Der Kalender ist nicht öffentlich (dann zeigt ihn kein Fernseher) | in ChurchTools freigeben: Berechtigungen → Benutzer → „Öffentlicher Benutzer" → Kalender → „Einzelnen Kalender sehen" – oder im Editor aus dem Baustein entfernen |

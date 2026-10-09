@@ -576,6 +576,8 @@ export const t = {
     /** The schedules page, the schedule dialog and the words of the rules. */
     schedules: {
         title: 'Zeitpläne',
+        all: 'Alle Zeitpläne',
+        count: (n: number) => `${n} ${n === 1 ? 'Zeitplan' : 'Zeitpläne'}`,
         intro:
             'Welche Präsentation auf welchem Bildschirm wann läuft. Passt keine Regel, läuft die Standard-Präsentation; passen mehrere, ' +
             'gilt die obere. Ein Klick auf eine Zeile zeigt ihre Präsentation, ein Klick auf das Bild öffnet den Zeitplan.',
@@ -942,7 +944,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             text: 'Sie legen die Gruppen für Gestalter und Geräte an und vergeben deren Rechte. Wer Infoscreens gestaltet, braucht diese Seite nicht – fehlt dir ein Recht, wende dich an einen Administrator deiner Gemeinde.',
         },
         overview: {
-            intro: 'Hier verwalten ChurchTools-Administratoren die Gruppen und Rechte für Gestalter und Geräte, die Adressen der Fernseher und die Mediathek im Wiki.',
+            intro: 'Hier verwalten ChurchTools-Administratoren die Gruppen und Rechte für Gestalter und Geräte, die Adressen der Bildschirme und die Mediathek im Wiki.',
         },
         groups: {
             title: 'Gruppen und Rechte',
@@ -1050,9 +1052,9 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             missing: (name: string) => `Es gibt noch keinen Wiki-Bereich „${name}" – der Assistent legt ihn unter „Gruppen und Rechte" an.`,
         },
         tv: {
-            title: 'Adressen für die Fernseher',
-            intro: 'Erzeugt die Adresse, mit der sich ein Fernseher selbst anmeldet.',
-            formTitle: 'Adresse für einen Fernseher',
+            title: 'Adressen der Bildschirme',
+            intro: 'Erzeugt die Adresse, mit der sich der Fernseher eines Bildschirms selbst anmeldet.',
+            formTitle: 'Adresse für einen Bildschirm',
             text: 'Mit dieser Adresse meldet sich der Fernseher bei jedem Start selbst als Geräte-Benutzer an – eine Anmeldung im Browser hielte nur 24 Stunden. Trag sie als Startseite des Kiosk-Browsers ein.',
             noScreens: 'Noch keine Bildschirme angelegt.',
             screen: 'Bildschirm',
@@ -1092,7 +1094,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                     : 'neu einrichten geht jederzeit.'),
             deviceAccounts: 'Gerätekonten',
             deviceAccountsAdvice:
-                'Empfehlung: Ändere danach die Passwörter dieser Konten in ChurchTools oder lösche die Konten. Erst dann funktionieren die Adressen der Fernseher nicht mehr – sie enthalten die Anmeldung dieser Konten. Der Designer kann das nicht selbst tun.',
+                'Empfehlung: Ändere danach die Passwörter dieser Konten in ChurchTools oder lösche die Konten. Erst dann funktionieren die Adressen der Bildschirme nicht mehr – sie enthalten die Anmeldung dieser Konten. Der Designer kann das nicht selbst tun.',
             overview: 'Was beim Abbau sonst passiert und was bleibt',
             thisStep: 'Dieser Schritt',
             groupsDeleted: 'Die oben genannten Gruppen werden mit Rollen, Rechten und Mitgliedschaften gelöscht.',
@@ -1108,7 +1110,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             byHand: 'Bleibt, von Hand zu erledigen',
             wikiByHand: 'Der Wiki-Bereich mit den Bildern: sichern, dann im Wiki löschen oder behalten. Die Adressen der Bilder bleiben ohne Anmeldung erreichbar, bis das Bild gelöscht ist.',
             deviceByHand:
-                'Der Geräte-Benutzer: Passwort ändern (empfohlen) oder die Person löschen – sein Login-Token steckt in den Adressen der Fernseher und gilt bis dahin weiter. Archivieren kannst du ihn danach.',
+                'Der Geräte-Benutzer: Passwort ändern (empfohlen) oder die Person löschen – sein Login-Token steckt in den Adressen der Bildschirme und gilt bis dahin weiter. Archivieren kannst du ihn danach.',
             kioskByHand: 'Die Kiosk-Browser der Fernseher: umstellen oder ausschalten.',
             guide: 'Ausführlich in der Anleitung',
             ownWarning: (names: string) =>
@@ -1123,7 +1125,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 'Danach von Hand: die Passwörter der Gerätekonten ändern oder die Konten löschen (sonst gelten die Adressen ' +
                 'der Fernseher weiter), Wiki-Bereich sichern und löschen oder behalten.',
             passwordsLog: (names: string[]) =>
-                `Passwörter ändern empfohlen für: ${names.join(', ')} – dann funktionieren die Adressen der Fernseher nicht mehr.`,
+                `Passwörter ändern empfohlen für: ${names.join(', ')} – dann funktionieren die Adressen der Bildschirme nicht mehr.`,
         },
         provision: {
             missingAuth: (auth: string) => `Das Recht „${auth}" fehlt im Rechtekatalog – ist die Extension installiert?`,
