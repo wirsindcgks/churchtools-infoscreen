@@ -6,17 +6,25 @@
  * at the bottom below 48rem, a dialog in the middle above (Plan.md 44, M3; 45).
  * The grid choice sits beside it – it is about the stage, too.
  */
-import { onBeforeUnmount, ref } from 'vue';
+import { computed, onBeforeUnmount, watch } from 'vue';
 import { t } from '../i18n/designer';
 import type { BlockType } from '../model/schema';
 import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
-import { BLOCK_ICONS, PALETTE } from './ops';
+import { BLOCK_ICONS, BLOCK_LABELS, PALETTE } from './ops';
 import { GRID_SIZES } from './snap';
 
 const editor = useEditorStore();
 
-const sheetOpen = ref(false);
+/** The sheet's state lives in the store: the button on an empty slide opens it, too (Plan.md 79, A7). */
+const sheetOpen = computed(() => editor.blockSheetOpen);
+
+/** What "Einfügen" would put on the slide, named for the tooltip ("Text einfügen"). */
+const pasteTitle = computed(() => {
+    const [first] = editor.clipboard;
+    if (!first) return '';
+    return t.editor.palette.pasteWhat(BLOCK_LABELS[first.type]);
+});
 
 /**
  * Escape here closes the sheet only – not the editor's own key handler,
@@ -31,13 +39,15 @@ function closeOnEscape(event: KeyboardEvent): void {
     closeSheet();
 }
 function openSheet(): void {
-    sheetOpen.value = true;
-    document.addEventListener('keydown', closeOnEscape);
+    editor.blockSheetOpen = true;
 }
 function closeSheet(): void {
-    sheetOpen.value = false;
-    document.removeEventListener('keydown', closeOnEscape);
+    editor.blockSheetOpen = false;
 }
+watch(sheetOpen, (open) => {
+    if (open) document.addEventListener('keydown', closeOnEscape);
+    else document.removeEventListener('keydown', closeOnEscape);
+});
 function addFromSheet(type: BlockType): void {
     editor.addBlock(type);
     closeSheet();
@@ -55,6 +65,17 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
             @click="openSheet"
         >
             <Icon name="plus" :size="16" /> {{ t.editor.palette.addBlock }}
+        </button>
+        <button
+            v-if="editor.clipboard.length"
+            class="d-btn"
+            type="button"
+            :disabled="!editor.slide"
+            :title="pasteTitle"
+            data-testid="paste-block"
+            @click="editor.pasteBlocks()"
+        >
+            {{ t.editor.palette.paste }}
         </button>
         <!-- The symbol alone was not recognised (Plan.md 47): the word stays beside it. -->
         <label class="grid-select" :title="t.editor.palette.guidesTitle">

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { serialize } from '../model/read';
 import { textBlock, makeSlide } from '../model/testing';
-import { BLOCK_LABELS, PALETTE, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, duplicateSlide, move, reorder, slugify } from './ops';
+import { BLOCK_LABELS, PALETTE, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, duplicateSlide, fitToStage, freeSpot, move, reorder, slugify } from './ops';
 import { History } from './history';
 import { DEFAULT_THEME, type Block, type BlockType } from '../model/schema';
 
@@ -188,5 +188,48 @@ describe('the palette (Plan.md 47)', () => {
             'Video',
             'Webseite',
         ]);
+    });
+
+    describe('freeSpot (Plan.md 79, A6)', () => {
+        const frame = { x: 360, y: 440, width: 1200, height: 200 };
+
+        it('leaves a block where it is on an empty slide', () => {
+            expect(freeSpot(frame, [], stage)).toEqual(frame);
+        });
+
+        it('steps 40 px down and right as often as needed – three texts, three places', () => {
+            const placed: { x: number; y: number }[] = [];
+            for (let i = 0; i < 3; i++) placed.push(freeSpot(createBlock('text', stage), placed, stage));
+            expect(placed.map((b) => [b.x, b.y])).toEqual([
+                [360, 440],
+                [400, 480],
+                [440, 520],
+            ]);
+        });
+
+        it('ignores blocks that only come near', () => {
+            expect(freeSpot(frame, [{ x: 361, y: 440 }, { x: 360, y: 441 }], stage)).toEqual(frame);
+        });
+
+        it('starts again at the top left, 40 px in, at the stage edge', () => {
+            const big = { x: 100, y: 100, width: 1800, height: 1000 };
+            // One step would run past the right and bottom edge.
+            expect(freeSpot(big, [{ x: 100, y: 100 }], stage)).toMatchObject({ x: 40, y: 40 });
+            // And the next one steps on from there.
+            expect(freeSpot(big, [{ x: 100, y: 100 }, { x: 40, y: 40 }], stage)).toMatchObject({ x: 80, y: 80 });
+        });
+
+        it('does not loop where every spot is taken', () => {
+            const big = { x: 40, y: 40, width: 1850, height: 1000 };
+            expect(freeSpot(big, [{ x: 40, y: 40 }], stage)).toMatchObject({ x: 40, y: 40 });
+        });
+    });
+
+    it('shrinks a block in its aspect ratio until it fits the stage', () => {
+        const fitted = fitToStage({ width: 1400, height: 700 }, { width: 1080, height: 1920 });
+        expect(fitted.width).toBeLessThanOrEqual(1080);
+        expect(fitted.width / fitted.height).toBeCloseTo(2, 1);
+        const same = { width: 400, height: 300 };
+        expect(fitToStage(same, stage)).toBe(same);
     });
 });
