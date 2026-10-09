@@ -676,7 +676,7 @@ export const t = {
         all: 'Alle Zeitpläne',
         count: (n: number) => `${n} ${n === 1 ? 'Zeitplan' : 'Zeitpläne'}`,
         intro:
-            'Welche Präsentation auf welchem Bildschirm wann läuft. Passt keine Regel, läuft die Standard-Präsentation; passen mehrere, ' +
+            'Welche Präsentation auf welchem Bildschirm wann läuft. Jeder Bildschirm hat genau einen Zeitplan; er entsteht von selbst, sobald der Bildschirm angelegt wird. Passt keine Regel, läuft die Standard-Präsentation; passen mehrere, ' +
             'gilt die obere. Ein Klick auf eine Zeile zeigt ihre Präsentation, ein Klick auf das Bild öffnet den Zeitplan.',
         searchPlaceholder: 'Suchen nach Bildschirm oder Präsentation …',
         searchLabel: 'Zeitpläne durchsuchen',
