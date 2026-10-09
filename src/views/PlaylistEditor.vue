@@ -10,6 +10,7 @@ import EditorStage from '../designer/EditorStage.vue';
 import { useEditorStore } from '../designer/editor-store';
 import Icon from '../designer/Icon.vue';
 import Inspector from '../designer/Inspector.vue';
+import { provideInspectorContext } from '../designer/inspector/context';
 import LiveFlag from '../designer/LiveFlag.vue';
 import { providePalette } from '../designer/palette';
 import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
@@ -91,6 +92,21 @@ const rooms = ref<RoomInfo[] | null>(null);
 /** Services people may see (Plan.md 51); null until loaded, unreadable → `servicesFailed`. */
 const services = ref<ServiceInfo[] | null>(null);
 const servicesFailed = ref(false);
+
+// The short menu above the chosen block reads the same lists as the inspector beside the stage (Plan.md 79, C1).
+provideInspectorContext(
+    () => ({
+        calendars: calendars.value,
+        hiddenCalendars: hiddenCalendars.value,
+        groups: groups.value,
+        homepages: homepages.value,
+        rooms: rooms.value,
+        services: services.value,
+        allowedServices: allowedServices.value,
+        servicesFailed: servicesFailed.value,
+    }),
+    (kind) => openLibrary(kind),
+);
 
 /** The preview of the unsaved draft, as the TV would show it. */
 const previewing = ref(false);
@@ -247,6 +263,13 @@ const drawerTitle = computed(() => {
     const index = editor.slide ? editor.slides.indexOf(editor.slide) : -1;
     return index < 0 ? t.editor.slide : t.editor.slideOf(index + 1, editor.slides.length);
 });
+
+/** "Alle Einstellungen" in the short menu (Plan.md 79, C1): the column opens, even when it was folded, and rolls to the block's settings. */
+function showAllSettings(): void {
+    if (desktop.value) desktopInspectorOpen.value = true;
+    else inspectorOpen.value = true;
+    void nextTick(() => root.value?.querySelector('[data-testid="block-inspector"]')?.scrollIntoView?.({ block: 'start' }));
+}
 
 /** The "…" menu below 48rem, after the one on a screen tile (Plan.md 44, M2). */
 const moreMenuOpen = ref(false);
@@ -681,7 +704,7 @@ function onKey(event: KeyboardEvent): void {
                         <Icon name="close" :size="16" />
                     </button>
                 </div>
-                <EditorStage />
+                <EditorStage @all-settings="showAllSettings" />
             </div>
             <!-- Below 48rem and upright above it this becomes a sheet at the bottom; otherwise a column beside the stage (Plan.md 44, M4; 45). -->
             <div class="tablet-rail tablet-rail--inspector">

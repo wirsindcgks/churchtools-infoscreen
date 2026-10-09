@@ -11,6 +11,7 @@ import { PAGE_SECONDS } from '../../../player/paging';
 import type { RoomInfo } from '../../../rooms/normalize';
 import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
+import QuickField from '../fields/QuickField.vue';
 import NumberField from '../fields/NumberField.vue';
 import SegmentField from '../fields/SegmentField.vue';
 import SortList, { type SortItem } from '../fields/SortList.vue';
@@ -20,11 +21,14 @@ import ToggleField from '../fields/ToggleField.vue';
 import { ROOMS_TILES } from '../layouts';
 import { move as moveItem } from '../../ops';
 import { useBlockEdit } from '../use-block';
+import { useInspectorMode } from '../mode';
 
 /** Most rooms a block holds – the schema's limit. */
 const ROOMS_MAX = 30;
 
 const props = defineProps<{ block: Extract<Block, { type: 'rooms' }> }>();
+/** Only fields stand in the short menu; a hint or a line of text belongs to the inspector. */
+const mode = useInspectorMode();
 const { setBlock } = useBlockEdit(() => props.block);
 /** The preview's stage context: a room's name may come from its data when the designer may not see the room. */
 const stage = useStageContext();
@@ -80,44 +84,47 @@ function remove(index: number): void {
 </script>
 
 <template>
-    <p v-if="context.rooms && !context.rooms.length" class="hint" data-testid="rooms-none">
-        {{ t.inspector.noRooms }}
-    </p>
-    <div v-else-if="context.rooms" class="room-add">
-        <select
-            :disabled="!pickable.length || block.rooms.length >= ROOMS_MAX"
-            value=""
-            :aria-label="t.inspector.addRoomLabel"
-            data-testid="rooms-add"
-            @change="pickRoom($event.target as HTMLSelectElement)"
-        >
-            <option value="">{{ t.inspector.addRoom }}</option>
-            <option v-for="r in pickable" :key="r.id" :value="r.id">{{ r.name }}</option>
-        </select>
-        <button class="d-btn" type="button" :disabled="!pickable.length || block.rooms.length >= ROOMS_MAX" data-testid="rooms-add-all" @click="addRooms(pickable)">
-            {{ t.inspector.addAllRooms }}
-        </button>
-    </div>
-    <span v-if="context.rooms?.length" class="hint" data-testid="rooms-count">{{ t.common.countOf(block.rooms.length, ROOMS_MAX) }}</span>
-    <p v-if="!block.rooms.length" class="hint">{{ t.inspector.noRoomsChosen }}</p>
-    <InspectorSection v-else id="room-list" :title="t.inspector.rooms" :summary="t.inspector.roomCount(block.rooms.length)">
-        <template #info>{{ t.inspector.roomsInfo }}</template>
-        <SortList quick :items="chosen" :remove-label="t.inspector.removeRoom" testid="room" row-testid="room-entry" @move="move" @remove="remove">
-            <template #row="{ index }">
-                <TextField
-                    :model-value="block.rooms[index]!.hint"
-                    :label="t.inspector.signpost"
-                    :placeholder="t.inspector.signpostPlaceholder"
-                    :maxlength="100"
-                    testid="room-hint"
-                    @update:model-value="setRoom(index, { hint: $event })"
-                />
-                <ToggleField :model-value="block.rooms[index]!.showTitles" :label="t.inspector.showTitles" testid="room-titles" @update:model-value="setRoom(index, { showTitles: $event })">
-                    <template #info>{{ t.inspector.showTitlesInfo }}</template>
-                </ToggleField>
-            </template>
-        </SortList>
-    </InspectorSection>
+    <!-- Choosing and ordering the rooms are one chip "Räume · 2" in the short menu, the first field of the block (Plan.md 79, C5). -->
+    <QuickField quick :label="t.inspector.rooms" :face="t.quick.count(t.inspector.rooms, block.rooms.length)">
+        <p v-if="context.rooms && !context.rooms.length" class="hint" data-testid="rooms-none">
+            {{ t.inspector.noRooms }}
+        </p>
+        <div v-else-if="context.rooms" class="room-add">
+            <select
+                :disabled="!pickable.length || block.rooms.length >= ROOMS_MAX"
+                value=""
+                :aria-label="t.inspector.addRoomLabel"
+                data-testid="rooms-add"
+                @change="pickRoom($event.target as HTMLSelectElement)"
+            >
+                <option value="">{{ t.inspector.addRoom }}</option>
+                <option v-for="r in pickable" :key="r.id" :value="r.id">{{ r.name }}</option>
+            </select>
+            <button class="d-btn" type="button" :disabled="!pickable.length || block.rooms.length >= ROOMS_MAX" data-testid="rooms-add-all" @click="addRooms(pickable)">
+                {{ t.inspector.addAllRooms }}
+            </button>
+        </div>
+        <span v-if="context.rooms?.length" class="hint" data-testid="rooms-count">{{ t.common.countOf(block.rooms.length, ROOMS_MAX) }}</span>
+        <p v-if="!block.rooms.length" class="hint">{{ t.inspector.noRoomsChosen }}</p>
+        <InspectorSection v-else id="room-list" :title="t.inspector.rooms" :summary="t.inspector.roomCount(block.rooms.length)">
+            <template #info>{{ t.inspector.roomsInfo }}</template>
+            <SortList :items="chosen" :remove-label="t.inspector.removeRoom" testid="room" row-testid="room-entry" @move="move" @remove="remove">
+                <template #row="{ index }">
+                    <TextField
+                        :model-value="block.rooms[index]!.hint"
+                        :label="t.inspector.signpost"
+                        :placeholder="t.inspector.signpostPlaceholder"
+                        :maxlength="100"
+                        testid="room-hint"
+                        @update:model-value="setRoom(index, { hint: $event })"
+                    />
+                    <ToggleField :model-value="block.rooms[index]!.showTitles" :label="t.inspector.showTitles" testid="room-titles" @update:model-value="setRoom(index, { showTitles: $event })">
+                        <template #info>{{ t.inspector.showTitlesInfo }}</template>
+                    </ToggleField>
+                </template>
+            </SortList>
+        </InspectorSection>
+    </QuickField>
 
     <TileField quick :model-value="block.layout" :options="ROOMS_TILES" :label="t.inspector.appearance" testid="rooms-layout" @update:model-value="setBlock({ layout: $event })" />
     <SegmentField quick stacked :model-value="block.days" :options="days" :label="t.inspector.period" testid="rooms-days" @update:model-value="setBlock({ days: Number($event) })" />
@@ -131,7 +138,7 @@ function remove(index: number): void {
         testid="rooms-seconds"
         @update:model-value="setBlock({ pageSeconds: $event })"
     />
-    <p v-if="block.layout === 'door'" class="hint" data-testid="rooms-door-hint">
+    <p v-if="mode === 'full' && block.layout === 'door'" class="hint" data-testid="rooms-door-hint">
         {{ t.inspector.doorHint }}
     </p>
 </template>

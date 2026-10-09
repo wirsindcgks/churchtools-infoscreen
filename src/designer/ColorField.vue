@@ -6,12 +6,12 @@
  * from the church's style guide. The button is folded while the colour is one of the palette's, open when it is a
  * free one. Only a valid hex code is taken over; while typing, the field keeps what was typed and marks it until it
  * is one. Without a provider (the Design page, where the palette is defined) picker and hex field stand alone.
- * A click on a swatch copies the value.
+ * A click on a swatch copies the value. In the short menu (Plan.md 79, C1) it is one round swatch that opens all this.
  */
 import { computed, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
 import Icon from './Icon.vue';
-import { useFieldVisible } from './inspector/mode';
+import QuickField from './inspector/fields/QuickField.vue';
 import { parseHex, pickerValue } from './color';
 import { usePalette, type PaletteColor } from './palette';
 
@@ -19,7 +19,6 @@ const props = defineProps<{ modelValue: string; label: string; testid?: string; 
 const emit = defineEmits<{ 'update:modelValue': [string]; focus: []; blur: [] }>();
 
 const lists = usePalette();
-const visible = useFieldVisible(() => props.quick);
 
 /** Name and hex value; a colour without a name of its own is just its hex value. */
 function swatchLabel(entry: PaletteColor): string {
@@ -71,82 +70,84 @@ function onTextBlur(): void {
 </script>
 
 <template>
-    <div v-if="visible" class="d-field color-field">
-        <span>{{ label }}</span>
-        <div v-if="lists && lists.palette.length" class="swatch-group" data-testid="palette-group">
-            <span class="swatch-caption">{{ t.common.color.palette }}</span>
-            <div class="palette-swatches" role="group" :aria-label="t.common.color.paletteOf(label)">
-                <button
-                    v-for="entry in lists.palette"
-                    :key="entry.color"
-                    type="button"
-                    class="swatch"
-                    :style="{ background: entry.color }"
-                    :title="swatchLabel(entry)"
-                    :aria-label="swatchLabel(entry)"
-                    :aria-pressed="entry.color.toLowerCase() === modelValue.toLowerCase()"
-                    :data-testid="testid ? `${testid}-swatch` : 'color-swatch'"
-                    @click="emit('update:modelValue', entry.color)"
-                />
+    <QuickField :quick="quick" :label="label" :swatch="modelValue">
+        <div class="d-field color-field">
+            <span>{{ label }}</span>
+            <div v-if="lists && lists.palette.length" class="swatch-group" data-testid="palette-group">
+                <span class="swatch-caption">{{ t.common.color.palette }}</span>
+                <div class="palette-swatches" role="group" :aria-label="t.common.color.paletteOf(label)">
+                    <button
+                        v-for="entry in lists.palette"
+                        :key="entry.color"
+                        type="button"
+                        class="swatch"
+                        :style="{ background: entry.color }"
+                        :title="swatchLabel(entry)"
+                        :aria-label="swatchLabel(entry)"
+                        :aria-pressed="entry.color.toLowerCase() === modelValue.toLowerCase()"
+                        :data-testid="testid ? `${testid}-swatch` : 'color-swatch'"
+                        @click="emit('update:modelValue', entry.color)"
+                    />
+                </div>
+            </div>
+            <div v-if="lists && lists.slide.length" class="swatch-group" data-testid="slide-colors-group">
+                <span class="swatch-caption">{{ t.common.color.onSlide }}</span>
+                <div class="palette-swatches" role="group" :aria-label="t.common.color.onSlideOf(label)">
+                    <button
+                        v-for="entry in lists.slide"
+                        :key="entry.color"
+                        type="button"
+                        class="swatch"
+                        :style="{ background: entry.color }"
+                        :title="swatchLabel(entry)"
+                        :aria-label="swatchLabel(entry)"
+                        :aria-pressed="entry.color.toLowerCase() === modelValue.toLowerCase()"
+                        :data-testid="testid ? `${testid}-swatch` : 'color-swatch'"
+                        @click="emit('update:modelValue', entry.color)"
+                    />
+                </div>
+            </div>
+            <button
+                v-if="showsSwatches"
+                type="button"
+                class="custom-toggle"
+                :aria-expanded="customOpen"
+                :data-testid="testid ? `${testid}-custom` : 'color-custom'"
+                @click="customOpen = !customOpen"
+            >
+                <Icon name="chevron-down" :size="14" :class="['custom-chevron', { open: customOpen }]" />
+                {{ t.common.color.custom }}
+            </button>
+            <div v-if="customShown" class="row">
+                <input
+                    type="color"
+                    :value="pickerValue(modelValue)"
+                    :aria-label="t.common.color.pick(label)"
+                    :data-testid="testid ? `${testid}-picker` : undefined"
+                    @focus="emit('focus')"
+                    @blur="emit('blur')"
+                    @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+                >
+                <input
+                    type="text"
+                    class="hex"
+                    :class="{ invalid }"
+                    :value="draft"
+                    maxlength="9"
+                    spellcheck="false"
+                    autocapitalize="off"
+                    autocomplete="off"
+                    :aria-label="t.common.color.asHex(label)"
+                    :aria-invalid="invalid"
+                    :title="invalid ? t.common.color.invalidHex : undefined"
+                    :data-testid="testid"
+                    @focus="onTextFocus"
+                    @blur="onTextBlur"
+                    @input="onText(($event.target as HTMLInputElement).value)"
+                >
             </div>
         </div>
-        <div v-if="lists && lists.slide.length" class="swatch-group" data-testid="slide-colors-group">
-            <span class="swatch-caption">{{ t.common.color.onSlide }}</span>
-            <div class="palette-swatches" role="group" :aria-label="t.common.color.onSlideOf(label)">
-                <button
-                    v-for="entry in lists.slide"
-                    :key="entry.color"
-                    type="button"
-                    class="swatch"
-                    :style="{ background: entry.color }"
-                    :title="swatchLabel(entry)"
-                    :aria-label="swatchLabel(entry)"
-                    :aria-pressed="entry.color.toLowerCase() === modelValue.toLowerCase()"
-                    :data-testid="testid ? `${testid}-swatch` : 'color-swatch'"
-                    @click="emit('update:modelValue', entry.color)"
-                />
-            </div>
-        </div>
-        <button
-            v-if="showsSwatches"
-            type="button"
-            class="custom-toggle"
-            :aria-expanded="customOpen"
-            :data-testid="testid ? `${testid}-custom` : 'color-custom'"
-            @click="customOpen = !customOpen"
-        >
-            <Icon name="chevron-down" :size="14" :class="['custom-chevron', { open: customOpen }]" />
-            {{ t.common.color.custom }}
-        </button>
-        <div v-if="customShown" class="row">
-            <input
-                type="color"
-                :value="pickerValue(modelValue)"
-                :aria-label="t.common.color.pick(label)"
-                :data-testid="testid ? `${testid}-picker` : undefined"
-                @focus="emit('focus')"
-                @blur="emit('blur')"
-                @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
-            >
-            <input
-                type="text"
-                class="hex"
-                :class="{ invalid }"
-                :value="draft"
-                maxlength="9"
-                spellcheck="false"
-                autocapitalize="off"
-                autocomplete="off"
-                :aria-label="t.common.color.asHex(label)"
-                :aria-invalid="invalid"
-                :title="invalid ? t.common.color.invalidHex : undefined"
-                :data-testid="testid"
-                @focus="onTextFocus"
-                @blur="onTextBlur"
-                @input="onText(($event.target as HTMLInputElement).value)"
-            >
-        </div>
-    </div>
+    </QuickField>
 </template>
 
 <style scoped>

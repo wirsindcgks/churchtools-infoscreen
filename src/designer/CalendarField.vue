@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * The calendars of a block (Plan.md 62): a foldable list of the public ones as switches, the same in every block that has
- * calendars (Plan.md 79, B2: the short menu takes it with `quick`). Status stays visible below it – no public calendar at all, and a chosen one that is not public.
+ * calendars (Plan.md 79, B2: the short menu takes it with `quick`, as one chip "Kalender · 3" that opens the whole list). Status stays visible below it – no public calendar at all, and a chosen one that is not public.
  */
 import { computed } from 'vue';
 import { t } from '../i18n/designer';
@@ -9,17 +9,17 @@ import { PUBLIC_CALENDAR_PATH, type Calendar } from '../ct/api';
 import { calendarColor } from '../player/format';
 import InspectorSection from './InspectorSection.vue';
 import ToggleField from './inspector/fields/ToggleField.vue';
-import { useFieldVisible } from './inspector/mode';
+import QuickField from './inspector/fields/QuickField.vue';
 
 const props = defineProps<{ calendars: Calendar[]; chosenIds: number[]; hidden: Calendar[]; quick?: boolean }>();
-const visible = useFieldVisible(() => props.quick);
 const emit = defineEmits<{ toggle: [id: number, on: boolean] }>();
 
-const summary = computed(() => t.common.countOf(props.calendars.filter((c) => props.chosenIds.includes(c.id)).length, props.calendars.length));
+const chosenCount = computed(() => props.calendars.filter((c) => props.chosenIds.includes(c.id)).length);
+const summary = computed(() => t.common.countOf(chosenCount.value, props.calendars.length));
 </script>
 
 <template>
-    <template v-if="visible">
+    <QuickField :quick="quick" :label="t.common.calendars.title" :face="t.quick.count(t.common.calendars.title, chosenCount)">
         <InspectorSection id="calendars" :title="t.common.calendars.title" :summary="summary">
             <template #info>
                 {{ t.common.calendars.info(PUBLIC_CALENDAR_PATH) }}
@@ -53,7 +53,7 @@ const summary = computed(() => t.common.countOf(props.calendars.filter((c) => pr
                 {{ t.common.remove }}
             </button>
         </p>
-    </template>
+    </QuickField>
 </template>
 
 <style scoped>

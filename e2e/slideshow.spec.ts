@@ -83,7 +83,7 @@ test('build a slideshow with several pictures, keep it, and see it in the librar
     await expect(page.getByTestId('slideshow-count')).toHaveText('0 von 30');
 
     // Pick three in the order 3, 1, 2 – the running numbers show the order.
-    await page.getByTestId('pick-slideshow').click();
+    await page.getByTestId('block-inspector').getByTestId('pick-slideshow').click();
     const library = page.getByTestId('media-library');
     await expect(library).toBeVisible();
     const pick = (name: string) => library.getByTestId('media-item').filter({ hasText: name }).locator('button.pick');
@@ -185,7 +185,7 @@ test('a slideshow takes at most 30 pictures, and an upload is marked instead of 
     test.setTimeout(90_000);
     await fakeLibrary(page, baseURL, 31);
     await newSlideWithSlideshow(page);
-    await page.getByTestId('pick-slideshow').click();
+    await page.getByTestId('block-inspector').getByTestId('pick-slideshow').click();
     const library = page.getByTestId('media-library');
     await expect(library.getByTestId('media-item')).toHaveCount(31);
     const buttons = library.locator('button.pick');
@@ -207,14 +207,14 @@ test('a slideshow takes at most 30 pictures, and an upload is marked instead of 
     await expect(library.getByTestId('media-add')).toHaveText('Hinzufügen (30)');
     await library.getByTestId('media-add').click();
     await expect(page.getByTestId('slideshow-count')).toHaveText('30 von 30');
-    await expect(page.getByTestId('pick-slideshow')).toBeDisabled();
+    await expect(page.getByTestId('block-inspector').getByTestId('pick-slideshow')).toBeDisabled();
 });
 
 test('the preview of a 31st picture says that a gallery takes at most 30', async ({ page, baseURL }) => {
     test.setTimeout(90_000);
     await fakeLibrary(page, baseURL, 31);
     await newSlideWithSlideshow(page);
-    await page.getByTestId('pick-slideshow').click();
+    await page.getByTestId('block-inspector').getByTestId('pick-slideshow').click();
     const library = page.getByTestId('media-library');
     await expect(library.getByTestId('media-item')).toHaveCount(31);
     const buttons = library.locator('button.pick');
@@ -244,7 +244,7 @@ for (const [transition] of TRANSITIONS) {
         test.setTimeout(60_000);
         await fakeLibrary(page, baseURL, 3);
         await newSlideWithSlideshow(page);
-        await page.getByTestId('pick-slideshow').click();
+        await page.getByTestId('block-inspector').getByTestId('pick-slideshow').click();
         const library = page.getByTestId('media-library');
         for (const name of ['bild-01', 'bild-02']) await library.getByTestId('media-item').filter({ hasText: name }).locator('button.pick').click();
         await library.getByTestId('media-add').click();
@@ -285,7 +285,7 @@ for (const [transition] of TRANSITIONS) {
 async function twoPictures(page: Page, baseURL: string | undefined): Promise<void> {
     await fakeLibrary(page, baseURL, 3);
     await newSlideWithSlideshow(page);
-    await page.getByTestId('pick-slideshow').click();
+    await page.getByTestId('block-inspector').getByTestId('pick-slideshow').click();
     const library = page.getByTestId('media-library');
     for (const name of ['bild-01', 'bild-02']) await library.getByTestId('media-item').filter({ hasText: name }).locator('button.pick').click();
     await library.getByTestId('media-add').click();
@@ -376,7 +376,7 @@ for (const size of [
         await page.setViewportSize(size);
         await fakeLibrary(page, baseURL, 3, true);
         await newSlideWithSlideshow(page, size.width >= 1440);
-        await page.getByTestId('pick-slideshow').click();
+        await page.getByTestId('block-inspector').getByTestId('pick-slideshow').click();
         const library = page.getByTestId('media-library');
         for (const name of ['e2e-chromium', 'bild-02']) await library.getByTestId('media-item').filter({ hasText: name }).locator('button.pick').click();
         await library.getByTestId('media-add').click();

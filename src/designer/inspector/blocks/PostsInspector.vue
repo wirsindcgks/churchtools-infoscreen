@@ -10,12 +10,16 @@ import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
 import NumberField from '../fields/NumberField.vue';
 import TileField from '../fields/TileField.vue';
+import QuickField from '../fields/QuickField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import FontSection from '../FontSection.vue';
 import { POSTS_TILES } from '../layouts';
 import { useBlockEdit } from '../use-block';
+import { useInspectorMode } from '../mode';
 
 const props = defineProps<{ block: Extract<Block, { type: 'posts' }> }>();
+/** Only fields stand in the short menu; a hint or a line of text belongs to the inspector. */
+const mode = useInspectorMode();
 const { setBlock } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
 
@@ -27,20 +31,22 @@ function toggleGroup(id: number, on: boolean): void {
 </script>
 
 <template>
-    <InspectorSection id="post-groups" :title="t.inspector.groups" :summary="block.groupIds.length ? t.common.chosen(block.groupIds.length) : t.common.none">
-        <template #info>{{ t.inspector.postGroupsInfo }}</template>
-        <ToggleField
-            v-for="g in context.groups"
-            :key="g.id"
-            quick
-            :model-value="block.groupIds.includes(g.id)"
-            :label="g.visibility !== 'public' ? `${g.name} · ${t.inspector.notPublic}` : g.name"
-            :testid="`post-group-${g.id}`"
-            @update:model-value="toggleGroup(g.id, $event)"
-        />
-        <p v-if="!context.groups.length" class="hint">{{ t.inspector.noPostGroups }}</p>
-    </InspectorSection>
-    <p v-if="block.groupIds.some((id) => context.groups.find((g) => g.id === id)?.visibility !== 'public')" class="hint" data-testid="posts-not-public">
+    <!-- One chip "Gruppen · 2" in the short menu, so a double click on the block can lead here (Plan.md 79, C5). -->
+    <QuickField quick :label="t.inspector.groups" :face="t.quick.count(t.inspector.groups, block.groupIds.length)">
+        <InspectorSection id="post-groups" :title="t.inspector.groups" :summary="block.groupIds.length ? t.common.chosen(block.groupIds.length) : t.common.none">
+            <template #info>{{ t.inspector.postGroupsInfo }}</template>
+            <ToggleField
+                v-for="g in context.groups"
+                :key="g.id"
+                :model-value="block.groupIds.includes(g.id)"
+                :label="g.visibility !== 'public' ? `${g.name} · ${t.inspector.notPublic}` : g.name"
+                :testid="`post-group-${g.id}`"
+                @update:model-value="toggleGroup(g.id, $event)"
+            />
+            <p v-if="!context.groups.length" class="hint">{{ t.inspector.noPostGroups }}</p>
+        </InspectorSection>
+    </QuickField>
+    <p v-if="mode === 'full' && block.groupIds.some((id) => context.groups.find((g) => g.id === id)?.visibility !== 'public')" class="hint" data-testid="posts-not-public">
         {{ t.inspector.postsNotPublic }}
     </p>
     <TileField quick :model-value="block.layout" :options="POSTS_TILES" :label="t.inspector.appearance" testid="posts-layout" @update:model-value="setBlock({ layout: $event })" />

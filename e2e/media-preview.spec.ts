@@ -182,7 +182,7 @@ test('in the editor the eye opens the preview; Escape closes only it; "Verwenden
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await addBlock(page, 'image');
-    await page.getByTestId('pick-image').click();
+    await page.getByTestId('block-inspector').getByTestId('pick-image').click();
     const library = page.getByTestId('media-library');
     const items = library.getByTestId('media-item');
     await expect(items).toHaveCount(3);
