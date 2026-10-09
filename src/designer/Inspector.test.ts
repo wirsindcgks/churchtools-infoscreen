@@ -40,7 +40,7 @@ describe('the layers in "Anordnen" (Plan.md 79, B3)', () => {
         const editor = await open();
         editor.addBlock('text');
         editor.addBlock('shape');
-        editor.setLocked(editor.slide!.blocks[0]!.id, true);
+        editor.setLocked([editor.slide!.blocks[0]!.id], true);
         const wrapper = mount(Inspector, { props: { calendars: [], groups: [], homepages: [], rooms: null } });
         const rows = wrapper.findAll('[data-testid="layer-row"]');
         expect(rows[1]!.find('[data-testid="layer-lock"]').exists()).toBe(true);

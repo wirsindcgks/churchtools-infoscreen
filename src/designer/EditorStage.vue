@@ -15,7 +15,7 @@ import Icon from './Icon.vue';
 import { isDoubleTap, longPress, TAP_SLOP, type Tap } from './gestures';
 import { handlesOutside } from './handles';
 import { neighbourGaps, pairGaps, sizeLabelPlace, type Measure } from './measure';
-import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, clampFrame } from './ops';
+import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, boundingBox, clampFrame } from './ops';
 import QuickMenu from './QuickMenu.vue';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 import { clampPan, viewOnto, WHOLE, zoomAt, zoomedFit, type View } from './stage-zoom';
@@ -102,15 +102,21 @@ onBeforeUnmount(() => {
 const HANDLES: Handle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
 
 interface Drag {
+    /** The block the press started on. */
     id: string;
+    /** The blocks that move: a drag of several carries the unlocked chosen ones (Plan.md 79, D3); a handle has only `id`. */
+    ids: string[];
     handle: Handle | 'move';
     startX: number;
     startY: number;
+    /** The block's frame; for a drag of several the box around the moving ones. */
     frame: { x: number; y: number; width: number; height: number };
     /** Snap targets come closer than this many screen pixels: a fingertip is less exact than a mouse. */
     snapPx: number;
 }
 let drag: Drag | null = null;
+/** A press on one of several chosen blocks keeps the choice for a group drag; let go unmoved, it picks that block alone. */
+let soloPending: string | null = null;
 /**
  * Zoomed in, a finger on the chosen block first waits (C3; user at the phone, 2026-10-09): moved at once, it moves the
  * stage like a map; held still for {@link HOLD_MS}, the block lifts and follows the finger.
@@ -126,6 +132,7 @@ function dropHold(): void {
 const guides = ref<Guide[]>([]);
 /** The block being dragged or resized – set with the first movement, not with a click. */
 const dragId = ref<string | null>(null);
+const dragIds = ref<string[]>([]);
 /** Distances to the neighbours while dragging (A1) and the equal gaps the drag snapped to (A3). */
 const measures = ref<Measure[]>([]);
 const spacings = ref<Measure[]>([]);
@@ -147,20 +154,29 @@ function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): vo
     // A locked block lets a click through to an unlocked one below it; with Alt it takes the click itself.
     const point = handle === 'move' && clicked.locked && !event.altKey ? stagePoint(event) : null;
     const block = (point && blockBelow(blocks.value, clicked, point)) || clicked;
-    const wasChosen = editor.selectedBlockId === block.id;
-    editor.selectBlock(block.id);
+    soloPending = null;
+    // Shift, Ctrl or ⌘ adds the block to the choice or takes it out, and starts no drag (D2).
+    if (handle === 'move' && (event.shiftKey || event.ctrlKey || event.metaKey)) {
+        editor.toggleBlock(block.id);
+        return;
+    }
+    const wasChosen = editor.isSelected(block.id);
+    if (handle === 'move' && wasChosen && editor.selectedBlockIds.length > 1) soloPending = block.id;
+    else editor.selectBlock(block.id);
     const touch = event.pointerType === 'touch';
     if (touch) showName(block.id);
     // A finger first chooses (C3): a swipe over an unchosen block scrolls the page. Only the chosen block is moved.
     if (touch && !wasChosen) return;
-    // Locked (Plan.md, 25): it can be chosen – to unlock it in the inspector – but not moved.
-    if (block.locked) return;
+    // Locked (Plan.md, 25): it can be chosen – to unlock it in the inspector – but not moved. In a group the locked stay and the rest goes.
+    const moving = handle === 'move' ? editor.selection.filter((b) => !b.locked) : block.locked ? [] : [block];
+    if (!moving.length) return;
     const ready: Drag = {
         id: block.id,
+        ids: moving.map((b) => b.id),
         handle,
         startX: event.clientX,
         startY: event.clientY,
-        frame: { x: block.x, y: block.y, width: block.width, height: block.height },
+        frame: boundingBox(moving)!,
         snapPx: touch ? SNAP_SCREEN_PX_TOUCH : SNAP_SCREEN_PX,
     };
     if (touch && handle === 'move' && view.value.zoom > 1) {
@@ -198,7 +214,9 @@ function moveTo(event: PointerEvent): void {
     const dy = (event.clientY - drag.startY) / fit.value.scale;
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
     editor.beginGesture();
+    soloPending = null;
     dragId.value = drag.id;
+    dragIds.value = drag.ids;
     const f = { ...drag.frame };
     const h = drag.handle;
     if (h === 'move') {
@@ -216,14 +234,14 @@ function moveTo(event: PointerEvent): void {
             f.height -= dy;
         }
     }
-    const id = drag.id;
-    const others = blocks.value.filter((b) => b.id !== id);
+    // The box of a group snaps against everything else – the locked chosen ones included, so one can line up with them.
+    const others = blocks.value.filter((b) => !drag!.ids.includes(b.id));
     // Alt/Option suspends snapping for fine placement – the distances still show.
     if (event.altKey) {
         guides.value = [];
         spacings.value = [];
         measures.value = neighbourGaps(clampFrame(f, editor.stage), others, editor.stage);
-        editor.updateBlock(drag.id, f);
+        apply(drag, f);
         return;
     }
     const options = {
@@ -236,7 +254,17 @@ function moveTo(event: PointerEvent): void {
     guides.value = snapped.guides;
     spacings.value = snapped.spacings;
     measures.value = neighbourGaps(clampFrame(snapped.frame, editor.stage), others, editor.stage);
-    editor.updateBlock(id, snapped.frame);
+    apply(drag, snapped.frame);
+}
+
+/** Puts the dragged block, or the box of the dragged group, on this frame. */
+function apply(d: Drag, frame: { x: number; y: number; width: number; height: number }): void {
+    if (d.handle !== 'move') {
+        editor.updateBlock(d.id, frame);
+        return;
+    }
+    const now = boundingBox(blocks.value.filter((b) => d.ids.includes(b.id)));
+    if (now) editor.moveBlocks(d.ids, frame.x - now.x, frame.y - now.y);
 }
 
 function end(): void {
@@ -244,11 +272,16 @@ function end(): void {
     liftedId.value = null;
     drag = null;
     dragId.value = null;
+    dragIds.value = [];
     guides.value = [];
     measures.value = [];
     spacings.value = [];
     // A mouse released over a block after marking text in the field must not close the editing run.
     if (!editor.editingTextId) editor.endGesture();
+    if (soloPending) {
+        editor.selectBlock(soloPending);
+        soloPending = null;
+    }
 }
 
 type Drawn = Measure & { kind: 'measure' | 'spacing' };
@@ -273,7 +306,7 @@ function measureStyle(m: Measure): Record<string, string> {
 
 /** The size beside the block while it is dragged or resized (A1): where `sizeLabelPlace` puts it, clear of the distances. */
 const sizeLabel = computed(() => {
-    const b = blocks.value.find((x) => x.id === dragId.value);
+    const b = dragId.value ? boundingBox(blocks.value.filter((x) => dragIds.value.includes(x.id))) : null;
     if (!b) return null;
     const { top } = sizeLabelPlace(b, drawn.value, editor.stage, fit.value.scale);
     return { text: t.editor.stage.size(b.width, b.height), style: { left: `${b.x + b.width / 2}px`, top: `${top}px` } };
@@ -302,12 +335,16 @@ wideQuery.addEventListener('change', onWideChange);
 onBeforeUnmount(() => wideQuery.removeEventListener('change', onWideChange));
 
 /** A block's frame in host pixels (the menu and the buttons on empty blocks live outside the scaled stage). */
-function hostFrame(b: Block): { left: number; top: number; width: number; height: number } {
+function hostFrame(b: { x: number; y: number; width: number; height: number }): { left: number; top: number; width: number; height: number } {
     const { scale, offsetX, offsetY } = fit.value;
     return { left: offsetX + b.x * scale, top: offsetY + b.y * scale, width: b.width * scale, height: b.height * scale };
 }
-const quickBlock = computed(() => (wide.value && !dragId.value && fit.value.scale > 0 ? editor.block : null));
-const quickFrame = computed(() => (quickBlock.value ? hostFrame(quickBlock.value) : null));
+const quickBlocks = computed(() => (wide.value && !dragId.value && fit.value.scale > 0 ? editor.selection : []));
+/** One block's frame, or the box around several (all of them, the locked too). */
+const quickFrame = computed(() => {
+    const box = boundingBox(quickBlocks.value);
+    return box ? hostFrame(box) : null;
+});
 const quickMenu = ref<InstanceType<typeof QuickMenu> | null>(null);
 
 /** The buttons on blocks that lack their content (C6): only where they fit, never on a locked block, the one being dragged or one whose middle another block covers. */
@@ -435,7 +472,7 @@ async function onLongPress(): Promise<void> {
     pressedId.value = down.target;
     setTimeout(() => (pressedId.value = null), 300);
     navigator.vibrate?.(15);
-    if (!editor.selectedBlockId) editor.selectBlock(down.target);
+    if (!editor.selectedBlockIds.length) editor.selectBlock(down.target);
     await nextTick();
     if (quickMenu.value) quickMenu.value.openMore();
     else if (!wide.value) emit('open-more');
@@ -462,7 +499,7 @@ function onHostDownCapture(event: PointerEvent): void {
     pressPoint = { x: event.clientX, y: event.clientY };
     // Zoomed, also over the chosen block: there the finger waits for a hold first (start).
     panStart =
-        target && (target === 'empty' || target !== editor.selectedBlockId || view.value.zoom > 1)
+        target && (target === 'empty' || !editor.isSelected(target) || view.value.zoom > 1)
             ? { x: event.clientX, y: event.clientY, view: { ...view.value } }
             : null;
     press.cancel();
@@ -507,9 +544,67 @@ function onHostUpCapture(event: PointerEvent): void {
     // A tap on the empty stage lets go of the block (the mouse does it on press; a finger may be the start of a zoom).
     if (down.target === 'empty') editor.selectBlock(null);
 }
-function onHostDown(event: PointerEvent): void {
-    if (event.pointerType !== 'touch') editor.selectBlock(null);
+/**
+ * A press on the empty stage with a mouse lets go of the blocks and – dragged more than 3 px – draws the selection rectangle
+ * (Plan.md 79, D2); with Shift, Ctrl or ⌘ it adds to the choice instead. A finger has none: the empty stage scrolls (C3).
+ */
+interface Marquee {
+    /** Where it started and where it is now, in stage pixels. */
+    from: { x: number; y: number };
+    to: { x: number; y: number };
+    /** The pointer's start in screen pixels, for the 3 px before it counts as a drag. */
+    screen: { x: number; y: number };
+    add: boolean;
+    moved: boolean;
 }
+const marquee = ref<Marquee | null>(null);
+const MARQUEE_SLOP = 3;
+const noSelect = (event: Event): void => event.preventDefault();
+function onHostDown(event: PointerEvent): void {
+    if (event.pointerType === 'touch') return;
+    const add = event.shiftKey || event.ctrlKey || event.metaKey;
+    if (!add) editor.selectBlock(null);
+    const point = event.button === 0 && editor.slide ? stagePoint(event) : null;
+    if (!point) return;
+    marquee.value = { from: point, to: point, screen: { x: event.clientX, y: event.clientY }, add, moved: false };
+    window.addEventListener('pointermove', onMarqueeMove);
+    window.addEventListener('pointerup', onMarqueeEnd);
+    window.addEventListener('pointercancel', onMarqueeEnd);
+    document.addEventListener('selectstart', noSelect);
+}
+function onMarqueeMove(event: PointerEvent): void {
+    const m = marquee.value;
+    const point = stagePoint(event);
+    if (!m || !point) return;
+    m.to = point;
+    if (!m.moved && Math.hypot(event.clientX - m.screen.x, event.clientY - m.screen.y) > MARQUEE_SLOP) m.moved = true;
+}
+function onMarqueeEnd(event: PointerEvent): void {
+    const m = marquee.value;
+    const rect = marqueeRect.value;
+    stopMarquee();
+    if (m?.moved && event.type === 'pointerup') editor.selectArea(rect ?? { x: -1, y: -1, width: 0, height: 0 }, m.add);
+}
+function stopMarquee(): void {
+    marquee.value = null;
+    window.removeEventListener('pointermove', onMarqueeMove);
+    window.removeEventListener('pointerup', onMarqueeEnd);
+    window.removeEventListener('pointercancel', onMarqueeEnd);
+    document.removeEventListener('selectstart', noSelect);
+}
+onBeforeUnmount(stopMarquee);
+/** The rectangle in stage pixels, cut off at the stage; null before it counts as a drag or while it lies wholly outside. */
+const marqueeRect = computed(() => {
+    const m = marquee.value;
+    if (!m?.moved) return null;
+    const left = Math.max(0, Math.min(m.from.x, m.to.x));
+    const top = Math.max(0, Math.min(m.from.y, m.to.y));
+    const right = Math.min(editor.stage.width, Math.max(m.from.x, m.to.x));
+    const bottom = Math.min(editor.stage.height, Math.max(m.from.y, m.to.y));
+    return right < left || bottom < top ? null : { x: left, y: top, width: right - left, height: bottom - top };
+});
+/** The dashed box around two or more chosen blocks (D3): no handles, a group is not scaled. */
+const selectionBox = computed(() => (editor.selection.length > 1 ? boundingBox(editor.selection) : null));
 function onContextMenu(event: Event): void {
     if (touchLive) event.preventDefault();
 }
@@ -681,7 +776,7 @@ function onEmptyAction(b: Block): void {
                     v-for="block in blocks"
                     :key="block.id"
                     class="frame"
-                    :class="{ 'frame--selected': block.id === editor.selectedBlockId, 'frame--locked': block.locked, 'frame--tight': tight(block), 'frame--pressed': block.id === pressedId, 'frame--lifted': block.id === liftedId }"
+                    :class="{ 'frame--selected': editor.isSelected(block.id), 'frame--locked': block.locked, 'frame--tight': tight(block), 'frame--pressed': block.id === pressedId, 'frame--lifted': block.id === liftedId }"
                     :style="{
                         left: `${block.x}px`,
                         top: `${block.y}px`,
@@ -706,14 +801,14 @@ function onEmptyAction(b: Block): void {
                         <Icon :name="BLOCK_ICONS[block.type]" :size="14" />{{ BLOCK_LABELS[block.type] }}
                     </span>
                     <span
-                        v-if="block.locked && block.id === editor.selectedBlockId"
+                        v-if="block.locked && block.id === editor.block?.id"
                         class="lock"
                         :title="t.editor.stage.lockBadge"
                         data-testid="frame-lock"
                     >
                         <Icon name="lock" :size="16" />
                     </span>
-                    <template v-else-if="block.id === editor.selectedBlockId">
+                    <template v-else-if="block.id === editor.block?.id">
                         <span
                             v-for="h in HANDLES"
                             :key="h"
@@ -726,6 +821,18 @@ function onEmptyAction(b: Block): void {
                         />
                     </template>
                 </div>
+                <div
+                    v-if="selectionBox"
+                    class="selection-box"
+                    :style="{ left: `${selectionBox.x}px`, top: `${selectionBox.y}px`, width: `${selectionBox.width}px`, height: `${selectionBox.height}px`, '--line': `${1.5 / fit.scale}px` }"
+                    data-testid="selection-box"
+                />
+                <div
+                    v-if="marqueeRect"
+                    class="select-area"
+                    :style="{ left: `${marqueeRect.x}px`, top: `${marqueeRect.y}px`, width: `${marqueeRect.width}px`, height: `${marqueeRect.height}px`, '--line': `${1 / fit.scale}px` }"
+                    data-testid="select-area"
+                />
                 <!-- Only in the editor (C4): the hint of an empty text, and the field while it is written – same structure as the player's text. -->
                 <div
                     v-for="b in placeholders"
@@ -776,10 +883,10 @@ function onEmptyAction(b: Block): void {
             <Icon name="frame-fit" :size="16" /> {{ t.editor.stage.zoomReset }}
         </button>
         <QuickMenu
-            v-if="quickBlock && quickFrame"
-            :key="quickBlock.id"
+            v-if="quickBlocks.length && quickFrame"
+            :key="quickBlocks.map((b) => b.id).join()"
             ref="quickMenu"
-            :block="quickBlock"
+            :blocks="quickBlocks"
             :frame="quickFrame"
             :host="size"
             @all-settings="emit('all-settings')"
@@ -1029,6 +1136,24 @@ function onEmptyAction(b: Block): void {
 }
 .frame--locked {
     cursor: default;
+}
+/* Several chosen (D3): the box around them is dashed and lets every press through to the blocks below it. */
+.selection-box {
+    position: absolute;
+    z-index: 3;
+    box-sizing: border-box;
+    pointer-events: none;
+    outline: var(--line) dashed rgb(59, 130, 246);
+    outline-offset: calc(var(--line) * 2);
+}
+/* The rectangle drawn on the empty stage (D2). */
+.select-area {
+    position: absolute;
+    z-index: 3;
+    box-sizing: border-box;
+    pointer-events: none;
+    border: var(--line) solid rgb(59, 130, 246);
+    background: rgba(59, 130, 246, 0.12);
 }
 /* Sized in screen pixels like the handles; the stage is shown scaled. */
 .lock {

@@ -118,6 +118,7 @@ export const t = {
         shift: 'Umschalt',
         alt: 'Alt',
         arrows: 'Pfeiltasten',
+        click: 'Klick',
         keys: { Delete: 'Entf', Escape: 'Esc' } as Record<string, string>,
         macKeys: { Delete: '⌫' } as Record<string, string>,
         groups: { general: 'Allgemein', block: 'Gewählter Baustein', stage: 'Beim Ziehen und Zeigen' },
@@ -126,6 +127,7 @@ export const t = {
             undo: 'Rückgängig',
             redo: 'Wiederholen',
             deselect: 'Auswahl aufheben',
+            selectAll: 'Alle Bausteine wählen',
             help: 'Diese Übersicht',
             copy: 'Kopieren',
             cut: 'Ausschneiden',
@@ -135,6 +137,7 @@ export const t = {
             nudge: 'Um 1 Pixel verschieben',
             nudgeFar: 'Um 10 Pixel verschieben',
             placeFree: 'Beim Ziehen gedrückt halten: frei platzieren, ohne Einrasten',
+            addToSelection: 'Baustein zur Auswahl hinzufügen oder wegnehmen',
             distances: 'Über einem Baustein gedrückt halten: Abstände zum gewählten zeigen',
         },
     },
@@ -201,6 +204,8 @@ export const t = {
         /** The bar at the bottom of a phone (Plan.md 79, C2). */
         phone: { editSlide: 'Folie bearbeiten' },
         blockNamed: (label: string) => `Baustein: ${label}`,
+        /** The head of the inspector and of the short menu while several blocks are chosen (Plan.md 79, D5). */
+        blocksCount: (n: number) => `${n} Bausteine`,
         discardChanges: 'Ungespeicherte Änderungen verwerfen?',
         slideConflict: {
             title: 'Eine verknüpfte Folie wurde inzwischen geändert',
@@ -331,6 +336,7 @@ export const t = {
         done: 'Fertig',
         allSettings: 'Alle Einstellungen',
         copy: 'Kopieren',
+        cut: 'Ausschneiden',
         paste: 'Einfügen',
         layers: { front: 'Ganz nach vorn', forward: 'Nach vorn', backward: 'Nach hinten', back: 'Ganz nach hinten' },
         /** The button in the middle of a block that still lacks its content. */
@@ -380,6 +386,12 @@ export const t = {
         },
         duplicateBlock: 'Baustein duplizieren',
         copyBlock: 'Baustein kopieren',
+        /** The same buttons while several blocks are chosen (Plan.md 79, D5). */
+        duplicateBlocks: 'Bausteine duplizieren',
+        copyBlocks: 'Bausteine kopieren',
+        deleteBlocks: 'Bausteine löschen',
+        lockBlocksTitle: 'Alle sperren: nicht mehr verschieben, ändern oder löschen',
+        unlockBlocksTitle: 'Alle entsperren',
         lockedTitle: 'Entsperren, um den Baustein wieder zu bearbeiten',
         lockTitle: 'Sperren: nicht mehr verschieben, ändern oder löschen',
         deleteBlock: 'Baustein löschen',

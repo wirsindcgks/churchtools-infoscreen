@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * The two rows at the bottom of a phone (Plan.md 79, C2). The lower one is always there: the slide – "Folie 2 von 5" opens the
- * sheet of slides, "+ Baustein" the sheet of blocks, "⋯" holds what belongs to the slide. A block chosen adds the upper row:
+ * sheet of slides, "+ Baustein" the sheet of blocks, "⋯" holds what belongs to the slide. A block chosen (or several) adds the upper row:
  * the short menu of the block in its bar form (`QuickMenu`, `variant="bar"`). The sheets themselves belong to the editor; this bar only asks for them.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
@@ -64,8 +64,8 @@ async function removeSlide(): Promise<void> {
 
 <template>
     <div class="phone-bar" :style="keyboard ? { bottom: `${keyboard}px` } : undefined" data-testid="phone-bar">
-        <div v-if="editor.block" class="block-row" data-testid="phone-block-row">
-            <QuickMenu ref="quickMenu" :key="editor.block.id" :block="editor.block" variant="bar" @all-settings="emit('all-settings')" />
+        <div v-if="editor.selection.length" class="block-row" data-testid="phone-block-row">
+            <QuickMenu ref="quickMenu" :key="editor.selection.map((b) => b.id).join()" :blocks="editor.selection" variant="bar" @all-settings="emit('all-settings')" />
         </div>
         <div class="slide-row" data-testid="phone-slide-row">
             <button

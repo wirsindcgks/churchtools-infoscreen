@@ -23,7 +23,7 @@ import { t } from '../i18n/designer';
 import { tr } from '../i18n/repository';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
-import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, fitToStage, freeSpot, move, moveAround, newId, reorder, type Layer } from './ops';
+import { boundingBox, clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, freeSpot, move, moveAround, newId, reorderMany, type Layer } from './ops';
 
 /** Publishing (Plan.md 79, Paket E): what the button "Veröffentlichen" is doing. */
 export type SaveStatus = 'idle' | 'publishing' | 'published' | 'conflict' | 'error';
@@ -44,7 +44,8 @@ export const useEditorStore = defineStore('editor', () => {
     /** Screens that show this playlist; saving changes all of them. */
     const screens = ref<ScreenRef[]>([]);
     const selectedSlideId = ref<string | null>(null);
-    const selectedBlockId = ref<string | null>(null);
+    /** The chosen blocks (Plan.md 79, D1); `selection` has them in layer order, only those the slide still has. */
+    const selectedBlockIds = ref<string[]>([]);
     const status = ref<SaveStatus>('idle');
     const conflict = ref<ConflictInfo | null>(null);
     /** A slide another playlist saved in between (Plan.md 49); set instead of `conflict`. */
@@ -105,7 +106,9 @@ export const useEditorStore = defineStore('editor', () => {
         return (playlist.value?.slideIds ?? []).map((id) => byId.get(id)).filter((s): s is SlideDoc => !!s);
     });
     const slide = computed(() => slides.value.find((s) => s.id === selectedSlideId.value) ?? slides.value[0] ?? null);
-    const block = computed(() => slide.value?.blocks.find((b) => b.id === selectedBlockId.value) ?? null);
+    const selection = computed<Block[]>(() => slide.value?.blocks.filter((b) => selectedBlockIds.value.includes(b.id)) ?? []);
+    /** The one chosen block; null with none or with several. */
+    const block = computed(() => (selection.value.length === 1 ? selection.value[0]! : null));
     /** The text block being written on the stage (Plan.md 79, C4): one editing run is one step in the history. */
     const editingTextId = ref<string | null>(null);
     const calendarIds = computed(() => [
@@ -162,7 +165,7 @@ export const useEditorStore = defineStore('editor', () => {
         draftStatus.value = draftsOn.value ? 'clean' : 'off';
         if (!slides.value.some((s) => s.id === selectedSlideId.value)) {
             selectedSlideId.value = slides.value[0]?.id ?? null;
-            selectedBlockId.value = null;
+            selectedBlockIds.value = [];
         }
     }
 
@@ -206,7 +209,7 @@ export const useEditorStore = defineStore('editor', () => {
         draftStatus.value = 'saved';
         if (!slides.value.some((s) => s.id === selectedSlideId.value)) {
             selectedSlideId.value = slides.value[0]?.id ?? null;
-            selectedBlockId.value = null;
+            selectedBlockIds.value = [];
         }
     }
 
@@ -239,7 +242,7 @@ export const useEditorStore = defineStore('editor', () => {
         const target = slide.value?.blocks.find((b) => b.id === id);
         if (!target || target.type !== 'text' || target.locked) return;
         if (editingTextId.value) endTextEdit();
-        selectedBlockId.value = id;
+        selectedBlockIds.value = [id];
         editingTextId.value = id;
         beginGesture();
     }
@@ -266,6 +269,7 @@ export const useEditorStore = defineStore('editor', () => {
         const previous = history.undo(draft.value);
         if (previous) draft.value = previous;
         historyVersion.value++;
+        pruneSelection();
     }
 
     function redo(): void {
@@ -274,6 +278,7 @@ export const useEditorStore = defineStore('editor', () => {
         const next = history.redo(draft.value);
         if (next) draft.value = next;
         historyVersion.value++;
+        pruneSelection();
     }
 
     function slideIn(bundle: PlaylistBundle, id: string | undefined): SlideDoc | undefined {
@@ -282,11 +287,39 @@ export const useEditorStore = defineStore('editor', () => {
 
     function selectSlide(id: string): void {
         selectedSlideId.value = id;
-        selectedBlockId.value = null;
+        selectedBlockIds.value = [];
     }
 
     function selectBlock(id: string | null): void {
-        selectedBlockId.value = id;
+        selectedBlockIds.value = id ? [id] : [];
+    }
+
+    function isSelected(id: string): boolean {
+        return selectedBlockIds.value.includes(id);
+    }
+
+    /** Adds the block to the choice, or takes it out (Shift-click). */
+    function toggleBlock(id: string): void {
+        selectedBlockIds.value = isSelected(id) ? selectedBlockIds.value.filter((x) => x !== id) : [...selectedBlockIds.value, id];
+    }
+
+    /** Every block of the slide, locked ones too. */
+    function selectAll(): void {
+        selectedBlockIds.value = slide.value?.blocks.map((b) => b.id) ?? [];
+    }
+
+    /** The blocks whose frame the rectangle (stage pixels) touches; with `add` together with those chosen already. */
+    function selectArea(rect: { x: number; y: number; width: number; height: number }, add = false): void {
+        const hit = (slide.value?.blocks ?? [])
+            .filter((b) => b.x <= rect.x + rect.width && b.x + b.width >= rect.x && b.y <= rect.y + rect.height && b.y + b.height >= rect.y)
+            .map((b) => b.id);
+        selectedBlockIds.value = add ? [...new Set([...selectedBlockIds.value, ...hit])] : hit;
+    }
+
+    /** Takes out of the choice what the slide no longer has (after undo, redo and delete). */
+    function pruneSelection(): void {
+        const kept = selectedBlockIds.value.filter((id) => slide.value?.blocks.some((b) => b.id === id));
+        if (kept.length !== selectedBlockIds.value.length) selectedBlockIds.value = kept;
     }
 
     function renamePlaylist(name: string): void {
@@ -386,7 +419,7 @@ export const useEditorStore = defineStore('editor', () => {
         });
         const next = slides.value[Math.min(index, slides.value.length - 1)];
         selectedSlideId.value = next?.id ?? null;
-        selectedBlockId.value = null;
+        selectedBlockIds.value = [];
     }
 
     function moveSlide(from: number, to: number): void {
@@ -404,56 +437,70 @@ export const useEditorStore = defineStore('editor', () => {
         const created = freeSpot(createBlock(type, stage.value, calendarIds.value, theme.value), slide.value.blocks, stage.value);
         const id = slide.value.id;
         change((b) => slideIn(b, id)?.blocks.push(created));
-        selectedBlockId.value = created.id;
+        selectedBlockIds.value = [created.id];
     }
 
-    function copyBlock(id: string): void {
-        const source = slide.value?.blocks.find((x) => x.id === id);
-        if (source) clipboard.value = [cloneJson(source)];
+    /** The blocks of the slide with these ids, in layer order. */
+    function blocksOf(ids: readonly string[]): Block[] {
+        return slide.value?.blocks.filter((b) => ids.includes(b.id)) ?? [];
     }
 
-    /** Copy and delete in one step; a locked block stays where it is. */
-    function cutBlock(id: string): void {
-        if (isLocked(id)) return;
-        copyBlock(id);
-        removeBlock(id);
+    /** Copies the blocks with their places to each other; locked ones come along. */
+    function copyBlocks(ids: readonly string[]): void {
+        const sources = blocksOf(ids);
+        if (sources.length) clipboard.value = sources.map((x) => cloneJson(x));
+    }
+
+    /** Copy and delete in one step; locked blocks stay where they are (and are not copied). */
+    function cutBlocks(ids: readonly string[]): void {
+        const free = blocksOf(ids).filter((x) => !x.locked);
+        if (!free.length) return;
+        const freeIds = free.map((x) => x.id);
+        copyBlocks(freeIds);
+        removeBlocks(freeIds);
     }
 
     /**
      * Puts copies of the given blocks on the current slide as one step: new ids, not locked, otherwise as they were.
-     * They keep their place unless a block sits there already; one too big for this stage shrinks to fit. The last is chosen.
+     * They keep their place to each other, as a group. It stays where it was unless a block sits there already (then the
+     * group steps on, `freeSpot` for its box); a group too big for this stage shrinks to fit in its aspect ratio. All of them are chosen.
      * With `at` (stage pixels) the group's middle goes there instead, pulled back onto the stage, and stays even over a block.
      */
     function place(sources: Block[], at?: { x: number; y: number }): void {
         const target = slide.value;
         if (!target || !sources.length) return;
         const slideId = target.id;
-        const placed: Block[] = [];
-        let shift = { x: 0, y: 0 };
-        if (at) {
-            const left = Math.min(...sources.map((x) => x.x));
-            const top = Math.min(...sources.map((x) => x.y));
-            const right = Math.max(...sources.map((x) => x.x + x.width));
-            const bottom = Math.max(...sources.map((x) => x.y + x.height));
-            shift = { x: at.x - (left + right) / 2, y: at.y - (top + bottom) / 2 };
-        }
-        for (const source of sources) {
+        let copies = sources.map((source): Block => {
             const copy = cloneJson(source);
-            copy.x += shift.x;
-            copy.y += shift.y;
             delete copy.locked;
-            const fitted = fitToStage({ ...copy, id: newId() }, stage.value);
-            // A block from another stage may stick out of this one: pull it back in where it fits.
-            const inside = {
-                ...fitted,
-                x: Math.max(0, Math.min(fitted.x, stage.value.width - fitted.width)),
-                y: Math.max(0, Math.min(fitted.y, stage.value.height - fitted.height)),
-            };
-            const spot = at ? inside : freeSpot(inside, [...target.blocks, ...placed], stage.value);
-            placed.push({ ...spot, ...clampFrame(spot, stage.value) });
+            return { ...copy, id: newId() };
+        });
+        const stageSize = stage.value;
+        let box = boundingBox(copies)!;
+        // A group from another stage may be bigger than this one.
+        const scale = Math.min(1, stageSize.width / box.width, stageSize.height / box.height);
+        if (scale < 1) {
+            copies = copies.map((x) => ({
+                ...x,
+                x: Math.round(box.x + (x.x - box.x) * scale),
+                y: Math.round(box.y + (x.y - box.y) * scale),
+                width: Math.floor(x.width * scale),
+                height: Math.floor(x.height * scale),
+            }));
+            box = boundingBox(copies)!;
         }
+        // Pulled back in where it fits – as a whole, so the blocks keep their places to each other.
+        let spot = {
+            x: Math.max(0, Math.min(at ? at.x - box.width / 2 : box.x, stageSize.width - box.width)),
+            y: Math.max(0, Math.min(at ? at.y - box.height / 2 : box.y, stageSize.height - box.height)),
+        };
+        if (!at) spot = freeSpot({ ...box, ...spot }, target.blocks, stageSize);
+        const placed = copies.map((x) => {
+            const moved = { ...x, x: x.x + spot.x - box.x, y: x.y + spot.y - box.y };
+            return { ...moved, ...clampFrame(moved, stageSize) };
+        });
         change((b) => slideIn(b, slideId)?.blocks.push(...placed));
-        selectedBlockId.value = placed[placed.length - 1]!.id;
+        selectedBlockIds.value = placed.map((x) => x.id);
     }
 
     function pasteBlocks(at?: { x: number; y: number }): void {
@@ -461,9 +508,8 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     /** Copy and paste in one, without touching the clipboard. */
-    function duplicateBlock(id: string): void {
-        const source = slide.value?.blocks.find((x) => x.id === id);
-        if (source) place([source]);
+    function duplicateBlocks(ids: readonly string[]): void {
+        place(blocksOf(ids));
     }
 
     /** A locked block (Plan.md, 25) takes no change – from the stage, the keys or the inspector. */
@@ -471,13 +517,15 @@ export const useEditorStore = defineStore('editor', () => {
         return !!slide.value?.blocks.find((x) => x.id === id)?.locked;
     }
 
-    function setLocked(id: string, locked: boolean): void {
+    /** Locks or unlocks all of them in one step. */
+    function setLocked(ids: readonly string[], locked: boolean): void {
         const slideId = slide.value?.id;
         change((b) => {
-            const target = slideIn(b, slideId)?.blocks.find((x) => x.id === id);
-            if (!target) return;
-            if (locked) target.locked = true;
-            else delete target.locked;
+            for (const target of slideIn(b, slideId)?.blocks ?? []) {
+                if (!ids.includes(target.id)) continue;
+                if (locked) target.locked = true;
+                else delete target.locked;
+            }
         });
     }
 
@@ -493,24 +541,51 @@ export const useEditorStore = defineStore('editor', () => {
         });
     }
 
-    function removeBlock(id: string): void {
-        if (isLocked(id)) return;
+    /**
+     * Moves the unlocked ones among them together by this much (arrow keys, dragging on the stage). The box around them is
+     * clamped like one block, so the group does not warp at the edge. A move that changes nothing leaves no step.
+     */
+    function moveBlocks(ids: readonly string[], dx: number, dy: number): void {
+        const free = blocksOf(ids).filter((x) => !x.locked);
+        const box = boundingBox(free);
+        if (!box) return;
+        const clamped = clampFrame({ ...box, x: box.x + dx, y: box.y + dy }, stage.value);
+        const shiftX = clamped.x - box.x;
+        const shiftY = clamped.y - box.y;
+        if (!shiftX && !shiftY) return;
+        const slideId = slide.value?.id;
+        const moving = new Set(free.map((x) => x.id));
+        change((b) => {
+            for (const target of slideIn(b, slideId)?.blocks ?? []) {
+                if (!moving.has(target.id)) continue;
+                target.x += shiftX;
+                target.y += shiftY;
+            }
+        });
+    }
+
+    /** Deletes the unlocked ones in one step; locked blocks stay. */
+    function removeBlocks(ids: readonly string[]): void {
+        const gone = new Set(blocksOf(ids).filter((x) => !x.locked).map((x) => x.id));
+        if (!gone.size) return;
         const slideId = slide.value?.id;
         change((b) => {
             const target = slideIn(b, slideId);
-            if (target) target.blocks = target.blocks.filter((x) => x.id !== id);
+            if (target) target.blocks = target.blocks.filter((x) => !gone.has(x.id));
         });
-        if (selectedBlockId.value === id) selectedBlockId.value = null;
+        pruneSelection();
     }
 
-    function layerBlock(id: string, layer: Layer): void {
-        if (isLocked(id)) return;
+    /** The layer of the unlocked ones, in one step; among themselves they keep their order (`reorderMany`). */
+    function layerBlocks(ids: readonly string[], layer: Layer): void {
         const slideId = slide.value?.id;
+        const free = new Set(blocksOf(ids).filter((x) => !x.locked).map((x) => x.id));
+        if (!free.size) return;
         change((b) => {
             const target = slideIn(b, slideId);
             if (!target) return;
-            const index = target.blocks.findIndex((x) => x.id === id);
-            if (index >= 0) target.blocks = reorder(target.blocks, index, layer);
+            const indices = target.blocks.flatMap((x, i) => (free.has(x.id) ? [i] : []));
+            target.blocks = reorderMany(target.blocks, indices, layer);
         });
     }
 
@@ -775,7 +850,9 @@ export const useEditorStore = defineStore('editor', () => {
         slide,
         block,
         calendarIds,
-        selectedBlockId,
+        selectedBlockIds,
+        selection,
+        isSelected,
         editingTextId,
         status,
         conflict,
@@ -798,6 +875,9 @@ export const useEditorStore = defineStore('editor', () => {
         redo,
         selectSlide,
         selectBlock,
+        toggleBlock,
+        selectAll,
+        selectArea,
         renamePlaylist,
         addSlide,
         duplicateCurrentSlide,
@@ -808,15 +888,16 @@ export const useEditorStore = defineStore('editor', () => {
         updateSlide,
         addBlock,
         updateBlock,
-        removeBlock,
-        layerBlock,
+        moveBlocks,
+        removeBlocks,
+        layerBlocks,
         moveBlockLayer,
         clipboard,
         blockSheetOpen,
-        copyBlock,
-        cutBlock,
+        copyBlocks,
+        cutBlocks,
         pasteBlocks,
-        duplicateBlock,
+        duplicateBlocks,
         setLocked,
         publish,
         saveDraft,
