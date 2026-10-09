@@ -24,6 +24,30 @@ export const t = {
         countOf: (n: number, total: number) => `${n} von ${total}`,
         chosen: (n: number) => `${n} gewählt`,
         none: 'keine',
+        loading: 'Lade …',
+        format: 'Format',
+        create: 'Erstellen',
+        playlists: 'Präsentationen',
+        playlistMissing: 'Präsentation fehlt',
+        onNoScreen: 'auf keinem Bildschirm',
+        portrait: 'Hochkant',
+        landscape: 'Quer',
+        screenCount: (n: number) => `${n} ${n === 1 ? 'Bildschirm' : 'Bildschirme'}`,
+        filters: { allShort: 'Alle', all: 'Alle Bildschirme', landscape: 'Querformat', portrait: 'Hochformat' },
+        edited: {
+            changed: 'Zuletzt geändert',
+            uploaded: 'Hochgeladen',
+            lastSign: 'Letztes Lebenszeichen',
+            on: (verb: string, date: string, time: string) => `${verb} am ${date} um ${time}`,
+            by: (verb: string, name: string) => `${verb} von ${name}`,
+        },
+        alive: {
+            online: 'online',
+            neverText: 'noch nie abgerufen',
+            neverTitle: 'Dieser Bildschirm hat sich noch nie gemeldet – ein Fernseher meldet sich alle fünf Minuten, sobald er läuft und das Recht dazu hat.',
+            playerVersion: (version: string) => ` · Player ${version}`,
+            offlineSince: (when: string) => `nicht online seit ${when}`,
+        },
         /** The mark on a presentation that runs on a screen right now (Plan.md 77). */
         running: 'Läuft gerade',
         runningAria: (title: string) => `Läuft gerade – ${title}`,
@@ -440,6 +464,473 @@ export const t = {
         noStorage: 'Kein Speicher angebunden.',
     },
 
-    home: {},
+    /** The start page: tiles of the screens, their dialogs. */
+    home: {
+        unreachable: (message: string | null) => `ChurchTools ist gerade nicht erreichbar${message ? ` (${message})` : ''}.`,
+        resetDemoConfirm: 'Alle Demo-Bildschirme verwerfen und mit dem Beispiel neu beginnen?',
+        deleteConfirm: (name: string, slug: string) =>
+            `Bildschirm „${name}" löschen?\n\nEin Gerät, das die Adresse „${slug}" aufruft, zeigt danach eine Fehlermeldung.`,
+        demoNotice:
+            'Demo-Modus: Die Bildschirme liegen in diesem Browser, nicht in ChurchTools; Termine, Name und Logo kommen live. ' +
+            'Designer und Player in anderen Tabs dieses Browsers sehen dieselben Bildschirme.',
+        resetDemo: 'Demo zurücksetzen',
+        rightsMissing: 'Dir fehlen Rechte, um hier alles zu nutzen:',
+        rightsAdminBefore: 'Was eine Gruppe noch braucht, zeigen die',
+        rightsAdminAfter: '; dort legt der Assistent die Gruppen samt Rechten an. Rechte einer Gruppe wirken erst, wenn sie den Status „aktiv" hat.',
+        rightsOther: 'Rechte vergibt ein Administrator deiner Gemeinde: Er nimmt dich in die Gruppe „Infoscreen-Designer" auf.',
+        intro:
+            'Die Fernseher und was sie gerade zeigen. Ein Klick auf eine Kachel öffnet die Präsentation, die dort gerade läuft; ' +
+            'Adresse, Zeitplan und Einstellungen stecken im Menü „…".',
+        searchPlaceholder: 'Suchen nach Name oder Adresse …',
+        searchLabel: 'Bildschirme durchsuchen',
+        empty: 'Noch keine Bildschirme angelegt.',
+        emptyNoAdmin: 'Bildschirme legt ein Administrator an – danach gestaltest du sie hier.',
+        createFirst: 'Ersten Bildschirm erstellen',
+        noMatch: 'Kein Bildschirm passt zu diesem Filter.',
+        card: {
+            rules: (n: number) => `${n} ${n === 1 ? 'Regel' : 'Regeln'}`,
+            schedule: 'Zeitplan',
+            edit: (name: string) => `${name} bearbeiten`,
+            unnamed: 'Ohne Namen',
+            actionsFor: (name: string) => `Aktionen für ${name}`,
+            actions: 'Aktionen',
+            openPlayer: 'Player öffnen',
+            copied: 'Adresse kopiert',
+            copy: 'Adresse kopieren',
+            rename: 'Umbenennen',
+            addressTitle: (slug: string) => `Adresse für das Gerät: ${slug}`,
+            byRuleTitle: (slides: number) => `Läuft jetzt nach Zeitplan – ${slides} ${slides === 1 ? 'Folie' : 'Folien'}`,
+            defaultTitle: (slides: number) => `Standard-Präsentation – ${slides} ${slides === 1 ? 'Folie' : 'Folien'}`,
+            now: 'jetzt',
+            scheduleTitle: 'Zeitplan: welche Präsentation wann läuft',
+            scheduleCreateTitle: 'Zeitplan anlegen: zu bestimmten Zeiten andere Folien zeigen',
+        },
+        create: {
+            title: 'Bildschirm erstellen',
+            namePlaceholder: 'z. B. Foyer links',
+            nameHint: 'Erscheint im Designer, lässt sich später ändern.',
+            address: 'Adresse für das Gerät',
+            addressPlaceholder: 'z. B. foyer-links',
+            addressInvalid: 'Nur Kleinbuchstaben, Ziffern und Bindestriche.',
+            addressHint: 'Steht in der Adresse des Fernsehers und bleibt fest.',
+            formatHint: 'Lässt sich später nicht umstellen.',
+        },
+        settings: {
+            title: 'Bildschirm einstellen',
+            renameTitle: 'Bildschirm umbenennen',
+            conflict: (by: string | undefined) =>
+                `Die Einstellungen wurden inzwischen geändert${by ? ` (von ${by})` : ''}. Bitte schließen und neu öffnen.`,
+            nameRequired: 'Ohne Namen lässt sich nicht speichern.',
+            overscan: 'Overscan-Korrektur (%)',
+            overscanInfo: 'Verkleinert die Bildfläche auf Fernsehern, die den Rand abschneiden.',
+            address: 'Adresse',
+            fixedHint: 'Format und Adresse bleiben fest. Was der Bildschirm zeigt, gestalten die Gestalter im Editor.',
+        },
+    },
+
+    /** The presentations page, its tiles and dialogs. */
+    playlists: {
+        deleteConfirm: (name: string) => `Präsentation „${name}" löschen?`,
+        intro:
+            'Was die Bildschirme zeigen. Eine Präsentation kann auf mehreren Bildschirmen laufen; welche wann läuft, legt der Zeitplan ' +
+            'eines Bildschirms fest – unter „Zeitpläne" oder an der Kachel des Bildschirms.',
+        searchPlaceholder: 'Suchen nach Präsentation oder Bildschirm …',
+        searchLabel: 'Präsentationen durchsuchen',
+        all: 'Alle Präsentationen',
+        count: (n: number) => `${n} ${n === 1 ? 'Präsentation' : 'Präsentationen'}`,
+        empty: 'Noch keine Präsentationen.',
+        createFirst: 'Erste Präsentation erstellen',
+        noMatch: 'Keine Präsentation passt zu Suche und Filter.',
+        duplicate: {
+            title: 'Präsentation duplizieren',
+            copy: 'Kopie – eigene Folien, unabhängig',
+            linked: 'Verknüpft – dieselben Folien, Änderungen gelten in beiden',
+        },
+        card: {
+            bannerTitle: (text: string) => `Hinweisband: „${text}“`,
+            banner: 'Hinweis',
+            duplicate: 'Duplizieren',
+            deleteBlocked: 'Läuft noch auf einem Bildschirm – erst dort im Zeitplan eine andere wählen',
+            slides: 'Folien',
+            runsOn: 'Läuft auf diesen Bildschirmen',
+            runsNowhere: 'Noch kein Bildschirm zeigt sie',
+        },
+        create: {
+            title: 'Präsentation erstellen',
+            namePlaceholder: 'z. B. Gottesdienst',
+            nameHint: 'Lässt sich im Editor ändern.',
+            formatHint: 'Sie läuft auf Bildschirmen desselben Formats. Welche das sind, wählt der Zeitplan eines Bildschirms.',
+        },
+        picker: {
+            newOption: '＋ Neue Präsentation anlegen …',
+            editTitle: 'Öffnet die Präsentation im Editor; Änderungen am Zeitplan werden vorher gespeichert',
+            edit: 'Folien bearbeiten',
+            newName: 'Name der neuen Präsentation',
+            create: 'Anlegen',
+        },
+    },
+
+    /** The schedules page, the schedule dialog and the words of the rules. */
+    schedules: {
+        title: 'Zeitpläne',
+        intro:
+            'Welche Präsentation auf welchem Bildschirm wann läuft. Passt keine Regel, läuft die Standard-Präsentation; passen mehrere, ' +
+            'gilt die obere. Ein Klick auf eine Zeile zeigt ihre Präsentation, ein Klick auf das Bild öffnet den Zeitplan.',
+        searchPlaceholder: 'Suchen nach Bildschirm oder Präsentation …',
+        searchLabel: 'Zeitpläne durchsuchen',
+        editOf: (name: string) => `Zeitplan von ${name} bearbeiten`,
+        runsNow: 'Läuft jetzt',
+        preview: 'Vorschau',
+        openInEditor: (name: string) => `Präsentation ${name} im Editor öffnen`,
+        edit: 'Bearbeiten',
+        now: 'Jetzt:',
+        otherwise: 'sonst',
+        always: 'immer',
+        defaultMark: '(Standard)',
+        defaultName: 'Standard',
+        empty: 'Noch keine Bildschirme – sie legt ein Administrator an.',
+        noMatch: 'Kein Bildschirm passt zur Suche.',
+        rule: (n: number) => `Regel ${n}`,
+        weekdays: [
+            ['Mo', 'Montag'],
+            ['Di', 'Dienstag'],
+            ['Mi', 'Mittwoch'],
+            ['Do', 'Donnerstag'],
+            ['Fr', 'Freitag'],
+            ['Sa', 'Samstag'],
+            ['So', 'Sonntag'],
+        ] as readonly (readonly [string, string])[],
+        noDays: 'keine Tage',
+        daily: 'täglich',
+        presets: { before: 'Vor Beginn', during: 'Während', after: 'Nach dem Ende', around: 'Rundherum' },
+        pointOffset: (minutes: number, before: boolean, anchor: string) => `${minutes} Min. ${before ? 'vor' : 'nach'} ${anchor}`,
+        appointmentSummary: (from: string, to: string, calendars: string) => `${from} bis ${to} von Terminen in ${calendars}`,
+        problems: {
+            defaultMissing: 'Die Standard-Präsentation fehlt.',
+            defaultOtherFormat: 'Die Standard-Präsentation hat ein anderes Format als der Bildschirm.',
+            playlistGone: (label: string) => `${label}: Die Präsentation gibt es nicht mehr.`,
+            otherFormat: (label: string) => `${label}: Die Präsentation hat ein anderes Format als der Bildschirm.`,
+            noWeekday: (label: string) => `${label}: mindestens einen Wochentag wählen.`,
+            timeFormat: (label: string) => `${label}: Uhrzeiten als SS:MM angeben.`,
+            timeOrder: (label: string) => `${label}: „bis" muss nach „von" liegen – über Mitternacht zwei Regeln anlegen.`,
+            noCalendar: (label: string) => `${label}: mindestens einen Kalender wählen.`,
+            windowOrder: (label: string) => `${label}: „bis" muss nach „von" liegen.`,
+        },
+        dialog: {
+            title: 'Zeitplan',
+            titleFor: (name: string) => `Zeitplan – ${name}`,
+            discard: 'Änderungen am Zeitplan verwerfen?',
+            calendarFallback: (id: number) => `Kalender ${id}`,
+            introBefore: 'Ein Bildschirm zeigt seine',
+            introDefault: 'Standard-Präsentation',
+            introAfter:
+                '– außer eine Regel sagt, dass zu bestimmten Zeiten etwas anderes laufen soll. Zur Wahl stehen alle Präsentationen im Format ' +
+                'des Bildschirms; dieselbe Präsentation darf auf mehreren Bildschirmen laufen.',
+            normally: 'Normalerweise zeigt dieser Bildschirm',
+            defaultPlaylist: 'Standard-Präsentation',
+            otherTimes: 'Zu bestimmten Zeiten etwas anderes zeigen',
+            noRules: (name: string) =>
+                `Noch keine Regel – es läuft immer „${name}". Soll zum Beispiel sonntags vormittags oder rund um den Gottesdienst ` +
+                'eine andere Präsentation laufen, lege eine Regel an.',
+            severalRules: 'Passen mehrere Regeln, gilt die obere.',
+            atTimes: 'Zu bestimmten Uhrzeiten',
+            aroundAppointments: 'Rund um Termine',
+            moveUp: 'Nach oben – hat Vorrang',
+            removeRule: 'Regel entfernen',
+            weekdays: 'Wochentage',
+            from: 'von',
+            to: 'bis',
+            presets: 'Vorlagen',
+            windowFrom: 'Beginn des Zeitraums',
+            windowTo: 'Ende des Zeitraums',
+            ofAppointmentIn: 'eines Termins in',
+            calendarIgnored: '(nicht öffentlich – wird ignoriert)',
+            calendarInvisible: '(nicht sichtbar)',
+            shows: 'zeigt',
+            needSecond: 'Dafür braucht es eine zweite Präsentation: lege sie hier an – oder wähle oben in der Liste eine vorhandene.',
+            playlistOfRule: (n: number) => `Präsentation der Regel ${n}`,
+            appointmentRuleTitle: 'Vor, während und nach Terminen ausgewählter Kalender',
+            noCalendars: 'Keine Kalender sichtbar',
+            previewTitle: 'Vorschau: Was läuft wann?',
+            day: 'Tag',
+            endOfDay: '24 Uhr',
+            slideCount: (n: number) => `${n} ${n === 1 ? 'Folie' : 'Folien'}`,
+            time: 'Uhrzeit',
+            decisionRuns: (weekday: string, time: string) => `${weekday}, ${time} Uhr: läuft`,
+            decisionDefault: '– keine Regel passt, Standard',
+            decisionRule: (n: number) => `– Regel ${n}`,
+            appointmentRulesHint: (days: number) =>
+                `Termin-Regeln rechnen mit den Terminen der nächsten ${days} Tage. Der Fernseher wechselt erst, wenn seine Uhr bestätigt ist.`,
+            conflict: (by: string | null | undefined, name: string) => `${by ?? 'Jemand'} hat den Zeitplan von „${name}" inzwischen gespeichert.`,
+            reload: 'Neu laden',
+            keepMine: 'Meine Fassung speichern',
+        },
+    },
+
+    /** The notices page, its dialog and the form of the band. */
+    notices: {
+        title: 'Hinweise',
+        new: 'Neuer Hinweis',
+        intro:
+            'Ein Band über allen Folien – etwa „Heute Parkplatz gesperrt". Es läuft auf allen gewählten Präsentationen und ' +
+            'verschwindet zur eingestellten Zeit von selbst.',
+        endConfirm: (text: string) => `Hinweis „${text}“ auf allen Präsentationen beenden?`,
+        modeStatic: 'Stehend',
+        modeTicker: 'Laufschrift',
+        noEnd: 'ohne Ende',
+        until: (when: string) => `bis ${when}`,
+        expiredOn: (when: string) => `abgelaufen am ${when}`,
+        running: 'Laufende Hinweise',
+        count: (n: number) => `${n} ${n === 1 ? 'Hinweis' : 'Hinweise'}`,
+        nowhere: 'Erscheint in den nächsten 7 Tagen auf keinem Fernseher',
+        end: 'Beenden',
+        noneRunning: 'Gerade läuft kein Hinweis.',
+        expired: 'Abgelaufen',
+        expiredHint: 'Abgelaufene Hinweise verschwinden nach 7 Tagen von selbst.',
+        dialog: {
+            discard: 'Änderungen am Hinweis verwerfen?',
+            edit: 'Hinweis bearbeiten',
+            runsOn: 'Läuft auf',
+            none: 'Keine',
+            replaced: 'hat einen anderen Hinweis – wird ersetzt',
+            conflict: (by: string | null | undefined, name: string) => `${by ?? 'Jemand'} hat „${name}" inzwischen geändert.`,
+        },
+        banner: {
+            textPlaceholder: 'z. B. Heute Parkplatz gesperrt – bitte in der Schulstraße parken',
+            kind: 'Art',
+            position: 'Position',
+            speed: 'Tempo',
+            speeds: { slow: 'Langsam', medium: 'Mittel', fast: 'Schnell' },
+            height: 'Höhe (px)',
+            fontSize: 'Schriftgröße',
+            until: 'Zeigen bis',
+            untilInfo: 'Leer: bis du es abschaltest. Die Zeit gilt für die Gemeinde, nicht für das Gerät.',
+            expired: 'Abgelaufen – die Fernseher zeigen das Band nicht mehr.',
+        },
+    },
+
+    /** The media library: page, picking dialog, preview, delete dialog and the messages of the library. */
+    media: {
+        title: 'Mediathek',
+        kindName: { image: 'Bild', video: 'Video' },
+        nouns: { images: 'Bilder', videos: 'Videos' },
+        show: {
+            label: 'Verwendung',
+            allTitle: 'Alle Bilder und Videos',
+            used: 'Verwendet',
+            usedTitle: 'Verwendete Bilder und Videos',
+            unused: 'Unbenutzt',
+            unusedTitle: 'Unbenutzte Bilder und Videos',
+        },
+        uploadAria: 'Bilder und Videos hochladen',
+        upload: 'Hochladen',
+        intro:
+            'Bilder und Videos für alle Bildschirme. Sie liegen im Wiki-Bereich „Infoscreen" von ChurchTools – dort bitte nichts löschen, ' +
+            'sonst fehlt die Datei auf den Fernsehern. Wer ein Bild kennt, kann es ohne Anmeldung abrufen; nichts ' +
+            'Vertrauliches hochladen. Videos: MP4 (H.264) bis 128 MB.',
+        searchPlaceholder: 'Suchen nach Datei, Bildschirm, Präsentation oder Folie …',
+        searchLabel: 'Mediathek durchsuchen',
+        count: (n: number) => `${n} ${n === 1 ? 'Datei' : 'Dateien'}`,
+        loading: 'Lade Mediathek …',
+        selectAll: 'Alle auswählen',
+        picked: (n: number) => `${n} ausgewählt`,
+        clearSelection: 'Auswahl aufheben',
+        empty: 'Noch keine Bilder oder Videos. Hochladen oben rechts oder einfach hierher ziehen.',
+        noMatch: 'Nichts passt zu Suche und Filter.',
+        grid: {
+            mark: (name: string) => `${name} markieren`,
+            use: (name: string) => `${name} verwenden`,
+            view: (name: string) => `${name} ansehen`,
+            select: (name: string) => `${name} auswählen`,
+            delete: (name: string) => `${name} löschen`,
+            more: (n: number) => `und ${n} weitere`,
+        },
+        dialog: {
+            limit: 'Höchstens 30 Bilder je Galerie',
+            use: 'Verwenden',
+            unmark: 'Markierung aufheben',
+            mark: 'Markieren',
+            hintBefore: (noun: string) => `Neue ${noun} landen im Wiki-Bereich „Infoscreen", Seite`,
+            hintAfter: '.',
+            upload: (noun: string) => `${noun} hochladen`,
+            add: (n: number) => `Hinzufügen (${n})`,
+            loading: (noun: string) => `Lade ${noun} …`,
+            empty: (noun: string) => `Noch keine ${noun}. Hochladen per Knopf oder einfach hierher ziehen.`,
+        },
+        preview: {
+            title: 'Vorschau',
+            dark: 'Dunkel',
+            light: 'Hell',
+            checker: 'Karo',
+            previous: 'Vorige Datei',
+            next: 'Nächste Datei',
+            background: 'Hintergrund',
+            size: 'Größe',
+            length: 'Länge',
+            uploadedOn: 'Hochgeladen am',
+            whereRuns: 'Wo läuft es',
+        },
+        delete: {
+            titleOne: (name: string) => `„${name}" löschen?`,
+            titleMany: (n: number) => `${n} ${n === 1 ? 'Datei' : 'Dateien'} löschen?`,
+            lead: 'Die Dateien werden aus ChurchTools gelöscht. Das lässt sich nicht rückgängig machen.',
+            stillShown: (n: number) =>
+                `${n === 1 ? 'Eine Datei wird' : `${n} Dateien werden`} noch gezeigt. Nach dem Löschen bleibt dort eine leere Fläche.`,
+            unused: (n: number) => `Unbenutzt (${n})`,
+            onlyUnused: (n: number) => `Nur unbenutzte löschen (${n})`,
+            all: (n: number) => `Alle ${n} löschen`,
+            anyway: 'Trotzdem löschen',
+        },
+        library: {
+            preparing: (name: string, i: number, total: number) => `Bereite vor: ${name} (${i}/${total})`,
+            uploadingImages: (n: number) => `Lade ${n === 1 ? 'Bild' : `${n} Bilder`} hoch …`,
+            uploadingVideo: (name: string, i: number, total: number) => `Lade Video hoch: ${name} (${i}/${total}) …`,
+            uploadFailed: (message: string) => `Hochladen fehlgeschlagen: ${message}`,
+            deleteConfirm: (name: string) => `„${name}" aus ChurchTools löschen?`,
+            stillShown: (kind: string, where: string) =>
+                `Das ${kind} wird noch gezeigt:\n\n${where}\n\nDort bleibt eine leere Fläche. Trotzdem löschen?`,
+            deleting: (name: string, i: number, total: number) => `Lösche ${name} (${i}/${total}) …`,
+            nowShown: (name: string) => `„${name}" wird inzwischen gezeigt`,
+            failed: (name: string, message: string) => `„${name}": ${message}`,
+            notDeleted: (kept: string[]) => `Nicht gelöscht: ${kept.join('; ')}.`,
+            noCategory: (name: string) =>
+                `Den Wiki-Bereich „${name}" gibt es noch nicht. Ein Administrator legt ihn in den Einstellungen an („Automatisch einrichten").`,
+            inUse: (what: string, usage: string) => `Das ${what} wird noch verwendet: ${usage}.`,
+            notAnImage: (name: string) => `„${name}" ist kein Bild, das ChurchTools anzeigen kann.`,
+            notAVideo: (name: string) => `„${name}" ist kein Video, das ChurchTools abspielen kann.`,
+            onlyMp4: 'Nur MP4-Videos (H.264) werden unterstützt.',
+            tooLarge: (name: string, megabytes: number) => `„${name}" ist größer als ${megabytes} MB.`,
+            scaleFailed: 'Bild ließ sich nicht verkleinern.',
+        },
+    },
+
+    /** What the module writes into the wiki: the page of a screen and the start page of its category. */
+    wiki: {
+        noFile: 'ChurchTools hat keine Datei zurückgegeben.',
+        screenPage: (screenName: string, slug: string) =>
+            `Bilder für den Infoscreen **${screenName}** (Adresse \`${slug}\`).\n\nHochgeladen und ausgewählt werden sie im Infoscreen Designer. ` +
+            'Wer hier ein Bild löscht, das noch auf einem Bildschirm verwendet wird, lässt dort eine leere Fläche zurück.',
+        overview: (extensionUrl: string) => `# Infoscreen
+
+Diese Kategorie gehört zum **Infoscreen Designer**, mit dem die Gemeinde ihre Fernseher im Foyer und in den Räumen gestaltet: [Infoscreen Designer öffnen](${extensionUrl})
+
+## Warum es diesen Bereich gibt
+
+Die Fernseher zeigen Bilder – Plakate, Logos, Hintergründe. ChurchTools bietet einer Erweiterung keinen eigenen Dateispeicher; Bilder kann sie nur an eine Seite im Wiki hängen. Deshalb legt der Designer diesen Bereich an und speichert hier, was in seiner **Mediathek** hochgeladen wird. Das Wiki ist nur der Ablageort: Hochgeladen, ausgewählt und gelöscht wird im Designer.
+
+Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers unter „Ausgeblendet" verschieben – neu angelegt steht er schon dort.
+
+## Was hier liegt
+
+- **Mediathek**: die Bilder, die im Designer hochgeladen wurden.
+- Seiten, die nach der Adresse eines Bildschirms benannt sind: Bilder aus der Zeit, als jeder Bildschirm seine eigenen hatte. Sie lassen sich weiter in jedem Bildschirm verwenden.
+
+## Gut zu wissen
+
+- Bilder hier zu löschen entfernt sie auch von den Fernsehern, die sie zeigen. Im Designer wird vorher angezeigt, wo ein Bild verwendet wird – dort löschen ist sicherer.
+- Bildadressen sind ohne Anmeldung abrufbar, geschützt nur durch eine lange Zufallskennung. Bitte keine vertraulichen Bilder hochladen.
+- Diese Seite schreibt der Designer selbst, solange sie niemand ändert. Wer sie bearbeitet, übernimmt sie.
+`,
+    },
+
+    /** The about page. */
+    about: {
+        title: 'Über & Neuigkeiten',
+        intro: 'Was der Infoscreen Designer kann und was sich zuletzt geändert hat.',
+        description:
+            'Gestaltet Infoscreens für die Fernseher der Gemeinde direkt in ChurchTools: Folien mit Texten, Bildern, ' +
+            'Terminen aus dem Kalender, Countdowns, Beiträgen und Gruppen aus ChurchTools, Webseiten und QR-Codes, dazu Laufschrift über allen Folien; ' +
+            'Präsentationen, die nach Zeitplan laufen; ein Design für alle Bildschirme. Die Fernseher zeigen Änderungen nach etwa 20 Sekunden.',
+        allVersions: 'Alle Versionen auf GitHub',
+        report: 'Fehler melden oder etwas wünschen',
+        source: 'Quellcode und Anleitung',
+        license: 'Freie Software unter der GNU General Public License, Version 3 oder später.',
+        installed: 'Installiert',
+        inProgress: 'In Arbeit',
+        unreleased: 'Schon gebaut, aber noch in keiner Version – kommt mit dem nächsten Update.',
+        nextVersion: 'Nächste Version',
+        version: (version: string) => `Version ${version}`,
+    },
+
+    /** The design page: the look of all screens. */
+    design: {
+        title: 'Design',
+        conflict: (by: string | undefined) => `Inzwischen hat ${by ?? 'jemand'} das Design geändert.`,
+        savedHint: 'Gespeichert – die Fernseher zeigen es in etwa 20 s.',
+        discard: 'Verwerfen',
+        saving: 'Speichere …',
+        intro:
+            'Das Erscheinungsbild aller Bildschirme. Ecken, Akzentfarbe, Darstellung der Termine und Bildformat gelten ' +
+            'sofort überall; ein Baustein mit eigener Darstellung behält sie. Text- und Hintergrundfarbe und die ' +
+            'Schrift bekommen neue Folien und Bausteine.',
+        ratios: { wide: '16:9 – breit', square: '1:1 – quadratisch', free: 'Frei – wie das Bild' },
+        corners: {
+            title: 'Ecken',
+            round: 'Rund',
+            square: 'Eckig',
+            hint: 'Für Kacheln, Etiketten, Bilder und den Seitenbalken der Terminliste.',
+        },
+        colors: {
+            title: 'Farben',
+            accentHint: 'Für Kalender ohne eigene Farbe, für Kacheln und den Seitenbalken.',
+            textHint: 'Text und Hintergrund gelten für neue Folien und Bausteine; bestehende bleiben, wie sie sind.',
+        },
+        cards: {
+            title: 'Kartenhintergrund',
+            tint: 'Leicht getönt',
+            tintHint: 'Die Textfarbe scheint leicht durch – passt auf helle und dunkle Folien.',
+            none: 'Ohne',
+            noneHint: 'Die Karten liegen direkt auf der Folie.',
+            color: 'Eigene Farbe',
+            colorHint: 'Eine Farbe mit eigener Deckkraft.',
+            colorLabel: 'Farbe',
+            opacity: 'Deckkraft',
+            hint: 'Für die Karte von „Nächster Termin“ (Form „Modern“), für „Beiträge“ und „Gruppen“ sowie die Tür-Anzeige der Raumbelegung. Kalender- und Akzentfarben bleiben, wie sie sind.',
+        },
+        palette: {
+            title: 'Farbpalette',
+            hint: 'Farben eurer Gemeinde mit Namen – im Editor stehen sie an jedem Farbfeld zum Anklicken.',
+            colorN: (n: number) => `Farbe ${n}`,
+            namePlaceholder: 'Gemeindeblau',
+            moveUp: (n: number) => `Farbe ${n} nach oben`,
+            moveDown: (n: number) => `Farbe ${n} nach unten`,
+            remove: (n: number) => `Farbe ${n} entfernen`,
+            add: 'Farbe hinzufügen',
+            max: (n: number) => `Höchstens ${n} Farben.`,
+        },
+        font: {
+            title: 'Schrift',
+            hint: 'Mit dieser Schrift beginnen neue Bausteine und Hinweise; bestehende behalten ihre.',
+        },
+        appointments: {
+            title: 'Termine',
+            native: 'Nativ',
+            nativeHint: 'Schlichte Zeilen, der nächste Termin mit Bild daneben.',
+            modern: 'Modern',
+            modernHint: 'Karten mit Datumskachel und Kalender; der nächste Termin hervorgehoben.',
+        },
+        images: {
+            title: 'Terminbilder',
+            hint: 'Das Bild eines Termins wird auf dieses Format zugeschnitten; „Frei" zeigt es, wie es ist.',
+        },
+        preview: {
+            title: 'Vorschau',
+            hint: 'Mit echten Terminen der ersten Kalender, so wie ein Fernseher im Querformat sie zeigt.',
+        },
+    },
+
+    /** The page for an address the module does not know. */
+    notFound: {
+        text: 'Diese Seite gibt es im Infoscreen Designer nicht.',
+        back: 'Zum Designer',
+    },
+
+    /** The left column of the module. */
+    sidebar: {
+        pages: 'Seiten',
+        new: 'Neu',
+        newTitle: 'Neue Version – noch nicht angesehen',
+    },
+
     setup: {},
 } as const;

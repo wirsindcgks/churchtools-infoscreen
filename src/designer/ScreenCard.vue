@@ -6,6 +6,7 @@
  * the editor; the rest is in the "…" menu.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { t } from '../i18n/designer';
 import { useStageContext } from '../player/context';
 import type { ScreenOverview } from '../store/screen-repository';
 import Icon from './Icon.vue';
@@ -62,7 +63,7 @@ function remove(): void {
 /** What the tile says about the schedule; the designers' part (Plan.md, Nächste Schritte 17). */
 const scheduleLabel = computed(() => {
     const rules = screen.value.schedule.length;
-    return rules ? `${rules} ${rules === 1 ? 'Regel' : 'Regeln'}` : 'Zeitplan';
+    return rules ? t.home.card.rules(rules) : t.home.card.schedule;
 });
 
 function schedule(): void {
@@ -86,7 +87,7 @@ function settings(): void {
         <RouterLink
             class="open d-tile-media"
             :to="{ name: 'editor', params: { id: shown?.id ?? screen.defaultPlaylistId } }"
-            :aria-label="`${shown?.name ?? screen.name} bearbeiten`"
+            :aria-label="t.home.card.edit(shown?.name ?? screen.name)"
             data-testid="open-editor"
         >
             <SlideThumb :slide="shown?.firstSlide ?? null" :stage="screen.stage" />
@@ -95,7 +96,7 @@ function settings(): void {
             <div class="title-row">
                 <h3 class="d-tile-title">
                     <RouterLink :to="{ name: 'editor', params: { id: shown?.id ?? screen.defaultPlaylistId } }" tabindex="-1">
-                        {{ screen.name || 'Ohne Namen' }}
+                        {{ screen.name || t.home.card.unnamed }}
                     </RouterLink>
                 </h3>
                 <div class="menu">
@@ -104,8 +105,8 @@ function settings(): void {
                         type="button"
                         :aria-expanded="menuOpen"
                         aria-haspopup="menu"
-                        :aria-label="`Aktionen für ${screen.name}`"
-                        title="Aktionen"
+                        :aria-label="t.home.card.actionsFor(screen.name)"
+                        :title="t.home.card.actions"
                         data-testid="screen-menu"
                         @click="menuOpen = !menuOpen"
                     >
@@ -119,22 +120,22 @@ function settings(): void {
                             data-testid="open-player"
                             @click="menuOpen = false"
                         >
-                            <Icon name="play" :size="16" /> Player öffnen
+                            <Icon name="play" :size="16" /> {{ t.home.card.openPlayer }}
                         </RouterLink>
                         <button role="menuitem" type="button" data-testid="copy-address" @click="copy">
-                            <Icon name="copy" :size="16" /> {{ copied ? 'Adresse kopiert' : 'Adresse kopieren' }}
+                            <Icon name="copy" :size="16" /> {{ copied ? t.home.card.copied : t.home.card.copy }}
                         </button>
                         <button role="menuitem" type="button" data-testid="screen-schedule-open" @click="schedule">
-                            <Icon name="calendar" :size="16" /> Zeitplan
+                            <Icon name="calendar" :size="16" /> {{ t.home.card.schedule }}
                         </button>
                         <button v-if="admin" role="menuitem" type="button" data-testid="screen-rename-open" @click="rename">
-                            <Icon name="pencil" :size="16" /> Umbenennen
+                            <Icon name="pencil" :size="16" /> {{ t.home.card.rename }}
                         </button>
                         <button v-if="admin" role="menuitem" type="button" data-testid="screen-settings-open" @click="settings">
-                            <Icon name="settings" :size="16" /> Einstellungen
+                            <Icon name="settings" :size="16" /> {{ t.common.settings }}
                         </button>
                         <button v-if="admin" role="menuitem" type="button" class="danger" data-testid="delete-screen" @click="remove">
-                            <Icon name="trash" :size="16" /> Löschen
+                            <Icon name="trash" :size="16" /> {{ t.common.delete }}
                         </button>
                     </div>
                 </div>
@@ -146,28 +147,28 @@ function settings(): void {
                 </li>
                 <li>
                     <Icon name="id" :size="16" />
-                    <code :title="`Adresse für das Gerät: ${screen.slug}`">{{ screen.slug }}</code>
+                    <code :title="t.home.card.addressTitle(screen.slug)">{{ screen.slug }}</code>
                 </li>
-                <li :title="portrait ? 'Hochkant' : 'Quer'">
+                <li :title="portrait ? t.common.portrait : t.common.landscape">
                     <Icon :name="portrait ? 'portrait' : 'landscape'" :size="16" />
-                    {{ portrait ? 'Hochkant' : 'Quer' }}
+                    {{ portrait ? t.common.portrait : t.common.landscape }}
                 </li>
                 <li
-                    :title="byRule ? `Läuft jetzt nach Zeitplan – ${shown?.slideCount ?? 0} Slides` : `Standard-Playlist – ${shown?.slideCount ?? 0} Slides`"
+                    :title="byRule ? t.home.card.byRuleTitle(shown?.slideCount ?? 0) : t.home.card.defaultTitle(shown?.slideCount ?? 0)"
                     :class="['d-facts-gap', { 'by-rule': byRule }]"
                     data-testid="screen-playlist"
                 >
                     <Icon name="list" :size="16" />
                     <span>
-                        {{ shown?.name ?? 'Playlist fehlt' }}
-                        <span v-if="byRule" class="now-tag" data-testid="screen-running">jetzt</span>
+                        {{ shown?.name ?? t.common.playlistMissing }}
+                        <span v-if="byRule" class="now-tag" data-testid="screen-running">{{ t.home.card.now }}</span>
                     </span>
                 </li>
                 <li>
                     <button
                         class="schedule-link"
                         type="button"
-                        :title="screen.schedule.length ? 'Zeitplan: welche Playlist wann läuft' : 'Zeitplan anlegen: zu bestimmten Zeiten andere Slides zeigen'"
+                        :title="screen.schedule.length ? t.home.card.scheduleTitle : t.home.card.scheduleCreateTitle"
                         data-testid="open-schedule"
                         @click="schedule"
                     >

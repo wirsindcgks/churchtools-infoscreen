@@ -171,7 +171,7 @@ test('an administrator renames a screen from the tile menu (Plan.md 71)', async 
     await page.getByTestId('screen-menu').first().click();
     await page.getByTestId('screen-rename-open').click();
     const dialog = page.getByTestId('screen-rename');
-    await expect(dialog.getByRole('heading', { name: 'Screen umbenennen' })).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Bildschirm umbenennen' })).toBeVisible();
     await expect(page.getByTestId('settings-overscan')).toHaveCount(0);
     const name = page.getByTestId('settings-name');
     await expect(name).toBeFocused();
@@ -757,7 +757,7 @@ test('a rule without a second playlist asks for one on the spot, and the new one
     await page.goto('./');
     await page.getByTestId('screen-card').first().getByTestId('open-schedule').click();
     const dialog = page.getByTestId('schedule-dialog');
-    await expect(dialog).toContainText('Normalerweise zeigt dieser Screen');
+    await expect(dialog).toContainText('Normalerweise zeigt dieser Bildschirm');
     await expect(dialog).toContainText('Noch keine Regel');
 
     await dialog.getByTestId('add-time-rule').click();
@@ -771,7 +771,7 @@ test('a rule without a second playlist asks for one on the spot, and the new one
     await expect(dialog.getByTestId('schedule-playlist')).toHaveCount(2); // the legend below the day
 
     // The default can take a new one the same way: the last entry of the list.
-    await dialog.getByTestId('default-playlist').selectOption({ label: '＋ Neue Playlist anlegen …' });
+    await dialog.getByTestId('default-playlist').selectOption({ label: '＋ Neue Präsentation anlegen …' });
     await expect(dialog.getByTestId('default-playlist')).toHaveValue(/.+/);
     await expect(dialog.getByTestId('inline-create')).toHaveCount(1);
     await page.screenshot({ path: 'test-results/schedule-inline.png' });

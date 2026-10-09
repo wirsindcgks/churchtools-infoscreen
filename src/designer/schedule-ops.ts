@@ -6,6 +6,7 @@
  */
 import type { Appointment } from '../appointments/normalize';
 import { zonedParts, zonedTimeToInstant } from '../appointments/zoned';
+import { t } from '../i18n/designer';
 import { sameStage, type AppointmentPoint, type PlaylistDoc, type ScheduleRule, type ScreenDoc } from '../model/schema';
 import { matchingRuleIndex, ruleWindow } from '../player/schedule';
 
@@ -13,15 +14,11 @@ export type TimeRule = Extract<ScheduleRule, { kind: 'time' }>;
 export type AppointmentRule = Extract<ScheduleRule, { kind: 'appointment' }>;
 
 /** ISO weekdays, 1 = Monday – the order the rules store them in. */
-export const WEEKDAYS = [
-    { day: 1, short: 'Mo', long: 'Montag' },
-    { day: 2, short: 'Di', long: 'Dienstag' },
-    { day: 3, short: 'Mi', long: 'Mittwoch' },
-    { day: 4, short: 'Do', long: 'Donnerstag' },
-    { day: 5, short: 'Fr', long: 'Freitag' },
-    { day: 6, short: 'Sa', long: 'Samstag' },
-    { day: 7, short: 'So', long: 'Sonntag' },
-] as const;
+export const WEEKDAYS: readonly { day: number; short: string; long: string }[] = t.schedules.weekdays.map(([short, long], index) => ({
+    day: index + 1,
+    short,
+    long,
+}));
 
 export function createTimeRule(playlistId: string): TimeRule {
     return { kind: 'time', playlistId, weekdays: [7], from: '09:00', to: '12:00' };
@@ -39,10 +36,10 @@ export function createAppointmentRule(playlistId: string, calendarIds: number[])
 
 /** Common windows around an appointment, as one click each (Plan.md, 22). */
 export const WINDOW_PRESETS = [
-    { key: 'before', label: 'Vor Beginn', from: { anchor: 'start', minutes: -30 }, to: { anchor: 'start', minutes: 0 } },
-    { key: 'during', label: 'Während', from: { anchor: 'start', minutes: 0 }, to: { anchor: 'end', minutes: 0 } },
-    { key: 'after', label: 'Nach dem Ende', from: { anchor: 'end', minutes: 0 }, to: { anchor: 'end', minutes: 30 } },
-    { key: 'around', label: 'Rundherum', from: { anchor: 'start', minutes: -30 }, to: { anchor: 'end', minutes: 15 } },
+    { key: 'before', label: t.schedules.presets.before, from: { anchor: 'start', minutes: -30 }, to: { anchor: 'start', minutes: 0 } },
+    { key: 'during', label: t.schedules.presets.during, from: { anchor: 'start', minutes: 0 }, to: { anchor: 'end', minutes: 0 } },
+    { key: 'after', label: t.schedules.presets.after, from: { anchor: 'end', minutes: 0 }, to: { anchor: 'end', minutes: 30 } },
+    { key: 'around', label: t.schedules.presets.around, from: { anchor: 'start', minutes: -30 }, to: { anchor: 'end', minutes: 15 } },
 ] as const satisfies readonly { key: string; label: string; from: AppointmentPoint; to: AppointmentPoint }[];
 
 /**
@@ -64,9 +61,9 @@ export function windowPatch(
 
 /** "30 Min. vor Beginn", "Ende", "75 Min. nach Beginn". */
 export function pointLabel(point: AppointmentPoint): string {
-    const anchor = point.anchor === 'start' ? 'Beginn' : 'Ende';
+    const anchor = point.anchor === 'start' ? t.common.point.start : t.common.point.end;
     if (point.minutes === 0) return anchor;
-    return `${Math.abs(point.minutes)} Min. ${point.minutes < 0 ? 'vor' : 'nach'} ${anchor}`;
+    return t.schedules.pointOffset(Math.abs(point.minutes), point.minutes < 0, anchor);
 }
 
 /** Whether a window can never open: its end lies before its beginning for any appointment. */
@@ -98,23 +95,23 @@ export function scheduleProblems(screen: ScreenDoc, playlists: PlaylistDoc[]): s
         return !stage || sameStage(stage, screen.stage);
     };
     const problems: string[] = [];
-    if (!known.has(screen.defaultPlaylistId)) problems.push('Die Standard-Playlist fehlt.');
-    else if (!fits(screen.defaultPlaylistId)) problems.push('Die Standard-Playlist hat ein anderes Format als der Screen.');
+    if (!known.has(screen.defaultPlaylistId)) problems.push(t.schedules.problems.defaultMissing);
+    else if (!fits(screen.defaultPlaylistId)) problems.push(t.schedules.problems.defaultOtherFormat);
     screen.schedule.forEach((rule, index) => {
-        const label = `Regel ${index + 1}`;
-        if (!known.has(rule.playlistId)) problems.push(`${label}: Die Playlist gibt es nicht mehr.`);
-        else if (!fits(rule.playlistId)) problems.push(`${label}: Die Playlist hat ein anderes Format als der Screen.`);
+        const label = t.schedules.rule(index + 1);
+        if (!known.has(rule.playlistId)) problems.push(t.schedules.problems.playlistGone(label));
+        else if (!fits(rule.playlistId)) problems.push(t.schedules.problems.otherFormat(label));
         if (rule.kind === 'time') {
-            if (!rule.weekdays.length) problems.push(`${label}: mindestens einen Wochentag wählen.`);
+            if (!rule.weekdays.length) problems.push(t.schedules.problems.noWeekday(label));
             if (!/^\d{2}:\d{2}$/.test(rule.from) || !/^\d{2}:\d{2}$/.test(rule.to)) {
-                problems.push(`${label}: Uhrzeiten als SS:MM angeben.`);
+                problems.push(t.schedules.problems.timeFormat(label));
             } else if (toMinutes(rule.to) <= toMinutes(rule.from)) {
-                problems.push(`${label}: „bis" muss nach „von" liegen – über Mitternacht zwei Regeln anlegen.`);
+                problems.push(t.schedules.problems.timeOrder(label));
             }
         } else {
-            if (!rule.calendarIds.length) problems.push(`${label}: mindestens einen Kalender wählen.`);
+            if (!rule.calendarIds.length) problems.push(t.schedules.problems.noCalendar(label));
             const { from, to } = ruleWindow(rule);
-            if (windowEmpty(from, to)) problems.push(`${label}: „bis" muss nach „von" liegen.`);
+            if (windowEmpty(from, to)) problems.push(t.schedules.problems.windowOrder(label));
         }
     });
     return [...new Set(problems)];
@@ -200,8 +197,8 @@ export function playlistColors(
 /** "Mo–Fr", "Sa, So", "täglich" – how the schedules page names the days of a rule. */
 export function weekdaysLabel(days: readonly number[]): string {
     const sorted = [...new Set(days)].sort((a, b) => a - b);
-    if (!sorted.length) return 'keine Tage';
-    if (sorted.length === 7) return 'täglich';
+    if (!sorted.length) return t.schedules.noDays;
+    if (sorted.length === 7) return t.schedules.daily;
     const runs: number[][] = [];
     for (const day of sorted) {
         const run = runs.at(-1);
@@ -219,5 +216,5 @@ export function ruleSummary(rule: ScheduleRule, calendarName: (id: number) => st
     if (rule.kind === 'time') return `${weekdaysLabel(rule.weekdays)} ${rule.from}–${rule.to}`;
     const calendars = rule.calendarIds.map(calendarName).join(', ');
     const { from, to } = ruleWindow(rule);
-    return `${pointLabel(from)} bis ${pointLabel(to)} von Terminen in ${calendars}`;
+    return t.schedules.appointmentSummary(pointLabel(from), pointLabel(to), calendars);
 }

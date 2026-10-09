@@ -6,6 +6,7 @@
  * runs on are the job of "Hinweise", not this form.
  */
 import { computed } from 'vue';
+import { t } from '../i18n/designer';
 import type { Banner } from '../model/schema';
 import { wallTime } from '../player/banner';
 import { fontDef, FONTS } from '../player/fonts';
@@ -22,9 +23,9 @@ function update(patch: Partial<Banner>): void {
 }
 
 const SPEEDS = [
-    { value: 80, label: 'Langsam' },
-    { value: 140, label: 'Mittel' },
-    { value: 220, label: 'Schnell' },
+    { value: 80, label: t.notices.banner.speeds.slow },
+    { value: 140, label: t.notices.banner.speeds.medium },
+    { value: 220, label: t.notices.banner.speeds.fast },
 ];
 /** The speed choice nearest to what is stored. */
 const speed = computed(() => {
@@ -51,46 +52,46 @@ function setFontSize(value: string): void {
 <template>
     <div class="banner-editor">
         <label class="d-field">
-            Text
+            {{ t.inspector.text }}
             <input
                 type="text"
                 maxlength="500"
                 :value="modelValue.text"
-                placeholder="z. B. Heute Parkplatz gesperrt – bitte in der Schulstraße parken"
+                :placeholder="t.notices.banner.textPlaceholder"
                 data-testid="banner-text"
                 @input="update({ text: ($event.target as HTMLInputElement).value })"
             >
         </label>
         <div class="grid2">
             <label class="d-field">
-                Art
+                {{ t.notices.banner.kind }}
                 <select
                     :value="modelValue.mode"
                     data-testid="banner-mode"
                     @change="update({ mode: ($event.target as HTMLSelectElement).value as 'scroll' | 'static' })"
                 >
-                    <option value="scroll">Laufschrift</option>
-                    <option value="static">Stehend</option>
+                    <option value="scroll">{{ t.notices.modeTicker }}</option>
+                    <option value="static">{{ t.notices.modeStatic }}</option>
                 </select>
             </label>
             <label class="d-field">
-                Position
+                {{ t.notices.banner.position }}
                 <select
                     :value="modelValue.position"
                     @change="update({ position: ($event.target as HTMLSelectElement).value as 'bottom' | 'top' })"
                 >
-                    <option value="bottom">Unten</option>
-                    <option value="top">Oben</option>
+                    <option value="bottom">{{ t.inspector.verticals.bottom }}</option>
+                    <option value="top">{{ t.inspector.verticals.top }}</option>
                 </select>
             </label>
             <label v-if="modelValue.mode !== 'static'" class="d-field">
-                Tempo
+                {{ t.notices.banner.speed }}
                 <select :value="speed" @change="update({ speed: Number(($event.target as HTMLSelectElement).value) })">
                     <option v-for="s in SPEEDS" :key="s.value" :value="s.value">{{ s.label }}</option>
                 </select>
             </label>
             <label class="d-field">
-                Höhe (px)
+                {{ t.notices.banner.height }}
                 <input
                     type="number"
                     min="30"
@@ -100,7 +101,7 @@ function setFontSize(value: string): void {
                 >
             </label>
             <label class="d-field">
-                Schriftgröße
+                {{ t.notices.banner.fontSize }}
                 <input
                     type="number"
                     min="8"
@@ -111,7 +112,7 @@ function setFontSize(value: string): void {
             </label>
             <!-- The fonts the blocks offer: bundled with the module, never from a foreign server. -->
             <label class="d-field">
-                Schriftart
+                {{ t.inspector.fontFamily }}
                 <select
                     data-testid="banner-font"
                     :value="fontDef(modelValue.style.fontFamily).key"
@@ -123,7 +124,7 @@ function setFontSize(value: string): void {
                 </select>
             </label>
             <label class="d-field">
-                Stärke
+                {{ t.inspector.fontWeight }}
                 <select
                     data-testid="banner-weight"
                     :value="modelValue.style.fontWeight"
@@ -133,27 +134,27 @@ function setFontSize(value: string): void {
                         })
                     "
                 >
-                    <option :value="400">Normal</option>
-                    <option :value="600">Halbfett</option>
-                    <option :value="700">Fett</option>
+                    <option :value="400">{{ t.inspector.weights.normal }}</option>
+                    <option :value="600">{{ t.inspector.weights.semibold }}</option>
+                    <option :value="700">{{ t.inspector.weights.bold }}</option>
                 </select>
             </label>
         </div>
         <div class="grid2">
             <ColorField
-                label="Hintergrund"
+                :label="t.common.color.background"
                 :model-value="modelValue.background"
                 @update:model-value="update({ background: $event })"
             />
             <ColorField
-                label="Text"
+                :label="t.common.color.text"
                 :model-value="modelValue.style.color"
                 @update:model-value="update({ style: { ...modelValue.style, color: $event } })"
             />
         </div>
         <HintRow>
             <label class="d-field">
-                Zeigen bis
+                {{ t.notices.banner.until }}
                 <input
                     type="datetime-local"
                     :value="modelValue.until ?? ''"
@@ -161,10 +162,10 @@ function setFontSize(value: string): void {
                     @change="update({ until: ($event.target as HTMLInputElement).value || undefined })"
                 >
             </label>
-            <template #info>Leer: bis du es abschaltest. Die Zeit gilt für die Gemeinde, nicht für das Gerät.</template>
+            <template #info>{{ t.notices.banner.untilInfo }}</template>
         </HintRow>
         <p v-if="expired" class="hint hint--warn" data-testid="banner-expired">
-            Abgelaufen – die Fernseher zeigen das Band nicht mehr.
+            {{ t.notices.banner.expired }}
         </p>
     </div>
 </template>

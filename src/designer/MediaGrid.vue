@@ -10,6 +10,7 @@
  * checkbox to pick files for deleting – several at once – in place of its own "Löschen".
  */
 import { computed } from 'vue';
+import { t } from '../i18n/designer';
 import { usageLines, type MediaItem } from '../media/library';
 import { formatDuration } from '../media/video';
 import { sizedImageUrl } from '../player/format';
@@ -43,7 +44,7 @@ const uploads = computed(() =>
         ? new Map(
               props.items.map((item) => [
                   item.fileId,
-                  lastEdited(item.createdAt, item.createdBy, props.timeZone ?? 'UTC', 'Hochgeladen'),
+                  lastEdited(item.createdAt, item.createdBy, props.timeZone ?? 'UTC', t.common.edited.uploaded),
               ]),
           )
         : new Map<number, ReturnType<typeof lastEdited>>(),
@@ -63,7 +64,7 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
             <button
                 class="pick d-tile-media"
                 type="button"
-                :title="choosable ? (multiple ? `${item.name} markieren` : `${item.name} verwenden`) : `${item.name} ansehen`"
+                :title="choosable ? (multiple ? t.media.grid.mark(item.name) : t.media.grid.use(item.name)) : t.media.grid.view(item.name)"
                 :aria-pressed="choosable && multiple ? numberOf(item) > 0 : undefined"
                 @click="choosable ? emit('choose', item) : emit('preview', item)"
             >
@@ -79,18 +80,18 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                 v-if="choosable"
                 class="look"
                 type="button"
-                :aria-label="`${item.name} ansehen`"
-                :title="`${item.name} ansehen`"
+                :aria-label="t.media.grid.view(item.name)"
+                :title="t.media.grid.view(item.name)"
                 data-testid="media-preview-open"
                 @click="emit('preview', item)"
             >
                 <Icon name="eye" :size="16" />
             </button>
-            <label v-if="selectable" class="tile-check" :title="`${item.name} auswählen`">
+            <label v-if="selectable" class="tile-check" :title="t.media.grid.select(item.name)">
                 <input
                     type="checkbox"
                     :checked="selected?.includes(item.fileId)"
-                    :aria-label="`${item.name} auswählen`"
+                    :aria-label="t.media.grid.select(item.name)"
                     data-testid="media-select"
                     @change="emit('toggle', item)"
                 >
@@ -98,7 +99,7 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
             <figcaption class="d-tile-body">
                 <div class="title-row">
                     <span class="d-tile-title" :title="item.name">{{ item.name }}</span>
-                    <button v-if="!selectable" class="delete" type="button" :title="`${item.name} löschen`" @click="emit('remove', item)">Löschen</button>
+                    <button v-if="!selectable" class="delete" type="button" :title="t.media.grid.delete(item.name)" @click="emit('remove', item)">{{ t.common.delete }}</button>
                 </div>
                 <ul class="d-facts" data-testid="media-uses">
                     <template v-if="places.get(item.fileId)!.length">
@@ -111,12 +112,12 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                             <span>{{ line }}</span>
                         </li>
                         <li v-if="places.get(item.fileId)!.length > SHOWN" :title="places.get(item.fileId)!.join('\n')">
-                            <span class="more">und {{ places.get(item.fileId)!.length - SHOWN }} weitere</span>
+                            <span class="more">{{ t.media.grid.more(places.get(item.fileId)!.length - SHOWN) }}</span>
                         </li>
                     </template>
                     <li v-else>
                         <Icon :name="USE_ICON" :size="16" />
-                        <span>Unbenutzt</span>
+                        <span>{{ t.media.show.unused }}</span>
                     </li>
                 </ul>
                 <ul v-if="uploads.get(item.fileId)" class="d-facts upload-facts">

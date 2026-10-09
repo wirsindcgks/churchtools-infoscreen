@@ -132,7 +132,7 @@ test('a notice on a playlist no screen shows says so, with a pale strip (Plan.md
     await expect(card.getByTestId('notice-nowhere')).toHaveText('Erscheint in den nächsten 7 Tagen auf keinem Fernseher');
     await expect(card.getByTestId('week-day')).toHaveCount(7);
     await expect(card.getByTestId('week-segment')).toHaveCount(0);
-    await expect(card).toContainText('auf keinem Screen');
+    await expect(card).toContainText('auf keinem Bildschirm');
 });
 
 test('an expired notice has no strip and says when it ended (Plan.md 69)', async ({ page }) => {

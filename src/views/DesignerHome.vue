@@ -29,6 +29,7 @@ import { setScreenCounts } from '../designer/screen-counts';
 import { usePreview } from '../designer/usePreview';
 import { getRepository, resetDemoStore } from '../store/backend';
 import type { ScreenOverview, ScreenRepository } from '../store/screen-repository';
+import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 
 const router = useRouter();
@@ -146,7 +147,7 @@ onMounted(async () => {
         error.value =
             e instanceof NotAuthenticatedError
                 ? e.message
-                : `ChurchTools ist gerade nicht erreichbar${e instanceof Error ? ` (${e.message})` : ''}.`;
+                : t.home.unreachable(e instanceof Error ? e.message : null);
     }
 });
 
@@ -157,15 +158,14 @@ async function created(playlistId: string): Promise<void> {
 }
 
 function resetDemoAndReload(): void {
-    if (!window.confirm('Alle Demo-Screens verwerfen und mit dem Beispiel neu beginnen?')) return;
+    if (!window.confirm(t.home.resetDemoConfirm)) return;
     resetDemoStore();
     window.location.reload();
 }
 
 async function remove(overview: ScreenOverview): Promise<void> {
     const { name, slug } = overview.screen;
-    const question =
-        `Screen „${name}" löschen?\n\n` + `Ein Gerät, das die Adresse „${slug}" aufruft, zeigt danach eine Fehlermeldung.`;
+    const question = t.home.deleteConfirm(name, slug);
     if (!repository.value || !window.confirm(question)) return;
     await repository.value.deleteScreen(slug);
     await refresh();
@@ -179,20 +179,19 @@ async function remove(overview: ScreenOverview): Promise<void> {
                 v-if="screensAdmin"
                 class="d-btn d-btn--create"
                 type="button"
-                aria-label="Screen erstellen"
+                :aria-label="t.home.create.title"
                 data-testid="new-screen"
                 @click="creating = true"
             >
                 <Icon name="plus" />
-                <span class="create-label">Screen erstellen</span>
+                <span class="create-label">{{ t.home.create.title }}</span>
             </button>
         </template>
 
         <p v-if="demo" class="d-banner" data-testid="demo-notice">
-            Demo-Modus: Die Screens liegen in diesem Browser, nicht in ChurchTools; Termine, Name und Logo kommen live.
-            Designer und Player in anderen Tabs dieses Browsers sehen dieselben Screens.
+            {{ t.home.demoNotice }}
             <button class="link" type="button" data-testid="reset-demo" @click="resetDemoAndReload">
-                Demo zurücksetzen
+                {{ t.home.resetDemo }}
             </button>
         </p>
 
@@ -202,7 +201,7 @@ async function remove(overview: ScreenOverview): Promise<void> {
             role="status"
             data-testid="missing-rights"
         >
-            <strong>Dir fehlen Rechte, um hier alles zu nutzen:</strong>
+            <strong>{{ t.home.rightsMissing }}</strong>
             <ul>
                 <li v-for="right in missingRights" :key="`${right.area}-${right.key ?? right.text}`">
                     {{ right.text }}
@@ -211,34 +210,32 @@ async function remove(overview: ScreenOverview): Promise<void> {
                 </li>
             </ul>
             <p v-if="admin" class="muted">
-                Was eine Gruppe noch braucht, zeigen die
-                <RouterLink :to="{ name: 'setup-groups' }">Einstellungen</RouterLink>; dort legt der Assistent die Gruppen samt
-                Rechten an. Rechte einer Gruppe wirken erst, wenn sie den Status „aktiv" hat.
+                {{ t.home.rightsAdminBefore }}
+                <RouterLink :to="{ name: 'setup-groups' }">{{ t.common.settings }}</RouterLink>{{ t.home.rightsAdminAfter }}
             </p>
             <p v-else class="muted">
-                Rechte vergibt ein Administrator deiner Gemeinde: Er nimmt dich in die Gruppe „Infoscreen-Designer" auf.
+                {{ t.home.rightsOther }}
             </p>
         </section>
 
-        <PageHeader icon="grid" title="Screens" testid="screens-heading">
-            Die Fernseher und was sie gerade zeigen. Ein Klick auf eine Kachel öffnet die Playlist, die dort gerade läuft;
-            Adresse, Zeitplan und Einstellungen stecken im Menü „…".
+        <PageHeader icon="grid" :title="t.common.screens" testid="screens-heading">
+            {{ t.home.intro }}
         </PageHeader>
 
         <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
-        <p v-else-if="!ready" class="empty">Lade …</p>
+        <p v-else-if="!ready" class="empty">{{ t.common.loading }}</p>
         <template v-else>
             <SearchField
                 v-model="query"
-                placeholder="Suchen nach Name oder Adresse …"
-                label="Screens durchsuchen"
+                :placeholder="t.home.searchPlaceholder"
+                :label="t.home.searchLabel"
                 testid="search"
             />
 
             <GroupCard
                 :icon="current.icon"
                 :title="current.label"
-                :count="`${shown.length} ${shown.length === 1 ? 'Screen' : 'Screens'}`"
+                :count="t.common.screenCount(shown.length)"
                 :heading-id="`group-${current.key}`"
             >
                 <div v-if="shown.length" class="d-tiles">
@@ -256,13 +253,13 @@ async function remove(overview: ScreenOverview): Promise<void> {
                     />
                 </div>
                 <div v-else-if="!overviews.length" class="empty">
-                    <p>Noch keine Screens angelegt.</p>
-                    <p v-if="!screensAdmin">Screens legt ein Administrator an – danach gestaltest du sie hier.</p>
+                    <p>{{ t.home.empty }}</p>
+                    <p v-if="!screensAdmin">{{ t.home.emptyNoAdmin }}</p>
                     <button v-if="screensAdmin" class="d-btn d-btn--create" type="button" @click="creating = true">
-                        <Icon name="plus" /> Ersten Screen erstellen
+                        <Icon name="plus" /> {{ t.home.createFirst }}
                     </button>
                 </div>
-                <p v-else class="empty">Kein Screen passt zu diesem Filter.</p>
+                <p v-else class="empty">{{ t.home.noMatch }}</p>
             </GroupCard>
         </template>
 

@@ -5,6 +5,7 @@
  * until a screen's schedule chooses it.
  */
 import { computed, onMounted, ref } from 'vue';
+import { t } from '../i18n/designer';
 import { STAGE_PRESETS } from '../model/schema';
 import type { ScreenRepository } from '../store/screen-repository';
 import Icon from './Icon.vue';
@@ -20,8 +21,8 @@ const nameInput = ref<HTMLInputElement | null>(null);
 const canCreate = computed(() => name.value.trim() !== '' && !busy.value);
 
 const ORIENTATIONS = [
-    { value: 'landscape', icon: 'landscape', label: 'Quer', size: '1920 × 1080' },
-    { value: 'portrait', icon: 'portrait', label: 'Hochkant', size: '1080 × 1920' },
+    { value: 'landscape', icon: 'landscape', label: t.common.landscape, size: '1920 × 1080' },
+    { value: 'portrait', icon: 'portrait', label: t.common.portrait, size: '1080 × 1920' },
 ] as const;
 
 onMounted(() => nameInput.value?.focus());
@@ -54,21 +55,21 @@ async function create(): Promise<void> {
             data-testid="create-playlist-dialog"
             @submit.prevent="create"
         >
-            <h2 id="create-playlist-title">Playlist erstellen</h2>
+            <h2 id="create-playlist-title">{{ t.playlists.create.title }}</h2>
             <label class="d-field">
-                Name
+                {{ t.common.name }}
                 <input
                     ref="nameInput"
                     v-model="name"
                     type="text"
                     maxlength="100"
-                    placeholder="z. B. Gottesdienst"
+                    :placeholder="t.playlists.create.namePlaceholder"
                     data-testid="new-playlist-name"
                 >
-                <small>Lässt sich im Editor ändern.</small>
+                <small>{{ t.playlists.create.nameHint }}</small>
             </label>
             <fieldset class="orientation">
-                <legend>Format</legend>
+                <legend>{{ t.common.format }}</legend>
                 <label
                     v-for="o in ORIENTATIONS"
                     :key="o.value"
@@ -82,13 +83,13 @@ async function create(): Promise<void> {
                         <small>{{ o.size }}</small>
                     </span>
                 </label>
-                <small>Sie läuft auf Screens desselben Formats. Welche das sind, wählt der Zeitplan eines Screens.</small>
+                <small>{{ t.playlists.create.formatHint }}</small>
             </fieldset>
             <p v-if="error" class="invalid" role="alert">{{ error }}</p>
             <div class="d-dialog-actions">
-                <button class="d-btn" type="button" @click="emit('close')">Abbrechen</button>
+                <button class="d-btn" type="button" @click="emit('close')">{{ t.common.cancel }}</button>
                 <button class="d-btn d-btn--create" type="submit" :disabled="!canCreate" data-testid="create-playlist">
-                    Erstellen
+                    {{ t.common.create }}
                 </button>
             </div>
         </form>

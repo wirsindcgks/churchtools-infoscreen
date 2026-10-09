@@ -26,6 +26,7 @@ import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
+import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 
 const repository = shallowRef<ScreenRepository | null>(null);
@@ -68,7 +69,7 @@ const shown = computed(() => {
 });
 
 function playlistName(id: string): string {
-    return playlists.value.get(id)?.playlist.name ?? 'Playlist fehlt';
+    return playlists.value.get(id)?.playlist.name ?? t.common.playlistMissing;
 }
 
 /** When and by whom the screen or its schedule was last saved (Plan.md 66). */
@@ -77,7 +78,7 @@ function edited(screen: ScreenDoc) {
 }
 
 function calendarName(id: number): string {
-    return [...calendars.value, ...hiddenCalendars.value].find((c) => c.id === id)?.name ?? `Kalender ${id}`;
+    return [...calendars.value, ...hiddenCalendars.value].find((c) => c.id === id)?.name ?? t.schedules.dialog.calendarFallback(id);
 }
 
 /** What runs now: the rule that decides, -1 for the default playlist. */
@@ -140,7 +141,7 @@ function weekDays(screen: ScreenDoc): TimelineDay[] {
             key: segment.ruleIndex < 0 ? 'default' : String(segment.ruleIndex),
             label:
                 `${WEEKDAYS[day.weekday - 1]!.short} ${fromMinutes(segment.start)}–${fromMinutes(segment.end)}: ` +
-                `${playlistName(segment.playlistId)} – ${segment.ruleIndex < 0 ? 'Standard' : `Regel ${segment.ruleIndex + 1}`}`,
+                `${playlistName(segment.playlistId)} – ${segment.ruleIndex < 0 ? t.schedules.defaultName : t.schedules.rule(segment.ruleIndex + 1)}`,
         })),
     }));
 }
@@ -184,25 +185,24 @@ onMounted(async () => {
 
 <template>
     <ModulePage current="schedules">
-        <PageHeader icon="calendar" title="Zeitpläne" testid="schedules-heading">
-            Welche Playlist auf welchem Screen wann läuft. Passt keine Regel, läuft die Standard-Playlist; passen mehrere,
-            gilt die obere. Ein Klick auf eine Zeile zeigt ihre Playlist, ein Klick auf das Bild öffnet den Zeitplan.
+        <PageHeader icon="calendar" :title="t.schedules.title" testid="schedules-heading">
+            {{ t.schedules.intro }}
         </PageHeader>
 
         <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
-        <p v-else-if="!ready" class="empty">Lade …</p>
+        <p v-else-if="!ready" class="empty">{{ t.common.loading }}</p>
         <template v-else>
             <SearchField
                 v-model="query"
-                placeholder="Suchen nach Screen oder Playlist …"
-                label="Zeitpläne durchsuchen"
+                :placeholder="t.schedules.searchPlaceholder"
+                :label="t.schedules.searchLabel"
                 testid="schedule-search"
             />
 
             <GroupCard
                 icon="calendar"
-                title="Alle Screens"
-                :count="`${shown.length} ${shown.length === 1 ? 'Screen' : 'Screens'}`"
+                :title="t.common.filters.all"
+                :count="t.common.screenCount(shown.length)"
                 heading-id="schedules-group"
             >
                 <ul v-if="shown.length" class="d-tiles">
@@ -210,8 +210,8 @@ onMounted(async () => {
                         <button
                             class="thumb d-tile-media"
                             type="button"
-                            :aria-label="`Zeitplan von ${screen.name} bearbeiten`"
-                            :title="`Zeitplan von ${screen.name} bearbeiten`"
+                            :aria-label="t.schedules.editOf(screen.name)"
+                            :title="t.schedules.editOf(screen.name)"
                             data-testid="schedule-preview"
                             @click="editing = screen.slug"
                         >
@@ -222,21 +222,21 @@ onMounted(async () => {
                         </button>
                         <div class="d-tile-body">
                             <p class="caption">
-                                {{ previewIndex(screen) === running(screen).ruleIndex ? 'Läuft jetzt' : 'Vorschau' }}:
+                                {{ previewIndex(screen) === running(screen).ruleIndex ? t.schedules.runsNow : t.schedules.preview }}:
                                 <RouterLink
                                     v-if="previewed(screen)"
                                     :to="{ name: 'editor', params: { id: previewed(screen)!.playlist.id } }"
-                                    :title="`Playlist ${previewed(screen)!.playlist.name} im Editor öffnen`"
+                                    :title="t.schedules.openInEditor(previewed(screen)!.playlist.name)"
                                     data-testid="schedule-playlist"
                                 >
                                     {{ previewed(screen)!.playlist.name }}
                                 </RouterLink>
-                                <strong v-else>Playlist fehlt</strong>
+                                <strong v-else>{{ t.common.playlistMissing }}</strong>
                             </p>
                             <div class="title-row">
-                                <h3 class="d-tile-title">{{ screen.name || 'Ohne Namen' }}</h3>
+                                <h3 class="d-tile-title">{{ screen.name || t.home.card.unnamed }}</h3>
                                 <button class="d-btn" type="button" data-testid="schedule-edit" @click="editing = screen.slug">
-                                    Bearbeiten
+                                    {{ t.schedules.edit }}
                                 </button>
                             </div>
                             <WeekTimeline
@@ -248,13 +248,13 @@ onMounted(async () => {
                                 @pick="({ segment }) => choose(screen, keyIndex(segment.key))"
                             />
                             <ul class="d-facts">
-                                <li :title="screen.stage.height > screen.stage.width ? 'Hochkant' : 'Quer'">
+                                <li :title="screen.stage.height > screen.stage.width ? t.common.portrait : t.common.landscape">
                                     <Icon :name="screen.stage.height > screen.stage.width ? 'portrait' : 'landscape'" :size="16" />
-                                    {{ screen.stage.height > screen.stage.width ? 'Hochkant' : 'Quer' }}
+                                    {{ screen.stage.height > screen.stage.width ? t.common.portrait : t.common.landscape }}
                                 </li>
                                 <li class="d-facts-gap" data-testid="schedule-now">
                                     <Icon name="list" :size="16" />
-                                    <span>Jetzt: <strong class="now">{{ playlistName(running(screen).playlistId) }}</strong></span>
+                                    <span>{{ t.schedules.now }} <strong class="now">{{ playlistName(running(screen).playlistId) }}</strong></span>
                                 </li>
                                 <li
                                     v-for="(rule, index) in screen.schedule"
@@ -297,10 +297,10 @@ onMounted(async () => {
                                     <button type="button" class="line" :aria-pressed="previewIndex(screen) < 0" @click="choose(screen, -1)">
                                         <span class="swatch" :style="{ background: colorOf(screen, screen.defaultPlaylistId) }" aria-hidden="true" />
                                         <span class="text">
-                                            {{ screen.schedule.length ? 'sonst' : 'immer' }}
+                                            {{ screen.schedule.length ? t.schedules.otherwise : t.schedules.always }}
                                             <span class="arrow" aria-hidden="true">→</span>
                                             <strong>{{ playlistName(screen.defaultPlaylistId) }}</strong>
-                                            <span class="muted">(Standard)</span>
+                                            <span class="muted">{{ t.schedules.defaultMark }}</span>
                                         </span>
                                     </button>
                                 </li>
@@ -316,8 +316,8 @@ onMounted(async () => {
                         </div>
                     </li>
                 </ul>
-                <p v-else-if="!screens.length" class="empty">Noch keine Screens – sie legt ein Administrator an.</p>
-                <p v-else class="empty">Kein Screen passt zur Suche.</p>
+                <p v-else-if="!screens.length" class="empty">{{ t.schedules.empty }}</p>
+                <p v-else class="empty">{{ t.schedules.noMatch }}</p>
             </GroupCard>
         </template>
 

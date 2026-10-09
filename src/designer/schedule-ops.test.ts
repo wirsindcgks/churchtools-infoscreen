@@ -64,7 +64,7 @@ describe('scheduleProblems', () => {
         expect(problems).toEqual([
             'Regel 1: mindestens einen Wochentag wählen.',
             'Regel 2: „bis" muss nach „von" liegen – über Mitternacht zwei Regeln anlegen.',
-            'Regel 3: Die Playlist gibt es nicht mehr.',
+            'Regel 3: Die Präsentation gibt es nicht mehr.',
             'Regel 3: mindestens einen Kalender wählen.',
         ]);
     });
@@ -78,8 +78,8 @@ describe('scheduleProblems and formats (schema 1.4)', () => {
         ];
         const screen = makeScreen({ defaultPlaylistId: 'hoch', schedule: [createTimeRule('hoch')] });
         expect(scheduleProblems(screen, playlists)).toEqual([
-            'Die Standard-Playlist hat ein anderes Format als der Screen.',
-            'Regel 1: Die Playlist hat ein anderes Format als der Screen.',
+            'Die Standard-Präsentation hat ein anderes Format als der Bildschirm.',
+            'Regel 1: Die Präsentation hat ein anderes Format als der Bildschirm.',
         ]);
         expect(scheduleProblems({ ...screen, defaultPlaylistId: 'quer', schedule: [] }, playlists)).toEqual([]);
     });

@@ -8,6 +8,7 @@
  * `groupBanners` does) – so a reload after a conflict finds it again.
  */
 import { computed, onMounted, ref } from 'vue';
+import { t } from '../i18n/designer';
 import { bannerKey, type Banner, type ThemeDoc } from '../model/schema';
 import { bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
@@ -128,7 +129,7 @@ async function save(): Promise<void> {
 }
 
 function close(): void {
-    if (dirty.value && !window.confirm('Änderungen am Hinweis verwerfen?')) return;
+    if (dirty.value && !window.confirm(t.notices.dialog.discard)) return;
     emit('close');
 }
 
@@ -161,12 +162,12 @@ function observe(el: unknown): void {
             @keydown.esc="close"
         >
             <header class="head">
-                <h2 id="notice-title">{{ editing ? 'Hinweis bearbeiten' : 'Neuer Hinweis' }}</h2>
-                <button class="d-btn d-btn--icon" type="button" aria-label="Schließen" @click="close">
+                <h2 id="notice-title">{{ editing ? t.notices.dialog.edit : t.notices.new }}</h2>
+                <button class="d-btn d-btn--icon" type="button" :aria-label="t.common.close" @click="close">
                     <Icon name="close" />
                 </button>
             </header>
-            <p v-if="loading" class="muted">Lade …</p>
+            <p v-if="loading" class="muted">{{ t.common.loading }}</p>
             <p v-else-if="loadError" class="d-banner d-banner--error" role="alert">{{ loadError }}</p>
             <template v-else>
                 <div
@@ -186,13 +187,13 @@ function observe(el: unknown): void {
 
                 <section class="step">
                     <div class="step-head">
-                        <h3>Läuft auf</h3>
+                        <h3>{{ t.notices.dialog.runsOn }}</h3>
                         <div class="playlist-tools">
-                            <button class="d-btn" type="button" data-testid="notice-playlists-all" @click="selectAll">Alle</button>
-                            <button class="d-btn" type="button" data-testid="notice-playlists-none" @click="selectNone">Keine</button>
+                            <button class="d-btn" type="button" data-testid="notice-playlists-all" @click="selectAll">{{ t.common.filters.allShort }}</button>
+                            <button class="d-btn" type="button" data-testid="notice-playlists-none" @click="selectNone">{{ t.notices.dialog.none }}</button>
                         </div>
                     </div>
-                    <p v-if="!overviews.length" class="muted small">Noch keine Playlists.</p>
+                    <p v-if="!overviews.length" class="muted small">{{ t.playlists.empty }}</p>
                     <ul v-else class="playlists">
                         <li v-for="o in overviews" :key="o.playlist.id">
                             <label class="check">
@@ -204,25 +205,25 @@ function observe(el: unknown): void {
                                 >
                                 <span class="name">{{ o.playlist.name }}</span>
                                 <span class="muted small">
-                                    {{ o.screens.length ? o.screens.map((s) => s.name).join(', ') : 'auf keinem Screen' }}
+                                    {{ o.screens.length ? o.screens.map((s) => s.name).join(', ') : t.common.onNoScreen }}
                                 </span>
-                                <span v-if="hasOtherBanner(o)" class="muted small warn">hat einen anderen Hinweis – wird ersetzt</span>
+                                <span v-if="hasOtherBanner(o)" class="muted small warn">{{ t.notices.dialog.replaced }}</span>
                             </label>
                         </li>
                     </ul>
                 </section>
 
                 <p v-if="conflict" class="d-banner d-banner--error" role="alert">
-                    {{ conflict.updatedBy ?? 'Jemand' }} hat „{{ conflict.name }}" inzwischen geändert.
-                    <button class="d-btn" type="button" @click="load">Neu laden</button>
+                    {{ t.notices.dialog.conflict(conflict.updatedBy, conflict.name) }}
+                    <button class="d-btn" type="button" @click="load">{{ t.schedules.dialog.reload }}</button>
                 </p>
                 <p v-if="saveError" class="d-banner d-banner--error" role="alert">{{ saveError }}</p>
             </template>
 
             <div class="d-dialog-actions">
-                <button class="d-btn" type="button" data-testid="notice-cancel" @click="close">Abbrechen</button>
+                <button class="d-btn" type="button" data-testid="notice-cancel" @click="close">{{ t.common.cancel }}</button>
                 <button class="d-btn d-btn--primary" type="button" :disabled="!canSave" data-testid="notice-save" @click="save">
-                    {{ saving ? 'Speichert …' : 'Speichern' }}
+                    {{ saving ? t.editor.status.saving : t.common.save }}
                 </button>
             </div>
         </section>

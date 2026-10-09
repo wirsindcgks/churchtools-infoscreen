@@ -9,32 +9,10 @@ import path from 'node:path';
 import { parse } from '@vue/compiler-sfc';
 import { describe, expect, it } from 'vitest';
 
-/** Components still to convert in the parts of B1 that follow: editor, areas, settings. */
+/** Components still to convert in the last part of B1: the settings. */
 const PENDING: string[] = [
-    'designer/BannerEditor.vue',
-    'designer/CreatePlaylistDialog.vue',
-    'designer/CreateScreenDialog.vue',
-    'designer/MediaDeleteDialog.vue',
-    'designer/MediaGrid.vue',
-    'designer/MediaLibraryDialog.vue',
-    'designer/MediaPreview.vue',
-    'designer/ModuleSidebar.vue',
-    'designer/NoticeDialog.vue',
-    'designer/PlaylistCard.vue',
-    'designer/PlaylistPicker.vue',
     'designer/RefreshRightsDialog.vue',
     'designer/RemoveSetupDialog.vue',
-    'designer/ScheduleDialog.vue',
-    'designer/ScreenCard.vue',
-    'designer/ScreenSettingsDialog.vue',
-    'views/AboutView.vue',
-    'views/DesignView.vue',
-    'views/DesignerHome.vue',
-    'views/MediaView.vue',
-    'views/NotFoundView.vue',
-    'views/NoticesView.vue',
-    'views/PlaylistsView.vue',
-    'views/SchedulesView.vue',
     'views/SetupView.vue',
 ];
 

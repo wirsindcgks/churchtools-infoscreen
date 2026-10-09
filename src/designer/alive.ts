@@ -16,20 +16,17 @@ export interface AliveState {
     title: string;
 }
 
-const NEVER_TITLE =
-    'Dieser Screen hat sich noch nie gemeldet – ein Fernseher meldet sich alle fünf Minuten, sobald er läuft und das Recht dazu hat.';
-
 /**
  * What a tile says about the life of a screen. Compared with the clock of this browser; a sign of life
  * in the future (a device clock that runs ahead) counts as online. Unreadable counts as never.
  */
 export function aliveState(heartbeat: HeartbeatDoc | undefined, now: Date, timeZone: string): AliveState {
     const at = heartbeat ? Date.parse(heartbeat.at) : Number.NaN;
-    if (!heartbeat || Number.isNaN(at)) return { kind: 'never', text: 'noch nie abgerufen', title: NEVER_TITLE };
-    const when = lastEdited(heartbeat.at, null, timeZone, 'Letztes Lebenszeichen');
-    const title = `${when?.whenTitle ?? ''}${heartbeat.version ? ` · Player ${heartbeat.version}` : ''}`;
-    if (now.getTime() - at <= ALIVE_WINDOW_MS) return { kind: 'online', text: 'online', title };
-    return { kind: 'offline', text: `nicht online seit ${when?.when ?? ''}`, title };
+    if (!heartbeat || Number.isNaN(at)) return { kind: 'never', text: t.common.alive.neverText, title: t.common.alive.neverTitle };
+    const when = lastEdited(heartbeat.at, null, timeZone, t.common.edited.lastSign);
+    const title = `${when?.whenTitle ?? ''}${heartbeat.version ? t.common.alive.playerVersion(heartbeat.version) : ''}`;
+    if (now.getTime() - at <= ALIVE_WINDOW_MS) return { kind: 'online', text: t.common.alive.online, title };
+    return { kind: 'offline', text: t.common.alive.offlineSince(when?.when ?? ''), title };
 }
 
 /** A screen whose sign of life says it shows a playlist right now, with the time of that sign. */

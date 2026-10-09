@@ -25,6 +25,7 @@ import WeekTimeline, { type TimelineDay } from '../designer/WeekTimeline.vue';
 import { bannerKey, DEFAULT_THEME, type Banner, type ScreenDoc, type ThemeDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
+import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 
 const repository = shallowRef<ScreenRepository | null>(null);
@@ -51,13 +52,12 @@ const running = computed(() => groups.value.filter((g) => !g.expired));
 const expired = computed(() => groups.value.filter((g) => g.expired));
 
 function modeLabel(banner: Banner): string {
-    return banner.mode === 'static' ? 'Stehend' : 'Laufschrift';
+    return banner.mode === 'static' ? t.notices.modeStatic : t.notices.modeTicker;
 }
 
 /** "bis Sa., 27.09., 18:00"; for an expired band "abgelaufen am Sa., 27.09., 18:00", as `until` stands. */
 function endLabel(group: BannerGroup): string {
-    const label = untilLabel(group.banner.until);
-    return group.expired ? label.replace(/^bis /, 'abgelaufen am ') : label;
+    return untilLabel(group.banner.until, group.expired);
 }
 
 function screenNames(ids: readonly string[]): string {
@@ -179,7 +179,7 @@ async function clear(group: BannerGroup): Promise<void> {
 }
 
 async function end(group: BannerGroup): Promise<void> {
-    if (!window.confirm(`Hinweis „${group.banner.text}“ auf allen Playlists beenden?`)) return;
+    if (!window.confirm(t.notices.endConfirm(group.banner.text))) return;
     await clear(group);
 }
 </script>
@@ -190,28 +190,27 @@ async function end(group: BannerGroup): Promise<void> {
             <button
                 class="d-btn d-btn--create"
                 type="button"
-                aria-label="Neuer Hinweis"
+                :aria-label="t.notices.new"
                 :disabled="!ready"
                 data-testid="new-notice"
                 @click="openNew"
             >
                 <Icon name="plus" />
-                <span class="create-label">Neuer Hinweis</span>
+                <span class="create-label">{{ t.notices.new }}</span>
             </button>
         </template>
 
-        <PageHeader icon="megaphone" title="Hinweise" testid="notices-heading">
-            Ein Band über allen Slides – etwa „Heute Parkplatz gesperrt". Es läuft auf allen gewählten Playlists und
-            verschwindet zur eingestellten Zeit von selbst.
+        <PageHeader icon="megaphone" :title="t.notices.title" testid="notices-heading">
+            {{ t.notices.intro }}
         </PageHeader>
 
         <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
-        <p v-else-if="!ready" class="empty">Lade …</p>
+        <p v-else-if="!ready" class="empty">{{ t.common.loading }}</p>
         <template v-else>
             <GroupCard
                 icon="megaphone"
-                title="Laufende Hinweise"
-                :count="`${running.length} ${running.length === 1 ? 'Hinweis' : 'Hinweise'}`"
+                :title="t.notices.running"
+                :count="t.notices.count(running.length)"
                 heading-id="notices-running"
             >
                 <ul v-if="running.length" class="d-tiles">
@@ -229,7 +228,7 @@ async function end(group: BannerGroup): Promise<void> {
                                 @hover="(key) => (segmentHover = key === null ? null : { notice: bannerKey(group.banner), key })"
                             />
                             <p v-if="!showsAnywhere(group)" class="nowhere" data-testid="notice-nowhere">
-                                Erscheint in den nächsten 7 Tagen auf keinem Fernseher
+                                {{ t.notices.nowhere }}
                             </p>
                             <ul class="d-facts">
                                 <li>
@@ -260,7 +259,7 @@ async function end(group: BannerGroup): Promise<void> {
                                 </li>
                                 <li v-if="!group.screens.length">
                                     <Icon name="tv" :size="16" />
-                                    <span>auf keinem Screen</span>
+                                    <span>{{ t.common.onNoScreen }}</span>
                                 </li>
                                 <li v-if="edited(group)?.when" class="d-facts-gap" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
                                     <Icon name="clock" :size="16" />
@@ -272,25 +271,25 @@ async function end(group: BannerGroup): Promise<void> {
                                 </li>
                             </ul>
                             <div class="actions">
-                                <button class="d-btn" type="button" data-testid="notice-edit" @click="edit(group)">Bearbeiten</button>
+                                <button class="d-btn" type="button" data-testid="notice-edit" @click="edit(group)">{{ t.schedules.edit }}</button>
                                 <button class="d-btn d-btn--danger" type="button" data-testid="notice-end" @click="end(group)">
-                                    Beenden
+                                    {{ t.notices.end }}
                                 </button>
                             </div>
                         </div>
                     </li>
                 </ul>
-                <p v-else class="empty">Gerade läuft kein Hinweis.</p>
+                <p v-else class="empty">{{ t.notices.noneRunning }}</p>
             </GroupCard>
 
             <GroupCard
                 v-if="expired.length"
                 icon="megaphone"
-                title="Abgelaufen"
-                :count="`${expired.length} ${expired.length === 1 ? 'Hinweis' : 'Hinweise'}`"
+                :title="t.notices.expired"
+                :count="t.notices.count(expired.length)"
                 heading-id="notices-expired"
             >
-                <p class="empty expired-hint">Abgelaufene Hinweise verschwinden nach 7 Tagen von selbst.</p>
+                <p class="empty expired-hint">{{ t.notices.expiredHint }}</p>
                 <ul class="d-tiles">
                     <li v-for="group in expired" :key="bannerKey(group.banner)" class="d-card d-tile" data-testid="notice-card-expired">
                         <div class="d-tile-media">
@@ -317,7 +316,7 @@ async function end(group: BannerGroup): Promise<void> {
                                 </li>
                                 <li v-if="!group.screens.length">
                                     <Icon name="tv" :size="16" />
-                                    <span>auf keinem Screen</span>
+                                    <span>{{ t.common.onNoScreen }}</span>
                                 </li>
                                 <li v-if="edited(group)?.when" class="d-facts-gap" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
                                     <Icon name="clock" :size="16" />
@@ -330,7 +329,7 @@ async function end(group: BannerGroup): Promise<void> {
                             </ul>
                             <div class="actions">
                                 <button class="d-btn" type="button" data-testid="notice-remove" @click="clear(group)">
-                                    Entfernen
+                                    {{ t.common.remove }}
                                 </button>
                             </div>
                         </div>
