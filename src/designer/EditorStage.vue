@@ -583,7 +583,8 @@ function onMarqueeEnd(event: PointerEvent): void {
     const m = marquee.value;
     const rect = marqueeRect.value;
     stopMarquee();
-    if (m?.moved && event.type === 'pointerup') editor.selectArea(rect ?? { x: -1, y: -1, width: 0, height: 0 }, m.add);
+    // A rectangle wholly beside the stage catches nothing; the press has let go of the blocks already.
+    if (m?.moved && rect && event.type === 'pointerup') editor.selectArea(rect, m.add);
 }
 function stopMarquee(): void {
     marquee.value = null;

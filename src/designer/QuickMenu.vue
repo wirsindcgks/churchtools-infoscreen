@@ -365,7 +365,8 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
                             {{ t.quick.deselect }}
                         </button>
                     </template>
-                    <template v-if="block">
+                    <!-- Several on a phone: the sheet holds the layer buttons for all of them (Arrange). -->
+                    <template v-if="block || (many && bar)">
                         <hr role="separator">
                         <button role="menuitem" type="button" data-testid="quick-all-settings" @click="choose(() => emit('all-settings'))">
                             {{ t.quick.allSettings }}
