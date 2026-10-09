@@ -12,6 +12,7 @@ import type { HomepageEntry } from '../groups/normalize';
 import type { RoomInfo } from '../rooms/normalize';
 import type { ServiceInfo } from '../appointments/services';
 import { useEditorStore } from './editor-store';
+import ArrangeField from './ArrangeField.vue';
 import Icon from './Icon.vue';
 import InspectorSection from './InspectorSection.vue';
 import { BLOCK_INSPECTORS } from './inspector/blocks';
@@ -144,6 +145,7 @@ const LAYERS = [
                 <component :is="BLOCK_INSPECTORS[block.type]" v-if="block" :block="block" />
 
                 <InspectorSection id="arrange" :title="t.inspector.arrange" default-open>
+                    <ArrangeField />
                     <p v-if="block" class="layer-position" data-testid="layer-position">{{ t.inspector.layerOf(layerNumber, rows.length) }}</p>
                     <ol ref="layerList" class="layer-list" data-testid="layer-list">
                         <li

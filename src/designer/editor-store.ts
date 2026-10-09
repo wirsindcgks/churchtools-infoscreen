@@ -21,6 +21,7 @@ import {
 import { DraftConflictError, DraftsUnavailableError, type DraftConflictInfo } from '../store/drafts';
 import { t } from '../i18n/designer';
 import { tr } from '../i18n/repository';
+import { align, alignTarget, distribute, distributeBlocker, type Axis, type Edge, type Frame } from './arrange';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
 import { boundingBox, clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, freeSpot, move, moveAround, newId, reorderMany, type Layer } from './ops';
@@ -564,6 +565,43 @@ export const useEditorStore = defineStore('editor', () => {
         });
     }
 
+    /** Writes new frames for the given blocks (clamped) in one step; frames that stay as they are leave no step. */
+    function applyFrames(blocks: readonly Block[], frames: readonly Frame[]): void {
+        const next = new Map<string, Frame>();
+        blocks.forEach((x, i) => {
+            const frame = clampFrame(frames[i]!, stage.value);
+            if (frame.x !== x.x || frame.y !== x.y) next.set(x.id, frame);
+        });
+        if (!next.size) return;
+        const slideId = slide.value?.id;
+        change((b) => {
+            for (const target of slideIn(b, slideId)?.blocks ?? []) {
+                const frame = next.get(target.id);
+                if (frame) Object.assign(target, frame);
+            }
+        });
+    }
+
+    /**
+     * Aligns the unlocked chosen blocks to an edge or middle (Plan.md 79, D4): one block to the stage, several to the box around
+     * the locked ones among them or else around all. One step.
+     */
+    function alignSelection(edge: Edge): void {
+        const target = alignTarget(selection.value, stage.value);
+        if (!target) return;
+        const free = selection.value.filter((x) => !x.locked);
+        applyFrames(free, align(free, edge, target));
+    }
+
+    /** Spreads three or more evenly between the outer two; with a locked block between them it does nothing. One step. */
+    function distributeSelection(axis: Axis): void {
+        if (distributeBlocker(selection.value, axis)) return;
+        const all = selection.value;
+        const spread = distribute(all, axis);
+        const free = all.map((x, i) => ({ x, frame: spread[i]! })).filter((p) => !p.x.locked);
+        applyFrames(free.map((p) => p.x), free.map((p) => p.frame));
+    }
+
     /** Deletes the unlocked ones in one step; locked blocks stay. */
     function removeBlocks(ids: readonly string[]): void {
         const gone = new Set(blocksOf(ids).filter((x) => !x.locked).map((x) => x.id));
@@ -889,6 +927,8 @@ export const useEditorStore = defineStore('editor', () => {
         addBlock,
         updateBlock,
         moveBlocks,
+        alignSelection,
+        distributeSelection,
         removeBlocks,
         layerBlocks,
         moveBlockLayer,

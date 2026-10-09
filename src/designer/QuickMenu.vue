@@ -5,12 +5,14 @@
  * so text and buttons keep their size at every zoom. A locked block shows only "Entsperren" and "⋯".
  * `variant="bar"` (C2) is the same menu as the bar at the bottom of a phone: the block's symbol, the fields in a row to
  * scroll, then "⋯" (which also holds duplicate, delete and lock/unlock there) and "Auswahl aufheben". An open field is a sheet from below.
- * With several blocks chosen (D5) it stands over their box and shows "3 Bausteine", lock, duplicate, delete and "⋯" (copy, cut, let go).
+ * With several blocks chosen (D5) it stands over their box and shows "3 Bausteine", the chip "Ausrichten" (D4), lock, duplicate,
+ * delete and "⋯" (copy, cut, let go).
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, reactive, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
 import type { Block } from '../model/schema';
 import { useEditorStore } from './editor-store';
+import ArrangeField from './ArrangeField.vue';
 import Icon from './Icon.vue';
 import { BLOCK_INSPECTORS } from './inspector/blocks';
 import { INSPECTOR_MODE, QUICK_OPEN, QUICK_VARIANT } from './inspector/mode';
@@ -224,6 +226,8 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
         </span>
         <span v-if="many" class="quick-count" data-testid="quick-count">{{ title }}</span>
         <span v-if="many && !bar" class="quick-divider" aria-hidden="true" />
+        <ArrangeField v-if="many && !allLocked" />
+        <span v-if="many && !allLocked && !bar" class="quick-divider" aria-hidden="true" />
         <template v-if="block && !block.locked">
             <div class="quick-scroll">
                 <div ref="fields" class="quick-fields" @scroll.passive="onFieldsScroll">

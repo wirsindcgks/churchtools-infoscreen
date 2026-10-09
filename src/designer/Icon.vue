@@ -87,6 +87,15 @@ const PATHS = {
     'valign-top': ['M4 4h16', 'M8 8h8v8H8z'],
     'valign-middle': ['M4 12h16', 'M9 6h6v12H9z'],
     'valign-bottom': ['M4 20h16', 'M8 8h8v8H8z'],
+    // Aligning and distributing several blocks (Plan.md 79, D4): a reference line and two bars of different length.
+    'arrange-left': ['M4 4v16', 'M8 7h12v4H8z', 'M8 14h7v4H8z'],
+    'arrange-center': ['M12 3v18', 'M5 7h14v4H5z', 'M8 14h8v4H8z'],
+    'arrange-right': ['M20 4v16', 'M4 7h12v4H4z', 'M9 14h7v4H9z'],
+    'arrange-top': ['M4 4h16', 'M7 8v12h4V8z', 'M14 8v7h4V8z'],
+    'arrange-middle': ['M3 12h18', 'M7 5v14h4V5z', 'M14 8v8h4V8z'],
+    'arrange-bottom': ['M4 20h16', 'M7 4v12h4V4z', 'M14 9v7h4V9z'],
+    'distribute-x': ['M3 4v16', 'M21 4v16', 'M7 8v8h2V8z', 'M11 8v8h2V8z', 'M15 8v8h2V8z'],
+    'distribute-y': ['M4 3h16', 'M4 21h16', 'M8 7h8v2H8z', 'M8 11h8v2H8z', 'M8 15h8v2H8z'],
 } as const;
 
 export type IconName = keyof typeof PATHS;

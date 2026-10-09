@@ -785,6 +785,61 @@ describe('selecting several blocks (Plan.md 79, D1)', () => {
         expect(editor.slide!.blocks[2]!.x).toBe(700);
     });
 
+    it('aligns and distributes as one step each; a locked block stays and is the target', async () => {
+        const { editor, ids } = await three();
+        editor.selectAll();
+        editor.alignSelection('left');
+        expect(editor.slide!.blocks.map((b) => b.x)).toEqual([100, 100, 100]);
+        editor.undo();
+        expect(editor.slide!.blocks.map((b) => b.x)).toEqual([100, 400, 700]);
+        editor.alignSelection('left');
+        editor.alignSelection('left');
+        editor.undo();
+        expect(editor.slide!.blocks.map((b) => b.x)).toEqual([100, 400, 700]);
+        editor.setLocked([ids[1]], true);
+        editor.alignSelection('top');
+        // The locked one (y 100) is the target; the third moves up to it.
+        expect(editor.slide!.blocks.map((b) => b.y)).toEqual([100, 100, 100]);
+        editor.alignSelection('right');
+        expect(editor.slide!.blocks.map((b) => b.x)).toEqual([400, 400, 400]);
+        editor.setLocked(ids, true);
+        editor.alignSelection('bottom');
+        expect(editor.slide!.blocks.map((b) => b.x)).toEqual([400, 400, 400]);
+    });
+
+    it('aligns a single block to the stage, and distributes evenly', async () => {
+        const { editor, ids } = await three();
+        editor.selectBlock(ids[0]);
+        editor.alignSelection('right');
+        expect(editor.slide!.blocks[0]!.x).toBe(1920 - 200);
+        editor.alignSelection('middle');
+        expect(editor.slide!.blocks[0]!.y).toBe(490);
+        editor.selectAll();
+        editor.undo();
+        editor.undo();
+        editor.distributeSelection('x');
+        // 100..900 with 600 of width: gaps of 100.
+        expect(editor.slide!.blocks.map((b) => b.x)).toEqual([100, 400, 700]);
+        editor.updateBlock(ids[1], { x: 200 });
+        editor.distributeSelection('x');
+        expect(editor.slide!.blocks[1]!.x).toBe(400);
+        editor.undo();
+        expect(editor.slide!.blocks[1]!.x).toBe(200);
+    });
+
+    it('does not distribute with a locked block in between or with fewer than three', async () => {
+        const { editor, ids } = await three();
+        editor.updateBlock(ids[1], { x: 200 });
+        editor.setLocked([ids[1]], true);
+        editor.selectAll();
+        editor.distributeSelection('x');
+        expect(editor.slide!.blocks[1]!.x).toBe(200);
+        editor.selectBlock(ids[0]);
+        editor.toggleBlock(ids[2]);
+        editor.distributeSelection('x');
+        expect(editor.slide!.blocks.map((b) => b.x)).toEqual([100, 200, 700]);
+    });
+
     it('clamps the box of the moved ones, so the group keeps its shape at the edge', async () => {
         const { editor, ids } = await three();
         editor.moveBlocks([ids[0], ids[2]], 5000, 0);
