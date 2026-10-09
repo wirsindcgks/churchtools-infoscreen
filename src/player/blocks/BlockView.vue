@@ -18,7 +18,8 @@ import SlideshowView from './SlideshowView.vue';
 import VideoView from './VideoView.vue';
 
 /** `slideSeconds`: how long the slide shows – a paged list shares it out among its pages. */
-const props = defineProps<{ block: Block; slideSeconds?: number }>();
+/** `hiddenBlockId`: the editor hides the drawn text of the block it is editing on the stage (Plan.md 79, C4); the player never sets it. */
+const props = defineProps<{ block: Block; slideSeconds?: number; hiddenBlockId?: string }>();
 const context = useStageContext();
 
 const frame = computed(() => ({
@@ -63,7 +64,7 @@ const imageUrl = computed(() => {
 <template>
     <div class="block" :class="`block--${block.type}`" :style="frame">
         <div v-if="block.type === 'text'" class="text" :style="textStyle(block.style)">
-            <div class="text-inner" :style="vertical" data-testid="text-inner">{{ block.text }}</div>
+            <div class="text-inner" :style="[vertical, { visibility: hiddenBlockId === block.id ? 'hidden' : undefined }]" data-testid="text-inner">{{ block.text }}</div>
         </div>
 
         <div

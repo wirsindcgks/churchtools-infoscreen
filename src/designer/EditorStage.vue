@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import type { Block } from '../model/schema';
 import { bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
 import { useStageContext } from '../player/context';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
+import { textStyle, verticalAlignOf, verticalStyle } from '../player/format';
 import { fitStage } from '../player/stage';
 import { t } from '../i18n/designer';
 import { useEditorStore } from './editor-store';
@@ -160,7 +161,8 @@ function end(): void {
     guides.value = [];
     measures.value = [];
     spacings.value = [];
-    editor.endGesture();
+    // A mouse released over a block after marking text in the field must not close the editing run.
+    if (!editor.editingTextId) editor.endGesture();
 }
 
 type Drawn = Measure & { kind: 'measure' | 'spacing' };
@@ -241,11 +243,75 @@ async function openContent(): Promise<void> {
     if (quickMenu.value) quickMenu.value.openFirst();
     else if (!wide.value) emit('all-settings');
 }
-/** A double click: the text block gets its own editing on the stage in C4, until then it does nothing. */
+/** A double click: a text block is written on the stage (C4), any other leads to its content (C5). */
 function onDoubleClick(): void {
-    if (editor.block?.type === 'text') return;
+    const chosen = editor.block;
+    if (chosen?.type === 'text') {
+        if (!chosen.locked) editor.startTextEdit(chosen.id);
+        return;
+    }
     void openContent();
 }
+
+/** Writing on the stage (Plan.md 79, C4): the field lies over the block inside the scaled stage, so type, wrap and alignment are the player's own. */
+const editingBlock = computed(() => {
+    const b = blocks.value.find((x) => x.id === editor.editingTextId);
+    return b?.type === 'text' ? b : null;
+});
+/** Text blocks without text show a pale hint here – the player shows nothing. */
+const placeholders = computed(() => blocks.value.filter((b): b is Extract<Block, { type: 'text' }> => b.type === 'text' && !b.text && b.id !== editor.editingTextId));
+function textFrame(b: Block): Record<string, string> {
+    return { left: `${b.x}px`, top: `${b.y}px`, width: `${b.width}px`, height: `${b.height}px` };
+}
+const textArea = ref<HTMLTextAreaElement | null>(null);
+function grow(): void {
+    const el = textArea.value;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+}
+function onTextInput(event: Event): void {
+    if (!editingBlock.value) return;
+    editor.updateBlock(editingBlock.value.id, { text: (event.target as HTMLTextAreaElement).value });
+    grow();
+}
+function onTextKey(event: KeyboardEvent): void {
+    if (event.key !== 'Escape') return;
+    event.stopPropagation();
+    editor.endTextEdit();
+}
+/** A press outside the field and the short menu (with its open panels) ends the writing. Captured: blocks stop their `pointerdown`. */
+function endOnOutside(event: PointerEvent): void {
+    const target = event.target as Element | null;
+    if (target?.closest('[data-testid="text-edit"], [data-testid="quick-menu"]')) return;
+    editor.endTextEdit();
+}
+watch(
+    () => editor.editingTextId,
+    async (id) => {
+        if (!id) {
+            document.removeEventListener('pointerdown', endOnOutside, true);
+            return;
+        }
+        document.addEventListener('pointerdown', endOnOutside, true);
+        await nextTick();
+        const el = textArea.value;
+        if (!el) return;
+        grow();
+        el.focus();
+        el.select();
+    },
+);
+// Another size, font or width changes the lines: the field follows.
+watch(
+    () => [editingBlock.value?.style, editingBlock.value?.width],
+    async () => {
+        await nextTick();
+        grow();
+    },
+    { deep: true },
+);
+onBeforeUnmount(() => document.removeEventListener('pointerdown', endOnOutside, true));
 function onEmptyAction(b: Block): void {
     editor.selectBlock(b.id);
     void openContent();
@@ -261,7 +327,12 @@ function onEmptyAction(b: Block): void {
             :style="{ left: `${fit.offsetX}px`, top: `${fit.offsetY}px`, width: `${editor.stage.width * fit.scale}px`, height: `${editor.stage.height * fit.scale}px` }"
         />
         <StageView v-if="editor.slide" :width="editor.stage.width" :height="editor.stage.height" :fit="fit">
-            <SlideView :slide="editor.slide" :width="editor.stage.width" :height="editor.stage.height" />
+            <SlideView
+                :slide="editor.slide"
+                :width="editor.stage.width"
+                :height="editor.stage.height"
+                :hidden-block-id="editor.editingTextId ?? undefined"
+            />
             <!-- The playlist's band lies over every slide (Plan.md 32); clicks go through to the blocks. -->
             <BannerView v-if="banner" class="stage-banner" :banner="banner" :stage-width="editor.stage.width" />
             <div
@@ -340,6 +411,32 @@ function onEmptyAction(b: Block): void {
                             @pointercancel="end"
                         />
                     </template>
+                </div>
+                <!-- Only in the editor (C4): the hint of an empty text, and the field while it is written – same structure as the player's text. -->
+                <div
+                    v-for="b in placeholders"
+                    :key="`ph${b.id}`"
+                    class="text-box text-box--hint"
+                    :style="{ ...textFrame(b), ...textStyle(b.style) }"
+                    data-testid="text-placeholder"
+                >
+                    <div class="text-lines" :style="verticalStyle(verticalAlignOf(b) ?? 'top')">{{ t.editor.stage.textPlaceholder }}</div>
+                </div>
+                <div v-if="editingBlock" class="text-box" :style="{ ...textFrame(editingBlock), ...textStyle(editingBlock.style) }">
+                    <textarea
+                        ref="textArea"
+                        class="text-lines text-field"
+                        :style="verticalStyle(verticalAlignOf(editingBlock) ?? 'top')"
+                        rows="1"
+                        :value="editingBlock.text"
+                        :placeholder="t.editor.stage.textPlaceholder"
+                        :aria-label="t.editor.stage.textEdit"
+                        data-testid="text-edit"
+                        @input="onTextInput"
+                        @keydown="onTextKey"
+                        @pointerdown.stop
+                        @dblclick.stop
+                    />
                 </div>
             </div>
         </StageView>
@@ -483,6 +580,55 @@ function onEmptyAction(b: Block): void {
     z-index: 1;
     pointer-events: none;
     transform: translateX(-50%);
+}
+.text-box {
+    position: absolute;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+    pointer-events: none;
+}
+.text-box--hint {
+    opacity: 0.4;
+}
+/* While writing, lines beyond the block stay visible – the cursor must not vanish; the player still cuts them. */
+.text-box:not(.text-box--hint) {
+    overflow: visible;
+}
+.text-lines {
+    flex: none;
+}
+/* The field takes everything from the box around it, so the lines fall as the player draws them. */
+.text-field {
+    display: block;
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 0;
+    margin-inline: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    outline: none;
+    background: none;
+    resize: none;
+    overflow: hidden;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    line-height: inherit;
+    text-align: inherit;
+    text-transform: inherit;
+    white-space: inherit;
+    overflow-wrap: inherit;
+    pointer-events: auto;
+}
+.text-field::placeholder {
+    color: inherit;
+    opacity: 0.4;
 }
 .frame {
     position: absolute;

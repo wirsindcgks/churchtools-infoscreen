@@ -13,7 +13,7 @@ import SlideView from './SlideView.vue';
 const BERLIN = 'Europe/Berlin';
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
 
-function render(slide: SlideDoc, overrides: Partial<StageContext> = {}) {
+function render(slide: SlideDoc, overrides: Partial<StageContext> = {}, hiddenBlockId?: string) {
     const context = reactive<StageContext>({
         now: new Date('2026-10-04T08:00:00Z'),
         timeZone: BERLIN,
@@ -26,7 +26,7 @@ function render(slide: SlideDoc, overrides: Partial<StageContext> = {}) {
     const Host = defineComponent({
         setup() {
             provideStageContext(context);
-            return () => h(SlideView, { slide, width: 1920, height: 1080 });
+            return () => h(SlideView, { slide, width: 1920, height: 1080, hiddenBlockId });
         },
     });
     return mount(Host);
@@ -44,6 +44,13 @@ describe('rendering a slide', () => {
         const wrapper = render(readSlide(fromTheFuture).doc);
         expect(wrapper.text()).toContain('Bekannt');
         expect(wrapper.findAll('.block')).toHaveLength(1);
+    });
+
+    it('hides the text of the block named by hiddenBlockId and of no other (Plan.md 79, C4)', () => {
+        const slide = makeSlide({ blocks: [textBlock('a', 'Eins'), textBlock('b', 'Zwei')] });
+        const inner = render(slide, {}, 'b').findAll('[data-testid="text-inner"]');
+        expect(inner[0]!.attributes('style') ?? '').not.toContain('visibility');
+        expect(inner[1]!.attributes('style')).toContain('visibility: hidden');
     });
 
     it('positions blocks in stage pixels', () => {

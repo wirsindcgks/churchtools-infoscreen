@@ -53,6 +53,49 @@ describe('editor store', () => {
         expect(editor.block?.x).toBe(startX);
     });
 
+    it('records a whole editing run on the stage as one undo step and ends it when the choice changes (Plan.md 79, C4)', async () => {
+        const { editor } = await setup();
+        editor.addBlock('text');
+        const id = editor.block!.id;
+        const before = editor.block!.type === 'text' ? editor.block!.text : '';
+        editor.startTextEdit(id);
+        expect(editor.editingTextId).toBe(id);
+        for (const text of ['H', 'Ha', 'Hal', 'Hallo']) editor.updateBlock(id, { text });
+        editor.endTextEdit();
+        expect(editor.editingTextId).toBeNull();
+        editor.undo();
+        expect(editor.block?.type === 'text' && editor.block.text).toBe(before);
+
+        editor.startTextEdit(id);
+        editor.selectBlock(null);
+        expect(editor.editingTextId).toBeNull();
+
+        // Undo in the middle of writing ends it and takes the whole writing back.
+        editor.startTextEdit(id);
+        editor.updateBlock(id, { text: 'Welt' });
+        editor.undo();
+        expect(editor.editingTextId).toBeNull();
+        expect(editor.block?.type === 'text' && editor.block.text).toBe(before);
+    });
+
+    it('does not write on a locked block, and ends when the block is locked or deleted (Plan.md 79, C4)', async () => {
+        const { editor } = await setup();
+        editor.addBlock('text');
+        const id = editor.block!.id;
+        editor.startTextEdit(id);
+        editor.setLocked(id, true);
+        expect(editor.editingTextId).toBeNull();
+        editor.startTextEdit(id);
+        expect(editor.editingTextId).toBeNull();
+        editor.setLocked(id, false);
+        editor.startTextEdit(id);
+        editor.removeBlock(id);
+        expect(editor.editingTextId).toBeNull();
+        editor.addBlock('shape');
+        editor.startTextEdit(editor.block!.id);
+        expect(editor.editingTextId).toBeNull();
+    });
+
     it('keeps blocks on the stage when they are dragged off', async () => {
         const { editor } = await setup();
         editor.addBlock('shape');
