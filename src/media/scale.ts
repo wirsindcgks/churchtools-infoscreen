@@ -4,6 +4,8 @@
  * and the image service scales for display anyway. An 8-megapixel phone
  * photo would otherwise occupy storage that nobody ever sees.
  */
+import { t } from '../i18n/designer';
+
 export const MAX_EDGE = 3840;
 
 export function targetSize(width: number, height: number, maxEdge = MAX_EDGE): { width: number; height: number } {
@@ -39,7 +41,7 @@ export async function prepareImage(file: File): Promise<PreparedImage> {
     // PNG keeps transparency (logos); photos become JPEG.
     const type = file.type === 'image/png' ? 'image/png' : 'image/jpeg';
     const blob = await new Promise<Blob>((resolve, reject) =>
-        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Bild ließ sich nicht verkleinern.'))), type, 0.88),
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error(t.media.library.scaleFailed))), type, 0.88),
     );
     const name = type === 'image/jpeg' ? file.name.replace(/\.(png|webp)$/i, '.jpg') : file.name;
     return { blob, name, ...size };

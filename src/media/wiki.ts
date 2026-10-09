@@ -11,6 +11,7 @@
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { httpStatus } from '../ct/client';
+import { t } from '../i18n/designer';
 
 export const WIKI_CATEGORY_NAME = 'Infoscreen';
 const OVERVIEW_PAGE = 'main';
@@ -117,7 +118,7 @@ export async function ensureScreenPage(categoryId: number, slug: string, screenN
     return churchtoolsClient.post<WikiPage>(`/wiki/categories/${categoryId}/pages`, {
         title: slug,
         isMarkdown: true,
-        text: `${MARKER}\nBilder für den Infoscreen **${screenName}** (Adresse \`${slug}\`).\n\nHochgeladen und ausgewählt werden sie im Infoscreen Designer. Wer hier ein Bild löscht, das noch auf einem Screen verwendet wird, lässt dort eine leere Fläche zurück.`,
+        text: `${MARKER}\n${t.wiki.screenPage(screenName, slug)}`,
     });
 }
 
@@ -137,28 +138,7 @@ export async function ensureOverviewPage(categoryId: number, extensionUrl: strin
 }
 
 export function overviewText(extensionUrl: string): string {
-    return `${MARKER}
-# Infoscreen
-
-Diese Kategorie gehört zum **Infoscreen Designer**, mit dem die Gemeinde ihre Fernseher im Foyer und in den Räumen gestaltet: [Infoscreen Designer öffnen](${extensionUrl})
-
-## Warum es diesen Bereich gibt
-
-Die Fernseher zeigen Bilder – Plakate, Logos, Hintergründe. ChurchTools bietet einer Erweiterung keinen eigenen Dateispeicher; Bilder kann sie nur an eine Seite im Wiki hängen. Deshalb legt der Designer diesen Bereich an und speichert hier, was in seiner **Mediathek** hochgeladen wird. Das Wiki ist nur der Ablageort: Hochgeladen, ausgewählt und gelöscht wird im Designer.
-
-Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers unter „Ausgeblendet" verschieben – neu angelegt steht er schon dort.
-
-## Was hier liegt
-
-- **Mediathek**: die Bilder, die im Designer hochgeladen wurden.
-- Seiten, die nach der Adresse eines Screens benannt sind: Bilder aus der Zeit, als jeder Screen seine eigenen hatte. Sie lassen sich weiter in jedem Screen verwenden.
-
-## Gut zu wissen
-
-- Bilder hier zu löschen entfernt sie auch von den Fernsehern, die sie zeigen. Im Designer wird vorher angezeigt, wo ein Bild verwendet wird – dort löschen ist sicherer.
-- Bildadressen sind ohne Anmeldung abrufbar, geschützt nur durch eine lange Zufallskennung. Bitte keine vertraulichen Bilder hochladen.
-- Diese Seite schreibt der Designer selbst, solange sie niemand ändert. Wer sie bearbeitet, übernimmt sie.
-`;
+    return `${MARKER}\n${t.wiki.overview(extensionUrl)}`;
 }
 
 export function listFiles(categoryId: number, pageGuid: string): Promise<WikiFile[]> {
@@ -170,7 +150,7 @@ export async function uploadFile(categoryId: number, pageGuid: string, file: Blo
     form.append('files[]', file, name);
     const uploaded = await churchtoolsClient.post<WikiFile[]>(`/files/wiki_${categoryId}/${pageGuid}`, form);
     const first = uploaded[0];
-    if (!first) throw new Error('ChurchTools hat keine Datei zurückgegeben.');
+    if (!first) throw new Error(t.wiki.noFile);
     return first;
 }
 

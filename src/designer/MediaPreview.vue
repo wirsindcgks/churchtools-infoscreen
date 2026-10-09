@@ -13,6 +13,7 @@ const background = ref<'dark' | 'light' | 'checker'>('dark');
  * through `items` without wrapping around. With `actionLabel` there is a button to choose the file; `notice` is a line under the header (the limit of a gallery).
  */
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
+import { t } from '../i18n/designer';
 import { formatDuration } from '../media/video';
 import { neighbours, usageLines, type MediaItem } from '../media/library';
 import { sizedImageUrl } from '../player/format';
@@ -25,9 +26,9 @@ const props = defineProps<{ items: MediaItem[]; fileId: number; actionLabel?: st
 const emit = defineEmits<{ 'update:fileId': [number]; action: [MediaItem]; close: [] }>();
 
 const BACKGROUNDS = [
-    { key: 'dark', label: 'Dunkel' },
-    { key: 'light', label: 'Hell' },
-    { key: 'checker', label: 'Karo' },
+    { key: 'dark', label: t.media.preview.dark },
+    { key: 'light', label: t.media.preview.light },
+    { key: 'checker', label: t.media.preview.checker },
 ] as const;
 
 const position = computed(() => neighbours(props.items, props.fileId));
@@ -85,26 +86,26 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <div v-if="item" class="backdrop" role="dialog" aria-modal="true" aria-label="Vorschau" data-testid="media-preview" @click.self="emit('close')">
+    <div v-if="item" class="backdrop" role="dialog" aria-modal="true" :aria-label="t.media.preview.title" data-testid="media-preview" @click.self="emit('close')">
         <div class="preview">
             <header>
                 <button
                     class="d-btn d-btn--icon"
                     type="button"
-                    aria-label="Vorige Datei"
-                    title="Vorige Datei"
+                    :aria-label="t.media.preview.previous"
+                    :title="t.media.preview.previous"
                     :disabled="!position?.prev"
                     data-testid="preview-prev"
                     @click="go(position?.prev)"
                 >
                     <Icon name="back" />
                 </button>
-                <span class="position" aria-live="polite" data-testid="preview-position">{{ (position?.index ?? 0) + 1 }} von {{ position?.count ?? 0 }}</span>
+                <span class="position" aria-live="polite" data-testid="preview-position">{{ t.common.countOf((position?.index ?? 0) + 1, position?.count ?? 0) }}</span>
                 <button
                     class="d-btn d-btn--icon"
                     type="button"
-                    aria-label="Nächste Datei"
-                    title="Nächste Datei"
+                    :aria-label="t.media.preview.next"
+                    :title="t.media.preview.next"
                     :disabled="!position?.next"
                     data-testid="preview-next"
                     @click="go(position?.next)"
@@ -112,7 +113,7 @@ onBeforeUnmount(() => {
                     <Icon name="forward" />
                 </button>
                 <span class="spacer" />
-                <FilterChips v-model="background" :options="BACKGROUNDS" label="Hintergrund" testid="preview-background" />
+                <FilterChips v-model="background" :options="BACKGROUNDS" :label="t.media.preview.background" testid="preview-background" />
                 <button
                     v-if="actionLabel"
                     class="d-btn d-btn--primary"
@@ -122,7 +123,7 @@ onBeforeUnmount(() => {
                 >
                     {{ actionLabel }}
                 </button>
-                <button ref="closeButton" class="d-btn" type="button" data-testid="preview-close" @click="emit('close')">Schließen</button>
+                <button ref="closeButton" class="d-btn" type="button" data-testid="preview-close" @click="emit('close')">{{ t.common.close }}</button>
             </header>
             <p v-if="notice" class="banner" role="status" data-testid="preview-notice">{{ notice }}</p>
             <div class="body">
@@ -142,26 +143,26 @@ onBeforeUnmount(() => {
                     <img v-else :key="item.fileId" :src="sizedImageUrl(item.imageUrl, 1920, 1080, 'max')" :alt="item.name" data-testid="preview-image">
                 </div>
                 <dl class="facts">
-                    <dt class="name-label">Name</dt>
+                    <dt class="name-label">{{ t.common.name }}</dt>
                     <dd class="name" data-testid="preview-name">{{ item.name }}</dd>
                     <template v-if="size">
-                        <dt>Größe</dt>
+                        <dt>{{ t.media.preview.size }}</dt>
                         <dd data-testid="preview-size">{{ size }}</dd>
                     </template>
                     <template v-if="duration">
-                        <dt>Länge</dt>
+                        <dt>{{ t.media.preview.length }}</dt>
                         <dd data-testid="preview-duration">{{ duration }}</dd>
                     </template>
                     <template v-if="uploaded">
-                        <dt>Hochgeladen am</dt>
+                        <dt>{{ t.media.preview.uploadedOn }}</dt>
                         <dd data-testid="preview-uploaded">{{ uploaded }}</dd>
                     </template>
-                    <dt>Wo läuft es</dt>
+                    <dt>{{ t.media.preview.whereRuns }}</dt>
                     <dd data-testid="preview-uses">
                         <ul v-if="places.length">
                             <li v-for="line in places" :key="line">{{ line }}</li>
                         </ul>
-                        <template v-else>Unbenutzt</template>
+                        <template v-else>{{ t.media.show.unused }}</template>
                     </dd>
                 </dl>
             </div>

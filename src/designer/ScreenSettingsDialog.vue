@@ -7,6 +7,7 @@
  * from the tile's menu (Plan.md 71).
  */
 import { computed, onMounted, ref } from 'vue';
+import { t } from '../i18n/designer';
 import HintRow from './HintRow.vue';
 import type { ScreenDoc } from '../model/schema';
 import { ConflictError, type ScreenRepository } from '../store/screen-repository';
@@ -44,7 +45,7 @@ async function save(): Promise<void> {
     } catch (e) {
         error.value =
             e instanceof ConflictError
-                ? `Die Einstellungen wurden inzwischen geändert${e.current.updatedBy ? ` (von ${e.current.updatedBy})` : ''}. Bitte schließen und neu öffnen.`
+                ? t.home.settings.conflict(e.current.updatedBy)
                 : e instanceof Error
                   ? e.message
                   : String(e);
@@ -64,31 +65,31 @@ async function save(): Promise<void> {
             :data-testid="mode === 'rename' ? 'screen-rename' : 'screen-settings'"
             @submit.prevent="save"
         >
-            <h2 id="settings-title">{{ mode === 'rename' ? 'Screen umbenennen' : 'Screen einstellen' }}</h2>
+            <h2 id="settings-title">{{ mode === 'rename' ? t.home.settings.renameTitle : t.home.settings.title }}</h2>
             <label class="d-field">
-                Name
+                {{ t.common.name }}
                 <input ref="nameInput" v-model="name" type="text" maxlength="100" data-testid="settings-name">
-                <small v-if="!name.trim()" class="invalid">Ohne Namen lässt sich nicht speichern.</small>
+                <small v-if="!name.trim()" class="invalid">{{ t.home.settings.nameRequired }}</small>
             </label>
             <HintRow v-if="mode === 'settings'">
                 <label class="d-field">
-                    Overscan-Korrektur (%)
+                    {{ t.home.settings.overscan }}
                     <input v-model.number="overscan" type="number" min="0" max="20" data-testid="settings-overscan">
                 </label>
-                <template #info>Verkleinert die Bildfläche auf Fernsehern, die den Rand abschneiden.</template>
+                <template #info>{{ t.home.settings.overscanInfo }}</template>
             </HintRow>
             <dl v-if="mode === 'settings'">
-                <dt>Format</dt>
-                <dd>{{ portrait ? 'Hochkant' : 'Quer' }}, {{ screen.stage.width }} × {{ screen.stage.height }}</dd>
-                <dt>Adresse</dt>
+                <dt>{{ t.common.format }}</dt>
+                <dd>{{ portrait ? t.common.portrait : t.common.landscape }}, {{ screen.stage.width }} × {{ screen.stage.height }}</dd>
+                <dt>{{ t.home.settings.address }}</dt>
                 <dd><code>{{ screen.slug }}</code></dd>
             </dl>
-            <p v-if="mode === 'settings'" class="muted">Format und Adresse bleiben fest. Was der Screen zeigt, gestalten die Gestalter im Editor.</p>
+            <p v-if="mode === 'settings'" class="muted">{{ t.home.settings.fixedHint }}</p>
             <p v-if="error" class="invalid" role="alert">{{ error }}</p>
             <div class="d-dialog-actions">
-                <button class="d-btn" type="button" @click="emit('close')">Abbrechen</button>
+                <button class="d-btn" type="button" @click="emit('close')">{{ t.common.cancel }}</button>
                 <button class="d-btn d-btn--primary" type="submit" :disabled="!canSave" data-testid="settings-save">
-                    Speichern
+                    {{ t.common.save }}
                 </button>
             </div>
         </form>

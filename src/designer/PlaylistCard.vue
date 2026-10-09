@@ -6,6 +6,7 @@
  * shows it.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { t } from '../i18n/designer';
 import type { HeartbeatDoc } from '../model/heartbeat';
 import { bannerShown } from '../player/banner';
 import { useStageContext } from '../player/context';
@@ -67,7 +68,7 @@ function duplicate(): void {
         <RouterLink
             class="open d-tile-media"
             :to="{ name: 'editor', params: { id: playlist.id } }"
-            :aria-label="`${playlist.name} bearbeiten`"
+            :aria-label="t.home.card.edit(playlist.name)"
             data-testid="open-playlist"
         >
             <SlideThumb :slide="overview.firstSlide" :stage="playlist.stage" />
@@ -83,16 +84,16 @@ function duplicate(): void {
             <div class="title-row">
                 <h3 class="d-tile-title">
                     <RouterLink :to="{ name: 'editor', params: { id: playlist.id } }" tabindex="-1">
-                        {{ playlist.name || 'Ohne Namen' }}
+                        {{ playlist.name || t.home.card.unnamed }}
                     </RouterLink>
                 </h3>
                 <span
                     v-if="hasBanner"
                     class="banner-flag"
-                    :title="`Hinweisband: „${playlist.banner!.text}“`"
+                    :title="t.playlists.card.bannerTitle(playlist.banner!.text)"
                     data-testid="playlist-banner"
                 >
-                    <Icon name="megaphone" :size="14" /> Hinweis
+                    <Icon name="megaphone" :size="14" /> {{ t.playlists.card.banner }}
                 </span>
                 <div class="menu">
                     <button
@@ -100,8 +101,8 @@ function duplicate(): void {
                         type="button"
                         :aria-expanded="menuOpen"
                         aria-haspopup="menu"
-                        :aria-label="`Aktionen für ${playlist.name}`"
-                        title="Aktionen"
+                        :aria-label="t.home.card.actionsFor(playlist.name)"
+                        :title="t.home.card.actions"
                         data-testid="playlist-menu"
                         @click="menuOpen = !menuOpen"
                     >
@@ -109,34 +110,34 @@ function duplicate(): void {
                     </button>
                     <div v-if="menuOpen" class="menu-list" role="menu">
                         <button role="menuitem" type="button" data-testid="duplicate-playlist" @click="duplicate">
-                            <Icon name="copy" :size="16" /> Duplizieren
+                            <Icon name="copy" :size="16" /> {{ t.playlists.card.duplicate }}
                         </button>
                         <button
                             role="menuitem"
                             type="button"
                             class="danger"
                             :disabled="inUse"
-                            :title="inUse ? 'Läuft noch auf einem Screen – erst dort im Zeitplan eine andere wählen' : undefined"
+                            :title="inUse ? t.playlists.card.deleteBlocked : undefined"
                             data-testid="delete-playlist"
                             @click="remove"
                         >
-                            <Icon name="trash" :size="16" /> Löschen
+                            <Icon name="trash" :size="16" /> {{ t.common.delete }}
                         </button>
                     </div>
                 </div>
             </div>
             <ul class="d-facts">
-                <li :title="portrait ? 'Hochkant' : 'Quer'">
+                <li :title="portrait ? t.common.portrait : t.common.landscape">
                     <Icon :name="portrait ? 'portrait' : 'landscape'" :size="16" />
-                    {{ portrait ? 'Hochkant' : 'Quer' }}
+                    {{ portrait ? t.common.portrait : t.common.landscape }}
                 </li>
-                <li title="Slides">
+                <li :title="t.playlists.card.slides">
                     <Icon name="slides" :size="16" />
                     {{ overview.slideCount }}
                 </li>
-                <li class="d-facts-gap" :title="inUse ? 'Läuft auf diesen Screens' : 'Noch kein Screen zeigt sie'" data-testid="playlist-screens">
+                <li class="d-facts-gap" :title="inUse ? t.playlists.card.runsOn : t.playlists.card.runsNowhere" data-testid="playlist-screens">
                     <Icon name="tv" :size="16" />
-                    {{ inUse ? overview.screens.map((s) => s.name).join(', ') : 'auf keinem Screen' }}
+                    {{ inUse ? overview.screens.map((s) => s.name).join(', ') : t.common.onNoScreen }}
                 </li>
                 <li v-if="edited?.when" class="d-facts-gap" :title="edited.whenTitle!" data-testid="playlist-edited">
                     <Icon name="clock" :size="16" />

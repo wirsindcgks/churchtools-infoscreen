@@ -9,6 +9,7 @@ import changelogText from '../../CHANGELOG.md?raw';
 import { formatReleaseDate, parseChangelog, releaseOf, REPOSITORY_URL } from '../about/changelog';
 import ChangelogInline from '../about/ChangelogInline.vue';
 import { markReleaseSeen } from '../about/seen';
+import { t } from '../i18n/designer';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 
@@ -18,8 +19,8 @@ const versions = parseChangelog(changelogText);
 
 /** The installed release, and what came before it; changes after it are "in Arbeit". */
 function label(version: string | null): string {
-    if (version === null) return 'Nächste Version';
-    return `Version ${version}`;
+    if (version === null) return t.about.nextVersion;
+    return t.about.version(version);
 }
 
 onMounted(markReleaseSeen);
@@ -27,23 +28,19 @@ onMounted(markReleaseSeen);
 
 <template>
     <ModulePage current="about">
-        <PageHeader icon="info" title="Über & Neuigkeiten" testid="about-heading">
-            Was der Infoscreen Designer kann und was sich zuletzt geändert hat.
+        <PageHeader icon="info" :title="t.about.title" testid="about-heading">
+            {{ t.about.intro }}
         </PageHeader>
 
         <section class="d-card about" aria-labelledby="about-title">
-            <h2 id="about-title">Infoscreen Designer <span class="version" data-testid="about-version">{{ APP_VERSION }}</span></h2>
-            <p>
-                Gestaltet Infoscreens für die Fernseher der Gemeinde direkt in ChurchTools: Slides mit Texten, Bildern,
-                Terminen aus dem Kalender, Countdowns, Beiträgen und Gruppen aus ChurchTools, Webseiten und QR-Codes, dazu Laufschrift über allen Slides; Playlists, die nach Zeitplan laufen; ein Design für
-                alle Screens. Die Fernseher zeigen Änderungen nach etwa 20 Sekunden.
-            </p>
+            <h2 id="about-title">{{ t.common.moduleName }} <span class="version" data-testid="about-version">{{ APP_VERSION }}</span></h2>
+            <p>{{ t.about.description }}</p>
             <ul class="links">
-                <li><a :href="`${REPOSITORY_URL}/releases`" target="_blank" rel="noopener">Alle Versionen auf GitHub</a></li>
-                <li><a :href="`${REPOSITORY_URL}/issues`" target="_blank" rel="noopener">Fehler melden oder etwas wünschen</a></li>
-                <li><a :href="`${REPOSITORY_URL}#readme`" target="_blank" rel="noopener">Quellcode und Anleitung</a></li>
+                <li><a :href="`${REPOSITORY_URL}/releases`" target="_blank" rel="noopener">{{ t.about.allVersions }}</a></li>
+                <li><a :href="`${REPOSITORY_URL}/issues`" target="_blank" rel="noopener">{{ t.about.report }}</a></li>
+                <li><a :href="`${REPOSITORY_URL}#readme`" target="_blank" rel="noopener">{{ t.about.source }}</a></li>
             </ul>
-            <p class="muted">Freie Software unter der GNU General Public License, Version 3 oder später.</p>
+            <p class="muted">{{ t.about.license }}</p>
         </section>
 
         <section
@@ -55,12 +52,12 @@ onMounted(markReleaseSeen);
         >
             <header>
                 <h2 :id="`release-${v.version ?? 'next'}`">{{ label(v.version) }}</h2>
-                <span v-if="v.version === RELEASE" class="badge badge--installed">Installiert</span>
-                <span v-else-if="v.version === null" class="badge">In Arbeit</span>
+                <span v-if="v.version === RELEASE" class="badge badge--installed">{{ t.about.installed }}</span>
+                <span v-else-if="v.version === null" class="badge">{{ t.about.inProgress }}</span>
                 <span v-if="v.date" class="muted">{{ formatReleaseDate(v.date) }}</span>
             </header>
             <p v-if="v.version === null" class="muted">
-                Schon gebaut, aber noch in keiner Version – kommt mit dem nächsten Update.
+                {{ t.about.unreleased }}
             </p>
             <p v-for="(paragraph, i) in v.intro" :key="i" class="intro">
                 <ChangelogInline :parts="paragraph" />

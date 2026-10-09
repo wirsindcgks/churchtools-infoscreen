@@ -9,6 +9,7 @@
  * (Plan.md 53), which can choose or mark the file too.
  */
 import { computed, ref } from 'vue';
+import { t } from '../i18n/designer';
 import type { MediaItem } from '../media/library';
 import type { MediaDoc } from '../model/schema';
 import MediaGrid from './MediaGrid.vue';
@@ -25,7 +26,7 @@ const emit = defineEmits<{ choose: [MediaDoc]; chooseMany: [MediaDoc[]]; close: 
 const marked = ref<number[]>([]);
 const limit = computed(() => props.max ?? Infinity);
 const limitHint = ref(false);
-const LIMIT_TEXT = 'Höchstens 30 Bilder je Galerie';
+const LIMIT_TEXT = t.media.dialog.limit;
 let limitTimer: ReturnType<typeof setTimeout> | undefined;
 function tooMany(): void {
     limitHint.value = true;
@@ -52,10 +53,10 @@ const shown = computed(() => items.value.filter((i) => i.kind === props.kind));
 /** The file open in the preview; it pages through `shown`. */
 const previewId = ref<number | null>(null);
 const previewAction = computed(() => {
-    if (!props.multiple) return 'Verwenden';
-    return previewId.value !== null && marked.value.includes(previewId.value) ? 'Markierung aufheben' : 'Markieren';
+    if (!props.multiple) return t.media.dialog.use;
+    return previewId.value !== null && marked.value.includes(previewId.value) ? t.media.dialog.unmark : t.media.dialog.mark;
 });
-const noun = computed(() => (props.kind === 'video' ? 'Videos' : 'Bilder'));
+const noun = computed(() => (props.kind === 'video' ? t.media.nouns.videos : t.media.nouns.images));
 
 async function choose(item: MediaItem): Promise<void> {
     if (props.multiple) {
@@ -86,14 +87,14 @@ async function picked(): Promise<void> {
 </script>
 
 <template>
-    <div class="backdrop" role="dialog" aria-modal="true" aria-label="Mediathek" @click.self="emit('close')">
+    <div class="backdrop" role="dialog" aria-modal="true" :aria-label="t.media.title" @click.self="emit('close')">
         <div class="library" :class="{ 'library--drop': dragOver }" data-testid="media-library" v-on="dropZone">
             <header>
-                <h2>Mediathek</h2>
-                <span class="hint">Neue {{ noun }} landen im Wiki-Bereich „Infoscreen", Seite <code>{{ screen.slug }}</code>.</span>
+                <h2>{{ t.media.title }}</h2>
+                <span class="hint">{{ t.media.dialog.hintBefore(noun) }} <code>{{ screen.slug }}</code>{{ t.media.dialog.hintAfter }}</span>
                 <span class="spacer" />
                 <button class="d-btn d-btn--create" type="button" :disabled="!!busy || loading" @click="input?.click()">
-                    {{ noun }} hochladen
+                    {{ t.media.dialog.upload(noun) }}
                 </button>
                 <button
                     v-if="multiple"
@@ -103,9 +104,9 @@ async function picked(): Promise<void> {
                     data-testid="media-add"
                     @click="addMarked"
                 >
-                    Hinzufügen ({{ marked.length }})
+                    {{ t.media.dialog.add(marked.length) }}
                 </button>
-                <button class="d-btn" type="button" @click="emit('close')">Schließen</button>
+                <button class="d-btn" type="button" @click="emit('close')">{{ t.common.close }}</button>
                 <input
                     ref="input"
                     type="file"
@@ -120,7 +121,7 @@ async function picked(): Promise<void> {
             <p v-if="problem" class="banner banner--error" role="alert">{{ problem }}</p>
             <p v-if="limitHint" class="banner" role="status" data-testid="media-limit">{{ LIMIT_TEXT }}</p>
             <div class="body">
-                <p v-if="loading" class="empty">Lade {{ noun }} …</p>
+                <p v-if="loading" class="empty">{{ t.media.dialog.loading(noun) }}</p>
                 <MediaGrid
                     v-else-if="shown.length"
                     :items="shown"
@@ -132,7 +133,7 @@ async function picked(): Promise<void> {
                     @remove="remove"
                     @preview="previewId = $event.fileId"
                 />
-                <p v-else class="empty">Noch keine {{ noun }}. Hochladen per Knopf oder einfach hierher ziehen.</p>
+                <p v-else class="empty">{{ t.media.dialog.empty(noun) }}</p>
             </div>
         </div>
         <MediaPreview

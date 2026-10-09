@@ -53,7 +53,7 @@ test.describe('start page on a desktop', () => {
         await expect(page.getByTestId('screen-card')).toHaveCount(1);
         await expect(page.getByTestId('screen-card')).toContainText('Demo – Foyer');
         await page.getByTestId('search').fill('gibt es nicht');
-        await expect(page.getByText('Kein Screen passt zu diesem Filter.')).toBeVisible();
+        await expect(page.getByText('Kein Bildschirm passt zu diesem Filter.')).toBeVisible();
         await page.getByTestId('search').fill('');
         await page.screenshot({ path: 'test-results/home.png' });
     });
@@ -168,13 +168,13 @@ test.describe('sections on a phone', () => {
         await page.getByTestId(testid).click();
     }
 
-    test('every section is reachable through the page menu, and the filters only show on Screens', async ({ page }) => {
+    test('every section is reachable through the page menu, and the filters only show on Bildschirme', async ({ page }) => {
         await page.goto('./');
-        await expect(page.getByTestId('filter-portrait')).toBeVisible(); // Screens: the filters stand in for a menu of their own
+        await expect(page.getByTestId('filter-portrait')).toBeVisible(); // Bildschirme: the filters stand in for a menu of their own
 
         await gotoViaMenu(page, 'sidebar-playlists');
         await expect(page.getByTestId('playlists-heading')).toBeVisible();
-        await expect(page.getByTestId('page-menu')).toContainText('Playlists');
+        await expect(page.getByTestId('page-menu')).toContainText('Präsentationen');
         await expect(page.getByTestId('filter-portrait')).not.toBeVisible();
         await expect(page.getByTestId('sidebar-schedules')).not.toBeVisible(); // menu closed again
 

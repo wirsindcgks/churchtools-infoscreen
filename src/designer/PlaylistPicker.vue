@@ -6,6 +6,7 @@
  * written at once; the schedule that uses it is saved with the dialog.
  */
 import { nextTick, onMounted, ref } from 'vue';
+import { t } from '../i18n/designer';
 import type { StagedPlaylist } from '../store/screen-repository';
 
 const props = defineProps<{
@@ -68,16 +69,16 @@ async function submit(): Promise<void> {
         <span class="pick-row">
             <select :value="modelValue" :aria-label="label" :data-testid="testid" @change="changed">
                 <option v-for="p in choices" :key="p.id" :value="p.id">{{ p.name }}</option>
-                <option :value="NEW">＋ Neue Playlist anlegen …</option>
+                <option :value="NEW">{{ t.playlists.picker.newOption }}</option>
             </select>
             <button
                 class="d-btn edit"
                 type="button"
-                title="Öffnet die Playlist im Editor; Änderungen am Zeitplan werden vorher gespeichert"
+                :title="t.playlists.picker.editTitle"
                 data-testid="playlist-edit"
                 @click="emit('edit', modelValue)"
             >
-                Slides bearbeiten
+                {{ t.playlists.picker.edit }}
             </button>
         </span>
         <form v-if="creating" class="create" data-testid="inline-create" @submit.prevent="submit">
@@ -87,15 +88,15 @@ async function submit(): Promise<void> {
                 v-model="name"
                 type="text"
                 maxlength="100"
-                placeholder="Name der neuen Playlist"
-                aria-label="Name der neuen Playlist"
+                :placeholder="t.playlists.picker.newName"
+                :aria-label="t.playlists.picker.newName"
                 data-testid="inline-create-name"
                 @keydown.esc.stop="creating = false"
             >
             <button class="d-btn d-btn--primary" type="submit" :disabled="!name.trim() || busy" data-testid="inline-create-save">
-                Anlegen
+                {{ t.playlists.picker.create }}
             </button>
-            <button class="d-btn" type="button" @click="creating = false">Abbrechen</button>
+            <button class="d-btn" type="button" @click="creating = false">{{ t.common.cancel }}</button>
         </form>
     </span>
 </template>

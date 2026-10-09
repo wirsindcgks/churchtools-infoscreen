@@ -6,8 +6,8 @@ import { expect, test, type Locator, type Page } from '@playwright/test';
  */
 
 const AREAS = [
-    { name: 'Screens', menu: 'sidebar-screens', tile: 'screen-card' },
-    { name: 'Playlists', menu: 'sidebar-playlists', tile: 'playlist-card' },
+    { name: 'Bildschirme', menu: 'sidebar-screens', tile: 'screen-card' },
+    { name: 'Präsentationen', menu: 'sidebar-playlists', tile: 'playlist-card' },
     { name: 'Mediathek', menu: 'sidebar-media', tile: 'media-item' },
     { name: 'Zeitpläne', menu: 'sidebar-schedules', tile: 'schedule-row' },
     { name: 'Hinweise', menu: 'sidebar-notices', tile: 'notice-card' },

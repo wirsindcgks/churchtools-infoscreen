@@ -8,6 +8,7 @@
  * it (G8).
  */
 import { computed, onMounted, ref } from 'vue';
+import { t } from '../i18n/designer';
 import FilterChips from '../designer/FilterChips.vue';
 import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
@@ -40,9 +41,9 @@ const shown = computed(() => filterMedia(items.value, query.value, show.value));
 const previewId = ref<number | null>(null);
 
 const SHOW = [
-    { key: 'all', label: 'Alle', title: 'Alle Bilder und Videos' },
-    { key: 'used', label: 'Verwendet', title: 'Verwendete Bilder und Videos' },
-    { key: 'unused', label: 'Unbenutzt', title: 'Unbenutzte Bilder und Videos' },
+    { key: 'all', label: t.common.filters.allShort, title: t.media.show.allTitle },
+    { key: 'used', label: t.media.show.used, title: t.media.show.usedTitle },
+    { key: 'unused', label: t.media.show.unused, title: t.media.show.unusedTitle },
 ] as const;
 
 /** File ids picked by their checkbox. A file hidden by search or filter stays picked – and is named in the dialog. */
@@ -90,13 +91,13 @@ async function picked(): Promise<void> {
             <button
                 class="d-btn d-btn--create"
                 type="button"
-                aria-label="Bilder und Videos hochladen"
+                :aria-label="t.media.uploadAria"
                 :disabled="!!busy || loading"
                 data-testid="media-upload-button"
                 @click="input?.click()"
             >
                 <Icon name="plus" />
-                <span class="create-label">Hochladen</span>
+                <span class="create-label">{{ t.media.upload }}</span>
             </button>
             <input
                 ref="input"
@@ -109,23 +110,21 @@ async function picked(): Promise<void> {
             >
         </template>
 
-        <PageHeader icon="image" title="Mediathek" testid="media-heading">
-            Bilder und Videos für alle Screens. Sie liegen im Wiki-Bereich „Infoscreen" von ChurchTools – dort bitte nichts löschen,
-            sonst fehlt die Datei auf den Fernsehern. Wer ein Bild kennt, kann es ohne Anmeldung abrufen; nichts
-            Vertrauliches hochladen. Videos: MP4 (H.264) bis 128 MB.
+        <PageHeader icon="image" :title="t.media.title" testid="media-heading">
+            {{ t.media.intro }}
         </PageHeader>
 
         <SearchField
             v-model="query"
-            placeholder="Suchen nach Datei, Screen, Playlist oder Slide …"
-            label="Mediathek durchsuchen"
+            :placeholder="t.media.searchPlaceholder"
+            :label="t.media.searchLabel"
             testid="media-search"
         />
 
         <GroupCard
             icon="image"
             :title="SHOW.find((s) => s.key === show)!.title"
-            :count="`${shown.length} ${shown.length === 1 ? 'Datei' : 'Dateien'}`"
+            :count="t.media.count(shown.length)"
             heading-id="media-group"
             class="library"
             :class="{ 'library--drop': dragOver }"
@@ -133,21 +132,21 @@ async function picked(): Promise<void> {
             v-on="dropZone"
         >
             <template #tools>
-                <FilterChips v-model="show" :options="SHOW" label="Verwendung" testid="media-filter" />
+                <FilterChips v-model="show" :options="SHOW" :label="t.media.show.label" testid="media-filter" />
             </template>
             <p v-if="busy" class="d-banner">{{ busy }}</p>
             <p v-if="problem" class="d-banner d-banner--error" role="alert">{{ problem }}</p>
-            <p v-if="loading" class="empty">Lade Mediathek …</p>
+            <p v-if="loading" class="empty">{{ t.media.loading }}</p>
             <template v-else-if="shown.length">
                 <div class="selection" data-testid="media-selection">
                     <label class="all">
                         <input type="checkbox" :checked="allShown" data-testid="media-select-all" @change="toggleAll">
-                        Alle auswählen
+                        {{ t.media.selectAll }}
                     </label>
                     <template v-if="picks.length">
-                        <span class="picked" aria-live="polite">{{ picks.length }} ausgewählt</span>
+                        <span class="picked" aria-live="polite">{{ t.media.picked(picks.length) }}</span>
                         <button class="d-btn" type="button" data-testid="media-selection-clear" @click="selected = []">
-                            Auswahl aufheben
+                            {{ t.media.clearSelection }}
                         </button>
                         <button
                             class="d-btn d-btn--danger"
@@ -156,7 +155,7 @@ async function picked(): Promise<void> {
                             data-testid="media-delete-selected"
                             @click="askDelete"
                         >
-                            <Icon name="trash" :size="16" /> Löschen
+                            <Icon name="trash" :size="16" /> {{ t.common.delete }}
                         </button>
                     </template>
                 </div>
@@ -171,9 +170,9 @@ async function picked(): Promise<void> {
                 />
             </template>
             <p v-else-if="!items.length" class="empty">
-                Noch keine Bilder oder Videos. Hochladen oben rechts oder einfach hierher ziehen.
+                {{ t.media.empty }}
             </p>
-            <p v-else class="empty">Nichts passt zu Suche und Filter.</p>
+            <p v-else class="empty">{{ t.media.noMatch }}</p>
         </GroupCard>
 
         <MediaDeleteDialog v-if="deleting" :items="picks" @close="deleting = false" @confirm="confirmDelete" />

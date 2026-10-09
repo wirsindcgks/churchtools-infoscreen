@@ -5,6 +5,7 @@
  * offers to delete only those.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { t } from '../i18n/designer';
 import { usageLines, type MediaItem } from '../media/library';
 import { sizedImageUrl } from '../player/format';
 import Icon from './Icon.vue';
@@ -14,9 +15,8 @@ const emit = defineEmits<{ confirm: [MediaItem[]]; close: [] }>();
 
 const used = computed(() => props.items.filter((i) => i.uses.length > 0));
 const unused = computed(() => props.items.filter((i) => i.uses.length === 0));
-const files = (n: number) => `${n} ${n === 1 ? 'Datei' : 'Dateien'}`;
 const title = computed(() =>
-    props.items.length === 1 ? `„${props.items[0]!.name}" löschen?` : `${files(props.items.length)} löschen?`,
+    props.items.length === 1 ? t.media.delete.titleOne(props.items[0]!.name) : t.media.delete.titleMany(props.items.length),
 );
 
 /** A document listener like the preview's: WebKit does not focus a button on click. */
@@ -37,12 +37,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
     <div class="d-dialog-backdrop" role="dialog" aria-modal="true" aria-labelledby="media-delete-title" @click.self="emit('close')">
         <div class="d-dialog" data-testid="media-delete-dialog">
             <h2 id="media-delete-title">{{ title }}</h2>
-            <p class="lead">Die Dateien werden aus ChurchTools gelöscht. Das lässt sich nicht rückgängig machen.</p>
+            <p class="lead">{{ t.media.delete.lead }}</p>
 
             <template v-if="used.length">
                 <p class="d-banner d-banner--warning" role="alert" data-testid="media-delete-warning">
-                    {{ used.length === 1 ? 'Eine Datei wird' : `${used.length} Dateien werden` }} noch gezeigt. Nach dem
-                    Löschen bleibt dort eine leere Fläche.
+                    {{ t.media.delete.stillShown(used.length) }}
                 </p>
                 <ul class="files" data-testid="media-delete-used">
                     <li v-for="item in used" :key="item.fileId">
@@ -57,7 +56,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
             </template>
 
             <template v-if="unused.length && items.length > 1">
-                <h3>Unbenutzt ({{ unused.length }})</h3>
+                <h3>{{ t.media.delete.unused(unused.length) }}</h3>
                 <ul class="files" data-testid="media-delete-unused">
                     <li v-for="item in unused" :key="item.fileId">
                         <span v-if="item.kind === 'video'" class="thumb"><Icon name="video" :size="16" /></span>
@@ -69,7 +68,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
 
             <div class="d-dialog-actions">
                 <button ref="cancel" class="d-btn" type="button" data-testid="media-delete-cancel" @click="emit('close')">
-                    Abbrechen
+                    {{ t.common.cancel }}
                 </button>
                 <button
                     v-if="used.length && unused.length"
@@ -78,11 +77,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', onKey));
                     data-testid="media-delete-unused-only"
                     @click="emit('confirm', unused)"
                 >
-                    Nur unbenutzte löschen ({{ unused.length }})
+                    {{ t.media.delete.onlyUnused(unused.length) }}
                 </button>
                 <button class="d-btn d-btn--danger" type="button" data-testid="media-delete-confirm" @click="emit('confirm', items)">
                     <Icon name="trash" :size="16" />
-                    {{ used.length ? (unused.length ? `Alle ${items.length} löschen` : 'Trotzdem löschen') : 'Löschen' }}
+                    {{ used.length ? (unused.length ? t.media.delete.all(items.length) : t.media.delete.anyway) : t.common.delete }}
                 </button>
             </div>
         </div>

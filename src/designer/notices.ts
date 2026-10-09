@@ -4,6 +4,7 @@
  * three playlists is one notice, not three.
  */
 import type { Appointment } from '../appointments/normalize';
+import { t } from '../i18n/designer';
 import { bannerKey, type Banner, type ScreenDoc } from '../model/schema';
 import { bannerShown, wallTime } from '../player/banner';
 import { formatShortDate, formatTime } from '../player/format';
@@ -73,14 +74,15 @@ export function groupBanners(overviews: readonly PlaylistOverview[], now: Date, 
 /**
  * "bis Sa., 27.09., 18:00" – `until` already holds the church's wall time
  * (Plan.md 32), so it is shown as it stands, without converting a time zone.
- * "ohne Ende" without one.
+ * "ohne Ende" without one. `expired` words it as past: "abgelaufen am Sa., 27.09., 18:00".
  */
-export function untilLabel(until: string | undefined): string {
+export function untilLabel(until: string | undefined, expired = false): string {
     const parsed = until ? /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(until) : null;
-    if (!parsed) return 'ohne Ende';
+    if (!parsed) return t.notices.noEnd;
     const [, year, month, day, hour, minute] = parsed;
     const instant = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute)));
-    return `bis ${formatShortDate(instant, 'UTC')}, ${formatTime(instant, 'UTC')}`;
+    const when = `${formatShortDate(instant, 'UTC')}, ${formatTime(instant, 'UTC')}`;
+    return expired ? t.notices.expiredOn(when) : t.notices.until(when);
 }
 
 /** A stretch of a day on which the band stands on the same screens throughout; none at all when `visible` is false. */

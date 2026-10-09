@@ -7,6 +7,7 @@
  * those of its format. Saves the schedule document alone, against its revision.
  */
 import { computed, onMounted, ref } from 'vue';
+import { t } from '../i18n/designer';
 import { useRouter } from 'vue-router';
 import { zonedDateKey, zonedParts, zonedTimeToInstant } from '../appointments/zoned';
 import { sameStage, type AppointmentPoint, type ScheduleRule, type ScreenDoc } from '../model/schema';
@@ -135,7 +136,7 @@ async function saveAndClose(expectedRevision = scheduleRevision.value): Promise<
 }
 
 function close(): void {
-    if (dirty.value && !window.confirm('Änderungen am Zeitplan verwerfen?')) return;
+    if (dirty.value && !window.confirm(t.schedules.dialog.discard)) return;
     emit('close');
 }
 
@@ -165,7 +166,7 @@ function colorOf(playlistId: string): string {
     return colors.value.get(playlistId) ?? PALETTE[0]!;
 }
 function nameOf(playlistId: string): string {
-    return allPlaylists.value.find((p) => p.id === playlistId)?.name || 'Playlist fehlt';
+    return allPlaylists.value.find((p) => p.id === playlistId)?.name || t.common.playlistMissing;
 }
 
 // Rules
@@ -234,7 +235,7 @@ function toggleCalendar(index: number, rule: AppointmentRule, id: number, on: bo
 }
 
 function calendarName(id: number): string {
-    return [...calendars.value, ...hiddenCalendars.value].find((c) => c.id === id)?.name ?? `Kalender ${id}`;
+    return [...calendars.value, ...hiddenCalendars.value].find((c) => c.id === id)?.name ?? t.schedules.dialog.calendarFallback(id);
 }
 
 /** A chosen calendar a TV does not show: the account sees it, but it is not public (Plan.md 62). */
@@ -300,39 +301,36 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
             @keydown.esc="close"
         >
             <header class="head">
-                <h2 id="schedule-title">Zeitplan{{ screen ? ` – ${screen.name}` : '' }}</h2>
-                <button class="d-btn d-btn--icon" type="button" aria-label="Schließen" @click="close">
+                <h2 id="schedule-title">{{ screen ? t.schedules.dialog.titleFor(screen.name) : t.schedules.title }}</h2>
+                <button class="d-btn d-btn--icon" type="button" :aria-label="t.common.close" @click="close">
                     <Icon name="close" />
                 </button>
             </header>
-            <p v-if="loading" class="muted">Lade …</p>
+            <p v-if="loading" class="muted">{{ t.common.loading }}</p>
             <p v-else-if="loadError" class="d-banner d-banner--error" role="alert">{{ loadError }}</p>
             <template v-else-if="screen">
                 <p class="muted intro">
-                    Ein Screen zeigt seine <strong>Standard-Playlist</strong> – außer eine Regel sagt, dass zu bestimmten
-                    Zeiten etwas anderes laufen soll. Zur Wahl stehen alle Playlists im Format des Screens; dieselbe
-                    Playlist darf auf mehreren Screens laufen.
+                    {{ t.schedules.dialog.introBefore }} <strong>{{ t.schedules.dialog.introDefault }}</strong> {{ t.schedules.dialog.introAfter }}
                 </p>
 
                 <section class="step">
-                    <h3>Normalerweise zeigt dieser Screen</h3>
+                    <h3>{{ t.schedules.dialog.normally }}</h3>
                     <PlaylistPicker
                         v-model="defaultPlaylistId"
                         :choices="choices"
                         :create="createPlaylist"
-                        label="Standard-Playlist"
+                        :label="t.schedules.dialog.defaultPlaylist"
                         testid="default-playlist"
                         @edit="editSlides"
                     />
                 </section>
 
                 <section class="step">
-                    <h3>Zu bestimmten Zeiten etwas anderes zeigen</h3>
+                    <h3>{{ t.schedules.dialog.otherTimes }}</h3>
                     <p v-if="!rules.length" class="muted small">
-                        Noch keine Regel – es läuft immer „{{ nameOf(defaultPlaylistId) }}". Soll zum Beispiel sonntags
-                        vormittags oder rund um den Gottesdienst eine andere Playlist laufen, lege eine Regel an.
+                        {{ t.schedules.dialog.noRules(nameOf(defaultPlaylistId)) }}
                     </p>
-                    <p v-else-if="rules.length > 1" class="muted small">Passen mehrere Regeln, gilt die obere.</p>
+                    <p v-else-if="rules.length > 1" class="muted small">{{ t.schedules.dialog.severalRules }}</p>
                     <ol class="rules">
                         <li
                             v-for="(rule, index) in rules"
@@ -343,13 +341,13 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                         >
                             <div class="rule-head">
                                 <span class="rank">{{ index + 1 }}</span>
-                                <strong>{{ rule.kind === 'time' ? 'Zu bestimmten Uhrzeiten' : 'Rund um Termine' }}</strong>
+                                <strong>{{ rule.kind === 'time' ? t.schedules.dialog.atTimes : t.schedules.dialog.aroundAppointments }}</strong>
                                 <span class="spacer" />
                                 <button
                                     class="d-btn d-btn--icon"
                                     type="button"
-                                    aria-label="Nach oben – hat Vorrang"
-                                    title="Nach oben – hat Vorrang"
+                                    :aria-label="t.schedules.dialog.moveUp"
+                                    :title="t.schedules.dialog.moveUp"
                                     :disabled="index === 0"
                                     data-testid="rule-up"
                                     @click="moveRule(index, index - 1)"
@@ -359,8 +357,8 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                                 <button
                                     class="d-btn d-btn--icon"
                                     type="button"
-                                    aria-label="Nach unten"
-                                    title="Nach unten"
+                                    :aria-label="t.common.moveDown"
+                                    :title="t.common.moveDown"
                                     :disabled="index === rules.length - 1"
                                     @click="moveRule(index, index + 1)"
                                 >
@@ -369,8 +367,8 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                                 <button
                                     class="d-btn d-btn--icon d-btn--danger"
                                     type="button"
-                                    aria-label="Regel entfernen"
-                                    title="Regel entfernen"
+                                    :aria-label="t.schedules.dialog.removeRule"
+                                    :title="t.schedules.dialog.removeRule"
                                     data-testid="rule-remove"
                                     @click="removeRule(index)"
                                 >
@@ -379,7 +377,7 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                             </div>
 
                             <div v-if="rule.kind === 'time'" class="rule-body">
-                                <div class="days" role="group" aria-label="Wochentage">
+                                <div class="days" role="group" :aria-label="t.schedules.dialog.weekdays">
                                     <button
                                         v-for="d in WEEKDAYS"
                                         :key="d.day"
@@ -395,7 +393,7 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                                     </button>
                                 </div>
                                 <label class="inline">
-                                    von
+                                    {{ t.schedules.dialog.from }}
                                     <input
                                         type="time"
                                         step="300"
@@ -405,7 +403,7 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                                     >
                                 </label>
                                 <label class="inline">
-                                    bis
+                                    {{ t.schedules.dialog.to }}
                                     <input
                                         type="time"
                                         step="300"
@@ -417,7 +415,7 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                             </div>
 
                             <div v-else class="rule-body appointment">
-                                <div class="presets" role="group" aria-label="Vorlagen">
+                                <div class="presets" role="group" :aria-label="t.schedules.dialog.presets">
                                     <button
                                         v-for="preset in WINDOW_PRESETS"
                                         :key="preset.key"
@@ -432,22 +430,22 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                                     </button>
                                 </div>
                                 <div class="window">
-                                    von
+                                    {{ t.schedules.dialog.from }}
                                     <AppointmentPointField
                                         :point="ruleWindow(rule).from"
-                                        label="Beginn des Zeitraums"
+                                        :label="t.schedules.dialog.windowFrom"
                                         testid="rule-window-from"
                                         @change="setWindow(index, $event, ruleWindow(rule).to)"
                                     />
-                                    bis
+                                    {{ t.schedules.dialog.to }}
                                     <AppointmentPointField
                                         :point="ruleWindow(rule).to"
-                                        label="Ende des Zeitraums"
+                                        :label="t.schedules.dialog.windowTo"
                                         testid="rule-window-to"
                                         @change="setWindow(index, ruleWindow(rule).from, $event)"
                                     />
                                 </div>
-                                <span class="muted small">eines Termins in</span>
+                                <span class="muted small">{{ t.schedules.dialog.ofAppointmentIn }}</span>
                                 <div class="calendars">
                                     <label v-for="c in calendars" :key="c.id" class="check">
                                         <input
@@ -458,20 +456,20 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                                         {{ c.name }}
                                     </label>
                                     <span v-for="id in rule.calendarIds.filter((i) => !calendars.some((c) => c.id === i))" :key="id" class="muted small">
-                                        {{ calendarName(id) }} {{ isHidden(id) ? '(nicht öffentlich – wird ignoriert)' : '(nicht sichtbar)' }}
+                                        {{ calendarName(id) }} {{ isHidden(id) ? t.schedules.dialog.calendarIgnored : t.schedules.dialog.calendarInvisible }}
                                     </span>
                                 </div>
                             </div>
                             <div class="rule-body shows">
                                 <span class="arrow" aria-hidden="true">→</span>
-                                <span>zeigt</span>
+                                <span>{{ t.schedules.dialog.shows }}</span>
                                 <PlaylistPicker
                                     :model-value="rule.playlistId"
                                     :choices="choices"
                                     :create="createPlaylist"
                                     :start-creating="createFor === index"
-                                    hint="Dafür braucht es eine zweite Playlist: lege sie hier an – oder wähle oben in der Liste eine vorhandene."
-                                    :label="`Playlist der Regel ${index + 1}`"
+                                    :hint="t.schedules.dialog.needSecond"
+                                    :label="t.schedules.dialog.playlistOfRule(index + 1)"
                                     testid="rule-playlist"
                                     @update:model-value="setRule(index, { playlistId: $event })"
                                     @edit="editSlides"
@@ -481,26 +479,26 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                     </ol>
                     <div class="adders">
                         <button class="d-btn" type="button" data-testid="add-time-rule" @click="addTimeRule">
-                            <Icon name="clock" :size="16" /> Zu bestimmten Uhrzeiten
+                            <Icon name="clock" :size="16" /> {{ t.schedules.dialog.atTimes }}
                         </button>
                         <button
                             class="d-btn"
                             type="button"
                             data-testid="add-appointment-rule"
                             :disabled="!calendars.length"
-                            :title="calendars.length ? 'Vor, während und nach Terminen ausgewählter Kalender' : 'Keine Kalender sichtbar'"
+                            :title="calendars.length ? t.schedules.dialog.appointmentRuleTitle : t.schedules.dialog.noCalendars"
                             @click="addAppointmentRule"
                         >
-                            <Icon name="calendar" :size="16" /> Rund um Termine
+                            <Icon name="calendar" :size="16" /> {{ t.schedules.dialog.aroundAppointments }}
                         </button>
                     </div>
                 </section>
 
                 <section class="step">
-                    <h3>Vorschau: Was läuft wann?</h3>
+                    <h3>{{ t.schedules.dialog.previewTitle }}</h3>
                     <div class="preview-controls">
                         <label class="inline">
-                            Tag
+                            {{ t.schedules.dialog.day }}
                             <input v-model="previewDate" type="date" :min="today" :max="lastDay" data-testid="preview-date">
                         </label>
                         <span class="muted small">{{ weekdayName }}</span>
@@ -521,29 +519,28 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                         <span class="needle" :style="{ left: `${(previewMinute / 1440) * 100}%` }" aria-hidden="true" />
                     </div>
                     <div class="scale muted small" aria-hidden="true">
-                        <span>0</span><span>6</span><span>12</span><span>18</span><span>24 Uhr</span>
+                        <span>0</span><span>6</span><span>12</span><span>18</span><span>{{ t.schedules.dialog.endOfDay }}</span>
                     </div>
                     <ul class="legend">
                         <li v-for="p in shown" :key="p.id" data-testid="schedule-playlist">
                             <span class="swatch" :style="{ background: colorOf(p.id) }" aria-hidden="true" />
                             {{ p.name }}
-                            <span class="muted">· {{ p.slideIds.length }} {{ p.slideIds.length === 1 ? 'Slide' : 'Slides' }}</span>
+                            <span class="muted">· {{ t.schedules.dialog.slideCount(p.slideIds.length) }}</span>
                         </li>
                     </ul>
                     <label class="slider">
-                        <span class="visually-hidden">Uhrzeit</span>
+                        <span class="visually-hidden">{{ t.schedules.dialog.time }}</span>
                         <input v-model.number="previewMinute" type="range" min="0" max="1425" step="15" data-testid="preview-time">
                     </label>
                     <p v-if="decision" class="decision" data-testid="preview-result">
-                        {{ weekdayName }}, {{ fromMinutes(previewMinute) }} Uhr: läuft
+                        {{ t.schedules.dialog.decisionRuns(weekdayName, fromMinutes(previewMinute)) }}
                         <strong :style="{ color: colorOf(decision.playlistId) }">„{{ nameOf(decision.playlistId) }}"</strong>
                         {{ ' ' }}<span class="muted">
-                            {{ decision.ruleIndex < 0 ? '– keine Regel passt, Standard' : `– Regel ${decision.ruleIndex + 1}` }}
+                            {{ decision.ruleIndex < 0 ? t.schedules.dialog.decisionDefault : t.schedules.dialog.decisionRule(decision.ruleIndex + 1) }}
                         </span>
                     </p>
                     <p v-if="hasAppointmentRules" class="muted small">
-                        Termin-Regeln rechnen mit den Terminen der nächsten {{ PREVIEW_DAYS }} Tage. Der Fernseher wechselt erst,
-                        wenn seine Uhr bestätigt ist.
+                        {{ t.schedules.dialog.appointmentRulesHint(PREVIEW_DAYS) }}
                     </p>
                 </section>
 
@@ -551,17 +548,17 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                     <li v-for="p in problems" :key="p">{{ p }}</li>
                 </ul>
                 <p v-if="conflict" class="d-banner d-banner--error" role="alert">
-                    {{ conflict.updatedBy ?? 'Jemand' }} hat den Zeitplan von „{{ conflict.name }}" inzwischen gespeichert.
-                    <button class="d-btn" type="button" @click="load">Neu laden</button>
-                    <button class="d-btn" type="button" @click="saveAndClose(conflict.revision)">Meine Fassung speichern</button>
+                    {{ t.schedules.dialog.conflict(conflict.updatedBy, conflict.name) }}
+                    <button class="d-btn" type="button" @click="load">{{ t.schedules.dialog.reload }}</button>
+                    <button class="d-btn" type="button" @click="saveAndClose(conflict.revision)">{{ t.schedules.dialog.keepMine }}</button>
                 </p>
                 <p v-if="saveError" class="d-banner d-banner--error" role="alert">{{ saveError }}</p>
             </template>
 
             <div class="d-dialog-actions">
-                <button class="d-btn" type="button" data-testid="schedule-cancel" @click="close">Abbrechen</button>
+                <button class="d-btn" type="button" data-testid="schedule-cancel" @click="close">{{ t.common.cancel }}</button>
                 <button class="d-btn d-btn--primary" type="button" :disabled="!canSave" data-testid="schedule-save" @click="saveAndClose()">
-                    {{ saving ? 'Speichert …' : 'Speichern' }}
+                    {{ saving ? t.editor.status.saving : t.common.save }}
                 </button>
             </div>
         </section>

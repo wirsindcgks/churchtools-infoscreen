@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 
 test('the start page opens for the signed-in user', async ({ page }) => {
     await page.goto('./');
-    await expect(page.getByTestId('screens-heading')).toHaveText('Screens');
+    await expect(page.getByTestId('screens-heading')).toHaveText('Bildschirme');
 });
 
 test('unknown paths show an explanation instead of an empty page', async ({ page }) => {
