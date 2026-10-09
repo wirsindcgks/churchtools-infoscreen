@@ -565,9 +565,21 @@ test.describe('on a tablet (Plan.md 45)', () => {
         await expect(page.getByTestId('add-clock')).toHaveCount(0); // the row of blocks is gone everywhere (Plan.md 47)
     }
 
+    /** The slide stands in the middle of the room between "+ Baustein" and what lies below it (user, 2026-10-09). */
+    async function expectStageCentered(page: Page, bottom: number): Promise<void> {
+        const [head, stage] = await Promise.all([page.getByTestId('add-block-menu').boundingBox(), page.locator('.editor-stage').boundingBox()]);
+        const above = stage!.y - (head!.y + head!.height);
+        const below = bottom - (stage!.y + stage!.height);
+        expect(above).toBeGreaterThan(20);
+        expect(Math.abs(above - below)).toBeLessThanOrEqual(30);
+    }
+
     test('upright: the stage takes the width, the inspector is a bar at the bottom, and there is no rail for it', async ({ page }) => {
         await openEditor(page);
         await expectRestingLayout(page, 700);
+        // In the middle above the sheet's bar, and the page does not scroll.
+        await expectStageCentered(page, (await page.getByTestId('inspector-sheet').boundingBox())!.y);
+        expect(await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)).toBeLessThanOrEqual(8);
         await expect(page.getByTestId('tablet-slides-toggle')).toHaveAttribute('aria-expanded', 'false');
         await expect(page.getByTestId('tablet-inspector-toggle')).not.toBeVisible();
         await expect(page.getByTestId('inspector-sheet-toggle')).toBeVisible();
@@ -592,6 +604,7 @@ test.describe('on a tablet (Plan.md 45)', () => {
         // The whole slide stays above the sheet, lower handles included: upright on a tablet it takes 45 %, not half.
         expect(sheetBox!.y).toBeGreaterThanOrEqual(stage!.y + stage!.height);
         expect(sheetBox!.height).toBeLessThanOrEqual(1180 * 0.45 + 1);
+        await expectStageCentered(page, sheetBox!.y);
 
         // The slides and the block row stay: there is room for them upright.
         await expect(page.getByTestId('add-block-menu')).toBeVisible();
@@ -644,6 +657,7 @@ test.describe('on a tablet (Plan.md 45)', () => {
         test('the stage takes the width, the inspector is a rail', async ({ page }) => {
             await openEditor(page);
             await expectRestingLayout(page, 1000);
+            await expectStageCentered(page, (await page.locator('.stage-column').boundingBox())!.y + (await page.locator('.stage-column').boundingBox())!.height);
             await expect(page.getByTestId('inspector-sheet')).not.toBeVisible();
             await expect(page.getByTestId('tablet-inspector-toggle')).toBeVisible();
             await expect(page.getByTestId('inspector-sheet-toggle')).not.toBeVisible();
