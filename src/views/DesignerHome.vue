@@ -143,8 +143,8 @@ onMounted(async () => {
         missingRights.value = rights.missing;
         // Demo mode has no module rights: there the ChurchTools admin right stands in, so the roles can be tried out.
         screensAdmin.value = rights.configureScreens ?? isAdmin;
-        // An administrator's visit creates the category of the signs of life; nobody else may (Plan.md 59).
-        if (isAdmin) await handle.repository.ensureStatusCategory().catch(() => null);
+        // An administrator's visit creates the categories of the signs of life and of the drafts; nobody else may (Plan.md 59, 79).
+        if (isAdmin) await Promise.all([handle.repository.ensureStatusCategory(), handle.repository.drafts.ensureCategory()]).catch(() => null);
         repository.value = handle.repository;
         try {
             await refresh();

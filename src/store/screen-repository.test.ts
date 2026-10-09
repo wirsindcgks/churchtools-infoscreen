@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ValueTooLargeError } from '../model/read';
 import { makePlaylist, makeScreen, makeSlide, textBlock } from '../model/testing';
 import type { Banner, ScreenBundle } from '../model/schema';
@@ -472,6 +472,23 @@ describe('ScreenRepository', () => {
             await repo.deletePlaylist(made.id);
             await expect(repo.loadPlaylist(made.id)).rejects.toBeInstanceOf(PlaylistNotFoundError);
             expect(await repo.collectOrphans(new Date(Date.now() + ORPHAN_GRACE_MS + 1000))).toEqual({ playlists: 0, slides: 1 });
+        });
+
+        it('discards the draft of a deleted playlist with it, and still deletes when that fails', async () => {
+            await repo.drafts.ensureCategory();
+            const made = await repo.createPlaylist({ name: 'Entwurf', stage: LANDSCAPE }, 'Anna');
+            await repo.drafts.save(
+                { playlistId: made.id, name: 'Neu', slideIds: [], slides: [], dropSlideIds: [] },
+                { expectedRevision: 0, updatedBy: 'Anna' },
+            );
+            await repo.deletePlaylist(made.id);
+            expect(await repo.drafts.load(made.id)).toBeNull();
+
+            const second = await repo.createPlaylist({ name: 'Zweite', stage: LANDSCAPE }, 'Anna');
+            vi.spyOn(repo.drafts, 'discard').mockRejectedValue(new Error('weg'));
+            vi.spyOn(console, 'warn').mockImplementation(() => {});
+            await repo.deletePlaylist(second.id);
+            await expect(repo.loadPlaylist(second.id)).rejects.toBeInstanceOf(PlaylistNotFoundError);
         });
 
         it('saves screen settings against the index revision only', async () => {

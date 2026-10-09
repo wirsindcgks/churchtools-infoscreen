@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 27 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 28 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -421,6 +421,35 @@ export const SlideDoc = v.object({
     blocks: v.array(Block),
 });
 
+/**
+ * Since 1.28 (Plan.md 79, Paket E): what a designer has changed in a playlist and not published yet.
+ * One per playlist, in the category `drafts`, which devices cannot see. The player does not know it.
+ */
+export const PlaylistDraftDoc = v.object({
+    schema: SchemaVersion,
+    kind: v.literal('playlist-draft'),
+    /** The id of the playlist. */
+    id: Id,
+    name: v.pipe(v.string(), v.maxLength(100)),
+    slideIds: v.array(Id),
+    /** Counts up with every save; the second designer saving against an older one gets a conflict. */
+    revision: v.pipe(v.number(), v.integer(), v.minValue(1)),
+    updatedBy: v.string(),
+    updatedAt: v.string(),
+});
+
+/** Since 1.28: the changed slide of a draft, whole – so the limit of 10,000 characters is the slide's own. */
+export const SlideDraftDoc = v.object({
+    schema: SchemaVersion,
+    kind: v.literal('slide-draft'),
+    /** `<playlist id>/<slide id>` */
+    id: v.pipe(v.string(), v.minLength(1), v.maxLength(129)),
+    playlistId: Id,
+    slide: SlideDoc,
+    updatedBy: v.string(),
+    updatedAt: v.string(),
+});
+
 const Stage = v.object({ width: PositivePx, height: PositivePx });
 
 /**
@@ -611,6 +640,8 @@ export type RoomEntry = v.InferOutput<typeof RoomEntry>;
 export type BlockType = Block['type'];
 export type SlideDoc = v.InferOutput<typeof SlideDoc>;
 export type PlaylistDoc = v.InferOutput<typeof PlaylistDoc>;
+export type PlaylistDraftDoc = v.InferOutput<typeof PlaylistDraftDoc>;
+export type SlideDraftDoc = v.InferOutput<typeof SlideDraftDoc>;
 export type Banner = v.InferOutput<typeof Banner>;
 export type ScreenDoc = v.InferOutput<typeof ScreenDoc>;
 export type ScheduleDoc = v.InferOutput<typeof ScheduleDoc>;
@@ -619,7 +650,16 @@ export type AppointmentPoint = v.InferOutput<typeof AppointmentPoint>;
 export type MediaDoc = v.InferOutput<typeof MediaDoc>;
 export type SettingsDoc = v.InferOutput<typeof SettingsDoc>;
 export type ThemeDoc = v.InferOutput<typeof ThemeDoc>;
-export type AnyDoc = ScreenDoc | PlaylistDoc | ScheduleDoc | SlideDoc | MediaDoc | SettingsDoc | ThemeDoc;
+export type AnyDoc =
+    | ScreenDoc
+    | PlaylistDoc
+    | ScheduleDoc
+    | SlideDoc
+    | MediaDoc
+    | SettingsDoc
+    | ThemeDoc
+    | PlaylistDraftDoc
+    | SlideDraftDoc;
 
 /** The one theme document; every screen shares it. */
 export const THEME_ID = 'theme';

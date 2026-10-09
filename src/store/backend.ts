@@ -39,6 +39,7 @@ async function create(): Promise<RepositoryHandle> {
         const { kv, restored } = createDemoKv();
         const repository = new ScreenRepository(kv);
         if (!restored) await seedDemo(repository);
+        await repository.drafts.ensureCategory();
         return { repository, demo: true };
     }
     throw new Error('Das Custom Module ist auf dieser Instanz nicht verfügbar.');

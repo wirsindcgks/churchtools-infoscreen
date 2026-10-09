@@ -12,11 +12,13 @@ import {
     Block,
     MediaDoc,
     PlaylistDoc,
+    PlaylistDraftDoc,
     SCHEMA_VERSION,
     ScheduleDoc,
     ScreenDoc,
     SettingsDoc,
     SlideDoc,
+    SlideDraftDoc,
     ThemeDoc,
     type AnyDoc,
     type Block as BlockValue,
@@ -166,6 +168,22 @@ export function readSlide(raw: unknown): ReadResult<SlideDoc> {
 }
 
 /**
+ * A draft of the category `drafts` (Plan.md 79): a playlist's or a slide's. The slide inside goes through
+ * {@link readSlide}, so an old draft is treated like an old slide after a schema update.
+ */
+export function readDraft(
+    raw: unknown,
+): ReadResult<PlaylistDraftDoc> | ReadResult<SlideDraftDoc> {
+    checkVersion(raw);
+    const kind = (raw as { kind?: unknown } | null)?.kind;
+    if (kind === 'playlist-draft') return { doc: parseStrict(PlaylistDraftDoc, raw, 'playlist-draft'), issues: [] };
+    if (kind !== 'slide-draft') throw new InvalidDocumentError('draft', `Unbekannte Art „${String(kind)}".`);
+    const inner = readSlide((raw as { slide?: unknown }).slide);
+    const doc = parseStrict(SlideDraftDoc, { ...(raw as object), slide: { ...inner.doc, blocks: [] } }, 'slide-draft');
+    return { doc: { ...doc, slide: inner.doc }, issues: inner.issues };
+}
+
+/**
  * Serializes a document for storage. Strict: what the designer writes must be
  * fully valid, and the size limit is checked here – before any write – so it
  * never matters whether the server would reject or silently truncate (C4).
@@ -179,6 +197,8 @@ export function serialize(doc: AnyDoc): string {
         media: MediaDoc,
         settings: SettingsDoc,
         theme: ThemeDoc,
+        'playlist-draft': PlaylistDraftDoc,
+        'slide-draft': SlideDraftDoc,
     } as const;
     const schema = schemas[doc.kind];
     const valid = parseStrict(schema, doc, doc.kind);
