@@ -100,6 +100,32 @@ test.describe('start page on a desktop', () => {
         await expect(page.getByTestId('playlists-heading')).toBeVisible();
         await expect(page.getByTestId('playlist-filter-portrait')).toBeVisible();
     });
+
+    test('the sidebar reaches the lower edge of the window with "Über & Neuigkeiten" and "Einstellungen" at its end, and the page lies on a surface (Plan.md 79, B3)', async ({ page }) => {
+        await page.goto('./');
+        await expect(page.getByTestId('sidebar-setup')).toBeVisible();
+        const viewport = page.viewportSize()!;
+        const [nav, screens, about, setup] = await Promise.all(
+            ['nav.module-sidebar', '[data-testid=sidebar-screens]', '[data-testid=sidebar-about]', '[data-testid=sidebar-setup]'].map((selector) => page.locator(selector).boundingBox()),
+        );
+        // Down to the window's lower edge (16 px of air), the two entries at the foot and the rest at the top.
+        expect(Math.abs(nav!.y + nav!.height - (viewport.height - 16))).toBeLessThanOrEqual(2);
+        expect(setup!.y + setup!.height).toBeGreaterThan(nav!.y + nav!.height - 20);
+        expect(about!.y).toBeLessThan(setup!.y);
+        expect(about!.y - (screens!.y + screens!.height)).toBeGreaterThan(100);
+        await expect(page.getByTestId('sidebar-last')).toBeVisible();
+
+        // The page is a light surface with round corners, like the sidebar.
+        const content = page.locator('main.content');
+        await expect(content).toHaveCSS('border-top-left-radius', /^[1-9]/);
+        const [surface, ground] = await Promise.all([
+            content.evaluate((el) => getComputedStyle(el).backgroundColor),
+            page.locator('.module-page').evaluate((el) => getComputedStyle(el).backgroundColor),
+        ]);
+        expect(surface).not.toBe(ground);
+        await expect(content).not.toHaveCSS('box-shadow', 'none');
+        if (test.info().project.name === 'chromium') await page.screenshot({ path: 'test-results/home-surface.png' });
+    });
 });
 
 test.describe('on a phone', () => {

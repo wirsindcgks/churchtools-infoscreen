@@ -32,6 +32,7 @@ import { getRepository } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
+import { vTip } from '../designer/tip';
 import { useConfirm } from '../designer/useConfirm';
 
 const { confirm } = useConfirm();
@@ -537,9 +538,9 @@ function onKey(event: KeyboardEvent): void {
             </span>
             <template #actions>
                 <button
+                    v-tip="withKeys(t.editor.undo, KEYS.undo)"
                     class="d-btn d-btn--icon d-btn--ghost"
                     type="button"
-                    :title="withKeys(t.editor.undo, KEYS.undo)"
                     :aria-label="t.editor.undo"
                     :disabled="!editor.canUndo"
                     @click="editor.undo()"
@@ -547,9 +548,9 @@ function onKey(event: KeyboardEvent): void {
                     <Icon name="undo" />
                 </button>
                 <button
+                    v-tip="withKeys(t.editor.redo, KEYS.redo)"
                     class="d-btn d-btn--icon d-btn--ghost"
                     type="button"
-                    :title="withKeys(t.editor.redo, KEYS.redo)"
                     :aria-label="t.editor.redo"
                     :disabled="!editor.canRedo"
                     @click="editor.redo()"
@@ -579,9 +580,9 @@ function onKey(event: KeyboardEvent): void {
                     <Icon name="play" :size="16" /> {{ t.editor.player }}<span v-if="editor.screens.length > 1" class="muted">: {{ s.name }}</span>
                 </RouterLink>
                 <button
+                    v-tip="withKeys(t.shortcuts.button, KEYS.help)"
                     class="d-btn d-btn--icon shortcuts-btn"
                     type="button"
-                    :title="withKeys(t.shortcuts.button, KEYS.help)"
                     :aria-label="t.shortcuts.button"
                     data-testid="shortcuts"
                     @click="shortcutsOpen = true"
@@ -683,12 +684,12 @@ function onKey(event: KeyboardEvent): void {
             <div class="tablet-rail tablet-rail--inspector">
                 <div class="rail-head">
                     <button
+                        v-tip="sheetLabel"
                         type="button"
                         class="tablet-toggle"
                         :aria-expanded="inspectorColumnOpen"
                         aria-controls="inspector-panel"
                         :aria-label="sheetLabel"
-                        :title="sheetLabel"
                         data-testid="tablet-inspector-toggle"
                         @click="toggleInspectorColumn"
                     >
@@ -700,9 +701,9 @@ function onKey(event: KeyboardEvent): void {
                 <div class="drawer-head">
                     <strong class="drawer-title" data-testid="inspector-drawer-title">{{ drawerTitle }}</strong>
                     <button
+                        v-tip="t.editor.collapse"
                         type="button"
                         class="d-btn d-btn--icon"
-                        :title="t.editor.collapse"
                         :aria-label="t.editor.collapse"
                         :data-testid="desktop ? 'desktop-inspector-collapse' : 'tablet-inspector-close'"
                         @click="toggleInspectorColumn"

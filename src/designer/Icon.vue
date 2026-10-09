@@ -57,6 +57,8 @@ const PATHS = {
     megaphone: ['M3 10v4h3l7 4V6l-7 4H3z', 'M6 14v3a1 1 0 0 0 1 1h1v-4', 'M15 9.5a3 3 0 0 1 0 5', 'M18 7a6.5 6.5 0 0 1 0 10'],
     // "Über & Neuigkeiten"
     info: [circle(12, 12, 8.5), 'M12 11v5', 'M12 7.8v.2'],
+    // The handle of a sortable row (Plan.md 79, D7): two columns of three dots.
+    grip: [circle(9, 6, 1), circle(15, 6, 1), circle(9, 12, 1), circle(15, 12, 1), circle(9, 18, 1), circle(15, 18, 1)],
     // Posts (Plan.md, Nächste Schritte 33): a page with a picture and lines of text.
     // Two people, for the groups block (Plan.md 43).
     people: [circle(9, 8, 3), 'M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6', 'M16 5a3 3 0 0 1 0 6', 'M18 14.5c1.8.8 3 2.9 3 5.5'],

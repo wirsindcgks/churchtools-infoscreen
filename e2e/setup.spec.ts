@@ -42,6 +42,32 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
     await expect(device.locator('.checks')).toContainText('Die Gruppe ist aktiv.', LIVE);
 });
 
+// The overview reads a little of the test instance for its marks; it writes nothing.
+test('the overview is one column of whole rows: symbol, title with its sentence, the mark, then the arrow (Plan.md 79, B3)', async ({ page }) => {
+    await page.goto('./einstellungen');
+    const rows = page.locator('a[data-testid^="settings-card-"]');
+    await expect(rows.first()).toBeVisible();
+    const count = await rows.count();
+    expect(count).toBeGreaterThanOrEqual(3);
+    const boxes = await Promise.all(Array.from({ length: count }, (_, i) => rows.nth(i).boundingBox()));
+    for (const [i, box] of boxes.entries()) {
+        expect(Math.abs(box!.x - boxes[0]!.x)).toBeLessThanOrEqual(1);
+        expect(Math.abs(box!.width - boxes[0]!.width)).toBeLessThanOrEqual(1);
+        if (i) expect(box!.y).toBeGreaterThanOrEqual(boxes[i - 1]!.y + boxes[i - 1]!.height - 1);
+    }
+    await expect(rows.first()).not.toContainText('Öffnen');
+    await expect(rows.first().locator('.settings-card-icon')).toBeVisible();
+    await expect(rows.first().locator('h2')).toBeVisible();
+    // The mark stands between the words and the arrow.
+    const mark = page.locator('[data-testid^="settings-status-"]').first();
+    await expect(mark).toBeVisible({ timeout: 15_000 });
+    const row = mark.locator('xpath=ancestor::a[1]');
+    const [markBox, titleBox, arrowBox] = await Promise.all([mark.boundingBox(), row.locator('h2').boundingBox(), row.locator('.settings-card-forward').boundingBox()]);
+    expect(markBox!.x).toBeGreaterThan(titleBox!.x + titleBox!.width - 1);
+    expect(arrowBox!.x).toBeGreaterThanOrEqual(markBox!.x + markBox!.width - 1);
+    if (test.info().project.name === 'chromium') await page.screenshot({ path: 'test-results/setup-overview.png' });
+});
+
 // Reads groups and rights of the test instance, writes nothing.
 test('the checks of a group are folded by category, and the head names what is not fine', async ({ page }, testInfo) => {
     const LIVE = { timeout: 15_000 };

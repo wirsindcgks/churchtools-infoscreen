@@ -17,6 +17,7 @@ import SegmentField from '../fields/SegmentField.vue';
 import SortList, { type SortItem } from '../fields/SortList.vue';
 import TileField from '../fields/TileField.vue';
 import { MOTION_TILES, TRANSITION_TILES } from '../layouts';
+import { move as moveItem } from '../../ops';
 import { useBlockEdit } from '../use-block';
 
 /** Most pictures a gallery holds – the schema's limit. */
@@ -44,10 +45,8 @@ const items = computed<SortItem[]>(() =>
 );
 
 function move(from: number, to: number): void {
-    const ids = [...props.block.mediaIds];
-    if (to < 0 || to >= ids.length) return;
-    [ids[from], ids[to]] = [ids[to]!, ids[from]!];
-    setBlock({ mediaIds: ids });
+    if (to < 0 || to >= props.block.mediaIds.length) return;
+    setBlock({ mediaIds: moveItem(props.block.mediaIds, from, to) });
 }
 
 function remove(index: number): void {

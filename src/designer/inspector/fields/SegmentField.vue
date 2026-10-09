@@ -3,7 +3,7 @@
  * Two to four possibilities side by side (Plan.md 79, B2): a group of radio buttons, each with a symbol or a short word.
  * A symbol alone carries its label as `aria-label` and `title`. `testid` stands on the group.
  */
-import { useId } from 'vue';
+import { computed, useId } from 'vue';
 import Icon, { type IconName } from '../../Icon.vue';
 import FieldRow from './FieldRow.vue';
 
@@ -13,15 +13,28 @@ export interface SegmentOption {
     icon?: IconName;
 }
 
-defineProps<{ modelValue: string | number | undefined; options: readonly SegmentOption[]; label: string; testid?: string; stacked?: boolean; disabled?: boolean; quick?: boolean }>();
+const props = defineProps<{ modelValue: string | number | undefined; options: readonly SegmentOption[]; label: string; testid?: string; stacked?: boolean; disabled?: boolean; quick?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [string | number] }>();
 defineSlots<{ info?(): unknown }>();
 const labelId = useId();
+
+/**
+ * Words need room: next to the label the control has about 150 px, and a word wants its 10 px of air on both sides (Plan.md
+ * 79, B3). A segment of words that does not fit there stands under its label in the full width; symbols stay in the row.
+ */
+const CHAR_WIDTH = 7;
+const FACE_PADDING = 20;
+const ROW_ROOM = 150;
+const stackedNow = computed(
+    () =>
+        props.stacked ||
+        (!props.options.some((o) => o.icon) && props.options.reduce((sum, o) => sum + o.label.length * CHAR_WIDTH + FACE_PADDING, 0) > ROW_ROOM),
+);
 const name = useId();
 </script>
 
 <template>
-    <FieldRow :label="label" :label-id="labelId" :stacked="stacked" :quick="quick">
+    <FieldRow :label="label" :label-id="labelId" :stacked="stackedNow" :quick="quick">
         <div class="segment" role="radiogroup" :aria-labelledby="labelId" :data-testid="testid">
             <label v-for="option in options" :key="option.value" class="segment-option" :title="option.icon ? option.label : undefined">
                 <input
@@ -81,7 +94,7 @@ const name = useId();
     align-items: center;
     justify-content: center;
     min-height: 2.3em;
-    padding: 0 0.4em;
+    padding: 0 10px;
     overflow: hidden;
     color: var(--d-text);
     font-size: var(--d-size-sm);

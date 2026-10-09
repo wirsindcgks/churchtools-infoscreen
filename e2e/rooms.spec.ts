@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addBlock, choose, openSection } from './helpers';
+import { addBlock, choose, nudgeRow, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -244,7 +244,7 @@ test('choose rooms, see the bookings, and keep the titles private where asked', 
     }
 
     // Saal first (the order of the list is the order on the stage).
-    await page.getByTestId('room-entry').nth(1).getByTestId('room-up').click();
+    await nudgeRow(page.getByTestId('room-entry').nth(1).getByTestId('room-handle'), 'ArrowUp');
     await expect(page.getByTestId('room-name')).toHaveText(['Saal', 'Gruppenraum 1', 'Jugendkeller']);
     await page.getByTestId('room-entry').nth(0).getByTestId('room-hint').fill('EG, links');
 
@@ -291,13 +291,13 @@ test('the door sign shows the first room: now, then what follows – or free', a
     await page.screenshot({ path: 'test-results/rooms-door.png' });
 
     // The second room: free now, until its next booking.
-    await page.getByTestId('room-entry').nth(1).getByTestId('room-up').click();
+    await nudgeRow(page.getByTestId('room-entry').nth(1).getByTestId('room-handle'), 'ArrowUp');
     await expect(door.getByTestId('door-name')).toHaveText('Gruppenraum 1');
     await expect(door.getByTestId('door-current')).toHaveText('Frei');
     await expect(door.getByTestId('door-state')).toContainText('bis 14:00');
     // The third has nothing at all: free without "until", and no "Danach".
-    await page.getByTestId('room-entry').nth(2).getByTestId('room-up').click();
-    await page.getByTestId('room-entry').nth(1).getByTestId('room-up').click();
+    await nudgeRow(page.getByTestId('room-entry').nth(2).getByTestId('room-handle'), 'ArrowUp');
+    await nudgeRow(page.getByTestId('room-entry').nth(1).getByTestId('room-handle'), 'ArrowUp');
     await expect(door.getByTestId('door-name')).toHaveText('Jugendkeller');
     await expect(door.getByTestId('door-current')).toHaveText('Frei');
     await expect(door.getByTestId('door-state')).not.toContainText('bis');
@@ -363,7 +363,7 @@ for (const size of [
             expect(box.x).toBeGreaterThanOrEqual(frame.x - 0.5);
             expect(box.x + box.width).toBeLessThanOrEqual(Math.min(frame.x + frame.width, size.width) + 0.5);
         };
-        for (const id of ['room-entry', 'room-name', 'room-hint', 'room-up', 'room-down', 'room-remove', 'room-titles']) {
+        for (const id of ['room-entry', 'room-name', 'room-hint', 'room-handle', 'room-remove', 'room-titles']) {
             const all = page.getByTestId(id);
             for (let i = 0; i < (await all.count()); i++) await inside(all.nth(i));
         }

@@ -49,3 +49,34 @@ export async function chooseFont(scope: Page | Locator, testid: string, key: str
     await scope.getByTestId(testid).click();
     await scope.getByTestId(`${testid}-${key}`).click();
 }
+
+/** The sortable row (`useSortable`) a handle or any part of it belongs to. */
+export function sortRow(part: Locator): Locator {
+    return part.locator('xpath=ancestor-or-self::*[@data-sort-item][1]');
+}
+
+/** Moves a sortable row by one place with the keyboard: its handle takes the focus, the arrow key does the rest. */
+export async function nudgeRow(handle: Locator, key: 'ArrowUp' | 'ArrowDown' | 'ArrowLeft' | 'ArrowRight'): Promise<void> {
+    await handle.focus();
+    await handle.press(key);
+}
+
+/**
+ * Drags a sortable row by its handle (the mouse takes the handle at once) until its centre has passed the centre of
+ * `target`, in steps so the list follows; `horizontal` for the phone's row of slides, where the tile itself is grabbed.
+ */
+export async function dragRow(page: Page, grip: Locator, target: Locator, horizontal = false): Promise<void> {
+    const from = (await grip.boundingBox())!;
+    const own = (await sortRow(grip).boundingBox())!;
+    const over = (await sortRow(target).boundingBox())!;
+    const axis = horizontal ? 'x' : 'y';
+    const size = horizontal ? 'width' : 'height';
+    const delta = over[axis] + over[size] / 2 - (own[axis] + own[size] / 2);
+    // A few pixels beyond the other's centre, in the direction of the drag.
+    const reach = delta + Math.sign(delta) * 6;
+    const start = { x: from.x + from.width / 2, y: from.y + from.height / 2 };
+    await page.mouse.move(start.x, start.y);
+    await page.mouse.down();
+    await page.mouse.move(start.x + (horizontal ? reach : 0), start.y + (horizontal ? 0 : reach), { steps: 12 });
+    await page.mouse.up();
+}
