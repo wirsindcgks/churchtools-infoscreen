@@ -503,6 +503,10 @@ function onKey(event: KeyboardEvent): void {
     } else if (editor.block && (event.key === 'Delete' || event.key === 'Backspace')) {
         event.preventDefault();
         editor.removeBlock(editor.block.id);
+    } else if (event.key === 'Enter' && !mod && editor.block?.type === 'text' && !editor.block.locked && !editor.blockSheetOpen && !target?.closest('button, a, summary')) {
+        // Writes the chosen text on the stage (Plan.md 79, C4); the key must not reach the new field as a line break.
+        event.preventDefault();
+        editor.startTextEdit(editor.block.id);
     } else if (event.key === 'Escape') {
         editor.selectBlock(null);
         inspectorOpen.value = false;

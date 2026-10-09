@@ -224,6 +224,9 @@ export const t = {
             empty: 'Diese Präsentation hat noch keine Folie.',
             emptySlide: 'Diese Folie ist noch leer.',
             size: (width: number, height: number) => `${width} × ${height}`,
+            /** Writing text on the stage (Plan.md 79, C4): the label of the field and the pale hint in an empty text. */
+            textEdit: 'Text bearbeiten',
+            textPlaceholder: 'Text eingeben',
         },
         previewDialog: {
             label: 'Vorschau der Präsentation',
@@ -285,6 +288,8 @@ export const t = {
         /** The short words of a switch in the menu, where the full label is too long. */
         short: { name: 'Name', logo: 'Logo', title: 'Titel', image: 'Bild' },
         unlock: 'Entsperren',
+        /** Ends the writing on the stage. */
+        done: 'Fertig',
         allSettings: 'Alle Einstellungen',
         copy: 'Kopieren',
         paste: 'Einfügen',

@@ -7,7 +7,8 @@ import { fillStyle } from './fill';
 import { backgroundImageUrl } from './images';
 import { themeVars } from './theme';
 
-const props = defineProps<{ slide: SlideDoc; width: number; height: number }>();
+/** `hiddenBlockId`: see `BlockView` – only the editor sets it. */
+const props = defineProps<{ slide: SlideDoc; width: number; height: number; hiddenBlockId?: string }>();
 const context = useStageContext();
 
 const background = computed(() => {
@@ -32,6 +33,7 @@ const look = computed(() => ({ ...background.value, ...themeVars(themeOf(context
             :key="block.id"
             :block="block"
             :slide-seconds="slide.durationSeconds"
+            :hidden-block-id="hiddenBlockId"
         />
     </div>
 </template>

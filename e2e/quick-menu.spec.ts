@@ -255,3 +255,93 @@ test('a window narrower than 48rem has no short menu yet (Plan.md 79, C1; the ph
     await expect(page.getByTestId('block-inspector')).toBeAttached();
     await expect(page.getByTestId('quick-menu')).toHaveCount(0);
 });
+
+/** The text as the stage draws it (the thumbnails of the slide list draw it too). */
+function drawn(page: Page) {
+    return page.locator('[data-quick-host]').getByTestId('text-inner');
+}
+
+test('a double click on a text writes on the stage; Escape ends it and one undo brings the old text back (Plan.md 79, C4)', async ({ page }) => {
+    await openEditor(page);
+    await addBlock(page, 'text');
+    const before = await drawn(page).innerText();
+    await page.getByTestId('frame-text').dblclick();
+    const field = page.getByTestId('text-edit');
+    await expect(field).toBeVisible();
+    await expect(field).toBeFocused();
+    await expect(field).toHaveAttribute('aria-label', 'Text bearbeiten');
+    // The whole text is marked: typing replaces it.
+    await page.keyboard.type('Hallo');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('Welt');
+    await expect(page.getByTestId('quick-menu')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(field).toHaveCount(0);
+    await expect(drawn(page)).toHaveText('Hallo\nWelt');
+    await expect(page.getByTestId('quick-menu')).toBeVisible();
+    await expect(page.getByTestId('text-input')).toHaveValue('Hallo\nWelt');
+
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press('ControlOrMeta+z');
+    await expect(drawn(page)).toHaveText(before);
+});
+
+test('the text field stands where the player draws the text (Plan.md 79, C4)', async ({ page }) => {
+    await openEditor(page);
+    await addBlock(page, 'text');
+    await page.getByTestId('text-input').fill('Hallo Welt');
+    const lines = (await drawn(page).boundingBox())!;
+    await page.getByTestId('frame-text').dblclick();
+    const field = (await page.getByTestId('text-edit').boundingBox())!;
+    expect(Math.abs(field.x - lines.x)).toBeLessThan(1.5);
+    expect(Math.abs(field.y - lines.y)).toBeLessThan(1.5);
+    expect(Math.abs(field.height - lines.height)).toBeLessThan(2);
+    await expect(drawn(page)).toHaveCSS('visibility', 'hidden');
+    await page.getByTestId('quick-done').click();
+    await expect(drawn(page)).toHaveCSS('visibility', 'visible');
+});
+
+test('a click beside the field ends the writing; the text level in the menu does not (Plan.md 79, C4)', async ({ page }) => {
+    await openEditor(page);
+    await addBlock(page, 'text');
+    await page.getByTestId('frame-text').dblclick();
+    const field = page.getByTestId('text-edit');
+    await page.keyboard.type('Eins');
+    await page.getByTestId('quick-menu').getByTestId('quick-chip').and(page.getByLabel(/Textstufe/)).click();
+    await page.getByTestId('quick-popover').getByTestId('text-level').locator('input[value="heading"]').check();
+    await expect(field).toBeVisible();
+    await expect(page.getByTestId('quick-popover')).toBeVisible();
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
+    await expect(field).toHaveCount(0);
+    await expect(drawn(page)).toHaveText('Eins');
+});
+
+test('"Fertig" ends the writing and keeps the block chosen (Plan.md 79, C4)', async ({ page }) => {
+    await openEditor(page);
+    await addBlock(page, 'text');
+    await page.getByTestId('frame-text').dblclick();
+    const menu = page.getByTestId('quick-menu');
+    await expect(menu.getByTestId('quick-duplicate')).toHaveCount(0);
+    await page.keyboard.type('Fertig?');
+    await menu.getByTestId('quick-done').click();
+    await expect(page.getByTestId('text-edit')).toHaveCount(0);
+    await expect(menu).toBeVisible();
+    await expect(menu.getByTestId('quick-duplicate')).toBeVisible();
+    await expect(drawn(page)).toHaveText('Fertig?');
+});
+
+test('an empty text shows a pale hint in the editor, and Enter on a chosen text starts the writing (Plan.md 79, C4)', async ({ page }) => {
+    await openEditor(page);
+    await addBlock(page, 'text');
+    await page.getByTestId('text-input').fill('');
+    const hint = page.getByTestId('text-placeholder');
+    await expect(hint).toBeVisible();
+    await expect(hint).toHaveText('Text eingeben');
+    await page.getByTestId('text-input').blur();
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('text-edit')).toBeFocused();
+    await expect(hint).toHaveCount(0);
+    await page.keyboard.type('Neu');
+    await page.keyboard.press('Escape');
+    await expect(drawn(page)).toHaveText('Neu');
+});

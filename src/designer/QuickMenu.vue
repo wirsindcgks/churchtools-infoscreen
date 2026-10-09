@@ -127,6 +127,12 @@ const LAYERS: { where: Layer; label: string }[] = [
 
 /** Arrows hop between the buttons and chips of the menu; the editor's arrows (which move the block) never hear them. */
 function onKeydown(event: KeyboardEvent): void {
+    // While writing, Escape from the menu ends the writing as in the field – the block stays chosen.
+    if (event.key === 'Escape' && editor.editingTextId) {
+        event.stopPropagation();
+        editor.endTextEdit();
+        return;
+    }
     // The editor's Delete removes the chosen block: a focused chip or button of the menu does not.
     if (event.key === 'Delete' || event.key === 'Backspace') {
         event.stopPropagation();
@@ -155,6 +161,8 @@ function openFirst(): boolean {
 }
 defineExpose({ openFirst });
 
+/** The block is being written on the stage (Plan.md 79, C4): the menu keeps its fields and offers "Fertig" instead of the actions. */
+const writing = computed(() => editor.editingTextId === props.block.id);
 const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common.lock));
 </script>
 
@@ -177,7 +185,12 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
             </div>
             <span class="quick-divider" aria-hidden="true" />
         </template>
-        <div class="quick-actions">
+        <div v-if="writing" class="quick-actions">
+            <button class="d-btn d-btn--primary quick-done" type="button" data-testid="quick-done" data-quick-stop @click="editor.endTextEdit()">
+                {{ t.quick.done }}
+            </button>
+        </div>
+        <div v-else class="quick-actions">
             <button
                 v-tip="lockLabel"
                 class="d-btn d-btn--icon d-btn--ghost quick-action"
@@ -304,6 +317,10 @@ const lockLabel = computed(() => (props.block.locked ? t.quick.unlock : t.common
     width: 1px;
     height: 20px;
     background: var(--d-divider);
+}
+.quick-done {
+    min-height: 32px;
+    height: 32px;
 }
 .quick-action {
     width: 32px;
