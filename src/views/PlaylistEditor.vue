@@ -1082,9 +1082,13 @@ function onKey(event: KeyboardEvent): void {
  * a tablet has the inspector as a column beside the stage instead.
  */
 @media (max-width: 48rem), (min-width: 48.0625rem) and (max-width: 75rem) and (orientation: portrait) {
-    /* Room for both rows of the bar, chosen block or not: the stage, standing in the middle, keeps its place when a block's row comes. */
+    /*
+     * Room for the slide row only: the stage stands in the middle between the head and that row, always (user, 2026-10-09:
+     * "die Slide einfach immer mittig"). A block's row comes into the free room below the stage – the stage does not move,
+     * not even under a finger that has just begun to drag a block.
+     */
     .editor {
-        padding-bottom: calc(112px + env(safe-area-inset-bottom));
+        padding-bottom: calc(56px + env(safe-area-inset-bottom));
     }
 
     /* Sheet: a 56 px bar, and the inspector itself only while open. */
@@ -1369,8 +1373,9 @@ function onKey(event: KeyboardEvent): void {
         position: relative;
         --slides-w: 53px;
     }
-    /* Upright, the slide sits right under "+ Baustein" instead of in the middle of a tall column. */
+    /* The slide stands in the middle of the room below "+ Baustein", upright and lying down (user, 2026-10-09). */
     .stage-column > :last-child {
+        margin-block: auto;
         margin-inline: 0;
         flex: 0 1 auto;
         height: auto;
@@ -1397,6 +1402,11 @@ function onKey(event: KeyboardEvent): void {
 @media (min-width: 48.0625rem) and (max-width: 75rem) and (orientation: portrait) {
     .columns {
         grid-template-columns: 53px minmax(0, 1fr);
+    }
+    /* Only the one bar of the sheet below, no block row as on a phone; the editor's height includes it, so the page does not scroll. */
+    .editor {
+        box-sizing: border-box;
+        padding-bottom: calc(56px + env(safe-area-inset-bottom));
     }
     /* A little lower than on a phone, so the slide's lower handles stay above the sheet (820 × 1180: slide ends at 597). */
     .inspector-sheet.open {
