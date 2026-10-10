@@ -425,13 +425,18 @@ function onKey(event: KeyboardEvent): void {
     }
     if (previewing.value) return; // the preview has its own keys
     const mod = event.metaKey || event.ctrlKey;
-    const typing = (event.target as HTMLElement | null)?.closest('input, textarea, select');
+    const target = event.target as HTMLElement | null;
+    const typing = target?.closest('input, textarea, select');
+    // A switch, a segment or a tile (Plan.md 79, B2) takes no text: after a click on one, the shortcuts
+    // with Ctrl/⌘ still reach the editor – undo right after a choice must work. Arrows and Delete stay
+    // with the field: they move between the choices of a segment.
+    const choosing = !!typing && target instanceof HTMLInputElement && (target.type === 'checkbox' || target.type === 'radio');
     if (mod && event.key.toLowerCase() === 's') {
         event.preventDefault();
         save();
         return;
     }
-    if (typing) return;
+    if (typing && !(choosing && mod)) return;
     if (mod && event.key.toLowerCase() === 'z') {
         event.preventDefault();
         if (event.shiftKey) editor.redo();

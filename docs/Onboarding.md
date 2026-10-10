@@ -67,7 +67,7 @@ Menü „…". Die erste Zeile sagt, ob der Fernseher gerade **„online"** ist.
   Fläche, Galerie (siehe unten), Gemeindekopf, Gruppen (siehe unten), Nächster Termin, QR-Code, Raumbelegung (siehe unten), Terminliste, Text, Uhr und Webseite.
 - **In der Mitte die Bildfläche:** ziehen, an den Griffen skalieren, an den **Hilfslinien** ausrichten (oben rechts: Abstand wählen oder aus; mit gedrückter Alt-Taste frei platzieren).
 - **Rechts der Inspektor:** Sein Kopf sagt, wo du bist („Folie 2 von 5"). Oben steht der Inhalt des Bausteins (Text, Kalender, Adresse …), darunter aufklappbare
-  Bereiche – **Schrift** und **Position & Ebene**, bei Gruppen auch **Angaben**. Zugeklappt zeigt jeder Bereich in
+  Bereiche – **Darstellung**, **Schrift**, **Anordnen** (die Ebene) und ganz unten **Genaue Maße** (X, Y, Breite, Höhe), bei Gruppen auch **Angaben**. An/aus stellst du mit Schaltern ein, wenige Möglichkeiten mit Segmenten, die Darstellung mit kleinen Bildkacheln. Zugeklappt zeigt jeder Bereich in
   einer Zeile, was eingestellt ist; was du einmal aufklappst, bleibt offen. Im Kopf des Inspektors stehen
   **„Sperren"** – damit ein Logo oder Hintergrund nicht verrutscht, ein Klick darauf erreicht dann den Baustein
   darunter, mit gedrückter Alt-Taste (Mac: Option) den gesperrten selbst –, **„Duplizieren"**, **„Kopieren"** und **„Löschen"**. Eine Kopie fügst du mit **„Einfügen"** neben „+ Baustein" oder Strg/⌘ + V an derselben Stelle ein, auch auf einer anderen Folie; Strg/⌘ + D dupliziert. Ein **ⓘ** klappt eine
@@ -80,7 +80,7 @@ Menü „…". Die erste Zeile sagt, ob der Fernseher gerade **„online"** ist.
 - **Speichern** (oder ⌘S / Strg+S). Alle Fernseher, die diese Präsentation zeigen, übernehmen die Änderung in etwa
   20 Sekunden von selbst.
 
-**Galerie:** Der Baustein zeigt Bilder aus der Mediathek nacheinander. Mit **„+ Bilder"** wählst du mehrere auf einmal
+**Galerie:** Der Baustein zeigt Bilder aus der Mediathek nacheinander. Mit **„Bilder hinzufügen"** wählst du mehrere auf einmal
 (die Zahl auf dem Bild ist die Reihenfolge), im Inspektor sortierst du sie mit ↑ und ↓ oder nimmst eins heraus. Du
 stellst die **Dauer je Bild** ein und den **Übergang** – Überblenden, Schieben, Aufdecken, Heranzoomen oder ohne. Die Folie läuft so lange, bis jedes Bild einmal zu sehen
 war; höchstens 30 Bilder je Galerie. Sie läuft auch ohne Netz, denn die Bilder liegen auf dem Gerät.

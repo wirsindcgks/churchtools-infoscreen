@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addBlock } from './helpers';
+import { addBlock, chosen, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -112,7 +112,7 @@ test('add a video: the library shows only videos, the inspector names the one ch
     await addBlock(page, 'video');
     const inspector = page.getByTestId('block-inspector');
     await expect(inspector.getByText('Noch kein Video gewählt.')).toBeVisible();
-    await expect(page.getByTestId('pick-video')).toHaveText('Video wählen …');
+    await expect(page.getByTestId('pick-video')).toHaveText('Video wählen');
     // The designer's stage says what is missing.
     await expect(page.locator('.editor-stage').getByTestId('video-placeholder')).toHaveText('Video wählen');
 
@@ -137,9 +137,10 @@ test('add a video: the library shows only videos, the inspector names the one ch
     await items.filter({ hasText: 'Predigtreihe.mp4' }).locator('button.pick').click();
     await expect(library).toBeHidden();
     await expect(page.getByTestId('video-name')).toContainText('Predigtreihe.mp4');
-    await expect(page.getByTestId('pick-video')).toHaveText('Anderes Video …');
+    await expect(page.getByTestId('pick-video')).toHaveText('Video tauschen');
     await expect(page.getByTestId('video-sound')).not.toBeChecked();
-    await expect(page.getByTestId('video-fit')).toHaveValue('contain');
+    await openSection(page, 'appearance');
+    await expect.poll(() => chosen(page, 'video-fit')).toBe('contain');
     await inspector.getByRole('button', { name: 'Erklärung' }).last().click();
     await expect(inspector.getByText('Die Folie dauert mindestens so lange wie das Video.')).toBeVisible();
     // On the designer's stage only a still: no sound, no playing.

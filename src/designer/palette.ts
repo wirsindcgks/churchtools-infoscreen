@@ -1,7 +1,7 @@
 /**
  * The colours offered at every colour field in the editor (Plan.md 64): the
  * theme's accent, text and background, then the church's palette. A page
- * provides the theme; `ColorField` asks for the list. Without a provider
+ * provides the theme; `ColorField` asks for the list, `FontField` for the font. Without a provider
  * (the Design page itself) a field shows no swatches. Where a page also
  * provides the slide, the colours it uses form a second group (Plan.md 65).
  */
@@ -18,6 +18,8 @@ export interface PaletteColor {
 export interface PaletteLists {
     palette: PaletteColor[];
     slide: PaletteColor[];
+    /** Key of the theme's font, for the font list (Plan.md 79, B2); null where no theme is provided. */
+    designFont: string | null;
 }
 
 const KEY: InjectionKey<ComputedRef<PaletteLists>> = Symbol('palette');
@@ -83,7 +85,7 @@ export function providePalette(theme: Ref<ThemeDoc | null | undefined>, slide?: 
         KEY,
         computed(() => {
             const palette = paletteColors(theme.value);
-            return { palette, slide: slideSwatches(slide?.value, palette) };
+            return { palette, slide: slideSwatches(slide?.value, palette), designFont: theme.value?.font ?? null };
         }),
     );
 }
