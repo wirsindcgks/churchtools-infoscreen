@@ -63,7 +63,7 @@ test.describe('on a desktop', () => {
 test.describe('on a phone', () => {
     test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
-    test('"⋯ → Mehrere auswählen": three taps, "3 gewählt", "Fertig", then delete from the bar', async ({ page }) => {
+    test('"⋯ → Mehrere auswählen": three taps, "3 gewählt", the short menu acts on them, "Fertig" brings the slide row back', async ({ page }) => {
         await openEditor(page);
         await freshSlideWith(page, 3);
         await page.getByTestId('quick-deselect').tap();
@@ -74,6 +74,7 @@ test.describe('on a phone', () => {
         const bar = page.getByTestId('multi-select-bar');
         await expect(bar).toContainText('0 gewählt');
         await expect(page.getByTestId('phone-block-row')).toHaveCount(0);
+        await expect(page.getByTestId('phone-slide-row')).toHaveCount(0);
 
         // New blocks lie one over the other, shifted: the top left corner of each one is free.
         const frames = page.getByTestId('frame-shape');
@@ -84,12 +85,19 @@ test.describe('on a phone', () => {
         await page.locator('.editor-stage').tap({ position: { x: 4, y: 4 } });
         await expect(bar).toContainText('3 gewählt');
 
-        await page.getByTestId('multi-select-done').tap();
-        await expect(bar).toHaveCount(0);
+        // The short menu stands above the count all along and acts on the three.
         await expect(page.getByTestId('quick-count')).toHaveText('3 Bausteine');
         await page.getByTestId('quick-more').tap();
+        await page.getByTestId('quick-duplicate').tap();
+        await expect(frames).toHaveCount(6);
+        await expect(bar).toContainText('3 gewählt');
+
+        await page.getByTestId('multi-select-done').tap();
+        await expect(bar).toHaveCount(0);
+        await expect(page.getByTestId('phone-slide-row')).toBeVisible();
+        await page.getByTestId('quick-more').tap();
         await page.getByTestId('quick-delete').tap();
-        await expect(frames).toHaveCount(0);
+        await expect(frames).toHaveCount(3);
     });
 
     test('"⋯ → Bausteine dieser Folie" opens the sheet with the list; a tap on a row chooses and closes the sheet', async ({ page }) => {

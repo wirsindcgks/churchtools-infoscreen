@@ -631,7 +631,7 @@ function onKey(event: KeyboardEvent): void {
             height: `calc(100vh - ${top}px)`,
             '--editor-top': `${top}px`,
             '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}`,
-            '--d-phone-bar': phone && (editor.selection.length || editor.multiSelect) ? '112px' : '56px',
+            '--d-phone-bar': phone && editor.selection.length ? '112px' : '56px',
             '--stage-max': stageMax === null ? undefined : `${stageMax}px`,
         }"
     >
