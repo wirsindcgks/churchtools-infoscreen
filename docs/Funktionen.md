@@ -22,10 +22,21 @@ brechen um, nichts wird abgeschnitten.
 
 ## Der Editor
 
-Folien gestalten wie in einem Folienprogramm: links die Folien, oben „+ Baustein" (alle Bausteine, alphabetisch), in der
+Folien gestalten wie in einem Folienprogramm: links die Folien, oben „+ Baustein", in der
 Mitte die Bildfläche, rechts der Inspektor: oben der Inhalt des gewählten Bausteins, darunter aufklappbare Bereiche.
-Ziehen, an den Griffen skalieren, am Raster ausrichten, sperren, rückgängig machen. **Beim Ziehen zeigt die Bildfläche die Abstände** zu den Nachbarn und zum Rand in Orange, dazu die Größe; kommt ein Abstand einem schon vorhandenen nahe, rastet er ein, und beide gleichen Abstände sind markiert. Mit gedrückter Alt-Taste über einem anderen Baustein stehen die Abstände zwischen beiden. **Kopieren, Einfügen, Duplizieren** gehen mit Strg/⌘ + C, V, D oder den Knöpfen im Inspektor und neben „+ Baustein" – eingefügt wird an derselben Stelle, auch auf einer anderen Folie. Termine kommen live aus den
-Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe. **Zur Wahl stehen nur öffentliche
+„+ Baustein" nennt zu jedem Baustein in einem Satz, was er zeigt, und hat ein Suchfeld („kalender" findet die
+Terminliste). Ziehen, an den Griffen skalieren, am Raster ausrichten, sperren, rückgängig machen. **Beim Ziehen zeigt die Bildfläche die Abstände** zu den Nachbarn und zum Rand in Orange, dazu die Größe; kommt ein Abstand einem schon vorhandenen nahe, rastet er ein, und beide gleichen Abstände sind markiert. Mit gedrückter Alt-Taste über einem anderen Baustein stehen die Abstände zwischen beiden. **Kopieren, Einfügen, Duplizieren** gehen mit Strg/⌘ + C, V, D oder den Knöpfen im Inspektor und neben „+ Baustein" – eingefügt wird an derselben Stelle, auch auf einer anderen Folie. Alle Tastengriffe zeigt „?" oben im Editor.
+
+**Das Kurzmenü:** Über dem gewählten Baustein steht ein kleines Menü mit dem, was man an ihm am häufigsten
+ändert – beim Text Textstufe, Farbe und Ausrichtung, beim Bild „Bild tauschen", bei Terminen die Kalender („Kalender ·
+3"). Rechts daneben Sperren, Duplizieren, Löschen und „⋯" mit Kopieren, Einfügen, den Ebenen und **„Alle
+Einstellungen"**, das den Inspektor öffnet. Beim Ziehen tritt es beiseite. **Ein Doppelklick führt zum Inhalt:** Auf
+einem Text schreibt man direkt auf der Folie, in derselben Schrift und Größe, die der Fernseher zeigt; auf einem Bild
+öffnet er die Mediathek, auf einer Terminliste die Kalender. Ein Baustein, dem noch etwas fehlt, trägt mittig einen
+Knopf wie „Bild wählen" oder „Adresse eingeben". Text gibt es in drei **Textstufen** – Überschrift, Untertitel, Text –,
+für quer und hochkant gleich groß.
+
+Termine kommen live aus den Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe. **Zur Wahl stehen nur öffentliche
 Kalender** – solche, die man in ChurchTools auch ohne Anmeldung sieht; ein „Rechte aktualisieren" braucht es dafür nicht.
 Interne Termine (nur für angemeldete Benutzer) zeigt kein Fernseher. Hat ein Baustein einen Kalender, der nicht
 öffentlich ist, nennt ihn der Editor und bietet an, ihn zu entfernen; fehlt einer, sagt der Editor, wie man ihn in
@@ -46,12 +57,39 @@ Uhr, Countdown, Nächstem Termin und Gemeindekopf. Ohne Wahl bleibt es, wie der 
 nicht in die Box, beginnt er oben; der Anfang wird nie abgeschnitten. Listen füllen ihre Box Seite für Seite und haben
 das Feld nicht.
 
-![Editor mit einer Terminliste als Karten, darüber Gemeindename und Uhr](bilder/editor.png)
+![Editor mit einer Terminliste als Karten, darüber das Kurzmenü mit den Kalendern](bilder/editor.png)
 
 **Fünfzehn Bausteine:** Text, Bild, Fläche, Galerie, Video, Uhr, Terminliste, Nächster Termin, Gemeindekopf mit Logo,
 Webseite, QR-Code, Countdown, Beiträge, Gruppen und Raumbelegung. Beim Baustein „Webseite" geht statt der Adresse auch der
 Einbettungscode (`<iframe …>`), den Karten, Umfragen oder Pinnwände anbieten – übernommen wird nur die Adresse darin.
 Seiten des eigenen ChurchTools bettet der Baustein nicht ein.
+
+## Entwurf und Veröffentlichen
+
+Ausprobieren ist gefahrlos: Der Editor **sichert jede Änderung von selbst als Entwurf** („Entwurf gesichert · 14:32"),
+die Fernseher zeigen weiter den veröffentlichten Stand. Erst **„Veröffentlichen"** bringt die Änderungen auf die
+Fernseher, nach etwa 20 Sekunden. Solange etwas noch nicht veröffentlicht ist, trägt die Präsentation die warme Marke
+**„Entwurf"** – im Editor unter dem Titel und auf ihrer Kachel unter „Präsentationen", dort mit „von wem, wann".
+Der Entwurf gehört der Präsentation, nicht der Person: Wer sie danach öffnet – am Rechner oder am Handy –, arbeitet am
+selben Entwurf weiter; sichern zwei gleichzeitig, fragt der Editor, wessen Stand gelten soll. **„Entwurf verwerfen"**
+im Menü „⋯" kehrt zum veröffentlichten Stand zurück. Läuft die Präsentation gerade, steht das im Editor; verknüpfte
+Folien nennt ein Dialog vor dem Veröffentlichen. Entwürfe liegen in einer eigenen Ablage, die kein Fernseher lesen
+darf – ein Gerät kann einen Entwurf nie zeigen (siehe [Rechte](Rechte.md)). Solange ein Administrator nach dem Update
+noch nicht „Rechte aktualisieren" geklickt hat, geht jede Änderung mit „Veröffentlichen" wie früher direkt auf die
+Fernseher; der Editor sagt das.
+
+## Mehrere Bausteine
+
+Mit Umschalt-Klick, einem **Auswahlrahmen** auf der leeren Fläche oder Strg/⌘ + A wählt man mehrere Bausteine
+und zieht, kopiert, dupliziert oder löscht sie gemeinsam; eingefügt wird die ganze Gruppe in ihrer Lage zueinander.
+**Ausrichten und Verteilen:** links, mittig, rechts, oben, mittig, unten, und ab drei Bausteinen gleiche Abstände –
+im Kurzmenü unter „Ausrichten" und im Inspektor unter „Anordnen". Ein gesperrter Baustein bleibt stehen, die anderen
+richten sich nach ihm. **Gruppieren** (Strg/⌘ + G) hält zusammen, was zusammengehört – Titel mit Uhrzeit, Bild mit
+Bildunterschrift: Ein Klick wählt dann die ganze Gruppe, ein Doppelklick ein einzelnes Mitglied. Solange nichts
+gewählt ist, zeigt der Inspektor **„Bausteine dieser Folie"**, oben = vorne: Ein Klick wählt, das Schloss sperrt,
+Ziehen ändert die Ebene – so erreicht man auch, was ganz verdeckt liegt.
+
+![Editor mit allen fünf Bausteinen einer Folie gewählt: darüber das Kurzmenü „5 Bausteine" mit offenem „Ausrichten", rechts „Anordnen"](bilder/mehrere.png)
 
 ## Galerie
 
@@ -118,7 +156,7 @@ braucht dafür das Recht, die Events der Kalender zu sehen – „Rechte aktuali
 
 ## Die Vorschau – genau wie am Fernseher
 
-„Vorschau" spielt die Präsentation mit allen ungespeicherten Änderungen im Vollbild ab: dieselben Bausteine, derselbe
+„Vorschau" spielt die Präsentation mit allen noch nicht veröffentlichten Änderungen im Vollbild ab: dieselben Bausteine, derselbe
 Wechsel, dieselben Daten wie am Fernseher. Die Gruppen wechseln seitenweise; die Folie bleibt, bis alle Seiten
 gelaufen sind.
 
@@ -139,7 +177,7 @@ gewählten Präsentationen und verschwindet zur eingestellten Zeit von selbst. J
 **Zeitleiste über die nächsten sieben Tage**: Sie zeigt, wann er tatsächlich am Fernseher steht – also wann eine
 seiner Präsentationen laut Zeitplan auf einem Bildschirm läuft, bis zu seinem Ende. Darunter steht jeder Bildschirm in einer
 eigenen Zeile; fährt man darüber, leuchten seine Zeiten auf. Steht ein Hinweis in den sieben Tagen auf keinem
-Fernseher, sagt die Kachel das. Jeder Hinweis zeigt auch, wann und von wem er zuletzt geändert wurde; das Speichern
+Fernseher, sagt die Kachel das. Jeder Hinweis zeigt auch, wann und von wem er zuletzt geändert wurde; das Veröffentlichen
 einer Folie zählt dabei nicht.
 
 ![Seite „Hinweise": Kacheln mit Vorschau des Bands, Zeitleiste über sieben Tage und den Bildschirmen](bilder/hinweise.png)
@@ -148,7 +186,8 @@ einer Folie zählt dabei nicht.
 
 Eine Präsentation ist der Inhalt eines Bildschirms und kann auf mehreren Bildschirmen laufen. Duplizieren ergibt eine Kopie mit
 eigenen Folien – oder auf Wunsch eine Präsentation mit denselben, verknüpften Folien. Jede Kachel zeigt, wann die
-Präsentation oder eine ihrer Folien zuletzt geändert wurde und von wem.
+Präsentation oder eine ihrer Folien zuletzt geändert wurde und von wem; liegt ein Entwurf vor, trägt sie die Marke
+„Entwurf".
 
 ![Präsentationen als Kacheln mit Format, Zahl der Folien und den Bildschirmen, die sie zeigen](bilder/playlists.png)
 
@@ -188,12 +227,23 @@ in einer eigenen Farbe mit Deckkraft – gilt für die Karten von „Nächster T
 
 ## Am Handy und auf dem Tablet
 
-Der Designer passt sich dem Telefon an: Seiten über ein Menü, Folien und Bausteine zum Aufklappen, die Einstellungen
-eines Bausteins als Blatt am unteren Rand – die ganze Folie bleibt darüber im Blick. Auf dem Tablet nimmt die Folie
-fast die ganze Breite ein; die Einstellungen öffnen hochkant als Blatt, quer als Spalte daneben. Am Rechner lassen
-sich Folien und Einstellungen einklappen.
+Der Designer ist für den Finger gebaut. Am Handy steht die Folie mittig, unten die **Folienzeile** („Folie 2 von 5",
+„+ Baustein", „⋯"); „Folie 2 von 5" öffnet die Folien als Bildchen zum Wählen, Hinzufügen und Umsortieren. Wer einen
+Baustein antippt, bekommt darüber die **Zeile des Bausteins** mit denselben Feldern wie im Kurzmenü; „⋯ → Alle
+Einstellungen" zieht das große Blatt hoch. Die Folie bleibt dabei ganz im Blick und springt nicht.
 
-<img src="bilder/handy.png" alt="Editor am Handy: oben die Folie, unten das Blatt mit den Einstellungen der Terminliste" width="320">
+**Tippen, dann ziehen:** Ein Wisch über einen nicht gewählten Baustein scrollt die Seite – auch eine bildfüllende
+Fläche fängt den Finger nicht. Erst ein gewählter Baustein lässt sich verschieben und an den Griffen skalieren; die
+Griffe sind klein zu sehen, aber groß zu treffen. **Zwei Finger zoomen** die Folie bis 400 %; gezoomt verschiebt ein
+Wisch die Fläche, und erst nach kurzem Halten hebt sich der Baustein an. „Ganze Folie" setzt zurück. Doppeltippen
+schreibt auf einen Text oder öffnet den Inhalt, langes Drücken öffnet „⋯" (auf der leeren Fläche „Einfügen"). Beim
+Schreiben zoomt der Editor, bis die Schrift lesbar ist, und hält den Text über der Bildschirmtastatur. Mehrere
+Bausteine wählt man über „⋯ → Mehrere auswählen", Verdecktes über „Bausteine dieser Folie".
+
+Auf dem Tablet gibt es das Kurzmenü wie am Rechner; die Einstellungen öffnen hochkant als Blatt, quer als Spalte
+daneben. Am Rechner lassen sich Folien und Einstellungen einklappen.
+
+<img src="bilder/handy.png" alt="Editor am Handy: die Folie mit einer gewählten Terminliste, darunter die Zeile des Bausteins und die Folienzeile" width="320">
 
 ## Am Fernseher
 
