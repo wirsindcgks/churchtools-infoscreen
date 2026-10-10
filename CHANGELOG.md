@@ -4,6 +4,54 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.19.0] – 2026-10-10
+
+Der Designer ist neu gebaut, damit auch Menschen ohne Technikwissen schöne Folien gestalten können, am Rechner wie am Handy.
+
+### Wichtig beim Update
+
+- **Nach dem Hochladen einmal „Rechte aktualisieren".** Das legt den Speicher für Entwürfe an und gibt den
+  Gestaltern Zugriff darauf. Die Geräte bekommen darauf kein Recht und können einen Entwurf nie zeigen.
+- **Neue Wörter:** Aus Slide wird **Folie**, aus Playlist **Präsentation**, aus Screen **Bildschirm**, in der
+  ganzen Oberfläche und in der Anleitung. Daten und Geräteadressen bleiben, wie sie sind.
+- Ein Fernseher holt die neue Version beim nächsten nächtlichen Neuladen. Bis dahin lässt er Bausteine und
+  Einstellungen weg, die er noch nicht kennt.
+
+### Neu
+
+- **Entwurf und Veröffentlichen.** Der Editor sichert jede Änderung von selbst als Entwurf. Auf die Bildschirme
+  kommt sie erst mit „Veröffentlichen". Kachel und Editor zeigen, wenn ein Entwurf offen ist.
+- **Kurzmenü am Baustein** mit den häufigsten Einstellungen. Ein Doppelklick führt zum Inhalt, ein leerer Baustein
+  sagt auf einem Knopf, was ihm fehlt. Text schreibt man direkt auf der Bildfläche.
+- **Mehrere Bausteine auf einmal:** mit Umschalt-Klick oder einem Auswahlrahmen wählen, gemeinsam ziehen,
+  ausrichten, verteilen und gruppieren. Kopieren und Einfügen geht auch zwischen Folien.
+- **Ebenenliste** mit allen Bausteinen einer Folie; eine Gruppe steht dort als eine Zeile.
+- **Abstände beim Ziehen:** Die Maße zu den Nachbarn erscheinen, gleiche Abstände rasten ein.
+- **Mehr Gestaltung:** der neue Baustein Linie, Flächen als Rechteck oder Ellipse mit Rand, jeder Baustein lässt
+  sich am Griff drehen und durchsichtig machen. Bilder bekommen einen Ausschnitt, runde Ecken, Schatten und einen
+  Ton (abdunkeln, aufhellen, Graustufen), Text bekommt Schatten, Hinterlegung, Zeilen- und Buchstabenabstand.
+- **Baustein „Social Media":** Instagram, YouTube und 15 weitere Plattformen mit Symbol und Namen. Das Symbol
+  erkennt der Designer am Link; Markenfarben lassen sich abschalten.
+- **„Läuft gerade":** Eine Präsentation, die ein Bildschirm gerade zeigt, ist an ihrer Kachel und im Editor
+  markiert. Eine Änderung daran steht nach dem Veröffentlichen nach etwa 20 Sekunden auf dem Fernseher.
+- **„+ Baustein" mit Suche** und einem Satz zu jedem Baustein; Text in drei Stufen: Überschrift, Untertitel,
+  Fließtext.
+- **Am Handy und Tablet:** eine Leiste unten mit den Einstellungen des Bausteins, die Folienwahl als Blatt,
+  Zoom mit zwei Fingern und Griffe, die man mit dem Finger trifft.
+
+### Geändert
+
+- **Neuer Look** für alle Bereiche und den Editor, mit einer Kachel für alles.
+- **Jede Einstellung heißt überall gleich** und hat ein Bedienelement: Schalter, Segmente und Bildkacheln statt
+  langer Auswahllisten. Farbe und Schrift bieten zuerst an, was das Design vorgibt.
+- Die Tastenkürzel stehen unter „?".
+- Die Kacheln der Mediathek haben ein „…" mit „Löschen".
+
+### Am Fernseher
+
+- **Neue Ladeanimation:** Statt der Sanduhr setzt sich eine kleine Folie zusammen, darunter steht der Name des
+  Bildschirms.
+
 ## [0.18.1] – 2026-10-07
 
 ### Geändert
@@ -905,6 +953,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.19.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.19.0
 [0.18.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.18.1
 [0.18.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.18.0
 [0.17.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.17.1

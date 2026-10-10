@@ -1,7 +1,7 @@
 {
   "name": "churchtools-infoscreen",
   "private": true,
-  "version": "0.18.1",
+  "version": "0.19.0",
   "type": "module",
   "license": "GPL-3.0-or-later",
   "author": "Tobias Nikola für CG Kraichgau-Stromberg e. V.",
