@@ -40,6 +40,29 @@ describe('editor store', () => {
         expect(editor.slide!.blocks.map((x) => x.rotation)).toEqual([30, 30, 30]);
     });
 
+    it('startCrop sets a picture shown whole to "Füllen" in one step, and ends with another choice or undo (Plan.md F2)', async () => {
+        const { editor } = await setup();
+        editor.addBlock('image');
+        const id = editor.block!.id;
+        // Without a medium there is nothing to crop.
+        editor.startCrop(id);
+        expect(editor.croppingId).toBeNull();
+        editor.updateBlock(id, { mediaId: 'm1' });
+        editor.endGesture();
+        editor.startCrop(id);
+        expect(editor.croppingId).toBe(id);
+        expect(editor.slide!.blocks[0]).toMatchObject({ fit: 'cover' });
+        editor.endCrop();
+        expect(editor.croppingId).toBeNull();
+        editor.startCrop(id);
+        editor.undo(); // the one step of "Füllen"
+        expect(editor.croppingId).toBeNull();
+        expect(editor.slide!.blocks[0]).toMatchObject({ fit: 'contain' });
+        editor.startCrop(id);
+        editor.selectBlock(null);
+        expect(editor.croppingId).toBeNull();
+    });
+
     it('opens a screen with its first slide selected and nothing to save', async () => {
         const { editor } = await setup();
         expect(editor.slide?.name).toBe('Willkommen');

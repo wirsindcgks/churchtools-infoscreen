@@ -30,7 +30,35 @@ const frame = computed(() => ({
     height: `${props.block.height}px`,
     ...(props.block.rotation ? { transform: `rotate(${props.block.rotation}deg)` } : {}),
     ...(props.block.opacity !== undefined && props.block.opacity !== 100 ? { opacity: `${props.block.opacity / 100}` } : {}),
+    ...pictureFrame(props.block),
 }));
+
+/** Shadows of a picture, video or gallery (Plan.md F2), in stage pixels. */
+const SHADOWS = { soft: '0 8px 24px rgba(0, 0, 0, 0.35)', strong: '0 16px 48px rgba(0, 0, 0, 0.6)' } as const;
+/** Pixel filters of a picture's tone. */
+const TONES = { darken: 'brightness(0.55)', lighten: 'brightness(1.35) contrast(0.7)', grayscale: 'grayscale(1)' } as const;
+
+/** Corners and shadow belong to the frame only when the picture fills it: otherwise the frame is not the picture. */
+function pictureFrame(block: Block): Record<string, string> {
+    if (block.type !== 'image' && block.type !== 'video' && block.type !== 'slideshow') return {};
+    // A gallery fills unless told otherwise; picture and video show whole.
+    if ((block.fit ?? (block.type === 'slideshow' ? 'cover' : 'contain')) !== 'cover') return {};
+    return {
+        ...(block.cornerRadius ? { borderRadius: `${block.cornerRadius}px` } : {}),
+        ...(block.shadow && block.shadow !== 'none' ? { boxShadow: SHADOWS[block.shadow] } : {}),
+    };
+}
+
+/** What a crop does to the picture: its place as in `object-position`, enlarged about the same point. */
+const imageStyle = computed(() => {
+    if (props.block.type !== 'image') return {};
+    const { fit, crop, tone } = props.block;
+    return {
+        objectFit: fit,
+        ...(fit === 'cover' && crop ? { objectPosition: `${crop.x}% ${crop.y}%`, transform: `scale(${crop.zoom})`, transformOrigin: `${crop.x}% ${crop.y}%` } : {}),
+        ...(tone && tone !== 'none' ? { filter: TONES[tone] } : {}),
+    };
+});
 
 /** An ellipse ignores the corners; an edge lies inside the shape, so it follows the rounding and keeps the fill in place. */
 const shapeStyle = computed(() => {
@@ -86,7 +114,7 @@ const imageUrl = computed(() => {
 </script>
 
 <template>
-    <div class="block" :class="`block--${block.type}`" :style="frame">
+    <div class="block" :class="`block--${block.type}`" :style="frame" :data-block-id="block.id">
         <div v-if="block.type === 'text'" class="text" :style="textStyle(block.style)">
             <div class="text-inner" :style="[vertical, { visibility: hiddenBlockId === block.id ? 'hidden' : undefined }]" data-testid="text-inner">{{ block.text }}</div>
         </div>
@@ -100,7 +128,7 @@ const imageUrl = computed(() => {
         <div v-else-if="block.type === 'line'" class="line" :style="lineStyle" />
 
         <template v-else-if="block.type === 'image'">
-            <img v-if="imageUrl" class="image" :src="imageUrl" :style="{ objectFit: block.fit }" alt="">
+            <img v-if="imageUrl" class="image" :src="imageUrl" :style="imageStyle" alt="">
             <!-- A calm placeholder, never a broken-image icon on a TV. -->
             <div v-else class="placeholder" />
         </template>

@@ -18,6 +18,8 @@ import SortList, { type SortItem } from '../fields/SortList.vue';
 import TileField from '../fields/TileField.vue';
 import { MOTION_TILES, TRANSITION_TILES } from '../layouts';
 import { move as moveItem } from '../../ops';
+import { lookSummary } from './picture-look';
+import PictureFrameFields from './PictureFrameFields.vue';
 import { useBlockEdit } from '../use-block';
 import { useInspectorMode } from '../mode';
 
@@ -84,7 +86,7 @@ function remove(index: number): void {
         testid="slideshow-seconds"
         @update:model-value="setBlock({ seconds: $event })"
     />
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="TRANSITION_TILES.find((o) => o.value === effectiveTransition(block))?.label">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="lookSummary(block, TRANSITION_TILES.find((o) => o.value === effectiveTransition(block))?.label)">
         <TileField
             quick
             :model-value="effectiveTransition(block)"
@@ -101,6 +103,7 @@ function remove(index: number): void {
             @update:model-value="setSlideshow({ motion: String($event) })"
         />
         <SegmentField :model-value="block.fit ?? 'cover'" :options="fits" :label="t.inspector.fit" testid="slideshow-fit" @update:model-value="setBlock({ fit: $event })" />
+        <PictureFrameFields v-if="(block.fit ?? 'cover') === 'cover'" :block="block" />
     </InspectorSection>
     <HintRow v-if="mode === 'full'" caption>
         <span>{{ t.inspector.runtime }}</span>

@@ -133,6 +133,8 @@ export const useEditorStore = defineStore('editor', () => {
     const block = computed(() => (selection.value.length === 1 ? selection.value[0]! : null));
     /** The text block being written on the stage (Plan.md 79, C4): one editing run is one step in the history. */
     const editingTextId = ref<string | null>(null);
+    /** The picture whose crop is being chosen on the stage (Plan.md F2). */
+    const croppingId = ref<string | null>(null);
     const calendarIds = computed(() => [
         ...new Set(draft.value?.slides.flatMap((s) => s.blocks.flatMap(blockCalendarIds)) ?? []),
     ]);
@@ -170,6 +172,7 @@ export const useEditorStore = defineStore('editor', () => {
         sharedWith.value = cloneJson(shared);
         revision.value = playlistRevision;
         endTextEdit();
+        endCrop();
         history.clear();
         historyVersion.value++;
         status.value = 'idle';
@@ -275,6 +278,29 @@ export const useEditorStore = defineStore('editor', () => {
         endGesture();
     }
 
+    /** Chooses the crop of a picture on the stage; a picture shown whole is set to "Füllen" first, as one step (Plan.md F2). */
+    function startCrop(id: string): void {
+        const target = slide.value?.blocks.find((b) => b.id === id);
+        if (!target || target.type !== 'image' || !target.mediaId || target.locked) return;
+        endTextEdit();
+        selectedBlockIds.value = [id];
+        if (target.fit !== 'cover') updateBlock(id, { fit: 'cover' });
+        croppingId.value = id;
+    }
+
+    function endCrop(): void {
+        croppingId.value = null;
+    }
+
+    // Another choice, another slide, a deleted or locked block: the crop ends.
+    watch(
+        () => croppingId.value && block.value?.id === croppingId.value && block.value.type === 'image' && !block.value.locked,
+        (valid) => {
+            if (!valid) endCrop();
+        },
+        { flush: 'sync' },
+    );
+
     // Another choice, another slide, a deleted or locked block: the writing ends.
     watch(
         () => editingTextId.value && block.value?.id === editingTextId.value && !block.value.locked,
@@ -288,6 +314,7 @@ export const useEditorStore = defineStore('editor', () => {
         if (!draft.value) return;
         // The writing on the stage is one step: it ends first, and the undo takes all of it back.
         endTextEdit();
+        endCrop();
         const previous = history.undo(draft.value);
         if (previous) draft.value = previous;
         historyVersion.value++;
@@ -297,6 +324,7 @@ export const useEditorStore = defineStore('editor', () => {
     function redo(): void {
         if (!draft.value) return;
         endTextEdit();
+        endCrop();
         const next = history.redo(draft.value);
         if (next) draft.value = next;
         historyVersion.value++;
@@ -1047,6 +1075,9 @@ export const useEditorStore = defineStore('editor', () => {
         selection,
         isSelected,
         editingTextId,
+        croppingId,
+        startCrop,
+        endCrop,
         status,
         conflict,
         slideConflict,

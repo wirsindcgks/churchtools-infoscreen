@@ -8,6 +8,8 @@ import { useInspectorContext } from '../context';
 import MediaField from '../fields/MediaField.vue';
 import SegmentField from '../fields/SegmentField.vue';
 import ToggleField from '../fields/ToggleField.vue';
+import { lookSummary } from './picture-look';
+import PictureFrameFields from './PictureFrameFields.vue';
 import { useBlockEdit } from '../use-block';
 import { useInspectorMode } from '../mode';
 
@@ -47,7 +49,8 @@ function caption(): string {
         <span>{{ t.inspector.runtime }}</span>
         <template #info>{{ t.inspector.videoRuntimeInfo }}</template>
     </HintRow>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="fits.find((f) => f.value === (block.fit ?? 'contain'))?.label">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="lookSummary(block, fits.find((f) => f.value === (block.fit ?? 'contain'))?.label)">
         <SegmentField :model-value="block.fit ?? 'contain'" :options="fits" :label="t.inspector.fit" testid="video-fit" @update:model-value="setBlock({ fit: $event })" />
+        <PictureFrameFields v-if="block.fit === 'cover'" :block="block" />
     </InspectorSection>
 </template>
