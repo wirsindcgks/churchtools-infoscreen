@@ -498,10 +498,49 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await frame(page, { x: 160, y: 140, width: 1600, height: 800 });
     await expect(page.locator('.editor-stage').getByTestId('posts-card')).toContainText('Sommerfreizeit');
     await shoot(page, 'beitraege');
+
+    // A slide designed (Plan.md 79, F): a picture with corners, shadow and tone, a text with shadow and band, a turned shape chosen.
+    await page.getByTestId('add-slide').click();
+    await addBlock(page, 'image');
+    const inspector = page.getByTestId('block-inspector');
+    await inspector.getByTestId('pick-image').click();
+    await page.getByTestId('media-library').getByTestId('media-item').filter({ hasText: 'konzertabend' }).locator('button.pick').click();
+    await expect(page.getByTestId('media-library')).toBeHidden();
+    await frame(page, { x: 160, y: 140, width: 1040, height: 800 });
+    await openSection(page, 'appearance');
+    await choose(inspector, 'image-fit', 'cover');
+    await choose(inspector, 'image-tone', 'darken');
+    await inspector.getByTestId('image-corners').fill('48');
+    await inspector.getByTestId('image-corners').blur();
+    await choose(inspector, 'image-shadow', 'soft');
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
+    await addBlock(page, 'text');
+    await inspector.getByTestId('text-input').fill('Konzertabend\nFreitag, 19 Uhr');
+    await frame(page, { x: 240, y: 620, width: 880, height: 240 });
+    const menu = page.getByTestId('quick-menu');
+    await menu.getByTestId('quick-chip').and(page.getByLabel(/^Schatten/)).click();
+    await choose(page.getByTestId('quick-popover'), 'text-shadow', 'strong');
+    await page.keyboard.press('Escape');
+    await menu.getByTestId('text-highlight').check({ force: true });
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
+    await addBlock(page, 'shape');
+    await frame(page, { x: 1320, y: 300, width: 420, height: 420 });
+    await inspector.getByRole('button', { name: 'Sonnengelb (#F5B301)' }).first().click();
+    await openSection(page, 'appearance');
+    await inspector.getByTestId('shape-corners').fill('32');
+    await inspector.getByTestId('shape-corners').blur();
+    await openSection(page, 'frame-look');
+    await inspector.getByTestId('inspector-opacity').fill('85');
+    await inspector.getByTestId('inspector-opacity').blur();
+    await inspector.getByTestId('inspector-rotation').fill('-12');
+    await inspector.getByTestId('inspector-rotation').blur();
+    await expect(page.getByTestId('handle-rotate')).toBeVisible();
+    await shoot(page, 'gestalten');
+
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
     // One more step, kept as a draft: the tile under "Präsentationen" carries the mark "Entwurf" (Plan.md 79, E).
-    await page.getByTestId('frame-posts').first().click();
+    await page.getByTestId('frame-shape').first().click();
     await page.keyboard.press('ArrowRight');
     await expect(page.getByTestId('save-status')).toContainText('Entwurf gesichert', { timeout: 15_000 });
 
