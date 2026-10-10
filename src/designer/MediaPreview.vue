@@ -265,7 +265,7 @@ header {
 }
 .facts .name {
     font-size: 1.1em;
-    font-weight: 700;
+    font-weight: var(--d-weight-heading);
 }
 .facts ul {
     margin: 0;

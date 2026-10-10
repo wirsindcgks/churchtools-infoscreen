@@ -21,13 +21,16 @@ const query = defineModel<string>({ required: true });
 .search-icon {
     position: absolute;
     top: 50%;
-    left: 12px;
+    left: var(--d-space-3);
     color: var(--d-text-muted);
     transform: translateY(-50%);
 }
+/* A lightly grey fill and a fine edge on the white surface of the page (Plan.md 79, B3). */
 input {
     min-height: 44px;
     padding-left: 40px;
+    border: 1px solid var(--d-edge);
     border-radius: var(--d-radius-lg);
+    background: var(--d-panel);
 }
 </style>

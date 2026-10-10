@@ -52,8 +52,8 @@ summary {
     display: flex;
     min-width: 0;
     align-items: center;
-    gap: 6px;
-    padding: 9px 0;
+    gap: var(--d-space-2);
+    padding: var(--d-space-3) 0;
     list-style: none;
     cursor: pointer;
 }
@@ -62,13 +62,13 @@ summary::-webkit-details-marker {
 }
 .chevron {
     color: var(--d-text-muted);
-    transition: transform 0.15s;
+    transition: transform var(--d-transition);
 }
 .section:not([open]) .chevron {
     transform: rotate(-90deg);
 }
 .title {
-    font-weight: 600;
+    font-weight: var(--d-weight-heading);
 }
 .summary-text {
     display: flex;
@@ -88,7 +88,7 @@ summary::-webkit-details-marker {
 .body {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-    padding-bottom: 12px;
+    gap: var(--d-space-3);
+    padding-bottom: var(--d-space-3);
 }
 </style>

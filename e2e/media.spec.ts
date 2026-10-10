@@ -15,7 +15,6 @@ test('upload an image, place it, and get warned before deleting it', async ({ pa
     test.setTimeout(150_000);
     // A unique name per run: browsers run in parallel against the same wiki page.
     const name = `e2e-${info.project.name}-${Date.now()}.png`;
-    page.on('dialog', (dialog) => void dialog.accept());
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
@@ -55,11 +54,16 @@ test('upload an image, place it, and get warned before deleting it', async ({ pa
         await player.close();
     }
 
-    // Delete it again: the usage warning appears (accepted above), then the image is gone.
+    // Delete it again: the question, then the usage warning (both answered with the red button), then the image is gone.
     await page.getByTestId('pick-image').click();
     const mine = page.getByTestId('media-item').filter({ hasText: name });
     await expect(mine).toHaveCount(1);
     await page.screenshot({ path: 'test-results/media-library.png' });
-    await mine.getByRole('button', { name: 'Löschen' }).click();
+    await mine.getByRole('button', { name: /^Aktionen/ }).click();
+    await mine.getByRole('menuitem', { name: 'Löschen' }).click();
+    await expect(page.getByTestId('confirm-dialog')).toContainText('aus ChurchTools löschen?');
+    await page.getByTestId('confirm-ok').click();
+    await expect(page.getByTestId('confirm-dialog')).toBeVisible();
+    await page.getByTestId('confirm-ok').click();
     await expect(mine).toHaveCount(0, { timeout: 20_000 });
 });

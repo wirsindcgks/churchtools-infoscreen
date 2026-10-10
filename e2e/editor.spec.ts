@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { addBlock, chooseFont, chosen, choose, customColor, openSection } from './helpers';
+import { addBlock, dragRow, nudgeRow, chooseFont, chosen, choose, customColor, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -43,6 +43,71 @@ test('the bar says nothing about a running playlist without a sign of life (Plan
     await expect(page.getByTestId('save-status')).toHaveText('Alles gespeichert');
     await expect(page.getByTestId('editor-live')).toHaveCount(0);
     await expect(page.getByTestId('save')).not.toHaveAttribute('title', /Läuft gerade/);
+});
+
+test('"?" opens the overview of the handles, Escape closes it, and the hints name their handle (Plan.md 79, B3)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    const mac = await page.evaluate(() => /^Mac|^iP(hone|ad|od)/.test(navigator.platform));
+    const ctrl = mac ? '⌘' : 'Strg+';
+
+    await page.getByTestId('shortcuts').click();
+    const dialog = page.getByTestId('shortcuts-dialog');
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Tastenkürzel' })).toBeVisible();
+    for (const text of ['Speichern', 'Rückgängig', 'Wiederholen', 'Kopieren', 'Ausschneiden', 'Einfügen', 'Duplizieren', 'Löschen', 'Pfeiltasten', 'Auswahl aufheben', 'frei platzieren', 'Abstände']) {
+        await expect(dialog).toContainText(text);
+    }
+    await expect(dialog).toContainText(`${ctrl}S`);
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+
+    // The key does the same, but not in a field.
+    await page.keyboard.press('Shift+?');
+    await expect(dialog).toBeVisible();
+    await page.getByTestId('shortcuts-close').click();
+    await expect(dialog).toHaveCount(0);
+    await page.getByTestId('slide-name').focus();
+    await page.keyboard.press('Shift+?');
+    await expect(dialog).toHaveCount(0);
+
+    await expect(page.getByTestId('save')).toHaveAttribute('title', `Speichern (${ctrl}S)`);
+    await page.getByTestId('frame-text').first().click();
+    await expect(page.getByTestId('block-duplicate')).not.toHaveAttribute('title', /.+/);
+    await expect(page.getByTestId('block-duplicate')).toHaveAccessibleName('Baustein duplizieren');
+});
+
+test('a symbol button names itself in a small face – at once for the keyboard, after a moment for the mouse, gone on Escape (Plan.md 79, B3)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    const mac = await page.evaluate(() => /^Mac|^iP(hone|ad|od)/.test(navigator.platform));
+    const ctrl = mac ? '⌘' : 'Strg+';
+    const tip = page.getByTestId('tip');
+
+    await page.getByTestId('frame-text').first().click();
+    // A focus the keyboard gave shows the hint without delay. (Safari's Tab skips buttons, so the key only marks the keyboard as the last input.)
+    await page.getByTestId('lock-toggle').focus();
+    await page.keyboard.press('Shift');
+    await page.getByTestId('block-duplicate').focus();
+    await expect(page.getByTestId('block-duplicate')).toBeFocused();
+    await expect(tip).toHaveText(`Baustein duplizieren (${ctrl}D)`);
+    // Under its button, and inside the window.
+    const [face, button] = await Promise.all([tip.boundingBox(), page.getByTestId('block-duplicate').boundingBox()]);
+    expect(face!.y).toBeGreaterThanOrEqual(button!.y + button!.height);
+    expect(face!.x).toBeGreaterThanOrEqual(0);
+    expect(face!.x + face!.width).toBeLessThanOrEqual(1440);
+    await page.keyboard.press('Escape');
+    await expect(tip).toHaveCount(0);
+    // Escape closed the hint only; the block is still chosen.
+    await expect(page.getByTestId('block-inspector')).toBeVisible();
+
+    // The mouse sees it after a moment, and it goes with the pointer.
+    await page.getByTestId('block-copy').hover();
+    await expect(tip).toHaveText(`Baustein kopieren (${ctrl}C)`);
+    await page.mouse.move(5, 5);
+    await expect(tip).toHaveCount(0);
 });
 
 test('the inspector head says which slide this is, and the slide inspector has no heading of its own', async ({ page }) => {
@@ -406,7 +471,6 @@ test.describe('with a finger, in both browsers', () => {
     });
 
     test('duplicate and remove the current slide from the phone header (Plan.md 44)', async ({ page }) => {
-        page.on('dialog', (dialog) => void dialog.accept());
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
         await expect(page.getByTestId('slide-item')).toHaveCount(3);
@@ -415,6 +479,10 @@ test.describe('with a finger, in both browsers', () => {
         await expect(page.getByTestId('slide-item')).toHaveCount(4);
 
         await page.getByTestId('slide-remove-phone').click();
+        // Our own question with a red "Entfernen" (Plan.md 79, B3).
+        await expect(page.getByTestId('confirm-dialog')).toContainText('aus dieser Präsentation entfernen?');
+        await expect(page.getByTestId('confirm-ok')).toHaveText('Entfernen');
+        await page.getByTestId('confirm-ok').click();
         await expect(page.getByTestId('slide-item')).toHaveCount(3);
     });
 
@@ -870,7 +938,7 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await expect(page.getByTestId('playlist-card')).toHaveCount(2);
 
     // The screen chooses it on Sundays 9–12.
-    await page.getByTestId('nav-screens').click();
+    await page.getByTestId('sidebar-screens').click();
     const card = page.getByTestId('screen-card').first();
     await expect(card.getByTestId('screen-playlist')).toHaveText('Wochenüberblick');
     await expect(card.getByTestId('open-schedule')).toHaveText('Zeitplan');
@@ -947,22 +1015,24 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await row.getByTestId('schedule-rule-line').hover();
     await expect(ruleSegments.first()).toHaveAttribute('data-dim', 'false');
     await expect(row.locator('[data-testid="week-segment"][data-key="default"]').first()).toHaveAttribute('data-dim', 'true');
-    await row.getByTestId('schedule-edit').hover();
+    await row.getByTestId('schedule-menu').hover();
     await expect(row.locator('[data-testid="week-segment"][data-key="default"]').first()).toHaveAttribute('data-dim', 'false');
     await ruleSegments.first().hover();
     await expect(row.getByTestId('schedule-rule-line')).toHaveClass(/linked/);
     await ruleSegments.first().click(); // chooses the preview like a click on the line
     await expect(row.getByTestId('schedule-rule-line').getByRole('button')).toHaveAttribute('aria-pressed', 'true');
-    await expect(row.getByTestId('schedule-playlist')).toHaveText('Gottesdienst');
+    await expect(row.getByTestId('schedule-mark')).toHaveText(/^(Läuft jetzt|Vorschau: Regel 1)$/);
     await row.locator('[data-testid="week-segment"][data-key="default"]').first().click();
-    await expect(row.getByTestId('schedule-playlist')).toHaveText('Wochenüberblick');
+    await expect(row.getByTestId('schedule-mark')).toHaveText(/^(Läuft jetzt|Vorschau: Standard)$/);
+    await expect(row.getByTestId('schedule-playlist')).toHaveText(/Gottesdienst|Wochenüberblick/);
 
+    await row.getByTestId('schedule-menu').click();
     await row.getByTestId('schedule-edit').click();
     await expect(page.getByTestId('schedule-dialog').getByTestId('schedule-rule')).toHaveCount(1);
     await page.getByTestId('schedule-cancel').click();
 
     // "Slides bearbeiten" in the schedule opens the playlist's editor.
-    await page.getByTestId('nav-screens').click();
+    await page.getByTestId('sidebar-screens').click();
     await card.getByTestId('open-schedule').click();
     await dialog.getByTestId('playlist-edit').last().click();
     await expect(page.getByTestId('playlist-name-input')).toHaveValue('Gottesdienst');
@@ -1639,7 +1709,7 @@ test.describe('the heads of the editor stand on one line (Plan.md 47)', () => {
         await expect(page.getByTestId('add-block-menu')).toBeVisible();
     }
 
-    test('at a desktop the slides head, "+ Baustein" and the inspector head are equally tall and their rules meet', async ({ page }) => {
+    test('at a desktop the slides head, "+ Baustein" and the inspector head are equally tall and flush; the columns are cards with air around them', async ({ page }) => {
         await openEditor(page);
         await page.getByTestId('frame-text').first().click();
         await expect(page.getByTestId('block-inspector')).toBeVisible();
@@ -1651,8 +1721,33 @@ test.describe('the heads of the editor stand on one line (Plan.md 47)', () => {
         expect(Math.abs(slides!.height - palette!.height)).toBeLessThanOrEqual(0.5);
         expect(Math.abs(inspector!.height - palette!.height)).toBeLessThanOrEqual(0.5);
         const bottom = (b: { y: number; height: number }) => b.y + b.height;
+        expect(Math.abs(slides!.y - palette!.y)).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(inspector!.y - palette!.y)).toBeLessThanOrEqual(0.5);
         expect(Math.abs(bottom(slides!) - bottom(palette!))).toBeLessThanOrEqual(0.5);
         expect(Math.abs(bottom(inspector!) - bottom(palette!))).toBeLessThanOrEqual(0.5);
+
+        // Plan.md 79, B3: no rules between the columns, but two cards on the workspace, 12 px from it and from the stage column.
+        const cards = await Promise.all([page.locator('.slide-list'), page.locator('.inspector-sheet'), page.locator('.editor')].map((l) => l.evaluate((el) => {
+            const style = getComputedStyle(el);
+            return { shadow: style.boxShadow, radius: style.borderTopLeftRadius, borderLeft: style.borderLeftWidth, borderRight: style.borderRightWidth, background: style.backgroundColor };
+        })));
+        for (const card of cards.slice(0, 2)) {
+            expect(card.shadow).not.toBe('none');
+            expect(parseFloat(card.radius)).toBeGreaterThan(0);
+            expect(card.borderLeft).toBe('0px');
+            expect(card.borderRight).toBe('0px');
+            expect(card.background).not.toBe(cards[2]!.background);
+        }
+        const [list, column, panel, root] = await Promise.all([
+            page.locator('.slide-list').boundingBox(),
+            page.locator('.stage-column').boundingBox(),
+            page.locator('.inspector-sheet').boundingBox(),
+            page.locator('.editor').boundingBox(),
+        ]);
+        expect(Math.abs(list!.x - root!.x - 12)).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(column!.x - (list!.x + list!.width) - 12)).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(panel!.x - (column!.x + column!.width) - 12)).toBeLessThanOrEqual(0.5);
+        expect(Math.abs(root!.x + root!.width - (panel!.x + panel!.width) - 12)).toBeLessThanOrEqual(0.5);
     });
 
     test('"Einklappen" is a button with a name and no words', async ({ page }) => {
@@ -1660,7 +1755,6 @@ test.describe('the heads of the editor stand on one line (Plan.md 47)', () => {
         const button = page.getByTestId('desktop-inspector-collapse');
         await expect(button).toHaveText('');
         await expect(button).toHaveAccessibleName('Einklappen');
-        await expect(button).toHaveAttribute('title', 'Einklappen');
     });
 
     test('folded at a desktop, the rails carry their buttons in the head zone with air around them', async ({ page }) => {
@@ -1680,7 +1774,7 @@ test.describe('the heads of the editor stand on one line (Plan.md 47)', () => {
             expect(b.height).toBe(36);
         }
         const railBox = (await page.locator('.tablet-rail--slides').boundingBox())!;
-        expect(railBox.width).toBe(53); // 8 + 36 + 8 and the rule
+        expect(railBox.width).toBe(53); // 8.5 + 36 + 8.5: a card as wide as the rail was
     });
 
     for (const [name, viewport] of [
@@ -1709,6 +1803,10 @@ test.describe('the heads of the editor stand on one line (Plan.md 47)', () => {
     });
 });
 
+async function copyButtonColor(page: Page): Promise<string> {
+    return page.getByTestId('block-copy').evaluate((el) => getComputedStyle(el).color);
+}
+
 test.describe('the slides "<" and the two-line block head (Plan.md 47)', () => {
     async function openEditor(page: Page): Promise<void> {
         await page.goto('./');
@@ -1732,7 +1830,7 @@ test.describe('the slides "<" and the two-line block head (Plan.md 47)', () => {
         });
     }
 
-    test('at a desktop, "Sperren", "Duplizieren", "Kopieren" and "Löschen" stand side by side, equally wide, below the name (Plan.md 79)', async ({ page }) => {
+    test('at a desktop, lock, duplicate and copy are 40 px symbol buttons on the left, the wastebasket alone on the right, below the name (Plan.md 79, B3)', async ({ page }) => {
         await openEditor(page);
         await page.getByTestId('add-block-menu').click();
         await page.getByTestId('sheet-add-next-appointment').click();
@@ -1742,19 +1840,23 @@ test.describe('the slides "<" and the two-line block head (Plan.md 47)', () => {
                 await page.getByTestId('add-block-menu').click();
                 await page.getByTestId('sheet-add-text').click();
             }
-            const buttons = ['lock-toggle', 'block-duplicate', 'block-copy', 'block-delete'].map((id) => page.getByTestId(id));
-            const [h3, ...boxes] = await Promise.all([page.locator('.block-head h3').boundingBox(), ...buttons.map((b) => b.boundingBox())]);
-            const mid = (b: { y: number; height: number }) => b.y + b.height / 2;
-            for (const box of boxes) {
-                expect(Math.abs(mid(box!) - mid(boxes[0]!))).toBeLessThanOrEqual(1);
-                expect(Math.abs(box!.width - boxes[0]!.width)).toBeLessThanOrEqual(1);
+            const [h3, lock, duplicate, copy, remove, head] = await Promise.all([
+                page.locator('.block-head h3').boundingBox(),
+                ...['lock-toggle', 'block-duplicate', 'block-copy', 'block-delete'].map((id) => page.getByTestId(id).boundingBox()),
+                page.locator('.head-actions').boundingBox(),
+            ]);
+            for (const box of [lock, duplicate, copy, remove]) {
+                expect(Math.round(box!.width)).toBe(40);
+                expect(Math.round(box!.height)).toBe(40);
+                expect(Math.abs(box!.y - lock!.y)).toBeLessThanOrEqual(1);
+                expect(box!.y).toBeGreaterThan(h3!.y + h3!.height);
             }
-            expect(mid(boxes[0]!)).toBeGreaterThan(h3!.y + h3!.height);
-            // The words fit into their buttons.
-            for (const button of buttons) {
-                const fits = await button.evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
-                expect(fits).toBe(true);
-            }
+            expect(duplicate!.x).toBeGreaterThan(lock!.x);
+            expect(copy!.x).toBeGreaterThan(duplicate!.x);
+            expect(remove!.x).toBeGreaterThan(copy!.x + copy!.width);
+            expect(Math.abs(remove!.x + remove!.width - (head!.x + head!.width))).toBeLessThanOrEqual(1);
+            // Red only on the wastebasket.
+            expect(await page.getByTestId('block-delete').evaluate((el) => getComputedStyle(el).color)).not.toBe(await copyButtonColor(page));
         }
     });
 });
@@ -1942,7 +2044,18 @@ test('the distances show while a block is dragged and are gone afterwards, the s
     const heights: number[] = [];
     for (const width of [1440, 1100]) {
         await page.setViewportSize({ width, height: 900 });
-        const box = (await page.getByTestId('frame-text').boundingBox())!;
+        // The stage refits a moment after the window changes (ResizeObserver); under load reading the box at once
+        // found the old place, the press missed the block and nothing was dragged. Wait until it stands still.
+        await page.evaluate(() => new Promise((done) => requestAnimationFrame(() => requestAnimationFrame(done))));
+        let box = (await page.getByTestId('frame-text').boundingBox())!;
+        await expect
+            .poll(async () => {
+                const next = (await page.getByTestId('frame-text').boundingBox())!;
+                const still = next.x === box.x && next.y === box.y && next.width === box.width;
+                box = next;
+                return still;
+            })
+            .toBe(true);
         await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
         await page.mouse.down();
         await page.mouse.move(box.x + box.width / 2 + 30, box.y + box.height / 2 + 20, { steps: 4 });
@@ -2019,5 +2132,154 @@ test.describe('on a phone (Plan.md 79)', () => {
             await expect(page.getByTestId(id!)).toHaveAccessibleName(name!);
             await expect(page.getByTestId(id!)).toBeVisible();
         }
+    });
+});
+
+/** The names of the slides in the list, in order – the phone's tiles show no name, but carry it in their label. */
+async function slideNames(page: Page): Promise<string[]> {
+    const labels = await page.getByTestId('slide-item').evaluateAll((items) => items.map((item) => item.getAttribute('aria-label') ?? ''));
+    return labels.map((label) => label.replace(/^\d+\. /, ''));
+}
+
+test.describe('sorting by dragging (Plan.md 79, D7)', () => {
+    test('slides: dragged by the handle or moved with the arrow keys, each move one step to undo', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        const [a, b, c] = await slideNames(page);
+        await expect(page.getByTestId('slide-handle').first()).toHaveAccessibleName('Ziehen zum Sortieren');
+
+        await dragRow(page, page.getByTestId('slide-handle').first(), page.getByTestId('slide-item').nth(2));
+        await expect.poll(() => slideNames(page)).toEqual([b, c, a]);
+        await expect(page.getByTestId('save-status')).toHaveText('Ungespeicherte Änderungen');
+        await page.keyboard.press('ControlOrMeta+z');
+        await expect.poll(() => slideNames(page)).toEqual([a, b, c]);
+
+        await nudgeRow(page.getByTestId('slide-handle').nth(1), 'ArrowUp');
+        await expect.poll(() => slideNames(page)).toEqual([b, a, c]);
+        // The handle keeps the focus, so the next press moves the same slide on.
+        await page.keyboard.press('ArrowDown');
+        await expect.poll(() => slideNames(page)).toEqual([a, b, c]);
+        await page.keyboard.press('ArrowDown');
+        await expect.poll(() => slideNames(page)).toEqual([a, c, b]);
+    });
+
+    test('layers in "Anordnen": top first, dragged to a new place, and a locked block stays where it is', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await page.getByTestId('slide-item').nth(2).click();
+        for (const type of ['text', 'shape', 'clock']) await addBlock(page, type);
+        const rows = page.getByTestId('layer-row');
+        const names = () => page.locator('[data-testid="layer-row"] .layer-name').allTextContents();
+        const before = await names();
+        expect(before.slice(0, 3)).toEqual(['Uhr', 'Fläche', 'Text']);
+        const count = before.length;
+        await expect(page.getByTestId('layer-position')).toHaveText(`Ebene ${count} von ${count}`);
+
+        // The top layer goes down to the third place; the stage follows.
+        await dragRow(page, rows.nth(0).getByTestId('layer-handle'), rows.nth(2));
+        await expect.poll(names).toEqual([...before.slice(1, 3), before[0]!, ...before.slice(3)]);
+        await expect(page.getByTestId('layer-position')).toHaveText(`Ebene ${count - 2} von ${count}`);
+        await page.keyboard.press('ControlOrMeta+z');
+        await expect.poll(names).toEqual(before);
+
+        // A row is chosen by a click, and a locked one cannot be dragged – the others pass it by.
+        await rows.nth(1).click();
+        await expect(rows.nth(1)).toHaveClass(/layer-item--on/);
+        await page.getByTestId('lock-toggle').click();
+        await expect(rows.nth(1).getByTestId('layer-lock')).toBeVisible();
+        await expect(rows.nth(1).getByTestId('layer-handle')).toBeDisabled();
+        await rows.nth(0).click();
+        await dragRow(page, rows.nth(0).getByTestId('layer-handle'), rows.nth(2));
+        await expect.poll(names).toEqual([before[2]!, before[1]!, before[0]!, ...before.slice(3)]);
+    });
+});
+
+test.describe('sorting slides on a phone (Plan.md 79, D7)', () => {
+    test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+    test('a mouse takes a tile as a whole where there is no room for a handle', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        const [a, b, c] = await slideNames(page);
+        await dragRow(page, page.getByTestId('slide-item').first(), page.getByTestId('slide-item').nth(2), true);
+        await expect.poll(() => slideNames(page)).toEqual([b, c, a]);
+    });
+
+    test('a finger scrolls the row until it has held a tile for 300 ms, then drags it', async ({ page, browserName }) => {
+        test.skip(browserName !== 'chromium', 'Touch events can be sent by the protocol in Chromium only');
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        const [a, b, c] = await slideNames(page);
+        const cdp = await page.context().newCDPSession(page);
+        const touch = (type: 'touchStart' | 'touchMove' | 'touchEnd', x: number, y: number) =>
+            cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
+        /** A finger path from the first tile to a little beyond the centre of the third, measured where they stand now. */
+        const path = async () => {
+            const first = (await page.getByTestId('slide-item').first().boundingBox())!;
+            const third = (await page.getByTestId('slide-item').nth(2).boundingBox())!;
+            const from = first.x + first.width / 2;
+            return { y: first.y + first.height / 2, from, to: third.x + third.width / 2 + 6 };
+        };
+
+        // Moving at once: the row scrolls (or stays), nothing is sorted.
+        let { y, from, to } = await path();
+        await touch('touchStart', from, y);
+        for (let i = 1; i <= 8; i++) await touch('touchMove', from + ((to - from) * i) / 8, y);
+        await touch('touchEnd', to, y);
+        expect(await slideNames(page)).toEqual([a, b, c]);
+        await page.waitForTimeout(500); // the browser's own scroll gesture ends
+
+        // Held first: the tile comes loose and follows the finger.
+        ({ y, from, to } = await path());
+        await touch('touchStart', from, y);
+        await page.waitForTimeout(400);
+        for (let i = 1; i <= 8; i++) await touch('touchMove', from + ((to - from) * i) / 8, y);
+        await touch('touchEnd', to, y);
+        await expect.poll(() => slideNames(page)).toEqual([b, c, a]);
+    });
+});
+
+test.describe('the bar of the editor stands flush with the cards (third round of looks)', () => {
+    test('desktop: back, save and title line up with the columns below', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        const back = (await page.getByTestId('leave-editor').boundingBox())!;
+        const slides = (await page.locator('.slide-list').boundingBox())!;
+        const save = (await page.getByTestId('save').boundingBox())!;
+        const inspector = (await page.getByTestId('inspector-sheet').boundingBox())!;
+        expect(Math.abs(back.x - slides.x)).toBeLessThanOrEqual(1);
+        expect(Math.abs(save.x + save.width - (inspector.x + inspector.width))).toBeLessThanOrEqual(1);
+        // The title and the state of the save stand in the middle of the window.
+        const title = (await page.locator('.d-appbar .heading').boundingBox())!;
+        expect(Math.abs(title.x + title.width / 2 - 1440 / 2)).toBeLessThanOrEqual(2);
+        // Nothing overlaps: back, title, actions in a row.
+        expect(back.x + back.width).toBeLessThanOrEqual(title.x);
+        expect(title.x + title.width).toBeLessThanOrEqual((await page.getByTestId('save').boundingBox())!.x);
+        await page.screenshot({ path: 'test-results/look3-editor-desktop.png' });
+    });
+
+    test('phone: the grey ground reaches the lower edge of the window', async ({ browser }) => {
+        const context = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true });
+        const page = await context.newPage();
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        const reach = await page.evaluate(() => ({
+            bottom: document.querySelector('.editor')!.getBoundingClientRect().bottom + window.scrollY,
+            inner: window.innerHeight,
+            scroll: document.documentElement.scrollHeight,
+            // The demo page has the browser's 8 px margin around its body, as the desktop height does.
+            margin: parseFloat(getComputedStyle(document.body).marginBottom),
+        }));
+        expect(reach.bottom).toBeGreaterThanOrEqual(reach.inner - 1);
+        // Not a pixel more than needed: the page does not scroll for it, beyond what lies below the editor anyway.
+        expect(reach.scroll).toBeLessThanOrEqual(reach.bottom + reach.margin + 1);
+        await page.screenshot({ path: 'test-results/look3-editor-phone.png' });
+        await context.close();
     });
 });

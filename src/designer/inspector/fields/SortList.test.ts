@@ -1,5 +1,6 @@
 import { mount } from '@vue/test-utils';
 import { describe, expect, it } from 'vitest';
+import { nextTick } from 'vue';
 import SortList from './SortList.vue';
 
 const items = [
@@ -13,28 +14,25 @@ function list() {
 }
 
 describe('SortList', () => {
-    it('draws a row per item with the same three symbol buttons, named for assistive technology', () => {
+    it('draws a row per item with a handle and a remove button, named for assistive technology', () => {
         const wrapper = list();
         expect(wrapper.findAll('[data-testid="gallery-row"]')).toHaveLength(3);
         const first = wrapper.get('[data-testid="gallery-row"]');
-        expect(first.findAll('button').map((b) => b.attributes('aria-label'))).toEqual(['Nach oben', 'Nach unten', 'Bild entfernen']);
-        expect(first.findAll('button svg')).toHaveLength(3);
+        expect(first.findAll('button').map((b) => b.attributes('aria-label'))).toEqual(['Ziehen zum Sortieren', 'Bild entfernen']);
+        // No arrow buttons any more: the handle is dragged, or moved with the arrow keys.
+        expect(wrapper.find('[data-testid="gallery-up"]').exists()).toBe(false);
+        expect(wrapper.find('[data-testid="gallery-down"]').exists()).toBe(false);
     });
 
-    it('cannot move the first up or the last down', () => {
-        const wrapper = list();
-        expect(wrapper.findAll('[data-testid="gallery-up"]')[0]!.attributes('disabled')).toBeDefined();
-        expect(wrapper.findAll('[data-testid="gallery-down"]')[2]!.attributes('disabled')).toBeDefined();
-        expect(wrapper.findAll('[data-testid="gallery-down"]')[0]!.attributes('disabled')).toBeUndefined();
-    });
-
-    it('reports moving and removing by index', async () => {
-        const wrapper = list();
-        await wrapper.findAll('[data-testid="gallery-down"]')[0]!.trigger('click');
-        await wrapper.findAll('[data-testid="gallery-up"]')[2]!.trigger('click');
+    it('moves a row with the arrow keys on its handle, reported by index', async () => {
+        const wrapper = mount(SortList, { props: { items, removeLabel: 'Bild entfernen', testid: 'gallery' }, attachTo: document.body });
+        await nextTick();
+        await wrapper.findAll('[data-testid="gallery-handle"]')[0]!.trigger('keydown', { key: 'ArrowDown' });
+        await wrapper.findAll('[data-testid="gallery-handle"]')[2]!.trigger('keydown', { key: 'ArrowUp' });
         await wrapper.findAll('[data-testid="gallery-remove"]')[1]!.trigger('click');
         expect(wrapper.emitted('move')).toEqual([[0, 1], [2, 1]]);
         expect(wrapper.emitted('remove')).toEqual([[1]]);
+        wrapper.unmount();
     });
 
     it('names the label, renames the row and keeps the remove button off where asked', () => {

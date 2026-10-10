@@ -56,7 +56,7 @@ img.media-preview--contain {
 .media-name {
     margin: 0;
     overflow-wrap: anywhere;
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .hint {
     margin: 0;

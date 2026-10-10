@@ -27,7 +27,7 @@ onMounted(markReleaseSeen);
 </script>
 
 <template>
-    <ModulePage current="about">
+    <ModulePage>
         <PageHeader icon="info" :title="t.about.title" testid="about-heading">
             {{ t.about.intro }}
         </PageHeader>
@@ -121,7 +121,7 @@ a {
     background: var(--d-panel);
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .badge--installed {
     background: var(--d-accent-pale);

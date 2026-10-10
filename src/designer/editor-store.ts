@@ -22,7 +22,7 @@ import { t } from '../i18n/designer';
 import { tr } from '../i18n/repository';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
-import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, fitToStage, freeSpot, move, newId, reorder, type Layer } from './ops';
+import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, fitToStage, freeSpot, move, moveAround, newId, reorder, type Layer } from './ops';
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'conflict' | 'error';
 
@@ -400,6 +400,18 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     /**
+     * The layers dragged in the list (Plan.md 79, B3): the block at array place `from` goes to `to`; locked blocks keep
+     * their place and the others pass them by. One step in the history.
+     */
+    function moveBlockLayer(from: number, to: number): void {
+        const slideId = slide.value?.id;
+        change((b) => {
+            const target = slideIn(b, slideId);
+            if (target) target.blocks = moveAround(target.blocks, from, to, (i) => !!target.blocks[i]?.locked);
+        });
+    }
+
+    /**
      * `mine`: the knowing overwrite after a playlist conflict – every slide of this playlist
      * alone is written as the draft has it, not only the changed ones; linked slides still only when changed.
      */
@@ -522,6 +534,7 @@ export const useEditorStore = defineStore('editor', () => {
         updateBlock,
         removeBlock,
         layerBlock,
+        moveBlockLayer,
         clipboard,
         blockSheetOpen,
         copyBlock,
@@ -543,7 +556,7 @@ function loadGridSize(): number {
         const stored = Number(localStorage.getItem(GRID_KEY));
         if ((GRID_SIZES as readonly number[]).includes(stored) && localStorage.getItem(GRID_KEY) !== null) return stored;
     } catch {
-        // No storage: fall back to the default.
+        // No storage: fall back to the default (guides off; the distances and guide lines of the stage do the work).
     }
-    return 20;
+    return 0;
 }

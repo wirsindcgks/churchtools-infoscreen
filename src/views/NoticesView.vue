@@ -6,7 +6,8 @@
  * "Beenden" and "Entfernen" clear it from every playlist of the group at
  * once, checked against every revision before anything is written.
  */
-import { computed, onMounted, ref, shallowRef } from 'vue';
+import { computed, onMounted, ref, shallowRef, watch } from 'vue';
+import { setSectionCount } from '../designer/section-counts';
 import { zonedDateKey, zonedParts } from '../appointments/zoned';
 import { currentPerson, displayName } from '../ct/client';
 import GroupCard from '../designer/GroupCard.vue';
@@ -18,6 +19,7 @@ import { providePalette } from '../designer/palette';
 import NoticeDialog from '../designer/NoticeDialog.vue';
 import NoticeThumb from '../designer/NoticeThumb.vue';
 import PageHeader from '../designer/PageHeader.vue';
+import Tile from '../designer/Tile.vue';
 import { ruleCalendarIds } from '../designer/running';
 import { fromMinutes, WEEKDAYS } from '../designer/schedule-ops';
 import { usePreview } from '../designer/usePreview';
@@ -27,6 +29,9 @@ import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
+import { useConfirm } from '../designer/useConfirm';
+
+const { confirm, notice } = useConfirm();
 
 const repository = shallowRef<ScreenRepository | null>(null);
 const author = ref<string | null>(null);
@@ -50,6 +55,12 @@ providePalette(themeOrDefault);
 const groups = computed(() => groupBanners(overviews.value, context.now, context.timeZone));
 const running = computed(() => groups.value.filter((g) => !g.expired));
 const expired = computed(() => groups.value.filter((g) => g.expired));
+/** The number in the sidebar: the running notices, also when one expires while the page stands open. */
+let counted = false;
+watch(
+    () => running.value.length,
+    (n) => counted && setSectionCount('notices', n),
+);
 
 function modeLabel(banner: Banner): string {
     return banner.mode === 'static' ? t.notices.modeStatic : t.notices.modeTicker;
@@ -80,6 +91,9 @@ async function refresh(): Promise<void> {
     overviews.value = list;
     screens.value = screenList;
     theme.value = stored;
+    counted = true;
+    setSectionCount('playlists', list.length);
+    setSectionCount('notices', running.value.length);
 }
 
 onMounted(async () => {
@@ -173,35 +187,34 @@ async function clear(group: BannerGroup): Promise<void> {
             { updatedBy: author.value ?? '' },
         );
     } catch (e) {
-        window.alert(e instanceof Error ? e.message : String(e));
+        await notice(e instanceof Error ? e.message : String(e));
     }
     await refresh();
 }
 
 async function end(group: BannerGroup): Promise<void> {
-    if (!window.confirm(t.notices.endConfirm(group.banner.text))) return;
+    if (!(await confirm({ message: t.notices.endConfirm(group.banner.text), confirmLabel: t.notices.end, danger: true }))) return;
     await clear(group);
 }
 </script>
 
 <template>
-    <ModulePage current="notices">
-        <template #actions>
-            <button
-                class="d-btn d-btn--create"
-                type="button"
-                :aria-label="t.notices.new"
-                :disabled="!ready"
-                data-testid="new-notice"
-                @click="openNew"
-            >
-                <Icon name="plus" />
-                <span class="create-label">{{ t.notices.new }}</span>
-            </button>
-        </template>
-
+    <ModulePage>
         <PageHeader icon="megaphone" :title="t.notices.title" testid="notices-heading">
             {{ t.notices.intro }}
+            <template #actions>
+                <button
+                    class="d-btn d-btn--create"
+                    type="button"
+                    :aria-label="t.notices.new"
+                    :disabled="!ready"
+                    data-testid="new-notice"
+                    @click="openNew"
+                >
+                    <Icon name="plus" />
+                    <span class="create-label">{{ t.notices.new }}</span>
+                </button>
+            </template>
         </PageHeader>
 
         <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
@@ -212,14 +225,38 @@ async function end(group: BannerGroup): Promise<void> {
                 :title="t.notices.running"
                 :count="t.notices.count(running.length)"
                 heading-id="notices-running"
+                :hide-heading="!expired.length"
             >
                 <ul v-if="running.length" class="d-tiles">
-                    <li v-for="group in running" :key="bannerKey(group.banner)" class="d-card d-tile" data-testid="notice-card">
-                        <div class="d-tile-media">
-                            <NoticeThumb :banner="group.banner" :background="themeOrDefault.background" />
-                        </div>
-                        <div class="d-tile-body">
-                            <h3 class="d-tile-title">{{ group.banner.text }}</h3>
+                    <Tile
+                        v-for="group in running"
+                        :key="bannerKey(group.banner)"
+                        :menu-label="t.home.card.actionsFor(group.banner.text)"
+                        menu-testid="notice-menu"
+                        data-testid="notice-card"
+                    >
+                        <template #media>
+                            <button
+                                class="thumb d-tile-media"
+                                type="button"
+                                :aria-label="t.schedules.edit"
+                                :title="t.schedules.edit"
+                                data-testid="notice-preview"
+                                @click="edit(group)"
+                            >
+                                <NoticeThumb :banner="group.banner" :background="themeOrDefault.background" />
+                            </button>
+                        </template>
+                        <template #title>{{ group.banner.text }}</template>
+                        <template #menu="{ close }">
+                            <button role="menuitem" type="button" data-testid="notice-edit" @click="close(); edit(group)">
+                                <Icon name="pencil" :size="16" /> {{ t.schedules.edit }}
+                            </button>
+                            <button role="menuitem" type="button" class="danger" data-testid="notice-end" @click="close(); end(group)">
+                                <Icon name="trash" :size="16" /> {{ t.notices.end }}
+                            </button>
+                        </template>
+                        <section class="d-tile-section">
                             <WeekTimeline
                                 class="week"
                                 :days="weekDays(group)"
@@ -230,6 +267,8 @@ async function end(group: BannerGroup): Promise<void> {
                             <p v-if="!showsAnywhere(group)" class="nowhere" data-testid="notice-nowhere">
                                 {{ t.notices.nowhere }}
                             </p>
+                        </section>
+                        <section class="d-tile-section">
                             <ul class="d-facts">
                                 <li>
                                     <Icon name="banner" :size="16" />
@@ -239,7 +278,11 @@ async function end(group: BannerGroup): Promise<void> {
                                     <Icon name="timer" :size="16" />
                                     <span>{{ endLabel(group) }}</span>
                                 </li>
-                                <li class="d-facts-gap">
+                            </ul>
+                        </section>
+                        <section class="d-tile-section">
+                            <ul class="d-facts">
+                                <li>
                                     <Icon name="list" :size="16" />
                                     <span>{{ group.playlists.map((o) => o.playlist.name).join(', ') }}</span>
                                 </li>
@@ -261,23 +304,21 @@ async function end(group: BannerGroup): Promise<void> {
                                     <Icon name="tv" :size="16" />
                                     <span>{{ t.common.onNoScreen }}</span>
                                 </li>
-                                <li v-if="edited(group)?.when" class="d-facts-gap" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
+                            </ul>
+                        </section>
+                        <template v-if="edited(group)" #foot>
+                            <ul class="d-facts">
+                                <li v-if="edited(group)!.when" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
                                     <Icon name="clock" :size="16" />
                                     <span>{{ edited(group)!.when }}</span>
                                 </li>
-                                <li v-if="edited(group)?.by" :class="{ 'd-facts-gap': !edited(group)?.when }" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
+                                <li v-if="edited(group)!.by" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
                                     <Icon name="person" :size="16" />
                                     <span>{{ edited(group)!.by }}</span>
                                 </li>
                             </ul>
-                            <div class="actions">
-                                <button class="d-btn" type="button" data-testid="notice-edit" @click="edit(group)">{{ t.schedules.edit }}</button>
-                                <button class="d-btn d-btn--danger" type="button" data-testid="notice-end" @click="end(group)">
-                                    {{ t.notices.end }}
-                                </button>
-                            </div>
-                        </div>
-                    </li>
+                        </template>
+                    </Tile>
                 </ul>
                 <p v-else class="empty">{{ t.notices.noneRunning }}</p>
             </GroupCard>
@@ -291,12 +332,25 @@ async function end(group: BannerGroup): Promise<void> {
             >
                 <p class="empty expired-hint">{{ t.notices.expiredHint }}</p>
                 <ul class="d-tiles">
-                    <li v-for="group in expired" :key="bannerKey(group.banner)" class="d-card d-tile" data-testid="notice-card-expired">
-                        <div class="d-tile-media">
-                            <NoticeThumb :banner="group.banner" :background="themeOrDefault.background" />
-                        </div>
-                        <div class="d-tile-body">
-                            <h3 class="d-tile-title">{{ group.banner.text }}</h3>
+                    <Tile
+                        v-for="group in expired"
+                        :key="bannerKey(group.banner)"
+                        :menu-label="t.home.card.actionsFor(group.banner.text)"
+                        menu-testid="notice-menu"
+                        data-testid="notice-card-expired"
+                    >
+                        <template #media>
+                            <div class="d-tile-media">
+                                <NoticeThumb :banner="group.banner" :background="themeOrDefault.background" />
+                            </div>
+                        </template>
+                        <template #title>{{ group.banner.text }}</template>
+                        <template #menu="{ close }">
+                            <button role="menuitem" type="button" data-testid="notice-remove" @click="close(); clear(group)">
+                                <Icon name="trash" :size="16" /> {{ t.common.remove }}
+                            </button>
+                        </template>
+                        <section class="d-tile-section">
                             <ul class="d-facts">
                                 <li>
                                     <Icon name="banner" :size="16" />
@@ -306,7 +360,11 @@ async function end(group: BannerGroup): Promise<void> {
                                     <Icon name="timer" :size="16" />
                                     <span>{{ endLabel(group) }}</span>
                                 </li>
-                                <li class="d-facts-gap">
+                            </ul>
+                        </section>
+                        <section class="d-tile-section">
+                            <ul class="d-facts">
+                                <li>
                                     <Icon name="list" :size="16" />
                                     <span>{{ group.playlists.map((o) => o.playlist.name).join(', ') }}</span>
                                 </li>
@@ -318,22 +376,21 @@ async function end(group: BannerGroup): Promise<void> {
                                     <Icon name="tv" :size="16" />
                                     <span>{{ t.common.onNoScreen }}</span>
                                 </li>
-                                <li v-if="edited(group)?.when" class="d-facts-gap" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
+                            </ul>
+                        </section>
+                        <template v-if="edited(group)" #foot>
+                            <ul class="d-facts">
+                                <li v-if="edited(group)!.when" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
                                     <Icon name="clock" :size="16" />
                                     <span>{{ edited(group)!.when }}</span>
                                 </li>
-                                <li v-if="edited(group)?.by" :class="{ 'd-facts-gap': !edited(group)?.when }" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
+                                <li v-if="edited(group)!.by" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
                                     <Icon name="person" :size="16" />
                                     <span>{{ edited(group)!.by }}</span>
                                 </li>
                             </ul>
-                            <div class="actions">
-                                <button class="d-btn" type="button" data-testid="notice-remove" @click="clear(group)">
-                                    {{ t.common.remove }}
-                                </button>
-                            </div>
-                        </div>
-                    </li>
+                        </template>
+                    </Tile>
                 </ul>
             </GroupCard>
         </template>
@@ -358,6 +415,17 @@ ul.d-tiles {
     padding: 0;
     list-style: none;
 }
+.thumb {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+}
+.thumb:focus-visible {
+    outline: 2px solid var(--d-accent);
+    outline-offset: 2px;
+}
 .week {
     margin: 6px 0;
 }
@@ -376,11 +444,6 @@ ul.d-tiles {
 .screen-line:hover,
 .screen-line.linked {
     background: var(--d-panel);
-}
-.actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 4px;
 }
 .empty {
     margin: 0;

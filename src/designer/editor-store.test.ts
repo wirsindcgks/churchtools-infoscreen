@@ -422,4 +422,33 @@ describe('linked slides (Plan.md 49)', () => {
             expect(new Set(spots.map(String)).size).toBe(3);
         });
     });
+
+    it('moves a layer by dragging in one step; a locked block keeps its place (Plan.md 79, B3)', async () => {
+        const { editor } = await setup();
+        editor.addBlock('text');
+        editor.addBlock('shape');
+        editor.addBlock('clock');
+        editor.addBlock('qr');
+        const types = () => editor.slide!.blocks.map((b) => b.type);
+        expect(types()).toEqual(['text', 'shape', 'clock', 'qr']);
+        editor.setLocked(editor.slide!.blocks[1]!.id, true);
+        editor.moveBlockLayer(0, 2);
+        // The text passes the locked shape, which stays at place 1.
+        expect(types()).toEqual(['clock', 'shape', 'text', 'qr']);
+        editor.undo();
+        expect(types()).toEqual(['text', 'shape', 'clock', 'qr']);
+    });
+
+    it('starts with the guides off, and keeps a choice made before (Plan.md 79, B3)', () => {
+        localStorage.removeItem('infoscreen-designer.grid');
+        setActivePinia(createPinia());
+        expect(useEditorStore().gridSize).toBe(0);
+        localStorage.setItem('infoscreen-designer.grid', '20');
+        setActivePinia(createPinia());
+        expect(useEditorStore().gridSize).toBe(20);
+        localStorage.setItem('infoscreen-designer.grid', '0');
+        setActivePinia(createPinia());
+        expect(useEditorStore().gridSize).toBe(0);
+        localStorage.removeItem('infoscreen-designer.grid');
+    });
 });

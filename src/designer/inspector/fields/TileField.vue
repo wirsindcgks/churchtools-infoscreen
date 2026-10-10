@@ -81,7 +81,7 @@ const name = useId();
     align-items: center;
     gap: 4px;
     min-width: 0;
-    padding: 8px 4px 6px;
+    padding: 8px 12px 6px;
     border: 1px solid var(--d-divider);
     border-radius: var(--d-radius);
     background: var(--d-surface);
@@ -103,7 +103,7 @@ const name = useId();
 }
 .tile:has(input:checked) .tile-word {
     color: var(--d-accent-strong);
-    font-weight: 600;
+    font-weight: var(--d-weight-normal);
 }
 .tile:has(input:focus-visible) .tile-face {
     outline: 2px solid var(--d-accent);

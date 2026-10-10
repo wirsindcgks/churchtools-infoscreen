@@ -4,7 +4,7 @@
  * "Anordnen" and "Genaue Maße". Without a block the slide and the playlist show instead. What a block shows lives in
  * `inspector/blocks/`, one component per type.
  */
-import { computed, provide } from 'vue';
+import { computed, provide, ref } from 'vue';
 import type { Calendar, PostGroup } from '../ct/api';
 import { t } from '../i18n/designer';
 import type { HomepageEntry } from '../groups/normalize';
@@ -17,7 +17,11 @@ import { BLOCK_INSPECTORS } from './inspector/blocks';
 import { INSPECTOR_CONTEXT } from './inspector/context';
 import NumberField from './inspector/fields/NumberField.vue';
 import SlideInspector from './inspector/SlideInspector.vue';
+import { layerRows, blockSummary } from './layers';
 import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
+import { KEYS, withKeys } from './shortcuts';
+import { vTip } from './tip';
+import { useSortable } from './useSortable';
 
 /** `rooms`: the rooms the designer may see; null while they are not loaded yet. */
 const props = defineProps<{ calendars: Calendar[]; hiddenCalendars?: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null; services?: ServiceInfo[] | null; allowedServices?: number[]; servicesFailed?: boolean }>();
@@ -67,6 +71,23 @@ const positionSummary = computed(() =>
     block.value ? `${block.value.x}, ${block.value.y} · ${block.value.width} × ${block.value.height}` : '',
 );
 
+/** The layers, top first; a drag reorders them in the slide (a locked block keeps its place). */
+const rows = computed(() => layerRows(editor.slide?.blocks ?? []));
+const layerList = ref<HTMLElement | null>(null);
+const isLockedAt = (index: number): boolean => !!editor.slide?.blocks[index]?.locked;
+// The list shows the array backwards: place d of the list is place n - 1 - d of the slide.
+useSortable({
+    container: layerList,
+    fixed: (index) => isLockedAt(rows.value.length - 1 - index),
+    onMove: (from, to) => editor.moveBlockLayer(rows.value.length - 1 - from, rows.value.length - 1 - to),
+});
+const layerNumber = computed(() => (block.value ? (editor.slide?.blocks.findIndex((b) => b.id === block.value!.id) ?? -1) + 1 : 0));
+const lookup = {
+    mediaName: (id: string) => editor.media.find((m) => m.id === id)?.name,
+    calendarName: (id: number) => [...props.calendars, ...(props.hiddenCalendars ?? [])].find((c) => c.id === id)?.name,
+    roomName: (id: number) => props.rooms?.find((r) => r.id === id)?.name,
+};
+
 const LAYERS = [
     { where: 'front', icon: 'layer-front', label: t.inspector.layers.front },
     { where: 'forward', icon: 'layer-forward', label: t.inspector.layers.forward },
@@ -86,51 +107,47 @@ const LAYERS = [
                 <div class="head-actions">
                     <!-- Plan.md, 25: locked, the whole block stays as it is until unlocked. -->
                     <button
-                        class="d-btn lock-toggle"
+                        v-tip="block.locked ? t.inspector.lockedTitle : t.inspector.lockTitle"
+                        class="d-btn d-btn--icon"
                         :class="{ 'lock-toggle--on': block.locked }"
                         type="button"
                         :aria-pressed="!!block.locked"
                         :aria-label="block.locked ? t.common.locked : t.common.lock"
-                        :title="block.locked ? t.inspector.lockedTitle : t.inspector.lockTitle"
                         data-testid="lock-toggle"
                         @click="editor.setLocked(block.id, !block.locked)"
                     >
-                        <Icon :name="block.locked ? 'lock' : 'unlock'" :size="16" />
-                        <span class="btn-word">{{ block.locked ? t.common.locked : t.common.lock }}</span>
+                        <Icon :name="block.locked ? 'lock' : 'unlock'" :size="18" />
                     </button>
                     <button
-                        class="d-btn lock-toggle"
+                        v-tip="withKeys(t.inspector.duplicateBlock, KEYS.duplicate)"
+                        class="d-btn d-btn--icon"
                         type="button"
-                        :title="t.inspector.duplicateBlock"
                         :aria-label="t.inspector.duplicateBlock"
                         data-testid="block-duplicate"
                         @click="editor.duplicateBlock(block.id)"
                     >
-                        <Icon name="duplicate" :size="16" />
-                        <span class="btn-word">{{ t.common.duplicate }}</span>
+                        <Icon name="duplicate" :size="18" />
                     </button>
                     <button
-                        class="d-btn lock-toggle"
+                        v-tip="withKeys(t.inspector.copyBlock, KEYS.copy)"
+                        class="d-btn d-btn--icon"
                         type="button"
-                        :title="t.inspector.copyBlock"
                         :aria-label="t.inspector.copyBlock"
                         data-testid="block-copy"
                         @click="editor.copyBlock(block.id)"
                     >
-                        <Icon name="copy" :size="16" />
-                        <span class="btn-word">{{ t.common.copy }}</span>
+                        <Icon name="copy" :size="18" />
                     </button>
                     <button
-                        class="d-btn lock-toggle"
+                        v-tip="withKeys(t.inspector.deleteBlock, KEYS.delete)"
+                        class="d-btn d-btn--icon d-btn--danger delete-btn"
                         type="button"
-                        :title="t.inspector.deleteBlock"
                         :aria-label="t.inspector.deleteBlock"
                         :disabled="!!block.locked"
                         data-testid="block-delete"
                         @click="editor.removeBlock(block.id)"
                     >
-                        <Icon name="trash" :size="16" class="danger-icon" />
-                        <span class="btn-word">{{ t.common.delete }}</span>
+                        <Icon name="trash" :size="18" />
                     </button>
                 </div>
             </div>
@@ -142,22 +159,47 @@ const LAYERS = [
                 <component :is="BLOCK_INSPECTORS[block.type]" :block="block" />
 
                 <InspectorSection id="arrange" :title="t.inspector.arrange" default-open>
-                    <div class="layer-row">
-                        <span class="row-label">{{ t.inspector.layer }}</span>
-                        <div class="layer-buttons">
+                    <p class="layer-position" data-testid="layer-position">{{ t.inspector.layerOf(layerNumber, rows.length) }}</p>
+                    <ol ref="layerList" class="layer-list" data-testid="layer-list">
+                        <li
+                            v-for="row in rows"
+                            :key="row.block.id"
+                            class="layer-item"
+                            :class="{ 'layer-item--on': row.block.id === block.id }"
+                            data-sort-item
+                            data-testid="layer-row"
+                            @click="editor.selectBlock(row.block.id)"
+                        >
                             <button
-                                v-for="layer in LAYERS"
-                                :key="layer.where"
-                                class="d-btn d-btn--icon"
+                                class="layer-handle"
                                 type="button"
-                                :title="layer.label"
-                                :aria-label="layer.label"
-                                :data-testid="`layer-${layer.where}`"
-                                @click="editor.layerBlock(block.id, layer.where)"
+                                data-sort-handle
+                                :disabled="!!row.block.locked"
+                                :aria-label="t.common.dragToSort"
+                                data-testid="layer-handle"
+                                @click.stop
                             >
-                                <Icon :name="layer.icon" :size="16" />
+                                <Icon name="grip" :size="14" />
                             </button>
-                        </div>
+                            <Icon :name="BLOCK_ICONS[row.block.type]" :size="16" class="layer-icon" />
+                            <span class="layer-name">{{ BLOCK_LABELS[row.block.type] }}</span>
+                            <span class="layer-sub">{{ blockSummary(row.block, lookup) }}</span>
+                            <Icon v-if="row.block.locked" name="lock" :size="14" class="layer-lock" :data-testid="`layer-lock`" />
+                        </li>
+                    </ol>
+                    <div class="layer-buttons">
+                        <button
+                            v-for="layer in LAYERS"
+                            :key="layer.where"
+                            v-tip="layer.label"
+                            class="d-btn d-btn--icon"
+                            type="button"
+                            :aria-label="layer.label"
+                            :data-testid="`layer-${layer.where}`"
+                            @click="editor.layerBlock(block.id, layer.where)"
+                        >
+                            <Icon :name="layer.icon" :size="16" />
+                        </button>
                     </div>
                 </InspectorSection>
 
@@ -188,9 +230,8 @@ const LAYERS = [
 .inspector {
     overflow-y: auto;
     min-height: 0;
-    padding: 12px 14px 24px;
-    border-left: 1px solid var(--d-divider);
-    background: var(--d-surface);
+    padding: var(--d-space-1) var(--d-space-4) var(--d-space-5);
+    /* The surface is the card around it (the editor's column, or the sheet at the bottom). */
 }
 /* Phone and tablet upright: in the editor's sheet now (Plan.md 44, M4; 45) – it owns the border and the max-height. */
 @media (max-width: 48rem), (min-width: 48.0625rem) and (max-width: 75rem) and (orientation: portrait) {
@@ -200,13 +241,13 @@ const LAYERS = [
         overflow-y: auto;
         /* The sheet scrolls up and down only; the fields follow the width of the phone (Plan.md 44). */
         overflow-x: hidden;
-        border-left: 0;
+        padding-top: var(--d-space-3);
     }
 }
 section {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
+    gap: var(--d-space-3);
 }
 h3 {
     display: flex;
@@ -215,70 +256,90 @@ h3 {
     margin: 0;
     font-size: 1.05em;
 }
-.layer-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
-}
-.row-label {
+.layer-position {
+    margin: 0;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
+/* The layers, top first: symbol, name and short content; the chosen one on the accent's pale ground. */
+.layer-list {
+    display: grid;
+    gap: 2px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.layer-item {
+    display: flex;
+    align-items: center;
+    gap: var(--d-space-2);
+    min-width: 0;
+    min-height: 36px;
+    padding: 0 var(--d-space-2);
+    border-radius: var(--d-radius);
+    cursor: pointer;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+.layer-item:hover {
+    background: var(--d-panel);
+}
+.layer-item--on,
+.layer-item--on:hover {
+    background: var(--d-accent-pale);
+    color: var(--d-accent-strong);
+}
+.layer-handle {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 20px;
+    height: 32px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--d-text-faint);
+    cursor: grab;
+}
+.layer-handle:disabled {
+    opacity: 0.3;
+    cursor: default;
+}
+.layer-icon,
+.layer-lock {
+    flex: none;
+    color: var(--d-text-muted);
+}
+.layer-name {
+    flex: none;
+    font-size: var(--d-size-sm);
+    font-weight: var(--d-weight-normal);
+}
+.layer-sub {
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
 .layer-buttons {
     display: flex;
-    gap: 4px;
+    gap: var(--d-space-1);
 }
 .block-head {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--d-space-2);
 }
+/* Lock, duplicate and copy on the left, the wastebasket alone on the right (Plan.md 79, B3). */
 .head-actions {
     display: flex;
-    gap: 6px;
+    gap: var(--d-space-1);
 }
-/* Over 48rem always two lines, whatever the name's length: name, then four equal buttons – symbol over word (Plan.md 47, 79). */
-@media (min-width: 48.0625rem) {
-    .block-head {
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        justify-content: stretch;
-    }
-    .head-actions {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 6px;
-    }
-    .head-actions .lock-toggle {
-        flex-direction: column;
-        justify-content: center;
-        gap: 2px;
-        min-width: 0;
-        padding-inline: 2px;
-        font-size: 12px;
-    }
-}
-.lock-toggle {
-    gap: 4px;
-    font-size: var(--d-size-sm);
-}
-/* Red only on the wastebasket (Plan.md 47). */
-.danger-icon {
-    color: var(--d-danger);
-}
-/* Below 48rem (the sheet on a phone) only the symbols: the word stays for screen readers. */
-@media (max-width: 48rem) {
-    .btn-word {
-        position: absolute;
-        width: 1px;
-        height: 1px;
-        overflow: hidden;
-        clip-path: inset(50%);
-        white-space: nowrap;
-    }
+.delete-btn {
+    margin-left: auto;
 }
 .lock-toggle--on {
     border-color: var(--d-accent);
@@ -289,7 +350,7 @@ h3 {
 .lockable {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
+    gap: var(--d-space-3);
     min-width: 0;
     margin: 0;
     padding: 0;
@@ -300,12 +361,12 @@ h3 {
 }
 /* Sections follow one another without the grid's gap; each brings its own divider line. */
 .lockable > :deep(.section) + :deep(.section) {
-    margin-top: -10px;
+    margin-top: calc(var(--d-space-3) * -1);
 }
 .measures {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px 12px;
+    gap: var(--d-space-2) var(--d-space-3);
 }
 .hint {
     margin: 0;

@@ -1,41 +1,17 @@
 <script setup lang="ts">
 /**
- * The bar below the ChurchTools navigation, built after the one of "Gruppen"
- * ("Gruppen | Einstellungen" left, "+ Gruppe erstellen" right): the same
- * place for the same things on every page of the module. With `current` it
- * shows the two sections – "Einstellungen" only to administrators, whose job
- * it is (role concept, Plan.md F); the editor puts its own title in the
- * default slot.
+ * The bar of the editor below the ChurchTools navigation: the way back on the left, the title and the state of the
+ * save in the middle (slot `title`), the actions on the right. It lies calm on the workspace, without a surface of its own
+ * (Plan.md 79, B3). Above 48rem the title stands in the middle of the window – left and right take equal room, unless
+ * the actions are so wide that the title has to move aside; below it, there is no room for a middle, and the title
+ * follows the way back. The overview pages have no bar – their sidebar carries the sections and their page head the actions.
  */
-import { t } from '../i18n/designer';
-import Icon from './Icon.vue';
-
-withDefaults(defineProps<{ current?: 'screens' | 'schedules' | 'notices' | 'playlists' | 'media' | 'design' | 'about' | 'setup'; showSetup?: boolean }>(), { current: undefined, showSetup: true });
 </script>
 
 <template>
     <header class="d-appbar">
-        <nav v-if="current" class="sections" :aria-label="t.common.moduleName">
-            <Icon name="tv" class="module-icon" :size="20" />
-            <RouterLink
-                :to="{ name: 'designer' }"
-                :class="{ active: current === 'screens' }"
-                :aria-current="current === 'screens' ? 'page' : undefined"
-                data-testid="nav-screens"
-            >
-                {{ t.common.screens }}
-            </RouterLink>
-            <RouterLink
-                v-if="showSetup"
-                :to="{ name: 'setup' }"
-                :class="{ active: current === 'setup' }"
-                :aria-current="current === 'setup' ? 'page' : undefined"
-                data-testid="open-setup"
-            >
-                {{ t.common.settings }}
-            </RouterLink>
-        </nav>
-        <div v-else class="start"><slot /></div>
+        <div class="start"><slot /></div>
+        <div class="middle"><slot name="title" /></div>
         <div class="end"><slot name="actions" /></div>
     </header>
 </template>
@@ -43,61 +19,51 @@ withDefaults(defineProps<{ current?: 'screens' | 'schedules' | 'notices' | 'play
 <style scoped>
 .d-appbar {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 8px 16px;
-    min-height: 56px;
-    padding: 8px 16px;
-    border-bottom: 1px solid var(--d-divider);
-    background: var(--d-surface);
+    gap: var(--d-space-2);
+    min-height: 64px;
+    /* The same side margin as the columns below: back and save stand flush with the cards (`--d-gutter`, theme.css). */
+    padding: var(--d-space-2) var(--d-gutter);
 }
-.sections,
 .start,
+.middle,
 .end {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--d-space-2);
     min-width: 0;
 }
 .start {
+    flex: none;
+}
+.middle {
     flex: 1;
     overflow: hidden;
 }
 .end {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-end;
 }
-.module-icon {
-    color: var(--d-text-muted);
-}
-.sections a {
-    padding: 4px 10px;
-    color: var(--d-text-muted);
-    font-size: 1.15em;
-    text-decoration: none;
-    white-space: nowrap;
-}
-.sections a + a {
-    border-left: 1px solid var(--d-divider);
-}
-.sections a:hover {
-    color: var(--d-text);
-}
-.sections a.active {
-    color: var(--d-text);
-    font-weight: 700;
-}
-@media (max-width: 40rem) {
+@media (min-width: 48.0625rem) {
     .d-appbar {
-        padding: 6px 12px;
+        display: grid;
+        /* Equal sides, but never narrower than their content; the middle gives way first. */
+        grid-template-columns: minmax(auto, 1fr) minmax(0, auto) minmax(auto, 1fr);
+        column-gap: var(--d-space-4);
     }
-    .module-icon {
-        display: none;
+    .middle {
+        justify-content: center;
     }
-    .sections a {
-        padding: 4px 8px;
-        font-size: 1em;
+    /* An automatic minimum, not 0: the sides keep the room of their content, so nothing overlaps. */
+    .start,
+    .end {
+        min-width: auto;
+    }
+}
+@media (max-width: 48rem) {
+    .d-appbar {
+        min-height: 56px;
+        padding-block: var(--d-space-1);
     }
 }
 </style>

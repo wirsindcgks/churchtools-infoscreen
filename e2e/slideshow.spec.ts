@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addBlock, chosen, choose, openSection } from './helpers';
+import { addBlock, chosen, choose, dragRow, nudgeRow, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -77,13 +77,6 @@ async function newSlideWithSlideshow(page: Page, ownSlide = true): Promise<void>
 test('build a slideshow with several pictures, keep it, and see it in the library', async ({ page, baseURL }) => {
     test.setTimeout(90_000);
     await fakeLibrary(page, baseURL, 4);
-    const dialogs: string[] = [];
-    page.on('dialog', (dialog) => {
-        dialogs.push(dialog.message());
-        // Agree to deleting, refuse the second question that names where it is still shown.
-        if (dialog.message().includes('aus ChurchTools löschen')) void dialog.accept();
-        else void dialog.dismiss();
-    });
     await newSlideWithSlideshow(page);
     const inspector = page.getByTestId('block-inspector');
     await expect(inspector.getByText('Noch keine Bilder gewählt.')).toBeVisible();
@@ -119,8 +112,17 @@ test('build a slideshow with several pictures, keep it, and see it in the librar
     await expect(page.getByTestId('slideshow-count')).toHaveText('3 von 30');
 
     // Reorder, remove, set the time.
-    await rows.nth(1).getByTestId('slideshow-up').click();
+    await nudgeRow(rows.nth(1).getByTestId('slideshow-handle'), 'ArrowUp');
     await expect(rows.nth(0)).toContainText('bild-02');
+    // Dragging by the handle moves a picture past the others (Plan.md 79, D7), and back again.
+    await dragRow(page, rows.nth(0).getByTestId('slideshow-handle'), rows.nth(2));
+    await expect(rows.nth(0)).toContainText('bild-03');
+    await expect(rows.nth(1)).toContainText('bild-01');
+    await expect(rows.nth(2)).toContainText('bild-02');
+    await dragRow(page, rows.nth(2).getByTestId('slideshow-handle'), rows.nth(0));
+    await expect(rows.nth(0)).toContainText('bild-02');
+    await expect(rows.nth(1)).toContainText('bild-03');
+    await expect(rows.nth(2)).toContainText('bild-01');
     await rows.nth(2).getByTestId('slideshow-remove').click();
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(1)).toContainText('bild-03');

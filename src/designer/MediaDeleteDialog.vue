@@ -133,7 +133,7 @@ h3 {
 }
 .name {
     overflow: hidden;
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
     text-overflow: ellipsis;
     white-space: nowrap;
 }

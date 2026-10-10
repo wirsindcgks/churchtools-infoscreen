@@ -17,6 +17,7 @@ import { sizedImageUrl } from '../player/format';
 import { videoSrc } from '../player/video';
 import Icon from './Icon.vue';
 import { lastEdited } from './last-edited';
+import Tile from './Tile.vue';
 
 const props = defineProps<{
     items: MediaItem[];
@@ -54,53 +55,58 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
 
 <template>
     <div class="d-tiles">
-        <figure
+        <Tile
             v-for="item in items"
             :key="item.fileId"
-            class="d-card d-tile"
+            as="figure"
             :class="{ selected: (item.mediaId && item.mediaId === selectedMediaId) || numberOf(item) > 0 || selected?.includes(item.fileId) }"
+            :menu-label="t.home.card.actionsFor(item.name)"
             data-testid="media-item"
         >
-            <button
-                class="pick d-tile-media"
-                type="button"
-                :title="choosable ? (multiple ? t.media.grid.mark(item.name) : t.media.grid.use(item.name)) : t.media.grid.view(item.name)"
-                :aria-pressed="choosable && multiple ? numberOf(item) > 0 : undefined"
-                @click="choosable ? emit('choose', item) : emit('preview', item)"
-            >
-                <template v-if="item.kind === 'video'">
-                    <video :src="videoSrc(item) ?? undefined" preload="metadata" muted playsinline :aria-label="item.name" />
-                    <span class="badge"><Icon name="play" :size="12" /><template v-if="formatDuration(item.durationSeconds)">{{ formatDuration(item.durationSeconds) }}</template></span>
-                </template>
-                <img v-else :src="sizedImageUrl(item.imageUrl, 320, 180, 'crop')" :alt="item.name" loading="lazy">
-                <span v-if="multiple && numberOf(item) > 0" class="mark" data-testid="media-mark">{{ numberOf(item) }}</span>
-            </button>
-            <!-- Beside the tile button, not in it: a button in a button is not valid. -->
-            <button
-                v-if="choosable"
-                class="look"
-                type="button"
-                :aria-label="t.media.grid.view(item.name)"
-                :title="t.media.grid.view(item.name)"
-                data-testid="media-preview-open"
-                @click="emit('preview', item)"
-            >
-                <Icon name="eye" :size="16" />
-            </button>
-            <label v-if="selectable" class="tile-check" :title="t.media.grid.select(item.name)">
-                <input
-                    type="checkbox"
-                    :checked="selected?.includes(item.fileId)"
-                    :aria-label="t.media.grid.select(item.name)"
-                    data-testid="media-select"
-                    @change="emit('toggle', item)"
+            <template #media>
+                <button
+                    class="pick d-tile-media"
+                    type="button"
+                    :title="choosable ? (multiple ? t.media.grid.mark(item.name) : t.media.grid.use(item.name)) : t.media.grid.view(item.name)"
+                    :aria-pressed="choosable && multiple ? numberOf(item) > 0 : undefined"
+                    @click="choosable ? emit('choose', item) : emit('preview', item)"
                 >
-            </label>
-            <figcaption class="d-tile-body">
-                <div class="title-row">
-                    <span class="d-tile-title" :title="item.name">{{ item.name }}</span>
-                    <button v-if="!selectable" class="delete" type="button" :title="t.media.grid.delete(item.name)" @click="emit('remove', item)">{{ t.common.delete }}</button>
-                </div>
+                    <template v-if="item.kind === 'video'">
+                        <video :src="videoSrc(item) ?? undefined" preload="metadata" muted playsinline :aria-label="item.name" />
+                        <span class="badge"><Icon name="play" :size="12" /><template v-if="formatDuration(item.durationSeconds)">{{ formatDuration(item.durationSeconds) }}</template></span>
+                    </template>
+                    <img v-else :src="sizedImageUrl(item.imageUrl, 320, 180, 'crop')" :alt="item.name" loading="lazy">
+                    <span v-if="multiple && numberOf(item) > 0" class="mark" data-testid="media-mark">{{ numberOf(item) }}</span>
+                </button>
+                <!-- Beside the tile button, not in it: a button in a button is not valid. -->
+                <button
+                    v-if="choosable"
+                    class="look"
+                    type="button"
+                    :aria-label="t.media.grid.view(item.name)"
+                    :title="t.media.grid.view(item.name)"
+                    data-testid="media-preview-open"
+                    @click="emit('preview', item)"
+                >
+                    <Icon name="eye" :size="16" />
+                </button>
+                <label v-if="selectable" class="tile-check" :title="t.media.grid.select(item.name)">
+                    <input
+                        type="checkbox"
+                        :checked="selected?.includes(item.fileId)"
+                        :aria-label="t.media.grid.select(item.name)"
+                        data-testid="media-select"
+                        @change="emit('toggle', item)"
+                    >
+                </label>
+            </template>
+            <template #title><span :title="item.name">{{ item.name }}</span></template>
+            <template v-if="!selectable" #menu="{ close }">
+                <button role="menuitem" type="button" class="danger" data-testid="media-delete" @click="close(); emit('remove', item)">
+                    <Icon name="trash" :size="16" /> {{ t.common.delete }}
+                </button>
+            </template>
+            <section class="d-tile-section">
                 <ul class="d-facts" data-testid="media-uses">
                     <template v-if="places.get(item.fileId)!.length">
                         <li
@@ -120,7 +126,9 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                         <span>{{ t.media.show.unused }}</span>
                     </li>
                 </ul>
-                <ul v-if="uploads.get(item.fileId)" class="d-facts upload-facts">
+            </section>
+            <template v-if="uploads.get(item.fileId)" #foot>
+                <ul class="d-facts">
                     <li
                         v-if="uploads.get(item.fileId)?.when"
                         :title="uploads.get(item.fileId)!.whenTitle!"
@@ -138,20 +146,15 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                         <span>{{ uploads.get(item.fileId)!.by }}</span>
                     </li>
                 </ul>
-            </figcaption>
-        </figure>
+            </template>
+        </Tile>
     </div>
 </template>
 
 <style scoped>
 /* The tile is `d-tile`; what only media tiles have follows. */
-/* Upkeep (who, when) is its own group below the uses, set apart by a little space like in the other tiles. */
-.upload-facts {
-    margin-top: 6px;
-}
 figure.selected {
-    border-color: var(--d-accent);
-    box-shadow: 0 0 0 1px var(--d-accent);
+    box-shadow: 0 0 0 2px var(--d-accent);
 }
 .pick {
     position: relative;
@@ -171,7 +174,7 @@ figure.selected {
     background: var(--d-accent);
     color: #fff;
     font-size: var(--d-size-sm);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
     line-height: 20px;
     text-align: center;
 }
@@ -251,29 +254,11 @@ figure:focus-within .look,
     background: rgba(15, 23, 42, 0.75);
     color: #fff;
     font-size: var(--d-size-sm);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
     line-height: 20px;
 }
 button.pick:hover img,
 button.pick:hover video {
     opacity: 0.85;
-}
-.title-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 6px;
-}
-.title-row .d-tile-title {
-    flex: 1;
-    min-width: 0;
-}
-.delete {
-    flex: none;
-    margin-top: 0.35em;
-    border: 0;
-    background: none;
-    color: var(--d-danger);
-    font: inherit;
-    cursor: pointer;
 }
 </style>

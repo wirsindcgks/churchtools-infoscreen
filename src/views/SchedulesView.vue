@@ -5,7 +5,7 @@
  * with the player's own rule matching. Beside them the first slide of the
  * playlist that runs now, or of the line one clicks. Editing opens the same
  * dialog as the screen's tile – by the button or by the picture, since the page
- * is about schedules; the playlist's name below the picture leads to its editor.
+ * is about schedules; the playlist's name in the "Jetzt" section leads to its editor.
  */
 import { computed, onMounted, reactive, ref, shallowRef } from 'vue';
 import { zonedDateKey, zonedParts } from '../appointments/zoned';
@@ -20,12 +20,14 @@ import { ruleCalendarIds, runningNow } from '../designer/running';
 import { fromMinutes, playlistColors, ruleSummary, weekTimeline, WEEKDAYS } from '../designer/schedule-ops';
 import SearchField from '../designer/SearchField.vue';
 import SlideThumb from '../designer/SlideThumb.vue';
+import Tile from '../designer/Tile.vue';
 import { usePreview } from '../designer/usePreview';
 import WeekTimeline, { type TimelineDay } from '../designer/WeekTimeline.vue';
 import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
+import { setScreenCounts } from '../designer/section-counts';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 
@@ -99,6 +101,13 @@ function previewed(screen: ScreenDoc): PlaylistOverview | null {
     return (id && playlists.value.get(id)) || null;
 }
 
+/** The mark on the picture: whether it shows what runs now or a line the person clicked. */
+function previewLabel(screen: ScreenDoc): string {
+    const index = previewIndex(screen);
+    if (index === running(screen).ruleIndex) return t.schedules.runsNow;
+    return `${t.schedules.preview}: ${index < 0 ? t.schedules.defaultName : t.schedules.rule(index + 1)}`;
+}
+
 function choose(screen: ScreenDoc, index: number): void {
     chosen.set(screen.id, index < 0 ? 'default' : String(index));
 }
@@ -165,6 +174,7 @@ async function refresh(): Promise<void> {
         repository.value.loadTheme().catch(() => null),
     ]);
     screens.value = list;
+    setScreenCounts(list);
     playlists.value = new Map(overviews.map((o) => [o.playlist.id, o]));
     theme.value = stored;
     // A saved schedule may have fewer lines than the one clicked before.
@@ -184,7 +194,7 @@ onMounted(async () => {
 </script>
 
 <template>
-    <ModulePage current="schedules">
+    <ModulePage>
         <PageHeader icon="calendar" :title="t.schedules.title" testid="schedules-heading">
             {{ t.schedules.intro }}
         </PageHeader>
@@ -204,41 +214,62 @@ onMounted(async () => {
                 :title="t.schedules.all"
                 :count="t.schedules.count(shown.length)"
                 heading-id="schedules-group"
+                hide-heading
             >
                 <ul v-if="shown.length" class="d-tiles">
-                    <li v-for="screen in shown" :key="screen.id" class="d-card d-tile" data-testid="schedule-row">
-                        <button
-                            class="thumb d-tile-media"
-                            type="button"
-                            :aria-label="t.schedules.editOf(screen.name)"
-                            :title="t.schedules.editOf(screen.name)"
-                            data-testid="schedule-preview"
-                            @click="editing = screen.slug"
-                        >
-                            <SlideThumb
-                                :slide="previewed(screen)?.firstSlide ?? null"
-                                :stage="previewed(screen)?.playlist.stage ?? screen.stage"
-                            />
-                        </button>
-                        <div class="d-tile-body">
-                            <p class="caption">
-                                {{ previewIndex(screen) === running(screen).ruleIndex ? t.schedules.runsNow : t.schedules.preview }}:
-                                <RouterLink
-                                    v-if="previewed(screen)"
-                                    :to="{ name: 'editor', params: { id: previewed(screen)!.playlist.id } }"
-                                    :title="t.schedules.openInEditor(previewed(screen)!.playlist.name)"
-                                    data-testid="schedule-playlist"
-                                >
-                                    {{ previewed(screen)!.playlist.name }}
-                                </RouterLink>
-                                <strong v-else>{{ t.common.playlistMissing }}</strong>
-                            </p>
-                            <div class="title-row">
-                                <h3 class="d-tile-title">{{ screen.name || t.home.card.unnamed }}</h3>
-                                <button class="d-btn" type="button" data-testid="schedule-edit" @click="editing = screen.slug">
-                                    {{ t.schedules.edit }}
-                                </button>
-                            </div>
+                    <Tile
+                        v-for="screen in shown"
+                        :key="screen.id"
+                        as="li"
+                        :menu-label="t.home.card.actionsFor(screen.name)"
+                        menu-testid="schedule-menu"
+                        data-testid="schedule-row"
+                    >
+                        <template #media>
+                            <button
+                                class="thumb d-tile-media"
+                                type="button"
+                                :aria-label="t.schedules.editOf(screen.name)"
+                                :title="t.schedules.editOf(screen.name)"
+                                data-testid="schedule-preview"
+                                @click="editing = screen.slug"
+                            >
+                                <SlideThumb
+                                    :slide="previewed(screen)?.firstSlide ?? null"
+                                    :stage="previewed(screen)?.playlist.stage ?? screen.stage"
+                                />
+                            </button>
+                        </template>
+                        <template #marks>
+                            <span class="d-tile-mark" data-testid="schedule-mark">{{ previewLabel(screen) }}</span>
+                        </template>
+                        <template #title>{{ screen.name || t.home.card.unnamed }}</template>
+                        <template #menu="{ close }">
+                            <button role="menuitem" type="button" data-testid="schedule-edit" @click="close(); editing = screen.slug">
+                                <Icon name="pencil" :size="16" /> {{ t.schedules.edit }}
+                            </button>
+                        </template>
+                        <section class="d-tile-section">
+                            <ul class="d-facts">
+                                <li data-testid="schedule-now">
+                                    <Icon name="list" :size="16" />
+                                    <span>
+                                        {{ t.schedules.now }}
+                                        <RouterLink
+                                            v-if="playlists.get(running(screen).playlistId)"
+                                            class="now"
+                                            :to="{ name: 'editor', params: { id: running(screen).playlistId } }"
+                                            :title="t.schedules.openInEditor(playlistName(running(screen).playlistId))"
+                                            data-testid="schedule-playlist"
+                                        >
+                                            {{ playlistName(running(screen).playlistId) }}
+                                        </RouterLink>
+                                        <strong v-else class="now">{{ playlistName(running(screen).playlistId) }}</strong>
+                                    </span>
+                                </li>
+                            </ul>
+                        </section>
+                        <section class="d-tile-section">
                             <WeekTimeline
                                 class="week"
                                 :days="weekDays(screen)"
@@ -248,14 +279,6 @@ onMounted(async () => {
                                 @pick="({ segment }) => choose(screen, keyIndex(segment.key))"
                             />
                             <ul class="d-facts">
-                                <li :title="screen.stage.height > screen.stage.width ? t.common.portrait : t.common.landscape">
-                                    <Icon :name="screen.stage.height > screen.stage.width ? 'portrait' : 'landscape'" :size="16" />
-                                    {{ screen.stage.height > screen.stage.width ? t.common.portrait : t.common.landscape }}
-                                </li>
-                                <li class="d-facts-gap" data-testid="schedule-now">
-                                    <Icon name="list" :size="16" />
-                                    <span>{{ t.schedules.now }} <strong class="now">{{ playlistName(running(screen).playlistId) }}</strong></span>
-                                </li>
                                 <li
                                     v-for="(rule, index) in screen.schedule"
                                     :key="index"
@@ -304,17 +327,29 @@ onMounted(async () => {
                                         </span>
                                     </button>
                                 </li>
-                                <li v-if="edited(screen)?.when" class="d-facts-gap" :title="edited(screen)!.whenTitle!" data-testid="schedule-edited-at">
+                            </ul>
+                        </section>
+                        <section class="d-tile-section">
+                            <ul class="d-facts">
+                                <li :title="screen.stage.height > screen.stage.width ? t.common.portrait : t.common.landscape">
+                                    <Icon :name="screen.stage.height > screen.stage.width ? 'portrait' : 'landscape'" :size="16" />
+                                    {{ screen.stage.height > screen.stage.width ? t.common.portrait : t.common.landscape }}
+                                </li>
+                            </ul>
+                        </section>
+                        <template v-if="edited(screen)" #foot>
+                            <ul class="d-facts">
+                                <li v-if="edited(screen)!.when" :title="edited(screen)!.whenTitle!" data-testid="schedule-edited-at">
                                     <Icon name="clock" :size="16" />
                                     <span>{{ edited(screen)!.when }}</span>
                                 </li>
-                                <li v-if="edited(screen)?.by" :class="{ 'd-facts-gap': !edited(screen)?.when }" :title="edited(screen)!.byTitle!" data-testid="schedule-edited-by">
+                                <li v-if="edited(screen)!.by" :title="edited(screen)!.byTitle!" data-testid="schedule-edited-by">
                                     <Icon name="person" :size="16" />
                                     <span>{{ edited(screen)!.by }}</span>
                                 </li>
                             </ul>
-                        </div>
-                    </li>
+                        </template>
+                    </Tile>
                 </ul>
                 <p v-else-if="!screens.length" class="empty">{{ t.schedules.empty }}</p>
                 <p v-else class="empty">{{ t.schedules.noMatch }}</p>
@@ -350,30 +385,13 @@ ul.d-tiles {
     outline: 2px solid var(--d-accent);
     outline-offset: 2px;
 }
-.caption {
-    margin: 0;
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
-}
-.caption strong,
-.caption a {
-    color: var(--d-text);
-    font-weight: 700;
-}
-.title-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-}
-.title-row .d-tile-title {
-    flex: 1;
-    min-width: 0;
-}
 .week {
     margin: 6px 0;
 }
 .now {
     color: var(--d-success);
+    font-weight: var(--d-weight-normal);
+    text-decoration: none;
 }
 .rule-line {
     align-self: stretch;
@@ -419,7 +437,7 @@ ul.d-tiles {
     height: 1.5em;
     border-radius: 50%;
     background: var(--d-panel);
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .text {
     display: flex;

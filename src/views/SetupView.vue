@@ -54,8 +54,11 @@ import {
     type GroupTypeChoice,
 } from '../setup/provision';
 import { isAdministrator } from '../designer/administrator';
+import { useConfirm } from '../designer/useConfirm';
 import { getRepository } from '../store/backend';
 import { CATEGORIES, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
+
+const { confirm } = useConfirm();
 
 type Side = 'designer' | 'device';
 
@@ -298,7 +301,7 @@ async function toggleAllowedService(id: number, on: boolean, box: HTMLInputEleme
     if (!repository || !serviceList.value || servicesSaving.value) return;
     if (on) {
         const name = serviceList.value.find((s) => s.id === id)?.name ?? t.setup.services.fallbackName(id);
-        if (!window.confirm(t.setup.services.confirm(name))) {
+        if (!(await confirm({ message: t.setup.services.confirm(name), confirmLabel: t.setup.services.release }))) {
             box.checked = false;
             return;
         }
@@ -326,7 +329,7 @@ async function runAssistant(): Promise<void> {
     const groupTypeId = chosenTypeId.value;
     if (groupTypeId === null) return;
     const question = t.setup.assistantRun.question(chosenTypeName.value, GROUP_NAMES.designer, GROUP_NAMES.device);
-    if (!repository || !window.confirm(question)) return;
+    if (!repository || !(await confirm({ message: question, confirmLabel: t.setup.groups.create }))) return;
     assistant.running = true;
     assistant.error = null;
     assistant.log = [];
@@ -697,6 +700,8 @@ onMounted(async () => {
         selected.designer = settings?.designerGroupId ?? null;
         selected.device = settings?.deviceGroupId ?? null;
         createdGroupIds.value = settings?.createdGroupIds ?? [];
+        // Known from the settings read above; `loadServices` reads them again before the list can change anything.
+        allowedServices.value = settings?.allowedServiceIds ?? [];
         const merkmal = types ? defaultGroupTypeId(types) : null;
         createdTypeId.value = settings?.createdGroupTypeId ?? merkmal;
         chosenTypeId.value = merkmal;
@@ -716,6 +721,46 @@ onMounted(async () => {
     } catch (e) {
         error.value = explain(e);
     }
+});
+
+type CardStatus = { tone: 'ok' | 'warn' | 'neutral'; text: string };
+
+/**
+ * The mark on the card "Gruppen und Rechte", from the checks the page runs on arrival anyway – no request of
+ * its own. Nothing while they run (a mark that changes would jump), and nothing in the demo, which has no groups.
+ */
+const groupsStatus = computed<CardStatus | null>(() => {
+    const word = t.setup.overview.status;
+    if (!settingsLoaded.value || demo.value) return null;
+    if (selected.designer === null && selected.device === null) return { tone: 'neutral', text: word.notSet };
+    if (busy.designer || busy.device) return null;
+    if ((selected.designer !== null && !checks.designer) || (selected.device !== null && !checks.device)) return null;
+    const problems = [...(checks.designer ?? []), ...(checks.device ?? [])].filter((c) => c.level === 'fail' || c.level === 'warn').length;
+    if (problems) return { tone: 'warn', text: word.toCheck(problems) };
+    if (selected.designer === null || selected.device === null) return { tone: 'warn', text: word.groupMissing };
+    return { tone: 'ok', text: word.allWell };
+});
+
+/** The services released so far, from the settings read on arrival. */
+const servicesStatus = computed<CardStatus | null>(() => {
+    const word = t.setup.overview.status;
+    if (!settingsLoaded.value) return null;
+    const n = allowedServices.value.length;
+    return n ? { tone: 'warn', text: word.released(n) } : { tone: 'neutral', text: word.noneReleased };
+});
+
+/** The cards of the overview, each to a page of its own; the wiki card only where there is an area (as before). */
+const overviewCards = computed(() => {
+    const wiki = settingsLoaded.value && wikiCategory.value && !demo.value;
+    const cards: { key: string; route: string; icon: IconName; title: string; intro: string; status: CardStatus | null }[] = [
+        { key: 'groups', route: 'setup-groups', icon: 'people', title: t.setup.groups.title, intro: t.setup.groups.intro, status: groupsStatus.value },
+        { key: 'tv', route: 'setup-tv', icon: 'link', title: t.setup.tv.title, intro: t.setup.tv.intro, status: null },
+    ];
+    if (wiki) {
+        cards.push({ key: 'wiki', route: 'setup-wiki', icon: 'image', title: t.setup.wiki.title, intro: t.setup.wiki.intro, status: { tone: 'ok', text: t.setup.overview.status.done } });
+    }
+    cards.push({ key: 'services', route: 'setup-services', icon: 'person', title: t.setup.services.title, intro: t.setup.services.intro, status: servicesStatus.value });
+    return cards;
 });
 
 // RouterView keeps this instance: arriving on the page later loads the services then.
@@ -785,9 +830,9 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 </script>
 
 <template>
-    <ModulePage current="setup">
+    <ModulePage>
         <div class="setup">
-            <RouterLink v-if="page !== 'overview'" class="back" :to="{ name: 'setup' }" data-testid="settings-back">
+            <RouterLink v-if="page !== 'overview'" class="d-btn back" :to="{ name: 'setup' }" data-testid="settings-back">
                 <Icon name="back" :size="16" /> {{ t.common.settings }}
             </RouterLink>
             <PageHeader :icon="header.icon" :title="header.title" testid="setup-heading">
@@ -802,40 +847,26 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                 <p v-if="error" class="error" role="alert">{{ error }}</p>
 
                 <div v-if="page === 'overview'" class="cards">
-                    <RouterLink class="d-card settings-card" :to="{ name: 'setup-groups' }" data-testid="settings-card-groups">
-                        <span class="settings-card-icon"><Icon name="person" :size="20" /></span>
-                        <span class="settings-card-body">
-                            <h2>{{ t.setup.groups.title }}</h2>
-                            <p class="muted">{{ t.setup.groups.intro }}</p>
-                        </span>
-                        <Icon name="forward" class="settings-card-forward" />
-                    </RouterLink>
-                    <RouterLink class="d-card settings-card" :to="{ name: 'setup-tv' }" data-testid="settings-card-tv">
-                        <span class="settings-card-icon"><Icon name="tv" :size="20" /></span>
-                        <span class="settings-card-body">
-                            <h2>{{ t.setup.tv.title }}</h2>
-                            <p class="muted">{{ t.setup.tv.intro }}</p>
-                        </span>
-                        <Icon name="forward" class="settings-card-forward" />
-                    </RouterLink>
                     <RouterLink
-                        v-if="settingsLoaded && wikiCategory && !demo"
+                        v-for="card in overviewCards"
+                        :key="card.key"
                         class="d-card settings-card"
-                        :to="{ name: 'setup-wiki' }"
-                        data-testid="settings-card-wiki"
+                        :to="{ name: card.route }"
+                        :data-testid="`settings-card-${card.key}`"
                     >
-                        <span class="settings-card-icon"><Icon name="image" :size="20" /></span>
+                        <span class="settings-card-icon"><Icon :name="card.icon" :size="20" /></span>
                         <span class="settings-card-body">
-                            <h2>{{ t.setup.wiki.title }}</h2>
-                            <p class="muted">{{ t.setup.wiki.intro }}</p>
+                            <h2>{{ card.title }}</h2>
+                            <p class="muted">{{ card.intro }}</p>
                         </span>
-                        <Icon name="forward" class="settings-card-forward" />
-                    </RouterLink>
-                    <RouterLink class="d-card settings-card" :to="{ name: 'setup-services' }" data-testid="settings-card-services">
-                        <span class="settings-card-icon"><Icon name="person" :size="20" /></span>
-                        <span class="settings-card-body">
-                            <h2>{{ t.setup.services.title }}</h2>
-                            <p class="muted">{{ t.setup.services.intro }}</p>
+                        <span
+                            v-if="card.status"
+                            class="status"
+                            :class="`status--${card.status.tone}`"
+                            :data-testid="`settings-status-${card.key}`"
+                        >
+                            <Icon v-if="card.status.tone === 'ok'" name="check" :size="12" />
+                            {{ card.status.text }}
                         </span>
                         <Icon name="forward" class="settings-card-forward" />
                     </RouterLink>
@@ -1110,34 +1141,34 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 <style scoped>
 .setup {
     display: grid;
-    gap: 16px;
+    gap: var(--d-space-4);
 }
-.sides,
-.cards {
+.sides {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min(320px, 100%), 1fr));
-    gap: 16px;
+    gap: var(--d-space-4);
+}
+/* One column of whole rows: symbol, title and sentence, the mark, the arrow. */
+.cards {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--d-space-3);
 }
 .settings-card {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
     align-items: center;
-    gap: 14px;
-    padding: 16px 20px;
+    gap: var(--d-space-3) var(--d-space-4);
+    padding: var(--d-space-4) var(--d-space-5);
     color: inherit;
     text-decoration: none;
-    transition: box-shadow 0.15s, border-color 0.15s;
+    transition: box-shadow var(--d-transition);
 }
 .settings-card:hover {
-    border-color: var(--d-interactive);
-    box-shadow: 0 4px 12px -4px #0000001f;
-}
-.settings-card:focus-visible {
-    outline: 2px solid var(--d-accent);
-    outline-offset: 2px;
+    box-shadow: var(--d-shadow-card-hover);
 }
 .settings-card-icon {
     display: grid;
-    flex: none;
     place-items: center;
     width: 40px;
     height: 40px;
@@ -1148,12 +1179,13 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 .settings-card-body {
     display: grid;
     flex: 1;
-    gap: 4px;
+    gap: var(--d-space-1);
     min-width: 0;
 }
 .settings-card-body h2 {
     margin: 0;
-    font-size: 1.1em;
+    font-size: 1.15em;
+    font-weight: var(--d-weight-heading);
 }
 .settings-card-body p {
     margin: 0;
@@ -1162,33 +1194,63 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
     flex: none;
     color: var(--d-text-muted);
 }
-.back {
+/* A phone has no room for the mark beside the words: it stands under them. */
+@media (max-width: 40rem) {
+    .settings-card {
+        grid-template-columns: auto minmax(0, 1fr) auto;
+        padding: var(--d-space-4);
+    }
+    .settings-card-icon {
+        grid-row: 1 / span 2;
+    }
+    .settings-card .status {
+        grid-column: 2;
+        grid-row: 2;
+        justify-self: start;
+    }
+    .settings-card-forward {
+        grid-column: 3;
+        grid-row: 1 / span 2;
+    }
+}
+/* The mark beside a card's title: calm green, amber where names go public or something waits, grey otherwise. */
+.status {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    color: var(--d-text-muted);
+    flex: none;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 999px;
     font-size: var(--d-size-sm);
-    text-decoration: none;
+    font-weight: var(--d-weight-normal);
 }
-.back:hover {
-    color: var(--d-text);
-    text-decoration: underline;
+.status--ok {
+    background: color-mix(in oklab, var(--d-success) 16%, var(--d-surface));
+    color: color-mix(in oklab, var(--d-success) 55%, var(--d-text));
 }
-.back:focus-visible {
-    outline: 2px solid var(--d-accent);
-    outline-offset: 2px;
-    border-radius: var(--d-radius);
+.status--warn {
+    background: var(--d-warning-pale);
+    color: color-mix(in oklab, var(--d-warning) 35%, var(--d-text));
+}
+.status--neutral {
+    background: var(--d-workspace);
+    color: var(--d-text-muted);
+}
+.back {
+    justify-self: start;
+    padding: 0 var(--d-space-3) 0 var(--d-space-2);
 }
 .card {
     display: grid;
     align-content: start;
-    gap: 10px;
-    padding: 16px 20px 20px;
-    scroll-margin-top: 16px;
+    gap: var(--d-space-3);
+    padding: var(--d-space-5);
+    scroll-margin-top: var(--d-space-4);
 }
 .card h2 {
     margin: 0;
     font-size: 1.15em;
+    font-weight: var(--d-weight-heading);
 }
 .card p {
     margin: 0;
@@ -1268,7 +1330,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
     border-radius: 50%;
     color: #fff;
     font-size: 12px;
-    font-weight: 700;
+    font-weight: var(--d-weight-normal);
 }
 .check--ok .symbol {
     background: var(--d-success);

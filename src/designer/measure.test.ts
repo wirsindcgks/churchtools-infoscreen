@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gapsBetween, neighbourGaps, pairGaps } from './measure';
+import { gapsBetween, neighbourGaps, pairGaps, sizeLabelPlace } from './measure';
 
 const stage = { width: 1920, height: 1080 };
 const box = (x: number, y: number, width: number, height: number) => ({ x, y, width, height });
@@ -78,5 +78,39 @@ describe('gapsBetween', () => {
 
     it('skips pairs without overlap on the other axis', () => {
         expect(gapsBetween([box(0, 0, 100, 100), box(200, 300, 100, 100)], 'x')).toEqual([]);
+    });
+});
+
+describe('sizeLabelPlace', () => {
+    const scale = 0.5; // one screen pixel is two stage pixels
+    const down = (frame: ReturnType<typeof box>) => ({ axis: 'y' as const, from: frame.y + frame.height, to: 1080, at: frame.x + frame.width / 2, value: 0 });
+
+    it('goes below the block where nothing hangs from its lower edge', () => {
+        const frame = box(500, 400, 200, 100);
+        expect(sizeLabelPlace(frame, [], stage, scale)).toEqual({ top: 516, place: 'below' });
+        // A distance elsewhere does not matter: upwards, or sideways.
+        const up = { axis: 'y' as const, from: 0, to: 400, at: 600, value: 400 };
+        const side = { axis: 'x' as const, from: 0, to: 500, at: 500, value: 500 };
+        expect(sizeLabelPlace(frame, [up, side], stage, scale).place).toBe('below');
+    });
+
+    it('moves inside at the lower edge where a distance runs down from it', () => {
+        const frame = box(500, 400, 200, 100); // 50 px tall on screen
+        expect(sizeLabelPlace(frame, [down(frame)], stage, scale)).toEqual({ top: 500 - 64, place: 'inside-bottom' });
+    });
+
+    it('moves inside at the lower edge where the stage ends there', () => {
+        const frame = box(500, 950, 200, 130);
+        expect(sizeLabelPlace(frame, [], stage, scale)).toEqual({ top: 1080 - 64, place: 'inside-bottom' });
+    });
+
+    it('goes above a block too low to hold it', () => {
+        const frame = box(500, 400, 200, 40); // 20 px tall on screen
+        expect(sizeLabelPlace(frame, [down(frame)], stage, scale)).toEqual({ top: 400 - 64, place: 'above' });
+    });
+
+    it('goes inside at the upper edge where there is no room above either', () => {
+        const frame = box(500, 20, 200, 40);
+        expect(sizeLabelPlace(frame, [down(frame)], stage, scale)).toEqual({ top: 36, place: 'inside-top' });
     });
 });

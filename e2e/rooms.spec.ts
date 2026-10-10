@@ -1,5 +1,5 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addBlock, choose, openSection } from './helpers';
+import { addBlock, choose, nudgeRow, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -214,8 +214,8 @@ async function allowServices(page: Page, ...names: string[]): Promise<void> {
         const box = page.getByRole('checkbox', { name });
         await expect(box).toBeVisible();
         if (await box.isChecked()) continue; // allowed by an earlier visit: the demo store lives on
-        page.once('dialog', (dialog) => void dialog.accept()); // the confirmation before releasing a service
         await box.check();
+        await page.getByTestId('confirm-ok').click(); // the confirmation before releasing a service
         await expect(page.getByTestId('allowed-services-saved')).toBeVisible();
     }
 }
@@ -244,7 +244,7 @@ test('choose rooms, see the bookings, and keep the titles private where asked', 
     }
 
     // Saal first (the order of the list is the order on the stage).
-    await page.getByTestId('room-entry').nth(1).getByTestId('room-up').click();
+    await nudgeRow(page.getByTestId('room-entry').nth(1).getByTestId('room-handle'), 'ArrowUp');
     await expect(page.getByTestId('room-name')).toHaveText(['Saal', 'Gruppenraum 1', 'Jugendkeller']);
     await page.getByTestId('room-entry').nth(0).getByTestId('room-hint').fill('EG, links');
 
@@ -291,13 +291,13 @@ test('the door sign shows the first room: now, then what follows – or free', a
     await page.screenshot({ path: 'test-results/rooms-door.png' });
 
     // The second room: free now, until its next booking.
-    await page.getByTestId('room-entry').nth(1).getByTestId('room-up').click();
+    await nudgeRow(page.getByTestId('room-entry').nth(1).getByTestId('room-handle'), 'ArrowUp');
     await expect(door.getByTestId('door-name')).toHaveText('Gruppenraum 1');
     await expect(door.getByTestId('door-current')).toHaveText('Frei');
     await expect(door.getByTestId('door-state')).toContainText('bis 14:00');
     // The third has nothing at all: free without "until", and no "Danach".
-    await page.getByTestId('room-entry').nth(2).getByTestId('room-up').click();
-    await page.getByTestId('room-entry').nth(1).getByTestId('room-up').click();
+    await nudgeRow(page.getByTestId('room-entry').nth(2).getByTestId('room-handle'), 'ArrowUp');
+    await nudgeRow(page.getByTestId('room-entry').nth(1).getByTestId('room-handle'), 'ArrowUp');
     await expect(door.getByTestId('door-name')).toHaveText('Jugendkeller');
     await expect(door.getByTestId('door-current')).toHaveText('Frei');
     await expect(door.getByTestId('door-state')).not.toContainText('bis');
@@ -363,7 +363,7 @@ for (const size of [
             expect(box.x).toBeGreaterThanOrEqual(frame.x - 0.5);
             expect(box.x + box.width).toBeLessThanOrEqual(Math.min(frame.x + frame.width, size.width) + 0.5);
         };
-        for (const id of ['room-entry', 'room-name', 'room-hint', 'room-up', 'room-down', 'room-remove', 'room-titles']) {
+        for (const id of ['room-entry', 'room-name', 'room-hint', 'room-handle', 'room-remove', 'room-titles']) {
             const all = page.getByTestId(id);
             for (let i = 0; i < (await all.count()); i++) await inside(all.nth(i));
         }
@@ -464,19 +464,15 @@ test('services only after an administrator allowed them: the inspector offers ex
     await expect(page.getByTestId('allowed-services-warning')).toContainText('mit der Gemeindeleitung ab');
 
     // Ticking asks first; "Abbrechen" leaves the box empty and saves nothing.
-    const asked: string[] = [];
-    const answer = { accept: false };
-    page.on('dialog', (dialog) => {
-        asked.push(dialog.message());
-        void (answer.accept ? dialog.accept() : dialog.dismiss());
-    });
     await page.getByRole('checkbox', { name: 'Moderation' }).click();
+    const asked = page.getByTestId('confirm-dialog');
+    await expect(asked).toContainText('„Moderation" freigeben?');
+    await expect(asked).toContainText('Gemeindeleitung');
+    await page.getByTestId('confirm-cancel').click();
     await expect(page.getByRole('checkbox', { name: 'Moderation' })).not.toBeChecked();
     await expect(page.getByTestId('allowed-services-saved')).toHaveCount(0);
-    expect(asked[0]).toContain('„Moderation" freigeben?');
-    expect(asked[0]).toContain('Gemeindeleitung');
-    answer.accept = true;
     await page.getByRole('checkbox', { name: 'Moderation' }).check();
+    await page.getByTestId('confirm-ok').click();
     await expect(page.getByTestId('allowed-services-saved')).toHaveText('Gespeichert');
 
     // The choice survives a reload, and the inspector offers just that one.

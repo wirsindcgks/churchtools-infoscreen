@@ -30,14 +30,11 @@ const title = computed(() => liveTitle(props.live, props.timeZone));
     background: var(--d-accent-pale);
     color: var(--d-accent);
     font-size: var(--d-size-sm);
-    font-weight: 600;
+    font-weight: var(--d-weight-normal);
     white-space: nowrap;
 }
 .live-flag.overlay {
-    /* On a tile's picture: opaque, so it reads on any slide background. */
-    position: absolute;
-    top: 8px;
-    left: 8px;
+    /* On a tile's picture (in its marks): opaque, so it reads on any slide background. */
     background: var(--d-surface);
     box-shadow: var(--d-shadow);
 }

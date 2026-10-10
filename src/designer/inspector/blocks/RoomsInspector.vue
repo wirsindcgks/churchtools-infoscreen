@@ -18,6 +18,7 @@ import TextField from '../fields/TextField.vue';
 import TileField from '../fields/TileField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import { ROOMS_TILES } from '../layouts';
+import { move as moveItem } from '../../ops';
 import { useBlockEdit } from '../use-block';
 
 /** Most rooms a block holds – the schema's limit. */
@@ -69,10 +70,8 @@ function setRoom(index: number, patch: Partial<RoomEntry>): void {
 }
 
 function move(from: number, to: number): void {
-    const entries = [...props.block.rooms];
-    if (to < 0 || to >= entries.length) return;
-    [entries[from], entries[to]] = [entries[to]!, entries[from]!];
-    setBlock({ rooms: entries });
+    if (to < 0 || to >= props.block.rooms.length) return;
+    setBlock({ rooms: moveItem(props.block.rooms, from, to) });
 }
 
 function remove(index: number): void {

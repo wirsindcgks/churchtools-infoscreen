@@ -15,6 +15,8 @@ import { providePalette } from '../designer/palette';
 import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
 import { BLOCK_LABELS } from '../designer/ops';
 import PlaylistPreview from '../designer/PlaylistPreview.vue';
+import ShortcutsDialog from '../designer/ShortcutsDialog.vue';
+import { KEYS, withKeys } from '../designer/shortcuts';
 import SlideList from '../designer/SlideList.vue';
 import type { SettingsDoc } from '../model/schema';
 import { useHeartbeats } from '../designer/useHeartbeats';
@@ -27,9 +29,14 @@ import { needsAppointmentRooms } from '../appointments/rooms';
 import { allowedServiceIds, appointmentServicesInUse, serviceChoices, type ServiceInfo } from '../appointments/services';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
+import { useOffsetTop } from '../designer/useOffsetTop';
 import type { ScreenRepository } from '../store/screen-repository';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
+import { vTip } from '../designer/tip';
+import { useConfirm } from '../designer/useConfirm';
+
+const { confirm } = useConfirm();
 
 const route = useRoute();
 const playlistId = String(route.params.id);
@@ -48,7 +55,7 @@ const loadError = ref<string | null>(null);
 const demo = ref(false);
 const author = ref('');
 const root = ref<HTMLElement | null>(null);
-const top = ref(0);
+const top = useOffsetTop(root);
 
 /** The services an administrator allows on screens (Plan.md 58); none until loaded, and where the settings cannot be read. */
 const allowedServices = ref<number[]>([]);
@@ -256,6 +263,9 @@ function openPreviewFromMenu(): void {
     previewing.value = true;
 }
 
+/** The overview of the handles behind the "?" (Plan.md 79, B3). */
+const shortcutsOpen = ref(false);
+
 /** Which picker the media library was opened for. */
 const libraryFor = ref<'block' | 'background' | 'logo' | 'slideshow' | 'video' | null>(null);
 const libraryTarget = ref<string | null>(null);
@@ -339,7 +349,6 @@ const slideConflictText = computed(() => {
 });
 
 onMounted(async () => {
-    top.value = root.value?.getBoundingClientRect().top ?? 0;
     window.addEventListener('keydown', onKey);
     window.addEventListener('resize', onResize);
     window.addEventListener('beforeunload', onBeforeUnload);
@@ -402,7 +411,9 @@ onBeforeUnmount(() => {
     document.removeEventListener('pointerdown', closeMoreMenuOnOutside);
 });
 
-onBeforeRouteLeave(() => !editor.dirty || window.confirm(t.editor.discardChanges));
+onBeforeRouteLeave(
+    async () => !editor.dirty || (await confirm({ message: t.editor.discardChanges, confirmLabel: t.common.discard, danger: true })),
+);
 
 function onBeforeUnload(event: BeforeUnloadEvent): void {
     if (editor.dirty) event.preventDefault();
@@ -419,6 +430,10 @@ function onKey(event: KeyboardEvent): void {
         return;
     }
     // With a dialog open, keys belong to the dialog – Delete must not hit the block behind it.
+    if (shortcutsOpen.value) {
+        if (event.key === 'Escape') shortcutsOpen.value = false;
+        return;
+    }
     if (libraryFor.value) {
         if (event.key === 'Escape') libraryFor.value = null;
         return;
@@ -437,7 +452,10 @@ function onKey(event: KeyboardEvent): void {
         return;
     }
     if (typing && !(choosing && mod)) return;
-    if (mod && event.key.toLowerCase() === 'z') {
+    if (event.key === '?' && !mod) {
+        event.preventDefault();
+        shortcutsOpen.value = true;
+    } else if (mod && event.key.toLowerCase() === 'z') {
         event.preventDefault();
         if (event.shiftKey) editor.redo();
         else editor.undo();
@@ -483,13 +501,14 @@ function onKey(event: KeyboardEvent): void {
         :class="{ 'sheet-open': inspectorOpen }"
         :style="{
             height: `calc(100vh - ${top}px)`,
+            '--editor-top': `${top}px`,
             '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}`,
             '--stage-max': stageMax === null ? undefined : `${stageMax}px`,
         }"
     >
         <AppBar>
             <RouterLink
-                class="back"
+                class="link-btn back"
                 :to="back.to"
                 :title="t.editor.leaveTitle(back.label)"
                 :aria-label="t.editor.backAria(back.label)"
@@ -497,30 +516,34 @@ function onKey(event: KeyboardEvent): void {
             >
                 <Icon name="back" :size="18" /><span class="back-label">{{ back.label }}</span>
             </RouterLink>
-            <LiveFlag
-                v-if="live.length"
-                class="live"
-                :live="live"
-                :time-zone="context.timeZone"
-                data-testid="editor-live"
-            />
-            <span class="heading">
-                <strong class="title">{{ editor.draft?.playlist.name || t.editor.playlistFallback }}</strong>
-                <span class="status" :class="`status--${editor.status}`" data-testid="save-status">{{ statusText }}</span>
-            </span>
-            <!-- The TVs check every 20 s for what was saved (Plan.md, 26); in demo mode an open player takes it at once. -->
-            <span
-                v-if="editor.status === 'saved' && editor.screens.length && !demo"
-                class="status status-hint"
-                data-testid="save-hint"
-            >
-                {{ t.editor.savedHint(editor.screens.length) }}
-            </span>
+            <template #title>
+                <span class="heading">
+                    <strong class="title">{{ editor.draft?.playlist.name || t.editor.playlistFallback }}</strong>
+                    <span class="status-line">
+                        <LiveFlag
+                            v-if="live.length"
+                            class="live"
+                            :live="live"
+                            :time-zone="context.timeZone"
+                            data-testid="editor-live"
+                        />
+                        <span class="status" :class="`status--${editor.status}`" data-testid="save-status">{{ statusText }}</span>
+                        <!-- The TVs check every 20 s for what was saved (Plan.md, 26); in demo mode an open player takes it at once. -->
+                        <span
+                            v-if="editor.status === 'saved' && editor.screens.length && !demo"
+                            class="status status-hint"
+                            data-testid="save-hint"
+                        >
+                            {{ t.editor.savedHint(editor.screens.length) }}
+                        </span>
+                    </span>
+                </span>
+            </template>
             <template #actions>
                 <button
-                    class="d-btn d-btn--icon"
+                    v-tip="withKeys(t.editor.undo, KEYS.undo)"
+                    class="d-btn d-btn--icon d-btn--ghost"
                     type="button"
-                    :title="t.editor.undoTitle"
                     :aria-label="t.editor.undo"
                     :disabled="!editor.canUndo"
                     @click="editor.undo()"
@@ -528,9 +551,9 @@ function onKey(event: KeyboardEvent): void {
                     <Icon name="undo" />
                 </button>
                 <button
-                    class="d-btn d-btn--icon"
+                    v-tip="withKeys(t.editor.redo, KEYS.redo)"
+                    class="d-btn d-btn--icon d-btn--ghost"
                     type="button"
-                    :title="t.editor.redoTitle"
                     :aria-label="t.editor.redo"
                     :disabled="!editor.canRedo"
                     @click="editor.redo()"
@@ -551,7 +574,7 @@ function onKey(event: KeyboardEvent): void {
                 <RouterLink
                     v-for="s in editor.screens.slice(0, 1)"
                     :key="s.id"
-                    class="d-link player-link"
+                    class="link-btn player-link"
                     :to="{ name: 'player', query: { screen: s.slug } }"
                     target="_blank"
                     :title="t.editor.playerTitle(s.name)"
@@ -559,6 +582,16 @@ function onKey(event: KeyboardEvent): void {
                 >
                     <Icon name="play" :size="16" /> {{ t.editor.player }}<span v-if="editor.screens.length > 1" class="muted">: {{ s.name }}</span>
                 </RouterLink>
+                <button
+                    v-tip="withKeys(t.shortcuts.button, KEYS.help)"
+                    class="d-btn d-btn--icon shortcuts-btn"
+                    type="button"
+                    :aria-label="t.shortcuts.button"
+                    data-testid="shortcuts"
+                    @click="shortcutsOpen = true"
+                >
+                    ?
+                </button>
                 <!-- Below 48rem "Vorschau" and "Player" move in here – Rückgängig/Wiederholen and Speichern stay outside (Plan.md 44, M2). -->
                 <div ref="moreMenuRoot" class="more-menu">
                     <button
@@ -599,7 +632,7 @@ function onKey(event: KeyboardEvent): void {
                     class="d-btn d-btn--primary"
                     type="button"
                     data-testid="save"
-                    :title="live.length ? liveSaveTitle(live) : undefined"
+                    :title="withKeys(live.length ? liveSaveTitle(live) : t.common.save, KEYS.save)"
                     :disabled="!editor.dirty || editor.status === 'saving'"
                     @click="save"
                 >
@@ -654,12 +687,12 @@ function onKey(event: KeyboardEvent): void {
             <div class="tablet-rail tablet-rail--inspector">
                 <div class="rail-head">
                     <button
+                        v-tip="sheetLabel"
                         type="button"
                         class="tablet-toggle"
                         :aria-expanded="inspectorColumnOpen"
                         aria-controls="inspector-panel"
                         :aria-label="sheetLabel"
-                        :title="sheetLabel"
                         data-testid="tablet-inspector-toggle"
                         @click="toggleInspectorColumn"
                     >
@@ -671,9 +704,9 @@ function onKey(event: KeyboardEvent): void {
                 <div class="drawer-head">
                     <strong class="drawer-title" data-testid="inspector-drawer-title">{{ drawerTitle }}</strong>
                     <button
+                        v-tip="t.editor.collapse"
                         type="button"
                         class="d-btn d-btn--icon"
-                        :title="t.editor.collapse"
                         :aria-label="t.editor.collapse"
                         :data-testid="desktop ? 'desktop-inspector-collapse' : 'tablet-inspector-close'"
                         @click="toggleInspectorColumn"
@@ -704,6 +737,8 @@ function onKey(event: KeyboardEvent): void {
             :start-slide-id="editor.slide?.id"
             @close="previewing = false"
         />
+
+        <ShortcutsDialog v-if="shortcutsOpen" @close="shortcutsOpen = false" />
 
         <MediaLibraryDialog
             v-if="libraryFor && editor.draft"
@@ -760,59 +795,73 @@ function onKey(event: KeyboardEvent): void {
 .editor {
     /*
      * One height for the heads of the three columns above 48rem (slides, "+ Baustein", inspector) and
-     * the rail buttons' zone, so their lines meet: 8 px air, a 36 px button, 8 px air, and the 1 px rule.
+     * the rail buttons' zone, so their tops and bottoms meet: 8 px air, a 36 px button, 8 px air, and the
+     * 1 px that the cards no longer draw as a rule.
      */
     --editor-head-h: 53px;
     display: flex;
     flex-direction: column;
     min-height: 480px;
-    background: var(--d-surface);
+    /* The calm ground the cards and the stage lie on (Plan.md 79, B3). */
+    background: var(--d-workspace);
 }
-.back {
+@media (min-width: 48.0625rem) {
+    .heading {
+        align-items: center;
+        text-align: center;
+    }
+    .status-line {
+        justify-content: center;
+    }
+}
+/* A link that looks like a button: the way back and the player. */
+.link-btn {
     display: inline-flex;
     flex: none;
     align-items: center;
-    gap: 4px;
-    min-height: 2.3em;
-    padding: 0 12px 0 8px;
+    gap: var(--d-space-2);
+    box-sizing: border-box;
+    min-height: var(--d-control-h);
+    padding: 0 var(--d-space-4);
     border: 1px solid var(--d-divider);
-    border-radius: var(--d-radius);
-    background: var(--d-panel);
+    border-radius: var(--d-radius-lg);
+    background: var(--d-surface);
     color: var(--d-text);
-    font-weight: 700;
-    text-decoration: none;
-}
-.back:hover {
-    border-color: var(--d-interactive);
-    background: var(--d-accent-pale);
-}
-.back:focus-visible {
-    outline: 2px solid var(--d-accent);
-    outline-offset: 1px;
-}
-.d-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    color: var(--d-accent-strong);
+    font-weight: var(--d-weight-button);
     text-decoration: none;
     white-space: nowrap;
+    transition: background-color var(--d-transition), border-color var(--d-transition);
 }
-.d-link:hover {
-    text-decoration: underline;
+.link-btn:hover {
+    border-color: var(--d-interactive);
+    background: var(--d-panel);
 }
-/* At a desktop width `.heading` is transparent to layout: title and status sit beside each other as before. */
+/* Like "Vorschau", with less room before the arrow. */
+.back {
+    padding: 0 var(--d-space-3) 0 var(--d-space-2);
+}
+/* Title above, the state of the save below it, small – in the middle of the bar above 48rem (AppBar.vue). */
 .heading {
-    display: contents;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.25;
 }
 .title {
     overflow: hidden;
-    font-size: 1.1em;
+    font-size: 1.2em;
+    font-weight: var(--d-weight-heading);
     white-space: nowrap;
     text-overflow: ellipsis;
 }
+.status-line {
+    display: flex;
+    align-items: center;
+    gap: var(--d-space-2);
+    min-width: 0;
+}
 .preview-btn {
-    gap: 6px;
+    gap: var(--d-space-2);
 }
 .status {
     color: var(--d-text-muted);
@@ -849,7 +898,7 @@ function onKey(event: KeyboardEvent): void {
     flex: none;
 }
 .banner {
-    border-radius: 0;
+    margin: 0 var(--d-space-3) var(--d-space-3);
     font-size: var(--d-size-sm);
 }
 .stage-column {
@@ -869,7 +918,14 @@ function onKey(event: KeyboardEvent): void {
     flex: 1;
     display: grid;
     grid-template-columns: var(--slides-w) minmax(0, 1fr) var(--inspector-w);
+    /* Cards and stage lie on the workspace with 12 px of air all around (Plan.md 79, B3). */
+    column-gap: var(--d-space-3);
+    padding: 0 var(--d-gutter) var(--d-space-3);
     min-height: 0;
+}
+/* The stage a little in from the cards, so its shadow has room. */
+.stage-column > :last-child {
+    margin: 0 var(--d-space-2) var(--d-space-2);
 }
 
 /* Rails and the drawer's head belong to the range above 48rem (Plan.md 45); hidden below. */
@@ -966,7 +1022,7 @@ function onKey(event: KeyboardEvent): void {
         background: none;
         color: var(--d-text);
         font: inherit;
-        font-weight: 700;
+        font-weight: var(--d-weight-heading);
         text-align: left;
         cursor: pointer;
     }
@@ -1004,14 +1060,25 @@ function onKey(event: KeyboardEvent): void {
  * at the bottom, and the header into one row (Plan.md 44, M2–M4).
  */
 @media (max-width: 48rem) {
+    /* The height follows the content, but the grey ground reaches down to the window's lower edge. */
     .editor {
+        box-sizing: border-box;
         height: auto !important;
-        min-height: 0;
+        min-height: calc(100vh - var(--editor-top, 0px));
+        min-height: calc(100dvh - var(--editor-top, 0px));
     }
     .columns {
+        /* The rows keep their own height where the editor is taller than its content (min-height above). */
+        align-content: start;
         grid-template-columns: minmax(0, 1fr);
+        column-gap: 0;
+        padding: 0;
+    }
+    .banner {
+        margin: 0 var(--d-space-2) var(--d-space-2);
     }
     .stage-column > :last-child {
+        margin: 0 var(--d-space-3) var(--d-space-2);
         flex: none;
         height: auto;
         aspect-ratio: var(--stage-aspect);
@@ -1035,10 +1102,8 @@ function onKey(event: KeyboardEvent): void {
     .live {
         padding: 5px;
     }
-    .heading {
-        display: flex;
-        flex-direction: column;
-        min-width: 0;
+    .shortcuts-btn {
+        display: none;
     }
     .status {
         overflow: hidden;
@@ -1090,25 +1155,23 @@ function onKey(event: KeyboardEvent): void {
         grid-column: 3;
         grid-row: 1;
     }
+    /* A shut column is a card of its own, 53 px wide, with the one button in the zone of the heads. */
     .tablet-rail {
         flex-direction: column;
+        border-radius: var(--d-radius-lg);
         background: var(--d-surface);
+        box-shadow: var(--d-shadow-card);
     }
-    /* The button's zone is as tall as the heads beside it, with the same rule below. */
+    /* The button's zone is as tall as the heads beside it. */
     .rail-head {
         box-sizing: border-box;
         display: flex;
         align-items: center;
         justify-content: center;
         height: var(--editor-head-h);
-        border-bottom: 1px solid var(--d-divider);
     }
     .tablet-rail--slides {
         display: flex;
-        border-right: 1px solid var(--d-divider);
-    }
-    .tablet-rail--inspector {
-        border-left: 1px solid var(--d-divider);
     }
     .tablet-toggle {
         display: flex;
@@ -1125,6 +1188,7 @@ function onKey(event: KeyboardEvent): void {
         color: var(--d-text);
         font: inherit;
         cursor: pointer;
+        transition: background-color var(--d-transition), border-color var(--d-transition);
     }
     .tablet-toggle:hover,
     .tablet-toggle[aria-expanded='true'] {
@@ -1133,7 +1197,7 @@ function onKey(event: KeyboardEvent): void {
     }
     .tablet-number {
         font-size: 11px;
-        font-weight: 700;
+        font-weight: var(--d-weight-normal);
         line-height: 1;
     }
     .collapse-icon {
@@ -1152,20 +1216,21 @@ function onKey(event: KeyboardEvent): void {
     }
     /* Upright, the slide sits right under "+ Baustein" instead of in the middle of a tall column. */
     .stage-column > :last-child {
+        margin-inline: 0;
         flex: 0 1 auto;
         height: auto;
         min-height: 0;
         aspect-ratio: var(--stage-aspect);
     }
-    .slide-list {
+    /* Beside the rail card: its 12 px of padding, the 53 px, and the 12 px gap. */
+    .columns .slide-list {
         position: absolute;
         top: 0;
-        bottom: 0;
-        left: 53px;
+        bottom: var(--d-space-3);
+        left: calc(53px + 2 * var(--d-space-3));
         z-index: 30;
         box-sizing: border-box;
         width: 240px;
-        border-right: 1px solid var(--d-divider);
         box-shadow: var(--d-shadow);
     }
     .slide-list:not(.drawer-open) {
@@ -1213,8 +1278,10 @@ function onKey(event: KeyboardEvent): void {
         display: flex;
         flex-direction: column;
         min-height: 0;
-        border-left: 1px solid var(--d-divider);
+        overflow: hidden;
+        border-radius: var(--d-radius-lg);
         background: var(--d-surface);
+        box-shadow: var(--d-shadow-card);
     }
     .drawer-head {
         display: flex;
@@ -1224,18 +1291,17 @@ function onKey(event: KeyboardEvent): void {
         gap: 8px;
         box-sizing: border-box;
         height: var(--editor-head-h);
-        padding: 0 12px;
-        border-bottom: 1px solid var(--d-divider);
+        padding: 0 var(--d-space-3) 0 var(--d-space-4);
     }
     .drawer-title {
         overflow: hidden;
+        font-weight: var(--d-weight-heading);
         white-space: nowrap;
         text-overflow: ellipsis;
     }
     .inspector-sheet :deep(.inspector) {
         flex: 1;
         overflow-x: hidden;
-        border-left: 0;
     }
 }
 

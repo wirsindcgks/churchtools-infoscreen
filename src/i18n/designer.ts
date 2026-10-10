@@ -15,7 +15,12 @@ export const t = {
         settings: 'Einstellungen',
         save: 'Speichern',
         cancel: 'Abbrechen',
+        ok: 'OK',
+        open: 'Öffnen',
+        discard: 'Verwerfen',
         close: 'Schließen',
+        /** The own question dialog instead of the browser's (Plan.md 79, B3). */
+        dialog: { confirmTitle: 'Bitte bestätigen', noticeTitle: 'Hinweis' },
         remove: 'Entfernen',
         delete: 'Löschen',
         duplicate: 'Duplizieren',
@@ -25,6 +30,7 @@ export const t = {
         name: 'Name',
         moveUp: 'Nach oben',
         moveDown: 'Nach unten',
+        dragToSort: 'Ziehen zum Sortieren',
         explanation: 'Erklärung',
         countOf: (n: number, total: number) => `${n} von ${total}`,
         chosen: (n: number) => `${n} gewählt`,
@@ -38,7 +44,7 @@ export const t = {
         portrait: 'Hochkant',
         landscape: 'Quer',
         screenCount: (n: number) => `${n} ${n === 1 ? 'Bildschirm' : 'Bildschirme'}`,
-        filters: { allShort: 'Alle', all: 'Alle Bildschirme', landscape: 'Querformat', portrait: 'Hochformat' },
+        filters: { allShort: 'Alle', all: 'Alle Bildschirme', landscape: 'Querformat', portrait: 'Hochformat', landscapeShort: 'Quer', portraitShort: 'Hoch' },
         edited: {
             changed: 'Zuletzt geändert',
             uploaded: 'Hochgeladen',
@@ -100,6 +106,36 @@ export const t = {
         },
     },
 
+    /** The overview of the editor's handles behind the "?" (Plan.md 79, B3); Mac and other keyboards name the keys differently. */
+    shortcuts: {
+        button: 'Tastenkürzel',
+        title: 'Tastenkürzel',
+        intro: 'Diese Griffe gelten im Editor, solange du nicht in ein Feld schreibst.',
+        ctrl: 'Strg',
+        shift: 'Umschalt',
+        alt: 'Alt',
+        arrows: 'Pfeiltasten',
+        keys: { Delete: 'Entf', Escape: 'Esc' } as Record<string, string>,
+        macKeys: { Delete: '⌫' } as Record<string, string>,
+        groups: { general: 'Allgemein', block: 'Gewählter Baustein', stage: 'Beim Ziehen und Zeigen' },
+        rows: {
+            save: 'Speichern',
+            undo: 'Rückgängig',
+            redo: 'Wiederholen',
+            deselect: 'Auswahl aufheben',
+            help: 'Diese Übersicht',
+            copy: 'Kopieren',
+            cut: 'Ausschneiden',
+            paste: 'Einfügen',
+            duplicate: 'Duplizieren',
+            remove: 'Löschen',
+            nudge: 'Um 1 Pixel verschieben',
+            nudgeFar: 'Um 10 Pixel verschieben',
+            placeFree: 'Beim Ziehen gedrückt halten: frei platzieren, ohne Einrasten',
+            distances: 'Über einem Baustein gedrückt halten: Abstände zum gewählten zeigen',
+        },
+    },
+
     /** The editor around the stage: bar, list of slides, stage, preview, import. */
     editor: {
         backToScreens: 'Bildschirme',
@@ -117,9 +153,7 @@ export const t = {
         },
         savedHint: (screens: number) => `– ${screens === 1 ? 'der Fernseher zeigt' : 'die Fernseher zeigen'} es in etwa 20 s`,
         undo: 'Rückgängig',
-        undoTitle: 'Rückgängig (⌘Z)',
         redo: 'Wiederholen',
-        redoTitle: 'Wiederholen (⇧⌘Z)',
         preview: 'Vorschau',
         previewTitle: 'Die Präsentation abspielen wie auf dem Fernseher – mit allen Änderungen, ohne zu speichern',
         player: 'Player',
@@ -419,7 +453,7 @@ export const t = {
         arrange: 'Anordnen',
         measures: 'Genaue Maße',
         frameFields: { x: 'X', y: 'Y', width: 'Breite', height: 'Höhe' },
-        layer: 'Ebene',
+        layerOf: (n: number, total: number) => `Ebene ${n} von ${total}`,
         linkedAlso: (names: string) => `Auch in: ${names}`,
         linkedPending: 'ab dem Speichern',
         linkedInfo:
@@ -951,6 +985,16 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         },
         overview: {
             intro: 'Hier verwalten ChurchTools-Administratoren die Gruppen und Rechte für Gestalter und Geräte, die Adressen der Bildschirme und die Mediathek im Wiki.',
+            /** The marks on the cards (Plan.md 79, B3): only what the page knows without a request of its own. */
+            status: {
+                allWell: 'Alles in Ordnung',
+                notSet: 'Nicht eingerichtet',
+                groupMissing: 'Eine Gruppe fehlt',
+                toCheck: (n: number) => `${n} ${n === 1 ? 'Punkt' : 'Punkte'} zu prüfen`,
+                done: 'Eingerichtet',
+                released: (n: number) => `${n} freigegeben`,
+                noneReleased: 'Keine freigegeben',
+            },
         },
         groups: {
             title: 'Gruppen und Rechte',
@@ -1038,6 +1082,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             none: 'In ChurchTools gibt es keinen Dienst, der gezeigt werden könnte.',
             saved: 'Gespeichert',
             fallbackName: (id: number) => `Dienst ${id}`,
+            release: 'Freigeben',
             confirm: (name: string) =>
                 `„${name}" freigeben? Die Namen der Eingeteilten stehen dann öffentlich auf den Fernsehern. Ist das mit der Gemeindeleitung abgestimmt?`,
         },

@@ -36,7 +36,7 @@ test('only administrators see the settings and configure screens; everyone else 
     });
     await page.goto('./');
     await expect(page.getByTestId('screens-heading')).toBeVisible();
-    await expect(page.getByTestId('open-setup')).toHaveCount(0);
+    await expect(page.getByTestId('sidebar-setup')).toHaveCount(0);
     // Screens are the administrators' (Plan.md, F): designers open the editor, nothing more.
     await expect(page.getByTestId('new-screen')).toHaveCount(0);
     await page.getByTestId('screen-menu').first().click();

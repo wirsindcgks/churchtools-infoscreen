@@ -340,6 +340,29 @@ export function move<T>(items: T[], from: number, to: number): T[] {
     return result;
 }
 
+/** The order of `count` items when `from` is dropped at `to`; items `fixed` keep their place and the others pass them by. */
+export function reorderAround(count: number, from: number, to: number, fixed?: (index: number) => boolean): number[] {
+    const order = Array.from({ length: count }, (_, i) => i);
+    if (from < 0 || from >= count) return order;
+    const rest = order.filter((i) => i !== from);
+    const target = Math.max(0, Math.min(to, rest.length));
+    if (!fixed) {
+        rest.splice(target, 0, from);
+        return rest;
+    }
+    // Only the free places are shuffled; the fixed items stay at their index.
+    const places = rest.slice(0, target).filter((i) => !fixed(i)).length;
+    const free = rest.filter((i) => !fixed(i));
+    free.splice(places, 0, from);
+    let next = 0;
+    return order.map((i) => (fixed(i) ? i : free[next++]!));
+}
+
+/** `items` in the order `reorderAround` gives. */
+export function moveAround<T>(items: readonly T[], from: number, to: number, fixed?: (index: number) => boolean): T[] {
+    return reorderAround(items.length, from, to, fixed).map((i) => items[i]!);
+}
+
 /**
  * The block a click on a locked one reaches through to (Plan.md 25): the
  * topmost unlocked block below it at that point of the stage – so a locked

@@ -11,7 +11,8 @@ import { currentPerson, displayName, NotAuthenticatedError } from '../ct/client'
 import { aliveState } from '../designer/alive';
 import { useHeartbeats } from '../designer/useHeartbeats';
 import CreateScreenDialog from '../designer/CreateScreenDialog.vue';
-import { FILTERS, formatFilter } from '../designer/format-filter';
+import FilterChips from '../designer/FilterChips.vue';
+import { FILTERS, FORMAT_SEGMENTS, formatFilter, type FormatFilter } from '../designer/format-filter';
 import GroupCard from '../designer/GroupCard.vue';
 import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
@@ -25,12 +26,15 @@ import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
 import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { ruleCalendarIds, runningNow } from '../designer/running';
-import { setScreenCounts } from '../designer/screen-counts';
+import { screenCounts, setScreenCounts } from '../designer/section-counts';
 import { usePreview } from '../designer/usePreview';
 import { getRepository, resetDemoStore } from '../store/backend';
 import type { ScreenOverview, ScreenRepository } from '../store/screen-repository';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
+import { useConfirm } from '../designer/useConfirm';
+
+const { confirm } = useConfirm();
 
 const router = useRouter();
 const route = useRoute();
@@ -53,6 +57,12 @@ const scheduling = ref<string | null>(null);
 /** Administrators set the module up (role concept, Plan.md F); everyone else does not see the way there. */
 const admin = ref(false);
 const filter = computed(() => formatFilter(route.query.format));
+/** The segment writes `?format=` into the address, so the back button and bookmarks keep working. */
+const formatChoice = computed<FormatFilter>({
+    get: () => filter.value,
+    set: (key) => void router.push({ name: 'designer', query: key === 'all' ? {} : { format: key } }),
+});
+const formatOptions = computed(() => FORMAT_SEGMENTS.map((f) => ({ ...f, count: screenCounts.value?.[f.key] })));
 const query = ref('');
 /** Loaded: the page shows its frame before, and its content from then on. */
 const ready = computed(() => author.value !== null && repository.value !== null);
@@ -157,8 +167,8 @@ async function created(playlistId: string): Promise<void> {
     await router.push({ name: 'editor', params: { id: playlistId } });
 }
 
-function resetDemoAndReload(): void {
-    if (!window.confirm(t.home.resetDemoConfirm)) return;
+async function resetDemoAndReload(): Promise<void> {
+    if (!(await confirm({ message: t.home.resetDemoConfirm, confirmLabel: t.home.resetDemo, danger: true }))) return;
     resetDemoStore();
     window.location.reload();
 }
@@ -166,28 +176,14 @@ function resetDemoAndReload(): void {
 async function remove(overview: ScreenOverview): Promise<void> {
     const { name, slug } = overview.screen;
     const question = t.home.deleteConfirm(name, slug);
-    if (!repository.value || !window.confirm(question)) return;
+    if (!repository.value || !(await confirm({ message: question, confirmLabel: t.common.delete, danger: true }))) return;
     await repository.value.deleteScreen(slug);
     await refresh();
 }
 </script>
 
 <template>
-    <ModulePage current="screens">
-        <template #actions>
-            <button
-                v-if="screensAdmin"
-                class="d-btn d-btn--create"
-                type="button"
-                :aria-label="t.home.create.title"
-                data-testid="new-screen"
-                @click="creating = true"
-            >
-                <Icon name="plus" />
-                <span class="create-label">{{ t.home.create.title }}</span>
-            </button>
-        </template>
-
+    <ModulePage>
         <p v-if="demo" class="d-banner" data-testid="demo-notice">
             {{ t.home.demoNotice }}
             <button class="link" type="button" data-testid="reset-demo" @click="resetDemoAndReload">
@@ -218,25 +214,42 @@ async function remove(overview: ScreenOverview): Promise<void> {
             </p>
         </section>
 
-        <PageHeader icon="grid" :title="t.common.screens" testid="screens-heading">
+        <PageHeader icon="tv" :title="t.common.screens" testid="screens-heading">
             {{ t.home.intro }}
+            <template #actions>
+                <button
+                    v-if="screensAdmin"
+                    class="d-btn d-btn--create"
+                    type="button"
+                    :aria-label="t.home.create.title"
+                    data-testid="new-screen"
+                    @click="creating = true"
+                >
+                    <Icon name="plus" />
+                    <span class="create-label">{{ t.home.create.title }}</span>
+                </button>
+            </template>
         </PageHeader>
 
         <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
         <p v-else-if="!ready" class="empty">{{ t.common.loading }}</p>
         <template v-else>
-            <SearchField
-                v-model="query"
-                :placeholder="t.home.searchPlaceholder"
-                :label="t.home.searchLabel"
-                testid="search"
-            />
+            <div class="d-toolbar">
+                <SearchField
+                    v-model="query"
+                    :placeholder="t.home.searchPlaceholder"
+                    :label="t.home.searchLabel"
+                    testid="search"
+                />
+                <FilterChips v-model="formatChoice" :options="formatOptions" :label="t.common.format" testid="filter" />
+            </div>
 
             <GroupCard
                 :icon="current.icon"
                 :title="current.label"
                 :count="t.common.screenCount(shown.length)"
                 :heading-id="`group-${current.key}`"
+                hide-heading
             >
                 <div v-if="shown.length" class="d-tiles">
                     <ScreenCard

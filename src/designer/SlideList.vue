@@ -10,6 +10,11 @@ import { fitStage } from '../player/stage';
 import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
 import SlideImportDialog from './SlideImportDialog.vue';
+import { useConfirm } from './useConfirm';
+import { useSortable } from './useSortable';
+import { vTip } from './tip';
+
+const { confirm } = useConfirm();
 
 const emit = defineEmits<{ collapse: [] }>();
 const editor = useEditorStore();
@@ -47,8 +52,9 @@ onBeforeUnmount(() => phoneQuery.removeEventListener('change', onPhoneChange));
  */
 const list = ref<HTMLElement | null>(null);
 const listWidth = ref(0);
-/** What a tile takes beside its thumbnail: the list's padding, the tile's padding and its border, on both sides. */
-const TILE_CHROME = 2 * (8 + 8 + 2);
+/** What a tile takes beside its thumbnail: the list's padding, the tile's padding and border on both sides, and the column of the number. */
+const NUMBER_COLUMN = 24;
+const TILE_CHROME = 2 * (8 + 6 + 2) + NUMBER_COLUMN;
 const THUMB_MIN_WIDTH = 96;
 let listObserver: ResizeObserver | undefined;
 onMounted(() => {
@@ -98,22 +104,26 @@ function toggleOpen(): void {
 const selectedIndex = computed(() => editor.slides.findIndex((s) => s.id === editor.slide?.id) + 1);
 
 const importing = ref(false);
-const dragging = ref<number | null>(null);
-const over = ref<number | null>(null);
 
-function drop(index: number): void {
-    if (dragging.value !== null) editor.moveSlide(dragging.value, index);
-    dragging.value = null;
-    over.value = null;
-}
+/**
+ * Dragging replaces the browser's own drag and drop, which a finger cannot use (Plan.md 79, D7): the handle for the
+ * mouse, a held tile for the finger – and on a phone's narrow row, where there is no room for a handle, for the mouse too.
+ */
+useSortable({
+    container: list,
+    onMove: (from, to) => editor.moveSlide(from, to),
+    horizontal: () => phone.value,
+    touchOnRow: true,
+    mouseOnRow: () => phone.value,
+});
 
 /** What the chain symbol says: the other playlists showing the slide (Plan.md 49). */
 function linkedLabel(id: string): string {
     return t.editor.slideList.linkedWith(editor.linkedIn(id).map((p) => p.name).join(', '));
 }
 
-function remove(id: string, name: string): void {
-    if (window.confirm(t.editor.slideList.confirmRemove(name))) editor.removeSlide(id);
+async function remove(id: string, name: string): Promise<void> {
+    if (await confirm({ message: t.editor.slideList.confirmRemove(name), confirmLabel: t.common.remove, danger: true })) editor.removeSlide(id);
 }
 
 function removeCurrent(): void {
@@ -130,9 +140,9 @@ function removeCurrent(): void {
             </span>
             <!-- Over 75rem the column folds into a rail, below it the drawer closes (Plan.md 45); the phone has its own header. -->
             <button
+                v-tip="t.editor.slideList.collapse"
                 type="button"
                 class="d-btn d-btn--icon collapse-btn"
-                :title="t.editor.slideList.collapse"
                 :aria-label="t.editor.slideList.collapse"
                 data-testid="slides-collapse"
                 @click="emit('collapse')"
@@ -159,9 +169,9 @@ function removeCurrent(): void {
                 <Icon name="chevron-down" :size="16" :class="['toggle-chevron', { open }]" />
             </button>
             <button
+                v-tip="t.editor.slideList.duplicateSlide"
                 class="d-btn d-btn--icon"
                 type="button"
-                :title="t.editor.slideList.duplicateSlide"
                 :aria-label="t.editor.slideList.duplicateSlide"
                 data-testid="slide-duplicate-phone"
                 :disabled="!editor.slide"
@@ -170,9 +180,9 @@ function removeCurrent(): void {
                 <Icon name="duplicate" :size="16" />
             </button>
             <button
+                v-tip="t.editor.slideList.removeSlide"
                 class="d-btn d-btn--icon"
                 type="button"
-                :title="t.editor.slideList.removeSlide"
                 :aria-label="t.editor.slideList.removeSlide"
                 data-testid="slide-remove-phone"
                 :disabled="!editor.slide || editor.slides.length <= 1"
@@ -189,20 +199,20 @@ function removeCurrent(): void {
                 :class="{
                     active: slide.id === editor.slide?.id,
                     disabled: !slide.enabled,
-                    over: over === index && dragging !== index,
                 }"
                 :style="{ width: tileWidth ? `${tileWidth}px` : undefined }"
                 :title="`${index + 1}. ${slide.name}`"
                 :aria-label="`${index + 1}. ${slide.name}`"
-                draggable="true"
+                data-sort-item
                 data-testid="slide-item"
                 @click="editor.selectSlide(slide.id)"
-                @dragstart="dragging = index"
-                @dragover.prevent="over = index"
-                @dragleave="over = null"
-                @drop.prevent="drop(index)"
-                @dragend="dragging = null; over = null"
             >
+                <div class="lead">
+                    <span class="num">{{ index + 1 }}</span>
+                    <button class="grip" type="button" data-sort-handle :aria-label="t.common.dragToSort" data-testid="slide-handle" @click.stop>
+                        <Icon name="grip" :size="14" />
+                    </button>
+                </div>
                 <div class="thumb" :style="{ width: `${thumb.width}px`, height: `${thumb.height}px` }">
                     <StageView :width="editor.stage.width" :height="editor.stage.height" :fit="thumb.fit">
                         <SlideView :slide="slide" :width="editor.stage.width" :height="editor.stage.height" />
@@ -218,7 +228,7 @@ function removeCurrent(): void {
                     </span>
                 </div>
                 <div class="meta">
-                    <span class="name">{{ index + 1 }}. {{ slide.name }}</span>
+                    <span class="name">{{ slide.name }}</span>
                     <!-- On a phone the name sits in the header and the sheet's bar already; here it would not fit next to the duration (Plan.md 44, second phone test). -->
                     <span class="index-num">{{ index + 1 }} ·</span>
                     <span
@@ -232,18 +242,18 @@ function removeCurrent(): void {
                 </div>
                 <div v-if="slide.id === editor.slide?.id" class="actions" @click.stop>
                     <button
+                        v-tip="t.editor.slideList.duplicate"
                         class="d-btn d-btn--icon"
                         type="button"
-                        :title="t.editor.slideList.duplicate"
                         :aria-label="t.editor.slideList.duplicate"
                         @click="editor.duplicateCurrentSlide()"
                     >
                         <Icon name="duplicate" :size="16" />
                     </button>
                     <button
+                        v-tip="t.editor.slideList.remove"
                         class="d-btn d-btn--icon"
                         type="button"
-                        :title="t.editor.slideList.remove"
                         :aria-label="t.editor.slideList.remove"
                         :disabled="editor.slides.length <= 1"
                         @click="remove(slide.id, slide.name)"
@@ -294,8 +304,11 @@ function removeCurrent(): void {
     display: flex;
     flex-direction: column;
     min-height: 0;
-    border-right: 1px solid var(--d-divider);
+    /* A card on the workspace (Plan.md 79, B3). */
+    overflow: hidden;
+    border-radius: var(--d-radius-lg);
     background: var(--d-surface);
+    box-shadow: var(--d-shadow-card);
 }
 .header-desktop {
     display: flex;
@@ -304,13 +317,15 @@ function removeCurrent(): void {
     box-sizing: border-box;
     flex: none;
     height: var(--editor-head-h);
-    padding: 0 12px;
-    border-bottom: 1px solid var(--d-divider);
+    padding: 0 var(--d-space-3) 0 var(--d-space-4);
 }
 .title {
     display: flex;
     align-items: baseline;
     gap: 6px;
+}
+.title strong {
+    font-weight: var(--d-weight-heading);
 }
 .collapse-icon {
     transform: rotate(90deg);
@@ -326,31 +341,84 @@ ol {
        would make the list shorter, the scrollbar go, and the thumbnail grow again. */
     scrollbar-gutter: stable;
     margin: 0;
-    padding: 8px;
+    padding: 0 8px 8px;
     list-style: none;
 }
+/* The number left of the picture, the picture right of it; name and time below, the buttons of the chosen one last. */
 li {
-    padding: 8px;
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr);
+    column-gap: 8px;
+    padding: 6px;
     border: 2px solid transparent;
     border-radius: var(--d-radius-lg);
     cursor: pointer;
+    transition: background-color var(--d-transition);
+}
+li > :not(.lead) {
+    grid-column: 2;
 }
 li + li {
-    margin-top: 6px;
+    margin-top: 4px;
 }
 li:hover {
     background: var(--d-panel);
 }
-li.active {
-    border-color: var(--d-accent);
-    background: var(--d-accent-pale);
+.lead {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.num {
+    padding-top: 2px;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+/* The handle sits under the number; a finger holds the whole tile instead (useSortable). */
+.grip {
+    display: grid;
+    place-items: center;
+    width: 20px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: var(--d-radius);
+    background: none;
+    color: var(--d-text-faint);
+    cursor: grab;
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+li:hover .grip,
+.grip:focus-visible {
+    color: var(--d-text-muted);
+}
+.grip:hover {
+    background: var(--d-workspace);
+    color: var(--d-text);
+}
+/* A held tile must not select its text or open the system menu. */
+li {
+    user-select: none;
+    -webkit-touch-callout: none;
+}
+li.active .num {
+    color: var(--d-accent);
+    font-weight: var(--d-weight-normal);
+}
+/* The chosen slide: a ring of 2 px in the accent around its picture, 3 px off it. */
+li.active .thumb {
+    outline: 2px solid var(--d-accent);
+    outline-offset: 3px;
 }
 .count {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
 li.add-item {
-    padding: 8px;
+    display: block;
+    padding: 6px 8px 0 32px;
     border: 0;
     cursor: default;
 }
@@ -371,6 +439,7 @@ li.add-item:hover {
     color: var(--d-text-muted);
     font: inherit;
     cursor: pointer;
+    transition: background-color var(--d-transition), border-color var(--d-transition);
 }
 .add:hover {
     border-color: var(--d-accent);
@@ -384,8 +453,9 @@ li.add-item:hover {
     justify-content: center;
     gap: 6px;
     width: 100%;
-    margin-top: 6px;
-    padding: 6px;
+    min-height: var(--d-control-h);
+    margin-top: var(--d-space-2);
+    padding: 6px 12px;
     border: 0;
     border-radius: var(--d-radius);
     background: none;
@@ -396,10 +466,6 @@ li.add-item:hover {
 }
 .import:hover {
     background: var(--d-accent-pale);
-}
-li.over {
-    border-style: dashed;
-    border-color: var(--d-accent);
 }
 li.disabled .thumb {
     opacity: 0.4;
@@ -466,8 +532,10 @@ li.disabled .thumb {
  */
 @media (max-width: 48rem) {
     .slide-list {
-        border-right: 0;
-        border-bottom: 1px solid var(--d-divider);
+        overflow: visible;
+        border-radius: 0;
+        background: none;
+        box-shadow: none;
     }
     .header-desktop {
         display: none;
@@ -477,8 +545,7 @@ li.disabled .thumb {
         align-items: center;
         gap: 6px;
         min-height: 44px;
-        padding: 2px 8px;
-        border-bottom: 1px solid var(--d-divider);
+        padding: 2px var(--d-space-3);
     }
     /* Same look as the page menu's own button (`ModuleSidebar.vue`) – a frame makes it obvious this collapses (Plan.md 44, second phone test). */
     .toggle {
@@ -494,7 +561,7 @@ li.disabled .thumb {
         background: var(--d-surface);
         color: var(--d-text);
         font: inherit;
-        font-weight: 700;
+        font-weight: var(--d-weight-heading);
         text-align: left;
         cursor: pointer;
     }
@@ -539,19 +606,22 @@ li.disabled .thumb {
      * `box-sizing: border-box`, because the thumbnail inside is not itself shrunk.
      */
     li {
+        display: block;
         box-sizing: border-box;
         flex: none;
         padding: 0;
         border: 0;
     }
+    .lead {
+        display: none;
+    }
+    li.active .thumb {
+        outline: 0;
+    }
     /* Outside the tile, into the gap: a frame inside would cover the small thumbnail. */
     li.active {
         outline: 2px solid var(--d-accent);
-        outline-offset: 1px;
-    }
-    li.over {
-        outline-style: dashed;
-        outline-color: var(--d-accent);
+        outline-offset: 3px;
     }
     /* The two tiles below sit side by side here instead of stacked full-width (Plan.md 44). */
     li.add-item {
