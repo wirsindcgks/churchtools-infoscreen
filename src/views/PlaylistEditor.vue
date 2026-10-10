@@ -634,7 +634,6 @@ function onKey(event: KeyboardEvent): void {
         class="infoscreen-designer editor"
         :class="{ 'sheet-open': inspectorOpen }"
         :style="{
-            height: `calc(100vh - ${top}px)`,
             '--editor-top': `${top}px`,
             '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}`,
             '--d-phone-bar': phone && editor.selection.length ? '112px' : '56px',
@@ -1034,6 +1033,9 @@ function onKey(event: KeyboardEvent): void {
     --editor-head-h: 53px;
     display: flex;
     flex-direction: column;
+    /* The window's visible height: on a tablet 100vh reaches under Safari's bar, and the inspector's lower part had to be scrolled to. */
+    height: calc(100vh - var(--editor-top, 0px));
+    height: calc(100dvh - var(--editor-top, 0px));
     min-height: 480px;
     /* The calm ground the cards and the stage lie on (Plan.md 79, B3). */
     background: var(--d-workspace);
