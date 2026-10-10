@@ -112,7 +112,6 @@ export const useEditorStore = defineStore('editor', () => {
     });
     const slide = computed(() => slides.value.find((s) => s.id === selectedSlideId.value) ?? slides.value[0] ?? null);
     const selection = computed<Block[]>(() => slide.value?.blocks.filter((b) => selectedBlockIds.value.includes(b.id)) ?? []);
-    /** The one chosen block; null with none or with several. */
     /** Several blocks can be grouped when they are not already all one group (groups among them merge). */
     const canGroup = computed(() => {
         const ids = withGroups(slide.value?.blocks ?? [], selectedBlockIds.value);
@@ -126,6 +125,7 @@ export const useEditorStore = defineStore('editor', () => {
         const first = selection.value[0];
         return selection.value.length >= 2 && !!first?.groupId && groupOf(slide.value?.blocks ?? [], first.id).length === selection.value.length && selection.value.every((x) => x.groupId === first.groupId);
     });
+    /** The one chosen block; null with none or with several. */
     const block = computed(() => (selection.value.length === 1 ? selection.value[0]! : null));
     /** The text block being written on the stage (Plan.md 79, C4): one editing run is one step in the history. */
     const editingTextId = ref<string | null>(null);
