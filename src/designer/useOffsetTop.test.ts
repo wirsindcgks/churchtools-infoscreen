@@ -54,6 +54,22 @@ describe('useOffsetTop', () => {
         wrapper.unmount();
     });
 
+    it('measures again when a banner is put above the bar later, and when it goes', async () => {
+        const { wrapper, top } = host();
+        offset = 112;
+        const banner = document.createElement('div');
+        document.body.prepend(banner);
+        await nextTick();
+        await new Promise((resolve) => setTimeout(resolve));
+        expect(top.value).toBe(112);
+        expect(observers[0]!.observe).toHaveBeenCalledWith(banner);
+        offset = 56;
+        banner.remove();
+        await new Promise((resolve) => setTimeout(resolve));
+        expect(top.value).toBe(56);
+        wrapper.unmount();
+    });
+
     it('measures at once on mounting', async () => {
         const { wrapper } = host();
         await nextTick();
