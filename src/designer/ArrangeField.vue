@@ -38,16 +38,16 @@ const ROWS: { axis: Axis; edges: Button<{ edge: Edge }>[]; spread: Button<object
     },
 ];
 
-const canAlign = computed(() => !!alignTarget(editor.selection, editor.stage));
+const canAlign = computed(() => !!alignTarget(editor.selectionUnits, editor.stage));
 
 /** The hint of a distribute button: its name, or why it is off. */
 function distributeTip(axis: Axis, label: string): string {
-    const why = distributeBlocker(editor.selection, axis);
+    const why = distributeBlocker(editor.selectionUnits, axis);
     return why === 'few' ? t.arrange.few : why === 'locked' ? t.arrange.locked : label;
 }
 
 function distribute(axis: Axis): void {
-    if (!distributeBlocker(editor.selection, axis)) editor.distributeSelection(axis);
+    if (!distributeBlocker(editor.selectionUnits, axis)) editor.distributeSelection(axis);
 }
 </script>
 
@@ -72,10 +72,10 @@ function distribute(axis: Axis): void {
                 <button
                     v-tip="distributeTip(row.axis, row.spread.label)"
                     class="d-btn d-btn--icon arrange-spread"
-                    :class="{ 'arrange-off': !!distributeBlocker(editor.selection, row.axis) }"
+                    :class="{ 'arrange-off': !!distributeBlocker(editor.selectionUnits, row.axis) }"
                     type="button"
                     :aria-label="row.spread.label"
-                    :aria-disabled="distributeBlocker(editor.selection, row.axis) ? 'true' : undefined"
+                    :aria-disabled="distributeBlocker(editor.selectionUnits, row.axis) ? 'true' : undefined"
                     :data-testid="`distribute-${row.axis}`"
                     @click="distribute(row.axis)"
                 >

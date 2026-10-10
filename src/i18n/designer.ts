@@ -374,7 +374,7 @@ export const t = {
         bottom: 'Unten ausrichten',
         distributeX: 'Waagrecht verteilen',
         distributeY: 'Senkrecht verteilen',
-        few: 'Verteilen ab drei Bausteinen',
+        few: 'Verteilen ab drei Bausteinen oder Gruppen',
         locked: 'Ein gesperrter Baustein liegt dazwischen',
     },
 

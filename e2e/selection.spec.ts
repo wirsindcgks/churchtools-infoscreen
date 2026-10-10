@@ -238,7 +238,7 @@ test('"Verteilen" is off below three blocks and says why (Plan.md 79, D4)', asyn
     const button = page.locator('[data-testid="section-arrange"]').getByTestId('distribute-x');
     await expect(button).toHaveAttribute('aria-disabled', 'true');
     await button.hover();
-    await expect(page.getByTestId('tip')).toHaveText('Verteilen ab drei Bausteinen');
+    await expect(page.getByTestId('tip')).toHaveText('Verteilen ab drei Bausteinen oder Gruppen');
 });
 
 test('the chip "Ausrichten" of the short menu lines two blocks up at the top (Plan.md 79, D4)', async ({ page }) => {
