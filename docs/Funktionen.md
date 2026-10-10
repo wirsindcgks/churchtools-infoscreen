@@ -88,7 +88,9 @@ richten sich nach ihm. **Gruppieren** (Strg/⌘ + G) hält zusammen, was zusamme
 Bildunterschrift: Ein Klick wählt dann die ganze Gruppe, ein Doppelklick ein einzelnes Mitglied; beim Ausrichten
 und Verteilen zählt sie wie ein einzelner Baustein. Solange nichts
 gewählt ist, zeigt der Inspektor **„Bausteine dieser Folie"**, oben = vorne: Ein Klick wählt, das Schloss sperrt,
-Ziehen ändert die Ebene – so erreicht man auch, was ganz verdeckt liegt.
+Ziehen ändert die Ebene – so erreicht man auch, was ganz verdeckt liegt. Eine Gruppe ist dort eine Zeile, die sich
+aufklappen lässt; ihre Mitglieder ordnet man darin untereinander, und „vorn/hinten" eines einzelnen Mitglieds bleibt
+innerhalb der Gruppe.
 
 ![Editor mit allen fünf Bausteinen einer Folie gewählt: darüber das Kurzmenü „5 Bausteine" mit offenem „Ausrichten", rechts „Anordnen"](bilder/mehrere.png)
 
