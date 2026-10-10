@@ -2,8 +2,8 @@
 /**
  * The two rows at the bottom of a phone (Plan.md 79, C2). The lower one is always there: the slide – "Folie 2 von 5" opens the
  * sheet of slides, "+ Baustein" the sheet of blocks, "⋯" holds what belongs to the slide. A block chosen (or several) adds the upper row:
- * the short menu of the block in its bar form (`QuickMenu`, `variant="bar"`); in the mode "Mehrere auswählen" that row counts
- * the chosen ones and ends the mode instead (D6). The sheets themselves belong to the editor; this bar only asks for them.
+ * the short menu of the block in its bar form (`QuickMenu`, `variant="bar"`); in the mode "Mehrere auswählen" the lower row
+ * counts the chosen ones and ends the mode instead of the slide's (D6). The sheets themselves belong to the editor; this bar only asks for them.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
@@ -65,14 +65,15 @@ async function removeSlide(): Promise<void> {
 
 <template>
     <div class="phone-bar" :style="keyboard ? { bottom: `${keyboard}px` } : undefined" data-testid="phone-bar">
-        <div v-if="editor.multiSelect" class="block-row multi-row" data-testid="multi-select-bar">
+        <div v-if="editor.selection.length" class="block-row" data-testid="phone-block-row">
+            <QuickMenu ref="quickMenu" :key="editor.selection.map((b) => b.id).join()" :blocks="editor.selection" variant="bar" @all-settings="emit('all-settings')" />
+        </div>
+        <!-- In the mode the lower row counts and ends it; the short menu above already acts on what is chosen (user at the phone, 2026-10-10). -->
+        <div v-if="editor.multiSelect" class="slide-row multi-row" data-testid="multi-select-bar">
             <span class="multi-count">{{ t.editor.selectedCount(editor.selectedBlockIds.length) }}</span>
             <button class="d-btn d-btn--create" type="button" data-testid="multi-select-done" @click="editor.endMultiSelect()">{{ t.quick.done }}</button>
         </div>
-        <div v-else-if="editor.selection.length" class="block-row" data-testid="phone-block-row">
-            <QuickMenu ref="quickMenu" :key="editor.selection.map((b) => b.id).join()" :blocks="editor.selection" variant="bar" @all-settings="emit('all-settings')" />
-        </div>
-        <div class="slide-row" data-testid="phone-slide-row">
+        <div v-else class="slide-row" data-testid="phone-slide-row">
             <button
                 class="slides-btn"
                 type="button"
@@ -178,7 +179,6 @@ async function removeSlide(): Promise<void> {
 /* The count on the left, "Fertig" on the right. */
 .multi-row {
     justify-content: space-between;
-    padding: 0 var(--d-space-3);
     font-weight: var(--d-weight-heading);
 }
 /* One step set off from the slide row below. */
