@@ -117,6 +117,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     text: t.blocks.text,
     image: t.blocks.image,
     shape: t.blocks.shape,
+    line: t.blocks.line,
     clock: t.blocks.clock,
     'appointment-list': t.blocks['appointment-list'],
     'next-appointment': t.blocks['next-appointment'],
@@ -135,6 +136,7 @@ export const BLOCK_ICONS: Record<BlockType, IconName> = {
     text: 'text',
     image: 'image',
     shape: 'shape',
+    line: 'line',
     clock: 'clock',
     'appointment-list': 'list',
     'next-appointment': 'calendar',
@@ -187,6 +189,7 @@ export function createBlock(
         text: [1200, 200],
         image: [800, 450],
         shape: [600, 300],
+        line: [800, 40],
         clock: [400, 100],
         'appointment-list': [1400, 600],
         'next-appointment': [1400, 600],
@@ -220,6 +223,8 @@ export function createBlock(
             return { ...frame, type, mediaId: '', fit: 'contain' };
         case 'shape':
             return { ...frame, type, fill: { kind: 'solid', color: '#334155' }, cornerRadius: 0 };
+        case 'line':
+            return { ...frame, type, color: theme.accent, thickness: 8, dash: 'solid' };
         case 'clock':
             return { ...frame, type, format: 'time', style: textStyle(64, { fontWeight: 600, align: 'right' }) };
         case 'appointment-list':
