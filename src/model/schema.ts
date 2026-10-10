@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 30 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 31 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -48,6 +48,10 @@ export const TextStyle = v.object({
     verticalAlign: v.optional(v.picklist(['top', 'middle', 'bottom'])),
 });
 
+/** Since 1.31: the soft or strong shadow of a picture, video or gallery (Plan.md F2). */
+const BlockShadow = v.picklist(['none', 'soft', 'strong']);
+const BlockCorners = v.pipe(v.number(), v.finite(), v.minValue(0));
+
 const BlockFrame = {
     id: Id,
     x: Px,
@@ -84,6 +88,23 @@ export const ImageBlock = v.object({
     /** Empty until a medium is chosen; the player then shows a calm placeholder. */
     mediaId: v.pipe(v.string(), v.maxLength(64)),
     fit: v.optional(v.picklist(['contain', 'cover']), 'contain'),
+    /**
+     * Since 1.31: the part of the picture shown at `fit: 'cover'` (Plan.md F2). `x` and `y` are the position as in CSS
+     * `object-position` (50 = middle, 0 = the left or top edge of the picture at the frame); `zoom` enlarges. Older
+     * players show the whole cover.
+     */
+    crop: v.optional(
+        v.object({
+            x: v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(100)),
+            y: v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(100)),
+            zoom: v.pipe(v.number(), v.finite(), v.minValue(1), v.maxValue(3)),
+        }),
+    ),
+    /** Since 1.31: rounded corners and a shadow, both only at `fit: 'cover'` (Plan.md F2). Older players ignore them. */
+    cornerRadius: v.optional(BlockCorners),
+    shadow: v.optional(BlockShadow),
+    /** Since 1.31: darkens, lightens or greys the picture's pixels, for text on top of it. */
+    tone: v.optional(v.picklist(['none', 'darken', 'lighten', 'grayscale'])),
 });
 
 export const ShapeBlock = v.object({
@@ -319,6 +340,9 @@ export const SlideshowBlock = v.object({
     transition: v.optional(v.picklist(['fade', 'slide', 'wipe', 'zoom', 'none']), 'fade'),
     /** Since 1.19: a slow zoom of every image while it stands, with any transition; `alternate` zooms every second one out. */
     motion: v.optional(v.picklist(['none', 'in', 'out', 'alternate']), 'none'),
+    /** Since 1.31: only at `fit: 'cover'` (Plan.md F2). Older players ignore them. */
+    cornerRadius: v.optional(BlockCorners),
+    shadow: v.optional(BlockShadow),
 });
 
 /** One room of a `rooms` block (schema 1.16). */
@@ -362,6 +386,9 @@ export const VideoBlock = v.object({
     fit: v.optional(v.picklist(['contain', 'cover']), 'contain'),
     /** Off until switched on; the browser of the device may still keep it muted. */
     sound: v.optional(v.boolean(), false),
+    /** Since 1.31: only at `fit: 'cover'` (Plan.md F2). Older players ignore them. */
+    cornerRadius: v.optional(BlockCorners),
+    shadow: v.optional(BlockShadow),
 });
 
 export const Block = v.variant('type', [

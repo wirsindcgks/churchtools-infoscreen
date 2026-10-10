@@ -169,6 +169,50 @@ describe('rendering a slide', () => {
     });
 });
 
+describe('pictures: crop, tone, corners and shadow (Plan.md F2)', () => {
+    const medium: MediaDoc = { schema: { major: 1, minor: 0 }, kind: 'media', id: 'm1', name: 'Plakat', fileId: 46, imageUrl: 'https://example.church.tools/images/46/hash' };
+    const image = (extra: Record<string, unknown> = {}) => ({ id: 'i', type: 'image', x: 0, y: 0, width: 960, height: 540, mediaId: 'm1', fit: 'cover', ...extra }) as Block;
+    const drawn = (block: Block) => render(makeSlide({ blocks: [block] }), { media: new Map([['m1', medium]]) });
+
+    it('sets the crop as object-position and a zoom about the same point', () => {
+        const wrapper = drawn(image({ crop: { x: 20, y: 70, zoom: 2 } }));
+        const style = wrapper.get('img').attributes('style');
+        expect(style).toContain('object-position: 20% 70%');
+        expect(style).toContain('transform: scale(2)');
+        expect(style).toContain('transform-origin: 20% 70%');
+        expect(drawn(image()).get('img').attributes('style')).not.toMatch(/transform|object-position/);
+    });
+
+    it('ignores the crop at "Ganz zeigen"', () => {
+        expect(drawn(image({ fit: 'contain', crop: { x: 20, y: 70, zoom: 2 } })).get('img').attributes('style')).not.toMatch(/transform/);
+    });
+
+    it('sets the tone as a filter on the picture at both fits, nothing for none', () => {
+        expect(drawn(image({ tone: 'darken' })).get('img').attributes('style')).toContain('filter: brightness(0.55)');
+        expect(drawn(image({ fit: 'contain', tone: 'grayscale' })).get('img').attributes('style')).toContain('filter: grayscale(1)');
+        expect(drawn(image({ tone: 'lighten' })).get('img').attributes('style')).toContain('brightness(1.35) contrast(0.7)');
+        expect(drawn(image({ tone: 'none' })).get('img').attributes('style')).not.toContain('filter');
+    });
+
+    it('rounds and shades the frame only at "Füllen", for picture, video and gallery', () => {
+        const frame = (block: Block) => drawn(block).get('.block').attributes('style');
+        expect(frame(image({ cornerRadius: 24, shadow: 'soft' }))).toMatch(/border-radius: 24px.*box-shadow: .*rgba\(0, 0, 0, 0\.35\)/);
+        expect(frame(image({ shadow: 'strong' }))).toContain('0 16px 48px');
+        expect(frame(image({ fit: 'contain', cornerRadius: 24, shadow: 'soft' }))).not.toMatch(/border-radius|box-shadow/);
+        expect(frame(image({ shadow: 'none' }))).not.toContain('box-shadow');
+        const video = { id: 'v', type: 'video', x: 0, y: 0, width: 400, height: 300, fit: 'cover', cornerRadius: 12, shadow: 'soft' } as Block;
+        expect(frame(video)).toMatch(/border-radius: 12px/);
+        expect(frame({ ...video, fit: 'contain' } as Block)).not.toContain('border-radius');
+        const gallery = { id: 'g', type: 'slideshow', x: 0, y: 0, width: 400, height: 300, mediaIds: ['m1'], cornerRadius: 12, shadow: 'strong' } as Block;
+        expect(frame(gallery)).toMatch(/border-radius: 12px.*box-shadow/);
+        expect(frame({ ...gallery, fit: 'contain' } as Block)).not.toContain('box-shadow');
+    });
+
+    it('names the block on its frame', () => {
+        expect(drawn(image()).get('.block').attributes('data-block-id')).toBe('i');
+    });
+});
+
 describe('rendering posts (Plan.md 33)', () => {
     const post = (overrides: Partial<Post> = {}): Post => ({
         id: 4,

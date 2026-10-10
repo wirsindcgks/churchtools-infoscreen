@@ -32,6 +32,8 @@ const block = computed(() => (props.blocks.length === 1 ? props.blocks[0]! : nul
 const many = computed(() => props.blocks.length > 1);
 const ids = computed(() => props.blocks.map((b) => b.id));
 const allLocked = computed(() => props.blocks.every((b) => b.locked));
+/** A picture with a medium, chosen alone: its crop can be chosen on the stage (Plan.md F2). */
+const cropable = computed(() => props.blocks.length === 1 && props.blocks[0]!.type === 'image' && !!props.blocks[0]!.mediaId && !props.blocks[0]!.locked);
 /** Whether a chosen, unlocked block is turned: then "Drehen zurücksetzen" is offered. */
 const turned = computed(() => props.blocks.some((b) => !b.locked && b.rotation));
 const title = computed(() => (block.value ? BLOCK_LABELS[block.value.type] : (editor.groupSelected ? t.editor.groupCount(props.blocks.length) : t.editor.blocksCount(props.blocks.length))));
@@ -373,6 +375,9 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
                             {{ layer.label }}
                         </button>
                     </template>
+                    <button v-if="cropable" role="menuitem" type="button" data-testid="quick-crop" @click="choose(() => editor.startCrop(ids[0]!))">
+                        {{ t.quick.crop }}
+                    </button>
                     <button v-if="turned" role="menuitem" type="button" data-testid="quick-reset-rotation" @click="choose(() => editor.resetRotation(ids))">
                         {{ t.quick.resetRotation }}
                     </button>

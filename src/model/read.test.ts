@@ -51,7 +51,7 @@ describe('readSlide – tolerant towards newer data', () => {
     });
 
     it('reads rotation, opacity, shape, border and the line (schema 1.30): all optional, old slides stay valid', () => {
-        expect(SCHEMA_VERSION.minor).toBe(30);
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(30);
         const old = makeSlide({ blocks: [textBlock('a')] });
         const shape = { id: 's', type: 'shape', x: 0, y: 0, width: 100, height: 100, fill: { kind: 'solid', color: '#000' } };
         const line = { id: 'l', type: 'line', x: 0, y: 0, width: 800, height: 40, color: '#f00', thickness: 8 };
@@ -70,6 +70,28 @@ describe('readSlide – tolerant towards newer data', () => {
         expect(readSlide({ ...old, blocks: [{ ...shape, rotation: 181 }] }).issues).not.toHaveLength(0);
         expect(readSlide({ ...old, blocks: [{ ...shape, opacity: 101 }] }).issues).not.toHaveLength(0);
         expect(readSlide({ ...old, blocks: [{ ...line, thickness: 0 }] }).issues).not.toHaveLength(0);
+    });
+
+    it('reads crop, corners, shadow and tone of pictures (schema 1.31): all optional, old slides stay valid', () => {
+        expect(SCHEMA_VERSION.minor).toBe(31);
+        const old = makeSlide({ blocks: [textBlock('a')] });
+        const image = { id: 'i', type: 'image', x: 0, y: 0, width: 400, height: 300, mediaId: 'm' };
+        const video = { id: 'v', type: 'video', x: 0, y: 0, width: 400, height: 300 };
+        const gallery = { id: 'g', type: 'slideshow', x: 0, y: 0, width: 400, height: 300, mediaIds: [] };
+        const read = (block: object) => readSlide({ ...old, blocks: [block] });
+        expect(read(image).issues).toHaveLength(0);
+        expect(read(video).issues).toHaveLength(0);
+        expect(read(gallery).issues).toHaveLength(0);
+        const full = read({ ...image, crop: { x: 20, y: 80, zoom: 2.5 }, cornerRadius: 24, shadow: 'soft', tone: 'darken' });
+        expect(full.issues).toHaveLength(0);
+        expect(full.doc.blocks[0]).toMatchObject({ crop: { x: 20, y: 80, zoom: 2.5 }, cornerRadius: 24, shadow: 'soft', tone: 'darken' });
+        expect(read({ ...video, cornerRadius: 8, shadow: 'strong' }).issues).toHaveLength(0);
+        expect(read({ ...gallery, cornerRadius: 8, shadow: 'strong' }).issues).toHaveLength(0);
+        expect(read({ ...image, crop: { x: 20, y: 80, zoom: 4 } }).issues).not.toHaveLength(0);
+        expect(read({ ...image, crop: { x: 101, y: 0, zoom: 1 } }).issues).not.toHaveLength(0);
+        expect(read({ ...image, tone: 'sepia' }).issues).not.toHaveLength(0);
+        expect(read({ ...image, shadow: 'huge' }).issues).not.toHaveLength(0);
+        expect(read({ ...image, cornerRadius: -1 }).issues).not.toHaveLength(0);
     });
 
     it('accepts a newer minor version', () => {
