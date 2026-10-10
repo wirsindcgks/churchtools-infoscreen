@@ -91,6 +91,8 @@ Schatten; der **Ton** dunkelt ein Bild ab, hellt es auf oder macht es grau, dami
 Gemeindekopf; beim Text zusätzlich eine farbige **Hinterlegung** hinter jeder Zeile. Zeilen- und Buchstabenabstand
 (eng, normal, weit) hat jeder Baustein mit Schrift.
 
+![Editor mit einer gestalteten Folie: ein Bild mit runden Ecken, Schatten und abgedunkeltem Ton, darauf ein Text mit Schatten und Hinterlegung, daneben eine gedrehte gelbe Fläche mit ihrem Drehgriff; rechts „Drehung und Deckkraft“ mit −12°](bilder/gestalten.png)
+
 ## Mehrere Bausteine
 
 Mit Umschalt-Klick, einem **Auswahlrahmen** auf der leeren Fläche oder Strg/⌘ + A wählt man mehrere Bausteine
