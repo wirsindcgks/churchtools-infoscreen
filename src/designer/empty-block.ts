@@ -1,5 +1,6 @@
 import { t } from '../i18n/designer';
 import type { Block } from '../model/schema';
+import { outerFrame } from './rotate';
 
 /** What a block still lacks, as the words of the button on it (Plan.md 79, C6); null where it has what it needs. */
 export function emptyAction(block: Block): string | null {
@@ -32,5 +33,6 @@ export function centerCovered(block: Block, blocks: readonly Block[]): boolean {
     const cy = block.y + block.height / 2;
     return blocks
         .slice(blocks.findIndex((b) => b.id === block.id) + 1)
+        .map(outerFrame)
         .some((b) => cx >= b.x && cx <= b.x + b.width && cy >= b.y && cy <= b.y + b.height);
 }

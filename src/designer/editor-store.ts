@@ -26,6 +26,7 @@ import { History } from './history';
 import { layerUnits } from './layers';
 import { GRID_SIZES } from './snap';
 import { boundingBox, clampFrame, cloneJson, createBlock, createSlide, dropSingleGroups, duplicateSlide, freeSpot, gatherLayers, groupOf, move, moveAround, newId, reorderMany, withGroups, type Layer } from './ops';
+import { outerFrame } from './rotate';
 
 /** Publishing (Plan.md 79, Paket E): what the button "Veröffentlichen" is doing. */
 export type SaveStatus = 'idle' | 'publishing' | 'published' | 'conflict' | 'error';
@@ -356,7 +357,10 @@ export const useEditorStore = defineStore('editor', () => {
     /** The blocks whose frame the rectangle (stage pixels) touches; with `add` together with those chosen already. */
     function selectArea(rect: { x: number; y: number; width: number; height: number }, add = false): void {
         let hit = (slide.value?.blocks ?? [])
-            .filter((b) => b.x <= rect.x + rect.width && b.x + b.width >= rect.x && b.y <= rect.y + rect.height && b.y + b.height >= rect.y)
+            .filter((b) => {
+                const box = outerFrame(b);
+                return box.x <= rect.x + rect.width && box.x + box.width >= rect.x && box.y <= rect.y + rect.height && box.y + box.height >= rect.y;
+            })
             .map((b) => b.id);
         hit = withGroups(slide.value?.blocks ?? [], hit);
         selectedBlockIds.value = add ? [...new Set([...selectedBlockIds.value, ...hit])] : hit;
@@ -582,6 +586,16 @@ export const useEditorStore = defineStore('editor', () => {
         });
     }
 
+    /** Sets the turned, unlocked ones among them back to 0° (the field goes) in one step (Plan.md F1). */
+    function resetRotation(ids: readonly string[]): void {
+        const turned = new Set(blocksOf(ids).filter((x) => !x.locked && x.rotation).map((x) => x.id));
+        if (!turned.size) return;
+        const slideId = slide.value?.id;
+        change((b) => {
+            for (const target of slideIn(b, slideId)?.blocks ?? []) if (turned.has(target.id)) delete target.rotation;
+        });
+    }
+
     /** Frame changes are clamped so a block always stays reachable on the stage. */
     function updateBlock(id: string, patch: Partial<Block>): void {
         if (isLocked(id)) return;
@@ -623,7 +637,7 @@ export const useEditorStore = defineStore('editor', () => {
     function applyFrames(blocks: readonly Block[], frames: readonly Frame[]): void {
         const next = new Map<string, Frame>();
         blocks.forEach((x, i) => {
-            const frame = clampFrame(frames[i]!, stage.value);
+            const frame = clampFrame({ ...frames[i]!, rotation: x.rotation }, stage.value);
             if (frame.x !== x.x || frame.y !== x.y) next.set(x.id, frame);
         });
         if (!next.size) return;
@@ -1069,6 +1083,7 @@ export const useEditorStore = defineStore('editor', () => {
         updateSlide,
         addBlock,
         updateBlock,
+        resetRotation,
         moveBlocks,
         selectionUnits,
         alignSelection,

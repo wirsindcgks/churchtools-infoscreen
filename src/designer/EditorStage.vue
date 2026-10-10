@@ -17,6 +17,7 @@ import { handlesOutside } from './handles';
 import { neighbourGaps, pairGaps, sizeLabelPlace, type Measure } from './measure';
 import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, boundingBox, clampFrame } from './ops';
 import QuickMenu from './QuickMenu.vue';
+import { outerFrame, resizeRotated, snapAngle } from './rotate';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 import { clampPan, viewOnto, WHOLE, zoomAt, zoomedFit, type View } from './stage-zoom';
 
@@ -114,6 +115,8 @@ interface Drag {
     startY: number;
     /** The block's frame; for a drag of several the box around the moving ones. */
     frame: { x: number; y: number; width: number; height: number };
+    /** The turn of the block a handle drags (Plan.md F1); then it is resized in its own axes and does not snap. */
+    rotation?: number;
     /** Snap targets come closer than this many screen pixels: a fingertip is less exact than a mouse. */
     snapPx: number;
 }
@@ -194,7 +197,9 @@ function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): vo
         handle,
         startX: event.clientX,
         startY: event.clientY,
-        frame: boundingBox(moving)!,
+        // A handle works on the block's own frame, a move on the box around what moves (which counts a turn).
+        frame: handle === 'move' ? boundingBox(moving)! : { x: block.x, y: block.y, width: block.width, height: block.height },
+        rotation: handle === 'move' ? undefined : block.rotation,
         snapPx: touch ? SNAP_SCREEN_PX_TOUCH : SNAP_SCREEN_PX,
     };
     if (touch && handle === 'move' && view.value.zoom > 1) {
@@ -238,6 +243,17 @@ function moveTo(event: PointerEvent): void {
     dragIds.value = drag.ids;
     const f = { ...drag.frame };
     const h = drag.handle;
+    // The others count by the box around them.
+    const others = blocks.value.filter((b) => !drag!.ids.includes(b.id)).map((b) => ({ ...b, ...outerFrame(b) }));
+    if (h !== 'move' && drag.rotation) {
+        // Turned: resized in its own axes, whole pixels, no snapping – the edges lie aslant.
+        const resized = resizeRotated(f, drag.rotation, h, dx, dy);
+        guides.value = [];
+        spacings.value = [];
+        measures.value = neighbourGaps(outerFrame({ ...clampFrame({ ...resized, rotation: drag.rotation }, editor.stage), rotation: drag.rotation }), others, editor.stage);
+        apply(drag, resized);
+        return;
+    }
     if (h === 'move') {
         f.x += dx;
         f.y += dy;
@@ -254,7 +270,6 @@ function moveTo(event: PointerEvent): void {
         }
     }
     // The box of a group snaps against everything else – the locked chosen ones included, so one can line up with them.
-    const others = blocks.value.filter((b) => !drag!.ids.includes(b.id));
     // Alt/Option suspends snapping for fine placement – the distances still show.
     if (event.altKey) {
         guides.value = [];
@@ -307,6 +322,41 @@ function end(): void {
     }
 }
 
+/** Turning a block at its handle (Plan.md F1): the angle the pointer had at the start and the block's turn then. */
+let turn: { id: string; cx: number; cy: number; startPointer: number; startRotation: number } | null = null;
+/** The angle shown beside the block while it is turned. */
+const turning = ref<{ id: string; angle: number } | null>(null);
+
+const pointerAngle = (event: PointerEvent, cx: number, cy: number): number => (Math.atan2(event.clientY - cy, event.clientX - cx) * 180) / Math.PI;
+
+function startTurn(event: PointerEvent, block: Block): void {
+    if (event.button !== 0) return;
+    event.stopPropagation();
+    const rect = overlay.value?.getBoundingClientRect();
+    if (!rect || !fit.value.scale || block.locked) return;
+    const cx = rect.left + (block.x + block.width / 2) * fit.value.scale;
+    const cy = rect.top + (block.y + block.height / 2) * fit.value.scale;
+    turn = { id: block.id, cx, cy, startPointer: pointerAngle(event, cx, cy), startRotation: block.rotation ?? 0 };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+}
+
+function moveTurn(event: PointerEvent): void {
+    if (!turn) return;
+    event.stopPropagation();
+    const angle = snapAngle(turn.startRotation + pointerAngle(event, turn.cx, turn.cy) - turn.startPointer, event.shiftKey);
+    editor.beginGesture();
+    turning.value = { id: turn.id, angle };
+    editor.updateBlock(turn.id, { rotation: angle || undefined });
+}
+
+function endTurn(event: PointerEvent): void {
+    if (!turn) return;
+    event.stopPropagation();
+    turn = null;
+    turning.value = null;
+    editor.endGesture();
+}
+
 type Drawn = Measure & { kind: 'measure' | 'spacing' };
 /** Everything drawn in orange: the neighbour distances, the pair under Alt, and the equal gaps without doubles. */
 const drawn = computed<Drawn[]>(() => {
@@ -329,10 +379,19 @@ function measureStyle(m: Measure): Record<string, string> {
 
 /** The size beside the block while it is dragged or resized (A1): where `sizeLabelPlace` puts it, clear of the distances. */
 const sizeLabel = computed(() => {
-    const b = dragId.value ? boundingBox(blocks.value.filter((x) => dragIds.value.includes(x.id))) : null;
+    const turned = turning.value ? blocks.value.find((x) => x.id === turning.value!.id) : null;
+    if (turning.value && turned) {
+        const b = outerFrame(turned);
+        const { top } = sizeLabelPlace(b, [], editor.stage, fit.value.scale);
+        return { text: t.editor.stage.angle(turning.value.angle), style: { left: `${b.x + b.width / 2}px`, top: `${top}px` } };
+    }
+    const dragged = dragId.value ? blocks.value.filter((x) => dragIds.value.includes(x.id)) : [];
+    const b = boundingBox(dragged);
     if (!b) return null;
     const { top } = sizeLabelPlace(b, drawn.value, editor.stage, fit.value.scale);
-    return { text: t.editor.stage.size(b.width, b.height), style: { left: `${b.x + b.width / 2}px`, top: `${top}px` } };
+    // One block says its own size, also when turned – its box would grow with the angle; several say their box.
+    const own = dragged.length === 1 ? dragged[0]! : b;
+    return { text: t.editor.stage.size(own.width, own.height), style: { left: `${b.x + b.width / 2}px`, top: `${top}px` } };
 });
 
 const gridStyle = computed(() => {
@@ -368,6 +427,8 @@ const quickFrame = computed(() => {
     const box = boundingBox(quickBlocks.value);
     return box ? hostFrame(box) : null;
 });
+/** The rotate handle stands this many screen pixels above the block (with its radius): the menu keeps clear of it. */
+const ROTATE_LIFT = 36;
 const quickMenu = ref<InstanceType<typeof QuickMenu> | null>(null);
 
 /** The buttons on blocks that lack their content (C6): only where they fit, never on a locked block, the one being dragged or one whose middle another block covers. */
@@ -676,7 +737,7 @@ const editingBlock = computed(() => {
 /** Text blocks without text show a pale hint here – the player shows nothing. */
 const placeholders = computed(() => blocks.value.filter((b): b is Extract<Block, { type: 'text' }> => b.type === 'text' && !b.text && b.id !== editor.editingTextId));
 function textFrame(b: Block): Record<string, string> {
-    return { left: `${b.x}px`, top: `${b.y}px`, width: `${b.width}px`, height: `${b.height}px` };
+    return { left: `${b.x}px`, top: `${b.y}px`, width: `${b.width}px`, height: `${b.height}px`, ...(b.rotation ? { transform: `rotate(${b.rotation}deg)` } : {}) };
 }
 const textArea = ref<HTMLTextAreaElement | null>(null);
 function grow(): void {
@@ -818,6 +879,7 @@ function onEmptyAction(b: Block): void {
                         top: `${block.y}px`,
                         width: `${block.width}px`,
                         height: `${block.height}px`,
+                        transform: block.rotation ? `rotate(${block.rotation}deg)` : undefined,
                         '--handle': `${12 / fit.scale}px`,
                         '--line': `${1.5 / fit.scale}px`,
                     }"
@@ -854,6 +916,15 @@ function onEmptyAction(b: Block): void {
                             @pointermove="moveTo"
                             @pointerup="end"
                             @pointercancel="end"
+                        />
+                        <span
+                            class="rotate-handle"
+                            :title="t.editor.stage.rotateHandle"
+                            data-testid="handle-rotate"
+                            @pointerdown="startTurn($event, block)"
+                            @pointermove="moveTurn"
+                            @pointerup="endTurn"
+                            @pointercancel="endTurn"
                         />
                     </template>
                 </div>
@@ -930,6 +1001,7 @@ function onEmptyAction(b: Block): void {
             :blocks="quickBlocks"
             :frame="quickFrame"
             :host="size"
+            :lift="quickBlocks.length === 1 && !quickBlocks[0]!.locked ? ROTATE_LIFT : 0"
             @all-settings="emit('all-settings')"
         />
         <!-- Only in the editor, never in the player (A7): over the stage, in screen pixels, below the blocks' reach. -->
@@ -1264,6 +1336,36 @@ function onEmptyAction(b: Block): void {
         background: transparent;
     }
 }
+.rotate-handle {
+    --lift: calc(var(--s) * 28);
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: var(--handle);
+    height: var(--handle);
+    margin-left: calc(var(--handle) / -2);
+    margin-top: calc(var(--handle) / -2 - var(--lift));
+    box-sizing: border-box;
+    border: var(--line) solid rgb(59, 130, 246);
+    border-radius: 50%;
+    background: #fff;
+    cursor: grab;
+    touch-action: none;
+}
+/* The short line from the handle down to the frame. */
+.rotate-handle::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 100%;
+    width: var(--line);
+    height: calc(var(--lift) - var(--handle) / 2);
+    transform: translateX(-50%);
+    background: rgb(59, 130, 246);
+}
+.frame--tight .rotate-handle {
+    --lift: calc(var(--s) * 62);
+}
 /* A fingertip needs a bigger grip than a mouse pointer – but the grip is the hit area below; seen, 16 screen pixels are enough (user at the phone, 2026-10-09: 24 were too big). */
 @media (pointer: coarse) {
     .handle {
@@ -1272,7 +1374,17 @@ function onEmptyAction(b: Block): void {
         margin: calc(var(--handle) * -2 / 3);
     }
     /* The area that catches a fingertip: 44 × 44 screen pixels around the middle of the handle. */
-    .handle::before {
+    .rotate-handle {
+        width: calc(var(--handle) * 4 / 3);
+        height: calc(var(--handle) * 4 / 3);
+        margin-left: calc(var(--handle) * -2 / 3);
+        margin-top: calc(var(--handle) * -2 / 3 - var(--lift));
+    }
+    .rotate-handle::after {
+        height: calc(var(--lift) - var(--handle) * 2 / 3);
+    }
+    .handle::before,
+    .rotate-handle::before {
         content: '';
         position: absolute;
         left: 50%;

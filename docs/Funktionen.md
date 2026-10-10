@@ -59,8 +59,8 @@ das Feld nicht.
 
 ![Editor mit einer Terminliste als Karten, darüber das Kurzmenü mit den Kalendern](bilder/editor.png)
 
-**Fünfzehn Bausteine:** Text, Bild, Fläche, Galerie, Video, Uhr, Terminliste, Nächster Termin, Gemeindekopf mit Logo,
-Webseite, QR-Code, Countdown, Beiträge, Gruppen und Raumbelegung. Beim Baustein „Webseite" geht statt der Adresse auch der
+**Sechzehn Bausteine:** Text, Bild, Fläche, Linie, Galerie, Video, Uhr, Terminliste, Nächster Termin, Gemeindekopf mit
+Logo, Webseite, QR-Code, Countdown, Beiträge, Gruppen und Raumbelegung. Beim Baustein „Webseite" geht statt der Adresse auch der
 Einbettungscode (`<iframe …>`), den Karten, Umfragen oder Pinnwände anbieten – übernommen wird nur die Adresse darin.
 Seiten des eigenen ChurchTools bettet der Baustein nicht ein.
 
@@ -77,6 +77,11 @@ Folien nennt ein Dialog vor dem Veröffentlichen. Entwürfe liegen in einer eige
 darf – ein Gerät kann einen Entwurf nie zeigen (siehe [Rechte](Rechte.md)). Solange ein Administrator nach dem Update
 noch nicht „Rechte aktualisieren" geklickt hat, geht jede Änderung mit „Veröffentlichen" wie früher direkt auf die
 Fernseher; der Editor sagt das.
+
+**Formen, Linien, Drehen:** Eine Fläche ist ein Rechteck mit runden Ecken oder eine Ellipse, auf Wunsch mit Rand. Die
+Linie ist durchgezogen oder gestrichelt und hat Griffe nur an ihren Enden. Jeder Baustein dreht sich am runden Griff
+über seinem Rahmen; er rastet bei 0°, 45°, 90° … ein, mit Umschalt dreht er frei. Genaue Winkel und die **Deckkraft**
+stehen im Inspektor unter „Drehung und Deckkraft“, „Drehen zurücksetzen“ im „⋯“ des Kurzmenüs.
 
 ## Mehrere Bausteine
 
