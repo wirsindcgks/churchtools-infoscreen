@@ -165,6 +165,8 @@ function onKeydown(event: KeyboardEvent): void {
     // The editor's Delete removes the chosen block: a focused chip or button of the menu does not.
     if (event.key === 'Delete' || event.key === 'Backspace') {
         event.stopPropagation();
+        // On a button, WebKit takes Backspace for "back" and leaves the editor; a field keeps it for its text.
+        if (!(event.target as HTMLElement).closest('input, textarea, select, [contenteditable]')) event.preventDefault();
         return;
     }
     if (!event.key.startsWith('Arrow')) return;
