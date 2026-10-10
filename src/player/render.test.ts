@@ -734,3 +734,43 @@ describe('rendering rooms (Plan.md 46)', () => {
         expect(pages.r).toBe(1);
     });
 });
+
+describe('the social media block (Plan.md 80)', () => {
+    const social = (extra: Record<string, unknown> = {}) =>
+        ({ id: 'so', type: 'social', x: 0, y: 0, width: 900, height: 360, links: [{ url: 'instagram.com/wirsindcgks' }, { url: 'https://www.youtube.com/@Gemeinde', label: 'Unser Kanal' }, { url: '  ' }, { url: 'gemeinde.de/kontakt' }], style, ...extra }) as Block;
+    const draw = (extra?: Record<string, unknown>) => render(makeSlide({ blocks: [social(extra)] }));
+
+    it('draws a line per link with its mark and name, skipping an empty address, a label winning over the name', () => {
+        const view = draw();
+        expect(view.findAll('[data-testid="social-row"]')).toHaveLength(3);
+        expect(view.findAll('[data-testid="social-name"]').map((n) => n.text())).toEqual(['wirsindcgks', 'Unser Kanal', 'gemeinde.de/kontakt']);
+        expect(view.find('[data-testid="social-mark-instagram"]').exists()).toBe(true);
+        expect(view.find('[data-testid="social-mark-youtube"]').exists()).toBe(true);
+        expect(view.find('[data-testid="social-mark-website"]').exists()).toBe(true);
+    });
+
+    it('puts the mark on a tile in the brand colour, Instagram with a gradient of its own per block, unless the colours are off', () => {
+        const view = draw();
+        expect(view.findAll('.social-tile')).toHaveLength(3);
+        expect(view.find('linearGradient').exists()).toBe(true);
+        expect(draw({ brandColors: false }).find('.social-tile').exists()).toBe(false);
+        const two = render(makeSlide({ blocks: [social(), social({ id: 'so2' })] }));
+        const ids = two.findAll('linearGradient').map((g) => g.attributes('id'));
+        expect(ids).toHaveLength(2);
+        expect(new Set(ids).size).toBe(2);
+        expect(ids.every((id) => id!.includes('so'))).toBe(true);
+    });
+
+    it('arranges the lines in a column or in a row', () => {
+        expect(draw().find('.social-lines--row').exists()).toBe(false);
+        expect(draw({ layout: 'row' }).find('.social-lines--row').exists()).toBe(true);
+    });
+
+    it('shows a calm placeholder without a link, and with only empty addresses', () => {
+        for (const links of [[], [{ url: ' ' }]]) {
+            const view = draw({ links });
+            expect(view.find('.placeholder').exists()).toBe(true);
+            expect(view.find('[data-testid="social-row"]').exists()).toBe(false);
+        }
+    });
+});

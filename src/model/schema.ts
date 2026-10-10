@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 32 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 33 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -399,6 +399,29 @@ export const VideoBlock = v.object({
     shadow: v.optional(BlockShadow),
 });
 
+/** One profile of a `social` block (schema 1.33). The platform is not stored: the player reads it from the address. */
+export const SocialLink = v.object({
+    url: v.pipe(v.string(), v.maxLength(500)),
+    /** The name shown instead of the one read from the address; missing or empty = the read one. */
+    label: v.optional(v.pipe(v.string(), v.maxLength(100))),
+});
+
+/**
+ * Since 1.33: social profiles, one line each – the platform's mark on the left, the name on the right (Plan.md 80).
+ * Both come from the address (`src/player/social.ts`). At most 12 links; more makes the block invalid, and it is
+ * skipped. Without a link the player shows a calm placeholder. Older players skip the block.
+ */
+export const SocialBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('social'),
+    links: v.pipe(v.array(SocialLink), v.maxLength(12)),
+    /** `column` (one below the other) when missing. */
+    layout: v.optional(v.picklist(['column', 'row'])),
+    /** The mark white on a tile in the brand's colour when missing or on; off = the mark alone in the text colour. */
+    brandColors: v.optional(v.boolean()),
+    style: TextStyle,
+});
+
 export const Block = v.variant('type', [
     TextBlock,
     ImageBlock,
@@ -416,6 +439,7 @@ export const Block = v.variant('type', [
     RoomsBlock,
     VideoBlock,
     LineBlock,
+    SocialBlock,
 ]);
 
 /** The calendars whose appointments a block shows or counts down to. */
@@ -695,6 +719,7 @@ export type Block = v.InferOutput<typeof Block>;
 export type GroupSort = NonNullable<v.InferOutput<typeof GroupsBlock>['sort']>;
 export type GroupFields = v.InferOutput<typeof GroupFields>;
 export type RoomEntry = v.InferOutput<typeof RoomEntry>;
+export type SocialLink = v.InferOutput<typeof SocialLink>;
 export type BlockType = Block['type'];
 export type SlideDoc = v.InferOutput<typeof SlideDoc>;
 export type PlaylistDoc = v.InferOutput<typeof PlaylistDoc>;

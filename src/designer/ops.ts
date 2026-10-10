@@ -130,6 +130,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     groups: t.blocks.groups,
     slideshow: t.blocks.slideshow,
     rooms: t.blocks.rooms,
+    social: t.blocks.social,
     video: t.blocks.video,
 };
 
@@ -149,6 +150,7 @@ export const BLOCK_ICONS: Record<BlockType, IconName> = {
     groups: 'people',
     slideshow: 'slideshow',
     rooms: 'door',
+    social: 'share',
     video: 'video',
 };
 
@@ -202,6 +204,7 @@ export function createBlock(
         groups: [1400, 700],
         slideshow: [1200, 675],
         rooms: [1400, 700],
+        social: [900, 360],
         video: [1280, 720],
     }[type];
     const width = Math.min(size[0]!, stage.width - 80);
@@ -263,6 +266,9 @@ export function createBlock(
         case 'rooms':
             // No room yet: the inspector offers the ones the designer may see (Plan.md 46).
             return { ...frame, type, rooms: [], layout: 'overview', days: 1, style: textStyle(44) };
+        case 'social':
+            // No link yet: the inspector takes them; the marks start in their brand colours (Plan.md 80).
+            return { ...frame, type, links: [], layout: 'column', brandColors: true, style: textStyle(56, { fontWeight: 600 }) };
         case 'video':
             // No video yet: the inspector offers the library's; sound stays off until switched on (Plan.md 52).
             return { ...frame, type, fit: 'contain', sound: false };

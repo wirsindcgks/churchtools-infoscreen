@@ -156,6 +156,7 @@ describe('vertical alignment (Plan.md 70)', () => {
             countdown: 'middle',
             'next-appointment': 'middle',
             'church-header': 'middle',
+            social: 'top',
         });
         expect(verticalAlignOf(block('text'))).toBe('top');
         expect(verticalAlignOf(block('clock'))).toBe('top');

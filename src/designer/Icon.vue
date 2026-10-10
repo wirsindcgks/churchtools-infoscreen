@@ -74,6 +74,8 @@ const PATHS = {
     slideshow: ['M8 4h13v10H8z', 'M4 8v12h13v-2', 'M8 12l4-4 3 3 2-2 4 4'],
     // Linie (Plan.md F1): a stroke with a dot at each end.
     line: ['M5 12h14', circle(4, 12, 1.5), circle(20, 12, 1.5)],
+    // Social Media (Plan.md 80): three nodes joined by two lines.
+    share: [circle(6, 12, 2.5), circle(17, 6, 2.5), circle(17, 18, 2.5), 'M8.2 10.8l6.6-3.6', 'M8.2 13.2l6.6 3.6'],
     // Video (Plan.md 52): a frame with a play triangle.
     video: ['M3 5h18v14H3z', 'M10 9v6l5-3z'],
     // Raumbelegung (Plan.md 46): a door with a handle.
