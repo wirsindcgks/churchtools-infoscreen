@@ -270,6 +270,8 @@ export const t = {
             empty: 'Diese Präsentation hat noch keine Folie.',
             emptySlide: 'Diese Folie ist noch leer.',
             size: (width: number, height: number) => `${width} × ${height}`,
+            angle: (degrees: number) => `${degrees}°`,
+            rotateHandle: 'Drehen',
             /** Writing text on the stage (Plan.md 79, C4): the label of the field and the pale hint in an empty text. */
             textEdit: 'Text bearbeiten',
             textPlaceholder: 'Text eingeben',
@@ -349,6 +351,7 @@ export const t = {
         allSettings: 'Alle Einstellungen',
         copy: 'Kopieren',
         cut: 'Ausschneiden',
+        resetRotation: 'Drehen zurücksetzen',
         paste: 'Einfügen',
         layers: { front: 'Ganz nach vorn', forward: 'Nach vorn', backward: 'Nach hinten', back: 'Ganz nach hinten' },
         /** The button in the middle of a block that still lacks its content. */
