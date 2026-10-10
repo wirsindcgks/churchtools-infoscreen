@@ -70,11 +70,20 @@ function toggleAll(): void {
 }
 
 const deleting = ref(false);
+/** What the dialog names: the picked files, or the one file of a tile's "…" (Plan.md 79, B3). */
+const toDelete = ref<MediaItem[]>([]);
 /** Where each file is shown is read again first: the dialog must not promise "unbenutzt" from an old list. */
 async function askDelete(): Promise<void> {
     await reload().catch(() => undefined);
     selected.value = picks.value.map((i) => i.fileId);
+    toDelete.value = picks.value;
     deleting.value = picks.value.length > 0;
+}
+async function askDeleteOne(item: MediaItem): Promise<void> {
+    await reload().catch(() => undefined);
+    const fresh = items.value.find((i) => i.fileId === item.fileId);
+    toDelete.value = fresh ? [fresh] : [];
+    deleting.value = !!fresh;
 }
 
 async function confirmDelete(list: MediaItem[]): Promise<void> {
@@ -171,6 +180,7 @@ async function picked(): Promise<void> {
                     :time-zone="timeZone"
                     :selected="selected"
                     @toggle="toggle"
+                    @remove="askDeleteOne"
                     @preview="previewId = $event.fileId"
                 />
             </template>
@@ -180,7 +190,7 @@ async function picked(): Promise<void> {
             <p v-else class="empty">{{ t.media.noMatch }}</p>
         </GroupCard>
 
-        <MediaDeleteDialog v-if="deleting" :items="picks" @close="deleting = false" @confirm="confirmDelete" />
+        <MediaDeleteDialog v-if="deleting" :items="toDelete" @close="deleting = false" @confirm="confirmDelete" />
         <MediaPreview v-if="previewId !== null" v-model:file-id="previewId" :items="shown" @close="previewId = null" />
     </ModulePage>
 </template>
