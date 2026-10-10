@@ -7,7 +7,7 @@
  * never reaches the instance. Skipped in the normal test run.
  */
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addBlock, choose, openInspector, openSection, openSlides } from './helpers';
+import { addBlock, choose, openSection, openSlides } from './helpers';
 
 const OUT = 'docs/bilder';
 
@@ -261,7 +261,9 @@ function bookings(resourceId: number): unknown[] {
 
 /** Every answer of the made-up church; writes stop here, reads the pictures do not need go to the instance. */
 async function fakeChurch(page: Page): Promise<void> {
-    await page.clock.setFixedTime(DOC_NOW);
+    // From this moment on the clock runs: a frozen one makes Vue drop every handler after the first of an event
+    // (its time stamp is never later than the handler's), and a press on a block would not choose it.
+    await page.clock.setSystemTime(DOC_NOW);
     await page.route('**/images/**', (route) => {
         const id = Number(/\/images\/(\d+)\//.exec(route.request().url())?.[1]);
         return route.fulfill({ contentType: 'image/svg+xml', body: PICTURES[id] ?? poster('Bild', '#334155', '#64748b') });
@@ -343,7 +345,10 @@ async function frame(page: Page, box: { x: number; y: number; width: number; hei
 
 async function shoot(page: Page, name: string): Promise<void> {
     await page.addStyleTag({ content: '[data-testid^="demo-notice"] { display: none !important; }' });
-    await page.waitForTimeout(1200); // pictures and fonts
+    // Pictures and fonts; in the editor also the draft, which is saved 2 s after the last change (Plan.md 79, E).
+    await page.waitForTimeout(2500);
+    const status = page.getByTestId('save-status');
+    if (await status.count()) await expect(status).not.toContainText('Sichert', { timeout: 15_000 });
     await page.screenshot({ path: `${OUT}/${name}.png` });
 }
 
@@ -415,7 +420,19 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     // The place goes before the room (0.17.1): where the appointment has a place, only that stands.
     await page.getByTestId('show-rooms').check();
     await expect(page.locator('.editor-stage').getByTestId('list-place').first()).toContainText('Kirchsaal');
+    await expect(page.getByTestId('quick-menu')).toBeVisible(); // the short menu over the list (Plan.md 79, C1)
+    await expect(page.getByTestId('save-status')).toContainText('Entwurf gesichert', { timeout: 15_000 });
     await shoot(page, 'editor');
+
+    // Every block of the slide, with the field "Ausrichten" of the short menu open (Plan.md 79, D4).
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
+    await page.keyboard.press('ControlOrMeta+a');
+    await expect(page.getByTestId('selection-box')).toBeVisible();
+    await page.getByTestId('quick-menu').getByTestId('quick-chip').click();
+    await expect(page.getByTestId('quick-popover').getByTestId('arrange-top')).toBeVisible();
+    await shoot(page, 'mehrere');
+    await page.keyboard.press('Escape');
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
 
     // Groups of a group homepage: two a page, with leaders and their pictures (Plan.md 43).
     await page.getByTestId('add-slide').click();
@@ -483,6 +500,10 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await shoot(page, 'beitraege');
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
+    // One more step, kept as a draft: the tile under "Präsentationen" carries the mark "Entwurf" (Plan.md 79, E).
+    await page.getByTestId('frame-posts').first().click();
+    await page.keyboard.press('ArrowRight');
+    await expect(page.getByTestId('save-status')).toContainText('Entwurf gesichert', { timeout: 15_000 });
 
     // A rule for Sunday morning.
     await page.goto('./');
@@ -529,15 +550,16 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
 test.describe('on a phone', () => {
     test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
 
-    test('the editor with its sheet', async ({ page, baseURL }) => {
+    test('the editor with its bars', async ({ page, baseURL }) => {
         origin = new URL(baseURL!).origin;
         await fakeChurch(page);
         await page.goto('./');
         await page.getByTestId('screen-card').filter({ hasText: 'Foyer' }).getByTestId('open-editor').click();
         const sh = await openSlides(page);
         await sh.getByTestId('slide-item').nth(2).click(); // the appointments
-        await page.getByTestId('frame-appointment-list').first().click();
-        await openInspector(page);
+        await page.getByTestId('frame-appointment-list').first().tap();
+        // The block's row over the slide row (Plan.md 79, C2); the big sheet opens only with "Alle Einstellungen".
+        await expect(page.getByTestId('phone-block-row')).toBeVisible();
         await shoot(page, 'handy');
     });
 });
