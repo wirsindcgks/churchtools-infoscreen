@@ -52,6 +52,8 @@ const positionSummary = computed(() =>
     block.value ? `${block.value.x}, ${block.value.y} · ${block.value.width} × ${block.value.height}` : '',
 );
 
+const frameLookSummary = computed(() => (block.value ? `${block.value.rotation ?? 0}° · ${block.value.opacity ?? 100} %` : ''));
+
 /** The layers, top first. */
 const rows = computed(() => layerRows(editor.slide?.blocks ?? []));
 const layerNumber = computed(() => (block.value ? (editor.slide?.blocks.findIndex((b) => b.id === block.value!.id) ?? -1) + 1 : 0));
@@ -152,6 +154,27 @@ const LAYERS = [
             <!-- A disabled fieldset disables every field and button inside it at once; a summary is none, so sections still fold. -->
             <fieldset class="lockable" :disabled="!!block?.locked">
                 <component :is="BLOCK_INSPECTORS[block.type]" v-if="block" :block="block" />
+
+                <InspectorSection v-if="block" id="frame-look" :title="t.inspector.frameLook" :summary="frameLookSummary">
+                    <NumberField
+                        :model-value="block.rotation ?? 0"
+                        unit="°"
+                        :min="-180"
+                        :max="180"
+                        :label="t.inspector.rotation"
+                        testid="inspector-rotation"
+                        @update:model-value="editor.updateBlock(block.id, { rotation: $event === 0 ? undefined : $event })"
+                    />
+                    <NumberField
+                        :model-value="block.opacity ?? 100"
+                        unit="%"
+                        :min="0"
+                        :max="100"
+                        :label="t.inspector.opacity"
+                        testid="inspector-opacity"
+                        @update:model-value="editor.updateBlock(block.id, { opacity: $event === 100 ? undefined : $event })"
+                    />
+                </InspectorSection>
 
                 <InspectorSection id="arrange" :title="t.inspector.arrange" default-open>
                     <ArrangeField />

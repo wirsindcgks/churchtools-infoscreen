@@ -42,12 +42,34 @@ describe('readSlide – tolerant towards newer data', () => {
     });
 
     it('reads the group of a block (schema 1.29): optional, kept when given, old slides stay valid', () => {
-        expect(SCHEMA_VERSION.minor).toBe(29);
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(29);
         const base = makeSlide({ blocks: [textBlock('a'), textBlock('b')] });
         const grouped = { ...base, blocks: [{ ...base.blocks[0]!, groupId: 'g1' }, ...base.blocks.slice(1)] };
         expect(readSlide(grouped).doc.blocks[0]!.groupId).toBe('g1');
         expect(readSlide(base).doc.blocks[0]!.groupId).toBeUndefined();
         expect(readSlide({ ...base, blocks: [{ ...base.blocks[0]!, groupId: '' }] }).issues).not.toHaveLength(0);
+    });
+
+    it('reads rotation, opacity, shape, border and the line (schema 1.30): all optional, old slides stay valid', () => {
+        expect(SCHEMA_VERSION.minor).toBe(30);
+        const old = makeSlide({ blocks: [textBlock('a')] });
+        const shape = { id: 's', type: 'shape', x: 0, y: 0, width: 100, height: 100, fill: { kind: 'solid', color: '#000' } };
+        const line = { id: 'l', type: 'line', x: 0, y: 0, width: 800, height: 40, color: '#f00', thickness: 8 };
+        const slide = readSlide({
+            ...old,
+            blocks: [
+                ...old.blocks,
+                { ...shape, shape: 'ellipse', border: { color: '#fff', width: 4 }, rotation: -45, opacity: 50 },
+                line,
+            ],
+        });
+        expect(slide.issues).toHaveLength(0);
+        expect(slide.doc.blocks[1]).toMatchObject({ shape: 'ellipse', border: { color: '#fff', width: 4 }, rotation: -45, opacity: 50 });
+        expect(slide.doc.blocks[2]).toMatchObject({ type: 'line', dash: 'solid', thickness: 8 });
+        expect(readSlide(old).doc.blocks[0]).not.toHaveProperty('rotation');
+        expect(readSlide({ ...old, blocks: [{ ...shape, rotation: 181 }] }).issues).not.toHaveLength(0);
+        expect(readSlide({ ...old, blocks: [{ ...shape, opacity: 101 }] }).issues).not.toHaveLength(0);
+        expect(readSlide({ ...old, blocks: [{ ...line, thickness: 0 }] }).issues).not.toHaveLength(0);
     });
 
     it('accepts a newer minor version', () => {

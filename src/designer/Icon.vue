@@ -70,6 +70,8 @@ const PATHS = {
     news: ['M4 4h16v16H4z', 'M7 7h6v5H7z', 'M15 8h2', 'M15 11h2', 'M7 14.5h11', 'M7 17h8'],
     // Galerie (slideshow) (Plan.md 46): two offset picture frames.
     slideshow: ['M8 4h13v10H8z', 'M4 8v12h13v-2', 'M8 12l4-4 3 3 2-2 4 4'],
+    // Linie (Plan.md F1): a stroke with a dot at each end.
+    line: ['M5 12h14', circle(4, 12, 1.5), circle(20, 12, 1.5)],
     // Video (Plan.md 52): a frame with a play triangle.
     video: ['M3 5h18v14H3z', 'M10 9v6l5-3z'],
     // Raumbelegung (Plan.md 46): a door with a handle.

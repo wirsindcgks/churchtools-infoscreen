@@ -590,6 +590,8 @@ export const useEditorStore = defineStore('editor', () => {
             const target = slideIn(b, slideId)?.blocks.find((x) => x.id === id);
             if (!target) return;
             Object.assign(target, patch);
+            // An undefined value takes the field away instead of leaving the key behind (rotation 0, opacity 100).
+            for (const [key, value] of Object.entries(patch)) if (value === undefined) delete (target as Record<string, unknown>)[key];
             Object.assign(target, clampFrame(target, b.playlist.stage));
         });
     }

@@ -48,3 +48,33 @@ describe('the layers in "Anordnen" (Plan.md 79, B3)', () => {
         expect(rows[0]!.get('[data-testid="layer-handle"]').attributes('disabled')).toBeUndefined();
     });
 });
+
+describe('"Drehung und Deckkraft" (Plan.md F1)', () => {
+    it('writes rotation and opacity, and takes the field away again at 0° and 100 %', async () => {
+        const editor = await open();
+        editor.addBlock('shape');
+        const wrapper = mount(Inspector, { props: { calendars: [], groups: [], homepages: [], rooms: null } });
+        expect(wrapper.find('[data-testid="inspector-rotation"]').exists()).toBe(true);
+        const set = async (testid: string, value: string) => {
+            const input = wrapper.get(`[data-testid="${testid}"]`);
+            await input.setValue(value);
+            await input.trigger('change');
+        };
+        await set('inspector-rotation', '45');
+        await set('inspector-opacity', '60');
+        expect(editor.slide!.blocks[0]).toMatchObject({ rotation: 45, opacity: 60 });
+        await set('inspector-rotation', '0');
+        await set('inspector-opacity', '100');
+        expect(editor.slide!.blocks[0]).not.toHaveProperty('rotation');
+        expect(editor.slide!.blocks[0]).not.toHaveProperty('opacity');
+    });
+
+    it('is not offered for several chosen blocks', async () => {
+        const editor = await open();
+        editor.addBlock('shape');
+        editor.addBlock('text');
+        editor.selectAll();
+        const wrapper = mount(Inspector, { props: { calendars: [], groups: [], homepages: [], rooms: null } });
+        expect(wrapper.find('[data-testid="inspector-rotation"]').exists()).toBe(false);
+    });
+});

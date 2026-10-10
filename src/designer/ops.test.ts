@@ -28,6 +28,11 @@ describe('designer operations', () => {
         }
     });
 
+    it('creates a line 800 x 40, 8 px thick, solid, in the accent of the design (Plan.md F1)', () => {
+        expect(createBlock('line', stage)).toMatchObject({ type: 'line', width: 800, height: 40, thickness: 8, dash: 'solid', color: DEFAULT_THEME.accent });
+        expect(BLOCK_LABELS.line).toBe('Linie');
+    });
+
     it('creates a slideshow empty, with the defaults, at 1200 x 675', () => {
         expect(createBlock('slideshow', stage)).toMatchObject({
             mediaIds: [],
@@ -215,6 +220,7 @@ describe('the palette (Plan.md 47)', () => {
             'Galerie',
             'Gemeindekopf',
             'Gruppen',
+            'Linie',
             'Nächster Termin',
             'QR-Code',
             'Raumbelegung',

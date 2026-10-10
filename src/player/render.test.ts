@@ -46,6 +46,39 @@ describe('rendering a slide', () => {
         expect(wrapper.findAll('.block')).toHaveLength(1);
     });
 
+    describe('rotation, opacity, shape and line (Plan.md F1)', () => {
+        const frame = { x: 10, y: 20, width: 400, height: 100 };
+        const shape = (extra: Record<string, unknown> = {}) =>
+            ({ id: 's', type: 'shape', ...frame, fill: { kind: 'solid', color: '#334155' }, cornerRadius: 12, ...extra }) as Block;
+        const line = (extra: Record<string, unknown> = {}) => ({ id: 'l', type: 'line', ...frame, color: '#ff0000', thickness: 8, dash: 'solid', ...extra }) as Block;
+        const style = (block: Block, selector = '.block') => render(makeSlide({ blocks: [block] })).get(selector).attributes('style') ?? '';
+
+        it('sets transform and opacity on the frame only when they are not neutral', () => {
+            expect(style(shape())).not.toMatch(/transform|opacity/);
+            expect(style(shape({ rotation: 0, opacity: 100 }))).not.toMatch(/transform|opacity/);
+            expect(style(shape({ rotation: -30, opacity: 40 }))).toMatch(/transform: rotate\(-30deg\).*opacity: 0\.4/);
+            expect(style(shape({ opacity: 0 }))).toContain('opacity: 0');
+        });
+
+        it('draws an ellipse with 50 % rounding whatever the corners say, and an edge as an inner shadow', () => {
+            expect(style(shape(), '.fill')).toContain('border-radius: 12px');
+            expect(style(shape({ shape: 'ellipse' }), '.fill')).toContain('border-radius: 50%');
+            expect(style(shape({ border: { color: '#ffffff', width: 6 } }), '.fill')).toMatch(/box-shadow: .*inset 0px 0px 0px 6px|inset 0 0 0 6px/);
+            expect(style(shape({ border: { color: '#ffffff', width: 0 } }), '.fill')).not.toContain('box-shadow');
+        });
+
+        it('draws a solid line with round ends and a dashed one as a gradient, at most as thick as the frame', () => {
+            const solid = style(line(), '.line');
+            expect(solid).toContain('height: 8px');
+            expect(solid).toContain('border-radius: 4px');
+            const dashed = style(line({ dash: 'dashed' }), '.line');
+            expect(dashed).toContain('repeating-linear-gradient');
+            expect(dashed).toContain('24px');
+            expect(dashed).toContain('40px');
+            expect(style(line({ thickness: 300 }), '.line')).toContain('height: 100px');
+        });
+    });
+
     it('hides the text of the block named by hiddenBlockId and of no other (Plan.md 79, C4)', () => {
         const slide = makeSlide({ blocks: [textBlock('a', 'Eins'), textBlock('b', 'Zwei')] });
         const inner = render(slide, {}, 'b').findAll('[data-testid="text-inner"]');

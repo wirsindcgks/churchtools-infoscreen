@@ -100,6 +100,9 @@ onBeforeUnmount(() => {
 });
 
 const HANDLES: Handle[] = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+/** A line has its ends only (Plan.md F1): its height is the grab area, not something to size. */
+const LINE_HANDLES: Handle[] = ['e', 'w'];
+const handlesOf = (block: { type: string }): Handle[] => (block.type === 'line' ? LINE_HANDLES : HANDLES);
 
 interface Drag {
     /** The block the press started on. */
@@ -843,7 +846,7 @@ function onEmptyAction(b: Block): void {
                     </span>
                     <template v-else-if="block.id === editor.block?.id">
                         <span
-                            v-for="h in HANDLES"
+                            v-for="h in handlesOf(block)"
                             :key="h"
                             class="handle"
                             :class="`handle--${h}`"
