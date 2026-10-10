@@ -7,7 +7,7 @@ import { DEFAULT_THEME, type Block, type SlideDoc } from '../model/schema';
 import { provideStageContext, type StageContext } from './context';
 import { qrShape } from './qr';
 import SlideView from './SlideView.vue';
-import { cardBackground, imageBox, listLayout, themeVars } from './theme';
+import { cardBackground, imageBox, listLayout, loadingVars, themeVars } from './theme';
 import { embedAddress, webFrame, webRefusal, withScheme } from './web';
 
 const BERLIN = 'Europe/Berlin';
@@ -170,5 +170,20 @@ describe('the theme on the stage (Plan.md 27)', () => {
         expect(image.attributes('style')).toContain('width: 880px');
         expect(image.attributes('style')).toContain('height: 495px');
         expect(image.attributes('src')).toContain('w=880&h=495&fit=crop');
+    });
+});
+
+describe('loadingVars', () => {
+    it("takes the theme's accent, text and background", () => {
+        const theme = { ...DEFAULT_THEME, accent: '#e11d48', text: '#111111', background: '#fafafa' };
+        expect(loadingVars(theme)).toEqual({ '--load-accent': '#e11d48', '--load-text': '#111111', '--load-bg': '#fafafa' });
+    });
+
+    it("falls back to the theme's defaults while none is known", () => {
+        expect(loadingVars(null)).toEqual({
+            '--load-accent': DEFAULT_THEME.accent,
+            '--load-text': DEFAULT_THEME.text,
+            '--load-bg': DEFAULT_THEME.background,
+        });
     });
 });

@@ -3,7 +3,7 @@
  * the blocks take from it – corners, accent colour, the default layout of
  * the appointment blocks and the shape of their images.
  */
-import { IMAGE_RATIOS, type Block, type ThemeDoc } from '../model/schema';
+import { DEFAULT_THEME, IMAGE_RATIOS, type Block, type ThemeDoc } from '../model/schema';
 
 /**
  * The surface of the cards (Plan.md 74). `currentColor` in an unregistered
@@ -25,6 +25,16 @@ export function themeVars(theme: ThemeDoc): Record<string, string> {
         '--isd-pill': round ? '999px' : '0',
         '--isd-card': cardBackground(theme),
     };
+}
+
+/**
+ * The colours of the loading screen: the theme's, as soon as one is known –
+ * from the device's last saved state, which the player reads first thing –
+ * and the theme's defaults on a device's very first start.
+ */
+export function loadingVars(theme: ThemeDoc | null | undefined): Record<string, string> {
+    const { accent, text, background } = theme ?? DEFAULT_THEME;
+    return { '--load-accent': accent, '--load-text': text, '--load-bg': background };
 }
 
 type ListBlock = Extract<Block, { type: 'appointment-list' }>;
