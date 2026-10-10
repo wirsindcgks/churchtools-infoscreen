@@ -85,7 +85,8 @@ und zieht, kopiert, dupliziert oder löscht sie gemeinsam; eingefügt wird die g
 **Ausrichten und Verteilen:** links, mittig, rechts, oben, mittig, unten, und ab drei Bausteinen gleiche Abstände –
 im Kurzmenü unter „Ausrichten" und im Inspektor unter „Anordnen". Ein gesperrter Baustein bleibt stehen, die anderen
 richten sich nach ihm. **Gruppieren** (Strg/⌘ + G) hält zusammen, was zusammengehört – Titel mit Uhrzeit, Bild mit
-Bildunterschrift: Ein Klick wählt dann die ganze Gruppe, ein Doppelklick ein einzelnes Mitglied. Solange nichts
+Bildunterschrift: Ein Klick wählt dann die ganze Gruppe, ein Doppelklick ein einzelnes Mitglied; beim Ausrichten
+und Verteilen zählt sie wie ein einzelner Baustein. Solange nichts
 gewählt ist, zeigt der Inspektor **„Bausteine dieser Folie"**, oben = vorne: Ein Klick wählt, das Schloss sperrt,
 Ziehen ändert die Ebene – so erreicht man auch, was ganz verdeckt liegt.
 
@@ -209,7 +210,8 @@ Aufräumen. Darunter steht, wann und von wem die Datei hochgeladen wurde – so,
 mit Maßen, Länge und Datum, auf dunklem, hellem oder kariertem Grund; mit den Pfeiltasten blättert man durch die gerade sichtbaren
 Dateien. Im Auswahl-Dialog des Editors öffnet das Auge auf der Kachel die Vorschau, dort steht auch „Verwenden".
 
-Zum Aufräumen wählt man eine oder mehrere Dateien über das Kästchen auf der Kachel und löscht sie gemeinsam. Vorher
+Zum Aufräumen wählt man eine oder mehrere Dateien über das Kästchen auf der Kachel und löscht sie gemeinsam;
+eine einzelne löscht auch „…" → „Löschen" an ihrer Kachel. Vorher
 nennt ein Dialog jede Datei – und zu jeder, die noch auf einer Folie läuft, die Stelle. Verwendete Dateien lassen sich
 dabei aussparen („Nur unbenutzte löschen").
 
