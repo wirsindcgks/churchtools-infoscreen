@@ -78,3 +78,18 @@ test('the rotate handle turns the block by 90°, one step undoes it, and "Drehen
     await page.getByTestId('quick-more').click();
     await expect(page.getByTestId('quick-reset-rotation')).toHaveCount(0);
 });
+
+test.describe('at a tablet', () => {
+    test.use({ hasTouch: true, viewport: { width: 1366, height: 1024 } });
+
+    test('the short menu keeps clear of the rotate handle of a flat block', async ({ page }) => {
+        await openEditor(page);
+        await addBlock(page, 'line');
+        // Flat for a finger: the handles stand outside, the rotate handle higher up (user at the iPad, 2026-10-10).
+        await expect(page.locator('.frame--selected')).toHaveClass(/frame--tight/);
+        const handle = (await page.getByTestId('handle-rotate').boundingBox())!;
+        const menu = (await page.getByTestId('quick-menu').boundingBox())!;
+        const apart = menu.y + menu.height <= handle.y || handle.y + handle.height <= menu.y;
+        expect(apart).toBe(true);
+    });
+});

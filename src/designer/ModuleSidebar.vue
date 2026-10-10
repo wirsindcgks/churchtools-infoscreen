@@ -164,8 +164,9 @@ watch(
     position: sticky;
     top: calc(var(--page-top, 0px) + var(--d-space-4));
     box-sizing: border-box;
-    /* Below the host's navigation, which stays put, and down to the window's lower edge (`--page-top`, ModulePage). */
+    /* Below the host's navigation, which stays put, and down to the window's visible lower edge (`--page-top`, ModulePage; `100dvh`, as 100vh reaches under Safari's bar on a tablet). */
     height: calc(100vh - var(--page-top, 0px) - 2 * var(--d-space-4));
+    height: calc(100dvh - var(--page-top, 0px) - 2 * var(--d-space-4));
     padding: var(--d-space-3);
     border-radius: var(--d-radius-lg);
     background: var(--d-surface);

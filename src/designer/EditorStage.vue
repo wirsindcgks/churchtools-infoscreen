@@ -18,7 +18,7 @@ import { neighbourGaps, pairGaps, sizeLabelPlace, type Measure } from './measure
 import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, boundingBox, clampFrame } from './ops';
 import QuickMenu from './QuickMenu.vue';
 import { cropPan, NO_CROP, type Crop } from './crop';
-import { outerFrame, resizeRotated, snapAngle } from './rotate';
+import { handleReach, outerFrame, resizeRotated, snapAngle } from './rotate';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 import { clampPan, viewOnto, WHOLE, zoomAt, zoomedFit, type View } from './stage-zoom';
 
@@ -471,8 +471,6 @@ const quickFrame = computed(() => {
     const box = boundingBox(quickBlocks.value);
     return box ? hostFrame(box) : null;
 });
-/** The rotate handle stands this many screen pixels above the block (with its radius): the menu keeps clear of it. */
-const ROTATE_LIFT = 36;
 const quickMenu = ref<InstanceType<typeof QuickMenu> | null>(null);
 
 /** The buttons on blocks that lack their content (C6): only where they fit, never on a locked block, the one being dragged or one whose middle another block covers. */
@@ -509,6 +507,19 @@ onBeforeUnmount(() => {
 function tight(b: Block): boolean {
     return coarse.value && handlesOutside({ width: b.width * fit.value.scale, height: b.height * fit.value.scale });
 }
+
+/** The middle of the rotate handle stands this many screen pixels above the block – further where the handles stand outside. */
+function rotateLift(b: Block): number {
+    return tight(b) ? 62 : 28;
+}
+/** How far the rotate handle of the one chosen block reaches past its box: the short menu keeps clear of it (F1). */
+const quickClear = computed(() => {
+    const [b] = quickBlocks.value;
+    if (quickBlocks.value.length !== 1 || !b || b.locked) return { above: 0, below: 0 };
+    // Seen, the handle is 12 screen pixels wide, 16 where a finger is the pointer.
+    const f = hostFrame(b);
+    return handleReach({ x: f.left, y: f.top, width: f.width, height: f.height, rotation: b.rotation }, rotateLift(b), coarse.value ? 8 : 6);
+});
 
 /** Where a pointer is in the host, in host pixels. */
 function hostPoint(event: { clientX: number; clientY: number }): { x: number; y: number } {
@@ -966,6 +977,7 @@ function onEmptyAction(b: Block): void {
                         height: `${block.height}px`,
                         transform: block.rotation ? `rotate(${block.rotation}deg)` : undefined,
                         '--handle': `${12 / fit.scale}px`,
+                        '--lift': `${rotateLift(block) / fit.scale}px`,
                         '--line': `${1.5 / fit.scale}px`,
                     }"
                     :title="block.locked ? t.editor.stage.lockedTitle(BLOCK_LABELS[block.type]) : undefined"
@@ -1094,7 +1106,7 @@ function onEmptyAction(b: Block): void {
             :blocks="quickBlocks"
             :frame="quickFrame"
             :host="size"
-            :lift="quickBlocks.length === 1 && !quickBlocks[0]!.locked ? ROTATE_LIFT : 0"
+            :clear="quickClear"
             @all-settings="emit('all-settings')"
         />
         <!-- Only in the editor, never in the player (A7): over the stage, in screen pixels, below the blocks' reach. -->
@@ -1455,8 +1467,8 @@ function onEmptyAction(b: Block): void {
         background: transparent;
     }
 }
+/* `--lift` comes from the frame (rotateLift), so the short menu knows it too. */
 .rotate-handle {
-    --lift: calc(var(--s) * 28);
     position: absolute;
     left: 50%;
     top: 0;
@@ -1481,9 +1493,6 @@ function onEmptyAction(b: Block): void {
     height: calc(var(--lift) - var(--handle) / 2);
     transform: translateX(-50%);
     background: rgb(59, 130, 246);
-}
-.frame--tight .rotate-handle {
-    --lift: calc(var(--s) * 62);
 }
 /* A fingertip needs a bigger grip than a mouse pointer – but the grip is the hit area below; seen, 16 screen pixels are enough (user at the phone, 2026-10-09: 24 were too big). */
 @media (pointer: coarse) {

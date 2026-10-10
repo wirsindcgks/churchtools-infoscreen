@@ -22,6 +22,13 @@ describe('quickMenuPlace (Plan.md 79, C1)', () => {
         expect(quickMenuPlace({ left: 400, top: 51, width: 200, height: 100 }, menu, host).place).toBe('below');
     });
 
+    it('keeps clear of the rotate handle above and below (Plan.md F1)', () => {
+        const clear = { above: 70, below: 0 };
+        expect(quickMenuPlace({ left: 400, top: 200, width: 200, height: 100 }, menu, host, 8, clear)).toEqual({ left: 350, top: 78, place: 'above' });
+        expect(quickMenuPlace({ left: 400, top: 100, width: 200, height: 100 }, menu, host, 8, clear).place).toBe('below');
+        expect(quickMenuPlace({ left: 400, top: 20, width: 200, height: 100 }, menu, host, 8, { above: 0, below: 70 })).toEqual({ left: 350, top: 198, place: 'below' });
+    });
+
     it('is kept within the host on the left and on the right', () => {
         expect(quickMenuPlace({ left: 0, top: 200, width: 40, height: 100 }, menu, host).left).toBe(0);
         expect(quickMenuPlace({ left: 960, top: 200, width: 40, height: 100 }, menu, host).left).toBe(700);

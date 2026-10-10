@@ -74,3 +74,14 @@ export function resizeRotated(frame: Frame, rotation: number, handle: ResizeHand
     const cy = frame.y + frame.height / 2 + before.y - after.y;
     return { x: Math.round(cx - width / 2), y: Math.round(cy - height / 2), width, height };
 }
+
+/**
+ * How far the rotate handle reaches past the top and the bottom of the box around its block – where the short menu has
+ * to keep clear of it. `lift` is the distance of the handle's middle from the block's top edge, `radius` the handle's
+ * own; the handle turns with the block, so turned upside down it reaches past the bottom instead.
+ */
+export function handleReach(frame: RotatedFrame, lift: number, radius: number): { above: number; below: number } {
+    const box = outerFrame(frame);
+    const y = frame.y + frame.height / 2 - (frame.height / 2 + lift) * Math.cos((frame.rotation ?? 0) * RAD);
+    return { above: tidy(Math.max(0, box.y - (y - radius))), below: tidy(Math.max(0, y + radius - (box.y + box.height))) };
+}
