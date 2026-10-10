@@ -93,6 +93,12 @@ test.describe('tiles of equal width', () => {
     }
 });
 
+test('no tile says "Läuft gerade" without a sign of life (Plan.md 77)', async ({ page }) => {
+    const tiles = await open(page, 'sidebar-playlists', 'playlist-card');
+    await expect(tiles.first()).toBeVisible();
+    await expect(page.getByTestId('playlist-live')).toHaveCount(0);
+});
+
 /** The demo has one screen and one playlist; a second screen (with its playlist) makes two tiles in a row possible. */
 async function addScreen(page: Page): Promise<void> {
     await page.goto('./');

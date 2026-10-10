@@ -17,6 +17,7 @@ import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import PlaylistCard from '../designer/PlaylistCard.vue';
 import SearchField from '../designer/SearchField.vue';
+import { useHeartbeats } from '../designer/useHeartbeats';
 import { usePreview } from '../designer/usePreview';
 import { blockCalendarIds, type ThemeDoc } from '../model/schema';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
@@ -49,6 +50,9 @@ const shown = computed(() => {
 
 const theme = ref<ThemeDoc | null>(null);
 
+/** Which playlist a screen shows right now (Plan.md 77); the tiles mark those that run. */
+const { heartbeats, now, refreshHeartbeats } = useHeartbeats(repository);
+
 // The tiles are the player's components: they need the same live data as the editor preview.
 usePreview(
     computed(() => [
@@ -67,6 +71,7 @@ async function refresh(): Promise<void> {
         repository.value.listPlaylists(),
         // The tiles show the theme; without it they show the defaults.
         repository.value.loadTheme().catch(() => null),
+        refreshHeartbeats(),
     ]);
     overviews.value = list;
     theme.value = stored;
@@ -165,6 +170,8 @@ async function remove(overview: PlaylistOverview): Promise<void> {
                         v-for="o in shown"
                         :key="o.playlist.id"
                         :overview="o"
+                        :heartbeats="heartbeats"
+                        :now="now"
                         @remove="remove(o)"
                         @duplicate="askDuplicate(o)"
                     />

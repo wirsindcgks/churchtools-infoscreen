@@ -1,20 +1,23 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName, instanceBaseUrl } from '../ct/client';
 import { fetchGroupHomepageList, fetchPostGroups, fetchResourceMasterdata, fetchServiceGroups, fetchServices, type PostGroup } from '../ct/api';
+import { liveSaveTitle, liveScreens } from '../designer/alive';
 import AppBar from '../designer/AppBar.vue';
 import BlockPalette from '../designer/BlockPalette.vue';
 import EditorStage from '../designer/EditorStage.vue';
 import { useEditorStore } from '../designer/editor-store';
 import Icon from '../designer/Icon.vue';
 import Inspector from '../designer/Inspector.vue';
+import LiveFlag from '../designer/LiveFlag.vue';
 import { providePalette } from '../designer/palette';
 import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
 import { BLOCK_LABELS } from '../designer/ops';
 import PlaylistPreview from '../designer/PlaylistPreview.vue';
 import SlideList from '../designer/SlideList.vue';
 import type { SettingsDoc } from '../model/schema';
+import { useHeartbeats } from '../designer/useHeartbeats';
 import { usePreview } from '../designer/usePreview';
 import type { HomepageEntry } from '../groups/normalize';
 import type { MediaDoc } from '../model/schema';
@@ -24,6 +27,7 @@ import { needsAppointmentRooms } from '../appointments/rooms';
 import { allowedServiceIds, appointmentServicesInUse, serviceChoices, type ServiceInfo } from '../appointments/services';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
+import type { ScreenRepository } from '../store/screen-repository';
 
 const route = useRoute();
 const playlistId = String(route.params.id);
@@ -53,7 +57,7 @@ providePalette(
 );
 
 const calendarIds = computed(() => editor.calendarIds);
-const { calendars, hiddenCalendars, problem } = usePreview(
+const { context, calendars, hiddenCalendars, problem } = usePreview(
     calendarIds,
     computed(() => editor.media),
     computed(() => editor.theme),
@@ -63,6 +67,11 @@ const { calendars, hiddenCalendars, problem } = usePreview(
     computed(() => needsAppointmentRooms(editor.slides.flatMap((s) => s.blocks))),
     computed(() => allowedServiceIds(appointmentServicesInUse(editor.slides.flatMap((s) => s.blocks)), allowedServices.value)),
 );
+
+/** The playlist is on a screen right now, by that screen's own sign of life (Plan.md 77). */
+const repository = shallowRef<ScreenRepository | null>(null);
+const { heartbeats, now, refreshHeartbeats } = useHeartbeats(repository);
+const live = computed(() => liveScreens(playlistId, editor.screens, heartbeats.value, now.value));
 
 /** Groups with posts switched on, for the „Beiträge"-Baustein; loaded once. Unreadable → an empty list, the inspector says so. */
 const groups = ref<PostGroup[]>([]);
@@ -346,7 +355,9 @@ onMounted(async () => {
         author.value = displayName(person);
         demo.value = handle.demo;
         editor.attach(handle.repository);
+        repository.value = handle.repository;
         await editor.open(playlistId);
+        void refreshHeartbeats();
         await editor.refreshMedia();
     } catch (e) {
         loadError.value = e instanceof Error ? e.message : String(e);
@@ -466,6 +477,13 @@ function onKey(event: KeyboardEvent): void {
             >
                 <Icon name="back" :size="18" /><span class="back-label">{{ back.label }}</span>
             </RouterLink>
+            <LiveFlag
+                v-if="live.length"
+                class="live"
+                :live="live"
+                :time-zone="context.timeZone"
+                data-testid="editor-live"
+            />
             <span class="heading">
                 <strong class="title">{{ editor.draft?.playlist.name || 'Playlist' }}</strong>
                 <span class="status" :class="`status--${editor.status}`" data-testid="save-status">{{ statusText }}</span>
@@ -561,6 +579,7 @@ function onKey(event: KeyboardEvent): void {
                     class="d-btn d-btn--primary"
                     type="button"
                     data-testid="save"
+                    :title="live.length ? liveSaveTitle(live) : undefined"
                     :disabled="!editor.dirty || editor.status === 'saving'"
                     @click="save"
                 >
@@ -986,6 +1005,13 @@ function onKey(event: KeyboardEvent): void {
     }
     .back-label {
         display: none;
+    }
+    /* Only the dot, so undo, redo and save keep their room (Plan.md 44, M2). */
+    .live :deep(.live-text) {
+        display: none;
+    }
+    .live {
+        padding: 5px;
     }
     .heading {
         display: flex;

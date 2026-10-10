@@ -6,14 +6,22 @@
  * shows it.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import type { HeartbeatDoc } from '../model/heartbeat';
 import { bannerShown } from '../player/banner';
 import { useStageContext } from '../player/context';
 import type { PlaylistOverview } from '../store/screen-repository';
+import { liveScreens } from './alive';
 import Icon from './Icon.vue';
 import { lastEdited } from './last-edited';
+import LiveFlag from './LiveFlag.vue';
 import SlideThumb from './SlideThumb.vue';
 
-const props = defineProps<{ overview: PlaylistOverview }>();
+const props = defineProps<{
+    overview: PlaylistOverview;
+    /** The signs of life by screen slug; null where they cannot be read – then no hint (Plan.md 77). */
+    heartbeats?: Map<string, HeartbeatDoc> | null;
+    now?: Date;
+}>();
 const emit = defineEmits<{ remove: []; duplicate: [] }>();
 
 const context = useStageContext();
@@ -22,6 +30,11 @@ const portrait = computed(() => playlist.value.stage.height > playlist.value.sta
 const inUse = computed(() => props.overview.screens.length > 0);
 /** A band is running (Plan.md, Nächste Schritte 34) – not one that only sits there, expired. */
 const hasBanner = computed(() => bannerShown(playlist.value.banner, context.now, context.timeZone));
+
+/** The screens that show it right now, by their own signs of life (Plan.md 77). */
+const live = computed(() =>
+    liveScreens(playlist.value.id, props.overview.screens, props.heartbeats ?? null, props.now ?? context.now),
+);
 
 /** When and by whom it was last edited – in the church's time zone, like every time here. */
 const edited = computed(() => lastEdited(props.overview.editedAt, props.overview.editedBy, context.timeZone));
@@ -58,6 +71,13 @@ function duplicate(): void {
             data-testid="open-playlist"
         >
             <SlideThumb :slide="overview.firstSlide" :stage="playlist.stage" />
+            <LiveFlag
+                v-if="live.length"
+                overlay
+                :live="live"
+                :time-zone="context.timeZone"
+                data-testid="playlist-live"
+            />
         </RouterLink>
         <div class="d-tile-body">
             <div class="title-row">
@@ -132,6 +152,9 @@ function duplicate(): void {
 </template>
 
 <style scoped>
+.open {
+    position: relative;
+}
 .open:focus-visible {
     outline: 2px solid var(--d-accent);
     outline-offset: 2px;
