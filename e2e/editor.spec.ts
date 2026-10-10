@@ -386,7 +386,7 @@ test.describe('with a finger, in both browsers', () => {
         await page.getByTestId('add-block-menu').click();
         const sheet = page.getByTestId('block-sheet');
         await expect(sheet).toBeVisible();
-        await expect(sheet.locator('[data-testid^="sheet-add-"]')).toHaveCount(16);
+        await expect(sheet.locator('[data-testid^="sheet-add-"]')).toHaveCount(17);
         await sheet.getByTestId('sheet-add-qr').click();
         await expect(sheet).toHaveCount(0);
 
@@ -2142,7 +2142,7 @@ test('the "+ Baustein" sheet describes each block and searches name and sentence
     await expect(sheet).toHaveCount(0);
     await page.getByTestId('add-block-menu').click();
     await expect(page.getByTestId('block-search')).toHaveValue('');
-    await expect(page.getByTestId('block-sheet').locator('[data-testid^="sheet-add-"]')).toHaveCount(16);
+    await expect(page.getByTestId('block-sheet').locator('[data-testid^="sheet-add-"]')).toHaveCount(17);
 });
 
 test('a new text begins as a heading; the text level sets size and weight in one step (Plan.md 79, C8)', async ({ page }) => {
