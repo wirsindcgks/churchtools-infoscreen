@@ -476,7 +476,7 @@ describe('linked slides (Plan.md 49)', () => {
         const types = () => editor.slide!.blocks.map((b) => b.type);
         expect(types()).toEqual(['text', 'shape', 'clock', 'qr']);
         editor.setLocked([editor.slide!.blocks[1]!.id], true);
-        editor.moveBlockLayer(0, 2);
+        editor.moveLayerUnit(0, 2);
         // The text passes the locked shape, which stays at place 1.
         expect(types()).toEqual(['clock', 'shape', 'text', 'qr']);
         editor.undo();
@@ -1074,15 +1074,48 @@ describe('grouping blocks (Plan.md 79, D9)', () => {
         expect(groupIdOf(editor, ids[2])).toBeUndefined();
     });
 
-    it('locks and moves in layers as a whole group, even with one member given', async () => {
+    it('locks as a whole group, even with one member given', async () => {
         const { editor, ids } = await four();
         editor.groupBlocks([ids[0], ids[1]]);
         editor.setLocked([ids[0]], true);
         expect(editor.slide!.blocks.filter((b) => b.locked).map((b) => b.id)).toEqual([ids[0], ids[1]]);
         editor.setLocked([ids[1]], false);
         expect(editor.slide!.blocks.some((b) => b.locked)).toBe(false);
+    });
+
+    it('sends one member to the front inside its group, the whole group as a unit (Plan.md 79, D9)', async () => {
+        const { editor, ids } = await four();
+        editor.groupBlocks([ids[0], ids[1]]);
+        const order = () => editor.slide!.blocks.map((b) => b.id);
+        expect(order()).toEqual([ids[0], ids[1], ids[2], ids[3]]);
         editor.layerBlocks([ids[0]], 'front');
-        expect(editor.slide!.blocks.map((b) => b.id)).toEqual([ids[2], ids[3], ids[0], ids[1]]);
+        expect(order()).toEqual([ids[1], ids[0], ids[2], ids[3]]);
+        editor.undo();
+        expect(order()).toEqual([ids[0], ids[1], ids[2], ids[3]]);
+        editor.layerBlocks([ids[0], ids[1]], 'front');
+        expect(order()).toEqual([ids[2], ids[3], ids[0], ids[1]]);
+        editor.undo();
+        expect(order()).toEqual([ids[0], ids[1], ids[2], ids[3]]);
+    });
+
+    it('drags a group as a whole and its members among themselves; locked ones stay (Plan.md 79, D9)', async () => {
+        const { editor, ids } = await four();
+        editor.groupBlocks([ids[0], ids[1]]);
+        const order = () => editor.slide!.blocks.map((b) => b.id);
+        // Units, bottom first: [group], c, d.
+        editor.moveLayerUnit(0, 2);
+        expect(order()).toEqual([ids[2], ids[3], ids[0], ids[1]]);
+        editor.undo();
+        expect(order()).toEqual([ids[0], ids[1], ids[2], ids[3]]);
+        editor.moveGroupLayer(editor.slide!.blocks[0]!.groupId!, 0, 1);
+        expect(order()).toEqual([ids[1], ids[0], ids[2], ids[3]]);
+        editor.undo();
+        expect(order()).toEqual([ids[0], ids[1], ids[2], ids[3]]);
+        // A locked unit keeps its place: the group is locked, so c passes it by.
+        editor.setLocked([ids[0]], true);
+        editor.moveLayerUnit(1, 0);
+        expect(order()).toEqual([ids[0], ids[1], ids[2], ids[3]]);
+        editor.moveLayerUnit(2, 1);
+        expect(order()).toEqual([ids[0], ids[1], ids[3], ids[2]]);
     });
 });
-

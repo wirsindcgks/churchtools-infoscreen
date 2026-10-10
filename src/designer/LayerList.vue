@@ -1,18 +1,16 @@
 <script setup lang="ts">
 /**
- * The blocks of the slide as a list, top layer first (Plan.md 79, D6): symbol, name, short content and a lock button.
- * A click chooses the block (Shift, Ctrl or ⌘ adds it; in the mode "Mehrere auswählen" every click does, and a box
- * stands before each row), a drag changes the layer. The mouse over a row outlines the block on the stage.
+ * The layers of the slide as a list, top layer first (Plan.md 79, D6, D9): a row per block, a group as one row. A click
+ * chooses the block or the group (Shift, Ctrl or ⌘ adds it; in the mode "Mehrere auswählen" every click does), a drag
+ * changes the layer – a group moves as a whole, its members only among themselves.
  * It stands in "Anordnen" and, while nothing is chosen, over the slide's settings.
  */
-import { computed, onBeforeUnmount, ref } from 'vue';
-import { t } from '../i18n/designer';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useEditorStore } from './editor-store';
-import Icon from './Icon.vue';
 import { useInspectorContext } from './inspector/context';
-import { blockSummary, layerRows } from './layers';
-import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
-import { vTip } from './tip';
+import LayerGroup from './LayerGroup.vue';
+import LayerItem from './LayerItem.vue';
+import { layerEntries } from './layers';
 import { useSortable } from './useSortable';
 
 /** A row was chosen on its own (no added click, outside the mode): on a phone the sheet closes then. */
@@ -21,16 +19,36 @@ const emit = defineEmits<{ picked: [] }>();
 const editor = useEditorStore();
 const context = useInspectorContext();
 
-/** The layers, top first; a drag reorders them in the slide (a locked block keeps its place). */
-const rows = computed(() => layerRows(editor.slide?.blocks ?? []));
+/** The entries, top first; a drag reorders the units in the slide (a unit with a locked block keeps its place). */
+const entries = computed(() => layerEntries(editor.slide?.blocks ?? []));
 const layerList = ref<HTMLElement | null>(null);
-const isLockedAt = (index: number): boolean => !!editor.slide?.blocks[index]?.locked;
-// The list shows the array backwards: place d of the list is place n - 1 - d of the slide.
+const isLockedAt = (index: number): boolean => {
+    const entry = entries.value[index];
+    return !!entry && (entry.kind === 'block' ? !!entry.row.block.locked : entry.rows.some((r) => r.block.locked));
+};
+// The list shows the units backwards: place d of the list is place n - 1 - d of the units.
 useSortable({
     container: layerList,
-    fixed: (index) => isLockedAt(rows.value.length - 1 - index),
-    onMove: (from, to) => editor.moveBlockLayer(rows.value.length - 1 - from, rows.value.length - 1 - to),
+    fixed: isLockedAt,
+    onMove: (from, to) => editor.moveLayerUnit(entries.value.length - 1 - from, entries.value.length - 1 - to),
 });
+
+/** The open groups – a group is closed from the start, opens by itself when a part of it is chosen, and stays so until closed. */
+const openGroups = ref(new Set<string>());
+watch(
+    () => editor.selectedBlockIds.join(','),
+    () => {
+        for (const entry of entries.value) {
+            if (entry.kind !== 'group') continue;
+            const count = entry.rows.filter((r) => editor.isSelected(r.block.id)).length;
+            if (count > 0 && count < entry.rows.length) openGroups.value.add(entry.groupId);
+        }
+    },
+    { immediate: true },
+);
+function toggleOpen(groupId: string): void {
+    if (!openGroups.value.delete(groupId)) openGroups.value.add(groupId);
+}
 
 const lookup = {
     mediaName: (id: string) => editor.media.find((m) => m.id === id)?.name,
@@ -38,8 +56,12 @@ const lookup = {
     roomName: (id: number) => context.rooms?.find((r) => r.id === id)?.name,
 };
 
+function isAdding(event: MouseEvent): boolean {
+    return event.shiftKey || event.ctrlKey || event.metaKey || editor.multiSelect;
+}
+
 function choose(id: string, event: MouseEvent): void {
-    if (event.shiftKey || event.ctrlKey || event.metaKey || editor.multiSelect) {
+    if (isAdding(event)) {
         editor.toggleBlock(id);
         return;
     }
@@ -47,10 +69,16 @@ function choose(id: string, event: MouseEvent): void {
     emit('picked');
 }
 
-/** Only the mouse hovers; a finger leaves no "over" behind. */
-function hint(event: PointerEvent, id: string | null): void {
-    if (event.pointerType === 'mouse') editor.hoveredBlockId = id;
+/** The whole group, found by its topmost member. */
+function chooseGroup(id: string, event: MouseEvent): void {
+    if (isAdding(event)) {
+        editor.toggleGroup(id);
+        return;
+    }
+    editor.pickBlock(id);
+    emit('picked');
 }
+
 onBeforeUnmount(() => {
     editor.hoveredBlockId = null;
 });
@@ -58,158 +86,29 @@ onBeforeUnmount(() => {
 
 <template>
     <ol ref="layerList" class="layer-list" data-testid="layer-list">
-        <li
-            v-for="row in rows"
-            :key="row.block.id"
-            class="layer-item"
-            :class="{ 'layer-item--on': editor.isSelected(row.block.id), 'layer-item--grouped': !!row.block.groupId }"
-            data-sort-item
-            data-testid="layer-row"
-            @click="choose(row.block.id, $event)"
-            @pointerenter="hint($event, row.block.id)"
-            @pointerleave="hint($event, null)"
-        >
-            <button
-                class="layer-handle"
-                type="button"
-                data-sort-handle
-                :disabled="!!row.block.locked"
-                :aria-label="t.common.dragToSort"
-                data-testid="layer-handle"
-                @click.stop
-            >
-                <Icon name="grip" :size="14" />
-            </button>
-            <span
-                v-if="editor.multiSelect"
-                class="layer-check"
-                :class="{ 'layer-check--on': editor.isSelected(row.block.id) }"
-                role="checkbox"
-                :aria-checked="editor.isSelected(row.block.id)"
-                data-testid="layer-check"
-            >
-                <Icon v-if="editor.isSelected(row.block.id)" name="check" :size="12" />
-            </span>
-            <Icon v-if="row.block.groupId" name="group" :size="14" class="layer-group-mark" role="img" :aria-label="t.inspector.groupMark" data-testid="layer-group-mark" />
-            <Icon :name="BLOCK_ICONS[row.block.type]" :size="16" class="layer-icon" />
-            <span class="layer-name">{{ BLOCK_LABELS[row.block.type] }}</span>
-            <span class="layer-sub">{{ blockSummary(row.block, lookup) }}</span>
-            <button
-                v-tip="row.block.locked ? t.quick.unlock : t.common.lock"
-                class="layer-lock"
-                :class="{ 'layer-lock--on': row.block.locked }"
-                type="button"
-                :aria-pressed="!!row.block.locked"
-                :aria-label="row.block.locked ? t.quick.unlock : t.common.lock"
-                data-testid="layer-lock"
-                @click.stop="editor.setLocked([row.block.id], !row.block.locked)"
-            >
-                <Icon :name="row.block.locked ? 'lock' : 'unlock'" :size="14" />
-            </button>
-        </li>
+        <template v-for="entry in entries" :key="entry.kind === 'block' ? entry.row.block.id : entry.groupId">
+            <LayerItem v-if="entry.kind === 'block'" :block="entry.row.block" :lookup="lookup" @choose="choose(entry.row.block.id, $event)" />
+            <LayerGroup
+                v-else
+                :group-id="entry.groupId"
+                :rows="entry.rows"
+                :open="openGroups.has(entry.groupId)"
+                :lookup="lookup"
+                @toggle="toggleOpen(entry.groupId)"
+                @choose-group="chooseGroup(entry.rows[0]!.block.id, $event)"
+                @choose-member="choose"
+            />
+        </template>
     </ol>
 </template>
 
 <style scoped>
-/* The layers, top first: symbol, name and short content; the chosen one on the accent's pale ground. */
+/* The layers, top first; the members of an open group stand indented below its row. */
 .layer-list {
     display: grid;
     gap: 2px;
     margin: 0;
     padding: 0;
     list-style: none;
-}
-.layer-item {
-    display: flex;
-    align-items: center;
-    gap: var(--d-space-2);
-    min-width: 0;
-    min-height: 36px;
-    padding: 0 var(--d-space-2);
-    border-radius: var(--d-radius);
-    cursor: pointer;
-    user-select: none;
-    -webkit-touch-callout: none;
-}
-.layer-item--grouped {
-    margin-left: var(--d-space-3);
-}
-.layer-group-mark {
-    flex: none;
-    color: var(--d-accent);
-}
-.layer-item:hover {
-    background: var(--d-panel);
-}
-.layer-item--on,
-.layer-item--on:hover {
-    background: var(--d-accent-pale);
-    color: var(--d-accent-strong);
-}
-.layer-handle {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 20px;
-    height: 32px;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--d-text-faint);
-    cursor: grab;
-}
-.layer-handle:disabled {
-    opacity: 0.3;
-    cursor: default;
-}
-/* The box of the mode "Mehrere auswählen": no click of its own, the row toggles. */
-.layer-check {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 18px;
-    height: 18px;
-    border: 1px solid var(--d-edge);
-    border-radius: 4px;
-    background: var(--d-surface);
-}
-.layer-check--on {
-    border-color: var(--d-accent);
-    background: var(--d-accent);
-    color: var(--d-accent-text);
-}
-.layer-icon {
-    flex: none;
-    color: var(--d-text-muted);
-}
-.layer-name {
-    flex: none;
-    font-size: var(--d-size-sm);
-    font-weight: var(--d-weight-normal);
-}
-.layer-sub {
-    min-width: 0;
-    flex: 1;
-    overflow: hidden;
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-/* Pale like the handle while open, in the accent while locked. */
-.layer-lock {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 28px;
-    height: 32px;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--d-text-faint);
-    cursor: pointer;
-}
-.layer-lock--on {
-    color: var(--d-accent-strong);
 }
 </style>
