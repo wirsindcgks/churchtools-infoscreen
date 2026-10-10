@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 28 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 29 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -60,6 +60,11 @@ const BlockFrame = {
      * does not care.
      */
     locked: v.optional(v.boolean()),
+    /**
+     * Since 1.29: blocks sharing a `groupId` on one slide are selected and moved together in the editor
+     * (Plan.md D9). No nesting; the player draws every block on its own and ignores the field.
+     */
+    groupId: v.optional(Id),
 };
 
 export const TextBlock = v.object({

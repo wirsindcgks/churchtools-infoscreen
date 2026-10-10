@@ -25,6 +25,8 @@ export const t = {
         remove: 'Entfernen',
         delete: 'Löschen',
         duplicate: 'Duplizieren',
+        group: 'Gruppieren',
+        ungroup: 'Gruppierung aufheben',
         copy: 'Kopieren',
         lock: 'Sperren',
         locked: 'Gesperrt',
@@ -133,6 +135,8 @@ export const t = {
             cut: 'Ausschneiden',
             paste: 'Einfügen',
             duplicate: 'Duplizieren',
+            group: 'Gruppieren',
+            ungroup: 'Gruppierung aufheben',
             remove: 'Löschen',
             nudge: 'Um 1 Pixel verschieben',
             nudgeFar: 'Um 10 Pixel verschieben',
@@ -208,6 +212,8 @@ export const t = {
         blockNamed: (label: string) => `Baustein: ${label}`,
         /** The head of the inspector and of the short menu while several blocks are chosen (Plan.md 79, D5). */
         blocksCount: (n: number) => `${n} Bausteine`,
+        /** The same when the choice is exactly one group (Plan.md 79, D9). */
+        groupCount: (n: number) => `Gruppe · ${n} Bausteine`,
         /** The mode "Mehrere auswählen" (Plan.md 79, D6): its entry in the menus and the bar that counts. */
         multiSelect: 'Mehrere auswählen',
         selectedCount: (n: number) => `${n} gewählt`,
@@ -579,6 +585,7 @@ export const t = {
         arrange: 'Anordnen',
         measures: 'Genaue Maße',
         frameFields: { x: 'X', y: 'Y', width: 'Breite', height: 'Höhe' },
+        groupMark: 'In einer Gruppe',
         layerOf: (n: number, total: number) => `Ebene ${n} von ${total}`,
         /** The list of the slide's blocks above the slide's settings (Plan.md 79, D6). */
         slideBlocks: 'Bausteine dieser Folie',

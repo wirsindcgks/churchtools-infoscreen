@@ -74,7 +74,7 @@ const LAYERS = [
                     </template>
                     <template v-else>
                         <Icon name="grid" :size="18" />
-                        <span data-testid="multi-title">{{ t.editor.blocksCount(selection.length) }}</span>
+                        <span data-testid="multi-title">{{ editor.groupSelected ? t.editor.groupCount(selection.length) : t.editor.blocksCount(selection.length) }}</span>
                     </template>
                 </h3>
                 <div class="head-actions">
@@ -90,6 +90,28 @@ const LAYERS = [
                         @click="editor.setLocked(ids, !allLocked)"
                     >
                         <Icon :name="allLocked ? 'lock' : 'unlock'" :size="18" />
+                    </button>
+                    <button
+                        v-if="editor.canGroup"
+                        v-tip="withKeys(t.common.group, KEYS.group)"
+                        class="d-btn d-btn--icon"
+                        type="button"
+                        :aria-label="t.common.group"
+                        data-testid="inspector-group"
+                        @click="editor.groupBlocks(ids)"
+                    >
+                        <Icon name="group" :size="18" />
+                    </button>
+                    <button
+                        v-if="editor.canUngroup"
+                        v-tip="withKeys(t.common.ungroup, KEYS.ungroup)"
+                        class="d-btn d-btn--icon"
+                        type="button"
+                        :aria-label="t.common.ungroup"
+                        data-testid="inspector-ungroup"
+                        @click="editor.ungroupBlocks(ids)"
+                    >
+                        <Icon name="ungroup" :size="18" />
                     </button>
                     <button
                         v-tip="withKeys(many ? t.inspector.duplicateBlocks : t.inspector.duplicateBlock, KEYS.duplicate)"

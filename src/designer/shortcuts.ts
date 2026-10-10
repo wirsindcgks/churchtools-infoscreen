@@ -23,6 +23,8 @@ export const KEYS = {
     paste: { mod: true, key: 'V' },
     duplicate: { mod: true, key: 'D' },
     selectAll: { mod: true, key: 'A' },
+    group: { mod: true, key: 'G' },
+    ungroup: { mod: true, shift: true, key: 'G' },
     delete: { key: 'Delete' },
     help: { key: '?' },
 } as const satisfies Record<string, Keys>;
@@ -80,6 +82,8 @@ export function shortcutGroups(mac: boolean = isMac()): ShortcutGroup[] {
                 { action: s.cut, keys: [k(KEYS.cut)] },
                 { action: s.paste, keys: [k(KEYS.paste)] },
                 { action: s.duplicate, keys: [k(KEYS.duplicate)] },
+                { action: s.group, keys: [k(KEYS.group)] },
+                { action: s.ungroup, keys: [k(KEYS.ungroup)] },
                 { action: s.remove, keys: [k(KEYS.delete)] },
                 { action: s.nudge, keys: [arrows] },
                 { action: s.nudgeFar, keys: [mac ? `${shift} ${arrows}` : `${shift}+${arrows}`] },

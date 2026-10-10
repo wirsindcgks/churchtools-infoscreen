@@ -32,7 +32,7 @@ const block = computed(() => (props.blocks.length === 1 ? props.blocks[0]! : nul
 const many = computed(() => props.blocks.length > 1);
 const ids = computed(() => props.blocks.map((b) => b.id));
 const allLocked = computed(() => props.blocks.every((b) => b.locked));
-const title = computed(() => (block.value ? BLOCK_LABELS[block.value.type] : t.editor.blocksCount(props.blocks.length)));
+const title = computed(() => (block.value ? BLOCK_LABELS[block.value.type] : (editor.groupSelected ? t.editor.groupCount(props.blocks.length) : t.editor.blocksCount(props.blocks.length))));
 provide(INSPECTOR_MODE, 'quick');
 provide(QUICK_VARIANT, bar ? 'bar' : 'float');
 /** Only one field is open at a time. */
@@ -313,6 +313,12 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
                     data-testid="quick-more-list"
                     @keydown="onMoreKey"
                 >
+                    <button v-if="editor.canGroup" role="menuitem" type="button" data-testid="quick-group" @click="choose(() => editor.groupBlocks(ids))">
+                        {{ t.common.group }}<kbd>{{ keyLabel(KEYS.group) }}</kbd>
+                    </button>
+                    <button v-if="editor.canUngroup" role="menuitem" type="button" data-testid="quick-ungroup" @click="choose(() => editor.ungroupBlocks(ids))">
+                        {{ t.common.ungroup }}<kbd>{{ keyLabel(KEYS.ungroup) }}</kbd>
+                    </button>
                     <button v-if="bar" role="menuitem" type="button" data-testid="quick-lock" @click="choose(() => editor.setLocked(ids, !allLocked))">
                         {{ lockLabel }}
                     </button>
