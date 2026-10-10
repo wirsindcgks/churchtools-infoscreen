@@ -39,5 +39,5 @@ const { calendars, hidden, toggleCalendar } = useCalendarChoice(() => props.bloc
             {{ t.inspector.countInfo }}
         </template>
     </HintRow>
-    <FontSection :block="block" />
+    <FontSection :block="block" effects="shadow" />
 </template>

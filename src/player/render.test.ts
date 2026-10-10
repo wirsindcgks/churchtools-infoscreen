@@ -32,6 +32,32 @@ function render(slide: SlideDoc, overrides: Partial<StageContext> = {}, hiddenBl
     return mount(Host);
 }
 
+describe('the band behind a text (Plan.md F3)', () => {
+    const highlight = { color: '#ff0000', opacity: 50 };
+    const text = (type: 'text' | 'clock', style: object = {}) =>
+        (type === 'text'
+            ? { id: 't', type, x: 0, y: 0, width: 400, height: 100, text: 'Hallo', style: { ...baseStyle, ...style } }
+            : { id: 't', type, x: 0, y: 0, width: 400, height: 100, format: 'time', style: { ...baseStyle, ...style } }) as Block;
+    const baseStyle = { fontFamily: 'sans', fontSize: 40, fontWeight: 400, color: '#fff', align: 'left' };
+
+    it('wraps the text of a text block in a span with the colour and strength', () => {
+        const wrapper = render(makeSlide({ blocks: [text('text', { highlight })] }));
+        const span = wrapper.get('[data-testid="text-inner"] span.highlight');
+        expect(span.text()).toBe('Hallo');
+        expect(span.attributes('style')).toContain('rgba(255, 0, 0, 0.5)');
+        expect(render(makeSlide({ blocks: [text('text')] })).find('span.highlight').exists()).toBe(false);
+    });
+
+    it('keeps hiding the text while it is written on the stage', () => {
+        const wrapper = render(makeSlide({ blocks: [text('text', { highlight })] }), {}, 't');
+        expect(wrapper.get('[data-testid="text-inner"]').attributes('style')).toContain('visibility: hidden');
+    });
+
+    it('is only for the text block', () => {
+        expect(render(makeSlide({ blocks: [text('clock', { highlight, shadow: 'soft' })] })).find('span.highlight').exists()).toBe(false);
+    });
+});
+
 describe('rendering a slide', () => {
     it('renders the known blocks of a slide from a newer designer and skips the rest', () => {
         const fromTheFuture = {

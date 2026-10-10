@@ -3,7 +3,7 @@ import { computed } from 'vue';
 import { isVideo, type Block } from '../../model/schema';
 import { imageSource, useStageContext } from '../context';
 import { fillStyle } from '../fill';
-import { textStyle, verticalAlignOf, verticalStyle } from '../format';
+import { textStyle, toHex, verticalAlignOf, verticalStyle } from '../format';
 import { blockImageUrl, headerLogoUrl } from '../images';
 import { qrShape } from '../qr';
 import { webFrame } from '../web';
@@ -81,6 +81,15 @@ const lineStyle = computed(() => {
         : { height: `${height}px`, background: color, borderRadius: `${height / 2}px` };
 });
 
+/** The band behind the lines of a text block (Plan.md F3): an inline span, so it breaks with every line. */
+const highlight = computed(() => {
+    if (props.block.type !== 'text' || !props.block.style.highlight) return null;
+    const { color, opacity } = props.block.style.highlight;
+    const hex = toHex(color) ?? '#000000';
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
+    return { background: `rgba(${r}, ${g}, ${b}, ${opacity / 100})` };
+});
+
 const logoUrl = computed(() => {
     if (props.block.type !== 'church-header') return null;
     const url = headerLogoUrl(props.block, context.media, context.churchLogo ?? null);
@@ -116,7 +125,7 @@ const imageUrl = computed(() => {
 <template>
     <div class="block" :class="`block--${block.type}`" :style="frame" :data-block-id="block.id">
         <div v-if="block.type === 'text'" class="text" :style="textStyle(block.style)">
-            <div class="text-inner" :style="[vertical, { visibility: hiddenBlockId === block.id ? 'hidden' : undefined }]" data-testid="text-inner">{{ block.text }}</div>
+            <div class="text-inner" :style="[vertical, { visibility: hiddenBlockId === block.id ? 'hidden' : undefined }]" data-testid="text-inner"><span v-if="highlight" class="highlight" :style="highlight">{{ block.text }}</span><template v-else>{{ block.text }}</template></div>
         </div>
 
         <div
@@ -200,6 +209,12 @@ const imageUrl = computed(() => {
 /* The item keeps the full width, so the text's own alignment works; the margins place it. */
 .text-inner {
     flex: none;
+}
+.highlight {
+    padding: 0.08em 0.3em;
+    border-radius: 0.15em;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
 }
 .header {
     display: flex;

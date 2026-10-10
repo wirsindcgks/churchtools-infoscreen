@@ -83,6 +83,14 @@ Linie ist durchgezogen oder gestrichelt und hat Griffe nur an ihren Enden. Jeder
 über seinem Rahmen; er rastet bei 0°, 45°, 90° … ein, mit Umschalt dreht er frei. Genaue Winkel und die **Deckkraft**
 stehen im Inspektor unter „Drehung und Deckkraft“, „Drehen zurücksetzen“ im „⋯“ des Kurzmenüs.
 
+**Bilder gestalten:** Ein Doppelklick auf ein Bild öffnet den **Ausschnitt** – das Bild im Rahmen verschieben, mit dem
+Regler vergrößern, „Fertig“. Bei „Füllen“ bekommen Bild, Video und Galerie runde Ecken und einen weichen oder starken
+Schatten; der **Ton** dunkelt ein Bild ab, hellt es auf oder macht es grau, damit Text darauf lesbar bleibt.
+
+**Text gestalten:** Schatten (weich oder stark, in der Gegenfarbe zur Schrift) bei Text, Uhr, Countdown und
+Gemeindekopf; beim Text zusätzlich eine farbige **Hinterlegung** hinter jeder Zeile. Zeilen- und Buchstabenabstand
+(eng, normal, weit) hat jeder Baustein mit Schrift.
+
 ## Mehrere Bausteine
 
 Mit Umschalt-Klick, einem **Auswahlrahmen** auf der leeren Fläche oder Strg/⌘ + A wählt man mehrere Bausteine

@@ -15,7 +15,7 @@ import { BLOCK_INSPECTORS } from '.';
  * field that stands in the menu by its label, a medium by its button.
  */
 const QUICK: Record<BlockType, string[]> = {
-    text: ['Textstufe: Überschrift', 'Farbe', 'Ausrichtung'],
+    text: ['Textstufe: Überschrift', 'Farbe', 'Ausrichtung', 'Schatten: Ohne', 'Hinterlegung'],
     image: ['Bild wählen', 'Einpassen: Ganz zeigen', 'Ton: Ohne'], // "Bild tauschen" once a picture is in
     shape: ['Form: Rechteck', 'Farbe', 'Ecken 0 px'],
     line: ['Farbe', 'Stärke 8 px', 'Strich: Durchgezogen'],

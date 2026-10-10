@@ -37,7 +37,7 @@ const context = useInspectorContext();
             {{ t.inspector.resetLogo }}
         </button>
     </MediaField>
-    <FontSection :block="block" />
+    <FontSection :block="block" effects="shadow" />
 </template>
 
 <style scoped>
