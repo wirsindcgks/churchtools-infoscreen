@@ -73,7 +73,7 @@ describe('readSlide – tolerant towards newer data', () => {
     });
 
     it('reads crop, corners, shadow and tone of pictures (schema 1.31): all optional, old slides stay valid', () => {
-        expect(SCHEMA_VERSION.minor).toBe(31);
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(31);
         const old = makeSlide({ blocks: [textBlock('a')] });
         const image = { id: 'i', type: 'image', x: 0, y: 0, width: 400, height: 300, mediaId: 'm' };
         const video = { id: 'v', type: 'video', x: 0, y: 0, width: 400, height: 300 };
@@ -92,6 +92,21 @@ describe('readSlide – tolerant towards newer data', () => {
         expect(read({ ...image, tone: 'sepia' }).issues).not.toHaveLength(0);
         expect(read({ ...image, shadow: 'huge' }).issues).not.toHaveLength(0);
         expect(read({ ...image, cornerRadius: -1 }).issues).not.toHaveLength(0);
+    });
+
+    it('reads shadow, highlight, line height and letter spacing of a text (schema 1.32): all optional, old slides stay valid', () => {
+        expect(SCHEMA_VERSION.minor).toBe(32);
+        const old = makeSlide({ blocks: [textBlock('a')] });
+        const text = old.blocks[0]! as Extract<typeof old.blocks[number], { type: 'text' }>;
+        const read = (style: object) => readSlide({ ...old, blocks: [{ ...text, style: { ...text.style, ...style } }] });
+        expect(readSlide(old).issues).toHaveLength(0);
+        const full = read({ shadow: 'strong', highlight: { color: '#ff0', opacity: 80 }, lineHeight: 'loose', letterSpacing: 'wide' });
+        expect(full.issues).toHaveLength(0);
+        expect(full.doc.blocks[0]).toMatchObject({ style: { shadow: 'strong', highlight: { color: '#ff0', opacity: 80 }, lineHeight: 'loose', letterSpacing: 'wide' } });
+        expect(read({ shadow: 'glow' }).issues).not.toHaveLength(0);
+        expect(read({ highlight: { color: '#ff0', opacity: 101 } }).issues).not.toHaveLength(0);
+        expect(read({ lineHeight: 'huge' }).issues).not.toHaveLength(0);
+        expect(read({ letterSpacing: 'x' }).issues).not.toHaveLength(0);
     });
 
     it('accepts a newer minor version', () => {

@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 31 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 32 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -46,6 +46,14 @@ export const TextStyle = v.object({
      * block did before – each block's default lives in the player; older players ignore the field.
      */
     verticalAlign: v.optional(v.picklist(['top', 'middle', 'bottom'])),
+    /** Since 1.32 (Plan.md F3), all four missing = as before; older players ignore them. A shadow against the text colour. */
+    shadow: v.optional(v.picklist(['none', 'soft', 'strong'])),
+    /** Since 1.32: a coloured band behind the lines of a text block; the other blocks ignore it. */
+    highlight: v.optional(
+        v.object({ color: Color, opacity: v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(100)) }),
+    ),
+    lineHeight: v.optional(v.picklist(['tight', 'normal', 'loose'])),
+    letterSpacing: v.optional(v.picklist(['tight', 'normal', 'wide'])),
 });
 
 /** Since 1.31: the soft or strong shadow of a picture, video or gallery (Plan.md F2). */

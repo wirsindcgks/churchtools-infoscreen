@@ -119,6 +119,27 @@ describe('textStyle', () => {
         expect(textStyle({ ...style, uppercase: false })).not.toHaveProperty('textTransform');
         expect(textStyle({ ...style, uppercase: true }).textTransform).toBe('uppercase');
     });
+
+    it('sets nothing for the new fields when they are missing, "normal" or "none" (Plan.md F3)', () => {
+        const plain = textStyle(style);
+        for (const key of ['lineHeight', 'letterSpacing', 'textShadow']) expect(plain).not.toHaveProperty(key);
+        const normal = textStyle({ ...style, lineHeight: 'normal', letterSpacing: 'normal', shadow: 'none' });
+        for (const key of ['lineHeight', 'letterSpacing', 'textShadow']) expect(normal).not.toHaveProperty(key);
+    });
+
+    it('sets line height and letter spacing', () => {
+        expect(textStyle({ ...style, lineHeight: 'tight' }).lineHeight).toBe('1.05');
+        expect(textStyle({ ...style, lineHeight: 'loose' }).lineHeight).toBe('1.6');
+        expect(textStyle({ ...style, letterSpacing: 'tight' }).letterSpacing).toBe('-0.02em');
+        expect(textStyle({ ...style, letterSpacing: 'wide' }).letterSpacing).toBe('0.08em');
+    });
+
+    it('shadows light text dark and dark text light, soft or strong', () => {
+        expect(textStyle({ ...style, shadow: 'soft' }).textShadow).toBe('0 2px 8px rgba(0, 0, 0, 0.5)');
+        expect(textStyle({ ...style, color: '#111827', shadow: 'soft' }).textShadow).toBe('0 2px 8px rgba(255, 255, 255, 0.5)');
+        expect(textStyle({ ...style, shadow: 'strong' }).textShadow).toBe('0 3px 6px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.8)');
+        expect(textStyle({ ...style, color: '#111827', shadow: 'strong' }).textShadow).toContain('rgba(255, 255, 255, 0.8)');
+    });
 });
 
 describe('vertical alignment (Plan.md 70)', () => {

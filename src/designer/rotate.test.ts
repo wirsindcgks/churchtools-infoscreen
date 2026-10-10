@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { outerFrame, resizeRotated, snapAngle } from './rotate';
+import { handleAbove, handleReach, outerFrame, resizeRotated, snapAngle } from './rotate';
 
 describe('outerFrame (Plan.md F1)', () => {
     const frame = { x: 100, y: 100, width: 400, height: 100 };
@@ -89,5 +89,43 @@ describe('resizeRotated (Plan.md F1)', () => {
 
     it('keeps the minimum size', () => {
         expect(resizeRotated(frame, 45, 'e', -1000, 0)).toMatchObject({ width: 20, height: 100 });
+    });
+});
+
+describe('handleReach', () => {
+    const frame = { x: 100, y: 100, width: 200, height: 100 };
+
+    it('reaches above an upright block by its lift and radius', () => {
+        expect(handleReach(frame, 28, 6)).toEqual({ above: 34, below: 0 });
+    });
+
+    it('reaches below a block turned upside down', () => {
+        expect(handleReach({ ...frame, rotation: 180 }, 62, 8)).toEqual({ above: 0, below: 70 });
+    });
+
+    it('stays beside a block turned a quarter', () => {
+        expect(handleReach({ ...frame, rotation: 90 }, 28, 6)).toEqual({ above: 0, below: 0 });
+    });
+});
+
+describe('handleAbove', () => {
+    const stage = { width: 1920, height: 1080 };
+    const frame = { x: 100, y: 100, width: 200, height: 100 };
+
+    it('stays below where there is room', () => {
+        expect(handleAbove(frame, 28, 9, stage)).toBe(false);
+    });
+
+    it('goes above a block at the bottom edge', () => {
+        expect(handleAbove({ ...frame, y: 970 }, 28, 9, stage)).toBe(true);
+    });
+
+    it('stays below where it fits neither below nor above', () => {
+        expect(handleAbove({ ...frame, y: 10, height: 1060 }, 28, 9, stage)).toBe(false);
+    });
+
+    it('turns with the block: a quarter turn at the left edge puts it on the other side', () => {
+        expect(handleAbove({ ...frame, x: -50, rotation: 90 }, 28, 9, stage)).toBe(true);
+        expect(handleAbove({ ...frame, x: -50, rotation: -90 }, 28, 9, stage)).toBe(false);
     });
 });

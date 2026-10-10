@@ -79,9 +79,19 @@ noch nicht „Rechte aktualisieren" geklickt hat, geht jede Änderung mit „Ver
 Fernseher; der Editor sagt das.
 
 **Formen, Linien, Drehen:** Eine Fläche ist ein Rechteck mit runden Ecken oder eine Ellipse, auf Wunsch mit Rand. Die
-Linie ist durchgezogen oder gestrichelt und hat Griffe nur an ihren Enden. Jeder Baustein dreht sich am runden Griff
-über seinem Rahmen; er rastet bei 0°, 45°, 90° … ein, mit Umschalt dreht er frei. Genaue Winkel und die **Deckkraft**
+Linie ist durchgezogen oder gestrichelt und hat Griffe nur an ihren Enden. Jeder Baustein dreht sich am Drehpfeil
+unter seinem Rahmen (am unteren Rand der Folie steht er darüber); er rastet bei 0°, 45°, 90° … ein, mit Umschalt dreht er frei. Genaue Winkel und die **Deckkraft**
 stehen im Inspektor unter „Drehung und Deckkraft“, „Drehen zurücksetzen“ im „⋯“ des Kurzmenüs.
+
+**Bilder gestalten:** Ein Doppelklick auf ein Bild öffnet den **Ausschnitt** – das Bild im Rahmen verschieben, mit dem
+Regler vergrößern, „Fertig“. Bei „Füllen“ bekommen Bild, Video und Galerie runde Ecken und einen weichen oder starken
+Schatten; der **Ton** dunkelt ein Bild ab, hellt es auf oder macht es grau, damit Text darauf lesbar bleibt.
+
+**Text gestalten:** Schatten (weich oder stark, in der Gegenfarbe zur Schrift) bei Text, Uhr, Countdown und
+Gemeindekopf; beim Text zusätzlich eine farbige **Hinterlegung** hinter jeder Zeile. Zeilen- und Buchstabenabstand
+(eng, normal, weit) hat jeder Baustein mit Schrift.
+
+![Editor mit einer gestalteten Folie: ein Bild mit runden Ecken, Schatten und abgedunkeltem Ton, darauf ein Text mit Schatten und Hinterlegung, daneben eine gedrehte gelbe Fläche mit ihrem Drehgriff; rechts „Drehung und Deckkraft“ mit −12°](bilder/gestalten.png)
 
 ## Mehrere Bausteine
 

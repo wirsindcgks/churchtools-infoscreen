@@ -16,7 +16,11 @@ export function useBlockEdit(block: () => Block) {
 
     function setStyle(patch: Partial<TextStyle>): void {
         const current = block();
-        if ('style' in current) setBlock({ style: { ...current.style, ...patch } });
+        if (!('style' in current)) return;
+        const style: Record<string, unknown> = { ...current.style, ...patch };
+        // An undefined value takes the field away instead of leaving the key behind ("Normal", "Ohne").
+        for (const key of Object.keys(style)) if (style[key] === undefined) delete style[key];
+        setBlock({ style });
     }
 
     /** The preview address of a library image, or null for none. */

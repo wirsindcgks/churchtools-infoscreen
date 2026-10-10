@@ -53,9 +53,12 @@
     /* The calm ground around cards and the sidebar: a touch darker than the panel, from the host's own colours. */
     --d-workspace: color-mix(in oklab, var(--d-panel) 96%, var(--d-text));
     --d-transition: 150ms ease;
-    /* Bold is spare (Plan.md 79): text is regular, buttons a little firmer, only headings are semi-bold. */
+    /*
+     * Bold is spare (Plan.md 79): text is regular, buttons and headings firmer. The Lato of ChurchTools has only 300, 400
+     * and 700, so 500 is drawn as 400 – buttons at 500 looked thin and hard to read (user at the iPad, 2026-10-10).
+     */
     --d-weight-normal: 400;
-    --d-weight-button: 500;
+    --d-weight-button: 600;
     --d-weight-heading: 600;
     /* The side margin of the editor's bar and its columns: back and save stand flush with the cards below. */
     --d-gutter: var(--d-space-3);

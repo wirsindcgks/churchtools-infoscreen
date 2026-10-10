@@ -17,9 +17,13 @@ import FontField from './fields/FontField.vue';
 import ToggleField from './fields/ToggleField.vue';
 import { useBlockEdit, type StyledBlock } from './use-block';
 
-const props = defineProps<{ block: StyledBlock; alignQuick?: boolean }>();
+/**
+ * `effects`: `'shadow'` adds the shadow of the text (clock, countdown, church header), `'all'` the shadow and the band
+ * behind the lines (the text block, where both go to the short menu); without it neither shows (Plan.md F3).
+ */
+const props = defineProps<{ block: StyledBlock; alignQuick?: boolean; effects?: 'shadow' | 'all' }>();
 const edit = useEdit();
-const { setStyle } = useBlockEdit(() => props.block);
+const { editor, setStyle } = useBlockEdit(() => props.block);
 
 const style = computed(() => props.block.style);
 const weights = [
@@ -38,8 +42,29 @@ const verticals = [
     { value: 'bottom', label: t.inspector.verticals.bottom, icon: 'valign-bottom' },
 ] as const;
 
+const lineHeights = [
+    { value: 'tight', label: t.inspector.spacingTight },
+    { value: 'normal', label: t.inspector.spacingNormal },
+    { value: 'loose', label: t.inspector.spacingWide },
+];
+const spacings = [
+    { value: 'tight', label: t.inspector.spacingTight },
+    { value: 'normal', label: t.inspector.spacingNormal },
+    { value: 'wide', label: t.inspector.spacingWide },
+];
+const shadows = [
+    { value: 'none', label: t.inspector.shadowNone },
+    { value: 'soft', label: t.inspector.shadowSoft },
+    { value: 'strong', label: t.inspector.shadowStrong },
+];
+const hasShadow = computed(() => !!style.value.shadow && style.value.shadow !== 'none');
+
 /** Folded sections say what is set inside (Plan.md 47). */
-const summary = computed(() => t.inspector.fontSummary(fontDef(style.value.fontFamily).label, style.value.fontSize, !!style.value.uppercase));
+const summary = computed(() => {
+    const base = t.inspector.fontSummary(fontDef(style.value.fontFamily).label, style.value.fontSize, !!style.value.uppercase);
+    const effects = [hasShadow.value && t.inspector.shadowSummary, props.effects === 'all' && style.value.highlight && t.inspector.highlight];
+    return [base, ...effects].filter(Boolean).join(' · ');
+});
 </script>
 
 <template>
@@ -75,6 +100,57 @@ const summary = computed(() => t.inspector.fontSummary(fontDef(style.value.fontF
             :quick="alignQuick"
             @update:model-value="setStyle({ align: $event as 'left' })"
         />
+        <SegmentField
+            :model-value="style.lineHeight ?? 'normal'"
+            :options="lineHeights"
+            :label="t.inspector.lineHeight"
+            testid="text-line-height"
+            @update:model-value="setStyle({ lineHeight: $event === 'normal' ? undefined : ($event as 'tight') })"
+        />
+        <SegmentField
+            :model-value="style.letterSpacing ?? 'normal'"
+            :options="spacings"
+            :label="t.inspector.letterSpacing"
+            testid="text-letter-spacing"
+            @update:model-value="setStyle({ letterSpacing: $event === 'normal' ? undefined : ($event as 'tight') })"
+        />
+        <SegmentField
+            v-if="effects"
+            :quick="effects === 'all'"
+            :model-value="style.shadow ?? 'none'"
+            :options="shadows"
+            :label="t.inspector.shadow"
+            testid="text-shadow"
+            @update:model-value="setStyle({ shadow: $event === 'none' ? undefined : ($event as 'soft') })"
+        />
+        <template v-if="effects === 'all'">
+            <ToggleField
+                quick
+                :model-value="!!style.highlight"
+                :label="t.inspector.highlight"
+                testid="text-highlight"
+                @update:model-value="setStyle({ highlight: $event ? { color: editor.theme.accent, opacity: 80 } : undefined })"
+            />
+            <template v-if="style.highlight">
+                <ColorField
+                    :label="t.inspector.highlightColor"
+                    testid="text-highlight-color"
+                    :model-value="style.highlight.color"
+                    @focus="edit.onFocus"
+                    @blur="edit.onBlur"
+                    @update:model-value="setStyle({ highlight: { ...style.highlight!, color: $event } })"
+                />
+                <NumberField
+                    :model-value="style.highlight.opacity"
+                    :label="t.inspector.highlightOpacity"
+                    unit="%"
+                    :min="0"
+                    :max="100"
+                    testid="text-highlight-opacity"
+                    @update:model-value="setStyle({ highlight: { ...style.highlight!, opacity: $event } })"
+                />
+            </template>
+        </template>
         <SegmentField
             v-if="verticalAlignOf(block)"
             :model-value="verticalAlignOf(block)!"
