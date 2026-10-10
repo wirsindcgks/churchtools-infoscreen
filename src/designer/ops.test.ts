@@ -33,6 +33,12 @@ describe('designer operations', () => {
         expect(BLOCK_LABELS.line).toBe('Linie');
     });
 
+    it('creates a social block 900 x 360, empty, in a column with brand colours and a semibold 56 px font (Plan.md 80)', () => {
+        const block = createBlock('social', stage);
+        expect(block).toMatchObject({ type: 'social', width: 900, height: 360, links: [], layout: 'column', brandColors: true, style: { fontSize: 56, fontWeight: 600 } });
+        expect(BLOCK_LABELS.social).toBe('Social Media');
+    });
+
     it('creates a slideshow empty, with the defaults, at 1200 x 675', () => {
         expect(createBlock('slideshow', stage)).toMatchObject({
             mediaIds: [],
@@ -74,6 +80,7 @@ describe('designer operations', () => {
             'posts',
             'groups',
             'rooms',
+            'social',
         ]);
         for (const block of styled) expect(block.style.fontFamily).toBe('oswald');
         expect(createBanner(theme).style.fontFamily).toBe('oswald');
@@ -224,6 +231,7 @@ describe('the palette (Plan.md 47)', () => {
             'Nächster Termin',
             'QR-Code',
             'Raumbelegung',
+            'Social Media',
             'Terminliste',
             'Text',
             'Uhr',

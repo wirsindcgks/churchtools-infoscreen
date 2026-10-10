@@ -95,7 +95,7 @@ describe('readSlide – tolerant towards newer data', () => {
     });
 
     it('reads shadow, highlight, line height and letter spacing of a text (schema 1.32): all optional, old slides stay valid', () => {
-        expect(SCHEMA_VERSION.minor).toBe(32);
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(32);
         const old = makeSlide({ blocks: [textBlock('a')] });
         const text = old.blocks[0]! as Extract<typeof old.blocks[number], { type: 'text' }>;
         const read = (style: object) => readSlide({ ...old, blocks: [{ ...text, style: { ...text.style, ...style } }] });
@@ -107,6 +107,25 @@ describe('readSlide – tolerant towards newer data', () => {
         expect(read({ highlight: { color: '#ff0', opacity: 101 } }).issues).not.toHaveLength(0);
         expect(read({ lineHeight: 'huge' }).issues).not.toHaveLength(0);
         expect(read({ letterSpacing: 'x' }).issues).not.toHaveLength(0);
+    });
+
+    it('reads the social block (schema 1.33): layout and colours optional, at most 12 links, old slides stay valid', () => {
+        expect(SCHEMA_VERSION.minor).toBe(33);
+        const old = makeSlide({ blocks: [textBlock('a')] });
+        const social = (extra: Record<string, unknown> = {}) => ({
+            id: 's', type: 'social', x: 0, y: 0, width: 900, height: 360, links: [{ url: 'instagram.com/wirsindcgks' }], style: (old.blocks[0] as { style: object }).style, ...extra,
+        });
+        const read = (extra?: Record<string, unknown>) => readSlide({ ...old, blocks: [...old.blocks, social(extra)] });
+        const plain = read();
+        expect(plain.issues).toHaveLength(0);
+        expect(plain.doc.blocks[1]).toMatchObject({ type: 'social', links: [{ url: 'instagram.com/wirsindcgks' }] });
+        expect(plain.doc.blocks[1]).not.toHaveProperty('layout');
+        expect(read({ layout: 'row', brandColors: false, links: [{ url: 'a.de', label: 'A' }] }).doc.blocks[1]).toMatchObject({ layout: 'row', brandColors: false, links: [{ url: 'a.de', label: 'A' }] });
+        const twelve = Array.from({ length: 12 }, (_, i) => ({ url: `a${i}.de` }));
+        expect(read({ links: twelve }).issues).toHaveLength(0);
+        expect(read({ links: [...twelve, { url: 'b.de' }] }).issues).not.toHaveLength(0);
+        expect(read({ layout: 'grid' }).issues).not.toHaveLength(0);
+        expect(read({ links: [{ url: 'x'.repeat(501) }] }).issues).not.toHaveLength(0);
     });
 
     it('accepts a newer minor version', () => {

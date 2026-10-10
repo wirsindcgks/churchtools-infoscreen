@@ -3,7 +3,7 @@
  * A list to reorder (Plan.md 79, B2, D7): per row the handle ⋮⋮, an optional thumbnail, the label and a small × to remove. The
  * rows are dragged by the handle or moved with the arrow keys on it (`useSortable`); `testid` names the parts
  * (`<testid>-list`, `-row`, `-handle`, `-name`, `-remove`; `rowTestid` renames the row). The `row` slot adds fields of
- * the item under its line, such as the way-finder of a room.
+ * the item under its line, such as the way-finder of a room; the `lead` slot puts a mark before the label.
  */
 import { ref } from 'vue';
 import { t } from '../../../i18n/designer';
@@ -23,7 +23,7 @@ export interface SortItem {
 
 const props = defineProps<{ items: SortItem[]; removeLabel: string; testid: string; rowTestid?: string; quick?: boolean }>();
 const emit = defineEmits<{ move: [from: number, to: number]; remove: [index: number] }>();
-defineSlots<{ row?(props: { item: SortItem; index: number }): unknown }>();
+defineSlots<{ row?(props: { item: SortItem; index: number }): unknown; lead?(props: { item: SortItem; index: number }): unknown }>();
 const visible = useFieldVisible(() => props.quick);
 
 const list = ref<HTMLElement | null>(null);
@@ -37,6 +37,7 @@ useSortable({ container: list, onMove: (from, to) => emit('move', from, to) });
                 <button class="sort-handle" type="button" data-sort-handle :aria-label="t.common.dragToSort" :data-testid="`${testid}-handle`">
                     <Icon name="grip" :size="16" />
                 </button>
+                <slot name="lead" :item="item" :index="index" />
                 <img v-if="item.thumb" :src="item.thumb" alt="">
                 <span v-else-if="item.thumb === null" class="sort-missing" />
                 <span class="sort-label" :class="{ 'sort-label--dimmed': item.dimmed }" :title="item.label" :data-testid="`${testid}-name`">{{ item.label }}</span>

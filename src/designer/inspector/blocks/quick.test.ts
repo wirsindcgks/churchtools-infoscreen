@@ -31,6 +31,7 @@ const QUICK: Record<BlockType, string[]> = {
     posts: ['Gruppen · 0', 'Darstellung: Hervorgehoben', 'Farbe'],
     groups: ['Gruppen-Homepage: – wählen –', 'Darstellung: Hervorgehoben', 'Farbe'],
     rooms: ['Räume · 0', 'Darstellung: Übersicht', 'Zeitraum: Heute'],
+    social: ['Profile · 0', 'Anordnung: Untereinander', 'Markenfarben'],
 };
 
 function draw(type: BlockType) {

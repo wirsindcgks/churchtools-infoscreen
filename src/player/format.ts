@@ -35,6 +35,7 @@ export const VERTICAL_DEFAULTS: Partial<Record<Block['type'], Vertical>> = {
     text: 'top',
     clock: 'top',
     countdown: 'middle',
+    social: 'top',
     'next-appointment': 'middle',
     'church-header': 'middle',
 };
