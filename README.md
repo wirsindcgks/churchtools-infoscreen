@@ -13,7 +13,10 @@ ChurchTools und erscheinen von selbst auf dem Bildschirm. Ein Fernseher mit Kios
 ## Was ihr damit macht
 
 - **Folien gestalten wie in einem Folien-Editor:** Text, Bilder, Uhr, Countdown, QR-Code, Galerie, Video und mehr
-  per Drag and drop. Die Vorschau zeigt genau das, was der Fernseher zeigt – auch am Handy und auf dem Tablet.
+  per Drag and drop, Text direkt auf der Folie, mit dem Finger genauso wie mit der Maus. Die Vorschau zeigt genau das,
+  was der Fernseher zeigt – auch am Handy und auf dem Tablet.
+- **Ausprobieren ohne Risiko:** Der Editor sichert jede Änderung als Entwurf; die Fernseher zeigen sie erst nach
+  „Veröffentlichen".
 - **Inhalte aus ChurchTools zeigen:** Termine als Liste oder als Karten (auf Wunsch mit Ort, Raum und Diensten),
   den nächsten Termin, Gruppen mit Treffzeit und QR-Code zur Anmeldung, aktuelle Beiträge und die Raumbelegung.
   Was in ChurchTools geändert wird, steht nach etwa 20 Sekunden auf dem Bildschirm.
