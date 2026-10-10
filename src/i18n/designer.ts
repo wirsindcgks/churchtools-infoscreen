@@ -52,6 +52,8 @@ export const t = {
             lastSign: 'Letztes Lebenszeichen',
             on: (verb: string, date: string, time: string) => `${verb} am ${date} um ${time}`,
             by: (verb: string, name: string) => `${verb} von ${name}`,
+            today: 'heute',
+            yesterday: 'gestern',
         },
         alive: {
             online: 'online',
@@ -120,7 +122,7 @@ export const t = {
         macKeys: { Delete: '⌫' } as Record<string, string>,
         groups: { general: 'Allgemein', block: 'Gewählter Baustein', stage: 'Beim Ziehen und Zeigen' },
         rows: {
-            save: 'Speichern',
+            save: 'Entwurf sofort sichern',
             undo: 'Rückgängig',
             redo: 'Wiederholen',
             deselect: 'Auswahl aufheben',
@@ -144,23 +146,50 @@ export const t = {
         leaveTitle: (where: string) => `Editor verlassen, zurück zu „${where}“`,
         backAria: (where: string) => `Zurück zu ${where}`,
         playlistFallback: 'Präsentation',
+        publish: 'Veröffentlichen',
+        publishTitle: 'Erst Veröffentlichen bringt die Änderungen auf die Fernseher',
         status: {
-            saving: 'Speichert …',
-            saved: 'Gespeichert',
+            publishing: 'Wird veröffentlicht …',
+            published: 'Veröffentlicht',
             conflict: 'Konflikt',
-            error: 'Nicht gespeichert',
-            unsaved: 'Ungespeicherte Änderungen',
-            allSaved: 'Alles gespeichert',
+            error: 'Nicht veröffentlicht',
+            unpublished: 'Nicht veröffentlichte Änderungen',
+            allPublished: 'Alles veröffentlicht',
+            draftSaving: 'Sichert …',
+            draftSaved: (time: string) => `Entwurf gesichert · ${time}`,
+            draftFromOpen: (by: string, when: string) => `Entwurf von ${by}, ${when} – noch nicht veröffentlicht`,
+            draftConflict: 'Konflikt beim Sichern',
+            draftRetry: 'Nicht gesichert – erneut versuchen',
+            saving: 'Speichert …',
+        },
+        draftsOff:
+            'Entwürfe gibt es, sobald ein Administrator unter Einstellungen ‚Rechte aktualisieren‘ klickt. ' +
+            'Bis dahin geht jede Änderung mit „Veröffentlichen“ direkt auf die Fernseher.',
+        discardDraft: 'Entwurf verwerfen',
+        discardDraftQuestion: 'Entwurf verwerfen? Alle Änderungen seit dem letzten Veröffentlichen gehen verloren.',
+        discardDraftConfirm: 'Verwerfen',
+        linkedPublishTitle: 'Verknüpfte Folien veröffentlichen?',
+        linkedPublishOne: (name: string, where: string) =>
+            `Die verknüpfte Folie ${name} läuft auch in ${where} – Veröffentlichen ändert sie dort mit.`,
+        linkedPublishMany: (count: number, where: string) =>
+            `${count} verknüpfte Folien laufen auch in ${where} – Veröffentlichen ändert sie dort mit.`,
+        draftConflict: {
+            title: 'Jemand arbeitet am selben Entwurf',
+            text: (by: string, when: string) => `${by} hat diesen Entwurf ${when} weitergeführt.`,
+            gone: 'Der Entwurf wurde inzwischen veröffentlicht oder verworfen.',
+            load: (by: string) => `Stand von ${by} laden`,
+            loadPublished: 'Veröffentlichten Stand laden',
+            keep: 'Meinen Stand behalten',
         },
         savedHint: (screens: number) => `– ${screens === 1 ? 'der Fernseher zeigt' : 'die Fernseher zeigen'} es in etwa 20 s`,
         undo: 'Rückgängig',
         redo: 'Wiederholen',
         preview: 'Vorschau',
-        previewTitle: 'Die Präsentation abspielen wie auf dem Fernseher – mit allen Änderungen, ohne zu speichern',
+        previewTitle: 'Die Präsentation abspielen wie auf dem Fernseher – mit allen Änderungen, ohne zu veröffentlichen',
         player: 'Player',
-        playerTitle: (name: string) => `Player von „${name}“ öffnen – zeigt den gespeicherten Stand`,
+        playerTitle: (name: string) => `Player von „${name}“ öffnen – zeigt den veröffentlichten Stand`,
         moreActions: 'Weitere Aktionen',
-        saveOnLive: (names: string) => `Läuft gerade auf ${names} – nach dem Speichern dort in etwa 20 Sekunden zu sehen`,
+        saveOnLive: (names: string) => `Läuft gerade auf ${names} – nach dem Veröffentlichen dort in etwa 20 Sekunden zu sehen`,
         demoNotice: 'Demo-Modus: Gespeichert wird in diesem Browser, nicht in ChurchTools; ein offener Player übernimmt Änderungen sofort.',
         previewData: (problem: string) => `Vorschaudaten: ${problem}`,
         slidesToggle: (number: number) => `Folien, aktuell Nummer ${number}`,
@@ -173,20 +202,18 @@ export const t = {
         phone: { editSlide: 'Folie bearbeiten' },
         blockNamed: (label: string) => `Baustein: ${label}`,
         discardChanges: 'Ungespeicherte Änderungen verwerfen?',
-        linkedSavedOne: (name: string, where: string) => `Verknüpfte Folie ${name} gespeichert – gilt auch in ${where}.`,
-        linkedSavedMany: (count: number, where: string) => `${count} verknüpfte Folien gespeichert – sie gelten auch in ${where}.`,
         slideConflict: {
             title: 'Eine verknüpfte Folie wurde inzwischen geändert',
             text: (name: string, playlist: string | null, by: string | null, at: string | null) =>
                 `„${name}" wurde${playlist ? ` in „${playlist}"` : ''}${by ? ` von ${by}` : ''} geändert${at ? ` (${at})` : ''}, ` +
-                'während du sie bearbeitet hast. Gespeichert wurde nichts.',
+                'während du sie bearbeitet hast. Veröffentlicht wurde nichts.',
             reload: 'Neu laden',
             keepCopy: 'Als eigene Kopie behalten',
         },
         conflict: {
             title: 'Die Präsentation wurde inzwischen geändert',
             text: (by: string | null, name: string, at: string | null) =>
-                `${by ?? 'Jemand'} hat „${name}" gespeichert, während du sie bearbeitet hast${at ? ` (${at})` : ''}.`,
+                `${by ?? 'Jemand'} hat „${name}" veröffentlicht, während du sie bearbeitet hast${at ? ` (${at})` : ''}.`,
             question: 'Beide Fassungen lassen sich nicht zusammenführen. Welche soll gelten?',
             loadOther: 'Die andere laden',
             keepMine: 'Meine behalten',
@@ -271,7 +298,7 @@ export const t = {
             copyHint: 'Übernommen werden Kopien – was du hier änderst, bleibt in der anderen Präsentation, wie es ist.',
             linkedHint: (source: string) =>
                 `Verknüpfte Folien bleiben gleich: Was du hier änderst, ändert sich auch in „${source}" – und umgekehrt. ` +
-                `Die Verknüpfung entsteht beim Speichern; erst dann zeigt auch „${source}" sie an.`,
+                `Die Verknüpfung entsteht beim Veröffentlichen; erst dann zeigt auch „${source}" sie an.`,
             loading: 'Lade Präsentationen …',
             none: 'Es gibt keine andere Präsentation in diesem Format.',
             playlist: 'Präsentation',
@@ -522,7 +549,7 @@ export const t = {
         frameFields: { x: 'X', y: 'Y', width: 'Breite', height: 'Höhe' },
         layerOf: (n: number, total: number) => `Ebene ${n} von ${total}`,
         linkedAlso: (names: string) => `Auch in: ${names}`,
-        linkedPending: 'ab dem Speichern',
+        linkedPending: 'ab dem Veröffentlichen',
         linkedInfo:
             'Änderungen an dieser Folie – auch Dauer und „Abgeschaltet" – gelten in allen genannten Präsentationen. ' +
             '„Verknüpfung lösen" macht daraus eine eigene Kopie nur für diese Präsentation.',
@@ -539,7 +566,7 @@ export const t = {
         schedule: 'Zeitplan',
         scheduleInfo:
             'Auf welchem Bildschirm sie wann läuft, legt der Zeitplan des Bildschirms fest – unter „Zeitpläne" oder an ' +
-            'der Kachel des Bildschirms. Speichern ändert alle Bildschirme, die sie zeigen.',
+            'der Kachel des Bildschirms. Veröffentlichen ändert alle Bildschirme, die sie zeigen.',
         bannerRunningBefore: (text: string) => `Hinweisband: „${text}" – bearbeiten unter`,
         bannerNoneBefore: 'Kein Hinweisband – anlegen unter',
         bannerLink: 'Hinweise',
@@ -659,6 +686,8 @@ export const t = {
         card: {
             bannerTitle: (text: string) => `Hinweisband: „${text}“`,
             banner: 'Hinweis',
+            draft: 'Entwurf',
+            draftTitle: (by: string, when: string) => `Entwurf von ${by}, ${when} – noch nicht veröffentlicht`,
             duplicate: 'Duplizieren',
             deleteBlocked: 'Läuft noch auf einem Bildschirm – erst dort im Zeitplan eine andere wählen',
             slides: 'Folien',

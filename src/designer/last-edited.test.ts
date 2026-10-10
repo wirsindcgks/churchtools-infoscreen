@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lastEdited } from './last-edited';
+import { clockTime, lastEdited, relativeWhen } from './last-edited';
 
 describe('lastEdited', () => {
     it('writes the time in summer time of the church', () => {
@@ -48,5 +48,26 @@ describe('lastEdited', () => {
         const edited = lastEdited('2026-10-05T12:32:00Z', 'Anna', 'Europe/Berlin', 'Hochgeladen');
         expect(edited?.whenTitle).toBe('Hochgeladen am 5. Oktober 2026 um 14:32');
         expect(edited?.byTitle).toBe('Hochgeladen von Anna');
+    });
+});
+
+describe('relativeWhen', () => {
+    const now = new Date('2026-10-10T10:00:00Z'); // 12:00 in Berlin
+
+    it('says today and yesterday, counted in the time zone', () => {
+        expect(relativeWhen('2026-10-10T12:32:00Z', 'Europe/Berlin', now)).toBe('heute 14:32');
+        expect(relativeWhen('2026-10-09T12:32:00Z', 'Europe/Berlin', now)).toBe('gestern 14:32');
+        // 23:30 UTC on the 9th is already the 10th in Berlin
+        expect(relativeWhen('2026-10-09T23:30:00Z', 'Europe/Berlin', now)).toBe('heute 01:30');
+        expect(relativeWhen('2026-10-09T23:30:00Z', 'America/New_York', now)).toBe('gestern 19:30');
+    });
+
+    it('writes the date otherwise, with the year only when it is another one', () => {
+        expect(relativeWhen('2026-10-05T12:32:00Z', 'Europe/Berlin', now)).toBe('05.10., 14:32');
+        expect(relativeWhen('2025-12-24T12:32:00Z', 'Europe/Berlin', now)).toBe('24.12.2025, 13:32');
+    });
+
+    it('writes the clock time in the time zone', () => {
+        expect(clockTime('2026-10-05T12:32:00Z', 'Europe/Berlin')).toBe('14:32');
     });
 });

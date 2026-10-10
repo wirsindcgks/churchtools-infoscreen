@@ -32,7 +32,16 @@ async function rename(page: Page, name: string): Promise<void> {
 
 async function save(page: Page): Promise<void> {
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
+}
+
+/** Publishing writes linked slides: a question about them comes first (Plan.md 49). */
+async function saveLinked(page: Page, expected?: string | RegExp): Promise<void> {
+    await page.getByTestId('save').click();
+    const ask = page.getByTestId('confirm-dialog');
+    await expect(ask).toContainText('Veröffentlichen ändert sie dort mit.');
+    if (expected) await expect(ask).toContainText(expected);
+    await page.getByTestId('confirm-ok').click();
 }
 
 test('a linked duplicate shows the chain, and a change in one playlist arrives in the other', async ({ page }) => {
@@ -43,11 +52,8 @@ test('a linked duplicate shows the chain, and a change in one playlist arrives i
     await expect(page.getByTestId('slide-linked-badge').first()).toHaveAttribute('aria-label', /^Verknüpft mit: /);
 
     await rename(page, 'Gemeinsam geändert');
-    await save(page);
-    const notice = page.getByTestId('linked-save-notice');
-    await expect(notice).toContainText('Verknüpfte Folie „Gemeinsam geändert" gespeichert – gilt auch in „');
-    await notice.getByRole('button', { name: 'Meldung schließen' }).click();
-    await expect(notice).toHaveCount(0);
+    await saveLinked(page, 'Die verknüpfte Folie „Gemeinsam geändert" läuft auch in „');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
 
     await openPlaylist(page, 0);
     await expect(page.getByTestId('slide-item').first()).toContainText('Gemeinsam geändert');
@@ -61,8 +67,8 @@ test('"Verknüpfung lösen" makes an own copy: a later change stays in this play
     await expect(page.getByTestId('slide-linked')).toHaveCount(0);
     await expect(page.getByTestId('slide-linked-badge')).toHaveCount(2);
     await rename(page, 'Nur hier');
-    await save(page);
-    await expect(page.getByTestId('linked-save-notice')).toHaveCount(0);
+    await save(page); // an own copy: no question about linked slides
+    await expect(page.getByTestId('confirm-dialog')).toHaveCount(0);
 
     await openPlaylist(page, 0);
     await expect(page.getByTestId('slide-item').first()).not.toContainText('Nur hier');
@@ -90,9 +96,9 @@ test('slides taken over linked: "schon hier" for the ones already in the playlis
     await expect(page.getByTestId('slide-linked-badge')).toHaveCount(1);
     await expect(dialog.getByTestId('slide-import-linked-hint')).toHaveCount(0);
     // The link comes with the save: until then the inspector says so.
-    await expect(page.getByTestId('slide-link-pending')).toHaveText('ab dem Speichern');
-    await save(page);
-    await expect(page.getByTestId('linked-save-notice')).toContainText('gilt auch in „');
+    await expect(page.getByTestId('slide-link-pending')).toHaveText('ab dem Veröffentlichen');
+    await saveLinked(page, 'läuft auch in „');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
     await expect(page.getByTestId('slide-link-pending')).toHaveCount(0);
     await expect(page.getByTestId('slide-linked-in')).toBeVisible();
 
@@ -115,26 +121,28 @@ test('two windows change the same linked slide: notice, reload, keep as an own c
     await openPlaylist(other, 0); // other: the original
 
     await rename(other, 'Von der anderen Seite');
-    await save(other);
+    await saveLinked(other);
+    await expect(other.getByTestId('save-status')).toHaveText('Veröffentlicht');
 
     await rename(page, 'Von meiner Seite');
-    await page.getByTestId('save').click();
+    await saveLinked(page);
     const dialog = page.getByTestId('slide-conflict-dialog');
     await expect(dialog).toBeVisible();
     await expect(dialog).toContainText('Von der anderen Seite');
-    await expect(dialog).toContainText('Gespeichert wurde nichts.');
+    await expect(dialog).toContainText('Veröffentlicht wurde nichts.');
     await page.getByTestId('slide-conflict-reload').click();
     await expect(dialog).toBeHidden();
     await expect(page.getByTestId('slide-item').first()).toContainText('Von der anderen Seite');
 
     // Once more, this time keeping mine as an own copy.
     await rename(other, 'Wieder von drüben');
-    await save(other);
+    await saveLinked(other);
+    await expect(other.getByTestId('save-status')).toHaveText('Veröffentlicht');
     await rename(page, 'Meine Fassung');
-    await page.getByTestId('save').click();
+    await saveLinked(page);
     await expect(dialog).toBeVisible();
     await page.getByTestId('slide-conflict-keep').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
     await expect(page.getByTestId('slide-item').first()).toContainText('Meine Fassung');
     await expect(page.getByTestId('slide-linked-badge')).toHaveCount(2);
 

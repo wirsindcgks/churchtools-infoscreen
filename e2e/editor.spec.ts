@@ -7,7 +7,7 @@ test('edit a slide: add text, type, drag, undo, save', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
-    await expect(page.getByTestId('save-status')).toHaveText('Alles gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Alles veröffentlicht');
     await page.waitForTimeout(1500);
     await page.screenshot({ path: 'test-results/editor-open.png' });
 
@@ -16,7 +16,7 @@ test('edit a slide: add text, type, drag, undo, save', async ({ page }) => {
     await page.getByTestId('text-input').fill('Gemeindefest am Samstag');
     await page.getByTestId('text-input').blur();
     await expect(page.locator('.editor-stage').getByText('Gemeindefest am Samstag')).toBeVisible();
-    await expect(page.getByTestId('save-status')).toHaveText('Ungespeicherte Änderungen');
+    await expect(page.getByTestId('save-status')).toHaveText(/Sichert …|Entwurf gesichert/);
 
     // Drag the new block 100 screen pixels to the right.
     const frame = page.getByTestId('frame-text').last();
@@ -34,13 +34,13 @@ test('edit a slide: add text, type, drag, undo, save', async ({ page }) => {
     expect(Math.round((await frame.boundingBox())!.x)).toBe(Math.round(box.x));
 
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
 });
 
 test('the bar says nothing about a running playlist without a sign of life (Plan.md 77)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
-    await expect(page.getByTestId('save-status')).toHaveText('Alles gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Alles veröffentlicht');
     await expect(page.getByTestId('editor-live')).toHaveCount(0);
     await expect(page.getByTestId('save')).not.toHaveAttribute('title', /Läuft gerade/);
 });
@@ -56,7 +56,7 @@ test('"?" opens the overview of the handles, Escape closes it, and the hints nam
     const dialog = page.getByTestId('shortcuts-dialog');
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('heading', { name: 'Tastenkürzel' })).toBeVisible();
-    for (const text of ['Speichern', 'Rückgängig', 'Wiederholen', 'Kopieren', 'Ausschneiden', 'Einfügen', 'Duplizieren', 'Löschen', 'Pfeiltasten', 'Auswahl aufheben', 'frei platzieren', 'Abstände']) {
+    for (const text of ['Entwurf sofort sichern', 'Rückgängig', 'Wiederholen', 'Kopieren', 'Ausschneiden', 'Einfügen', 'Duplizieren', 'Löschen', 'Pfeiltasten', 'Auswahl aufheben', 'frei platzieren', 'Abstände']) {
         await expect(dialog).toContainText(text);
     }
     await expect(dialog).toContainText(`${ctrl}S`);
@@ -72,7 +72,7 @@ test('"?" opens the overview of the handles, Escape closes it, and the hints nam
     await page.keyboard.press('Shift+?');
     await expect(dialog).toHaveCount(0);
 
-    await expect(page.getByTestId('save')).toHaveAttribute('title', `Speichern (${ctrl}S)`);
+    await expect(page.getByTestId('save')).toHaveAttribute('title', 'Erst Veröffentlichen bringt die Änderungen auf die Fernseher');
     await page.getByTestId('frame-text').first().click();
     await expect(page.getByTestId('block-duplicate')).not.toHaveAttribute('title', /.+/);
     await expect(page.getByTestId('block-duplicate')).toHaveAccessibleName('Baustein duplizieren');
@@ -262,7 +262,7 @@ test('the editor saves content without touching the screen\'s settings', async (
     await expect(page.getByTestId('screen-name')).toHaveCount(0);
     await addBlock(page, 'clock');
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
 });
 
 test('the editor carries no address for the TV – that is the administrators\' business', async ({ page }) => {
@@ -565,9 +565,21 @@ test.describe('on a tablet (Plan.md 45)', () => {
         await expect(page.getByTestId('add-clock')).toHaveCount(0); // the row of blocks is gone everywhere (Plan.md 47)
     }
 
+    /** The slide stands in the middle of the room between "+ Baustein" and what lies below it (user, 2026-10-09). */
+    async function expectStageCentered(page: Page, bottom: number): Promise<void> {
+        const [head, stage] = await Promise.all([page.getByTestId('add-block-menu').boundingBox(), page.locator('.editor-stage .stage').first().boundingBox()]);
+        const above = stage!.y - (head!.y + head!.height);
+        const below = bottom - (stage!.y + stage!.height);
+        expect(above).toBeGreaterThan(20);
+        expect(Math.abs(above - below)).toBeLessThanOrEqual(30);
+    }
+
     test('upright: the stage takes the width, the inspector is a bar at the bottom, and there is no rail for it', async ({ page }) => {
         await openEditor(page);
         await expectRestingLayout(page, 700);
+        // In the middle above the sheet's bar, and the page does not scroll.
+        await expectStageCentered(page, (await page.getByTestId('inspector-sheet').boundingBox())!.y);
+        expect(await page.evaluate(() => document.documentElement.scrollHeight - window.innerHeight)).toBeLessThanOrEqual(8);
         await expect(page.getByTestId('tablet-slides-toggle')).toHaveAttribute('aria-expanded', 'false');
         await expect(page.getByTestId('tablet-inspector-toggle')).not.toBeVisible();
         await expect(page.getByTestId('inspector-sheet-toggle')).toBeVisible();
@@ -592,6 +604,7 @@ test.describe('on a tablet (Plan.md 45)', () => {
         // The whole slide stays above the sheet, lower handles included: upright on a tablet it takes 45 %, not half.
         expect(sheetBox!.y).toBeGreaterThanOrEqual(stage!.y + stage!.height);
         expect(sheetBox!.height).toBeLessThanOrEqual(1180 * 0.45 + 1);
+        await expectStageCentered(page, sheetBox!.y);
 
         // The slides and the block row stay: there is room for them upright.
         await expect(page.getByTestId('add-block-menu')).toBeVisible();
@@ -644,6 +657,7 @@ test.describe('on a tablet (Plan.md 45)', () => {
         test('the stage takes the width, the inspector is a rail', async ({ page }) => {
             await openEditor(page);
             await expectRestingLayout(page, 1000);
+            await expectStageCentered(page, (await page.locator('.stage-column').boundingBox())!.y + (await page.locator('.stage-column').boundingBox())!.height);
             await expect(page.getByTestId('inspector-sheet')).not.toBeVisible();
             await expect(page.getByTestId('tablet-inspector-toggle')).toBeVisible();
             await expect(page.getByTestId('inspector-sheet-toggle')).not.toBeVisible();
@@ -766,7 +780,7 @@ test('at 1440px the phone sheets are gone, the inspector stands beside the stage
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await expect(page.getByTestId('inspector-sheet-toggle')).not.toBeVisible();
-    await expect(page.getByTestId('editor-more')).not.toBeVisible();
+    await expect(page.getByTestId('editor-more')).toBeVisible(); // "Entwurf verwerfen" lives there on every width (Plan.md 79, E)
     await expect(page.getByTestId('add-block-menu')).toBeVisible(); // "+ Baustein" on every width (Plan.md 47)
     await expect(page.getByTestId('open-preview')).toBeVisible();
     // The phone-only slide row header and its actions are gone; the selected tile keeps its own (Plan.md 44).
@@ -1028,7 +1042,7 @@ test('an appointment list shows every appointment page by page; the inspector sa
     await page.getByTestId('page-seconds').fill('12');
     await page.getByTestId('page-seconds').blur();
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
     await page.screenshot({ path: 'test-results/editor-paged-list.png' });
 });
 
@@ -1039,7 +1053,7 @@ test('the preview plays the unsaved draft like the TV, and saves nothing', async
     await addBlock(page, 'text');
     await page.getByTestId('text-input').fill('Nur in der Vorschau');
     await page.getByTestId('text-input').blur();
-    await expect(page.getByTestId('save-status')).toHaveText('Ungespeicherte Änderungen');
+    await expect(page.getByTestId('save-status')).toHaveText(/Sichert …|Entwurf gesichert/);
 
     await page.getByTestId('open-preview').click();
     const preview = page.getByTestId('playlist-preview');
@@ -1060,7 +1074,7 @@ test('the preview plays the unsaved draft like the TV, and saves nothing', async
     await page.keyboard.press('Escape');
     await expect(preview).toHaveCount(0);
 
-    await expect(page.getByTestId('save-status')).toHaveText('Ungespeicherte Änderungen');
+    await expect(page.getByTestId('save-status')).toHaveText(/Sichert …|Entwurf gesichert/);
     await expect(page.locator('.editor-stage')).toContainText('Nur in der Vorschau'); // the block is still there
 });
 
@@ -1198,7 +1212,7 @@ test('duplicate a playlist and take slides over from another one, as copies (Pla
     await expect(dialog).toBeHidden();
     await expect(page.getByTestId('slide-item')).toHaveCount(4);
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
 
     await page.goto('playlists');
     await expect(page.getByTestId('playlist-card')).toHaveCount(before + 1);
@@ -1227,7 +1241,7 @@ test('a countdown to the next appointment, and the band moved to "Hinweise" (Pla
     await expect(page.getByTestId('banner-status').getByRole('link', { name: 'Hinweise' })).toHaveAttribute('href', /\/hinweise$/);
 
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
 });
 
 /** At least one card on the stage, and every one inside the frame of its list. */
@@ -1419,7 +1433,7 @@ test('a website and a QR code (Plan.md 28)', async ({ page }) => {
     await page.getByTestId('qr-data').fill('https://www.gemeinde.example/anmeldung/');
     await expect(stage.getByTestId('qr-code')).toBeVisible();
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
     await page.waitForTimeout(500);
     await stage.screenshot({ path: 'test-results/web-and-qr.png' });
 });
@@ -2181,7 +2195,7 @@ test.describe('sorting by dragging (Plan.md 79, D7)', () => {
 
         await dragRow(page, page.getByTestId('slide-handle').first(), page.getByTestId('slide-item').nth(2));
         await expect.poll(() => slideNames(page)).toEqual([b, c, a]);
-        await expect(page.getByTestId('save-status')).toHaveText('Ungespeicherte Änderungen');
+        await expect(page.getByTestId('save-status')).toHaveText(/Sichert …|Entwurf gesichert/);
         await page.keyboard.press('ControlOrMeta+z');
         await expect.poll(() => slideNames(page)).toEqual([a, b, c]);
 
@@ -2242,7 +2256,7 @@ test.describe('sorting slides on a phone (Plan.md 79, D7)', () => {
         await page.mouse.down();
         await page.mouse.move(target.x + target.width / 2, target.y + target.height / 2 + 10, { steps: 8 });
         await page.mouse.up();
-        await expect(page.getByTestId('save-status')).toHaveText('Alles gespeichert');
+        await expect(page.getByTestId('save-status')).toHaveText('Alles veröffentlicht');
         expect(await slideNames(page)).toEqual([a, b, c]);
     });
 });
@@ -2285,5 +2299,68 @@ test.describe('the bar of the editor stands flush with the cards (third round of
         expect(reach.scroll).toBeLessThanOrEqual(reach.bottom + reach.margin + 1);
         await page.screenshot({ path: 'test-results/look3-editor-phone.png' });
         await context.close();
+    });
+});
+
+test.describe('drafts (Plan.md 79, Paket E)', () => {
+    test('a change is saved as a draft by itself, comes back after a reload and is published by the button', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await addBlock(page, 'clock');
+        await expect(page.getByTestId('save-status')).toHaveText(/^Entwurf gesichert · \d\d:\d\d$/, { timeout: 10_000 });
+        const blocks = await page.getByTestId('frame-clock').count();
+
+        await page.reload();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('save-status')).toHaveText(/^Entwurf von .+, heute \d\d:\d\d – noch nicht veröffentlicht$/);
+        await expect(page.getByTestId('frame-clock')).toHaveCount(blocks);
+        await expect(page.getByTestId('save')).toBeEnabled();
+
+        await page.getByTestId('save').click();
+        await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
+        await page.reload();
+        await expect(page.getByTestId('save-status')).toHaveText('Alles veröffentlicht');
+        await expect(page.getByTestId('frame-clock')).toHaveCount(blocks);
+    });
+
+    test('"Entwurf verwerfen" in the menu brings the published state back', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await page.getByTestId('editor-more').click();
+        await expect(page.getByTestId('more-discard-draft')).toBeDisabled();
+        await page.keyboard.press('Escape');
+
+        const before = await page.getByTestId('frame-clock').count();
+        await addBlock(page, 'clock');
+        await expect(page.getByTestId('frame-clock')).toHaveCount(before + 1);
+        await expect(page.getByTestId('save-status')).toHaveText(/^Entwurf gesichert/, { timeout: 10_000 });
+        await page.getByTestId('editor-more').click();
+        await page.getByTestId('more-discard-draft').click();
+        await expect(page.getByTestId('confirm-dialog')).toContainText('Alle Änderungen seit dem letzten Veröffentlichen gehen verloren.');
+        await page.getByTestId('confirm-ok').click();
+        await expect(page.getByTestId('save-status')).toHaveText('Alles veröffentlicht');
+        await expect(page.getByTestId('frame-clock')).toHaveCount(before);
+        await page.reload();
+        await expect(page.getByTestId('save-status')).toHaveText('Alles veröffentlicht');
+    });
+
+    test('the playlists page marks a playlist with a draft', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await page.goto('playlists');
+        await expect(page.getByTestId('playlist-card')).toHaveCount(1);
+        await expect(page.getByTestId('draft-flag')).toHaveCount(0);
+
+        await page.getByTestId('open-playlist').click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await addBlock(page, 'clock');
+        await expect(page.getByTestId('save-status')).toHaveText(/^Entwurf gesichert/, { timeout: 10_000 });
+        await page.getByTestId('leave-editor').click();
+        const flag = page.getByTestId('draft-flag');
+        await expect(flag).toHaveText('Entwurf');
+        await expect(flag).toHaveAttribute('title', /^Entwurf von .+, heute \d\d:\d\d – noch nicht veröffentlicht$/);
     });
 });

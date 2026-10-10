@@ -13,6 +13,9 @@ export const tr = {
         (playlist ? ` (in „${playlist}")` : '') +
         (by ? `, von ${by}` : '') +
         '.',
+    draftConflict: (revision: number, by: string | undefined) =>
+        `Der Entwurf wurde inzwischen weitergeführt (Stand ${revision}` + (by ? `, von ${by}` : '') + ').',
+    draftsUnavailable: 'Entwürfe sind nicht verfügbar: Die Kategorie „Entwürfe" fehlt, oder das Recht darauf.',
     playlistNotFound: 'Diese Präsentation gibt es nicht (mehr).',
     playlistInUse: (screens: string[]) =>
         `Die Präsentation läuft noch auf ${screens.map((s) => `„${s}"`).join(', ')}. Erst dort im Zeitplan eine andere wählen.`,

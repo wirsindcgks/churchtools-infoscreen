@@ -38,3 +38,36 @@ export function lastEdited(
         byTitle: name ? t.common.edited.by(verb, name) : null,
     };
 }
+
+const clock = (date: Date, timeZone: string) =>
+    new Intl.DateTimeFormat(LOCALE, { timeZone, hour: '2-digit', minute: '2-digit' }).format(date);
+
+/** The calendar day of `date` in the time zone, as numbers – to compare days without an offset. */
+function dayIn(date: Date, timeZone: string): { year: number; month: number; day: number } {
+    const parts = new Intl.DateTimeFormat('en-US', { timeZone, year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(date);
+    const get = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+    return { year: get('year'), month: get('month'), day: get('day') };
+}
+
+/** "14:32" in the church's time zone. */
+export function clockTime(at: string | Date, timeZone: string): string {
+    return clock(new Date(at), timeZone);
+}
+
+/** "heute 14:32", "gestern 14:32", else "05.10., 14:32" – with the year when it is not this one. Days count in the time zone. */
+export function relativeWhen(at: string | Date, timeZone: string, now: Date = new Date()): string {
+    const date = new Date(at);
+    const day = dayIn(date, timeZone);
+    const today = dayIn(now, timeZone);
+    const dayNumber = (d: { year: number; month: number; day: number }) => Date.UTC(d.year, d.month - 1, d.day) / 86_400_000;
+    const diff = dayNumber(today) - dayNumber(day);
+    if (diff === 0) return `${t.common.edited.today} ${clock(date, timeZone)}`;
+    if (diff === 1) return `${t.common.edited.yesterday} ${clock(date, timeZone)}`;
+    const dayText = new Intl.DateTimeFormat(LOCALE, {
+        timeZone,
+        day: '2-digit',
+        month: '2-digit',
+        ...(day.year === today.year ? {} : { year: 'numeric' as const }),
+    }).format(date);
+    return `${dayText}, ${clock(date, timeZone)}`;
+}

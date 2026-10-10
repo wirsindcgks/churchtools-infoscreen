@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ValueTooLargeError } from '../model/read';
 import { makePlaylist, makeScreen, makeSlide, textBlock } from '../model/testing';
 import type { Banner, ScreenBundle } from '../model/schema';
@@ -474,6 +474,23 @@ describe('ScreenRepository', () => {
             expect(await repo.collectOrphans(new Date(Date.now() + ORPHAN_GRACE_MS + 1000))).toEqual({ playlists: 0, slides: 1 });
         });
 
+        it('discards the draft of a deleted playlist with it, and still deletes when that fails', async () => {
+            await repo.drafts.ensureCategory();
+            const made = await repo.createPlaylist({ name: 'Entwurf', stage: LANDSCAPE }, 'Anna');
+            await repo.drafts.save(
+                { playlistId: made.id, name: 'Neu', slideIds: [], slides: [] },
+                { expectedRevision: 0, updatedBy: 'Anna' },
+            );
+            await repo.deletePlaylist(made.id);
+            expect(await repo.drafts.load(made.id)).toBeNull();
+
+            const second = await repo.createPlaylist({ name: 'Zweite', stage: LANDSCAPE }, 'Anna');
+            vi.spyOn(repo.drafts, 'discard').mockRejectedValue(new Error('weg'));
+            vi.spyOn(console, 'warn').mockImplementation(() => {});
+            await repo.deletePlaylist(second.id);
+            await expect(repo.loadPlaylist(second.id)).rejects.toBeInstanceOf(PlaylistNotFoundError);
+        });
+
         it('saves screen settings against the index revision only', async () => {
             const { screen } = await created();
             await repo.saveSchedule(screen.id, { defaultPlaylistId: makePlaylist().id, rules: [] }, { expectedRevision: null, updatedBy: 'Gestalterin' });
@@ -695,6 +712,13 @@ describe('ScreenRepository', () => {
             const own = await repo.createPlaylist({ name: 'Allein', stage: { width: 1920, height: 1080 } }, 'Anna');
             expect((await repo.loadPlaylist(own.id)).sharedWith).toEqual({});
             expect((await repo.loadPlaylist(b)).sharedWith['slide-2']?.map((p) => p.id)).toContain(A);
+        });
+
+        it('works out sharedWith for extra slide ids of a draft as well', async () => {
+            await linkedPair();
+            const own = await repo.createPlaylist({ name: 'Allein', stage: { width: 1920, height: 1080 } }, 'Anna');
+            const loaded = await repo.loadPlaylist(own.id, ['slide-1']);
+            expect(loaded.sharedWith['slide-1']?.map((p) => p.id)).toContain(A);
         });
 
         it('duplicates linked: the same slide ids, no slide written; by default copies', async () => {

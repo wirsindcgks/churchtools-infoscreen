@@ -54,6 +54,7 @@ import {
 import type { KvBackend, KvCategory, KvValue } from './kv';
 import { LOCALE, tp } from '../i18n/player';
 import { tr } from '../i18n/repository';
+import { DraftStore } from './drafts';
 
 export const CATEGORIES = {
     screens: { name: 'Screens', description: 'Infoscreen: ein Index-Wert je Screen' },
@@ -262,6 +263,8 @@ export class ScreenRepository {
     private statusId: number | null = null;
     /** Value ids of the signs of life by slug, to spare the read. */
     private readonly heartbeatValueIds = new Map<string, number>();
+    /** The drafts of playlists and slides (Plan.md 79, Paket E). */
+    readonly drafts: DraftStore;
 
     /**
      * `mediaOrigins`: the origins media addresses may point to – the instance's own (`withOwnAddresses`).
@@ -270,7 +273,9 @@ export class ScreenRepository {
     constructor(
         private readonly kv: KvBackend,
         private readonly mediaOrigins: readonly string[] = [],
-    ) {}
+    ) {
+        this.drafts = new DraftStore(kv);
+    }
 
     private readonly readOwnMedia = (raw: unknown): MediaDoc => {
         const doc = readMedia(raw);
@@ -604,8 +609,11 @@ export class ScreenRepository {
         return overviews.sort((a, b) => a.playlist.name.localeCompare(b.playlist.name, LOCALE));
     }
 
-    /** One playlist with its slides and media – what the editor opens. */
-    async loadPlaylist(id: string): Promise<LoadedPlaylist> {
+    /**
+     * One playlist with its slides and media – what the editor opens. `extraSlideIds` are slides of a draft that
+     * are not published yet (linked ones taken over): `sharedWith` is worked out for them as well.
+     */
+    async loadPlaylist(id: string, extraSlideIds: string[] = []): Promise<LoadedPlaylist> {
         const running = await this.readRunningScreens();
         const stored = running.playlists.find((p) => p.doc.id === id);
         if (!stored) throw new PlaylistNotFoundError(id);
@@ -624,7 +632,7 @@ export class ScreenRepository {
         const mediaRead = mediaIds.size ? await this.readAll('media', this.readOwnMedia) : { docs: [], issues: [] };
         const media = mediaRead.docs.map((m) => m.doc).filter((m) => mediaIds.has(m.id));
         const sharedWith: LoadedPlaylist['sharedWith'] = {};
-        for (const sid of stored.doc.slideIds) {
+        for (const sid of new Set([...stored.doc.slideIds, ...extraSlideIds])) {
             const others = running.playlists
                 .filter((p) => p.doc.id !== id && p.doc.slideIds.includes(sid))
                 .map((p) => ({ id: p.doc.id, name: withPlaylistDefaults(p.doc, screens).name }))
@@ -837,6 +845,11 @@ export class ScreenRepository {
         if (users.length) throw new PlaylistInUseError(users.map((s) => s.name));
         const ids = await this.ensureCategories();
         await this.kv.deleteValue(ids.playlists, stored.valueId);
+        try {
+            await this.drafts.discard(id);
+        } catch (error) {
+            console.warn('Der Entwurf der Präsentation konnte nicht verworfen werden:', error);
+        }
     }
 
     /**

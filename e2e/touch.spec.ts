@@ -8,7 +8,7 @@ type Point = { x: number; y: number };
 async function openEditor(page: Page): Promise<void> {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
-    await expect(page.getByTestId('save-status')).toHaveText('Alles gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Alles veröffentlicht');
 }
 
 /** A fresh, empty slide so nothing else stands on the stage. On a phone it is added from the sheet of slides. */
@@ -114,7 +114,7 @@ test.describe('on a phone', () => {
         const reset = page.getByTestId('zoom-reset');
         await expect(reset).toBeVisible();
         await expect(reset).toHaveText(/Ganze Folie/);
-        expect((await stage.boundingBox())!.width).toBeGreaterThan(whole.width * 1.5);
+        expect((await stage.boundingBox())!.width).toBeGreaterThan(whole.width * 1.2);
         await reset.tap();
         await expect(reset).toHaveCount(0);
         expect((await stage.boundingBox())!.width).toBeCloseTo(whole.width, 0);
@@ -155,6 +155,48 @@ test.describe('on a phone', () => {
         expect(await page.getByTestId('frame-text').first().evaluate((el) => (el as HTMLElement).style.left)).toBe(blocks);
     });
 
+    test('zoomed in, a swipe over the chosen block moves the stage; held a moment, the block lifts and follows', async ({ page }) => {
+        await openEditor(page);
+        await openFreshSlide(page);
+        await addBlock(page, 'shape');
+        const stage = page.locator('.editor-stage .stage').first();
+        const whole = (await stage.boundingBox())!;
+        const mid = { x: whole.x + whole.width / 2, y: whole.y + whole.height / 2 };
+        const finger = await fingers(page);
+        await finger.down({ x: mid.x - 40, y: mid.y }, { x: mid.x + 40, y: mid.y });
+        await finger.move({ x: mid.x - 100, y: mid.y }, { x: mid.x + 100, y: mid.y });
+        await finger.up();
+        await expect(page.getByTestId('zoom-reset')).toBeVisible();
+        await expect(page.getByTestId('frame-shape')).toHaveClass(/frame--selected/);
+
+        // A swipe at once: the stage moves, the block stays where it is on the slide (user at the phone, 2026-10-09).
+        const home = await placeOnStage(page, 'frame-shape');
+        let at = await center(page, 'frame-shape');
+        const before = (await stage.boundingBox())!;
+        await finger.down(at);
+        await finger.move({ x: at.x - 20, y: at.y - 10 });
+        await finger.move({ x: at.x - 50, y: at.y - 25 });
+        await finger.up();
+        const after = (await stage.boundingBox())!;
+        expect(Math.abs(after.x - before.x) + Math.abs(after.y - before.y)).toBeGreaterThan(20);
+        expect(await placeOnStage(page, 'frame-shape')).toEqual(home);
+
+        // Held still for a moment first: the block lifts and moves with the finger; the stage stays.
+        at = await center(page, 'frame-shape');
+        const still = (await stage.boundingBox())!;
+        await finger.down(at);
+        await page.waitForTimeout(350);
+        await expect(page.getByTestId('frame-shape')).toHaveClass(/frame--lifted/);
+        await finger.move({ x: at.x + 20, y: at.y + 10 });
+        await finger.move({ x: at.x + 50, y: at.y + 25 });
+        await finger.up();
+        await expect(page.getByTestId('frame-shape')).not.toHaveClass(/frame--lifted/);
+        const moved = await placeOnStage(page, 'frame-shape');
+        expect(moved.x - home.x).toBeGreaterThan(20);
+        const unmoved = (await stage.boundingBox())!;
+        expect(Math.abs(unmoved.x - still.x) + Math.abs(unmoved.y - still.y)).toBeLessThanOrEqual(1);
+    });
+
     test('a long press on a block chooses it and opens "⋯"; on the empty stage it offers to paste', async ({ page }) => {
         await openEditor(page);
         await openFreshSlide(page);
@@ -183,13 +225,24 @@ test.describe('on a phone', () => {
         await expect(page.getByTestId('paste-here')).toHaveCount(0);
     });
 
-    test('"Text bearbeiten" zooms onto the text; Escape brings the zoom back', async ({ page }) => {
+    test('writing zooms only as far as the letters need: a heading not, body text yes; Escape brings the zoom back', async ({ page }) => {
         await openEditor(page);
         await openFreshSlide(page);
         await addBlock(page, 'text');
         const stage = page.locator('.editor-stage .stage').first();
         const whole = (await stage.boundingBox())!;
         const bar = page.getByTestId('phone-bar');
+        // A heading is readable on the phone already: no zoom (user at the phone, 2026-10-09: "ein wilder Zoom").
+        await bar.getByTestId('quick-more').tap();
+        await bar.getByTestId('quick-edit-text').tap();
+        await expect(page.getByTestId('text-edit')).toBeVisible();
+        await expect(page.getByTestId('zoom-reset')).toHaveCount(0);
+        await page.keyboard.press('Escape');
+        await expect(page.getByTestId('text-edit')).toHaveCount(0);
+        // Body text is not: the stage grows until it is.
+        await bar.getByTestId('quick-chip').and(page.getByLabel(/Textstufe/)).tap();
+        await page.getByTestId('quick-popover').getByTestId('text-level').locator('input[value="body"]').check({ force: true });
+        await page.keyboard.press('Escape');
         await bar.getByTestId('quick-more').tap();
         await bar.getByTestId('quick-edit-text').tap();
         await expect(page.getByTestId('text-edit')).toBeVisible();
@@ -218,7 +271,7 @@ test.describe('at a desktop', () => {
         const reset = page.getByTestId('zoom-reset');
         await expect(reset).toBeVisible();
         const zoomed = (await stage.boundingBox())!;
-        expect(zoomed.width).toBeGreaterThan(whole.width * 1.5);
+        expect(zoomed.width).toBeGreaterThan(whole.width * 1.2);
         // The spot under the pointer stayed under it.
         expect((pointer.x - zoomed.x) / zoomed.width).toBeCloseTo((pointer.x - whole.x) / whole.width, 1);
         expect((pointer.y - zoomed.y) / zoomed.height).toBeCloseTo((pointer.y - whole.y) / whole.height, 1);

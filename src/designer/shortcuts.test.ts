@@ -31,7 +31,7 @@ describe('shortcuts (Plan.md 79, B3: Tastenkürzel an einer Stelle)', () => {
     it('lists every handle of the editor, per keyboard', () => {
         const rows = (mac: boolean) => shortcutGroups(mac).flatMap((g) => g.rows.map((r) => `${r.action}: ${r.keys.join(' / ')}`));
         expect(rows(false)).toEqual([
-            'Speichern: Strg+S',
+            'Entwurf sofort sichern: Strg+S',
             'Rückgängig: Strg+Z',
             'Wiederholen: Strg+Umschalt+Z',
             'Auswahl aufheben: Esc',
@@ -47,7 +47,7 @@ describe('shortcuts (Plan.md 79, B3: Tastenkürzel an einer Stelle)', () => {
             'Über einem Baustein gedrückt halten: Abstände zum gewählten zeigen: Alt',
         ]);
         const mac = rows(true).join('\n');
-        expect(mac).toContain('Speichern: ⌘S');
+        expect(mac).toContain('Entwurf sofort sichern: ⌘S');
         expect(mac).toContain('Wiederholen: ⇧⌘Z');
         expect(mac).toContain('Um 10 Pixel verschieben: ⇧ Pfeiltasten');
         expect(mac).toContain('⌥');

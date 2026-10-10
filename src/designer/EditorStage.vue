@@ -111,6 +111,18 @@ interface Drag {
     snapPx: number;
 }
 let drag: Drag | null = null;
+/**
+ * Zoomed in, a finger on the chosen block first waits (C3; user at the phone, 2026-10-09): moved at once, it moves the
+ * stage like a map; held still for {@link HOLD_MS}, the block lifts and follows the finger.
+ */
+const HOLD_MS = 250;
+let hold: { timer: ReturnType<typeof setTimeout>; ready: Drag; x: number; y: number } | null = null;
+/** The block a held finger has lifted – drawn raised while it is carried. */
+const liftedId = ref<string | null>(null);
+function dropHold(): void {
+    if (hold) clearTimeout(hold.timer);
+    hold = null;
+}
 const guides = ref<Guide[]>([]);
 /** The block being dragged or resized – set with the first movement, not with a click. */
 const dragId = ref<string | null>(null);
@@ -143,7 +155,7 @@ function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): vo
     if (touch && !wasChosen) return;
     // Locked (Plan.md, 25): it can be chosen – to unlock it in the inspector – but not moved.
     if (block.locked) return;
-    drag = {
+    const ready: Drag = {
         id: block.id,
         handle,
         startX: event.clientX,
@@ -151,10 +163,35 @@ function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): vo
         frame: { x: block.x, y: block.y, width: block.width, height: block.height },
         snapPx: touch ? SNAP_SCREEN_PX_TOUCH : SNAP_SCREEN_PX,
     };
+    if (touch && handle === 'move' && view.value.zoom > 1) {
+        dropHold();
+        hold = {
+            ready,
+            x: event.clientX,
+            y: event.clientY,
+            timer: setTimeout(() => {
+                if (!hold) return;
+                // From where the finger is now: it may have crept a few pixels while it held.
+                drag = { ...hold.ready, startX: hold.x, startY: hold.y };
+                liftedId.value = hold.ready.id;
+                hold = null;
+                panStart = null;
+                navigator.vibrate?.(10);
+            }, HOLD_MS),
+        };
+        return;
+    }
+    drag = ready;
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
 }
 
 function moveTo(event: PointerEvent): void {
+    if (hold) {
+        hold.x = event.clientX;
+        hold.y = event.clientY;
+        // Moved before it was held: the finger moves the stage (onHostMoveCapture), not the block.
+        if (Math.hypot(event.clientX - hold.ready.startX, event.clientY - hold.ready.startY) > TAP_SLOP) dropHold();
+    }
     if (!drag) return;
     // Screen pixels to stage pixels: the stage is shown scaled.
     const dx = (event.clientX - drag.startX) / fit.value.scale;
@@ -203,6 +240,8 @@ function moveTo(event: PointerEvent): void {
 }
 
 function end(): void {
+    dropHold();
+    liftedId.value = null;
     drag = null;
     dragId.value = null;
     guides.value = [];
@@ -372,6 +411,8 @@ let touchLive = false;
 let touchLiveTimer: ReturnType<typeof setTimeout> | undefined;
 const pasteMenu = ref<{ left: number; top: number; at: { x: number; y: number } } | null>(null);
 const press = longPress(onLongPress);
+/** The block a long press has just caught: it flashes, so the finger knows something happened (user at the phone, 2026-10-09). */
+const pressedId = ref<string | null>(null);
 let pressPoint = { x: 0, y: 0 };
 
 async function onLongPress(): Promise<void> {
@@ -391,6 +432,9 @@ async function onLongPress(): Promise<void> {
         };
         return;
     }
+    pressedId.value = down.target;
+    setTimeout(() => (pressedId.value = null), 300);
+    navigator.vibrate?.(15);
     if (!editor.selectedBlockId) editor.selectBlock(down.target);
     await nextTick();
     if (quickMenu.value) quickMenu.value.openMore();
@@ -416,7 +460,11 @@ function onHostDownCapture(event: PointerEvent): void {
     const target = tapTarget(event.target);
     tapDown = target ? { x: event.clientX, y: event.clientY, target } : null;
     pressPoint = { x: event.clientX, y: event.clientY };
-    panStart = target && (target === 'empty' || target !== editor.selectedBlockId) ? { x: event.clientX, y: event.clientY, view: { ...view.value } } : null;
+    // Zoomed, also over the chosen block: there the finger waits for a hold first (start).
+    panStart =
+        target && (target === 'empty' || target !== editor.selectedBlockId || view.value.zoom > 1)
+            ? { x: event.clientX, y: event.clientY, view: { ...view.value } }
+            : null;
     press.cancel();
     if (target) press.start(event.clientX, event.clientY);
 }
@@ -426,7 +474,7 @@ function onHostMoveCapture(event: PointerEvent): void {
     if (pinch) updatePinch();
     else {
         press.move(event.clientX, event.clientY);
-        if (panStart && view.value.zoom > 1) {
+        if (panStart && view.value.zoom > 1 && !drag) {
             const dx = event.clientX - panStart.x;
             const dy = event.clientY - panStart.y;
             if (Math.hypot(dx, dy) > TAP_SLOP) setView({ ...panStart.view, panX: panStart.view.panX + dx, panY: panStart.view.panY + dy });
@@ -522,6 +570,8 @@ function endOnOutside(event: PointerEvent): void {
     if (target?.closest('[data-testid="text-edit"], [data-testid="quick-menu"]')) return;
     editor.endTextEdit();
 }
+/** Letters this size on the screen are readable while writing; smaller ones the phone zooms up to it (C4). */
+const READABLE_PX = 16;
 /** The view before a phone zoomed onto the block being written (C4); it comes back when the writing ends. */
 let viewBeforeWriting: View | null = null;
 watch(
@@ -535,9 +585,16 @@ watch(
         }
         document.addEventListener('pointerdown', endOnOutside, true);
         const writing = blocks.value.find((b) => b.id === id);
-        if (!wide.value && writing) {
-            viewBeforeWriting = { ...view.value };
-            setView(viewOnto(baseFit.value, writing, size, 0.9, 16));
+        // Only as far as the letters become readable, never more than the block's width – a bigger jump, together with the
+        // keyboard coming, threw the slide about (user at the phone, 2026-10-09). Readable already: no zoom at all.
+        if (!wide.value && writing?.type === 'text') {
+            const onScreen = writing.style.fontSize * fit.value.scale;
+            if (onScreen < READABLE_PX) {
+                const zoom = (view.value.zoom * READABLE_PX) / onScreen;
+                const fill = Math.min(0.9, (zoom * writing.width * baseFit.value.scale) / size.width);
+                viewBeforeWriting = { ...view.value };
+                setView(viewOnto(baseFit.value, writing, size, fill, 16));
+            }
         }
         await nextTick();
         const el = textArea.value;
@@ -624,7 +681,7 @@ function onEmptyAction(b: Block): void {
                     v-for="block in blocks"
                     :key="block.id"
                     class="frame"
-                    :class="{ 'frame--selected': block.id === editor.selectedBlockId, 'frame--locked': block.locked, 'frame--tight': tight(block) }"
+                    :class="{ 'frame--selected': block.id === editor.selectedBlockId, 'frame--locked': block.locked, 'frame--tight': tight(block), 'frame--pressed': block.id === pressedId, 'frame--lifted': block.id === liftedId }"
                     :style="{
                         left: `${block.x}px`,
                         top: `${block.y}px`,
@@ -770,9 +827,10 @@ function onEmptyAction(b: Block): void {
     font-family: var(--d-font);
     white-space: nowrap;
 }
+/* Top right: at the bottom of the frame, a phone's block row lies over it. */
 .zoom-reset {
+    top: 8px;
     right: 8px;
-    bottom: 8px;
 }
 .stage-shadow {
     position: absolute;
@@ -1007,12 +1065,28 @@ function onEmptyAction(b: Block): void {
 .handle--s { left: 50%; top: 100%; cursor: ns-resize; }
 .handle--sw { left: 0; top: 100%; cursor: nesw-resize; }
 .handle--w { left: 0; top: 50%; cursor: ew-resize; }
-/* A fingertip needs a bigger grip than a mouse pointer. */
+/* Held and carried by a finger while zoomed: raised a little, so it is plain that the block, not the stage, moves. */
+.frame--lifted {
+    box-shadow: 0 calc(var(--s) * 6) calc(var(--s) * 18) rgba(15, 23, 42, 0.35);
+}
+/* A long press caught the block: a short flash of the frame. */
+.frame--pressed {
+    animation: frame-pressed 0.3s ease-out;
+}
+@keyframes frame-pressed {
+    from {
+        background: rgba(59, 130, 246, 0.35);
+    }
+    to {
+        background: transparent;
+    }
+}
+/* A fingertip needs a bigger grip than a mouse pointer – but the grip is the hit area below; seen, 16 screen pixels are enough (user at the phone, 2026-10-09: 24 were too big). */
 @media (pointer: coarse) {
     .handle {
-        width: calc(var(--handle) * 2);
-        height: calc(var(--handle) * 2);
-        margin: calc(var(--handle) * -1);
+        width: calc(var(--handle) * 4 / 3);
+        height: calc(var(--handle) * 4 / 3);
+        margin: calc(var(--handle) * -2 / 3);
     }
     /* The area that catches a fingertip: 44 × 44 screen pixels around the middle of the handle. */
     .handle::before {

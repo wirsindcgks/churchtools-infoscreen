@@ -154,7 +154,8 @@ let serviceCalendarIds: number[] = [];
 let videoInUse = false;
 let catalog: AuthCatalog | null = null;
 /** `status` is the category of the signs of life (Plan.md 59), no required one: the plan takes it when it is there. */
-let categories: Partial<Record<CategoryKey, number>> & { status?: number } = {};
+/** `drafts` likewise (Plan.md 79): the designers' drafts, which a device never gets rights on. */
+let categories: Partial<Record<CategoryKey, number>> & { status?: number; drafts?: number } = {};
 
 /** The setup assistant (Plan.md, 9): what it would do, and what it did. */
 const demo = ref(false);
@@ -244,7 +245,7 @@ function computePlan(): void {
         plan.value = planProvisioning({
             catalog,
             moduleKey: EXTENSION_KEY,
-            categories: categories as Record<CategoryKey, number> & { status?: number },
+            categories: categories as Record<CategoryKey, number> & { status?: number; drafts?: number },
             wikiCategoryId,
             roomIds: rooms.map((r) => r.id),
             usedRoomIds,
@@ -710,10 +711,16 @@ onMounted(async () => {
             // Without these the assistant only explains; the page itself still works.
             // An administrator's visit creates the category of the signs of life, if it is missing (Plan.md 59).
             const statusId = (admin.value ? repository.ensureStatusCategory() : repository.statusCategoryId()).catch(() => null);
+            const draftsId = (admin.value ? repository.drafts.ensureCategory() : repository.drafts.categoryId()).catch(() => null);
             let visible: Partial<Record<CategoryKey, number>>;
             [visible, catalog] = await Promise.all([repository.visibleCategories(), loadAuthCatalog().catch(() => null)]);
             const status = await statusId;
-            categories = status === null ? visible : { ...visible, status };
+            const drafts = await draftsId;
+            categories = {
+                ...visible,
+                ...(status === null ? {} : { status }),
+                ...(drafts === null ? {} : { drafts }),
+            };
             assistant.allowed = true;
         }
         computePlan();

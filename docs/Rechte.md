@@ -49,16 +49,20 @@ In der Rechteverwaltung unter **„Infoscreen Designer"**.
 | Im Assistenten | In der Rechteverwaltung (API) | Administrator | Gestalter | Gerät |
 | --- | --- | --- | --- | --- |
 | „Infoscreen Designer" sehen | `view` | ✓ | ✓ | ✓ |
-| Kategorien sehen | `view custom category` | alle | alle | alle |
+| Kategorien sehen | `view custom category` | alle | alle | alle ² |
 | – | `create custom category` | ✓ ¹ | – | – |
-| Daten in Kategorie sehen | `view custom data` | alle | alle | alle |
-| Daten in Kategorie erstellen | `create custom data` | alle | Playlists, Slides, Medien | Status |
-| Daten in Kategorie bearbeiten | `edit custom data` | alle | Playlists, Slides, Medien | Status |
-| Daten in Kategorie löschen | `delete custom data` | alle | Playlists, Slides, Medien | – |
+| Daten in Kategorie sehen | `view custom data` | alle | alle | alle ² |
+| Daten in Kategorie erstellen | `create custom data` | alle | Playlists, Slides, Medien, Entwürfe | Status |
+| Daten in Kategorie bearbeiten | `edit custom data` | alle | Playlists, Slides, Medien, Entwürfe | Status |
+| Daten in Kategorie löschen | `delete custom data` | alle | Playlists, Slides, Medien, Entwürfe | – |
 | – | `edit custom category`, `delete custom category` | – | – | – |
 
 ¹ Nur für den allerersten Start: Beim ersten Öffnen legt der Designer seine Kategorien an. Die Kategorie „Status" legt ein
-Administrator an, wenn er die Startseite öffnet.
+Administrator an, wenn er die Startseite öffnet; die Kategorie „Entwürfe" legt er an, wenn er die Einstellungen öffnet.
+
+² Außer „Entwürfe": Dort hat das Gerät **nichts**, weder die Kategorie zu sehen noch Daten. Gestalter sehen, erstellen,
+bearbeiten und löschen dort die Entwürfe ihrer Präsentationen – ein Fernseher kann einen Entwurf also nie zeigen. Die
+Kategorie erscheint unter „alle" für Administratoren und Gestalter, nicht für Geräte.
 
 **„Alle" schließt „Status" ein:** Auch Gestalter und Geräte sehen die Kategorie – Gestalter, damit die Kacheln zeigen, ob
 ein Bildschirm online ist, Geräte, weil sie ihren Wert dort lesen, bevor sie ihn ändern. **Schreiben darf nur das Gerät, und nur

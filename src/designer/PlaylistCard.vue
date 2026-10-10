@@ -13,7 +13,7 @@ import { useStageContext } from '../player/context';
 import type { PlaylistOverview } from '../store/screen-repository';
 import { liveScreens } from './alive';
 import Icon from './Icon.vue';
-import { lastEdited } from './last-edited';
+import { lastEdited, relativeWhen } from './last-edited';
 import LiveFlag from './LiveFlag.vue';
 import SlideThumb from './SlideThumb.vue';
 import Tile from './Tile.vue';
@@ -23,6 +23,8 @@ const props = defineProps<{
     /** The signs of life by screen slug; null where they cannot be read – then no hint (Plan.md 77). */
     heartbeats?: Map<string, HeartbeatDoc> | null;
     now?: Date;
+    /** Who saved a draft of this playlist, and when (Plan.md 79, Paket E); null or missing without one. */
+    draft?: { updatedBy: string; updatedAt: string } | null;
 }>();
 const emit = defineEmits<{ remove: []; duplicate: [] }>();
 
@@ -54,7 +56,7 @@ const edited = computed(() => lastEdited(props.overview.editedAt, props.overview
                 <SlideThumb :slide="overview.firstSlide" :stage="playlist.stage" />
             </RouterLink>
         </template>
-        <template v-if="live.length || hasBanner" #marks>
+        <template v-if="live.length || hasBanner || draft" #marks>
             <LiveFlag v-if="live.length" overlay :live="live" :time-zone="context.timeZone" data-testid="playlist-live" />
             <span
                 v-if="hasBanner"
@@ -63,6 +65,14 @@ const edited = computed(() => lastEdited(props.overview.editedAt, props.overview
                 data-testid="playlist-banner"
             >
                 <Icon name="megaphone" :size="14" /> {{ t.playlists.card.banner }}
+            </span>
+            <span
+                v-if="draft"
+                class="d-tile-mark"
+                :title="t.playlists.card.draftTitle(draft.updatedBy, relativeWhen(draft.updatedAt, context.timeZone, props.now ?? context.now))"
+                data-testid="draft-flag"
+            >
+                <Icon name="pencil" :size="14" /> {{ t.playlists.card.draft }}
             </span>
         </template>
         <template #title>
