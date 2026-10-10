@@ -23,6 +23,23 @@ async function setup() {
 describe('editor store', () => {
     beforeEach(() => setActivePinia(createPinia()));
 
+    it('resets the rotation of the unlocked chosen blocks in one step and takes the field away (Plan.md F1)', async () => {
+        const { editor } = await setup();
+        editor.addBlock('shape');
+        editor.addBlock('shape');
+        editor.addBlock('shape');
+        const [a, b, c] = editor.slide!.blocks.map((x) => x.id);
+        for (const id of [a!, b!, c!]) editor.updateBlock(id, { rotation: 30 });
+        editor.setLocked([c!], true);
+        editor.resetRotation([a!, b!, c!]);
+        const [first, second, third] = editor.slide!.blocks;
+        expect(first).not.toHaveProperty('rotation');
+        expect(second).not.toHaveProperty('rotation');
+        expect(third).toMatchObject({ rotation: 30 });
+        editor.undo();
+        expect(editor.slide!.blocks.map((x) => x.rotation)).toEqual([30, 30, 30]);
+    });
+
     it('opens a screen with its first slide selected and nothing to save', async () => {
         const { editor } = await setup();
         expect(editor.slide?.name).toBe('Willkommen');

@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 29 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 30 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -65,6 +65,10 @@ const BlockFrame = {
      * (Plan.md D9). No nesting; the player draws every block on its own and ignores the field.
      */
     groupId: v.optional(Id),
+    /** Since 1.30: turned about the middle of the frame, in degrees (Plan.md F1). Missing means 0; older players ignore it. */
+    rotation: v.optional(v.pipe(v.number(), v.finite(), v.minValue(-180), v.maxValue(180))),
+    /** Since 1.30: how opaque the block is, in percent (Plan.md F1). Missing means 100; older players ignore it. */
+    opacity: v.optional(v.pipe(v.number(), v.finite(), v.minValue(0), v.maxValue(100))),
 };
 
 export const TextBlock = v.object({
@@ -87,6 +91,19 @@ export const ShapeBlock = v.object({
     type: v.literal('shape'),
     fill: Fill,
     cornerRadius: v.optional(v.pipe(v.number(), v.minValue(0)), 0),
+    /** Since 1.30: an ellipse ignores `cornerRadius`. Missing means a rectangle; older players draw a rectangle. */
+    shape: v.optional(v.picklist(['rect', 'ellipse'])),
+    /** Since 1.30: an edge drawn inside the shape; missing or width 0 means none. Older players ignore it. */
+    border: v.optional(v.object({ color: Color, width: v.pipe(v.number(), v.finite(), v.minValue(0)) })),
+});
+
+/** Since 1.30: drawn horizontally in the middle of its frame; slanted by `rotation`. Older players skip the block. */
+export const LineBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('line'),
+    color: Color,
+    thickness: PositivePx,
+    dash: v.optional(v.picklist(['solid', 'dashed']), 'solid'),
 });
 
 export const ClockBlock = v.object({
@@ -363,6 +380,7 @@ export const Block = v.variant('type', [
     SlideshowBlock,
     RoomsBlock,
     VideoBlock,
+    LineBlock,
 ]);
 
 /** The calendars whose appointments a block shows or counts down to. */

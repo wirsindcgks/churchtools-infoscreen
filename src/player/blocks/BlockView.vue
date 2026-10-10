@@ -22,12 +22,36 @@ import VideoView from './VideoView.vue';
 const props = defineProps<{ block: Block; slideSeconds?: number; hiddenBlockId?: string }>();
 const context = useStageContext();
 
+/** Rotation and opacity only when set and not their neutral value, so a plain block carries neither (Plan.md F1). */
 const frame = computed(() => ({
     left: `${props.block.x}px`,
     top: `${props.block.y}px`,
     width: `${props.block.width}px`,
     height: `${props.block.height}px`,
+    ...(props.block.rotation ? { transform: `rotate(${props.block.rotation}deg)` } : {}),
+    ...(props.block.opacity !== undefined && props.block.opacity !== 100 ? { opacity: `${props.block.opacity / 100}` } : {}),
 }));
+
+/** An ellipse ignores the corners; an edge lies inside the shape, so it follows the rounding and keeps the fill in place. */
+const shapeStyle = computed(() => {
+    if (props.block.type !== 'shape') return {};
+    const { border } = props.block;
+    return {
+        ...fillStyle(props.block.fill),
+        borderRadius: props.block.shape === 'ellipse' ? '50%' : `${props.block.cornerRadius}px`,
+        ...(border && border.width >= 1 ? { boxShadow: `inset 0 0 0 ${border.width}px ${border.color}` } : {}),
+    };
+});
+
+/** A horizontal stroke in the middle of the frame; dashes are 3 × the thickness long with 2 × between them. */
+const lineStyle = computed(() => {
+    if (props.block.type !== 'line') return {};
+    const { color, thickness, dash } = props.block;
+    const height = Math.min(thickness, props.block.height);
+    return dash === 'dashed'
+        ? { height: `${height}px`, backgroundImage: `repeating-linear-gradient(to right, ${color} 0 ${3 * thickness}px, transparent ${3 * thickness}px ${5 * thickness}px)` }
+        : { height: `${height}px`, background: color, borderRadius: `${height / 2}px` };
+});
 
 const logoUrl = computed(() => {
     if (props.block.type !== 'church-header') return null;
@@ -70,8 +94,10 @@ const imageUrl = computed(() => {
         <div
             v-else-if="block.type === 'shape'"
             class="fill"
-            :style="{ ...fillStyle(block.fill), borderRadius: `${block.cornerRadius}px` }"
+            :style="shapeStyle"
         />
+
+        <div v-else-if="block.type === 'line'" class="line" :style="lineStyle" />
 
         <template v-else-if="block.type === 'image'">
             <img v-if="imageUrl" class="image" :src="imageUrl" :style="{ objectFit: block.fit }" alt="">
@@ -174,6 +200,13 @@ const imageUrl = computed(() => {
     display: block;
     width: 100%;
     height: 100%;
+}
+.line {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%);
 }
 .placeholder {
     /* Image and web page have no text colour of their own: a middle grey shows on light and dark slides alike (Plan.md 48). */

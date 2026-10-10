@@ -22,7 +22,7 @@ import { KEYS, keyLabel, withKeys } from './shortcuts';
 import { vTip } from './tip';
 
 /** `frame`: the rectangle of the block (of the box around several) in host pixels; `host`: the size of the host – both only for the menu above. */
-const props = defineProps<{ blocks: Block[]; frame?: Rect; host?: Size; variant?: 'float' | 'bar' }>();
+const props = defineProps<{ blocks: Block[]; frame?: Rect; host?: Size; lift?: number; variant?: 'float' | 'bar' }>();
 const emit = defineEmits<{ 'all-settings': [] }>();
 
 const editor = useEditorStore();
@@ -32,6 +32,8 @@ const block = computed(() => (props.blocks.length === 1 ? props.blocks[0]! : nul
 const many = computed(() => props.blocks.length > 1);
 const ids = computed(() => props.blocks.map((b) => b.id));
 const allLocked = computed(() => props.blocks.every((b) => b.locked));
+/** Whether a chosen, unlocked block is turned: then "Drehen zurücksetzen" is offered. */
+const turned = computed(() => props.blocks.some((b) => !b.locked && b.rotation));
 const title = computed(() => (block.value ? BLOCK_LABELS[block.value.type] : (editor.groupSelected ? t.editor.groupCount(props.blocks.length) : t.editor.blocksCount(props.blocks.length))));
 provide(INSPECTOR_MODE, 'quick');
 provide(QUICK_VARIANT, bar ? 'bar' : 'float');
@@ -57,7 +59,7 @@ const focusInside = ref(false);
 const placed = ref({ left: 0, top: 0 });
 function place(): void {
     if (bar || focusInside.value || !props.frame || !props.host) return;
-    const { left, top } = quickMenuPlace(props.frame, size, props.host);
+    const { left, top } = quickMenuPlace(props.frame, size, props.host, undefined, props.lift);
     placed.value = { left, top };
 }
 function measure(): void {
@@ -371,6 +373,9 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
                             {{ layer.label }}
                         </button>
                     </template>
+                    <button v-if="turned" role="menuitem" type="button" data-testid="quick-reset-rotation" @click="choose(() => editor.resetRotation(ids))">
+                        {{ t.quick.resetRotation }}
+                    </button>
                     <button v-if="below" role="menuitem" type="button" data-testid="quick-select-below" @click="choose(() => editor.selectBlock(below!.id))">
                         {{ t.quick.selectBelow }}
                     </button>

@@ -1,6 +1,7 @@
 /** Pure editing operations on the data model; the store wires them to history and storage. */
 import * as v from 'valibot';
 import type { IconName } from './Icon.vue';
+import { MIN_BLOCK_SIZE, outerFrame, type RotatedFrame } from './rotate';
 import {
     DEFAULT_THEME,
     GroupFields,
@@ -117,6 +118,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     text: t.blocks.text,
     image: t.blocks.image,
     shape: t.blocks.shape,
+    line: t.blocks.line,
     clock: t.blocks.clock,
     'appointment-list': t.blocks['appointment-list'],
     'next-appointment': t.blocks['next-appointment'],
@@ -135,6 +137,7 @@ export const BLOCK_ICONS: Record<BlockType, IconName> = {
     text: 'text',
     image: 'image',
     shape: 'shape',
+    line: 'line',
     clock: 'clock',
     'appointment-list': 'list',
     'next-appointment': 'calendar',
@@ -187,6 +190,7 @@ export function createBlock(
         text: [1200, 200],
         image: [800, 450],
         shape: [600, 300],
+        line: [800, 40],
         clock: [400, 100],
         'appointment-list': [1400, 600],
         'next-appointment': [1400, 600],
@@ -220,6 +224,8 @@ export function createBlock(
             return { ...frame, type, mediaId: '', fit: 'contain' };
         case 'shape':
             return { ...frame, type, fill: { kind: 'solid', color: '#334155' }, cornerRadius: 0 };
+        case 'line':
+            return { ...frame, type, color: theme.accent, thickness: 8, dash: 'solid' };
         case 'clock':
             return { ...frame, type, format: 'time', style: textStyle(64, { fontWeight: 600, align: 'right' }) };
         case 'appointment-list':
@@ -316,19 +322,26 @@ export function fitToStage<T extends { width: number; height: number }>(frame: T
     return { ...frame, width: Math.floor(frame.width * scale), height: Math.floor(frame.height * scale) };
 }
 
-export const MIN_BLOCK_SIZE = 20;
+export { MIN_BLOCK_SIZE };
 
 /**
  * Keeps a frame usable: at least MIN_BLOCK_SIZE, whole pixels, and never
  * entirely off the stage – a block you cannot see you cannot select.
  */
 export function clampFrame(
-    frame: { x: number; y: number; width: number; height: number },
+    frame: RotatedFrame,
     stage: { width: number; height: number },
 ): { x: number; y: number; width: number; height: number } {
     const width = Math.max(MIN_BLOCK_SIZE, Math.round(frame.width));
     const height = Math.max(MIN_BLOCK_SIZE, Math.round(frame.height));
     const keep = MIN_BLOCK_SIZE;
+    if (frame.rotation) {
+        // A turned block counts by the box around it (Plan.md F1): the frame moves by what the box has to move.
+        const box = outerFrame({ ...frame, width, height });
+        const x = Math.min(Math.max(box.x, keep - box.width), stage.width - keep);
+        const y = Math.min(Math.max(box.y, keep - box.height), stage.height - keep);
+        return { width, height, x: Math.round(frame.x + x - box.x), y: Math.round(frame.y + y - box.y) };
+    }
     return {
         width,
         height,
@@ -411,8 +424,9 @@ export function gatherLayers<T>(items: readonly T[], indices: readonly number[])
 }
 
 /** The smallest rectangle around the given frames (Plan.md 79, D3); null for none. */
-export function boundingBox(frames: readonly { x: number; y: number; width: number; height: number }[]): { x: number; y: number; width: number; height: number } | null {
-    if (!frames.length) return null;
+export function boundingBox(entries: readonly RotatedFrame[]): { x: number; y: number; width: number; height: number } | null {
+    if (!entries.length) return null;
+    const frames = entries.map(outerFrame);
     const left = Math.min(...frames.map((f) => f.x));
     const top = Math.min(...frames.map((f) => f.y));
     const right = Math.max(...frames.map((f) => f.x + f.width));
@@ -460,7 +474,8 @@ export function blockBelow(blocks: readonly Block[], clicked: Block, point: { x:
     const index = blocks.findIndex((b) => b.id === clicked.id);
     for (let i = index - 1; i >= 0; i--) {
         const b = blocks[i]!;
-        if (!b.locked && point.x >= b.x && point.x <= b.x + b.width && point.y >= b.y && point.y <= b.y + b.height) return b;
+        const box = outerFrame(b);
+        if (!b.locked && point.x >= box.x && point.x <= box.x + box.width && point.y >= box.y && point.y <= box.y + box.height) return b;
     }
     return null;
 }

@@ -6,6 +6,7 @@ import ClockInspector from './ClockInspector.vue';
 import CountdownInspector from './CountdownInspector.vue';
 import GroupsInspector from './GroupsInspector.vue';
 import ImageInspector from './ImageInspector.vue';
+import LineInspector from './LineInspector.vue';
 import NextAppointmentInspector from './NextAppointmentInspector.vue';
 import PostsInspector from './PostsInspector.vue';
 import QrInspector from './QrInspector.vue';
@@ -23,6 +24,7 @@ export const BLOCK_INSPECTORS: Record<BlockType, Component> = {
     text: TextInspector,
     image: ImageInspector,
     shape: ShapeInspector,
+    line: LineInspector,
     clock: ClockInspector,
     qr: QrInspector,
     web: WebInspector,

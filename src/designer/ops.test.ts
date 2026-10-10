@@ -28,6 +28,11 @@ describe('designer operations', () => {
         }
     });
 
+    it('creates a line 800 x 40, 8 px thick, solid, in the accent of the design (Plan.md F1)', () => {
+        expect(createBlock('line', stage)).toMatchObject({ type: 'line', width: 800, height: 40, thickness: 8, dash: 'solid', color: DEFAULT_THEME.accent });
+        expect(BLOCK_LABELS.line).toBe('Linie');
+    });
+
     it('creates a slideshow empty, with the defaults, at 1200 x 675', () => {
         expect(createBlock('slideshow', stage)).toMatchObject({
             mediaIds: [],
@@ -215,6 +220,7 @@ describe('the palette (Plan.md 47)', () => {
             'Galerie',
             'Gemeindekopf',
             'Gruppen',
+            'Linie',
             'Nächster Termin',
             'QR-Code',
             'Raumbelegung',
@@ -299,5 +305,33 @@ describe('text levels (Plan.md 79, C8)', () => {
     it('a new text block begins as a heading', () => {
         const block = createBlock('text', { width: 1920, height: 1080 });
         expect(block.type === 'text' && block.style).toMatchObject({ fontSize: 96, fontWeight: 700 });
+    });
+});
+
+describe('turned blocks count by their box (Plan.md F1)', () => {
+    const stage = { width: 1920, height: 1080 };
+    const bar = { x: 900, y: 100, width: 600, height: 40 };
+
+    it('boundingBox takes the box around each turned frame', () => {
+        expect(boundingBox([{ ...bar, rotation: 90 }])).toEqual({ x: 1180, y: -180, width: 40, height: 600 });
+        expect(boundingBox([bar, { x: 0, y: 0, width: 10, height: 10 }])).toEqual({ x: 0, y: 0, width: 1500, height: 140 });
+    });
+
+    it('clampFrame keeps the box of a narrow block turned by 90° on the stage and returns the frame', () => {
+        // The frame is 600 wide and 40 high; turned, it stands 40 wide and 600 high around its middle.
+        const clamped = clampFrame({ x: 100, y: -500, width: 600, height: 40, rotation: 90 }, stage);
+        const box = boundingBox([{ ...clamped, rotation: 90 }])!;
+        expect(clamped).toMatchObject({ width: 600, height: 40 });
+        expect(box.y).toBe(-580); // 20 px of the box (MIN_BLOCK_SIZE) stay on the stage
+        expect(box.y + box.height).toBe(20);
+        expect(clampFrame({ x: 100, y: 100, width: 600, height: 40, rotation: 90 }, stage)).toMatchObject({ x: 100, y: 100 });
+    });
+
+    it('blockBelow reaches through to the box of a turned block', () => {
+        const turned = { ...createBlock('shape', stage), id: 'turned', x: 900, y: 100, width: 600, height: 40, rotation: 90 } as Block;
+        const cover = { ...createBlock('shape', stage), id: 'cover', x: 0, y: 0, width: 1920, height: 1080, locked: true } as Block;
+        // At (1200, 300) the plain frame has nothing, the turned box has.
+        expect(below([turned, cover], cover, { x: 1200, y: 300 })?.id).toBe('turned');
+        expect(below([turned, cover], cover, { x: 1000, y: 300 })).toBeNull();
     });
 });
