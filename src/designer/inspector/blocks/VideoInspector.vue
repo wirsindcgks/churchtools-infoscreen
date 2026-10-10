@@ -9,8 +9,11 @@ import MediaField from '../fields/MediaField.vue';
 import SegmentField from '../fields/SegmentField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import { useBlockEdit } from '../use-block';
+import { useInspectorMode } from '../mode';
 
 const props = defineProps<{ block: Extract<Block, { type: 'video' }> }>();
+/** Only fields stand in the short menu; a hint or a line of text belongs to the inspector. */
+const mode = useInspectorMode();
 const { setBlock, videoLabel } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
 
@@ -40,7 +43,7 @@ function caption(): string {
     <ToggleField quick :model-value="block.sound ?? false" :label="t.inspector.sound" testid="video-sound" @update:model-value="setBlock({ sound: $event })">
         <template #info>{{ t.inspector.soundInfo }}</template>
     </ToggleField>
-    <HintRow caption>
+    <HintRow v-if="mode === 'full'" caption>
         <span>{{ t.inspector.runtime }}</span>
         <template #info>{{ t.inspector.videoRuntimeInfo }}</template>
     </HintRow>

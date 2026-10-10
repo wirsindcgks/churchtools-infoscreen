@@ -1,0 +1,272 @@
+import { expect, test, type Page } from '@playwright/test';
+import { openInspector, openSlides } from './helpers';
+
+// The bar at the bottom of a phone (Plan.md 79, C2): the slide or the chosen block, in one place.
+test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
+
+async function openEditor(page: Page): Promise<void> {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('save-status')).toHaveText('Alles gespeichert');
+}
+
+/** The stage lies whole in the window and no bar covers any of it. */
+async function expectStageClear(page: Page): Promise<void> {
+    const [stage, bar] = await Promise.all([page.locator('.editor-stage .stage').first().boundingBox(), page.getByTestId('phone-bar').boundingBox()]);
+    expect(stage!.y).toBeGreaterThanOrEqual(0);
+    expect(stage!.y + stage!.height).toBeLessThanOrEqual(bar!.y + 1);
+}
+
+/**
+ * The stage stands in the middle of the room between what lies above it and both rows of the bar below, chosen block
+ * or not (user, 2026-10-09). Measured from the top of the columns: the demo notice and its margin exist only in the mock.
+ */
+async function expectStageCentered(page: Page): Promise<void> {
+    const [columns, stage, slideRow] = await Promise.all([
+        page.locator('.columns').boundingBox(),
+        page.locator('.editor-stage').boundingBox(),
+        page.getByTestId('phone-slide-row').boundingBox(),
+    ]);
+    const above = stage!.y - columns!.y;
+    const below = slideRow!.y - 56 - (stage!.y + stage!.height);
+    expect(above).toBeGreaterThan(40);
+    expect(Math.abs(above - below)).toBeLessThanOrEqual(3);
+}
+
+test('without a block the bar shows the slide; nothing stands above the stage any more', async ({ page }) => {
+    await openEditor(page);
+    const bar = page.getByTestId('phone-bar');
+    await expect(bar).toBeVisible();
+    await expect(page.getByTestId('phone-block-row')).toHaveCount(0);
+    await expect(page.getByTestId('phone-slides')).toContainText('Folie 1 von 3');
+    await expect(bar.getByTestId('add-block-menu')).toBeVisible();
+    await expect(bar.getByTestId('phone-slide-more')).toBeVisible();
+    // The row of slides, "+ Baustein" and the guides above the stage are gone.
+    await expect(page.getByTestId('slide-item')).toHaveCount(0);
+    await expect(page.getByTestId('slides-toggle')).toHaveCount(0);
+    await expect(page.getByTestId('add-block-menu')).toHaveCount(1);
+    await expect(page.getByTestId('grid-size')).toHaveCount(0);
+    await expectStageCentered(page);
+    // Without a block the bar is the one row of 56 px (plus the safe area) at the bottom edge.
+    const box = (await bar.boundingBox())!;
+    expect(box.height).toBeGreaterThanOrEqual(56);
+    expect(box.height).toBeLessThan(80);
+    expect(Math.round(box.y + box.height)).toBe(844);
+    await expectStageClear(page);
+});
+
+test('choosing a block shows its menu in the bar; the big sheet stays shut and the stage whole', async ({ page }) => {
+    await openEditor(page);
+    await page.getByTestId('frame-text').first().tap();
+    const bar = page.getByTestId('phone-bar');
+    const menu = bar.getByTestId('quick-menu');
+    await expect(menu).toBeVisible();
+    await expect(menu.getByTestId('quick-kind')).toHaveAttribute('aria-label', 'Text');
+    await expect(menu.getByTestId('quick-chip').first()).toBeVisible();
+    await expect(page.getByTestId('inspector-sheet')).toBeHidden();
+    await expect(page.getByTestId('inspector-sheet-toggle')).toBeHidden();
+    await expectStageClear(page);
+    // Two rows of 56 px (plus the safe area) at the bottom edge.
+    expect(Math.round((await bar.boundingBox())!.height)).toBeGreaterThanOrEqual(112);
+    // Every button of the bar is at least a fingertip.
+    // Duplicate and delete live in "⋯" on a phone: the fields keep the room.
+    await expect(menu.getByTestId('quick-duplicate')).toHaveCount(0);
+    for (const id of ['quick-deselect', 'quick-more']) {
+        const b = (await menu.getByTestId(id).boundingBox())!;
+        expect(b.width).toBeGreaterThanOrEqual(44);
+        expect(b.height).toBeGreaterThanOrEqual(44);
+    }
+    for (const chip of await menu.getByTestId('quick-chip').all()) expect((await chip.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    const full = (await bar.boundingBox())!;
+    expect(full.x + full.width).toBeLessThanOrEqual(390);
+    await page.screenshot({ path: 'test-results/c4c-phone-block.png' });
+    await menu.getByTestId('quick-more').tap();
+    await expect(menu.getByTestId('quick-duplicate')).toBeVisible();
+    await expect(menu.getByTestId('quick-delete')).toBeVisible();
+    await menu.getByTestId('quick-more').tap();
+});
+
+test('a block shows two rows; "Auswahl aufheben" lets go of it and leaves the slide row', async ({ page }) => {
+    await openEditor(page);
+    await page.getByTestId('frame-text').first().tap();
+    const bar = page.getByTestId('phone-bar');
+    const slideRow = bar.getByTestId('phone-slide-row');
+    const blockRow = bar.getByTestId('phone-block-row');
+    await expect(slideRow).toBeVisible();
+    await expect(blockRow).toBeVisible();
+    await expect(bar.getByTestId('phone-slides')).toContainText('Folie 1 von 3');
+    await expect(bar.getByTestId('phone-back-to-slide')).toHaveCount(0);
+    const [upper, lower] = await Promise.all([blockRow.boundingBox(), slideRow.boundingBox()]);
+    expect(Math.round(upper!.y + upper!.height)).toBeLessThanOrEqual(Math.round(lower!.y));
+    expect(Math.round(upper!.height)).toBe(56);
+    await expectStageCentered(page);
+    const deselect = bar.getByTestId('quick-deselect');
+    await expect(deselect).toHaveAttribute('aria-label', 'Auswahl aufheben');
+    const d = (await deselect.boundingBox())!;
+    expect(d.width).toBeGreaterThanOrEqual(44);
+    expect(d.height).toBeGreaterThanOrEqual(44);
+    await deselect.tap();
+    await expect(blockRow).toHaveCount(0);
+    await expect(bar.getByTestId('quick-menu')).toHaveCount(0);
+    await expect(bar.getByTestId('phone-slides')).toBeVisible();
+});
+
+test('the fields fade out at an edge only where more of them lie beyond it', async ({ page }) => {
+    await openEditor(page);
+    await page.getByTestId('frame-text').first().tap();
+    const row = page.getByTestId('phone-block-row');
+    const fields = row.locator('.quick-fields');
+    const start = row.getByTestId('quick-fade-start');
+    const end = row.getByTestId('quick-fade-end');
+    const overflows = await fields.evaluate((el) => el.scrollWidth > el.clientWidth + 1);
+    expect(overflows).toBe(true);
+    await expect(start).not.toHaveClass(/\bon\b/);
+    await expect(end).toHaveClass(/\bon\b/);
+    await fields.evaluate((el) => el.scrollTo({ left: el.scrollWidth }));
+    await expect(start).toHaveClass(/\bon\b/);
+    await expect(end).not.toHaveClass(/\bon\b/);
+    await page.screenshot({ path: 'test-results/c4d-phone-fade.png' });
+});
+
+test('with a block chosen the slide row still works: another slide drops the block and its row', async ({ page }) => {
+    await openEditor(page);
+    await page.getByTestId('frame-text').first().tap();
+    await expect(page.getByTestId('phone-block-row')).toBeVisible();
+    await expect(page.getByTestId('add-block-menu')).toBeEnabled();
+    const sheet = await openSlides(page);
+    await sheet.getByTestId('slide-item').nth(1).tap();
+    await expect(page.getByTestId('phone-slides')).toContainText('Folie 2 von 3');
+    await expect(page.getByTestId('phone-block-row')).toHaveCount(0);
+});
+
+test('a field opens as a sheet from below over the bar; a tap beside, a swipe down or Escape closes it', async ({ page }) => {
+    await openEditor(page);
+    await page.getByTestId('frame-text').first().tap();
+    const menu = page.getByTestId('phone-bar').getByTestId('quick-menu');
+    const chip = menu.getByTestId('quick-chip').first();
+    const popover = page.getByTestId('quick-popover');
+
+    await chip.tap();
+    await expect(popover).toBeVisible();
+    const box = (await popover.boundingBox())!;
+    const bar = (await page.getByTestId('phone-block-row').boundingBox())!;
+    expect(box.x).toBe(0);
+    expect(box.width).toBe(390);
+    expect(Math.round(box.y + box.height)).toBe(Math.round(bar.y));
+    expect(box.height).toBeLessThanOrEqual(844 * 0.6 + 1);
+    await expect(popover).toHaveAttribute('aria-label', /.+/);
+    const grip = (await page.locator('.quick-sheet-grip').boundingBox())!;
+    expect(Math.round(grip.width)).toBe(36);
+    expect(Math.round(grip.height)).toBe(4);
+    await page.screenshot({ path: 'test-results/c4c-phone-field.png' });
+    // The block stays chosen and the big sheet shut.
+    await expect(page.getByTestId('inspector-sheet')).toBeHidden();
+
+    // A tap beside closes it – and only that.
+    await page.mouse.click(195, 150);
+    await expect(popover).toHaveCount(0);
+    await expect(menu).toBeVisible();
+
+    // Swipe down on the head.
+    await chip.tap();
+    await expect(popover).toBeVisible();
+    const head = (await page.getByTestId('quick-sheet-grip').boundingBox())!;
+    await page.mouse.move(head.x + head.width / 2, head.y + 10);
+    await page.mouse.down();
+    await page.mouse.move(head.x + head.width / 2, head.y + 40, { steps: 4 });
+    await page.mouse.up();
+    await expect(popover).toBeVisible(); // 30 px are not enough
+    await page.mouse.move(head.x + head.width / 2, head.y + 10);
+    await page.mouse.down();
+    await page.mouse.move(head.x + head.width / 2, head.y + 90, { steps: 6 });
+    await page.mouse.up();
+    await expect(popover).toHaveCount(0);
+
+    // Escape; and only one field at a time.
+    await chip.tap();
+    await expect(popover).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(popover).toHaveCount(0);
+    await expect(menu).toBeVisible();
+    await chip.tap();
+    await menu.getByTestId('quick-chip').nth(1).tap();
+    await expect(popover).toHaveCount(1);
+});
+
+test('"⋯ → Alle Einstellungen" opens the big sheet, which closes with its own button', async ({ page }) => {
+    await openEditor(page);
+    await page.getByTestId('frame-text').first().tap();
+    const bar = page.getByTestId('phone-bar');
+    await bar.getByTestId('quick-more').tap();
+    await expect(bar.getByTestId('quick-lock')).toBeVisible();
+    await bar.getByTestId('quick-all-settings').tap();
+    const sheet = page.getByTestId('inspector-sheet');
+    await expect(sheet).toHaveClass(/open/);
+    await expect(page.getByTestId('block-inspector')).toBeVisible();
+    await expect(page.getByTestId('inspector-sheet-toggle')).toBeHidden();
+    await expect(page.getByTestId('phone-bar')).toHaveCount(0);
+    await page.getByTestId('inspector-sheet-close').tap();
+    await expect(sheet).toBeHidden();
+    await expect(page.getByTestId('phone-bar').getByTestId('quick-menu')).toBeVisible();
+});
+
+test('a locked block shows only its symbol and "⋯", with Entsperren inside', async ({ page }) => {
+    await openEditor(page);
+    await page.getByTestId('frame-text').first().tap();
+    const bar = page.getByTestId('phone-bar');
+    await bar.getByTestId('quick-more').tap();
+    await bar.getByTestId('quick-lock').tap();
+    await expect(bar.getByTestId('quick-chip')).toHaveCount(0);
+    await expect(bar.getByTestId('quick-duplicate')).toHaveCount(0);
+    await expect(bar.getByTestId('quick-kind')).toBeVisible();
+    await bar.getByTestId('quick-more').tap();
+    await expect(bar.getByTestId('quick-lock')).toHaveText('Entsperren');
+    await expect(bar.getByTestId('quick-copy')).toBeVisible();
+    await expect(bar.getByTestId('quick-all-settings')).toBeVisible();
+    await bar.getByTestId('quick-lock').tap();
+    await expect(bar.getByTestId('quick-chip').first()).toBeVisible();
+});
+
+test('the slide\'s "⋯" holds its settings, duplicate, remove and the guides', async ({ page }) => {
+    await openEditor(page);
+    const bar = page.getByTestId('phone-bar');
+    await bar.getByTestId('phone-slide-more').tap();
+    await expect(page.getByTestId('paste-block')).toHaveCount(0); // nothing copied yet
+    await expect(page.getByTestId('grid-size')).toBeVisible();
+    await page.getByTestId('slide-duplicate-phone').tap();
+    await expect(page.getByTestId('phone-slides')).toContainText('von 4');
+    await bar.getByTestId('phone-slide-more').tap();
+    await page.getByTestId('slide-remove-phone').tap();
+    await expect(page.getByTestId('confirm-dialog')).toContainText('aus dieser Präsentation entfernen?');
+    await page.getByTestId('confirm-ok').tap();
+    await expect(page.getByTestId('phone-slides')).toContainText('von 3');
+    await openInspector(page);
+    await expect(page.getByTestId('slide-inspector')).toBeVisible();
+});
+
+test('"Folie 1 von 3" opens the sheet of slides; a tap on a slide chooses it and closes the sheet', async ({ page }) => {
+    await openEditor(page);
+    const sheet = await openSlides(page);
+    await expect(sheet.getByTestId('slide-item')).toHaveCount(3);
+    await expect(sheet.getByTestId('slide-duration').first()).toBeVisible();
+    const first = (await sheet.getByTestId('slide-item').nth(0).boundingBox())!;
+    const second = (await sheet.getByTestId('slide-item').nth(1).boundingBox())!;
+    expect(second.x).toBeGreaterThan(first.x + first.width - 1); // two columns
+    expect(Math.abs(second.y - first.y)).toBeLessThanOrEqual(1);
+    await expect(sheet.getByTestId('add-slide')).toBeVisible();
+    await expect(sheet.getByTestId('import-slides')).toBeVisible();
+    await sheet.getByTestId('slide-item').nth(1).tap();
+    await expect(sheet).toHaveCount(0);
+    await expect(page.getByTestId('phone-slides')).toContainText('Folie 2 von 3');
+    // The sheet closes with its button and with Escape, too.
+    await openSlides(page);
+    await page.getByTestId('slides-sheet-close').tap();
+    await expect(page.getByTestId('slides-sheet')).toHaveCount(0);
+    await openSlides(page);
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('slides-sheet')).toHaveCount(0);
+    // A new slide is added from the sheet.
+    const again = await openSlides(page);
+    await again.getByTestId('add-slide').tap();
+    await expect(page.getByTestId('phone-slides')).toContainText('von 4');
+});

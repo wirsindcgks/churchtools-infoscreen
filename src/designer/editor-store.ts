@@ -6,7 +6,7 @@
  * records once at its start (`beginGesture`).
  */
 import { defineStore } from 'pinia';
-import { computed, ref, shallowRef } from 'vue';
+import { computed, ref, shallowRef, watch } from 'vue';
 import { blockCalendarIds, DEFAULT_THEME, type Block, type BlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type ThemeDoc } from '../model/schema';
 import {
     ConflictError,
@@ -80,6 +80,8 @@ export const useEditorStore = defineStore('editor', () => {
     });
     const slide = computed(() => slides.value.find((s) => s.id === selectedSlideId.value) ?? slides.value[0] ?? null);
     const block = computed(() => slide.value?.blocks.find((b) => b.id === selectedBlockId.value) ?? null);
+    /** The text block being written on the stage (Plan.md 79, C4): one editing run is one step in the history. */
+    const editingTextId = ref<string | null>(null);
     const calendarIds = computed(() => [
         ...new Set(draft.value?.slides.flatMap((s) => s.blocks.flatMap(blockCalendarIds)) ?? []),
     ]);
@@ -115,6 +117,7 @@ export const useEditorStore = defineStore('editor', () => {
         markSaved();
         sharedWith.value = cloneJson(shared);
         revision.value = playlistRevision;
+        endTextEdit();
         history.clear();
         historyVersion.value++;
         status.value = 'idle';
@@ -166,8 +169,34 @@ export const useEditorStore = defineStore('editor', () => {
         gestureRecorded = false;
     }
 
+    function startTextEdit(id: string): void {
+        const target = slide.value?.blocks.find((b) => b.id === id);
+        if (!target || target.type !== 'text' || target.locked) return;
+        if (editingTextId.value) endTextEdit();
+        selectedBlockId.value = id;
+        editingTextId.value = id;
+        beginGesture();
+    }
+
+    function endTextEdit(): void {
+        if (!editingTextId.value) return;
+        editingTextId.value = null;
+        endGesture();
+    }
+
+    // Another choice, another slide, a deleted or locked block: the writing ends.
+    watch(
+        () => editingTextId.value && block.value?.id === editingTextId.value && !block.value.locked,
+        (valid) => {
+            if (!valid) endTextEdit();
+        },
+        { flush: 'sync' },
+    );
+
     function undo(): void {
         if (!draft.value) return;
+        // The writing on the stage is one step: it ends first, and the undo takes all of it back.
+        endTextEdit();
         const previous = history.undo(draft.value);
         if (previous) draft.value = previous;
         historyVersion.value++;
@@ -175,6 +204,7 @@ export const useEditorStore = defineStore('editor', () => {
 
     function redo(): void {
         if (!draft.value) return;
+        endTextEdit();
         const next = history.redo(draft.value);
         if (next) draft.value = next;
         historyVersion.value++;
@@ -318,14 +348,25 @@ export const useEditorStore = defineStore('editor', () => {
     /**
      * Puts copies of the given blocks on the current slide as one step: new ids, not locked, otherwise as they were.
      * They keep their place unless a block sits there already; one too big for this stage shrinks to fit. The last is chosen.
+     * With `at` (stage pixels) the group's middle goes there instead, pulled back onto the stage, and stays even over a block.
      */
-    function place(sources: Block[]): void {
+    function place(sources: Block[], at?: { x: number; y: number }): void {
         const target = slide.value;
         if (!target || !sources.length) return;
         const slideId = target.id;
         const placed: Block[] = [];
+        let shift = { x: 0, y: 0 };
+        if (at) {
+            const left = Math.min(...sources.map((x) => x.x));
+            const top = Math.min(...sources.map((x) => x.y));
+            const right = Math.max(...sources.map((x) => x.x + x.width));
+            const bottom = Math.max(...sources.map((x) => x.y + x.height));
+            shift = { x: at.x - (left + right) / 2, y: at.y - (top + bottom) / 2 };
+        }
         for (const source of sources) {
             const copy = cloneJson(source);
+            copy.x += shift.x;
+            copy.y += shift.y;
             delete copy.locked;
             const fitted = fitToStage({ ...copy, id: newId() }, stage.value);
             // A block from another stage may stick out of this one: pull it back in where it fits.
@@ -334,15 +375,15 @@ export const useEditorStore = defineStore('editor', () => {
                 x: Math.max(0, Math.min(fitted.x, stage.value.width - fitted.width)),
                 y: Math.max(0, Math.min(fitted.y, stage.value.height - fitted.height)),
             };
-            const spot = freeSpot(inside, [...target.blocks, ...placed], stage.value);
+            const spot = at ? inside : freeSpot(inside, [...target.blocks, ...placed], stage.value);
             placed.push({ ...spot, ...clampFrame(spot, stage.value) });
         }
         change((b) => slideIn(b, slideId)?.blocks.push(...placed));
         selectedBlockId.value = placed[placed.length - 1]!.id;
     }
 
-    function pasteBlocks(): void {
-        place(clipboard.value);
+    function pasteBlocks(at?: { x: number; y: number }): void {
+        place(clipboard.value, at);
     }
 
     /** Copy and paste in one, without touching the clipboard. */
@@ -503,6 +544,7 @@ export const useEditorStore = defineStore('editor', () => {
         block,
         calendarIds,
         selectedBlockId,
+        editingTextId,
         status,
         conflict,
         slideConflict,
@@ -518,6 +560,8 @@ export const useEditorStore = defineStore('editor', () => {
         open,
         beginGesture,
         endGesture,
+        startTextEdit,
+        endTextEdit,
         undo,
         redo,
         selectSlide,

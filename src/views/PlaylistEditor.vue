@@ -10,6 +10,8 @@ import EditorStage from '../designer/EditorStage.vue';
 import { useEditorStore } from '../designer/editor-store';
 import Icon from '../designer/Icon.vue';
 import Inspector from '../designer/Inspector.vue';
+import PhoneBar from '../designer/PhoneBar.vue';
+import { provideInspectorContext } from '../designer/inspector/context';
 import LiveFlag from '../designer/LiveFlag.vue';
 import { providePalette } from '../designer/palette';
 import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
@@ -30,6 +32,7 @@ import { allowedServiceIds, appointmentServicesInUse, serviceChoices, type Servi
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import { useOffsetTop } from '../designer/useOffsetTop';
+import { usePhone } from '../designer/usePhone';
 import type { ScreenRepository } from '../store/screen-repository';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
@@ -56,6 +59,9 @@ const demo = ref(false);
 const author = ref('');
 const root = ref<HTMLElement | null>(null);
 const top = useOffsetTop(root);
+/** Up to 48rem: one bar at the bottom instead of the slides and "+ Baustein" above the stage (Plan.md 79, C2). */
+const phone = usePhone();
+const phoneBar = ref<InstanceType<typeof PhoneBar> | null>(null);
 
 /** The services an administrator allows on screens (Plan.md 58); none until loaded, and where the settings cannot be read. */
 const allowedServices = ref<number[]>([]);
@@ -92,6 +98,21 @@ const rooms = ref<RoomInfo[] | null>(null);
 const services = ref<ServiceInfo[] | null>(null);
 const servicesFailed = ref(false);
 
+// The short menu above the chosen block reads the same lists as the inspector beside the stage (Plan.md 79, C1).
+provideInspectorContext(
+    () => ({
+        calendars: calendars.value,
+        hiddenCalendars: hiddenCalendars.value,
+        groups: groups.value,
+        homepages: homepages.value,
+        rooms: rooms.value,
+        services: services.value,
+        allowedServices: allowedServices.value,
+        servicesFailed: servicesFailed.value,
+    }),
+    (kind) => openLibrary(kind),
+);
+
 /** The preview of the unsaved draft, as the TV would show it. */
 const previewing = ref(false);
 
@@ -103,9 +124,18 @@ const inspectorOpen = ref(false);
 
 /**
  * The slides as a drawer on a tablet (Plan.md 45), closed by default. CSS ignores
- * it at a phone or desktop width; the phone's own row keeps its state in `SlideList.vue`.
+ * it at a phone or desktop width; the phone has its own sheet of slides (below).
  */
 const slidesDrawerOpen = ref(false);
+/** The sheet of slides on a phone, opened by "Folie 2 von 5" in the bar (Plan.md 79, C2). Choosing a slide in it – or adding one – closes it. */
+const slidesSheetOpen = ref(false);
+watch(
+    () => editor.slide?.id,
+    () => (slidesSheetOpen.value = false),
+);
+watch(phone, (isPhone) => {
+    if (!isPhone) slidesSheetOpen.value = false;
+});
 /** A tap on a slide chooses it – and folds the drawer away; the buttons of the chosen one stay out of it. */
 function closeSlidesDrawerOnPick(event: Event): void {
     if ((event.target as HTMLElement).closest('[data-testid="slide-item"]')) slidesDrawerOpen.value = false;
@@ -192,6 +222,8 @@ watch(
     () => editor.selectedBlockId,
     (id) => {
         if (id === null) return; // deselecting does not close it again
+        // On a phone the bar shows the block's short menu and the slide stays in sight: the sheet opens on request only (C2).
+        if (phone.value) return;
         // A finger still down means this selection may be the start of a drag: below 48rem,
         // opening the sheet right now hides the slides and the block bar and moves the stage
         // up into the space they leave – right under the finger that is dragging it (second
@@ -247,6 +279,24 @@ const drawerTitle = computed(() => {
     const index = editor.slide ? editor.slides.indexOf(editor.slide) : -1;
     return index < 0 ? t.editor.slide : t.editor.slideOf(index + 1, editor.slides.length);
 });
+
+/** The bar's way to the content of the chosen block (C5, C6): its first field, or all the settings where it has none. */
+function openContent(): void {
+    if (!phoneBar.value?.openFirst()) showAllSettings();
+}
+
+/** A long press on a block of a phone (C3): the "⋯" of the bar opens, once the bar has shown the block's menu. */
+async function openMore(): Promise<void> {
+    await nextTick();
+    phoneBar.value?.openMore();
+}
+
+/** "Alle Einstellungen" in the short menu (Plan.md 79, C1): the column opens, even when it was folded, and rolls to the block's settings. */
+function showAllSettings(): void {
+    if (desktop.value) desktopInspectorOpen.value = true;
+    else inspectorOpen.value = true;
+    void nextTick(() => root.value?.querySelector('[data-testid="block-inspector"]')?.scrollIntoView?.({ block: 'start' }));
+}
 
 /** The "…" menu below 48rem, after the one on a screen tile (Plan.md 44, M2). */
 const moreMenuOpen = ref(false);
@@ -429,6 +479,10 @@ function onKey(event: KeyboardEvent): void {
         if (event.key === 'Escape') moreMenuOpen.value = false;
         return;
     }
+    if (slidesSheetOpen.value) {
+        if (event.key === 'Escape') slidesSheetOpen.value = false;
+        return;
+    }
     // With a dialog open, keys belong to the dialog – Delete must not hit the block behind it.
     if (shortcutsOpen.value) {
         if (event.key === 'Escape') shortcutsOpen.value = false;
@@ -480,6 +534,10 @@ function onKey(event: KeyboardEvent): void {
     } else if (editor.block && (event.key === 'Delete' || event.key === 'Backspace')) {
         event.preventDefault();
         editor.removeBlock(editor.block.id);
+    } else if (event.key === 'Enter' && !mod && editor.block?.type === 'text' && !editor.block.locked && !editor.blockSheetOpen && !target?.closest('button, a, summary')) {
+        // Writes the chosen text on the stage (Plan.md 79, C4); the key must not reach the new field as a line break.
+        event.preventDefault();
+        editor.startTextEdit(editor.block.id);
     } else if (event.key === 'Escape') {
         editor.selectBlock(null);
         inspectorOpen.value = false;
@@ -503,6 +561,7 @@ function onKey(event: KeyboardEvent): void {
             height: `calc(100vh - ${top}px)`,
             '--editor-top': `${top}px`,
             '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}`,
+            '--d-phone-bar': phone && editor.block ? '112px' : '56px',
             '--stage-max': stageMax === null ? undefined : `${stageMax}px`,
         }"
     >
@@ -670,7 +729,7 @@ function onKey(event: KeyboardEvent): void {
                     </button>
                 </div>
             </div>
-            <SlideList :class="{ 'drawer-open': slidesDrawerOpen }" @click="closeSlidesDrawerOnPick" @collapse="collapseSlides" />
+            <SlideList v-if="!phone" :class="{ 'drawer-open': slidesDrawerOpen }" @click="closeSlidesDrawerOnPick" @collapse="collapseSlides" />
             <div class="stage-column">
                 <BlockPalette />
                 <!-- Floats over the middle of the stage instead of pushing it down; goes by itself (Plan.md 49). -->
@@ -681,7 +740,7 @@ function onKey(event: KeyboardEvent): void {
                         <Icon name="close" :size="16" />
                     </button>
                 </div>
-                <EditorStage />
+                <EditorStage @all-settings="showAllSettings" @open-content="openContent" @open-more="openMore" />
             </div>
             <!-- Below 48rem and upright above it this becomes a sheet at the bottom; otherwise a column beside the stage (Plan.md 44, M4; 45). -->
             <div class="tablet-rail tablet-rail--inspector">
@@ -704,14 +763,15 @@ function onKey(event: KeyboardEvent): void {
                 <div class="drawer-head">
                     <strong class="drawer-title" data-testid="inspector-drawer-title">{{ drawerTitle }}</strong>
                     <button
-                        v-tip="t.editor.collapse"
+                        v-tip="phone ? t.common.close : t.editor.collapse"
                         type="button"
                         class="d-btn d-btn--icon"
-                        :aria-label="t.editor.collapse"
-                        :data-testid="desktop ? 'desktop-inspector-collapse' : 'tablet-inspector-close'"
+                        :aria-label="phone ? t.common.close : t.editor.collapse"
+                        :data-testid="phone ? 'inspector-sheet-close' : desktop ? 'desktop-inspector-collapse' : 'tablet-inspector-close'"
                         @click="toggleInspectorColumn"
                     >
-                        <Icon name="chevron-down" :size="16" class="collapse-icon" />
+                        <Icon v-if="phone" name="close" :size="16" />
+                        <Icon v-else name="chevron-down" :size="16" class="collapse-icon" />
                     </button>
                 </div>
                 <button
@@ -726,6 +786,37 @@ function onKey(event: KeyboardEvent): void {
                     <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
                 </button>
                 <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :groups="groups" :homepages="homepages" :rooms="rooms" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" @pick-image="openLibrary" />
+            </div>
+        </div>
+
+        <!-- Phone: the bar at the bottom (C2); the open inspector sheet takes its place. -->
+        <PhoneBar
+            v-if="phone && editor.draft && !inspectorOpen"
+            ref="phoneBar"
+            @slides="slidesSheetOpen = true"
+            @edit-slide="inspectorOpen = true"
+            @all-settings="showAllSettings"
+        />
+        <div
+            v-if="phone && slidesSheetOpen"
+            class="d-dialog-backdrop slides-sheet-backdrop"
+            role="dialog"
+            aria-modal="true"
+            :aria-label="t.editor.slideList.title"
+            data-testid="slides-sheet"
+            @click.self="slidesSheetOpen = false"
+        >
+            <div class="slides-sheet-panel">
+                <span class="slides-sheet-grip" aria-hidden="true" />
+                <header class="slides-sheet-head">
+                    <h2>
+                        {{ t.editor.slideList.title }} <span class="slides-sheet-count">{{ editor.slides.length }}</span>
+                    </h2>
+                    <button class="d-btn d-btn--icon" type="button" :aria-label="t.common.close" data-testid="slides-sheet-close" @click="slidesSheetOpen = false">
+                        <Icon name="close" :size="16" />
+                    </button>
+                </header>
+                <SlideList sheet />
             </div>
         </div>
 
@@ -991,8 +1082,9 @@ function onKey(event: KeyboardEvent): void {
  * a tablet has the inspector as a column beside the stage instead.
  */
 @media (max-width: 48rem), (min-width: 48.0625rem) and (max-width: 75rem) and (orientation: portrait) {
+    /* Room for both rows of the bar, chosen block or not: the stage, standing in the middle, keeps its place when a block's row comes. */
     .editor {
-        padding-bottom: calc(56px + env(safe-area-inset-bottom));
+        padding-bottom: calc(112px + env(safe-area-inset-bottom));
     }
 
     /* Sheet: a 56 px bar, and the inspector itself only while open. */
@@ -1068,8 +1160,8 @@ function onKey(event: KeyboardEvent): void {
         min-height: calc(100dvh - var(--editor-top, 0px));
     }
     .columns {
-        /* The rows keep their own height where the editor is taller than its content (min-height above). */
-        align-content: start;
+        /* The rows keep their own height where the editor is taller than its content (min-height above); the stage stands in the middle of the room between the head and the bars (user, 2026-10-09). */
+        align-content: center;
         grid-template-columns: minmax(0, 1fr);
         column-gap: 0;
         padding: 0;
@@ -1083,6 +1175,10 @@ function onKey(event: KeyboardEvent): void {
         height: auto;
         aspect-ratio: var(--stage-aspect);
         max-height: 70vh;
+    }
+    /* Standing in the middle, the same air above as below – else the stage sits 8 px high. */
+    .editor:not(.sheet-open) .stage-column > :last-child {
+        margin-top: var(--d-space-2);
     }
 
     /* Header: back link loses its label, title and status stack, "…" replaces Vorschau/Player. */
@@ -1124,16 +1220,75 @@ function onKey(event: KeyboardEvent): void {
     .editor.sheet-open .stage-column > :last-child {
         max-height: var(--stage-max, 40vh);
     }
-    /*
-     * While the sheet is open, only the stage stands above it – the slides and the block bar
-     * are gone (second phone test, Plan.md 44): together with the sheet they left no room for
-     * the stage at all, exactly while a block on it is being edited. `.slide-list` is a child
-     * component's root, which carries this scope's attribute too (Vue's scoped CSS reaches a
-     * child's root node), so no `:deep()` is needed here.
-     */
-    .editor.sheet-open .slide-list,
-    .editor.sheet-open .block-palette {
+    /* Above the open sheet it stays on top, where showStageAboveSheet measured it. */
+    .editor.sheet-open .columns {
+        align-content: start;
+    }
+
+    /* The big sheet (C2): shut it is gone – the bar stands in its place – and open it has a head with the title and "Schließen" instead of the bar. */
+    .inspector-sheet:not(.open) {
         display: none;
+    }
+    .sheet-bar {
+        display: none;
+    }
+    .drawer-head {
+        display: flex;
+        flex: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        box-sizing: border-box;
+        height: 52px;
+        padding: 0 var(--d-space-3) 0 var(--d-space-4);
+    }
+    .drawer-title {
+        overflow: hidden;
+        font-weight: var(--d-weight-heading);
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+
+    /* The sheet of slides: from the bottom, over a backdrop, like the sheet of blocks. */
+    .slides-sheet-backdrop {
+        align-items: end;
+        padding: 0;
+    }
+    .slides-sheet-panel {
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        width: 100%;
+        max-height: 75vh;
+        padding-top: 8px;
+        padding-bottom: env(safe-area-inset-bottom);
+        border-radius: var(--d-radius-lg) var(--d-radius-lg) 0 0;
+        background: var(--d-surface);
+        box-shadow: var(--d-shadow);
+    }
+    .slides-sheet-grip {
+        align-self: center;
+        width: 36px;
+        height: 4px;
+        border-radius: 2px;
+        background: var(--d-interactive);
+    }
+    .slides-sheet-head {
+        display: flex;
+        flex: none;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--d-space-2) var(--d-space-3) var(--d-space-2) var(--d-space-4);
+    }
+    .slides-sheet-head h2 {
+        margin: 0;
+        font-size: 1.1em;
+        font-weight: var(--d-weight-heading);
+    }
+    .slides-sheet-count {
+        color: var(--d-text-muted);
+        font-size: var(--d-size-sm);
+        font-weight: var(--d-weight-normal);
     }
 }
 

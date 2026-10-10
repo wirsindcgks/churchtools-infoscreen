@@ -3,6 +3,7 @@
  * a name is a function. No library. The player never imports this file – what it shows lives in `player.ts`, and
  * what the store tells the designer in `repository.ts`.
  */
+import type { BlockType } from '../model/schema';
 
 /** The heading of the settings page for services, which the inspector names, too. */
 const SERVICES_TITLE = 'Dienste auf Bildschirmen';
@@ -168,6 +169,8 @@ export const t = {
         slide: 'Folie',
         slideNamed: (name: string) => `Folie: ${name}`,
         slideOf: (index: number, total: number) => `Folie ${index} von ${total}`,
+        /** The bar at the bottom of a phone (Plan.md 79, C2). */
+        phone: { editSlide: 'Folie bearbeiten' },
         blockNamed: (label: string) => `Baustein: ${label}`,
         discardChanges: 'Ungespeicherte Änderungen verwerfen?',
         linkedSavedOne: (name: string, where: string) => `Verknüpfte Folie ${name} gespeichert – gilt auch in ${where}.`,
@@ -194,6 +197,26 @@ export const t = {
             guidesTitle: 'Hilfslinien: Bausteine rasten ein; mit gedrückter Alt-Taste frei platzieren',
             gridOff: 'aus',
             insertBlock: 'Baustein einfügen',
+            searchBlock: 'Baustein suchen',
+            noBlockFound: 'Kein Baustein gefunden',
+            /** One sentence under each block in the "+ Baustein" sheet (Plan.md 79, C7); the sheet searches them, too. */
+            descriptions: {
+                text: 'Überschrift, Untertitel oder ein paar Zeilen',
+                image: 'Ein Bild aus der Mediathek',
+                shape: 'Eine farbige Fläche, etwa hinter einem Text',
+                clock: 'Uhrzeit oder Datum, immer aktuell',
+                'appointment-list': 'Termine aus euren Kalendern als Liste',
+                'next-appointment': 'Der nächste Termin groß, auf Wunsch mit Bild',
+                'church-header': 'Name und Logo eurer Gemeinde',
+                web: 'Eine Webseite oder ein eingebetteter Inhalt',
+                qr: 'Ein QR-Code, etwa zu einer Anmeldung',
+                countdown: 'Zählt bis zum nächsten Termin herunter',
+                posts: 'Beiträge aus einer Gruppe in ChurchTools',
+                groups: 'Gruppen einer Gruppen-Homepage, etwa Hauskreise',
+                slideshow: 'Mehrere Bilder nacheinander',
+                rooms: 'Wer heute welchen Raum belegt',
+                video: 'Ein Video aus der Mediathek',
+            } satisfies Record<BlockType, string>,
             paste: 'Einfügen',
             pasteWhat: (label: string) => `${label} einfügen`,
         },
@@ -203,6 +226,11 @@ export const t = {
             empty: 'Diese Präsentation hat noch keine Folie.',
             emptySlide: 'Diese Folie ist noch leer.',
             size: (width: number, height: number) => `${width} × ${height}`,
+            /** Writing text on the stage (Plan.md 79, C4): the label of the field and the pale hint in an empty text. */
+            textEdit: 'Text bearbeiten',
+            textPlaceholder: 'Text eingeben',
+            /** The button that brings the whole slide back after zooming (C3). */
+            zoomReset: 'Ganze Folie',
         },
         previewDialog: {
             label: 'Vorschau der Präsentation',
@@ -251,6 +279,43 @@ export const t = {
             alreadyHere: 'schon hier',
             link: (n: number) => (n === 1 ? '1 Folie verknüpfen' : `${n} Folien verknüpfen`),
             take: (n: number) => (n === 1 ? '1 Folie übernehmen' : `${n} Folien übernehmen`),
+        },
+    },
+
+    /** The short menu above the chosen block (Plan.md 79, C1) and what an empty block says (C6). */
+    quick: {
+        label: (name: string) => `Kurzmenü: ${name}`,
+        /** The face of a chip that stands for a whole list: "Kalender · 3". */
+        count: (label: string, n: number) => `${label} · ${n}`,
+        /** The name of a chip for a screen reader: the field and what it holds now. */
+        chip: (label: string, face: string) => `${label}: ${face}`,
+        /** The short words of a switch in the menu, where the full label is too long. */
+        short: { name: 'Name', logo: 'Logo', title: 'Titel', image: 'Bild' },
+        unlock: 'Entsperren',
+        /** The right button of the phone bar's upper row: lets go of the block. */
+        deselect: 'Auswahl aufheben',
+        /** In "⋯": chooses the block that lies under the chosen one (C3). */
+        selectBelow: 'Darunterliegenden wählen',
+        /** In "⋯" of the phone bar: starts the writing on the stage (C4). */
+        editText: 'Text bearbeiten',
+        /** The menu a long press on the empty stage opens (C3). */
+        pasteHere: 'Einfügen',
+        /** Ends the writing on the stage. */
+        done: 'Fertig',
+        allSettings: 'Alle Einstellungen',
+        copy: 'Kopieren',
+        paste: 'Einfügen',
+        layers: { front: 'Ganz nach vorn', forward: 'Nach vorn', backward: 'Nach hinten', back: 'Ganz nach hinten' },
+        /** The button in the middle of a block that still lacks its content. */
+        empty: {
+            image: 'Bild wählen',
+            video: 'Video wählen',
+            slideshow: 'Bilder hinzufügen',
+            web: 'Adresse eingeben',
+            qr: 'Inhalt eingeben',
+            posts: 'Gruppen wählen',
+            groups: 'Homepage wählen',
+            rooms: 'Räume wählen',
         },
     },
 
@@ -444,6 +509,8 @@ export const t = {
         allFonts: 'Alle Schriften',
         fontSize: 'Größe',
         fontWeight: 'Stärke',
+        textLevel: 'Textstufe',
+        textLevels: { heading: 'Überschrift', subtitle: 'Untertitel', body: 'Text' },
         weights: { normal: 'Normal', semibold: 'Halbfett', bold: 'Fett' },
         uppercase: 'Großbuchstaben',
         align: 'Ausrichtung',
@@ -619,7 +686,7 @@ export const t = {
         all: 'Alle Zeitpläne',
         count: (n: number) => `${n} ${n === 1 ? 'Zeitplan' : 'Zeitpläne'}`,
         intro:
-            'Welche Präsentation auf welchem Bildschirm wann läuft. Passt keine Regel, läuft die Standard-Präsentation; passen mehrere, ' +
+            'Welche Präsentation auf welchem Bildschirm wann läuft. Jeder Bildschirm hat genau einen Zeitplan; er entsteht von selbst, sobald der Bildschirm angelegt wird. Passt keine Regel, läuft die Standard-Präsentation; passen mehrere, ' +
             'gilt die obere. Ein Klick auf eine Zeile zeigt ihre Präsentation, ein Klick auf das Bild öffnet den Zeitplan.',
         searchPlaceholder: 'Suchen nach Bildschirm oder Präsentation …',
         searchLabel: 'Zeitpläne durchsuchen',

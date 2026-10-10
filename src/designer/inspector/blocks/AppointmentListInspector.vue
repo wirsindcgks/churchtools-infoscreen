@@ -18,9 +18,12 @@ import ToggleField from '../fields/ToggleField.vue';
 import FontSection from '../FontSection.vue';
 import { appointmentListTiles } from '../layouts';
 import { useBlockEdit } from '../use-block';
+import { useInspectorMode } from '../mode';
 import AppointmentExtras from './AppointmentExtras.vue';
 
 const props = defineProps<{ block: Extract<Block, { type: 'appointment-list' }> }>();
+/** Only fields stand in the short menu; a hint or a line of text belongs to the inspector. */
+const mode = useInspectorMode();
 const editor = useEditorStore();
 /** The preview's stage context: paged lists report their page count there. */
 const stage = useStageContext();
@@ -86,7 +89,7 @@ const pageHint = computed(() => {
     />
     <!-- Plan.md, 23: every appointment of the horizon, page by page. -->
     <ToggleField :model-value="block.showAll ?? false" :label="t.inspector.showAll" testid="show-all" @update:model-value="setBlock({ showAll: $event })" />
-    <p v-if="block.showAll" class="hint" data-testid="page-hint">{{ pageHint }}</p>
+    <p v-if="mode === 'full' && block.showAll" class="hint" data-testid="page-hint">{{ pageHint }}</p>
     <AppointmentExtras :block="block" />
     <FontSection :block="block" />
 </template>

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openSection } from './helpers';
+import { expectSlides, openInspector, openSection } from './helpers';
 
 // Linked slides (Plan.md 49): the very same slide in several playlists, in demo mode.
 test.use({ viewport: { width: 1440, height: 900 } });
@@ -14,13 +14,13 @@ async function duplicateFirst(page: Page, linked: boolean): Promise<void> {
     await page.getByTestId(linked ? 'duplicate-linked' : 'duplicate-copy').check();
     await page.getByTestId('duplicate-confirm').click();
     await expect(page).toHaveURL(/playlists\/[\w-]+$/);
-    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await expectSlides(page);
 }
 
 async function openPlaylist(page: Page, index: number): Promise<void> {
     await page.goto('playlists');
     await page.getByTestId('playlist-card').nth(index).getByTestId('open-playlist').click();
-    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await expectSlides(page);
 }
 
 const slideName = (page: Page) => page.getByTestId('slide-inspector').locator('input[type=text]').first();
@@ -158,7 +158,7 @@ for (const size of [
 
         await page.setViewportSize(size);
         await openPlaylist(page, 0);
-        if (size.width === 390) await page.getByTestId('inspector-sheet-toggle').click();
+        if (size.width === 390) await openInspector(page);
         else if (size.width === 1180) await page.getByTestId('tablet-inspector-toggle').click();
         const row = page.getByTestId('slide-linked');
         await expect(row).toBeVisible();

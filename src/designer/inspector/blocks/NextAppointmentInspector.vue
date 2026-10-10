@@ -35,7 +35,7 @@ const layouts = computed(() => nextAppointmentTiles(props.block, themeOf(stage))
         testid="next-layout"
         @update:model-value="setBlock({ layout: $event || undefined })"
     />
-    <ToggleField quick :model-value="block.showImage" :label="t.inspector.showAppointmentImage" testid="show-image" @update:model-value="setBlock({ showImage: $event })" />
+    <ToggleField quick :model-value="block.showImage" :label="t.inspector.showAppointmentImage" :quick-label="t.quick.short.image" testid="show-image" @update:model-value="setBlock({ showImage: $event })" />
     <AppointmentExtras :block="block" />
     <FontSection :block="block" />
 </template>

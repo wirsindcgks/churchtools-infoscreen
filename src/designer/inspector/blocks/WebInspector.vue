@@ -7,8 +7,11 @@ import { embedAddress, webRefusal, withScheme } from '../../../player/web';
 import SelectField from '../fields/SelectField.vue';
 import TextField from '../fields/TextField.vue';
 import { useBlockEdit } from '../use-block';
+import { useInspectorMode } from '../mode';
 
 const props = defineProps<{ block: Extract<Block, { type: 'web' }> }>();
+/** Only fields stand in the short menu; a hint or a line of text belongs to the inspector. */
+const mode = useInspectorMode();
 const { setBlock } = useBlockEdit(() => props.block);
 
 const zooms = [
@@ -57,8 +60,8 @@ function setUrl(pasted: string): void {
     >
         <template #info>{{ t.inspector.webInfo }}</template>
     </TextField>
-    <p v-if="embedProblemBlock === block.id" class="hint" data-testid="web-problem">{{ t.inspector.webNoAddressInCode }}</p>
-    <p v-else-if="webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
+    <p v-if="mode === 'full' && embedProblemBlock === block.id" class="hint" data-testid="web-problem">{{ t.inspector.webNoAddressInCode }}</p>
+    <p v-else-if="mode === 'full' && webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
     <SelectField quick :model-value="block.zoom" :options="zooms" :label="t.inspector.webSize" testid="web-zoom" @update:model-value="setBlock({ zoom: Number($event) })" />
 </template>
 

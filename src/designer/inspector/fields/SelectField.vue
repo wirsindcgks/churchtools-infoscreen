@@ -3,7 +3,7 @@
  * A choice from a list, for more than four possibilities (Plan.md 79, B2); for two to four there are `SegmentField` and
  * `TileField`. The label stands above, because an option is often longer than the room beside a label; `inline` puts it left.
  */
-import { useId } from 'vue';
+import { computed, useId } from 'vue';
 import FieldRow from './FieldRow.vue';
 
 export interface SelectOption {
@@ -17,6 +17,8 @@ const props = defineProps<{ modelValue: string | number | undefined; options: re
 const emit = defineEmits<{ 'update:modelValue': [string | number] }>();
 defineSlots<{ info?(): unknown }>();
 const id = useId();
+/** What the chip of the short menu shows: the chosen option's text. */
+const face = computed(() => props.options.find((o) => String(o.value) === String(props.modelValue))?.label);
 
 /** The option's own value, number or string as it was given. */
 function onChange(raw: string): void {
@@ -26,7 +28,7 @@ function onChange(raw: string): void {
 </script>
 
 <template>
-    <FieldRow :label="label" :for="id" :stacked="!inline" :quick="quick">
+    <FieldRow :label="label" :for="id" :stacked="!inline" :quick="quick" :face="face">
         <select :id="id" :value="modelValue" :disabled="disabled" :data-testid="testid" @change="onChange(($event.target as HTMLSelectElement).value)">
             <option v-for="option in options" :key="option.value" :value="option.value" :style="option.style">{{ option.label }}</option>
         </select>

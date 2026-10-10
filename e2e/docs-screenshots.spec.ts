@@ -7,7 +7,7 @@
  * never reaches the instance. Skipped in the normal test run.
  */
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { addBlock, choose, openSection } from './helpers';
+import { addBlock, choose, openInspector, openSection, openSlides } from './helpers';
 
 const OUT = 'docs/bilder';
 
@@ -396,7 +396,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await page.getByTestId('create').click();
     await expect(page.getByTestId('slide-item')).toHaveCount(1);
     await addBlock(page, 'image');
-    await page.getByTestId('pick-image').click();
+    await page.getByTestId('block-inspector').getByTestId('pick-image').click();
     await page.getByTestId('media-library').locator('button.pick').first().click();
     await expect(page.getByTestId('media-library')).toBeHidden();
     await frame(page, { x: 0, y: 160, width: 1080, height: 608 });
@@ -436,7 +436,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await page.getByTestId('add-slide').click();
     await addBlock(page, 'slideshow');
     await frame(page, { x: 160, y: 140, width: 1600, height: 800 });
-    await page.getByTestId('pick-slideshow').click();
+    await page.getByTestId('block-inspector').getByTestId('pick-slideshow').click();
     const library = page.getByTestId('media-library');
     for (const name of ['jugendtreff', 'fruehstueck', 'konzertabend']) {
         await library.getByTestId('media-item').filter({ hasText: name }).locator('button.pick').click();
@@ -534,10 +534,10 @@ test.describe('on a phone', () => {
         await fakeChurch(page);
         await page.goto('./');
         await page.getByTestId('screen-card').filter({ hasText: 'Foyer' }).getByTestId('open-editor').click();
-        await expect(page.getByTestId('slide-item')).toHaveCount(3);
-        await page.getByTestId('slide-item').nth(2).click(); // the appointments
+        const sh = await openSlides(page);
+        await sh.getByTestId('slide-item').nth(2).click(); // the appointments
         await page.getByTestId('frame-appointment-list').first().click();
-        await expect(page.getByTestId('inspector-sheet')).toHaveClass(/open/);
+        await openInspector(page);
         await shoot(page, 'handy');
     });
 });

@@ -2,20 +2,26 @@
 /**
  * "+ Baustein" above the stage, on every width (Plan.md 47): the row of twelve
  * buttons is gone – it took two lines and was the busiest spot of the editor.
- * The button opens a sheet with all blocks, alphabetical, as symbol and name:
+ * The button opens a sheet with all blocks, alphabetical, as symbol, name and a sentence, with a search above:
  * at the bottom below 48rem, a dialog in the middle above (Plan.md 44, M3; 45).
  * The grid choice sits beside it – it is about the stage, too.
+ * On a phone the bar above the stage is gone (Plan.md 79, C2): "+ Baustein", "Einfügen" and the guides live in the bar at
+ * the bottom (`PhoneBar.vue`); only the sheet stays here.
  */
-import { computed, onBeforeUnmount, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
 import type { BlockType } from '../model/schema';
 import { useEditorStore } from './editor-store';
+import { searchBlocks } from './block-search';
 import Icon from './Icon.vue';
 import { BLOCK_ICONS, BLOCK_LABELS, PALETTE } from './ops';
+import SearchField from './SearchField.vue';
 import { KEYS, withKeys } from './shortcuts';
 import { GRID_SIZES } from './snap';
+import { usePhone } from './usePhone';
 
 const editor = useEditorStore();
+const phone = usePhone();
 
 /** The sheet's state lives in the store: the button on an empty slide opens it, too (Plan.md 79, A7). */
 const sheetOpen = computed(() => editor.blockSheetOpen);
@@ -45,9 +51,19 @@ function openSheet(): void {
 function closeSheet(): void {
     editor.blockSheetOpen = false;
 }
-watch(sheetOpen, (open) => {
-    if (open) document.addEventListener('keydown', closeOnEscape);
-    else document.removeEventListener('keydown', closeOnEscape);
+
+/** The search of the sheet: empty on every opening; the field has the focus at a desktop, not on a phone (the keyboard would jump up). */
+const query = ref('');
+const sheet = ref<HTMLElement | null>(null);
+const found = computed(() => new Set(searchBlocks(query.value)));
+const shown = computed(() => PALETTE.filter(([type]) => found.value.has(type)));
+watch(sheetOpen, async (open) => {
+    if (open) {
+        document.addEventListener('keydown', closeOnEscape);
+        query.value = '';
+        await nextTick();
+        if (window.matchMedia('(min-width: 48.0625rem)').matches) sheet.value?.querySelector('input')?.focus();
+    } else document.removeEventListener('keydown', closeOnEscape);
 });
 function addFromSheet(type: BlockType): void {
     editor.addBlock(type);
@@ -59,6 +75,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
 <template>
     <div class="block-palette">
         <button
+            v-if="!phone"
             class="d-btn d-btn--create"
             type="button"
             :aria-label="t.editor.palette.addBlock"
@@ -69,7 +86,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
             <Icon name="plus" :size="16" /> <span class="create-label">{{ t.editor.palette.addBlock }}</span>
         </button>
         <button
-            v-if="editor.clipboard.length"
+            v-if="!phone && editor.clipboard.length"
             class="d-btn"
             type="button"
             :disabled="!editor.slide"
@@ -80,7 +97,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
             {{ t.editor.palette.paste }}
         </button>
         <!-- The symbol alone was not recognised (Plan.md 47): the word stays beside it. -->
-        <label class="grid-select" :title="t.editor.palette.guidesTitle">
+        <label v-if="!phone" class="grid-select" :title="t.editor.palette.guidesTitle">
             <Icon name="grid" :size="16" />
             <span class="grid-label">{{ t.editor.palette.guides }}</span>
             <select
@@ -102,16 +119,17 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
             data-testid="block-sheet"
             @click.self="closeSheet"
         >
-            <div class="block-sheet-panel">
+            <div ref="sheet" class="block-sheet-panel">
                 <header class="sheet-head">
                     <h2>{{ t.editor.palette.insertBlock }}</h2>
                     <button class="d-btn d-btn--icon" type="button" :aria-label="t.common.close" @click="closeSheet">
                         <Icon name="close" :size="16" />
                     </button>
                 </header>
+                <SearchField v-model="query" class="sheet-search" :placeholder="t.editor.palette.searchBlock" :label="t.editor.palette.searchBlock" testid="block-search" />
                 <div class="sheet-grid">
                     <button
-                        v-for="[type, label] in PALETTE"
+                        v-for="[type, label] in shown"
                         :key="type"
                         class="sheet-block"
                         type="button"
@@ -120,9 +138,13 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
                         @click="addFromSheet(type)"
                     >
                         <Icon :name="BLOCK_ICONS[type]" :size="24" />
-                        <span>{{ label }}</span>
+                        <span class="sheet-text">
+                            <span class="sheet-name">{{ label }}</span>
+                            <span class="sheet-description">{{ t.editor.palette.descriptions[type] }}</span>
+                        </span>
                     </button>
                 </div>
+                <p v-if="!shown.length" class="sheet-empty" data-testid="block-search-empty">{{ t.editor.palette.noBlockFound }}</p>
             </div>
         </div>
     </div>
@@ -165,25 +187,26 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
     margin: 0;
     font-size: 1.1em;
 }
+.sheet-search {
+    margin-bottom: 12px;
+}
 .sheet-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: 1fr;
     gap: 8px;
 }
 .sheet-block {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 4px;
-    min-height: 64px;
-    padding: 8px;
+    gap: 12px;
+    min-height: 44px;
+    padding: 8px 12px;
     border: 1px solid var(--d-divider);
     border-radius: var(--d-radius);
     background: var(--d-surface);
     color: var(--d-text);
     font: inherit;
-    font-size: var(--d-size-sm);
+    text-align: left;
     cursor: pointer;
 }
 .sheet-block:hover:not(:disabled) {
@@ -195,7 +218,26 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
     cursor: default;
 }
 .sheet-block :deep(.d-icon) {
+    flex: none;
     color: var(--d-text-muted);
+}
+.sheet-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.sheet-name {
+    font-weight: var(--d-weight-button);
+}
+.sheet-description {
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+    font-weight: var(--d-weight-normal);
+}
+.sheet-empty {
+    margin: 16px 0 8px;
+    color: var(--d-text-muted);
+    text-align: center;
 }
 /* Above 48rem the bar is as tall as the heads of the columns beside it, so their rules meet (Plan.md 47). */
 @media (min-width: 48.0625rem) {
@@ -208,6 +250,9 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
 }
 /* Below 48rem the backdrop of the "+ Baustein" sheet sits at the bottom, not centred. */
 @media (max-width: 48rem) {
+    .block-palette {
+        padding: 0;
+    }
     .block-sheet-backdrop {
         align-items: end;
     }
@@ -222,11 +267,11 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
         box-shadow: var(--d-shadow);
     }
 }
-/* Above 48rem the sheet is a dialog in the middle (Plan.md 45), sized like `.d-dialog`; on a desktop with four columns (Plan.md 47). */
+/* Above 48rem the sheet is a dialog in the middle (Plan.md 45), wide enough for two columns of blocks with a sentence each (Plan.md 79, C7). */
 @media (min-width: 48.0625rem) {
     .block-sheet-panel {
         box-sizing: border-box;
-        width: min(460px, 100%);
+        width: min(720px, 100%);
         max-height: calc(100vh - 32px);
         overflow-y: auto;
         padding: 16px;
@@ -234,13 +279,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
         background: var(--d-surface);
         box-shadow: var(--d-shadow);
     }
-}
-@media (min-width: 75.0625rem) {
-    .block-sheet-panel {
-        width: min(600px, 100%);
-    }
     .sheet-grid {
-        grid-template-columns: repeat(4, 1fr);
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 </style>
