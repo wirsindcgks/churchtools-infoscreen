@@ -18,5 +18,5 @@ const formats = [
 
 <template>
     <TileField quick :model-value="block.format" :options="formats" :label="t.inspector.appearance" testid="clock-format" @update:model-value="setBlock({ format: $event })" />
-    <FontSection :block="block" />
+    <FontSection :block="block" effects="shadow" />
 </template>

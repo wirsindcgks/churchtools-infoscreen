@@ -4,6 +4,14 @@ import { fontStack } from './fonts';
 import { GROUP_COLORS } from './palette';
 import { LOCALE, tp } from '../i18n/player';
 
+/** Shadows of a text (Plan.md F3): the dark kind under light text, a light glow around dark text; `a` is the strength. */
+const TEXT_SHADOWS = {
+    soft: (rgb: string) => `0 2px 8px rgba(${rgb}, 0.5)`,
+    strong: (rgb: string) => `0 3px 6px rgba(${rgb}, 0.8), 0 0 2px rgba(${rgb}, 0.8)`,
+} as const;
+const LINE_HEIGHTS = { tight: '1.05', loose: '1.6' } as const;
+const LETTER_SPACINGS = { tight: '-0.02em', wide: '0.08em' } as const;
+
 export function textStyle(style: TextStyle): Record<string, string> {
     return {
         fontFamily: fontStack(style.fontFamily),
@@ -12,6 +20,11 @@ export function textStyle(style: TextStyle): Record<string, string> {
         color: style.color,
         textAlign: style.align,
         ...(style.uppercase === true && { textTransform: 'uppercase' }),
+        ...(style.lineHeight && style.lineHeight !== 'normal' && { lineHeight: LINE_HEIGHTS[style.lineHeight] }),
+        ...(style.letterSpacing && style.letterSpacing !== 'normal' && { letterSpacing: LETTER_SPACINGS[style.letterSpacing] }),
+        ...(style.shadow && style.shadow !== 'none' && {
+            textShadow: TEXT_SHADOWS[style.shadow](textOn(style.color) === '#111827' ? '0, 0, 0' : '255, 255, 255'),
+        }),
     };
 }
 
@@ -124,7 +137,7 @@ export function tint(color: string, percent: number): string {
 let canvas: CanvasRenderingContext2D | null | undefined;
 
 /** Resolves any CSS colour to `#rrggbb` through a canvas; without canvas (jsdom) only black and white are known. */
-function toHex(color: string): string | null {
+export function toHex(color: string): string | null {
     if (canvas === undefined) {
         try {
             canvas = typeof document === 'undefined' ? null : document.createElement('canvas').getContext('2d');
