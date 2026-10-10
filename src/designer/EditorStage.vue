@@ -18,7 +18,7 @@ import { neighbourGaps, pairGaps, sizeLabelPlace, type Measure } from './measure
 import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, boundingBox, clampFrame } from './ops';
 import QuickMenu from './QuickMenu.vue';
 import { cropPan, NO_CROP, type Crop } from './crop';
-import { handleReach, outerFrame, resizeRotated, snapAngle } from './rotate';
+import { handleBelow, handleReach, outerFrame, resizeRotated, snapAngle } from './rotate';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 import { clampPan, viewOnto, WHOLE, zoomAt, zoomedFit, type View } from './stage-zoom';
 
@@ -512,13 +512,21 @@ function tight(b: Block): boolean {
 function rotateLift(b: Block): number {
     return tight(b) ? 62 : 28;
 }
+/** Seen, the rotate handle is 12 screen pixels wide, 16 where a finger is the pointer. */
+const rotateRadius = (): number => (coarse.value ? 8 : 6);
+/** Where the rotate handle would leave the stage above the block, it stands below it (the stage clips). */
+function rotateBelow(b: Block): boolean {
+    const scale = fit.value.scale;
+    return scale > 0 && handleBelow(b, rotateLift(b) / scale, rotateRadius() / scale, editor.stage);
+}
 /** How far the rotate handle of the one chosen block reaches past its box: the short menu keeps clear of it (F1). */
 const quickClear = computed(() => {
     const [b] = quickBlocks.value;
     if (quickBlocks.value.length !== 1 || !b || b.locked) return { above: 0, below: 0 };
-    // Seen, the handle is 12 screen pixels wide, 16 where a finger is the pointer.
     const f = hostFrame(b);
-    return handleReach({ x: f.left, y: f.top, width: f.width, height: f.height, rotation: b.rotation }, rotateLift(b), coarse.value ? 8 : 6);
+    // Below the block the handle stands where it would stand above a block turned half round.
+    const rotation = (b.rotation ?? 0) + (rotateBelow(b) ? 180 : 0);
+    return handleReach({ x: f.left, y: f.top, width: f.width, height: f.height, rotation }, rotateLift(b), rotateRadius());
 });
 
 /** Where a pointer is in the host, in host pixels. */
@@ -1016,6 +1024,7 @@ function onEmptyAction(b: Block): void {
                         />
                         <span
                             class="rotate-handle"
+                            :class="{ 'rotate-handle--below': rotateBelow(block) }"
                             :title="t.editor.stage.rotateHandle"
                             data-testid="handle-rotate"
                             @pointerdown="startTurn($event, block)"
@@ -1493,6 +1502,14 @@ function onEmptyAction(b: Block): void {
     height: calc(var(--lift) - var(--handle) / 2);
     transform: translateX(-50%);
     background: rgb(59, 130, 246);
+}
+.rotate-handle--below {
+    top: 100%;
+    margin-top: calc(var(--handle) / -2 + var(--lift));
+}
+.rotate-handle--below::after {
+    top: auto;
+    bottom: 100%;
 }
 /* A fingertip needs a bigger grip than a mouse pointer – but the grip is the hit area below; seen, 16 screen pixels are enough (user at the phone, 2026-10-09: 24 were too big). */
 @media (pointer: coarse) {
