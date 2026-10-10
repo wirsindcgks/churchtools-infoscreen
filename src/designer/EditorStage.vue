@@ -18,7 +18,7 @@ import { neighbourGaps, pairGaps, sizeLabelPlace, type Measure } from './measure
 import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, boundingBox, clampFrame } from './ops';
 import QuickMenu from './QuickMenu.vue';
 import { cropPan, NO_CROP, type Crop } from './crop';
-import { handleBelow, handleReach, outerFrame, resizeRotated, snapAngle } from './rotate';
+import { handleAbove, handleReach, outerFrame, resizeRotated, snapAngle } from './rotate';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 import { clampPan, viewOnto, WHOLE, zoomAt, zoomedFit, type View } from './stage-zoom';
 
@@ -508,16 +508,16 @@ function tight(b: Block): boolean {
     return coarse.value && handlesOutside({ width: b.width * fit.value.scale, height: b.height * fit.value.scale });
 }
 
-/** The middle of the rotate handle stands this many screen pixels above the block – further where the handles stand outside. */
+/** The middle of the rotate handle stands this many screen pixels below the block – further where the handles stand outside. */
 function rotateLift(b: Block): number {
     return tight(b) ? 62 : 28;
 }
-/** Seen, the rotate handle is 12 screen pixels wide, 16 where a finger is the pointer. */
-const rotateRadius = (): number => (coarse.value ? 8 : 6);
-/** Where the rotate handle would leave the stage above the block, it stands below it (the stage clips). */
-function rotateBelow(b: Block): boolean {
+/** Seen, the rotate handle is 18 screen pixels wide, 22 where a finger is the pointer. */
+const rotateRadius = (): number => (coarse.value ? 11 : 9);
+/** Where the rotate handle would leave the stage below the block, it stands above it (the stage clips). */
+function rotateAbove(b: Block): boolean {
     const scale = fit.value.scale;
-    return scale > 0 && handleBelow(b, rotateLift(b) / scale, rotateRadius() / scale, editor.stage);
+    return scale > 0 && handleAbove(b, rotateLift(b) / scale, rotateRadius() / scale, editor.stage);
 }
 /** How far the rotate handle of the one chosen block reaches past its box: the short menu keeps clear of it (F1). */
 const quickClear = computed(() => {
@@ -525,7 +525,7 @@ const quickClear = computed(() => {
     if (quickBlocks.value.length !== 1 || !b || b.locked) return { above: 0, below: 0 };
     const f = hostFrame(b);
     // Below the block the handle stands where it would stand above a block turned half round.
-    const rotation = (b.rotation ?? 0) + (rotateBelow(b) ? 180 : 0);
+    const rotation = (b.rotation ?? 0) + (rotateAbove(b) ? 0 : 180);
     return handleReach({ x: f.left, y: f.top, width: f.width, height: f.height, rotation }, rotateLift(b), rotateRadius());
 });
 
@@ -986,6 +986,7 @@ function onEmptyAction(b: Block): void {
                         transform: block.rotation ? `rotate(${block.rotation}deg)` : undefined,
                         '--handle': `${12 / fit.scale}px`,
                         '--lift': `${rotateLift(block) / fit.scale}px`,
+                        '--turn': `${(2 * rotateRadius()) / fit.scale}px`,
                         '--line': `${1.5 / fit.scale}px`,
                     }"
                     :title="block.locked ? t.editor.stage.lockedTitle(BLOCK_LABELS[block.type]) : undefined"
@@ -1024,14 +1025,16 @@ function onEmptyAction(b: Block): void {
                         />
                         <span
                             class="rotate-handle"
-                            :class="{ 'rotate-handle--below': rotateBelow(block) }"
+                            :class="{ 'rotate-handle--above': rotateAbove(block) }"
                             :title="t.editor.stage.rotateHandle"
                             data-testid="handle-rotate"
                             @pointerdown="startTurn($event, block)"
                             @pointermove="moveTurn"
                             @pointerup="endTurn"
                             @pointercancel="endTurn"
-                        />
+                        >
+                            <Icon name="rotate" />
+                        </span>
                     </template>
                 </div>
                 <div
@@ -1476,40 +1479,33 @@ function onEmptyAction(b: Block): void {
         background: transparent;
     }
 }
-/* `--lift` comes from the frame (rotateLift), so the short menu knows it too. */
+/* `--lift` and `--turn` come from the frame (rotateLift, rotateRadius), so the short menu knows them too. A turning
+   arrow on a white disc below the block (user, 2026-10-10), readable on any background. */
 .rotate-handle {
     position: absolute;
     left: 50%;
-    top: 0;
-    width: var(--handle);
-    height: var(--handle);
-    margin-left: calc(var(--handle) / -2);
-    margin-top: calc(var(--handle) / -2 - var(--lift));
-    box-sizing: border-box;
-    border: var(--line) solid rgb(59, 130, 246);
+    top: 100%;
+    display: grid;
+    place-items: center;
+    width: var(--turn);
+    height: var(--turn);
+    margin-left: calc(var(--turn) / -2);
+    margin-top: calc(var(--turn) / -2 + var(--lift));
     border-radius: 50%;
     background: #fff;
+    box-shadow: 0 0 0 var(--line) rgba(59, 130, 246, 0.35), 0 calc(var(--line) * 2) calc(var(--line) * 4) rgba(15, 23, 42, 0.3);
+    color: rgb(59, 130, 246);
     cursor: grab;
     touch-action: none;
 }
-/* The short line from the handle down to the frame. */
-.rotate-handle::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: 100%;
-    width: var(--line);
-    height: calc(var(--lift) - var(--handle) / 2);
-    transform: translateX(-50%);
-    background: rgb(59, 130, 246);
+.rotate-handle--above {
+    top: 0;
+    margin-top: calc(var(--turn) / -2 - var(--lift));
 }
-.rotate-handle--below {
-    top: 100%;
-    margin-top: calc(var(--handle) / -2 + var(--lift));
-}
-.rotate-handle--below::after {
-    top: auto;
-    bottom: 100%;
+.rotate-handle :deep(svg) {
+    width: 70%;
+    height: 70%;
+    pointer-events: none;
 }
 /* A fingertip needs a bigger grip than a mouse pointer – but the grip is the hit area below; seen, 16 screen pixels are enough (user at the phone, 2026-10-09: 24 were too big). */
 @media (pointer: coarse) {
@@ -1519,15 +1515,6 @@ function onEmptyAction(b: Block): void {
         margin: calc(var(--handle) * -2 / 3);
     }
     /* The area that catches a fingertip: 44 × 44 screen pixels around the middle of the handle. */
-    .rotate-handle {
-        width: calc(var(--handle) * 4 / 3);
-        height: calc(var(--handle) * 4 / 3);
-        margin-left: calc(var(--handle) * -2 / 3);
-        margin-top: calc(var(--handle) * -2 / 3 - var(--lift));
-    }
-    .rotate-handle::after {
-        height: calc(var(--lift) - var(--handle) * 2 / 3);
-    }
     .handle::before,
     .rotate-handle::before {
         content: '';

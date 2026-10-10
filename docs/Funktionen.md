@@ -79,8 +79,8 @@ noch nicht „Rechte aktualisieren" geklickt hat, geht jede Änderung mit „Ver
 Fernseher; der Editor sagt das.
 
 **Formen, Linien, Drehen:** Eine Fläche ist ein Rechteck mit runden Ecken oder eine Ellipse, auf Wunsch mit Rand. Die
-Linie ist durchgezogen oder gestrichelt und hat Griffe nur an ihren Enden. Jeder Baustein dreht sich am runden Griff
-über seinem Rahmen; er rastet bei 0°, 45°, 90° … ein, mit Umschalt dreht er frei. Genaue Winkel und die **Deckkraft**
+Linie ist durchgezogen oder gestrichelt und hat Griffe nur an ihren Enden. Jeder Baustein dreht sich am Drehpfeil
+unter seinem Rahmen (am unteren Rand der Folie steht er darüber); er rastet bei 0°, 45°, 90° … ein, mit Umschalt dreht er frei. Genaue Winkel und die **Deckkraft**
 stehen im Inspektor unter „Drehung und Deckkraft“, „Drehen zurücksetzen“ im „⋯“ des Kurzmenüs.
 
 **Bilder gestalten:** Ein Doppelklick auf ein Bild öffnet den **Ausschnitt** – das Bild im Rahmen verschieben, mit dem

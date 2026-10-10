@@ -87,11 +87,11 @@ export function handleReach(frame: RotatedFrame, lift: number, radius: number): 
 }
 
 /**
- * Whether the rotate handle goes below its block: the stage clips what reaches past its edge, so where the handle's place
- * above the block lies outside the stage and the place below does not, it moves there (user at the iPad, 2026-10-10).
- * All in stage pixels; `lift` and `radius` as in handleReach.
+ * Whether the rotate handle goes above its block. It stands below it (user, 2026-10-10: below, not above the middle);
+ * the stage clips what reaches past its edge, so where that place lies outside the stage and the one above does not, it
+ * moves there. All in stage pixels; `lift` and `radius` as in handleReach, which measures the handle above.
  */
-export function handleBelow(frame: RotatedFrame, lift: number, radius: number, stage: { width: number; height: number }): boolean {
+export function handleAbove(frame: RotatedFrame, lift: number, radius: number, stage: { width: number; height: number }): boolean {
     const a = (frame.rotation ?? 0) * RAD;
     const reach = frame.height / 2 + lift;
     const cx = frame.x + frame.width / 2;
@@ -101,5 +101,5 @@ export function handleBelow(frame: RotatedFrame, lift: number, radius: number, s
         const y = cy - side * reach * Math.cos(a);
         return x >= radius && x <= stage.width - radius && y >= radius && y <= stage.height - radius;
     };
-    return !fits(1) && fits(-1);
+    return !fits(-1) && fits(1);
 }
