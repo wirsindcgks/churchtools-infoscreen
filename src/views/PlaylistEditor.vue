@@ -439,6 +439,21 @@ function onKey(event: KeyboardEvent): void {
     } else if (mod && event.key.toLowerCase() === 'y') {
         event.preventDefault();
         editor.redo();
+    } else if (mod && !editor.blockSheetOpen && 'cxvd'.includes(event.key.toLowerCase()) && event.key.length === 1) {
+        // Copy, cut, paste, duplicate (Plan.md 79, A5); D would otherwise set a bookmark.
+        const key = event.key.toLowerCase();
+        if (key === 'v') {
+            if (!editor.clipboard.length) return;
+            event.preventDefault();
+            editor.pasteBlocks();
+        } else if (editor.block) {
+            // Text marked on the page (a hint, a name) is copied as text, as anywhere else.
+            if ((key === 'c' || key === 'x') && window.getSelection()?.toString()) return;
+            event.preventDefault();
+            if (key === 'c') editor.copyBlock(editor.block.id);
+            else if (key === 'x') editor.cutBlock(editor.block.id);
+            else editor.duplicateBlock(editor.block.id);
+        }
     } else if (editor.block && (event.key === 'Delete' || event.key === 'Backspace')) {
         event.preventDefault();
         editor.removeBlock(editor.block.id);

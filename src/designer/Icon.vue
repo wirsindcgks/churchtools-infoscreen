@@ -21,6 +21,8 @@ const PATHS = {
     slides: ['M7 7h13v11H7z', 'M4 4h13', 'M4 4v11'],
     person: [circle(12, 8, 3.5), 'M5 20c0-3.9 3.1-6 7-6s7 2.1 7 6'],
     copy: ['M9 9h11v11H9z', 'M5 15H4V4h11v1'],
+    // Duplicate a block (Plan.md 79, A5): the two sheets of `copy`, with a plus on the front one.
+    duplicate: ['M9 9h11v11H9z', 'M5 15H4V4h11v1', 'M14.5 12.5v6', 'M11.5 15.5h6'],
     // Address of a screen: a hash sign.
     id: ['M9.5 4L7.5 20', 'M16.5 4l-2 16', 'M4.5 9h15.5', 'M4 15h15.5'],
     // Linked slides (Plan.md 49): two chain links.
