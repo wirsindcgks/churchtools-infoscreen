@@ -65,8 +65,12 @@ function hint(event: PointerEvent, id: string | null): void {
 </template>
 
 <style>
+/*
+ * Not scoped, since the group's row in LayerGroup.vue shares it – but bound to the list, so no class of the
+ * ChurchTools page around the module can catch it.
+ */
 /* One row of the list – a block or a group: symbol, name and short content; the chosen one on the accent's pale ground. */
-.layer-item {
+.layer-list .layer-item {
     display: flex;
     align-items: center;
     gap: var(--d-space-2);
@@ -78,18 +82,18 @@ function hint(event: PointerEvent, id: string | null): void {
     user-select: none;
     -webkit-touch-callout: none;
 }
-.layer-item--nested {
+.layer-list .layer-item--nested {
     margin-left: var(--d-space-3);
 }
-.layer-item:hover {
+.layer-list .layer-item:hover {
     background: var(--d-panel);
 }
-.layer-item--on,
-.layer-item--on:hover {
+.layer-list .layer-item--on,
+.layer-list .layer-item--on:hover {
     background: var(--d-accent-pale);
     color: var(--d-accent-strong);
 }
-.layer-handle {
+.layer-list .layer-handle {
     display: grid;
     flex: none;
     place-items: center;
@@ -101,12 +105,12 @@ function hint(event: PointerEvent, id: string | null): void {
     color: var(--d-text-faint);
     cursor: grab;
 }
-.layer-handle:disabled {
+.layer-list .layer-handle:disabled {
     opacity: 0.3;
     cursor: default;
 }
 /* The box of the mode "Mehrere auswählen": no click of its own, the row toggles. */
-.layer-check {
+.layer-list .layer-check {
     display: grid;
     flex: none;
     place-items: center;
@@ -116,21 +120,21 @@ function hint(event: PointerEvent, id: string | null): void {
     border-radius: 4px;
     background: var(--d-surface);
 }
-.layer-check--on {
+.layer-list .layer-check--on {
     border-color: var(--d-accent);
     background: var(--d-accent);
     color: var(--d-accent-text);
 }
-.layer-icon {
+.layer-list .layer-icon {
     flex: none;
     color: var(--d-text-muted);
 }
-.layer-name {
+.layer-list .layer-name {
     flex: none;
     font-size: var(--d-size-sm);
     font-weight: var(--d-weight-normal);
 }
-.layer-sub {
+.layer-list .layer-sub {
     min-width: 0;
     flex: 1;
     overflow: hidden;
@@ -140,7 +144,7 @@ function hint(event: PointerEvent, id: string | null): void {
     white-space: nowrap;
 }
 /* Pale like the handle while open, in the accent while locked. */
-.layer-lock {
+.layer-list .layer-lock {
     display: grid;
     flex: none;
     place-items: center;
@@ -152,10 +156,10 @@ function hint(event: PointerEvent, id: string | null): void {
     color: var(--d-text-faint);
     cursor: pointer;
 }
-.layer-lock--on {
+.layer-list .layer-lock--on {
     color: var(--d-accent-strong);
 }
-.layer-group-toggle {
+.layer-list .layer-group-toggle {
     display: grid;
     flex: none;
     place-items: center;
@@ -167,7 +171,7 @@ function hint(event: PointerEvent, id: string | null): void {
     color: var(--d-text-muted);
     cursor: pointer;
 }
-.layer-group-toggle--closed > svg {
+.layer-list .layer-group-toggle--closed > svg {
     transform: rotate(-90deg);
 }
 </style>
