@@ -68,7 +68,7 @@ const edited = computed(() => lastEdited(props.overview.editedAt, props.overview
             </span>
             <span
                 v-if="draft"
-                class="d-tile-mark"
+                class="d-tile-mark d-draft-mark"
                 :title="t.playlists.card.draftTitle(draft.updatedBy, relativeWhen(draft.updatedAt, context.timeZone, props.now ?? context.now))"
                 data-testid="draft-flag"
             >

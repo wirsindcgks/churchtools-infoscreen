@@ -656,6 +656,15 @@ function onKey(event: KeyboardEvent): void {
                             :time-zone="context.timeZone"
                             data-testid="editor-live"
                         />
+                        <!-- Changed but not published, whatever the saving says beside it (Plan.md 79, Paket E, Teil 3). -->
+                        <span
+                            v-if="editor.draftsOn && editor.dirty"
+                            class="d-draft-mark draft-mark"
+                            :title="t.editor.draftFlagTitle"
+                            data-testid="unpublished-flag"
+                        >
+                            <Icon name="pencil" :size="14" /><span class="draft-mark-text">{{ t.editor.draftFlag }}</span>
+                        </span>
                         <span class="status" :class="`status--${statusClass}`" data-testid="save-status">
                             <button
                                 v-if="editor.status === 'idle' && editor.draftStatus === 'error'"
@@ -800,6 +809,7 @@ function onKey(event: KeyboardEvent): void {
                     @click="publishWithCheck"
                 >
                     {{ t.editor.publish }}
+                    <span v-if="editor.draftsOn && editor.dirty" class="publish-dot" aria-hidden="true" />
                 </button>
             </template>
         </AppBar>
@@ -1096,6 +1106,25 @@ function onKey(event: KeyboardEvent): void {
 .status--draft-error {
     color: var(--d-danger);
 }
+.draft-mark {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: var(--d-size-sm);
+    white-space: nowrap;
+}
+/* Something waits to be published. */
+.publish-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-left: var(--d-space-2);
+    border-radius: 50%;
+    background: var(--d-warning);
+}
 .status-retry {
     padding: 0;
     border: 0;
@@ -1332,6 +1361,13 @@ function onKey(event: KeyboardEvent): void {
     }
     .live {
         padding: 5px;
+    }
+    /* Only the pencil, like the dot of "Läuft gerade". */
+    .draft-mark-text {
+        display: none;
+    }
+    .draft-mark {
+        padding: 2px 5px;
     }
     .shortcuts-btn {
         display: none;

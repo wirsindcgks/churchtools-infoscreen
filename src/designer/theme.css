@@ -335,6 +335,11 @@
     font-weight: var(--d-weight-normal);
     white-space: nowrap;
 }
+.infoscreen-designer :where(.d-draft-mark) {
+    /* Changed, not yet published (Plan.md 79, Paket E, Teil 3): warm, apart from "Hinweis" and "Läuft gerade". */
+    background: var(--d-warning);
+    color: var(--d-text);
+}
 .infoscreen-designer :where(.d-tile-title) {
     margin: 0;
     padding-top: 0.35em;

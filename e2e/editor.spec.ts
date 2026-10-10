@@ -8,6 +8,7 @@ test('edit a slide: add text, type, drag, undo, save', async ({ page }) => {
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await expect(page.getByTestId('save-status')).toHaveText('Alles veröffentlicht');
+    await expect(page.getByTestId('unpublished-flag')).toHaveCount(0);
     await page.waitForTimeout(1500);
     await page.screenshot({ path: 'test-results/editor-open.png' });
 
@@ -17,6 +18,8 @@ test('edit a slide: add text, type, drag, undo, save', async ({ page }) => {
     await page.getByTestId('text-input').blur();
     await expect(page.locator('.editor-stage').getByText('Gemeindefest am Samstag')).toBeVisible();
     await expect(page.getByTestId('save-status')).toHaveText(/Sichert …|Entwurf gesichert/);
+    // Changed but not published says so, beside whatever the saving says (Plan.md 79, Paket E, Teil 3).
+    await expect(page.getByTestId('unpublished-flag')).toHaveText('Entwurf');
 
     // Drag the new block 100 screen pixels to the right.
     const frame = page.getByTestId('frame-text').last();
@@ -35,6 +38,7 @@ test('edit a slide: add text, type, drag, undo, save', async ({ page }) => {
 
     await page.getByTestId('save').click();
     await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
+    await expect(page.getByTestId('unpublished-flag')).toHaveCount(0);
 });
 
 test('the bar says nothing about a running playlist without a sign of life (Plan.md 77)', async ({ page }) => {

@@ -151,6 +151,8 @@ export const t = {
         playlistFallback: 'Präsentation',
         publish: 'Veröffentlichen',
         publishTitle: 'Erst Veröffentlichen bringt die Änderungen auf die Fernseher',
+        draftFlag: 'Entwurf',
+        draftFlagTitle: 'Noch nicht veröffentlicht – die Fernseher zeigen den zuletzt veröffentlichten Stand',
         status: {
             publishing: 'Wird veröffentlicht …',
             published: 'Veröffentlicht',
