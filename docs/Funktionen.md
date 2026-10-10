@@ -8,21 +8,21 @@ arbeitet, im [Onboarding](Onboarding.md).
 nichts davon stammt aus einer echten ChurchTools-Instanz. Die Bilder entstehen automatisch
 (`npm run docs:screenshots`) und lassen sich nach jeder Änderung neu erzeugen.
 
-## Die Screens
+## Die Bildschirme
 
-Jeder Fernseher ist eine Kachel – mit dem, was er **gerade** zeigt. Ein Klick öffnet die laufende Playlist im
+Jeder Fernseher ist eine Kachel – mit dem, was er **gerade** zeigt. Ein Klick öffnet die laufende Präsentation im
 Editor; Adresse, Zeitplan und Player stecken im Menü „…", für Administratoren dazu „Umbenennen" und „Einstellungen". Filter trennen Quer- und Hochformat. Die Angaben der
 Kachel stehen untereinander: zuerst, ob der Fernseher **„online"** ist – er meldet sich alle fünf Minuten –, sonst
 **„nicht online seit …"** oder **„noch nie abgerufen"**; zuletzt wann und von wem sie oder ihr Zeitplan zuletzt geändert
 wurde. Alle Bereiche –
-Screens, Playlists, Zeitpläne, Hinweise und Mediathek – zeigen dieselben Kacheln in derselben Breite; lange Namen
+Bildschirme, Präsentationen, Zeitpläne, Hinweise und Mediathek – zeigen dieselben Kacheln in derselben Breite; lange Namen
 brechen um, nichts wird abgeschnitten.
 
-![Startseite: zwei Screens als Kacheln, quer und hochkant, jeweils mit der laufenden Slide](bilder/startseite.png)
+![Startseite: zwei Bildschirme als Kacheln, quer und hochkant, jeweils mit der laufenden Folie](bilder/startseite.png)
 
 ## Der Editor
 
-Slides gestalten wie in einem Folienprogramm: links die Slides, oben „+ Baustein" (alle Bausteine, alphabetisch), in der
+Folien gestalten wie in einem Folienprogramm: links die Folien, oben „+ Baustein" (alle Bausteine, alphabetisch), in der
 Mitte die Bildfläche, rechts der Inspektor: oben der Inhalt des gewählten Bausteins, darunter aufklappbare Bereiche.
 Ziehen, an den Griffen skalieren, am Raster ausrichten, sperren, rückgängig machen. Termine kommen live aus den
 Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe. **Zur Wahl stehen nur öffentliche
@@ -33,10 +33,10 @@ ChurchTools freigibt.
 
 **Farben aus der Palette:** An jedem Farbfeld des Editors stehen kleine Tupfer in zwei Gruppen. Zuerst die
 **„Farbpalette"** – Akzent, Text und Hintergrund des Designs, dann die Palette (Seite „Design"); das ist das
-Freigegebene. Darunter **„Auf der Slide"** – alle Farben, die die gerade bearbeitete Slide benutzt; eine freigegebene
+Freigegebene. Darunter **„Auf der Folie"** – alle Farben, die die gerade bearbeitete Folie benutzt; eine freigegebene
 trägt dort ihren Namen aus der Palette, eine abweichende nur ihren Hex-Wert. Eine leere Gruppe erscheint nicht; Farbwähler und
 Hex-Feld bleiben, abweichen geht weiter. Ein Klick setzt den Hex-Wert, beim Darüberfahren steht der Name.
-Die Farbe wird **kopiert**: Ändert ihr eine Palettenfarbe später, färbt das bestehende Slides nicht um.
+Die Farbe wird **kopiert**: Ändert ihr eine Palettenfarbe später, färbt die bestehenden Folien nicht um.
 
 **Schrift:** Im Bereich „Schrift" – in jedem Baustein, der Schrift hat – steht neben Schriftart, Größe, Stärke und
 Farbe das Kästchen **„Großbuchstaben"**. Ihr schreibt wie gewohnt; der Fernseher zeigt den Text in Großbuchstaben, der
@@ -56,17 +56,17 @@ Seiten des eigenen ChurchTools bettet der Baustein nicht ein.
 ## Galerie
 
 Bilder aus der Mediathek nacheinander, mit vier Übergängen (Überblenden, Schieben, Aufdecken oder harter Schnitt). Dazu zoomt jedes Bild auf Wunsch langsam hinein, heraus oder abwechselnd (Feld „Bewegung"). Mehrere Bilder auf einmal wählen, mit ↑/↓
-sortieren, Dauer je Bild und Darstellung (Ganz zeigen oder Fläche füllen) einstellen. Die Slide läuft, bis jedes Bild
+sortieren, Dauer je Bild und Darstellung (Ganz zeigen oder Fläche füllen) einstellen. Die Folie läuft, bis jedes Bild
 einmal zu sehen war; höchstens 30 Bilder. Die Bilder liegen auf dem Gerät, die Galerie läuft auch ohne Netz.
 
 ![Editor mit dem Baustein „Galerie": rechts die Liste der Bilder mit Reihenfolge, Dauer und Übergang](bilder/galerie.png)
 
 ## Video
 
-Ein Video aus der Mediathek, als Endlosschleife und von vorn bei jedem Durchlauf der Slide. Hochgeladen wird **MP4 mit
+Ein Video aus der Mediathek, als Endlosschleife und von vorn bei jedem Durchlauf der Folie. Hochgeladen wird **MP4 mit
 H.264, bis 128 MB**; das Video bleibt, wie es ist – es wird nicht umgerechnet. Der **Ton** lässt sich je Baustein
 einschalten (Vorgabe: aus); er startet nur, wenn der Browser des Fernsehers es erlaubt, sonst läuft das Video stumm.
-Die Slide dauert mindestens so lange wie das Video. **Ohne Netz zeigt der Fernseher an dieser Stelle nichts:** Videos
+Die Folie dauert mindestens so lange wie das Video. **Ohne Netz zeigt der Fernseher an dieser Stelle nichts:** Videos
 werden nicht auf dem Gerät gespeichert, sondern bei jedem Durchlauf von ChurchTools geladen. Dafür braucht das Gerät
 das Recht „Wiki-Bereich „Infoscreen" sehen" – der Assistent vergibt es. In der Vorschau laufen Videos stumm; ein Knopf
 am Video schaltet den Ton zu. Auf einem Kiosk-Gerät noch nicht im Dauerbetrieb geprüft.
@@ -89,7 +89,7 @@ Gezeigt wird nur, was ChurchTools auf der Gruppen-Homepage ohnehin öffentlich z
 als **Türschild** des ersten Raums: „Jetzt" mit Titel und Ende oder „Frei" (mit „bis 14:00", wenn noch etwas kommt),
 darunter „Danach" mit den nächsten Buchungen. Die laufende Buchung ist hervorgehoben; heute oder heute und morgen;
 ein **Wegweiser** je Raum („1. OG, links"). Gewählt werden nur Räume, nicht Gegenstände und Fahrzeuge. Die Übersicht
-wechselt seitenweise, die Slide bleibt, bis alle Seiten gelaufen sind.
+wechselt seitenweise, die Folie bleibt, bis alle Seiten gelaufen sind.
 
 ![Editor mit dem Baustein „Raumbelegung": die Übersicht dreier Räume mit ihren Buchungen, rechts die Liste der Räume](bilder/raumbelegung.png)
 
@@ -110,7 +110,7 @@ aktualisieren" gibt es ihm (siehe [Rechte](Rechte.md)). Hat ein Baustein mehrere
 
 Beim **Nächsten Termin** und bei der **Terminliste als Karten** zeigt „Dienste zeigen", wer einen Dienst übernimmt –
 „Predigt: Anna Beispiel · Moderation: Ben Muster" –, in einer eigenen Zeile mit einem Personen-Symbol (in der Liste unter Titel und Untertitel).
-Gewählt wird je Baustein aus den Diensten, die ein Administrator unter **Einstellungen → Dienste auf Screens** freigegeben hat;
+Gewählt wird je Baustein aus den Diensten, die ein Administrator unter **Einstellungen → Dienste auf Bildschirmen** freigegeben hat;
 ohne Freigabe erscheint kein Dienst. Gezeigt werden nur **zugesagte** Einteilungen und nur
 Dienste aus Dienstgruppen, die in ChurchTools „Ohne Berechtigung einsehbar" sind; was eine Gemeinde dort verborgen hält,
 bleibt auch am Fernseher verborgen, und am Termin stehen nur Name und Dienst, nie ein Foto oder ein Kommentar. Das Gerät
@@ -118,8 +118,8 @@ braucht dafür das Recht, die Events der Kalender zu sehen – „Rechte aktuali
 
 ## Die Vorschau – genau wie am Fernseher
 
-„Vorschau" spielt die Playlist mit allen ungespeicherten Änderungen im Vollbild ab: dieselben Bausteine, derselbe
-Wechsel, dieselben Daten wie am Fernseher. Die Gruppen wechseln seitenweise; die Slide bleibt, bis alle Seiten
+„Vorschau" spielt die Präsentation mit allen ungespeicherten Änderungen im Vollbild ab: dieselben Bausteine, derselbe
+Wechsel, dieselben Daten wie am Fernseher. Die Gruppen wechseln seitenweise; die Folie bleibt, bis alle Seiten
 gelaufen sind.
 
 ![Vollbild-Vorschau: zwei Gruppen-Karten mit QR-Code, unten ein Hinweisband](bilder/vorschau.png)
@@ -134,34 +134,34 @@ einschaltet.
 
 ## Hinweise
 
-Ein Band über allen Slides – als Laufschrift oder stehend, etwa „Heute Parkplatz gesperrt". Es läuft auf den
-gewählten Playlists und verschwindet zur eingestellten Zeit von selbst. Jeder Hinweis ist eine Kachel mit einer
+Ein Band über allen Folien – als Laufschrift oder stehend, etwa „Heute Parkplatz gesperrt". Es läuft auf den
+gewählten Präsentationen und verschwindet zur eingestellten Zeit von selbst. Jeder Hinweis ist eine Kachel mit einer
 **Zeitleiste über die nächsten sieben Tage**: Sie zeigt, wann er tatsächlich am Fernseher steht – also wann eine
-seiner Playlists laut Zeitplan auf einem Screen läuft, bis zu seinem Ende. Darunter steht jeder Screen in einer
+seiner Präsentationen laut Zeitplan auf einem Bildschirm läuft, bis zu seinem Ende. Darunter steht jeder Bildschirm in einer
 eigenen Zeile; fährt man darüber, leuchten seine Zeiten auf. Steht ein Hinweis in den sieben Tagen auf keinem
 Fernseher, sagt die Kachel das. Jeder Hinweis zeigt auch, wann und von wem er zuletzt geändert wurde; das Speichern
-einer Slide zählt dabei nicht.
+einer Folie zählt dabei nicht.
 
-![Seite „Hinweise": Kacheln mit Vorschau des Bands, Zeitleiste über sieben Tage und den Screens](bilder/hinweise.png)
+![Seite „Hinweise": Kacheln mit Vorschau des Bands, Zeitleiste über sieben Tage und den Bildschirmen](bilder/hinweise.png)
 
-## Playlists
+## Präsentationen
 
-Eine Playlist ist der Inhalt eines Screens und kann auf mehreren Screens laufen. Duplizieren ergibt eine Kopie mit
-eigenen Slides – oder auf Wunsch eine Playlist mit denselben, verknüpften Slides. Jede Kachel zeigt, wann die
-Playlist oder eine ihrer Slides zuletzt geändert wurde und von wem.
+Eine Präsentation ist der Inhalt eines Bildschirms und kann auf mehreren Bildschirmen laufen. Duplizieren ergibt eine Kopie mit
+eigenen Folien – oder auf Wunsch eine Präsentation mit denselben, verknüpften Folien. Jede Kachel zeigt, wann die
+Präsentation oder eine ihrer Folien zuletzt geändert wurde und von wem.
 
-![Playlists als Kacheln mit Format, Zahl der Slides und den Screens, die sie zeigen](bilder/playlists.png)
+![Präsentationen als Kacheln mit Format, Zahl der Folien und den Bildschirmen, die sie zeigen](bilder/playlists.png)
 
 ## Zeitpläne
 
-Welche Playlist ein Screen wann zeigt: nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten vor
-Beginn bis 10 Minuten nach Beginn"). Jeder Screen ist eine Kachel mit der Playlist, die gerade läuft, und einer
-**Zeitleiste über die nächsten sieben Tage** – heute oben, mit einer Nadel für jetzt, jede Playlist in ihrer Farbe
+Welche Präsentation ein Bildschirm wann zeigt: nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten vor
+Beginn bis 10 Minuten nach Beginn"). Jeder Bildschirm ist eine Kachel mit der Präsentation, die gerade läuft, und einer
+**Zeitleiste über die nächsten sieben Tage** – heute oben, mit einer Nadel für jetzt, jede Präsentation in ihrer Farbe
 wie im Zeitplan-Dialog. Darunter die Regeln in denselben Farben: Fährt man über eine Regel, leuchten ihre Zeiten
-auf; ein Klick auf eine Regel oder einen Abschnitt zeigt deren Playlist im Bild. Zuletzt steht, wann und von wem
-der Zeitplan oder der Screen zuletzt gespeichert wurde.
+auf; ein Klick auf eine Regel oder einen Abschnitt zeigt deren Präsentation im Bild. Zuletzt steht, wann und von wem
+der Zeitplan oder der Bildschirm zuletzt gespeichert wurde.
 
-![Zeitpläne: je Screen eine Kachel mit Vorschau, Zeitleiste über sieben Tage und den Regeln](bilder/zeitplaene.png)
+![Zeitpläne: je Bildschirm eine Kachel mit Vorschau, Zeitleiste über sieben Tage und den Regeln](bilder/zeitplaene.png)
 
 ## Mediathek
 
@@ -171,14 +171,14 @@ mit Maßen, Länge und Datum, auf dunklem, hellem oder kariertem Grund; mit den 
 Dateien. Im Auswahl-Dialog des Editors öffnet das Auge auf der Kachel die Vorschau, dort steht auch „Verwenden".
 
 Zum Aufräumen wählt man eine oder mehrere Dateien über das Kästchen auf der Kachel und löscht sie gemeinsam. Vorher
-nennt ein Dialog jede Datei – und zu jeder, die noch auf einer Slide läuft, die Stelle. Verwendete Dateien lassen sich
+nennt ein Dialog jede Datei – und zu jeder, die noch auf einer Folie läuft, die Stelle. Verwendete Dateien lassen sich
 dabei aussparen („Nur unbenutzte löschen").
 
 ![Mediathek mit Suche, Filtern und der Angabe, wo ein Bild verwendet wird](bilder/mediathek.png)
 
 ## Design
 
-Einmal für alle Screens: Ecken, Akzentfarbe, Farben und Schrift für neue Bausteine, Termine schlicht oder als Karten,
+Einmal für alle Bildschirme: Ecken, Akzentfarbe, Farben und Schrift für neue Bausteine, Termine schlicht oder als Karten,
 das Format der Bilder – mit Vorschau. Dazu eine **Farbpalette**: bis zu zwölf Farben der Gemeinde mit Namen
 („Gemeindeblau"), in einer Reihenfolge, die ihr selbst bestimmt. Der **Kartenhintergrund** – leicht getönt, ohne oder
 in einer eigenen Farbe mit Deckkraft – gilt für die Karten von „Nächster Termin" (Form „Modern"), „Beiträge" und
@@ -188,12 +188,12 @@ in einer eigenen Farbe mit Deckkraft – gilt für die Karten von „Nächster T
 
 ## Am Handy und auf dem Tablet
 
-Der Designer passt sich dem Telefon an: Seiten über ein Menü, Slides und Bausteine zum Aufklappen, die Einstellungen
-eines Bausteins als Blatt am unteren Rand – die ganze Slide bleibt darüber im Blick. Auf dem Tablet nimmt die Slide
+Der Designer passt sich dem Telefon an: Seiten über ein Menü, Folien und Bausteine zum Aufklappen, die Einstellungen
+eines Bausteins als Blatt am unteren Rand – die ganze Folie bleibt darüber im Blick. Auf dem Tablet nimmt die Folie
 fast die ganze Breite ein; die Einstellungen öffnen hochkant als Blatt, quer als Spalte daneben. Am Rechner lassen
-sich Slides und Einstellungen einklappen.
+sich Folien und Einstellungen einklappen.
 
-<img src="bilder/handy.png" alt="Editor am Handy: oben die Slide, unten das Blatt mit den Einstellungen der Terminliste" width="320">
+<img src="bilder/handy.png" alt="Editor am Handy: oben die Folie, unten das Blatt mit den Einstellungen der Terminliste" width="320">
 
 ## Am Fernseher
 

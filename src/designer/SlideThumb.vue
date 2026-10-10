@@ -6,6 +6,7 @@
  * portrait screens line up in one grid.
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { t } from '../i18n/designer';
 import type { SlideDoc } from '../model/schema';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
@@ -35,7 +36,7 @@ onBeforeUnmount(() => observer?.disconnect());
         <StageView v-if="slide && size.width" :width="stage.width" :height="stage.height" :fit="fit">
             <SlideView :slide="slide" :width="stage.width" :height="stage.height" />
         </StageView>
-        <span v-else-if="!slide" class="empty">Keine Slide</span>
+        <span v-else-if="!slide" class="empty">{{ t.editor.thumbEmpty }}</span>
     </div>
 </template>
 

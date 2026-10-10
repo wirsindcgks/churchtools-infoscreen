@@ -4,6 +4,7 @@
  * have no hour to count to and are left out.
  */
 import type { Appointment } from '../appointments/normalize';
+import { tp } from '../i18n/player';
 
 export type Countdown =
     | { kind: 'none' }
@@ -34,7 +35,7 @@ export function remaining(ms: number): string {
     const minutes = Math.floor((total % 3600) / 60);
     const seconds = total % 60;
     const two = (n: number) => String(n).padStart(2, '0');
-    if (days >= 1) return `${days} ${days === 1 ? 'Tag' : 'Tage'} ${hours} Std.`;
+    if (days >= 1) return tp.countdown.daysHours(days, hours);
     if (hours >= 1) return `${hours}:${two(minutes)}:${two(seconds)}`;
     return `${two(minutes)}:${two(seconds)}`;
 }

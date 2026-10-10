@@ -16,6 +16,7 @@ import { textStyle } from '../format';
 import { PAGE_SECONDS, pageInterval, paginateByHeight, SHOW_ALL_CAP } from '../paging';
 import { listLayout } from '../theme';
 import AppointmentRow from './AppointmentRow.vue';
+import { tp } from '../../i18n/player';
 
 const props = defineProps<{ block: Extract<Block, { type: 'appointment-list' }>; slideSeconds?: number }>();
 const context = useStageContext();
@@ -110,7 +111,7 @@ onBeforeUnmount(() => clearInterval(timer));
             <ul :key="page" class="list" :class="{ 'list--cards': layout === 'cards' }">
                 <AppointmentRow v-for="a in shown" :key="a.key" :appointment="a" :layout="layout" :time-zone="context.timeZone" :show-rooms="showsRoomsAt(block, a.calendarId)" :services="block.services" />
                 <!-- An empty week is a normal state and must look like one, not like a failure. -->
-                <li v-if="items.length === 0" class="empty">Keine Termine in den nächsten {{ block.horizonDays }} Tagen.</li>
+                <li v-if="items.length === 0" class="empty">{{ tp.appointments.noneInDays(block.horizonDays) }}</li>
             </ul>
         </Transition>
         <div v-if="pages.length > 1" class="pager">

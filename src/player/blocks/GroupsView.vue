@@ -15,6 +15,7 @@ import { postParagraphs } from '../../posts/text';
 import { GROUP_SECONDS, pageInterval, paginateByHeight } from '../paging';
 import { qrShape } from '../qr';
 import CalendarBadge from './CalendarBadge.vue';
+import { LOCALE, tp } from '../../i18n/player';
 
 const props = defineProps<{ block: Extract<Block, { type: 'groups' }>; slideSeconds?: number }>();
 const context = useStageContext();
@@ -24,7 +25,7 @@ const items = computed(() =>
 );
 
 /** As calm as "Keine aktuellen Beiträge" – before a homepage is chosen, and after it turns out empty. */
-const emptyMessage = computed(() => (props.block.parentGroupId === undefined ? 'Keine Gruppen-Homepage gewählt' : 'Keine Gruppen'));
+const emptyMessage = computed(() => (props.block.parentGroupId === undefined ? tp.groups.noHomepage : tp.groups.none));
 
 /** A broken image on a TV looks worse than none – hide it, the layout keeps its space empty. */
 function hideOnError(event: Event): void {
@@ -231,7 +232,7 @@ function rowMeta(group: Group): string {
     return parts.join(' · ');
 }
 function rowLeaders(group: Group): string | null {
-    return props.block.show.leaders && group.leaders.length ? `Leitung: ${group.leaders.map((l) => l.name).join(', ')}` : null;
+    return props.block.show.leaders && group.leaders.length ? tp.groups.leadersLine(group.leaders.map((l) => l.name).join(', ')) : null;
 }
 
 /**
@@ -336,8 +337,8 @@ onMounted(() => {
     </div>
 
     <!-- Cards: one to four a page, each image, text with a coloured bar, and a QR code to its public page. -->
-    <!-- lang="de": hyphenation needs a language, and what the page around sets is unknown (Plan.md 44, M5). -->
-    <div v-else ref="cardsRoot" class="groups-cards" lang="de" :style="textStyle(block.style)" data-testid="groups-card">
+    <!-- The language: hyphenation needs a language, and what the page around sets is unknown (Plan.md 44, M5). -->
+    <div v-else ref="cardsRoot" class="groups-cards" :lang="LOCALE" :style="textStyle(block.style)" data-testid="groups-card">
         <div
             v-if="cards.length"
             class="cells"
@@ -376,7 +377,7 @@ onMounted(() => {
                                     <rect :width="c.qr.size" :height="c.qr.size" fill="#ffffff" />
                                     <path :d="c.qr.path" fill="#111111" />
                                 </svg>
-                                <span class="qr-caption">Zur Gruppe</span>
+                                <span class="qr-caption">{{ tp.groups.toGroup }}</span>
                             </div>
                         </template>
                         <div v-if="block.show.name" class="group-name">{{ c.group.name }}</div>
@@ -399,7 +400,7 @@ onMounted(() => {
                         <!-- How far it reaches to the right is measured against the drawn code (fitCards). -->
                         <div v-if="c.leaders.length" class="leaders-box">
                             <div class="group-leaders" data-testid="group-leaders">
-                                <span class="leaders-label">Leitung:</span>
+                                <span class="leaders-label">{{ tp.groups.leaders }}</span>
                                 <span class="leader-list">
                                     <span v-for="(leader, k) in c.leaders" :key="k" class="leader">
                                         <img

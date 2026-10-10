@@ -13,6 +13,8 @@ import type { PreparedImage } from './scale';
 import { readVideoMetadata, videoProblem, type VideoMetadata } from './video';
 import * as wiki from './wiki';
 import type { WikiCategory, WikiFile, WikiPage } from './wiki';
+import { t } from '../i18n/designer';
+import { LOCALE } from '../i18n/player';
 
 export { VIDEO_MAX_BYTES, VIDEO_TYPES } from './video';
 
@@ -55,11 +57,11 @@ export function usageLines(uses: readonly MediaUse[]): string[] {
 
 /** The images that match the search – in their name or where they are shown – and the chosen chip. */
 export function filterMedia(items: readonly MediaItem[], query: string, show: MediaShow): MediaItem[] {
-    const needle = query.trim().toLocaleLowerCase('de');
+    const needle = query.trim().toLocaleLowerCase(LOCALE);
     return items.filter(
         (item) =>
             (show === 'all' || (show === 'used') === item.uses.length > 0) &&
-            (!needle || [item.name, ...usageLines(item.uses)].join(' ').toLocaleLowerCase('de').includes(needle)),
+            (!needle || [item.name, ...usageLines(item.uses)].join(' ').toLocaleLowerCase(LOCALE).includes(needle)),
     );
 }
 
@@ -90,9 +92,7 @@ export const wikiBackend: MediaBackend = {
     category: async () => {
         const category = await wiki.findCategory();
         if (!category) {
-            throw new Error(
-                `Den Wiki-Bereich „${wiki.WIKI_CATEGORY_NAME}" gibt es noch nicht. Ein Administrator legt ihn in den Einstellungen an („Automatisch einrichten").`,
-            );
+            throw new Error(t.media.library.noCategory(wiki.WIKI_CATEGORY_NAME));
         }
         return category;
     },
@@ -115,14 +115,14 @@ function isVideoFile(file: WikiFile): boolean {
  * 1.4) there is no screen to name a page after; the library is flat, and
  * older uploads stay on the pages of their screens (Plan.md, 18).
  */
-export const MEDIA_PAGE = { slug: 'mediathek', name: 'Mediathek' } as const;
+export const MEDIA_PAGE = { slug: 'mediathek', name: t.media.title } as const;
 
 export class MediaInUseError extends Error {
     constructor(
         readonly usage: { playlist: string; slide: string }[],
-        what = 'Bild',
+        what: string = t.media.kindName.image,
     ) {
-        super(`Das ${what} wird noch verwendet: ${usage.map((u) => `${u.playlist} › ${u.slide}`).join(', ')}.`);
+        super(t.media.library.inUse(what, usage.map((u) => `${u.playlist} › ${u.slide}`).join(', ')));
         this.name = 'MediaInUseError';
     }
 }
@@ -204,7 +204,7 @@ export class MediaLibrary {
         const docs: MediaDoc[] = [];
         for (const image of images) {
             const file = await this.backend.upload(categoryId, page.guid, image.blob, image.name);
-            if (!file.imageUrl) throw new Error(`„${image.name}" ist kein Bild, das ChurchTools anzeigen kann.`);
+            if (!file.imageUrl) throw new Error(t.media.library.notAnImage(image.name));
             docs.push(
                 await this.adopt({
                     fileId: file.id,
@@ -232,7 +232,7 @@ export class MediaLibrary {
         const categoryId = await this.categoryId();
         const page = await this.backend.ensurePage(categoryId, screen.slug, screen.name);
         const uploaded = await this.backend.upload(categoryId, page.guid, file, file.name);
-        if (!uploaded.fileUrl) throw new Error(`„${file.name}" ist kein Video, das ChurchTools abspielen kann.`);
+        if (!uploaded.fileUrl) throw new Error(t.media.library.notAVideo(file.name));
         const metadata = await this.readMetadata(videoSrc({ fileUrl: uploaded.fileUrl }) ?? uploaded.fileUrl).catch((): VideoMetadata => ({}));
         return this.adopt({
             fileId: uploaded.id,
@@ -253,7 +253,7 @@ export class MediaLibrary {
     /** Deletes an image or video – unless it is still shown somewhere and `force` is not set. */
     async remove(item: MediaItem, force = false): Promise<void> {
         const usage = await this.usage(item);
-        if (usage.length && !force) throw new MediaInUseError(usage, item.kind === 'video' ? 'Video' : 'Bild');
+        if (usage.length && !force) throw new MediaInUseError(usage, t.media.kindName[item.kind]);
         await this.backend.remove(item.fileId);
         if (item.mediaId) await this.repository.deleteMedia(item.mediaId);
     }

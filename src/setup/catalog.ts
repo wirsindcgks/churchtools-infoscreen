@@ -7,6 +7,7 @@
  * development through the proxy it has not, and the callers say so.
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
+import { t } from '../i18n/designer';
 
 interface AuthEntry {
     id: number | string;
@@ -59,6 +60,6 @@ export async function loadAuthCatalog(): Promise<AuthCatalog> {
     const data = (await churchtoolsClient.oldApi('churchauth/ajax', 'getMasterData')) as {
         auth_table?: Record<string, Record<string, AuthEntry>>;
     };
-    if (!data?.auth_table) throw new Error('Der Rechtekatalog von ChurchTools ist nicht lesbar.');
+    if (!data?.auth_table) throw new Error(t.setup.catalogUnreadable);
     return catalogFrom(data.auth_table);
 }

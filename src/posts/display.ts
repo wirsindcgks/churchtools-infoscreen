@@ -5,6 +5,7 @@
  */
 import { zonedParts } from '../appointments/zoned';
 import { formatDate } from '../player/format';
+import { tp } from '../i18n/player';
 
 /**
  * A post's age in words, by calendar day in the instance time zone – not by
@@ -17,9 +18,9 @@ export function relativeAge(published: Date, now: Date, timeZone: string): strin
     const publishedDay = Date.UTC(p.year, p.month - 1, p.day);
     const today = Date.UTC(n.year, n.month - 1, n.day);
     const days = Math.round((today - publishedDay) / 86_400_000);
-    if (days <= 0) return 'heute';
-    if (days === 1) return 'gestern';
-    if (days <= 6) return `vor ${days} Tagen`;
+    if (days <= 0) return tp.time.today;
+    if (days === 1) return tp.time.yesterday;
+    if (days <= 6) return tp.time.daysAgo(days);
     return formatDate(published, timeZone);
 }
 

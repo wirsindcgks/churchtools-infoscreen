@@ -11,6 +11,7 @@
  * never existing roles; creating and deleting groups is measured (G34),
  * granting rights is not – the first run on the test instance is the test.
  */
+import { t } from '../i18n/designer';
 import type { CategoryKey } from '../store/screen-repository';
 import type { AuthCatalog } from './catalog';
 import { ALL_DATA, AUTH, has, type Grant } from './checks';
@@ -29,16 +30,16 @@ export interface GroupTypeChoice {
 
 /** The suggested group type among the ones the instance has – by its shown or its stored name – or null. */
 export function defaultGroupTypeId(types: readonly GroupTypeChoice[]): number | null {
-    return types.find((t) => t.name === DEFAULT_GROUP_TYPE_NAME || t.rawName === DEFAULT_GROUP_TYPE_NAME)?.id ?? null;
+    return types.find((type) => type.name === DEFAULT_GROUP_TYPE_NAME || type.rawName === DEFAULT_GROUP_TYPE_NAME)?.id ?? null;
 }
 
 export type GroupKey = keyof typeof GROUP_NAMES;
 
 /** The core rights the assistant grants per calendar or room, as it labels them – and takes back again (Plan.md 62). */
 const RIGHT_LABELS = {
-    [AUTH.calendarView]: 'Einzelnen Kalender sehen',
-    [AUTH.eventView]: 'Events von einzelnen Kalendern sehen',
-    [AUTH.resourceView]: 'Ressource sehen',
+    [AUTH.calendarView]: t.setup.provision.rightLabels.calendarView,
+    [AUTH.eventView]: t.setup.provision.rightLabels.eventView,
+    [AUTH.resourceView]: t.setup.provision.rightLabels.resourceView,
 } as const;
 
 /**
@@ -95,7 +96,7 @@ export interface PlanInput {
 
 export class MissingAuthError extends Error {
     constructor(readonly auth: string) {
-        super(`Das Recht „${auth}" fehlt im Rechtekatalog – ist die Extension installiert?`);
+        super(t.setup.provision.missingAuth(auth));
         this.name = 'MissingAuthError';
     }
 }
@@ -115,17 +116,17 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     const adminOnly = (['screens', 'settings'] as const).map((k) => input.categories[k]);
 
     const readModule: GrantSpec[] = [
-        { authId: moduleRight('view'), label: '„Infoscreen Designer" sehen' },
-        { authId: moduleRight('view custom category'), dataId: all, label: 'Kategorien sehen' },
-        { authId: moduleRight('view custom data'), dataId: all, label: 'Daten in Kategorie sehen' },
+        { authId: moduleRight('view'), label: t.setup.provision.grants.viewModule },
+        { authId: moduleRight('view custom category'), dataId: all, label: t.setup.provision.grants.viewCategories },
+        { authId: moduleRight('view custom data'), dataId: all, label: t.setup.provision.grants.viewData },
     ];
 
     const designer: GrantSpec[] = [
         ...readModule,
-        { authId: moduleRight('create custom data'), dataId: written, label: 'Daten in Kategorie erstellen' },
-        { authId: moduleRight('edit custom data'), dataId: written, label: 'Daten in Kategorie bearbeiten' },
-        { authId: moduleRight('delete custom data'), dataId: written, label: 'Daten in Kategorie löschen' },
-        { authId: AUTH.wikiView, label: '„Wiki" sehen' },
+        { authId: moduleRight('create custom data'), dataId: written, label: t.setup.provision.grants.createData },
+        { authId: moduleRight('edit custom data'), dataId: written, label: t.setup.provision.grants.editData },
+        { authId: moduleRight('delete custom data'), dataId: written, label: t.setup.provision.grants.deleteData },
+        { authId: AUTH.wikiView, label: t.setup.provision.grants.viewWiki },
     ];
     // "Ressource sehen" per room (205) is enough; "Ressourcen sehen" (201) nobody needs (G45).
     if (input.roomIds.length) {
@@ -133,8 +134,8 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     }
     if (input.wikiCategoryId !== null) {
         designer.push(
-            { authId: AUTH.wikiCategoryView, dataId: [input.wikiCategoryId], label: 'Wiki-Bereich „Infoscreen" sehen' },
-            { authId: AUTH.wikiCategoryEdit, dataId: [input.wikiCategoryId], label: 'Wiki-Bereich „Infoscreen" bearbeiten' },
+            { authId: AUTH.wikiCategoryView, dataId: [input.wikiCategoryId], label: t.setup.provision.grants.viewWikiCategory },
+            { authId: AUTH.wikiCategoryEdit, dataId: [input.wikiCategoryId], label: t.setup.provision.grants.editWikiCategory },
         );
     }
 
@@ -143,13 +144,13 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     if (input.categories.status !== undefined) {
         const status = [input.categories.status];
         device.push(
-            { authId: moduleRight('create custom data'), dataId: status, label: 'Lebenszeichen schreiben (Kategorie „Status")' },
-            { authId: moduleRight('edit custom data'), dataId: status, label: 'Lebenszeichen ändern (Kategorie „Status")' },
+            { authId: moduleRight('create custom data'), dataId: status, label: t.setup.provision.grants.writeStatus },
+            { authId: moduleRight('edit custom data'), dataId: status, label: t.setup.provision.grants.editStatus },
         );
     }
     // Videos come only through the download address, which wants this one right; "Wiki" sehen (501) a device does not need (G47, Plan.md 52).
     if (input.wikiCategoryId !== null) {
-        device.push({ authId: AUTH.wikiCategoryView, dataId: [input.wikiCategoryId], label: 'Wiki-Bereich „Infoscreen" sehen' });
+        device.push({ authId: AUTH.wikiCategoryView, dataId: [input.wikiCategoryId], label: t.setup.provision.grants.viewWikiCategory });
     }
     // The device sees calendars through the public user; it needs no right of its own (Plan.md 73, G53).
     // One entry: every room when appointments show theirs, plus what the rooms blocks use.
@@ -168,7 +169,11 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     const writing = (['create custom data', 'edit custom data', 'delete custom data'] as const).map((auth) => ({
         authId: moduleRight(auth),
         dataId: adminOnly,
-        label: `${{ 'create custom data': 'Anlegen', 'edit custom data': 'Bearbeiten', 'delete custom data': 'Löschen' }[auth]} von Screens und Einstellungen`,
+        label: {
+            'create custom data': t.setup.provision.grants.createAdminData,
+            'edit custom data': t.setup.provision.grants.editAdminData,
+            'delete custom data': t.setup.provision.grants.deleteAdminData,
+        }[auth],
     }));
 
     return [
@@ -205,16 +210,16 @@ export async function provision(plan: GroupSpec[], groupTypeId: number, api: Pro
         for (const spec of plan) {
             const groupId = await api.createGroup(spec.name, groupTypeId);
             result.groupIds[spec.key] = groupId;
-            result.log.push(`Gruppe „${spec.name}" angelegt.`);
+            result.log.push(t.setup.provision.groupCreated(spec.name));
             const roles = await api.roleIds(groupId);
             for (const roleId of roles) {
                 for (const g of spec.grants) await api.grant(roleId, g.authId, g.dataId);
             }
-            result.log.push(`${spec.grants.length} Rechte an ${roles.length} Rollen von „${spec.name}" vergeben.`);
+            result.log.push(t.setup.provision.rightsGranted(spec.grants.length, roles.length, spec.name));
         }
     } catch (e) {
         result.error = e instanceof Error ? e.message : String(e);
-        result.log.push(`Abgebrochen: ${result.error}`);
+        result.log.push(t.setup.provision.aborted(result.error));
     }
     return result;
 }
@@ -259,13 +264,13 @@ export async function removeCreatedGroups(
             outcome = await deleteGroup(id);
         } catch (e) {
             error = e instanceof Error ? e.message : String(e);
-            log.push(`Abgebrochen: ${error}`);
+            log.push(t.setup.provision.aborted(error));
             break;
         }
         remaining.shift();
         removed.push(id);
         if (outcome === 'gone') {
-            log.push(`Gruppe ${id} gab es nicht mehr – aus den Einstellungen entfernt.`);
+            log.push(t.setup.remove.goneLog(id));
         } else {
             deleted++;
         }
@@ -273,7 +278,7 @@ export async function removeCreatedGroups(
             if (nextSelected[key] === id) nextSelected[key] = null;
         }
     }
-    if (!error && deleted) log.push(`${deleted} Gruppen gelöscht.`);
+    if (!error && deleted) log.push(t.setup.remove.groupsDeletedLog(deleted));
     return { remaining, removed, selected: nextSelected, log, error };
 }
 
@@ -283,10 +288,7 @@ export async function removeCreatedGroups(
  * unwritten unless said here (docs/Einrichtung.md, „Was beim Abbau passiert –
  * auf einen Blick").
  */
-export const REMOVE_SETUP_NEXT_STEPS_LOG_LINE =
-    'Als Nächstes: den Designer in der Extension-Verwaltung von ChurchTools löschen, falls er ganz weg soll. ' +
-    'Danach von Hand: die Passwörter der Gerätekonten ändern oder die Konten löschen (sonst gelten die Adressen ' +
-    'der Fernseher weiter), Wiki-Bereich sichern und löschen oder behalten.';
+export const REMOVE_SETUP_NEXT_STEPS_LOG_LINE = t.setup.remove.nextSteps;
 
 /**
  * Log line before `REMOVE_SETUP_NEXT_STEPS_LOG_LINE`, once device accounts
@@ -295,7 +297,7 @@ export const REMOVE_SETUP_NEXT_STEPS_LOG_LINE =
  * by then the group that named the accounts is already gone.
  */
 export function devicePasswordRecommendationLogLine(names: string[]): string {
-    return `Passwörter ändern empfohlen für: ${names.join(', ')} – dann funktionieren die Adressen der Fernseher nicht mehr.`;
+    return t.setup.remove.passwordsLog(names);
 }
 
 export interface RefreshItem {
@@ -342,7 +344,8 @@ export function planRefresh(
         authId === AUTH.resourceView ? names.rooms?.get(dataId) : names.calendars?.get(dataId);
     const named = (authId: number, dataId: number, label: string): string => {
         const name = nameOf(authId, dataId);
-        return name ? `${label}: ${name}` : `${label}: ${authId === AUTH.resourceView ? 'Raum' : 'Kalender'} ${dataId}`;
+        if (name) return t.setup.provision.named(label, name);
+        return authId === AUTH.resourceView ? t.setup.provision.roomFallback(label, dataId) : t.setup.provision.calendarFallback(label, dataId);
     };
     const knownIds = (authId: number): Set<number> => new Set(authId === AUTH.resourceView ? known.roomIds : known.calendarIds);
 
@@ -443,16 +446,14 @@ export async function applyRefresh(plan: GroupSpec[], state: RefreshState, api: 
         }
     } catch (e) {
         result.error = e instanceof Error ? e.message : String(e);
-        result.log.push(`Abgebrochen: ${result.error}`);
+        result.log.push(t.setup.provision.aborted(result.error));
     }
     return result;
 }
 
 /** The log line of one group: what was granted and taken back, or that it is up to date. */
 export function refreshLogLine(change: RefreshGroup): string {
-    return change.add.length || change.remove.length
-        ? `„${change.name}": ${change.add.length} Rechte vergeben, ${change.remove.length} zurückgenommen.`
-        : `Rechte von „${change.name}" sind auf dem Stand.`;
+    return t.setup.refresh.logLine(change.name, change.add.length, change.remove.length);
 }
 
 /** Nothing to add and nothing to take back anywhere: no dialog, no writing. */

@@ -7,6 +7,7 @@
  * The grid choice sits beside it – it is about the stage, too.
  */
 import { onBeforeUnmount, ref } from 'vue';
+import { t } from '../i18n/designer';
 import type { BlockType } from '../model/schema';
 import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
@@ -53,19 +54,19 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
             data-testid="add-block-menu"
             @click="openSheet"
         >
-            <Icon name="plus" :size="16" /> Baustein
+            <Icon name="plus" :size="16" /> {{ t.editor.palette.addBlock }}
         </button>
         <!-- The symbol alone was not recognised (Plan.md 47): the word stays beside it. -->
-        <label class="grid-select" title="Hilfslinien: Bausteine rasten ein; mit gedrückter Alt-Taste frei platzieren">
+        <label class="grid-select" :title="t.editor.palette.guidesTitle">
             <Icon name="grid" :size="16" />
-            <span class="grid-label">Hilfslinien</span>
+            <span class="grid-label">{{ t.editor.palette.guides }}</span>
             <select
-                aria-label="Hilfslinien"
+                :aria-label="t.editor.palette.guides"
                 :value="editor.gridSize"
                 data-testid="grid-size"
                 @change="editor.setGridSize(Number(($event.target as HTMLSelectElement).value))"
             >
-                <option v-for="size in GRID_SIZES" :key="size" :value="size">{{ size ? `${size} px` : 'aus' }}</option>
+                <option v-for="size in GRID_SIZES" :key="size" :value="size">{{ size ? `${size} px` : t.editor.palette.gridOff }}</option>
             </select>
         </label>
 
@@ -74,14 +75,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
             class="d-dialog-backdrop block-sheet-backdrop"
             role="dialog"
             aria-modal="true"
-            aria-label="Baustein einfügen"
+            :aria-label="t.editor.palette.insertBlock"
             data-testid="block-sheet"
             @click.self="closeSheet"
         >
             <div class="block-sheet-panel">
                 <header class="sheet-head">
-                    <h2>Baustein einfügen</h2>
-                    <button class="d-btn d-btn--icon" type="button" aria-label="Schließen" @click="closeSheet">
+                    <h2>{{ t.editor.palette.insertBlock }}</h2>
+                    <button class="d-btn d-btn--icon" type="button" :aria-label="t.common.close" @click="closeSheet">
                         <Icon name="close" :size="16" />
                     </button>
                 </header>

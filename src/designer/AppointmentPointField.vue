@@ -3,6 +3,7 @@
  * One end of an appointment rule's window, as the designer says it:
  * "[30] Min. [vor] [Beginn]" (Plan.md, Nächste Schritte 22).
  */
+import { t } from '../i18n/designer';
 import type { AppointmentPoint } from '../model/schema';
 
 const props = defineProps<{ point: AppointmentPoint; label: string; testid: string }>();
@@ -32,28 +33,28 @@ function setAnchor(value: string): void {
             min="0"
             max="1440"
             :value="Math.abs(point.minutes)"
-            aria-label="Minuten"
+            :aria-label="t.common.point.minutes"
             data-testid="point-minutes"
             @input="setMinutes(($event.target as HTMLInputElement).value)"
         >
-        Min.
+        {{ t.common.point.min }}
         <select
             :value="point.minutes < 0 ? 'before' : 'after'"
-            aria-label="vor oder nach"
+            :aria-label="t.common.point.directionLabel"
             data-testid="point-direction"
             @change="setDirection(($event.target as HTMLSelectElement).value)"
         >
-            <option value="before">vor</option>
-            <option value="after">nach</option>
+            <option value="before">{{ t.common.point.before }}</option>
+            <option value="after">{{ t.common.point.after }}</option>
         </select>
         <select
             :value="point.anchor"
-            aria-label="Beginn oder Ende des Termins"
+            :aria-label="t.common.point.anchorLabel"
             data-testid="point-anchor"
             @change="setAnchor(($event.target as HTMLSelectElement).value)"
         >
-            <option value="start">Beginn</option>
-            <option value="end">Ende</option>
+            <option value="start">{{ t.common.point.start }}</option>
+            <option value="end">{{ t.common.point.end }}</option>
         </select>
     </span>
 </template>

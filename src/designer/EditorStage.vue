@@ -7,6 +7,7 @@ import { useStageContext } from '../player/context';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
 import { fitStage } from '../player/stage';
+import { t } from '../i18n/designer';
 import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
 import { BLOCK_LABELS, blockBelow } from './ops';
@@ -169,7 +170,7 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
                         '--handle': `${12 / fit.scale}px`,
                         '--line': `${1.5 / fit.scale}px`,
                     }"
-                    :title="block.locked ? `${BLOCK_LABELS[block.type]} – gesperrt: ein Klick greift auf Bausteine darunter durch, Alt-Klick wählt ihn` : BLOCK_LABELS[block.type]"
+                    :title="block.locked ? t.editor.stage.lockedTitle(BLOCK_LABELS[block.type]) : BLOCK_LABELS[block.type]"
                     :data-testid="`frame-${block.type}`"
                     @pointerdown="start($event, block, 'move')"
                     @pointermove="moveTo"
@@ -179,7 +180,7 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
                     <span
                         v-if="block.locked && block.id === editor.selectedBlockId"
                         class="lock"
-                        title="Gesperrt – im Inspektor entsperren"
+                        :title="t.editor.stage.lockBadge"
                         data-testid="frame-lock"
                     >
                         <Icon name="lock" :size="16" />
@@ -199,7 +200,7 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
                 </div>
             </div>
         </StageView>
-        <p v-else class="empty">Diese Playlist hat noch keine Slide.</p>
+        <p v-else class="empty">{{ t.editor.stage.empty }}</p>
     </div>
 </template>
 

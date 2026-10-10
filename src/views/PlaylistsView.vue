@@ -23,6 +23,8 @@ import { blockCalendarIds, type ThemeDoc } from '../model/schema';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
+import { t } from '../i18n/designer';
+import { LOCALE } from '../i18n/player';
 
 const router = useRouter();
 const repository = shallowRef<ScreenRepository | null>(null);
@@ -34,17 +36,17 @@ const creating = ref(false);
 const ready = computed(() => author.value !== null && repository.value !== null);
 const query = ref('');
 const format = ref<FormatFilter>('all');
-const FORMATS = FILTERS.map((f) => ({ key: f.key, label: f.key === 'all' ? 'Alle' : f.label }));
+const FORMATS = FILTERS.map((f) => ({ key: f.key, label: f.key === 'all' ? t.common.filters.allShort : f.label }));
 
 const isPortrait = (o: PlaylistOverview) => o.playlist.stage.height > o.playlist.stage.width;
 
 const shown = computed(() => {
-    const needle = query.value.trim().toLocaleLowerCase('de');
+    const needle = query.value.trim().toLocaleLowerCase(LOCALE);
     return overviews.value.filter(
         (o) =>
             (format.value === 'all' || (format.value === 'portrait') === isPortrait(o)) &&
             (!needle ||
-                `${o.playlist.name} ${o.screens.map((s) => s.name).join(' ')}`.toLocaleLowerCase('de').includes(needle)),
+                `${o.playlist.name} ${o.screens.map((s) => s.name).join(' ')}`.toLocaleLowerCase(LOCALE).includes(needle)),
     );
 });
 
@@ -115,7 +117,7 @@ async function duplicate(overview: PlaylistOverview, linked: boolean): Promise<v
 }
 
 async function remove(overview: PlaylistOverview): Promise<void> {
-    if (!repository.value || !window.confirm(`Playlist „${overview.playlist.name}" löschen?`)) return;
+    if (!repository.value || !window.confirm(t.playlists.deleteConfirm(overview.playlist.name))) return;
     try {
         await repository.value.deletePlaylist(overview.playlist.id);
     } catch (e) {
@@ -131,39 +133,38 @@ async function remove(overview: PlaylistOverview): Promise<void> {
             <button
                 class="d-btn d-btn--create"
                 type="button"
-                aria-label="Playlist erstellen"
+                :aria-label="t.playlists.create.title"
                 :disabled="!ready"
                 data-testid="new-playlist"
                 @click="creating = true"
             >
                 <Icon name="plus" />
-                <span class="create-label">Playlist erstellen</span>
+                <span class="create-label">{{ t.playlists.create.title }}</span>
             </button>
         </template>
 
-        <PageHeader icon="list" title="Playlists" testid="playlists-heading">
-            Was die Screens zeigen. Eine Playlist kann auf mehreren Screens laufen; welche wann läuft, legt der Zeitplan
-            eines Screens fest – unter „Zeitpläne" oder an der Kachel des Screens.
+        <PageHeader icon="list" :title="t.common.playlists" testid="playlists-heading">
+            {{ t.playlists.intro }}
         </PageHeader>
 
         <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
-        <p v-else-if="!ready" class="empty">Lade …</p>
+        <p v-else-if="!ready" class="empty">{{ t.common.loading }}</p>
         <template v-else>
             <SearchField
                 v-model="query"
-                placeholder="Suchen nach Playlist oder Screen …"
-                label="Playlists durchsuchen"
+                :placeholder="t.playlists.searchPlaceholder"
+                :label="t.playlists.searchLabel"
                 testid="playlist-search"
             />
 
             <GroupCard
                 icon="list"
-                :title="format === 'all' ? 'Alle Playlists' : FILTERS.find((f) => f.key === format)!.label"
-                :count="`${shown.length} ${shown.length === 1 ? 'Playlist' : 'Playlists'}`"
+                :title="format === 'all' ? t.playlists.all : FILTERS.find((f) => f.key === format)!.label"
+                :count="t.playlists.count(shown.length)"
                 heading-id="playlists-group"
             >
                 <template #tools>
-                    <FilterChips v-model="format" :options="FORMATS" label="Format" testid="playlist-filter" />
+                    <FilterChips v-model="format" :options="FORMATS" :label="t.common.format" testid="playlist-filter" />
                 </template>
                 <div v-if="shown.length" class="d-tiles">
                     <PlaylistCard
@@ -177,12 +178,12 @@ async function remove(overview: PlaylistOverview): Promise<void> {
                     />
                 </div>
                 <div v-else-if="!overviews.length" class="empty">
-                    <p>Noch keine Playlists.</p>
+                    <p>{{ t.playlists.empty }}</p>
                     <button class="d-btn d-btn--create" type="button" @click="creating = true">
-                        <Icon name="plus" /> Erste Playlist erstellen
+                        <Icon name="plus" /> {{ t.playlists.createFirst }}
                     </button>
                 </div>
-                <p v-else class="empty">Keine Playlist passt zu Suche und Filter.</p>
+                <p v-else class="empty">{{ t.playlists.noMatch }}</p>
             </GroupCard>
         </template>
 
@@ -195,26 +196,26 @@ async function remove(overview: PlaylistOverview): Promise<void> {
             @click.self="duplicating = null"
         >
             <div class="d-dialog duplicate" data-testid="duplicate-dialog">
-                <h2 id="duplicate-title">Playlist duplizieren</h2>
+                <h2 id="duplicate-title">{{ t.playlists.duplicate.title }}</h2>
                 <div class="options" role="radiogroup" aria-labelledby="duplicate-title">
                     <label>
                         <input v-model="duplicateMode" type="radio" value="copy" data-testid="duplicate-copy">
-                        Kopie – eigene Slides, unabhängig
+                        {{ t.playlists.duplicate.copy }}
                     </label>
                     <label>
                         <input v-model="duplicateMode" type="radio" value="linked" data-testid="duplicate-linked">
-                        Verknüpft – dieselben Slides, Änderungen gelten in beiden
+                        {{ t.playlists.duplicate.linked }}
                     </label>
                 </div>
                 <div class="d-dialog-actions">
-                    <button class="d-btn" type="button" @click="duplicating = null">Abbrechen</button>
+                    <button class="d-btn" type="button" @click="duplicating = null">{{ t.common.cancel }}</button>
                     <button
                         class="d-btn d-btn--primary"
                         type="button"
                         data-testid="duplicate-confirm"
                         @click="duplicate(duplicating, duplicateMode === 'linked')"
                     >
-                        Duplizieren
+                        {{ t.playlists.card.duplicate }}
                     </button>
                 </div>
             </div>

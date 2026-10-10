@@ -11,6 +11,7 @@
 
 import { PUBLIC_CALENDAR_PATH } from '../ct/api';
 import type { RoomInfo } from '../rooms/normalize';
+import { t } from '../i18n/designer';
 
 /** Core permission ids (G30). */
 export const AUTH = {
@@ -60,15 +61,15 @@ export function has(grants: Grant[], authId: number, dataId?: number): boolean {
 export function checkStatus(statusId: number | null | undefined): Check {
     switch (statusId) {
         case 1:
-            return { level: 'ok', category: 'group', text: 'Die Gruppe ist aktiv.' };
+            return { level: 'ok', category: 'group', text: t.setup.checks.status.active };
         case 4:
-            return { level: 'warn', category: 'group', text: 'Die Gruppe ist beendet.', detail: 'Ihre Rechte wirken noch, aber beendete Gruppen geraten leicht aus dem Blick.' };
+            return { level: 'warn', category: 'group', text: t.setup.checks.status.finished, detail: t.setup.checks.status.finishedDetail };
         case 2:
-            return { level: 'fail', category: 'group', text: 'Die Gruppe ist ein Entwurf.', detail: 'Rechte wirken erst, wenn sie aktiv ist.' };
+            return { level: 'fail', category: 'group', text: t.setup.checks.status.draft, detail: t.setup.checks.status.draftDetail };
         case 3:
-            return { level: 'fail', category: 'group', text: 'Die Gruppe ist archiviert.', detail: 'Die Rechte ihrer Mitglieder wirken nicht mehr.' };
+            return { level: 'fail', category: 'group', text: t.setup.checks.status.archived, detail: t.setup.checks.status.archivedDetail };
         default:
-            return { level: 'warn', category: 'group', text: `Unbekannter Gruppenstatus (${statusId ?? 'keiner'}).` };
+            return { level: 'warn', category: 'group', text: t.setup.checks.status.unknown(statusId) };
     }
 }
 
@@ -106,8 +107,8 @@ type ModuleRights = RequiredRight[] | null;
 const MODULE_RIGHTS_UNKNOWN: Check = {
     level: 'info',
     category: 'module',
-    text: 'Rechte am Modul lassen sich hier nicht prüfen.',
-    detail: 'Der Rechtekatalog ist nur innerhalb von ChurchTools lesbar, nicht in der lokalen Entwicklung.',
+    text: t.setup.checks.moduleUnknown,
+    detail: t.setup.checks.moduleUnknownDetail,
 };
 
 export interface DesignerGroupInput {
@@ -127,29 +128,29 @@ export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
     const checks: Check[] = [
         checkStatus(input.statusId),
         members
-            ? { level: 'ok', category: 'group', text: `${members} ${members === 1 ? 'Mitglied' : 'Mitglieder'}.` }
-            : { level: 'warn', category: 'group', text: 'Noch niemand in der Gruppe.', detail: 'Wer Infoscreens gestalten soll, wird hier Mitglied.' },
+            ? { level: 'ok', category: 'group', text: t.setup.checks.members(members) }
+            : { level: 'warn', category: 'group', text: t.setup.checks.nobody, detail: t.setup.checks.nobodyDetail },
     ];
 
     if (input.wikiCategoryId === null) {
         checks.push({
             level: 'info',
             category: 'media',
-            text: 'Der Wiki-Bereich „Infoscreen" ist noch nicht da.',
-            detail: 'Er entsteht beim ersten Bild-Upload in der Mediathek; danach lassen sich die Rechte hier prüfen.',
+            text: t.setup.checks.wikiMissing,
+            detail: t.setup.checks.wikiMissingDetail,
         });
     } else {
         const wiki = input.wikiCategoryId;
         for (const role of relevantRoles(input.roles)) {
-            const lacking = [
-                !has(role.grants, AUTH.wikiView) && '„Wiki" sehen',
-                !has(role.grants, AUTH.wikiCategoryView, wiki) && 'Wiki-Bereich „Infoscreen" sehen',
-                !has(role.grants, AUTH.wikiCategoryEdit, wiki) && 'Wiki-Bereich „Infoscreen" bearbeiten',
-            ].filter((x): x is string => !!x);
+            const lacking = ([
+                !has(role.grants, AUTH.wikiView) && t.setup.checks.wikiSee,
+                !has(role.grants, AUTH.wikiCategoryView, wiki) && t.setup.checks.wikiCategorySee,
+                !has(role.grants, AUTH.wikiCategoryEdit, wiki) && t.setup.checks.wikiCategoryEdit,
+            ] as (string | false)[]).filter((x): x is string => !!x);
             checks.push(
                 lacking.length
-                    ? { level: 'fail', category: 'media', text: `Rolle „${role.name}": für die Mediathek fehlt ${lacking.join(', ')}.` }
-                    : { level: 'ok', category: 'media', text: `Rolle „${role.name}" darf Bilder in die Mediathek laden.` },
+                    ? { level: 'fail', category: 'media', text: t.setup.checks.roleLacksMedia(role.name, lacking.join(', ')) }
+                    : { level: 'ok', category: 'media', text: t.setup.checks.roleMayUpload(role.name) },
             );
         }
     }
@@ -161,18 +162,16 @@ export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
             const missing = lacking(role.grants, input.moduleRights);
             checks.push(
                 missing.length
-                    ? { level: 'fail', category: 'module', text: `Rolle „${role.name}": am Modul fehlt ${missing.join(', ')}.` }
-                    : { level: 'ok', category: 'module', text: `Rolle „${role.name}" darf Screens gestalten.` },
+                    ? { level: 'fail', category: 'module', text: t.setup.checks.roleLacksModule(role.name, missing.join(', ')) }
+                    : { level: 'ok', category: 'module', text: t.setup.checks.roleMayDesign(role.name) },
             );
             const tooMuch = (input.forbidden ?? []).filter((f) => (f.dataId ?? []).some((d) => has(role.grants, f.authId, d)));
             if (tooMuch.length) {
                 checks.push({
                     level: 'warn',
                     category: 'module',
-                    text: `Rolle „${role.name}" darf Screens oder Einstellungen ändern – das ist Sache der Administratoren.`,
-                    detail:
-                        '„Rechte aktualisieren" nimmt das bei den Gruppen des Assistenten zurück; bei eigenen Gruppen in der ' +
-                        'Rechteverwaltung von ChurchTools entfernen.',
+                    text: t.setup.checks.roleTooMuch(role.name),
+                    detail: t.setup.checks.roleTooMuchDetail,
                 });
             }
         }
@@ -186,8 +185,8 @@ export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
             checks.push({
                 level: 'warn',
                 category: 'rooms',
-                text: `Rolle „${role.name}" sieht nicht alle Räume.`,
-                detail: 'Dann fehlen sie im Baustein „Raumbelegung". „Rechte aktualisieren" gibt sie den Gruppen des Assistenten.',
+                text: t.setup.checks.roleRooms(role.name),
+                detail: t.setup.checks.roleRoomsDetail,
             });
         }
     }
@@ -256,25 +255,25 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
     const publicIds = new Set(input.publicCalendarIds);
     const byId = new Map(input.calendars.map((c) => [c.id, c]));
     if (!input.usedCalendarIds.length) {
-        checks.push({ level: 'info', category: 'calendars', text: 'Noch zeigt kein Screen Termine.' });
+        checks.push({ level: 'info', category: 'calendars', text: t.setup.checks.noAppointments });
     }
     for (const id of input.usedCalendarIds) {
         const calendar = byId.get(id);
         if (publicIds.has(id)) {
-            checks.push({ level: 'ok', category: 'calendars', text: `„${calendar?.name ?? `Kalender ${id}`}" ist öffentlich.` });
+            checks.push({ level: 'ok', category: 'calendars', text: t.setup.checks.calendarPublic(calendar?.name ?? t.setup.checks.calendarFallback(id)) });
         } else if (calendar) {
             checks.push({
                 level: 'warn',
                 category: 'calendars',
-                text: `„${calendar.name}" ist nicht öffentlich – kein Fernseher zeigt ihn.`,
-                detail: `Freigeben: ${PUBLIC_CALENDAR_PATH}. Oder im Editor aus dem Baustein entfernen.`,
+                text: t.setup.checks.calendarNotPublic(calendar.name),
+                detail: t.setup.checks.calendarNotPublicDetail(PUBLIC_CALENDAR_PATH),
             });
         } else {
             checks.push({
                 level: 'warn',
                 category: 'calendars',
-                text: `Kalender ${id} ist nicht öffentlich oder gelöscht – kein Fernseher zeigt ihn.`,
-                detail: 'Im Editor aus dem Baustein entfernen.',
+                text: t.setup.checks.calendarGone(id),
+                detail: t.setup.checks.calendarGoneDetail,
             });
         }
     }
@@ -284,21 +283,19 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         checks.push({
             level: 'warn',
             category: 'group',
-            text: 'Noch kein Geräte-Benutzer in der Gruppe.',
-            detail: 'Das Konto, mit dem sich die Fernseher anmelden, gehört hierher.',
+            text: t.setup.checks.noDevice,
+            detail: t.setup.checks.noDeviceDetail,
         });
         return checks;
     }
-    checks.push({ level: 'ok', category: 'group', text: `${input.members.length} Geräte-Benutzer.` });
+    checks.push({ level: 'ok', category: 'group', text: t.setup.checks.devices(input.members.length) });
     for (const m of input.members) {
         if (!m.otherGroups?.length) continue;
         checks.push({
             level: 'warn',
             category: 'rights',
-            text: `${m.label} ist auch Mitglied in ${m.otherGroups.map((g) => `„${g}"`).join(', ')}.`,
-            detail:
-                'Rechte aus diesen Gruppen bekommt auch der Fernseher – und jeder, der seine Adresse kennt. Die Prüfung sieht sie nicht. ' +
-                'Ein Gerätekonto gehört nur in „Infoscreen-Devices".',
+            text: t.setup.checks.otherGroups(m.label, m.otherGroups.map((g) => `„${g}"`).join(', ')),
+            detail: t.setup.checks.otherGroupsDetail,
         });
     }
 
@@ -308,10 +305,8 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
             checks.push({
                 level: 'warn',
                 category: 'rights',
-                text: `${member.label} darf den internen Kalender „${calendar.name}" lesen.`,
-                detail:
-                    'Der Fernseher zeigt ihn nicht, aber wer seine Adresse kennt, kann ihn lesen. ' +
-                    'Das Recht kommt aus Status oder einer anderen Gruppe des Kontos.',
+                text: t.setup.checks.internalCalendar(member.label, calendar.name),
+                detail: t.setup.checks.internalCalendarDetail,
             });
         }
     }
@@ -320,7 +315,7 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
     for (const id of input.usedRoomIds ?? []) {
         const room = roomsById.get(id);
         if (!room) {
-            checks.push({ level: 'warn', category: 'rooms', text: `Raum ${id} wird verwendet, ist aber nicht (mehr) zu finden.` });
+            checks.push({ level: 'warn', category: 'rooms', text: t.setup.checks.roomUnknown(id) });
             continue;
         }
         const blind = input.members.filter((m) => !has(m.grants, AUTH.resourceView, id)).map((m) => m.label);
@@ -329,10 +324,10 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                 ? {
                       level: 'fail',
                       category: 'rooms',
-                      text: `„${room.name}" ist für ${blind.join(', ')} nicht sichtbar.`,
-                      detail: 'Recht „Ressource sehen" für diesen Raum an die Rolle der Gerätegruppe geben – oder „Rechte aktualisieren".',
+                      text: t.setup.checks.roomBlind(room.name, blind.join(', ')),
+                      detail: t.setup.checks.roomBlindDetail,
                   }
-                : { level: 'ok', category: 'rooms', text: `„${room.name}" ist sichtbar.` },
+                : { level: 'ok', category: 'rooms', text: t.setup.checks.roomVisible(room.name) },
         );
     }
 
@@ -346,12 +341,12 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                 checks.push({
                     level: 'fail',
                     category: 'rooms',
-                    text: `Räume an Terminen: ${m.label} sieht ${m.unseen} von ${all.length} Räumen nicht.`,
-                    detail: '„Rechte aktualisieren" gibt der Gerätegruppe das Recht „Ressource sehen" für alle Räume.',
+                    text: t.setup.checks.appointmentRoomsBlind(m.label, m.unseen, all.length),
+                    detail: t.setup.checks.appointmentRoomsBlindDetail,
                 });
             }
         } else {
-            checks.push({ level: 'ok', category: 'rooms', text: 'Räume an Terminen sind sichtbar.' });
+            checks.push({ level: 'ok', category: 'rooms', text: t.setup.checks.appointmentRoomsVisible });
         }
     }
 
@@ -366,10 +361,10 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                 ? {
                       level: 'fail',
                       category: 'services',
-                      text: `Dienste an Terminen: ${blind.join(', ')} sieht die Events der Kalender nicht.`,
-                      detail: '„Rechte aktualisieren" gibt der Gerätegruppe das Recht „Events von einzelnen Kalendern sehen" für diese Kalender.',
+                      text: t.setup.checks.servicesBlind(blind.join(', ')),
+                      detail: t.setup.checks.servicesBlindDetail,
                   }
-                : { level: 'ok', category: 'services', text: 'Dienste an Terminen sind sichtbar.' },
+                : { level: 'ok', category: 'services', text: t.setup.checks.servicesVisible },
         );
     }
 
@@ -380,8 +375,8 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
             const missing = lacking(member.grants, input.moduleRights);
             checks.push(
                 missing.length
-                    ? { level: 'fail', category: 'module', text: `${member.label}: am Modul fehlt ${missing.join(', ')}.` }
-                    : { level: 'ok', category: 'module', text: `${member.label} darf die Screens lesen.` },
+                    ? { level: 'fail', category: 'module', text: t.setup.checks.deviceLacksModule(member.label, missing.join(', ')) }
+                    : { level: 'ok', category: 'module', text: t.setup.checks.deviceMayRead(member.label) },
             );
         }
     }
@@ -391,14 +386,14 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         const wiki = input.wikiCategoryId;
         const blind = input.members.filter((m) => !has(m.grants, AUTH.wikiCategoryView, wiki)).map((m) => m.label);
         if (blind.length) {
-            const subject = `${blind.join(', ')} ${blind.length === 1 ? 'darf' : 'dürfen'} den Wiki-Bereich „Infoscreen" nicht sehen`;
+            const subject = t.setup.checks.videoSubject(blind.join(', '), blind.length);
             checks.push(
                 input.videoInUse
-                    ? { level: 'fail', category: 'media', text: `${subject} – Videos laufen nicht.`, detail: '„Rechte aktualisieren" gibt der Gerätegruppe das Recht „Einzelne Wiki-Kategorien sehen" für den Bereich.' }
-                    : { level: 'warn', category: 'media', text: `${subject} – Videos würden nicht laufen.`, detail: '„Rechte aktualisieren" vergibt es.' },
+                    ? { level: 'fail', category: 'media', text: t.setup.checks.videoBlind(subject), detail: t.setup.checks.videoBlindDetail }
+                    : { level: 'warn', category: 'media', text: t.setup.checks.videoWouldBlind(subject), detail: t.setup.checks.videoWouldBlindDetail },
             );
         } else if (input.videoInUse) {
-            checks.push({ level: 'ok', category: 'media', text: 'Videos können laufen: der Wiki-Bereich „Infoscreen" ist sichtbar.' });
+            checks.push({ level: 'ok', category: 'media', text: t.setup.checks.videoOk });
         }
     }
 
@@ -410,10 +405,8 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         checks.push({
             level: 'warn',
             category: 'rights',
-            text: `${wikiHolders.join(', ')} ${wikiHolders.length === 1 ? 'hat' : 'haben'} Wiki-Rechte, die ein Gerät nicht braucht.`,
-            detail:
-                'Bilder lädt der Fernseher ohne Anmeldung, zum Abspielen von Videos genügt „Wiki-Bereich Infoscreen sehen". ' +
-                'Weniger Rechte heißt weniger Schaden, wenn ein Gerät verloren geht.',
+            text: t.setup.checks.wikiHolders(wikiHolders.join(', '), wikiHolders.length),
+            detail: t.setup.checks.wikiHoldersDetail,
         });
     }
 
@@ -421,33 +414,22 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         for (const member of input.members) {
             const excess = excessRights(member.grants, input.plannedAuthIds);
             if (!excess.length) continue;
-            const names = excess.slice(0, EXCESS_NAMED).map((id) => input.authName?.(id) ?? `Recht ${id}`);
+            const names = excess.slice(0, EXCESS_NAMED).map((id) => input.authName?.(id) ?? t.setup.checks.excessFallback(id));
             const more = excess.length - names.length;
             checks.push({
                 level: 'warn',
                 category: 'rights',
-                text:
-                    `${member.label} hat ${excess.length === 1 ? 'ein Recht' : `${excess.length} Rechte`}, ` +
-                    `${excess.length === 1 ? 'das' : 'die'} ein Gerät nicht braucht: ${names.join(', ')}${more > 0 ? ` und ${more} weitere` : ''}.`,
-                detail:
-                    'Ein Gerät soll nur lesen – bis auf sein Lebenszeichen –, und nur, was seine Screens zeigen: Wer die Adresse des Fernsehers kennt, hat diese ' +
-                    'Rechte auch. Meist kommen sie aus dem Personenstatus oder einer anderen Gruppe des Kontos. Die Namen sind die ' +
-                    'der Rechteverwaltung von ChurchTools; dort der Person einen Status ohne diese Rechte geben.',
+                text: t.setup.checks.excess(member.label, excess.length, names.join(', '), more),
+                detail: t.setup.checks.excessDetail,
             });
         }
     }
     return checks;
 }
 
-const CATEGORIES: { category: CheckCategory; title: string }[] = [
-    { category: 'group', title: 'Gruppe' },
-    { category: 'calendars', title: 'Kalender' },
-    { category: 'rooms', title: 'Räume' },
-    { category: 'services', title: 'Dienste' },
-    { category: 'module', title: 'Infoscreen Designer' },
-    { category: 'media', title: 'Mediathek und Videos' },
-    { category: 'rights', title: 'Weitere Rechte' },
-];
+const CATEGORIES: { category: CheckCategory; title: string }[] = (
+    ['group', 'calendars', 'rooms', 'services', 'module', 'media', 'rights'] as const
+).map((category) => ({ category, title: t.setup.checks.categories[category] }));
 
 const SEVERITY: Record<Level, number> = { ok: 0, info: 1, warn: 2, fail: 3 };
 
@@ -464,11 +446,11 @@ export interface CheckGroup {
     summary: string;
 }
 
-const COUNTED: { level: Level; one: string; many: string }[] = [
-    { level: 'fail', one: 'Fehler', many: 'Fehler' },
-    { level: 'warn', one: 'Warnung', many: 'Warnungen' },
-    { level: 'info', one: 'Hinweis', many: 'Hinweise' },
-];
+const COUNTED: { level: Level; one: string; many: string }[] = (['fail', 'warn', 'info'] as const).map((level) => ({
+    level,
+    one: t.setup.checks.counted[level][0],
+    many: t.setup.checks.counted[level][1],
+}));
 
 /** Sorts checks into their categories, in a fixed order; categories without a check are left out. */
 export function groupChecks(checks: Check[]): CheckGroup[] {
@@ -482,7 +464,7 @@ export function groupChecks(checks: Check[]): CheckGroup[] {
             const n = own.filter((c) => c.level === counted).length;
             return n ? `${n} ${n === 1 ? one : many}` : '';
         }).filter((part) => part !== '');
-        const allWell = own.length === 1 ? 'In Ordnung' : `${ok} von ${own.length} in Ordnung`;
+        const allWell = t.setup.checks.allWell(ok, own.length);
         groups.push({ category, title, level, checks: own, summary: counts.length ? counts.join(', ') : allWell });
     }
     return groups;

@@ -50,13 +50,13 @@ test('the inspector head says which slide this is, and the slide inspector has n
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     const title = page.getByTestId('inspector-drawer-title');
-    await expect(title).toHaveText('Slide 1 von 3');
-    await expect(page.getByTestId('slide-inspector').getByRole('heading', { name: 'Slide', exact: true })).toHaveCount(0);
+    await expect(title).toHaveText('Folie 1 von 3');
+    await expect(page.getByTestId('slide-inspector').getByRole('heading', { name: 'Folie', exact: true })).toHaveCount(0);
     await page.getByTestId('slide-item').nth(1).click();
-    await expect(title).toHaveText('Slide 2 von 3');
+    await expect(title).toHaveText('Folie 2 von 3');
     await addBlock(page, 'text');
     await expect(page.getByTestId('block-inspector')).toBeVisible();
-    await expect(title).toHaveText('Slide 2 von 3');
+    await expect(title).toHaveText('Folie 2 von 3');
 });
 
 test('create a new portrait screen', async ({ page }) => {
@@ -171,7 +171,7 @@ test('an administrator renames a screen from the tile menu (Plan.md 71)', async 
     await page.getByTestId('screen-menu').first().click();
     await page.getByTestId('screen-rename-open').click();
     const dialog = page.getByTestId('screen-rename');
-    await expect(dialog.getByRole('heading', { name: 'Screen umbenennen' })).toBeVisible();
+    await expect(dialog.getByRole('heading', { name: 'Bildschirm umbenennen' })).toBeVisible();
     await expect(page.getByTestId('settings-overscan')).toHaveCount(0);
     const name = page.getByTestId('settings-name');
     await expect(name).toBeFocused();
@@ -757,7 +757,7 @@ test('a rule without a second playlist asks for one on the spot, and the new one
     await page.goto('./');
     await page.getByTestId('screen-card').first().getByTestId('open-schedule').click();
     const dialog = page.getByTestId('schedule-dialog');
-    await expect(dialog).toContainText('Normalerweise zeigt dieser Screen');
+    await expect(dialog).toContainText('Normalerweise zeigt dieser Bildschirm');
     await expect(dialog).toContainText('Noch keine Regel');
 
     await dialog.getByTestId('add-time-rule').click();
@@ -771,7 +771,7 @@ test('a rule without a second playlist asks for one on the spot, and the new one
     await expect(dialog.getByTestId('schedule-playlist')).toHaveCount(2); // the legend below the day
 
     // The default can take a new one the same way: the last entry of the list.
-    await dialog.getByTestId('default-playlist').selectOption({ label: '＋ Neue Playlist anlegen …' });
+    await dialog.getByTestId('default-playlist').selectOption({ label: '＋ Neue Präsentation anlegen …' });
     await expect(dialog.getByTestId('default-playlist')).toHaveValue(/.+/);
     await expect(dialog.getByTestId('inline-create')).toHaveCount(1);
     await page.screenshot({ path: 'test-results/schedule-inline.png' });
@@ -865,7 +865,7 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await page.getByTestId('create-playlist').click();
     await expect(page).toHaveURL(/playlists\/[\w-]+$/);
     await expect(page.getByTestId('slide-item')).toHaveCount(1);
-    await expect(page.getByTestId('playlist-screens')).toHaveText('noch keinem Screen');
+    await expect(page.getByTestId('playlist-screens')).toHaveText('noch keinem Bildschirm');
     await page.getByTestId('leave-editor').click();
     await expect(page.getByTestId('playlist-card')).toHaveCount(2);
 
@@ -1040,7 +1040,7 @@ test('in the preview a long appointment list turns its pages, with a bar filling
     await page.getByTestId('frame-appointment-list').first().click();
     await page.getByTestId('show-all').check();
     // 3 pages × 10 s outlast the slide's 12 s: the slide list and the duration field say so.
-    await expect(page.getByTestId('page-hint')).toContainText('Ergibt 3 Seiten à 10 s – die Slide läuft dafür 30 s statt 12 s');
+    await expect(page.getByTestId('page-hint')).toContainText('Ergibt 3 Seiten à 10 s – die Folie läuft dafür 30 s statt 12 s');
     await expect(page.getByTestId('slide-duration').nth(2)).toHaveText('12 → 30 s');
     await page.getByTestId('show-all').blur(); // Esc is the editor's only outside a field
     await page.keyboard.press('Escape');

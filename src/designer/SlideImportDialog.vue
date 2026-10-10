@@ -5,6 +5,7 @@
  * choice, linked: the very same slides, a change counts in both (Plan.md 49).
  */
 import { computed, onMounted, ref, watch } from 'vue';
+import { t } from '../i18n/designer';
 import { sameStage, type SlideDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
 import type { LoadedPlaylist, PlaylistOverview, ScreenRepository } from '../store/screen-repository';
@@ -93,38 +94,37 @@ function take(): void {
 <template>
     <div class="d-dialog-backdrop" role="dialog" aria-modal="true" aria-labelledby="import-title" @click.self="emit('close')">
         <div class="d-dialog import" data-testid="slide-import">
-            <h2 id="import-title">Slides aus anderer Playlist</h2>
+            <h2 id="import-title">{{ t.editor.import.title }}</h2>
             <fieldset class="mode" data-testid="slide-import-mode">
-                <legend>Übernehmen als</legend>
+                <legend>{{ t.editor.import.takeAs }}</legend>
                 <div class="mode-options">
                     <label>
                         <input v-model="mode" type="radio" value="copy" data-testid="slide-import-copy">
-                        Als Kopie
+                        {{ t.editor.import.asCopy }}
                     </label>
                     <label>
                         <input v-model="mode" type="radio" value="linked" data-testid="slide-import-linked">
-                        Verknüpft
+                        {{ t.editor.import.asLinked }}
                     </label>
                 </div>
             </fieldset>
             <p v-if="mode === 'copy'" class="hint">
-                Übernommen werden Kopien – was du hier änderst, bleibt in der anderen Playlist, wie es ist.
+                {{ t.editor.import.copyHint }}
             </p>
             <p v-else class="hint" data-testid="slide-import-linked-hint">
-                Verknüpfte Slides bleiben gleich: Was du hier änderst, ändert sich auch in „{{ sourceName }}" – und umgekehrt.
-                Die Verknüpfung entsteht beim Speichern; erst dann zeigt auch „{{ sourceName }}" sie an.
+                {{ t.editor.import.linkedHint(sourceName) }}
             </p>
             <p v-if="problem" class="d-banner d-banner--error" role="alert">{{ problem }}</p>
-            <p v-if="loading" class="hint">Lade Playlists …</p>
+            <p v-if="loading" class="hint">{{ t.editor.import.loading }}</p>
             <p v-else-if="!candidates.length" class="hint" data-testid="slide-import-none">
-                Es gibt keine andere Playlist in diesem Format.
+                {{ t.editor.import.none }}
             </p>
             <template v-else>
                 <label class="d-field">
-                    Playlist
+                    {{ t.editor.import.playlist }}
                     <select v-model="playlistId" data-testid="slide-import-playlist">
                         <option v-for="o in candidates" :key="o.playlist.id" :value="o.playlist.id">
-                            {{ o.playlist.name }} ({{ o.slideCount }} {{ o.slideCount === 1 ? 'Slide' : 'Slides' }})
+                            {{ o.playlist.name }} ({{ t.editor.import.slideCount(o.slideCount) }})
                         </option>
                     </select>
                 </label>
@@ -141,13 +141,13 @@ function take(): void {
                                 >
                                 {{ slide.name }}
                             </span>
-                            <span v-if="unavailable(slide.id)" class="hint" data-testid="slide-import-here">schon hier</span>
+                            <span v-if="unavailable(slide.id)" class="hint" data-testid="slide-import-here">{{ t.editor.import.alreadyHere }}</span>
                         </label>
                     </li>
                 </ul>
             </template>
             <div class="d-dialog-actions">
-                <button class="d-btn" type="button" @click="emit('close')">Abbrechen</button>
+                <button class="d-btn" type="button" @click="emit('close')">{{ t.common.cancel }}</button>
                 <button
                     class="d-btn d-btn--primary"
                     type="button"
@@ -156,10 +156,10 @@ function take(): void {
                     @click="take"
                 >
                     <template v-if="mode === 'linked'">
-                        {{ chosen.size === 1 ? '1 Slide verknüpfen' : `${chosen.size} Slides verknüpfen` }}
+                        {{ t.editor.import.link(chosen.size) }}
                     </template>
                     <template v-else>
-                        {{ chosen.size === 1 ? '1 Slide übernehmen' : `${chosen.size} Slides übernehmen` }}
+                        {{ t.editor.import.take(chosen.size) }}
                     </template>
                 </button>
             </div>

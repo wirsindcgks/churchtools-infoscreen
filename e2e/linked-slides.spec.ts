@@ -45,7 +45,7 @@ test('a linked duplicate shows the chain, and a change in one playlist arrives i
     await rename(page, 'Gemeinsam geändert');
     await save(page);
     const notice = page.getByTestId('linked-save-notice');
-    await expect(notice).toContainText('Verknüpfte Slide „Gemeinsam geändert" gespeichert – gilt auch in „');
+    await expect(notice).toContainText('Verknüpfte Folie „Gemeinsam geändert" gespeichert – gilt auch in „');
     await notice.getByRole('button', { name: 'Meldung schließen' }).click();
     await expect(notice).toHaveCount(0);
 
@@ -82,9 +82,9 @@ test('slides taken over linked: "schon hier" for the ones already in the playlis
     const dialog = page.getByTestId('slide-import');
     await expect(dialog.getByTestId('slide-import-item')).toHaveCount(3);
     await dialog.getByTestId('slide-import-linked').check();
-    await expect(dialog.getByTestId('slide-import-linked-hint')).toContainText('Verknüpfte Slides bleiben gleich');
+    await expect(dialog.getByTestId('slide-import-linked-hint')).toContainText('Verknüpfte Folien bleiben gleich');
     await dialog.getByTestId('slide-import-item').first().click();
-    await expect(dialog.getByTestId('slide-import-take')).toHaveText('1 Slide verknüpfen');
+    await expect(dialog.getByTestId('slide-import-take')).toHaveText('1 Folie verknüpfen');
     await dialog.getByTestId('slide-import-take').click();
     await expect(page.getByTestId('slide-item')).toHaveCount(4);
     await expect(page.getByTestId('slide-linked-badge')).toHaveCount(1);

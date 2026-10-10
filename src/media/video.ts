@@ -3,14 +3,15 @@
  * and how length and size are read. The image service takes no videos (G42), so
  * a video is kept as it is, MP4 with H.264, and played from its download address.
  */
+import { t } from '../i18n/designer';
 
 export const VIDEO_TYPES = ['video/mp4'];
 export const VIDEO_MAX_BYTES = 128 * 1024 * 1024;
 
 /** Why a file may not go up as a video; `null` when it may. Checked before anything is sent. */
 export function videoProblem(file: { name: string; type: string; size: number }): string | null {
-    if (!VIDEO_TYPES.includes(file.type)) return 'Nur MP4-Videos (H.264) werden unterstützt.';
-    if (file.size > VIDEO_MAX_BYTES) return `„${file.name}" ist größer als ${VIDEO_MAX_BYTES / 1024 / 1024} MB.`;
+    if (!VIDEO_TYPES.includes(file.type)) return t.media.library.onlyMp4;
+    if (file.size > VIDEO_MAX_BYTES) return t.media.library.tooLarge(file.name, VIDEO_MAX_BYTES / 1024 / 1024);
     return null;
 }
 

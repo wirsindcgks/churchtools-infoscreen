@@ -15,6 +15,7 @@ import { useRotation } from '../player/rotation';
 import SlideView from '../player/SlideView.vue';
 import { fitStage } from '../player/stage';
 import StageView from '../player/StageView.vue';
+import { t } from '../i18n/designer';
 import Icon from './Icon.vue';
 
 const props = defineProps<{
@@ -131,7 +132,7 @@ onBeforeUnmount(() => {
         :class="{ idle }"
         role="dialog"
         aria-modal="true"
-        aria-label="Vorschau der Playlist"
+        :aria-label="t.editor.previewDialog.label"
         data-testid="playlist-preview"
         @pointermove="wake"
         @pointerdown="wake"
@@ -140,19 +141,19 @@ onBeforeUnmount(() => {
             <Transition name="fade">
                 <SlideView v-if="current" :key="current.id" :slide="current" :width="stage.width" :height="stage.height" />
             </Transition>
-            <p v-if="!current" class="stage-message">Diese Playlist enthält keine aktive Slide.</p>
+            <p v-if="!current" class="stage-message">{{ t.editor.previewDialog.noActive }}</p>
             <BannerView v-if="bannerShown(banner, parent.now, parent.timeZone)" :banner="banner!" :stage-width="stage.width" />
         </StageView>
 
         <div class="controls" data-testid="preview-controls">
-            <span class="badge">Vorschau – nicht gespeichert</span>
-            <button type="button" aria-label="Vorige Slide" title="Vorige Slide (←)" @click="rotation.step(-1)">
+            <span class="badge">{{ t.editor.previewDialog.badge }}</span>
+            <button type="button" :aria-label="t.editor.previewDialog.previous" :title="t.editor.previewDialog.previousTitle" @click="rotation.step(-1)">
                 <Icon name="back" />
             </button>
             <button
                 type="button"
-                :aria-label="paused ? 'Weiter abspielen' : 'Anhalten'"
-                :title="paused ? 'Weiter abspielen (Leertaste)' : 'Anhalten (Leertaste)'"
+                :aria-label="paused ? t.editor.previewDialog.resume : t.editor.previewDialog.pause"
+                :title="paused ? t.editor.previewDialog.resumeTitle : t.editor.previewDialog.pauseTitle"
                 data-testid="preview-pause"
                 @click="paused = !paused"
             >
@@ -160,18 +161,18 @@ onBeforeUnmount(() => {
             </button>
             <button
                 type="button"
-                aria-label="Nächste Slide"
-                title="Nächste Slide (→)"
+                :aria-label="t.editor.previewDialog.next"
+                :title="t.editor.previewDialog.nextTitle"
                 data-testid="preview-next"
                 @click="rotation.step(1)"
             >
                 <Icon name="forward" />
             </button>
             <span v-if="current" class="where" data-testid="preview-where">
-                {{ (index % shown.length) + 1 }}/{{ shown.length }} · {{ current.name }} · {{ seconds }} s{{ paused ? ' · angehalten' : '' }}
+                {{ (index % shown.length) + 1 }}/{{ shown.length }} · {{ current.name }} · {{ seconds }} s{{ paused ? t.editor.previewDialog.paused : '' }}
             </span>
-            <button type="button" class="close" title="Vorschau schließen (Esc)" data-testid="preview-close" @click="emit('close')">
-                <Icon name="close" /> Schließen
+            <button type="button" class="close" :title="t.editor.previewDialog.closeTitle" data-testid="preview-close" @click="emit('close')">
+                <Icon name="close" /> {{ t.common.close }}
             </button>
         </div>
     </div>

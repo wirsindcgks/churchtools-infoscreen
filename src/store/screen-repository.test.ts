@@ -157,7 +157,7 @@ describe('ScreenRepository', () => {
 
         const loaded = await repo.loadScreen('foyer-links');
         expect(loaded.slides).toHaveLength(1);
-        expect(loaded.issues.map((i) => i.message)).toEqual(['Slide fehlt.']);
+        expect(loaded.issues.map((i) => i.message)).toEqual(['Folie fehlt.']);
     });
 
     it('counts an own header logo as a use of that image, so deleting it warns (schema 1.1)', async () => {

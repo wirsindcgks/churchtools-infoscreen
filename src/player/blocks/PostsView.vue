@@ -20,6 +20,7 @@ import { sizedImageUrl, textStyle } from '../format';
 import { paginateByHeight, pageInterval, POST_SECONDS } from '../paging';
 import CalendarBadge from './CalendarBadge.vue';
 import DateTile from './DateTile.vue';
+import { tp } from '../../i18n/player';
 
 const props = defineProps<{ block: Extract<Block, { type: 'posts' }>; slideSeconds?: number }>();
 const context = useStageContext();
@@ -134,7 +135,7 @@ onMounted(() => {
                 </span>
                 <CalendarBadge class="row-badge" :name="p.groupName" :color="p.color" />
             </li>
-            <li v-if="items.length === 0" class="empty" data-testid="posts-empty">Keine aktuellen Beiträge</li>
+            <li v-if="items.length === 0" class="empty" data-testid="posts-empty">{{ tp.posts.none }}</li>
         </ul>
     </div>
 
@@ -177,7 +178,7 @@ onMounted(() => {
                 </div>
             </div>
         </template>
-        <div v-else class="hero-text hero-subtitle" data-testid="posts-empty">Keine aktuellen Beiträge</div>
+        <div v-else class="hero-text hero-subtitle" data-testid="posts-empty">{{ tp.posts.none }}</div>
     </div>
 </template>
 

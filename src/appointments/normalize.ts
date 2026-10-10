@@ -10,6 +10,7 @@ import { calendarColor } from '../player/format';
 import { BOOKING_CONFIRMED, type RoomInfo } from '../rooms/normalize';
 import { servicesByAppointment, type AppointmentService, type ServiceInput } from './services';
 import { startOfZonedDay, zonedDateKey, zonedTimeKey } from './zoned';
+import { LOCALE } from '../i18n/player';
 
 /** The fields of an appointment this code reads; the response has many more. */
 export interface AppointmentResponse {
@@ -106,7 +107,7 @@ export function normalizeAppointments(
         (a, b) =>
             a.start.getTime() - b.start.getTime() ||
             Number(b.allDay) - Number(a.allDay) ||
-            a.title.localeCompare(b.title, 'de'),
+            a.title.localeCompare(b.title, LOCALE),
     );
 }
 

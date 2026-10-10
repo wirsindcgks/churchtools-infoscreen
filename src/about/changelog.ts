@@ -4,6 +4,7 @@
  * the subset "Keep a Changelog" uses is read – versions, groups, bullets with
  * bold, code and links – and turned into data, never into HTML.
  */
+import { LOCALE } from '../i18n/player';
 
 export type Inline =
     | { kind: 'text'; text: string }
@@ -129,7 +130,7 @@ export function releaseOf(appVersion: string): string {
 /** "2026-09-25" → "25. September 2026". */
 export function formatReleaseDate(date: string): string {
     const [year, month, day] = date.split('-').map(Number);
-    return new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+    return new Intl.DateTimeFormat(LOCALE, { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
         new Date(Date.UTC(year!, month! - 1, day!)),
     );
 }

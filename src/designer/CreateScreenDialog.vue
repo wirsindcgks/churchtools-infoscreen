@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import * as v from 'valibot';
 import { computed, onMounted, ref, watch } from 'vue';
+import { t } from '../i18n/designer';
 import { Slug } from '../model/schema';
 import type { ScreenRepository } from '../store/screen-repository';
 import Icon from './Icon.vue';
@@ -24,8 +25,8 @@ const slugValid = computed(() => v.is(Slug, slug.value));
 const canCreate = computed(() => name.value.trim() !== '' && slugValid.value && !busy.value);
 
 const ORIENTATIONS = [
-    { value: 'landscape', icon: 'landscape', label: 'Quer', size: '1920 × 1080' },
-    { value: 'portrait', icon: 'portrait', label: 'Hochkant', size: '1080 × 1920' },
+    { value: 'landscape', icon: 'landscape', label: t.common.landscape, size: '1920 × 1080' },
+    { value: 'portrait', icon: 'portrait', label: t.common.portrait, size: '1080 × 1920' },
 ] as const;
 
 onMounted(() => nameInput.value?.focus());
@@ -56,37 +57,37 @@ async function create(): Promise<void> {
             data-testid="create-dialog"
             @submit.prevent="create"
         >
-            <h2 id="create-title">Screen erstellen</h2>
+            <h2 id="create-title">{{ t.home.create.title }}</h2>
             <label class="d-field">
-                Name
+                {{ t.common.name }}
                 <input
                     ref="nameInput"
                     v-model="name"
                     type="text"
                     maxlength="100"
-                    placeholder="z. B. Foyer links"
+                    :placeholder="t.home.create.namePlaceholder"
                     data-testid="new-name"
                 >
-                <small>Erscheint im Designer, lässt sich später ändern.</small>
+                <small>{{ t.home.create.nameHint }}</small>
             </label>
             <label class="d-field">
-                Adresse für das Gerät
+                {{ t.home.create.address }}
                 <input
                     v-model="slug"
                     type="text"
                     maxlength="64"
-                    placeholder="z. B. foyer-links"
+                    :placeholder="t.home.create.addressPlaceholder"
                     autocapitalize="off"
                     autocorrect="off"
                     spellcheck="false"
                     data-testid="new-slug"
                     @input="slugTouched = true"
                 >
-                <small v-if="slug && !slugValid" class="invalid">Nur Kleinbuchstaben, Ziffern und Bindestriche.</small>
-                <small v-else>Steht in der Adresse des Fernsehers und bleibt fest.</small>
+                <small v-if="slug && !slugValid" class="invalid">{{ t.home.create.addressInvalid }}</small>
+                <small v-else>{{ t.home.create.addressHint }}</small>
             </label>
             <fieldset class="orientation">
-                <legend>Format</legend>
+                <legend>{{ t.common.format }}</legend>
                 <label
                     v-for="o in ORIENTATIONS"
                     :key="o.value"
@@ -100,13 +101,13 @@ async function create(): Promise<void> {
                         <small>{{ o.size }}</small>
                     </span>
                 </label>
-                <small>Lässt sich später nicht umstellen.</small>
+                <small>{{ t.home.create.formatHint }}</small>
             </fieldset>
             <p v-if="error" class="invalid" role="alert">{{ error }}</p>
             <div class="d-dialog-actions">
-                <button class="d-btn" type="button" @click="emit('close')">Abbrechen</button>
+                <button class="d-btn" type="button" @click="emit('close')">{{ t.common.cancel }}</button>
                 <button class="d-btn d-btn--create" type="submit" :disabled="!canCreate" data-testid="create">
-                    Erstellen
+                    {{ t.common.create }}
                 </button>
             </div>
         </form>

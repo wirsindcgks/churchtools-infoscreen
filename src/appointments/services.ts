@@ -4,6 +4,7 @@
  * only as cards. One rule for the player, the preview and the device rights.
  */
 import type { Block } from '../model/schema';
+import { LOCALE, tp } from '../i18n/player';
 
 /** The service ids a block shows; empty where it shows none. */
 export function appointmentServiceIds(block: Block): number[] {
@@ -118,12 +119,12 @@ export function servicesByAppointment(input: ServiceInput): Map<string, Appointm
         const list = result.get(key) ?? [];
         for (const [serviceId, people] of byService) {
             const service = showable.get(serviceId)!;
-            list.push({ serviceId, name: (service.name ?? '').trim() || `Dienst ${serviceId}`, people });
+            list.push({ serviceId, name: (service.name ?? '').trim() || tp.appointments.fallbackService(serviceId), people });
         }
         list.sort((a, b) => {
             const sa = showable.get(a.serviceId)!.sortKey ?? Infinity;
             const sb = showable.get(b.serviceId)!.sortKey ?? Infinity;
-            return (sa === sb ? 0 : sa < sb ? -1 : 1) || a.name.localeCompare(b.name, 'de');
+            return (sa === sb ? 0 : sa < sb ? -1 : 1) || a.name.localeCompare(b.name, LOCALE);
         });
         result.set(key, list);
     }
@@ -150,8 +151,8 @@ export interface ServiceInfo {
 /** The showable services, by name. */
 export function serviceChoices(services: ServiceResponse[], groups: ServiceGroupResponse[]): ServiceInfo[] {
     return showableServices(services, groups)
-        .map((s) => ({ id: s.id!, name: (s.name ?? '').trim() || `Dienst ${s.id}` }))
-        .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+        .map((s) => ({ id: s.id!, name: (s.name ?? '').trim() || tp.appointments.fallbackService(s.id!) }))
+        .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
 }
 
 /** Most services a block holds – the schema's limit. */

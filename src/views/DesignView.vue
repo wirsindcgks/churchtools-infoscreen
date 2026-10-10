@@ -13,6 +13,7 @@ import ColorField from '../designer/ColorField.vue';
 import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
+import { t } from '../i18n/designer';
 import { usePreview } from '../designer/usePreview';
 import { createBlock, createSlide } from '../designer/ops';
 import PaletteScope from '../designer/PaletteScope.vue';
@@ -94,11 +95,11 @@ const previewWidth = ref(0);
 const fit = computed(() => fitStage({ width: previewWidth.value, height: (previewWidth.value * 9) / 16 }, STAGE));
 
 const RATIOS: { value: ThemeDoc['imageRatio']; label: string }[] = [
-    { value: '16:9', label: '16:9 – breit' },
+    { value: '16:9', label: t.design.ratios.wide },
     { value: '3:2', label: '3:2' },
     { value: '4:3', label: '4:3' },
-    { value: '1:1', label: '1:1 – quadratisch' },
-    { value: 'free', label: 'Frei – wie das Bild' },
+    { value: '1:1', label: t.design.ratios.square },
+    { value: 'free', label: t.design.ratios.free },
 ];
 
 async function load(): Promise<void> {
@@ -124,7 +125,7 @@ async function save(): Promise<void> {
     } catch (e) {
         if (e instanceof ConflictError) {
             status.value = 'conflict';
-            message.value = `Inzwischen hat ${e.current.updatedBy ?? 'jemand'} das Design geändert.`;
+            message.value = t.design.conflict(e.current.updatedBy);
         } else {
             status.value = 'error';
             message.value = e instanceof Error ? e.message : String(e);
@@ -167,9 +168,9 @@ function observe(el: unknown): void {
     <ModulePage current="design">
         <template #actions>
             <span v-if="status === 'saved' && !dirty" class="ok" data-testid="theme-saved">
-                Gespeichert – die Fernseher zeigen es in etwa 20 s.
+                {{ t.design.savedHint }}
             </span>
-            <button class="d-btn" type="button" :disabled="!dirty" @click="look = copyLook(saved)">Verwerfen</button>
+            <button class="d-btn" type="button" :disabled="!dirty" @click="look = copyLook(saved)">{{ t.design.discard }}</button>
             <button
                 class="d-btn d-btn--primary"
                 type="button"
@@ -177,89 +178,87 @@ function observe(el: unknown): void {
                 data-testid="theme-save"
                 @click="save"
             >
-                {{ status === 'saving' ? 'Speichere …' : 'Speichern' }}
+                {{ status === 'saving' ? t.design.saving : t.common.save }}
             </button>
         </template>
 
-        <PageHeader icon="palette" title="Design" testid="design-heading">
-            Das Erscheinungsbild aller Screens. Ecken, Akzentfarbe, Darstellung der Termine und Bildformat gelten
-            sofort überall; ein Baustein mit eigener Darstellung behält sie. Text- und Hintergrundfarbe und die
-            Schrift bekommen neue Slides und Bausteine.
+        <PageHeader icon="palette" :title="t.design.title" testid="design-heading">
+            {{ t.design.intro }}
         </PageHeader>
 
         <p v-if="message" class="d-banner d-banner--error" role="alert">
             {{ message }}
-            <button v-if="status === 'conflict'" class="d-btn" type="button" @click="reload">Neu laden</button>
+            <button v-if="status === 'conflict'" class="d-btn" type="button" @click="reload">{{ t.schedules.dialog.reload }}</button>
         </p>
         <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
-        <p v-else-if="author === null || !repository" class="empty">Lade …</p>
+        <p v-else-if="author === null || !repository" class="empty">{{ t.common.loading }}</p>
         <div v-else class="layout">
             <div class="d-card settings">
                 <section class="box" aria-labelledby="box-corners">
-                    <h2 id="box-corners">Ecken</h2>
+                    <h2 id="box-corners">{{ t.design.corners.title }}</h2>
                     <div class="choice" role="radiogroup" aria-labelledby="box-corners">
                         <label v-for="c in (['round', 'square'] as const)" :key="c" class="option" :class="{ on: look.corners === c }">
                             <input v-model="look.corners" type="radio" name="corners" :value="c" :data-testid="`corners-${c}`">
                             <span class="corner-sample" :class="`corner-sample--${c}`" aria-hidden="true" />
-                            {{ c === 'round' ? 'Rund' : 'Eckig' }}
+                            {{ c === 'round' ? t.design.corners.round : t.design.corners.square }}
                         </label>
                     </div>
-                    <p class="hint">Für Kacheln, Etiketten, Bilder und den Seitenbalken der Terminliste.</p>
+                    <p class="hint">{{ t.design.corners.hint }}</p>
                 </section>
 
                 <section class="box" aria-labelledby="box-colours">
-                    <h2 id="box-colours">Farben</h2>
-                    <ColorField v-model="look.accent" label="Akzent" testid="theme-accent" />
-                    <p class="hint">Für Kalender ohne eigene Farbe, für Kacheln und den Seitenbalken.</p>
+                    <h2 id="box-colours">{{ t.design.colors.title }}</h2>
+                    <ColorField v-model="look.accent" :label="t.common.color.accent" testid="theme-accent" />
+                    <p class="hint">{{ t.design.colors.accentHint }}</p>
                     <div class="grid2">
-                        <ColorField v-model="look.text" label="Text" testid="theme-text" />
-                        <ColorField v-model="look.background" label="Hintergrund" testid="theme-background" />
+                        <ColorField v-model="look.text" :label="t.common.color.text" testid="theme-text" />
+                        <ColorField v-model="look.background" :label="t.common.color.background" testid="theme-background" />
                     </div>
-                    <p class="hint">Text und Hintergrund gelten für neue Slides und Bausteine; bestehende bleiben, wie sie sind.</p>
+                    <p class="hint">{{ t.design.colors.textHint }}</p>
                 </section>
 
                 <section class="box" aria-labelledby="box-cards">
-                    <h2 id="box-cards">Kartenhintergrund</h2>
+                    <h2 id="box-cards">{{ t.design.cards.title }}</h2>
                     <div class="choice" role="radiogroup" aria-labelledby="box-cards">
                         <label class="option option--wide" :class="{ on: look.cards === 'tint' }">
                             <input v-model="look.cards" type="radio" name="cards" value="tint" data-testid="cards-tint">
-                            <span><strong>Leicht getönt</strong><br><small>Die Textfarbe scheint leicht durch – passt auf helle und dunkle Slides.</small></span>
+                            <span><strong>{{ t.design.cards.tint }}</strong><br><small>{{ t.design.cards.tintHint }}</small></span>
                         </label>
                         <label class="option option--wide" :class="{ on: look.cards === 'none' }">
                             <input v-model="look.cards" type="radio" name="cards" value="none" data-testid="cards-none">
-                            <span><strong>Ohne</strong><br><small>Die Karten liegen direkt auf der Slide.</small></span>
+                            <span><strong>{{ t.design.cards.none }}</strong><br><small>{{ t.design.cards.noneHint }}</small></span>
                         </label>
                         <label class="option option--wide" :class="{ on: look.cards === 'color' }">
                             <input v-model="look.cards" type="radio" name="cards" value="color" data-testid="cards-color">
-                            <span><strong>Eigene Farbe</strong><br><small>Eine Farbe mit eigener Deckkraft.</small></span>
+                            <span><strong>{{ t.design.cards.color }}</strong><br><small>{{ t.design.cards.colorHint }}</small></span>
                         </label>
                     </div>
                     <template v-if="look.cards === 'color'">
                         <!-- Only this field offers the palette, as it is being edited; the page shows no swatches elsewhere (e2e/palette.spec.ts). -->
                         <PaletteScope :theme="theme">
-                            <ColorField v-model="look.cardColor" label="Farbe" testid="theme-card-color" />
+                            <ColorField v-model="look.cardColor" :label="t.design.cards.colorLabel" testid="theme-card-color" />
                         </PaletteScope>
                         <label class="d-field">
-                            Deckkraft
+                            {{ t.design.cards.opacity }}
                             <input v-model.number="look.cardOpacity" type="range" min="0" max="100" step="5" data-testid="theme-card-opacity">
                             <output>{{ look.cardOpacity }} %</output>
                         </label>
                     </template>
-                    <p class="hint">Für die Karte von „Nächster Termin“ (Form „Modern“), für „Beiträge“ und „Gruppen“ sowie die Tür-Anzeige der Raumbelegung. Kalender- und Akzentfarben bleiben, wie sie sind.</p>
+                    <p class="hint">{{ t.design.cards.hint }}</p>
                 </section>
 
                 <section class="box" aria-labelledby="box-palette">
-                    <h2 id="box-palette">Farbpalette</h2>
-                    <p class="hint">Farben eurer Gemeinde mit Namen – im Editor stehen sie an jedem Farbfeld zum Anklicken.</p>
+                    <h2 id="box-palette">{{ t.design.palette.title }}</h2>
+                    <p class="hint">{{ t.design.palette.hint }}</p>
                     <div v-for="(entry, i) in look.palette" :key="i" class="palette-entry" data-testid="palette-entry">
-                        <ColorField v-model="entry.color" :label="`Farbe ${i + 1}`" />
+                        <ColorField v-model="entry.color" :label="t.design.palette.colorN(i + 1)" />
                         <label class="d-field">
-                            Name
+                            {{ t.common.name }}
                             <input
                                 v-model="entry.name"
                                 type="text"
                                 maxlength="40"
-                                placeholder="Gemeindeblau"
+                                :placeholder="t.design.palette.namePlaceholder"
                                 autocomplete="off"
                                 data-testid="palette-name"
                             >
@@ -269,8 +268,8 @@ function observe(el: unknown): void {
                                 class="d-btn d-btn--icon"
                                 type="button"
                                 :disabled="i === 0"
-                                :aria-label="`Farbe ${i + 1} nach oben`"
-                                title="Nach oben"
+                                :aria-label="t.design.palette.moveUp(i + 1)"
+                                :title="t.common.moveUp"
                                 data-testid="palette-up"
                                 @click="movePaletteColor(i, -1)"
                             >
@@ -280,8 +279,8 @@ function observe(el: unknown): void {
                                 class="d-btn d-btn--icon"
                                 type="button"
                                 :disabled="i === look.palette.length - 1"
-                                :aria-label="`Farbe ${i + 1} nach unten`"
-                                title="Nach unten"
+                                :aria-label="t.design.palette.moveDown(i + 1)"
+                                :title="t.common.moveDown"
                                 data-testid="palette-down"
                                 @click="movePaletteColor(i, 1)"
                             >
@@ -290,8 +289,8 @@ function observe(el: unknown): void {
                             <button
                                 class="d-btn d-btn--icon"
                                 type="button"
-                                :aria-label="`Farbe ${i + 1} entfernen`"
-                                title="Entfernen"
+                                :aria-label="t.design.palette.remove(i + 1)"
+                                :title="t.common.remove"
                                 data-testid="palette-remove"
                                 @click="look.palette.splice(i, 1)"
                             >
@@ -307,16 +306,16 @@ function observe(el: unknown): void {
                             data-testid="palette-add"
                             @click="addPaletteColor"
                         >
-                            <Icon name="plus" /> Farbe hinzufügen
+                            <Icon name="plus" /> {{ t.design.palette.add }}
                         </button>
                     </div>
-                    <p v-if="look.palette.length >= PALETTE_MAX" class="hint">Höchstens {{ PALETTE_MAX }} Farben.</p>
+                    <p v-if="look.palette.length >= PALETTE_MAX" class="hint">{{ t.design.palette.max(PALETTE_MAX) }}</p>
                 </section>
 
                 <section class="box" aria-labelledby="box-font">
-                    <h2 id="box-font">Schrift</h2>
+                    <h2 id="box-font">{{ t.design.font.title }}</h2>
                     <label class="d-field">
-                        Schriftart
+                        {{ t.inspector.fontFamily }}
                         <!-- An unknown key stays stored until someone picks a font; it draws as Lato meanwhile. -->
                         <select
                             data-testid="theme-font"
@@ -329,43 +328,43 @@ function observe(el: unknown): void {
                             </option>
                         </select>
                     </label>
-                    <p class="hint">Mit dieser Schrift beginnen neue Bausteine und Hinweise; bestehende behalten ihre.</p>
+                    <p class="hint">{{ t.design.font.hint }}</p>
                 </section>
 
                 <section class="box" aria-labelledby="box-appointments">
-                    <h2 id="box-appointments">Termine</h2>
+                    <h2 id="box-appointments">{{ t.design.appointments.title }}</h2>
                     <div class="choice" role="radiogroup" aria-labelledby="box-appointments">
                         <label class="option option--wide" :class="{ on: look.appointments === 'native' }">
                             <input v-model="look.appointments" type="radio" name="appointments" value="native" data-testid="appointments-native">
-                            <span><strong>Nativ</strong><br><small>Schlichte Zeilen, der nächste Termin mit Bild daneben.</small></span>
+                            <span><strong>{{ t.design.appointments.native }}</strong><br><small>{{ t.design.appointments.nativeHint }}</small></span>
                         </label>
                         <label class="option option--wide" :class="{ on: look.appointments === 'large' }">
                             <input v-model="look.appointments" type="radio" name="appointments" value="large" data-testid="appointments-large">
-                            <span><strong>Modern</strong><br><small>Karten mit Datumskachel und Kalender; der nächste Termin hervorgehoben.</small></span>
+                            <span><strong>{{ t.design.appointments.modern }}</strong><br><small>{{ t.design.appointments.modernHint }}</small></span>
                         </label>
                     </div>
                 </section>
 
                 <section class="box" aria-labelledby="box-images">
-                    <h2 id="box-images">Terminbilder</h2>
+                    <h2 id="box-images">{{ t.design.images.title }}</h2>
                     <label class="d-field">
-                        Format
+                        {{ t.common.format }}
                         <select v-model="look.imageRatio" data-testid="theme-image-ratio">
                             <option v-for="r in RATIOS" :key="r.value" :value="r.value">{{ r.label }}</option>
                         </select>
                     </label>
-                    <p class="hint">Das Bild eines Termins wird auf dieses Format zugeschnitten; „Frei" zeigt es, wie es ist.</p>
+                    <p class="hint">{{ t.design.images.hint }}</p>
                 </section>
             </div>
 
             <section class="d-card preview" aria-labelledby="box-preview">
-                <h2 id="box-preview">Vorschau</h2>
+                <h2 id="box-preview">{{ t.design.preview.title }}</h2>
                 <div :ref="observe" class="preview-box" data-testid="theme-preview">
                     <StageView v-if="previewWidth" :width="STAGE.width" :height="STAGE.height" :fit="fit">
                         <SlideView :slide="previewSlide" :width="STAGE.width" :height="STAGE.height" />
                     </StageView>
                 </div>
-                <p class="hint">Mit echten Terminen der ersten Kalender, so wie ein Fernseher im Querformat sie zeigt.</p>
+                <p class="hint">{{ t.design.preview.hint }}</p>
             </section>
         </div>
     </ModulePage>

@@ -1,6 +1,8 @@
 import type { HeartbeatDoc } from '../model/heartbeat';
 import type { ScreenRef } from '../store/screen-repository';
 import { lastEdited } from './last-edited';
+import { t } from '../i18n/designer';
+import { LOCALE } from '../i18n/player';
 
 /**
  * A screen counts as online while its last sign of life is at most this old: twice the longest jittered
@@ -14,20 +16,17 @@ export interface AliveState {
     title: string;
 }
 
-const NEVER_TITLE =
-    'Dieser Screen hat sich noch nie gemeldet – ein Fernseher meldet sich alle fünf Minuten, sobald er läuft und das Recht dazu hat.';
-
 /**
  * What a tile says about the life of a screen. Compared with the clock of this browser; a sign of life
  * in the future (a device clock that runs ahead) counts as online. Unreadable counts as never.
  */
 export function aliveState(heartbeat: HeartbeatDoc | undefined, now: Date, timeZone: string): AliveState {
     const at = heartbeat ? Date.parse(heartbeat.at) : Number.NaN;
-    if (!heartbeat || Number.isNaN(at)) return { kind: 'never', text: 'noch nie abgerufen', title: NEVER_TITLE };
-    const when = lastEdited(heartbeat.at, null, timeZone, 'Letztes Lebenszeichen');
-    const title = `${when?.whenTitle ?? ''}${heartbeat.version ? ` · Player ${heartbeat.version}` : ''}`;
-    if (now.getTime() - at <= ALIVE_WINDOW_MS) return { kind: 'online', text: 'online', title };
-    return { kind: 'offline', text: `nicht online seit ${when?.when ?? ''}`, title };
+    if (!heartbeat || Number.isNaN(at)) return { kind: 'never', text: t.common.alive.neverText, title: t.common.alive.neverTitle };
+    const when = lastEdited(heartbeat.at, null, timeZone, t.common.edited.lastSign);
+    const title = `${when?.whenTitle ?? ''}${heartbeat.version ? t.common.alive.playerVersion(heartbeat.version) : ''}`;
+    if (now.getTime() - at <= ALIVE_WINDOW_MS) return { kind: 'online', text: t.common.alive.online, title };
+    return { kind: 'offline', text: t.common.alive.offlineSince(when?.when ?? ''), title };
 }
 
 /** A screen whose sign of life says it shows a playlist right now, with the time of that sign. */
@@ -63,11 +62,11 @@ const quoted = (live: LiveScreen[]) => live.map((l) => `„${l.screen.name}“`)
 /** "Läuft gerade auf „Foyer links“ – laut Lebenszeichen von 14:32"; with several screens, the youngest sign. */
 export function liveTitle(live: LiveScreen[], timeZone: string): string {
     const youngest = Math.max(...live.map((l) => Date.parse(l.at)));
-    const time = new Intl.DateTimeFormat('de-DE', { timeZone, hour: '2-digit', minute: '2-digit' }).format(youngest);
-    return `Läuft gerade auf ${quoted(live)} – laut Lebenszeichen von ${time}`;
+    const time = new Intl.DateTimeFormat(LOCALE, { timeZone, hour: '2-digit', minute: '2-digit' }).format(youngest);
+    return t.common.runningOn(quoted(live), time);
 }
 
 /** The tooltip of "Speichern" while the playlist runs: where the change will show up, and when. */
 export function liveSaveTitle(live: LiveScreen[]): string {
-    return `Läuft gerade auf ${quoted(live)} – nach dem Speichern dort in etwa 20 Sekunden zu sehen`;
+    return t.editor.saveOnLive(quoted(live));
 }

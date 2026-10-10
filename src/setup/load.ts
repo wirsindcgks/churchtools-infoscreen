@@ -8,6 +8,8 @@ import { churchtoolsClient } from '@churchtools/churchtools-client';
 import type { GroupPermissions } from './abilities';
 import type { Grant, RoleRights } from './checks';
 import type { GroupTypeChoice, ProvisionApi } from './provision';
+import { t } from '../i18n/designer';
+import { LOCALE } from '../i18n/player';
 
 export interface GroupSummary {
     id: number;
@@ -45,7 +47,7 @@ const summary = (g: GroupResponse): GroupSummary => ({ id: g.id, name: g.name, s
 
 export async function loadGroups(): Promise<GroupSummary[]> {
     const groups = await churchtoolsClient.getAllPages<GroupResponse>('/groups');
-    return groups.map(summary).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+    return groups.map(summary).sort((a, b) => a.name.localeCompare(b.name, LOCALE));
 }
 
 function permissions(domainType: string, id: number): Promise<Grant[]> {
@@ -123,7 +125,7 @@ export async function groupMemberNames(groupId: number): Promise<{ personId: num
 export async function loadGroupTypes(): Promise<GroupTypeChoice[]> {
     const types = await churchtoolsClient.get<{ id: number; name: string; nameTranslated?: string; sortKey?: number }[]>('/group/grouptypes');
     return [...types]
-        .sort((a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0) || (a.nameTranslated || a.name).localeCompare(b.nameTranslated || b.name, 'de'))
+        .sort((a, b) => (a.sortKey ?? 0) - (b.sortKey ?? 0) || (a.nameTranslated || a.name).localeCompare(b.nameTranslated || b.name, LOCALE))
         .map((t) => ({ id: t.id, name: t.nameTranslated || t.name, rawName: t.name }));
 }
 
@@ -170,7 +172,7 @@ export async function personGroups(personId: number): Promise<{ id: number; name
     const memberships = await churchtoolsClient.get<PersonGroupResponse[]>(`/persons/${personId}/groups`);
     return memberships.flatMap((m) => {
         const id = m.group?.domainIdentifier ? Number(m.group.domainIdentifier) : NaN;
-        return Number.isNaN(id) ? [] : [{ id, name: m.group?.title || `Gruppe ${id}` }];
+        return Number.isNaN(id) ? [] : [{ id, name: m.group?.title || t.setup.groupFallback(id) }];
     });
 }
 

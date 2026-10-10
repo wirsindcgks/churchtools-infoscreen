@@ -28,6 +28,8 @@ import { allowedServiceIds, appointmentServicesInUse, serviceChoices, type Servi
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
+import { t } from '../i18n/designer';
+import { LOCALE } from '../i18n/player';
 
 const route = useRoute();
 const playlistId = String(route.params.id);
@@ -39,8 +41,8 @@ const playlistId = String(route.params.id);
  */
 const cameFrom = String(useRouter().options.history.state.back ?? '');
 const back = cameFrom === '/' || cameFrom.startsWith('/?')
-    ? { to: { name: 'designer', query: useRouter().resolve(cameFrom).query }, label: 'Screens' }
-    : { to: { name: 'playlists' }, label: 'Playlists' };
+    ? { to: { name: 'designer', query: useRouter().resolve(cameFrom).query }, label: t.editor.backToScreens }
+    : { to: { name: 'playlists' }, label: t.editor.backToPlaylists };
 const editor = useEditorStore();
 const loadError = ref<string | null>(null);
 const demo = ref(false);
@@ -229,14 +231,14 @@ function onResize(): void {
 
 /** The name the sheet's bar and the "…" menu don't have room for otherwise. */
 const sheetLabel = computed(() => {
-    if (editor.block) return `Baustein: ${BLOCK_LABELS[editor.block.type]}`;
-    return editor.slide?.name ? `Slide: ${editor.slide.name}` : 'Slide';
+    if (editor.block) return t.editor.blockNamed(BLOCK_LABELS[editor.block.type]);
+    return editor.slide?.name ? t.editor.slideNamed(editor.slide.name) : t.editor.slide;
 });
 
 /** The drawer's head says where you are, whatever is chosen; the name and the block have their own heads below (Plan.md 48). */
 const drawerTitle = computed(() => {
     const index = editor.slide ? editor.slides.indexOf(editor.slide) : -1;
-    return index < 0 ? 'Slide' : `Slide ${index + 1} von ${editor.slides.length}`;
+    return index < 0 ? t.editor.slide : t.editor.slideOf(index + 1, editor.slides.length);
 });
 
 /** The "…" menu below 48rem, after the one on a screen tile (Plan.md 44, M2). */
@@ -298,15 +300,15 @@ const currentMediaId = computed(() => {
 const statusText = computed(() => {
     switch (editor.status) {
         case 'saving':
-            return 'Speichert …';
+            return t.editor.status.saving;
         case 'saved':
-            return 'Gespeichert';
+            return t.editor.status.saved;
         case 'conflict':
-            return 'Konflikt';
+            return t.editor.status.conflict;
         case 'error':
-            return 'Nicht gespeichert';
+            return t.editor.status.error;
         default:
-            return editor.dirty ? 'Ungespeicherte Änderungen' : 'Alles gespeichert';
+            return editor.dirty ? t.editor.status.unsaved : t.editor.status.allSaved;
     }
 });
 
@@ -316,10 +318,10 @@ const linkedNotice = computed(() => {
     if (!saved.length) return '';
     const quote = (names: string[]) => names.map((n) => `„${n}"`).join(', ');
     if (saved.length === 1) {
-        return `Verknüpfte Slide ${quote([saved[0]!.name])} gespeichert – gilt auch in ${quote(saved[0]!.playlists)}.`;
+        return t.editor.linkedSavedOne(quote([saved[0]!.name]), quote(saved[0]!.playlists));
     }
     const playlists = [...new Set(saved.flatMap((s) => s.playlists))];
-    return `${saved.length} verknüpfte Slides gespeichert – sie gelten auch in ${quote(playlists)}.`;
+    return t.editor.linkedSavedMany(saved.length, quote(playlists));
 });
 const LINKED_NOTICE_MS = 8000;
 let linkedNoticeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -332,10 +334,8 @@ watch(linkedNotice, (text) => {
 const slideConflictText = computed(() => {
     const c = editor.slideConflict;
     if (!c) return '';
-    const where = c.playlist ? ` in „${c.playlist}"` : '';
-    const who = c.updatedBy ? ` von ${c.updatedBy}` : '';
-    const when = c.updatedAt ? ` (${new Date(c.updatedAt).toLocaleString('de-DE')})` : '';
-    return `„${c.slide.name}" wurde${where}${who} geändert${when}, während du sie bearbeitet hast. Gespeichert wurde nichts.`;
+    const when = c.updatedAt ? new Date(c.updatedAt).toLocaleString(LOCALE) : null;
+    return t.editor.slideConflict.text(c.slide.name, c.playlist, c.updatedBy ?? null, when);
 });
 
 onMounted(async () => {
@@ -402,7 +402,7 @@ onBeforeUnmount(() => {
     document.removeEventListener('pointerdown', closeMoreMenuOnOutside);
 });
 
-onBeforeRouteLeave(() => !editor.dirty || window.confirm('Ungespeicherte Änderungen verwerfen?'));
+onBeforeRouteLeave(() => !editor.dirty || window.confirm(t.editor.discardChanges));
 
 function onBeforeUnload(event: BeforeUnloadEvent): void {
     if (editor.dirty) event.preventDefault();
@@ -471,8 +471,8 @@ function onKey(event: KeyboardEvent): void {
             <RouterLink
                 class="back"
                 :to="back.to"
-                :title="`Editor verlassen, zurück zu „${back.label}“`"
-                :aria-label="`Zurück zu ${back.label}`"
+                :title="t.editor.leaveTitle(back.label)"
+                :aria-label="t.editor.backAria(back.label)"
                 data-testid="leave-editor"
             >
                 <Icon name="back" :size="18" /><span class="back-label">{{ back.label }}</span>
@@ -485,7 +485,7 @@ function onKey(event: KeyboardEvent): void {
                 data-testid="editor-live"
             />
             <span class="heading">
-                <strong class="title">{{ editor.draft?.playlist.name || 'Playlist' }}</strong>
+                <strong class="title">{{ editor.draft?.playlist.name || t.editor.playlistFallback }}</strong>
                 <span class="status" :class="`status--${editor.status}`" data-testid="save-status">{{ statusText }}</span>
             </span>
             <!-- The TVs check every 20 s for what was saved (Plan.md, 26); in demo mode an open player takes it at once. -->
@@ -494,14 +494,14 @@ function onKey(event: KeyboardEvent): void {
                 class="status status-hint"
                 data-testid="save-hint"
             >
-                – {{ editor.screens.length === 1 ? 'der Fernseher zeigt' : 'die Fernseher zeigen' }} es in etwa 20 s
+                {{ t.editor.savedHint(editor.screens.length) }}
             </span>
             <template #actions>
                 <button
                     class="d-btn d-btn--icon"
                     type="button"
-                    title="Rückgängig (⌘Z)"
-                    aria-label="Rückgängig"
+                    :title="t.editor.undoTitle"
+                    :aria-label="t.editor.undo"
                     :disabled="!editor.canUndo"
                     @click="editor.undo()"
                 >
@@ -510,8 +510,8 @@ function onKey(event: KeyboardEvent): void {
                 <button
                     class="d-btn d-btn--icon"
                     type="button"
-                    title="Wiederholen (⇧⌘Z)"
-                    aria-label="Wiederholen"
+                    :title="t.editor.redoTitle"
+                    :aria-label="t.editor.redo"
                     :disabled="!editor.canRedo"
                     @click="editor.redo()"
                 >
@@ -520,12 +520,12 @@ function onKey(event: KeyboardEvent): void {
                 <button
                     class="d-btn preview-btn"
                     type="button"
-                    title="Die Playlist abspielen wie auf dem Fernseher – mit allen Änderungen, ohne zu speichern"
+                    :title="t.editor.previewTitle"
                     data-testid="open-preview"
                     :disabled="!editor.slides.length"
                     @click="previewing = true"
                 >
-                    <Icon name="eye" :size="16" /> Vorschau
+                    <Icon name="eye" :size="16" /> {{ t.editor.preview }}
                 </button>
                 <!-- The player shows screens, not playlists: offer the screens this playlist runs on. -->
                 <RouterLink
@@ -534,17 +534,17 @@ function onKey(event: KeyboardEvent): void {
                     class="d-link player-link"
                     :to="{ name: 'player', query: { screen: s.slug } }"
                     target="_blank"
-                    :title="`Player von „${s.name}“ öffnen – zeigt den gespeicherten Stand`"
+                    :title="t.editor.playerTitle(s.name)"
                     data-testid="open-player"
                 >
-                    <Icon name="play" :size="16" /> Player<span v-if="editor.screens.length > 1" class="muted">: {{ s.name }}</span>
+                    <Icon name="play" :size="16" /> {{ t.editor.player }}<span v-if="editor.screens.length > 1" class="muted">: {{ s.name }}</span>
                 </RouterLink>
                 <!-- Below 48rem "Vorschau" and "Player" move in here – Rückgängig/Wiederholen and Speichern stay outside (Plan.md 44, M2). -->
                 <div ref="moreMenuRoot" class="more-menu">
                     <button
                         class="d-btn d-btn--icon"
                         type="button"
-                        aria-label="Weitere Aktionen"
+                        :aria-label="t.editor.moreActions"
                         aria-haspopup="menu"
                         :aria-expanded="moreMenuOpen"
                         data-testid="editor-more"
@@ -560,7 +560,7 @@ function onKey(event: KeyboardEvent): void {
                             :disabled="!editor.slides.length"
                             @click="openPreviewFromMenu"
                         >
-                            <Icon name="eye" :size="16" /> Vorschau
+                            <Icon name="eye" :size="16" /> {{ t.editor.preview }}
                         </button>
                         <RouterLink
                             v-for="s in editor.screens.slice(0, 1)"
@@ -571,7 +571,7 @@ function onKey(event: KeyboardEvent): void {
                             data-testid="more-player"
                             @click="moreMenuOpen = false"
                         >
-                            <Icon name="play" :size="16" /> Player
+                            <Icon name="play" :size="16" /> {{ t.editor.player }}
                         </RouterLink>
                     </div>
                 </div>
@@ -583,16 +583,16 @@ function onKey(event: KeyboardEvent): void {
                     :disabled="!editor.dirty || editor.status === 'saving'"
                     @click="save"
                 >
-                    Speichern
+                    {{ t.common.save }}
                 </button>
             </template>
         </AppBar>
 
         <p v-if="demo" class="d-banner d-banner--warning banner" data-testid="demo-notice-editor">
-            Demo-Modus: Gespeichert wird in diesem Browser, nicht in ChurchTools; ein offener Player übernimmt Änderungen sofort.
+            {{ t.editor.demoNotice }}
         </p>
         <p v-if="editor.error" class="d-banner d-banner--error banner" role="alert">{{ editor.error }}</p>
-        <p v-if="problem" class="d-banner d-banner--error banner" role="alert">Vorschaudaten: {{ problem }}</p>
+        <p v-if="problem" class="d-banner d-banner--error banner" role="alert">{{ t.editor.previewData(problem) }}</p>
 
         <p v-if="loadError" class="d-banner d-banner--error banner" role="alert">{{ loadError }}</p>
         <div
@@ -608,7 +608,7 @@ function onKey(event: KeyboardEvent): void {
                         class="tablet-toggle"
                         :aria-expanded="slidesExpanded"
                         aria-controls="slide-list-ol"
-                        :aria-label="`Slides, aktuell Nummer ${slideNumber}`"
+                        :aria-label="t.editor.slidesToggle(slideNumber)"
                         data-testid="tablet-slides-toggle"
                         @click="toggleSlides"
                     >
@@ -624,7 +624,7 @@ function onKey(event: KeyboardEvent): void {
                 <div v-if="linkedNotice" class="d-banner linked-notice" role="status" data-testid="linked-save-notice">
                     <Icon name="link" :size="16" />
                     <span>{{ linkedNotice }}</span>
-                    <button class="d-btn d-btn--icon" type="button" aria-label="Meldung schließen" @click="editor.linkedSaved = []">
+                    <button class="d-btn d-btn--icon" type="button" :aria-label="t.editor.closeNotice" @click="editor.linkedSaved = []">
                         <Icon name="close" :size="16" />
                     </button>
                 </div>
@@ -653,8 +653,8 @@ function onKey(event: KeyboardEvent): void {
                     <button
                         type="button"
                         class="d-btn d-btn--icon"
-                        title="Einklappen"
-                        aria-label="Einklappen"
+                        :title="t.editor.collapse"
+                        :aria-label="t.editor.collapse"
                         :data-testid="desktop ? 'desktop-inspector-collapse' : 'tablet-inspector-close'"
                         @click="toggleInspectorColumn"
                     >
@@ -699,14 +699,14 @@ function onKey(event: KeyboardEvent): void {
 
         <div v-if="editor.status === 'conflict' && editor.slideConflict" class="d-dialog-backdrop" role="dialog" aria-modal="true">
             <div class="d-dialog" data-testid="slide-conflict-dialog">
-                <h2>Eine verknüpfte Slide wurde inzwischen geändert</h2>
+                <h2>{{ t.editor.slideConflict.title }}</h2>
                 <p>{{ slideConflictText }}</p>
                 <div class="d-dialog-actions">
                     <button class="d-btn d-btn--primary" type="button" data-testid="slide-conflict-reload" @click="editor.discardAndReload()">
-                        Neu laden
+                        {{ t.editor.slideConflict.reload }}
                     </button>
                     <button class="d-btn" type="button" data-testid="slide-conflict-keep" @click="editor.keepAsCopy(author)">
-                        Als eigene Kopie behalten
+                        {{ t.editor.slideConflict.keepCopy }}
                     </button>
                 </div>
             </div>
@@ -714,19 +714,21 @@ function onKey(event: KeyboardEvent): void {
 
         <div v-if="editor.status === 'conflict' && editor.conflict" class="d-dialog-backdrop" role="dialog" aria-modal="true">
             <div class="d-dialog" data-testid="conflict-dialog">
-                <h2>Der Screen wurde inzwischen geändert</h2>
+                <h2>{{ t.editor.conflict.title }}</h2>
                 <p>
-                    {{ editor.conflict.updatedBy ?? 'Jemand' }} hat „{{ editor.conflict.name }}" gespeichert, während du
-                    ihn bearbeitet hast
-                    <template v-if="editor.conflict.updatedAt">
-                        ({{ new Date(editor.conflict.updatedAt).toLocaleString('de-DE') }})
-                    </template>.
+                    {{
+                        t.editor.conflict.text(
+                            editor.conflict.updatedBy ?? null,
+                            editor.conflict.name,
+                            editor.conflict.updatedAt ? new Date(editor.conflict.updatedAt).toLocaleString(LOCALE) : null,
+                        )
+                    }}
                 </p>
-                <p>Beide Fassungen lassen sich nicht zusammenführen. Welche soll gelten?</p>
+                <p>{{ t.editor.conflict.question }}</p>
                 <div class="d-dialog-actions">
-                    <button class="d-btn" type="button" @click="editor.discardAndReload()">Die andere laden</button>
+                    <button class="d-btn" type="button" @click="editor.discardAndReload()">{{ t.editor.conflict.loadOther }}</button>
                     <button class="d-btn d-btn--primary" type="button" @click="editor.overwrite(author)">
-                        Meine behalten
+                        {{ t.editor.conflict.keepMine }}
                     </button>
                 </div>
             </div>

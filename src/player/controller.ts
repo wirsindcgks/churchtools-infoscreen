@@ -19,14 +19,7 @@ import { appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, postNeeds,
 import { activePlaylistId } from './schedule';
 import { askServiceWorkerHasPage } from './service-worker';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
-
-/**
- * Shown when the browser of a TV is not signed in – its address lacks the
- * device login (way B, G9) or the device's password was changed.
- */
-export const SIGN_IN_MESSAGE =
-    'Dieser Fernseher ist nicht bei ChurchTools angemeldet. Seine Adresse erzeugt ein Administrator im Infoscreen ' +
-    'Designer unter „Einstellungen" – mit ihr meldet er sich bei jedem Start selbst an.';
+import { tp } from '../i18n/player';
 
 export interface PlayerState {
     phase: 'loading' | 'running' | 'error';
@@ -207,7 +200,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         // On a TV the one who reads this can fix it: say how, not only what (G32: sessions end).
         const message =
             error instanceof NotAuthenticatedError
-                ? SIGN_IN_MESSAGE
+                ? tp.signedOut
                 : error instanceof Error
                   ? error.message
                   : String(error);

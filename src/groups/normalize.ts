@@ -12,6 +12,7 @@
  */
 import type { GroupSort } from '../model/schema';
 import { groupColor } from '../posts/normalize';
+import { LOCALE, tp } from '../i18n/player';
 
 /** An entry of `GET /grouphomepages`, as far as this code reads it. */
 interface HomepageListResponse {
@@ -129,7 +130,7 @@ export function normalizeHomepageList(raw: unknown[]): HomepageEntry[] {
         if (!Number.isInteger(parentGroupId) || parentGroupId <= 0 || !isValidHomepageHash(hash)) continue;
         entries.push({ parentGroupId, title: (entry.title ?? '').trim(), hash });
     }
-    return entries.sort((a, b) => a.title.localeCompare(b.title, 'de'));
+    return entries.sort((a, b) => a.title.localeCompare(b.title, LOCALE));
 }
 
 function label(value: MasterDataResponse | null | undefined): string {
@@ -221,15 +222,15 @@ export function selectGroups(groups: readonly Group[], groupIds: readonly number
     if (sort !== 'weekday') {
         const direction = sort === 'name-desc' ? -1 : 1;
         return [...groups]
-            .sort((a, b) => direction * a.name.localeCompare(b.name, 'de', { numeric: true }) || a.id - b.id)
+            .sort((a, b) => direction * a.name.localeCompare(b.name, LOCALE, { numeric: true }) || a.id - b.id)
             .slice(0, GROUPS_CAP);
     }
     return [...groups]
         .sort(
             (a, b) =>
                 (a.weekdaySort ?? Infinity) - (b.weekdaySort ?? Infinity) ||
-                a.meetingTime.localeCompare(b.meetingTime, 'de') ||
-                a.name.localeCompare(b.name, 'de'),
+                a.meetingTime.localeCompare(b.meetingTime, LOCALE) ||
+                a.name.localeCompare(b.name, LOCALE),
         )
         .slice(0, GROUPS_CAP);
 }
@@ -243,8 +244,8 @@ export function homepageGroups(homepages: readonly HomepageGroups[] | undefined,
 /** "Noch 3 Plätze frei" – or null when nothing is to be said. */
 export function placesText(group: Pick<Group, 'freePlaces' | 'waitinglist'>): string | null {
     if (group.freePlaces === null) return null;
-    if (group.freePlaces === 0) return group.waitinglist ? 'Ausgebucht – Warteliste offen' : 'Ausgebucht';
-    return group.freePlaces === 1 ? 'Noch 1 Platz frei' : `Noch ${group.freePlaces} Plätze frei`;
+    if (group.freePlaces === 0) return group.waitinglist ? tp.groups.fullWithWaitlist : tp.groups.full;
+    return tp.groups.placesLeft(group.freePlaces);
 }
 
 /** "Mittwoch · 19:30", or whatever of both there is. */

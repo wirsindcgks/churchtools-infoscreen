@@ -20,6 +20,7 @@ import BannerView from '../player/BannerView.vue';
 import SlideView from '../player/SlideView.vue';
 import { onStoreChanged } from '../store/backend';
 import StageView from '../player/StageView.vue';
+import { tp } from '../i18n/player';
 
 const route = useRoute();
 const slug = typeof route.query.screen === 'string' ? route.query.screen : null;
@@ -194,7 +195,7 @@ onBeforeUnmount(() => {
 <template>
     <!-- Covers the ChurchTools chrome without touching it (G6). -->
     <div class="player" data-testid="player">
-        <p v-if="!slug" class="message" role="alert">Kein Screen angegeben (Parameter „screen" fehlt).</p>
+        <p v-if="!slug" class="message" role="alert">{{ tp.noScreen }}</p>
         <!--
             Loading – also while a screen with rules waits a moment for the clock check,
             instead of showing the wrong playlist. A small scene tells what happens: slides
@@ -241,11 +242,11 @@ onBeforeUnmount(() => {
                         :height="stage.height"
                     />
                 </Transition>
-                <p v-if="!current" class="stage-message">Diese Playlist enthält keine aktive Slide.</p>
+                <p v-if="!current" class="stage-message">{{ tp.noActiveSlide }}</p>
                 <BannerView v-if="banner" :banner="banner" :stage-width="stage.width" />
             </StageView>
             <!-- Old content with a discreet marker beats a black screen. -->
-            <span v-if="state.staleSince" class="stale" data-testid="stale" title="Keine Verbindung zu ChurchTools" />
+            <span v-if="state.staleSince" class="stale" data-testid="stale" :title="tp.noConnection" />
         </template>
     </div>
 </template>

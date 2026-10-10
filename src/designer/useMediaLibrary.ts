@@ -4,6 +4,7 @@
  * 16), each of which lays them out in its own frame.
  */
 import { onMounted, ref } from 'vue';
+import { t } from '../i18n/designer';
 import { MediaInUseError, MediaLibrary, wikiBackend, type MediaItem } from '../media/library';
 import { prepareImage } from '../media/scale';
 import { looksLikeVideo, videoProblem } from '../media/video';
@@ -70,20 +71,20 @@ export function useMediaLibrary(
             if (list.length) {
                 const prepared = [];
                 for (const [i, file] of list.entries()) {
-                    busy.value = `Bereite vor: ${file.name} (${i + 1}/${list.length})`;
+                    busy.value = t.media.library.preparing(file.name, i + 1, list.length);
                     prepared.push(await prepareImage(file));
                 }
-                busy.value = `Lade ${list.length === 1 ? 'Bild' : `${list.length} Bilder`} hoch …`;
+                busy.value = t.media.library.uploadingImages(list.length);
                 docs.push(...(await library.upload(prepared, target())));
             }
             for (const [i, file] of videos.entries()) {
-                busy.value = `Lade Video hoch: ${file.name} (${i + 1}/${videos.length}) …`;
+                busy.value = t.media.library.uploadingVideo(file.name, i + 1, videos.length);
                 docs.push(await library.uploadVideo(file, target()));
             }
             await reload();
             uploaded?.(docs);
         } catch (e) {
-            problem.value = `Hochladen fehlgeschlagen: ${message(e)}`;
+            problem.value = t.media.library.uploadFailed(message(e));
         } finally {
             busy.value = null;
         }
@@ -103,7 +104,7 @@ export function useMediaLibrary(
         if (!library) return;
         problem.value = null;
         try {
-            if (!window.confirm(`„${item.name}" aus ChurchTools löschen?`)) return;
+            if (!window.confirm(t.media.library.deleteConfirm(item.name))) return;
             await library.remove(item);
         } catch (e) {
             if (!(e instanceof MediaInUseError)) {
@@ -111,7 +112,7 @@ export function useMediaLibrary(
                 return;
             }
             const where = e.usage.map((u) => `• ${u.playlist} › ${u.slide}`).join('\n');
-            if (!window.confirm(`Das ${item.kind === 'video' ? 'Video' : 'Bild'} wird noch gezeigt:\n\n${where}\n\nDort bleibt eine leere Fläche. Trotzdem löschen?`)) return;
+            if (!window.confirm(t.media.library.stillShown(t.media.kindName[item.kind], where))) return;
             await library.remove(item, true);
         }
         await reload();
@@ -128,18 +129,18 @@ export function useMediaLibrary(
         const kept: string[] = [];
         try {
             for (const [i, item] of list.entries()) {
-                busy.value = `Lösche ${item.name} (${i + 1}/${list.length}) …`;
+                busy.value = t.media.library.deleting(item.name, i + 1, list.length);
                 try {
                     await library.remove(item, item.uses.length > 0);
                     gone.push(item.fileId);
                 } catch (e) {
-                    kept.push(e instanceof MediaInUseError ? `„${item.name}" wird inzwischen gezeigt` : `„${item.name}": ${message(e)}`);
+                    kept.push(e instanceof MediaInUseError ? t.media.library.nowShown(item.name) : t.media.library.failed(item.name, message(e)));
                 }
             }
         } finally {
             busy.value = null;
         }
-        if (kept.length) problem.value = `Nicht gelöscht: ${kept.join('; ')}.`;
+        if (kept.length) problem.value = t.media.library.notDeleted(kept);
         await reload().catch((e: unknown) => (problem.value = message(e)));
         return gone;
     }

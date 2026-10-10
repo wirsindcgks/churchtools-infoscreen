@@ -12,6 +12,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
+import { t } from '../i18n/designer';
 import { FILTERS, formatFilter } from './format-filter';
 import { ensureScreenCounts, screenCounts } from './screen-counts';
 import { unseenRelease } from '../about/seen';
@@ -33,20 +34,20 @@ interface PageLink {
 }
 
 const PAGES: PageLink[] = [
-    { name: 'designer', label: 'Screens', icon: 'tv', testid: 'sidebar-screens', phoneOnly: true },
-    { name: 'schedules', label: 'Zeitpläne', icon: 'calendar', testid: 'sidebar-schedules' },
-    { name: 'notices', label: 'Hinweise', icon: 'megaphone', testid: 'sidebar-notices' },
-    { name: 'playlists', label: 'Playlists', icon: 'list', testid: 'sidebar-playlists' },
-    { name: 'media', label: 'Mediathek', icon: 'image', testid: 'sidebar-media' },
-    { name: 'design', label: 'Design', icon: 'palette', testid: 'sidebar-design' },
+    { name: 'designer', label: t.common.screens, icon: 'tv', testid: 'sidebar-screens', phoneOnly: true },
+    { name: 'schedules', label: t.schedules.title, icon: 'calendar', testid: 'sidebar-schedules' },
+    { name: 'notices', label: t.notices.title, icon: 'megaphone', testid: 'sidebar-notices' },
+    { name: 'playlists', label: t.common.playlists, icon: 'list', testid: 'sidebar-playlists' },
+    { name: 'media', label: t.media.title, icon: 'image', testid: 'sidebar-media' },
+    { name: 'design', label: t.design.title, icon: 'palette', testid: 'sidebar-design' },
 ];
-const ABOUT: PageLink = { name: 'about', label: 'Über & Neuigkeiten', icon: 'info', testid: 'sidebar-about' };
+const ABOUT: PageLink = { name: 'about', label: t.about.title, icon: 'info', testid: 'sidebar-about' };
 
 /** What the phone's menu button shows: icon and name of the page open right now. */
-const SETUP: Pick<PageLink, 'label' | 'icon'> = { label: 'Einstellungen', icon: 'settings' };
+const SETUP: Pick<PageLink, 'label' | 'icon'> = { label: t.common.settings, icon: 'settings' };
 const currentPage = computed(() => {
     const name = String(route.name ?? '');
-    return [...PAGES, ABOUT].find((p) => p.name === name) ?? (name.startsWith('setup') ? SETUP : { label: 'Seiten', icon: 'list' as IconName });
+    return [...PAGES, ABOUT].find((p) => p.name === name) ?? (name.startsWith('setup') ? SETUP : { label: t.sidebar.pages, icon: 'list' as IconName });
 });
 
 const menuOpen = ref(false);
@@ -91,7 +92,7 @@ watch(
 </script>
 
 <template>
-    <nav ref="nav" class="module-sidebar" aria-label="Infoscreen Designer">
+    <nav ref="nav" class="module-sidebar" :aria-label="t.common.moduleName">
         <button
             ref="menuButton"
             type="button"
@@ -148,8 +149,8 @@ watch(
                             v-if="unseenRelease"
                             class="new"
                             role="img"
-                            aria-label="Neu"
-                            title="Neue Version – noch nicht angesehen"
+                            :aria-label="t.sidebar.new"
+                            :title="t.sidebar.newTitle"
                             data-testid="about-new"
                         />
                     </RouterLink>

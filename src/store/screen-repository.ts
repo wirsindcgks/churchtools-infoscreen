@@ -52,6 +52,8 @@ import {
     type ThemeDoc,
 } from '../model/schema';
 import type { KvBackend, KvCategory, KvValue } from './kv';
+import { LOCALE, tp } from '../i18n/player';
+import { tr } from '../i18n/repository';
 
 export const CATEGORIES = {
     screens: { name: 'Screens', description: 'Infoscreen: ein Index-Wert je Screen' },
@@ -82,14 +84,14 @@ export const ORPHAN_GRACE_MS = 60 * 60 * 1000;
 
 export class ScreenNotFoundError extends Error {
     constructor(readonly slug: string) {
-        super(`Es gibt keinen Screen „${slug}".`);
+        super(tp.screenNotFound(slug));
         this.name = 'ScreenNotFoundError';
     }
 }
 
 export class SlugTakenError extends Error {
     constructor(readonly slug: string) {
-        super(`Die Adresse „${slug}" ist schon vergeben.`);
+        super(tr.slugTaken(slug));
         this.name = 'SlugTakenError';
     }
 }
@@ -104,11 +106,7 @@ export interface ConflictInfo {
 
 export class ConflictError extends Error {
     constructor(readonly current: ConflictInfo) {
-        super(
-            `Der Screen wurde inzwischen geändert (Stand ${current.revision}` +
-                (current.updatedBy ? `, von ${current.updatedBy}` : '') +
-                ').',
-        );
+        super(tr.conflict(current.revision, current.updatedBy));
         this.name = 'ConflictError';
     }
 }
@@ -126,19 +124,14 @@ export interface SlideConflictInfo {
 /** Not a {@link ConflictError}: it is about one slide that several playlists show, not the playlist itself. */
 export class SlideConflictError extends Error {
     constructor(readonly current: SlideConflictInfo) {
-        super(
-            `Die Slide „${current.slide.name}" wurde inzwischen geändert` +
-                (current.playlist ? ` (in „${current.playlist}")` : '') +
-                (current.updatedBy ? `, von ${current.updatedBy}` : '') +
-                '.',
-        );
+        super(tr.slideConflict(current.slide.name, current.playlist, current.updatedBy));
         this.name = 'SlideConflictError';
     }
 }
 
 export class PlaylistNotFoundError extends Error {
     constructor(readonly id: string) {
-        super('Diese Playlist gibt es nicht (mehr).');
+        super(tr.playlistNotFound);
         this.name = 'PlaylistNotFoundError';
     }
 }
@@ -146,7 +139,7 @@ export class PlaylistNotFoundError extends Error {
 /** A playlist that still runs somewhere is not deleted – a screen would lose its content. */
 export class PlaylistInUseError extends Error {
     constructor(readonly screens: string[]) {
-        super(`Die Playlist läuft noch auf ${screens.map((s) => `„${s}"`).join(', ')}. Erst dort im Zeitplan eine andere wählen.`);
+        super(tr.playlistInUse(screens));
         this.name = 'PlaylistInUseError';
     }
 }
@@ -392,7 +385,7 @@ export class ScreenRepository {
     /** The screens as they run – with their schedules applied – sorted by name. */
     async listScreens(): Promise<ScreenDoc[]> {
         const { screens } = await this.readRunningScreens();
-        return screens.map((s) => s.doc).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+        return screens.map((s) => s.doc).sort((a, b) => a.name.localeCompare(b.name, LOCALE));
     }
 
     /**
@@ -402,7 +395,7 @@ export class ScreenRepository {
      */
     async listScreenOverviews(): Promise<ScreenOverview[]> {
         const running = await this.readRunningScreens();
-        const screens = running.screens.map((s) => s.doc).sort((a, b) => a.name.localeCompare(b.name, 'de'));
+        const screens = running.screens.map((s) => s.doc).sort((a, b) => a.name.localeCompare(b.name, LOCALE));
         if (!screens.length) return [];
         const playlists = new Map(running.playlists.map((p) => [p.doc.id, p.doc]));
         const slides = new Map((await this.readSlides()).docs.map((s) => [s.doc.id, s.doc]));
@@ -457,13 +450,13 @@ export class ScreenRepository {
         const byId = new Map(running.playlists.map((p) => [p.doc.id, p.doc]));
         const playlists = playlistIds.map((id) => byId.get(id)).filter((p): p is PlaylistDoc => !!p);
         for (const id of playlistIds) {
-            if (!byId.has(id)) issues.push({ documentId: id, message: 'Playlist fehlt.' });
+            if (!byId.has(id)) issues.push({ documentId: id, message: tr.playlistMissing });
         }
 
         const slideIds = new Set(playlists.flatMap((p) => p.slideIds));
         const slides = slidesRead.docs.map((s) => s.doc).filter((s) => slideIds.has(s.id));
         for (const id of slideIds) {
-            if (!slides.some((s) => s.id === id)) issues.push({ documentId: id, message: 'Slide fehlt.' });
+            if (!slides.some((s) => s.id === id)) issues.push({ documentId: id, message: tr.slideMissing });
         }
 
         const mediaIds = new Set(slides.flatMap(referencedMedia));
@@ -471,7 +464,7 @@ export class ScreenRepository {
         issues.push(...mediaRead.issues);
         const media = mediaRead.docs.map((m) => m.doc).filter((m) => mediaIds.has(m.id));
         for (const id of mediaIds) {
-            if (!media.some((m) => m.id === id)) issues.push({ documentId: id, message: 'Medium fehlt.' });
+            if (!media.some((m) => m.id === id)) issues.push({ documentId: id, message: tr.mediaMissing });
         }
 
         // Settings that cannot be read allow nothing: the strict side.
@@ -608,7 +601,7 @@ export class ScreenRepository {
                 o.media = media.filter((m) => ids.includes(m.id));
             }
         }
-        return overviews.sort((a, b) => a.playlist.name.localeCompare(b.playlist.name, 'de'));
+        return overviews.sort((a, b) => a.playlist.name.localeCompare(b.playlist.name, LOCALE));
     }
 
     /** One playlist with its slides and media – what the editor opens. */
@@ -624,7 +617,7 @@ export class ScreenRepository {
         const byId = new Map(slidesRead.docs.map((s) => [s.doc.id, s.doc]));
         const slides = stored.doc.slideIds.map((sid) => byId.get(sid)).filter((s): s is SlideDoc => !!s);
         for (const sid of stored.doc.slideIds) {
-            if (!byId.has(sid)) issues.push({ documentId: sid, message: 'Slide fehlt.' });
+            if (!byId.has(sid)) issues.push({ documentId: sid, message: tr.slideMissing });
         }
 
         const mediaIds = new Set(slides.flatMap(referencedMedia));
@@ -635,7 +628,7 @@ export class ScreenRepository {
             const others = running.playlists
                 .filter((p) => p.doc.id !== id && p.doc.slideIds.includes(sid))
                 .map((p) => ({ id: p.doc.id, name: withPlaylistDefaults(p.doc, screens).name }))
-                .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+                .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
             if (others.length) sharedWith[sid] = others;
         }
         return {
@@ -658,7 +651,7 @@ export class ScreenRepository {
             schema: { ...SCHEMA_VERSION },
             kind: 'slide',
             id: crypto.randomUUID(),
-            name: 'Neue Slide',
+            name: tr.newSlide,
             durationSeconds: 10,
             enabled: true,
             // In the theme's colour (Plan.md, 27), like every slide added in the editor.
@@ -670,7 +663,7 @@ export class ScreenRepository {
             schema: { ...SCHEMA_VERSION },
             kind: 'playlist',
             id: crypto.randomUUID(),
-            name: options.name.trim() || 'Neue Playlist',
+            name: options.name.trim() || tr.newPlaylist,
             slideIds: [slide.id],
             stage: { ...options.stage },
             revision: 1,
@@ -708,7 +701,7 @@ export class ScreenRepository {
             schema: { ...SCHEMA_VERSION },
             kind: 'playlist',
             id: crypto.randomUUID(),
-            name: `${source.playlist.name} (Kopie)`,
+            name: tr.copyOf(source.playlist.name),
             slideIds: slides.map((s) => s.id),
             stage: { ...source.playlist.stage },
             revision: 1,
@@ -737,7 +730,7 @@ export class ScreenRepository {
         const now = (options.now ?? new Date()).toISOString();
         const slideIds = new Set(bundle.slides.map((s) => s.id));
         const missing = bundle.playlist.slideIds.find((id) => !slideIds.has(id));
-        if (missing) throw new Error(`Slide ${missing} fehlt im Speicherstand.`);
+        if (missing) throw new Error(tr.slideMissingInStore(missing));
 
         const running = await this.readRunningScreens();
         const stored = running.playlists.find((p) => p.doc.id === bundle.playlist.id);
@@ -875,7 +868,7 @@ export class ScreenRepository {
             if (!playlist) throw new PlaylistNotFoundError(id);
             const staged = withPlaylistDefaults(playlist, screens);
             if (!sameStage(staged.stage, current.doc.stage)) {
-                throw new Error(`„${staged.name}" ist für ein anderes Format gestaltet als „${current.doc.name}".`);
+                throw new Error(tr.otherFormat(staged.name, current.doc.name));
             }
         }
         const schedule: ScheduleDoc = {
@@ -1067,10 +1060,10 @@ export class ScreenRepository {
         const playlistIds = new Set(playlists.map((p) => p.id));
         const needed = [screen.defaultPlaylistId, ...screen.schedule.map((r) => r.playlistId)];
         const missingPlaylist = needed.find((id) => !playlistIds.has(id));
-        if (missingPlaylist) throw new Error(`Playlist ${missingPlaylist} fehlt im Speicherstand.`);
+        if (missingPlaylist) throw new Error(tr.playlistMissingInStore(missingPlaylist));
         const slideIds = new Set(slides.map((s) => s.id));
         const missingSlide = playlists.flatMap((p) => p.slideIds).find((id) => !slideIds.has(id));
-        if (missingSlide) throw new Error(`Slide ${missingSlide} fehlt im Speicherstand.`);
+        if (missingSlide) throw new Error(tr.slideMissingInStore(missingSlide));
     }
 
     private async upsert(categoryId: number, valueId: number | undefined, text: string): Promise<void> {
@@ -1213,5 +1206,5 @@ function screensShowing(playlistId: string, screens: readonly ScreenDoc[]): Scre
     return screens
         .filter((s) => playlistIdsOf(s).includes(playlistId))
         .map((s) => ({ id: s.id, slug: s.slug, name: s.name }))
-        .sort((a, b) => a.name.localeCompare(b.name, 'de'));
+        .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
 }
