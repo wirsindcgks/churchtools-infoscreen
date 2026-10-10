@@ -22,7 +22,7 @@ import { KEYS, keyLabel, withKeys } from './shortcuts';
 import { vTip } from './tip';
 
 /** `frame`: the rectangle of the block (of the box around several) in host pixels; `host`: the size of the host – both only for the menu above. */
-const props = defineProps<{ blocks: Block[]; frame?: Rect; host?: Size; lift?: number; variant?: 'float' | 'bar' }>();
+const props = defineProps<{ blocks: Block[]; frame?: Rect; host?: Size; clear?: { above: number; below: number }; variant?: 'float' | 'bar' }>();
 const emit = defineEmits<{ 'all-settings': [] }>();
 
 const editor = useEditorStore();
@@ -61,7 +61,7 @@ const focusInside = ref(false);
 const placed = ref({ left: 0, top: 0 });
 function place(): void {
     if (bar || focusInside.value || !props.frame || !props.host) return;
-    const { left, top } = quickMenuPlace(props.frame, size, props.host, undefined, props.lift);
+    const { left, top } = quickMenuPlace(props.frame, size, props.host, undefined, props.clear);
     placed.value = { left, top };
 }
 function measure(): void {
@@ -69,7 +69,7 @@ function measure(): void {
     size.width = root.value.offsetWidth;
     size.height = root.value.offsetHeight;
 }
-watch([() => props.frame, () => props.host, size], place, { deep: true });
+watch([() => props.frame, () => props.host, () => props.clear, size], place, { deep: true });
 function onFocusOut(event: FocusEvent): void {
     if (root.value?.contains(event.relatedTarget as Node | null)) return;
     focusInside.value = false;

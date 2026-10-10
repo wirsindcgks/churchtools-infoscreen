@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { outerFrame, resizeRotated, snapAngle } from './rotate';
+import { handleReach, outerFrame, resizeRotated, snapAngle } from './rotate';
 
 describe('outerFrame (Plan.md F1)', () => {
     const frame = { x: 100, y: 100, width: 400, height: 100 };
@@ -89,5 +89,21 @@ describe('resizeRotated (Plan.md F1)', () => {
 
     it('keeps the minimum size', () => {
         expect(resizeRotated(frame, 45, 'e', -1000, 0)).toMatchObject({ width: 20, height: 100 });
+    });
+});
+
+describe('handleReach', () => {
+    const frame = { x: 100, y: 100, width: 200, height: 100 };
+
+    it('reaches above an upright block by its lift and radius', () => {
+        expect(handleReach(frame, 28, 6)).toEqual({ above: 34, below: 0 });
+    });
+
+    it('reaches below a block turned upside down', () => {
+        expect(handleReach({ ...frame, rotation: 180 }, 62, 8)).toEqual({ above: 0, below: 70 });
+    });
+
+    it('stays beside a block turned a quarter', () => {
+        expect(handleReach({ ...frame, rotation: 90 }, 28, 6)).toEqual({ above: 0, below: 0 });
     });
 });

@@ -1,5 +1,5 @@
 /**
- * Bold is spare in the designer's frame (Plan.md 79): text is regular (400), buttons 500, only headings 600 – as the
+ * Bold is spare in the designer's frame (Plan.md 79): text is regular (400), buttons and headings 600 – as the
  * tokens `--d-weight-*` in theme.css say. Nothing heavier may creep back in. The player and the blocks are the
  * content of slides and set their own weights.
  */

@@ -20,14 +20,20 @@ export type MenuPlace = 'above' | 'below' | 'inside';
 
 /**
  * Centred above the block with `gap` of air if that fits into the host; else below it; else inside, at the block's top edge.
- * Sideways it is kept within the host (a menu wider than the host starts at its left edge). `lift` keeps it that much
- * higher above the block, clear of the rotate handle (Plan.md F1).
+ * Sideways it is kept within the host (a menu wider than the host starts at its left edge). `clear` keeps it that much
+ * further from the block above and below, clear of the rotate handle (Plan.md F1).
  */
-export function quickMenuPlace(frame: Rect, menu: Size, host: Size, gap = 8, lift = 0): { left: number; top: number; place: MenuPlace } {
+export function quickMenuPlace(
+    frame: Rect,
+    menu: Size,
+    host: Size,
+    gap = 8,
+    clear: { above: number; below: number } = { above: 0, below: 0 },
+): { left: number; top: number; place: MenuPlace } {
     const left = Math.max(0, Math.min(frame.left + frame.width / 2 - menu.width / 2, host.width - menu.width));
-    const above = frame.top - lift - gap - menu.height;
+    const above = frame.top - clear.above - gap - menu.height;
     if (above >= 0) return { left, top: above, place: 'above' };
-    const below = frame.top + frame.height + gap;
+    const below = frame.top + frame.height + clear.below + gap;
     if (below + menu.height <= host.height) return { left, top: below, place: 'below' };
     return { left, top: frame.top + gap, place: 'inside' };
 }

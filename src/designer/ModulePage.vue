@@ -22,7 +22,7 @@ const top = useOffsetTop(root);
 
 <template>
     <!-- "de": names on a tile may need to hyphenate (Plan.md 44, M5) – we do not know what the host page sets. -->
-    <div ref="root" :lang="LOCALE" class="infoscreen-designer module-page" :style="{ minHeight: `calc(100vh - ${top}px)`, '--page-top': `${top}px` }">
+    <div ref="root" :lang="LOCALE" class="infoscreen-designer module-page" :style="{ '--page-top': `${top}px` }">
         <div class="layout">
             <ModuleSidebar />
             <main class="content"><slot /></main>
@@ -32,6 +32,9 @@ const top = useOffsetTop(root);
 
 <style scoped>
 .module-page {
+    /* The window's visible height: on a tablet 100vh reaches under Safari's bar, and the page scrolled though it all fitted. */
+    min-height: calc(100vh - var(--page-top, 0px));
+    min-height: calc(100dvh - var(--page-top, 0px));
     display: flex;
     flex-direction: column;
     background: var(--d-workspace);
