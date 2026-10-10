@@ -381,6 +381,35 @@ export function reorderMany<T>(items: readonly T[], indices: readonly number[], 
     return result;
 }
 
+/** The ids of the group the block belongs to, in layer order; a block without a group is its own. */
+export function groupOf(blocks: readonly Block[], id: string): string[] {
+    const groupId = blocks.find((x) => x.id === id)?.groupId;
+    if (!groupId) return [id];
+    return blocks.filter((x) => x.groupId === groupId).map((x) => x.id);
+}
+
+/** The ids together with every member of the groups they belong to, in layer order. */
+export function withGroups(blocks: readonly Block[], ids: readonly string[]): string[] {
+    const groups = new Set(blocks.filter((x) => ids.includes(x.id) && x.groupId).map((x) => x.groupId));
+    return blocks.filter((x) => ids.includes(x.id) || (x.groupId && groups.has(x.groupId))).map((x) => x.id);
+}
+
+/** Takes the `groupId` off blocks whose group has only one member left (a group needs at least two). */
+export function dropSingleGroups(blocks: Block[]): void {
+    const counts = new Map<string, number>();
+    for (const x of blocks) if (x.groupId) counts.set(x.groupId, (counts.get(x.groupId) ?? 0) + 1);
+    for (const x of blocks) if (x.groupId && counts.get(x.groupId)! < 2) delete x.groupId;
+}
+
+/** Moves the chosen items together to the place of the topmost of them, keeping their order among themselves. */
+export function gatherLayers<T>(items: readonly T[], indices: readonly number[]): T[] {
+    const chosen = new Set(indices.filter((i) => i >= 0 && i < items.length));
+    if (!chosen.size) return [...items];
+    const top = Math.max(...chosen);
+    const picked = items.filter((_, i) => chosen.has(i));
+    return [...items.filter((_, i) => i < top && !chosen.has(i)), ...picked, ...items.filter((_, i) => i > top)];
+}
+
 /** The smallest rectangle around the given frames (Plan.md 79, D3); null for none. */
 export function boundingBox(frames: readonly { x: number; y: number; width: number; height: number }[]): { x: number; y: number; width: number; height: number } | null {
     if (!frames.length) return null;

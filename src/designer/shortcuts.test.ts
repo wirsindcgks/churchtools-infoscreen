@@ -41,6 +41,8 @@ describe('shortcuts (Plan.md 79, B3: Tastenkürzel an einer Stelle)', () => {
             'Ausschneiden: Strg+X',
             'Einfügen: Strg+V',
             'Duplizieren: Strg+D',
+            'Gruppieren: Strg+G',
+            'Gruppierung aufheben: Strg+Umschalt+G',
             'Löschen: Entf',
             'Um 1 Pixel verschieben: Pfeiltasten',
             'Um 10 Pixel verschieben: Umschalt+Pfeiltasten',

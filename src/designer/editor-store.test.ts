@@ -941,3 +941,129 @@ describe('selecting several blocks (Plan.md 79, D1)', () => {
         expect(c!.y - a!.y).toBe(225);
     });
 });
+
+describe('grouping blocks (Plan.md 79, D9)', () => {
+    /** Four shapes, bottom to top: a, b, c, d at known places, 200 × 100 each. */
+    async function four() {
+        const { editor } = await setup();
+        const ids: string[] = [];
+        for (const [x, y] of [[100, 100], [400, 100], [700, 400], [1000, 400]] as const) {
+            editor.addBlock('shape');
+            editor.updateBlock(editor.block!.id, { x, y, width: 200, height: 100 });
+            ids.push(editor.block!.id);
+        }
+        editor.selectBlock(null);
+        return { editor, ids: ids as [string, string, string, string] };
+    }
+    const groupIdOf = (editor: Awaited<ReturnType<typeof four>>['editor'], id: string) => editor.slide!.blocks.find((b) => b.id === id)?.groupId;
+
+    it('groups two or more as one step, closes the layers up and keeps the choice', async () => {
+        const { editor, ids } = await four();
+        editor.selectBlock(ids[0]);
+        editor.toggleBlock(ids[2]);
+        expect(editor.canGroup).toBe(true);
+        const steps = editor.slide!.blocks.length;
+        editor.groupBlocks(editor.selectedBlockIds);
+        expect(groupIdOf(editor, ids[0])).toBeTruthy();
+        expect(groupIdOf(editor, ids[0])).toBe(groupIdOf(editor, ids[2]));
+        expect(groupIdOf(editor, ids[1])).toBeUndefined();
+        expect(editor.slide!.blocks.map((b) => b.id)).toEqual([ids[1], ids[0], ids[2], ids[3]]);
+        expect(editor.selectedBlockIds).toEqual([ids[0], ids[2]]);
+        expect(editor.groupSelected).toBe(true);
+        expect(editor.canGroup).toBe(false);
+        expect(editor.canUngroup).toBe(true);
+        editor.undo();
+        expect(groupIdOf(editor, ids[0])).toBeUndefined();
+        expect(editor.slide!.blocks.map((b) => b.id)).toEqual(ids);
+        expect(editor.slide!.blocks).toHaveLength(steps);
+    });
+
+    it('does nothing for one block, and merges groups without nesting', async () => {
+        const { editor, ids } = await four();
+        editor.groupBlocks([ids[0]]);
+        expect(groupIdOf(editor, ids[0])).toBeUndefined();
+        editor.groupBlocks([ids[0], ids[1]]);
+        editor.groupBlocks([ids[2], ids[3]]);
+        const first = groupIdOf(editor, ids[0]);
+        expect(first).not.toBe(groupIdOf(editor, ids[2]));
+        editor.groupBlocks([ids[1], ids[2]]);
+        expect(new Set(ids.map((id) => groupIdOf(editor, id))).size).toBe(1);
+        expect(groupIdOf(editor, ids[0])).not.toBe(first);
+    });
+
+    it('locks the whole group if one member is locked', async () => {
+        const { editor, ids } = await four();
+        editor.setLocked([ids[1]], true);
+        editor.groupBlocks([ids[0], ids[1]]);
+        expect(editor.slide!.blocks.filter((b) => b.locked).map((b) => b.id).sort()).toEqual([ids[0], ids[1]].sort());
+    });
+
+    it('ungroups every member of the touched groups', async () => {
+        const { editor, ids } = await four();
+        editor.groupBlocks([ids[0], ids[1], ids[2]]);
+        editor.ungroupBlocks([ids[1]]);
+        expect(ids.map((id) => groupIdOf(editor, id))).toEqual([undefined, undefined, undefined, undefined]);
+        expect(editor.canUngroup).toBe(false);
+    });
+
+    it('chooses the whole group on pickBlock and toggles it as one; a single member can be chosen alone', async () => {
+        const { editor, ids } = await four();
+        editor.groupBlocks([ids[0], ids[1]]);
+        editor.pickBlock(ids[0]);
+        expect(editor.selectedBlockIds).toEqual([ids[0], ids[1]]);
+        editor.pickBlock(ids[3]);
+        expect(editor.selectedBlockIds).toEqual([ids[3]]);
+        editor.toggleGroup(ids[1]);
+        expect(editor.selectedBlockIds).toEqual([ids[3], ids[0], ids[1]]);
+        editor.toggleGroup(ids[0]);
+        expect(editor.selectedBlockIds).toEqual([ids[3]]);
+        editor.selectBlock(ids[0]);
+        expect(editor.selectedBlockIds).toEqual([ids[0]]);
+        expect(editor.groupSelected).toBe(false);
+    });
+
+    it('takes whole groups into a selection rectangle', async () => {
+        const { editor, ids } = await four();
+        editor.groupBlocks([ids[0], ids[3]]);
+        editor.selectArea({ x: 110, y: 110, width: 5, height: 5 });
+        expect(editor.selectedBlockIds).toEqual([ids[0], ids[3]]);
+    });
+
+    it('gives a copied group a new id, and a lone copied member none', async () => {
+        const { editor, ids } = await four();
+        editor.groupBlocks([ids[0], ids[1]]);
+        editor.duplicateBlocks([ids[0], ids[1]]);
+        const copies = editor.selectedBlockIds;
+        expect(copies).toHaveLength(2);
+        const copyGroup = groupIdOf(editor, copies[0]!);
+        expect(copyGroup).toBeTruthy();
+        expect(copyGroup).toBe(groupIdOf(editor, copies[1]!));
+        expect(copyGroup).not.toBe(groupIdOf(editor, ids[0]));
+        editor.copyBlocks([ids[0]]);
+        editor.pasteBlocks();
+        expect(groupIdOf(editor, editor.selectedBlockIds[0]!)).toBeUndefined();
+        expect(groupIdOf(editor, ids[0])).toBeTruthy();
+    });
+
+    it('leaves no group of one when a member is deleted', async () => {
+        const { editor, ids } = await four();
+        editor.groupBlocks([ids[0], ids[1], ids[2]]);
+        editor.removeBlocks([ids[0]]);
+        expect(groupIdOf(editor, ids[1])).toBe(groupIdOf(editor, ids[2]));
+        expect(groupIdOf(editor, ids[1])).toBeTruthy();
+        editor.removeBlocks([ids[1]]);
+        expect(groupIdOf(editor, ids[2])).toBeUndefined();
+    });
+
+    it('locks and moves in layers as a whole group, even with one member given', async () => {
+        const { editor, ids } = await four();
+        editor.groupBlocks([ids[0], ids[1]]);
+        editor.setLocked([ids[0]], true);
+        expect(editor.slide!.blocks.filter((b) => b.locked).map((b) => b.id)).toEqual([ids[0], ids[1]]);
+        editor.setLocked([ids[1]], false);
+        expect(editor.slide!.blocks.some((b) => b.locked)).toBe(false);
+        editor.layerBlocks([ids[0]], 'front');
+        expect(editor.slide!.blocks.map((b) => b.id)).toEqual([ids[2], ids[3], ids[0], ids[1]]);
+    });
+});
+

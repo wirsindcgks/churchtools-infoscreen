@@ -62,7 +62,7 @@ onBeforeUnmount(() => {
             v-for="row in rows"
             :key="row.block.id"
             class="layer-item"
-            :class="{ 'layer-item--on': editor.isSelected(row.block.id) }"
+            :class="{ 'layer-item--on': editor.isSelected(row.block.id), 'layer-item--grouped': !!row.block.groupId }"
             data-sort-item
             data-testid="layer-row"
             @click="choose(row.block.id, $event)"
@@ -90,6 +90,7 @@ onBeforeUnmount(() => {
             >
                 <Icon v-if="editor.isSelected(row.block.id)" name="check" :size="12" />
             </span>
+            <Icon v-if="row.block.groupId" name="group" :size="14" class="layer-group-mark" role="img" :aria-label="t.inspector.groupMark" data-testid="layer-group-mark" />
             <Icon :name="BLOCK_ICONS[row.block.type]" :size="16" class="layer-icon" />
             <span class="layer-name">{{ BLOCK_LABELS[row.block.type] }}</span>
             <span class="layer-sub">{{ blockSummary(row.block, lookup) }}</span>
@@ -129,6 +130,13 @@ onBeforeUnmount(() => {
     cursor: pointer;
     user-select: none;
     -webkit-touch-callout: none;
+}
+.layer-item--grouped {
+    margin-left: var(--d-space-3);
+}
+.layer-group-mark {
+    flex: none;
+    color: var(--d-accent);
 }
 .layer-item:hover {
     background: var(--d-panel);

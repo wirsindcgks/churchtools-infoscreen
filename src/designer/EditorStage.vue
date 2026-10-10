@@ -160,18 +160,19 @@ function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): vo
     togglePending = null;
     // In the mode "Mehrere auswählen" (D6) a press adds an unchosen block and starts no drag; a chosen one is dragged with the group.
     if (handle === 'move' && editor.multiSelect && !editor.isSelected(block.id)) {
-        editor.toggleBlock(block.id);
+        editor.toggleGroup(block.id);
         return;
     }
     // Shift, Ctrl or ⌘ adds the block to the choice or takes it out, and starts no drag (D2).
     if (handle === 'move' && (event.shiftKey || event.ctrlKey || event.metaKey)) {
-        editor.toggleBlock(block.id);
+        editor.toggleGroup(block.id);
         return;
     }
     const wasChosen = editor.isSelected(block.id);
     if (handle === 'move' && editor.multiSelect) togglePending = block.id;
     else if (handle === 'move' && wasChosen && editor.selectedBlockIds.length > 1) soloPending = block.id;
-    else editor.selectBlock(block.id);
+    else if (wasChosen) editor.selectBlock(block.id);
+    else editor.pickBlock(block.id);
     const touch = event.pointerType === 'touch';
     if (touch) showName(block.id);
     // A finger first chooses (C3): a swipe over an unchosen block scrolls the page. Only the chosen block is moved.
@@ -180,7 +181,7 @@ function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): vo
     const moving = handle === 'move' ? editor.selection.filter((b) => !b.locked) : block.locked ? [] : [block];
     if (!moving.length) {
         // Nothing to carry (a locked block): the press can only toggle.
-        if (togglePending) editor.toggleBlock(togglePending);
+        if (togglePending) editor.toggleGroup(togglePending);
         togglePending = null;
         return;
     }
@@ -294,11 +295,11 @@ function end(): void {
     // A mouse released over a block after marking text in the field must not close the editing run.
     if (!editor.editingTextId) editor.endGesture();
     if (soloPending) {
-        editor.selectBlock(soloPending);
+        editor.pickBlock(soloPending);
         soloPending = null;
     }
     if (togglePending) {
-        editor.toggleBlock(togglePending);
+        editor.toggleGroup(togglePending);
         togglePending = null;
     }
 }
@@ -493,7 +494,7 @@ async function onLongPress(): Promise<void> {
     pressedId.value = down.target;
     setTimeout(() => (pressedId.value = null), 300);
     navigator.vibrate?.(15);
-    if (!editor.selectedBlockIds.length) editor.selectBlock(down.target);
+    if (!editor.selectedBlockIds.length) editor.pickBlock(down.target);
     await nextTick();
     if (quickMenu.value) quickMenu.value.openMore();
     else if (!wide.value) emit('open-more');
@@ -558,7 +559,7 @@ function onHostUpCapture(event: PointerEvent): void {
         lastTap = null;
         lastTouchDouble = performance.now();
         if (down.target === 'empty') resetZoom();
-        else onDoubleClick();
+        else onDoubleClick(down.target);
         return;
     }
     lastTap = tap;
@@ -632,9 +633,9 @@ function onContextMenu(event: Event): void {
     if (touchLive) event.preventDefault();
 }
 /** The browser may make a `dblclick` of two taps as well – the double tap has done its work then. */
-function onFrameDoubleClick(): void {
+function onFrameDoubleClick(id: string): void {
     if (performance.now() - lastTouchDouble < 700) return;
-    onDoubleClick();
+    onDoubleClick(id);
 }
 
 /** Leads to the content of the chosen block: its menu opens its first field – on a phone the editor's bar does (C5, C6). */
@@ -646,9 +647,14 @@ async function openContent(): Promise<void> {
     else if (!wide.value) emit('open-content');
 }
 /** A double click: a text block is written on the stage (C4), any other leads to its content (C5). */
-function onDoubleClick(): void {
+function onDoubleClick(id: string): void {
     // In the mode "Mehrere auswählen" (D6) two taps are two toggles, not a call for the content.
     if (editor.multiSelect) return;
+    // On a member of a chosen group it chooses that block alone (D9); the next one leads to its content.
+    if (editor.groupSelected && editor.isSelected(id)) {
+        editor.selectBlock(id);
+        return;
+    }
     const chosen = editor.block;
     if (chosen?.type === 'text') {
         if (!chosen.locked) editor.startTextEdit(chosen.id);
@@ -819,7 +825,7 @@ function onEmptyAction(b: Block): void {
                     @pointercancel="end"
                     @pointerenter="hoveredId = block.id"
                     @pointerleave="hoveredId = null"
-                    @dblclick="onFrameDoubleClick"
+                    @dblclick="onFrameDoubleClick(block.id)"
                 >
                     <!-- Shown by CSS where there is a pointer to hover with, never on the chosen block or while dragging (A4). -->
                     <span class="frame-name" :class="{ 'frame-name--inside': block.y < 32 / fit.scale, 'frame-name--touch': block.id === touchNameId && !dragId }">

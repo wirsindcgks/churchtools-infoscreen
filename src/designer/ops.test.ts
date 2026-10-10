@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { serialize } from '../model/read';
 import { textBlock, makeSlide } from '../model/testing';
-import { BLOCK_LABELS, PALETTE, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, levelOf, textLevels, duplicateSlide, fitToStage, freeSpot, move, reorder, reorderMany, boundingBox, slugify } from './ops';
+import { BLOCK_LABELS, PALETTE, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, levelOf, textLevels, duplicateSlide, fitToStage, freeSpot, move, reorder, reorderMany, boundingBox, slugify, groupOf, withGroups, dropSingleGroups, gatherLayers } from './ops';
 import { History } from './history';
 import { DEFAULT_THEME, type Block, type BlockType } from '../model/schema';
 
@@ -123,6 +123,21 @@ describe('designer operations', () => {
         // One block behaves as `reorder`.
         expect(reorderMany(items, [2], 'forward')).toEqual(reorder(items, 2, 'forward'));
         expect(reorderMany(items, [], 'front')).toEqual(items);
+    });
+
+    it('finds groups, drops lone members and gathers layers (Plan.md 79, D9)', () => {
+        const blocks = ['a', 'b', 'c', 'd'].map((id, i) => ({ ...textBlock(id), groupId: i === 1 || i === 3 ? 'g' : i === 0 ? 'h' : undefined }));
+        expect(groupOf(blocks, 'b')).toEqual(['b', 'd']);
+        expect(groupOf(blocks, 'c')).toEqual(['c']);
+        expect(groupOf(blocks, 'zz')).toEqual(['zz']);
+        expect(withGroups(blocks, ['d', 'c'])).toEqual(['b', 'c', 'd']);
+        dropSingleGroups(blocks);
+        expect(blocks.map((x) => x.groupId)).toEqual([undefined, 'g', undefined, 'g']);
+        const items = ['a', 'b', 'c', 'd', 'e'];
+        expect(gatherLayers(items, [0, 3])).toEqual(['b', 'c', 'a', 'd', 'e']);
+        expect(gatherLayers(items, [1, 2])).toEqual(items);
+        expect(gatherLayers(items, [4, 0])).toEqual(['b', 'c', 'd', 'a', 'e']);
+        expect(gatherLayers(items, [])).toEqual(items);
     });
 
     it('measures the box around several frames', () => {

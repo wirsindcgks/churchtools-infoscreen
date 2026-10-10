@@ -25,6 +25,9 @@ const PATHS = {
     copy: ['M9 9h11v11H9z', 'M5 15H4V4h11v1'],
     // Duplicate a block (Plan.md 79, A5): the two sheets of `copy`, with a plus on the front one.
     duplicate: ['M9 9h11v11H9z', 'M5 15H4V4h11v1', 'M14.5 12.5v6', 'M11.5 15.5h6'],
+    // Group and ungroup blocks (Plan.md 79, D9): two blocks inside one frame, or the two apart.
+    group: ['M3 3h18v18H3z', 'M7 7h5v5H7z', 'M12 12h5v5h-5z'],
+    ungroup: ['M4 4h8v8H4z', 'M12 12h8v8h-8z'],
     // Address of a screen: a hash sign.
     id: ['M9.5 4L7.5 20', 'M16.5 4l-2 16', 'M4.5 9h15.5', 'M4 15h15.5'],
     // Linked slides (Plan.md 49): two chain links.

@@ -24,7 +24,7 @@ import { tr } from '../i18n/repository';
 import { align, alignTarget, distribute, distributeBlocker, type Axis, type Edge, type Frame } from './arrange';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
-import { boundingBox, clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, freeSpot, move, moveAround, newId, reorderMany, type Layer } from './ops';
+import { boundingBox, clampFrame, cloneJson, createBlock, createSlide, dropSingleGroups, duplicateSlide, freeSpot, gatherLayers, groupOf, move, moveAround, newId, reorderMany, withGroups, type Layer } from './ops';
 
 /** Publishing (Plan.md 79, Paket E): what the button "Veröffentlichen" is doing. */
 export type SaveStatus = 'idle' | 'publishing' | 'published' | 'conflict' | 'error';
@@ -113,6 +113,19 @@ export const useEditorStore = defineStore('editor', () => {
     const slide = computed(() => slides.value.find((s) => s.id === selectedSlideId.value) ?? slides.value[0] ?? null);
     const selection = computed<Block[]>(() => slide.value?.blocks.filter((b) => selectedBlockIds.value.includes(b.id)) ?? []);
     /** The one chosen block; null with none or with several. */
+    /** Several blocks can be grouped when they are not already all one group (groups among them merge). */
+    const canGroup = computed(() => {
+        const ids = withGroups(slide.value?.blocks ?? [], selectedBlockIds.value);
+        if (ids.length < 2) return false;
+        const members = blocksOf(ids);
+        return !(members[0]?.groupId && members.every((x) => x.groupId === members[0]!.groupId));
+    });
+    const canUngroup = computed(() => selection.value.some((x) => x.groupId));
+    /** The choice is exactly one group (Plan.md D9). */
+    const groupSelected = computed(() => {
+        const first = selection.value[0];
+        return selection.value.length >= 2 && !!first?.groupId && groupOf(slide.value?.blocks ?? [], first.id).length === selection.value.length && selection.value.every((x) => x.groupId === first.groupId);
+    });
     const block = computed(() => (selection.value.length === 1 ? selection.value[0]! : null));
     /** The text block being written on the stage (Plan.md 79, C4): one editing run is one step in the history. */
     const editingTextId = ref<string | null>(null);
@@ -314,6 +327,19 @@ export const useEditorStore = defineStore('editor', () => {
         return selectedBlockIds.value.includes(id);
     }
 
+    /** Chooses the block with its whole group (a click on the stage). */
+    function pickBlock(id: string): void {
+        selectedBlockIds.value = groupOf(slide.value?.blocks ?? [], id);
+    }
+
+    /** Takes the block's whole group out of the choice if a member is in it, else puts all in (Shift-click). */
+    function toggleGroup(id: string): void {
+        const members = groupOf(slide.value?.blocks ?? [], id);
+        selectedBlockIds.value = isSelected(id)
+            ? selectedBlockIds.value.filter((x) => !members.includes(x))
+            : [...selectedBlockIds.value, ...members.filter((x) => !isSelected(x))];
+    }
+
     /** Adds the block to the choice, or takes it out (Shift-click). */
     function toggleBlock(id: string): void {
         selectedBlockIds.value = isSelected(id) ? selectedBlockIds.value.filter((x) => x !== id) : [...selectedBlockIds.value, id];
@@ -326,9 +352,10 @@ export const useEditorStore = defineStore('editor', () => {
 
     /** The blocks whose frame the rectangle (stage pixels) touches; with `add` together with those chosen already. */
     function selectArea(rect: { x: number; y: number; width: number; height: number }, add = false): void {
-        const hit = (slide.value?.blocks ?? [])
+        let hit = (slide.value?.blocks ?? [])
             .filter((b) => b.x <= rect.x + rect.width && b.x + b.width >= rect.x && b.y <= rect.y + rect.height && b.y + b.height >= rect.y)
             .map((b) => b.id);
+        hit = withGroups(slide.value?.blocks ?? [], hit);
         selectedBlockIds.value = add ? [...new Set([...selectedBlockIds.value, ...hit])] : hit;
     }
 
@@ -486,11 +513,17 @@ export const useEditorStore = defineStore('editor', () => {
         const target = slide.value;
         if (!target || !sources.length) return;
         const slideId = target.id;
+        const groupIds = new Map<string, string>();
         let copies = sources.map((source): Block => {
             const copy = cloneJson(source);
             delete copy.locked;
+            if (copy.groupId) {
+                if (!groupIds.has(copy.groupId)) groupIds.set(copy.groupId, newId());
+                copy.groupId = groupIds.get(copy.groupId)!;
+            }
             return { ...copy, id: newId() };
         });
+        dropSingleGroups(copies);
         const stageSize = stage.value;
         let box = boundingBox(copies)!;
         // A group from another stage may be bigger than this one.
@@ -536,6 +569,7 @@ export const useEditorStore = defineStore('editor', () => {
     /** Locks or unlocks all of them in one step. */
     function setLocked(ids: readonly string[], locked: boolean): void {
         const slideId = slide.value?.id;
+        ids = withGroups(slide.value?.blocks ?? [], ids);
         change((b) => {
             for (const target of slideIn(b, slideId)?.blocks ?? []) {
                 if (!ids.includes(target.id)) continue;
@@ -624,7 +658,9 @@ export const useEditorStore = defineStore('editor', () => {
         const slideId = slide.value?.id;
         change((b) => {
             const target = slideIn(b, slideId);
-            if (target) target.blocks = target.blocks.filter((x) => !gone.has(x.id));
+            if (!target) return;
+            target.blocks = target.blocks.filter((x) => !gone.has(x.id));
+            dropSingleGroups(target.blocks);
         });
         pruneSelection();
     }
@@ -632,13 +668,46 @@ export const useEditorStore = defineStore('editor', () => {
     /** The layer of the unlocked ones, in one step; among themselves they keep their order (`reorderMany`). */
     function layerBlocks(ids: readonly string[], layer: Layer): void {
         const slideId = slide.value?.id;
-        const free = new Set(blocksOf(ids).filter((x) => !x.locked).map((x) => x.id));
+        const free = new Set(blocksOf(withGroups(slide.value?.blocks ?? [], ids)).filter((x) => !x.locked).map((x) => x.id));
         if (!free.size) return;
         change((b) => {
             const target = slideIn(b, slideId);
             if (!target) return;
             const indices = target.blocks.flatMap((x, i) => (free.has(x.id) ? [i] : []));
             target.blocks = reorderMany(target.blocks, indices, layer);
+        });
+    }
+
+    /**
+     * Groups the blocks (and every group among them) as one step: one new `groupId`, the layers closed up under the topmost.
+     * If one of them is locked, all become locked – a protection is never lost quietly. The choice stays.
+     */
+    function groupBlocks(ids: readonly string[]): void {
+        const slideId = slide.value?.id;
+        const all = new Set(withGroups(slide.value?.blocks ?? [], ids));
+        if (all.size < 2) return;
+        const groupId = newId();
+        change((b) => {
+            const target = slideIn(b, slideId);
+            if (!target) return;
+            const members = target.blocks.filter((x) => all.has(x.id));
+            const locked = members.some((x) => x.locked);
+            for (const x of members) {
+                x.groupId = groupId;
+                if (locked) x.locked = true;
+            }
+            const indices = target.blocks.flatMap((x, i) => (all.has(x.id) ? [i] : []));
+            target.blocks = gatherLayers(target.blocks, indices);
+        });
+    }
+
+    /** Takes the `groupId` off every member of the groups the blocks belong to, as one step. */
+    function ungroupBlocks(ids: readonly string[]): void {
+        const slideId = slide.value?.id;
+        const all = new Set(withGroups(slide.value?.blocks ?? [], ids));
+        if (!blocksOf([...all]).some((x) => x.groupId)) return;
+        change((b) => {
+            for (const x of slideIn(b, slideId)?.blocks ?? []) if (all.has(x.id)) delete x.groupId;
         });
     }
 
@@ -932,6 +1001,8 @@ export const useEditorStore = defineStore('editor', () => {
         redo,
         selectSlide,
         selectBlock,
+        pickBlock,
+        toggleGroup,
         toggleBlock,
         selectAll,
         selectArea,
@@ -950,6 +1021,11 @@ export const useEditorStore = defineStore('editor', () => {
         distributeSelection,
         removeBlocks,
         layerBlocks,
+        groupBlocks,
+        ungroupBlocks,
+        canGroup,
+        canUngroup,
+        groupSelected,
         moveBlockLayer,
         clipboard,
         blockSheetOpen,

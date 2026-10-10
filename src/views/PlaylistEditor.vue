@@ -272,7 +272,7 @@ function onResize(): void {
 /** The name the sheet's bar and the "…" menu don't have room for otherwise. */
 const sheetLabel = computed(() => {
     if (editor.block) return t.editor.blockNamed(BLOCK_LABELS[editor.block.type]);
-    if (editor.selection.length > 1) return t.editor.blocksCount(editor.selection.length);
+    if (editor.selection.length > 1) return editor.groupSelected ? t.editor.groupCount(editor.selection.length) : t.editor.blocksCount(editor.selection.length);
     return editor.slide?.name ? t.editor.slideNamed(editor.slide.name) : t.editor.slide;
 });
 
@@ -582,6 +582,12 @@ function onKey(event: KeyboardEvent): void {
         // All blocks of the slide (Plan.md 79, D2); the page's own "select all" would mark its texts.
         event.preventDefault();
         editor.selectAll();
+    } else if (mod && !editor.blockSheetOpen && event.key.toLowerCase() === 'g') {
+        // Group and ungroup (Plan.md 79, D9); the browser's own G is "find next".
+        event.preventDefault();
+        if (event.shiftKey) {
+            if (editor.canUngroup) editor.ungroupBlocks(editor.selectedBlockIds);
+        } else if (editor.canGroup) editor.groupBlocks(editor.selectedBlockIds);
     } else if (mod && !editor.blockSheetOpen && 'cxvd'.includes(event.key.toLowerCase()) && event.key.length === 1) {
         // Copy, cut, paste, duplicate (Plan.md 79, A5); D would otherwise set a bookmark.
         const key = event.key.toLowerCase();

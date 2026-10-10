@@ -41,6 +41,15 @@ describe('readSlide – tolerant towards newer data', () => {
         expect(issues[0]?.message).toContain('width');
     });
 
+    it('reads the group of a block (schema 1.29): optional, kept when given, old slides stay valid', () => {
+        expect(SCHEMA_VERSION.minor).toBe(29);
+        const base = makeSlide({ blocks: [textBlock('a'), textBlock('b')] });
+        const grouped = { ...base, blocks: [{ ...base.blocks[0]!, groupId: 'g1' }, ...base.blocks.slice(1)] };
+        expect(readSlide(grouped).doc.blocks[0]!.groupId).toBe('g1');
+        expect(readSlide(base).doc.blocks[0]!.groupId).toBeUndefined();
+        expect(readSlide({ ...base, blocks: [{ ...base.blocks[0]!, groupId: '' }] }).issues).not.toHaveLength(0);
+    });
+
     it('accepts a newer minor version', () => {
         const raw = { ...makeSlide(), schema: { major: 1, minor: 7 } };
         expect(readSlide(raw).doc.id).toBe(raw.id);
