@@ -25,6 +25,8 @@ export const t = {
         remove: 'Entfernen',
         delete: 'Löschen',
         duplicate: 'Duplizieren',
+        group: 'Gruppieren',
+        ungroup: 'Gruppierung aufheben',
         copy: 'Kopieren',
         lock: 'Sperren',
         locked: 'Gesperrt',
@@ -118,6 +120,7 @@ export const t = {
         shift: 'Umschalt',
         alt: 'Alt',
         arrows: 'Pfeiltasten',
+        click: 'Klick',
         keys: { Delete: 'Entf', Escape: 'Esc' } as Record<string, string>,
         macKeys: { Delete: '⌫' } as Record<string, string>,
         groups: { general: 'Allgemein', block: 'Gewählter Baustein', stage: 'Beim Ziehen und Zeigen' },
@@ -126,15 +129,19 @@ export const t = {
             undo: 'Rückgängig',
             redo: 'Wiederholen',
             deselect: 'Auswahl aufheben',
+            selectAll: 'Alle Bausteine wählen',
             help: 'Diese Übersicht',
             copy: 'Kopieren',
             cut: 'Ausschneiden',
             paste: 'Einfügen',
             duplicate: 'Duplizieren',
+            group: 'Gruppieren',
+            ungroup: 'Gruppierung aufheben',
             remove: 'Löschen',
             nudge: 'Um 1 Pixel verschieben',
             nudgeFar: 'Um 10 Pixel verschieben',
             placeFree: 'Beim Ziehen gedrückt halten: frei platzieren, ohne Einrasten',
+            addToSelection: 'Baustein zur Auswahl hinzufügen oder wegnehmen',
             distances: 'Über einem Baustein gedrückt halten: Abstände zum gewählten zeigen',
         },
     },
@@ -148,6 +155,8 @@ export const t = {
         playlistFallback: 'Präsentation',
         publish: 'Veröffentlichen',
         publishTitle: 'Erst Veröffentlichen bringt die Änderungen auf die Fernseher',
+        draftFlag: 'Entwurf',
+        draftFlagTitle: 'Noch nicht veröffentlicht – die Fernseher zeigen den zuletzt veröffentlichten Stand',
         status: {
             publishing: 'Wird veröffentlicht …',
             published: 'Veröffentlicht',
@@ -201,6 +210,13 @@ export const t = {
         /** The bar at the bottom of a phone (Plan.md 79, C2). */
         phone: { editSlide: 'Folie bearbeiten' },
         blockNamed: (label: string) => `Baustein: ${label}`,
+        /** The head of the inspector and of the short menu while several blocks are chosen (Plan.md 79, D5). */
+        blocksCount: (n: number) => `${n} Bausteine`,
+        /** The same when the choice is exactly one group (Plan.md 79, D9). */
+        groupCount: (n: number) => `Gruppe · ${n} Bausteine`,
+        /** The mode "Mehrere auswählen" (Plan.md 79, D6): its entry in the menus and the bar that counts. */
+        multiSelect: 'Mehrere auswählen',
+        selectedCount: (n: number) => `${n} gewählt`,
         discardChanges: 'Ungespeicherte Änderungen verwerfen?',
         slideConflict: {
             title: 'Eine verknüpfte Folie wurde inzwischen geändert',
@@ -331,6 +347,7 @@ export const t = {
         done: 'Fertig',
         allSettings: 'Alle Einstellungen',
         copy: 'Kopieren',
+        cut: 'Ausschneiden',
         paste: 'Einfügen',
         layers: { front: 'Ganz nach vorn', forward: 'Nach vorn', backward: 'Nach hinten', back: 'Ganz nach hinten' },
         /** The button in the middle of a block that still lacks its content. */
@@ -344,6 +361,21 @@ export const t = {
             groups: 'Homepage wählen',
             rooms: 'Räume wählen',
         },
+    },
+
+    /** Aligning and distributing several blocks (Plan.md 79, D4). */
+    arrange: {
+        label: 'Ausrichten',
+        left: 'Links ausrichten',
+        center: 'Waagrecht mittig ausrichten',
+        right: 'Rechts ausrichten',
+        top: 'Oben ausrichten',
+        middle: 'Senkrecht mittig ausrichten',
+        bottom: 'Unten ausrichten',
+        distributeX: 'Waagrecht verteilen',
+        distributeY: 'Senkrecht verteilen',
+        few: 'Verteilen ab drei Bausteinen oder Gruppen',
+        locked: 'Ein gesperrter Baustein liegt dazwischen',
     },
 
     /** The inspector beside the stage. */
@@ -380,6 +412,12 @@ export const t = {
         },
         duplicateBlock: 'Baustein duplizieren',
         copyBlock: 'Baustein kopieren',
+        /** The same buttons while several blocks are chosen (Plan.md 79, D5). */
+        duplicateBlocks: 'Bausteine duplizieren',
+        copyBlocks: 'Bausteine kopieren',
+        deleteBlocks: 'Bausteine löschen',
+        lockBlocksTitle: 'Alle sperren: nicht mehr verschieben, ändern oder löschen',
+        unlockBlocksTitle: 'Alle entsperren',
         lockedTitle: 'Entsperren, um den Baustein wieder zu bearbeiten',
         lockTitle: 'Sperren: nicht mehr verschieben, ändern oder löschen',
         deleteBlock: 'Baustein löschen',
@@ -547,7 +585,14 @@ export const t = {
         arrange: 'Anordnen',
         measures: 'Genaue Maße',
         frameFields: { x: 'X', y: 'Y', width: 'Breite', height: 'Höhe' },
+        group: 'Gruppe',
+        groupSize: (n: number) => `${n} Bausteine`,
+        groupOpen: 'Gruppe aufklappen',
+        groupClose: 'Gruppe zuklappen',
         layerOf: (n: number, total: number) => `Ebene ${n} von ${total}`,
+        /** The list of the slide's blocks above the slide's settings (Plan.md 79, D6). */
+        slideBlocks: 'Bausteine dieser Folie',
+        topIsFront: 'oben = vorne',
         linkedAlso: (names: string) => `Auch in: ${names}`,
         linkedPending: 'ab dem Veröffentlichen',
         linkedInfo:

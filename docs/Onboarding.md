@@ -61,24 +61,37 @@ Menü „…". Die erste Zeile sagt, ob der Fernseher gerade **„online"** ist.
   anderen Präsentation, wie es ist) oder **„Verknüpft"**: dann ist es dieselbe Folie, und eine Änderung gilt in beiden
   Präsentationen. Verknüpfte Folien tragen ein Kettensymbol auf dem Vorschaubild; im Inspektor steht unter dem Namen
   „Auch in: …", dort löst **„Verknüpfung lösen"** die Folie zu einer eigenen Kopie nur für diese Präsentation. Hat
-  jemand eine verknüpfte Folie inzwischen woanders geändert, speichert der Editor nichts, sondern fragt: **„Neu laden"**
+  jemand eine verknüpfte Folie inzwischen woanders geändert, veröffentlicht der Editor nichts, sondern fragt: **„Neu laden"**
   oder **„Als eigene Kopie behalten"**.
-- **„+ Baustein"** öffnet alle Bausteine, alphabetisch: Beiträge, Bild, Countdown („Gottesdienst beginnt in 12:34"),
+- **„+ Baustein"** öffnet alle Bausteine, alphabetisch und je mit einem Satz, was sie zeigen; oben sucht ein Feld nach Name und Satz: Beiträge, Bild, Countdown („Gottesdienst beginnt in 12:34"),
   Fläche, Galerie (siehe unten), Gemeindekopf, Gruppen (siehe unten), Nächster Termin, QR-Code, Raumbelegung (siehe unten), Terminliste, Text, Uhr und Webseite.
 - **In der Mitte die Bildfläche:** ziehen, an den Griffen skalieren, an den **Hilfslinien** ausrichten (oben rechts: Abstand wählen oder aus; mit gedrückter Alt-Taste frei platzieren).
+  Über dem gewählten Baustein steht das **Kurzmenü** mit seinen wichtigsten Feldern, dazu Sperren, Duplizieren,
+  Löschen und „⋯" (Kopieren, Einfügen, Ebenen, **„Alle Einstellungen"**). Ein **Doppelklick** führt zum Inhalt: Auf
+  einen Text schreibst du direkt auf der Folie (Esc oder ein Klick daneben beendet), ein Bild öffnet die Mediathek,
+  eine Terminliste die Kalender. Fehlt einem Baustein noch etwas, steht mittig ein Knopf wie „Bild wählen".
+- **Mehrere Bausteine:** Umschalt-Klick, ein Rahmen auf der leeren Fläche oder Strg/⌘ + A wählt mehrere; sie ziehen,
+  kopieren und löschen sich gemeinsam. **„Ausrichten"** im Kurzmenü richtet sie aneinander aus oder verteilt sie
+  gleichmäßig; ein gesperrter bleibt dabei stehen. **Gruppieren** (Strg/⌘ + G) hält sie zusammen: Ein Klick wählt
+  dann alle, ein Doppelklick einen einzelnen; beim Ausrichten zählt die Gruppe wie ein Baustein. Umschalt +
+  Strg/⌘ + G hebt die Gruppe auf.
 - **Rechts der Inspektor:** Sein Kopf sagt, wo du bist („Folie 2 von 5"). Oben steht der Inhalt des Bausteins (Text, Kalender, Adresse …), darunter aufklappbare
   Bereiche – **Darstellung**, **Schrift**, **Anordnen** (die Ebene) und ganz unten **Genaue Maße** (X, Y, Breite, Höhe), bei Gruppen auch **Angaben**. An/aus stellst du mit Schaltern ein, wenige Möglichkeiten mit Segmenten, die Darstellung mit kleinen Bildkacheln. Zugeklappt zeigt jeder Bereich in
   einer Zeile, was eingestellt ist; was du einmal aufklappst, bleibt offen. Im Kopf des Inspektors stehen
   **„Sperren"** – damit ein Logo oder Hintergrund nicht verrutscht, ein Klick darauf erreicht dann den Baustein
-  darunter, mit gedrückter Alt-Taste (Mac: Option) den gesperrten selbst –, **„Duplizieren"**, **„Kopieren"** und **„Löschen"**. Eine Kopie fügst du mit **„Einfügen"** neben „+ Baustein" oder Strg/⌘ + V an derselben Stelle ein, auch auf einer anderen Folie; Strg/⌘ + D dupliziert. Ein **ⓘ** klappt eine
+  darunter, mit gedrückter Alt-Taste (Mac: Option) den gesperrten selbst –, bei mehreren **„Gruppieren"**, **„Duplizieren"**, **„Kopieren"** und **„Löschen"**. Eine Kopie fügst du mit **„Einfügen"** neben „+ Baustein" oder Strg/⌘ + V an derselben Stelle ein, auch auf einer anderen Folie; Strg/⌘ + D dupliziert. Ist nichts gewählt, zeigt der Inspektor **„Bausteine dieser Folie"** (oben = vorne): Klick wählt, das Schloss
+  sperrt, Ziehen ändert die Ebene – so erreichst du auch Verdecktes. Ein **ⓘ** klappt eine
   Erklärung auf. Folien und Inspektor lassen sich einklappen, damit die Bildfläche mehr Platz bekommt; auf dem
   Tablet sind sie das von Anfang an.
 - **Hinweise** haben eine eigene Seite in der Seitenleiste: ein Band über allen Folien der gewählten Präsentationen – als
   Laufschrift oder stehend, etwa „Heute Parkplatz gesperrt", mit **„Zeigen bis"**, danach verschwindet es von selbst.
 - **Vorschau** (oben): spielt die Präsentation mit deinen Änderungen im Vollbild ab, wie der Fernseher – ohne zu
-  speichern. Esc schließt sie.
-- **Speichern** (oder ⌘S / Strg+S). Alle Fernseher, die diese Präsentation zeigen, übernehmen die Änderung in etwa
-  20 Sekunden von selbst.
+  veröffentlichen. Esc schließt sie.
+- **Speichern musst du nicht:** Der Editor sichert jede Änderung nach ein, zwei Sekunden als **Entwurf** („Entwurf
+  gesichert · 14:32"; sofort mit ⌘S / Strg+S). Die Fernseher sehen davon nichts, bis du **„Veröffentlichen"** drückst –
+  dann übernehmen alle, die diese Präsentation zeigen, die Änderung in etwa 20 Sekunden. Bis dahin trägt die
+  Präsentation die Marke **„Entwurf"**, im Editor und auf ihrer Kachel. Wer sie danach öffnet, auch am Handy, macht
+  am selben Entwurf weiter. **„Entwurf verwerfen"** im Menü „⋯" holt den veröffentlichten Stand zurück.
 
 **Galerie:** Der Baustein zeigt Bilder aus der Mediathek nacheinander. Mit **„Bilder hinzufügen"** wählst du mehrere auf einmal
 (die Zahl auf dem Bild ist die Reihenfolge), im Inspektor sortierst du sie mit ↑ und ↓ oder nimmst eins heraus. Du
@@ -143,10 +156,30 @@ behalten auch ihre Schrift.
 
 ![Design: Einstellungen links, Vorschau rechts](bilder/design.png)
 
+### Am Handy und auf dem Tablet
+
+Am Handy steht unten die **Folienzeile**: „Folie 2 von 5" öffnet die Folien zum Wählen, Hinzufügen und Umsortieren
+(Folie halten und ziehen), daneben „+ Baustein" und „⋯".
+
+- **Erst tippen, dann ziehen.** Ein Wisch über die Folie scrollt die Seite; ein angetippter Baustein ist gewählt und
+  lässt sich dann verschieben und an den Griffen skalieren. Über der Folienzeile erscheint seine eigene Zeile mit den
+  Feldern aus dem Kurzmenü; **„⋯ → Alle Einstellungen"** zieht das große Blatt hoch, „✕" hebt die Auswahl auf.
+- **Zwei Finger zoomen** die Folie. Gezoomt verschiebt ein Wisch die Fläche; halte einen gewählten Baustein kurz, bis
+  er sich mit einem Schatten anhebt, dann folgt er dem Finger. **„Ganze Folie"** oben rechts setzt zurück.
+- **Doppeltippen** auf einen Text öffnet das Schreiben, auf einen anderen Baustein seinen Inhalt. **Langes Drücken**
+  öffnet „⋯", auf der leeren Fläche „Einfügen".
+- **Mehrere Bausteine:** „⋯ → Mehrere auswählen", dann jeden antippen; „Fertig" beendet. Verdeckte Bausteine
+  erreichst du über „⋯ → Bausteine dieser Folie" oder „⋯ → Darunterliegenden wählen".
+
+Auf dem Tablet steht das Kurzmenü wie am Rechner über dem Baustein; Tippen, Ziehen und Zoomen gehen wie am Handy.
+
+<img src="bilder/handy.png" alt="Editor am Handy: die Folie mit einer gewählten Terminliste, darunter die Zeile des Bausteins und die Folienzeile" width="320">
+
 ### Gut zu wissen
 
 - **Rückgängig** mit ⌘Z / Strg+Z; ein Ziehen ist ein Schritt.
-- **Speichert jemand anderes gleichzeitig dieselbe Präsentation**, fragt der Editor, welche Fassung gelten soll.
+- **Arbeitet jemand anderes gleichzeitig an derselben Präsentation**, fragt der Editor beim Sichern oder
+  Veröffentlichen, welche Fassung gelten soll.
 - **Neuer Kalender auf einem Bildschirm** – in einer Terminliste, einem Countdown oder einer Termin-Regel? Zur Wahl
   stehen nur öffentliche Kalender, also solche, die man in ChurchTools auch ohne Anmeldung sieht; die zeigen die
   Fernseher ohne weiteren Handgriff. Fehlt einer, kann ihn ein Administrator freigeben – den Weg nennt das (i) am

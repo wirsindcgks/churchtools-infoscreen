@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { serialize } from '../model/read';
 import { textBlock, makeSlide } from '../model/testing';
-import { BLOCK_LABELS, PALETTE, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, levelOf, textLevels, duplicateSlide, fitToStage, freeSpot, move, reorder, slugify } from './ops';
+import { BLOCK_LABELS, PALETTE, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, levelOf, textLevels, duplicateSlide, fitToStage, freeSpot, move, reorder, reorderMany, boundingBox, slugify, groupOf, withGroups, dropSingleGroups, gatherLayers } from './ops';
 import { History } from './history';
 import { DEFAULT_THEME, type Block, type BlockType } from '../model/schema';
 
@@ -107,6 +107,42 @@ describe('designer operations', () => {
         expect(reorder(['a', 'b', 'c'], 2, 'back')).toEqual(['c', 'a', 'b']);
         expect(reorder(['a', 'b', 'c'], 1, 'forward')).toEqual(['a', 'c', 'b']);
         expect(reorder(['a', 'b', 'c'], 1, 'backward')).toEqual(['b', 'a', 'c']);
+    });
+
+    it('changes the paint order of several at once (Plan.md 79, D1)', () => {
+        const items = ['a', 'b', 'c', 'd', 'e'];
+        // To the front or the back they keep their order among themselves.
+        expect(reorderMany(items, [3, 1], 'front')).toEqual(['a', 'c', 'e', 'b', 'd']);
+        expect(reorderMany(items, [3, 1], 'back')).toEqual(['b', 'd', 'a', 'c', 'e']);
+        // One step: each moves one place, none passes another chosen one.
+        expect(reorderMany(items, [1, 2], 'forward')).toEqual(['a', 'd', 'b', 'c', 'e']);
+        expect(reorderMany(items, [1, 3], 'backward')).toEqual(['b', 'a', 'd', 'c', 'e']);
+        expect(reorderMany(items, [3, 4], 'forward')).toEqual(items);
+        expect(reorderMany(items, [0, 1], 'backward')).toEqual(items);
+        expect(reorderMany(items, [0, 3, 4], 'forward')).toEqual(['b', 'a', 'c', 'd', 'e']);
+        // One block behaves as `reorder`.
+        expect(reorderMany(items, [2], 'forward')).toEqual(reorder(items, 2, 'forward'));
+        expect(reorderMany(items, [], 'front')).toEqual(items);
+    });
+
+    it('finds groups, drops lone members and gathers layers (Plan.md 79, D9)', () => {
+        const blocks = ['a', 'b', 'c', 'd'].map((id, i) => ({ ...textBlock(id), groupId: i === 1 || i === 3 ? 'g' : i === 0 ? 'h' : undefined }));
+        expect(groupOf(blocks, 'b')).toEqual(['b', 'd']);
+        expect(groupOf(blocks, 'c')).toEqual(['c']);
+        expect(groupOf(blocks, 'zz')).toEqual(['zz']);
+        expect(withGroups(blocks, ['d', 'c'])).toEqual(['b', 'c', 'd']);
+        dropSingleGroups(blocks);
+        expect(blocks.map((x) => x.groupId)).toEqual([undefined, 'g', undefined, 'g']);
+        const items = ['a', 'b', 'c', 'd', 'e'];
+        expect(gatherLayers(items, [0, 3])).toEqual(['b', 'c', 'a', 'd', 'e']);
+        expect(gatherLayers(items, [1, 2])).toEqual(items);
+        expect(gatherLayers(items, [4, 0])).toEqual(['b', 'c', 'd', 'a', 'e']);
+        expect(gatherLayers(items, [])).toEqual(items);
+    });
+
+    it('measures the box around several frames', () => {
+        expect(boundingBox([])).toBeNull();
+        expect(boundingBox([{ x: 10, y: 20, width: 100, height: 50 }, { x: 60, y: 0, width: 100, height: 30 }])).toEqual({ x: 10, y: 0, width: 150, height: 70 });
     });
 
     it('moves list items', () => {

@@ -246,7 +246,7 @@ test('checkboxes pick several files; the dialog names them and deletes after ask
     await page.getByTestId('sidebar-media').click();
     const items = page.getByTestId('media-item');
     await expect(items).toHaveCount(4);
-    // Nothing picked: no button to delete, and no tile deletes on its own.
+    // Nothing picked: no button to delete; a tile's "Löschen" waits in its closed "…".
     await expect(page.getByTestId('media-delete-selected')).toHaveCount(0);
     await expect(items.getByRole('button', { name: 'Löschen' })).toHaveCount(0);
 
@@ -280,5 +280,24 @@ test('checkboxes pick several files; the dialog names them and deletes after ask
     await expect(page.getByTestId('media-selection')).toContainText('2 ausgewählt');
     await page.getByTestId('media-selection-clear').click();
     await expect(page.getByTestId('media-select-all')).not.toBeChecked();
+    release();
+});
+
+test('the "…" of a tile deletes that one file after asking (Plan.md 79, B3)', async ({ page, baseURL }) => {
+    const release = await fakeLibrary(page, baseURL);
+    await page.goto('./');
+    await page.getByTestId('sidebar-media').click();
+    const items = page.getByTestId('media-item');
+    await expect(items).toHaveCount(4);
+    const tile = items.filter({ hasText: 'bild-01' });
+    await tile.getByTestId('media-menu').click();
+    await tile.getByTestId('media-delete').click();
+    const dialog = page.getByTestId('media-delete-dialog');
+    // One unused file: the question names it, no list.
+    await expect(dialog.getByRole('heading', { level: 2 })).toContainText('bild-01');
+    await expect(dialog.getByTestId('media-delete-unused')).toHaveCount(0);
+    await dialog.getByTestId('media-delete-confirm').click();
+    await expect(items).toHaveCount(3);
+    await expect(items.filter({ hasText: 'bild-01' })).toHaveCount(0);
     release();
 });

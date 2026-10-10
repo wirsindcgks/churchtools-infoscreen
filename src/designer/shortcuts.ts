@@ -22,6 +22,9 @@ export const KEYS = {
     cut: { mod: true, key: 'X' },
     paste: { mod: true, key: 'V' },
     duplicate: { mod: true, key: 'D' },
+    selectAll: { mod: true, key: 'A' },
+    group: { mod: true, key: 'G' },
+    ungroup: { mod: true, shift: true, key: 'G' },
     delete: { key: 'Delete' },
     help: { key: '?' },
 } as const satisfies Record<string, Keys>;
@@ -68,6 +71,7 @@ export function shortcutGroups(mac: boolean = isMac()): ShortcutGroup[] {
                 { action: s.undo, keys: [k(KEYS.undo)] },
                 { action: s.redo, keys: [k(KEYS.redo)] },
                 { action: s.deselect, keys: [t.shortcuts.keys.Escape!] },
+                { action: s.selectAll, keys: [k(KEYS.selectAll)] },
                 { action: s.help, keys: [k(KEYS.help)] },
             ],
         },
@@ -78,6 +82,8 @@ export function shortcutGroups(mac: boolean = isMac()): ShortcutGroup[] {
                 { action: s.cut, keys: [k(KEYS.cut)] },
                 { action: s.paste, keys: [k(KEYS.paste)] },
                 { action: s.duplicate, keys: [k(KEYS.duplicate)] },
+                { action: s.group, keys: [k(KEYS.group)] },
+                { action: s.ungroup, keys: [k(KEYS.ungroup)] },
                 { action: s.remove, keys: [k(KEYS.delete)] },
                 { action: s.nudge, keys: [arrows] },
                 { action: s.nudgeFar, keys: [mac ? `${shift} ${arrows}` : `${shift}+${arrows}`] },
@@ -86,6 +92,7 @@ export function shortcutGroups(mac: boolean = isMac()): ShortcutGroup[] {
         {
             title: t.shortcuts.groups.stage,
             rows: [
+                { action: s.addToSelection, keys: [mac ? `${shift} ${t.shortcuts.click}` : `${shift}+${t.shortcuts.click}`] },
                 { action: s.placeFree, keys: [alt] },
                 { action: s.distances, keys: [alt] },
             ],

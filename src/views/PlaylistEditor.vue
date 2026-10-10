@@ -220,7 +220,7 @@ function onPointerUpOrCancel(): void {
 }
 
 watch(
-    () => editor.selectedBlockId,
+    () => editor.selection.map((b) => b.id).join() || null,
     (id) => {
         if (id === null) return; // deselecting does not close it again
         // On a phone the bar shows the block's short menu and the slide stays in sight: the sheet opens on request only (C2).
@@ -272,6 +272,7 @@ function onResize(): void {
 /** The name the sheet's bar and the "…" menu don't have room for otherwise. */
 const sheetLabel = computed(() => {
     if (editor.block) return t.editor.blockNamed(BLOCK_LABELS[editor.block.type]);
+    if (editor.selection.length > 1) return editor.groupSelected ? t.editor.groupCount(editor.selection.length) : t.editor.blocksCount(editor.selection.length);
     return editor.slide?.name ? t.editor.slideNamed(editor.slide.name) : t.editor.slide;
 });
 
@@ -577,6 +578,16 @@ function onKey(event: KeyboardEvent): void {
     } else if (mod && event.key.toLowerCase() === 'y') {
         event.preventDefault();
         editor.redo();
+    } else if (mod && !editor.blockSheetOpen && event.key.toLowerCase() === 'a') {
+        // All blocks of the slide (Plan.md 79, D2); the page's own "select all" would mark its texts.
+        event.preventDefault();
+        editor.selectAll();
+    } else if (mod && !editor.blockSheetOpen && event.key.toLowerCase() === 'g') {
+        // Group and ungroup (Plan.md 79, D9); the browser's own G is "find next".
+        event.preventDefault();
+        if (event.shiftKey) {
+            if (editor.canUngroup) editor.ungroupBlocks(editor.selectedBlockIds);
+        } else if (editor.canGroup) editor.groupBlocks(editor.selectedBlockIds);
     } else if (mod && !editor.blockSheetOpen && 'cxvd'.includes(event.key.toLowerCase()) && event.key.length === 1) {
         // Copy, cut, paste, duplicate (Plan.md 79, A5); D would otherwise set a bookmark.
         const key = event.key.toLowerCase();
@@ -584,30 +595,34 @@ function onKey(event: KeyboardEvent): void {
             if (!editor.clipboard.length) return;
             event.preventDefault();
             editor.pasteBlocks();
-        } else if (editor.block) {
+        } else if (editor.selection.length) {
             // Text marked on the page (a hint, a name) is copied as text, as anywhere else.
             if ((key === 'c' || key === 'x') && window.getSelection()?.toString()) return;
             event.preventDefault();
-            if (key === 'c') editor.copyBlock(editor.block.id);
-            else if (key === 'x') editor.cutBlock(editor.block.id);
-            else editor.duplicateBlock(editor.block.id);
+            const ids = editor.selectedBlockIds;
+            if (key === 'c') editor.copyBlocks(ids);
+            else if (key === 'x') editor.cutBlocks(ids);
+            else editor.duplicateBlocks(ids);
         }
-    } else if (editor.block && (event.key === 'Delete' || event.key === 'Backspace')) {
+    } else if (editor.selection.length && (event.key === 'Delete' || event.key === 'Backspace')) {
         event.preventDefault();
-        editor.removeBlock(editor.block.id);
+        editor.removeBlocks(editor.selectedBlockIds);
     } else if (event.key === 'Enter' && !mod && editor.block?.type === 'text' && !editor.block.locked && !editor.blockSheetOpen && !target?.closest('button, a, summary')) {
         // Writes the chosen text on the stage (Plan.md 79, C4); the key must not reach the new field as a line break.
         event.preventDefault();
         editor.startTextEdit(editor.block.id);
+    } else if (event.key === 'Escape' && editor.multiSelect) {
+        // The mode ends, the choice stays (D6).
+        editor.endMultiSelect();
     } else if (event.key === 'Escape') {
         editor.selectBlock(null);
         inspectorOpen.value = false;
-    } else if (editor.block && event.key.startsWith('Arrow')) {
+    } else if (editor.selection.length && event.key.startsWith('Arrow')) {
         event.preventDefault();
         const step = event.shiftKey ? 10 : 1;
         const dx = { ArrowLeft: -step, ArrowRight: step }[event.key] ?? 0;
         const dy = { ArrowUp: -step, ArrowDown: step }[event.key] ?? 0;
-        editor.updateBlock(editor.block.id, { x: editor.block.x + dx, y: editor.block.y + dy });
+        editor.moveBlocks(editor.selectedBlockIds, dx, dy);
     }
 }
 
@@ -619,10 +634,9 @@ function onKey(event: KeyboardEvent): void {
         class="infoscreen-designer editor"
         :class="{ 'sheet-open': inspectorOpen }"
         :style="{
-            height: `calc(100vh - ${top}px)`,
             '--editor-top': `${top}px`,
             '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}`,
-            '--d-phone-bar': phone && editor.block ? '112px' : '56px',
+            '--d-phone-bar': phone && editor.selection.length ? '112px' : '56px',
             '--stage-max': stageMax === null ? undefined : `${stageMax}px`,
         }"
     >
@@ -647,6 +661,15 @@ function onKey(event: KeyboardEvent): void {
                             :time-zone="context.timeZone"
                             data-testid="editor-live"
                         />
+                        <!-- Changed but not published, whatever the saving says beside it (Plan.md 79, Paket E, Teil 3). -->
+                        <span
+                            v-if="editor.draftsOn && editor.dirty"
+                            class="d-draft-mark draft-mark"
+                            :title="t.editor.draftFlagTitle"
+                            data-testid="unpublished-flag"
+                        >
+                            <Icon name="pencil" :size="14" /><span class="draft-mark-text">{{ t.editor.draftFlag }}</span>
+                        </span>
                         <span class="status" :class="`status--${statusClass}`" data-testid="save-status">
                             <button
                                 v-if="editor.status === 'idle' && editor.draftStatus === 'error'"
@@ -791,6 +814,7 @@ function onKey(event: KeyboardEvent): void {
                     @click="publishWithCheck"
                 >
                     {{ t.editor.publish }}
+                    <span v-if="editor.draftsOn && editor.dirty" class="publish-dot" aria-hidden="true" />
                 </button>
             </template>
         </AppBar>
@@ -876,7 +900,7 @@ function onKey(event: KeyboardEvent): void {
                     <span class="sheet-label">{{ sheetLabel }}</span>
                     <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
                 </button>
-                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :groups="groups" :homepages="homepages" :rooms="rooms" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" @pick-image="openLibrary" />
+                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :groups="groups" :homepages="homepages" :rooms="rooms" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" @pick-image="openLibrary" @picked="phone && (inspectorOpen = false)" />
             </div>
         </div>
 
@@ -886,6 +910,7 @@ function onKey(event: KeyboardEvent): void {
             ref="phoneBar"
             @slides="slidesSheetOpen = true"
             @edit-slide="inspectorOpen = true"
+            @blocks="editor.selectBlock(null); inspectorOpen = true"
             @all-settings="showAllSettings"
         />
         <div
@@ -1008,6 +1033,9 @@ function onKey(event: KeyboardEvent): void {
     --editor-head-h: 53px;
     display: flex;
     flex-direction: column;
+    /* The window's visible height: on a tablet 100vh reaches under Safari's bar, and the inspector's lower part had to be scrolled to. */
+    height: calc(100vh - var(--editor-top, 0px));
+    height: calc(100dvh - var(--editor-top, 0px));
     min-height: 480px;
     /* The calm ground the cards and the stage lie on (Plan.md 79, B3). */
     background: var(--d-workspace);
@@ -1085,6 +1113,25 @@ function onKey(event: KeyboardEvent): void {
 .status--draft-conflict,
 .status--draft-error {
     color: var(--d-danger);
+}
+.draft-mark {
+    display: inline-flex;
+    flex: none;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: var(--d-size-sm);
+    white-space: nowrap;
+}
+/* Something waits to be published. */
+.publish-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    margin-left: var(--d-space-2);
+    border-radius: 50%;
+    background: var(--d-warning);
 }
 .status-retry {
     padding: 0;
@@ -1322,6 +1369,13 @@ function onKey(event: KeyboardEvent): void {
     }
     .live {
         padding: 5px;
+    }
+    /* Only the pencil, like the dot of "Läuft gerade". */
+    .draft-mark-text {
+        display: none;
+    }
+    .draft-mark {
+        padding: 2px 5px;
     }
     .shortcuts-btn {
         display: none;

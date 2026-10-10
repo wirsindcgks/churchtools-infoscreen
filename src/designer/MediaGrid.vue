@@ -7,7 +7,7 @@
  * there is nothing to choose for, so a click opens the preview (Plan.md 53). With `multiple`
  * a click marks or unmarks: the tile shows the running number of the choice, `marked`
  * holds the file ids in that order. With `selectable` (the media library page) every tile has a
- * checkbox to pick files for deleting – several at once – in place of its own "Löschen".
+ * checkbox to pick files for deleting – several at once –, and "…" deletes the one file (Plan.md 79, B3).
  */
 import { computed } from 'vue';
 import { t } from '../i18n/designer';
@@ -61,6 +61,7 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
             as="figure"
             :class="{ selected: (item.mediaId && item.mediaId === selectedMediaId) || numberOf(item) > 0 || selected?.includes(item.fileId) }"
             :menu-label="t.home.card.actionsFor(item.name)"
+            menu-testid="media-menu"
             data-testid="media-item"
         >
             <template #media>
@@ -101,7 +102,7 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                 </label>
             </template>
             <template #title><span :title="item.name">{{ item.name }}</span></template>
-            <template v-if="!selectable" #menu="{ close }">
+            <template #menu="{ close }">
                 <button role="menuitem" type="button" class="danger" data-testid="media-delete" @click="close(); emit('remove', item)">
                     <Icon name="trash" :size="16" /> {{ t.common.delete }}
                 </button>

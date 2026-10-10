@@ -7,16 +7,17 @@ import { INSPECTOR_CONTEXT } from './inspector/context';
 import { createBlock } from './ops';
 import QuickMenu from './QuickMenu.vue';
 
-function mountMenu(variant?: 'bar', locked = false) {
+function mountMenu(variant?: 'bar', locked = false, count = 1) {
     const pinia = createPinia();
     setActivePinia(pinia);
     const block = { ...createBlock('clock', { width: 1920, height: 1080 }, [1]), locked };
+    const blocks = Array.from({ length: count }, (_, i) => ({ ...block, id: `${block.id}-${i}` }));
     const frame = ref({ left: 400, top: 300, width: 200, height: 100 });
     const Host = defineComponent({
         setup() {
             provideStageContext({ now: new Date(), timeZone: 'Europe/Berlin', clockConfirmed: true, churchName: '', appointments: [], media: new Map() });
             provide(INSPECTOR_CONTEXT, { pickImage: () => undefined, calendars: [], groups: [], homepages: [], rooms: [] });
-            return () => h(QuickMenu, variant ? { block, variant } : { block, frame: frame.value, host: { width: 1000, height: 600 } });
+            return () => h(QuickMenu, variant ? { blocks, variant } : { blocks, frame: frame.value, host: { width: 1000, height: 600 } });
         },
     });
     const wrapper = mount(Host, { attachTo: document.body, global: { plugins: [pinia] } });
@@ -80,6 +81,29 @@ describe('QuickMenu (Plan.md 79, C1)', () => {
         await wrapper.find('[data-testid="quick-more"]').trigger('click');
         expect(wrapper.find('[data-testid="quick-lock"]').text()).toBe('Entsperren');
         expect(wrapper.find('[data-testid="quick-layer-front"]').exists()).toBe(false);
+        wrapper.unmount();
+    });
+
+    it('of several blocks: "3 Bausteine", lock, duplicate and delete, and in "⋯" copy, cut and let go (Plan.md 79, D5)', async () => {
+        const { wrapper } = mountMenu(undefined, false, 3);
+        expect(wrapper.find('[data-testid="quick-menu"]').attributes('aria-label')).toBe('Kurzmenü: 3 Bausteine');
+        expect(wrapper.find('[data-testid="quick-count"]').text()).toBe('3 Bausteine');
+        expect(wrapper.find('.quick-fields').exists()).toBe(false);
+        for (const id of ['quick-lock', 'quick-duplicate', 'quick-delete']) expect(wrapper.find(`[data-testid="${id}"]`).exists()).toBe(true);
+        await wrapper.find('[data-testid="quick-more"]').trigger('click');
+        const items = wrapper.findAll('[data-testid="quick-more-list"] [role="menuitem"]').map((b) => b.attributes('data-testid'));
+        expect(items).toEqual(['quick-copy', 'quick-cut', 'quick-deselect']);
+        wrapper.unmount();
+    });
+
+    it('of several blocks as the bar of a phone: the count, and lock, duplicate, delete and all settings inside "⋯"', async () => {
+        const { wrapper } = mountMenu('bar', false, 2);
+        expect(wrapper.find('[data-testid="quick-count"]').text()).toBe('2 Bausteine');
+        expect(wrapper.find('[data-testid="quick-deselect"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="quick-duplicate"]').exists()).toBe(false);
+        await wrapper.find('[data-testid="quick-more"]').trigger('click');
+        const items = wrapper.findAll('[data-testid="quick-more-list"] [role="menuitem"]').map((b) => b.attributes('data-testid'));
+        expect(items).toEqual(['quick-lock', 'quick-duplicate', 'quick-copy', 'quick-cut', 'quick-multi-select', 'quick-all-settings', 'quick-delete']);
         wrapper.unmount();
     });
 });

@@ -1,37 +1,44 @@
 <script setup lang="ts">
 /**
  * The frame of the inspector (Plan.md 79, B2): the head with its four buttons, the inspector of the chosen block, then
- * "Anordnen" and "Genaue Maße". Without a block the slide and the playlist show instead. What a block shows lives in
+ * "Anordnen" and "Genaue Maße". With several blocks chosen (D5) the head says "3 Bausteine" and only "Anordnen" follows.
+ * Without a block the slide and the playlist show instead. What a block shows lives in
  * `inspector/blocks/`, one component per type.
  */
-import { computed, ref } from 'vue';
+import { computed } from 'vue';
 import type { Calendar, PostGroup } from '../ct/api';
 import { t } from '../i18n/designer';
 import type { HomepageEntry } from '../groups/normalize';
 import type { RoomInfo } from '../rooms/normalize';
 import type { ServiceInfo } from '../appointments/services';
 import { useEditorStore } from './editor-store';
+import ArrangeField from './ArrangeField.vue';
 import Icon from './Icon.vue';
 import InspectorSection from './InspectorSection.vue';
 import { BLOCK_INSPECTORS } from './inspector/blocks';
 import { provideInspectorContext } from './inspector/context';
 import NumberField from './inspector/fields/NumberField.vue';
 import SlideInspector from './inspector/SlideInspector.vue';
-import { layerRows, blockSummary } from './layers';
+import LayerList from './LayerList.vue';
+import { layerRows } from './layers';
 import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
 import { KEYS, withKeys } from './shortcuts';
 import { vTip } from './tip';
-import { useSortable } from './useSortable';
 
 /** `rooms`: the rooms the designer may see; null while they are not loaded yet. */
 const props = defineProps<{ calendars: Calendar[]; hiddenCalendars?: Calendar[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null; services?: ServiceInfo[] | null; allowedServices?: number[]; servicesFailed?: boolean }>();
-const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow' | 'video'] }>();
+/** `picked`: a block was chosen from the list of the slide's blocks (on a phone the sheet closes then). */
+const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow' | 'video']; picked: [] }>();
 
 // The inspectors below read the lists through getters, so they follow the props.
 provideInspectorContext(() => props, (kind) => emit('pick-image', kind));
 
 const editor = useEditorStore();
 const block = computed(() => editor.block);
+const selection = computed(() => editor.selection);
+const ids = computed(() => editor.selectedBlockIds);
+const allLocked = computed(() => selection.value.length > 0 && selection.value.every((b) => b.locked));
+const many = computed(() => selection.value.length > 1);
 
 const FRAME_FIELDS = [
     { key: 'x', min: undefined },
@@ -45,23 +52,9 @@ const positionSummary = computed(() =>
     block.value ? `${block.value.x}, ${block.value.y} · ${block.value.width} × ${block.value.height}` : '',
 );
 
-/** The layers, top first; a drag reorders them in the slide (a locked block keeps its place). */
+/** The layers, top first. */
 const rows = computed(() => layerRows(editor.slide?.blocks ?? []));
-const layerList = ref<HTMLElement | null>(null);
-const isLockedAt = (index: number): boolean => !!editor.slide?.blocks[index]?.locked;
-// The list shows the array backwards: place d of the list is place n - 1 - d of the slide.
-useSortable({
-    container: layerList,
-    fixed: (index) => isLockedAt(rows.value.length - 1 - index),
-    onMove: (from, to) => editor.moveBlockLayer(rows.value.length - 1 - from, rows.value.length - 1 - to),
-});
 const layerNumber = computed(() => (block.value ? (editor.slide?.blocks.findIndex((b) => b.id === block.value!.id) ?? -1) + 1 : 0));
-const lookup = {
-    mediaName: (id: string) => editor.media.find((m) => m.id === id)?.name,
-    calendarName: (id: number) => [...props.calendars, ...(props.hiddenCalendars ?? [])].find((c) => c.id === id)?.name,
-    roomName: (id: number) => props.rooms?.find((r) => r.id === id)?.name,
-};
-
 const LAYERS = [
     { where: 'front', icon: 'layer-front', label: t.inspector.layers.front },
     { where: 'forward', icon: 'layer-forward', label: t.inspector.layers.forward },
@@ -72,95 +65,98 @@ const LAYERS = [
 
 <template>
     <aside class="inspector">
-        <section v-if="block" data-testid="block-inspector">
+        <section v-if="selection.length" data-testid="block-inspector">
             <div class="block-head">
                 <h3>
-                    <Icon :name="BLOCK_ICONS[block.type]" :size="18" />
-                    {{ BLOCK_LABELS[block.type] }}
+                    <template v-if="block">
+                        <Icon :name="BLOCK_ICONS[block.type]" :size="18" />
+                        {{ BLOCK_LABELS[block.type] }}
+                    </template>
+                    <template v-else>
+                        <Icon name="grid" :size="18" />
+                        <span data-testid="multi-title">{{ editor.groupSelected ? t.editor.groupCount(selection.length) : t.editor.blocksCount(selection.length) }}</span>
+                    </template>
                 </h3>
                 <div class="head-actions">
                     <!-- Plan.md, 25: locked, the whole block stays as it is until unlocked. -->
                     <button
-                        v-tip="block.locked ? t.inspector.lockedTitle : t.inspector.lockTitle"
+                        v-tip="many ? (allLocked ? t.inspector.unlockBlocksTitle : t.inspector.lockBlocksTitle) : allLocked ? t.inspector.lockedTitle : t.inspector.lockTitle"
                         class="d-btn d-btn--icon"
-                        :class="{ 'lock-toggle--on': block.locked }"
+                        :class="{ 'lock-toggle--on': allLocked }"
                         type="button"
-                        :aria-pressed="!!block.locked"
-                        :aria-label="block.locked ? t.common.locked : t.common.lock"
+                        :aria-pressed="allLocked"
+                        :aria-label="allLocked ? t.common.locked : t.common.lock"
                         data-testid="lock-toggle"
-                        @click="editor.setLocked(block.id, !block.locked)"
+                        @click="editor.setLocked(ids, !allLocked)"
                     >
-                        <Icon :name="block.locked ? 'lock' : 'unlock'" :size="18" />
+                        <Icon :name="allLocked ? 'lock' : 'unlock'" :size="18" />
                     </button>
                     <button
-                        v-tip="withKeys(t.inspector.duplicateBlock, KEYS.duplicate)"
+                        v-if="editor.canGroup"
+                        v-tip="withKeys(t.common.group, KEYS.group)"
                         class="d-btn d-btn--icon"
                         type="button"
-                        :aria-label="t.inspector.duplicateBlock"
+                        :aria-label="t.common.group"
+                        data-testid="inspector-group"
+                        @click="editor.groupBlocks(ids)"
+                    >
+                        <Icon name="group" :size="18" />
+                    </button>
+                    <button
+                        v-if="editor.canUngroup"
+                        v-tip="withKeys(t.common.ungroup, KEYS.ungroup)"
+                        class="d-btn d-btn--icon"
+                        type="button"
+                        :aria-label="t.common.ungroup"
+                        data-testid="inspector-ungroup"
+                        @click="editor.ungroupBlocks(ids)"
+                    >
+                        <Icon name="ungroup" :size="18" />
+                    </button>
+                    <button
+                        v-tip="withKeys(many ? t.inspector.duplicateBlocks : t.inspector.duplicateBlock, KEYS.duplicate)"
+                        class="d-btn d-btn--icon"
+                        type="button"
+                        :aria-label="many ? t.inspector.duplicateBlocks : t.inspector.duplicateBlock"
                         data-testid="block-duplicate"
-                        @click="editor.duplicateBlock(block.id)"
+                        @click="editor.duplicateBlocks(ids)"
                     >
                         <Icon name="duplicate" :size="18" />
                     </button>
                     <button
-                        v-tip="withKeys(t.inspector.copyBlock, KEYS.copy)"
+                        v-tip="withKeys(many ? t.inspector.copyBlocks : t.inspector.copyBlock, KEYS.copy)"
                         class="d-btn d-btn--icon"
                         type="button"
-                        :aria-label="t.inspector.copyBlock"
+                        :aria-label="many ? t.inspector.copyBlocks : t.inspector.copyBlock"
                         data-testid="block-copy"
-                        @click="editor.copyBlock(block.id)"
+                        @click="editor.copyBlocks(ids)"
                     >
                         <Icon name="copy" :size="18" />
                     </button>
                     <button
-                        v-tip="withKeys(t.inspector.deleteBlock, KEYS.delete)"
+                        v-tip="withKeys(many ? t.inspector.deleteBlocks : t.inspector.deleteBlock, KEYS.delete)"
                         class="d-btn d-btn--icon d-btn--danger delete-btn"
                         type="button"
-                        :aria-label="t.inspector.deleteBlock"
-                        :disabled="!!block.locked"
+                        :aria-label="many ? t.inspector.deleteBlocks : t.inspector.deleteBlock"
+                        :disabled="allLocked"
                         data-testid="block-delete"
-                        @click="editor.removeBlock(block.id)"
+                        @click="editor.removeBlocks(ids)"
                     >
                         <Icon name="trash" :size="18" />
                     </button>
                 </div>
             </div>
-            <p v-if="block.locked" class="hint" data-testid="locked-hint">
+            <p v-if="block?.locked" class="hint" data-testid="locked-hint">
                 {{ t.inspector.lockedHint }}
             </p>
             <!-- A disabled fieldset disables every field and button inside it at once; a summary is none, so sections still fold. -->
-            <fieldset class="lockable" :disabled="!!block.locked">
-                <component :is="BLOCK_INSPECTORS[block.type]" :block="block" />
+            <fieldset class="lockable" :disabled="!!block?.locked">
+                <component :is="BLOCK_INSPECTORS[block.type]" v-if="block" :block="block" />
 
                 <InspectorSection id="arrange" :title="t.inspector.arrange" default-open>
-                    <p class="layer-position" data-testid="layer-position">{{ t.inspector.layerOf(layerNumber, rows.length) }}</p>
-                    <ol ref="layerList" class="layer-list" data-testid="layer-list">
-                        <li
-                            v-for="row in rows"
-                            :key="row.block.id"
-                            class="layer-item"
-                            :class="{ 'layer-item--on': row.block.id === block.id }"
-                            data-sort-item
-                            data-testid="layer-row"
-                            @click="editor.selectBlock(row.block.id)"
-                        >
-                            <button
-                                class="layer-handle"
-                                type="button"
-                                data-sort-handle
-                                :disabled="!!row.block.locked"
-                                :aria-label="t.common.dragToSort"
-                                data-testid="layer-handle"
-                                @click.stop
-                            >
-                                <Icon name="grip" :size="14" />
-                            </button>
-                            <Icon :name="BLOCK_ICONS[row.block.type]" :size="16" class="layer-icon" />
-                            <span class="layer-name">{{ BLOCK_LABELS[row.block.type] }}</span>
-                            <span class="layer-sub">{{ blockSummary(row.block, lookup) }}</span>
-                            <Icon v-if="row.block.locked" name="lock" :size="14" class="layer-lock" :data-testid="`layer-lock`" />
-                        </li>
-                    </ol>
+                    <ArrangeField />
+                    <p v-if="block" class="layer-position" data-testid="layer-position">{{ t.inspector.layerOf(layerNumber, rows.length) }}</p>
+                    <LayerList @picked="emit('picked')" />
                     <div class="layer-buttons">
                         <button
                             v-for="layer in LAYERS"
@@ -170,14 +166,14 @@ const LAYERS = [
                             type="button"
                             :aria-label="layer.label"
                             :data-testid="`layer-${layer.where}`"
-                            @click="editor.layerBlock(block.id, layer.where)"
+                            @click="editor.layerBlocks(ids, layer.where)"
                         >
                             <Icon :name="layer.icon" :size="16" />
                         </button>
                     </div>
                 </InspectorSection>
 
-                <InspectorSection id="measures" :title="t.inspector.measures" :summary="positionSummary">
+                <InspectorSection v-if="block" id="measures" :title="t.inspector.measures" :summary="positionSummary">
                     <div class="measures">
                         <NumberField
                             v-for="field in FRAME_FIELDS"
@@ -195,8 +191,15 @@ const LAYERS = [
             </fieldset>
         </section>
 
-        <!-- Slide and playlist -->
-        <SlideInspector v-else />
+        <template v-else>
+            <!-- Without a block chosen the slide's blocks come first, for the finger and for blocks hidden under others. -->
+            <InspectorSection v-if="rows.length" id="slide-blocks" :title="t.inspector.slideBlocks" default-open class="slide-blocks" data-testid="slide-blocks">
+                <p class="layer-position">{{ t.inspector.topIsFront }}</p>
+                <LayerList @picked="emit('picked')" />
+            </InspectorSection>
+            <!-- Slide and playlist -->
+            <SlideInspector />
+        </template>
     </aside>
 </template>
 
@@ -235,68 +238,11 @@ h3 {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
-/* The layers, top first: symbol, name and short content; the chosen one on the accent's pale ground. */
-.layer-list {
-    display: grid;
-    gap: 2px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-.layer-item {
-    display: flex;
-    align-items: center;
-    gap: var(--d-space-2);
-    min-width: 0;
-    min-height: 36px;
-    padding: 0 var(--d-space-2);
-    border-radius: var(--d-radius);
-    cursor: pointer;
-    user-select: none;
-    -webkit-touch-callout: none;
-}
-.layer-item:hover {
-    background: var(--d-panel);
-}
-.layer-item--on,
-.layer-item--on:hover {
-    background: var(--d-accent-pale);
-    color: var(--d-accent-strong);
-}
-.layer-handle {
-    display: grid;
-    flex: none;
-    place-items: center;
-    width: 20px;
-    height: 32px;
-    padding: 0;
-    border: 0;
-    background: none;
-    color: var(--d-text-faint);
-    cursor: grab;
-}
-.layer-handle:disabled {
-    opacity: 0.3;
-    cursor: default;
-}
-.layer-icon,
-.layer-lock {
-    flex: none;
-    color: var(--d-text-muted);
-}
-.layer-name {
-    flex: none;
-    font-size: var(--d-size-sm);
-    font-weight: var(--d-weight-normal);
-}
-.layer-sub {
-    min-width: 0;
-    flex: 1;
-    overflow: hidden;
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
-    text-overflow: ellipsis;
-    white-space: nowrap;
+/* The first part of the inspector: no line above it, one below, then the slide's own fields. */
+.inspector .slide-blocks {
+    margin-bottom: var(--d-space-3);
+    border-top: 0;
+    border-bottom: 1px solid var(--d-divider);
 }
 .layer-buttons {
     display: flex;

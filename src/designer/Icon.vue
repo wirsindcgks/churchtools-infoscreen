@@ -25,6 +25,9 @@ const PATHS = {
     copy: ['M9 9h11v11H9z', 'M5 15H4V4h11v1'],
     // Duplicate a block (Plan.md 79, A5): the two sheets of `copy`, with a plus on the front one.
     duplicate: ['M9 9h11v11H9z', 'M5 15H4V4h11v1', 'M14.5 12.5v6', 'M11.5 15.5h6'],
+    // Group and ungroup blocks (Plan.md 79, D9): two blocks inside one frame, or the two apart.
+    group: ['M3 3h18v18H3z', 'M7 7h5v5H7z', 'M12 12h5v5h-5z'],
+    ungroup: ['M4 4h8v8H4z', 'M12 12h8v8h-8z'],
     // Address of a screen: a hash sign.
     id: ['M9.5 4L7.5 20', 'M16.5 4l-2 16', 'M4.5 9h15.5', 'M4 15h15.5'],
     // Linked slides (Plan.md 49): two chain links.
@@ -87,6 +90,16 @@ const PATHS = {
     'valign-top': ['M4 4h16', 'M8 8h8v8H8z'],
     'valign-middle': ['M4 12h16', 'M9 6h6v12H9z'],
     'valign-bottom': ['M4 20h16', 'M8 8h8v8H8z'],
+    // Aligning several blocks (Plan.md 79, D4): a reference line and two bars of different length.
+    'arrange-left': ['M4 4v16', 'M8 7h12v4H8z', 'M8 14h7v4H8z'],
+    'arrange-center': ['M12 3v18', 'M5 7h14v4H5z', 'M8 14h8v4H8z'],
+    'arrange-right': ['M20 4v16', 'M4 7h12v4H4z', 'M9 14h7v4H9z'],
+    'arrange-top': ['M4 4h16', 'M7 8v12h4V8z', 'M14 8v7h4V8z'],
+    'arrange-middle': ['M3 12h18', 'M7 5v14h4V5z', 'M14 8v8h4V8z'],
+    'arrange-bottom': ['M4 20h16', 'M7 4v12h4V4z', 'M14 9v7h4V9z'],
+    // Distributing: the outer two stay (the lines), the one between sits at equal distance to both.
+    'distribute-x': ['M4 4v16', 'M20 4v16', 'M9.5 8h5v8h-5z'],
+    'distribute-y': ['M4 4h16', 'M4 20h16', 'M8 9.5h8v5H8z'],
 } as const;
 
 export type IconName = keyof typeof PATHS;

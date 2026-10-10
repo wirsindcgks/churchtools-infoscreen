@@ -21,9 +21,11 @@ import {
 import { DraftConflictError, DraftsUnavailableError, type DraftConflictInfo } from '../store/drafts';
 import { t } from '../i18n/designer';
 import { tr } from '../i18n/repository';
+import { align, alignTarget, distribute, distributeBlocker, unitsOf, type Axis, type Edge, type Frame, type Unit } from './arrange';
 import { History } from './history';
+import { layerUnits } from './layers';
 import { GRID_SIZES } from './snap';
-import { clampFrame, cloneJson, createBlock, createSlide, duplicateSlide, fitToStage, freeSpot, move, moveAround, newId, reorder, type Layer } from './ops';
+import { boundingBox, clampFrame, cloneJson, createBlock, createSlide, dropSingleGroups, duplicateSlide, freeSpot, gatherLayers, groupOf, move, moveAround, newId, reorderMany, withGroups, type Layer } from './ops';
 
 /** Publishing (Plan.md 79, Paket E): what the button "Veröffentlichen" is doing. */
 export type SaveStatus = 'idle' | 'publishing' | 'published' | 'conflict' | 'error';
@@ -44,7 +46,12 @@ export const useEditorStore = defineStore('editor', () => {
     /** Screens that show this playlist; saving changes all of them. */
     const screens = ref<ScreenRef[]>([]);
     const selectedSlideId = ref<string | null>(null);
-    const selectedBlockId = ref<string | null>(null);
+    /** The chosen blocks (Plan.md 79, D1); `selection` has them in layer order, only those the slide still has. */
+    const selectedBlockIds = ref<string[]>([]);
+    /** "Mehrere auswählen" (Plan.md 79, D6): while on, every tap on a block adds it to the choice or takes it out. */
+    const multiSelect = ref(false);
+    /** The block whose layer row the mouse is over; the stage outlines its frame. Not a step in the history. */
+    const hoveredBlockId = ref<string | null>(null);
     const status = ref<SaveStatus>('idle');
     const conflict = ref<ConflictInfo | null>(null);
     /** A slide another playlist saved in between (Plan.md 49); set instead of `conflict`. */
@@ -105,7 +112,24 @@ export const useEditorStore = defineStore('editor', () => {
         return (playlist.value?.slideIds ?? []).map((id) => byId.get(id)).filter((s): s is SlideDoc => !!s);
     });
     const slide = computed(() => slides.value.find((s) => s.id === selectedSlideId.value) ?? slides.value[0] ?? null);
-    const block = computed(() => slide.value?.blocks.find((b) => b.id === selectedBlockId.value) ?? null);
+    const selection = computed<Block[]>(() => slide.value?.blocks.filter((b) => selectedBlockIds.value.includes(b.id)) ?? []);
+    /** The choice as aligning and distributing see it: a group counts as one (`unitsOf`). */
+    const selectionUnits = computed(() => unitsOf(selection.value));
+    /** Several blocks can be grouped when they are not already all one group (groups among them merge). */
+    const canGroup = computed(() => {
+        const ids = withGroups(slide.value?.blocks ?? [], selectedBlockIds.value);
+        if (ids.length < 2) return false;
+        const members = blocksOf(ids);
+        return !(members[0]?.groupId && members.every((x) => x.groupId === members[0]!.groupId));
+    });
+    const canUngroup = computed(() => selection.value.some((x) => x.groupId));
+    /** The choice is exactly one group (Plan.md D9). */
+    const groupSelected = computed(() => {
+        const first = selection.value[0];
+        return selection.value.length >= 2 && !!first?.groupId && groupOf(slide.value?.blocks ?? [], first.id).length === selection.value.length && selection.value.every((x) => x.groupId === first.groupId);
+    });
+    /** The one chosen block; null with none or with several. */
+    const block = computed(() => (selection.value.length === 1 ? selection.value[0]! : null));
     /** The text block being written on the stage (Plan.md 79, C4): one editing run is one step in the history. */
     const editingTextId = ref<string | null>(null);
     const calendarIds = computed(() => [
@@ -162,7 +186,7 @@ export const useEditorStore = defineStore('editor', () => {
         draftStatus.value = draftsOn.value ? 'clean' : 'off';
         if (!slides.value.some((s) => s.id === selectedSlideId.value)) {
             selectedSlideId.value = slides.value[0]?.id ?? null;
-            selectedBlockId.value = null;
+            selectedBlockIds.value = [];
         }
     }
 
@@ -206,7 +230,7 @@ export const useEditorStore = defineStore('editor', () => {
         draftStatus.value = 'saved';
         if (!slides.value.some((s) => s.id === selectedSlideId.value)) {
             selectedSlideId.value = slides.value[0]?.id ?? null;
-            selectedBlockId.value = null;
+            selectedBlockIds.value = [];
         }
     }
 
@@ -239,7 +263,7 @@ export const useEditorStore = defineStore('editor', () => {
         const target = slide.value?.blocks.find((b) => b.id === id);
         if (!target || target.type !== 'text' || target.locked) return;
         if (editingTextId.value) endTextEdit();
-        selectedBlockId.value = id;
+        selectedBlockIds.value = [id];
         editingTextId.value = id;
         beginGesture();
     }
@@ -266,6 +290,7 @@ export const useEditorStore = defineStore('editor', () => {
         const previous = history.undo(draft.value);
         if (previous) draft.value = previous;
         historyVersion.value++;
+        pruneSelection();
     }
 
     function redo(): void {
@@ -274,6 +299,7 @@ export const useEditorStore = defineStore('editor', () => {
         const next = history.redo(draft.value);
         if (next) draft.value = next;
         historyVersion.value++;
+        pruneSelection();
     }
 
     function slideIn(bundle: PlaylistBundle, id: string | undefined): SlideDoc | undefined {
@@ -282,11 +308,64 @@ export const useEditorStore = defineStore('editor', () => {
 
     function selectSlide(id: string): void {
         selectedSlideId.value = id;
-        selectedBlockId.value = null;
+        selectedBlockIds.value = [];
+        multiSelect.value = false;
+        hoveredBlockId.value = null;
+    }
+
+    /** Starts the mode and keeps what is chosen. */
+    function startMultiSelect(): void {
+        multiSelect.value = true;
+    }
+
+    function endMultiSelect(): void {
+        multiSelect.value = false;
     }
 
     function selectBlock(id: string | null): void {
-        selectedBlockId.value = id;
+        selectedBlockIds.value = id ? [id] : [];
+    }
+
+    function isSelected(id: string): boolean {
+        return selectedBlockIds.value.includes(id);
+    }
+
+    /** Chooses the block with its whole group (a click on the stage). */
+    function pickBlock(id: string): void {
+        selectedBlockIds.value = groupOf(slide.value?.blocks ?? [], id);
+    }
+
+    /** Takes the block's whole group out of the choice if a member is in it, else puts all in (Shift-click). */
+    function toggleGroup(id: string): void {
+        const members = groupOf(slide.value?.blocks ?? [], id);
+        selectedBlockIds.value = isSelected(id)
+            ? selectedBlockIds.value.filter((x) => !members.includes(x))
+            : [...selectedBlockIds.value, ...members.filter((x) => !isSelected(x))];
+    }
+
+    /** Adds the block to the choice, or takes it out (Shift-click). */
+    function toggleBlock(id: string): void {
+        selectedBlockIds.value = isSelected(id) ? selectedBlockIds.value.filter((x) => x !== id) : [...selectedBlockIds.value, id];
+    }
+
+    /** Every block of the slide, locked ones too. */
+    function selectAll(): void {
+        selectedBlockIds.value = slide.value?.blocks.map((b) => b.id) ?? [];
+    }
+
+    /** The blocks whose frame the rectangle (stage pixels) touches; with `add` together with those chosen already. */
+    function selectArea(rect: { x: number; y: number; width: number; height: number }, add = false): void {
+        let hit = (slide.value?.blocks ?? [])
+            .filter((b) => b.x <= rect.x + rect.width && b.x + b.width >= rect.x && b.y <= rect.y + rect.height && b.y + b.height >= rect.y)
+            .map((b) => b.id);
+        hit = withGroups(slide.value?.blocks ?? [], hit);
+        selectedBlockIds.value = add ? [...new Set([...selectedBlockIds.value, ...hit])] : hit;
+    }
+
+    /** Takes out of the choice what the slide no longer has (after undo, redo and delete). */
+    function pruneSelection(): void {
+        const kept = selectedBlockIds.value.filter((id) => slide.value?.blocks.some((b) => b.id === id));
+        if (kept.length !== selectedBlockIds.value.length) selectedBlockIds.value = kept;
     }
 
     function renamePlaylist(name: string): void {
@@ -386,7 +465,7 @@ export const useEditorStore = defineStore('editor', () => {
         });
         const next = slides.value[Math.min(index, slides.value.length - 1)];
         selectedSlideId.value = next?.id ?? null;
-        selectedBlockId.value = null;
+        selectedBlockIds.value = [];
     }
 
     function moveSlide(from: number, to: number): void {
@@ -404,56 +483,76 @@ export const useEditorStore = defineStore('editor', () => {
         const created = freeSpot(createBlock(type, stage.value, calendarIds.value, theme.value), slide.value.blocks, stage.value);
         const id = slide.value.id;
         change((b) => slideIn(b, id)?.blocks.push(created));
-        selectedBlockId.value = created.id;
+        selectedBlockIds.value = [created.id];
     }
 
-    function copyBlock(id: string): void {
-        const source = slide.value?.blocks.find((x) => x.id === id);
-        if (source) clipboard.value = [cloneJson(source)];
+    /** The blocks of the slide with these ids, in layer order. */
+    function blocksOf(ids: readonly string[]): Block[] {
+        return slide.value?.blocks.filter((b) => ids.includes(b.id)) ?? [];
     }
 
-    /** Copy and delete in one step; a locked block stays where it is. */
-    function cutBlock(id: string): void {
-        if (isLocked(id)) return;
-        copyBlock(id);
-        removeBlock(id);
+    /** Copies the blocks with their places to each other; locked ones come along. */
+    function copyBlocks(ids: readonly string[]): void {
+        const sources = blocksOf(ids);
+        if (sources.length) clipboard.value = sources.map((x) => cloneJson(x));
+    }
+
+    /** Copy and delete in one step; locked blocks stay where they are (and are not copied). */
+    function cutBlocks(ids: readonly string[]): void {
+        const free = blocksOf(ids).filter((x) => !x.locked);
+        if (!free.length) return;
+        const freeIds = free.map((x) => x.id);
+        copyBlocks(freeIds);
+        removeBlocks(freeIds);
     }
 
     /**
      * Puts copies of the given blocks on the current slide as one step: new ids, not locked, otherwise as they were.
-     * They keep their place unless a block sits there already; one too big for this stage shrinks to fit. The last is chosen.
+     * They keep their place to each other, as a group. It stays where it was unless a block sits there already (then the
+     * group steps on, `freeSpot` for its box); a group too big for this stage shrinks to fit in its aspect ratio. All of them are chosen.
      * With `at` (stage pixels) the group's middle goes there instead, pulled back onto the stage, and stays even over a block.
      */
     function place(sources: Block[], at?: { x: number; y: number }): void {
         const target = slide.value;
         if (!target || !sources.length) return;
         const slideId = target.id;
-        const placed: Block[] = [];
-        let shift = { x: 0, y: 0 };
-        if (at) {
-            const left = Math.min(...sources.map((x) => x.x));
-            const top = Math.min(...sources.map((x) => x.y));
-            const right = Math.max(...sources.map((x) => x.x + x.width));
-            const bottom = Math.max(...sources.map((x) => x.y + x.height));
-            shift = { x: at.x - (left + right) / 2, y: at.y - (top + bottom) / 2 };
-        }
-        for (const source of sources) {
+        const groupIds = new Map<string, string>();
+        let copies = sources.map((source): Block => {
             const copy = cloneJson(source);
-            copy.x += shift.x;
-            copy.y += shift.y;
             delete copy.locked;
-            const fitted = fitToStage({ ...copy, id: newId() }, stage.value);
-            // A block from another stage may stick out of this one: pull it back in where it fits.
-            const inside = {
-                ...fitted,
-                x: Math.max(0, Math.min(fitted.x, stage.value.width - fitted.width)),
-                y: Math.max(0, Math.min(fitted.y, stage.value.height - fitted.height)),
-            };
-            const spot = at ? inside : freeSpot(inside, [...target.blocks, ...placed], stage.value);
-            placed.push({ ...spot, ...clampFrame(spot, stage.value) });
+            if (copy.groupId) {
+                if (!groupIds.has(copy.groupId)) groupIds.set(copy.groupId, newId());
+                copy.groupId = groupIds.get(copy.groupId)!;
+            }
+            return { ...copy, id: newId() };
+        });
+        dropSingleGroups(copies);
+        const stageSize = stage.value;
+        let box = boundingBox(copies)!;
+        // A group from another stage may be bigger than this one.
+        const scale = Math.min(1, stageSize.width / box.width, stageSize.height / box.height);
+        if (scale < 1) {
+            copies = copies.map((x) => ({
+                ...x,
+                x: Math.round(box.x + (x.x - box.x) * scale),
+                y: Math.round(box.y + (x.y - box.y) * scale),
+                width: Math.floor(x.width * scale),
+                height: Math.floor(x.height * scale),
+            }));
+            box = boundingBox(copies)!;
         }
+        // Pulled back in where it fits – as a whole, so the blocks keep their places to each other.
+        let spot = {
+            x: Math.max(0, Math.min(at ? at.x - box.width / 2 : box.x, stageSize.width - box.width)),
+            y: Math.max(0, Math.min(at ? at.y - box.height / 2 : box.y, stageSize.height - box.height)),
+        };
+        if (!at) spot = freeSpot({ ...box, ...spot }, target.blocks, stageSize);
+        const placed = copies.map((x) => {
+            const moved = { ...x, x: x.x + spot.x - box.x, y: x.y + spot.y - box.y };
+            return { ...moved, ...clampFrame(moved, stageSize) };
+        });
         change((b) => slideIn(b, slideId)?.blocks.push(...placed));
-        selectedBlockId.value = placed[placed.length - 1]!.id;
+        selectedBlockIds.value = placed.map((x) => x.id);
     }
 
     function pasteBlocks(at?: { x: number; y: number }): void {
@@ -461,9 +560,8 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     /** Copy and paste in one, without touching the clipboard. */
-    function duplicateBlock(id: string): void {
-        const source = slide.value?.blocks.find((x) => x.id === id);
-        if (source) place([source]);
+    function duplicateBlocks(ids: readonly string[]): void {
+        place(blocksOf(ids));
     }
 
     /** A locked block (Plan.md, 25) takes no change – from the stage, the keys or the inspector. */
@@ -471,13 +569,16 @@ export const useEditorStore = defineStore('editor', () => {
         return !!slide.value?.blocks.find((x) => x.id === id)?.locked;
     }
 
-    function setLocked(id: string, locked: boolean): void {
+    /** Locks or unlocks all of them in one step. */
+    function setLocked(ids: readonly string[], locked: boolean): void {
         const slideId = slide.value?.id;
+        ids = withGroups(slide.value?.blocks ?? [], ids);
         change((b) => {
-            const target = slideIn(b, slideId)?.blocks.find((x) => x.id === id);
-            if (!target) return;
-            if (locked) target.locked = true;
-            else delete target.locked;
+            for (const target of slideIn(b, slideId)?.blocks ?? []) {
+                if (!ids.includes(target.id)) continue;
+                if (locked) target.locked = true;
+                else delete target.locked;
+            }
         });
     }
 
@@ -493,36 +594,183 @@ export const useEditorStore = defineStore('editor', () => {
         });
     }
 
-    function removeBlock(id: string): void {
-        if (isLocked(id)) return;
+    /**
+     * Moves the unlocked ones among them together by this much (arrow keys, dragging on the stage). The box around them is
+     * clamped like one block, so the group does not warp at the edge. A move that changes nothing leaves no step.
+     */
+    function moveBlocks(ids: readonly string[], dx: number, dy: number): void {
+        const free = blocksOf(ids).filter((x) => !x.locked);
+        const box = boundingBox(free);
+        if (!box) return;
+        const clamped = clampFrame({ ...box, x: box.x + dx, y: box.y + dy }, stage.value);
+        const shiftX = clamped.x - box.x;
+        const shiftY = clamped.y - box.y;
+        if (!shiftX && !shiftY) return;
         const slideId = slide.value?.id;
+        const moving = new Set(free.map((x) => x.id));
         change((b) => {
-            const target = slideIn(b, slideId);
-            if (target) target.blocks = target.blocks.filter((x) => x.id !== id);
+            for (const target of slideIn(b, slideId)?.blocks ?? []) {
+                if (!moving.has(target.id)) continue;
+                target.x += shiftX;
+                target.y += shiftY;
+            }
         });
-        if (selectedBlockId.value === id) selectedBlockId.value = null;
     }
 
-    function layerBlock(id: string, layer: Layer): void {
-        if (isLocked(id)) return;
+    /** Writes new frames for the given blocks (clamped) in one step; frames that stay as they are leave no step. */
+    function applyFrames(blocks: readonly Block[], frames: readonly Frame[]): void {
+        const next = new Map<string, Frame>();
+        blocks.forEach((x, i) => {
+            const frame = clampFrame(frames[i]!, stage.value);
+            if (frame.x !== x.x || frame.y !== x.y) next.set(x.id, frame);
+        });
+        if (!next.size) return;
         const slideId = slide.value?.id;
         change((b) => {
-            const target = slideIn(b, slideId);
-            if (!target) return;
-            const index = target.blocks.findIndex((x) => x.id === id);
-            if (index >= 0) target.blocks = reorder(target.blocks, index, layer);
+            for (const target of slideIn(b, slideId)?.blocks ?? []) {
+                const frame = next.get(target.id);
+                if (frame) Object.assign(target, frame);
+            }
         });
     }
 
     /**
-     * The layers dragged in the list (Plan.md 79, B3): the block at array place `from` goes to `to`; locked blocks keep
-     * their place and the others pass them by. One step in the history.
+     * Aligns the unlocked chosen blocks to an edge or middle (Plan.md 79, D4): one block to the stage, several to the box around
+     * the locked ones among them or else around all. One step.
      */
-    function moveBlockLayer(from: number, to: number): void {
+    /** Moves each unit's members by the distance its box went, so a group keeps its shape. */
+    function moveUnits(units: readonly Unit[], frames: readonly Frame[]): void {
+        const moved: Block[] = [];
+        const to: Frame[] = [];
+        units.forEach((unit, i) => {
+            const dx = frames[i]!.x - unit.x;
+            const dy = frames[i]!.y - unit.y;
+            for (const x of blocksOf(unit.ids)) {
+                moved.push(x);
+                to.push({ x: x.x + dx, y: x.y + dy, width: x.width, height: x.height });
+            }
+        });
+        applyFrames(moved, to);
+    }
+
+    function alignSelection(edge: Edge): void {
+        const units = selectionUnits.value;
+        const target = alignTarget(units, stage.value);
+        if (!target) return;
+        const free = units.filter((u) => !u.locked);
+        moveUnits(free, align(free, edge, target));
+    }
+
+    /** Spreads three or more units evenly between the outer two; with a locked one between them it does nothing. One step. */
+    function distributeSelection(axis: Axis): void {
+        const units = selectionUnits.value;
+        if (distributeBlocker(units, axis)) return;
+        const spread = distribute(units, axis);
+        const free = units.map((u, i) => ({ u, frame: spread[i]! })).filter((p) => !p.u.locked);
+        moveUnits(free.map((p) => p.u), free.map((p) => p.frame));
+    }
+
+    /** Deletes the unlocked ones in one step; locked blocks stay. */
+    function removeBlocks(ids: readonly string[]): void {
+        const gone = new Set(blocksOf(ids).filter((x) => !x.locked).map((x) => x.id));
+        if (!gone.size) return;
         const slideId = slide.value?.id;
         change((b) => {
             const target = slideIn(b, slideId);
-            if (target) target.blocks = moveAround(target.blocks, from, to, (i) => !!target.blocks[i]?.locked);
+            if (!target) return;
+            target.blocks = target.blocks.filter((x) => !gone.has(x.id));
+            dropSingleGroups(target.blocks);
+        });
+        pruneSelection();
+    }
+
+    /**
+     * The layer of the unlocked ones, in one step; among themselves they keep their order (`reorderMany`). A choice that
+     * is a part of one group only moves inside the group; otherwise whole groups move as units and never tear apart.
+     */
+    function layerBlocks(ids: readonly string[], layer: Layer): void {
+        const slideId = slide.value?.id;
+        const blocks = slide.value?.blocks ?? [];
+        const chosen = blocksOf(ids);
+        const groupId = chosen[0]?.groupId;
+        const inside = !!groupId && chosen.every((x) => x.groupId === groupId) && chosen.length < blocks.filter((x) => x.groupId === groupId).length;
+        const free = new Set((inside ? chosen : blocksOf(withGroups(blocks, ids))).filter((x) => !x.locked).map((x) => x.id));
+        if (!free.size) return;
+        change((b) => {
+            const target = slideIn(b, slideId);
+            if (!target) return;
+            let units = layerUnits(target.blocks);
+            if (inside) {
+                const at = units.findIndex((u) => u[0]!.groupId === groupId);
+                const members = units[at]!;
+                units[at] = reorderMany(members, members.flatMap((x, i) => (free.has(x.id) ? [i] : [])), layer);
+            } else {
+                const indices = units.flatMap((u, i) => (u.some((x) => free.has(x.id)) ? [i] : []));
+                units = reorderMany(units, indices, layer);
+            }
+            target.blocks = units.flat();
+        });
+    }
+
+    /**
+     * Groups the blocks (and every group among them) as one step: one new `groupId`, the layers closed up under the topmost.
+     * If one of them is locked, all become locked – a protection is never lost quietly. The choice stays.
+     */
+    function groupBlocks(ids: readonly string[]): void {
+        const slideId = slide.value?.id;
+        const all = new Set(withGroups(slide.value?.blocks ?? [], ids));
+        if (all.size < 2) return;
+        const groupId = newId();
+        change((b) => {
+            const target = slideIn(b, slideId);
+            if (!target) return;
+            const members = target.blocks.filter((x) => all.has(x.id));
+            const locked = members.some((x) => x.locked);
+            for (const x of members) {
+                x.groupId = groupId;
+                if (locked) x.locked = true;
+            }
+            const indices = target.blocks.flatMap((x, i) => (all.has(x.id) ? [i] : []));
+            target.blocks = gatherLayers(target.blocks, indices);
+        });
+    }
+
+    /** Takes the `groupId` off every member of the groups the blocks belong to, as one step. */
+    function ungroupBlocks(ids: readonly string[]): void {
+        const slideId = slide.value?.id;
+        const all = new Set(withGroups(slide.value?.blocks ?? [], ids));
+        if (!blocksOf([...all]).some((x) => x.groupId)) return;
+        change((b) => {
+            for (const x of slideIn(b, slideId)?.blocks ?? []) if (all.has(x.id)) delete x.groupId;
+        });
+    }
+
+    /**
+     * The layers dragged in the list (Plan.md 79, D9): the unit at place `from` (bottom first, see `layerUnits`) goes to
+     * `to`. A unit with a locked block keeps its place and the others pass it by. One step in the history.
+     */
+    function moveLayerUnit(from: number, to: number): void {
+        const slideId = slide.value?.id;
+        change((b) => {
+            const target = slideIn(b, slideId);
+            if (!target) return;
+            const units = layerUnits(target.blocks);
+            target.blocks = moveAround(units, from, to, (i) => !!units[i]?.some((x) => x.locked)).flat();
+        });
+    }
+
+    /** The members of a group dragged among themselves: `from` and `to` are places among them, bottom first. */
+    function moveGroupLayer(groupId: string, from: number, to: number): void {
+        const slideId = slide.value?.id;
+        change((b) => {
+            const target = slideIn(b, slideId);
+            if (!target) return;
+            const units = layerUnits(target.blocks);
+            const at = units.findIndex((u) => u[0]!.groupId === groupId);
+            if (at < 0) return;
+            const members = units[at]!;
+            units[at] = moveAround(members, from, to, (i) => !!members[i]?.locked);
+            target.blocks = units.flat();
         });
     }
 
@@ -775,7 +1023,13 @@ export const useEditorStore = defineStore('editor', () => {
         slide,
         block,
         calendarIds,
-        selectedBlockId,
+        selectedBlockIds,
+        multiSelect,
+        hoveredBlockId,
+        startMultiSelect,
+        endMultiSelect,
+        selection,
+        isSelected,
         editingTextId,
         status,
         conflict,
@@ -798,6 +1052,11 @@ export const useEditorStore = defineStore('editor', () => {
         redo,
         selectSlide,
         selectBlock,
+        pickBlock,
+        toggleGroup,
+        toggleBlock,
+        selectAll,
+        selectArea,
         renamePlaylist,
         addSlide,
         duplicateCurrentSlide,
@@ -808,15 +1067,25 @@ export const useEditorStore = defineStore('editor', () => {
         updateSlide,
         addBlock,
         updateBlock,
-        removeBlock,
-        layerBlock,
-        moveBlockLayer,
+        moveBlocks,
+        selectionUnits,
+        alignSelection,
+        distributeSelection,
+        removeBlocks,
+        layerBlocks,
+        groupBlocks,
+        ungroupBlocks,
+        canGroup,
+        canUngroup,
+        groupSelected,
+        moveLayerUnit,
+        moveGroupLayer,
         clipboard,
         blockSheetOpen,
-        copyBlock,
-        cutBlock,
+        copyBlocks,
+        cutBlocks,
         pasteBlocks,
-        duplicateBlock,
+        duplicateBlocks,
         setLocked,
         publish,
         saveDraft,

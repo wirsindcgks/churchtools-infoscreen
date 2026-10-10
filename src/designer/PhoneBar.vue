@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
  * The two rows at the bottom of a phone (Plan.md 79, C2). The lower one is always there: the slide – "Folie 2 von 5" opens the
- * sheet of slides, "+ Baustein" the sheet of blocks, "⋯" holds what belongs to the slide. A block chosen adds the upper row:
- * the short menu of the block in its bar form (`QuickMenu`, `variant="bar"`). The sheets themselves belong to the editor; this bar only asks for them.
+ * sheet of slides, "+ Baustein" the sheet of blocks, "⋯" holds what belongs to the slide. A block chosen (or several) adds the upper row:
+ * the short menu of the block in its bar form (`QuickMenu`, `variant="bar"`); in the mode "Mehrere auswählen" the lower row
+ * counts the chosen ones and ends the mode instead of the slide's (D6). The sheets themselves belong to the editor; this bar only asks for them.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
@@ -14,7 +15,7 @@ import { KEYS, keyLabel } from './shortcuts';
 import { useConfirm } from './useConfirm';
 import { useKeyboardInset } from './usePhone';
 
-const emit = defineEmits<{ slides: []; 'edit-slide': []; 'all-settings': [] }>();
+const emit = defineEmits<{ slides: []; 'edit-slide': []; blocks: []; 'all-settings': [] }>();
 
 const editor = useEditorStore();
 const { confirm } = useConfirm();
@@ -64,10 +65,15 @@ async function removeSlide(): Promise<void> {
 
 <template>
     <div class="phone-bar" :style="keyboard ? { bottom: `${keyboard}px` } : undefined" data-testid="phone-bar">
-        <div v-if="editor.block" class="block-row" data-testid="phone-block-row">
-            <QuickMenu ref="quickMenu" :key="editor.block.id" :block="editor.block" variant="bar" @all-settings="emit('all-settings')" />
+        <div v-if="editor.selection.length" class="block-row" data-testid="phone-block-row">
+            <QuickMenu ref="quickMenu" :key="editor.selection.map((b) => b.id).join()" :blocks="editor.selection" variant="bar" @all-settings="emit('all-settings')" />
         </div>
-        <div class="slide-row" data-testid="phone-slide-row">
+        <!-- In the mode the lower row counts and ends it; the short menu above already acts on what is chosen (user at the phone, 2026-10-10). -->
+        <div v-if="editor.multiSelect" class="slide-row multi-row" data-testid="multi-select-bar">
+            <span class="multi-count">{{ t.editor.selectedCount(editor.selectedBlockIds.length) }}</span>
+            <button class="d-btn d-btn--create" type="button" data-testid="multi-select-done" @click="editor.endMultiSelect()">{{ t.quick.done }}</button>
+        </div>
+        <div v-else class="slide-row" data-testid="phone-slide-row">
             <button
                 class="slides-btn"
                 type="button"
@@ -107,6 +113,12 @@ async function removeSlide(): Promise<void> {
                 <div v-if="moreOpen" class="more-list" role="menu" data-testid="phone-slide-more-list" @keydown="onMoreKey">
                     <button role="menuitem" type="button" data-testid="phone-slide-edit" @click="choose(() => emit('edit-slide'))">
                         {{ t.editor.phone.editSlide }}
+                    </button>
+                    <button role="menuitem" type="button" :disabled="!editor.slide?.blocks.length" data-testid="phone-slide-blocks" @click="choose(() => emit('blocks'))">
+                        {{ t.inspector.slideBlocks }}
+                    </button>
+                    <button role="menuitem" type="button" :disabled="!editor.slide?.blocks.length" data-testid="phone-multi-select" @click="choose(() => editor.startMultiSelect())">
+                        {{ t.editor.multiSelect }}
                     </button>
                     <button role="menuitem" type="button" data-testid="slide-duplicate-phone" @click="choose(() => editor.duplicateCurrentSlide())">
                         {{ t.editor.slideList.duplicateSlide }}
@@ -163,6 +175,11 @@ async function removeSlide(): Promise<void> {
     height: calc(56px + env(safe-area-inset-bottom));
     padding: 0 var(--d-space-2) env(safe-area-inset-bottom) var(--d-space-3);
     background: var(--d-surface);
+}
+/* The count on the left, "Fertig" on the right. */
+.multi-row {
+    justify-content: space-between;
+    font-weight: var(--d-weight-heading);
 }
 /* One step set off from the slide row below. */
 .block-row {
