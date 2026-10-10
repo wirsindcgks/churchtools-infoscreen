@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addBlock, openSection } from './helpers';
+import { addBlock, dragRow, openSection } from './helpers';
 
 // Grouping blocks (Plan.md 79, D9): a group is chosen and moved as one; a double click picks one member.
 
@@ -42,7 +42,7 @@ test.describe('on a desktop', () => {
         await expect(selected(page)).toHaveCount(2);
         await page.keyboard.press('ControlOrMeta+g');
         await expect(page.getByTestId('multi-title')).toHaveText('Gruppe · 2 Bausteine');
-        await expect(page.getByTestId('layer-group-mark')).toHaveCount(2); // the list stands in "Anordnen"
+        await expect(page.getByTestId('layer-group')).toHaveCount(1); // the list stands in "Anordnen"
 
         // A click on one member chooses the whole group.
         await page.keyboard.press('Escape');
@@ -94,7 +94,7 @@ test.describe('on a desktop', () => {
         expect(Math.abs(second.x + second.width - (stage.x + stage.width))).toBeLessThan(2);
     });
 
-    test('the inspector and the short menu group and ungroup; the list marks the members', async ({ page }) => {
+    test('the inspector and the short menu group and ungroup; the list shows the group as one row', async ({ page }) => {
         await openWithThree(page);
         await frames(page).nth(0).click();
         await frames(page).nth(1).click({ modifiers: ['Shift'] });
@@ -103,18 +103,45 @@ test.describe('on a desktop', () => {
         await expect(page.getByTestId('inspector-group')).toHaveCount(0);
         await expect(page.getByTestId('inspector-ungroup')).toBeVisible();
         await openSection(page, 'arrange');
-        await expect(page.getByTestId('layer-group-mark')).toHaveCount(2);
+        await expect(page.getByTestId('layer-group')).toHaveCount(1);
+        await expect(page.getByTestId('layer-group')).toContainText('2 Bausteine');
 
-        // Locking one locks both.
-        // The list shows the top layer first: the third block is no member, the second one is.
-        await page.getByTestId('layer-lock').nth(1).click();
-        await expect(page.locator('.layer-lock--on')).toHaveCount(2);
+        // The lock of the group row locks both members.
+        await page.getByTestId('layer-group-row').getByTestId('layer-lock').click();
+        await expect(page.getByTestId('layer-group-row').getByTestId('layer-lock')).toHaveAttribute('aria-pressed', 'true');
+        await page.getByTestId('layer-group-toggle').click();
+        await expect(page.locator('.layer-lock--on')).toHaveCount(3);
 
         await page.getByTestId('quick-more').click();
         await page.getByTestId('quick-ungroup').click();
-        await expect(page.getByTestId('layer-group-mark')).toHaveCount(0);
+        await expect(page.getByTestId('layer-group')).toHaveCount(0);
         await page.getByTestId('quick-more').click();
         await expect(page.getByTestId('quick-group')).toBeVisible();
+    });
+
+    test('the group is one row: a member goes to the front inside it, dragging the row moves both (user, 2026-10-10)', async ({ page }) => {
+        await openWithThree(page);
+        const [a, b, c] = await lefts(page);
+        await frames(page).nth(0).click();
+        await frames(page).nth(1).click({ modifiers: ['Shift'] });
+        await page.keyboard.press('ControlOrMeta+g');
+        await openSection(page, 'arrange');
+        const toggle = page.getByTestId('layer-group-toggle');
+        await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+        await expect(page.getByTestId('layer-row')).toHaveCount(1);
+        await toggle.click();
+        await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+
+        // The members list top first: the lower one chosen alone goes to the front – inside the group.
+        const members = page.getByTestId('layer-group-members').getByTestId('layer-row');
+        await members.nth(1).click();
+        await expect(selected(page)).toHaveCount(1);
+        await page.getByTestId('block-inspector').getByTestId('layer-front').click();
+        expect(await lefts(page)).toEqual([b, a, c]);
+
+        // The row of the group drags above the third block and takes both along.
+        await dragRow(page, page.getByTestId('layer-group-row').getByTestId('layer-handle'), page.getByTestId('layer-row').first());
+        await expect.poll(() => lefts(page)).toEqual([c, b, a]);
     });
 });
 

@@ -585,7 +585,10 @@ export const t = {
         arrange: 'Anordnen',
         measures: 'Genaue Maße',
         frameFields: { x: 'X', y: 'Y', width: 'Breite', height: 'Höhe' },
-        groupMark: 'In einer Gruppe',
+        group: 'Gruppe',
+        groupSize: (n: number) => `${n} Bausteine`,
+        groupOpen: 'Gruppe aufklappen',
+        groupClose: 'Gruppe zuklappen',
         layerOf: (n: number, total: number) => `Ebene ${n} von ${total}`,
         /** The list of the slide's blocks above the slide's settings (Plan.md 79, D6). */
         slideBlocks: 'Bausteine dieser Folie',

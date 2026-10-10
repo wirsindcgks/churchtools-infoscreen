@@ -54,3 +54,36 @@ export interface LayerRow {
 export function layerRows(blocks: readonly Block[]): LayerRow[] {
     return blocks.map((block, index) => ({ block, index })).reverse();
 }
+
+/**
+ * The layers as units, bottom first (Plan.md 79, D9): a block without a group is a unit of its own, a group stands at
+ * the place of its topmost member with its members in their order. `layerUnits(blocks).flat()` is the order in which
+ * every group lies together – slides from earlier states with a group pulled apart become smooth on the first move.
+ */
+export function layerUnits(blocks: readonly Block[]): Block[][] {
+    const lastOf = new Map<string, number>();
+    blocks.forEach((block, i) => {
+        if (block.groupId) lastOf.set(block.groupId, i);
+    });
+    const units: Block[][] = [];
+    blocks.forEach((block, i) => {
+        if (!block.groupId) units.push([block]);
+        else if (lastOf.get(block.groupId) === i) units.push(blocks.filter((x) => x.groupId === block.groupId));
+    });
+    return units;
+}
+
+/** One line of the list: a block, or a group with its members (top first). */
+export type LayerEntry = { kind: 'block'; row: LayerRow } | { kind: 'group'; groupId: string; rows: LayerRow[] };
+
+/** The list of layers with the groups as one entry each, top first. A group of one member counts as a block. */
+export function layerEntries(blocks: readonly Block[]): LayerEntry[] {
+    const indexOf = new Map(blocks.map((block, index) => [block.id, index]));
+    const row = (block: Block): LayerRow => ({ block, index: indexOf.get(block.id)! });
+    return layerUnits(blocks)
+        .map((unit): LayerEntry => {
+            const groupId = unit[0]!.groupId;
+            return groupId && unit.length > 1 ? { kind: 'group', groupId, rows: unit.map(row).reverse() } : { kind: 'block', row: row(unit[0]!) };
+        })
+        .reverse();
+}

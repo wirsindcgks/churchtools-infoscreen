@@ -23,6 +23,7 @@ import { t } from '../i18n/designer';
 import { tr } from '../i18n/repository';
 import { align, alignTarget, distribute, distributeBlocker, unitsOf, type Axis, type Edge, type Frame, type Unit } from './arrange';
 import { History } from './history';
+import { layerUnits } from './layers';
 import { GRID_SIZES } from './snap';
 import { boundingBox, clampFrame, cloneJson, createBlock, createSlide, dropSingleGroups, duplicateSlide, freeSpot, gatherLayers, groupOf, move, moveAround, newId, reorderMany, withGroups, type Layer } from './ops';
 
@@ -683,16 +684,31 @@ export const useEditorStore = defineStore('editor', () => {
         pruneSelection();
     }
 
-    /** The layer of the unlocked ones, in one step; among themselves they keep their order (`reorderMany`). */
+    /**
+     * The layer of the unlocked ones, in one step; among themselves they keep their order (`reorderMany`). A choice that
+     * is a part of one group only moves inside the group; otherwise whole groups move as units and never tear apart.
+     */
     function layerBlocks(ids: readonly string[], layer: Layer): void {
         const slideId = slide.value?.id;
-        const free = new Set(blocksOf(withGroups(slide.value?.blocks ?? [], ids)).filter((x) => !x.locked).map((x) => x.id));
+        const blocks = slide.value?.blocks ?? [];
+        const chosen = blocksOf(ids);
+        const groupId = chosen[0]?.groupId;
+        const inside = !!groupId && chosen.every((x) => x.groupId === groupId) && chosen.length < blocks.filter((x) => x.groupId === groupId).length;
+        const free = new Set((inside ? chosen : blocksOf(withGroups(blocks, ids))).filter((x) => !x.locked).map((x) => x.id));
         if (!free.size) return;
         change((b) => {
             const target = slideIn(b, slideId);
             if (!target) return;
-            const indices = target.blocks.flatMap((x, i) => (free.has(x.id) ? [i] : []));
-            target.blocks = reorderMany(target.blocks, indices, layer);
+            let units = layerUnits(target.blocks);
+            if (inside) {
+                const at = units.findIndex((u) => u[0]!.groupId === groupId);
+                const members = units[at]!;
+                units[at] = reorderMany(members, members.flatMap((x, i) => (free.has(x.id) ? [i] : [])), layer);
+            } else {
+                const indices = units.flatMap((u, i) => (u.some((x) => free.has(x.id)) ? [i] : []));
+                units = reorderMany(units, indices, layer);
+            }
+            target.blocks = units.flat();
         });
     }
 
@@ -730,14 +746,31 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     /**
-     * The layers dragged in the list (Plan.md 79, B3): the block at array place `from` goes to `to`; locked blocks keep
-     * their place and the others pass them by. One step in the history.
+     * The layers dragged in the list (Plan.md 79, D9): the unit at place `from` (bottom first, see `layerUnits`) goes to
+     * `to`. A unit with a locked block keeps its place and the others pass it by. One step in the history.
      */
-    function moveBlockLayer(from: number, to: number): void {
+    function moveLayerUnit(from: number, to: number): void {
         const slideId = slide.value?.id;
         change((b) => {
             const target = slideIn(b, slideId);
-            if (target) target.blocks = moveAround(target.blocks, from, to, (i) => !!target.blocks[i]?.locked);
+            if (!target) return;
+            const units = layerUnits(target.blocks);
+            target.blocks = moveAround(units, from, to, (i) => !!units[i]?.some((x) => x.locked)).flat();
+        });
+    }
+
+    /** The members of a group dragged among themselves: `from` and `to` are places among them, bottom first. */
+    function moveGroupLayer(groupId: string, from: number, to: number): void {
+        const slideId = slide.value?.id;
+        change((b) => {
+            const target = slideIn(b, slideId);
+            if (!target) return;
+            const units = layerUnits(target.blocks);
+            const at = units.findIndex((u) => u[0]!.groupId === groupId);
+            if (at < 0) return;
+            const members = units[at]!;
+            units[at] = moveAround(members, from, to, (i) => !!members[i]?.locked);
+            target.blocks = units.flat();
         });
     }
 
@@ -1045,7 +1078,8 @@ export const useEditorStore = defineStore('editor', () => {
         canGroup,
         canUngroup,
         groupSelected,
-        moveBlockLayer,
+        moveLayerUnit,
+        moveGroupLayer,
         clipboard,
         blockSheetOpen,
         copyBlocks,
