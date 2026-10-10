@@ -332,8 +332,14 @@ test.describe('with a finger', () => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
         await page.getByTestId('frame-text').first().tap();
-        const grip = await page.locator('.handle').first().boundingBox();
-        expect(grip!.width).toBeGreaterThanOrEqual(20);
+        // Shown 16 px, caught 44 px (Plan.md 79, C3): a fingertip 18 px beside the middle still lands on the grip.
+        const grip = (await page.locator('.handle').first().boundingBox())!;
+        expect(grip.width).toBeGreaterThanOrEqual(15.5);
+        const caught = await page.evaluate(({ x, y }) => !!document.elementFromPoint(x, y)?.closest('.handle'), {
+            x: grip.x + grip.width / 2 + 18,
+            y: grip.y + grip.height / 2,
+        });
+        expect(caught).toBe(true);
         await expect(page.locator('.editor-stage')).toHaveCSS('touch-action', 'pan-x pan-y');
         await expect(page.getByTestId('frame-text').first()).toHaveCSS('touch-action', 'none');
     });
@@ -1608,7 +1614,7 @@ test('the blocks stand in German alphabetical order in the "+ Baustein" sheet; t
     const types = await sheet.locator('[data-testid^="sheet-add-"]').evaluateAll((buttons) =>
         buttons.map((b) => b.getAttribute('data-testid')!.replace('sheet-add-', '')),
     );
-    // Beiträge, Bild, Countdown, Fläche, Galerie, Gemeindekopf, Gruppen, Nächster Termin, QR-Code, Raumbelegung, Terminliste, Text, Uhr, Video, Webseite
+    // Beiträge, Bild, Countdown, Fläche, Galerie, Gemeindekopf, Gruppen, Linie, Nächster Termin, QR-Code, Raumbelegung, Terminliste, Text, Uhr, Video, Webseite
     expect(types).toEqual([
         'posts',
         'image',
@@ -1617,6 +1623,7 @@ test('the blocks stand in German alphabetical order in the "+ Baustein" sheet; t
         'slideshow',
         'church-header',
         'groups',
+        'line',
         'next-appointment',
         'qr',
         'rooms',

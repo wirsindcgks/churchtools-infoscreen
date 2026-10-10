@@ -14,8 +14,19 @@ export function backgroundImageUrl(media: MediaDoc, stage: Size): string {
     return sizedImageUrl(media.imageUrl, stage.width, stage.height, 'crop');
 }
 
-export function blockImageUrl(media: MediaDoc, block: Size): string {
-    return sizedImageUrl(media.imageUrl, block.width, block.height);
+/** The longest side the image service is asked for. */
+const MAX_SIDE = 1920;
+
+/**
+ * The picture of a block in the size it needs: the frame times the zoom of its crop (Plan.md F2), scaled down in the same
+ * proportion until no side is over 1920. Player, cache and preloading all call this, so they agree on the address.
+ */
+export function blockImageUrl(media: MediaDoc, block: Size & { fit?: string; crop?: { zoom: number } }): string {
+    const zoom = block.fit === 'cover' && block.crop ? block.crop.zoom : 1;
+    const width = block.width * zoom;
+    const height = block.height * zoom;
+    const shrink = Math.min(1, MAX_SIDE / width, MAX_SIDE / height);
+    return sizedImageUrl(media.imageUrl, width * shrink, height * shrink);
 }
 
 type HeaderBlock = Extract<Block, { type: 'church-header' }>;

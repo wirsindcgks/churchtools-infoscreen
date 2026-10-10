@@ -611,6 +611,8 @@ function onKey(event: KeyboardEvent): void {
         // Writes the chosen text on the stage (Plan.md 79, C4); the key must not reach the new field as a line break.
         event.preventDefault();
         editor.startTextEdit(editor.block.id);
+    } else if (event.key === 'Escape' && editor.croppingId) {
+        editor.endCrop();
     } else if (event.key === 'Escape' && editor.multiSelect) {
         // The mode ends, the choice stays (D6).
         editor.endMultiSelect();

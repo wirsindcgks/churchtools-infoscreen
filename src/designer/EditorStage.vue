@@ -17,6 +17,7 @@ import { handlesOutside } from './handles';
 import { neighbourGaps, pairGaps, sizeLabelPlace, type Measure } from './measure';
 import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, boundingBox, clampFrame } from './ops';
 import QuickMenu from './QuickMenu.vue';
+import { cropPan, NO_CROP, type Crop } from './crop';
 import { outerFrame, resizeRotated, snapAngle } from './rotate';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 import { clampPan, viewOnto, WHOLE, zoomAt, zoomedFit, type View } from './stage-zoom';
@@ -159,6 +160,14 @@ function stagePoint(event: PointerEvent): { x: number; y: number } | null {
 function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): void {
     if (event.button !== 0) return;
     event.stopPropagation();
+    if (editor.croppingId) {
+        // While the crop is chosen, dragging the picture moves its section; a press on anything else ends it and goes on as usual.
+        if (handle === 'move' && clicked.id === editor.croppingId) {
+            startCropDrag(event, clicked);
+            return;
+        }
+        editor.endCrop();
+    }
     // A locked block lets a click through to an unlocked one below it; with Alt it takes the click itself.
     const point = handle === 'move' && clicked.locked && !event.altKey ? stagePoint(event) : null;
     const block = (point && blockBelow(blocks.value, clicked, point)) || clicked;
@@ -224,7 +233,37 @@ function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): vo
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
 }
 
+/** Choosing a crop (Plan.md F2): the press, the crop it started from and the picture's size, read from the drawn `<img>`. */
+let cropDrag: { id: string; startX: number; startY: number; crop: Crop | undefined; box: { width: number; height: number }; natural: { width: number; height: number } } | null = null;
+
+function startCropDrag(event: PointerEvent, block: Block): void {
+    if (block.type !== 'image') return;
+    const img = host.value?.querySelector<HTMLImageElement>(`.block[data-block-id="${block.id}"] img`);
+    cropDrag = {
+        id: block.id,
+        startX: event.clientX,
+        startY: event.clientY,
+        crop: block.crop,
+        box: { width: block.width, height: block.height },
+        natural: { width: img?.naturalWidth ?? 0, height: img?.naturalHeight ?? 0 },
+    };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+}
+
+function moveCrop(event: PointerEvent): void {
+    if (!cropDrag) return;
+    const dx = (event.clientX - cropDrag.startX) / fit.value.scale;
+    const dy = (event.clientY - cropDrag.startY) / fit.value.scale;
+    if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+    editor.beginGesture();
+    editor.updateBlock(cropDrag.id, { crop: cropPan(cropDrag.crop, cropDrag.box, cropDrag.natural, dx, dy) });
+}
+
 function moveTo(event: PointerEvent): void {
+    if (cropDrag) {
+        moveCrop(event);
+        return;
+    }
     if (hold) {
         hold.x = event.clientX;
         hold.y = event.clientY;
@@ -302,6 +341,11 @@ function apply(d: Drag, frame: { x: number; y: number; width: number; height: nu
 }
 
 function end(): void {
+    if (cropDrag) {
+        cropDrag = null;
+        editor.endGesture();
+        return;
+    }
     dropHold();
     liftedId.value = null;
     drag = null;
@@ -421,7 +465,7 @@ function hostFrame(b: { x: number; y: number; width: number; height: number }): 
     const { scale, offsetX, offsetY } = fit.value;
     return { left: offsetX + b.x * scale, top: offsetY + b.y * scale, width: b.width * scale, height: b.height * scale };
 }
-const quickBlocks = computed(() => (wide.value && !dragId.value && fit.value.scale > 0 ? editor.selection : []));
+const quickBlocks = computed(() => (wide.value && !dragId.value && !editor.croppingId && fit.value.scale > 0 ? editor.selection : []));
 /** One block's frame, or the box around several (all of them, the locked too). */
 const quickFrame = computed(() => {
     const box = boundingBox(quickBlocks.value);
@@ -516,7 +560,7 @@ function resetZoom(): void {
 }
 
 // Taps and long presses of a finger (C3): on a block or on the empty stage; the menus and buttons in the host are none of it.
-const NOT_STAGE = '[data-testid="quick-menu"], [data-testid="text-edit"], .empty-action, .zoom-reset, .empty-slide-box, .paste-menu, .multi-pill';
+const NOT_STAGE = '[data-testid="quick-menu"], [data-testid="crop-bar"], [data-testid="text-edit"], .empty-action, .zoom-reset, .empty-slide-box, .paste-menu, .multi-pill';
 function tapTarget(el: EventTarget | null): string | null {
     const e = el as Element | null;
     if (!e || !host.value?.contains(e) || e.closest(NOT_STAGE)) return null;
@@ -726,6 +770,11 @@ function onDoubleClick(id: string): void {
         if (!chosen.locked) editor.startTextEdit(chosen.id);
         return;
     }
+    // A picture with a medium opens its crop; an empty one leads to the library (F2, C5).
+    if (chosen?.type === 'image' && chosen.mediaId && !chosen.locked) {
+        editor.startCrop(chosen.id);
+        return;
+    }
     void openContent();
 }
 
@@ -762,6 +811,42 @@ function endOnOutside(event: PointerEvent): void {
     if (target?.closest('[data-testid="text-edit"], [data-testid="quick-menu"]')) return;
     editor.endTextEdit();
 }
+/** The crop bar's place under the picture, or at the bottom of the stage area on a phone (Plan.md F2). */
+const croppingBlock = computed(() => {
+    const b = blocks.value.find((x) => x.id === editor.croppingId);
+    return b?.type === 'image' ? b : null;
+});
+const cropBarStyle = computed(() => {
+    const b = croppingBlock.value;
+    if (!b) return {};
+    const frame = hostFrame(outerFrame(b));
+    const bottom = size.height - CROP_BAR_HEIGHT - 8;
+    if (!wide.value) return { left: `${size.width / 2}px`, top: `${bottom}px` };
+    return { left: `${Math.min(Math.max(frame.left + frame.width / 2, 0), size.width)}px`, top: `${Math.max(0, Math.min(frame.top + frame.height + 8, bottom))}px` };
+});
+const CROP_BAR_HEIGHT = 44;
+const cropZoom = computed(() => croppingBlock.value?.crop?.zoom ?? 1);
+function setCropZoom(event: Event): void {
+    const b = croppingBlock.value;
+    if (!b) return;
+    editor.beginGesture();
+    editor.updateBlock(b.id, { crop: { ...(b.crop ?? NO_CROP), zoom: Number((event.target as HTMLInputElement).value) } });
+}
+/** A press beside the picture and the bar ends the crop. Captured: blocks stop their `pointerdown`. */
+function endCropOnOutside(event: PointerEvent): void {
+    const target = event.target as Element | null;
+    if (target?.closest('[data-testid="crop-bar"]') || target?.closest(`.frame[data-block-id="${editor.croppingId}"]`)) return;
+    editor.endCrop();
+}
+watch(
+    () => editor.croppingId,
+    (id) => {
+        document.removeEventListener('pointerdown', endCropOnOutside, true);
+        if (id) document.addEventListener('pointerdown', endCropOnOutside, true);
+    },
+);
+onBeforeUnmount(() => document.removeEventListener('pointerdown', endCropOnOutside, true));
+
 /** Letters this size on the screen are readable while writing; smaller ones the phone zooms up to it (C4). */
 const READABLE_PX = 16;
 /** The view before a phone zoomed onto the block being written (C4); it comes back when the writing ends. */
@@ -873,7 +958,7 @@ function onEmptyAction(b: Block): void {
                     v-for="block in blocks"
                     :key="block.id"
                     class="frame"
-                    :class="{ 'frame--selected': editor.isSelected(block.id), 'frame--locked': block.locked, 'frame--tight': tight(block), 'frame--pressed': block.id === pressedId, 'frame--lifted': block.id === liftedId, 'frame--hinted': block.id === editor.hoveredBlockId && !editor.isSelected(block.id) }"
+                    :class="{ 'frame--selected': editor.isSelected(block.id), 'frame--crop': block.id === editor.croppingId, 'frame--locked': block.locked, 'frame--tight': tight(block), 'frame--pressed': block.id === pressedId, 'frame--lifted': block.id === liftedId, 'frame--hinted': block.id === editor.hoveredBlockId && !editor.isSelected(block.id) }"
                     :style="{
                         left: `${block.x}px`,
                         top: `${block.y}px`,
@@ -906,7 +991,7 @@ function onEmptyAction(b: Block): void {
                     >
                         <Icon name="lock" :size="16" />
                     </span>
-                    <template v-else-if="block.id === editor.block?.id">
+                    <template v-else-if="block.id === editor.block?.id && block.id !== editor.croppingId">
                         <span
                             v-for="h in handlesOf(block)"
                             :key="h"
@@ -994,6 +1079,14 @@ function onEmptyAction(b: Block): void {
             <span>{{ t.editor.selectedCount(editor.selectedBlockIds.length) }}</span>
             <button class="d-btn" type="button" data-testid="multi-select-done" @click="editor.endMultiSelect()">{{ t.quick.done }}</button>
         </div>
+        <div v-if="croppingBlock" class="crop-bar" :style="cropBarStyle" role="group" :aria-label="t.editor.stage.cropBar" data-testid="crop-bar" @pointerdown.stop>
+            <label class="crop-zoom">
+                {{ t.editor.stage.cropZoom }}
+                <input type="range" min="1" max="3" step="0.05" :value="cropZoom" data-testid="crop-zoom" @input="setCropZoom" @change="editor.endGesture()">
+            </label>
+            <button class="d-btn" type="button" data-testid="crop-reset" @click="editor.updateBlock(croppingBlock.id, { crop: undefined })">{{ t.editor.stage.cropReset }}</button>
+            <button class="d-btn d-btn--primary" type="button" data-testid="crop-done" @click="editor.endCrop()">{{ t.editor.stage.cropDone }}</button>
+        </div>
         <QuickMenu
             v-if="quickBlocks.length && quickFrame"
             :key="quickBlocks.map((b) => b.id).join()"
@@ -1038,6 +1131,32 @@ function onEmptyAction(b: Block): void {
 }
 .editor-stage--pinching {
     touch-action: none;
+}
+.crop-bar {
+    position: absolute;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 8px;
+    transform: translateX(-50%);
+    border-radius: var(--d-radius);
+    border: 1px solid var(--d-edge);
+    background: var(--d-surface);
+    color: var(--d-text);
+    box-shadow: var(--d-shadow);
+    font-family: var(--d-font);
+    white-space: nowrap;
+}
+.crop-zoom {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: var(--d-size-sm);
+}
+.frame--selected.frame--crop {
+    outline-style: dashed;
 }
 .zoom-reset,
 .paste-menu,

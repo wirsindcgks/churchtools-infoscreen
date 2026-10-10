@@ -16,7 +16,7 @@ import { BLOCK_INSPECTORS } from '.';
  */
 const QUICK: Record<BlockType, string[]> = {
     text: ['Textstufe: Überschrift', 'Farbe', 'Ausrichtung'],
-    image: ['Bild wählen', 'Einpassen: Ganz zeigen'], // "Bild tauschen" once a picture is in
+    image: ['Bild wählen', 'Einpassen: Ganz zeigen', 'Ton: Ohne'], // "Bild tauschen" once a picture is in
     shape: ['Form: Rechteck', 'Farbe', 'Ecken 0 px'],
     line: ['Farbe', 'Stärke 8 px', 'Strich: Durchgezogen'],
     slideshow: ['Bilder hinzufügen', 'Übergang: Überblenden'],
