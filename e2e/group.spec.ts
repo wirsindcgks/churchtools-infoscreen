@@ -128,11 +128,20 @@ test.describe('on a phone', () => {
         await expect(selected(page)).toHaveCount(0);
         await frames(page).nth(0).tap({ position: { x: 4, y: 4 } });
         await expect(selected(page)).toHaveCount(2);
+        // A double tap on a member of the chosen group chooses it alone – the second tap's release must not take the group back.
+        const corner = (await frames(page).nth(0).boundingBox())!;
+        await page.touchscreen.tap(corner.x + 4, corner.y + 4);
+        await page.touchscreen.tap(corner.x + 4, corner.y + 4);
+        await expect(selected(page)).toHaveCount(1);
 
         await page.getByTestId('quick-more').tap();
         await page.getByTestId('quick-ungroup').tap();
         await page.getByTestId('quick-more').tap();
-        await expect(page.getByTestId('quick-group')).toBeVisible();
         await expect(page.getByTestId('quick-ungroup')).toHaveCount(0);
+        // Without the group a tap chooses only the block itself.
+        await page.keyboard.press('Escape');
+        await page.getByTestId('quick-deselect').tap();
+        await frames(page).nth(0).tap({ position: { x: 4, y: 4 } });
+        await expect(selected(page)).toHaveCount(1);
     });
 });

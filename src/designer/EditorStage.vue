@@ -652,6 +652,8 @@ function onDoubleClick(id: string): void {
     if (editor.multiSelect) return;
     // On a member of a chosen group it chooses that block alone (D9); the next one leads to its content.
     if (editor.groupSelected && editor.isSelected(id)) {
+        // A finger's second tap is still pending here (its pointerup comes after this): it must not take the group back.
+        soloPending = null;
         editor.selectBlock(id);
         return;
     }
