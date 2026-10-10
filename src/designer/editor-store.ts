@@ -21,7 +21,7 @@ import {
 import { DraftConflictError, DraftsUnavailableError, type DraftConflictInfo } from '../store/drafts';
 import { t } from '../i18n/designer';
 import { tr } from '../i18n/repository';
-import { align, alignTarget, distribute, distributeBlocker, type Axis, type Edge, type Frame } from './arrange';
+import { align, alignTarget, distribute, distributeBlocker, unitsOf, type Axis, type Edge, type Frame, type Unit } from './arrange';
 import { History } from './history';
 import { GRID_SIZES } from './snap';
 import { boundingBox, clampFrame, cloneJson, createBlock, createSlide, dropSingleGroups, duplicateSlide, freeSpot, gatherLayers, groupOf, move, moveAround, newId, reorderMany, withGroups, type Layer } from './ops';
@@ -112,6 +112,8 @@ export const useEditorStore = defineStore('editor', () => {
     });
     const slide = computed(() => slides.value.find((s) => s.id === selectedSlideId.value) ?? slides.value[0] ?? null);
     const selection = computed<Block[]>(() => slide.value?.blocks.filter((b) => selectedBlockIds.value.includes(b.id)) ?? []);
+    /** The choice as aligning and distributing see it: a group counts as one (`unitsOf`). */
+    const selectionUnits = computed(() => unitsOf(selection.value));
     /** Several blocks can be grouped when they are not already all one group (groups among them merge). */
     const canGroup = computed(() => {
         const ids = withGroups(slide.value?.blocks ?? [], selectedBlockIds.value);
@@ -635,20 +637,36 @@ export const useEditorStore = defineStore('editor', () => {
      * Aligns the unlocked chosen blocks to an edge or middle (Plan.md 79, D4): one block to the stage, several to the box around
      * the locked ones among them or else around all. One step.
      */
-    function alignSelection(edge: Edge): void {
-        const target = alignTarget(selection.value, stage.value);
-        if (!target) return;
-        const free = selection.value.filter((x) => !x.locked);
-        applyFrames(free, align(free, edge, target));
+    /** Moves each unit's members by the distance its box went, so a group keeps its shape. */
+    function moveUnits(units: readonly Unit[], frames: readonly Frame[]): void {
+        const moved: Block[] = [];
+        const to: Frame[] = [];
+        units.forEach((unit, i) => {
+            const dx = frames[i]!.x - unit.x;
+            const dy = frames[i]!.y - unit.y;
+            for (const x of blocksOf(unit.ids)) {
+                moved.push(x);
+                to.push({ x: x.x + dx, y: x.y + dy, width: x.width, height: x.height });
+            }
+        });
+        applyFrames(moved, to);
     }
 
-    /** Spreads three or more evenly between the outer two; with a locked block between them it does nothing. One step. */
+    function alignSelection(edge: Edge): void {
+        const units = selectionUnits.value;
+        const target = alignTarget(units, stage.value);
+        if (!target) return;
+        const free = units.filter((u) => !u.locked);
+        moveUnits(free, align(free, edge, target));
+    }
+
+    /** Spreads three or more units evenly between the outer two; with a locked one between them it does nothing. One step. */
     function distributeSelection(axis: Axis): void {
-        if (distributeBlocker(selection.value, axis)) return;
-        const all = selection.value;
-        const spread = distribute(all, axis);
-        const free = all.map((x, i) => ({ x, frame: spread[i]! })).filter((p) => !p.x.locked);
-        applyFrames(free.map((p) => p.x), free.map((p) => p.frame));
+        const units = selectionUnits.value;
+        if (distributeBlocker(units, axis)) return;
+        const spread = distribute(units, axis);
+        const free = units.map((u, i) => ({ u, frame: spread[i]! })).filter((p) => !p.u.locked);
+        moveUnits(free.map((p) => p.u), free.map((p) => p.frame));
     }
 
     /** Deletes the unlocked ones in one step; locked blocks stay. */
@@ -1017,6 +1035,7 @@ export const useEditorStore = defineStore('editor', () => {
         addBlock,
         updateBlock,
         moveBlocks,
+        selectionUnits,
         alignSelection,
         distributeSelection,
         removeBlocks,

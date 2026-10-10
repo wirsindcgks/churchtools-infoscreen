@@ -74,3 +74,23 @@ export function alignTarget(chosen: readonly Lockable[], stage: { width: number;
     const locked = chosen.filter((f) => f.locked);
     return boundingBox(locked.length ? locked : chosen);
 }
+
+/** What aligning and distributing move: one block, or a group as a whole (its box); locked if any member is. */
+export type Unit = Frame & { ids: string[]; locked: boolean };
+
+/**
+ * The chosen blocks as units (user, 2026-10-10): a group with two or more chosen members behaves like one block – alone it
+ * aligns to the stage, among others it moves as a whole and counts as one when distributing. A member chosen alone is a
+ * block of its own. In the order of the blocks.
+ */
+export function unitsOf(chosen: readonly (Lockable & { id: string; groupId?: string })[]): Unit[] {
+    const members = new Map<string, number>();
+    for (const b of chosen) if (b.groupId) members.set(b.groupId, (members.get(b.groupId) ?? 0) + 1);
+    const units = new Map<string, (typeof chosen)[number][]>();
+    for (const b of chosen) {
+        const key = b.groupId && members.get(b.groupId)! > 1 ? `group:${b.groupId}` : `block:${b.id}`;
+        units.set(key, [...(units.get(key) ?? []), b]);
+    }
+    return [...units.values()].map((list) => ({ ...boundingBox(list)!, ids: list.map((b) => b.id), locked: list.some((b) => !!b.locked) }));
+}
+

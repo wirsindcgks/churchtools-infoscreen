@@ -78,6 +78,22 @@ test.describe('on a desktop', () => {
         await expect(selected(page)).toHaveCount(1);
     });
 
+    test('a chosen group aligns to the slide as one block; its members keep their distance (user, 2026-10-10)', async ({ page }) => {
+        await openWithThree(page);
+        await frames(page).nth(0).click();
+        await frames(page).nth(1).click({ modifiers: ['Shift'] });
+        await page.keyboard.press('ControlOrMeta+g');
+        const [a0, b0] = await lefts(page);
+        await openSection(page, 'arrange');
+        await page.getByTestId('block-inspector').getByTestId('arrange-right').click();
+        const [a1, b1] = await lefts(page);
+        expect(Math.abs(b1! - a1! - (b0! - a0!))).toBeLessThan(1);
+        // The right edge of the second member meets the slide's right edge.
+        const stage = (await page.getByTestId('grid').boundingBox())!;
+        const second = (await frames(page).nth(1).boundingBox())!;
+        expect(Math.abs(second.x + second.width - (stage.x + stage.width))).toBeLessThan(2);
+    });
+
     test('the inspector and the short menu group and ungroup; the list marks the members', async ({ page }) => {
         await openWithThree(page);
         await frames(page).nth(0).click();

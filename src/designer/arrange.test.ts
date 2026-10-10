@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { align, alignTarget, distribute, distributeBlocker } from './arrange';
+import { align, alignTarget, distribute, distributeBlocker, unitsOf } from './arrange';
 
 const f = (x: number, y: number, width: number, height: number, locked = false) => ({ x, y, width, height, locked });
 const target = { x: 100, y: 50, width: 400, height: 300 };
@@ -85,3 +85,19 @@ describe('alignTarget', () => {
         expect(alignTarget([f(0, 0, 10, 10, true), f(90, 40, 10, 10, true)], stage)).toBeNull();
     });
 });
+
+describe('unitsOf', () => {
+    const b = (id: string, x: number, groupId?: string, locked = false) => ({ id, x, y: 0, width: 100, height: 50, groupId, locked });
+    it('makes one unit of a group, with the box around its members', () => {
+        const units = unitsOf([b('a', 0, 'g'), b('c', 500), b('b', 200, 'g')]);
+        expect(units.map((u) => u.ids)).toEqual([['a', 'b'], ['c']]);
+        expect(units[0]).toMatchObject({ x: 0, y: 0, width: 300, height: 50, locked: false });
+    });
+    it('keeps a member chosen alone a block of its own', () => {
+        expect(unitsOf([b('a', 0, 'g'), b('c', 500)]).map((u) => u.ids)).toEqual([['a'], ['c']]);
+    });
+    it('locks the unit when a member is locked', () => {
+        expect(unitsOf([b('a', 0, 'g', true), b('b', 200, 'g')])[0]!.locked).toBe(true);
+    });
+});
+

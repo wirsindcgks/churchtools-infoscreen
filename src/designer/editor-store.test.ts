@@ -856,6 +856,25 @@ describe('selecting several blocks (Plan.md 79, D1)', () => {
         expect(editor.slide!.blocks.map((b) => b.x)).toEqual([100, 200, 700]);
     });
 
+    it('aligns and distributes a group as one block (user, 2026-10-10)', async () => {
+        const { editor, ids } = await three();
+        editor.groupBlocks([ids[0], ids[1]]);
+        // The group alone goes to the stage as a whole; its members keep their distance.
+        editor.pickBlock(ids[0]);
+        editor.alignSelection('right');
+        expect(editor.slide!.blocks.filter((x) => x.groupId).map((x) => x.x).sort((p, q) => p - q)).toEqual([1420, 1720]);
+        editor.undo();
+        // With another block the group moves as one unit: the box's left edge is the target, the second member stays at 400.
+        editor.selectAll();
+        editor.alignSelection('left');
+        const x = (id: string) => editor.slide!.blocks.find((b) => b.id === id)!.x;
+        expect([x(ids[0]), x(ids[1]), x(ids[2])]).toEqual([100, 400, 100]);
+        // Two units – the group and one block – are too few to distribute.
+        editor.undo();
+        editor.distributeSelection('x');
+        expect([x(ids[0]), x(ids[1]), x(ids[2])]).toEqual([100, 400, 700]);
+    });
+
     it('clamps the box of the moved ones, so the group keeps its shape at the edge', async () => {
         const { editor, ids } = await three();
         editor.moveBlocks([ids[0], ids[2]], 5000, 0);
