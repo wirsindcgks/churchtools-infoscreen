@@ -40,6 +40,8 @@ const PATHS = {
     unlock: ['M6 11h12v10H6z', 'M8.5 11V8a3.5 3.5 0 0 1 6.8-1.2'],
     eye: ['M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z', circle(12, 12, 3)],
     back: ['M15 5l-7 7 7 7'],
+    // The rotate handle on the stage (Plan.md F1): a turning arrow.
+    rotate: ['M19.5 12a7.5 7.5 0 1 1-2.2-5.3', 'M19.5 3.5v4h-4'],
     undo: ['M9 14L4 9l5-5', 'M4 9h11a5 5 0 0 1 0 10h-3'],
     redo: ['M15 14l5-5-5-5', 'M20 9H9a5 5 0 0 0 0 10h3'],
     external: ['M14 4h6v6', 'M20 4l-9 9', 'M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5'],

@@ -42,7 +42,7 @@ test('a shape turned into an ellipse is drawn with 50 % rounding', async ({ page
     await expect(chip(page, /^Ecken/)).toHaveCount(0);
 });
 
-/** Drags the rotate handle a quarter turn clockwise: from above the middle to the right of it, at the same distance. */
+/** Drags the rotate handle a quarter turn clockwise, at the same distance from the middle – wherever it stands. */
 async function turnQuarter(page: Page): Promise<void> {
     const handle = (await page.getByTestId('handle-rotate').boundingBox())!;
     const frame = (await page.locator('.frame--selected').boundingBox())!;

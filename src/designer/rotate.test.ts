@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { handleBelow, handleReach, outerFrame, resizeRotated, snapAngle } from './rotate';
+import { handleAbove, handleReach, outerFrame, resizeRotated, snapAngle } from './rotate';
 
 describe('outerFrame (Plan.md F1)', () => {
     const frame = { x: 100, y: 100, width: 400, height: 100 };
@@ -108,24 +108,24 @@ describe('handleReach', () => {
     });
 });
 
-describe('handleBelow', () => {
+describe('handleAbove', () => {
     const stage = { width: 1920, height: 1080 };
     const frame = { x: 100, y: 100, width: 200, height: 100 };
 
-    it('stays above where there is room', () => {
-        expect(handleBelow(frame, 28, 6, stage)).toBe(false);
+    it('stays below where there is room', () => {
+        expect(handleAbove(frame, 28, 9, stage)).toBe(false);
     });
 
-    it('goes below a block at the top edge', () => {
-        expect(handleBelow({ ...frame, y: 10 }, 28, 6, stage)).toBe(true);
+    it('goes above a block at the bottom edge', () => {
+        expect(handleAbove({ ...frame, y: 970 }, 28, 9, stage)).toBe(true);
     });
 
-    it('stays above where it fits neither above nor below', () => {
-        expect(handleBelow({ ...frame, y: 10, height: 1060 }, 28, 6, stage)).toBe(false);
+    it('stays below where it fits neither below nor above', () => {
+        expect(handleAbove({ ...frame, y: 10, height: 1060 }, 28, 9, stage)).toBe(false);
     });
 
-    it('turns with the block: a quarter turn at the right edge puts it on the other side', () => {
-        expect(handleBelow({ ...frame, x: 1750, rotation: 90 }, 28, 6, stage)).toBe(true);
-        expect(handleBelow({ ...frame, x: 1750, rotation: -90 }, 28, 6, stage)).toBe(false);
+    it('turns with the block: a quarter turn at the left edge puts it on the other side', () => {
+        expect(handleAbove({ ...frame, x: -50, rotation: 90 }, 28, 9, stage)).toBe(true);
+        expect(handleAbove({ ...frame, x: -50, rotation: -90 }, 28, 9, stage)).toBe(false);
     });
 });
