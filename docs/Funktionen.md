@@ -59,8 +59,8 @@ das Feld nicht.
 
 ![Editor mit einer Terminliste als Karten, darüber das Kurzmenü mit den Kalendern](bilder/editor.png)
 
-**Sechzehn Bausteine:** Text, Bild, Fläche, Linie, Galerie, Video, Uhr, Terminliste, Nächster Termin, Gemeindekopf mit
-Logo, Webseite, QR-Code, Countdown, Beiträge, Gruppen und Raumbelegung. Beim Baustein „Webseite" geht statt der Adresse auch der
+**Siebzehn Bausteine:** Text, Bild, Fläche, Linie, Galerie, Video, Uhr, Terminliste, Nächster Termin, Gemeindekopf mit
+Logo, Webseite, QR-Code, Countdown, Beiträge, Gruppen, Raumbelegung und Social Media. Beim Baustein „Webseite" geht statt der Adresse auch der
 Einbettungscode (`<iframe …>`), den Karten, Umfragen oder Pinnwände anbieten – übernommen wird nur die Adresse darin.
 Seiten des eigenen ChurchTools bettet der Baustein nicht ein.
 
@@ -152,6 +152,21 @@ wechselt seitenweise, die Folie bleibt, bis alle Seiten gelaufen sind.
 Nur bestätigte Buchungen erscheinen, und nur Raum, Zeit und Titel – nie Beschreibung, Notizen oder Namen der Buchenden.
 Weil ein Titel Namen enthalten kann („Gespräch Familie X"), lässt er sich **je Raum abschalten**; dann steht dort
 „Belegt". Die Rechte dafür vergibt der Assistent (siehe [Rechte](Rechte.md)).
+
+## Social Media
+
+Die Profile der Gemeinde auf einen Blick: links das **Zeichen** der Plattform, rechts der **Name**, unter dem man sie in der
+App findet. Man fügt nur den **Link** ein – Zeichen und Name erkennt der Baustein daran. Er kennt Instagram, Facebook,
+YouTube, TikTok, X, Threads, WhatsApp, Telegram, Signal, Spotify, Apple Podcasts, SoundCloud, Bluesky, Mastodon, Twitch,
+Pinterest und Vimeo; eine E-Mail-Adresse bekommt einen Brief, jede andere Seite einen Globus mit ihrer Adresse als Name.
+Aus `instagram.com/wirsindcgks` wird „wirsindcgks", ohne „@" davor. Wer einen anderen Text will, trägt ihn je Profil unter
+„Angezeigter Name" ein.
+
+Die Zeichen liegen im Programm: Der Fernseher fragt keine fremde Seite an und zeigt sie auch ohne Netz. Mit **Markenfarben**
+(Vorgabe) steht jedes Zeichen weiß auf einer Kachel in der Farbe der Plattform; ohne sie steht es allein in der Textfarbe.
+Die Profile stehen **untereinander** oder **nebeneinander**, bis zu zwölf je Baustein, in der Reihenfolge der Liste. Eine
+Zeile bricht nicht um; ein zu langer Name endet mit „…". Ein QR-Code je Profil gehört nicht dazu – dafür gibt es den
+Baustein „QR-Code".
 
 ## Der Raum am Termin
 

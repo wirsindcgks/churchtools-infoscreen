@@ -22,6 +22,8 @@ export function emptyAction(block: Block): string | null {
             return block.parentGroupId === undefined ? say.groups : null;
         case 'rooms':
             return block.rooms.length ? null : say.rooms;
+        case 'social':
+            return block.links.some((l) => l.url.trim()) ? null : say.social;
         default:
             return null;
     }

@@ -3,6 +3,7 @@
  * be told from the next of its kind. Pure, so the order and the lines are tested without a component.
  */
 import type { Block } from '../model/schema';
+import { socialName } from '../player/social';
 
 /** Longest short content before it is cut. */
 export const SUMMARY_MAX = 30;
@@ -35,6 +36,8 @@ export function blockSummary(block: Block, lookup: SummaryLookup): string {
             return shorten((block.calendarIds[0] !== undefined && lookup.calendarName(block.calendarIds[0])) || '');
         case 'rooms':
             return shorten((block.rooms[0] && lookup.roomName(block.rooms[0].resourceId)) || '');
+        case 'social':
+            return shorten((block.links[0] && socialName(block.links[0])) || '');
         case 'web':
             return shorten(block.url.replace(/^https?:\/\//, ''));
         case 'qr':

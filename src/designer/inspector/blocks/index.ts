@@ -13,6 +13,7 @@ import QrInspector from './QrInspector.vue';
 import RoomsInspector from './RoomsInspector.vue';
 import ShapeInspector from './ShapeInspector.vue';
 import SlideshowInspector from './SlideshowInspector.vue';
+import SocialInspector from './SocialInspector.vue';
 import TextInspector from './TextInspector.vue';
 import VideoInspector from './VideoInspector.vue';
 import WebInspector from './WebInspector.vue';
@@ -27,6 +28,7 @@ export const BLOCK_INSPECTORS: Record<BlockType, Component> = {
     line: LineInspector,
     clock: ClockInspector,
     qr: QrInspector,
+    social: SocialInspector,
     web: WebInspector,
     video: VideoInspector,
     slideshow: SlideshowInspector,
