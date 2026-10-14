@@ -31,17 +31,17 @@ const QUICK: Record<BlockType, string[]> = {
     posts: ['Gruppen · 0', 'Darstellung: Hervorgehoben', 'Farbe'],
     groups: ['Gruppen-Homepage: – wählen –', 'Darstellung: Hervorgehoben', 'Farbe'],
     rooms: ['Räume · 0', 'Darstellung: Übersicht', 'Zeitraum: Heute'],
-    social: ['Profile · 0', 'Anordnung: Untereinander', 'Markenfarben'],
+    social: ['Profile · 0', 'Anordnung: Untereinander', 'Markenfarben', 'Farbe', 'Ausrichtung'],
 };
 
-function draw(type: BlockType) {
+function draw(type: BlockType, mode: 'quick' | 'full' = 'quick') {
     const pinia = createPinia();
     setActivePinia(pinia);
     const block = createBlock(type, { width: 1920, height: 1080 }, [1]);
     const Host = defineComponent({
         setup() {
             provideStageContext({ now: new Date(), timeZone: 'Europe/Berlin', clockConfirmed: true, churchName: '', appointments: [], media: new Map() });
-            provide(INSPECTOR_MODE, 'quick');
+            provide(INSPECTOR_MODE, mode);
             provide(INSPECTOR_CONTEXT, {
                 pickImage: () => undefined,
                 calendars: [{ id: 1, name: 'Gottesdienst' }],
@@ -79,5 +79,18 @@ describe('the short menu of the blocks (Plan.md 79, B2)', () => {
         container.querySelectorAll('[data-testid="quick-chip"], [data-quick-inline], button.quick-chip').forEach((el) => el.remove());
         expect(container.textContent!.trim()).toBe('');
         expect(container.querySelectorAll('input, button, select, textarea, img, svg, hr')).toHaveLength(0);
+    });
+});
+
+/** A new block brings the default set of formatting with it (Plan.md, Konventionen); a block with a text style shows it. */
+describe('the font of the blocks (Plan.md 83)', () => {
+    /** Known gaps, each a small item in Plan.md: the room occupancy uses its style but offers no section yet. */
+    const without: BlockType[] = ['rooms'];
+    const styled = (Object.keys(QUICK) as BlockType[]).filter(
+        (type) => !without.includes(type) && 'style' in createBlock(type, { width: 1920, height: 1080 }, [1]),
+    );
+
+    it.each(styled)('%s has a text style, so its inspector offers the section "Schrift"', (type) => {
+        expect(draw(type, 'full').querySelector('[data-testid="section-font"]')).not.toBeNull();
     });
 });

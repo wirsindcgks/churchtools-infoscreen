@@ -1,7 +1,8 @@
 <script setup lang="ts">
 /**
- * The social media block (Plan.md 80): the profiles by their links, the arrangement and the brand colours. The mark and
- * the name come from the link (`socialProfile`); a name typed here wins. Links, arrangement and colours go to the short menu.
+ * The social media block (Plan.md 80): the profiles by their links, the arrangement and the brand colours, then the font
+ * (Plan.md 83). The mark and the name come from the link (`socialProfile`); a name typed here wins. Links, arrangement,
+ * brand colours, the colour and the alignment go to the short menu.
  */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
@@ -15,6 +16,7 @@ import SortList, { type SortItem } from '../fields/SortList.vue';
 import TextField from '../fields/TextField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import { move as moveItem } from '../../ops';
+import FontSection from '../FontSection.vue';
 import { useBlockEdit } from '../use-block';
 
 /** Most links a block holds – the schema's limit. */
@@ -102,6 +104,7 @@ function remove(index: number): void {
 
     <SegmentField quick stacked :model-value="block.layout ?? 'column'" :options="layouts" :label="t.inspector.socialLayout" testid="social-layout" @update:model-value="setBlock({ layout: $event as 'column' | 'row' })" />
     <ToggleField quick :model-value="block.brandColors !== false" :label="t.inspector.socialBrand" testid="social-brand" @update:model-value="setBlock({ brandColors: $event })" />
+    <FontSection :block="block" align-quick effects="shadow" />
 </template>
 
 <style scoped>

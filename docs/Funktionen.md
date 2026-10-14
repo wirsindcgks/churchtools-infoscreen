@@ -165,7 +165,9 @@ Aus `instagram.com/wirsindcgks` wird „wirsindcgks", ohne „@" davor. Wer eine
 Die Zeichen liegen im Programm: Der Fernseher fragt keine fremde Seite an und zeigt sie auch ohne Netz. Mit **Markenfarben**
 (Vorgabe) steht jedes Zeichen weiß auf einer Kachel in der Farbe der Plattform; ohne sie steht es allein in der Textfarbe.
 Die Profile stehen **untereinander** oder **nebeneinander**, bis zu zwölf je Baustein, in der Reihenfolge der Liste. Eine
-Zeile bricht nicht um; ein zu langer Name endet mit „…". Ein QR-Code je Profil gehört nicht dazu – dafür gibt es den
+Zeile bricht nicht um; ein zu langer Name endet mit „…". Unter **„Schrift"** gibt es dieselben Einstellungen wie bei
+Uhr und Countdown, mit Schatten und der Ausrichtung waagerecht wie senkrecht. Untereinander
+richtet sie die Zeilen aus, nebeneinander die ganze Reihe. Ein QR-Code je Profil gehört nicht dazu – dafür gibt es den
 Baustein „QR-Code".
 
 ## Der Raum am Termin
