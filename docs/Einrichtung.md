@@ -149,6 +149,8 @@ unter **Einstellungen → Mediathek im Wiki**.
 
 Der Assistent legt den Wiki-Bereich nur an, wenn du das Wiki sehen darfst; ohne dieses Recht bricht er ab, bevor er etwas anlegt. Einen fremden Bereich gleichen Namens, den du nicht sehen darfst, kann er nicht erkennen.
 
+**Den Wiki-Bereich „Infoscreen" nicht umbenennen.** Der Designer findet ihn bisher über seinen Namen. Heißt er anders, wirkt die Mediathek leer und der Designer meldet fehlende Rechte; Bilder und Rechte bleiben dabei erhalten, und die Fernseher zeigen weiter, was auf den Folien ist. Die beiden Gruppen darfst du umbenennen, der Designer kennt sie über ihre Nummer.
+
 **Bildschirme legst du als Administrator an:** auf der Startseite des Designers **„+ Bildschirm erstellen"** – Name, Adresse
 und Format. Den Namen änderst du später über das Menü **„…" der Kachel → „Umbenennen"**, den Overscan über **„…" →
 „Einstellungen"**; was der Bildschirm zeigt, gestalten die Gestalter.
@@ -401,4 +403,4 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | Baustein „Gruppen": „Noch keine Gruppen-Homepage" | In ChurchTools gibt es keine Gruppen-Homepage | an der Obergruppe: Einstellungen → Allgemein → Außendarstellung → „Gruppenhomepage erstellen" |
 | Baustein „Gruppen": eine Gruppe fehlt | Ihre öffentliche Seite ist aus, oder sie ist keine Untergruppe der Obergruppe | in ChurchTools an der Gruppe die öffentliche Seite einschalten |
 | Baustein „Gruppen": keine Leitung, obwohl eingeschaltet | Die Gruppen-Homepage zeigt die Leiter nicht – oder die Karte ist zu voll | an der Homepage „Leiter anzeigen" einschalten; sonst weniger Gruppen je Seite oder eine kleinere Schrift |
-| Mediathek: „Den Wiki-Bereich „Infoscreen" gibt es noch nicht" | Die Einrichtung ist noch nicht gelaufen – oder dir fehlt das Recht, den Bereich zu sehen | Schritt 4; sonst die Rechte am Wiki-Bereich prüfen |
+| Mediathek: „Den Wiki-Bereich „Infoscreen" gibt es noch nicht" | Die Einrichtung ist noch nicht gelaufen, dir fehlt das Recht, den Bereich zu sehen – oder er wurde umbenannt | Schritt 4; sonst die Rechte am Wiki-Bereich prüfen; einen umbenannten Bereich wieder „Infoscreen" nennen |
