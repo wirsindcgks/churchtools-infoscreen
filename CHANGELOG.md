@@ -4,6 +4,16 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.20.1] – 2026-10-14
+
+### Geändert
+
+- **Social Media mit Schrift-Einstellungen.** Der Baustein hat jetzt den Abschnitt „Schrift" wie Uhr und Countdown:
+  Schriftart, Größe, Stärke, Farbe, Abstände, Schatten und die Ausrichtung, waagerecht wie senkrecht. Farbe und
+  Ausrichtung stehen auch im Kurzmenü.
+- **Schatten für mehr Bausteine.** Terminliste, Nächster Termin, Beiträge und Gruppen bieten unter „Schrift" jetzt
+  ebenfalls einen Schatten an. Vorgabe ist „Ohne", bestehende Folien bleiben, wie sie sind.
+
 ## [0.20.0] – 2026-10-14
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für die Idee zu den Räumen in der Terminliste und den Hinweis
@@ -987,6 +997,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.20.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.20.1
 [0.20.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.20.0
 [0.19.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.19.1
 [0.19.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.19.0
