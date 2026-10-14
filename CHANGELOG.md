@@ -4,6 +4,14 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.19.1] – 2026-10-14
+
+### Geändert
+
+- **Hilfe ist leichter zu finden.** Das (i) neben einer Einstellung ist jetzt ein blauer runder Knopf statt eines
+  grauen Zeichens; ist die Erklärung offen, ist er ganz gefüllt. Das „?" für die Tastenkürzel sieht genauso aus
+  und steht vorn in der Kopfleiste des Editors, abgesetzt von Vorschau und Player.
+
 ## [0.19.0] – 2026-10-10
 
 Der Designer ist neu gebaut, damit auch Menschen ohne Technikwissen schöne Folien gestalten können, am Rechner wie am Handy.
@@ -953,6 +961,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.19.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.19.1
 [0.19.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.19.0
 [0.18.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.18.1
 [0.18.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.18.0
