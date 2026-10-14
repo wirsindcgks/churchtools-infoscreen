@@ -696,6 +696,17 @@ function onKey(event: KeyboardEvent): void {
                 </span>
             </template>
             <template #actions>
+                <!-- Help first and apart from the actions, round and tinted like the (i) of the fields. -->
+                <button
+                    v-tip="withKeys(t.shortcuts.button, KEYS.help)"
+                    class="d-btn d-btn--icon shortcuts-btn"
+                    type="button"
+                    :aria-label="t.shortcuts.button"
+                    data-testid="shortcuts"
+                    @click="shortcutsOpen = true"
+                >
+                    ?
+                </button>
                 <button
                     v-tip="withKeys(t.editor.undo, KEYS.undo)"
                     class="d-btn d-btn--icon d-btn--ghost"
@@ -738,16 +749,6 @@ function onKey(event: KeyboardEvent): void {
                 >
                     <Icon name="play" :size="16" /> {{ t.editor.player }}<span v-if="editor.screens.length > 1" class="muted">: {{ s.name }}</span>
                 </RouterLink>
-                <button
-                    v-tip="withKeys(t.shortcuts.button, KEYS.help)"
-                    class="d-btn d-btn--icon shortcuts-btn"
-                    type="button"
-                    :aria-label="t.shortcuts.button"
-                    data-testid="shortcuts"
-                    @click="shortcutsOpen = true"
-                >
-                    ?
-                </button>
                 <!-- Below 48rem "Vorschau" and "Player" move in here – Rückgängig/Wiederholen and Veröffentlichen stay outside (Plan.md 44, M2); "Entwurf verwerfen" is in it at any width. -->
                 <div ref="moreMenuRoot" class="more-menu">
                     <button
@@ -1099,6 +1100,17 @@ function onKey(event: KeyboardEvent): void {
 }
 .preview-btn {
     gap: var(--d-space-2);
+}
+.shortcuts-btn {
+    margin-right: var(--d-space-3);
+    border-color: color-mix(in oklab, var(--d-accent) 35%, transparent);
+    border-radius: 50%;
+    background: var(--d-accent-pale);
+    color: var(--d-accent);
+}
+.shortcuts-btn:hover {
+    border-color: var(--d-accent);
+    background: var(--d-accent-pale);
 }
 .status {
     color: var(--d-text-muted);

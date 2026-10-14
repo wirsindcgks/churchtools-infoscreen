@@ -33,13 +33,29 @@ const open = defineModel<boolean>('open', { default: false });
 .info-hint {
     display: contents;
 }
+/* In the accent colour, round and tinted: grey it read as part of the label and was overlooked. */
 .info-btn {
+    flex: none;
+    align-self: center;
+    width: 22px;
     min-width: 0;
+    height: 22px;
+    min-height: 0;
     margin-left: auto;
-    padding: 0.15em;
-    border-color: transparent;
-    background: none;
-    color: var(--d-text-muted);
+    padding: 0;
+    border-color: color-mix(in oklab, var(--d-accent) 35%, transparent);
+    border-radius: 50%;
+    background: var(--d-accent-pale);
+    color: var(--d-accent);
+}
+.info-btn:hover {
+    border-color: var(--d-accent);
+    background: var(--d-accent-pale);
+}
+.info-btn[aria-expanded='true'] {
+    border-color: var(--d-accent);
+    background: var(--d-accent);
+    color: var(--d-accent-text);
 }
 .hint {
     flex-basis: 100%;
