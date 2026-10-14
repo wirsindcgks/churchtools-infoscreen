@@ -4,7 +4,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 
 ## Auf einen Blick
 
-**Stand 2026-10-14.** Veröffentlicht sind `v0.1.0` bis `v0.20.0` (`v0.20.0`: Räume in der Terminliste auswählen und in Zeilen zeigen, Punkt 82; auf der Produktivinstanz noch `v0.19.1`); das Modul läuft im echten ChurchTools der Testinstanz. **Auf der Produktivinstanz ist es seit dem 2026-10-05 installiert** (der erste Versuch scheiterte am Kürzel, Befunde.md G52); **dort läuft `v0.19.1` (seit dem 2026-10-14, davor `v0.18.1`), die Rechte sind aktualisiert, beide Screens „online“. Der Gerätetest P4 ist bestanden (2026-10-14), der Feature-Stopp ist aufgehoben.** Die Fernseher melden sich über ihre Adresse selbst an (Weg B, Abschnitt D). Das Repository ist seit dem 2026-09-25 öffentlich.
+**Stand 2026-10-14.** Veröffentlicht sind `v0.1.0` bis `v0.20.0` (`v0.20.0`: Räume in der Terminliste auswählen und in Zeilen zeigen, Punkt 82); das Modul läuft im echten ChurchTools der Testinstanz. **Auf der Produktivinstanz ist es seit dem 2026-10-05 installiert** (der erste Versuch scheiterte am Kürzel, Befunde.md G52); **dort läuft `v0.20.0` (seit dem 2026-10-14, davor `v0.19.1`), die Rechte sind aktualisiert, beide Screens „online“. Der Gerätetest P4 ist bestanden (2026-10-14), der Feature-Stopp ist aufgehoben.** Die Fernseher melden sich über ihre Adresse selbst an (Weg B, Abschnitt D). Das Repository ist seit dem 2026-09-25 öffentlich.
 
 **Dieser Abschnitt ist die vollständige Liste dessen, was offen ist.** Wer wissen will, was als Nächstes kommt, liest ihn und sonst nichts. Erledigtes steht mit seiner Nummer in [`docs/Plan-Archiv.md`](docs/Plan-Archiv.md) und wird nur nachgeschlagen, wenn jemand die Begründung einer alten Entscheidung braucht.
 
