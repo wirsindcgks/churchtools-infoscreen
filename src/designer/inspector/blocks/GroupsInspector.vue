@@ -186,7 +186,7 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
             @update:model-value="setBlock({ show: { ...block.show, [key]: $event } })"
         />
     </InspectorSection>
-    <FontSection :block="block" />
+    <FontSection :block="block" effects="shadow" />
 </template>
 
 <style scoped>

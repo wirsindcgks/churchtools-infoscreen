@@ -90,7 +90,9 @@ describe('the font of the blocks (Plan.md 83)', () => {
         (type) => !without.includes(type) && 'style' in createBlock(type, { width: 1920, height: 1080 }, [1]),
     );
 
-    it.each(styled)('%s has a text style, so its inspector offers the section "Schrift"', (type) => {
-        expect(draw(type, 'full').querySelector('[data-testid="section-font"]')).not.toBeNull();
+    it.each(styled)('%s has a text style, so its inspector offers the section "Schrift" with the shadow', (type) => {
+        const font = draw(type, 'full').querySelector('[data-testid="section-font"]');
+        expect(font).not.toBeNull();
+        expect(font!.querySelector('[data-testid="text-shadow"]')).not.toBeNull();
     });
 });

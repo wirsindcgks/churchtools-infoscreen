@@ -91,7 +91,7 @@ const pageHint = computed(() => {
     <ToggleField :model-value="block.showAll ?? false" :label="t.inspector.showAll" testid="show-all" @update:model-value="setBlock({ showAll: $event })" />
     <p v-if="mode === 'full' && block.showAll" class="hint" data-testid="page-hint">{{ pageHint }}</p>
     <AppointmentExtras :block="block" />
-    <FontSection :block="block" />
+    <FontSection :block="block" effects="shadow" />
 </template>
 
 <style scoped>

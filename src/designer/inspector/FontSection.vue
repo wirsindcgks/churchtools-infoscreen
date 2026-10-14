@@ -18,8 +18,8 @@ import ToggleField from './fields/ToggleField.vue';
 import { useBlockEdit, type StyledBlock } from './use-block';
 
 /**
- * `effects`: `'shadow'` adds the shadow of the text (clock, countdown, church header), `'all'` the shadow and the band
- * behind the lines (the text block, where both go to the short menu); without it neither shows (Plan.md F3).
+ * `effects`: `'shadow'` adds the shadow of the text (every block with a font since Plan.md 83), `'all'` the shadow and the
+ * band behind the lines (the text block, where both go to the short menu); without it neither shows (Plan.md F3).
  */
 const props = defineProps<{ block: StyledBlock; alignQuick?: boolean; effects?: 'shadow' | 'all' }>();
 const edit = useEdit();

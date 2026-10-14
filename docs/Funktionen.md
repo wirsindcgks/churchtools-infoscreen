@@ -87,9 +87,9 @@ stehen im Inspektor unter „Drehung und Deckkraft“, „Drehen zurücksetzen�
 Regler vergrößern, „Fertig“. Bei „Füllen“ bekommen Bild, Video und Galerie runde Ecken und einen weichen oder starken
 Schatten; der **Ton** dunkelt ein Bild ab, hellt es auf oder macht es grau, damit Text darauf lesbar bleibt.
 
-**Text gestalten:** Schatten (weich oder stark, in der Gegenfarbe zur Schrift) bei Text, Uhr, Countdown und
-Gemeindekopf; beim Text zusätzlich eine farbige **Hinterlegung** hinter jeder Zeile. Zeilen- und Buchstabenabstand
-(eng, normal, weit) hat jeder Baustein mit Schrift.
+**Text gestalten:** Schatten (weich oder stark, in der Gegenfarbe zur Schrift) sowie Zeilen- und Buchstabenabstand
+(eng, normal, weit) hat jeder Baustein mit Schrift; beim Text kommt eine farbige **Hinterlegung** hinter jeder Zeile
+dazu.
 
 ![Editor mit einer gestalteten Folie: ein Bild mit runden Ecken, Schatten und abgedunkeltem Ton, darauf ein Text mit Schatten und Hinterlegung, daneben eine gedrehte gelbe Fläche mit ihrem Drehgriff; rechts „Drehung und Deckkraft“ mit −12°](bilder/gestalten.png)
 
@@ -166,7 +166,7 @@ Die Zeichen liegen im Programm: Der Fernseher fragt keine fremde Seite an und ze
 (Vorgabe) steht jedes Zeichen weiß auf einer Kachel in der Farbe der Plattform; ohne sie steht es allein in der Textfarbe.
 Die Profile stehen **untereinander** oder **nebeneinander**, bis zu zwölf je Baustein, in der Reihenfolge der Liste. Eine
 Zeile bricht nicht um; ein zu langer Name endet mit „…". Unter **„Schrift"** gibt es dieselben Einstellungen wie bei
-Uhr und Countdown, mit Schatten und der Ausrichtung waagerecht wie senkrecht. Untereinander
+Uhr und Countdown, mit der Ausrichtung waagerecht wie senkrecht. Untereinander
 richtet sie die Zeilen aus, nebeneinander die ganze Reihe. Ein QR-Code je Profil gehört nicht dazu – dafür gibt es den
 Baustein „QR-Code".
 
