@@ -598,9 +598,10 @@ export const t = {
         resetLogo: 'Logo aus ChurchTools verwenden',
         webAddress: 'Adresse oder Einbettungscode',
         webInfo:
-            'Mit Enter übernehmen – erst dann lädt die Seite. Statt der Adresse geht auch der Einbettungscode („iframe"), den Karten, Umfragen oder Pinnwände ' +
-            'anbieten – übernommen wird nur die Adresse darin. Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer. Viele große Seiten ' +
-            'wie Google verbieten das Einbetten – der Rahmen zeigt dann einen Fehler. Eigene Seiten, etwa die der Gemeinde-Website, gehen meist.',
+            'Viele Seiten verbieten, dass andere sie einbetten, auch manche Gemeinde-Website. Dann bleibt der Rahmen leer oder zeigt einen Fehler; ' +
+            'erkennen kann der Designer das nicht, aber man sieht es gleich auf der Folie. Die Adresse gilt nach Enter oder beim Verlassen des Feldes, ' +
+            'erst dann lädt die Seite. Statt der Adresse geht auch der Einbettungscode („iframe"), den Karten, Umfragen oder Pinnwände anbieten; ' +
+            'übernommen wird nur die Adresse darin. Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer.',
         webNoAddressInCode: 'Im Einbettungscode steht keine Adresse.',
         webSize: 'Größe der Seite',
         webZooms: {
