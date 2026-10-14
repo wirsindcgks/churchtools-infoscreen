@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 33 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 34 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -163,14 +163,18 @@ export const AppointmentListBlock = v.object({
      */
     layout: v.optional(v.picklist(['rows', 'cards'])),
     /**
-     * Since 1.16: the booked rooms beside the place – in the `cards` layout only
-     * (Plan.md, Nächste Schritte 50). Missing = off.
+     * Since 1.16: the booked rooms beside the place (Plan.md, Nächste Schritte 50); since 1.34 in
+     * the `rows` layout as well, at the right end of the row. Missing = off.
      */
     showRooms: v.optional(v.boolean()),
     /** Since 1.17: ids of the services whose people show under the place, cards only (Plan.md, Nächste Schritte 51). Missing or empty = off. */
     services: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(6))),
     /** Since 1.17: calendars whose appointments show no booked rooms though `showRooms` is on (Plan.md, Nächste Schritte 51). Missing = none left out. */
     roomsOffCalendarIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
+    /** Since 1.34: false = the rooms show as cards only, as before 1.34 (lists written before it). Missing = in rows as well. */
+    roomsInRows: v.optional(v.boolean()),
+    /** Since 1.34: ids of the rooms left out of what the block names – the appointment stays (Plan.md, Nächste Schritte 82). Missing or empty = every booked room is named. */
+    roomsOffIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
     style: TextStyle,
 });
 
@@ -191,6 +195,8 @@ export const NextAppointmentBlock = v.object({
     services: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(6))),
     /** Since 1.17: calendars whose appointments show no booked rooms though `showRooms` is on (Plan.md, Nächste Schritte 51). Missing = none left out. */
     roomsOffCalendarIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
+    /** Since 1.34: ids of the rooms left out of what the block names – the appointment stays (Plan.md, Nächste Schritte 82). Missing or empty = every booked room is named. */
+    roomsOffIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
     style: TextStyle,
 });
 

@@ -110,7 +110,7 @@ describe('readSlide – tolerant towards newer data', () => {
     });
 
     it('reads the social block (schema 1.33): layout and colours optional, at most 12 links, old slides stay valid', () => {
-        expect(SCHEMA_VERSION.minor).toBe(33);
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(33);
         const old = makeSlide({ blocks: [textBlock('a')] });
         const social = (extra: Record<string, unknown> = {}) => ({
             id: 's', type: 'social', x: 0, y: 0, width: 900, height: 360, links: [{ url: 'instagram.com/wirsindcgks' }], style: (old.blocks[0] as { style: object }).style, ...extra,
@@ -525,5 +525,49 @@ describe('readDraft and serialize – drafts (schema 1.28, Plan.md 79)', () => {
         expect(() => readDraft({ ...playlistDraft, kind: 'slide' })).toThrow(InvalidDocumentError);
         const big = slideDraft(makeSlide({ blocks: [textBlock('a', 'x'.repeat(MAX_VALUE_LENGTH))] }));
         expect(() => serialize(big)).toThrow(ValueTooLargeError);
+    });
+});
+
+describe('readSlide – rooms off per room (schema 1.34, Plan.md 82)', () => {
+    const style = { fontFamily: 'sans', fontSize: 44, color: '#fff' };
+    const list = { id: 'l', type: 'appointment-list', x: 0, y: 0, width: 800, height: 400, calendarIds: [1], horizonDays: 14, limit: 5, layout: 'rows', showRooms: true, style };
+    const next = { id: 'n', type: 'next-appointment', x: 0, y: 0, width: 800, height: 400, calendarIds: [1], showRooms: true, style };
+
+    it('reads the list on both blocks, and a 1.33 slide stays valid without it', () => {
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(34);
+        const { doc, issues } = readSlide({
+            ...makeSlide(),
+            schema: { major: 1, minor: 33 },
+            blocks: [{ ...list, roomsOffIds: [4, 5] }, { ...next, roomsOffIds: [] }, { ...next, id: 'm' }],
+        });
+        expect(issues).toEqual([]);
+        expect(doc.blocks[0]).toMatchObject({ roomsOffIds: [4, 5] });
+        expect(doc.blocks[1]).toMatchObject({ roomsOffIds: [] });
+        expect(doc.blocks[2]).not.toHaveProperty('roomsOffIds');
+    });
+
+    it('rejects ids that are no integers', () => {
+        expect(readSlide({ ...makeSlide(), blocks: [{ ...list, roomsOffIds: [1.5] }] }).doc.blocks).toEqual([]);
+    });
+});
+
+describe('readSlide – rooms in rows of lists from before 1.34 (Plan.md 82)', () => {
+    const style = { fontFamily: 'sans', fontSize: 44, color: '#fff' };
+    const list = (extra: object = {}) => ({ id: 'l', type: 'appointment-list', x: 0, y: 0, width: 800, height: 400, calendarIds: [1], horizonDays: 14, limit: 5, style, ...extra });
+    const next = { id: 'n', type: 'next-appointment', x: 0, y: 0, width: 800, height: 400, calendarIds: [1], showRooms: true, style };
+    const read = (minor: number, ...blocks: object[]) => readSlide({ ...makeSlide(), blocks, schema: { major: 1, minor } });
+
+    it('keeps the look of a 1.33 list: rows or no layout with rooms get roomsInRows false, without an issue', () => {
+        const { doc, issues } = read(33, list({ layout: 'rows', showRooms: true }), { ...list({ showRooms: true }), id: 'm' });
+        expect(issues).toEqual([]);
+        expect(doc.blocks[0]).toMatchObject({ roomsInRows: false });
+        expect(doc.blocks[1]).toMatchObject({ roomsInRows: false });
+        expect(doc.schema.minor).toBe(SCHEMA_VERSION.minor);
+    });
+
+    it('leaves cards, lists without rooms, the next appointment and 1.34 documents alone', () => {
+        const kept = read(33, list({ layout: 'cards', showRooms: true }), { ...list({ showRooms: false }), id: 'a' }, { ...list(), id: 'b' }, next).doc.blocks;
+        for (const b of kept) expect(b).not.toHaveProperty('roomsInRows');
+        expect(read(34, list({ layout: 'rows', showRooms: true })).doc.blocks[0]).not.toHaveProperty('roomsInRows');
     });
 });

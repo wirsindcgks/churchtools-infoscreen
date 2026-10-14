@@ -506,10 +506,16 @@ export const t = {
         showAppointmentImage: 'Terminbild zeigen',
         showRoom: 'Raum zeigen',
         showRoomInfo:
-            'Zeigt die gebuchten Räume des Termins, wo kein Ort eingetragen ist – ein eingetragener Ort geht vor, damit nichts doppelt steht. ' +
+            'Zeigt die gebuchten Räume des Termins: in Zeilen am Ende der Zeile, bei Karten und beim nächsten Termin mit der Pin-Nadel. ' +
+            'Ein eingetragener Ort geht vor, damit nichts doppelt steht. ' +
             'Nur bestätigte Buchungen, keine, die noch warten. Damit der Fernseher sie sieht, bekommt das Gerät mit „Rechte aktualisieren“ ' +
             'das Recht, alle Räume zu sehen; zeigt kein Bildschirm mehr Räume an Terminen, nimmt „Rechte aktualisieren“ es zurück.',
         roomsFor: 'Räume zeigen für',
+        roomsForCalendars: 'Kalender',
+        roomsForRooms: 'Räume',
+        roomsOffInfo: 'Ein abgeschalteter Raum wird nur nicht genannt. Der Termin bleibt in der Liste.',
+        roomsNone: 'Räume sind noch nicht geladen oder es gibt keine. Dann werden alle gebuchten Räume genannt.',
+        roomsRestricted: 'eingeschränkt',
         servicesTitle: 'Dienste zeigen',
         servicesInfo:
             'Zeigt, wer den Dienst übernimmt – nur zugesagte Einteilungen und nur Dienste aus Dienstgruppen, die in ChurchTools ‚Ohne Berechtigung einsehbar‘ sind. ' +

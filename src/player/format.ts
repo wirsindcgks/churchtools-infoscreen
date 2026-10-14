@@ -171,12 +171,12 @@ export function textOn(color: string | null | undefined): string {
  * The place line of an appointment: "Gemeindezentrum", or without a place "Saal, Raum 01". The place wins:
  * ChurchTools keeps it beside the booked rooms, and a booking can come from a template or be set by mistake –
  * a room only fills in where no place is entered, as in the WordPress plugin. Both side by side doubled
- * names ("Eventhalle · Eventhalle"). The rooms only where the block asks for them (`showRooms`); null when
+ * names ("Eventhalle · Eventhalle"). `roomNames`: the rooms this block names (`shownRoomNames`); null when
  * there is nothing to say.
  */
-export function placeLine(appointment: { location: string | null; rooms?: string[] }, showRooms?: boolean): string | null {
+export function placeLine(appointment: { location: string | null }, roomNames: readonly string[]): string | null {
     if (appointment.location) return appointment.location;
-    return (showRooms ? (appointment.rooms ?? []).join(', ') : '') || null;
+    return roomNames.join(', ') || null;
 }
 
 /**

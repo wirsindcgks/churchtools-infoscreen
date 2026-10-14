@@ -654,12 +654,40 @@ describe('the room at an appointment (Plan.md 50)', () => {
         expect(place({ ...list('cards'), roomsOffCalendarIds: [9] } as Block, appointment(null, booked(1)), 'list-place').text()).toBe('Saal');
     });
 
-    it('shows no room where the block does not ask, and none in the list of rows', () => {
+    it('shows no room where the block does not ask, and none in rows that do not ask either', () => {
         const place_ = { name: 'Gemeindezentrum' };
         expect(place(next('card', false), appointment(place_, booked(1)), 'next-place').text()).toBe('Gemeindezentrum');
         expect(place(list('cards', false), appointment(place_, booked(1)), 'list-place').text()).toBe('Gemeindezentrum');
-        const rows = render(makeSlide({ blocks: [list('rows')] }), { appointments: appointment(place_, booked(1)) });
+        const rows = render(makeSlide({ blocks: [list('rows', false)] }), { appointments: appointment(null, booked(1)) });
         expect(rows.text()).not.toContain('Saal');
+        expect(rows.find('[data-testid="list-place"]').exists()).toBe(false);
+    });
+
+    it('names the rooms at the right end of a row, the place first, nothing without text (schema 1.34)', () => {
+        expect(place(list('rows'), appointment(null, booked(1, 3)), 'list-place').text()).toBe('Saal, Raum 01');
+        expect(place(list('rows'), appointment({ name: 'Gemeindezentrum' }, booked(1)), 'list-place').text()).toBe('Gemeindezentrum');
+        expect(place(list('rows'), appointment(null), 'list-place').exists()).toBe(false);
+        const row = render(makeSlide({ blocks: [list('rows')] }), { appointments: appointment(null, booked(1)) }).get('li.row');
+        expect(row.classes()).toContain('row--place');
+        const bare = render(makeSlide({ blocks: [list('rows')] }), { appointments: appointment(null) }).get('li.row');
+        expect(bare.classes()).not.toContain('row--place');
+    });
+
+    it('shows no column in the rows of a list from before 1.34, and rooms as cards (roomsInRows false)', () => {
+        const old = (layout: 'rows' | 'cards') => ({ ...list(layout), roomsInRows: false }) as Block;
+        expect(place(old('rows'), appointment(null, booked(1)), 'list-place').exists()).toBe(false);
+        expect(place(old('cards'), appointment(null, booked(1)), 'list-place').text()).toBe('Saal');
+    });
+
+    it('leaves out the rooms a block switched off – the appointment stays (schema 1.34)', () => {
+        const off = (extra: object) => ({ ...list('rows'), ...extra }) as Block;
+        expect(place(off({ roomsOffIds: [1] }), appointment(null, booked(1, 3)), 'list-place').text()).toBe('Raum 01');
+        expect(place(off({ roomsOffIds: [] }), appointment(null, booked(1, 3)), 'list-place').text()).toBe('Saal, Raum 01');
+        const none = render(makeSlide({ blocks: [off({ roomsOffIds: [1, 3] })] }), { appointments: appointment(null, booked(1, 3)) });
+        expect(none.text()).toContain('Gottesdienst');
+        expect(none.find('[data-testid="list-place"]').exists()).toBe(false);
+        expect(place({ ...next('card'), roomsOffIds: [3] } as Block, appointment(null, booked(1, 3)), 'next-place').text()).toBe('Saal');
+        expect(place({ ...next('classic'), roomsOffIds: [1, 3] } as Block, appointment(null, booked(1, 3)), 'next-place').exists()).toBe(false);
     });
 });
 

@@ -142,13 +142,29 @@ export function readPlaylistOrSchedule(raw: unknown): PlaylistDoc | ScheduleDoc 
     return readPlaylist(raw);
 }
 
+/**
+ * Before 1.34 a list showed rooms as cards only (Plan.md 82). A list written then keeps that look: `roomsInRows: false`
+ * on every list that asks for rooms and is not sure to be cards (no `layout` follows the theme, which is unknown here).
+ * The slide then counts as 1.34, so that switching "Raum zeigen" on again sticks.
+ */
+function migrateRoomsInRows(raw: unknown, rawBlocks: unknown[]): { blocks: unknown[]; migrated: boolean } {
+    const schema = (raw as { schema?: { major?: unknown; minor?: unknown } } | null)?.schema;
+    const old = !schema || (schema.major === 1 && typeof schema.minor === 'number' && schema.minor < 34);
+    if (!old) return { blocks: rawBlocks, migrated: false };
+    const blocks = rawBlocks.map((b) => {
+        const block = b as { type?: unknown; showRooms?: unknown; layout?: unknown } | null;
+        return block?.type === 'appointment-list' && block.showRooms === true && block.layout !== 'cards' ? { ...block, roomsInRows: false } : b;
+    });
+    return { blocks, migrated: true };
+}
+
 /** Blocks are parsed one by one so that one unknown block cannot take the slide down. */
 export function readSlide(raw: unknown): ReadResult<SlideDoc> {
     checkVersion(raw);
-    const rawBlocks: unknown[] = Array.isArray((raw as { blocks?: unknown })?.blocks)
-        ? (raw as { blocks: unknown[] }).blocks
-        : [];
+    const found: unknown[] = Array.isArray((raw as { blocks?: unknown })?.blocks) ? (raw as { blocks: unknown[] }).blocks : [];
+    const { blocks: rawBlocks, migrated } = migrateRoomsInRows(raw, found);
     const slide = parseStrict(SlideDoc, { ...(raw as object), blocks: [] }, 'slide');
+    if (migrated) slide.schema = { ...SCHEMA_VERSION };
 
     const issues: ReadIssue[] = [];
     const blocks: BlockValue[] = [];

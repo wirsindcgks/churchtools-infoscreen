@@ -4,6 +4,32 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.20.0] – 2026-10-14
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für die Idee zu den Räumen in der Terminliste und den Hinweis
+zum Webseiten-Baustein.
+
+### Wichtig beim Update
+
+- Bestehende Listen in Zeilen sehen aus wie vorher. Die Räume erscheinen dort erst, wenn man „Raum zeigen" einmal
+  neu einschaltet. Zeigt danach ein Bildschirm zum ersten Mal Räume an Terminen, braucht das Gerät einmal „Rechte
+  aktualisieren".
+
+### Neu
+
+- **Räume auch in der Terminliste als Zeilen.** „Raum zeigen" gilt jetzt in beiden Formen der Liste. In Zeilen
+  stehen die Räume rechts am Ende der Zeile, ein zu langer Text endet mit „…". Ein eingetragener Ort geht weiter vor.
+- **Einzelne Räume abschalten.** Unter „Räume zeigen für" steht jeder Raum aus ChurchTools als Schalter. Ein
+  abgeschalteter Raum wird an diesem Baustein nicht genannt, der Termin bleibt in der Liste. So bleiben etwa
+  Verwaltung oder Lager vom Bildschirm im Foyer weg. Ein Raum, der später in ChurchTools dazukommt, erscheint von
+  selbst.
+
+### Geändert
+
+- **Webseiten-Baustein:** Die Hilfe am Adressfeld sagt jetzt zuerst, dass viele Seiten das Einbetten verbieten,
+  auch manche Gemeinde-Website. Der Rahmen bleibt dann leer oder zeigt einen Fehler; das sieht man sofort auf der
+  Folie.
+
 ## [0.19.1] – 2026-10-14
 
 ### Geändert
@@ -961,6 +987,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.20.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.20.0
 [0.19.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.19.1
 [0.19.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.19.0
 [0.18.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.18.1

@@ -404,7 +404,7 @@ test('the room at an appointment without a place, in both layouts of the next ap
     await expect(place).toHaveText('Saal');
 });
 
-test('the room in the list of appointments: as cards, not as rows', async ({ page }) => {
+test('the room in the list of appointments: as cards and as rows, at the right end of the row', async ({ page }) => {
     await fakeChurch(page, { bookingRequests: [], appointmentRequests: [] });
     await newBlock(page, 'appointment-list');
 
@@ -415,8 +415,48 @@ test('the room in the list of appointments: as cards, not as rows', async ({ pag
     await choose(page, 'list-layout', 'rows');
     await expect(stage(page).getByTestId('list-card')).toHaveCount(0);
     await expect(stage(page)).toContainText('Sonntagsgottesdienst');
-    await expect(stage(page)).not.toContainText('Saal');
-    await expect(page.getByTestId('show-rooms')).toHaveCount(0);
+    await expect(page.getByTestId('show-rooms')).toBeVisible();
+    const place = stage(page).getByTestId('list-place');
+    await expect(place).toHaveText('Saal');
+    // Right of the title, at the end of the row.
+    const row = await stage(page).locator('li.row').first().boundingBox();
+    const box = (await place.boundingBox())!;
+    expect(box.x + box.width).toBeGreaterThan(row!.x + row!.width - 4);
+    await page.getByTestId('show-rooms').uncheck();
+    await expect(place).toHaveCount(0);
+    await expect(page.getByTestId('rooms-for')).toHaveCount(0);
+});
+
+test('single rooms can be switched off in a list of rows: the appointment stays, only the room goes', async ({ page }) => {
+    const first = '2026-10-04T08:00:00Z';
+    await fakeChurch(page, {
+        bookingRequests: [],
+        scene: {
+            now: NOW,
+            eventStart: first,
+            appointments: [scheduled(9, GOTTESDIENSTE, 'Sonntagsgottesdienst', first, { rooms: [1, 2] }), scheduled(10, GOTTESDIENSTE, 'Hauskreis', '2026-10-05T18:00:00Z', { rooms: [2] })],
+        },
+    });
+    await newBlock(page, 'appointment-list');
+    await choose(page, 'list-layout', 'rows');
+    const places = stage(page).getByTestId('list-place');
+    await expect(places).toHaveText(['Saal, Gruppenraum 1', 'Gruppenraum 1']);
+
+    await openSection(page, 'rooms-for');
+    // Only the three rooms of the type "Raum": the item (Beamer) is no room.
+    await expect(page.getByTestId('rooms-room-1')).toBeChecked();
+    await expect(page.getByTestId('rooms-room-2')).toBeChecked();
+    await expect(page.getByTestId('rooms-room-3')).toBeChecked();
+    await expect(page.getByTestId('rooms-room-4')).toHaveCount(0);
+    await page.getByTestId('rooms-room-1').uncheck();
+    await expect(places).toHaveText(['Gruppenraum 1', 'Gruppenraum 1']);
+    await page.getByTestId('rooms-room-2').uncheck();
+    // No room left: both appointments stay, without a room.
+    await expect(places).toHaveCount(0);
+    await expect(stage(page)).toContainText('Sonntagsgottesdienst');
+    await expect(stage(page)).toContainText('Hauskreis');
+    await page.getByTestId('rooms-room-2').check();
+    await expect(places).toHaveText(['Gruppenraum 1', 'Gruppenraum 1']);
 });
 
 test('the services at an appointment: only open ones are offered, only accepted people show', async ({ page }) => {

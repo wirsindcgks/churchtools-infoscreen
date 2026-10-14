@@ -18,12 +18,16 @@ const props = defineProps<{
     layout: 'rows' | 'cards';
     timeZone: string;
     measuring?: boolean;
-    /** The booked rooms beside the place – in the card form only (schema 1.16). */
+    /** The block asks for rooms at this appointment: the rows then show the place column (schema 1.34). */
     showRooms?: boolean;
+    /** The rooms this block names at this appointment (`shownRoomNames`). */
+    roomNames?: string[];
     /** The services this block shows under the place – in the card form only (schema 1.17). */
     services?: number[];
 }>();
-const place = computed(() => placeLine(props.appointment, props.showRooms));
+const place = computed(() => placeLine(props.appointment, props.roomNames ?? []));
+/** The rows name the place at the right end of the line – only where the block asks for rooms (schema 1.34). */
+const rowPlace = computed(() => (props.showRooms && place.value ? place.value : null));
 const widestDate = computed(() => formatDate(WIDEST_DATE, props.timeZone));
 const people = computed(() => servicesLine(props.appointment, props.services));
 </script>
@@ -63,10 +67,11 @@ const people = computed(() => servicesLine(props.appointment, props.services));
         </span>
         <CalendarBadge class="card-badge" :name="appointment.calendarName" :color="appointment.color" />
     </li>
-    <li v-else class="row">
+    <li v-else class="row" :class="{ 'row--place': rowPlace }">
         <span class="when">{{ formatShortDate(appointment.start, timeZone) }}</span>
         <span class="time">{{ appointment.allDay ? tp.time.allDay : appointment.startTime }}</span>
         <span class="title">{{ appointment.title }}</span>
+        <span v-if="rowPlace" class="row-place" :data-testid="measuring ? undefined : 'list-place'">{{ place }}</span>
     </li>
 </template>
 
@@ -78,8 +83,20 @@ const people = computed(() => servicesLine(props.appointment, props.services));
     padding: 0.25em 0;
     border-bottom: 1px solid color-mix(in srgb, currentColor 15%, transparent);
 }
+/* The fourth column only with text: at most 40 % of the width, the rest of it ends with an ellipsis. */
+.row--place {
+    grid-template-columns: 6.5em 5.5em minmax(0, 1fr) fit-content(40%);
+}
 .when,
 .time {
+    font-variant-numeric: tabular-nums;
+    opacity: 0.8;
+}
+.row-place {
+    justify-self: end;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     font-variant-numeric: tabular-nums;
     opacity: 0.8;
 }

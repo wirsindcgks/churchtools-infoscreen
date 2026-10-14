@@ -170,12 +170,20 @@ Baustein „QR-Code".
 
 ## Der Raum am Termin
 
-Beim **Nächsten Termin** und bei der **Terminliste als Karten** zeigt der Schalter **„Raum zeigen"** die gebuchten Räume,
-mit der Pin-Nadel: „Saal, Raum 01". Ist am Termin ein Ort eingetragen, steht nur dieser – wie im WordPress-Plugin, damit
+Beim **Nächsten Termin** und bei der **Terminliste** – als Karten wie als Zeilen – zeigt der Schalter **„Raum zeigen"** die
+gebuchten Räume, mit der Pin-Nadel: „Saal, Raum 01". In der Zeilenform stehen sie rechtsbündig am Ende der Zeile; ein zu
+langer Text endet mit „…". Ist am Termin ein Ort eingetragen, steht nur dieser – wie im WordPress-Plugin, damit
 nichts doppelt steht; die Räume springen ein, wo kein Ort gepflegt ist. Nur bestätigte Buchungen von Räumen zählen, und am Termin
 steht nur der Raumname, nie ein Buchungstitel. Das Gerät braucht dafür das Recht, alle Räume zu sehen – „Rechte
-aktualisieren" gibt es ihm (siehe [Rechte](Rechte.md)). Hat ein Baustein mehrere Kalender, lässt sich
-„Räume zeigen für:" je Kalender abschalten – etwa wo für einen Termin viele Räume gebucht werden.
+aktualisieren" gibt es ihm (siehe [Rechte](Rechte.md)).
+
+Welche Räume genannt werden, bestimmt der Bereich **„Räume zeigen für"**, sobald „Raum zeigen" an ist. Unter **„Räume"**
+steht jeder Raum von ChurchTools als Schalter, anfangs alle an; ein abgeschalteter Raum wird nur **nicht genannt** – der
+Termin bleibt in der Liste. So lassen sich Verwaltung oder Lagerraum weglassen, und ein Raum, der später dazukommt,
+erscheint von selbst. Zwei Bildschirme können für denselben Termin verschiedene Räume zeigen, je nach Baustein. Hat der
+Baustein mehrere Kalender, lässt sich unter **„Kalender"** außerdem je Kalender abschalten – etwa wo für einen Termin viele
+Räume gebucht werden. Listen in Zeilen, die es schon vor dieser Version gab, zeigen die Räume erst, wenn man „Raum
+zeigen" dort einmal neu einschaltet. Nach den Terminen filtern die Schalter nicht; dafür gibt es die Raumbelegung.
 
 ## Die Dienste am Termin
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { selectUpcoming } from '../../appointments/normalize';
-import { showsRoomsAt } from '../../appointments/rooms';
+import { shownRoomNames } from '../../appointments/rooms';
 import type { Block } from '../../model/schema';
 import { themeOf, useStageContext } from '../context';
 import { formatDate, placeLine, servicesLine, sizedImageUrl, textStyle, timeRange, verticalAlignOf, verticalStyle } from '../format';
@@ -25,10 +25,11 @@ const next = computed(
 );
 
 /** Place and, if asked for, the booked rooms: "Gemeindezentrum · Saal". */
-const place = computed(() => (next.value ? placeLine(next.value, showsRoomsAt(props.block, next.value.calendarId)) : null));
+const roomNames = computed(() => (next.value ? shownRoomNames(props.block, next.value) : []));
+const place = computed(() => (next.value ? placeLine(next.value, roomNames.value) : null));
 
 /** The plain layout has no place line of its own: it appears with the rooms, after the same pattern. */
-const classicPlace = computed(() => (next.value && showsRoomsAt(props.block, next.value.calendarId) && next.value.rooms?.length ? place.value : null));
+const classicPlace = computed(() => (roomNames.value.length ? place.value : null));
 
 /** Who takes the services the block chose, in its own line under the place. */
 const people = computed(() => (next.value ? servicesLine(next.value, props.block.services) : null));

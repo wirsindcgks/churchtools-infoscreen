@@ -168,8 +168,8 @@ describe('appointmentNeeds – rooms (Plan.md 50)', () => {
         expect(rooms(next({ showRooms: true, layout: 'card' }))).toBe(true);
     });
 
-    it('wants rooms for a list only as cards – or following the theme, which is not known here', () => {
-        expect(rooms(list({ showRooms: true, layout: 'rows' }))).toBe(false);
+    it('wants rooms for a list in every layout, rows included (schema 1.34)', () => {
+        expect(rooms(list({ showRooms: true, layout: 'rows' }))).toBe(true);
         expect(rooms(list({ showRooms: true, layout: 'cards' }))).toBe(true);
         expect(rooms(list({ showRooms: true }))).toBe(true);
         expect(rooms(list({ layout: 'cards' }))).toBe(false);

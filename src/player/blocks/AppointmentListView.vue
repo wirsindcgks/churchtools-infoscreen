@@ -9,7 +9,7 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { selectUpcoming } from '../../appointments/normalize';
-import { showsRoomsAt } from '../../appointments/rooms';
+import { roomsShownInLayout, shownRoomNames, showsRoomsAt } from '../../appointments/rooms';
 import type { Block } from '../../model/schema';
 import { themeOf, useStageContext } from '../context';
 import { textStyle } from '../format';
@@ -62,6 +62,9 @@ watch(
     { immediate: true },
 );
 
+/** Rooms show in the layout the list really has – not in rows for a list from before 1.34 (Plan.md 82). */
+const roomsShown = computed(() => roomsShownInLayout(props.block, layout.value));
+
 let timer: ReturnType<typeof setInterval> | undefined;
 /** Seconds one page shows while the pages turn; 0 while they do not (one page, or the designer's preview). */
 const turnSeconds = ref(0);
@@ -105,11 +108,11 @@ onBeforeUnmount(() => clearInterval(timer));
     <div class="paged" :style="textStyle(block.style)">
         <!-- Every row once, invisible, in the same markup and width as the shown ones: for pages and whole rows. -->
         <ul ref="measureList" class="list measure" aria-hidden="true">
-            <AppointmentRow v-for="a in items" :key="a.key" :appointment="a" :layout="layout" :time-zone="context.timeZone" :show-rooms="showsRoomsAt(block, a.calendarId)" :services="block.services" measuring />
+            <AppointmentRow v-for="a in items" :key="a.key" :appointment="a" :layout="layout" :time-zone="context.timeZone" :show-rooms="roomsShown && showsRoomsAt(block, a.calendarId)" :room-names="roomsShown ? shownRoomNames(block, a) : []" :services="block.services" measuring />
         </ul>
         <Transition name="page" mode="out-in">
             <ul :key="page" class="list" :class="{ 'list--cards': layout === 'cards' }">
-                <AppointmentRow v-for="a in shown" :key="a.key" :appointment="a" :layout="layout" :time-zone="context.timeZone" :show-rooms="showsRoomsAt(block, a.calendarId)" :services="block.services" />
+                <AppointmentRow v-for="a in shown" :key="a.key" :appointment="a" :layout="layout" :time-zone="context.timeZone" :show-rooms="roomsShown && showsRoomsAt(block, a.calendarId)" :room-names="roomsShown ? shownRoomNames(block, a) : []" :services="block.services" />
                 <!-- An empty week is a normal state and must look like one, not like a failure. -->
                 <li v-if="items.length === 0" class="empty">{{ tp.appointments.noneInDays(block.horizonDays) }}</li>
             </ul>

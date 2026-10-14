@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Block, TextStyle } from '../model/schema';
-import { textStyle, calendarColor, formatDate, formatShortDate, formatTime, servicesLine, sizedImageUrl, WIDEST_DATE, textOn, VERTICAL_DEFAULTS, verticalAlignOf, verticalStyle } from './format';
+import { textStyle, calendarColor, formatDate, formatShortDate, formatTime, placeLine, servicesLine, sizedImageUrl, WIDEST_DATE, textOn, VERTICAL_DEFAULTS, verticalAlignOf, verticalStyle } from './format';
 
 describe('sizedImageUrl', () => {
     it('always sets both dimensions, because w alone yields a 150 px high image (G14)', () => {
@@ -177,5 +177,13 @@ describe('vertical alignment (Plan.md 70)', () => {
         expect(verticalStyle('top')).toEqual({});
         expect(verticalStyle('middle')).toEqual({ marginBlock: 'auto' });
         expect(verticalStyle('bottom')).toEqual({ marginTop: 'auto' });
+    });
+});
+
+describe('placeLine (Plan.md 82)', () => {
+    it('puts the place before the rooms, and names the rooms without one', () => {
+        expect(placeLine({ location: 'Gemeindezentrum' }, ['Saal'])).toBe('Gemeindezentrum');
+        expect(placeLine({ location: null }, ['Saal', 'Raum 01'])).toBe('Saal, Raum 01');
+        expect(placeLine({ location: null }, [])).toBeNull();
     });
 });

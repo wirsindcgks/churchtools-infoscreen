@@ -591,10 +591,16 @@ describe('ScreenRepository', () => {
             bundle({ slides: [makeSlide({ id: 'slide-1', blocks: blocks(true, 'rows') }), makeSlide({ id: 'slide-2' })] }),
             { ...save, expectedRevision: null },
         );
+        // Rows ask for rooms as well since schema 1.34 (Plan.md 82).
+        expect(await repo.appointmentRoomsInUse()).toBe(true);
+        await repo.saveScreen(
+            bundle({ slides: [makeSlide({ id: 'slide-1', blocks: blocks(false, 'rows') }), makeSlide({ id: 'slide-2' })] }),
+            { ...save, expectedRevision: 1 },
+        );
         expect(await repo.appointmentRoomsInUse()).toBe(false);
         await repo.saveScreen(
             bundle({ slides: [makeSlide({ id: 'slide-1', blocks: blocks(true, 'cards') }), makeSlide({ id: 'slide-2' })] }),
-            { ...save, expectedRevision: 1 },
+            { ...save, expectedRevision: 2 },
         );
         expect(await repo.appointmentRoomsInUse()).toBe(true);
     });

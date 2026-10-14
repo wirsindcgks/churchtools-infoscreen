@@ -234,6 +234,15 @@ describe('the rooms of an appointment (Plan.md 50)', () => {
         expect(roomsOf([booking(3), booking(1), booking(1)])).toEqual(['Saal', 'Raum 01']);
     });
 
+    it('carries the ids of the rooms in the same order (schema 1.34)', () => {
+        const r = response(1, ...when);
+        r.bookings = [booking(3), booking(1)] as never;
+        const found = normalizeAppointments([r], BERLIN, rooms)[0]!;
+        expect(found.rooms).toEqual(['Saal', 'Raum 01']);
+        expect(found.roomIds).toEqual([1, 3]);
+        expect(normalizeAppointments([response(1, ...when)], BERLIN, rooms)[0]).not.toHaveProperty('roomIds');
+    });
+
     it('leaves out waiting and rejected bookings and resources that are no room', () => {
         expect(roomsOf([booking(1, 1), booking(3, 3), booking(5)])).toBeUndefined();
         expect(roomsOf([booking(1, 1), booking(3), booking(5)])).toEqual(['Raum 01']);
