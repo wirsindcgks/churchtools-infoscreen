@@ -29,7 +29,7 @@ function setThickness(thickness: number): void {
 <template>
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
         <ColorField quick :label="t.common.fill.solid" :model-value="block.color" @focus="edit.onFocus" @blur="edit.onBlur" @update:model-value="setBlock({ color: $event })" />
-        <NumberField quick :model-value="block.thickness" :label="t.inspector.lineThickness" unit="px" :min="1" testid="line-thickness" @update:model-value="setThickness" />
+        <NumberField quick named :model-value="block.thickness" :label="t.inspector.lineThickness" unit="px" :min="1" testid="line-thickness" @update:model-value="setThickness" />
         <SegmentField quick :model-value="block.dash ?? 'solid'" :options="dashes" :label="t.inspector.lineDash" testid="line-dash" @update:model-value="setBlock({ dash: $event })" />
     </InspectorSection>
 </template>

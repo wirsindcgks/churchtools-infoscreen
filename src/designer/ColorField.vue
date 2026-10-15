@@ -7,9 +7,10 @@
  * is one. Without a provider (the Design page, where the palette is defined) picker and hex field stand alone.
  * A click on a swatch copies the value. In the short menu (Plan.md 79, C1) it is one round swatch that opens all this.
  */
-import { ref, watch } from 'vue';
+import { inject, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
 import QuickField from './inspector/fields/QuickField.vue';
+import { SHEET_TITLE } from './inspector/mode';
 import { parseHex, pickerValue } from './color';
 import { usePalette, type PaletteColor } from './palette';
 
@@ -17,6 +18,8 @@ const props = defineProps<{ modelValue: string; label: string; testid?: string; 
 const emit = defineEmits<{ 'update:modelValue': [string]; focus: []; blur: [] }>();
 
 const lists = usePalette();
+/** In the sheet of a phone's bar its title says the label already; it stays for a screen reader only (Plan.md 88, C). */
+const sheetTitle = inject(SHEET_TITLE, ref(null));
 
 /** Name and hex value; a colour without a name of its own is just its hex value. */
 function swatchLabel(entry: PaletteColor): string {
@@ -57,9 +60,9 @@ function onTextBlur(): void {
 </script>
 
 <template>
-    <QuickField :quick="quick" :label="label" :swatch="modelValue">
+    <QuickField v-slot="{ inSheet }" :quick="quick" :label="label" :swatch="modelValue">
         <div class="d-field color-field">
-            <span>{{ label }}</span>
+            <span :class="{ 'label-quiet': inSheet || sheetTitle === label }">{{ label }}</span>
             <div v-if="lists && lists.palette.length" class="swatch-group" data-testid="palette-group">
                 <span class="swatch-caption">{{ t.common.color.palette }}</span>
                 <div class="palette-swatches" role="group" :aria-label="t.common.color.paletteOf(label)">
@@ -127,6 +130,14 @@ function onTextBlur(): void {
 </template>
 
 <style scoped>
+.label-quiet {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    white-space: nowrap;
+    clip-path: inset(50%);
+}
 .row {
     display: flex;
     gap: 4px;

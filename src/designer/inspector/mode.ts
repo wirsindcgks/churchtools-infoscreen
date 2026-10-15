@@ -17,6 +17,9 @@ export const QUICK_VARIANT: InjectionKey<'float' | 'bar'> = Symbol('quick-varian
 /** Set inside the open field of the short menu: a foldable section there shows its content without the fold. */
 export const IN_QUICK_FIELD: InjectionKey<Readonly<Ref<boolean>>> = Symbol('in-quick-field');
 
+/** The title of the open sheet of the phone's bar, below it (Plan.md 88, C): a field with the same label keeps it for the screen reader only. */
+export const SHEET_TITLE: InjectionKey<Readonly<Ref<string | null>>> = Symbol('sheet-title');
+
 /** The mode the surrounding page provides (default `full`), following a ref. */
 export function useInspectorMode(): ComputedRef<InspectorMode> {
     const mode = inject(INSPECTOR_MODE, 'full');

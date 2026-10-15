@@ -40,7 +40,7 @@ const layouts = computed(() => appointmentListTiles(props.block, themeOf(stage))
 const layout = computed(() => listLayout(props.block, themeOf(stage)));
 
 /** The folded look: the layout the list really has, and how far ahead it looks. */
-const summary = computed(() => `${layout.value === 'cards' ? t.inspector.layoutCards : t.inspector.layoutRows} · ${props.block.horizonDays} ${t.inspector.unitDays}`);
+const summary = computed(() => `${layout.value === 'cards' ? t.inspector.layoutCards : t.inspector.layoutRows} · ${t.inspector.days(props.block.horizonDays)}`);
 
 /** How a paged list will run – with the page count the stage preview measured. */
 const pageHint = computed(() => {
@@ -81,7 +81,7 @@ const pageHint = computed(() => {
             quick
             :model-value="block.horizonDays"
             :label="t.inspector.period"
-            :unit="t.inspector.unitDays"
+            :unit="t.inspector.unitDays(block.horizonDays)"
             :min="1"
             :max="366"
             testid="list-days"

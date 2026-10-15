@@ -42,11 +42,12 @@ test.describe('on a desktop', () => {
         await expect(selected(page)).toHaveCount(2);
         await page.keyboard.press('ControlOrMeta+g');
         await expect(page.getByTestId('multi-title')).toHaveText('Gruppe · 2 Bausteine');
-        await expect(page.getByTestId('layer-group')).toHaveCount(1); // the list stands in "Anordnen"
 
         // A click on one member chooses the whole group.
         await page.keyboard.press('Escape');
         await expect(selected(page)).toHaveCount(0);
+        // Nothing chosen, the list stands in "Bausteine dieser Folie" (Plan.md 88, B).
+        await expect(page.getByTestId('layer-group')).toHaveCount(1);
         await frames(page).nth(0).click();
         await expect(selected(page)).toHaveCount(2);
 
@@ -102,7 +103,9 @@ test.describe('on a desktop', () => {
         await page.getByTestId('inspector-group').click();
         await expect(page.getByTestId('inspector-group')).toHaveCount(0);
         await expect(page.getByTestId('inspector-ungroup')).toBeVisible();
-        await openSection(page, 'arrange');
+        // The list stands in "Bausteine dieser Folie", with nothing chosen (Plan.md 88, B).
+        await page.keyboard.press('Escape');
+        await expect(selected(page)).toHaveCount(0);
         await expect(page.getByTestId('layer-group')).toHaveCount(1);
         await expect(page.getByTestId('layer-group')).toContainText('2 Bausteine');
 
@@ -112,6 +115,7 @@ test.describe('on a desktop', () => {
         await page.getByTestId('layer-group-toggle').click();
         await expect(page.locator('.layer-lock--on')).toHaveCount(3);
 
+        await page.getByTestId('layer-group-row').click();
         await page.getByTestId('quick-more').click();
         await page.getByTestId('quick-ungroup').click();
         await expect(page.getByTestId('layer-group')).toHaveCount(0);
@@ -125,7 +129,8 @@ test.describe('on a desktop', () => {
         await frames(page).nth(0).click();
         await frames(page).nth(1).click({ modifiers: ['Shift'] });
         await page.keyboard.press('ControlOrMeta+g');
-        await openSection(page, 'arrange');
+        await page.keyboard.press('Escape');
+        await expect(selected(page)).toHaveCount(0);
         const toggle = page.getByTestId('layer-group-toggle');
         await expect(toggle).toHaveAttribute('aria-expanded', 'false');
         await expect(page.getByTestId('layer-row')).toHaveCount(1);
@@ -136,8 +141,11 @@ test.describe('on a desktop', () => {
         const members = page.getByTestId('layer-group-members').getByTestId('layer-row');
         await members.nth(1).click();
         await expect(selected(page)).toHaveCount(1);
+        await openSection(page, 'arrange');
         await page.getByTestId('block-inspector').getByTestId('layer-front').click();
         expect(await lefts(page)).toEqual([b, a, c]);
+        await page.keyboard.press('Escape');
+        await expect(selected(page)).toHaveCount(0);
 
         // The row of the group drags above the third block and takes both along.
         await dragRow(page, page.getByTestId('layer-group-row').getByTestId('layer-handle'), page.getByTestId('layer-row').first());

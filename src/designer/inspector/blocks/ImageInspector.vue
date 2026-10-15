@@ -28,6 +28,10 @@ const tones = [
     { value: 'lighten', label: t.inspector.toneLighten },
     { value: 'grayscale', label: t.inspector.toneGrayscale },
 ];
+/** "Ohne" alone does not say what is missing in the chip. */
+function toneFace(value: string | number | undefined): string {
+    return value === 'none' ? t.inspector.toneNoneFace : (tones.find((o) => o.value === value)?.label ?? '');
+}
 const preview = computed(() => mediaUrl(props.block.mediaId));
 const summary = computed(() =>
     lookSummary(props.block, fits.find((f) => f.value === props.block.fit)?.label, tones.find((o) => o.value === props.block.tone && o.value !== 'none')?.label),
@@ -48,7 +52,7 @@ const summary = computed(() =>
     />
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
         <SegmentField quick :model-value="block.fit" :options="fits" :label="t.inspector.fit" testid="image-fit" @update:model-value="setBlock({ fit: $event })" />
-        <SegmentField quick stacked :model-value="block.tone ?? 'none'" :options="tones" :label="t.inspector.tone" testid="image-tone" @update:model-value="setBlock({ tone: $event === 'none' ? undefined : $event })" />
+        <SegmentField quick stacked :face="toneFace" :model-value="block.tone ?? 'none'" :options="tones" :label="t.inspector.tone" testid="image-tone" @update:model-value="setBlock({ tone: $event === 'none' ? undefined : $event })" />
         <template v-if="block.fit === 'cover'">
             <button v-if="mode === 'full' && block.mediaId && !block.locked" class="d-btn" type="button" data-testid="image-crop" @click="editor.startCrop(block.id)">
                 {{ t.inspector.cropChoose }}

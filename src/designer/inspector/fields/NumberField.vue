@@ -19,13 +19,15 @@ const props = defineProps<{
     stacked?: boolean;
     disabled?: boolean;
     quick?: boolean;
+    /** The chip of the short menu puts the label before the number, where the number alone says little: "Ecken 12 px". */
+    named?: boolean;
 }>();
 const emit = defineEmits<{ 'update:modelValue': [number] }>();
 defineSlots<{ info?(): unknown }>();
 
 const id = useId();
-/** What the chip of the short menu shows: "Ecken 12 px". */
-const face = computed(() => [props.label, props.modelValue, props.unit].filter((part) => part !== undefined).join(' '));
+/** What the chip of the short menu shows: "14 Tage", with `named` "Ecken 12 px". */
+const face = computed(() => [props.named ? props.label : undefined, props.modelValue, props.unit].filter((part) => part !== undefined).join(' '));
 const edit = useEdit();
 const draft = ref(String(props.modelValue));
 let typing = false;

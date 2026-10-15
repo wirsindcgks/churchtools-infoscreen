@@ -5,6 +5,7 @@
  * so a word like "Hineinzoomen" keeps its room.
  */
 import { computed, useId } from 'vue';
+import { chipFace, type ChipFace } from './chip-face';
 import FieldRow from './FieldRow.vue';
 import Pictogram from './Pictogram.vue';
 import type { PictogramName } from '../pictograms';
@@ -15,17 +16,17 @@ export interface TileOption {
     pictogram: PictogramName;
 }
 
-const props = defineProps<{ modelValue: string | number | undefined; options: readonly TileOption[]; label: string; testid?: string; disabled?: boolean; quick?: boolean }>();
+const props = defineProps<{ modelValue: string | number | undefined; options: readonly TileOption[]; label: string; testid?: string; disabled?: boolean; quick?: boolean; face?: ChipFace }>();
 const emit = defineEmits<{ 'update:modelValue': [string | number] }>();
 defineSlots<{ info?(): unknown }>();
 const labelId = useId();
 /** What the chip of the short menu shows: the chosen tile's word. */
-const face = computed(() => props.options.find((o) => o.value === props.modelValue)?.label);
+const chosenFace = computed(() => chipFace(props.face, props.modelValue, props.options.find((o) => o.value === props.modelValue)?.label));
 const name = useId();
 </script>
 
 <template>
-    <FieldRow :label="label" :label-id="labelId" stacked :quick="quick" :face="face">
+    <FieldRow :label="label" :label-id="labelId" stacked :quick="quick" :face="chosenFace">
         <div class="tiles" :class="{ 'tiles--four': options.length > 3 }" role="radiogroup" :aria-labelledby="labelId" :data-testid="testid">
             <label v-for="option in options" :key="option.value" class="tile">
                 <input

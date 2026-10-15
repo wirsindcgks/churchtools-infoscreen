@@ -36,6 +36,11 @@ const fits = [
     { value: 'cover', label: t.inspector.fitCover },
 ];
 
+/** "Ohne" alone does not say what is missing in the chip. */
+function transitionFace(value: string | number | undefined): string {
+    return value === 'none' ? t.inspector.transitionNoneFace : (TRANSITION_TILES.find((o) => o.value === value)?.label ?? '');
+}
+
 /** An old block with the transition `zoom` is written as fade plus motion the moment either one changes. */
 function setSlideshow(patch: { transition?: string; motion?: string }): void {
     setBlock({ transition: effectiveTransition(props.block), motion: effectiveMotion(props.block), ...patch });
@@ -93,6 +98,7 @@ function remove(index: number): void {
             quick
             :model-value="effectiveTransition(block)"
             :options="TRANSITION_TILES"
+            :face="transitionFace"
             :label="t.inspector.transition"
             testid="slideshow-transition"
             @update:model-value="setSlideshow({ transition: String($event) })"

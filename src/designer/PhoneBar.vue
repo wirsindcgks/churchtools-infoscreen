@@ -1,8 +1,8 @@
 <script setup lang="ts">
 /**
- * The two rows at the bottom of a phone (Plan.md 79, C2). The lower one is always there: the slide – "Folie 2 von 5" opens the
- * sheet of slides, "+ Baustein" the sheet of blocks, "⋯" holds what belongs to the slide. A block chosen (or several) adds the upper row:
- * the short menu of the block in its bar form (`QuickMenu`, `variant="bar"`); in the mode "Mehrere auswählen" the lower row
+ * The rows at the bottom of a phone (Plan.md 79, C2). The lowest one is always there: the slide – "Folie 2 von 5" opens the
+ * sheet of slides, "+ Baustein" the sheet of blocks, "⋯" holds what belongs to the slide. A block chosen (or several) adds the
+ * short menu of the block in its bar form (`QuickMenu`, `variant="bar"`): a row of its fields, if it has any, and the row with its name (Plan.md 88, C); in the mode "Mehrere auswählen" the lower row
  * counts the chosen ones and ends the mode instead of the slide's (D6). The sheets themselves belong to the editor; this bar only asks for them.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
@@ -31,6 +31,24 @@ function openMore(): void {
 }
 defineExpose({ openFirst, openMore });
 const keyboard = useKeyboardInset();
+
+/** The rows of the block's menu are not always the same height (the row of fields can be missing), so the sheets of the fields measure them. */
+const blockRow = ref<HTMLElement | null>(null);
+const blockRowHeight = ref(0);
+let rowObserver: ResizeObserver | undefined;
+watch(
+    blockRow,
+    (el) => {
+        rowObserver?.disconnect();
+        blockRowHeight.value = el?.offsetHeight ?? 0;
+        if (el && typeof ResizeObserver !== 'undefined') {
+            rowObserver = new ResizeObserver(() => (blockRowHeight.value = el.offsetHeight));
+            rowObserver.observe(el);
+        }
+    },
+    { flush: 'post' },
+);
+onBeforeUnmount(() => rowObserver?.disconnect());
 
 const slideIndex = computed(() => (editor.slide ? editor.slides.indexOf(editor.slide) + 1 : 0));
 
@@ -64,8 +82,12 @@ async function removeSlide(): Promise<void> {
 </script>
 
 <template>
-    <div class="phone-bar" :style="keyboard ? { bottom: `${keyboard}px` } : undefined" data-testid="phone-bar">
-        <div v-if="editor.selection.length" class="block-row" data-testid="phone-block-row">
+    <div
+        class="phone-bar"
+        :style="{ bottom: keyboard ? `${keyboard}px` : undefined, '--d-phone-bar': `${56 + blockRowHeight}px` }"
+        data-testid="phone-bar"
+    >
+        <div v-if="editor.selection.length" ref="blockRow" class="block-row" data-testid="phone-block-row">
             <QuickMenu ref="quickMenu" :key="editor.selection.map((b) => b.id).join()" :blocks="editor.selection" variant="bar" @all-settings="emit('all-settings')" />
         </div>
         <!-- In the mode the lower row counts and ends it; the short menu above already acts on what is chosen (user at the phone, 2026-10-10). -->
@@ -170,6 +192,11 @@ async function removeSlide(): Promise<void> {
     gap: var(--d-space-2);
     height: 56px;
     border-top: 1px solid var(--d-divider);
+}
+/* The menu of the block brings its own rows of 56 px: the fields over the name. */
+.block-row {
+    align-items: stretch;
+    height: auto;
 }
 .slide-row {
     height: calc(56px + env(safe-area-inset-bottom));

@@ -120,6 +120,7 @@ const summary = computed(() => {
             :quick="effects === 'all'"
             :model-value="style.shadow ?? 'none'"
             :options="shadows"
+            :face="(value) => t.inspector.shadowFace[(value as 'none') ?? 'none']"
             :label="t.inspector.shadow"
             testid="text-shadow"
             @update:model-value="setStyle({ shadow: $event === 'none' ? undefined : ($event as 'soft') })"

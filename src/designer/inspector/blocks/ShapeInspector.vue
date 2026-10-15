@@ -40,7 +40,7 @@ function setBorderWidth(width: number): void {
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
         <SegmentField quick :model-value="block.shape ?? 'rect'" :options="forms" :label="t.inspector.shapeForm" testid="shape-form" @update:model-value="setBlock({ shape: $event })" />
         <FillEditor quick :model-value="block.fill" @focus="edit.onFocus" @blur="edit.onBlur" @update:model-value="setBlock({ fill: $event })" />
-        <NumberField v-if="!ellipse" quick :model-value="block.cornerRadius ?? 0" :label="t.inspector.cornerRadius" unit="px" :min="0" testid="shape-corners" @update:model-value="setBlock({ cornerRadius: $event })" />
+        <NumberField v-if="!ellipse" quick named :model-value="block.cornerRadius ?? 0" :label="t.inspector.cornerRadius" unit="px" :min="0" testid="shape-corners" @update:model-value="setBlock({ cornerRadius: $event })" />
         <NumberField :model-value="borderWidth" :label="t.inspector.shapeBorder" unit="px" :min="0" testid="shape-border" @update:model-value="setBorderWidth" />
         <ColorField
             v-if="block.border && borderWidth >= 1"

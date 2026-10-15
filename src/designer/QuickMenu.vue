@@ -158,6 +158,9 @@ const LAYERS: { where: Layer; label: string }[] = [
     { where: 'back', label: t.quick.layers.back },
 ];
 
+/** On a phone only one step each way; to the very front or back goes through "Alle Einstellungen › Anordnen" (Plan.md 88, C). */
+const layers = computed(() => (bar ? LAYERS.filter((l) => l.where === 'forward' || l.where === 'backward') : LAYERS));
+
 /** Arrows hop between the buttons and chips of the menu; the editor's arrows (which move the block) never hear them. */
 function onKeydown(event: KeyboardEvent): void {
     // While writing, Escape from the menu ends the writing as in the field – the block stays chosen.
@@ -233,14 +236,17 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
         <span v-if="bar" class="quick-kind" role="img" :aria-label="title" data-testid="quick-kind">
             <Icon :name="block ? BLOCK_ICONS[block.type] : 'grid'" :size="20" />
         </span>
+        <span v-if="bar && block" class="quick-name" data-testid="quick-name">{{ title }}</span>
         <span v-if="many" class="quick-count" data-testid="quick-count">{{ title }}</span>
         <span v-if="many && !bar" class="quick-divider" aria-hidden="true" />
-        <ArrangeField v-if="many && !allLocked" />
+        <ArrangeField v-if="many && !allLocked && !bar" />
         <span v-if="many && !allLocked && !bar" class="quick-divider" aria-hidden="true" />
-        <template v-if="block && !block.locked">
+        <!-- On a phone the fields stand in a row of their own over the symbol and the name (Plan.md 88, C); with several chosen that row holds "Ausrichten". -->
+        <template v-if="bar ? (block ? !block.locked : many && !allLocked) : block && !block.locked">
             <div class="quick-scroll">
                 <div ref="fields" class="quick-fields" @scroll.passive="onFieldsScroll">
-                    <component :is="BLOCK_INSPECTORS[block.type]" :block="block" />
+                    <ArrangeField v-if="bar && many" />
+                    <component :is="BLOCK_INSPECTORS[block.type]" v-if="block" :block="block" />
                 </div>
                 <template v-if="bar">
                     <span class="quick-fade quick-fade--start" :class="{ on: more.start }" aria-hidden="true" data-testid="quick-fade-start" />
@@ -320,10 +326,10 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
                     @keydown="onMoreKey"
                 >
                     <button v-if="editor.canGroup" role="menuitem" type="button" data-testid="quick-group" @click="choose(() => editor.groupBlocks(ids))">
-                        {{ t.common.group }}<kbd>{{ keyLabel(KEYS.group) }}</kbd>
+                        {{ t.common.group }}<kbd v-if="!bar">{{ keyLabel(KEYS.group) }}</kbd>
                     </button>
                     <button v-if="editor.canUngroup" role="menuitem" type="button" data-testid="quick-ungroup" @click="choose(() => editor.ungroupBlocks(ids))">
-                        {{ t.common.ungroup }}<kbd>{{ keyLabel(KEYS.ungroup) }}</kbd>
+                        {{ t.common.ungroup }}<kbd v-if="!bar">{{ keyLabel(KEYS.ungroup) }}</kbd>
                     </button>
                     <button v-if="bar" role="menuitem" type="button" data-testid="quick-lock" @click="choose(() => editor.setLocked(ids, !allLocked))">
                         {{ lockLabel }}
@@ -348,24 +354,25 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
                         {{ t.common.duplicate }}
                     </button>
                     <button role="menuitem" type="button" data-testid="quick-copy" @click="choose(() => editor.copyBlocks(ids))">
-                        {{ t.quick.copy }}<kbd>{{ keyLabel(KEYS.copy) }}</kbd>
+                        {{ t.quick.copy }}<kbd v-if="!bar">{{ keyLabel(KEYS.copy) }}</kbd>
                     </button>
                     <button v-if="many && !allLocked" role="menuitem" type="button" data-testid="quick-cut" @click="choose(() => editor.cutBlocks(ids))">
-                        {{ t.quick.cut }}<kbd>{{ keyLabel(KEYS.cut) }}</kbd>
+                        {{ t.quick.cut }}<kbd v-if="!bar">{{ keyLabel(KEYS.cut) }}</kbd>
                     </button>
                     <template v-if="block && !block.locked">
                         <button
+                            v-if="!bar || editor.clipboard.length"
                             role="menuitem"
                             type="button"
                             :disabled="!editor.clipboard.length"
                             data-testid="quick-paste"
                             @click="choose(() => editor.pasteBlocks())"
                         >
-                            {{ t.quick.paste }}<kbd>{{ keyLabel(KEYS.paste) }}</kbd>
+                            {{ t.quick.paste }}<kbd v-if="!bar">{{ keyLabel(KEYS.paste) }}</kbd>
                         </button>
                         <hr role="separator">
                         <button
-                            v-for="layer in LAYERS"
+                            v-for="layer in layers"
                             :key="layer.where"
                             role="menuitem"
                             type="button"
@@ -453,9 +460,6 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
     padding: 0 var(--d-space-2);
     font-weight: var(--d-weight-normal);
 }
-.quick-menu--bar .quick-count {
-    flex: 1;
-}
 .quick-divider {
     flex: none;
     width: 1px;
@@ -536,13 +540,17 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
     border: 0;
     border-top: 1px solid var(--d-divider);
 }
-/* The bar at the bottom of a phone (C2): the upper row of 56 px – symbol, fields to scroll, then the actions and "Auswahl aufheben", each at least 44 × 44. */
+/* The bar at the bottom of a phone (C2), in two rows of 56 px (Plan.md 88, C): over them the fields across the full width, then the block's symbol and name with "⋯" and "Auswahl aufheben" – each button at least 44 × 44. */
 .quick-menu--bar {
     position: relative;
     z-index: auto;
+    display: grid;
     flex: 1;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 0 var(--d-space-1);
+    align-items: center;
     min-width: 0;
-    height: 100%;
+    height: auto;
     padding: 0 var(--d-space-2);
     border-radius: 0;
     background: none;
@@ -550,10 +558,26 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
 }
 .quick-kind {
     display: grid;
-    flex: none;
+    grid-column: 1;
+    grid-row: 2;
     place-items: center;
     width: 24px;
     height: 24px;
+}
+.quick-name {
+    grid-column: 2;
+    grid-row: 2;
+    min-width: 0;
+    padding: 0 var(--d-space-2);
+    overflow: hidden;
+    font-weight: var(--d-weight-heading);
+    text-overflow: ellipsis;
+}
+.quick-menu--bar .quick-count {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 0 var(--d-space-2);
+    font-weight: var(--d-weight-heading);
 }
 /* Only the bar needs a frame around the fields: for the fades at its edges. */
 .quick-scroll {
@@ -561,11 +585,19 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
 }
 .quick-menu--bar .quick-scroll {
     position: relative;
+    box-sizing: border-box;
     display: flex;
-    flex: 1;
-    min-width: 0;
-    height: 100%;
+    grid-column: 1 / -1;
+    grid-row: 1;
     align-items: center;
+    min-width: 0;
+    height: 56px;
+    margin: 0 calc(var(--d-space-2) * -1);
+    border-bottom: 1px solid var(--d-divider);
+}
+/* A block without a field that shows in the bar has no row for them. */
+.quick-menu--bar .quick-scroll:not(:has(.quick-fields > *)) {
+    display: none;
 }
 /* The fields scroll and fade out at an edge where there is more. No mask: the sheet of a field hangs inside; the fades lie above the fields, below the sheet. */
 .quick-fade {
@@ -592,7 +624,7 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
 .quick-menu--bar .quick-fields {
     flex: 1;
     min-width: 0;
-    padding: 0 var(--d-space-1);
+    padding: 0 var(--d-space-3);
     overflow-x: auto;
     scrollbar-width: none;
 }
@@ -600,8 +632,9 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
     display: none;
 }
 .quick-menu--bar .quick-actions {
-    flex: none;
-    margin-left: auto;
+    grid-column: 3;
+    grid-row: 2;
+    height: 56px;
 }
 .quick-menu--bar .quick-action,
 .quick-menu--bar .quick-done {
@@ -618,15 +651,10 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
     flex: none;
     height: 44px;
     min-width: 44px;
-    max-width: 150px;
+    max-width: 220px;
 }
 .quick-menu--bar .quick-fields :deep(.quick-face) {
     white-space: nowrap;
-}
-/* A hairline between the fields and "⋯". */
-.quick-menu--bar .quick-actions {
-    padding-left: var(--d-space-1);
-    border-left: 1px solid var(--d-divider);
 }
 .quick-more-danger {
     color: var(--d-danger);

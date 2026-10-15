@@ -35,7 +35,7 @@ const { setBlock } = useBlockEdit(() => props.block);
 const stage = useStageContext();
 const context = useInspectorContext();
 
-const summary = computed(() => `${ROOMS_TILES.find((o) => o.value === props.block.layout)?.label} · ${props.block.days} ${t.inspector.unitDays}`);
+const summary = computed(() => `${ROOMS_TILES.find((o) => o.value === props.block.layout)?.label} · ${t.inspector.days(props.block.days)}`);
 
 /** The name ChurchTools gives the room – from what the designer may see, else from the preview's data. */
 function roomName(resourceId: number): string | null {
@@ -82,8 +82,8 @@ function remove(index: number): void {
 </script>
 
 <template>
-    <!-- Choosing and ordering the rooms are one chip "Räume · 2" in the short menu, the first field of the block (Plan.md 79, C5). -->
-    <QuickField quick :label="t.inspector.rooms" :face="t.quick.count(t.inspector.rooms, block.rooms.length)">
+    <!-- Choosing and ordering the rooms are one chip "Räume 2 von 30" in the short menu, the first field of the block (Plan.md 79, C5). -->
+    <QuickField quick :label="t.inspector.rooms" :face="block.rooms.length ? t.quick.listFace(t.inspector.rooms, t.common.countOf(block.rooms.length, ROOMS_MAX)) : t.quick.empty.rooms">
         <!-- Plan.md 86: an instance without the type "Raum" shows no room until an administrator chooses a type. -->
         <p v-if="context.rooms && !context.rooms.length" class="hint" data-testid="rooms-none">
             {{ context.roomTypeMissing ? t.inspector.roomTypeMissing : t.inspector.noRooms }}
@@ -134,7 +134,7 @@ function remove(index: number): void {
             quick
             :model-value="block.days"
             :label="t.inspector.period"
-            :unit="t.inspector.unitDays"
+            :unit="t.inspector.unitDays(block.days)"
             :min="1"
             :max="14"
             testid="rooms-days"
@@ -160,16 +160,14 @@ function remove(index: number): void {
 <style scoped>
 .room-add {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
+    flex-direction: column;
     gap: 6px;
     min-width: 0;
 }
 .select-box {
     position: relative;
     display: flex;
-    flex: 1 1 9rem;
-    min-width: 9rem;
+    min-width: 0;
 }
 .select-box select {
     flex: 1;

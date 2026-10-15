@@ -13,10 +13,10 @@ import { t } from '../../../i18n/designer';
 import Icon from '../../Icon.vue';
 import { quickFieldPlace } from '../../quick-menu';
 import { vTip } from '../../tip';
-import { IN_QUICK_FIELD, INSPECTOR_MODE, QUICK_OPEN, QUICK_VARIANT, useInspectorMode } from '../mode';
+import { IN_QUICK_FIELD, INSPECTOR_MODE, QUICK_OPEN, QUICK_VARIANT, SHEET_TITLE, useInspectorMode } from '../mode';
 
 const props = defineProps<{ quick?: boolean; label: string; face?: string; swatch?: string; inline?: boolean }>();
-defineSlots<{ default(): unknown }>();
+defineSlots<{ default(props: { inSheet: boolean }): unknown }>();
 
 const mode = useInspectorMode();
 const asChip = computed(() => mode.value === 'quick' && !!props.quick && !props.inline);
@@ -36,6 +36,11 @@ const id = useId();
 const shared = inject(QUICK_OPEN, null) ?? ref<string | null>(null);
 const sheet = inject(QUICK_VARIANT, 'float') === 'bar';
 const open = computed(() => asChip.value && shared.value === id);
+// In the sheet its title says the label already (Plan.md 88, C): a field of that name below it keeps the label for a screen reader only.
+provide(
+    SHEET_TITLE,
+    computed(() => (sheet && open.value ? props.label : null)),
+);
 
 const root = ref<HTMLElement | null>(null);
 const chip = ref<HTMLButtonElement | null>(null);
@@ -119,9 +124,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <slot v-if="mode === 'full'" />
+    <slot v-if="mode === 'full'" :in-sheet="false" />
     <template v-else-if="!quick" />
-    <div v-else-if="inline" class="quick-inline" data-quick-inline><slot /></div>
+    <div v-else-if="inline" class="quick-inline" data-quick-inline><slot :in-sheet="false" /></div>
     <div v-else ref="root" class="quick-field" @keydown="onKeydown">
         <button
             ref="chip"
@@ -165,9 +170,9 @@ onBeforeUnmount(() => {
                     <span class="quick-sheet-grip" aria-hidden="true" />
                     <span class="quick-sheet-title">{{ label }}</span>
                 </div>
-                <div class="quick-sheet-body"><slot /></div>
+                <div class="quick-sheet-body"><slot :in-sheet="true" /></div>
             </template>
-            <slot v-else />
+            <slot v-else :in-sheet="false" />
         </div>
     </div>
 </template>

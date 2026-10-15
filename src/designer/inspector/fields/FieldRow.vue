@@ -4,18 +4,22 @@
  * at the end of the row when the `info` slot is filled. `stacked` puts the label above a wide control; `end` pushes a small control (a switch) to the right edge; `wide` gives the label the room and sizes the control to its content (a
  * row of a list, such as a calendar). The `before` slot puts a small mark (a colour dot) in front of the label. In the short menu
  * (`quick` mode) the row goes through `QuickField`: not drawn without `quick`, else a chip with `face` or, with `inline`, in the menu itself.
+ * In the sheet of a phone's bar, whose title is the label already, the label is kept for a screen reader only (Plan.md 88, C).
  */
+import { inject, ref } from 'vue';
 import HintRow from '../../HintRow.vue';
+import { SHEET_TITLE } from '../mode';
 import QuickField from './QuickField.vue';
 
 const props = defineProps<{ label: string; for?: string; labelId?: string; stacked?: boolean; end?: boolean; wide?: boolean; quick?: boolean; face?: string; inline?: boolean }>();
 defineSlots<{ default(): unknown; info?(): unknown; before?(): unknown }>();
+const sheetTitle = inject(SHEET_TITLE, ref(null));
 </script>
 
 <template>
-    <QuickField :quick="quick" :label="label" :face="face" :inline="inline">
+    <QuickField v-slot="{ inSheet }" :quick="quick" :label="label" :face="face" :inline="inline">
         <HintRow>
-            <div class="d-field field-row" :class="{ 'field-row--stacked': stacked, 'field-row--wide': wide }">
+            <div class="d-field field-row" :class="{ 'field-row--stacked': stacked, 'field-row--wide': wide, 'field-row--quiet': inSheet || sheetTitle === label }">
                 <div class="field-label-box">
                     <slot name="before" />
                     <label v-if="props.for" class="field-label" :for="props.for">{{ label }}</label>
@@ -40,6 +44,17 @@ defineSlots<{ default(): unknown; info?(): unknown; before?(): unknown }>();
     grid-template-columns: minmax(0, 1fr);
     align-items: stretch;
     gap: 4px 0;
+}
+.field-row--quiet {
+    gap: 0;
+}
+.field-row--quiet .field-label-box {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    white-space: nowrap;
+    clip-path: inset(50%);
 }
 .field-row--wide {
     grid-template-columns: minmax(0, 1fr) auto;

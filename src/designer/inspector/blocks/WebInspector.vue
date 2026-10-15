@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** The web page block (Plan.md 79, B2): its address and the size of the page in the box. Both go to the short menu. */
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { t } from '../../../i18n/designer';
 import type { Block } from '../../../model/schema';
 import { embedAddress, webRefusal, withScheme } from '../../../player/web';
@@ -23,6 +23,15 @@ const zooms = [
     { value: 2, label: t.inspector.webZooms[200] },
     { value: 3, label: t.inspector.webZooms[300] },
 ];
+
+/** The chip of the short menu shows the host of the address – "example.org" – or, while there is none, the word for it. */
+const addressFace = computed(() => {
+    try {
+        return new URL(props.block.url).host || t.inspector.webAddressFace;
+    } catch {
+        return t.inspector.webAddressFace;
+    }
+});
 
 /** Why an address is not shown – or null when it is. */
 function webProblem(url: string): string | null {
@@ -51,6 +60,7 @@ function setUrl(pasted: string): void {
     <TextField
         quick
         stacked
+        :face="addressFace"
         commit="change"
         input-id="web-url-input"
         inputmode="url"
@@ -64,7 +74,7 @@ function setUrl(pasted: string): void {
     <p v-if="mode === 'full' && embedProblemBlock === block.id" class="hint" data-testid="web-problem">{{ t.inspector.webNoAddressInCode }}</p>
     <p v-else-if="mode === 'full' && webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="zooms.find((z) => z.value === block.zoom)?.label">
-        <SelectField quick :model-value="block.zoom" :options="zooms" :label="t.inspector.webSize" testid="web-zoom" @update:model-value="setBlock({ zoom: Number($event) })" />
+        <SelectField quick :face="(value) => t.inspector.webSizeFace(Math.round(Number(value) * 100))" :model-value="block.zoom" :options="zooms" :label="t.inspector.webSize" testid="web-zoom" @update:model-value="setBlock({ zoom: Number($event) })" />
     </InspectorSection>
 </template>
 

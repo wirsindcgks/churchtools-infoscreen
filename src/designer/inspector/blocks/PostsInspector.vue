@@ -24,7 +24,10 @@ const mode = useInspectorMode();
 const { setBlock } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
 
-const summary = computed(() => `${POSTS_TILES.find((o) => o.value === props.block.layout)?.label} · ${props.block.maxAgeDays} ${t.inspector.unitDays}`);
+const summary = computed(() => `${POSTS_TILES.find((o) => o.value === props.block.layout)?.label} · ${t.inspector.days(props.block.maxAgeDays)}`);
+
+/** The fold and the chip of the short menu say it alike: "2 von 10". */
+const groupsSummary = computed(() => t.common.countOf(props.block.groupIds.length, context.groups.length));
 
 /** Empty is allowed here (Plan.md 33): a fresh block starts without a group until one is chosen. */
 function toggleGroup(id: number, on: boolean): void {
@@ -34,9 +37,9 @@ function toggleGroup(id: number, on: boolean): void {
 </script>
 
 <template>
-    <!-- One chip "Gruppen · 2" in the short menu, so a double click on the block can lead here (Plan.md 79, C5). -->
-    <QuickField quick :label="t.inspector.groups" :face="t.quick.count(t.inspector.groups, block.groupIds.length)">
-        <InspectorSection id="post-groups" :title="t.inspector.groups" :summary="block.groupIds.length ? t.common.chosen(block.groupIds.length) : t.common.none">
+    <!-- One chip "Gruppen 2 von 10" in the short menu, so a double click on the block can lead here (Plan.md 79, C5). -->
+    <QuickField quick :label="t.inspector.groups" :face="block.groupIds.length ? t.quick.listFace(t.inspector.groups, groupsSummary) : t.quick.empty.posts">
+        <InspectorSection id="post-groups" :title="t.inspector.groups" :summary="block.groupIds.length ? groupsSummary : t.common.none">
             <template #info>{{ t.inspector.postGroupsInfo }}</template>
             <ToggleField
                 v-for="g in context.groups"
@@ -58,7 +61,7 @@ function toggleGroup(id: number, on: boolean): void {
         <NumberField
             :model-value="block.maxAgeDays"
             :label="t.inspector.period"
-            :unit="t.inspector.unitDays"
+            :unit="t.inspector.unitDays(block.maxAgeDays)"
             :min="1"
             :max="365"
             testid="posts-days"

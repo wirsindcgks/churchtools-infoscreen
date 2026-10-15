@@ -66,6 +66,11 @@ const homepages = computed(() => [
     ...(homepageMissing.value ? [{ value: props.block.parentGroupId!, label: t.inspector.homepageGone }] : []),
 ]);
 
+/** The chip of the short menu shows the chosen homepage's title; without one it says what to do. */
+function homepageFace(value: string | number | undefined): string {
+    return homepages.value.find((o) => String(o.value) === String(value) && o.value !== '')?.label ?? t.quick.empty.groups;
+}
+
 /** Empty `groupIds` means "every group, in the chosen order"; switching it off starts from all of them, in that order. */
 function toggleAll(all: boolean): void {
     setBlock({ groupIds: all ? [] : selectGroups(homepageGroupList.value, [], props.block.sort).map((g) => g.id) });
@@ -115,6 +120,7 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
         quick
         :model-value="block.parentGroupId ?? ''"
         :options="homepages"
+        :face="homepageFace"
         :label="t.inspector.groupsHomepage"
         testid="groups-homepage"
         @update:model-value="setHomepage"

@@ -58,8 +58,8 @@ function remove(index: number): void {
 </script>
 
 <template>
-    <!-- Adding and ordering the profiles are one chip "Profile · 2" in the short menu, the first field of the block. -->
-    <QuickField quick :label="t.inspector.socialProfiles" :face="t.quick.count(t.inspector.socialProfiles, block.links.length)">
+    <!-- Adding and ordering the profiles are one chip "Profile 2 von 12" in the short menu, the first field of the block. -->
+    <QuickField quick :label="t.inspector.socialProfiles" :face="block.links.length ? t.quick.listFace(t.inspector.socialProfiles, t.common.countOf(block.links.length, SOCIAL_MAX)) : t.quick.empty.social">
         <TextField
             stacked
             commit="change"

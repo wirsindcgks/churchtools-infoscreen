@@ -70,8 +70,8 @@ test('choosing a block shows its menu in the bar; the big sheet stays shut and t
     await expect(page.getByTestId('inspector-sheet')).toBeHidden();
     await expect(page.getByTestId('inspector-sheet-toggle')).toBeHidden();
     await expectStageClear(page);
-    // Two rows of 56 px (plus the safe area) at the bottom edge.
-    expect(Math.round((await bar.boundingBox())!.height)).toBeGreaterThanOrEqual(112);
+    // Three rows of 56 px (plus the safe area) at the bottom edge: the fields, the name of the block, the slide (Plan.md 88, C).
+    expect(Math.round((await bar.boundingBox())!.height)).toBeGreaterThanOrEqual(168);
     // Every button of the bar is at least a fingertip.
     // Duplicate and delete live in "⋯" on a phone: the fields keep the room.
     await expect(menu.getByTestId('quick-duplicate')).toHaveCount(0);
@@ -90,7 +90,7 @@ test('choosing a block shows its menu in the bar; the big sheet stays shut and t
     await menu.getByTestId('quick-more').tap();
 });
 
-test('a block shows two rows; "Auswahl aufheben" lets go of it and leaves the slide row', async ({ page }) => {
+test('a block shows its rows; "Auswahl aufheben" lets go of it and leaves the slide row', async ({ page }) => {
     await openEditor(page);
     await page.getByTestId('frame-text').first().tap();
     const bar = page.getByTestId('phone-bar');
@@ -102,7 +102,9 @@ test('a block shows two rows; "Auswahl aufheben" lets go of it and leaves the sl
     await expect(bar.getByTestId('phone-back-to-slide')).toHaveCount(0);
     const [upper, lower] = await Promise.all([blockRow.boundingBox(), slideRow.boundingBox()]);
     expect(Math.round(upper!.y + upper!.height)).toBeLessThanOrEqual(Math.round(lower!.y));
-    expect(Math.round(upper!.height)).toBe(56);
+    // The fields over the name of the block, 56 px each (plus the hairline above).
+    expect(Math.round(upper!.height)).toBeGreaterThanOrEqual(112);
+    expect(Math.round(upper!.height)).toBeLessThanOrEqual(114);
     await expectStageCentered(page);
     const deselect = bar.getByTestId('quick-deselect');
     await expect(deselect).toHaveAttribute('aria-label', 'Auswahl aufheben');
@@ -113,6 +115,46 @@ test('a block shows two rows; "Auswahl aufheben" lets go of it and leaves the sl
     await expect(blockRow).toHaveCount(0);
     await expect(bar.getByTestId('quick-menu')).toHaveCount(0);
     await expect(bar.getByTestId('phone-slides')).toBeVisible();
+});
+
+test('the fields have a row of their own across the full width, the name stands below; "⋯" is short (Plan.md 88, C)', async ({ page }) => {
+    await openEditor(page);
+    await page.getByTestId('frame-text').first().tap();
+    const bar = page.getByTestId('phone-bar');
+    const [row, fields, kind, name, more] = await Promise.all([
+        bar.getByTestId('phone-block-row').boundingBox(),
+        bar.locator('.quick-scroll').boundingBox(),
+        bar.getByTestId('quick-kind').boundingBox(),
+        bar.getByTestId('quick-name').boundingBox(),
+        bar.getByTestId('quick-more').boundingBox(),
+    ]);
+    // The row of the fields spans the bar from edge to edge and lies over the name, the symbol and "⋯".
+    expect(Math.round(fields!.x)).toBe(0);
+    expect(Math.round(fields!.width)).toBe(390);
+    expect(Math.abs(fields!.y - row!.y)).toBeLessThanOrEqual(2);
+    for (const below of [kind!, name!, more!]) expect(below.y).toBeGreaterThanOrEqual(fields!.y + fields!.height - 1);
+    await expect(bar.getByTestId('quick-name')).toHaveText('Text');
+    // The list has no keys, no "Einfügen" while nothing is copied and only one step each way for the layers.
+    await bar.getByTestId('quick-more').tap();
+    const list = bar.getByTestId('quick-more-list');
+    await expect(list.locator('kbd')).toHaveCount(0);
+    await expect(list.getByTestId('quick-paste')).toHaveCount(0);
+    await expect(list.locator('[data-testid^="quick-layer-"]')).toHaveCount(2);
+    await expect(list.getByTestId('quick-layer-forward')).toBeVisible();
+    await expect(list.getByTestId('quick-layer-backward')).toBeVisible();
+});
+
+test('a sheet does not name its field twice: the label equal to the title is left to the screen reader', async ({ page }) => {
+    await openEditor(page);
+    await page.getByTestId('frame-text').first().tap();
+    const menu = page.getByTestId('phone-bar').getByTestId('quick-menu');
+    await menu.getByTestId('quick-chip').and(page.getByLabel(/^Textstufe/)).tap();
+    const sheet = page.getByTestId('quick-popover');
+    await expect(sheet.locator('.quick-sheet-title')).toHaveText('Textstufe');
+    // One visible "Textstufe" – the title; the field's label stays in the page, but clipped to a pixel.
+    const label = sheet.locator('.field-label', { hasText: 'Textstufe' });
+    await expect(label).toHaveCount(1);
+    expect(await label.evaluate((el) => el.closest('.field-label-box')!.getBoundingClientRect().width)).toBeLessThanOrEqual(1);
 });
 
 test('the fields fade out at an edge only where more of them lie beyond it', async ({ page }) => {

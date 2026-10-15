@@ -84,6 +84,16 @@ describe('QuickMenu (Plan.md 79, C1)', () => {
         wrapper.unmount();
     });
 
+    it('as the bar of a phone, "⋯" is short: no keys, "Einfügen" only with something copied, two steps of the layers (Plan.md 88, C)', async () => {
+        const { wrapper } = mountMenu('bar');
+        await wrapper.find('[data-testid="quick-more"]').trigger('click');
+        const list = wrapper.find('[data-testid="quick-more-list"]');
+        expect(list.find('kbd').exists()).toBe(false);
+        expect(list.find('[data-testid="quick-paste"]').exists()).toBe(false);
+        expect(list.findAll('[data-testid^="quick-layer-"]').map((b) => b.attributes('data-testid'))).toEqual(['quick-layer-forward', 'quick-layer-backward']);
+        wrapper.unmount();
+    });
+
     it('of several blocks: "3 Bausteine", lock, duplicate and delete, and in "⋯" copy, cut and let go (Plan.md 79, D5)', async () => {
         const { wrapper } = mountMenu(undefined, false, 3);
         expect(wrapper.find('[data-testid="quick-menu"]').attributes('aria-label')).toBe('Kurzmenü: 3 Bausteine');

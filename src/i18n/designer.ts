@@ -337,12 +337,14 @@ export const t = {
     /** The short menu above the chosen block (Plan.md 79, C1) and what an empty block says (C6). */
     quick: {
         label: (name: string) => `Kurzmenü: ${name}`,
-        /** The face of a chip that stands for a whole list: "Kalender · 3". */
-        count: (label: string, n: number) => `${label} · ${n}`,
+        /** The face of a chip that stands for a whole list, as the fold in the inspector sums it up: "Kalender 3 von 4". */
+        listFace: (label: string, summary: string) => `${label} ${summary}`,
+        /** The face of that chip while nothing is chosen: what to do. */
+        chooseCalendars: 'Kalender wählen',
         /** The name of a chip for a screen reader: the field and what it holds now. */
         chip: (label: string, face: string) => `${label}: ${face}`,
         /** The short words of a switch in the menu, where the full label is too long. */
-        short: { name: 'Name', logo: 'Logo', title: 'Titel', image: 'Bild' },
+        short: { name: 'Gemeindename', logo: 'Logo', title: 'Titel', image: 'Terminbild' },
         unlock: 'Entsperren',
         /** The right button of the phone bar's upper row: lets go of the block. */
         deselect: 'Auswahl aufheben',
@@ -463,6 +465,12 @@ export const t = {
         shadowNone: 'Ohne',
         shadowSoft: 'Weich',
         shadowStrong: 'Stark',
+        /** The chips of the short menu name what the bare word leaves open (Plan.md 88, C). */
+        shadowFace: { none: 'Ohne Schatten', soft: 'Schatten weich', strong: 'Schatten stark' },
+        toneNoneFace: 'Ohne Ton',
+        transitionNoneFace: 'Ohne Übergang',
+        webSizeFace: (percent: number) => `Größe ${percent} %`,
+        webAddressFace: 'Adresse',
         cropChoose: 'Ausschnitt wählen',
         videoMissing: 'Video fehlt',
         noVideo: 'Noch kein Video gewählt.',
@@ -499,7 +507,9 @@ export const t = {
         layoutClassic: 'Schlicht',
         layoutCard: 'Hervorgehoben',
         period: 'Zeitraum',
-        unitDays: 'Tage',
+        /** The unit after a number of days: "1 Tag", "14 Tage". */
+        unitDays: (n: number) => (n === 1 ? 'Tag' : 'Tage'),
+        days: (n: number) => `${n} ${n === 1 ? 'Tag' : 'Tage'}`,
         unitSeconds: 's',
         secondsPerPage: 'Dauer je Seite',
         showAll: 'Alle Termine, seitenweise',

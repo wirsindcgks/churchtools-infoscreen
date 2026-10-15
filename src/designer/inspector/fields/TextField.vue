@@ -23,6 +23,8 @@ const props = defineProps<{
     stacked?: boolean;
     disabled?: boolean;
     quick?: boolean;
+    /** What the chip of the short menu shows instead of the label. */
+    face?: string;
 }>();
 const emit = defineEmits<{ 'update:modelValue': [string] }>();
 defineSlots<{ info?(): unknown }>();
@@ -45,7 +47,7 @@ function onChange(event: Event): void {
 </script>
 
 <template>
-    <FieldRow :label="label" :for="inputId ?? generated" :stacked="stacked || multiline" :quick="quick">
+    <FieldRow :label="label" :for="inputId ?? generated" :stacked="stacked || multiline" :quick="quick" :face="face">
         <textarea
             v-if="multiline"
             :id="inputId ?? generated"

@@ -5,6 +5,7 @@
  */
 import { computed, useId } from 'vue';
 import Icon from '../../Icon.vue';
+import { chipFace, type ChipFace } from './chip-face';
 import FieldRow from './FieldRow.vue';
 
 export interface SelectOption {
@@ -14,12 +15,12 @@ export interface SelectOption {
     style?: Record<string, string>;
 }
 
-const props = defineProps<{ modelValue: string | number | undefined; options: readonly SelectOption[]; label: string; testid?: string; inline?: boolean; disabled?: boolean; quick?: boolean }>();
+const props = defineProps<{ modelValue: string | number | undefined; options: readonly SelectOption[]; label: string; testid?: string; inline?: boolean; disabled?: boolean; quick?: boolean; face?: ChipFace }>();
 const emit = defineEmits<{ 'update:modelValue': [string | number] }>();
 defineSlots<{ info?(): unknown }>();
 const id = useId();
 /** What the chip of the short menu shows: the chosen option's text. */
-const face = computed(() => props.options.find((o) => String(o.value) === String(props.modelValue))?.label);
+const chosenFace = computed(() => chipFace(props.face, props.modelValue, props.options.find((o) => String(o.value) === String(props.modelValue))?.label));
 
 /** The option's own value, number or string as it was given. */
 function onChange(raw: string): void {
@@ -29,7 +30,7 @@ function onChange(raw: string): void {
 </script>
 
 <template>
-    <FieldRow :label="label" :for="id" :stacked="!inline" :quick="quick" :face="face">
+    <FieldRow :label="label" :for="id" :stacked="!inline" :quick="quick" :face="chosenFace">
         <span class="select-box">
             <select :id="id" :value="modelValue" :disabled="disabled" :data-testid="testid" @change="onChange(($event.target as HTMLSelectElement).value)">
                 <option v-for="option in options" :key="option.value" :value="option.value" :style="option.style">{{ option.label }}</option>

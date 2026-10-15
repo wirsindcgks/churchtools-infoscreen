@@ -78,8 +78,14 @@ describe('the mode of the inspector (Plan.md 79, B2 and C1: the short menu)', ()
         expect(face(SegmentField, { modelValue: 'b', options, label: 'Einpassen' }).text()).toBe('B');
         expect(face(TileField, { modelValue: 'a', options: tiles, label: 'Darstellung' }).attributes('aria-label')).toBe('Darstellung: A');
         expect(face(SelectField, { modelValue: 'b', options, label: 'Größe' }).text()).toBe('B');
-        expect(face(NumberField, { modelValue: 12, label: 'Ecken', unit: 'px' }).text()).toBe('Ecken 12 px');
-        expect(face(CalendarField, { calendars: [{ id: 1, name: 'A' }, { id: 2, name: 'B' }], chosenIds: [1, 2], hidden: [] }).text()).toBe('Kalender · 2');
+        // A number says value and unit; with `named` the label stands before it (Plan.md 88, C).
+        expect(face(NumberField, { modelValue: 12, label: 'Ecken', unit: 'px', named: true }).text()).toBe('Ecken 12 px');
+        expect(face(NumberField, { modelValue: 14, label: 'Zeitraum', unit: 'Tage' }).text()).toBe('14 Tage');
+        // A `face` replaces the chosen option: a text, or a function of the value.
+        expect(face(SegmentField, { modelValue: 'b', options, label: 'Schatten', face: (v: unknown) => `Schatten ${String(v)}` }).text()).toBe('Schatten b');
+        expect(face(SelectField, { modelValue: 'b', options, label: 'Größe', face: 'fest' }).text()).toBe('fest');
+        expect(face(CalendarField, { calendars: [{ id: 1, name: 'A' }, { id: 2, name: 'B' }], chosenIds: [1, 2], hidden: [] }).text()).toBe('Kalender 2 von 2');
+        expect(face(CalendarField, { calendars: [{ id: 1, name: 'A' }], chosenIds: [], hidden: [] }).text()).toBe('Kalender wählen');
         const swatch = face(ColorField, { modelValue: '#ff0000', label: 'Farbe' });
         expect(swatch.text()).toBe('');
         expect(swatch.attributes('aria-label')).toBe('Farbe');

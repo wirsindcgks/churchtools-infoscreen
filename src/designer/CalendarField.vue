@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * The calendars of a block (Plan.md 62): a foldable list of the public ones – and released ones, marked "nicht öffentlich" (Plan.md 85 b) – as switches (the `info` slot adds a line to its (i)), the same in every block that has
- * calendars (Plan.md 79, B2: the short menu takes it with `quick`, as one chip "Kalender · 3" that opens the whole list). Status stays visible below it – no public calendar at all, and a chosen one that is not public.
+ * calendars (Plan.md 79, B2: the short menu takes it with `quick`, as one chip "Kalender 3 von 4" that opens the whole list). Status stays visible below it – no public calendar at all, and a chosen one that is not public.
  */
 import { computed } from 'vue';
 import { t } from '../i18n/designer';
@@ -17,10 +17,12 @@ defineSlots<{ info?(): unknown }>();
 
 const chosenCount = computed(() => props.calendars.filter((c) => props.chosenIds.includes(c.id)).length);
 const summary = computed(() => t.common.countOf(chosenCount.value, props.calendars.length));
+/** The chip says what the fold says; while nothing is chosen, what to do. */
+const face = computed(() => (chosenCount.value ? t.quick.listFace(t.common.calendars.title, summary.value) : t.quick.chooseCalendars));
 </script>
 
 <template>
-    <QuickField :quick="quick" :label="t.common.calendars.title" :face="t.quick.count(t.common.calendars.title, chosenCount)">
+    <QuickField :quick="quick" :label="t.common.calendars.title" :face="face">
         <InspectorSection id="calendars" :title="t.common.calendars.title" :summary="summary">
             <template #info>
                 {{ t.common.calendars.info(PUBLIC_CALENDAR_PATH) }}

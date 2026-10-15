@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { defineComponent, h, provide, type Component } from 'vue';
 import type { BlockType } from '../../../model/schema';
 import { provideStageContext } from '../../../player/context';
+import { t } from '../../../i18n/designer';
 import { createBlock } from '../../ops';
 import { INSPECTOR_CONTEXT } from '../context';
 import { INSPECTOR_MODE } from '../mode';
@@ -15,23 +16,23 @@ import { BLOCK_INSPECTORS } from '.';
  * field that stands in the menu by its label, a medium by its button.
  */
 const QUICK: Record<BlockType, string[]> = {
-    text: ['Textstufe: Überschrift', 'Farbe', 'Ausrichtung', 'Schatten: Ohne', 'Hinterlegung'],
-    image: ['Bild wählen', 'Einpassen: Ganz zeigen', 'Ton: Ohne'], // "Bild tauschen" once a picture is in
+    text: ['Textstufe: Überschrift', 'Farbe', 'Ausrichtung', 'Schatten: Ohne Schatten', 'Hinterlegung'],
+    image: ['Bild wählen', 'Einpassen: Ganz zeigen', 'Ton: Ohne Ton'], // "Bild tauschen" once a picture is in
     shape: ['Form: Rechteck', 'Farbe', 'Ecken 0 px'],
     line: ['Farbe', 'Stärke 8 px', 'Strich: Durchgezogen'],
     slideshow: ['Bilder hinzufügen', 'Übergang: Überblenden'],
     video: ['Video wählen', 'Ton'],
     clock: ['Ansicht: Uhrzeit', 'Farbe'],
-    'appointment-list': ['Kalender · 1', 'Ansicht: Wie im Design', 'Zeitraum 14 Tage', 'Farbe'],
-    'next-appointment': ['Kalender · 1', 'Ansicht: Wie im Design', 'Terminbild zeigen', 'Farbe'],
-    countdown: ['Kalender · 1', 'Titel des Termins zeigen', 'Farbe'],
+    'appointment-list': ['Kalender 1 von 1', 'Ansicht: Wie im Design', 'Zeitraum: 14 Tage', 'Farbe'],
+    'next-appointment': ['Kalender 1 von 1', 'Ansicht: Wie im Design', 'Terminbild zeigen', 'Farbe'],
+    countdown: ['Kalender 1 von 1', 'Titel des Termins zeigen', 'Farbe'],
     'church-header': ['Gemeindenamen zeigen', 'Logo zeigen', 'Farbe'],
-    web: ['Adresse oder Einbettungscode', 'Größe der Seite: 100 %'],
+    web: ['Adresse oder Einbettungscode: Adresse', 'Größe der Seite: Größe 100 %'],
     qr: ['Inhalt', 'Farbe'],
-    posts: ['Gruppen · 0', 'Ansicht: Hervorgehoben', 'Farbe'],
-    groups: ['Gruppen-Homepage: – wählen –', 'Ansicht: Hervorgehoben', 'Farbe'],
-    rooms: ['Räume · 0', 'Ansicht: Übersicht', 'Zeitraum 1 Tage', 'Farbe'],
-    social: ['Profile · 0', 'Anordnung: Untereinander', 'Markenfarben', 'Farbe', 'Ausrichtung'],
+    posts: ['Gruppen wählen', 'Ansicht: Hervorgehoben', 'Farbe'],
+    groups: ['Gruppen-Homepage: Homepage wählen', 'Ansicht: Hervorgehoben', 'Farbe'],
+    rooms: ['Räume wählen', 'Ansicht: Übersicht', 'Zeitraum: 1 Tag', 'Farbe'],
+    social: ['Profile: Profil hinzufügen', 'Anordnung: Untereinander', 'Markenfarben', 'Farbe', 'Ausrichtung'],
 };
 
 function draw(type: BlockType, mode: 'quick' | 'full' = 'quick') {
@@ -79,6 +80,18 @@ describe('the short menu of the blocks (Plan.md 79, B2)', () => {
         container.querySelectorAll('[data-testid="quick-chip"], [data-quick-inline], button.quick-chip').forEach((el) => el.remove());
         expect(container.textContent!.trim()).toBe('');
         expect(container.querySelectorAll('input, button, select, textarea, img, svg, hr')).toHaveLength(0);
+    });
+});
+
+/** One day is "1 Tag", several are "Tage" (Plan.md 88, C) – in the field, in the chip and in the fold's summary. */
+describe('the days of a block', () => {
+    it.each([
+        [1, '1 Tag'],
+        [2, '2 Tage'],
+        [14, '14 Tage'],
+    ])('%i is written "%s"', (n, text) => {
+        expect(t.inspector.days(n)).toBe(text);
+        expect(`${n} ${t.inspector.unitDays(n)}`).toBe(text);
     });
 });
 
