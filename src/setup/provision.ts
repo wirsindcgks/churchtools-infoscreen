@@ -48,7 +48,7 @@ const RIGHT_LABELS = {
  */
 export const MANAGED_RIGHTS: Record<GroupKey, { authId: number; label: string }[]> = {
     device: [AUTH.calendarView, AUTH.eventView, AUTH.resourceView].map((authId) => ({ authId, label: RIGHT_LABELS[authId] })),
-    designer: [{ authId: AUTH.resourceView, label: RIGHT_LABELS[AUTH.resourceView] }],
+    designer: [AUTH.calendarView, AUTH.resourceView].map((authId) => ({ authId, label: RIGHT_LABELS[authId] })),
 };
 
 export interface GrantSpec {
@@ -92,6 +92,8 @@ export interface PlanInput {
     appointmentRooms: boolean;
     /** The calendars of the blocks that show services (Plan.md 51): the device sees their events. */
     serviceCalendarIds: number[];
+    /** The non-public calendars released for screens (Plan.md 85 b), only those the administrator sees: device and designers may read them. */
+    screenCalendarIds?: number[];
 }
 
 export class MissingAuthError extends Error {
@@ -135,6 +137,11 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
         { authId: moduleRight('delete custom data'), dataId: designerWritten, label: t.setup.provision.grants.deleteData },
         { authId: AUTH.wikiView, label: t.setup.provision.grants.viewWiki },
     ];
+    // Released calendars: the preview shows their appointments like the screen (Plan.md 85 b).
+    const released = input.screenCalendarIds ?? [];
+    if (released.length) {
+        designer.push({ authId: AUTH.calendarView, dataId: released, label: RIGHT_LABELS[AUTH.calendarView] });
+    }
     // "Ressource sehen" per room (205) is enough; "Ressourcen sehen" (201) nobody needs (G45).
     if (input.roomIds.length) {
         designer.push({ authId: AUTH.resourceView, dataId: input.roomIds, label: RIGHT_LABELS[AUTH.resourceView] });
@@ -159,7 +166,11 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     if (input.wikiCategoryId !== null) {
         device.push({ authId: AUTH.wikiCategoryView, dataId: [input.wikiCategoryId], label: t.setup.provision.grants.viewWikiCategory });
     }
-    // The device sees calendars through the public user; it needs no right of its own (Plan.md 73, G53).
+    // The device sees calendars through the public user; it needs no right of its own (Plan.md 73, G53) –
+    // except for the non-public ones an administrator released (Plan.md 85 b, G60).
+    if (released.length) {
+        device.push({ authId: AUTH.calendarView, dataId: released, label: RIGHT_LABELS[AUTH.calendarView] });
+    }
     // One entry: every room when appointments show theirs, plus what the rooms blocks use.
     const deviceRooms =
         input.appointmentRooms && input.roomIds.length

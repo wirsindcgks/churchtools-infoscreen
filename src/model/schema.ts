@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 39 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 40 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -741,6 +741,8 @@ export const SettingsDoc = v.object({
      * Missing = the type "Raum"; empty = none, so no resource is a room.
      */
     roomTypeIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
+    /** Since 1.40: calendars that are not public but released for screens by an administrator (Plan.md 85 b). Missing = none. */
+    screenCalendarIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
 });
 
 export type Fill = v.InferOutput<typeof Fill>;

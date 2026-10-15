@@ -40,17 +40,21 @@ export function usePreview(
     });
     provideStageContext(context);
 
-    /** Only public calendars; the others the account sees are in `hiddenCalendars` (Plan.md 73). */
+    /** Public calendars plus the released ones the account sees; the others it sees are in `hiddenCalendars` (Plan.md 73, 85 b). */
     const calendars = ref<Calendar[]>([]);
     const hiddenCalendars = ref<Calendar[]>([]);
+    /** Of `calendars`, the ones that are not public but released for screens by an administrator (schema 1.40, Plan.md 85 b). */
+    const releasedCalendarIds = ref<number[]>([]);
     const problem = ref<string | null>(null);
     /** The resource types that count as rooms, from the settings (schema 1.35, Plan.md 86); missing = the type "Raum", as on the TV. */
     let roomTypeIds: number[] | undefined;
+    /** The calendars an administrator released for screens, from the settings (schema 1.40, Plan.md 85 b). */
+    let screenCalendarIds: number[] | undefined;
 
     async function loadBasics(): Promise<void> {
         const settings = getRepository()
             .then((handle) => handle.repository.loadSettings())
-            .then((doc) => doc?.roomTypeIds, () => undefined);
+            .then((doc) => ({ roomTypeIds: doc?.roomTypeIds, screenCalendarIds: doc?.screenCalendarIds }), () => undefined);
         try {
             const [timeZone, churchName, own, publicList, churchLogo] = await Promise.all([
                 churchToolsPlayerData.timeZone(),
@@ -62,13 +66,19 @@ export function usePreview(
             Object.assign(context, { timeZone, churchName, churchLogo });
             const publicIds = new Set(publicList.map((c) => c.id));
             const ownIds = new Set(own.map((c) => c.id));
+            // Released calendars count only where the account sees them; the rights plan gives it to the designers (Plan.md 85 b).
+            const released = new Set((await settings)?.screenCalendarIds ?? []);
+            const offered = (c: Calendar): boolean => publicIds.has(c.id) || released.has(c.id);
             // The order of the signed-in list where possible; public calendars it lacks come last.
-            calendars.value = [...own.filter((c) => publicIds.has(c.id)), ...publicList.filter((c) => !ownIds.has(c.id))];
-            hiddenCalendars.value = own.filter((c) => !publicIds.has(c.id));
+            calendars.value = [...own.filter(offered), ...publicList.filter((c) => !ownIds.has(c.id))];
+            hiddenCalendars.value = own.filter((c) => !offered(c));
+            releasedCalendarIds.value = own.filter((c) => !publicIds.has(c.id) && released.has(c.id)).map((c) => c.id);
         } catch (error) {
             problem.value = error instanceof Error ? error.message : String(error);
         }
-        roomTypeIds = await settings;
+        const read = await settings;
+        roomTypeIds = read?.roomTypeIds;
+        screenCalendarIds = read?.screenCalendarIds;
     }
 
     let request = 0;
@@ -86,6 +96,7 @@ export function usePreview(
                 services: appointmentServices.value,
                 tags: appointmentTags.value,
                 roomTypeIds,
+                releasedCalendarIds: screenCalendarIds,
             });
             if (mine === request) context.appointments = list;
         } catch (error) {
@@ -161,5 +172,5 @@ export function usePreview(
     const ticker = setInterval(() => (context.now = new Date()), 30_000);
     onBeforeUnmount(() => clearInterval(ticker));
 
-    return { context, calendars, hiddenCalendars, problem };
+    return { context, calendars, hiddenCalendars, releasedCalendarIds, problem };
 }

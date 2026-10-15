@@ -139,15 +139,15 @@ Rechte:
 Der Assistent fasst **nur Gruppen an, die er selbst angelegt hat**, und ändert keine bestehenden Rollen. Gibt es
 schon Gruppen mit diesen Namen, hält er an.
 
-**Später wiederkommen:** Zeigt ein Bildschirm einen weiteren Kalender, muss der Kalender nur öffentlich sein – ein
-„Rechte aktualisieren" braucht es dafür nicht. Zeigt ein Bildschirm neue Räume, klicke in **Einstellungen → Gruppen und
+**Später wiederkommen:** Zeigt ein Bildschirm einen weiteren Kalender, muss der Kalender nur öffentlich sein (oder
+freigegeben, siehe unten) – ein „Rechte aktualisieren" braucht es dafür nicht. Zeigt ein Bildschirm neue Räume, klicke in **Einstellungen → Gruppen und
 Rechte** auf **„Rechte aktualisieren"**. **Der Knopf nimmt auch zurück,** was kein Bildschirm mehr braucht: Kalender, Dienste und
 Räume, die kein Bildschirm mehr zeigt, verlieren ihr Recht an den Gruppen des Assistenten. Vorher öffnet sich eine
 **Vorschau** – je Gruppe, was dazukommt und was wegfällt. Erst „Übernehmen" schreibt; ohne Änderung meldet der Knopf nur, dass alles auf dem
 Stand ist. Ein entzogenes Recht wirkt bei ChurchTools noch bis zu einer Dreiviertelstunde nach, weil ChurchTools Rechte
 zwischenspeichert. Von Hand an diesen Gruppen ergänzte Rechte an Kalendern und Räumen nähme der Knopf ebenfalls zurück
 ([Rechte](Rechte.md#was-rechte-aktualisieren-zurücknimmt)). **Nur öffentliche Kalender:** Der Fernseher zeigt nur
-öffentliche Kalender – und von diesen keine internen Termine. „Automatische Einrichtung rückgängig machen" löscht die
+öffentliche Kalender – und von diesen keine internen Termine –, außer du gibst einzelne nicht öffentliche Kalender frei (unten). „Automatische Einrichtung rückgängig machen" löscht die
 beiden Gruppen wieder – **nur die, die der Assistent selbst angelegt hat**. Vorhandene Gruppen, die du gewählt hast,
 bleiben, ebenso der Wiki-Bereich mit den Bildern. Ob der Bereich vom Designer angelegt wurde oder schon da war, steht
 unter **Einstellungen → Mediathek im Wiki**.
@@ -161,6 +161,19 @@ deshalb **vor dem Assistenten** fest (Punkt 1 oben). Wie auf der Design-Seite gi
 und „Dienste auf Bildschirmen". Änderst du die Typen später und brauchen die Gruppen dadurch andere Rechte, fragt ein
 Fenster, ob du gleich **„Rechte aktualisieren"** willst; eine Vorschau zeigt vorher, was sich ändert. Im Designer
 selbst fragt kein Fenster nach: Zeigt ein Bildschirm neue Räume, gilt „Später wiederkommen" oben.
+
+**Interne Kalender für Bildschirme freigeben.** Normalerweise zeigt ein Fernseher nur öffentliche Kalender. Unter
+**Einstellungen → Interne Kalender für Bildschirme** listet die Seite alle Kalender, die du siehst, der öffentliche
+Benutzer aber nicht, je mit einem Schalter und dem Zusatz „nicht öffentlich". Ein freigegebener Kalender steht den
+Gestaltern zur Wahl (mit dem Zusatz „nicht öffentlich") und läuft auf dem Fernseher. **Wer die Adresse eines Fernsehers
+kennt, kann einen freigegebenen Kalender ganz lesen, auch intern markierte Termine. Der Fernseher selbst zeigt intern
+markierte Termine nie.** Gib deshalb nur frei, was im Foyer stehen darf. Wie bei den Räumen gilt die Auswahl erst mit
+**„Speichern"**; danach fragt ein Fenster, ob du gleich **„Rechte aktualisieren"** willst – der Assistent gibt dann
+den beiden Gruppen „Einzelnen Kalender sehen" auf die freigegebenen Kalender (und dem Gerät, wo Dienste gezeigt
+werden, „Events von einzelnen Kalendern sehen"). Die Prüfung meldet einen freigegebenen Kalender als in Ordnung.
+**Nimmst du eine Freigabe zurück,** zeigt kein Fernseher den Kalender mehr, sofort – der Fernseher folgt der Freigabe
+in den Einstellungen. Das Recht an den Gruppen nimmt „Rechte aktualisieren" zurück; es wirkt in ChurchTools noch bis
+zu einer halben Stunde nach.
 
 Der Assistent legt den Wiki-Bereich nur an, wenn du das Wiki sehen darfst; ohne dieses Recht bricht er ab, bevor er etwas anlegt. Einen fremden Bereich gleichen Namens, den du nicht sehen darfst, kann er nicht erkennen.
 

@@ -74,7 +74,7 @@ providePalette(
 );
 
 const calendarIds = computed(() => editor.calendarIds);
-const { context, calendars, hiddenCalendars, problem } = usePreview(
+const { context, calendars, hiddenCalendars, releasedCalendarIds, problem } = usePreview(
     calendarIds,
     computed(() => editor.media),
     computed(() => editor.theme),
@@ -110,6 +110,7 @@ provideInspectorContext(
     () => ({
         calendars: calendars.value,
         hiddenCalendars: hiddenCalendars.value,
+        releasedCalendarIds: releasedCalendarIds.value,
         groups: groups.value,
         homepages: homepages.value,
         rooms: rooms.value,
@@ -921,7 +922,7 @@ function onKey(event: KeyboardEvent): void {
                     <span class="sheet-label">{{ sheetLabel }}</span>
                     <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
                 </button>
-                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :groups="groups" :homepages="homepages" :rooms="rooms" :room-type-missing="roomTypeMissing" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" :tags="tags" @pick-image="openLibrary" @picked="phone && (inspectorOpen = false)" />
+                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :released-calendar-ids="releasedCalendarIds" :groups="groups" :homepages="homepages" :rooms="rooms" :room-type-missing="roomTypeMissing" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" :tags="tags" @pick-image="openLibrary" @picked="phone && (inspectorOpen = false)" />
             </div>
         </div>
 

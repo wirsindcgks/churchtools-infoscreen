@@ -217,6 +217,8 @@ export interface DeviceGroupInput {
     usedCalendarIds: number[];
     /** The calendars the public user sees – that is "public" (Plan.md 73, G53). */
     publicCalendarIds: number[];
+    /** The non-public calendars an administrator released for screens (Plan.md 85 b): fine, not a warning. */
+    screenCalendarIds?: number[];
     /** The rooms the administrator sees, to name the used ones. */
     rooms?: RoomInfo[];
     /** There are resources, but no type counts as a room (Plan.md 86): no screen shows a room. */
@@ -259,6 +261,7 @@ export function excessRights(grants: Grant[], plannedAuthIds: readonly number[])
 export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
     const checks: Check[] = [checkStatus(input.statusId)];
     const publicIds = new Set(input.publicCalendarIds);
+    const releasedIds = new Set(input.screenCalendarIds ?? []);
     const byId = new Map(input.calendars.map((c) => [c.id, c]));
     if (!input.usedCalendarIds.length) {
         checks.push({ level: 'info', category: 'calendars', text: t.setup.checks.noAppointments });
@@ -267,6 +270,8 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         const calendar = byId.get(id);
         if (publicIds.has(id)) {
             checks.push({ level: 'ok', category: 'calendars', text: t.setup.checks.calendarPublic(calendar?.name ?? t.setup.checks.calendarFallback(id)) });
+        } else if (calendar && releasedIds.has(id)) {
+            checks.push({ level: 'ok', category: 'calendars', text: t.setup.checks.calendarReleased(calendar.name) });
         } else if (calendar) {
             checks.push({
                 level: 'warn',
@@ -311,7 +316,8 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
     }
 
     // A device account that may read an internal calendar (one the public user does not see): the TV does not show it, but its address reads it (Plan.md 62).
-    for (const calendar of input.calendars.filter((c) => !publicIds.has(c.id))) {
+    // Not so for a released one: reading it is the point (Plan.md 85 b).
+    for (const calendar of input.calendars.filter((c) => !publicIds.has(c.id) && !releasedIds.has(c.id))) {
         for (const member of input.members.filter((m) => has(m.grants, AUTH.calendarView, calendar.id))) {
             checks.push({
                 level: 'warn',

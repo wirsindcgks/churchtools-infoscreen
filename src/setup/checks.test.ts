@@ -154,6 +154,25 @@ describe('checkDeviceGroup', () => {
         });
     });
 
+    it('calls a released calendar in use fine, and an unreleased one still warns (Plan.md 85 b)', () => {
+        const input = { statusId: 1, members: [], calendars, usedCalendarIds: [4], publicCalendarIds: [2], wikiCategoryId: WIKI };
+        const released = checkDeviceGroup({ ...input, screenCalendarIds: [4] });
+        expect(released.find((c) => c.category === 'calendars')).toEqual({
+            level: 'ok',
+            category: 'calendars',
+            text: '„Gemeindeleitung": nicht öffentlich, für Bildschirme freigegeben.',
+        });
+        expect(checkDeviceGroup({ ...input, screenCalendarIds: [] }).find((c) => c.category === 'calendars')).toMatchObject({ level: 'warn' });
+    });
+
+    it('does not warn that a device account reads a released calendar, but does for another internal one (Plan.md 85 b)', () => {
+        const members = [{ label: 'Gerät A', grants: [{ authId: 403, dataId: 4 }, { authId: 403, dataId: 5 }] }];
+        const all = [...calendars, { id: 5, name: 'Intern' }];
+        const checks = checkDeviceGroup({ statusId: 1, members, calendars: all, usedCalendarIds: [], publicCalendarIds: [2], screenCalendarIds: [4], wikiCategoryId: WIKI });
+        const texts = checks.filter((c) => c.category === 'rights').map((c) => c.text);
+        expect(texts).toEqual(['Gerät A darf den internen Kalender „Intern" lesen.']);
+    });
+
     it('warns about a calendar in use that is neither public nor visible to the administrator', () => {
         const checks = checkDeviceGroup({
             statusId: 1,

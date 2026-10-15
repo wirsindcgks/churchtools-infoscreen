@@ -271,9 +271,9 @@ describe('planRefresh (Plan.md 62)', () => {
         expect(pairs(result.remove)).toEqual(['403:3']);
     });
 
-    it('takes no calendar from the designers – they manage only rooms (205)', () => {
+    it('takes a calendar right from the designers, too – but not the events right (306), which only devices get', () => {
         const result = planRefresh(plan, { designer: [[held(403, 3), held(306, 3), held(205, 4)]] }, known).find((g) => g.key === 'designer')!;
-        expect(pairs(result.remove)).toEqual(['205:4']);
+        expect(pairs(result.remove)).toEqual(['403:3', '205:4']);
     });
 
     it('takes no room when the list of rooms is empty, e.g. after a failed load', () => {
@@ -294,6 +294,40 @@ describe('planRefresh (Plan.md 62)', () => {
     it('lists each pair once, however many roles hold it', () => {
         const result = device([[held(403, 3)], [held(403, 3)]]);
         expect(pairs(result.remove)).toEqual(['403:3']);
+    });
+});
+
+describe('released calendars (Plan.md 85 b)', () => {
+    const plan = planProvisioning({ ...input, screenCalendarIds: [3, 4] });
+    const known = { calendarIds: [1, 2, 3, 4, 5], roomIds: [] };
+    const refresh = (key: 'device' | 'designer', grants: ReturnType<typeof held>[][]) => planRefresh(plan, { [key]: grants }, known).find((g) => g.key === key)!;
+
+    it('gives device and designers "Einzelnen Kalender sehen" on exactly these calendars', () => {
+        for (const spec of plan) expect(spec.grants.find((g) => g.authId === AUTH.calendarView)?.dataId).toEqual([3, 4]);
+    });
+
+    it('asks for what is missing on both groups', () => {
+        expect(pairs(refresh('device', [[]]).add)).toEqual(expect.arrayContaining(['403:3', '403:4']));
+        expect(pairs(refresh('designer', [[]]).add)).toEqual(expect.arrayContaining(['403:3', '403:4']));
+    });
+
+    it('takes the right back from both groups once the release ends – only for calendars the administrator sees', () => {
+        const ended = planProvisioning({ ...input, screenCalendarIds: [] });
+        for (const key of ['device', 'designer'] as const) {
+            const result = planRefresh(ended, { [key]: [[held(403, 3), held(403, 99)]] }, known).find((g) => g.key === key)!;
+            expect(pairs(result.remove)).toEqual(['403:3']);
+        }
+    });
+
+    it('keeps the right while the release stands', () => {
+        expect(refresh('device', [[held(403, 3)]]).remove).toEqual([]);
+        expect(refresh('designer', [[held(403, 4)]]).remove).toEqual([]);
+    });
+
+    it('asks nothing for calendars when none is released', () => {
+        const [d, v] = planProvisioning({ ...input, screenCalendarIds: [] });
+        expect(d!.grants.some((g) => g.authId === AUTH.calendarView)).toBe(false);
+        expect(v!.grants.some((g) => g.authId === AUTH.calendarView)).toBe(false);
     });
 });
 

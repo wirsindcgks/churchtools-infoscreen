@@ -99,7 +99,7 @@ In der Rechteverwaltung unter **„Kalender"**.
 
 | Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
 | --- | --- | --- | --- | --- |
-| Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | für die Vorschau | für die Vorschau | –, sieht öffentliche Kalender über den öffentlichen Benutzer ³ |
+| Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | für die Vorschau | für die Vorschau; dazu die freigegebenen internen Kalender ⁶ | –, sieht öffentliche Kalender über den öffentlichen Benutzer ³; freigegebene interne Kalender über ein eigenes Recht ⁶ |
 
 ³ **Nur öffentliche Kalender.** Ein Fernseher zeigt nur Termine aus Kalendern, die der **öffentliche Benutzer** sehen
 darf – Kalender, die in ChurchTools auch ohne Anmeldung sichtbar sind, nicht jeder Gemeindekalender – und von diesen
@@ -109,6 +109,14 @@ braucht es dafür nicht. Das Gerät braucht **kein eigenes Kalenderrecht:** Jede
 öffentliche Benutzer sieht. Der Fernseher fragt nur öffentliche Kalender ab – auch dann nicht andere, wenn sein Konto sie
 über Status oder eine andere Gruppe lesen dürfte. Gestalter können nur öffentliche Kalender wählen. Welche Kalender
 öffentlich sind, entscheidet die Gemeinde; es gilt auch für die Website und den öffentlichen Kalender.
+
+⁶ **Freigegebene interne Kalender.** Ein Administrator kann unter Einstellungen → „Interne Kalender für Bildschirme"
+einzelne nicht öffentliche Kalender freigeben. „Rechte aktualisieren" gibt dann der **Gerätegruppe und der
+Gestaltergruppe** „Einzelnen Kalender sehen" (403) auf genau diese Kalender – nur auf Kalender, die der Administrator
+sieht. Das Gerät liest sie damit samt Terminen (gemessen, Befunde G60); intern markierte Termine zeigt der Fernseher
+trotzdem nie, über die Adresse des Fernsehers sind sie aber lesbar. Der Fernseher folgt der Freigabe in den
+Einstellungen, nicht dem Recht: Endet die Freigabe, verschwindet der Kalender sofort; das Recht nimmt „Rechte
+aktualisieren" zurück und es wirkt bis zu einer halben Stunde nach.
 
 ### Ressourcen – für die Raumbelegung
 
@@ -186,7 +194,7 @@ der Assistent selbst angelegt hat**, und nur das, was er selbst verwaltet:
 
 | Im Assistenten | In der Rechteverwaltung (API) | Gruppe | Wann es wegfällt |
 | --- | --- | --- | --- |
-| Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | Gerät | Immer: Geräte sehen öffentliche Kalender über den öffentlichen Benutzer |
+| Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | Gerät, Gestalter | Der Kalender ist nicht (mehr) für Bildschirme freigegeben – öffentliche Kalender sieht das Gerät über den öffentlichen Benutzer (⁶ oben) |
 | Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | Gerät | Kein Baustein zeigt mehr Dienste dieses Kalenders |
 | Ressource sehen | Ressource sehen (`view resource`, 205) | Gerät, Gestalter | Der Raum ist kein Raum mehr in dem, was die Gruppe haben soll |
 | Anlegen von Bildschirmen und Einstellungen | `create custom data` | Gestalter, Gerät | immer – das ist Sache der Administratoren |

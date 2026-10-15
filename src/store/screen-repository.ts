@@ -216,6 +216,8 @@ export interface LoadedScreen extends ScreenBundle {
     allowedServiceIds: number[];
     /** The resource types that count as rooms (schema 1.35, Plan.md 86); missing = the type "Raum". */
     roomTypeIds?: number[];
+    /** The non-public calendars an administrator released for screens (schema 1.40, Plan.md 85 b); missing = none. */
+    screenCalendarIds?: number[];
     issues: ReadIssue[];
 }
 
@@ -478,7 +480,7 @@ export class ScreenRepository {
         const settings = await this.loadSettings().catch(() => null);
         const allowedServiceIds = settings?.allowedServiceIds ?? [];
         const roomTypeIds = settings?.roomTypeIds;
-        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, allowedServiceIds, roomTypeIds, issues };
+        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, issues };
     }
 
     /**

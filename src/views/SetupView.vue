@@ -70,7 +70,7 @@ type Side = 'designer' | 'device';
  * whichever page one starts on or moves to.
  */
 const route = useRoute();
-type SetupPage = 'overview' | 'groups' | 'tv' | 'wiki' | 'services' | 'rooms';
+type SetupPage = 'overview' | 'groups' | 'tv' | 'wiki' | 'services' | 'rooms' | 'calendars';
 const page = computed<SetupPage>(() => {
     switch (route.name) {
         case 'setup-groups':
@@ -83,6 +83,8 @@ const page = computed<SetupPage>(() => {
             return 'services';
         case 'setup-rooms':
             return 'rooms';
+        case 'setup-calendars':
+            return 'calendars';
         default:
             return 'overview';
     }
@@ -117,6 +119,11 @@ const HEADERS: Record<SetupPage, { icon: IconName; title: string; intro: string 
         icon: 'door',
         title: t.setup.rooms.title,
         intro: t.setup.rooms.intro,
+    },
+    calendars: {
+        icon: 'calendar',
+        title: t.setup.calendars.title,
+        intro: t.setup.calendars.intro,
     },
 };
 const header = computed(() => HEADERS[page.value]);
@@ -233,9 +240,9 @@ function moduleRights(side: Side): RequiredRight[] | null {
     return spec ? spec.grants.filter((g) => !NOT_MODULE.includes(g.authId)) : null;
 }
 
-/** Only public calendars get a right for their events; the rest is named by the check (Plan.md 73). */
+/** Only public and released calendars get a right for their events; the rest is named by the check (Plan.md 73, 85 b). */
 function grantableCalendars(ids: number[]): number[] {
-    const showable = new Set(publicCalendarIds);
+    const showable = new Set([...publicCalendarIds, ...releasedCalendars.value]);
     return ids.filter((id) => showable.has(id));
 }
 
@@ -265,6 +272,7 @@ function computePlan(): void {
             usedRoomIds,
             appointmentRooms,
             serviceCalendarIds: grantableCalendars(serviceCalendarIds),
+            screenCalendarIds: releasedCalendars.value,
         });
     } catch (e) {
         planProblem.value = explain(e);
@@ -363,6 +371,21 @@ function toggleRoomType(id: number, on: boolean): void {
     draftRoomTypes.value = on ? [...draftRoomTypes.value, id] : draftRoomTypes.value.filter((a) => a !== id);
 }
 
+/**
+ * The non-public calendars an administrator may release for screens (Plan.md 85 b): the ones the administrator sees and the public
+ * user does not. Null until loaded. `releasedCalendars` is the release as stored – only calendars that still exist and are not public –
+ * and `draftCalendars` the choice on the page until „Speichern".
+ */
+const internalCalendars = ref<Calendar[] | null>(null);
+const releasedCalendars = ref<number[]>([]);
+const draftCalendars = ref<number[]>([]);
+/** Most calendars the settings hold – the schema's limit. */
+const RELEASED_CALENDARS_MAX = 50;
+
+function toggleReleasedCalendar(id: number, on: boolean): void {
+    draftCalendars.value = on ? [...draftCalendars.value, id] : draftCalendars.value.filter((a) => a !== id);
+}
+
 /** The same ids, in any order. */
 const sameIds = (a: number[], b: number[]): boolean => a.length === b.length && a.every((id) => b.includes(id));
 const sortedIds = (ids: Iterable<number>, known: Set<number>): number[] => [...new Set(ids)].filter((id) => known.has(id)).sort((a, b) => a - b);
@@ -372,8 +395,8 @@ const sortedIds = (ids: Iterable<number>, known: Set<number>): number[] => [...n
  * head, „Verwerfen" brings back what is stored. Before, groups waited for a button below, services and rooms
  * saved at every click.
  */
-type FormPage = 'groups' | 'services' | 'rooms';
-const FORM_PAGES: SetupPage[] = ['groups', 'services', 'rooms'];
+type FormPage = 'groups' | 'services' | 'rooms' | 'calendars';
+const FORM_PAGES: SetupPage[] = ['groups', 'services', 'rooms', 'calendars'];
 const formPage = computed<FormPage | null>(() => (FORM_PAGES.includes(page.value) ? (page.value as FormPage) : null));
 const formState = ref<'idle' | 'saving' | 'saved'>('idle');
 
@@ -385,6 +408,8 @@ function dirtyOf(form: FormPage): boolean {
             return !!serviceList.value && !sameIds(draftServices.value, allowedServices.value);
         case 'rooms':
             return !!masterdata.value && !sameIds(draftRoomTypes.value, roomTypeIds.value);
+        case 'calendars':
+            return !!internalCalendars.value && !sameIds(draftCalendars.value, releasedCalendars.value);
     }
 }
 const formDirty = computed(() => (formPage.value ? dirtyOf(formPage.value) : false));
@@ -397,6 +422,8 @@ function discardForm(form: FormPage): void {
         for (const side of changed) void check(side);
     } else if (form === 'services') {
         draftServices.value = [...allowedServices.value];
+    } else if (form === 'calendars') {
+        draftCalendars.value = [...releasedCalendars.value];
     } else {
         draftRoomTypes.value = [...roomTypeIds.value];
     }
@@ -427,6 +454,15 @@ async function saveForm(): Promise<void> {
             draftRoomTypes.value = [...next];
             // Other rooms need other rights: plan and check anew.
             rooms = roomsOf(masterdata.value, next);
+            computePlan();
+            void Promise.all([check('designer'), check('device')]);
+        } else if (form === 'calendars' && internalCalendars.value) {
+            // A calendar that is gone or has become public leaves the release without a word.
+            const next = sortedIds(draftCalendars.value, new Set(internalCalendars.value.map((c) => c.id)));
+            await persistSettings({ screenCalendarIds: next });
+            releasedCalendars.value = next;
+            draftCalendars.value = [...next];
+            // Other calendars need other rights: plan and check anew.
             computePlan();
             void Promise.all([check('designer'), check('device')]);
         }
@@ -762,6 +798,7 @@ async function check(side: Side): Promise<void> {
                 usedRoomIds,
                 appointmentRooms,
                 serviceCalendarIds,
+                screenCalendarIds: releasedCalendars.value,
                 videoInUse,
                 wikiCategoryId,
                 moduleRights: moduleRights('device'),
@@ -843,6 +880,10 @@ onMounted(async () => {
         settingsLoaded.value = true;
         calendars = calendarList;
         publicCalendarIds = publicCalendars.map((c) => c.id);
+        const publicIds = new Set(publicCalendarIds);
+        internalCalendars.value = calendarList.filter((c) => !publicIds.has(c.id));
+        releasedCalendars.value = sortedIds(settings?.screenCalendarIds ?? [], new Set(internalCalendars.value.map((c) => c.id)));
+        draftCalendars.value = [...releasedCalendars.value];
         usedCalendarIds = used;
         rooms = resources ? roomsOf(resources, settings?.roomTypeIds) : [];
         usedRoomIds = usedRooms;
@@ -919,6 +960,15 @@ const roomsStatus = computed<CardStatus | null>(() => {
     return { tone: 'ok', text: names.length === 1 ? names[0]! : word.roomTypes(names.length) };
 });
 
+/** How many internal calendars are released; nothing to decide where all are public. */
+const calendarsStatus = computed<CardStatus | null>(() => {
+    const word = t.setup.overview.status;
+    if (!settingsLoaded.value || !internalCalendars.value) return null;
+    if (!internalCalendars.value.length) return { tone: 'neutral', text: word.allPublic };
+    const n = releasedCalendars.value.length;
+    return n ? { tone: 'warn', text: word.released(n) } : { tone: 'neutral', text: word.noneReleased };
+});
+
 /** The cards of the overview, each to a page of its own; the wiki card only where there is an area (as before). */
 const overviewCards = computed(() => {
     const wiki = settingsLoaded.value && wikiCategory.value && !demo.value;
@@ -931,6 +981,7 @@ const overviewCards = computed(() => {
     }
     cards.push({ key: 'services', route: 'setup-services', icon: 'person', title: t.setup.services.title, intro: t.setup.services.intro, status: servicesStatus.value });
     cards.push({ key: 'rooms', route: 'setup-rooms', icon: 'door', title: t.setup.rooms.title, intro: t.setup.rooms.intro, status: roomsStatus.value });
+    cards.push({ key: 'calendars', route: 'setup-calendars', icon: 'calendar', title: t.setup.calendars.title, intro: t.setup.calendars.intro, status: calendarsStatus.value });
     return cards;
 });
 
@@ -1236,6 +1287,31 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                 </label>
                             </div>
                         </template>
+                    </section>
+                </template>
+
+                <template v-if="page === 'calendars'">
+                    <!-- Plan.md 85 b: an administrator releases single non-public calendars for screens. -->
+                    <section class="d-card card" data-testid="screen-calendars">
+                        <p class="lead">{{ t.setup.calendars.lead }}</p>
+                        <p class="muted">{{ t.setup.calendars.detail }}</p>
+                        <p v-if="!internalCalendars" class="empty">{{ t.common.loading }}</p>
+                        <p v-else-if="!internalCalendars.length" class="muted" data-testid="screen-calendars-none">{{ t.setup.calendars.none }}</p>
+                        <div v-else class="d-choices">
+                            <label v-for="c in internalCalendars" :key="c.id" class="d-choice">
+                                <input
+                                    type="checkbox"
+                                    :checked="draftCalendars.includes(c.id)"
+                                    :disabled="!draftCalendars.includes(c.id) && draftCalendars.length >= RELEASED_CALENDARS_MAX"
+                                    data-testid="screen-calendar"
+                                    @change="toggleReleasedCalendar(c.id, ($event.target as HTMLInputElement).checked)"
+                                >
+                                <span class="d-choice-text">
+                                    <span>{{ c.name }}</span>
+                                    <small>{{ t.setup.calendars.notPublic }}</small>
+                                </span>
+                            </label>
+                        </div>
                     </section>
                 </template>
 

@@ -9,6 +9,8 @@ export interface InspectorContext {
     pickImage(kind: 'block' | 'background' | 'logo' | 'slideshow' | 'video'): void;
     readonly calendars: Calendar[];
     readonly hiddenCalendars?: Calendar[];
+    /** Of `calendars`, the ones that are not public but released for screens (Plan.md 85 b): marked as such. */
+    readonly releasedCalendarIds?: number[];
     readonly groups: PostGroup[];
     readonly homepages: HomepageEntry[];
     /** The rooms the designer may see; null while they are not loaded yet. */
@@ -31,7 +33,7 @@ export function useInspectorContext(): InspectorContext {
 }
 
 /** The lists of the context, read through a function so they follow whatever they come from (props, refs). */
-export type InspectorLists = Pick<InspectorContext, 'calendars' | 'hiddenCalendars' | 'groups' | 'homepages' | 'rooms' | 'roomTypeMissing' | 'services' | 'allowedServices' | 'servicesFailed' | 'tags'>;
+export type InspectorLists = Pick<InspectorContext, 'calendars' | 'hiddenCalendars' | 'releasedCalendarIds' | 'groups' | 'homepages' | 'rooms' | 'roomTypeMissing' | 'services' | 'allowedServices' | 'servicesFailed' | 'tags'>;
 
 /**
  * Hands the lists and the image picker to every inspector and short menu below the calling component (Plan.md 79, C1):
@@ -45,6 +47,9 @@ export function provideInspectorContext(lists: () => InspectorLists, pickImage: 
         },
         get hiddenCalendars() {
             return lists().hiddenCalendars;
+        },
+        get releasedCalendarIds() {
+            return lists().releasedCalendarIds;
         },
         get groups() {
             return lists().groups;

@@ -24,5 +24,5 @@ export function useCalendarChoice(block: () => CalendarBlock) {
     /** The chosen calendars a TV will not show, with names: not public (Plan.md 62). Ids in no list stay unnoticed. */
     const hidden = computed<Calendar[]>(() => (context.hiddenCalendars ?? []).filter((k) => block().calendarIds.includes(k.id)));
 
-    return { calendars: computed(() => context.calendars), hidden, toggleCalendar };
+    return { calendars: computed(() => context.calendars), hidden, released: computed(() => context.releasedCalendarIds ?? []), toggleCalendar };
 }

@@ -51,13 +51,14 @@ export interface PlayerData {
      * (schema 1.17, Plan.md 51): any failure – a 403 too – leaves out the services only.
      * `roomTypeIds`: the resource types that count as rooms (schema 1.35); missing = the type "Raum".
      * `tags`: the tags of the appointments come along (schema 1.37, Plan.md 82 C); without them `tagIds` stays empty.
+     * `releasedCalendarIds`: non-public calendars an administrator released for screens (schema 1.40, Plan.md 85 b).
      */
     appointments(
         calendarIds: number[],
         from: Date,
         to: Date,
         timeZone: string,
-        options?: { rooms?: boolean; services?: number[]; roomTypeIds?: number[]; tags?: boolean },
+        options?: { rooms?: boolean; services?: number[]; roomTypeIds?: number[]; tags?: boolean; releasedCalendarIds?: number[] },
     ): Promise<Appointment[]>;
     posts(groupIds: number[], limit: number): Promise<Post[]>;
     /**
@@ -123,8 +124,10 @@ export const churchToolsPlayerData: PlayerData = {
     async appointments(calendarIds, from, to, timeZone, options = {}) {
         const wantsRooms = options.rooms === true;
         const serviceIds = options.services ?? [];
-        // Only what the public user sees, even where the account may read more (Plan.md 73, G53). A failure here fails the fetch.
+        // Only what the public user sees plus what an administrator released, even where the account may read more
+        // (Plan.md 73, 85 b, G53). A failure here fails the fetch.
         const showable = new Set((await withTimeout(fetchPublicCalendars(instanceBaseUrl()))).map((c) => c.id));
+        for (const id of options.releasedCalendarIds ?? []) showable.add(id);
         const wanted = calendarIds.filter((id) => showable.has(id));
         if (!wanted.length) return [];
         const [raw, rooms, serviceInput] = await Promise.all([

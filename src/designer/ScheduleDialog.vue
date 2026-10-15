@@ -78,7 +78,7 @@ const canSave = computed(() => dirty.value && !problems.value.length && !saving.
 const ruleCalendarIds = computed(() => [
     ...new Set(rules.value.flatMap((r) => (r.kind === 'appointment' ? r.calendarIds : []))),
 ]);
-const { context, calendars, hiddenCalendars } = usePreview(
+const { context, calendars, hiddenCalendars, releasedCalendarIds } = usePreview(
     ruleCalendarIds,
     computed(() => []),
 );
@@ -455,7 +455,7 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                                             :checked="rule.calendarIds.includes(c.id)"
                                             @change="toggleCalendar(index, rule, c.id, ($event.target as HTMLInputElement).checked)"
                                         >
-                                        {{ c.name }}
+                                        {{ c.name }}<template v-if="releasedCalendarIds.includes(c.id)"> · {{ t.common.calendars.releasedBadge }}</template>
                                     </label>
                                     <span v-for="id in rule.calendarIds.filter((i) => !calendars.some((c) => c.id === i))" :key="id" class="muted small">
                                         {{ calendarName(id) }} {{ isHidden(id) ? t.schedules.dialog.calendarIgnored : t.schedules.dialog.calendarInvisible }}

@@ -20,12 +20,12 @@ const props = defineProps<{ block: Extract<Block, { type: 'countdown' }> }>();
 /** Only fields stand in the short menu; a hint or a line of text belongs to the inspector. */
 const mode = useInspectorMode();
 const { setBlock } = useBlockEdit(() => props.block);
-const { calendars, hidden, toggleCalendar } = useCalendarChoice(() => props.block);
+const { calendars, hidden, released, toggleCalendar } = useCalendarChoice(() => props.block);
 const { tags, toggleTag } = useTagChoice(() => props.block);
 </script>
 
 <template>
-    <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" @toggle="toggleCalendar" />
+    <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" :released="released" @toggle="toggleCalendar" />
     <!-- Plan.md 82 C: appointments with these tags stay off the screen. Without the tags (not loaded, unreadable) there is no field. -->
     <TagField v-if="tags" :tags="tags" :chosen-ids="block.hideTagIds ?? []" @toggle="toggleTag" />
     <ToggleField quick :model-value="block.showTitle" :label="t.inspector.showTitle" :quick-label="t.quick.short.title" testid="countdown-title" @update:model-value="setBlock({ showTitle: $event })" />

@@ -36,8 +36,9 @@ einem Text schreibt man direkt auf der Folie, in derselben Schrift und Größe, 
 Knopf wie „Bild wählen" oder „Adresse eingeben". Text gibt es in drei **Textstufen** – Überschrift, Untertitel, Text –,
 für quer und hochkant gleich groß.
 
-Termine kommen live aus den Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe. **Zur Wahl stehen nur öffentliche
-Kalender** – solche, die man in ChurchTools auch ohne Anmeldung sieht; ein „Rechte aktualisieren" braucht es dafür nicht.
+Termine kommen live aus den Kalendern von ChurchTools – hier als Karten mit Datumskachel und Kalenderfarbe. **Zur Wahl stehen öffentliche
+Kalender** – solche, die man in ChurchTools auch ohne Anmeldung sieht; ein „Rechte aktualisieren" braucht es dafür nicht –
+und einzelne nicht öffentliche, die ein Administrator in den Einstellungen für Bildschirme freigegeben hat (mit dem Zusatz „nicht öffentlich").
 Interne Termine (nur für angemeldete Benutzer) zeigt kein Fernseher. Hat ein Baustein einen Kalender, der nicht
 öffentlich ist, nennt ihn der Editor und bietet an, ihn zu entfernen; fehlt einer, sagt der Editor, wie man ihn in
 ChurchTools freigibt.

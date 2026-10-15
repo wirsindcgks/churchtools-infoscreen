@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * The calendars of a block (Plan.md 62): a foldable list of the public ones as switches, the same in every block that has
+ * The calendars of a block (Plan.md 62): a foldable list of the public ones – and released ones, marked "nicht öffentlich" (Plan.md 85 b) – as switches, the same in every block that has
  * calendars (Plan.md 79, B2: the short menu takes it with `quick`, as one chip "Kalender · 3" that opens the whole list). Status stays visible below it – no public calendar at all, and a chosen one that is not public.
  */
 import { computed } from 'vue';
@@ -11,7 +11,7 @@ import InspectorSection from './InspectorSection.vue';
 import ToggleField from './inspector/fields/ToggleField.vue';
 import QuickField from './inspector/fields/QuickField.vue';
 
-const props = defineProps<{ calendars: Calendar[]; chosenIds: number[]; hidden: Calendar[]; quick?: boolean }>();
+const props = defineProps<{ calendars: Calendar[]; chosenIds: number[]; hidden: Calendar[]; released?: number[]; quick?: boolean }>();
 const emit = defineEmits<{ toggle: [id: number, on: boolean] }>();
 
 const chosenCount = computed(() => props.calendars.filter((c) => props.chosenIds.includes(c.id)).length);
@@ -29,7 +29,7 @@ const summary = computed(() => t.common.countOf(chosenCount.value, props.calenda
                 :key="c.id"
                 quick
                 :model-value="chosenIds.includes(c.id)"
-                :label="c.name"
+                :label="released?.includes(c.id) ? `${c.name} · ${t.common.calendars.releasedBadge}` : c.name"
                 @update:model-value="emit('toggle', c.id, $event)"
             >
                 <template #before><span class="swatch" :style="{ background: calendarColor(c.color) ?? 'transparent' }" /></template>

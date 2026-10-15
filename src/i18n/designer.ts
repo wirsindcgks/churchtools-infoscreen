@@ -102,8 +102,9 @@ export const t = {
         calendars: {
             title: 'Kalender',
             info: (path: string) =>
-                'Zur Wahl stehen nur öffentliche Kalender. Öffentlich ist ein Kalender, den man in ChurchTools auch ohne ' +
+                'Zur Wahl stehen öffentliche Kalender und die, die ein Administrator für Bildschirme freigegeben hat. Öffentlich ist ein Kalender, den man in ChurchTools auch ohne ' +
                 `Anmeldung sieht. Fehlt einer, gibt ihn frei, wer in ChurchTools Berechtigungen verwalten darf: ${path}.`,
+            releasedBadge: 'nicht öffentlich',
             nonePublic: 'Kein Kalender ist öffentlich.',
             release: (path: string) => `Freigeben kann, wer in ChurchTools Berechtigungen verwalten darf: ${path}.`,
             notPublic: (name: string) => `${name} – nicht öffentlich, erscheint auf keinem Fernseher`,
@@ -1209,6 +1210,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 released: (n: number) => `${n} freigegeben`,
                 noneReleased: 'Keine freigegeben',
                 noRoomType: 'Kein Typ gewählt',
+                allPublic: 'Alle öffentlich',
                 noResources: 'Keine Ressourcen',
                 roomTypes: (n: number) => `${n} Typen`,
             },
@@ -1323,6 +1325,16 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             failed: 'Die Ressourcen konnten nicht geladen werden.',
             none: 'In ChurchTools gibt es keine Ressourcentypen.',
             empty: 'Keine Ressourcen',
+        },
+        calendars: {
+            title: 'Interne Kalender für Bildschirme',
+            intro: 'Welche nicht öffentlichen Kalender Fernseher zeigen dürfen.',
+            lead: 'Wer die Adresse eines Fernsehers kennt, kann einen freigegebenen Kalender ganz lesen, auch intern markierte Termine. Der Fernseher selbst zeigt intern markierte Termine nie.',
+            detail:
+                'Ohne Freigabe zeigt ein Fernseher nur öffentliche Kalender. Freigegebene Kalender sehen Gestalter und Fernseher nach „Rechte aktualisieren“. Nimmst du eine Freigabe zurück, verschwindet der Kalender sofort vom Fernseher; das Recht wirkt in ChurchTools noch bis zu einer halben Stunde nach.',
+            none: 'Alle Kalender sind öffentlich.',
+            failed: 'Die Kalender konnten nicht geladen werden.',
+            notPublic: 'nicht öffentlich',
         },
         wiki: {
             title: 'Mediathek im Wiki',
@@ -1494,6 +1506,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             roleRoomsDetail: 'Dann fehlen sie im Baustein „Raumbelegung". „Rechte aktualisieren" gibt sie den Gruppen des Assistenten.',
             noAppointments: 'Noch zeigt kein Bildschirm Termine.',
             calendarPublic: (name: string) => `„${name}" ist öffentlich.`,
+            calendarReleased: (name: string) => `„${name}": nicht öffentlich, für Bildschirme freigegeben.`,
             calendarFallback: (id: number) => `Kalender ${id}`,
             calendarNotPublic: (name: string) => `„${name}" ist nicht öffentlich – kein Fernseher zeigt ihn.`,
             calendarNotPublicDetail: (path: string) => `Freigeben: ${path}. Oder im Editor aus dem Baustein entfernen.`,

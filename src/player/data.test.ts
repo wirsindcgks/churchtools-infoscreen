@@ -285,6 +285,27 @@ describe('churchToolsPlayerData.appointments – only public calendars (Plan.md 
         expect(api.fetchAppointments).not.toHaveBeenCalled();
     });
 
+    it('adds the calendars an administrator released – and still only those (Plan.md 85 b)', async () => {
+        vi.mocked(api.fetchPublicCalendars).mockResolvedValue([calendar(2)]);
+        vi.mocked(api.fetchAppointments).mockClear();
+        vi.mocked(api.fetchAppointments).mockResolvedValue([]);
+        await churchToolsPlayerData.appointments([2, 3, 4], from, to, 'Europe/Berlin', { releasedCalendarIds: [3] });
+        expect(vi.mocked(api.fetchAppointments).mock.calls[0]![0]).toEqual([2, 3]);
+    });
+
+    it('keeps an internal appointment of a released calendar off the screen (Plan.md 85 b)', async () => {
+        const raw = (id: number, isInternal: boolean) => ({
+            appointment: {
+                base: { id, title: `T${id}`, allDay: false, isInternal, calendar: { id: 3, name: 'Leitung', color: 'black' } },
+                calculated: { startDate: '2026-10-04T08:00:00Z', endDate: '2026-10-04T09:30:00Z' },
+            },
+        });
+        vi.mocked(api.fetchPublicCalendars).mockResolvedValue([calendar(2)]);
+        vi.mocked(api.fetchAppointments).mockResolvedValue([raw(1, true), raw(2, false)]);
+        const list = await churchToolsPlayerData.appointments([3], from, to, 'Europe/Berlin', { releasedCalendarIds: [3] });
+        expect(list.map((a) => a.title)).toEqual(['T2']);
+    });
+
     it('fails when the calendars cannot be read', async () => {
         vi.mocked(api.fetchPublicCalendars).mockRejectedValue(new Error('offline'));
         await expect(churchToolsPlayerData.appointments([2], from, to, 'Europe/Berlin')).rejects.toThrow('offline');

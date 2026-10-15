@@ -183,7 +183,7 @@ Auf dem Tablet steht das Kurzmenü wie am Rechner über dem Baustein; Tippen, Zi
 - **Neuer Kalender auf einem Bildschirm** – in einer Terminliste, einem Countdown oder einer Termin-Regel? Zur Wahl
   stehen nur öffentliche Kalender, also solche, die man in ChurchTools auch ohne Anmeldung sieht; die zeigen die
   Fernseher ohne weiteren Handgriff. Fehlt einer, kann ihn ein Administrator freigeben – den Weg nennt das (i) am
-  Kalender-Feld. Ein interner Kalender erscheint auf keinem Fernseher.
+  Kalender-Feld. Ein interner Kalender erscheint auf keinem Fernseher, es sei denn, ein Administrator hat ihn unter „Einstellungen → Interne Kalender für Bildschirme“ freigegeben.
 - **Sagt die Startseite „Dir fehlen Rechte"**, nennt sie das Recht – gib die Meldung an einen Administrator weiter.
 - **Was neu ist**, steht unter **„Über & Neuigkeiten"** unten in der Seitenleiste; ein blauer Punkt zeigt eine neue
   Version an.

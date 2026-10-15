@@ -22,7 +22,7 @@ import AppointmentExtras from './AppointmentExtras.vue';
 const props = defineProps<{ block: Extract<Block, { type: 'next-appointment' }> }>();
 const stage = useStageContext();
 const { setBlock } = useBlockEdit(() => props.block);
-const { calendars, hidden, toggleCalendar } = useCalendarChoice(() => props.block);
+const { calendars, hidden, released, toggleCalendar } = useCalendarChoice(() => props.block);
 const { tags, toggleTag } = useTagChoice(() => props.block);
 
 const layouts = computed(() => nextAppointmentTiles(props.block, themeOf(stage)));
@@ -31,7 +31,7 @@ const card = computed(() => nextLayout(props.block, themeOf(stage)) === 'card');
 </script>
 
 <template>
-    <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" @toggle="toggleCalendar" />
+    <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" :released="released" @toggle="toggleCalendar" />
     <!-- Plan.md 82 C: appointments with these tags stay off the screen. Without the tags (not loaded, unreadable) there is no field. -->
     <TagField v-if="tags" :tags="tags" :chosen-ids="block.hideTagIds ?? []" @toggle="toggleTag" />
     <!-- Plan.md, 20: the highlighted event of the WordPress plugin. '' follows the theme (Plan.md 27). -->

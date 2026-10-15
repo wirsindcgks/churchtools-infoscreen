@@ -27,7 +27,7 @@ test('the inspector offers no calendar that is not public, and names one the blo
     await openSection(page, 'calendars');
     const calendars = page.getByTestId('section-calendars');
     await calendars.getByRole('button', { name: 'Erklärung' }).click();
-    await expect(calendars.getByText('Zur Wahl stehen nur öffentliche Kalender.')).toBeVisible();
+    await expect(calendars.getByText('Zur Wahl stehen öffentliche Kalender und die, die ein Administrator für Bildschirme freigegeben hat.')).toBeVisible();
     await expect(inspector.getByRole('switch', { name: 'Gottesdienst' })).toBeChecked();
     await expect(inspector.getByRole('switch', { name: 'Gemeindeleitung' })).toHaveCount(0);
 
@@ -54,4 +54,35 @@ test('the inspector says so, with the way to release one, when no calendar is pu
     await expect(inspector.getByTestId('no-public-calendars')).toContainText(
         'Berechtigungen → Benutzer → „Öffentlicher Benutzer" → Kalender → „Einzelnen Kalender sehen"',
     );
+});
+
+/**
+ * An administrator releases an internal calendar in the settings (Plan.md 85 b); the editor then offers it, marked as not public.
+ * The calendars are made up as above; saving writes only the demo store of this browser.
+ */
+test('a released calendar is on offer in the editor, marked as not public', async ({ page }) => {
+    const one = { id: 1, name: 'Sonstige Veranstaltung' };
+    const two = { id: 2, name: 'Gottesdienst' };
+    await page.route(/\/api\/calendars(\?|$)/, (route) =>
+        route.fulfill({
+            json: { data: isAnonymous(route.request()) ? [one, two] : [one, two, { id: 3, name: 'Gemeindeleitung' }] },
+        }),
+    );
+    await page.route(/\/api\/calendars\/appointments/, (route) => route.fulfill({ json: { data: [] } }));
+
+    await page.goto('./einstellungen/kalender');
+    await expect(page.getByTestId('screen-calendars')).toContainText('Der Fernseher selbst zeigt intern markierte Termine nie.');
+    await expect(page.getByTestId('screen-calendar')).toHaveCount(1);
+    await page.getByRole('checkbox', { name: /Gemeindeleitung/ }).check();
+    await page.getByTestId('settings-save').click();
+    await expect(page.getByTestId('settings-saved')).toBeVisible();
+
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await page.getByTestId('slide-item').nth(2).click();
+    await page.getByTestId('frame-appointment-list').first().click();
+    const inspector = page.getByTestId('block-inspector');
+    await openSection(page, 'calendars');
+    await expect(inspector.getByRole('switch', { name: 'Gemeindeleitung · nicht öffentlich' })).toBeChecked();
+    await expect(inspector.getByTestId('hidden-calendar-3')).toHaveCount(0);
 });

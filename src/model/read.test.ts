@@ -14,7 +14,7 @@ import {
     withOwnAddresses,
 } from './read';
 import { DEFAULT_FONT } from '../player/fonts';
-import { isVideo, MediaDoc, PlaylistDoc, SCHEMA_VERSION, THEME_ID, type SlideDoc } from './schema';
+import { isVideo, MediaDoc, PlaylistDoc, SCHEMA_VERSION, SettingsDoc, THEME_ID, type SlideDoc } from './schema';
 import { makePlaylist, makeSlide, makeScreen, textBlock } from './testing';
 
 describe('readSlide – tolerant towards newer data', () => {
@@ -565,6 +565,18 @@ describe('the progress bar of a playlist (schema 1.39, Plan.md 86)', () => {
             updatedAt: '2026-10-15T10:00:00.000Z',
         };
         expect(readDraft(JSON.parse(serialize(draft))).doc).toEqual(draft);
+    });
+});
+
+describe('the released calendars of the settings (schema 1.40, Plan.md 85 b)', () => {
+    const settings = { schema: { ...SCHEMA_VERSION }, kind: 'settings' as const, id: 'settings' };
+
+    it('are a list of whole numbers, and may be missing', () => {
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(40);
+        expect(v.parse(SettingsDoc, { ...settings, screenCalendarIds: [3, 7] }).screenCalendarIds).toEqual([3, 7]);
+        expect(v.parse(SettingsDoc, settings).screenCalendarIds).toBeUndefined();
+        expect(v.safeParse(SettingsDoc, { ...settings, screenCalendarIds: [1.5] }).success).toBe(false);
+        expect(v.safeParse(SettingsDoc, { ...settings, screenCalendarIds: Array.from({ length: 51 }, (_, i) => i) }).success).toBe(false);
     });
 });
 
