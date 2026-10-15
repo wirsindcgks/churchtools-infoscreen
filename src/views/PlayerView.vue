@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { enableTokenLogin } from '../ct/client';
 import type { MediaDoc, SlideDoc } from '../model/schema';
-import { imageSource, provideStageContext, type StageContext } from '../player/context';
+import { imageSource, provideStageContext, themeOf, type StageContext } from '../player/context';
 import { browserDeps, createPlayer } from '../player/controller';
 import { createChurchToolsPlayerData } from '../player/data';
 import { readDeviceLogin, reloadWithDeviceLogin, withDeviceLogin } from '../player/device-login';
@@ -15,8 +15,9 @@ import { activePlaylistId } from '../player/schedule';
 import { registerPlayerServiceWorker } from '../player/service-worker';
 import { fitStage } from '../player/stage';
 import { loadingVars } from '../player/theme';
-import { bannerShown } from '../player/banner';
+import { bandInset, bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
+import ProgressBar from '../player/ProgressBar.vue';
 import SlideView from '../player/SlideView.vue';
 import { onStoreChanged } from '../store/backend';
 import StageView from '../player/StageView.vue';
@@ -147,7 +148,7 @@ const banner = computed(() => {
     return bannerShown(band, context.now, context.timeZone) ? band : null;
 });
 
-const { index, current, scheduleNext } = useRotation(slides, () => context.pages ?? {});
+const { index, current, scheduleNext, startedAt, heldAt, seconds } = useRotation(slides, () => context.pages ?? {});
 
 const preload = createPreloader();
 watch(
@@ -244,6 +245,14 @@ onBeforeUnmount(() => {
                 </Transition>
                 <p v-if="!current" class="stage-message">{{ tp.noActiveSlide }}</p>
                 <BannerView v-if="banner" :banner="banner" :stage-width="stage.width" />
+                <ProgressBar
+                    v-if="playlist?.progress && current"
+                    :started-at="startedAt"
+                    :seconds="seconds"
+                    :held="heldAt"
+                    :bottom="bandInset(banner)"
+                    :color="themeOf(context).accent"
+                />
             </StageView>
             <!-- Old content with a discreet marker beats a black screen. -->
             <span v-if="state.staleSince" class="stale" data-testid="stale" :title="tp.noConnection" />

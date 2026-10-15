@@ -180,6 +180,14 @@ const backgroundColors = computed(() => {
                     testid="playlist-name-input"
                     @update:model-value="editor.renamePlaylist($event)"
                 />
+                <ToggleField
+                    :model-value="!!editor.draft.playlist.progress"
+                    :label="t.inspector.progress"
+                    testid="playlist-progress"
+                    @update:model-value="editor.setProgress($event)"
+                >
+                    <template #info>{{ t.inspector.progressInfo }}</template>
+                </ToggleField>
                 <dl>
                     <dt>{{ t.inspector.format }}</dt>
                     <dd>

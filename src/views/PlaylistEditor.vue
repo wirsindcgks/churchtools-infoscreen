@@ -962,6 +962,7 @@ function onKey(event: KeyboardEvent): void {
             :slides="editor.slides"
             :stage="editor.stage"
             :banner="editor.draft.playlist.banner"
+            :progress="editor.draft.playlist.progress"
             :start-slide-id="editor.slide?.id"
             @close="previewing = false"
         />

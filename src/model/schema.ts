@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 38 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 39 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -530,6 +530,8 @@ export const PlaylistDraftDoc = v.object({
     id: Id,
     name: v.pipe(v.string(), v.maxLength(100)),
     slideIds: v.array(Id),
+    /** Since 1.39, as on the playlist. */
+    progress: v.optional(v.boolean()),
     /** Counts up with every save; the second designer saving against an older one gets a conflict. */
     revision: v.pipe(v.number(), v.integer(), v.minValue(1)),
     updatedBy: v.string(),
@@ -564,6 +566,8 @@ export const PlaylistDoc = v.object({
     stage: v.optional(Stage),
     /** Since 1.10: running text or a notice over every slide. */
     banner: v.optional(Banner),
+    /** Since 1.39: a thin bar at the bottom of the stage shows how long the slide stays (Plan.md 86). Missing = off. */
+    progress: v.optional(v.boolean()),
     /** The designers save against it; missing counts as 0. */
     revision: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
     updatedBy: v.optional(v.string()),

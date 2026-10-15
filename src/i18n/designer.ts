@@ -681,6 +681,8 @@ export const t = {
         scheduleInfo:
             'Auf welchem Bildschirm sie wann läuft, legt der Zeitplan des Bildschirms fest – unter „Zeitpläne" oder an ' +
             'der Kachel des Bildschirms. Veröffentlichen ändert alle Bildschirme, die sie zeigen.',
+        progress: 'Fortschrittsbalken',
+        progressInfo: 'Ein dünner Balken am unteren Rand zeigt, wie lange die Folie noch steht.',
         bannerRunningBefore: (text: string) => `Hinweisband: „${text}" – bearbeiten unter`,
         bannerNoneBefore: 'Kein Hinweisband – anlegen unter',
         bannerLink: 'Hinweise',

@@ -243,7 +243,9 @@ einer Folie zählt dabei nicht.
 Eine Präsentation ist der Inhalt eines Bildschirms und kann auf mehreren Bildschirmen laufen. Duplizieren ergibt eine Kopie mit
 eigenen Folien – oder auf Wunsch eine Präsentation mit denselben, verknüpften Folien. Jede Kachel zeigt, wann die
 Präsentation oder eine ihrer Folien zuletzt geändert wurde und von wem; liegt ein Entwurf vor, trägt sie die Marke
-„Entwurf".
+„Entwurf". Im Inspektor der Folie, Abschnitt „Präsentation", zeigt der Schalter „Fortschrittsbalken" am unteren Rand der
+Bildfläche einen dünnen Balken in der Akzentfarbe des Designs, der anzeigt, wie lange die Folie noch steht; er sitzt auf dem Hinweisband,
+wenn dieses unten steht, und steht still, solange die Vorschau angehalten ist.
 
 ![Präsentationen als Kacheln mit Format, Zahl der Folien und den Bildschirmen, die sie zeigen](bilder/playlists.png)
 

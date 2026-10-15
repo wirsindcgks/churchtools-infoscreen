@@ -713,6 +713,7 @@ export class ScreenRepository {
             name: tr.copyOf(source.playlist.name),
             slideIds: slides.map((s) => s.id),
             stage: { ...source.playlist.stage },
+            ...(source.playlist.progress ? { progress: true } : {}),
             revision: 1,
             updatedBy,
             updatedAt: time,

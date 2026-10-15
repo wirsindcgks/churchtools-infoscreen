@@ -14,8 +14,8 @@ import {
     withOwnAddresses,
 } from './read';
 import { DEFAULT_FONT } from '../player/fonts';
-import { isVideo, MediaDoc, SCHEMA_VERSION, THEME_ID, type SlideDoc } from './schema';
-import { makeSlide, makeScreen, textBlock } from './testing';
+import { isVideo, MediaDoc, PlaylistDoc, SCHEMA_VERSION, THEME_ID, type SlideDoc } from './schema';
+import { makePlaylist, makeSlide, makeScreen, textBlock } from './testing';
 
 describe('readSlide – tolerant towards newer data', () => {
     it('skips a block of an unknown type and keeps the rest', () => {
@@ -546,6 +546,25 @@ describe('readDraft and serialize – drafts (schema 1.28, Plan.md 79)', () => {
         expect(() => readDraft({ ...playlistDraft, kind: 'slide' })).toThrow(InvalidDocumentError);
         const big = slideDraft(makeSlide({ blocks: [textBlock('a', 'x'.repeat(MAX_VALUE_LENGTH))] }));
         expect(() => serialize(big)).toThrow(ValueTooLargeError);
+    });
+});
+
+describe('the progress bar of a playlist (schema 1.39, Plan.md 86)', () => {
+    it('is accepted on the playlist and on its draft, and may be missing', () => {
+        expect(v.parse(PlaylistDoc, makePlaylist({ progress: true })).progress).toBe(true);
+        expect(v.parse(PlaylistDoc, makePlaylist()).progress).toBeUndefined();
+        const draft = {
+            schema: { ...SCHEMA_VERSION },
+            kind: 'playlist-draft' as const,
+            id: 'p1',
+            name: 'Sonntag',
+            slideIds: [],
+            progress: true,
+            revision: 1,
+            updatedBy: 'Anna',
+            updatedAt: '2026-10-15T10:00:00.000Z',
+        };
+        expect(readDraft(JSON.parse(serialize(draft))).doc).toEqual(draft);
     });
 });
 

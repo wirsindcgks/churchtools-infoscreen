@@ -94,4 +94,14 @@ describe('the inspector of the slide (Plan.md 79, B2)', () => {
         await wrapper.get('[data-testid="background-kind"] input[value="solid"]').setValue(true);
         expect(editor.slide!.background).toEqual({ kind: 'solid', color: '#000000' });
     });
+
+    it('switches the progress bar of the playlist on and off', async () => {
+        const { editor, wrapper } = await setup();
+        const toggle = wrapper.get<HTMLInputElement>('[data-testid="playlist-progress"]');
+        expect(toggle.element.checked).toBe(false);
+        await toggle.setValue(true);
+        expect(editor.draft!.playlist.progress).toBe(true);
+        await toggle.setValue(false);
+        expect(editor.draft!.playlist.progress).toBeUndefined();
+    });
 });

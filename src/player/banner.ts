@@ -20,3 +20,8 @@ export function wallTime(now: Date, timeZone: string): string {
 export function passSeconds(stageWidth: number, textWidth: number, speed: number): number {
     return (stageWidth + textWidth) / Math.max(1, speed);
 }
+
+/** How far a bar must stand above the stage's bottom edge to sit on the band's upper edge; 0 without a band there. */
+export function bandInset(banner: Banner | null | undefined): number {
+    return banner && banner.position !== 'top' ? (banner.height ?? 90) : 0;
+}

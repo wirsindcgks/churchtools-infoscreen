@@ -7,11 +7,11 @@
  */
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import type { Banner, SlideDoc } from '../model/schema';
-import { bannerShown } from '../player/banner';
+import { bandInset, bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
-import { provideStageContext, useStageContext, type StageContext } from '../player/context';
-import { slideSeconds } from '../player/paging';
+import { provideStageContext, themeOf, useStageContext, type StageContext } from '../player/context';
 import { useRotation } from '../player/rotation';
+import ProgressBar from '../player/ProgressBar.vue';
 import SlideView from '../player/SlideView.vue';
 import { fitStage } from '../player/stage';
 import StageView from '../player/StageView.vue';
@@ -24,6 +24,8 @@ const props = defineProps<{
     startSlideId?: string;
     /** The playlist's band, as the TV shows it over every slide (Plan.md 32). */
     banner?: Banner | null;
+    /** The playlist's progress bar (schema 1.39, Plan.md 86). */
+    progress?: boolean;
 }>();
 const emit = defineEmits<{ close: [] }>();
 
@@ -76,10 +78,10 @@ provideStageContext(context);
 /** Only what the TV shows: switched-off slides are left out, as there. */
 const shown = computed(() => props.slides.filter((s) => s.enabled));
 const rotation = useRotation(shown, () => context.pages ?? {});
-const { current, index } = rotation;
+const { current, index, startedAt, heldAt } = rotation;
 watch(paused, (value) => rotation.setPaused(value));
 
-const seconds = computed(() => (current.value ? slideSeconds(current.value, context.pages ?? {}) : 0));
+const seconds = rotation.seconds;
 
 const viewport = reactive({ width: window.innerWidth, height: window.innerHeight });
 const fit = computed(() => fitStage(viewport, props.stage));
@@ -143,6 +145,14 @@ onBeforeUnmount(() => {
             </Transition>
             <p v-if="!current" class="stage-message">{{ t.editor.previewDialog.noActive }}</p>
             <BannerView v-if="bannerShown(banner, parent.now, parent.timeZone)" :banner="banner!" :stage-width="stage.width" />
+            <ProgressBar
+                v-if="progress && current"
+                :started-at="startedAt"
+                :seconds="seconds"
+                :held="heldAt"
+                :bottom="bannerShown(banner, parent.now, parent.timeZone) ? bandInset(banner) : 0"
+                :color="themeOf(context).accent"
+            />
         </StageView>
 
         <div class="controls" data-testid="preview-controls">

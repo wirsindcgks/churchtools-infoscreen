@@ -16,15 +16,24 @@ export function useRotation(slides: Readonly<Ref<SlideDoc[]>>, pages: () => Read
     const paused = ref(false);
     const current = computed(() => (slides.value.length ? slides.value[index.value % slides.value.length] : null));
 
+    /** When the slide on show began (ms) – what a progress bar counts from. */
+    const startedAt = ref(Date.now());
+    /** Milliseconds the slide had run when it was held; `null` while it runs. */
+    const heldAt = ref<number | null>(null);
+    /** How long the slide on show stays (s); grows once a paged list has measured its pages. */
+    const seconds = computed(() => (current.value ? slideSeconds(current.value, pages()) : 0));
+
     let rotation: ReturnType<typeof setTimeout> | undefined;
     function scheduleNext(): void {
         clearTimeout(rotation);
         if (paused.value) return;
-        const startedAt = Date.now();
+        const began = Date.now();
+        startedAt.value = began;
+        heldAt.value = null;
         const wait = (ms: number) => {
             rotation = setTimeout(() => {
                 const needed = (current.value ? slideSeconds(current.value, pages()) : 10) * 1000;
-                const left = needed - (Date.now() - startedAt);
+                const left = needed - (Date.now() - began);
                 if (left > 100) return wait(left);
                 index.value = slides.value.length ? (index.value + 1) % slides.value.length : 0;
                 scheduleNext();
@@ -38,11 +47,17 @@ export function useRotation(slides: Readonly<Ref<SlideDoc[]>>, pages: () => Read
         const count = slides.value.length;
         if (!count) return;
         index.value = (((index.value + by) % count) + count) % count;
+        // Held, the new slide has not run yet: its bar stands at the start.
+        if (paused.value) {
+            startedAt.value = Date.now();
+            heldAt.value = 0;
+        }
         scheduleNext();
     }
 
     function setPaused(value: boolean): void {
         paused.value = value;
+        if (value && heldAt.value === null) heldAt.value = Date.now() - startedAt.value;
         scheduleNext();
     }
 
@@ -68,5 +83,5 @@ export function useRotation(slides: Readonly<Ref<SlideDoc[]>>, pages: () => Read
     );
     onBeforeUnmount(() => clearTimeout(rotation));
 
-    return { index, current, paused, scheduleNext, step, setPaused };
+    return { index, current, paused, startedAt, heldAt, seconds, scheduleNext, step, setPaused };
 }

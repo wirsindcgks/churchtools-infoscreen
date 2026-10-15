@@ -186,6 +186,17 @@ describe('editor store', () => {
         expect((await repository.loadPlaylist(playlistId)).playlist.name).toBe('Gottesdienst');
     });
 
+    it('keeps the progress bar through draft and publishing; off is saved as missing', async () => {
+        const { editor, repository, playlistId } = await setup();
+        editor.setProgress(true);
+        expect(await editor.publish()).toBe(true);
+        expect((await repository.loadPlaylist(playlistId)).playlist.progress).toBe(true);
+        editor.setProgress(false);
+        expect(editor.draft!.playlist).not.toHaveProperty('progress', false);
+        expect(await editor.publish()).toBe(true);
+        expect((await repository.loadPlaylist(playlistId)).playlist.progress).toBeUndefined();
+    });
+
     it('stops at a conflict and lets the user decide', async () => {
         const { editor, repository, playlistId } = await setup();
         // Another designer saves in between.
