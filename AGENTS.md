@@ -68,7 +68,7 @@ und Iststand in `Plan.md`, Punkt 88.
 - **Lose steht nur der Inhalt** (was den Baustein füllt), alles andere in einem Klappmenü, immer `InspectorSection`.
 - **„Darstellung" ist immer ein Klappmenü** (Kacheln zuerst, dann Zeitraum, Anzahl, Dauer, Schalter, Farben), nie die
   Beschriftung eines Feldes. **„Schrift"** enthält nur, was den Text betrifft.
-- **Von selbst offen ist nur „Darstellung"** (ohne sie „Schrift").
+- **Zum Start sind alle Klappmenüs zu** (Ausnahme: „Bausteine dieser Folie", wenn nichts gewählt ist).
 - **Jedes Klappmenü hat eine Zusammenfassung in Worten;** Titel höchstens drei Wörter.
 - **Das (i) am Ende der Zeile, die es erklärt,** oder im Titel des Klappmenüs – nie eine Zeile nur fürs (i).
 - **Ein Bedienelement je Art,** Felder untereinander, kein Klappmenü im Klappmenü.

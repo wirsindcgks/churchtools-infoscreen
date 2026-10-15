@@ -106,7 +106,7 @@ function remove(index: number): void {
         </InspectorSection>
     </QuickField>
 
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="look" default-open>
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="look">
         <SegmentField quick stacked :model-value="block.layout ?? 'column'" :options="layouts" :label="t.inspector.socialLayout" testid="social-layout" @update:model-value="setBlock({ layout: $event as 'column' | 'row' })" />
         <ToggleField quick :model-value="block.brandColors !== false" :label="t.inspector.socialBrand" testid="social-brand" @update:model-value="setBlock({ brandColors: $event })" />
     </InspectorSection>

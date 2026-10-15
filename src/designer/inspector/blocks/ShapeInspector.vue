@@ -37,7 +37,7 @@ function setBorderWidth(width: number): void {
 </script>
 
 <template>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" default-open>
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
         <SegmentField quick :model-value="block.shape ?? 'rect'" :options="forms" :label="t.inspector.shapeForm" testid="shape-form" @update:model-value="setBlock({ shape: $event })" />
         <FillEditor quick :model-value="block.fill" @focus="edit.onFocus" @blur="edit.onBlur" @update:model-value="setBlock({ fill: $event })" />
         <NumberField v-if="!ellipse" quick :model-value="block.cornerRadius ?? 0" :label="t.inspector.cornerRadius" unit="px" :min="0" testid="shape-corners" @update:model-value="setBlock({ cornerRadius: $event })" />

@@ -63,7 +63,7 @@ function setUrl(pasted: string): void {
     </TextField>
     <p v-if="mode === 'full' && embedProblemBlock === block.id" class="hint" data-testid="web-problem">{{ t.inspector.webNoAddressInCode }}</p>
     <p v-else-if="mode === 'full' && webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="zooms.find((z) => z.value === block.zoom)?.label" default-open>
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="zooms.find((z) => z.value === block.zoom)?.label">
         <SelectField quick :model-value="block.zoom" :options="zooms" :label="t.inspector.webSize" testid="web-zoom" @update:model-value="setBlock({ zoom: Number($event) })" />
     </InspectorSection>
 </template>

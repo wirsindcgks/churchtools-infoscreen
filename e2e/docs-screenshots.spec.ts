@@ -418,6 +418,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await page.getByTestId('slide-item').nth(2).click();
     await page.getByTestId('frame-appointment-list').first().click();
     // The place goes before the room (0.17.1): where the appointment has a place, only that stands.
+    await openSection(page, 'appearance');
     await page.getByTestId('show-rooms').check();
     await expect(page.locator('.editor-stage').getByTestId('list-place').first()).toContainText('Kirchsaal');
     await expect(page.getByTestId('quick-menu')).toBeVisible(); // the short menu over the list (Plan.md 79, C1)
@@ -439,6 +440,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await addBlock(page, 'groups');
     await page.getByTestId('groups-homepage').selectOption('40');
     await frame(page, { x: 60, y: 60, width: 1800, height: 960 });
+    await openSection(page, 'appearance');
     await choose(page, 'groups-per-page', '2');
     // A font as a church would set it for two cards a page; the default (56 px) is meant for one.
     await openSection(page, 'font');
@@ -462,6 +464,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await expect(library).toBeHidden();
     await openSection(page, 'slideshow-images');
     await expect(page.getByTestId('slideshow-row')).toHaveCount(3);
+    await openSection(page, 'appearance');
     await page.getByTestId('slideshow-seconds').fill('8');
     await page.getByTestId('slideshow-seconds').blur();
     await shoot(page, 'galerie');
@@ -483,6 +486,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await frame(page, { x: 160, y: 140, width: 1600, height: 800 });
     await page.getByTestId('rooms-add-all').click();
     await openSection(page, 'room-list');
+    await openSection(page, 'appearance');
     await page.getByTestId('room-entry').nth(0).getByTestId('room-hint').fill('Erdgeschoss');
     await page.getByTestId('room-entry').nth(1).getByTestId('room-hint').fill('1. OG, links');
     await page.getByTestId('room-entry').nth(2).getByTestId('room-hint').fill('Untergeschoss');
@@ -492,6 +496,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     // Posts of ChurchTools groups (Plan.md 33).
     await page.getByTestId('add-slide').click();
     await addBlock(page, 'posts');
+    await openSection(page, 'appearance');
     await openSection(page, 'post-groups');
     await page.getByTestId('post-group-42').check();
     await page.getByTestId('post-group-44').check();

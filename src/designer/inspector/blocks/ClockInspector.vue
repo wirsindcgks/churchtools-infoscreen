@@ -18,7 +18,7 @@ const formats = [
 </script>
 
 <template>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="formats.find((f) => f.value === block.format)?.label" default-open>
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="formats.find((f) => f.value === block.format)?.label">
         <TileField quick :model-value="block.format" :options="formats" :label="t.inspector.view" testid="clock-format" @update:model-value="setBlock({ format: $event })" />
     </InspectorSection>
     <FontSection :block="block" effects="shadow" />

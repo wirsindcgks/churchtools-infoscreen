@@ -52,7 +52,7 @@ function toggleGroup(id: number, on: boolean): void {
             </p>
         </InspectorSection>
     </QuickField>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" default-open>
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
         <TileField quick :model-value="block.layout" :options="POSTS_TILES" :label="t.inspector.view" testid="posts-layout" @update:model-value="setBlock({ layout: $event })" />
         <NumberField :model-value="block.limit" :label="t.inspector.count" :min="1" :max="10" testid="posts-limit" @update:model-value="setBlock({ limit: $event })" />
         <NumberField

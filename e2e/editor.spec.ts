@@ -179,6 +179,7 @@ test('the header block shows the church logo in the size of the block (G29)', as
     await page.getByTestId('open-editor').first().click();
     await page.getByTestId('frame-church-header').first().click();
     // The short menu above the block has this switch, too (Plan.md 79, C1); the inspector's is the one under test.
+    await openSection(page, 'appearance');
     await page.getByTestId('block-inspector').getByTestId('show-logo').check();
     const logo = page.locator('.editor-stage .block--church-header img');
     await expect(logo).toBeVisible();
@@ -1046,6 +1047,7 @@ test('an appointment list shows every appointment page by page; the inspector sa
     await page.getByTestId('slide-item').nth(2).click();
     await page.getByTestId('frame-appointment-list').first().click();
     await expect(page.getByTestId('page-seconds')).toHaveCount(0);
+    await openSection(page, 'appearance');
     await page.getByTestId('show-all').check();
     await expect(page.getByTestId('page-seconds')).toHaveValue('10');
     await expect(page.getByTestId('page-hint')).toContainText(/Alle Termine passen auf eine Seite|Ergibt \d+ Seiten/);
@@ -1109,6 +1111,7 @@ test('in the preview a long appointment list turns its pages, with a bar filling
     await page.getByTestId('open-editor').first().click();
     await page.getByTestId('slide-item').nth(2).click();
     await page.getByTestId('frame-appointment-list').first().click();
+    await openSection(page, 'appearance');
     await page.getByTestId('show-all').check();
     // 3 pages × 10 s outlast the slide's 12 s: the slide list and the duration field say so.
     await expect(page.getByTestId('page-hint')).toContainText('Ergibt 3 Seiten à 10 s – die Folie läuft dafür 30 s statt 12 s');
@@ -1239,6 +1242,7 @@ test('a countdown to the next appointment, and the band moved to "Hinweise" (Pla
     // The mocked appointments start tomorrow at the earliest: days and hours.
     await expect(stage.getByTestId('countdown-time')).toHaveText(/^\d+ Tag(e)? \d+ Std\.$|^\d+:\d{2}:\d{2}$/);
     await expect(stage.getByTestId('countdown')).toContainText('beginnt in');
+    await openSection(page, 'appearance');
     await page.getByTestId('block-inspector').getByTestId('countdown-title').uncheck();
     await expect(stage.getByTestId('countdown')).toContainText('Beginnt in');
     await page.waitForTimeout(500);
@@ -1304,6 +1308,7 @@ test('list and next appointment in the look of the WordPress plugin: tile, label
 
     await page.getByTestId('slide-item').nth(2).click();
     await page.getByTestId('frame-appointment-list').first().click();
+    await openSection(page, 'appearance');
     await choose(page, 'list-layout', 'cards');
     const stage = page.locator('.editor-stage');
     // Rows as tall as the plugin's: only those that fit whole – none cut off at the bottom.
@@ -1354,6 +1359,7 @@ test('the design page sets the look of all screens: corners, large appointments,
     // Rows as tall as the plugin's: only those that fit whole – none cut off at the bottom.
     await expectWholeCards(stage);
     await page.getByTestId('frame-appointment-list').first().click();
+    await openSection(page, 'appearance');
     await expect.poll(() => chosen(page, 'list-layout')).toBe('');
     await choose(page, 'list-layout', 'rows');
     await expect(stage.getByTestId('list-card')).toHaveCount(0);
@@ -1436,6 +1442,7 @@ test('a website and a QR code (Plan.md 28)', async ({ page }) => {
     await expect(frame).toHaveAttribute('src', 'https://www.gemeinde.example/wochenblatt/');
     await expect(frame).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
     await expect(page.frameLocator('.editor-stage [data-testid="web-frame"]').locator('h1')).toHaveText('Wochenblatt');
+    await openSection(page, 'appearance');
     await page.getByTestId('web-zoom').selectOption('2');
     await expect(frame).toHaveAttribute('style', /scale\(2\)/);
 
@@ -1958,6 +1965,7 @@ test('a groups block sorts every group by weekday, name A–Z or Z–A, until a 
     await addBlock(page, 'groups');
     const inspector = page.getByTestId('block-inspector');
     await inspector.getByTestId('groups-homepage').selectOption('40');
+    await openSection(page, 'appearance');
     await choose(inspector, 'groups-layout', 'list');
 
     const rows = page.locator('.editor-stage').getByTestId('group-row');

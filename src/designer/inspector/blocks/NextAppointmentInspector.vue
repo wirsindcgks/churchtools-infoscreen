@@ -36,7 +36,7 @@ const summary = computed(() => (card.value ? t.inspector.layoutCard : t.inspecto
     <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" :released="released" @toggle="toggleCalendar" />
     <!-- Plan.md 82 C: appointments with these tags stay off the screen. Without the tags (not loaded, unreadable) there is no field. -->
     <TagField v-if="tags" :tags="tags" :chosen-ids="block.hideTagIds ?? []" @toggle="toggleTag" />
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" default-open>
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
         <!-- Plan.md, 20: the highlighted event of the WordPress plugin. '' follows the theme (Plan.md 27). -->
         <TileField
             quick

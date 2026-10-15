@@ -127,6 +127,7 @@ test('build a slideshow with several pictures, keep it, and see it in the librar
     await rows.nth(2).getByTestId('slideshow-remove').click();
     await expect(rows).toHaveCount(2);
     await expect(rows.nth(1)).toContainText('bild-03');
+    await openSection(page, 'appearance');
     await page.getByTestId('slideshow-seconds').fill('3');
     await page.getByTestId('slideshow-seconds').blur();
     await page.screenshot({ path: 'test-results/slideshow-inspector.png' });
@@ -251,6 +252,7 @@ for (const [transition] of TRANSITIONS) {
         await library.getByTestId('media-add').click();
         await openSection(page, 'slideshow-images');
         await expect(page.getByTestId('slideshow-row')).toHaveCount(2);
+        await openSection(page, 'appearance');
         await page.getByTestId('slideshow-seconds').fill('3');
         await page.getByTestId('slideshow-seconds').blur();
         await openSection(page, 'appearance');
@@ -292,6 +294,7 @@ async function twoPictures(page: Page, baseURL: string | undefined): Promise<voi
     await library.getByTestId('media-add').click();
     await openSection(page, 'slideshow-images');
     await expect(page.getByTestId('slideshow-row')).toHaveCount(2);
+    await openSection(page, 'appearance');
     await page.getByTestId('slideshow-seconds').fill('3');
     await page.getByTestId('slideshow-seconds').blur();
     await openSection(page, 'appearance');

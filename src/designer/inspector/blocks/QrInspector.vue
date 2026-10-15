@@ -29,7 +29,7 @@ const edit = useEdit();
         @update:model-value="setBlock({ data: $event })"
     />
     <p v-if="mode === 'full' && block.data.trim() && !qrShape(block.data)" class="hint">{{ t.inspector.qrTooLong }}</p>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" default-open>
+    <InspectorSection id="appearance" :title="t.inspector.appearance">
         <template #summary-extra>
             <span class="swatch" :style="{ background: block.color }" />
             <span class="swatch" :style="{ background: block.background }" />

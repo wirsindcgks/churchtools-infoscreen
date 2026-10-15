@@ -146,7 +146,7 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
         </template>
     </InspectorSection>
 
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" default-open>
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
         <TileField quick :model-value="block.layout" :options="GROUPS_TILES" :label="t.inspector.view" testid="groups-layout" @update:model-value="setBlock({ layout: $event })" />
         <SegmentField
             v-if="block.groupIds.length === 0"

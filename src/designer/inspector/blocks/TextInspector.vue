@@ -27,7 +27,7 @@ function chooseLevel(value: string | number): void {
 
 <template>
     <TextField multiline :rows="3" :model-value="block.text" :label="t.inspector.text" testid="text-input" @update:model-value="setBlock({ text: $event })" />
-    <FontSection :block="block" align-quick effects="all" default-open>
+    <FontSection :block="block" align-quick effects="all">
         <template #first>
             <SegmentField :model-value="level" :options="levelOptions" :label="t.inspector.textLevel" testid="text-level" quick @update:model-value="chooseLevel" />
         </template>

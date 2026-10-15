@@ -80,7 +80,6 @@ function remove(index: number): void {
         id="appearance"
         :title="t.inspector.appearance"
         :summary="lookSummary(block, `${block.seconds ?? 6} ${t.inspector.unitSeconds}`, TRANSITION_TILES.find((o) => o.value === effectiveTransition(block))?.label)"
-        default-open
     >
         <NumberField
             :model-value="block.seconds ?? 6"

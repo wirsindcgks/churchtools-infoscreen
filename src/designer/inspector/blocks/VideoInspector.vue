@@ -43,7 +43,7 @@ function caption(): string {
     <ToggleField quick :model-value="block.sound ?? false" :label="t.inspector.sound" testid="video-sound" @update:model-value="setBlock({ sound: $event })">
         <template #info>{{ t.inspector.soundInfo }}</template>
     </ToggleField>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="lookSummary(block, fits.find((f) => f.value === (block.fit ?? 'contain'))?.label)" default-open>
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="lookSummary(block, fits.find((f) => f.value === (block.fit ?? 'contain'))?.label)">
         <SegmentField :model-value="block.fit ?? 'contain'" :options="fits" :label="t.inspector.fit" testid="video-fit" @update:model-value="setBlock({ fit: $event })" />
         <PictureFrameFields v-if="block.fit === 'cover'" :block="block" />
     </InspectorSection>

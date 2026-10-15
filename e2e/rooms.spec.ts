@@ -282,6 +282,7 @@ test('the door sign shows the first room: now, then what follows – or free', a
     await fakeChurch(page);
     await newRoomsBlock(page);
     await page.getByTestId('rooms-add-all').click();
+    await openSection(page, 'appearance');
     await choose(page, 'rooms-layout', 'door');
     await openSection(page, 'room-list');
     await expect(page.getByTestId('rooms-door-hint')).toHaveText('Das Türschild zeigt den ersten Raum der Liste.');
@@ -316,6 +317,7 @@ test('an empty day says so, and the period is a number of days', async ({ page }
     await newRoomsBlock(page);
     await page.getByTestId('rooms-add').selectOption('3'); // only the Jugendkeller, no booking
     await expect(stage(page).getByTestId('rooms-empty')).toHaveText('Heute sind keine Räume belegt.');
+    await openSection(page, 'appearance');
     await page.getByTestId('rooms-days').fill('2');
     await expect(stage(page).getByTestId('rooms-empty')).toHaveText('Heute und morgen sind keine Räume belegt.');
 });
@@ -422,6 +424,7 @@ test('the room at an appointment without a place, in both layouts of the next ap
     // Asked for with the bookings – and only the confirmed room comes through, no title, no item.
     await expect.poll(() => church.appointmentRequests!.some((r) => r.getAll('include[]').includes('bookings'))).toBe(true);
     const place = stage(page).getByTestId('next-place');
+    await openSection(page, 'appearance');
     await choose(page, 'next-layout', 'card');
     await expect(place).toHaveText('Saal');
     await page.screenshot({ path: 'test-results/rooms-at-appointment.png' });
@@ -450,6 +453,7 @@ test('the room in the list of appointments: as cards and as rows, at the right e
     await fakeChurch(page, { bookingRequests: [], appointmentRequests: [] });
     await newBlock(page, 'appointment-list');
 
+    await openSection(page, 'appearance');
     await choose(page, 'list-layout', 'cards');
     await expect(stage(page).getByTestId('list-place')).toHaveText('Saal');
     await expect(page.getByTestId('show-rooms')).toBeVisible();
@@ -488,6 +492,7 @@ test('single rooms can be switched off in a list of rows: the appointment stays,
         },
     });
     await newBlock(page, 'appointment-list');
+    await openSection(page, 'appearance');
     await choose(page, 'list-layout', 'rows');
     const places = stage(page).getByTestId('list-place');
     await expect(places).toHaveText(['Saal, Gruppenraum 1', 'Gruppenraum 1']);
@@ -513,6 +518,7 @@ test('the services at an appointment: only open ones are offered, only accepted 
     await fakeChurch(page, { bookingRequests: [] });
     await allowServices(page, 'Predigt', 'Moderation');
     await newBlock(page, 'next-appointment');
+    await openSection(page, 'appearance');
     await choose(page, 'next-layout', 'card');
 
     // Off until chosen; "Ton" is in a group that is not open to all and is not offered.
@@ -537,6 +543,7 @@ test('the services at an appointment: only open ones are offered, only accepted 
 test('services only after an administrator allowed them: the inspector offers exactly those', async ({ page }) => {
     await fakeChurch(page, { bookingRequests: [] });
     await newBlock(page, 'next-appointment');
+    await openSection(page, 'appearance');
     await choose(page, 'next-layout', 'card');
 
     // Nothing allowed: no box, a hint that says where to allow.
@@ -582,6 +589,7 @@ test('the services in the list of appointments: as cards, not as rows', async ({
     await fakeChurch(page, { bookingRequests: [] });
     await allowServices(page, 'Predigt');
     await newBlock(page, 'appointment-list');
+    await openSection(page, 'appearance');
     await choose(page, 'list-layout', 'cards');
     await openSection(page, 'services');
     await page.getByTestId('service-1').check();
@@ -595,6 +603,7 @@ test('the services in the list of appointments: as cards, not as rows', async ({
 test('rooms can be left out for single calendars: the room goes, an entered place stays', async ({ page }) => {
     await fakeChurch(page, { bookingRequests: [], second: true });
     await newBlock(page, 'appointment-list');
+    await openSection(page, 'appearance');
     await choose(page, 'list-layout', 'cards');
     const places = stage(page).getByTestId('list-place');
     // The first has no place, its room fills in; the second has one, and it wins over its room (v0.17.1).
@@ -640,6 +649,7 @@ test('the cards of the list: date column of one width, place under the date, thr
         await fakeChurch(page, { bookingRequests: [], scene: scene(which) });
         await allowServices(page, 'Predigt');
         await newBlock(page, 'appointment-list');
+        await openSection(page, 'appearance');
         await choose(page, 'list-layout', 'cards');
         await openSection(page, 'services');
         await openSection(page, 'rooms-for');

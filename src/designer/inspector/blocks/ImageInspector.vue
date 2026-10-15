@@ -46,7 +46,7 @@ const summary = computed(() =>
         testid="pick-image"
         @pick="context.pickImage('block')"
     />
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" default-open>
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
         <SegmentField quick :model-value="block.fit" :options="fits" :label="t.inspector.fit" testid="image-fit" @update:model-value="setBlock({ fit: $event })" />
         <SegmentField quick stacked :model-value="block.tone ?? 'none'" :options="tones" :label="t.inspector.tone" testid="image-tone" @update:model-value="setBlock({ tone: $event === 'none' ? undefined : $event })" />
         <template v-if="block.fit === 'cover'">

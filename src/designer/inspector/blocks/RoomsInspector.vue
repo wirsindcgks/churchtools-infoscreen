@@ -128,7 +128,7 @@ function remove(index: number): void {
         </InspectorSection>
     </QuickField>
 
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" default-open>
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
         <TileField quick :model-value="block.layout" :options="ROOMS_TILES" :label="t.inspector.view" testid="rooms-layout" @update:model-value="setBlock({ layout: $event })" />
         <NumberField
             quick
