@@ -16,7 +16,7 @@ Kurzfassung je Rolle steht im [Onboarding](Onboarding.md), alle Rechte als Tabel
 | [1. Extension installieren](#1-extension-installieren) | Administrator | Extension-Verwaltung von ChurchTools |
 | [2. Dir selbst die Modulrechte geben](#2-dir-selbst-die-modulrechte-geben) | Administrator | Rechteverwaltung |
 | [3. Den Designer einmal öffnen](#3-den-designer-einmal-öffnen) | Administrator | Menü „Infoscreen Designer" |
-| [4. Gruppen und Rechte anlegen lassen](#4-gruppen-und-rechte-anlegen-lassen) | Administrator | Designer → Einstellungen → Gruppen und Rechte |
+| [4. Gruppen und Rechte anlegen lassen](#4-gruppen-und-rechte-anlegen-lassen) | Administrator | Designer → Einstellungen → Räume, Gruppen und Rechte |
 | [5. Gestalter aufnehmen](#5-gestalter-aufnehmen) | Administrator | Gruppe „Infoscreen-Designer" |
 | [6. Geräte-Benutzer anlegen](#6-geräte-benutzer-anlegen) | Administrator | Personen, Gruppe „Infoscreen-Devices" |
 | [7. Den Fernseher einrichten](#7-den-fernseher-einrichten) | Administrator, dann wer vor Ort ist | Designer → Einstellungen → Adressen der Bildschirme, Kiosk-Browser |
@@ -112,14 +112,19 @@ für die Website und den öffentlichen Kalender; der Designer ändert daran nich
 
 Die Rechteverwaltung von ChurchTools ist fein, aber aufwendig. Deshalb erledigt der Designer den Rest selbst:
 
-1. Im Designer oben auf **Einstellungen → Gruppen und Rechte**.
-2. In der Karte **„Automatisch einrichten"** unter „Was genau passiert" nachlesen, was angelegt wird.
-3. Den **Gruppentyp** wählen. Vorgewählt ist „Merkmal", wenn es ihn bei euch gibt. Gemeinden dürfen Gruppentypen
+1. **Zuerst die Räume festlegen:** im Designer oben auf **Einstellungen → Räume**. Die Seite zeigt die
+   Ressourcentypen von ChurchTools mit ihren Ressourcen; angekreuzt ist, was als Raum gilt. Gibt es bei euch den Typ
+   „Raum", ist er vorgewählt und meist nichts zu tun. Sonst die Typen ankreuzen, deren Ressourcen Räume sind, und
+   **„Speichern"** (Näheres unter „Welche Ressourcen Räume sind" weiter unten). Zuerst deshalb, weil der Assistent
+   die Rechte an genau diesen Räumen vergibt.
+2. Zurück zu den Einstellungen, dort **Gruppen und Rechte**.
+3. In der Karte **„Automatisch einrichten"** unter „Was genau passiert" nachlesen, was angelegt wird.
+4. Den **Gruppentyp** wählen. Vorgewählt ist „Merkmal", wenn es ihn bei euch gibt. Gemeinden dürfen Gruppentypen
    umbenennen und löschen; fehlt „Merkmal", nimm einen Typ für Gruppen, die eine Funktion in der Gemeinde abbilden,
    etwa „Dienst". **Achte darauf, was der Typ mitbringt:** Rechte, die ein Gruppentyp seinen Rollen gibt, gelten in
    jeder Gruppe dieses Typs – Gestalter und Fernseher bekämen sie mit. Ein Typ, der wenig mitbringt, ist der richtige
    ([Academy: Gruppentypen](https://churchtools.academy/de/help/app/rund-ums-gruppenmodul/37-was-sind-gruppentypen-und-wofur-kann-ich-sie-benutzen/)).
-4. **„Gruppen und Rechte anlegen"** klicken.
+5. **„Gruppen und Rechte anlegen"** klicken.
 
 Der Assistent legt zwei **leere, aktive Gruppen vom gewählten Typ** an und gibt allen ihren Rollen die nötigen
 Rechte:
@@ -150,10 +155,12 @@ unter **Einstellungen → Mediathek im Wiki**.
 **Welche Ressourcen Räume sind.** Als Raum gilt, was in ChurchTools zum Ressourcentyp „Raum" gehört. Manche Gemeinden
 ordnen ihre Ressourcen anders, etwa nach Gebäuden, und haben diesen Typ nicht. Dann wählst du unter **Einstellungen →
 Räume** die Typen, deren Ressourcen Räume sind; die Seite nennt zu jedem Typ seine Ressourcen. Ohne Auswahl gilt der
-Typ „Raum"; gibt es ihn nicht, zeigt kein Bildschirm Räume, und Einstellungen wie Prüfung warnen davor. Wie auf der
-Design-Seite gilt die Auswahl erst mit **„Speichern"** oben rechts; „Verwerfen" holt den gespeicherten Stand zurück. So
-speichern auch „Gruppen und Rechte" und „Dienste auf Bildschirmen". Brauchen die Gruppen danach andere Rechte, fragt ein
-Fenster, ob du gleich **„Rechte aktualisieren"** willst; eine Vorschau zeigt vorher, was sich ändert.
+Typ „Raum"; gibt es ihn nicht, zeigt kein Bildschirm Räume, und Einstellungen wie Prüfung warnen davor. Leg die Typen
+deshalb **vor dem Assistenten** fest (Punkt 1 oben). Wie auf der Design-Seite gilt die Auswahl erst mit
+**„Speichern"** oben rechts; „Verwerfen" holt den gespeicherten Stand zurück. So speichern auch „Gruppen und Rechte"
+und „Dienste auf Bildschirmen". Änderst du die Typen später und brauchen die Gruppen dadurch andere Rechte, fragt ein
+Fenster, ob du gleich **„Rechte aktualisieren"** willst; eine Vorschau zeigt vorher, was sich ändert. Im Designer
+selbst fragt kein Fenster nach: Zeigt ein Bildschirm neue Räume, gilt „Später wiederkommen" oben.
 
 Der Assistent legt den Wiki-Bereich nur an, wenn du das Wiki sehen darfst; ohne dieses Recht bricht er ab, bevor er etwas anlegt. Einen fremden Bereich gleichen Namens, den du nicht sehen darfst, kann er nicht erkennen.
 
