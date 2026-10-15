@@ -27,7 +27,7 @@ import { usePreview } from '../designer/usePreview';
 import type { HomepageEntry } from '../groups/normalize';
 import type { MediaDoc } from '../model/schema';
 import { MEDIA_PAGE } from '../media/library';
-import { roomsOf, type RoomInfo } from '../rooms/normalize';
+import { roomTypeIdsOf, roomsOf, type RoomInfo } from '../rooms/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { allowedServiceIds, appointmentServicesInUse, serviceChoices, type ServiceInfo } from '../appointments/services';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
@@ -95,6 +95,8 @@ const groups = ref<PostGroup[]>([]);
 const homepages = ref<HomepageEntry[]>([]);
 /** Rooms for the „Raumbelegung"-Baustein (Plan.md 46); null until loaded, unreadable → none. */
 const rooms = ref<RoomInfo[] | null>(null);
+/** No resource type counts as a room (Plan.md 86) – the inspector says where an administrator chooses one. */
+const roomTypeMissing = ref(false);
 /** Services people may see (Plan.md 51); null until loaded, unreadable → `servicesFailed`. */
 const services = ref<ServiceInfo[] | null>(null);
 const servicesFailed = ref(false);
@@ -107,6 +109,7 @@ provideInspectorContext(
         groups: groups.value,
         homepages: homepages.value,
         rooms: rooms.value,
+        roomTypeMissing: roomTypeMissing.value,
         services: services.value,
         allowedServices: allowedServices.value,
         servicesFailed: servicesFailed.value,
@@ -467,15 +470,20 @@ onMounted(async () => {
     } catch {
         homepages.value = [];
     }
+    // Unreadable settings allow no service; the rooms then follow the type "Raum".
+    let settings: SettingsDoc | null = null;
     try {
-        rooms.value = roomsOf(await fetchResourceMasterdata());
+        settings = (await loadSettings?.()) ?? null;
+    } catch {
+        settings = null;
+    }
+    allowedServices.value = settings?.allowedServiceIds ?? [];
+    try {
+        const masterdata = await fetchResourceMasterdata();
+        rooms.value = roomsOf(masterdata, settings?.roomTypeIds);
+        roomTypeMissing.value = !roomTypeIdsOf(masterdata, settings?.roomTypeIds).length;
     } catch {
         rooms.value = [];
-    }
-    try {
-        allowedServices.value = ((await loadSettings?.()) ?? null)?.allowedServiceIds ?? [];
-    } catch {
-        allowedServices.value = [];
     }
     try {
         const [list, serviceGroups] = await Promise.all([fetchServices(), fetchServiceGroups()]);
@@ -903,7 +911,7 @@ function onKey(event: KeyboardEvent): void {
                     <span class="sheet-label">{{ sheetLabel }}</span>
                     <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
                 </button>
-                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :groups="groups" :homepages="homepages" :rooms="rooms" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" @pick-image="openLibrary" @picked="phone && (inspectorOpen = false)" />
+                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :groups="groups" :homepages="homepages" :rooms="rooms" :room-type-missing="roomTypeMissing" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" @pick-image="openLibrary" @picked="phone && (inspectorOpen = false)" />
             </div>
         </div>
 

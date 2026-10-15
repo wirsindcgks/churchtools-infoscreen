@@ -215,6 +215,8 @@ export interface DeviceGroupInput {
     publicCalendarIds: number[];
     /** The rooms the administrator sees, to name the used ones. */
     rooms?: RoomInfo[];
+    /** There are resources, but no type counts as a room (Plan.md 86): no screen shows a room. */
+    roomTypeMissing?: boolean;
     usedRoomIds?: number[];
     /** A block shows the rooms of its appointments (Plan.md 50): the device must see all rooms. */
     appointmentRooms?: boolean;
@@ -276,6 +278,11 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                 detail: t.setup.checks.calendarGoneDetail,
             });
         }
+    }
+
+    // Before the members: without a room type no device sees a room, whoever is in the group.
+    if (input.roomTypeMissing) {
+        checks.push({ level: 'warn', category: 'rooms', text: t.setup.checks.roomTypeMissing, detail: t.setup.checks.roomTypeMissingDetail });
     }
 
     if (!input.members.length) {

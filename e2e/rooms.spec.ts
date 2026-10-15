@@ -106,6 +106,8 @@ const EVENT = {
 };
 
 interface Church {
+    /** Resource types of its own – an instance without the type "Raum" (Plan.md 86). */
+    types?: typeof TYPES;
     rooms?: typeof ROOMS;
     /** Rooms whose bookings answer 403, as for a device without the right (G45). */
     forbidden?: number[];
@@ -168,7 +170,7 @@ async function fakeChurch(page: Page, church: Church = { bookingRequests: [] }):
             return json([url.searchParams.has('include[]') ? APPOINTMENT : { appointment: APPOINTMENT.appointment }]);
         }
         if (path === '/permissions/global') return json({ churchcore: { 'administer persons': true } });
-        if (path === '/resource/masterdata') return json({ resourceTypes: TYPES, resources: church.rooms ?? ROOMS });
+        if (path === '/resource/masterdata') return json({ resourceTypes: church.types ?? TYPES, resources: church.rooms ?? ROOMS });
         if (path === '/events') return json([church.scene ? { ...EVENT, startDate: church.scene.eventStart } : EVENT]);
         if (path === '/services') return json(SERVICE_LIST);
         if (path === '/servicegroups') return json(SERVICE_GROUPS);
@@ -196,11 +198,11 @@ async function newRoomsBlock(page: Page, ownSlide = true): Promise<void> {
     await expect(page.getByTestId('block-inspector')).toBeVisible();
 }
 
-/** A new block of this type on a slide of its own. */
+/** A new block of this type on a slide of its own – also on a second visit, when the slide of the first is still there. */
 async function newBlock(page: Page, type: string): Promise<void> {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
-    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await expect(page.getByTestId('slide-item').first()).toBeVisible();
     await page.getByTestId('add-slide').click();
     await addBlock(page, type);
     await expect(page.getByTestId('block-inspector')).toBeVisible();
@@ -335,6 +337,33 @@ test('without a right to any room the inspector says how to get it', async ({ pa
     await expect(stage(page).getByTestId('rooms-placeholder')).toHaveText('Räume wählen');
 });
 
+test('without the type "Raum" the inspector points to the settings, where an administrator chooses the room types (Plan.md 86)', async ({ page }) => {
+    const types = [{ id: 7, name: 'Gemeindezentrum', nameTranslated: 'Gemeindezentrum', sortKey: 10 }, TYPES[1]!];
+    const rooms = [{ id: 1, name: 'Saal', nameTranslated: 'Saal', sortKey: 10, resourceTypeId: 7 }, ROOMS[3]!];
+    await fakeChurch(page, { types, rooms, bookingRequests: [] });
+    await newRoomsBlock(page);
+    await expect(page.getByTestId('rooms-none')).toContainText('Einstellungen → Räume');
+
+    await page.goto('./einstellungen');
+    await expect(page.getByTestId('settings-card-rooms')).toContainText('Kein Typ gewählt');
+    await page.getByTestId('settings-card-rooms').click();
+    await expect(page).toHaveURL(/\/einstellungen\/raeume$/);
+    await expect(page.getByTestId('room-types-missing')).toBeVisible();
+    // Each type names its resources, so an administrator sees what becomes a room.
+    await expect(page.getByTestId('room-types')).toContainText('Saal');
+    await page.getByRole('checkbox', { name: /Gemeindezentrum/ }).check();
+    await expect(page.getByTestId('room-types-saved')).toBeVisible();
+    await expect(page.getByTestId('room-types-missing')).toHaveCount(0);
+
+    // The editor reads the choice anew: the slide of the first visit is still there, with a fourth one.
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expectSlides(page, 4);
+    await page.getByTestId('add-slide').click();
+    await addBlock(page, 'rooms');
+    await expect(page.getByTestId('rooms-add').locator('option')).toHaveText(['+ Raum', 'Saal']);
+});
+
 for (const size of [
     { width: 1440, height: 900 },
     { width: 1180, height: 820 },
@@ -411,9 +440,17 @@ test('the room in the list of appointments: as cards and as rows, at the right e
     await choose(page, 'list-layout', 'cards');
     await expect(stage(page).getByTestId('list-place')).toHaveText('Saal');
     await expect(page.getByTestId('show-rooms')).toBeVisible();
+    // "Kalender zeigen" (Plan.md 85): the badge of the cards goes, the appointment stays.
+    const badge = stage(page).getByTestId('list-card').locator('.badge');
+    await expect(badge).toHaveText('Gottesdienste');
+    await page.getByTestId('show-calendar').uncheck();
+    await expect(badge).toHaveCount(0);
+    await expect(stage(page).getByTestId('list-card')).toContainText('Sonntagsgottesdienst');
 
     await choose(page, 'list-layout', 'rows');
     await expect(stage(page).getByTestId('list-card')).toHaveCount(0);
+    // Rows have no badge: no switch for it either.
+    await expect(page.getByTestId('show-calendar')).toHaveCount(0);
     await expect(stage(page)).toContainText('Sonntagsgottesdienst');
     await expect(page.getByTestId('show-rooms')).toBeVisible();
     const place = stage(page).getByTestId('list-place');

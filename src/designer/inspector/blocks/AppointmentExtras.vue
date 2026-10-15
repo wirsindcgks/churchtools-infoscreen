@@ -100,6 +100,7 @@ const servicesSummary = computed(() => (shownServiceCount.value ? t.common.chose
         >
             <template #info>{{ t.inspector.showRoomInfo }}</template>
         </ToggleField>
+        <p v-if="roomsOn && context.roomTypeMissing" class="hint" data-testid="room-type-missing">{{ t.inspector.roomTypeMissing }}</p>
         <!-- Plan.md, 51 and 82: rooms can be left out for single calendars and single rooms. -->
         <InspectorSection v-if="roomsOn" id="rooms-for" :title="t.inspector.roomsFor" :summary="roomsForSummary">
             <div class="groups" data-testid="rooms-for">

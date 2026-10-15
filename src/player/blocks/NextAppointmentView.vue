@@ -66,7 +66,7 @@ const imageStyle = computed(() =>
                 <div class="hero-head">
                     <DateTile :start="next.start" :time-zone="context.timeZone" :color="next.color" />
                     <div class="hero-titles">
-                        <CalendarBadge :name="next.calendarName" :color="next.color" />
+                        <CalendarBadge v-if="block.showCalendar !== false" :name="next.calendarName" :color="next.color" />
                         <div class="hero-title">{{ next.title }}</div>
                         <div v-if="next.subtitle" class="hero-subtitle">{{ next.subtitle }}</div>
                     </div>

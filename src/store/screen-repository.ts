@@ -214,6 +214,8 @@ export interface LoadedScreen extends ScreenBundle {
      * An offline copy of an older player lacks it – read it with `?? []`.
      */
     allowedServiceIds: number[];
+    /** The resource types that count as rooms (schema 1.35, Plan.md 86); missing = the type "Raum". */
+    roomTypeIds?: number[];
     issues: ReadIssue[];
 }
 
@@ -472,12 +474,11 @@ export class ScreenRepository {
             if (!media.some((m) => m.id === id)) issues.push({ documentId: id, message: tr.mediaMissing });
         }
 
-        // Settings that cannot be read allow nothing: the strict side.
-        const allowedServiceIds = await this.loadSettings().then(
-            (settings) => settings?.allowedServiceIds ?? [],
-            () => [] as number[],
-        );
-        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, allowedServiceIds, issues };
+        // Settings that cannot be read allow no service: the strict side. The rooms then follow the type "Raum".
+        const settings = await this.loadSettings().catch(() => null);
+        const allowedServiceIds = settings?.allowedServiceIds ?? [];
+        const roomTypeIds = settings?.roomTypeIds;
+        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, allowedServiceIds, roomTypeIds, issues };
     }
 
     /**

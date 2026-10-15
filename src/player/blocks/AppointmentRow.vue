@@ -24,6 +24,8 @@ const props = defineProps<{
     roomNames?: string[];
     /** The services this block shows under the place – in the card form only (schema 1.17). */
     services?: number[];
+    /** False: the card shows no calendar badge (schema 1.35, Plan.md 85). */
+    showCalendar?: boolean;
 }>();
 const place = computed(() => placeLine(props.appointment, props.roomNames ?? []));
 /** The rows name the place at the right end of the line – only where the block asks for rooms (schema 1.34). */
@@ -34,7 +36,7 @@ const people = computed(() => servicesLine(props.appointment, props.services));
 
 <template>
     <!-- One line from left to right: tile, day over time, title, and the category at the end (2026-09-25). -->
-    <li v-if="layout === 'cards'" class="row card" :data-testid="measuring ? undefined : 'list-card'">
+    <li v-if="layout === 'cards'" class="row card" :class="{ 'card--no-badge': showCalendar === false }" :data-testid="measuring ? undefined : 'list-card'">
         <DateTile :start="appointment.start" :time-zone="timeZone" :color="appointment.color" />
         <span class="card-when">
             <!-- The widest date there is, unseen: the column is as wide on every row and every page. -->
@@ -65,7 +67,7 @@ const people = computed(() => servicesLine(props.appointment, props.services));
                 <span class="meta-text">{{ people }}</span>
             </span>
         </span>
-        <CalendarBadge class="card-badge" :name="appointment.calendarName" :color="appointment.color" />
+        <CalendarBadge v-if="showCalendar !== false" class="card-badge" :name="appointment.calendarName" :color="appointment.color" />
     </li>
     <li v-else class="row" :class="{ 'row--place': rowPlace }">
         <span class="when">{{ formatShortDate(appointment.start, timeZone) }}</span>
@@ -114,6 +116,10 @@ const people = computed(() => servicesLine(props.appointment, props.services));
     align-items: center;
     gap: 0.9em;
     padding: 0.55em 0;
+}
+/* Without the badge the title takes its column too: no gap is left at the right end. */
+.card--no-badge {
+    grid-template-columns: auto max-content minmax(0, 1fr);
 }
 .card-when {
     display: grid;

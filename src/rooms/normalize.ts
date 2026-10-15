@@ -35,7 +35,7 @@ interface BookingBase {
 
 /** `GET /resource/masterdata`, as far as this code reads it. */
 export interface ResourceMasterdata {
-    resourceTypes?: { id?: number; name?: string | null }[] | null;
+    resourceTypes?: { id?: number; name?: string | null; nameTranslated?: string | null; sortKey?: number | null }[] | null;
     resources?: {
         id?: number;
         name?: string | null;
@@ -67,12 +67,44 @@ export interface RoomBookings {
     bookings: RoomBooking[];
 }
 
-/** The resources of the type room, by `sortKey`, then name. Name = the translated one where there is one. */
-export function roomsOf(masterdata: unknown): RoomInfo[] {
+/** A resource type as the settings offer it (Plan.md 86): its name and the names of its resources. */
+export interface ResourceTypeInfo {
+    id: number;
+    name: string;
+    resources: string[];
+}
+
+/**
+ * The resource types that count as rooms (schema 1.35, Plan.md 86): the chosen ones that still exist; without a
+ * choice the type "Raum". Empty – an instance without that type, or nothing chosen – means: no resource is a room.
+ */
+export function roomTypeIdsOf(masterdata: unknown, chosen?: readonly number[]): number[] {
+    const types = ((masterdata ?? {}) as ResourceMasterdata).resourceTypes ?? [];
+    const known = types.filter((t) => typeof t?.id === 'number');
+    const ids = chosen ? known.filter((t) => chosen.includes(t.id!)) : known.filter((t) => t.name === ROOM_TYPE_KEY);
+    return ids.map((t) => t.id!);
+}
+
+/** Every resource type with its resources, by `sortKey`, then name – for the choice in the settings. */
+export function resourceTypesOf(masterdata: unknown): ResourceTypeInfo[] {
     const data = (masterdata ?? {}) as ResourceMasterdata;
-    const roomTypeIds = new Set(
-        (data.resourceTypes ?? []).filter((t) => t?.name === ROOM_TYPE_KEY && typeof t.id === 'number').map((t) => t.id),
-    );
+    return (data.resourceTypes ?? [])
+        .filter((t) => typeof t?.id === 'number')
+        .sort((a, b) => (a.sortKey ?? Infinity) - (b.sortKey ?? Infinity) || (a.name ?? '').localeCompare(b.name ?? '', LOCALE))
+        .map((t) => ({
+            id: t.id!,
+            name: (t.nameTranslated ?? t.name ?? '').trim() || String(t.id),
+            resources: roomsOf(data, [t.id!]).map((r) => r.name),
+        }));
+}
+
+/**
+ * The resources of the types that count as rooms (`roomTypeIdsOf`), by `sortKey`, then name. Name = the
+ * translated one where there is one. `chosenTypeIds` is the choice of the settings; missing = the type "Raum".
+ */
+export function roomsOf(masterdata: unknown, chosenTypeIds?: readonly number[]): RoomInfo[] {
+    const data = (masterdata ?? {}) as ResourceMasterdata;
+    const roomTypeIds = new Set(roomTypeIdsOf(data, chosenTypeIds));
     return (data.resources ?? [])
         .filter((r) => typeof r?.id === 'number' && r.resourceTypeId != null && roomTypeIds.has(r.resourceTypeId))
         .sort((a, b) => (a.sortKey ?? Infinity) - (b.sortKey ?? Infinity) || (a.name ?? '').localeCompare(b.name ?? '', LOCALE))

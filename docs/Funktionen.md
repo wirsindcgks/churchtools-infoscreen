@@ -144,7 +144,9 @@ Gezeigt wird nur, was ChurchTools auf der Gruppen-Homepage ohnehin öffentlich z
 „Was ist heute im Saal los?" – die Buchungen der **Räume** aus ChurchTools, als **Übersicht** aller gewählten Räume oder
 als **Türschild** des ersten Raums: „Jetzt" mit Titel und Ende oder „Frei" (mit „bis 14:00", wenn noch etwas kommt),
 darunter „Danach" mit den nächsten Buchungen. Die laufende Buchung ist hervorgehoben; heute oder heute und morgen;
-ein **Wegweiser** je Raum („1. OG, links"). Gewählt werden nur Räume, nicht Gegenstände und Fahrzeuge. Die Übersicht
+ein **Wegweiser** je Raum („1. OG, links"). Gewählt werden nur Räume, nicht Gegenstände und Fahrzeuge. Was ein Raum ist,
+legt der Ressourcentyp fest – vorgegeben ist „Raum"; wo es ihn nicht gibt, wählt ein Administrator unter **Einstellungen
+→ Räume** die passenden Typen, und bis dahin sagt der Baustein, dass das fehlt. Die Übersicht
 wechselt seitenweise, die Folie bleibt, bis alle Seiten gelaufen sind.
 
 ![Editor mit dem Baustein „Raumbelegung": die Übersicht dreier Räume mit ihren Buchungen, rechts die Liste der Räume](bilder/raumbelegung.png)
@@ -186,6 +188,10 @@ erscheint von selbst. Zwei Bildschirme können für denselben Termin verschieden
 Baustein mehrere Kalender, lässt sich unter **„Kalender"** außerdem je Kalender abschalten – etwa wo für einen Termin viele
 Räume gebucht werden. Listen in Zeilen, die es schon vor dieser Version gab, zeigen die Räume erst, wenn man „Raum
 zeigen" dort einmal neu einschaltet. Nach den Terminen filtern die Schalter nicht; dafür gibt es die Raumbelegung.
+
+**Kalender zeigen.** In der Kartenform der Terminliste und beim Nächsten Termin als Karte steht der Kalender als farbiges
+Etikett. Wer es nicht braucht, schaltet **„Kalender zeigen"** unter der Darstellung ab; die Karte nutzt den Platz dann für
+den Titel. Die Farbe des Kalenders bleibt an der Datumskachel.
 
 ## Die Dienste am Termin
 

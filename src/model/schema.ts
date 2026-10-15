@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 34 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 35 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -175,6 +175,8 @@ export const AppointmentListBlock = v.object({
     roomsInRows: v.optional(v.boolean()),
     /** Since 1.34: ids of the rooms left out of what the block names – the appointment stays (Plan.md, Nächste Schritte 82). Missing or empty = every booked room is named. */
     roomsOffIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
+    /** Since 1.35: false = the cards show no calendar badge (Plan.md 85). Missing = shown, as before. */
+    showCalendar: v.optional(v.boolean()),
     style: TextStyle,
 });
 
@@ -197,6 +199,8 @@ export const NextAppointmentBlock = v.object({
     roomsOffCalendarIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
     /** Since 1.34: ids of the rooms left out of what the block names – the appointment stays (Plan.md, Nächste Schritte 82). Missing or empty = every booked room is named. */
     roomsOffIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
+    /** Since 1.35: false = the card shows no calendar badge (Plan.md 85). Missing = shown, as before. */
+    showCalendar: v.optional(v.boolean()),
     style: TextStyle,
 });
 
@@ -717,6 +721,11 @@ export const SettingsDoc = v.object({
     createdWikiCategoryId: v.optional(v.pipe(v.number(), v.integer())),
     /** Since 1.20: the services an administrator allows on screens (Plan.md 58); missing or empty = none. */
     allowedServiceIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
+    /**
+     * Since 1.35: the resource types that count as rooms (Plan.md 86) – not every church has the type "Raum".
+     * Missing = the type "Raum"; empty = none, so no resource is a room.
+     */
+    roomTypeIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
 });
 
 export type Fill = v.InferOutput<typeof Fill>;

@@ -108,11 +108,11 @@ onBeforeUnmount(() => clearInterval(timer));
     <div class="paged" :style="textStyle(block.style)">
         <!-- Every row once, invisible, in the same markup and width as the shown ones: for pages and whole rows. -->
         <ul ref="measureList" class="list measure" aria-hidden="true">
-            <AppointmentRow v-for="a in items" :key="a.key" :appointment="a" :layout="layout" :time-zone="context.timeZone" :show-rooms="roomsShown && showsRoomsAt(block, a.calendarId)" :room-names="roomsShown ? shownRoomNames(block, a) : []" :services="block.services" measuring />
+            <AppointmentRow v-for="a in items" :key="a.key" :appointment="a" :layout="layout" :time-zone="context.timeZone" :show-rooms="roomsShown && showsRoomsAt(block, a.calendarId)" :room-names="roomsShown ? shownRoomNames(block, a) : []" :services="block.services" :show-calendar="block.showCalendar" measuring />
         </ul>
         <Transition name="page" mode="out-in">
             <ul :key="page" class="list" :class="{ 'list--cards': layout === 'cards' }">
-                <AppointmentRow v-for="a in shown" :key="a.key" :appointment="a" :layout="layout" :time-zone="context.timeZone" :show-rooms="roomsShown && showsRoomsAt(block, a.calendarId)" :room-names="roomsShown ? shownRoomNames(block, a) : []" :services="block.services" />
+                <AppointmentRow v-for="a in shown" :key="a.key" :appointment="a" :layout="layout" :time-zone="context.timeZone" :show-rooms="roomsShown && showsRoomsAt(block, a.calendarId)" :room-names="roomsShown ? shownRoomNames(block, a) : []" :services="block.services" :show-calendar="block.showCalendar" />
                 <!-- An empty week is a normal state and must look like one, not like a failure. -->
                 <li v-if="items.length === 0" class="empty">{{ tp.appointments.noneInDays(block.horizonDays) }}</li>
             </ul>

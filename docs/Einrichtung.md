@@ -147,6 +147,12 @@ beiden Gruppen wieder – **nur die, die der Assistent selbst angelegt hat**. Vo
 bleiben, ebenso der Wiki-Bereich mit den Bildern. Ob der Bereich vom Designer angelegt wurde oder schon da war, steht
 unter **Einstellungen → Mediathek im Wiki**.
 
+**Welche Ressourcen Räume sind.** Als Raum gilt, was in ChurchTools zum Ressourcentyp „Raum" gehört. Manche Gemeinden
+ordnen ihre Ressourcen anders, etwa nach Gebäuden, und haben diesen Typ nicht. Dann wählst du unter **Einstellungen →
+Räume** die Typen, deren Ressourcen Räume sind; die Seite nennt zu jedem Typ seine Ressourcen. Ohne Auswahl gilt der
+Typ „Raum"; gibt es ihn nicht, zeigt kein Bildschirm Räume, und Einstellungen wie Prüfung warnen davor. Nach einer
+Änderung **„Rechte aktualisieren"**, damit Gestalter und Fernseher die neuen Räume sehen.
+
 Der Assistent legt den Wiki-Bereich nur an, wenn du das Wiki sehen darfst; ohne dieses Recht bricht er ab, bevor er etwas anlegt. Einen fremden Bereich gleichen Namens, den du nicht sehen darfst, kann er nicht erkennen.
 
 **Den Wiki-Bereich „Infoscreen" nicht umbenennen.** Der Designer findet ihn bisher über seinen Namen. Heißt er anders, wirkt die Mediathek leer und der Designer meldet fehlende Rechte; Bilder und Rechte bleiben dabei erhalten, und die Fernseher zeigen weiter, was auf den Folien ist. Die beiden Gruppen darfst du umbenennen, der Designer kennt sie über ihre Nummer.
@@ -399,6 +405,7 @@ Mehr als lesen konnte das Gerät ohnehin nie – wer es findet, sieht, was im Fo
 | Fernseher: „Es gibt keinen Bildschirm „…"" | Adresse vertippt oder Bildschirm gelöscht | Adresse neu kopieren |
 | Fernseher: Termine eines Kalenders fehlen | Der Kalender ist nicht öffentlich (dann zeigt ihn kein Fernseher) | in ChurchTools freigeben: Berechtigungen → Benutzer → „Öffentlicher Benutzer" → Kalender → „Einzelnen Kalender sehen" – oder im Editor aus dem Baustein entfernen |
 | Fernseher: Ein Raum fehlt in der Raumbelegung | Gerät darf den Raum nicht sehen | Einstellungen → Gruppen und Rechte → „Rechte aktualisieren" |
+| Designer: „Keine Ressource gilt als Raum" – keine Räume zur Wahl, keine Räume an Terminen | Die Instanz hat keinen Ressourcentyp „Raum", und kein anderer ist gewählt | Einstellungen → Räume: die Typen wählen, deren Ressourcen Räume sind; danach „Rechte aktualisieren" |
 | Fernseher: Bild fehlt, Platzhalter statt Bild | Bild im Wiki gelöscht | im Designer ein neues Bild wählen |
 | Baustein „Gruppen": „Noch keine Gruppen-Homepage" | In ChurchTools gibt es keine Gruppen-Homepage | an der Obergruppe: Einstellungen → Allgemein → Außendarstellung → „Gruppenhomepage erstellen" |
 | Baustein „Gruppen": eine Gruppe fehlt | Ihre öffentliche Seite ist aus, oder sie ist keine Untergruppe der Obergruppe | in ChurchTools an der Gruppe die öffentliche Seite einschalten |

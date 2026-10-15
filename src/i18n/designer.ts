@@ -505,6 +505,7 @@ export const t = {
         showAll: 'Alle Termine, seitenweise',
         showAppointmentImage: 'Terminbild zeigen',
         showRoom: 'Raum zeigen',
+        showCalendar: 'Kalender zeigen',
         showRoomInfo:
             'Zeigt die gebuchten Räume des Termins: in Zeilen am Ende der Zeile, bei Karten und beim nächsten Termin mit der Pin-Nadel. ' +
             'Ein eingetragener Ort geht vor, damit nichts doppelt steht. ' +
@@ -515,6 +516,8 @@ export const t = {
         roomsForRooms: 'Räume',
         roomsOffInfo: 'Ein abgeschalteter Raum wird nur nicht genannt. Der Termin bleibt in der Liste.',
         roomsNone: 'Räume sind noch nicht geladen oder es gibt keine. Dann werden alle gebuchten Räume genannt.',
+        roomTypeMissing:
+            'Keine Ressource gilt als Raum: Diese ChurchTools-Instanz hat keinen Ressourcentyp „Raum“. Ein Administrator wählt unter Einstellungen → Räume, welche Ressourcentypen Räume sind.',
         roomsRestricted: 'eingeschränkt',
         servicesTitle: 'Dienste zeigen',
         servicesInfo:
@@ -1200,6 +1203,9 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 done: 'Eingerichtet',
                 released: (n: number) => `${n} freigegeben`,
                 noneReleased: 'Keine freigegeben',
+                noRoomType: 'Kein Typ gewählt',
+                noResources: 'Keine Ressourcen',
+                roomTypes: (n: number) => `${n} Typen`,
             },
         },
         groups: {
@@ -1291,6 +1297,17 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             release: 'Freigeben',
             confirm: (name: string) =>
                 `„${name}" freigeben? Die Namen der Eingeteilten stehen dann öffentlich auf den Fernsehern. Ist das mit der Gemeindeleitung abgestimmt?`,
+        },
+        rooms: {
+            title: 'Räume',
+            intro: 'Welche Ressourcentypen als Räume gelten.',
+            lead: 'Räume kommen aus den Ressourcen von ChurchTools. Als Raum gilt, was zu einem der hier gewählten Ressourcentypen gehört – ohne Auswahl der Typ „Raum“. Nur diese Ressourcen stehen in der Raumbelegung und an Terminen zur Wahl, und nur für sie vergibt „Rechte aktualisieren“ das Recht „Ressource sehen“.',
+            missing:
+                'Diese ChurchTools-Instanz hat keinen Ressourcentyp „Raum“, und es ist kein anderer gewählt. Deshalb zeigt kein Bildschirm Räume. Wähle die Typen, deren Ressourcen Räume sind.',
+            failed: 'Die Ressourcen konnten nicht geladen werden.',
+            none: 'In ChurchTools gibt es keine Ressourcentypen.',
+            empty: 'Keine Ressourcen',
+            saved: 'Gespeichert. Damit Designer und Fernseher die Räume sehen, unter „Gruppen und Rechte“ auf „Rechte aktualisieren“ klicken.',
         },
         wiki: {
             title: 'Mediathek im Wiki',
@@ -1477,6 +1494,9 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             internalCalendarDetail:
                 'Der Fernseher zeigt ihn nicht, aber wer seine Adresse kennt, kann ihn lesen. Das Recht kommt aus Status oder einer anderen Gruppe des Kontos.',
             roomUnknown: (id: number) => `Raum ${id} wird verwendet, ist aber nicht (mehr) zu finden.`,
+            roomTypeMissing: 'Kein Ressourcentyp für Räume gewählt.',
+            roomTypeMissingDetail:
+                'Diese ChurchTools-Instanz hat keinen Ressourcentyp „Raum“, darum zeigt kein Bildschirm Räume. Die Typen wählst du unter Einstellungen → Räume.',
             roomBlind: (room: string, labels: string) => `„${room}" ist für ${labels} nicht sichtbar.`,
             roomBlindDetail: 'Recht „Ressource sehen" für diesen Raum an die Rolle der Gerätegruppe geben – oder „Rechte aktualisieren".',
             roomVisible: (room: string) => `„${room}" ist sichtbar.`,

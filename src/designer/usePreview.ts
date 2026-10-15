@@ -7,6 +7,7 @@
 import { onBeforeUnmount, reactive, ref, watch, type Ref } from 'vue';
 import { fetchCalendars, fetchPublicCalendars, type Calendar } from '../ct/api';
 import { instanceBaseUrl } from '../ct/client';
+import { getRepository } from '../store/backend';
 import type { MediaDoc, ThemeDoc } from '../model/schema';
 import { provideStageContext, type StageContext } from '../player/context';
 import { appointmentWindow, churchToolsPlayerData, mergePosts } from '../player/data';
@@ -42,8 +43,13 @@ export function usePreview(
     const calendars = ref<Calendar[]>([]);
     const hiddenCalendars = ref<Calendar[]>([]);
     const problem = ref<string | null>(null);
+    /** The resource types that count as rooms, from the settings (schema 1.35, Plan.md 86); missing = the type "Raum", as on the TV. */
+    let roomTypeIds: number[] | undefined;
 
     async function loadBasics(): Promise<void> {
+        const settings = getRepository()
+            .then((handle) => handle.repository.loadSettings())
+            .then((doc) => doc?.roomTypeIds, () => undefined);
         try {
             const [timeZone, churchName, own, publicList, churchLogo] = await Promise.all([
                 churchToolsPlayerData.timeZone(),
@@ -61,6 +67,7 @@ export function usePreview(
         } catch (error) {
             problem.value = error instanceof Error ? error.message : String(error);
         }
+        roomTypeIds = await settings;
     }
 
     let request = 0;
@@ -76,6 +83,7 @@ export function usePreview(
             const list = await churchToolsPlayerData.appointments(ids, window.from, window.to, context.timeZone, {
                 rooms: appointmentRooms.value,
                 services: appointmentServices.value,
+                roomTypeIds,
             });
             if (mine === request) context.appointments = list;
         } catch (error) {
@@ -127,7 +135,7 @@ export function usePreview(
         }
         try {
             const window = appointmentWindow(new Date(), context.timeZone, days);
-            const list = await churchToolsPlayerData.rooms(resourceIds, window.from, window.to, context.timeZone);
+            const list = await churchToolsPlayerData.rooms(resourceIds, window.from, window.to, context.timeZone, roomTypeIds);
             if (mine === roomsRequest) context.rooms = list;
         } catch (error) {
             problem.value = error instanceof Error ? error.message : String(error);

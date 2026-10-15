@@ -689,6 +689,16 @@ describe('the room at an appointment (Plan.md 50)', () => {
         expect(place({ ...next('card'), roomsOffIds: [3] } as Block, appointment(null, booked(1, 3)), 'next-place').text()).toBe('Saal');
         expect(place({ ...next('classic'), roomsOffIds: [1, 3] } as Block, appointment(null, booked(1, 3)), 'next-place').exists()).toBe(false);
     });
+
+    it('leaves out the calendar badge of the cards with "Kalender zeigen" off (schema 1.35, Plan.md 85)', () => {
+        const badge = (block: Block) => render(makeSlide({ blocks: [block] }), { appointments: appointment(null) }).find('.badge');
+        expect(badge(list('cards')).exists()).toBe(true);
+        expect(badge(next('card')).exists()).toBe(true);
+        expect(badge({ ...list('cards'), showCalendar: false } as Block).exists()).toBe(false);
+        expect(badge({ ...next('card'), showCalendar: false } as Block).exists()).toBe(false);
+        const card = render(makeSlide({ blocks: [{ ...list('cards'), showCalendar: false } as Block] }), { appointments: appointment(null) }).get('[data-testid="list-card"]');
+        expect(card.classes()).toContain('card--no-badge');
+    });
 });
 
 describe('rendering rooms (Plan.md 46)', () => {

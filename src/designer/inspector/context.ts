@@ -13,6 +13,8 @@ export interface InspectorContext {
     readonly homepages: HomepageEntry[];
     /** The rooms the designer may see; null while they are not loaded yet. */
     readonly rooms: RoomInfo[] | null;
+    /** No resource type counts as a room (Plan.md 86): an administrator chooses one in the settings. */
+    readonly roomTypeMissing?: boolean;
     readonly services?: ServiceInfo[] | null;
     readonly allowedServices?: number[];
     readonly servicesFailed?: boolean;
@@ -27,7 +29,7 @@ export function useInspectorContext(): InspectorContext {
 }
 
 /** The lists of the context, read through a function so they follow whatever they come from (props, refs). */
-export type InspectorLists = Pick<InspectorContext, 'calendars' | 'hiddenCalendars' | 'groups' | 'homepages' | 'rooms' | 'services' | 'allowedServices' | 'servicesFailed'>;
+export type InspectorLists = Pick<InspectorContext, 'calendars' | 'hiddenCalendars' | 'groups' | 'homepages' | 'rooms' | 'roomTypeMissing' | 'services' | 'allowedServices' | 'servicesFailed'>;
 
 /**
  * Hands the lists and the image picker to every inspector and short menu below the calling component (Plan.md 79, C1):
@@ -50,6 +52,9 @@ export function provideInspectorContext(lists: () => InspectorLists, pickImage: 
         },
         get rooms() {
             return lists().rooms;
+        },
+        get roomTypeMissing() {
+            return lists().roomTypeMissing;
         },
         get services() {
             return lists().services;

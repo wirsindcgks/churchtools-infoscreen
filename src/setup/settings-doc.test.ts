@@ -37,4 +37,11 @@ describe('settingsToSave', () => {
         expect(saved).not.toHaveProperty('id');
         expect(readSettings({ ...saved, id: 'settings', kind: 'settings' }).allowedServiceIds).toEqual([7]);
     });
+
+    it('keeps the rest when the room types are saved, and reads them back (schema 1.35, Plan.md 86)', () => {
+        const saved = settingsToSave(stored, { roomTypeIds: [3] });
+        expect(saved).toMatchObject({ designerGroupId: 11, allowedServiceIds: [3, 7], roomTypeIds: [3] });
+        expect(readSettings({ ...saved, id: 'settings', kind: 'settings' }).roomTypeIds).toEqual([3]);
+        expect(readSettings({ ...stored }).roomTypeIds).toBeUndefined();
+    });
 });

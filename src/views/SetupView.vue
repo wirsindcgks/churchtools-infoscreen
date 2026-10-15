@@ -17,7 +17,7 @@ import RemoveSetupDialog, { type DeviceAccountInfo, type RemoveGroupInfo } from 
 import { createCategory, setCategoryInMenu, wikiRestoreLogLine, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
 import type { ScreenDoc } from '../model/schema';
 import { withDeviceLogin } from '../player/device-login';
-import { roomsOf, type RoomInfo } from '../rooms/normalize';
+import { resourceTypesOf, roomTypeIdsOf, roomsOf, type ResourceMasterdata, type ResourceTypeInfo, type RoomInfo } from '../rooms/normalize';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
 import { AUTH, checkDesignerGroup, checkDeviceGroup, groupChecks, type Check, type RequiredRight } from '../setup/checks';
 import {
@@ -69,7 +69,7 @@ type Side = 'designer' | 'device';
  * whichever page one starts on or moves to.
  */
 const route = useRoute();
-type SetupPage = 'overview' | 'groups' | 'tv' | 'wiki' | 'services';
+type SetupPage = 'overview' | 'groups' | 'tv' | 'wiki' | 'services' | 'rooms';
 const page = computed<SetupPage>(() => {
     switch (route.name) {
         case 'setup-groups':
@@ -80,6 +80,8 @@ const page = computed<SetupPage>(() => {
             return 'wiki';
         case 'setup-services':
             return 'services';
+        case 'setup-rooms':
+            return 'rooms';
         default:
             return 'overview';
     }
@@ -109,6 +111,11 @@ const HEADERS: Record<SetupPage, { icon: IconName; title: string; intro: string 
         icon: 'person',
         title: t.setup.services.title,
         intro: t.setup.services.intro,
+    },
+    rooms: {
+        icon: 'door',
+        title: t.setup.rooms.title,
+        intro: t.setup.rooms.intro,
     },
 };
 const header = computed(() => HEADERS[page.value]);
@@ -323,6 +330,62 @@ async function toggleAllowedService(id: number, on: boolean, box: HTMLInputEleme
         error.value = explain(e);
     } finally {
         servicesSaving.value = false;
+    }
+}
+
+/**
+ * The resource types that count as rooms (Plan.md 86): not every church has the type "Raum". Null where the
+ * master data cannot be read; `chosenRoomTypes` is the choice as stored – undefined = none made, the type "Raum" counts.
+ */
+const masterdata = ref<ResourceMasterdata | null>(null);
+const resourceTypes = computed<ResourceTypeInfo[] | null>(() => (masterdata.value ? resourceTypesOf(masterdata.value) : null));
+const chosenRoomTypes = ref<number[] | undefined>(undefined);
+const roomTypeIds = computed(() => roomTypeIdsOf(masterdata.value, chosenRoomTypes.value));
+/** There are resources, but none counts as a room: no screen shows a room. */
+const roomTypeMissing = computed(() => !!masterdata.value?.resources?.length && !roomTypeIds.value.length);
+const roomTypesSaved = ref(false);
+const roomTypesSaving = ref(false);
+const roomTypesFailed = ref(false);
+/** The choice is read: until then the overview shows no mark. */
+const roomTypesKnown = ref(false);
+let roomTypesRequested = false;
+
+/** Its own reads, like the services: a failure elsewhere on the page (the wiki, say) stops neither the choice nor its mark. */
+async function loadRoomTypes(): Promise<void> {
+    if (roomTypesRequested || !repository) return;
+    roomTypesRequested = true;
+    try {
+        const [resources, settings] = await Promise.all([fetchResourceMasterdata(), repository.loadSettings()]);
+        masterdata.value = resources;
+        chosenRoomTypes.value = settings?.roomTypeIds;
+        roomTypesKnown.value = true;
+    } catch {
+        roomTypesFailed.value = true;
+    }
+}
+
+/** Saves at once, then plans and checks the rights anew: other rooms need other rights. */
+async function toggleRoomType(id: number, on: boolean, box: HTMLInputElement): Promise<void> {
+    if (!repository || !masterdata.value || !resourceTypes.value || roomTypesSaving.value) return;
+    const known = new Set(resourceTypes.value.map((type) => type.id));
+    const next = [...new Set(on ? [...roomTypeIds.value, id] : roomTypeIds.value.filter((a) => a !== id))]
+        .filter((a) => known.has(a))
+        .sort((a, b) => a - b);
+    roomTypesSaving.value = true;
+    roomTypesSaved.value = false;
+    error.value = null;
+    try {
+        await persistSettings({ roomTypeIds: next });
+        chosenRoomTypes.value = next;
+        roomTypesSaved.value = true;
+        rooms = roomsOf(masterdata.value, next);
+        computePlan();
+        void Promise.all([check('designer'), check('device')]);
+    } catch (e) {
+        box.checked = !on;
+        error.value = explain(e);
+    } finally {
+        roomTypesSaving.value = false;
     }
 }
 
@@ -601,6 +664,7 @@ async function check(side: Side): Promise<void> {
                 usedCalendarIds,
                 publicCalendarIds,
                 rooms,
+                roomTypeMissing: roomTypeMissing.value,
                 usedRoomIds,
                 appointmentRooms,
                 serviceCalendarIds,
@@ -665,7 +729,9 @@ onMounted(async () => {
         repository = handle.repository;
         demo.value = handle.demo;
         if (page.value === 'services') void loadServices();
-        const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, masterdata, usedRooms, roomsAtAppointments, serviceCalendars, videos, permissions, types] = await Promise.all([
+        // The device check names a missing room type: it waits for this read below.
+        const roomTypesRead = loadRoomTypes();
+        const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, resources, usedRooms, roomsAtAppointments, serviceCalendars, videos, permissions, types] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
@@ -693,7 +759,7 @@ onMounted(async () => {
         calendars = calendarList;
         publicCalendarIds = publicCalendars.map((c) => c.id);
         usedCalendarIds = used;
-        rooms = masterdata ? roomsOf(masterdata) : [];
+        rooms = resources ? roomsOf(resources, settings?.roomTypeIds) : [];
         usedRoomIds = usedRooms;
         appointmentRooms = roomsAtAppointments;
         serviceCalendarIds = serviceCalendars;
@@ -724,6 +790,7 @@ onMounted(async () => {
             assistant.allowed = true;
         }
         computePlan();
+        await roomTypesRead;
         await Promise.all([check('designer'), check('device')]);
     } catch (e) {
         error.value = explain(e);
@@ -756,6 +823,16 @@ const servicesStatus = computed<CardStatus | null>(() => {
     return n ? { tone: 'warn', text: word.released(n) } : { tone: 'neutral', text: word.noneReleased };
 });
 
+/** Which resource types count as rooms; a warning where none does. */
+const roomsStatus = computed<CardStatus | null>(() => {
+    const word = t.setup.overview.status;
+    if (!roomTypesKnown.value || !resourceTypes.value) return null;
+    if (roomTypeMissing.value) return { tone: 'warn', text: word.noRoomType };
+    const names = resourceTypes.value.filter((type) => roomTypeIds.value.includes(type.id)).map((type) => type.name);
+    if (!names.length) return { tone: 'neutral', text: word.noResources };
+    return { tone: 'ok', text: names.length === 1 ? names[0]! : word.roomTypes(names.length) };
+});
+
 /** The cards of the overview, each to a page of its own; the wiki card only where there is an area (as before). */
 const overviewCards = computed(() => {
     const wiki = settingsLoaded.value && wikiCategory.value && !demo.value;
@@ -767,6 +844,7 @@ const overviewCards = computed(() => {
         cards.push({ key: 'wiki', route: 'setup-wiki', icon: 'image', title: t.setup.wiki.title, intro: t.setup.wiki.intro, status: { tone: 'ok', text: t.setup.overview.status.done } });
     }
     cards.push({ key: 'services', route: 'setup-services', icon: 'person', title: t.setup.services.title, intro: t.setup.services.intro, status: servicesStatus.value });
+    cards.push({ key: 'rooms', route: 'setup-rooms', icon: 'door', title: t.setup.rooms.title, intro: t.setup.rooms.intro, status: roomsStatus.value });
     return cards;
 });
 
@@ -1045,6 +1123,33 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     </section>
                 </template>
 
+                <template v-if="page === 'rooms'">
+                    <!-- Plan.md 86: not every church has the resource type "Raum"; an administrator chooses which types are rooms. -->
+                    <section class="d-card card" data-testid="room-types">
+                        <p class="lead">{{ t.setup.rooms.lead }}</p>
+                        <p v-if="roomTypesFailed && !resourceTypes" class="error" role="alert" data-testid="room-types-failed">{{ t.setup.rooms.failed }}</p>
+                        <p v-else-if="!resourceTypes" class="empty">{{ t.common.loading }}</p>
+                        <p v-else-if="!resourceTypes.length" class="muted" data-testid="room-types-none">{{ t.setup.rooms.none }}</p>
+                        <template v-else>
+                            <p v-if="roomTypeMissing" class="d-banner d-banner--warning" role="note" data-testid="room-types-missing">{{ t.setup.rooms.missing }}</p>
+                            <label v-for="type in resourceTypes" :key="type.id" class="check room-type">
+                                <input
+                                    type="checkbox"
+                                    :checked="roomTypeIds.includes(type.id)"
+                                    :disabled="roomTypesSaving"
+                                    data-testid="room-type"
+                                    @change="toggleRoomType(type.id, ($event.target as HTMLInputElement).checked, $event.target as HTMLInputElement)"
+                                >
+                                <span class="room-type-text">
+                                    <span>{{ type.name }}</span>
+                                    <span class="muted small">{{ type.resources.length ? type.resources.join(', ') : t.setup.rooms.empty }}</span>
+                                </span>
+                            </label>
+                            <p v-if="roomTypesSaved" class="muted small" role="status" data-testid="room-types-saved">{{ t.setup.rooms.saved }}</p>
+                        </template>
+                    </section>
+                </template>
+
                 <template v-if="page === 'wiki'">
                     <section v-if="wikiCategory && !demo" class="d-card card" data-testid="wiki-menu">
                         <h2>{{ t.setup.wiki.title }}</h2>
@@ -1266,6 +1371,13 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
     display: flex;
     align-items: center;
     gap: 8px;
+}
+.room-type {
+    align-items: flex-start;
+}
+.room-type-text {
+    display: grid;
+    gap: 2px;
 }
 .checks {
     margin: 4px 0 0;

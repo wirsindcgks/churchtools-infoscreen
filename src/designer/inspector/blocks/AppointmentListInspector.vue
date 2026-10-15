@@ -9,6 +9,7 @@ import { t } from '../../../i18n/designer';
 import type { Block } from '../../../model/schema';
 import { themeOf, useStageContext } from '../../../player/context';
 import { PAGE_SECONDS } from '../../../player/paging';
+import { listLayout } from '../../../player/theme';
 import CalendarField from '../../CalendarField.vue';
 import { useEditorStore } from '../../editor-store';
 import { useCalendarChoice } from '../calendar-choice';
@@ -31,6 +32,8 @@ const { setBlock } = useBlockEdit(() => props.block);
 const { calendars, hidden, toggleCalendar } = useCalendarChoice(() => props.block);
 
 const layouts = computed(() => appointmentListTiles(props.block, themeOf(stage)));
+/** The layout the list really has – one that follows the theme included. */
+const layout = computed(() => listLayout(props.block, themeOf(stage)));
 
 /** How a paged list will run – with the page count the stage preview measured. */
 const pageHint = computed(() => {
@@ -55,6 +58,14 @@ const pageHint = computed(() => {
         :label="t.inspector.appearance"
         testid="list-layout"
         @update:model-value="setBlock({ layout: $event || undefined })"
+    />
+    <!-- Plan.md 85: the calendar badge of the cards can go. -->
+    <ToggleField
+        v-if="layout === 'cards'"
+        :model-value="block.showCalendar !== false"
+        :label="t.inspector.showCalendar"
+        testid="show-calendar"
+        @update:model-value="setBlock({ showCalendar: $event ? undefined : false })"
     />
     <NumberField
         quick

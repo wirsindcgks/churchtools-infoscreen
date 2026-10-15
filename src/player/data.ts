@@ -48,13 +48,14 @@ export interface PlayerData {
      * the stammdaten cannot give – no right, a failure – leave the appointments
      * without rooms; they never fail the appointments. The same goes for `services`
      * (schema 1.17, Plan.md 51): any failure – a 403 too – leaves out the services only.
+     * `roomTypeIds`: the resource types that count as rooms (schema 1.35); missing = the type "Raum".
      */
     appointments(
         calendarIds: number[],
         from: Date,
         to: Date,
         timeZone: string,
-        options?: { rooms?: boolean; services?: number[] },
+        options?: { rooms?: boolean; services?: number[]; roomTypeIds?: number[] },
     ): Promise<Appointment[]>;
     posts(groupIds: number[], limit: number): Promise<Post[]>;
     /**
@@ -66,9 +67,9 @@ export interface PlayerData {
     /**
      * The confirmed bookings of these rooms within `[from, to)` (schema 1.16).
      * A room the caller may not read (403), that the stammdaten do not name or
-     * that is no room drops out; other errors fail.
+     * that is no room – of no type in `roomTypeIds` (schema 1.35) – drops out; other errors fail.
      */
-    rooms(resourceIds: number[], from: Date, to: Date, timeZone: string): Promise<RoomBookings[]>;
+    rooms(resourceIds: number[], from: Date, to: Date, timeZone: string, roomTypeIds?: number[]): Promise<RoomBookings[]>;
     /**
      * Writes the sign of life of this screen (Plan.md 59). Only a TV with a device login does; for anyone else
      * this does nothing. Fails without the right to write it – the caller must not let that touch the display.
@@ -129,7 +130,7 @@ export const churchToolsPlayerData: PlayerData = {
                 withTimeout(fetchAppointments(ids, from, to, timeZone, { bookings: wantsRooms })),
             ),
             wantsRooms
-                ? withTimeout(fetchResourceMasterdata()).then(roomsOf, (error: unknown) => {
+                ? withTimeout(fetchResourceMasterdata()).then((masterdata) => roomsOf(masterdata, options.roomTypeIds), (error: unknown) => {
                       console.warn('Räume der Termine konnten nicht geladen werden:', error);
                       return [];
                   })
@@ -167,9 +168,9 @@ export const churchToolsPlayerData: PlayerData = {
             }),
         );
     },
-    async rooms(resourceIds, from, to, timeZone) {
+    async rooms(resourceIds, from, to, timeZone, roomTypeIds) {
         if (!resourceIds.length) return [];
-        const known = new Map(roomsOf(await withTimeout(fetchResourceMasterdata())).map((r) => [r.id, r.name]));
+        const known = new Map(roomsOf(await withTimeout(fetchResourceMasterdata()), roomTypeIds).map((r) => [r.id, r.name]));
         const parts = await Promise.all(
             resourceIds
                 .filter((id) => known.has(id))

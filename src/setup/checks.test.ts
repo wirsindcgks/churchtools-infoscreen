@@ -320,6 +320,17 @@ describe('checkDeviceGroup', () => {
         expect(none.some((c) => c.text.includes('Saal') || c.text.includes('Raum'))).toBe(false);
     });
 
+    it('warns when no resource type counts as a room (Plan.md 86) – also before a device is in the group', () => {
+        const check = (roomTypeMissing?: boolean) =>
+            checkDeviceGroup({ statusId: 1, members: [], calendars, usedCalendarIds: [], publicCalendarIds: [2], roomTypeMissing, wikiCategoryId: WIKI }).find(
+                (c) => c.text === 'Kein Ressourcentyp für Räume gewählt.',
+            );
+        expect(check(true)).toMatchObject({ level: 'warn', category: 'rooms' });
+        expect(check(true)?.detail).toContain('Einstellungen → Räume');
+        expect(check(false)).toBeUndefined();
+        expect(check()).toBeUndefined();
+    });
+
     it('warns about a calendar a screen uses that no longer exists', () => {
         const checks = checkDeviceGroup({
             statusId: 1,

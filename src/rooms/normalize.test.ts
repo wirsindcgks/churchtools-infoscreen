@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeBookings, reviveRooms, roomsOf, type RoomBookings } from './normalize';
+import { normalizeBookings, resourceTypesOf, reviveRooms, roomsOf, roomTypeIdsOf, type RoomBookings } from './normalize';
 
 /** A booking as `/bookings` sends it (G45) – with everything the block must never take. */
 function booking(overrides: Record<string, unknown> = {}, calculated: Record<string, unknown> | null = {}) {
@@ -95,6 +95,49 @@ describe('roomsOf', () => {
         expect(roomsOf({ resourceTypes: masterdata.resourceTypes, resources: [] })).toEqual([]);
         expect(roomsOf({ resources: masterdata.resources })).toEqual([]);
         expect(roomsOf(null)).toEqual([]);
+    });
+
+    it('takes the types the settings chose instead (Plan.md 86); an empty choice is no room at all', () => {
+        expect(roomsOf(masterdata, [2, 9])).toEqual([
+            { id: 6, name: 'Anderer Typ' },
+            { id: 5, name: 'Beamer' },
+        ]);
+        expect(roomsOf(masterdata, [])).toEqual([]);
+    });
+});
+
+describe('roomTypeIdsOf (Plan.md 86)', () => {
+    const types = { resourceTypes: [{ id: 3, name: 'Gemeindezentrum' }, { id: 1, name: 'resource.type.room' }] };
+
+    it('is the type "Raum" without a choice, else the chosen types that still exist', () => {
+        expect(roomTypeIdsOf(types)).toEqual([1]);
+        expect(roomTypeIdsOf(types, [3, 99])).toEqual([3]);
+    });
+
+    it('is empty on an instance without the type "Raum" – and without a choice', () => {
+        expect(roomTypeIdsOf({ resourceTypes: [{ id: 3, name: 'Gemeindezentrum' }] })).toEqual([]);
+        expect(roomTypeIdsOf(types, [])).toEqual([]);
+    });
+});
+
+describe('resourceTypesOf', () => {
+    it('names every type, by sort key, with the names of its resources', () => {
+        const masterdata = {
+            resourceTypes: [
+                { id: 2, name: 'resource.type.item', nameTranslated: 'Gegenstand', sortKey: 20 },
+                { id: 1, name: 'resource.type.room', nameTranslated: 'Raum', sortKey: 10 },
+                { id: 3, name: 'Gemeindezentrum', sortKey: 30 },
+            ],
+            resources: [
+                { id: 1, name: 'Saal', sortKey: 10, resourceTypeId: 1 },
+                { id: 5, name: 'Beamer', sortKey: 5, resourceTypeId: 2 },
+            ],
+        };
+        expect(resourceTypesOf(masterdata)).toEqual([
+            { id: 1, name: 'Raum', resources: ['Saal'] },
+            { id: 2, name: 'Gegenstand', resources: ['Beamer'] },
+            { id: 3, name: 'Gemeindezentrum', resources: [] },
+        ]);
     });
 });
 

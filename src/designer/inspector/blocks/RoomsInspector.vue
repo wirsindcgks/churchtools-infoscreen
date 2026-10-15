@@ -86,8 +86,9 @@ function remove(index: number): void {
 <template>
     <!-- Choosing and ordering the rooms are one chip "Räume · 2" in the short menu, the first field of the block (Plan.md 79, C5). -->
     <QuickField quick :label="t.inspector.rooms" :face="t.quick.count(t.inspector.rooms, block.rooms.length)">
+        <!-- Plan.md 86: an instance without the type "Raum" shows no room until an administrator chooses a type. -->
         <p v-if="context.rooms && !context.rooms.length" class="hint" data-testid="rooms-none">
-            {{ t.inspector.noRooms }}
+            {{ context.roomTypeMissing ? t.inspector.roomTypeMissing : t.inspector.noRooms }}
         </p>
         <div v-else-if="context.rooms" class="room-add">
             <select

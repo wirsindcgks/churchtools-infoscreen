@@ -551,6 +551,21 @@ describe('readSlide – rooms off per room (schema 1.34, Plan.md 82)', () => {
     });
 });
 
+describe('readSlide – "Kalender zeigen" (schema 1.35, Plan.md 85)', () => {
+    const style = { fontFamily: 'sans', fontSize: 44, color: '#fff' };
+    const list = { id: 'l', type: 'appointment-list', x: 0, y: 0, width: 800, height: 400, calendarIds: [1], horizonDays: 14, limit: 5, layout: 'cards', style };
+    const next = { id: 'n', type: 'next-appointment', x: 0, y: 0, width: 800, height: 400, calendarIds: [1], layout: 'card', style };
+
+    it('reads the switch on both blocks, and a 1.34 slide stays valid without it', () => {
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(35);
+        const { doc, issues } = readSlide({ ...makeSlide(), schema: { major: 1, minor: 34 }, blocks: [{ ...list, showCalendar: false }, { ...next, showCalendar: false }, { ...next, id: 'm' }] });
+        expect(issues).toEqual([]);
+        expect(doc.blocks[0]).toMatchObject({ showCalendar: false });
+        expect(doc.blocks[1]).toMatchObject({ showCalendar: false });
+        expect(doc.blocks[2]).not.toHaveProperty('showCalendar');
+    });
+});
+
 describe('readSlide – rooms in rows of lists from before 1.34 (Plan.md 82)', () => {
     const style = { fontFamily: 'sans', fontSize: 44, color: '#fff' };
     const list = (extra: object = {}) => ({ id: 'l', type: 'appointment-list', x: 0, y: 0, width: 800, height: 400, calendarIds: [1], horizonDays: 14, limit: 5, style, ...extra });
