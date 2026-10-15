@@ -44,7 +44,7 @@ Interne Termine (nur für angemeldete Benutzer) zeigt kein Fernseher. Hat ein Ba
 ChurchTools freigibt.
 
 **Termine über Tags ausblenden.** Terminliste, Nächster Termin und Countdown lassen Termine weg, die einen bestimmten
-Tag tragen – etwa „Intern" oder „Probe". Unter den Kalendern steht **„Termine mit diesen Tags ausblenden"**; dort schaltet
+Tag tragen – etwa „Intern" oder „Probe". Unter den Kalendern steht **„Tags ausblenden"**; dort schaltet
 man die Tags ein, die der Baustein auslassen soll. Tags vergibt man in ChurchTools am Termin und verwaltet sie im Kalender
 über das Tag-Symbol; eine Wiederholungsserie trägt den Tag an jedem Termin. Ein Tag, den es in ChurchTools nicht mehr gibt,
 steht als „Tag gelöscht" da und lässt sich abwählen. Das Gerät braucht dafür kein eigenes Recht. Zeitpläne nach Terminen
@@ -120,7 +120,7 @@ innerhalb der Gruppe.
 ## Galerie
 
 Bilder aus der Mediathek nacheinander, mit vier Übergängen (Überblenden, Schieben, Aufdecken oder harter Schnitt). Dazu zoomt jedes Bild auf Wunsch langsam hinein, heraus oder abwechselnd (Feld „Bewegung"). Mehrere Bilder auf einmal wählen, mit ↑/↓
-sortieren, Dauer je Bild und Darstellung (Ganz zeigen oder Fläche füllen) einstellen. Die Folie läuft, bis jedes Bild
+sortieren, Dauer je Bild und Einpassen (Ganz zeigen oder Fläche füllen) unter „Darstellung" einstellen. Die Folie läuft, bis jedes Bild
 einmal zu sehen war; höchstens 30 Bilder. Die Bilder liegen auf dem Gerät, die Galerie läuft auch ohne Netz.
 
 ![Editor mit dem Baustein „Galerie": rechts die Liste der Bilder mit Reihenfolge, Dauer und Übergang](bilder/galerie.png)

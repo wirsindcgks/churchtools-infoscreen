@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * The social media block (Plan.md 80): the profiles by their links, the arrangement and the brand colours, then the font
+ * The social media block (Plan.md 80): the profiles by their links, then as the look the arrangement and the brand colours, then the font
  * (Plan.md 83). The mark and the name come from the link (`socialProfile`); a name typed here wins. Links, arrangement,
  * brand colours, the colour and the alignment go to the short menu.
  */
@@ -29,6 +29,10 @@ const layouts = [
     { value: 'column', label: t.inspector.socialColumn },
     { value: 'row', label: t.inspector.socialRow },
 ];
+
+const look = computed(() =>
+    [layouts.find((l) => l.value === (props.block.layout ?? 'column'))?.label, props.block.brandColors !== false && t.inspector.socialBrand].filter(Boolean).join(' · '),
+);
 
 const chosen = computed<SortItem[]>(() => props.block.links.map((link, index) => ({ key: index, label: socialName(link) || link.url })));
 
@@ -102,8 +106,10 @@ function remove(index: number): void {
         </InspectorSection>
     </QuickField>
 
-    <SegmentField quick stacked :model-value="block.layout ?? 'column'" :options="layouts" :label="t.inspector.socialLayout" testid="social-layout" @update:model-value="setBlock({ layout: $event as 'column' | 'row' })" />
-    <ToggleField quick :model-value="block.brandColors !== false" :label="t.inspector.socialBrand" testid="social-brand" @update:model-value="setBlock({ brandColors: $event })" />
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="look" default-open>
+        <SegmentField quick stacked :model-value="block.layout ?? 'column'" :options="layouts" :label="t.inspector.socialLayout" testid="social-layout" @update:model-value="setBlock({ layout: $event as 'column' | 'row' })" />
+        <ToggleField quick :model-value="block.brandColors !== false" :label="t.inspector.socialBrand" testid="social-brand" @update:model-value="setBlock({ brandColors: $event })" />
+    </InspectorSection>
     <FontSection :block="block" align-quick effects="shadow" />
 </template>
 

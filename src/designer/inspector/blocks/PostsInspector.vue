@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
- * The posts block (Plan.md 33, 79 B2): the groups whose posts show, the look as picture tiles, how many posts from
- * how long ago, how long each stays. Groups and look go to the short menu.
+ * The posts block (Plan.md 33, 79 B2): the groups whose posts show (with the hint on non-public ones), then as the look the picture tiles, how many posts from
+ * how long ago, how long each stays and what a post shows. Groups and look go to the short menu.
  */
+import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
 import type { Block } from '../../../model/schema';
 import { POST_SECONDS } from '../../../player/paging';
@@ -22,6 +23,8 @@ const props = defineProps<{ block: Extract<Block, { type: 'posts' }> }>();
 const mode = useInspectorMode();
 const { setBlock } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
+
+const summary = computed(() => `${POSTS_TILES.find((o) => o.value === props.block.layout)?.label} · ${props.block.maxAgeDays} ${t.inspector.unitDays}`);
 
 /** Empty is allowed here (Plan.md 33): a fresh block starts without a group until one is chosen. */
 function toggleGroup(id: number, on: boolean): void {
@@ -44,36 +47,38 @@ function toggleGroup(id: number, on: boolean): void {
                 @update:model-value="toggleGroup(g.id, $event)"
             />
             <p v-if="!context.groups.length" class="hint">{{ t.inspector.noPostGroups }}</p>
+            <p v-if="mode === 'full' && block.groupIds.some((id) => context.groups.find((g) => g.id === id)?.visibility !== 'public')" class="hint" data-testid="posts-not-public">
+                {{ t.inspector.postsNotPublic }}
+            </p>
         </InspectorSection>
     </QuickField>
-    <p v-if="mode === 'full' && block.groupIds.some((id) => context.groups.find((g) => g.id === id)?.visibility !== 'public')" class="hint" data-testid="posts-not-public">
-        {{ t.inspector.postsNotPublic }}
-    </p>
-    <TileField quick :model-value="block.layout" :options="POSTS_TILES" :label="t.inspector.appearance" testid="posts-layout" @update:model-value="setBlock({ layout: $event })" />
-    <NumberField :model-value="block.limit" :label="t.inspector.count" :min="1" :max="10" testid="posts-limit" @update:model-value="setBlock({ limit: $event })" />
-    <NumberField
-        :model-value="block.maxAgeDays"
-        :label="t.inspector.period"
-        :unit="t.inspector.unitDays"
-        :min="1"
-        :max="365"
-        testid="posts-days"
-        @update:model-value="setBlock({ maxAgeDays: $event })"
-    >
-        <template #info>{{ t.inspector.periodPostsInfo }}</template>
-    </NumberField>
-    <NumberField
-        v-if="block.layout === 'card'"
-        :model-value="block.pageSeconds ?? POST_SECONDS"
-        :label="t.inspector.secondsPerPost"
-        :unit="t.inspector.unitSeconds"
-        :min="5"
-        :max="120"
-        testid="post-seconds"
-        @update:model-value="setBlock({ pageSeconds: $event })"
-    />
-    <ToggleField :model-value="block.showImage" :label="t.inspector.showImage" testid="posts-image" @update:model-value="setBlock({ showImage: $event })" />
-    <ToggleField :model-value="block.showAuthor" :label="t.inspector.showAuthor" testid="posts-author" @update:model-value="setBlock({ showAuthor: $event })" />
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" default-open>
+        <TileField quick :model-value="block.layout" :options="POSTS_TILES" :label="t.inspector.view" testid="posts-layout" @update:model-value="setBlock({ layout: $event })" />
+        <NumberField :model-value="block.limit" :label="t.inspector.count" :min="1" :max="10" testid="posts-limit" @update:model-value="setBlock({ limit: $event })" />
+        <NumberField
+            :model-value="block.maxAgeDays"
+            :label="t.inspector.period"
+            :unit="t.inspector.unitDays"
+            :min="1"
+            :max="365"
+            testid="posts-days"
+            @update:model-value="setBlock({ maxAgeDays: $event })"
+        >
+            <template #info>{{ t.inspector.periodPostsInfo }}</template>
+        </NumberField>
+        <NumberField
+            v-if="block.layout === 'card'"
+            :model-value="block.pageSeconds ?? POST_SECONDS"
+            :label="t.inspector.secondsPerPost"
+            :unit="t.inspector.unitSeconds"
+            :min="5"
+            :max="120"
+            testid="post-seconds"
+            @update:model-value="setBlock({ pageSeconds: $event })"
+        />
+        <ToggleField :model-value="block.showImage" :label="t.inspector.showImage" testid="posts-image" @update:model-value="setBlock({ showImage: $event })" />
+        <ToggleField :model-value="block.showAuthor" :label="t.inspector.showAuthor" testid="posts-author" @update:model-value="setBlock({ showAuthor: $event })" />
+    </InspectorSection>
     <FontSection :block="block" effects="shadow" />
 </template>
 

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 /**
  * What the appointment list and the next appointment share beyond their calendars (Plan.md 79, B2): the
- * booked room where no place is entered (Plan.md 50), the rooms to leave out per calendar (Plan.md 51) and per
- * room (Plan.md 82) and the services (Plan.md 51, 58; cards only). None of it goes to the short menu.
+ * booked room where no place is entered (Plan.md 50; the switch, part `toggle`, stands in the look), the rooms to leave out
+ * per calendar (Plan.md 51) and per room (Plan.md 82) and the services (Plan.md 51, 58; cards only; both foldable, part
+ * `sections`). None of it goes to the short menu.
  */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
@@ -18,7 +19,8 @@ import ToggleField from '../fields/ToggleField.vue';
 import { useFieldVisible } from '../mode';
 import { useBlockEdit } from '../use-block';
 
-const props = defineProps<{ block: Extract<Block, { type: 'appointment-list' | 'next-appointment' }> }>();
+/** `toggle` is "Raum zeigen" with its hint, for the look; `sections` the two foldable lists after the look. */
+const props = defineProps<{ block: Extract<Block, { type: 'appointment-list' | 'next-appointment' }>; part: 'toggle' | 'sections' }>();
 const { setBlock } = useBlockEdit(() => props.block);
 /** The preview's stage context: the theme decides the layout of a list that follows it. */
 const stage = useStageContext();
@@ -90,7 +92,7 @@ const servicesSummary = computed(() => (shownServiceCount.value ? t.common.chose
 </script>
 
 <template>
-    <template v-if="visible">
+    <template v-if="visible && part === 'toggle'">
         <!-- Plan.md, 50: the booked rooms where no place is entered; Plan.md 82: in both forms of the list. -->
         <ToggleField
             :model-value="roomsOn"
@@ -101,6 +103,8 @@ const servicesSummary = computed(() => (shownServiceCount.value ? t.common.chose
             <template #info>{{ t.inspector.showRoomInfo }}</template>
         </ToggleField>
         <p v-if="roomsOn && context.roomTypeMissing" class="hint" data-testid="room-type-missing">{{ t.inspector.roomTypeMissing }}</p>
+    </template>
+    <template v-else-if="visible">
         <!-- Plan.md, 51 and 82: rooms can be left out for single calendars and single rooms. -->
         <InspectorSection v-if="roomsOn" id="rooms-for" :title="t.inspector.roomsFor" :summary="roomsForSummary">
             <div class="groups" data-testid="rooms-for">

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-/** The text block (Plan.md 79, B2): the text itself, then the text level and the font. The short menu will take level, colour and alignment. */
+/** The text block (Plan.md 79, B2): the text itself, then the font section with the text level first. The short menu will take level, colour and alignment. */
 import { t } from '../../../i18n/designer';
 import type { Block } from '../../../model/schema';
 import { computed } from 'vue';
@@ -27,6 +27,9 @@ function chooseLevel(value: string | number): void {
 
 <template>
     <TextField multiline :rows="3" :model-value="block.text" :label="t.inspector.text" testid="text-input" @update:model-value="setBlock({ text: $event })" />
-    <SegmentField :model-value="level" :options="levelOptions" :label="t.inspector.textLevel" testid="text-level" quick @update:model-value="chooseLevel" />
-    <FontSection :block="block" align-quick effects="all" />
+    <FontSection :block="block" align-quick effects="all" default-open>
+        <template #first>
+            <SegmentField :model-value="level" :options="levelOptions" :label="t.inspector.textLevel" testid="text-level" quick @update:model-value="chooseLevel" />
+        </template>
+    </FontSection>
 </template>

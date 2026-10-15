@@ -1,14 +1,13 @@
 <script setup lang="ts">
 /**
- * The gallery (Plan.md 46, 79 B2): library pictures one after the other – the pictures with their order, how long each
- * stays, then the transition, the motion and how a picture fits the box as the look. "Bilder hinzufügen" and the
+ * The gallery (Plan.md 46, 79 B2): library pictures one after the other – the pictures with their order, then as the look how long each
+ * stays, the transition, the motion and how a picture fits the box. "Bilder hinzufügen" and the
  * transition go to the short menu.
  */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
 import type { Block } from '../../../model/schema';
 import { effectiveMotion, effectiveTransition } from '../../../player/slideshow';
-import HintRow from '../../HintRow.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
 import MediaField from '../fields/MediaField.vue';
@@ -77,16 +76,23 @@ function remove(index: number): void {
     <InspectorSection v-else id="slideshow-images" :title="t.inspector.images" :summary="t.inspector.imageCount(block.mediaIds.length)">
         <SortList :items="items" :remove-label="t.inspector.removeImage" testid="slideshow" @move="move" @remove="remove" />
     </InspectorSection>
-    <NumberField
-        :model-value="block.seconds ?? 6"
-        :label="t.inspector.secondsPerImage"
-        :unit="t.inspector.unitSeconds"
-        :min="3"
-        :max="60"
-        testid="slideshow-seconds"
-        @update:model-value="setBlock({ seconds: $event })"
-    />
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="lookSummary(block, TRANSITION_TILES.find((o) => o.value === effectiveTransition(block))?.label)">
+    <InspectorSection
+        id="appearance"
+        :title="t.inspector.appearance"
+        :summary="lookSummary(block, `${block.seconds ?? 6} ${t.inspector.unitSeconds}`, TRANSITION_TILES.find((o) => o.value === effectiveTransition(block))?.label)"
+        default-open
+    >
+        <NumberField
+            :model-value="block.seconds ?? 6"
+            :label="t.inspector.secondsPerImage"
+            :unit="t.inspector.unitSeconds"
+            :min="3"
+            :max="60"
+            testid="slideshow-seconds"
+            @update:model-value="setBlock({ seconds: $event })"
+        >
+            <template #info>{{ t.inspector.slideshowRuntimeInfo }}</template>
+        </NumberField>
         <TileField
             quick
             :model-value="effectiveTransition(block)"
@@ -105,10 +111,6 @@ function remove(index: number): void {
         <SegmentField :model-value="block.fit ?? 'cover'" :options="fits" :label="t.inspector.fit" testid="slideshow-fit" @update:model-value="setBlock({ fit: $event })" />
         <PictureFrameFields v-if="(block.fit ?? 'cover') === 'cover'" :block="block" />
     </InspectorSection>
-    <HintRow v-if="mode === 'full'" caption>
-        <span>{{ t.inspector.runtime }}</span>
-        <template #info>{{ t.inspector.slideshowRuntimeInfo }}</template>
-    </HintRow>
 </template>
 
 <style scoped>

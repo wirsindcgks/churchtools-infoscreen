@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * The room occupancy (Plan.md 46, 79 B2): which rooms are taken – an overview or the door sign of the first room. Rooms,
- * look and period go to the short menu.
+ * look and period go to the short menu; look, period and page time stand in "Darstellung".
  */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
@@ -9,6 +9,7 @@ import type { Block, RoomEntry } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
 import { PAGE_SECONDS } from '../../../player/paging';
 import type { RoomInfo } from '../../../rooms/normalize';
+import Icon from '../../Icon.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
 import QuickField from '../fields/QuickField.vue';
@@ -32,6 +33,8 @@ const { setBlock } = useBlockEdit(() => props.block);
 /** The preview's stage context: a room's name may come from its data when the designer may not see the room. */
 const stage = useStageContext();
 const context = useInspectorContext();
+
+const summary = computed(() => `${ROOMS_TILES.find((o) => o.value === props.block.layout)?.label} · ${props.block.days} ${t.inspector.unitDays}`);
 
 /** The name ChurchTools gives the room – from what the designer may see, else from the preview's data. */
 function roomName(resourceId: number): string | null {
@@ -85,16 +88,20 @@ function remove(index: number): void {
             {{ context.roomTypeMissing ? t.inspector.roomTypeMissing : t.inspector.noRooms }}
         </p>
         <div v-else-if="context.rooms" class="room-add">
-            <select
-                :disabled="!pickable.length || block.rooms.length >= ROOMS_MAX"
-                value=""
-                :aria-label="t.inspector.addRoomLabel"
-                data-testid="rooms-add"
-                @change="pickRoom($event.target as HTMLSelectElement)"
-            >
-                <option value="">{{ t.inspector.addRoom }}</option>
-                <option v-for="r in pickable" :key="r.id" :value="r.id">{{ r.name }}</option>
-            </select>
+            <!-- Looks like `SelectField` (Plan.md 88): the chevron instead of the global arrow. -->
+            <span class="select-box">
+                <select
+                    :disabled="!pickable.length || block.rooms.length >= ROOMS_MAX"
+                    value=""
+                    :aria-label="t.inspector.addRoomLabel"
+                    data-testid="rooms-add"
+                    @change="pickRoom($event.target as HTMLSelectElement)"
+                >
+                    <option value="">{{ t.inspector.addRoom }}</option>
+                    <option v-for="r in pickable" :key="r.id" :value="r.id">{{ r.name }}</option>
+                </select>
+                <Icon name="chevron-down" :size="14" class="select-icon" />
+            </span>
             <button class="d-btn" type="button" :disabled="!pickable.length || block.rooms.length >= ROOMS_MAX" data-testid="rooms-add-all" @click="addRooms(pickable)">
                 {{ t.inspector.addAllRooms }}
             </button>
@@ -121,30 +128,32 @@ function remove(index: number): void {
         </InspectorSection>
     </QuickField>
 
-    <TileField quick :model-value="block.layout" :options="ROOMS_TILES" :label="t.inspector.appearance" testid="rooms-layout" @update:model-value="setBlock({ layout: $event })" />
-    <NumberField
-        quick
-        :model-value="block.days"
-        :label="t.inspector.period"
-        :unit="t.inspector.unitDays"
-        :min="1"
-        :max="14"
-        testid="rooms-days"
-        @update:model-value="setBlock({ days: $event })"
-    />
-    <NumberField
-        v-if="block.layout === 'overview'"
-        :model-value="block.pageSeconds ?? PAGE_SECONDS"
-        :label="t.inspector.secondsPerPage"
-        :unit="t.inspector.unitSeconds"
-        :min="5"
-        :max="120"
-        testid="rooms-seconds"
-        @update:model-value="setBlock({ pageSeconds: $event })"
-    />
-    <p v-if="mode === 'full' && block.layout === 'door'" class="hint" data-testid="rooms-door-hint">
-        {{ t.inspector.doorHint }}
-    </p>
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" default-open>
+        <TileField quick :model-value="block.layout" :options="ROOMS_TILES" :label="t.inspector.view" testid="rooms-layout" @update:model-value="setBlock({ layout: $event })" />
+        <NumberField
+            quick
+            :model-value="block.days"
+            :label="t.inspector.period"
+            :unit="t.inspector.unitDays"
+            :min="1"
+            :max="14"
+            testid="rooms-days"
+            @update:model-value="setBlock({ days: $event })"
+        />
+        <NumberField
+            v-if="block.layout === 'overview'"
+            :model-value="block.pageSeconds ?? PAGE_SECONDS"
+            :label="t.inspector.secondsPerPage"
+            :unit="t.inspector.unitSeconds"
+            :min="5"
+            :max="120"
+            testid="rooms-seconds"
+            @update:model-value="setBlock({ pageSeconds: $event })"
+        />
+        <p v-if="mode === 'full' && block.layout === 'door'" class="hint" data-testid="rooms-door-hint">
+            {{ t.inspector.doorHint }}
+        </p>
+    </InspectorSection>
 </template>
 
 <style scoped>
@@ -155,9 +164,26 @@ function remove(index: number): void {
     gap: 6px;
     min-width: 0;
 }
-.room-add select {
+.select-box {
+    position: relative;
+    display: flex;
+    flex: 1 1 9rem;
+    min-width: 9rem;
+}
+.select-box select {
     flex: 1;
-    min-width: 0;
+    padding-right: 32px;
+    background-image: none;
+}
+.select-icon {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+.room-add .d-btn {
+    flex: none;
 }
 .hint {
     margin: 0;

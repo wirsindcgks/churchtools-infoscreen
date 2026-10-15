@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * The groups block (Plan.md 43, 79 B2): the groups of a ChurchTools group homepage, one at a time with a QR code or as a
- * list. Homepage and look go to the short menu.
+ * list. Homepage and look go to the short menu. The groups (all, or a chosen list) and the look are foldable.
  */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
@@ -101,13 +101,18 @@ function move(from: number, to: number): void {
 }
 
 /** Folded sections say what is set inside (Plan.md 47). */
+const groupsSummary = computed(() => (props.block.groupIds.length ? t.common.countOf(props.block.groupIds.length, homepageGroupList.value.length) : t.inspector.all));
+const summary = computed(() => {
+    const layout = GROUPS_TILES.find((o) => o.value === props.block.layout)?.label;
+    const order = props.block.groupIds.length === 0 && sorts.find((o) => o.value === props.block.sort)?.label;
+    return [layout, order].filter(Boolean).join(' · ');
+});
 const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((key) => props.block.show[key]).length, GROUP_SHOW_KEYS.length));
 </script>
 
 <template>
     <SelectField
         quick
-        inline
         :model-value="block.parentGroupId ?? ''"
         :options="homepages"
         :label="t.inspector.groupsHomepage"
@@ -120,57 +125,60 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
         {{ t.inspector.noHomepage }}
     </p>
 
-    <ToggleField
-        :model-value="block.groupIds.length === 0"
-        :label="t.inspector.allGroups"
-        :disabled="block.groupIds.length === 0 && homepageGroupList.length === 0"
-        testid="groups-all"
-        @update:model-value="toggleAll"
-    />
-    <SegmentField
-        v-if="block.groupIds.length === 0"
-        :model-value="block.sort"
-        :options="sorts"
-        :label="t.inspector.order"
-        testid="groups-sort"
-        stacked
-        @update:model-value="setBlock({ sort: $event })"
-    >
-        <template #info>{{ t.inspector.sortWeekdayInfo }}</template>
-    </SegmentField>
-
-    <InspectorSection v-if="block.groupIds.length" id="group-list" :title="t.inspector.groups" :summary="t.common.chosen(block.groupIds.length)">
-        <SortList :items="chosen" :remove-label="t.common.remove" testid="group" @move="move" @remove="removeAt" />
+    <InspectorSection id="group-list" :title="t.inspector.groups" :summary="groupsSummary">
         <ToggleField
-            v-for="g in pickable"
-            :key="g.id"
-            :model-value="false"
-            :label="g.name"
-            :testid="`group-pick-${g.id}`"
-            @update:model-value="pick(g.id)"
+            :model-value="block.groupIds.length === 0"
+            :label="t.inspector.allGroups"
+            :disabled="block.groupIds.length === 0 && homepageGroupList.length === 0"
+            testid="groups-all"
+            @update:model-value="toggleAll"
         />
+        <template v-if="block.groupIds.length">
+            <SortList :items="chosen" :remove-label="t.common.remove" testid="group" @move="move" @remove="removeAt" />
+            <ToggleField
+                v-for="g in pickable"
+                :key="g.id"
+                :model-value="false"
+                :label="g.name"
+                :testid="`group-pick-${g.id}`"
+                @update:model-value="pick(g.id)"
+            />
+        </template>
     </InspectorSection>
 
-    <TileField quick :model-value="block.layout" :options="GROUPS_TILES" :label="t.inspector.appearance" testid="groups-layout" @update:model-value="setBlock({ layout: $event })" />
-    <SegmentField
-        v-if="block.layout === 'card'"
-        :model-value="block.perPage"
-        :options="perPages"
-        :label="t.inspector.groupsPerPage"
-        testid="groups-per-page"
-        @update:model-value="setBlock({ perPage: Number($event) })"
-    >
-        <template v-if="block.perPage > 1" #info>{{ t.inspector.perPageInfo(block.width >= block.height) }}</template>
-    </SegmentField>
-    <NumberField
-        :model-value="block.pageSeconds ?? GROUP_SECONDS"
-        :label="block.layout === 'card' && block.perPage === 1 ? t.inspector.secondsPerGroup : t.inspector.secondsPerPage"
-        :unit="t.inspector.unitSeconds"
-        :min="5"
-        :max="120"
-        testid="group-seconds"
-        @update:model-value="setBlock({ pageSeconds: $event })"
-    />
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" default-open>
+        <TileField quick :model-value="block.layout" :options="GROUPS_TILES" :label="t.inspector.view" testid="groups-layout" @update:model-value="setBlock({ layout: $event })" />
+        <SegmentField
+            v-if="block.groupIds.length === 0"
+            :model-value="block.sort"
+            :options="sorts"
+            :label="t.inspector.order"
+            testid="groups-sort"
+            stacked
+            @update:model-value="setBlock({ sort: $event })"
+        >
+            <template #info>{{ t.inspector.sortWeekdayInfo }}</template>
+        </SegmentField>
+        <SegmentField
+            v-if="block.layout === 'card'"
+            :model-value="block.perPage"
+            :options="perPages"
+            :label="t.inspector.groupsPerPage"
+            testid="groups-per-page"
+            @update:model-value="setBlock({ perPage: Number($event) })"
+        >
+            <template v-if="block.perPage > 1" #info>{{ t.inspector.perPageInfo(block.width >= block.height) }}</template>
+        </SegmentField>
+        <NumberField
+            :model-value="block.pageSeconds ?? GROUP_SECONDS"
+            :label="block.layout === 'card' && block.perPage === 1 ? t.inspector.secondsPerGroup : t.inspector.secondsPerPage"
+            :unit="t.inspector.unitSeconds"
+            :min="5"
+            :max="120"
+            testid="group-seconds"
+            @update:model-value="setBlock({ pageSeconds: $event })"
+        />
+    </InspectorSection>
 
     <InspectorSection id="fields" :title="t.inspector.details" :summary="fieldsSummary">
         <template #info>

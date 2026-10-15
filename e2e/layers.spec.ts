@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { addBlock, openSlides } from './helpers';
+import { addBlock, openSection, openSlides } from './helpers';
 
 // The list of the slide's blocks, "Mehrere auswählen" at the finger, and the sheet of slides sorted on the grid (Plan.md 79, D6, D7).
 
@@ -46,6 +46,7 @@ test.describe('on a desktop', () => {
         // A click chooses the block (the short menu stands), Shift-click adds the next.
         await rows.nth(0).click();
         await expect(page.getByTestId('quick-menu')).toBeVisible();
+        await openSection(page, 'arrange');
         const arrange = page.getByTestId('block-inspector').getByTestId('layer-row');
         await arrange.nth(1).click({ modifiers: ['Shift'] });
         await expect(page.getByTestId('multi-title')).toHaveText('2 Bausteine');

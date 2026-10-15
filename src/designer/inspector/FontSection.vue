@@ -21,7 +21,7 @@ import { useBlockEdit, type StyledBlock } from './use-block';
  * `effects`: `'shadow'` adds the shadow of the text (every block with a font since Plan.md 83), `'all'` the shadow and the
  * band behind the lines (the text block, where both go to the short menu); without it neither shows (Plan.md F3).
  */
-const props = defineProps<{ block: StyledBlock; alignQuick?: boolean; effects?: 'shadow' | 'all' }>();
+const props = defineProps<{ block: StyledBlock; alignQuick?: boolean; effects?: 'shadow' | 'all'; defaultOpen?: boolean }>();
 const edit = useEdit();
 const { editor, setStyle } = useBlockEdit(() => props.block);
 
@@ -68,10 +68,11 @@ const summary = computed(() => {
 </script>
 
 <template>
-    <InspectorSection id="font" :title="t.inspector.font" :summary="summary">
+    <InspectorSection id="font" :title="t.inspector.font" :summary="summary" :default-open="defaultOpen">
         <template #summary-extra>
             <span class="swatch" :style="{ background: style.color }" />
         </template>
+        <slot name="first" />
         <FontField :model-value="style.fontFamily" :label="t.inspector.fontFamily" testid="font-family" @update:model-value="setStyle({ fontFamily: $event })" />
         <NumberField :model-value="style.fontSize" :label="t.inspector.fontSize" unit="px" :min="8" testid="font-size" @update:model-value="setStyle({ fontSize: $event })" />
         <SegmentField

@@ -141,7 +141,7 @@ test('add a video: the library shows only videos, the inspector names the one ch
     await expect(page.getByTestId('block-inspector').getByTestId('video-sound')).not.toBeChecked();
     await openSection(page, 'appearance');
     await expect.poll(() => chosen(page, 'video-fit')).toBe('contain');
-    await inspector.getByRole('button', { name: 'Erklärung' }).last().click();
+    await inspector.getByTestId('pick-video').locator('..').getByRole('button', { name: 'Erklärung' }).click();
     await expect(inspector.getByText('Die Folie dauert mindestens so lange wie das Video.')).toBeVisible();
     // On the designer's stage only a still: no sound, no playing.
     const onStage = page.locator('.editor-stage').getByTestId('video');

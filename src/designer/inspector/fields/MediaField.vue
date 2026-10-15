@@ -5,6 +5,8 @@
  * default slot takes further buttons, such as "Logo aus ChurchTools verwenden". In the short menu (Plan.md 79, C1) it is
  * only the button, a chip that opens the library.
  */
+import { ref } from 'vue';
+import InfoHint from '../../InfoHint.vue';
 import { useInspectorMode } from '../mode';
 
 defineProps<{
@@ -23,8 +25,9 @@ defineProps<{
     quick?: boolean;
 }>();
 defineEmits<{ pick: [] }>();
-defineSlots<{ default?(): unknown }>();
+defineSlots<{ default?(): unknown; info?(): unknown }>();
 const mode = useInspectorMode();
+const infoOpen = ref(false);
 </script>
 
 <template>
@@ -45,9 +48,13 @@ const mode = useInspectorMode();
     <div v-else class="media-field">
         <img v-if="previewUrl" :class="{ 'media-preview--contain': contain }" :src="previewUrl" alt="">
         <p v-if="caption" :class="captionMuted ? 'hint' : 'media-name'" :data-testid="captionTestid">{{ caption }}</p>
-        <button class="d-btn media-pick" type="button" :disabled="disabled" :data-testid="testid" @click="$emit('pick')">
-            {{ filled ? swapLabel : pickLabel }}
-        </button>
+        <div class="media-actions">
+            <button class="d-btn media-pick" type="button" :disabled="disabled" :data-testid="testid" @click="$emit('pick')">
+                {{ filled ? swapLabel : pickLabel }}
+            </button>
+            <InfoHint v-if="$slots.info" v-model:open="infoOpen" part="button" />
+        </div>
+        <InfoHint v-if="$slots.info" v-model:open="infoOpen" part="text"><slot name="info" /></InfoHint>
         <slot />
     </div>
 </template>
@@ -78,7 +85,13 @@ img.media-preview--contain {
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
+.media-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
 .media-pick {
+    flex: 1;
     justify-content: center;
 }
 </style>

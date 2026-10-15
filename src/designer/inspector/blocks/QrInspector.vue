@@ -29,21 +29,23 @@ const edit = useEdit();
         @update:model-value="setBlock({ data: $event })"
     />
     <p v-if="mode === 'full' && block.data.trim() && !qrShape(block.data)" class="hint">{{ t.inspector.qrTooLong }}</p>
-    <InspectorSection id="appearance" :title="t.inspector.appearance">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" default-open>
+        <template #summary-extra>
+            <span class="swatch" :style="{ background: block.color }" />
+            <span class="swatch" :style="{ background: block.background }" />
+        </template>
         <template #info>{{ t.inspector.qrColorsInfo }}</template>
-        <div class="colors">
-            <ColorField quick :label="t.common.fill.solid" :model-value="block.color" @focus="edit.onFocus" @blur="edit.onBlur" @update:model-value="setBlock({ color: $event })" />
-            <ColorField :label="t.common.color.background" :model-value="block.background" @focus="edit.onFocus" @blur="edit.onBlur" @update:model-value="setBlock({ background: $event })" />
-        </div>
+        <ColorField quick :label="t.common.fill.solid" :model-value="block.color" @focus="edit.onFocus" @blur="edit.onBlur" @update:model-value="setBlock({ color: $event })" />
+        <ColorField :label="t.common.color.background" :model-value="block.background" @focus="edit.onFocus" @blur="edit.onBlur" @update:model-value="setBlock({ background: $event })" />
     </InspectorSection>
 </template>
 
 <style scoped>
-.colors {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    align-items: end;
+.swatch {
+    width: 10px;
+    height: 10px;
+    border: 1px solid var(--d-divider);
+    border-radius: 50%;
 }
 .hint {
     margin: 0;

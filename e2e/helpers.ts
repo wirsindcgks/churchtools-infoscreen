@@ -66,6 +66,8 @@ export async function nudgeRow(handle: Locator, key: 'ArrowUp' | 'ArrowDown' | '
  * `target`, in steps so the list follows; `horizontal` for the phone's row of slides, where the tile itself is grabbed.
  */
 export async function dragRow(page: Page, grip: Locator, target: Locator, horizontal = false): Promise<void> {
+    // An open "Darstellung" above can push the list out of the window.
+    await grip.scrollIntoViewIfNeeded();
     const from = (await grip.boundingBox())!;
     const own = (await sortRow(grip).boundingBox())!;
     const over = (await sortRow(target).boundingBox())!;

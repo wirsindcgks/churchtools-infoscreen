@@ -1614,7 +1614,7 @@ test('the blocks stand in German alphabetical order in the "+ Baustein" sheet; t
     const types = await sheet.locator('[data-testid^="sheet-add-"]').evaluateAll((buttons) =>
         buttons.map((b) => b.getAttribute('data-testid')!.replace('sheet-add-', '')),
     );
-    // Beiträge, Bild, Countdown, Fläche, Galerie, Gemeindekopf, Gruppen, Linie, Nächster Termin, QR-Code, Raumbelegung, Terminliste, Text, Uhr, Video, Webseite
+    // Beiträge, Bild, Countdown, Fläche, Galerie, Gemeindekopf, Gruppen, Linie, Nächster Termin, QR-Code, Raumbelegung, Social Media, Terminliste, Text, Uhr, Video, Webseite
     expect(types).toEqual([
         'posts',
         'image',
@@ -1627,6 +1627,7 @@ test('the blocks stand in German alphabetical order in the "+ Baustein" sheet; t
         'next-appointment',
         'qr',
         'rooms',
+        'social',
         'appointment-list',
         'text',
         'clock',
@@ -1977,8 +1978,8 @@ test('a groups block sorts every group by weekday, name A–Z or Z–A, until a 
     await expect(rows.nth(2)).toContainText('Bibelkreis');
 
     // Choosing one by one starts in the order just seen; the order control has no place there.
-    await inspector.getByTestId('groups-all').uncheck();
     await openSection(page, 'group-list');
+    await inspector.getByTestId('groups-all').uncheck();
     await expect(sort).toHaveCount(0);
     const picks = inspector.getByTestId('group-row');
     await expect(picks).toHaveCount(3);
@@ -2225,6 +2226,7 @@ test.describe('sorting by dragging (Plan.md 79, D7)', () => {
         await expect(page.getByTestId('slide-item')).toHaveCount(3);
         await page.getByTestId('slide-item').nth(2).click();
         for (const type of ['text', 'shape', 'clock']) await addBlock(page, type);
+        await openSection(page, 'arrange');
         const rows = page.getByTestId('layer-row');
         const names = () => page.locator('[data-testid="layer-row"] .layer-name').allTextContents();
         const before = await names();

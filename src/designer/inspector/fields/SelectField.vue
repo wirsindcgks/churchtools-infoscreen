@@ -4,6 +4,7 @@
  * `TileField`. The label stands above, because an option is often longer than the room beside a label; `inline` puts it left.
  */
 import { computed, useId } from 'vue';
+import Icon from '../../Icon.vue';
 import FieldRow from './FieldRow.vue';
 
 export interface SelectOption {
@@ -29,15 +30,46 @@ function onChange(raw: string): void {
 
 <template>
     <FieldRow :label="label" :for="id" :stacked="!inline" :quick="quick" :face="face">
-        <select :id="id" :value="modelValue" :disabled="disabled" :data-testid="testid" @change="onChange(($event.target as HTMLSelectElement).value)">
-            <option v-for="option in options" :key="option.value" :value="option.value" :style="option.style">{{ option.label }}</option>
-        </select>
+        <span class="select-box">
+            <select :id="id" :value="modelValue" :disabled="disabled" :data-testid="testid" @change="onChange(($event.target as HTMLSelectElement).value)">
+                <option v-for="option in options" :key="option.value" :value="option.value" :style="option.style">{{ option.label }}</option>
+            </select>
+            <Icon name="chevron-down" :size="14" class="select-icon" />
+        </span>
         <template v-if="$slots.info" #info><slot name="info" /></template>
     </FieldRow>
 </template>
 
 <style scoped>
+/* Looks like the button of `FontField`: same height, border, radius and chevron; the native select stays for keyboard and touch. */
+.select-box {
+    position: relative;
+    display: flex;
+    flex: 1;
+}
 select {
     flex: 1;
+    appearance: none;
+    background-image: none;
+    min-height: 2.3em;
+    padding: 0.3em 32px 0.3em 12px;
+    border: 1px solid var(--d-divider);
+    border-radius: var(--d-radius);
+    background: var(--d-surface);
+    color: var(--d-text);
+    font-size: var(--d-size);
+    text-overflow: ellipsis;
+    cursor: pointer;
+}
+select:disabled {
+    cursor: default;
+    opacity: 0.5;
+}
+.select-icon {
+    position: absolute;
+    top: 50%;
+    right: 12px;
+    transform: translateY(-50%);
+    pointer-events: none;
 }
 </style>

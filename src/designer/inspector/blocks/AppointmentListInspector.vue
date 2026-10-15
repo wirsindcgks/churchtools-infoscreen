@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * The appointment list (Plan.md 79, B2): calendars, the look as picture tiles, the period, how many appointments – or,
- * as pages, how long each page stays (Plan.md 23) – then the shared room and service fields and the font. Calendars,
+ * The appointment list (Plan.md 79, B2): calendars, then as the look the picture tiles, the period, how many appointments – or,
+ * as pages, how long each page stays (Plan.md 23) – and the room switch, then the lists of rooms and services and the font. Calendars,
  * look and period go to the short menu.
  */
 import { computed } from 'vue';
@@ -10,6 +10,7 @@ import type { Block } from '../../../model/schema';
 import { themeOf, useStageContext } from '../../../player/context';
 import { PAGE_SECONDS } from '../../../player/paging';
 import { listLayout } from '../../../player/theme';
+import InspectorSection from '../../InspectorSection.vue';
 import CalendarField from '../../CalendarField.vue';
 import TagField from '../../TagField.vue';
 import { useEditorStore } from '../../editor-store';
@@ -38,6 +39,9 @@ const layouts = computed(() => appointmentListTiles(props.block, themeOf(stage))
 /** The layout the list really has – one that follows the theme included. */
 const layout = computed(() => listLayout(props.block, themeOf(stage)));
 
+/** The folded look: the layout the list really has, and how far ahead it looks. */
+const summary = computed(() => `${layout.value === 'cards' ? t.inspector.layoutCards : t.inspector.layoutRows} · ${props.block.horizonDays} ${t.inspector.unitDays}`);
+
 /** How a paged list will run – with the page count the stage preview measured. */
 const pageHint = computed(() => {
     const pages = stage.pages?.[props.block.id] ?? 1;
@@ -55,58 +59,61 @@ const pageHint = computed(() => {
     <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" :released="released" @toggle="toggleCalendar" />
     <!-- Plan.md 82 C: appointments with these tags stay off the screen. Without the tags (not loaded, unreadable) there is no field. -->
     <TagField v-if="tags" :tags="tags" :chosen-ids="block.hideTagIds ?? []" @toggle="toggleTag" />
-    <!-- Plan.md, 20: the look of the WordPress plugin's list and highlighted event. '' follows the theme (Plan.md 27). -->
-    <TileField
-        quick
-        :model-value="block.layout ?? ''"
-        :options="layouts"
-        :label="t.inspector.appearance"
-        testid="list-layout"
-        @update:model-value="setBlock({ layout: $event || undefined })"
-    />
-    <!-- Plan.md 85: the calendar badge of the cards can go. -->
-    <ToggleField
-        v-if="layout === 'cards'"
-        :model-value="block.showCalendar !== false"
-        :label="t.inspector.showCalendar"
-        testid="show-calendar"
-        @update:model-value="setBlock({ showCalendar: $event ? undefined : false })"
-    />
-    <NumberField
-        quick
-        :model-value="block.horizonDays"
-        :label="t.inspector.period"
-        :unit="t.inspector.unitDays"
-        :min="1"
-        :max="366"
-        testid="list-days"
-        @update:model-value="setBlock({ horizonDays: $event })"
-    />
-    <NumberField
-        v-if="!block.showAll"
-        key="limit"
-        :model-value="block.limit"
-        :label="t.inspector.count"
-        :min="1"
-        :max="50"
-        testid="list-limit"
-        @update:model-value="setBlock({ limit: $event })"
-    />
-    <NumberField
-        v-else
-        key="seconds"
-        :model-value="block.pageSeconds ?? PAGE_SECONDS"
-        :label="t.inspector.secondsPerPage"
-        :unit="t.inspector.unitSeconds"
-        :min="3"
-        :max="120"
-        testid="page-seconds"
-        @update:model-value="setBlock({ pageSeconds: $event })"
-    />
-    <!-- Plan.md, 23: every appointment of the horizon, page by page. -->
-    <ToggleField :model-value="block.showAll ?? false" :label="t.inspector.showAll" testid="show-all" @update:model-value="setBlock({ showAll: $event })" />
-    <p v-if="mode === 'full' && block.showAll" class="hint" data-testid="page-hint">{{ pageHint }}</p>
-    <AppointmentExtras :block="block" />
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" default-open>
+        <!-- Plan.md, 20: the look of the WordPress plugin's list and highlighted event. '' follows the theme (Plan.md 27). -->
+        <TileField
+            quick
+            :model-value="block.layout ?? ''"
+            :options="layouts"
+            :label="t.inspector.view"
+            testid="list-layout"
+            @update:model-value="setBlock({ layout: $event || undefined })"
+        />
+        <!-- Plan.md 85: the calendar badge of the cards can go. -->
+        <ToggleField
+            v-if="layout === 'cards'"
+            :model-value="block.showCalendar !== false"
+            :label="t.inspector.showCalendar"
+            testid="show-calendar"
+            @update:model-value="setBlock({ showCalendar: $event ? undefined : false })"
+        />
+        <NumberField
+            quick
+            :model-value="block.horizonDays"
+            :label="t.inspector.period"
+            :unit="t.inspector.unitDays"
+            :min="1"
+            :max="366"
+            testid="list-days"
+            @update:model-value="setBlock({ horizonDays: $event })"
+        />
+        <NumberField
+            v-if="!block.showAll"
+            key="limit"
+            :model-value="block.limit"
+            :label="t.inspector.count"
+            :min="1"
+            :max="50"
+            testid="list-limit"
+            @update:model-value="setBlock({ limit: $event })"
+        />
+        <NumberField
+            v-else
+            key="seconds"
+            :model-value="block.pageSeconds ?? PAGE_SECONDS"
+            :label="t.inspector.secondsPerPage"
+            :unit="t.inspector.unitSeconds"
+            :min="3"
+            :max="120"
+            testid="page-seconds"
+            @update:model-value="setBlock({ pageSeconds: $event })"
+        />
+        <!-- Plan.md, 23: every appointment of the horizon, page by page. -->
+        <ToggleField :model-value="block.showAll ?? false" :label="t.inspector.showAll" testid="show-all" @update:model-value="setBlock({ showAll: $event })" />
+        <p v-if="mode === 'full' && block.showAll" class="hint" data-testid="page-hint">{{ pageHint }}</p>
+        <AppointmentExtras :block="block" part="toggle" />
+    </InspectorSection>
+    <AppointmentExtras :block="block" part="sections" />
     <FontSection :block="block" effects="shadow" />
 </template>
 

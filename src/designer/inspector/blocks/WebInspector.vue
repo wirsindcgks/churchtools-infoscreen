@@ -4,6 +4,7 @@ import { ref } from 'vue';
 import { t } from '../../../i18n/designer';
 import type { Block } from '../../../model/schema';
 import { embedAddress, webRefusal, withScheme } from '../../../player/web';
+import InspectorSection from '../../InspectorSection.vue';
 import SelectField from '../fields/SelectField.vue';
 import TextField from '../fields/TextField.vue';
 import { useBlockEdit } from '../use-block';
@@ -62,7 +63,9 @@ function setUrl(pasted: string): void {
     </TextField>
     <p v-if="mode === 'full' && embedProblemBlock === block.id" class="hint" data-testid="web-problem">{{ t.inspector.webNoAddressInCode }}</p>
     <p v-else-if="mode === 'full' && webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
-    <SelectField quick :model-value="block.zoom" :options="zooms" :label="t.inspector.webSize" testid="web-zoom" @update:model-value="setBlock({ zoom: Number($event) })" />
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="zooms.find((z) => z.value === block.zoom)?.label" default-open>
+        <SelectField quick :model-value="block.zoom" :options="zooms" :label="t.inspector.webSize" testid="web-zoom" @update:model-value="setBlock({ zoom: Number($event) })" />
+    </InspectorSection>
 </template>
 
 <style scoped>

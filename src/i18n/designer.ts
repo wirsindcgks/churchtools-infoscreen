@@ -494,6 +494,7 @@ export const t = {
             'Zählt bis zum Beginn des nächsten Termins dieser Kalender; ganztägige Termine zählen nicht mit. ' +
             'Passt gut auf eine Präsentation, die ein Zeitplan „30 Minuten vor Beginn“ einschaltet.',
         appearance: 'Darstellung',
+        view: 'Ansicht',
         layoutDesign: 'Wie im Design',
         layoutRows: 'Zeilen',
         layoutCards: 'Karten',
@@ -520,7 +521,7 @@ export const t = {
         roomTypeMissing:
             'Keine Ressource gilt als Raum: Diese ChurchTools-Instanz hat keinen Ressourcentyp „Raum“. Ein Administrator wählt unter Einstellungen → Räume, welche Ressourcentypen Räume sind.',
         roomsRestricted: 'eingeschränkt',
-        hideTagsTitle: 'Termine mit diesen Tags ausblenden',
+        hideTagsTitle: 'Tags ausblenden',
         hideTagsNone: 'keine',
         hideTagsInfo: 'Termine, die einen der gewählten Tags tragen, erscheinen nicht auf dem Bildschirm. Tags vergibt man in ChurchTools am Termin.',
         hideTagsEmpty: 'In ChurchTools gibt es noch keine Termin-Tags. Man vergibt sie am Termin und verwaltet sie im Kalender über das Tag-Symbol.',

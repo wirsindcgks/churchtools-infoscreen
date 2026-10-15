@@ -46,9 +46,9 @@ const summary = computed(() =>
         testid="pick-image"
         @pick="context.pickImage('block')"
     />
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" default-open>
         <SegmentField quick :model-value="block.fit" :options="fits" :label="t.inspector.fit" testid="image-fit" @update:model-value="setBlock({ fit: $event })" />
-        <SegmentField quick :model-value="block.tone ?? 'none'" :options="tones" :label="t.inspector.tone" testid="image-tone" @update:model-value="setBlock({ tone: $event === 'none' ? undefined : $event })" />
+        <SegmentField quick stacked :model-value="block.tone ?? 'none'" :options="tones" :label="t.inspector.tone" testid="image-tone" @update:model-value="setBlock({ tone: $event === 'none' ? undefined : $event })" />
         <template v-if="block.fit === 'cover'">
             <button v-if="mode === 'full' && block.mediaId && !block.locked" class="d-btn" type="button" data-testid="image-crop" @click="editor.startCrop(block.id)">
                 {{ t.inspector.cropChoose }}

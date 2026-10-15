@@ -2,7 +2,6 @@
 /** The video block (Plan.md 52, 79 B2): the video, the sound, then how it fits the box. Video and sound go to the short menu. */
 import { t } from '../../../i18n/designer';
 import type { Block } from '../../../model/schema';
-import HintRow from '../../HintRow.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
 import MediaField from '../fields/MediaField.vue';
@@ -11,11 +10,8 @@ import ToggleField from '../fields/ToggleField.vue';
 import { lookSummary } from './picture-look';
 import PictureFrameFields from './PictureFrameFields.vue';
 import { useBlockEdit } from '../use-block';
-import { useInspectorMode } from '../mode';
 
 const props = defineProps<{ block: Extract<Block, { type: 'video' }> }>();
-/** Only fields stand in the short menu; a hint or a line of text belongs to the inspector. */
-const mode = useInspectorMode();
 const { setBlock, videoLabel } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
 
@@ -41,15 +37,13 @@ function caption(): string {
         :caption-testid="block.mediaId ? 'video-name' : undefined"
         testid="pick-video"
         @pick="context.pickImage('video')"
-    />
+    >
+        <template #info>{{ t.inspector.videoRuntimeInfo }}</template>
+    </MediaField>
     <ToggleField quick :model-value="block.sound ?? false" :label="t.inspector.sound" testid="video-sound" @update:model-value="setBlock({ sound: $event })">
         <template #info>{{ t.inspector.soundInfo }}</template>
     </ToggleField>
-    <HintRow v-if="mode === 'full'" caption>
-        <span>{{ t.inspector.runtime }}</span>
-        <template #info>{{ t.inspector.videoRuntimeInfo }}</template>
-    </HintRow>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="lookSummary(block, fits.find((f) => f.value === (block.fit ?? 'contain'))?.label)">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="lookSummary(block, fits.find((f) => f.value === (block.fit ?? 'contain'))?.label)" default-open>
         <SegmentField :model-value="block.fit ?? 'contain'" :options="fits" :label="t.inspector.fit" testid="video-fit" @update:model-value="setBlock({ fit: $event })" />
         <PictureFrameFields v-if="block.fit === 'cover'" :block="block" />
     </InspectorSection>
