@@ -4,6 +4,35 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.23.0] – 2026-10-15
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für die Ideen zu Tags, Zeitraum und Fortschrittsbalken und an
+einen zweiten Tester für den Wunsch nach internen Kalendern.
+
+### Wichtig beim Update
+
+- Alle Fernseher auf diese Version bringen, bevor eine **Raumbelegung mehr als zwei Tage** zeigt. Ein älterer Player
+  lässt einen solchen Baustein weg.
+- Wer interne Kalender freigibt, danach **„Rechte aktualisieren"**. Dabei bekommt auch die Gestaltergruppe das Recht,
+  freigegebene Kalender zu sehen. Ein Recht der Gestaltergruppe auf einen nicht freigegebenen Kalender nimmt es
+  zurück; der Dialog nennt vorher, was sich ändert.
+
+### Neu
+
+- **Termine über Tags ausblenden.** Terminliste, Nächster Termin und Countdown blenden Termine mit gewählten
+  Termin-Tags aus, etwa einem Tag „nicht im Foyer". Tags vergibt man in ChurchTools am Termin.
+- **Interne Kalender für Bildschirme.** Auf der neuen Einstellungsseite „Interne Kalender für Bildschirme" gibt ein
+  Administrator einzelne nicht öffentliche Kalender frei. Der Designer bietet sie an, gekennzeichnet als „nicht
+  öffentlich". Intern markierte Termine zeigt der Fernseher weiterhin nie. Nimmt man eine Freigabe zurück,
+  verschwindet der Kalender sofort vom Fernseher.
+- **Fortschrittsbalken.** Ein Schalter je Präsentation, im Inspektor der Folie unter „Präsentation": Ein dünner
+  Balken am unteren Rand zeigt, wie lange die Folie noch steht.
+
+### Geändert
+
+- **Raumbelegung bis zu 14 Tage.** Der Zeitraum ist ein Zahlenfeld wie bei der Terminliste. Ab übermorgen steht der
+  Wochentag mit Datum vor der Zeit.
+
 ## [0.22.0] – 2026-10-15
 
 ### Wichtig beim Update
@@ -1045,6 +1074,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.23.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.23.0
 [0.22.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.22.0
 [0.21.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.21.0
 [0.20.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.20.1
