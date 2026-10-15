@@ -4,6 +4,36 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.21.0] – 2026-10-15
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) und einen zweiten Tester für die Rückmeldungen zu Räumen und
+Kalendern.
+
+### Wichtig beim Update
+
+- Ohne Auswahl gilt wie bisher der Ressourcentyp „Raum"; wo es ihn gibt, ändert sich nichts. Gibt es ihn bei euch
+  nicht, unter **Einstellungen → Räume** die passenden Typen wählen, speichern und „Rechte aktualisieren".
+- Gruppen, Dienste und Räume in den Einstellungen gelten jetzt erst mit **„Speichern"** oben rechts.
+
+### Neu
+
+- **Welche Ressourcen Räume sind.** Auf der neuen Einstellungsseite „Räume" wählt ein Administrator die
+  Ressourcentypen, deren Ressourcen als Räume gelten; zu jedem Typ stehen seine Ressourcen dabei. So zeigen auch
+  Gemeinden ohne den Typ „Raum" ihre Räume in der Raumbelegung und an Terminen. Gilt kein Typ als Raum, warnen
+  Einstellungen, Prüfung der Gerätegruppe und Designer.
+- **Kalender ausblenden.** Terminliste (Karten) und Nächster Termin (Karte) haben den Schalter „Kalender zeigen".
+  Ohne das Etikett bleibt rechts keine Lücke.
+
+### Geändert
+
+- **Auswahlfelder einheitlich.** Optionen und Häkchen stehen überall in einem Rahmen, das Feld mittig neben dem Text,
+  die gewählte Zeile hervorgehoben – auf der Design-Seite, in den Einstellungen und in den Dialogen.
+- **Einstellungen speichern wie das Design.** Gruppen, Dienste und Räume speichern mit „Speichern" oben rechts;
+  „Verwerfen" holt den gespeicherten Stand zurück. Wer mit ungespeicherten Änderungen die Seite verlässt, wird
+  gefragt, auch auf der Design-Seite.
+- **Erinnerung an „Rechte aktualisieren".** Braucht eine gespeicherte Einstellung neue Rechte für die Gruppen, fragt
+  ein Fenster, ob man sie gleich aktualisieren will; eine Vorschau zeigt vorher, was sich ändert.
+
 ## [0.20.1] – 2026-10-14
 
 ### Geändert
@@ -997,6 +1027,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.21.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.21.0
 [0.20.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.20.1
 [0.20.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.20.0
 [0.19.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.19.1
