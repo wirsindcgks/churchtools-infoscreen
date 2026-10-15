@@ -57,6 +57,22 @@ kommt als eigene Zeile in „Auf einen Blick".
   Ordnung.
 - **An bestehenden Rollen der Rechteverwaltung wird nichts geändert** – dafür gibt es eine eigene Testgruppe.
 
+## Ordnung im Inspektor
+
+*Seit 2026-10-15 (Nutzer: „Das sollten wir zukünftig immer mitdenken").* Jedes neue Feld an einem Baustein bekommt
+seinen Platz nach diesen Regeln, statt lose angehängt zu werden; wer plant, legt den Platz im Auftrag fest. Begründung
+und Iststand in `Plan.md`, Punkt 88.
+
+- **Reihenfolge:** Kopf → Inhalt (lose) → Auswahl-Klappmenüs mit Fachnamen (Kalender, Gruppen, Räume …) →
+  „Darstellung" → „Schrift" → Drehung und Deckkraft → Anordnen → Genaue Maße.
+- **Lose steht nur der Inhalt** (was den Baustein füllt), alles andere in einem Klappmenü, immer `InspectorSection`.
+- **„Darstellung" ist immer ein Klappmenü** (Kacheln zuerst, dann Zeitraum, Anzahl, Dauer, Schalter, Farben), nie die
+  Beschriftung eines Feldes. **„Schrift"** enthält nur, was den Text betrifft.
+- **Von selbst offen ist nur „Darstellung"** (ohne sie „Schrift").
+- **Jedes Klappmenü hat eine Zusammenfassung in Worten;** Titel höchstens drei Wörter.
+- **Das (i) am Ende der Zeile, die es erklärt,** oder im Titel des Klappmenüs – nie eine Zeile nur fürs (i).
+- **Ein Bedienelement je Art,** Felder untereinander, kein Klappmenü im Klappmenü.
+
 ## Planen und Umsetzen
 
 *Versuch seit 2026-09-25: Spart die Aufteilung Token, ohne dass die Qualität leidet?*
