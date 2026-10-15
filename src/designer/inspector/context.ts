@@ -1,5 +1,5 @@
 import { inject, provide, type InjectionKey } from 'vue';
-import type { Calendar, PostGroup } from '../../ct/api';
+import type { AppointmentTag, Calendar, PostGroup } from '../../ct/api';
 import type { HomepageEntry } from '../../groups/normalize';
 import type { RoomInfo } from '../../rooms/normalize';
 import type { ServiceInfo } from '../../appointments/services';
@@ -18,6 +18,8 @@ export interface InspectorContext {
     readonly services?: ServiceInfo[] | null;
     readonly allowedServices?: number[];
     readonly servicesFailed?: boolean;
+    /** The appointment tags (Plan.md 82 C); null while they are not loaded and where they cannot be loaded – then no field. */
+    readonly tags?: AppointmentTag[] | null;
 }
 
 export const INSPECTOR_CONTEXT: InjectionKey<InspectorContext> = Symbol('inspector-context');
@@ -29,7 +31,7 @@ export function useInspectorContext(): InspectorContext {
 }
 
 /** The lists of the context, read through a function so they follow whatever they come from (props, refs). */
-export type InspectorLists = Pick<InspectorContext, 'calendars' | 'hiddenCalendars' | 'groups' | 'homepages' | 'rooms' | 'roomTypeMissing' | 'services' | 'allowedServices' | 'servicesFailed'>;
+export type InspectorLists = Pick<InspectorContext, 'calendars' | 'hiddenCalendars' | 'groups' | 'homepages' | 'rooms' | 'roomTypeMissing' | 'services' | 'allowedServices' | 'servicesFailed' | 'tags'>;
 
 /**
  * Hands the lists and the image picker to every inspector and short menu below the calling component (Plan.md 79, C1):
@@ -64,6 +66,9 @@ export function provideInspectorContext(lists: () => InspectorLists, pickImage: 
         },
         get servicesFailed() {
             return lists().servicesFailed;
+        },
+        get tags() {
+            return lists().tags;
         },
     });
 }

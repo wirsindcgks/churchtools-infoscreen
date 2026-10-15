@@ -32,7 +32,10 @@ export interface AppointmentResponse {
         calculated: { startDate: string; endDate: string };
         /** With `include[]=bookings`; ChurchTools puts it beside `base`, read here in both places. */
         bookings?: BookingEntry[] | null;
+        /** With `include[]=tags` (G59); every occurrence of a series carries the tags of the series. */
+        tags?: { id: number }[] | null;
     };
+    tags?: { id: number }[] | null;
     bookings?: BookingEntry[] | null;
 }
 
@@ -86,6 +89,8 @@ export interface Appointment {
      * By `sortKey` of the service, then name. Missing where services were not asked for or nobody is assigned.
      */
     services?: AppointmentService[];
+    /** The ids of its tags (G59, Plan.md 82 C); empty where tags were not asked for or it has none. */
+    tagIds: number[];
 }
 
 const DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/;
@@ -150,6 +155,7 @@ function normalizeOne(response: AppointmentResponse, timeZone: string, rooms: Ro
         imageUrl: base.image?.imageUrl ?? null,
         location: [base.address?.name, base.address?.addition].map((part) => part?.trim()).filter(Boolean).join(', ') || null,
         description: plainText(base.description ?? ''),
+        tagIds: (response.tags ?? response.appointment.tags ?? []).map((tag) => tag.id),
         ...(booked.length ? { rooms: booked.map((r) => r.name), roomIds: booked.map((r) => r.id) } : {}),
     };
 }
@@ -203,6 +209,8 @@ export interface UpcomingOptions {
     horizonDays: number;
     limit: number;
     calendarIds?: number[];
+    /** Appointments with one of these tags are left out (schema 1.37, Plan.md 82 C). */
+    hideTagIds?: readonly number[];
 }
 
 /**
@@ -212,8 +220,10 @@ export interface UpcomingOptions {
 export function selectUpcoming(appointments: Appointment[], options: UpcomingOptions): Appointment[] {
     const horizonEnd = startOfZonedDay(options.now, options.timeZone, options.horizonDays);
     const calendars = options.calendarIds ? new Set(options.calendarIds) : null;
+    const hidden = options.hideTagIds?.length ? new Set(options.hideTagIds) : null;
     return appointments
         .filter((a) => a.end > options.now && a.start < horizonEnd)
         .filter((a) => !calendars || calendars.has(a.calendarId))
+        .filter((a) => !hidden || !a.tagIds.some((id) => hidden.has(id)))
         .slice(0, options.limit);
 }

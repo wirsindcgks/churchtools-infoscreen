@@ -268,3 +268,32 @@ describe('the rooms of an appointment (Plan.md 50)', () => {
         for (const secret of ['Familie X', 'privat', '77', 'onBehalfOfPid']) expect(json).not.toContain(secret);
     });
 });
+
+describe('the tags of an appointment (Plan.md 82 C)', () => {
+    const when = ['2026-10-04T09:00:00Z', '2026-10-04T10:30:00Z'] as const;
+    const tag = (id: number) => ({ id, name: `Tag ${id}` });
+
+    it('reads the ids of the tags beside or inside the appointment, and none where the field is missing', () => {
+        const beside = response(1, ...when);
+        beside.tags = [tag(4), tag(7)];
+        const inside = response(2, ...when);
+        inside.appointment.tags = [tag(9)];
+        const [a, b, c] = normalizeAppointments([beside, inside, response(3, ...when)], BERLIN);
+        expect(a!.tagIds).toEqual([4, 7]);
+        expect(b!.tagIds).toEqual([9]);
+        expect(c!.tagIds).toEqual([]);
+    });
+
+    it('leaves out appointments with a hidden tag, whichever calendar they belong to', () => {
+        const tagged = response(1, ...when);
+        tagged.tags = [tag(4)];
+        const other = response(2, ...when);
+        other.tags = [tag(5)];
+        const list = normalizeAppointments([tagged, other, response(3, ...when)], BERLIN);
+        const options = { now: new Date('2026-10-01T00:00:00Z'), timeZone: BERLIN, horizonDays: 30, limit: 10 };
+        expect(selectUpcoming(list, options).map((a) => a.baseId)).toEqual([1, 2, 3]);
+        expect(selectUpcoming(list, { ...options, hideTagIds: [] }).map((a) => a.baseId)).toEqual([1, 2, 3]);
+        expect(selectUpcoming(list, { ...options, hideTagIds: [4] }).map((a) => a.baseId)).toEqual([2, 3]);
+        expect(selectUpcoming(list, { ...options, hideTagIds: [4, 5] }).map((a) => a.baseId)).toEqual([3]);
+    });
+});

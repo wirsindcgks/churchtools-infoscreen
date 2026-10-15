@@ -29,6 +29,7 @@ const items = computed(() =>
         horizonDays: props.block.horizonDays,
         limit: props.block.showAll ? SHOW_ALL_CAP : props.block.limit,
         calendarIds: props.block.calendarIds,
+        hideTagIds: props.block.hideTagIds,
     }),
 );
 

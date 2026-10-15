@@ -5,6 +5,7 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
+import { needsAppointmentTags } from '../appointments/tags';
 import { allowedServiceIds, appointmentServicesInUse } from '../appointments/services';
 import { startOfZonedDay } from '../appointments/zoned';
 import {
@@ -49,13 +50,14 @@ export interface PlayerData {
      * without rooms; they never fail the appointments. The same goes for `services`
      * (schema 1.17, Plan.md 51): any failure – a 403 too – leaves out the services only.
      * `roomTypeIds`: the resource types that count as rooms (schema 1.35); missing = the type "Raum".
+     * `tags`: the tags of the appointments come along (schema 1.37, Plan.md 82 C); without them `tagIds` stays empty.
      */
     appointments(
         calendarIds: number[],
         from: Date,
         to: Date,
         timeZone: string,
-        options?: { rooms?: boolean; services?: number[]; roomTypeIds?: number[] },
+        options?: { rooms?: boolean; services?: number[]; roomTypeIds?: number[]; tags?: boolean },
     ): Promise<Appointment[]>;
     posts(groupIds: number[], limit: number): Promise<Post[]>;
     /**
@@ -127,7 +129,7 @@ export const churchToolsPlayerData: PlayerData = {
         if (!wanted.length) return [];
         const [raw, rooms, serviceInput] = await Promise.all([
             readableAppointments(wanted, (ids) =>
-                withTimeout(fetchAppointments(ids, from, to, timeZone, { bookings: wantsRooms })),
+                withTimeout(fetchAppointments(ids, from, to, timeZone, { bookings: wantsRooms, tags: options.tags === true })),
             ),
             wantsRooms
                 ? withTimeout(fetchResourceMasterdata()).then((masterdata) => roomsOf(masterdata, options.roomTypeIds), (error: unknown) => {
@@ -225,7 +227,7 @@ export function appointmentNeeds(
     screen: ScreenDoc,
     slides: SlideDoc[],
     allowed: readonly number[] | undefined,
-): { calendarIds: number[]; days: number; rooms: boolean; services: number[] } {
+): { calendarIds: number[]; days: number; rooms: boolean; services: number[]; tags: boolean } {
     const ids = new Set<number>();
     let days = 1;
     const blocks = slides.flatMap((s) => s.blocks);
@@ -247,6 +249,7 @@ export function appointmentNeeds(
         days,
         rooms: needsAppointmentRooms(blocks),
         services: allowedServiceIds(appointmentServicesInUse(blocks), allowed),
+        tags: needsAppointmentTags(blocks),
     };
 }
 

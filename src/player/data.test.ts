@@ -290,3 +290,18 @@ describe('churchToolsPlayerData.appointments – only public calendars (Plan.md 
         await expect(churchToolsPlayerData.appointments([2], from, to, 'Europe/Berlin')).rejects.toThrow('offline');
     });
 });
+
+describe('appointmentNeeds – tags (Plan.md 82 C)', () => {
+    const base = { x: 0, y: 0, width: 1400, height: 700, calendarIds: [2], style };
+    const next = (overrides: Partial<Extract<Block, { type: 'next-appointment' }>> = {}): Block => ({ id: 'n', type: 'next-appointment', ...base, showImage: true, ...overrides });
+    const countdown = (hideTagIds?: number[]): Block => ({ id: 'c', type: 'countdown', ...base, showTitle: true, runningText: 'Läuft', hideTagIds }) as Block;
+    const tags = (...blocks: Block[]) => appointmentNeeds(makeScreen(), [makeSlide({ blocks })], []).tags;
+
+    it('wants tags as soon as one block hides some', () => {
+        expect(tags(next())).toBe(false);
+        expect(tags(next({ hideTagIds: [] }))).toBe(false);
+        expect(tags(next({ hideTagIds: [3] }))).toBe(true);
+        expect(tags(next(), countdown())).toBe(false);
+        expect(tags(next(), countdown([3]))).toBe(true);
+    });
+});

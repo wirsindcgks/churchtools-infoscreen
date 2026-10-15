@@ -246,7 +246,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         const needs = appointmentNeeds(state.screen.screen, state.screen.slides, state.screen.allowedServiceIds ?? []);
         const window = appointmentWindow(now, timeZone, needs.days);
         const appointments = needs.calendarIds.length
-            ? await data.appointments(needs.calendarIds, window.from, window.to, timeZone, { rooms: needs.rooms, services: needs.services, roomTypeIds: state.screen.roomTypeIds })
+            ? await data.appointments(needs.calendarIds, window.from, window.to, timeZone, { rooms: needs.rooms, services: needs.services, roomTypeIds: state.screen.roomTypeIds, tags: needs.tags })
             : [];
         const postGroups = postNeeds(state.screen.slides);
         // A post fetch is decoration, like the logo: its failure keeps the last posts and fails nothing else.

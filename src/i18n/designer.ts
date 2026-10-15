@@ -519,6 +519,11 @@ export const t = {
         roomTypeMissing:
             'Keine Ressource gilt als Raum: Diese ChurchTools-Instanz hat keinen Ressourcentyp „Raum“. Ein Administrator wählt unter Einstellungen → Räume, welche Ressourcentypen Räume sind.',
         roomsRestricted: 'eingeschränkt',
+        hideTagsTitle: 'Termine mit diesen Tags ausblenden',
+        hideTagsNone: 'keine',
+        hideTagsInfo: 'Termine, die einen der gewählten Tags tragen, erscheinen nicht auf dem Bildschirm. Tags vergibt man in ChurchTools am Termin.',
+        hideTagsEmpty: 'In ChurchTools gibt es noch keine Termin-Tags. Man vergibt sie am Termin und verwaltet sie im Kalender über das Tag-Symbol.',
+        hideTagGone: 'Tag gelöscht',
         servicesTitle: 'Dienste zeigen',
         servicesInfo:
             'Zeigt, wer den Dienst übernimmt – nur zugesagte Einteilungen und nur Dienste aus Dienstgruppen, die in ChurchTools ‚Ohne Berechtigung einsehbar‘ sind. ' +

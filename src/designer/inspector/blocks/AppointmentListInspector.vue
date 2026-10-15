@@ -11,8 +11,10 @@ import { themeOf, useStageContext } from '../../../player/context';
 import { PAGE_SECONDS } from '../../../player/paging';
 import { listLayout } from '../../../player/theme';
 import CalendarField from '../../CalendarField.vue';
+import TagField from '../../TagField.vue';
 import { useEditorStore } from '../../editor-store';
 import { useCalendarChoice } from '../calendar-choice';
+import { useTagChoice } from '../tag-choice';
 import NumberField from '../fields/NumberField.vue';
 import TileField from '../fields/TileField.vue';
 import ToggleField from '../fields/ToggleField.vue';
@@ -30,6 +32,7 @@ const editor = useEditorStore();
 const stage = useStageContext();
 const { setBlock } = useBlockEdit(() => props.block);
 const { calendars, hidden, toggleCalendar } = useCalendarChoice(() => props.block);
+const { tags, toggleTag } = useTagChoice(() => props.block);
 
 const layouts = computed(() => appointmentListTiles(props.block, themeOf(stage)));
 /** The layout the list really has – one that follows the theme included. */
@@ -50,6 +53,8 @@ const pageHint = computed(() => {
 
 <template>
     <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" @toggle="toggleCalendar" />
+    <!-- Plan.md 82 C: appointments with these tags stay off the screen. Without the tags (not loaded, unreadable) there is no field. -->
+    <TagField v-if="tags" :tags="tags" :chosen-ids="block.hideTagIds ?? []" @toggle="toggleTag" />
     <!-- Plan.md, 20: the look of the WordPress plugin's list and highlighted event. '' follows the theme (Plan.md 27). -->
     <TileField
         quick

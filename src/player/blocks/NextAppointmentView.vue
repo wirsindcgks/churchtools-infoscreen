@@ -21,6 +21,7 @@ const next = computed(
             horizonDays: 60,
             limit: 1,
             calendarIds: props.block.calendarIds,
+            hideTagIds: props.block.hideTagIds,
         })[0] ?? null,
 );
 

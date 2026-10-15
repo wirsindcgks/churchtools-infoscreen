@@ -68,5 +68,5 @@ export async function saveCached(slug: string, state: CachedState): Promise<void
 
 /** JSON round trips turn dates into strings; bring them back. */
 export function reviveAppointments(appointments: Appointment[]): Appointment[] {
-    return appointments.map((a) => ({ ...a, start: new Date(a.start), end: new Date(a.end) }));
+    return appointments.map((a) => ({ ...a, start: new Date(a.start), end: new Date(a.end), tagIds: a.tagIds ?? [] }));
 }

@@ -28,6 +28,7 @@ const now = computed(() => new Date(context.now.getTime() + (tick.value - since.
 const state = computed(() =>
     countdownTo(context.appointments, {
         calendarIds: props.block.calendarIds,
+        hideTagIds: props.block.hideTagIds,
         now: now.value,
         runningText: props.block.runningText ?? '',
     }),

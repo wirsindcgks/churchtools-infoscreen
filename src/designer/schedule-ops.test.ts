@@ -40,6 +40,7 @@ function appointment(start: Date, end: Date, calendarId = 3): Appointment {
         imageUrl: null,
         location: null,
         description: '',
+        tagIds: [],
     };
 }
 

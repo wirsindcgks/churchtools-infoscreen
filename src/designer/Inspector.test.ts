@@ -78,3 +78,37 @@ describe('"Drehung und Deckkraft" (Plan.md F1)', () => {
         expect(wrapper.find('[data-testid="inspector-rotation"]').exists()).toBe(false);
     });
 });
+
+describe('"Termine mit diesen Tags ausblenden" (Plan.md 82 C)', () => {
+    const props = (tags?: { id: number; name: string; color?: string }[] | null) => ({ calendars: [], groups: [], homepages: [], rooms: null, tags });
+
+    it('hides tags by switch, takes the field away with the last one, and offers a deleted tag to be removed', async () => {
+        const editor = await open();
+        editor.addBlock('countdown');
+        const wrapper = mount(Inspector, { props: props([{ id: 4, name: 'Intern', color: 'basic' }, { id: 5, name: 'Probe', color: 'red' }]) });
+        const hidden = () => (editor.block as { hideTagIds?: number[] }).hideTagIds;
+        await wrapper.get('[data-testid="section-hide-tags-toggle"]').trigger('click');
+        await wrapper.get('[data-testid="hide-tag-5"]').setValue(true);
+        await wrapper.get('[data-testid="hide-tag-4"]').setValue(true);
+        expect(hidden()).toEqual([4, 5]);
+        await wrapper.get('[data-testid="hide-tag-4"]').setValue(false);
+        await wrapper.get('[data-testid="hide-tag-5"]').setValue(false);
+        expect(hidden()).toBeUndefined();
+
+        editor.updateBlock(editor.block!.id, { hideTagIds: [9] } as never);
+        await wrapper.vm.$nextTick();
+        expect(wrapper.get('[data-testid="hide-tag-gone-9"]').text()).toContain('Tag gelöscht');
+        await wrapper.get('[data-testid="hide-tag-gone-9"] button').trigger('click');
+        expect(hidden()).toBeUndefined();
+    });
+
+    it('says there are no tags, and stays away where they could not be loaded', async () => {
+        const editor = await open();
+        editor.addBlock('countdown');
+        const none = mount(Inspector, { props: props([]) });
+        expect(none.get('[data-testid="hide-tags-none"]').text()).toContain('noch keine Termin-Tags');
+        const failed = mount(Inspector, { props: props(null) });
+        expect(failed.find('[data-testid="hide-tags-none"]').exists()).toBe(false);
+        expect(failed.find('[data-testid="section-hide-tags"]').exists()).toBe(false);
+    });
+});

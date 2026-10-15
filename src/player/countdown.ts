@@ -13,9 +13,9 @@ export type Countdown =
 
 export function countdownTo(
     appointments: readonly Appointment[],
-    options: { calendarIds: readonly number[]; now: Date; runningText: string },
+    options: { calendarIds: readonly number[]; hideTagIds?: readonly number[]; now: Date; runningText: string },
 ): Countdown {
-    const own = appointments.filter((a) => !a.allDay && options.calendarIds.includes(a.calendarId));
+    const own = appointments.filter((a) => !a.allDay && options.calendarIds.includes(a.calendarId) && !a.tagIds.some((id) => options.hideTagIds?.includes(id)));
     const now = options.now.getTime();
     if (options.runningText.trim()) {
         const running = own

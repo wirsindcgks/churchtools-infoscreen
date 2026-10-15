@@ -1,5 +1,8 @@
+import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { describe, expect, it, vi } from 'vitest';
-import { fetchGroupHomepage, fetchGroupHomepageList, fetchPublicCalendars } from './api';
+import { fetchAppointments, fetchAppointmentTags, fetchGroupHomepage, fetchGroupHomepageList, fetchPublicCalendars } from './api';
+
+vi.mock('@churchtools/churchtools-client', () => ({ churchtoolsClient: { get: vi.fn(async () => []) } }));
 
 const BASE = 'https://example.church.tools';
 
@@ -37,5 +40,28 @@ describe('fetchPublicCalendars (Plan.md 73, G53)', () => {
         expect(await fetchPublicCalendars(BASE, fetcher)).toEqual([{ id: 2, name: 'Gottesdienst' }]);
         expect(fetcher).toHaveBeenCalledWith(`${BASE}/api/calendars`, expect.objectContaining({ credentials: 'omit' }));
         expect(fetcher.mock.calls[0]![1]!.headers).toMatchObject({ 'X-Infoscreen-Anonymous': '1' });
+    });
+});
+
+describe('fetchAppointments asks for rooms and tags (Plan.md 82 C, G59)', () => {
+    const from = new Date('2026-10-04T00:00:00Z');
+    const to = new Date('2026-10-18T00:00:00Z');
+    const includeOf = async (options: { bookings?: boolean; tags?: boolean }) => {
+        vi.mocked(churchtoolsClient.get).mockClear();
+        await fetchAppointments([2], from, to, 'Europe/Berlin', options);
+        return (vi.mocked(churchtoolsClient.get).mock.calls[0]![1] as { include?: string[] }).include;
+    };
+
+    it('includes only what was asked for, both in one list', async () => {
+        expect(await includeOf({})).toBeUndefined();
+        expect(await includeOf({ bookings: true })).toEqual(['bookings']);
+        expect(await includeOf({ tags: true })).toEqual(['tags']);
+        expect(await includeOf({ bookings: true, tags: true })).toEqual(['bookings', 'tags']);
+    });
+
+    it('reads all appointment tags from /tags/appointment', async () => {
+        vi.mocked(churchtoolsClient.get).mockClear();
+        await fetchAppointmentTags();
+        expect(vi.mocked(churchtoolsClient.get).mock.calls[0]![0]).toBe('/tags/appointment');
     });
 });

@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 36 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 37 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -177,6 +177,8 @@ export const AppointmentListBlock = v.object({
     roomsOffIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
     /** Since 1.35: false = the cards show no calendar badge (Plan.md 85). Missing = shown, as before. */
     showCalendar: v.optional(v.boolean()),
+    /** Since 1.37: ids of appointment tags; appointments with one of them are left out (Plan.md 82 C). Missing or empty = none hidden. */
+    hideTagIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(20))),
     style: TextStyle,
 });
 
@@ -201,6 +203,8 @@ export const NextAppointmentBlock = v.object({
     roomsOffIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
     /** Since 1.35: false = the card shows no calendar badge (Plan.md 85). Missing = shown, as before. */
     showCalendar: v.optional(v.boolean()),
+    /** Since 1.37: ids of appointment tags; appointments with one of them are left out (Plan.md 82 C). Missing or empty = none hidden. */
+    hideTagIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(20))),
     style: TextStyle,
 });
 
@@ -252,6 +256,8 @@ export const CountdownBlock = v.object({
     calendarIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.minLength(1)),
     showTitle: v.optional(v.boolean(), true),
     runningText: v.optional(v.pipe(v.string(), v.maxLength(200)), 'Läuft gerade'),
+    /** Since 1.37: ids of appointment tags; appointments with one of them are not counted down to (Plan.md 82 C). Missing or empty = none hidden. */
+    hideTagIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(20))),
     style: TextStyle,
 });
 

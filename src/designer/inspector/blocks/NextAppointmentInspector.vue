@@ -9,7 +9,9 @@ import type { Block } from '../../../model/schema';
 import { themeOf, useStageContext } from '../../../player/context';
 import { nextLayout } from '../../../player/theme';
 import CalendarField from '../../CalendarField.vue';
+import TagField from '../../TagField.vue';
 import { useCalendarChoice } from '../calendar-choice';
+import { useTagChoice } from '../tag-choice';
 import TileField from '../fields/TileField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import FontSection from '../FontSection.vue';
@@ -21,6 +23,7 @@ const props = defineProps<{ block: Extract<Block, { type: 'next-appointment' }> 
 const stage = useStageContext();
 const { setBlock } = useBlockEdit(() => props.block);
 const { calendars, hidden, toggleCalendar } = useCalendarChoice(() => props.block);
+const { tags, toggleTag } = useTagChoice(() => props.block);
 
 const layouts = computed(() => nextAppointmentTiles(props.block, themeOf(stage)));
 /** The badge is part of the card only. */
@@ -29,6 +32,8 @@ const card = computed(() => nextLayout(props.block, themeOf(stage)) === 'card');
 
 <template>
     <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" @toggle="toggleCalendar" />
+    <!-- Plan.md 82 C: appointments with these tags stay off the screen. Without the tags (not loaded, unreadable) there is no field. -->
+    <TagField v-if="tags" :tags="tags" :chosen-ids="block.hideTagIds ?? []" @toggle="toggleTag" />
     <!-- Plan.md, 20: the highlighted event of the WordPress plugin. '' follows the theme (Plan.md 27). -->
     <TileField
         quick

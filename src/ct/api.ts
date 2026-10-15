@@ -29,7 +29,7 @@ export function fetchAppointments(
     from: Date,
     to: Date,
     timeZone: string,
-    options: { bookings?: boolean } = {},
+    options: { bookings?: boolean; tags?: boolean } = {},
 ): Promise<AppointmentResponse[]> {
     if (calendarIds.length === 0) return Promise.resolve([]);
     return churchtoolsClient.get<AppointmentResponse[]>('/calendars/appointments', {
@@ -37,9 +37,21 @@ export function fetchAppointments(
         from: zonedDateKey(from, timeZone),
         to: zonedDateKey(to, timeZone),
         only_allow_authenticated: 'true',
-        // The bookings of the appointments, for their rooms; without the right the list is empty, not a 403.
-        ...(options.bookings ? { include: ['bookings'] } : {}),
+        // The bookings of the appointments, for their rooms (without the right the list is empty, not a 403), and their tags (G59).
+        ...(options.bookings || options.tags ? { include: [...(options.bookings ? ['bookings'] : []), ...(options.tags ? ['tags'] : [])] } : {}),
     });
+}
+
+/** An appointment tag: the colour is a semantic ChurchTools name such as `basic` or `blue`, not hex (G59). */
+export interface AppointmentTag {
+    id: number;
+    name: string;
+    color?: string | null;
+}
+
+/** All appointment tags; the device user reads them without a right of its own (G59). */
+export function fetchAppointmentTags(): Promise<AppointmentTag[]> {
+    return churchtoolsClient.get<AppointmentTag[]>('/tags/appointment');
 }
 
 /**

@@ -25,8 +25,9 @@ test('the inspector offers no calendar that is not public, and names one the blo
 
     const inspector = page.getByTestId('block-inspector');
     await openSection(page, 'calendars');
-    await inspector.getByRole('button', { name: 'Erklärung' }).click();
-    await expect(inspector.getByText('Zur Wahl stehen nur öffentliche Kalender.')).toBeVisible();
+    const calendars = page.getByTestId('section-calendars');
+    await calendars.getByRole('button', { name: 'Erklärung' }).click();
+    await expect(calendars.getByText('Zur Wahl stehen nur öffentliche Kalender.')).toBeVisible();
     await expect(inspector.getByRole('switch', { name: 'Gottesdienst' })).toBeChecked();
     await expect(inspector.getByRole('switch', { name: 'Gemeindeleitung' })).toHaveCount(0);
 

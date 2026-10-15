@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName, instanceBaseUrl } from '../ct/client';
-import { fetchGroupHomepageList, fetchPostGroups, fetchResourceMasterdata, fetchServiceGroups, fetchServices, type PostGroup } from '../ct/api';
+import { fetchAppointmentTags, fetchGroupHomepageList, fetchPostGroups, fetchResourceMasterdata, fetchServiceGroups, fetchServices, type AppointmentTag, type PostGroup } from '../ct/api';
 import { liveSaveTitle, liveScreens } from '../designer/alive';
 import { clockTime, relativeWhen } from '../designer/last-edited';
 import AppBar from '../designer/AppBar.vue';
@@ -29,6 +29,7 @@ import type { MediaDoc } from '../model/schema';
 import { MEDIA_PAGE } from '../media/library';
 import { roomTypeIdsOf, roomsOf, type RoomInfo } from '../rooms/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
+import { needsAppointmentTags } from '../appointments/tags';
 import { allowedServiceIds, appointmentServicesInUse, serviceChoices, type ServiceInfo } from '../appointments/services';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
@@ -82,6 +83,7 @@ const { context, calendars, hiddenCalendars, problem } = usePreview(
     computed(() => roomNeeds(editor.slides)),
     computed(() => needsAppointmentRooms(editor.slides.flatMap((s) => s.blocks))),
     computed(() => allowedServiceIds(appointmentServicesInUse(editor.slides.flatMap((s) => s.blocks)), allowedServices.value)),
+    computed(() => needsAppointmentTags(editor.slides.flatMap((s) => s.blocks))),
 );
 
 /** The playlist is on a screen right now, by that screen's own sign of life (Plan.md 77). */
@@ -100,6 +102,8 @@ const roomTypeMissing = ref(false);
 /** Services people may see (Plan.md 51); null until loaded, unreadable → `servicesFailed`. */
 const services = ref<ServiceInfo[] | null>(null);
 const servicesFailed = ref(false);
+/** Appointment tags for hiding appointments (Plan.md 82 C); loaded once. Null until loaded and where unreadable: then no field. */
+const tags = ref<AppointmentTag[] | null>(null);
 
 // The short menu above the chosen block reads the same lists as the inspector beside the stage (Plan.md 79, C1).
 provideInspectorContext(
@@ -113,6 +117,7 @@ provideInspectorContext(
         services: services.value,
         allowedServices: allowedServices.value,
         servicesFailed: servicesFailed.value,
+        tags: tags.value,
     }),
     (kind) => openLibrary(kind),
 );
@@ -491,6 +496,11 @@ onMounted(async () => {
     } catch {
         services.value = [];
         servicesFailed.value = true;
+    }
+    try {
+        tags.value = await fetchAppointmentTags();
+    } catch {
+        tags.value = null;
     }
 });
 
@@ -911,7 +921,7 @@ function onKey(event: KeyboardEvent): void {
                     <span class="sheet-label">{{ sheetLabel }}</span>
                     <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
                 </button>
-                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :groups="groups" :homepages="homepages" :rooms="rooms" :room-type-missing="roomTypeMissing" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" @pick-image="openLibrary" @picked="phone && (inspectorOpen = false)" />
+                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :groups="groups" :homepages="homepages" :rooms="rooms" :room-type-missing="roomTypeMissing" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" :tags="tags" @pick-image="openLibrary" @picked="phone && (inspectorOpen = false)" />
             </div>
         </div>
 

@@ -6,8 +6,10 @@
 import { t } from '../../../i18n/designer';
 import type { Block } from '../../../model/schema';
 import CalendarField from '../../CalendarField.vue';
+import TagField from '../../TagField.vue';
 import HintRow from '../../HintRow.vue';
 import { useCalendarChoice } from '../calendar-choice';
+import { useTagChoice } from '../tag-choice';
 import TextField from '../fields/TextField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import FontSection from '../FontSection.vue';
@@ -19,10 +21,13 @@ const props = defineProps<{ block: Extract<Block, { type: 'countdown' }> }>();
 const mode = useInspectorMode();
 const { setBlock } = useBlockEdit(() => props.block);
 const { calendars, hidden, toggleCalendar } = useCalendarChoice(() => props.block);
+const { tags, toggleTag } = useTagChoice(() => props.block);
 </script>
 
 <template>
     <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" @toggle="toggleCalendar" />
+    <!-- Plan.md 82 C: appointments with these tags stay off the screen. Without the tags (not loaded, unreadable) there is no field. -->
+    <TagField v-if="tags" :tags="tags" :chosen-ids="block.hideTagIds ?? []" @toggle="toggleTag" />
     <ToggleField quick :model-value="block.showTitle" :label="t.inspector.showTitle" :quick-label="t.quick.short.title" testid="countdown-title" @update:model-value="setBlock({ showTitle: $event })" />
     <TextField
         :model-value="block.runningText"

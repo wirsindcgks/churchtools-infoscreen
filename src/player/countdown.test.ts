@@ -37,6 +37,24 @@ describe('the countdown (Plan.md 32)', () => {
         expect(state.kind === 'until' && state.appointment.title).toBe('Termin 1');
     });
 
+    it('skips appointments with a hidden tag (schema 1.37)', () => {
+        const tagged = normalizeAppointments(
+            [
+                { ...appointment(1, 2, '2026-10-04T08:00:00Z', '2026-10-04T09:30:00Z'), tags: [{ id: 4 }] },
+                appointment(2, 2, '2026-10-11T08:00:00Z', '2026-10-11T09:30:00Z'),
+            ],
+            BERLIN,
+        );
+        const now = new Date('2026-10-04T07:47:26Z');
+        const title = (hideTagIds: number[]) => {
+            const state = countdownTo(tagged, { ...options, hideTagIds, now });
+            return state.kind === 'until' ? state.appointment.title : state.kind;
+        };
+        expect(title([])).toBe('Termin 1');
+        expect(title([4])).toBe('Termin 2');
+        expect(countdownTo(tagged, { ...options, hideTagIds: [4], runningText: 'Läuft gerade', now: new Date('2026-10-04T08:30:00Z') }).kind).toBe('until');
+    });
+
     it('says what runs while it runs, or counts on to the next one without a text', () => {
         const during = new Date('2026-10-04T08:30:00Z');
         expect(countdownTo(appointments, { ...options, now: during }).kind).toBe('running');

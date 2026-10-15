@@ -109,6 +109,26 @@ describe('readSlide – tolerant towards newer data', () => {
         expect(read({ letterSpacing: 'x' }).issues).not.toHaveLength(0);
     });
 
+    it('reads hideTagIds on the appointment blocks (schema 1.37): optional, at most 20', () => {
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(37);
+        const old = makeSlide({ blocks: [textBlock('a')] });
+        const style = (old.blocks[0] as { style: object }).style;
+        const blocks = (extra: Record<string, unknown>) => [
+            { id: 'l', type: 'appointment-list', x: 0, y: 0, width: 900, height: 360, calendarIds: [2], horizonDays: 14, limit: 5, style, ...extra },
+            { id: 'n', type: 'next-appointment', x: 0, y: 0, width: 900, height: 360, calendarIds: [2], style, ...extra },
+            { id: 'c', type: 'countdown', x: 0, y: 0, width: 900, height: 360, calendarIds: [2], style, ...extra },
+        ];
+        const read = (extra: Record<string, unknown> = {}) => readSlide({ ...old, blocks: blocks(extra) });
+        expect(read().issues).toHaveLength(0);
+        expect(read().doc.blocks[0]).not.toHaveProperty('hideTagIds');
+        const accepted = read({ hideTagIds: [1, 2] });
+        expect(accepted.issues).toHaveLength(0);
+        expect(accepted.doc.blocks.map((b) => (b as { hideTagIds?: number[] }).hideTagIds)).toEqual([[1, 2], [1, 2], [1, 2]]);
+        expect(read({ hideTagIds: Array.from({ length: 20 }, (_, i) => i) }).issues).toHaveLength(0);
+        expect(read({ hideTagIds: Array.from({ length: 21 }, (_, i) => i) }).issues).not.toHaveLength(0);
+        expect(read({ hideTagIds: [1.5] }).issues).not.toHaveLength(0);
+    });
+
     it('reads the social block (schema 1.33): layout and colours optional, at most 12 links, old slides stay valid', () => {
         expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(33);
         const old = makeSlide({ blocks: [textBlock('a')] });

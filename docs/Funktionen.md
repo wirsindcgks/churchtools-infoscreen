@@ -42,6 +42,13 @@ Interne Termine (nur für angemeldete Benutzer) zeigt kein Fernseher. Hat ein Ba
 öffentlich ist, nennt ihn der Editor und bietet an, ihn zu entfernen; fehlt einer, sagt der Editor, wie man ihn in
 ChurchTools freigibt.
 
+**Termine über Tags ausblenden.** Terminliste, Nächster Termin und Countdown lassen Termine weg, die einen bestimmten
+Tag tragen – etwa „Intern" oder „Probe". Unter den Kalendern steht **„Termine mit diesen Tags ausblenden"**; dort schaltet
+man die Tags ein, die der Baustein auslassen soll. Tags vergibt man in ChurchTools am Termin und verwaltet sie im Kalender
+über das Tag-Symbol; eine Wiederholungsserie trägt den Tag an jedem Termin. Ein Tag, den es in ChurchTools nicht mehr gibt,
+steht als „Tag gelöscht" da und lässt sich abwählen. Das Gerät braucht dafür kein eigenes Recht. Zeitpläne nach Terminen
+beachten Tags nicht.
+
 **Farben aus der Palette:** An jedem Farbfeld des Editors stehen kleine Tupfer in zwei Gruppen. Zuerst die
 **„Farbpalette"** – Akzent, Text und Hintergrund des Designs, dann die Palette (Seite „Design"); das ist das
 Freigegebene. Darunter **„Auf der Folie"** – alle Farben, die die gerade bearbeitete Folie benutzt; eine freigegebene
