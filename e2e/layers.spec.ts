@@ -24,7 +24,7 @@ async function freshSlideWith(page: Page, count: number): Promise<void> {
 test.describe('on a desktop', () => {
     test.use({ viewport: { width: 1440, height: 900 } });
 
-    test('the list of the slide\'s blocks chooses, adds with Shift, locks and outlines the block under the mouse', async ({ page }) => {
+    test('the list of the slide\'s blocks chooses, locks and outlines the block under the mouse', async ({ page }) => {
         await openEditor(page);
         await freshSlideWith(page, 3);
         await page.keyboard.press('Escape');
@@ -43,16 +43,16 @@ test.describe('on a desktop', () => {
         await page.mouse.move(5, 5);
         await expect(page.locator('.frame--hinted')).toHaveCount(0);
 
-        // A click chooses the block (the short menu stands), Shift-click adds the next.
+        // A click chooses the block (the short menu stands).
         await rows.nth(0).click();
         await expect(page.getByTestId('quick-menu')).toBeVisible();
+        // With a block chosen the list is gone from "Anordnen".
         await openSection(page, 'arrange');
-        const arrange = page.getByTestId('block-inspector').getByTestId('layer-row');
-        await arrange.nth(1).click({ modifiers: ['Shift'] });
-        await expect(page.getByTestId('multi-title')).toHaveText('2 Bausteine');
+        await expect(page.getByTestId('block-inspector').getByTestId('layer-row')).toHaveCount(0);
+        await page.keyboard.press('Escape');
 
         // The lock button of a row locks and unlocks in one step.
-        const lock = arrange.nth(2).getByTestId('layer-lock');
+        const lock = section.getByTestId('layer-row').nth(2).getByTestId('layer-lock');
         await expect(lock).toHaveAttribute('aria-pressed', 'false');
         await lock.click();
         await expect(lock).toHaveAttribute('aria-pressed', 'true');

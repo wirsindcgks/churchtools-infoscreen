@@ -179,7 +179,6 @@ const LAYERS = [
                 <InspectorSection id="arrange" :title="t.inspector.arrange" :summary="block ? t.inspector.layerOf(layerNumber, rows.length) : undefined">
                     <ArrangeField />
                     <p v-if="block" class="layer-position" data-testid="layer-position">{{ t.inspector.layerOf(layerNumber, rows.length) }}</p>
-                    <LayerList @picked="emit('picked')" />
                     <div class="layer-buttons">
                         <button
                             v-for="layer in LAYERS"

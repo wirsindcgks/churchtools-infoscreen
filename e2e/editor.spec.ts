@@ -2228,36 +2228,39 @@ test.describe('sorting by dragging (Plan.md 79, D7)', () => {
         await expect.poll(() => slideNames(page)).toEqual([a, c, b]);
     });
 
-    test('layers in "Anordnen": top first, dragged to a new place, and a locked block stays where it is', async ({ page }) => {
+    test('layers in "Bausteine dieser Folie": top first, dragged to a new place, and a locked block stays where it is; "Anordnen" names the layer', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
         await expect(page.getByTestId('slide-item')).toHaveCount(3);
         await page.getByTestId('slide-item').nth(2).click();
         for (const type of ['text', 'shape', 'clock']) await addBlock(page, type);
-        await openSection(page, 'arrange');
-        const rows = page.getByTestId('layer-row');
+        // Nothing chosen: the list stands in "Bausteine dieser Folie", no longer in "Anordnen".
+        await page.keyboard.press('Escape');
+        const rows = page.getByTestId('slide-blocks').getByTestId('layer-row');
         const names = () => page.locator('[data-testid="layer-row"] .layer-name').allTextContents();
         const before = await names();
         expect(before.slice(0, 3)).toEqual(['Uhr', 'Fläche', 'Text']);
         const count = before.length;
-        await expect(page.getByTestId('layer-position')).toHaveText(`Ebene ${count} von ${count}`);
 
         // The top layer goes down to the third place; the stage follows.
         await dragRow(page, rows.nth(0).getByTestId('layer-handle'), rows.nth(2));
         await expect.poll(names).toEqual([...before.slice(1, 3), before[0]!, ...before.slice(3)]);
-        await expect(page.getByTestId('layer-position')).toHaveText(`Ebene ${count - 2} von ${count}`);
         await page.keyboard.press('ControlOrMeta+z');
         await expect.poll(names).toEqual(before);
 
-        // A row is chosen by a click, and a locked one cannot be dragged – the others pass it by.
-        await rows.nth(1).click();
-        await expect(rows.nth(1)).toHaveClass(/layer-item--on/);
-        await page.getByTestId('lock-toggle').click();
-        await expect(rows.nth(1).getByTestId('layer-lock')).toHaveAttribute('aria-pressed', 'true');
-        await expect(rows.nth(1).getByTestId('layer-handle')).toBeDisabled();
+        // A row is chosen by a click; "Anordnen" then says which layer it is, without a list of its own.
         await rows.nth(0).click();
-        await dragRow(page, rows.nth(0).getByTestId('layer-handle'), rows.nth(2));
-        await expect.poll(names).toEqual([before[2]!, before[1]!, before[0]!, ...before.slice(3)]);
+        await openSection(page, 'arrange');
+        await expect(page.getByTestId('layer-position')).toHaveText(`Ebene ${count} von ${count}`);
+        await expect(page.getByTestId('block-inspector').getByTestId('layer-row')).toHaveCount(0);
+
+        // A locked block cannot be dragged – the others pass it by.
+        await page.getByTestId('lock-toggle').click();
+        await page.keyboard.press('Escape');
+        await expect(rows.nth(0).getByTestId('layer-lock')).toHaveAttribute('aria-pressed', 'true');
+        await expect(rows.nth(0).getByTestId('layer-handle')).toBeDisabled();
+        await dragRow(page, rows.nth(1).getByTestId('layer-handle'), rows.nth(2));
+        await expect.poll(names).toEqual([before[0]!, before[2]!, before[1]!, ...before.slice(3)]);
     });
 });
 

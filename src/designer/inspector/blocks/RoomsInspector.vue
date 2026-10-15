@@ -18,6 +18,7 @@ import SortList, { type SortItem } from '../fields/SortList.vue';
 import TextField from '../fields/TextField.vue';
 import TileField from '../fields/TileField.vue';
 import ToggleField from '../fields/ToggleField.vue';
+import FontSection from '../FontSection.vue';
 import { ROOMS_TILES } from '../layouts';
 import { move as moveItem } from '../../ops';
 import { useBlockEdit } from '../use-block';
@@ -106,9 +107,8 @@ function remove(index: number): void {
                 {{ t.inspector.addAllRooms }}
             </button>
         </div>
-        <span v-if="context.rooms?.length" class="hint" data-testid="rooms-count">{{ t.common.countOf(block.rooms.length, ROOMS_MAX) }}</span>
         <p v-if="!block.rooms.length" class="hint">{{ t.inspector.noRoomsChosen }}</p>
-        <InspectorSection v-else id="room-list" :title="t.inspector.rooms" :summary="t.inspector.roomCount(block.rooms.length)">
+        <InspectorSection v-else id="room-list" :title="t.inspector.rooms" :summary="t.common.countOf(block.rooms.length, ROOMS_MAX)">
             <template #info>{{ t.inspector.roomsInfo }}</template>
             <SortList :items="chosen" :remove-label="t.inspector.removeRoom" testid="room" row-testid="room-entry" @move="move" @remove="remove">
                 <template #row="{ index }">
@@ -154,6 +154,7 @@ function remove(index: number): void {
             {{ t.inspector.doorHint }}
         </p>
     </InspectorSection>
+    <FontSection :block="block" effects="shadow" />
 </template>
 
 <style scoped>

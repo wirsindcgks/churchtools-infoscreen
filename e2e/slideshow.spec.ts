@@ -81,7 +81,6 @@ test('build a slideshow with several pictures, keep it, and see it in the librar
     await newSlideWithSlideshow(page);
     const inspector = page.getByTestId('block-inspector');
     await expect(inspector.getByText('Noch keine Bilder gewählt.')).toBeVisible();
-    await expect(page.getByTestId('slideshow-count')).toHaveText('0 von 30');
 
     // Pick three in the order 3, 1, 2 – the running numbers show the order.
     await page.getByTestId('block-inspector').getByTestId('pick-slideshow').click();
@@ -104,13 +103,13 @@ test('build a slideshow with several pictures, keep it, and see it in the librar
     await library.getByTestId('media-add').click();
     await expect(library).toBeHidden();
 
+    await expect(page.getByTestId('section-slideshow-images-toggle')).toContainText('3 von 30');
     await openSection(page, 'slideshow-images');
     const rows = page.getByTestId('slideshow-row');
     await expect(rows).toHaveCount(3);
     await expect(rows.nth(0)).toContainText('bild-03');
     await expect(rows.nth(1)).toContainText('bild-02');
     await expect(rows.nth(2)).toContainText('bild-01');
-    await expect(page.getByTestId('slideshow-count')).toHaveText('3 von 30');
 
     // Reorder, remove, set the time.
     await nudgeRow(rows.nth(1).getByTestId('slideshow-handle'), 'ArrowUp');
@@ -208,7 +207,7 @@ test('a slideshow takes at most 30 pictures, and an upload is marked instead of 
     await expect(library).toBeVisible();
     await expect(library.getByTestId('media-add')).toHaveText('Hinzufügen (30)');
     await library.getByTestId('media-add').click();
-    await expect(page.getByTestId('slideshow-count')).toHaveText('30 von 30');
+    await expect(page.getByTestId('section-slideshow-images-toggle')).toContainText('30 von 30');
     await expect(page.getByTestId('block-inspector').getByTestId('pick-slideshow')).toBeDisabled();
 });
 

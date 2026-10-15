@@ -37,10 +37,8 @@ export async function chosen(scope: Page | Locator, testid: string): Promise<str
     return (await checked.count()) ? checked.getAttribute('value') : null;
 }
 
-/** The hex field of a colour field: „Eigene Farbe" is unfolded first where it is folded (Plan.md 79, B2, design first). */
+/** The hex field of a colour field; it always stands below the swatches (Plan.md 88). */
 export async function customColor(scope: Page | Locator, testid: string): Promise<Locator> {
-    const toggle = scope.getByTestId(`${testid}-custom`);
-    if ((await toggle.count()) > 0 && (await toggle.getAttribute('aria-expanded')) === 'false') await toggle.click();
     return scope.getByTestId(testid);
 }
 

@@ -73,10 +73,9 @@ function remove(index: number): void {
         >
             <template #info>{{ t.inspector.socialInfo }}</template>
         </TextField>
-        <span class="hint" data-testid="social-count">{{ t.common.countOf(block.links.length, SOCIAL_MAX) }}</span>
         <p v-if="block.links.length >= SOCIAL_MAX" class="hint">{{ t.inspector.socialFull }}</p>
         <p v-if="!block.links.length" class="hint">{{ t.inspector.socialEmpty }}</p>
-        <InspectorSection v-else id="social-list" :title="t.inspector.socialProfiles" :summary="t.quick.count(t.inspector.socialProfiles, block.links.length)">
+        <InspectorSection v-else id="social-list" :title="t.inspector.socialProfiles" :summary="t.common.countOf(block.links.length, SOCIAL_MAX)">
             <SortList :items="chosen" :remove-label="t.inspector.socialRemove" testid="social" row-testid="social-entry" @move="move" @remove="remove">
                 <template #lead="{ index }">
                     <span class="mark"><SocialMark :kind="socialProfile(block.links[index]!.url).platform" :brand="block.brandColors !== false" :block-id="block.id" /></span>

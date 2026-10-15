@@ -77,7 +77,9 @@ function toggleGroup(id: number, on: boolean): void {
             @update:model-value="setBlock({ pageSeconds: $event })"
         />
         <ToggleField :model-value="block.showImage" :label="t.inspector.showImage" testid="posts-image" @update:model-value="setBlock({ showImage: $event })" />
-        <ToggleField :model-value="block.showAuthor" :label="t.inspector.showAuthor" testid="posts-author" @update:model-value="setBlock({ showAuthor: $event })" />
+        <ToggleField :model-value="block.showAuthor" :label="t.inspector.showAuthor" testid="posts-author" @update:model-value="setBlock({ showAuthor: $event })">
+            <template #info>{{ t.inspector.showAuthorInfo }}</template>
+        </ToggleField>
     </InspectorSection>
     <FontSection :block="block" effects="shadow" />
 </template>

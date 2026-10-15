@@ -2,15 +2,13 @@
 /**
  * A colour, design first (Plan.md 79, B2, decision 7). Where a page provides the theme (the editor), large swatches
  * stand in this order (Plan.md 64, 65): the palette – the theme's colours and the church's –, the colours the slide
- * uses beyond it, and last the button „Eigene Farbe", which unfolds the browser's picker and a hex field for a code
- * from the church's style guide. The button is folded while the colour is one of the palette's, open when it is a
- * free one. Only a valid hex code is taken over; while typing, the field keeps what was typed and marks it until it
+ * uses beyond it, and last always the row of the browser's picker and a hex field for a code from the church's style
+ * guide. Only a valid hex code is taken over; while typing, the field keeps what was typed and marks it until it
  * is one. Without a provider (the Design page, where the palette is defined) picker and hex field stand alone.
  * A click on a swatch copies the value. In the short menu (Plan.md 79, C1) it is one round swatch that opens all this.
  */
-import { computed, ref, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { t } from '../i18n/designer';
-import Icon from './Icon.vue';
 import QuickField from './inspector/fields/QuickField.vue';
 import { parseHex, pickerValue } from './color';
 import { usePalette, type PaletteColor } from './palette';
@@ -25,17 +23,6 @@ function swatchLabel(entry: PaletteColor): string {
     const hex = entry.color.toUpperCase();
     return entry.name.toLowerCase() === entry.color.toLowerCase() ? hex : `${entry.name} (${hex})`;
 }
-
-/** Whether the colour is one of the palette's – then „Eigene Farbe" stays folded. */
-const inPalette = computed(() => !!lists && lists.value.palette.some((entry) => entry.color.toLowerCase() === props.modelValue.toLowerCase()));
-/** Without swatches there is nothing to fold away. */
-const showsSwatches = computed(() => !!lists && (lists.value.palette.length > 0 || lists.value.slide.length > 0));
-const customOpen = ref(!inPalette.value);
-/** A free colour opens the fold; a palette colour never closes it again under the user's hands (typing may pass one). */
-watch(inPalette, (known) => {
-    if (!known) customOpen.value = true;
-});
-const customShown = computed(() => !showsSwatches.value || customOpen.value);
 
 const draft = ref(props.modelValue);
 const invalid = ref(false);
@@ -107,18 +94,7 @@ function onTextBlur(): void {
                     />
                 </div>
             </div>
-            <button
-                v-if="showsSwatches"
-                type="button"
-                class="custom-toggle"
-                :aria-expanded="customOpen"
-                :data-testid="testid ? `${testid}-custom` : 'color-custom'"
-                @click="customOpen = !customOpen"
-            >
-                <Icon name="chevron-down" :size="14" :class="['custom-chevron', { open: customOpen }]" />
-                {{ t.common.color.custom }}
-            </button>
-            <div v-if="customShown" class="row">
+            <div class="row">
                 <input
                     type="color"
                     :value="pickerValue(modelValue)"
@@ -206,28 +182,5 @@ function onTextBlur(): void {
 .swatch[aria-pressed='true'] {
     border-color: var(--d-surface);
     box-shadow: 0 0 0 2px var(--d-accent);
-}
-.custom-toggle {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    justify-self: start;
-    min-height: 28px;
-    padding: 0 2px;
-    border: 0;
-    background: none;
-    color: var(--d-text-muted);
-    font: inherit;
-    cursor: pointer;
-}
-.custom-toggle:hover {
-    color: var(--d-text);
-}
-.custom-chevron {
-    transform: rotate(-90deg);
-    transition: transform 0.12s;
-}
-.custom-chevron.open {
-    transform: none;
 }
 </style>

@@ -30,7 +30,7 @@ const QUICK: Record<BlockType, string[]> = {
     qr: ['Inhalt', 'Farbe'],
     posts: ['Gruppen · 0', 'Ansicht: Hervorgehoben', 'Farbe'],
     groups: ['Gruppen-Homepage: – wählen –', 'Ansicht: Hervorgehoben', 'Farbe'],
-    rooms: ['Räume · 0', 'Ansicht: Übersicht', 'Zeitraum 1 Tage'],
+    rooms: ['Räume · 0', 'Ansicht: Übersicht', 'Zeitraum 1 Tage', 'Farbe'],
     social: ['Profile · 0', 'Anordnung: Untereinander', 'Markenfarben', 'Farbe', 'Ausrichtung'],
 };
 
@@ -84,10 +84,8 @@ describe('the short menu of the blocks (Plan.md 79, B2)', () => {
 
 /** A new block brings the default set of formatting with it (Plan.md, Konventionen); a block with a text style shows it. */
 describe('the font of the blocks (Plan.md 83)', () => {
-    /** Known gaps, each a small item in Plan.md: the room occupancy uses its style but offers no section yet. */
-    const without: BlockType[] = ['rooms'];
     const styled = (Object.keys(QUICK) as BlockType[]).filter(
-        (type) => !without.includes(type) && 'style' in createBlock(type, { width: 1920, height: 1080 }, [1]),
+        (type) => 'style' in createBlock(type, { width: 1920, height: 1080 }, [1]),
     );
 
     it.each(styled)('%s has a text style, so its inspector offers the section "Schrift" with the shadow', (type) => {

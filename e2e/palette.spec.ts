@@ -54,8 +54,7 @@ test('a swatch sets the hex value of a text colour and of a fill (Plan.md 64)', 
     await expect(palette.getByTestId('text-color-swatch')).toHaveCount(5);
     await page.getByRole('button', { name: 'Sonnengelb (#F5B301)' }).first().click();
     await expect(palette.getByTestId('text-color-swatch').nth(4)).toHaveAttribute('aria-pressed', 'true');
-    // A colour of the palette leaves „Eigene Farbe" folded; unfolded it shows the hex value.
-    await expect(page.getByTestId('text-color')).toHaveCount(0);
+    // The hex field always stands below the swatches.
     await expect(await customColor(page, 'text-color')).toHaveValue('#f5b301');
 
     await page.getByTestId('slide-item').nth(2).click();
@@ -74,12 +73,13 @@ test('the swatches stand in two groups: the palette, and every colour the slide 
     const onSlide = page.getByTestId('slide-colors-group').first();
     await expect(palette).toBeVisible();
     await expect(palette).toContainText('Farbpalette');
-    // Design first: the palette, then the colours of the slide, then „Eigene Farbe" (Plan.md 79, B2).
-    const order = await page.getByTestId('text-color-custom').evaluate((el) => {
-        const field = el.parentElement!;
-        return [...field.children].map((c) => c.getAttribute('data-testid'));
+    // Design first: the palette, then the colours of the slide, then the row of picker and hex field (Plan.md 88).
+    const order = await page.getByTestId('text-color').evaluate((el) => {
+        const field = el.closest('.color-field')!;
+        return [...field.children].map((c) => c.getAttribute('data-testid') ?? (c.querySelector('[data-testid="text-color"]') ? 'row' : ''));
     });
-    expect(order.indexOf('palette-group')).toBeLessThan(order.indexOf('text-color-custom'));
+    expect(order.indexOf('palette-group')).toBeLessThan(order.indexOf('slide-colors-group'));
+    expect(order.indexOf('slide-colors-group')).toBeLessThan(order.indexOf('row'));
     await expect(palette.getByRole('group', { name: 'Farbe: Farbpalette' })).toBeVisible();
 
     // A palette colour in use also stands under "Auf der Slide", under its palette name.

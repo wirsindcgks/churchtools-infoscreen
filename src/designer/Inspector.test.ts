@@ -1,11 +1,24 @@
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { describe, expect, it } from 'vitest';
+import { defineComponent, h } from 'vue';
+import { provideStageContext } from '../player/context';
 import { MemoryKv } from '../store/memory-kv';
 import { ScreenRepository } from '../store/screen-repository';
 import { useEditorStore } from './editor-store';
 import Inspector from './Inspector.vue';
 import { createScreenBundle } from './ops';
+
+/** The inspector below a stage, as in the editor – with nothing chosen it shows the slide's settings. */
+function mountInspector() {
+    const Host = defineComponent({
+        setup() {
+            provideStageContext({ now: new Date(), timeZone: 'Europe/Berlin', clockConfirmed: true, churchName: '', appointments: [], media: new Map() });
+            return () => h(Inspector, { calendars: [], groups: [], homepages: [], rooms: null });
+        },
+    });
+    return mount(Host);
+}
 
 async function open() {
     const repository = new ScreenRepository(new MemoryKv());
@@ -18,21 +31,21 @@ async function open() {
     return editor;
 }
 
-describe('the layers in "Anordnen" (Plan.md 79, B3)', () => {
-    it('lists the top layer first, says which layer the chosen block is, and selects by click', async () => {
+describe('the layers (Plan.md 79, B3; Plan.md 88: the list stands with nothing chosen)', () => {
+    it('lists the top layer first, selects by click, and says in "Anordnen" which layer the chosen block is', async () => {
         const editor = await open();
         editor.addBlock('text');
         editor.addBlock('shape');
         editor.addBlock('clock');
-        const [text, shape, clock] = editor.slide!.blocks;
-        editor.selectBlock(shape!.id);
-        const wrapper = mount(Inspector, { props: { calendars: [], groups: [], homepages: [], rooms: null } });
+        const [text, shape] = editor.slide!.blocks;
+        editor.selectBlock(null);
+        const wrapper = mountInspector();
         const rows = wrapper.findAll('[data-testid="layer-row"]');
         expect(rows.map((r) => r.find('.layer-name').text())).toEqual(['Uhr', 'Fläche', 'Text']);
-        expect(rows[1]!.classes()).toContain('layer-item--on');
+        await rows[1]!.trigger('click');
+        expect(editor.block?.id).toBe(shape!.id);
+        expect(wrapper.find('[data-testid="layer-row"]').exists()).toBe(false);
         expect(wrapper.get('[data-testid="layer-position"]').text()).toBe('Ebene 2 von 3');
-        await rows[0]!.trigger('click');
-        expect(editor.block?.id).toBe(clock!.id);
         expect(text).toBeDefined();
     });
 
@@ -41,7 +54,8 @@ describe('the layers in "Anordnen" (Plan.md 79, B3)', () => {
         editor.addBlock('text');
         editor.addBlock('shape');
         editor.setLocked([editor.slide!.blocks[0]!.id], true);
-        const wrapper = mount(Inspector, { props: { calendars: [], groups: [], homepages: [], rooms: null } });
+        editor.selectBlock(null);
+        const wrapper = mountInspector();
         const rows = wrapper.findAll('[data-testid="layer-row"]');
         expect(rows[1]!.find('[data-testid="layer-lock"]').exists()).toBe(true);
         expect(rows[1]!.get('[data-testid="layer-handle"]').attributes('disabled')).toBeDefined();

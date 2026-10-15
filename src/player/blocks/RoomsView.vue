@@ -37,6 +37,9 @@ const door = computed(() =>
         : null,
 );
 
+/** The lines under „Danach" are flex rows, which `text-align` does not move: they follow the alignment of the text (Plan.md 88, B). */
+const doorJustify = computed(() => ({ left: 'flex-start', center: 'center', right: 'flex-end' })[props.block.style.align] ?? 'flex-start');
+
 // --- pages of the overview: as many whole rooms as fit, measured in a hidden copy ---
 
 const heights = ref<number[]>([]);
@@ -121,7 +124,7 @@ onBeforeUnmount(() => clearInterval(timer));
             <div v-if="door.next.length" class="door-next" data-testid="door-next">
                 <div class="door-label">{{ tp.rooms.next }}</div>
                 <ul class="door-list">
-                    <li v-for="line in door.next" :key="line.key" class="door-line" data-testid="door-line">
+                    <li v-for="line in door.next" :key="line.key" class="door-line" :style="{ justifyContent: doorJustify }" data-testid="door-line">
                         <span v-if="line.day" class="day">{{ line.day }}</span>
                         <span class="time">{{ line.time }}</span>
                         <span class="title">{{ line.title }}</span>

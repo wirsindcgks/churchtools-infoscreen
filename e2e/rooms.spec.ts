@@ -238,9 +238,9 @@ test('choose rooms, see the bookings, and keep the titles private where asked', 
     await add.selectOption('2');
     await expect(page.getByTestId('room-entry')).toHaveCount(1);
     await page.getByTestId('rooms-add-all').click();
+    await expect(page.getByTestId('section-room-list-toggle')).toContainText('3 von 30');
     await openSection(page, 'room-list');
     await expect(page.getByTestId('room-name')).toHaveText(['Gruppenraum 1', 'Saal', 'Jugendkeller']);
-    await expect(page.getByTestId('rooms-count')).toHaveText('3 von 30');
     await expect(page.getByTestId('rooms-add')).toBeDisabled();
 
     // One request per room, for confirmed bookings only.

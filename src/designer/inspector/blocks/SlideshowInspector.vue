@@ -65,15 +65,12 @@ function remove(index: number): void {
         :filled="false"
         :pick-label="t.inspector.addImages"
         :swap-label="t.inspector.addImages"
-        :caption="t.common.countOf(block.mediaIds.length, SLIDESHOW_MAX)"
-        caption-muted
-        caption-testid="slideshow-count"
         :disabled="block.mediaIds.length >= SLIDESHOW_MAX"
         testid="pick-slideshow"
         @pick="context.pickImage('slideshow')"
     />
     <p v-if="mode === 'full' && !block.mediaIds.length" class="hint">{{ t.inspector.noImages }}</p>
-    <InspectorSection v-else id="slideshow-images" :title="t.inspector.images" :summary="t.inspector.imageCount(block.mediaIds.length)">
+    <InspectorSection v-else id="slideshow-images" :title="t.inspector.images" :summary="t.common.countOf(block.mediaIds.length, SLIDESHOW_MAX)">
         <SortList :items="items" :remove-label="t.inspector.removeImage" testid="slideshow" @move="move" @remove="remove" />
     </InspectorSection>
     <InspectorSection

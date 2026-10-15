@@ -2,7 +2,7 @@
 /**
  * A medium of the library as one field (Plan.md 79, B2): the preview above, one button under it – "Bild wählen" while
  * empty, "Bild tauschen" once filled (the words come in as properties, so images, videos and logos share it). The
- * default slot takes further buttons, such as "Logo aus ChurchTools verwenden". In the short menu (Plan.md 79, C1) it is
+ * default slot takes further buttons, such as "Logo zurücksetzen". In the short menu (Plan.md 79, C1) it is
  * only the button, a chip that opens the library.
  */
 import { ref } from 'vue';
