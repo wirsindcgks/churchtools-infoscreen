@@ -37,7 +37,7 @@ test('upload an image, place it, and get warned before deleting it', async ({ pa
     await page.screenshot({ path: 'test-results/media-placed.png' });
 
     await page.getByTestId('save').click();
-    await expect(page.getByTestId('save-status')).toHaveText('Gespeichert');
+    await expect(page.getByTestId('save-status')).toHaveText('Veröffentlicht');
 
     // The player keeps the image on the device: after the first run it no longer needs the image service.
     // Chromium only: Playwright's WebKit context is ephemeral like a private window and keeps Cache
