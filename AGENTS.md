@@ -61,7 +61,7 @@ kommt als eigene Zeile in „Auf einen Blick".
 
 *Seit 2026-10-15 (Nutzer: „Das sollten wir zukünftig immer mitdenken").* Jedes neue Feld an einem Baustein bekommt
 seinen Platz nach diesen Regeln, statt lose angehängt zu werden; wer plant, legt den Platz im Auftrag fest. Begründung
-und Iststand in `Plan.md`, Punkt 88.
+und Iststand in `docs/Plan-Archiv.md`, Punkt 88; was offen ist, in `Plan.md`, Punkt 88.
 
 - **Reihenfolge:** Kopf → Inhalt (lose) → Auswahl-Klappmenüs mit Fachnamen (Kalender, Gruppen, Räume …) →
   „Darstellung" → „Schrift" → Drehung und Deckkraft → Anordnen → Genaue Maße.

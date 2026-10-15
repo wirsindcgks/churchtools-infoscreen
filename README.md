@@ -66,9 +66,9 @@ Administrator.
 
 ## Stand
 
-Aktuell ist Version 0.17.1. Bei uns zeigen seit dem 6. Oktober 2026 zwei Fernseher im Foyer ihre Folien damit;
-getestet ist es auf ChurchTools 3.136. Was sich je Version geändert hat, steht im
-[Changelog](CHANGELOG.md), was als Nächstes kommt, in [`Plan.md`](Plan.md). Fehler und Wünsche gerne im
+Die aktuelle Version steht unter [Releases](https://github.com/wirsindcgks/churchtools-infoscreen/releases). Bei uns
+zeigen seit dem 6. Oktober 2026 zwei Fernseher im Foyer ihre Folien damit; getestet ist es auf ChurchTools 3.136. Was
+sich je Version geändert hat, steht im [Changelog](CHANGELOG.md), was als Nächstes kommt, in [`Plan.md`](Plan.md). Fehler und Wünsche gerne im
 [Issue-Tracker](https://github.com/wirsindcgks/churchtools-infoscreen/issues).
 
 ## Mitentwickeln
