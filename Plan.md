@@ -11,7 +11,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 **Offen, nach Rang** *(Maßstab ist der Pitch)*:
 
 1. **Umbenennen darf nichts kaputt machen** (Punkt 84) – **gebaut am 2026-10-15** (Branch `feature/umbenennen-wiki-id`, Schema 1.36), noch nicht veröffentlicht. Bald: Bernhard will den Wiki-Bereich bei sich „auf die Seite“ legen. Bernhard ist über `v0.21.0` informiert (Nutzer, 2026-10-15).
-2. **Antwort an den zweiten Tester** (Punkt 85) – „Kalender zeigen“ seit `v0.21.0`, Social Media hat seit `v0.20.1` die Schrift.
+2. **Rückmeldung des zweiten Testers abwarten** (Punkt 85) – der Nutzer hat ihm geschrieben und wartet auf seine Antwort (2026-10-15): „Kalender zeigen“ seit `v0.21.0`, Social Media hat seit `v0.20.1` die Schrift.
 3. **Rückmeldungen des ersten Nutzers von außen** (Punkt 82) – **A** Hinweistext im Webseiten-Baustein und **B** Räume in der Terminliste sind mit `v0.20.0` veröffentlicht (2026-10-14; B ersetzt PR #93, der mit Dank geschlossen ist). **Offen: C** Tags an Terminen erst messen.
 4. **Rückmeldungen eines zweiten Testers** (Punkt 85, Rest) – nicht öffentliche Kalender per Freigabe eines Administrators (entschieden, vor dem Bau messen); Social Media hat seit `v0.20.1` Farbe und Größe.
 5. **Ideen aus Punkt 86** – Zeitraum der Raumbelegung wie bei der Terminliste, Fortschrittsanzeige über die Präsentation, frei wählbare Angaben am Termin; je ein Bauplan.
