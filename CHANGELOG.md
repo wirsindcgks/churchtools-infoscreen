@@ -4,6 +4,24 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.22.0] – 2026-10-15
+
+### Wichtig beim Update
+
+- Wer den Wiki-Bereich „Infoscreen" umbenennen will: nach dem Update als Administrator einmal die **Einstellungen**
+  öffnen, erst dann umbenennen. Dabei merkt sich der Designer den Bereich. Einen Bereich, den der Assistent angelegt
+  hat, kennt er ohnehin.
+
+### Geändert
+
+- **Umbenennen bricht nichts mehr.** Den Wiki-Bereich der Mediathek findet der Designer über seine Nummer statt
+  über den Namen. Ein umbenannter Bereich ließ bisher die Mediathek leer wirken, und der Designer meldete fehlende
+  Rechte. Die Gruppen waren schon vorher sicher.
+- **Die Einstellungen nennen die aktuellen Namen** von Wiki-Bereich und Gruppen, auch in der Prüfung der Gruppen
+  und beim Entfernen der Einrichtung.
+- **Klarere Hinweise zum Wiki-Bereich.** „Entsteht beim ersten Bild-Upload" stimmte nie, die Mediathek legt keinen
+  Bereich an. Findet der Designer den Bereich nicht, sagt er jetzt, dass er fehlt oder das Recht fehlt, ihn zu sehen.
+
 ## [0.21.0] – 2026-10-15
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) und einen zweiten Tester für die Rückmeldungen zu Räumen und
@@ -1027,6 +1045,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.22.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.22.0
 [0.21.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.21.0
 [0.20.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.20.1
 [0.20.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.20.0
