@@ -150,8 +150,10 @@ unter **Einstellungen → Mediathek im Wiki**.
 **Welche Ressourcen Räume sind.** Als Raum gilt, was in ChurchTools zum Ressourcentyp „Raum" gehört. Manche Gemeinden
 ordnen ihre Ressourcen anders, etwa nach Gebäuden, und haben diesen Typ nicht. Dann wählst du unter **Einstellungen →
 Räume** die Typen, deren Ressourcen Räume sind; die Seite nennt zu jedem Typ seine Ressourcen. Ohne Auswahl gilt der
-Typ „Raum"; gibt es ihn nicht, zeigt kein Bildschirm Räume, und Einstellungen wie Prüfung warnen davor. Nach einer
-Änderung **„Rechte aktualisieren"**, damit Gestalter und Fernseher die neuen Räume sehen.
+Typ „Raum"; gibt es ihn nicht, zeigt kein Bildschirm Räume, und Einstellungen wie Prüfung warnen davor. Wie auf der
+Design-Seite gilt die Auswahl erst mit **„Speichern"** oben rechts; „Verwerfen" holt den gespeicherten Stand zurück. So
+speichern auch „Gruppen und Rechte" und „Dienste auf Bildschirmen". Brauchen die Gruppen danach andere Rechte, fragt ein
+Fenster, ob du gleich **„Rechte aktualisieren"** willst; eine Vorschau zeigt vorher, was sich ändert.
 
 Der Assistent legt den Wiki-Bereich nur an, wenn du das Wiki sehen darfst; ohne dieses Recht bricht er ab, bevor er etwas anlegt. Einen fremden Bereich gleichen Namens, den du nicht sehen darfst, kann er nicht erkennen.
 

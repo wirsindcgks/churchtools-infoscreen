@@ -178,6 +178,66 @@
     align-items: stretch;
     gap: 4px 0;
 }
+/*
+ * A choice among settings, radio or checkbox, in a frame of its own – one look across the module (2026-10-15).
+ * The box stands centred beside its text, however many lines that has; the chosen frame is tinted.
+ */
+.infoscreen-designer :where(.d-choices) {
+    display: grid;
+    gap: var(--d-space-2);
+}
+.infoscreen-designer :where(.d-choices--two) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+/* Short names side by side, as many as fit (calendars of a schedule rule). */
+.infoscreen-designer :where(.d-choices--wrap) {
+    display: flex;
+    flex-wrap: wrap;
+}
+.infoscreen-designer :where(.d-choice) {
+    display: flex;
+    align-items: center;
+    gap: var(--d-space-3);
+    min-width: 0;
+    padding: var(--d-space-2) var(--d-space-3);
+    border: 1px solid var(--d-divider);
+    border-radius: var(--d-radius);
+    background: var(--d-surface);
+    color: var(--d-text);
+    font-size: var(--d-size);
+    cursor: pointer;
+    transition:
+        border-color var(--d-transition),
+        background var(--d-transition);
+}
+.infoscreen-designer :where(.d-choice:hover:not(:has(> input:disabled))) {
+    border-color: var(--d-interactive);
+}
+.infoscreen-designer :where(.d-choice:has(> input:checked)) {
+    border-color: var(--d-interactive);
+    background: var(--d-accent-pale);
+}
+.infoscreen-designer :where(.d-choice:has(> input:disabled)) {
+    cursor: default;
+    opacity: 0.55;
+}
+/* The field style above makes inputs full width; the box keeps its own size. */
+.infoscreen-designer :where(.d-choice > input) {
+    flex: none;
+    width: auto;
+    margin: 0;
+    padding: 0;
+}
+.infoscreen-designer :where(.d-choice-text) {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.infoscreen-designer :where(.d-choice-text small) {
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
 
 .infoscreen-designer :where(button.d-btn--create) {
     border-color: var(--d-create);

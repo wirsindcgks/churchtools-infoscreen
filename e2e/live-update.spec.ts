@@ -46,7 +46,7 @@ test('the new-screen dialog lines up', async ({ page }) => {
     await expect(page.getByTestId('new-name')).toBeFocused();
     const [name, slug] = await Promise.all([page.getByTestId('new-name').boundingBox(), page.getByTestId('new-slug').boundingBox()]);
     expect(Math.round(name!.height)).toBe(Math.round(slug!.height)); // fields of one height
-    const choices = await dialog.locator('.choice').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
+    const choices = await dialog.locator('.d-choice').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
     expect(new Set(choices.map(Math.round)).size).toBe(1); // both formats side by side
     await dialog.screenshot({ path: 'test-results/new-screen-dialog.png' });
     await page.keyboard.press('Escape');

@@ -82,7 +82,7 @@ async function addNotice(page: Page, text: string, playlists: string[], until?: 
         await dialog.getByTestId('banner-until').dispatchEvent('change');
     }
     await dialog.getByTestId('notice-playlists-none').click();
-    for (const name of playlists) await dialog.locator('label.check', { hasText: name }).locator('input').check();
+    for (const name of playlists) await dialog.locator('label.d-choice', { hasText: name }).locator('input').check();
     await dialog.getByTestId('notice-save').click();
     await expect(dialog).toBeHidden();
 }

@@ -448,8 +448,8 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                                     />
                                 </div>
                                 <span class="muted small">{{ t.schedules.dialog.ofAppointmentIn }}</span>
-                                <div class="calendars">
-                                    <label v-for="c in calendars" :key="c.id" class="check">
+                                <div class="calendars d-choices d-choices--wrap">
+                                    <label v-for="c in calendars" :key="c.id" class="d-choice">
                                         <input
                                             type="checkbox"
                                             :checked="rule.calendarIds.includes(c.id)"
@@ -613,8 +613,7 @@ ol {
     height: 12px;
     border-radius: 3px;
 }
-.inline,
-.check {
+.inline {
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -740,9 +739,7 @@ ol {
     font-weight: var(--d-weight-normal);
 }
 .calendars {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 14px;
+    align-items: center;
     width: 100%;
 }
 .preview-controls {

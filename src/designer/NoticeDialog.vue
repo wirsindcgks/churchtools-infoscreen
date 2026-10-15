@@ -197,20 +197,20 @@ function observe(el: unknown): void {
                         </div>
                     </div>
                     <p v-if="!overviews.length" class="muted small">{{ t.playlists.empty }}</p>
-                    <ul v-else class="playlists">
+                    <ul v-else class="playlists d-choices">
                         <li v-for="o in overviews" :key="o.playlist.id">
-                            <label class="check">
+                            <label class="d-choice">
                                 <input
                                     type="checkbox"
                                     :checked="selected.has(o.playlist.id)"
                                     :data-testid="`notice-playlist-${o.playlist.id}`"
                                     @change="toggle(o.playlist.id, ($event.target as HTMLInputElement).checked)"
                                 >
-                                <span class="name">{{ o.playlist.name }}</span>
-                                <span class="muted small">
-                                    {{ o.screens.length ? o.screens.map((s) => s.name).join(', ') : t.common.onNoScreen }}
+                                <span class="d-choice-text">
+                                    <span>{{ o.playlist.name }}</span>
+                                    <small>{{ o.screens.length ? o.screens.map((s) => s.name).join(', ') : t.common.onNoScreen }}</small>
+                                    <small v-if="hasOtherBanner(o)" class="warn">{{ t.notices.dialog.replaced }}</small>
                                 </span>
-                                <span v-if="hasOtherBanner(o)" class="muted small warn">{{ t.notices.dialog.replaced }}</span>
                             </label>
                         </li>
                     </ul>
@@ -292,27 +292,11 @@ h3 {
     gap: 6px;
 }
 .playlists {
-    display: grid;
-    gap: 4px;
     margin: 0;
     padding: 0;
     list-style: none;
 }
-.check {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 4px 8px;
-    padding: 4px 0;
-}
-.check input {
-    width: auto;
-    margin: 0;
-}
-.check .name {
-    font-weight: var(--d-weight-normal);
-}
-.warn {
+.d-choice-text .warn {
     color: var(--d-danger);
 }
 </style>

@@ -7,13 +7,15 @@
  * player's own components and real appointments. Designers save it like a
  * playlist, against its revision.
  */
-import { computed, onMounted, ref, shallowRef, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
+import { onBeforeRouteLeave } from 'vue-router';
 import { currentPerson, displayName } from '../ct/client';
 import ColorField from '../designer/ColorField.vue';
 import Icon from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import { t } from '../i18n/designer';
+import { useConfirm } from '../designer/useConfirm';
 import { usePreview } from '../designer/usePreview';
 import { createBlock, createSlide } from '../designer/ops';
 import PaletteScope from '../designer/PaletteScope.vue';
@@ -61,6 +63,15 @@ function movePaletteColor(index: number, by: -1 | 1): void {
 }
 
 const dirty = computed(() => JSON.stringify(look.value) !== JSON.stringify(saved.value));
+
+/** Unsaved changes ask before they go – like the editor and the settings (2026-10-15). */
+const { confirm } = useConfirm();
+onBeforeRouteLeave(async () => !dirty.value || (await confirm({ message: t.editor.discardChanges, confirmLabel: t.common.discard, danger: true })));
+function onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (dirty.value) event.preventDefault();
+}
+window.addEventListener('beforeunload', onBeforeUnload);
+onBeforeUnmount(() => window.removeEventListener('beforeunload', onBeforeUnload));
 const theme = computed<ThemeDoc>(() => ({ ...DEFAULT_THEME, ...look.value }));
 
 // The preview: real appointments of the first calendars, shown as the TV would show them.
@@ -195,8 +206,8 @@ function observe(el: unknown): void {
             <div class="d-card settings">
                 <section class="box" aria-labelledby="box-corners">
                     <h2 id="box-corners">{{ t.design.corners.title }}</h2>
-                    <div class="choice" role="radiogroup" aria-labelledby="box-corners">
-                        <label v-for="c in (['round', 'square'] as const)" :key="c" class="option" :class="{ on: look.corners === c }">
+                    <div class="d-choices d-choices--two" role="radiogroup" aria-labelledby="box-corners">
+                        <label v-for="c in (['round', 'square'] as const)" :key="c" class="d-choice">
                             <input v-model="look.corners" type="radio" name="corners" :value="c" :data-testid="`corners-${c}`">
                             <span class="corner-sample" :class="`corner-sample--${c}`" aria-hidden="true" />
                             {{ c === 'round' ? t.design.corners.round : t.design.corners.square }}
@@ -218,18 +229,18 @@ function observe(el: unknown): void {
 
                 <section class="box" aria-labelledby="box-cards">
                     <h2 id="box-cards">{{ t.design.cards.title }}</h2>
-                    <div class="choice" role="radiogroup" aria-labelledby="box-cards">
-                        <label class="option option--wide" :class="{ on: look.cards === 'tint' }">
+                    <div class="d-choices" role="radiogroup" aria-labelledby="box-cards">
+                        <label class="d-choice">
                             <input v-model="look.cards" type="radio" name="cards" value="tint" data-testid="cards-tint">
-                            <span><strong>{{ t.design.cards.tint }}</strong><br><small>{{ t.design.cards.tintHint }}</small></span>
+                            <span class="d-choice-text"><strong>{{ t.design.cards.tint }}</strong><small>{{ t.design.cards.tintHint }}</small></span>
                         </label>
-                        <label class="option option--wide" :class="{ on: look.cards === 'none' }">
+                        <label class="d-choice">
                             <input v-model="look.cards" type="radio" name="cards" value="none" data-testid="cards-none">
-                            <span><strong>{{ t.design.cards.none }}</strong><br><small>{{ t.design.cards.noneHint }}</small></span>
+                            <span class="d-choice-text"><strong>{{ t.design.cards.none }}</strong><small>{{ t.design.cards.noneHint }}</small></span>
                         </label>
-                        <label class="option option--wide" :class="{ on: look.cards === 'color' }">
+                        <label class="d-choice">
                             <input v-model="look.cards" type="radio" name="cards" value="color" data-testid="cards-color">
-                            <span><strong>{{ t.design.cards.color }}</strong><br><small>{{ t.design.cards.colorHint }}</small></span>
+                            <span class="d-choice-text"><strong>{{ t.design.cards.color }}</strong><small>{{ t.design.cards.colorHint }}</small></span>
                         </label>
                     </div>
                     <template v-if="look.cards === 'color'">
@@ -320,14 +331,14 @@ function observe(el: unknown): void {
 
                 <section class="box" aria-labelledby="box-appointments">
                     <h2 id="box-appointments">{{ t.design.appointments.title }}</h2>
-                    <div class="choice" role="radiogroup" aria-labelledby="box-appointments">
-                        <label class="option option--wide" :class="{ on: look.appointments === 'native' }">
+                    <div class="d-choices" role="radiogroup" aria-labelledby="box-appointments">
+                        <label class="d-choice">
                             <input v-model="look.appointments" type="radio" name="appointments" value="native" data-testid="appointments-native">
-                            <span><strong>{{ t.design.appointments.native }}</strong><br><small>{{ t.design.appointments.nativeHint }}</small></span>
+                            <span class="d-choice-text"><strong>{{ t.design.appointments.native }}</strong><small>{{ t.design.appointments.nativeHint }}</small></span>
                         </label>
-                        <label class="option option--wide" :class="{ on: look.appointments === 'large' }">
+                        <label class="d-choice">
                             <input v-model="look.appointments" type="radio" name="appointments" value="large" data-testid="appointments-large">
-                            <span><strong>{{ t.design.appointments.modern }}</strong><br><small>{{ t.design.appointments.modernHint }}</small></span>
+                            <span class="d-choice-text"><strong>{{ t.design.appointments.modern }}</strong><small>{{ t.design.appointments.modernHint }}</small></span>
                         </label>
                     </div>
                 </section>
@@ -396,37 +407,6 @@ function observe(el: unknown): void {
 h2 {
     margin: 0;
     font-size: 1.05em;
-}
-.choice {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-.option {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 8px 10px;
-    border: 1px solid var(--d-divider);
-    border-radius: var(--d-radius);
-    cursor: pointer;
-}
-/* The module's field style makes inputs full width; a radio button keeps its own size. */
-.option input {
-    flex: none;
-    width: auto;
-    margin: 0;
-}
-.option.on {
-    border-color: var(--d-interactive);
-    background: var(--d-accent-pale);
-}
-.option--wide {
-    grid-column: 1 / -1;
-    align-items: flex-start;
-}
-.option small {
-    color: var(--d-text-muted);
 }
 .corner-sample {
     width: 22px;

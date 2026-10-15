@@ -217,12 +217,12 @@ async function remove(overview: PlaylistOverview): Promise<void> {
         >
             <div class="d-dialog duplicate" data-testid="duplicate-dialog">
                 <h2 id="duplicate-title">{{ t.playlists.duplicate.title }}</h2>
-                <div class="options" role="radiogroup" aria-labelledby="duplicate-title">
-                    <label>
+                <div class="d-choices" role="radiogroup" aria-labelledby="duplicate-title">
+                    <label class="d-choice">
                         <input v-model="duplicateMode" type="radio" value="copy" data-testid="duplicate-copy">
                         {{ t.playlists.duplicate.copy }}
                     </label>
-                    <label>
+                    <label class="d-choice">
                         <input v-model="duplicateMode" type="radio" value="linked" data-testid="duplicate-linked">
                         {{ t.playlists.duplicate.linked }}
                     </label>
@@ -259,19 +259,6 @@ async function remove(overview: PlaylistOverview): Promise<void> {
 }
 .duplicate h2 {
     margin: 0;
-}
-.options {
-    display: grid;
-    gap: 8px;
-}
-.duplicate label {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
-}
-.duplicate input[type='radio'] {
-    flex: none;
-    width: auto;
 }
 .empty {
     display: grid;

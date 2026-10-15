@@ -1237,9 +1237,6 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             loadingGroups: 'Lade Gruppen …',
             noSuitable: 'Keine passende Gruppe? In ChurchTools unter „Gruppen" eine anlegen, auf „aktiv" stellen und hier wählen.',
             checking: 'Prüfe …',
-            saveSelection: 'Auswahl speichern',
-            saved: 'Gespeichert.',
-            saving: 'Speichert …',
             checkNote:
                 'Geprüft werden die Rechte der Gruppenrollen und ihrer Gruppentyp-Rollen, bei Geräten dazu Personenstatus und direkt vergebene Rechte. Weitere Gruppen eines Gerätekontos werden genannt, ihre Rechte aber nicht geprüft.',
             sameGroup: 'Gestalter und Geräte sind dieselbe Gruppe.',
@@ -1281,6 +1278,21 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             createType: 'Gruppen eines Gruppentyps erstellen',
         },
         groupFallback: (id: number) => `Gruppe ${id}`,
+        /** Groups, services and rooms save like the design page: with „Speichern" in the head (2026-10-15). */
+        saved: 'Gespeichert',
+        saving: 'Speichert …',
+        /** After a save that changes what the groups need: a question instead of a line one may miss. */
+        rightsNeeded: {
+            title: 'Rechte aktualisieren?',
+            ask:
+                'Gespeichert. Damit Gestalter und Fernseher die Änderung sehen, brauchen ihre Gruppen andere Rechte. ' +
+                'Jetzt „Rechte aktualisieren“? Vorher zeigt eine Vorschau, was sich ändert.',
+            byHand:
+                'Gespeichert. Damit Gestalter und Fernseher die Änderung sehen, brauchen ihre Gruppen andere Rechte. ' +
+                'Unter „Gruppen und Rechte“ zeigt die Prüfung, was fehlt.',
+            now: 'Jetzt aktualisieren',
+            later: 'Später',
+        },
         rightsOfOthers: 'Rechte anderer lesen darf nur, wer in ChurchTools Berechtigungen verwalten darf. Diese Seite ist für Administratoren.',
         services: {
             title: SERVICES_TITLE,
@@ -1292,7 +1304,6 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             lead: 'Dienste zeigen, wer eingeteilt ist – mit Vor- und Nachnamen, für alle sichtbar, die am Fernseher vorbeigehen. Hier legst du fest, welche Dienste Gestalter überhaupt wählen können. Ohne Auswahl erscheint kein Dienst. Zur Wahl stehen nur Dienste, deren Dienstgruppe in ChurchTools „Ohne Berechtigung einsehbar" ist und die Namen nicht verbergen.',
             failed: 'Dienste konnten nicht geladen werden.',
             none: 'In ChurchTools gibt es keinen Dienst, der gezeigt werden könnte.',
-            saved: 'Gespeichert',
             fallbackName: (id: number) => `Dienst ${id}`,
             release: 'Freigeben',
             confirm: (name: string) =>
@@ -1307,7 +1318,6 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             failed: 'Die Ressourcen konnten nicht geladen werden.',
             none: 'In ChurchTools gibt es keine Ressourcentypen.',
             empty: 'Keine Ressourcen',
-            saved: 'Gespeichert. Damit Designer und Fernseher die Räume sehen, unter „Gruppen und Rechte“ auf „Rechte aktualisieren“ klicken.',
         },
         wiki: {
             title: 'Mediathek im Wiki',

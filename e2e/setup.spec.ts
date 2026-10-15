@@ -33,8 +33,8 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
     await page.getByTestId('group-designer').selectOption({ label: 'Gemeindeleitung' });
     await expect(page.getByTestId('setup-designer').locator('.checks')).toContainText('Rolle', LIVE);
 
-    await page.getByTestId('save-setup').click();
-    await expect(page.getByTestId('setup-saved')).toBeVisible();
+    await page.getByTestId('settings-save').click();
+    await expect(page.getByTestId('settings-saved')).toBeVisible();
     await page.screenshot({ path: 'test-results/setup.png', fullPage: true });
 
     await page.reload();

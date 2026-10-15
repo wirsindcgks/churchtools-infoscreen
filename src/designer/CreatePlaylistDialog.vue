@@ -70,15 +70,10 @@ async function create(): Promise<void> {
             </label>
             <fieldset class="orientation">
                 <legend>{{ t.common.format }}</legend>
-                <label
-                    v-for="o in ORIENTATIONS"
-                    :key="o.value"
-                    class="choice"
-                    :class="{ chosen: orientation === o.value }"
-                >
+                <label v-for="o in ORIENTATIONS" :key="o.value" class="d-choice">
                     <input v-model="orientation" type="radio" name="orientation" :value="o.value" :data-testid="`new-playlist-${o.value}`">
                     <Icon :name="o.icon" :size="28" />
-                    <span>
+                    <span class="d-choice-text">
                         <strong>{{ o.label }}</strong>
                         <small>{{ o.size }}</small>
                     </span>
@@ -123,41 +118,6 @@ small {
 }
 .orientation > small {
     grid-column: 1 / -1;
-}
-.choice {
-    position: relative;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
-    border: 1px solid var(--d-divider);
-    border-radius: var(--d-radius);
-    color: var(--d-text);
-    cursor: pointer;
-}
-.choice:hover {
-    border-color: var(--d-interactive);
-}
-.choice.chosen {
-    border-color: var(--d-accent);
-    background: var(--d-accent-pale);
-    box-shadow: inset 0 0 0 1px var(--d-accent);
-}
-.choice:focus-within {
-    outline: 2px solid var(--d-accent);
-    outline-offset: 1px;
-}
-/* The radio stays for keyboard and screen readers; the whole tile shows the choice. */
-.choice input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-}
-.choice span {
-    display: grid;
-}
-.choice small {
-    color: var(--d-text-muted);
 }
 .invalid {
     margin: 0;

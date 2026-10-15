@@ -39,7 +39,7 @@ async function seedNotices(page: Page, tiles: Locator): Promise<void> {
     for (const [index, text] of ['Heute Parkplatz gesperrt', 'Kinderkirche fällt aus – bitte die Aushänge beachten'].entries()) {
         await page.getByTestId('new-notice').click();
         const dialog = page.getByTestId('notice-dialog');
-        const choices = dialog.locator('label.check input');
+        const choices = dialog.locator('label.d-choice input');
         if (index > 0) {
             if ((await choices.count()) < 2) {
                 await dialog.getByTestId('notice-cancel').click();

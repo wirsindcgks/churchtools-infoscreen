@@ -97,12 +97,12 @@ function take(): void {
             <h2 id="import-title">{{ t.editor.import.title }}</h2>
             <fieldset class="mode" data-testid="slide-import-mode">
                 <legend>{{ t.editor.import.takeAs }}</legend>
-                <div class="mode-options">
-                    <label>
+                <div class="d-choices d-choices--two">
+                    <label class="d-choice">
                         <input v-model="mode" type="radio" value="copy" data-testid="slide-import-copy">
                         {{ t.editor.import.asCopy }}
                     </label>
-                    <label>
+                    <label class="d-choice">
                         <input v-model="mode" type="radio" value="linked" data-testid="slide-import-linked">
                         {{ t.editor.import.asLinked }}
                     </label>
@@ -204,26 +204,11 @@ function take(): void {
     padding: 0;
     border: 0;
 }
-/* A div inside: WebKit lays a flex fieldset out wrongly. */
-.mode-options {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 4px 16px;
-}
 .mode legend {
     padding: 0;
     margin-bottom: 4px;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
-}
-.mode label {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-.mode input[type='radio'] {
-    flex: none;
-    width: auto;
 }
 .slides label.off {
     cursor: default;

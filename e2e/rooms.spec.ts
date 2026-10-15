@@ -213,14 +213,18 @@ const stage = (page: Page) => page.locator('.editor-stage');
 /** An administrator allows these services on screens (Plan.md 58) – on the settings page, as a person would. */
 async function allowServices(page: Page, ...names: string[]): Promise<void> {
     await page.goto('./einstellungen/dienste');
+    let changed = false;
     for (const name of names) {
         const box = page.getByRole('checkbox', { name });
         await expect(box).toBeVisible();
         if (await box.isChecked()) continue; // allowed by an earlier visit: the demo store lives on
         await box.check();
         await page.getByTestId('confirm-ok').click(); // the confirmation before releasing a service
-        await expect(page.getByTestId('allowed-services-saved')).toBeVisible();
+        changed = true;
     }
+    if (!changed) return;
+    await page.getByTestId('settings-save').click();
+    await expect(page.getByTestId('settings-saved')).toBeVisible();
 }
 
 test('choose rooms, see the bookings, and keep the titles private where asked', async ({ page }) => {
@@ -351,8 +355,17 @@ test('without the type "Raum" the inspector points to the settings, where an adm
     await expect(page.getByTestId('room-types-missing')).toBeVisible();
     // Each type names its resources, so an administrator sees what becomes a room.
     await expect(page.getByTestId('room-types')).toContainText('Saal');
+    // Like the design page: the choice waits for „Speichern"; „Verwerfen" brings back what is stored.
     await page.getByRole('checkbox', { name: /Gemeindezentrum/ }).check();
-    await expect(page.getByTestId('room-types-saved')).toBeVisible();
+    await page.getByTestId('settings-discard').click();
+    await expect(page.getByRole('checkbox', { name: /Gemeindezentrum/ })).not.toBeChecked();
+    await expect(page.getByTestId('settings-save')).toBeDisabled();
+    await page.getByRole('checkbox', { name: /Gemeindezentrum/ }).check();
+    await page.getByTestId('settings-save').click();
+    // New rooms need new rights: a popup says so, it does not hide in a line below.
+    await expect(page.getByTestId('confirm-dialog')).toContainText('brauchen ihre Gruppen andere Rechte');
+    await page.getByTestId('confirm-ok').click();
+    await expect(page.getByTestId('settings-saved')).toBeVisible();
     await expect(page.getByTestId('room-types-missing')).toHaveCount(0);
 
     // The editor reads the choice anew: the slide of the first visit is still there, with a fourth one.
@@ -546,10 +559,11 @@ test('services only after an administrator allowed them: the inspector offers ex
     await expect(asked).toContainText('Gemeindeleitung');
     await page.getByTestId('confirm-cancel').click();
     await expect(page.getByRole('checkbox', { name: 'Moderation' })).not.toBeChecked();
-    await expect(page.getByTestId('allowed-services-saved')).toHaveCount(0);
+    await expect(page.getByTestId('settings-save')).toBeDisabled();
     await page.getByRole('checkbox', { name: 'Moderation' }).check();
     await page.getByTestId('confirm-ok').click();
-    await expect(page.getByTestId('allowed-services-saved')).toHaveText('Gespeichert');
+    await page.getByTestId('settings-save').click();
+    await expect(page.getByTestId('settings-saved')).toHaveText('Gespeichert');
 
     // The choice survives a reload, and the inspector offers just that one.
     await page.reload();

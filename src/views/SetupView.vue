@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { churchtoolsClient } from '@churchtools/churchtools-client';
-import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import { EXTENSION_KEY } from '../config';
 import { t } from '../i18n/designer';
 import Icon, { type IconName } from '../designer/Icon.vue';
@@ -58,7 +58,8 @@ import { useConfirm } from '../designer/useConfirm';
 import { getRepository } from '../store/backend';
 import { CATEGORIES, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
 
-const { confirm } = useConfirm();
+const { confirm, notice } = useConfirm();
+const router = useRouter();
 
 type Side = 'designer' | 'device';
 
@@ -125,7 +126,8 @@ const selected = reactive<Record<Side, number | null>>({ designer: null, device:
 const checks = reactive<Record<Side, Check[] | null>>({ designer: null, device: null });
 const busy = reactive<Record<Side, boolean>>({ designer: false, device: false });
 const error = ref<string | null>(null);
-const saveState = ref<'idle' | 'saving' | 'saved' | 'failed'>('idle');
+/** The groups as stored – the choice above may differ until „Speichern". */
+const savedGroups = reactive<Record<Side, number | null>>({ designer: null, device: null });
 
 let repository: ScreenRepository | null = null;
 let wikiCategoryId: number | null = null;
@@ -267,6 +269,7 @@ function computePlan(): void {
 /** Saves `changes` over the stored settings, read fresh – what they do not name stays (see `settingsToSave`). By default the assistant's fields. */
 async function persistSettings(changes?: Partial<SettingsFields>): Promise<void> {
     const current = await repository!.loadSettings();
+    const groupsNow = { ...selected };
     await repository!.saveSettings(
         settingsToSave(
             current,
@@ -279,14 +282,15 @@ async function persistSettings(changes?: Partial<SettingsFields>): Promise<void>
             },
         ),
     );
+    if (!changes) Object.assign(savedGroups, groupsNow);
 }
 
 /** The services an administrator may allow (Plan.md 58): null until loaded or where they cannot be. */
 const serviceList = ref<ServiceInfo[] | null>(null);
 const servicesFailed = ref(false);
+/** As stored; `draftServices` is the choice on the page until „Speichern". */
 const allowedServices = ref<number[]>([]);
-const servicesSaved = ref(false);
-const servicesSaving = ref(false);
+const draftServices = ref<number[]>([]);
 let servicesRequested = false;
 /** Most services the settings hold – the schema's limit. */
 const ALLOWED_SERVICES_MAX = 50;
@@ -298,15 +302,16 @@ async function loadServices(): Promise<void> {
         // Its own reads, so a failure elsewhere on the page (the wiki, say) does not stop it; unreadable settings must not save over them.
         const [list, serviceGroups, settings] = await Promise.all([fetchServices(), fetchServiceGroups(), repository.loadSettings()]);
         allowedServices.value = settings?.allowedServiceIds ?? [];
+        draftServices.value = [...allowedServices.value];
         serviceList.value = serviceChoices(list, serviceGroups);
     } catch {
         servicesFailed.value = true;
     }
 }
 
-/** Saves at once; ids that are not a showable service any more drop out here, not before. */
+/** Releasing asks first: names go public (Plan.md 58). Saved with „Speichern", like every choice here. */
 async function toggleAllowedService(id: number, on: boolean, box: HTMLInputElement): Promise<void> {
-    if (!repository || !serviceList.value || servicesSaving.value) return;
+    if (!serviceList.value) return;
     if (on) {
         const name = serviceList.value.find((s) => s.id === id)?.name ?? t.setup.services.fallbackName(id);
         if (!(await confirm({ message: t.setup.services.confirm(name), confirmLabel: t.setup.services.release }))) {
@@ -314,23 +319,7 @@ async function toggleAllowedService(id: number, on: boolean, box: HTMLInputEleme
             return;
         }
     }
-    const known = new Set(serviceList.value.map((s) => s.id));
-    const next = [...new Set(on ? [...allowedServices.value, id] : allowedServices.value.filter((a) => a !== id))]
-        .filter((a) => known.has(a))
-        .sort((a, b) => a - b);
-    servicesSaving.value = true;
-    servicesSaved.value = false;
-    error.value = null;
-    try {
-        await persistSettings({ allowedServiceIds: next });
-        allowedServices.value = next;
-        servicesSaved.value = true;
-    } catch (e) {
-        box.checked = !on;
-        error.value = explain(e);
-    } finally {
-        servicesSaving.value = false;
-    }
+    draftServices.value = on ? [...draftServices.value, id] : draftServices.value.filter((a) => a !== id);
 }
 
 /**
@@ -343,8 +332,8 @@ const chosenRoomTypes = ref<number[] | undefined>(undefined);
 const roomTypeIds = computed(() => roomTypeIdsOf(masterdata.value, chosenRoomTypes.value));
 /** There are resources, but none counts as a room: no screen shows a room. */
 const roomTypeMissing = computed(() => !!masterdata.value?.resources?.length && !roomTypeIds.value.length);
-const roomTypesSaved = ref(false);
-const roomTypesSaving = ref(false);
+/** The choice on the page until „Speichern"; it starts as what counts now. */
+const draftRoomTypes = ref<number[]>([]);
 const roomTypesFailed = ref(false);
 /** The choice is read: until then the overview shows no mark. */
 const roomTypesKnown = ref(false);
@@ -358,36 +347,134 @@ async function loadRoomTypes(): Promise<void> {
         const [resources, settings] = await Promise.all([fetchResourceMasterdata(), repository.loadSettings()]);
         masterdata.value = resources;
         chosenRoomTypes.value = settings?.roomTypeIds;
+        draftRoomTypes.value = [...roomTypeIds.value];
         roomTypesKnown.value = true;
     } catch {
         roomTypesFailed.value = true;
     }
 }
 
-/** Saves at once, then plans and checks the rights anew: other rooms need other rights. */
-async function toggleRoomType(id: number, on: boolean, box: HTMLInputElement): Promise<void> {
-    if (!repository || !masterdata.value || !resourceTypes.value || roomTypesSaving.value) return;
-    const known = new Set(resourceTypes.value.map((type) => type.id));
-    const next = [...new Set(on ? [...roomTypeIds.value, id] : roomTypeIds.value.filter((a) => a !== id))]
-        .filter((a) => known.has(a))
-        .sort((a, b) => a - b);
-    roomTypesSaving.value = true;
-    roomTypesSaved.value = false;
-    error.value = null;
-    try {
-        await persistSettings({ roomTypeIds: next });
-        chosenRoomTypes.value = next;
-        roomTypesSaved.value = true;
-        rooms = roomsOf(masterdata.value, next);
-        computePlan();
-        void Promise.all([check('designer'), check('device')]);
-    } catch (e) {
-        box.checked = !on;
-        error.value = explain(e);
-    } finally {
-        roomTypesSaving.value = false;
+function toggleRoomType(id: number, on: boolean): void {
+    draftRoomTypes.value = on ? [...draftRoomTypes.value, id] : draftRoomTypes.value.filter((a) => a !== id);
+}
+
+/** The same ids, in any order. */
+const sameIds = (a: number[], b: number[]): boolean => a.length === b.length && a.every((id) => b.includes(id));
+const sortedIds = (ids: Iterable<number>, known: Set<number>): number[] => [...new Set(ids)].filter((id) => known.has(id)).sort((a, b) => a - b);
+
+/**
+ * The pages with a choice save like the design page (2026-10-15): the choice waits for „Speichern" in the
+ * head, „Verwerfen" brings back what is stored. Before, groups waited for a button below, services and rooms
+ * saved at every click.
+ */
+type FormPage = 'groups' | 'services' | 'rooms';
+const FORM_PAGES: SetupPage[] = ['groups', 'services', 'rooms'];
+const formPage = computed<FormPage | null>(() => (FORM_PAGES.includes(page.value) ? (page.value as FormPage) : null));
+const formState = ref<'idle' | 'saving' | 'saved'>('idle');
+
+function dirtyOf(form: FormPage): boolean {
+    switch (form) {
+        case 'groups':
+            return selected.designer !== savedGroups.designer || selected.device !== savedGroups.device;
+        case 'services':
+            return !!serviceList.value && !sameIds(draftServices.value, allowedServices.value);
+        case 'rooms':
+            return !!masterdata.value && !sameIds(draftRoomTypes.value, roomTypeIds.value);
     }
 }
+const formDirty = computed(() => (formPage.value ? dirtyOf(formPage.value) : false));
+const anyDirty = (): boolean => FORM_PAGES.some((form) => dirtyOf(form as FormPage));
+
+function discardForm(form: FormPage): void {
+    if (form === 'groups') {
+        const changed = (['designer', 'device'] as const).filter((side) => selected[side] !== savedGroups[side]);
+        Object.assign(selected, savedGroups);
+        for (const side of changed) void check(side);
+    } else if (form === 'services') {
+        draftServices.value = [...allowedServices.value];
+    } else {
+        draftRoomTypes.value = [...roomTypeIds.value];
+    }
+    if (formState.value !== 'saving') formState.value = 'idle';
+}
+
+/** What the plan grants, and the rooms it reads – compared around a save, so a change the groups need new rights for says so. */
+const rightsSignature = (): string => JSON.stringify({ plan: plan.value, rooms: rooms.map((r) => r.id) });
+
+async function saveForm(): Promise<void> {
+    const form = formPage.value;
+    if (!form || !repository || formState.value === 'saving') return;
+    formState.value = 'saving';
+    error.value = null;
+    const before = rightsSignature();
+    try {
+        if (form === 'groups') {
+            await persistSettings();
+        } else if (form === 'services' && serviceList.value) {
+            const next = sortedIds(draftServices.value, new Set(serviceList.value.map((s) => s.id)));
+            await persistSettings({ allowedServiceIds: next });
+            allowedServices.value = next;
+            draftServices.value = [...next];
+        } else if (form === 'rooms' && masterdata.value && resourceTypes.value) {
+            const next = sortedIds(draftRoomTypes.value, new Set(resourceTypes.value.map((type) => type.id)));
+            await persistSettings({ roomTypeIds: next });
+            chosenRoomTypes.value = next;
+            draftRoomTypes.value = [...next];
+            // Other rooms need other rights: plan and check anew.
+            rooms = roomsOf(masterdata.value, next);
+            computePlan();
+            void Promise.all([check('designer'), check('device')]);
+        }
+        formState.value = 'saved';
+    } catch (e) {
+        formState.value = 'idle';
+        error.value = explain(e);
+        return;
+    }
+    if (rightsSignature() !== before) await askForRights();
+}
+
+/** After a save that changes what the groups need: a question with the way there, not a line one may miss. */
+async function askForRights(): Promise<void> {
+    const canRefresh = createdGroupIds.value.length > 0 && assistant.allowed && !!plan.value && abilities.value.refresh.allowed;
+    if (!canRefresh) {
+        await notice(t.setup.rightsNeeded.byHand);
+        return;
+    }
+    const now = await confirm({
+        title: t.setup.rightsNeeded.title,
+        message: t.setup.rightsNeeded.ask,
+        confirmLabel: t.setup.rightsNeeded.now,
+        cancelLabel: t.setup.rightsNeeded.later,
+    });
+    if (!now) return;
+    // The log of „Rechte aktualisieren" stands on that page.
+    if (page.value !== 'groups') await router.push({ name: 'setup-groups' });
+    await updateRights();
+}
+
+watch(page, () => {
+    if (formState.value === 'saved') formState.value = 'idle';
+});
+
+/**
+ * Unsaved choices ask before they go – like the editor. Moving between the settings pages keeps them. A guard
+ * of the router, not `onBeforeRouteLeave`: that one stays with the route this instance first showed.
+ */
+const removeLeaveGuard = router.beforeEach(async (to) => {
+    if (String(to.name ?? '').startsWith('setup') || !anyDirty()) return true;
+    if (!(await confirm({ message: t.editor.discardChanges, confirmLabel: t.common.discard, danger: true }))) return false;
+    for (const form of FORM_PAGES) discardForm(form as FormPage);
+    return true;
+});
+function onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (anyDirty()) event.preventDefault();
+}
+window.addEventListener('beforeunload', onBeforeUnload);
+onBeforeUnmount(() => {
+    removeLeaveGuard();
+    window.removeEventListener('beforeunload', onBeforeUnload);
+});
 
 async function runAssistant(): Promise<void> {
     const groupTypeId = chosenTypeId.value;
@@ -693,20 +780,7 @@ async function check(side: Side): Promise<void> {
 
 function choose(side: Side, value: string): void {
     selected[side] = value ? Number(value) : null;
-    saveState.value = 'idle';
     void check(side);
-}
-
-async function save(): Promise<void> {
-    if (!repository) return;
-    saveState.value = 'saving';
-    try {
-        await persistSettings();
-        saveState.value = 'saved';
-    } catch (e) {
-        saveState.value = 'failed';
-        error.value = explain(e);
-    }
 }
 
 /**
@@ -766,6 +840,7 @@ onMounted(async () => {
         videoInUse = videos;
         selected.designer = settings?.designerGroupId ?? null;
         selected.device = settings?.deviceGroupId ?? null;
+        Object.assign(savedGroups, selected);
         createdGroupIds.value = settings?.createdGroupIds ?? [];
         // Known from the settings read above; `loadServices` reads them again before the list can change anything.
         allowedServices.value = settings?.allowedServiceIds ?? [];
@@ -922,6 +997,15 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
             </RouterLink>
             <PageHeader :icon="header.icon" :title="header.title" testid="setup-heading">
                 {{ header.intro }}
+                <template v-if="admin && formPage" #actions>
+                    <span v-if="formState === 'saved' && !formDirty" class="ok" role="status" data-testid="settings-saved">{{ t.setup.saved }}</span>
+                    <button class="d-btn" type="button" :disabled="!formDirty || formState === 'saving'" data-testid="settings-discard" @click="discardForm(formPage)">
+                        {{ t.common.discard }}
+                    </button>
+                    <button class="d-btn d-btn--primary" type="button" :disabled="!formDirty || formState === 'saving'" data-testid="settings-save" @click="saveForm">
+                        {{ formState === 'saving' ? t.setup.saving : t.common.save }}
+                    </button>
+                </template>
             </PageHeader>
             <p v-if="admin === null" class="empty">{{ t.common.loading }}</p>
             <section v-else-if="!admin" class="d-banner d-banner--warning" data-testid="setup-admins-only">
@@ -1083,11 +1167,6 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         </section>
                     </div>
 
-                    <div class="actions">
-                        <button class="d-btn d-btn--primary" type="button" data-testid="save-setup" @click="save">{{ t.setup.groups.saveSelection }}</button>
-                        <span v-if="saveState === 'saved'" class="muted" data-testid="setup-saved">{{ t.setup.groups.saved }}</span>
-                        <span v-else-if="saveState === 'saving'" class="muted">{{ t.setup.groups.saving }}</span>
-                    </div>
                     <p class="muted small">{{ t.setup.groups.checkNote }}</p>
                 </template>
 
@@ -1107,19 +1186,18 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         <p v-else-if="!serviceList.length" class="muted" data-testid="allowed-services-none">
                             {{ t.setup.services.none }}
                         </p>
-                        <template v-else>
-                            <label v-for="s in serviceList" :key="s.id" class="check">
+                        <div v-else class="d-choices">
+                            <label v-for="s in serviceList" :key="s.id" class="d-choice">
                                 <input
                                     type="checkbox"
-                                    :checked="allowedServices.includes(s.id)"
-                                    :disabled="servicesSaving || (!allowedServices.includes(s.id) && allowedServices.length >= ALLOWED_SERVICES_MAX)"
+                                    :checked="draftServices.includes(s.id)"
+                                    :disabled="!draftServices.includes(s.id) && draftServices.length >= ALLOWED_SERVICES_MAX"
                                     data-testid="allowed-service"
                                     @change="toggleAllowedService(s.id, ($event.target as HTMLInputElement).checked, $event.target as HTMLInputElement)"
                                 >
                                 {{ s.name }}
                             </label>
-                            <p v-if="servicesSaved" class="muted small" role="status" data-testid="allowed-services-saved">{{ t.setup.services.saved }}</p>
-                        </template>
+                        </div>
                     </section>
                 </template>
 
@@ -1132,20 +1210,20 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         <p v-else-if="!resourceTypes.length" class="muted" data-testid="room-types-none">{{ t.setup.rooms.none }}</p>
                         <template v-else>
                             <p v-if="roomTypeMissing" class="d-banner d-banner--warning" role="note" data-testid="room-types-missing">{{ t.setup.rooms.missing }}</p>
-                            <label v-for="type in resourceTypes" :key="type.id" class="check room-type">
-                                <input
-                                    type="checkbox"
-                                    :checked="roomTypeIds.includes(type.id)"
-                                    :disabled="roomTypesSaving"
-                                    data-testid="room-type"
-                                    @change="toggleRoomType(type.id, ($event.target as HTMLInputElement).checked, $event.target as HTMLInputElement)"
-                                >
-                                <span class="room-type-text">
-                                    <span>{{ type.name }}</span>
-                                    <span class="muted small">{{ type.resources.length ? type.resources.join(', ') : t.setup.rooms.empty }}</span>
-                                </span>
-                            </label>
-                            <p v-if="roomTypesSaved" class="muted small" role="status" data-testid="room-types-saved">{{ t.setup.rooms.saved }}</p>
+                            <div class="d-choices">
+                                <label v-for="type in resourceTypes" :key="type.id" class="d-choice">
+                                    <input
+                                        type="checkbox"
+                                        :checked="draftRoomTypes.includes(type.id)"
+                                        data-testid="room-type"
+                                        @change="toggleRoomType(type.id, ($event.target as HTMLInputElement).checked)"
+                                    >
+                                    <span class="d-choice-text">
+                                        <span>{{ type.name }}</span>
+                                        <small>{{ type.resources.length ? type.resources.join(', ') : t.setup.rooms.empty }}</small>
+                                    </span>
+                                </label>
+                            </div>
                         </template>
                     </section>
                 </template>
@@ -1367,17 +1445,9 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 .card p {
     margin: 0;
 }
-.check {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.room-type {
-    align-items: flex-start;
-}
-.room-type-text {
-    display: grid;
-    gap: 2px;
+.ok {
+    color: var(--d-success);
+    font-size: var(--d-size-sm);
 }
 .checks {
     margin: 4px 0 0;
