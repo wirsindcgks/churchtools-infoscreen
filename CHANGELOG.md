@@ -4,6 +4,25 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.25.0] – 2026-10-15
+
+### Geändert
+
+- **Farben ohne zweites Aufklappen.** Farbwähler und Feld für den Farbcode stehen immer unter den Farbpunkten; der
+  Knopf „Eigene Farbe“ entfällt, auch im Kurzmenü.
+- **„Anordnen“ ist kürzer.** Ist ein Baustein gewählt, zeigt es Ausrichten und Verteilen, die Ebene und die Knöpfe
+  zum Verschieben nach vorn und hinten. Die Liste aller Bausteine steht unter „Bausteine dieser Folie“, wenn nichts
+  gewählt ist.
+- **Zähler in der Zusammenfassung.** Galerie, Social Media und Raumbelegung nennen „3 von 30“ in der Zeile ihrer
+  Liste statt in einer eigenen Zeile.
+- **Kürzere Beschriftungen:** „Name zeigen“ bei den Beiträgen (mit Erklärung am (i)), „Logo zurücksetzen“ beim
+  Gemeindekopf.
+
+### Hinzugefügt
+
+- **„Schrift“ für die Raumbelegung** – Schriftart, Größe, Farbe, Ausrichtung und Schatten wie bei den anderen
+  Listen. Im Türschild folgen auch die Termine unter „Danach“ der Ausrichtung.
+
 ## [0.24.0] – 2026-10-15
 
 ### Geändert
@@ -1091,6 +1110,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.25.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.25.0
 [0.24.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.24.0
 [0.23.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.23.0
 [0.22.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.22.0
