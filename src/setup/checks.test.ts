@@ -52,6 +52,11 @@ describe('checkDesignerGroup', () => {
         expect(fail?.text).toContain('bearbeiten');
     });
 
+    it('names the wiki area as it is called now – it may have been renamed (Plan.md 84)', () => {
+        const checks = checkDesignerGroup({ statusId: 1, roles: [role({ grants: [] })], wikiCategoryId: WIKI, wikiCategoryName: 'Bilder Foyer' });
+        expect(checks.find((c) => c.level === 'fail')?.text).toContain('Wiki-Bereich „Bilder Foyer" bearbeiten');
+    });
+
     it('checks only roles that reach people: with members, else the default role', () => {
         const checks = checkDesignerGroup({
             statusId: 1,

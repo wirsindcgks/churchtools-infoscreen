@@ -49,8 +49,7 @@ export function useMediaLibrary(
             library = new MediaLibrary(wikiBackend, repository);
             await reload();
             // The overview page with instructions; a relative link works from inside ChurchTools.
-            const category = await wikiBackend.category();
-            void ensureOverviewPage(category.id, import.meta.env.BASE_URL).catch((e: unknown) =>
+            void ensureOverviewPage(await library.categoryId(), import.meta.env.BASE_URL).catch((e: unknown) =>
                 console.warn('Anleitungsseite nicht geschrieben:', e),
             );
         } catch (e) {

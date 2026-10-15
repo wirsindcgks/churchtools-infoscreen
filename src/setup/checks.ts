@@ -12,6 +12,7 @@
 import { PUBLIC_CALENDAR_PATH } from '../ct/api';
 import type { RoomInfo } from '../rooms/normalize';
 import { t } from '../i18n/designer';
+import { WIKI_CATEGORY_NAME } from '../media/wiki';
 
 /** Core permission ids (G30). */
 export const AUTH = {
@@ -116,6 +117,8 @@ export interface DesignerGroupInput {
     roles: RoleRights[];
     /** `null`: the wiki category does not exist yet or is not visible. */
     wikiCategoryId: number | null;
+    /** Its name, as it may have been renamed (Plan.md 84); missing = "Infoscreen". */
+    wikiCategoryName?: string;
     moduleRights?: ModuleRights;
     /** Rights designers must not hold: writing screens and settings (Plan.md, F). */
     forbidden?: RequiredRight[] | null;
@@ -141,11 +144,12 @@ export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
         });
     } else {
         const wiki = input.wikiCategoryId;
+        const wikiName = input.wikiCategoryName ?? WIKI_CATEGORY_NAME;
         for (const role of relevantRoles(input.roles)) {
             const lacking = ([
                 !has(role.grants, AUTH.wikiView) && t.setup.checks.wikiSee,
-                !has(role.grants, AUTH.wikiCategoryView, wiki) && t.setup.checks.wikiCategorySee,
-                !has(role.grants, AUTH.wikiCategoryEdit, wiki) && t.setup.checks.wikiCategoryEdit,
+                !has(role.grants, AUTH.wikiCategoryView, wiki) && t.setup.checks.wikiCategorySee(wikiName),
+                !has(role.grants, AUTH.wikiCategoryEdit, wiki) && t.setup.checks.wikiCategoryEdit(wikiName),
             ] as (string | false)[]).filter((x): x is string => !!x);
             checks.push(
                 lacking.length

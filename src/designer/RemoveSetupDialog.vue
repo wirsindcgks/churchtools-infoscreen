@@ -42,9 +42,11 @@ const props = withDefaults(
         groups: RemoveGroupInfo[];
         ownMemberOf?: string[];
         wikiCategoryName?: string | null;
+        /** The device group's current name – it may have been renamed (Plan.md 84). */
+        deviceGroupName?: string;
         deviceAccounts?: DeviceAccountInfo[];
     }>(),
-    { ownMemberOf: () => [], wikiCategoryName: null, deviceAccounts: () => [] },
+    { ownMemberOf: () => [], wikiCategoryName: null, deviceGroupName: GROUP_NAMES.device, deviceAccounts: () => [] },
 );
 const emit = defineEmits<{ close: []; confirm: [] }>();
 
@@ -82,7 +84,7 @@ function confirm(): void {
                     <template v-else>{{ t.setup.remove.groupGone(g.id) }}</template>
                 </li>
             </ul>
-            <p>{{ t.setup.remove.consequences(GROUP_NAMES.device, props.wikiCategoryName || null) }}</p>
+            <p>{{ t.setup.remove.consequences(props.deviceGroupName, props.wikiCategoryName || null) }}</p>
             <section
                 v-if="props.deviceAccounts.length"
                 class="d-banner d-banner--warning device-accounts"

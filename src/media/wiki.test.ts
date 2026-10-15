@@ -1,6 +1,6 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createCategory, findCategory, setCategoryInMenu, wikiRestoreLogLine } from './wiki';
+import { createCategory, findCategory, pickCategory, setCategoryInMenu, wikiRestoreLogLine } from './wiki';
 
 describe('the wiki area of the media library (G36, Plan.md F)', () => {
     afterEach(() => vi.restoreAllMocks());
@@ -16,6 +16,15 @@ describe('the wiki area of the media library (G36, Plan.md F)', () => {
     it('findCategory returns a matching area unchanged', async () => {
         vi.spyOn(churchtoolsClient, 'get').mockResolvedValue([{ id: 7, name: 'Infoscreen' }]);
         expect(await findCategory()).toEqual({ id: 7, name: 'Infoscreen' });
+    });
+
+    it('finds a renamed area by the id the settings keep, then by the created one, last by name (Plan.md 84, G58)', () => {
+        const areas = [{ id: 7, name: 'Infoscreen' }, { id: 9, name: 'Bilder Foyer' }, { id: 11, name: 'Alt' }];
+        expect(pickCategory(areas, { wikiCategoryId: 9, createdWikiCategoryId: 11 })?.id).toBe(9);
+        expect(pickCategory(areas, { createdWikiCategoryId: 11 })?.id).toBe(11);
+        expect(pickCategory(areas, { wikiCategoryId: 99 })?.id).toBe(7);
+        expect(pickCategory(areas, null)?.id).toBe(7);
+        expect(pickCategory([{ id: 9, name: 'Bilder Foyer' }], null)).toBeNull();
     });
 
     it('createCategory is created under „Ausgeblendet": the library is looked after in the designer', async () => {

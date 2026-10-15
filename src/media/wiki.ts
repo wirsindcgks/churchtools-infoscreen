@@ -79,10 +79,27 @@ export function wikiRestoreLogLine(categoryName: string, outcome: WikiRestoreOut
     return `Wiki-Bereich konnte nicht wieder eingeblendet werden: ${outcome.error} – im Wiki unter „Ausgeblendet" zu finden.`;
 }
 
-/** Looks for the module's wiki category by name; `null` without a match, never creates one (Plan.md, F). */
-export async function findCategory(): Promise<WikiCategory | null> {
-    const categories = await churchtoolsClient.get<WikiCategory[]>('/wiki/categories');
+/** The ids under which the settings know the module's wiki category. */
+export interface KnownCategoryIds {
+    wikiCategoryId?: number;
+    createdWikiCategoryId?: number;
+}
+
+/**
+ * The module's wiki category among `categories`: by the id the settings keep, then by the id of the one the
+ * assistant created, last by name – a renamed category keeps its id (Plan.md 84, G58). `null` without a match.
+ */
+export function pickCategory(categories: WikiCategory[], known?: KnownCategoryIds | null): WikiCategory | null {
+    for (const id of [known?.wikiCategoryId, known?.createdWikiCategoryId]) {
+        const found = id === undefined ? undefined : categories.find((c) => c.id === id);
+        if (found) return found;
+    }
     return categories.find((c) => c.name === WIKI_CATEGORY_NAME) ?? null;
+}
+
+/** Looks for the module's wiki category (see `pickCategory`); never creates one (Plan.md, F). */
+export async function findCategory(known?: KnownCategoryIds | null): Promise<WikiCategory | null> {
+    return pickCategory(await churchtoolsClient.get<WikiCategory[]>('/wiki/categories'), known);
 }
 
 /** Creates the module's wiki category. Only the setup assistant calls this, and remembers the id (Plan.md, F). */

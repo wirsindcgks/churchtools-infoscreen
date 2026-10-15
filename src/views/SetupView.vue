@@ -14,7 +14,7 @@ import { playerUrl } from '../designer/player-url';
 import { GROUP_RIGHT_NAMES, settingsAbilities, type GroupPermissions, type SettingsButton } from '../setup/abilities';
 import RefreshRightsDialog from '../designer/RefreshRightsDialog.vue';
 import RemoveSetupDialog, { type DeviceAccountInfo, type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
-import { createCategory, setCategoryInMenu, wikiRestoreLogLine, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
+import { createCategory, pickCategory, setCategoryInMenu, wikiRestoreLogLine, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
 import type { ScreenDoc } from '../model/schema';
 import { withDeviceLogin } from '../player/device-login';
 import { resourceTypesOf, roomTypeIdsOf, roomsOf, type ResourceMasterdata, type ResourceTypeInfo, type RoomInfo } from '../rooms/normalize';
@@ -203,7 +203,12 @@ const assistant = reactive({ allowed: false, running: false, log: [] as string[]
  * own. Unknown for a created group that is neither side's current choice.
  */
 const groupMemberCounts = reactive<Record<number, number>>({});
-const removeDialog = ref<{ groups: RemoveGroupInfo[]; ownMemberOf: string[]; deviceAccounts: DeviceAccountInfo[] } | null>(null);
+const removeDialog = ref<{ groups: RemoveGroupInfo[]; ownMemberOf: string[]; deviceAccounts: DeviceAccountInfo[]; deviceGroupName: string } | null>(null);
+
+/** A side's group by its current name – it may have been renamed (Plan.md 84); the assistant's name until the list is there. */
+function groupName(side: Side): string {
+    return groups.value.find((g) => g.id === savedGroups[side])?.name ?? GROUP_NAMES[side];
+}
 
 /** Groups under the assistant's names that it did not create: it never takes them over. */
 const wikiMissing = computed(() => plan.value !== null && wikiCategoryIdKnown.value === false);
@@ -602,8 +607,8 @@ async function openRemoveSetup(): Promise<void> {
         // Only the warning about locking oneself out is lost – the dialog still opens and removal still works.
     }
     let deviceAccounts: DeviceAccountInfo[] = [];
+    const deviceGroupId = deviceGroupIdForRemoval();
     try {
-        const deviceGroupId = deviceGroupIdForRemoval();
         if (deviceGroupId !== null) {
             const members = await groupMemberNames(deviceGroupId);
             const baseUrl = instanceBaseUrl();
@@ -616,6 +621,7 @@ async function openRemoveSetup(): Promise<void> {
         groups: affected,
         ownMemberOf: affected.filter((g) => ownGroupIds.includes(g.id)).map((g) => g.name ?? t.setup.groupFallback(g.id)),
         deviceAccounts,
+        deviceGroupName: groups.value.find((g) => g.id === deviceGroupId)?.name ?? GROUP_NAMES.device,
     };
 }
 
@@ -642,14 +648,14 @@ function deviceGroupIdForRemoval(): number | null {
 async function restoreWikiVisibility(): Promise<void> {
     if (!wikiCategory.value) return;
     if (wikiCategory.value.inMenu !== false) {
-        assistant.log.push(wikiRestoreLogLine(WIKI_CATEGORY_NAME, 'already-shown'));
+        assistant.log.push(wikiRestoreLogLine(wikiCategory.value.name, 'already-shown'));
         return;
     }
     try {
         wikiCategory.value = await setCategoryInMenu(wikiCategory.value, true);
-        assistant.log.push(wikiRestoreLogLine(WIKI_CATEGORY_NAME, 'shown'));
+        assistant.log.push(wikiRestoreLogLine(wikiCategory.value.name, 'shown'));
     } catch (e) {
-        assistant.log.push(wikiRestoreLogLine(WIKI_CATEGORY_NAME, { error: explain(e) }));
+        assistant.log.push(wikiRestoreLogLine(wikiCategory.value?.name ?? WIKI_CATEGORY_NAME, { error: explain(e) }));
     }
 }
 
@@ -729,6 +735,7 @@ async function check(side: Side): Promise<void> {
                 statusId: rights.group.statusId,
                 roles: rights.roles,
                 wikiCategoryId,
+                wikiCategoryName: wikiCategory.value?.name,
                 moduleRights: moduleRights('designer'),
                 forbidden: forbiddenRights('designer'),
                 roomIds: rooms.map((r) => r.id),
@@ -826,8 +833,12 @@ onMounted(async () => {
         screens.value = screenList;
         device.slug = screenList[0]?.slug ?? '';
         groups.value = list;
-        wikiCategory.value = wikiCategories.find((c) => c.name === WIKI_CATEGORY_NAME) ?? null;
+        wikiCategory.value = pickCategory(wikiCategories, settings);
         wikiCategoryId = wikiCategory.value?.id ?? null;
+        // Kept by id from now on, so renaming the area in the wiki loses nothing (Plan.md 84, G58).
+        if (admin.value && !demo.value && settings && wikiCategoryId !== null && settings.wikiCategoryId !== wikiCategoryId) {
+            await persistSettings({ wikiCategoryId }).catch((e: unknown) => console.warn('Wiki-Bereich nicht vermerkt:', e));
+        }
         wikiCategoryIdKnown.value = wikiCategoryId !== null;
         settingsLoaded.value = true;
         calendars = calendarList;
@@ -1047,7 +1058,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     <section class="d-card card assistant" data-testid="assistant">
                         <h2>{{ t.setup.groups.assistant }}</h2>
                         <template v-if="createdGroupIds.length">
-                            <p>{{ t.setup.groups.done(GROUP_NAMES.designer, GROUP_NAMES.device) }}</p>
+                            <p>{{ t.setup.groups.done(groupName('designer'), groupName('device')) }}</p>
                             <p class="muted small">{{ t.setup.groups.doneHint }}</p>
                             <div class="actions">
                                 <button
@@ -1231,7 +1242,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                 <template v-if="page === 'wiki'">
                     <section v-if="wikiCategory && !demo" class="d-card card" data-testid="wiki-menu">
                         <h2>{{ t.setup.wiki.title }}</h2>
-                        <p class="muted">{{ t.setup.wiki.text(WIKI_CATEGORY_NAME) }}</p>
+                        <p class="muted">{{ t.setup.wiki.text(wikiCategory.name) }}</p>
                         <p data-testid="wiki-menu-state">
                             {{ t.setup.wiki.stateBefore }}
                             <strong>{{ wikiCategory.inMenu === false ? t.setup.wiki.stateHidden : t.setup.wiki.stateShown }}</strong>.
@@ -1321,6 +1332,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
             :groups="removeDialog.groups"
             :own-member-of="removeDialog.ownMemberOf"
             :device-accounts="removeDialog.deviceAccounts"
+            :device-group-name="removeDialog.deviceGroupName"
             :wiki-category-name="wikiCategory?.name"
             @close="removeDialog = null"
             @confirm="confirmRemoveSetup"

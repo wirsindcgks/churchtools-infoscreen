@@ -86,7 +86,7 @@ describe('missingDesignerRights', () => {
     it('explains an invisible wiki category instead of claiming it is missing', () => {
         const missing = missingDesignerRights(input({ wikiCategoryId: null }));
         expect(missing).toHaveLength(1);
-        expect(missing[0]?.detail).toContain('ersten Bild-Upload');
+        expect(missing[0]?.detail).toContain('noch nicht eingerichtet');
     });
 });
 

@@ -12,7 +12,7 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { EXTENSION_KEY } from '../config';
 import { t } from '../i18n/designer';
-import { WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
+import { pickCategory, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
 import { CATEGORIES, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
 
 export interface ModulePermissions {
@@ -38,8 +38,10 @@ export interface RightsInput {
     /** The module's categories this person can see. */
     categories: Partial<Record<CategoryKey, number>>;
     wiki: Partial<WikiPermissions> | null;
-    /** `null`: the wiki category "Infoscreen" is not visible. */
+    /** `null`: the module's wiki category is not visible. */
     wikiCategoryId: number | null;
+    /** Its name, as it may have been renamed (Plan.md 84); missing = "Infoscreen". */
+    wikiCategoryName?: string;
 }
 
 export interface MissingRight {
@@ -97,13 +99,13 @@ function missingModuleRights({ module, categories }: RightsInput): MissingRight[
     return result;
 }
 
-function missingWikiRights({ wiki, wikiCategoryId }: RightsInput): MissingRight[] {
+function missingWikiRights({ wiki, wikiCategoryId, wikiCategoryName = WIKI_CATEGORY_NAME }: RightsInput): MissingRight[] {
     const missing = (text: string, key?: string, detail?: string): MissingRight => ({ area: 'wiki', text, key, detail });
     if (!wiki?.view) return [missing(t.setup.designerRights.wikiView, 'churchwiki: view', t.setup.designerRights.forMedia)];
     if (wikiCategoryId === null) {
         return [
             missing(
-                t.setup.designerRights.categoryView(WIKI_CATEGORY_NAME),
+                t.setup.designerRights.categoryView(wikiCategoryName),
                 'view category',
                 t.setup.designerRights.categoryHidden,
             ),
@@ -111,10 +113,10 @@ function missingWikiRights({ wiki, wikiCategoryId }: RightsInput): MissingRight[
     }
     const result: MissingRight[] = [];
     if (!wiki['view category']?.includes(wikiCategoryId)) {
-        result.push(missing(t.setup.designerRights.categoryView(WIKI_CATEGORY_NAME), 'view category', t.setup.designerRights.forMedia));
+        result.push(missing(t.setup.designerRights.categoryView(wikiCategoryName), 'view category', t.setup.designerRights.forMedia));
     }
     if (!wiki['edit category']?.includes(wikiCategoryId)) {
-        result.push(missing(t.setup.designerRights.categoryEdit(WIKI_CATEGORY_NAME), 'edit category', t.setup.designerRights.forUploads));
+        result.push(missing(t.setup.designerRights.categoryEdit(wikiCategoryName), 'edit category', t.setup.designerRights.forUploads));
     }
     return result;
 }
@@ -140,18 +142,21 @@ export interface DesignerRights {
 }
 
 export async function checkDesignerRights(repository: ScreenRepository, demo: boolean): Promise<DesignerRights> {
-    const [permissions, categories, wikiCategories] = await Promise.all([
+    const [permissions, categories, wikiCategories, settings] = await Promise.all([
         churchtoolsClient.get<Record<string, unknown>>('/permissions/global'),
         demo ? Promise.resolve({}) : repository.visibleCategories(),
         churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
+        repository.loadSettings().catch(() => null),
     ]);
+    const wikiCategory = pickCategory(wikiCategories, settings);
     const module = demo ? undefined : ((permissions[EXTENSION_KEY] as Partial<ModulePermissions> | undefined) ?? null);
     return {
         missing: missingDesignerRights({
             module,
             categories,
             wiki: (permissions.churchwiki as Partial<WikiPermissions> | undefined) ?? null,
-            wikiCategoryId: wikiCategories.find((c) => c.name === WIKI_CATEGORY_NAME)?.id ?? null,
+            wikiCategoryId: wikiCategory?.id ?? null,
+            wikiCategoryName: wikiCategory?.name,
         }),
         configureScreens: demo ? null : mayConfigureScreens(module, (categories as Partial<Record<CategoryKey, number>>).screens),
     };

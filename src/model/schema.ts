@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 35 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 36 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -719,6 +719,11 @@ export const SettingsDoc = v.object({
      * older than this field.
      */
     createdWikiCategoryId: v.optional(v.pipe(v.number(), v.integer())),
+    /**
+     * Since 1.36: the wiki category the module uses, whoever created it (Plan.md 84). The module finds it by
+     * this id first, so renaming it in the wiki loses nothing (G58). Missing: by `createdWikiCategoryId`, then by name.
+     */
+    wikiCategoryId: v.optional(v.pipe(v.number(), v.integer())),
     /** Since 1.20: the services an administrator allows on screens (Plan.md 58); missing or empty = none. */
     allowedServiceIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
     /**

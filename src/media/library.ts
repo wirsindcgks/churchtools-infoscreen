@@ -80,7 +80,7 @@ export function neighbours(
 
 /** The wiki calls, replaceable in tests. */
 export interface MediaBackend {
-    category(): Promise<WikiCategory>;
+    category(known?: wiki.KnownCategoryIds | null): Promise<WikiCategory>;
     pages(categoryId: number): Promise<WikiPage[]>;
     files(categoryId: number, pageGuid: string): Promise<WikiFile[]>;
     ensurePage(categoryId: number, slug: string, screenName: string): Promise<WikiPage>;
@@ -89,8 +89,8 @@ export interface MediaBackend {
 }
 
 export const wikiBackend: MediaBackend = {
-    category: async () => {
-        const category = await wiki.findCategory();
+    category: async (known) => {
+        const category = await wiki.findCategory(known);
         if (!category) {
             throw new Error(t.media.library.noCategory(wiki.WIKI_CATEGORY_NAME));
         }
@@ -136,12 +136,18 @@ export class MediaLibrary {
         private readonly readMetadata: (url: string) => Promise<VideoMetadata> = readVideoMetadata,
     ) {}
 
-    private categoryId(): Promise<number> {
-        this.category ??= this.backend.category().catch((error: unknown) => {
+    /** The id of the wiki category, found through the ids the settings keep (Plan.md 84). */
+    categoryId(): Promise<number> {
+        this.category ??= this.findCategory().catch((error: unknown) => {
             this.category = null;
             throw error;
         });
         return this.category.then((c) => c.id);
+    }
+
+    private async findCategory(): Promise<WikiCategory> {
+        // Designers may read the settings; without them the name still finds an area nobody renamed.
+        return this.backend.category(await this.repository.loadSettings().catch(() => null));
     }
 
     /** All images and videos of all screen pages, newest first. Other files (PDFs …) are left out. */
