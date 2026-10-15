@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 37 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 38 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -391,8 +391,8 @@ export const RoomsBlock = v.object({
     type: v.literal('rooms'),
     rooms: v.pipe(v.array(RoomEntry), v.maxLength(30)),
     layout: v.optional(v.picklist(['overview', 'door']), 'overview'),
-    /** 1 = today, 2 = today and tomorrow. */
-    days: v.optional(v.picklist([1, 2]), 1),
+    /** Days from today, 1–14 (since 1.38; before: 1 = today, 2 = today and tomorrow) (Plan.md 86). */
+    days: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(14)), 1),
     /** Seconds per page of the overview; default PAGE_SECONDS. */
     pageSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(120))),
     style: TextStyle,

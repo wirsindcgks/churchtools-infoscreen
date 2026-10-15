@@ -150,7 +150,7 @@ Gezeigt wird nur, was ChurchTools auf der Gruppen-Homepage ohnehin öffentlich z
 
 „Was ist heute im Saal los?" – die Buchungen der **Räume** aus ChurchTools, als **Übersicht** aller gewählten Räume oder
 als **Türschild** des ersten Raums: „Jetzt" mit Titel und Ende oder „Frei" (mit „bis 14:00", wenn noch etwas kommt),
-darunter „Danach" mit den nächsten Buchungen. Die laufende Buchung ist hervorgehoben; heute oder heute und morgen;
+darunter „Danach" mit den nächsten Buchungen. Die laufende Buchung ist hervorgehoben; ein Zeitraum von 1 bis 14 Tagen ab heute (ab übermorgen steht der Wochentag mit Datum vor der Zeit);
 ein **Wegweiser** je Raum („1. OG, links"). Gewählt werden nur Räume, nicht Gegenstände und Fahrzeuge. Was ein Raum ist,
 legt der Ressourcentyp fest – vorgegeben ist „Raum"; wo es ihn nicht gibt, wählt ein Administrator unter **Einstellungen
 → Räume** die passenden Typen, und bis dahin sagt der Baustein, dass das fehlt. Die Übersicht

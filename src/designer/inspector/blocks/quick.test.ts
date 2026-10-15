@@ -30,7 +30,7 @@ const QUICK: Record<BlockType, string[]> = {
     qr: ['Inhalt', 'Farbe'],
     posts: ['Gruppen · 0', 'Darstellung: Hervorgehoben', 'Farbe'],
     groups: ['Gruppen-Homepage: – wählen –', 'Darstellung: Hervorgehoben', 'Farbe'],
-    rooms: ['Räume · 0', 'Darstellung: Übersicht', 'Zeitraum: Heute'],
+    rooms: ['Räume · 0', 'Darstellung: Übersicht', 'Zeitraum 1 Tage'],
     social: ['Profile · 0', 'Anordnung: Untereinander', 'Markenfarben', 'Farbe', 'Ausrichtung'],
 };
 

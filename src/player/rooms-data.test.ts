@@ -135,7 +135,7 @@ describe('PlayerData.rooms (Plan.md 46)', () => {
 });
 
 const style = { fontFamily: 'sans', fontSize: 44, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
-const roomsBlock = (id: string, rooms: number[], days: 1 | 2 = 1): Block => ({
+const roomsBlock = (id: string, rooms: number[], days = 1): Block => ({
     id,
     type: 'rooms',
     x: 0,
@@ -151,10 +151,10 @@ const roomsBlock = (id: string, rooms: number[], days: 1 | 2 = 1): Block => ({
 describe('roomNeeds', () => {
     it('names each room once, sorted, with the most days any block needs', () => {
         const slides = [
-            makeSlide({ blocks: [roomsBlock('a', [3, 1]), roomsBlock('b', [1, 2], 2)] }),
+            makeSlide({ blocks: [roomsBlock('a', [3, 1]), roomsBlock('b', [1, 2], 7)] }),
             makeSlide({ blocks: [roomsBlock('c', [3])] }),
         ];
-        expect(roomNeeds(slides)).toEqual({ resourceIds: [1, 2, 3], days: 2 });
+        expect(roomNeeds(slides)).toEqual({ resourceIds: [1, 2, 3], days: 7 });
     });
 
     it('ignores blocks without rooms – their days do not count either', () => {

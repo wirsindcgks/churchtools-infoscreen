@@ -571,8 +571,6 @@ export const t = {
             'wenn die Gruppen-Homepage in ChurchTools die Leiter zeigt – dann sind sie ohnehin öffentlich.',
         roomsOverview: 'Übersicht',
         roomsDoor: 'Türschild',
-        today: 'Heute',
-        todayTomorrow: 'Heute + morgen',
         doorHint: 'Das Türschild zeigt den ersten Raum der Liste.',
         noRooms:
             'Keine Räume sichtbar. Ein Administrator gibt der Gruppe „Infoscreen-Designer" unter Einstellungen mit „Rechte aktualisieren" das Recht, Räume zu sehen.',

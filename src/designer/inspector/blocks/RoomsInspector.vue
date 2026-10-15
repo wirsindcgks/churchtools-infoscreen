@@ -13,7 +13,6 @@ import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
 import QuickField from '../fields/QuickField.vue';
 import NumberField from '../fields/NumberField.vue';
-import SegmentField from '../fields/SegmentField.vue';
 import SortList, { type SortItem } from '../fields/SortList.vue';
 import TextField from '../fields/TextField.vue';
 import TileField from '../fields/TileField.vue';
@@ -33,11 +32,6 @@ const { setBlock } = useBlockEdit(() => props.block);
 /** The preview's stage context: a room's name may come from its data when the designer may not see the room. */
 const stage = useStageContext();
 const context = useInspectorContext();
-
-const days = [
-    { value: 1, label: t.inspector.today },
-    { value: 2, label: t.inspector.todayTomorrow },
-];
 
 /** The name ChurchTools gives the room – from what the designer may see, else from the preview's data. */
 function roomName(resourceId: number): string | null {
@@ -128,7 +122,16 @@ function remove(index: number): void {
     </QuickField>
 
     <TileField quick :model-value="block.layout" :options="ROOMS_TILES" :label="t.inspector.appearance" testid="rooms-layout" @update:model-value="setBlock({ layout: $event })" />
-    <SegmentField quick stacked :model-value="block.days" :options="days" :label="t.inspector.period" testid="rooms-days" @update:model-value="setBlock({ days: Number($event) })" />
+    <NumberField
+        quick
+        :model-value="block.days"
+        :label="t.inspector.period"
+        :unit="t.inspector.unitDays"
+        :min="1"
+        :max="14"
+        testid="rooms-days"
+        @update:model-value="setBlock({ days: $event })"
+    />
     <NumberField
         v-if="block.layout === 'overview'"
         :model-value="block.pageSeconds ?? PAGE_SECONDS"

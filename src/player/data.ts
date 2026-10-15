@@ -294,7 +294,7 @@ export function groupNeeds(slides: SlideDoc[]): number[] {
 
 /**
  * The rooms a screen's `rooms` blocks show, each once and sorted, and the
- * days ahead they need (1 = today, 2 = today and tomorrow). Blocks without
+ * days ahead they need (1 = today, 2 = today and tomorrow, … up to 14). Blocks without
  * rooms do not count.
  */
 export function roomNeeds(slides: SlideDoc[]): { resourceIds: number[]; days: number } {

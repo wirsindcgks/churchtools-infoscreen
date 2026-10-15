@@ -53,13 +53,29 @@ describe('overviewRows', () => {
         expect(JSON.stringify(rows)).not.toContain('Familie');
     });
 
+    it('labels the day: none for today, "Morgen", then weekday and date over a month change', () => {
+        const rows = overviewRows(
+            [saal([booking(at('12:00'), at('13:00'), 'Heute'), booking(at('08:00', 28), at('09:00', 28), 'Morgen'), booking(at('08:00', 29), at('09:00', 29), 'Uebermorgen'), booking(new Date('2026-10-01T08:00:00Z'), new Date('2026-10-01T09:00:00Z'), 'Oktober')])],
+            [entry()],
+            NOW,
+            TZ,
+            5,
+        );
+        expect(rows[0]!.lines.map((l) => [l.title, l.day])).toEqual([
+            ['Heute', null],
+            ['Morgen', 'Morgen'],
+            ['Uebermorgen', 'Di 29.09.'],
+            ['Oktober', 'Do 01.10.'],
+        ]);
+    });
+
     it('marks tomorrow only with two days, and shows nothing of it with one', () => {
         const tomorrow = booking(at('08:00', 28), at('09:00', 28), 'Morgens');
         expect(overviewRows([saal([tomorrow])], [entry()], NOW, TZ, 1)).toEqual([]);
         const rows = overviewRows([saal([booking(at('12:00'), at('13:00'), 'Heute'), tomorrow])], [entry()], NOW, TZ, 2);
-        expect(rows[0]!.lines.map((l) => [l.title, l.tomorrow])).toEqual([
-            ['Heute', false],
-            ['Morgens', true],
+        expect(rows[0]!.lines.map((l) => [l.title, l.day])).toEqual([
+            ['Heute', null],
+            ['Morgens', 'Morgen'],
         ]);
     });
 
@@ -76,6 +92,7 @@ describe('overviewRows', () => {
     it('has the texts for an empty day', () => {
         expect(emptyText(1)).toBe('Heute sind keine Räume belegt.');
         expect(emptyText(2)).toBe('Heute und morgen sind keine Räume belegt.');
+        expect(emptyText(5)).toBe('In den nächsten 5 Tagen sind keine Räume belegt.');
     });
 });
 
@@ -112,7 +129,7 @@ describe('doorSign', () => {
         const sign = doorSign([saal([booking(at('08:00', 28), at('09:00', 28), 'Morgens')])], [entry()], NOW, TZ, 2);
         expect(sign!.current).toBeNull();
         expect(sign!.freeUntil).toBeNull();
-        expect(sign!.next[0]).toMatchObject({ title: 'Morgens', tomorrow: true });
+        expect(sign!.next[0]).toMatchObject({ title: 'Morgens', day: 'Morgen' });
         expect(doorSign([saal([])], [entry()], NOW, TZ, 1)).toMatchObject({ current: null, freeUntil: null, next: [] });
     });
 

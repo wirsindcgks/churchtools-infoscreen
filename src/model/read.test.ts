@@ -435,8 +435,9 @@ describe('readSlide – rooms block (schema 1.16, Plan.md 46)', () => {
         expect(issues).toHaveLength(1);
     });
 
-    it('takes days 1 and 2 only, and the two layouts only', () => {
-        for (const days of [0, 3]) expect(readSlide({ ...makeSlide(), blocks: [{ ...rooms, days }] }).doc.blocks).toEqual([]);
+    it('takes days 1 to 14 only, and the two layouts only', () => {
+        for (const days of [0, 15, 2.5]) expect(readSlide({ ...makeSlide(), blocks: [{ ...rooms, days }] }).doc.blocks).toEqual([]);
+        expect(readSlide({ ...makeSlide(), blocks: [{ ...rooms, days: 14 }] }).doc.blocks[0]).toMatchObject({ days: 14 });
         expect(readSlide({ ...makeSlide(), blocks: [{ ...rooms, days: 2, layout: 'door' }] }).doc.blocks[0]).toMatchObject({ days: 2, layout: 'door' });
         expect(readSlide({ ...makeSlide(), blocks: [{ ...rooms, layout: 'grid' }] }).doc.blocks).toEqual([]);
     });

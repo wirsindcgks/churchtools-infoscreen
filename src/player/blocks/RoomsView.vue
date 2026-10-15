@@ -122,7 +122,7 @@ onBeforeUnmount(() => clearInterval(timer));
                 <div class="door-label">{{ tp.rooms.next }}</div>
                 <ul class="door-list">
                     <li v-for="line in door.next" :key="line.key" class="door-line" data-testid="door-line">
-                        <span v-if="line.tomorrow" class="tomorrow">{{ tp.time.tomorrow }}</span>
+                        <span v-if="line.day" class="day">{{ line.day }}</span>
                         <span class="time">{{ line.time }}</span>
                         <span class="title">{{ line.title }}</span>
                     </li>
@@ -272,7 +272,7 @@ onBeforeUnmount(() => clearInterval(timer));
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.tomorrow {
+.day {
     flex: none;
     padding: 0 0.45em;
     font-size: 0.7em;

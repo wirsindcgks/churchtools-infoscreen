@@ -5,7 +5,6 @@
  * what was measured is what shows.
  */
 import type { RoomRow } from '../../rooms/display';
-import { tp } from '../../i18n/player';
 
 /** `measuring`: a row of the hidden copy – not to be found as one that shows. */
 defineProps<{ row: RoomRow; measuring?: boolean }>();
@@ -19,7 +18,7 @@ defineProps<{ row: RoomRow; measuring?: boolean }>();
         </span>
         <ul class="lines">
             <li v-for="line in row.lines" :key="line.key" class="line" :class="{ 'line--now': line.now }" :data-testid="measuring ? undefined : 'room-line'" :data-now="line.now ? '' : undefined">
-                <span v-if="line.tomorrow" class="tomorrow">{{ tp.time.tomorrow }}</span>
+                <span v-if="line.day" class="day">{{ line.day }}</span>
                 <span class="time">{{ line.time }}</span>
                 <span class="title">{{ line.title }}</span>
             </li>
@@ -93,7 +92,7 @@ defineProps<{ row: RoomRow; measuring?: boolean }>();
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.tomorrow {
+.day {
     flex: none;
     padding: 0 0.45em;
     font-size: 0.7em;

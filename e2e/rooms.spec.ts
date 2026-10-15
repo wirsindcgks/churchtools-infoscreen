@@ -311,12 +311,12 @@ test('the door sign shows the first room: now, then what follows – or free', a
     await expect(door.getByTestId('door-next')).toHaveCount(0);
 });
 
-test('an empty day says so, and two days mark tomorrow', async ({ page }) => {
+test('an empty day says so, and the period is a number of days', async ({ page }) => {
     await fakeChurch(page);
     await newRoomsBlock(page);
     await page.getByTestId('rooms-add').selectOption('3'); // only the Jugendkeller, no booking
     await expect(stage(page).getByTestId('rooms-empty')).toHaveText('Heute sind keine Räume belegt.');
-    await choose(page, 'rooms-days', '2');
+    await page.getByTestId('rooms-days').fill('2');
     await expect(stage(page).getByTestId('rooms-empty')).toHaveText('Heute und morgen sind keine Räume belegt.');
 });
 

@@ -103,6 +103,12 @@ export function formatWeekday(instant: Date, timeZone: string): string {
     return new Intl.DateTimeFormat(LOCALE, { timeZone, weekday: 'short' }).format(instant).replace('.', '');
 }
 
+/** "Fr 17.10." – the short weekday and the date. */
+export function formatDayLabel(instant: Date, timeZone: string): string {
+    const date = new Intl.DateTimeFormat(LOCALE, { timeZone, day: '2-digit', month: '2-digit' }).format(instant);
+    return `${formatWeekday(instant, timeZone)} ${date}`;
+}
+
 /** "10:00–11:30 Uhr", "10:00 Uhr" or "ganztägig". */
 export function timeRange(a: { allDay: boolean; startTime: string | null; endTime: string | null; multiDay: boolean }): string {
     if (a.allDay || !a.startTime) return tp.time.allDay;

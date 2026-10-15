@@ -77,6 +77,7 @@ export const tp = {
         unreadable: 'Raumbelegung nicht verfügbar',
         emptyToday: 'Heute sind keine Räume belegt.',
         emptyTodayTomorrow: 'Heute und morgen sind keine Räume belegt.',
+        emptyDays: (days: number) => `In den nächsten ${days} Tagen sind keine Räume belegt.`,
         fallbackName: (id: number) => `Raum ${id}`,
     },
 

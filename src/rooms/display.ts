@@ -6,7 +6,7 @@
  */
 import { startOfZonedDay } from '../appointments/zoned';
 import type { RoomEntry } from '../model/schema';
-import { formatTime } from '../player/format';
+import { formatDayLabel, formatTime } from '../player/format';
 import type { RoomBooking, RoomBookings } from './normalize';
 import { tp } from '../i18n/player';
 
@@ -17,8 +17,8 @@ export interface RoomLine {
     title: string;
     /** Running now: start ≤ now < end. */
     now: boolean;
-    /** Starts tomorrow – only with two days. */
-    tomorrow: boolean;
+    /** Which day, when not today: "Morgen", then "Fr 17.10."; null = today. */
+    day: string | null;
 }
 
 export interface RoomRow {
@@ -45,18 +45,25 @@ export function timeText(booking: Pick<RoomBooking, 'allDay' | 'start' | 'end'>,
     return booking.allDay ? tp.time.allDay : `${formatTime(booking.start, timeZone)}–${formatTime(booking.end, timeZone)}`;
 }
 
-function lineOf(booking: RoomBooking, entry: RoomEntry, now: Date, timeZone: string, tomorrowStart: number): RoomLine {
+/** The day label of a booking's start in the congregation's time zone; null = today. */
+function dayLabel(start: Date, now: Date, timeZone: string): string | null {
+    if (start < startOfZonedDay(now, timeZone, 1)) return null;
+    if (start < startOfZonedDay(now, timeZone, 2)) return tp.time.tomorrow;
+    return formatDayLabel(start, timeZone);
+}
+
+function lineOf(booking: RoomBooking, entry: RoomEntry, now: Date, timeZone: string): RoomLine {
     return {
         key: `${booking.resourceId}-${booking.id}-${booking.start.getTime()}`,
         time: timeText(booking, timeZone),
         title: entry.showTitles && booking.title ? booking.title : tp.rooms.busy,
         now: booking.start <= now && now < booking.end,
-        tomorrow: booking.start.getTime() >= tomorrowStart,
+        day: dayLabel(booking.start, now, timeZone),
     };
 }
 
 /** The bookings of a room that are not over and begin within the days shown, by start. */
-function upcoming(room: RoomBookings, now: Date, timeZone: string, days: 1 | 2): RoomBooking[] {
+function upcoming(room: RoomBookings, now: Date, timeZone: string, days: number): RoomBooking[] {
     const until = startOfZonedDay(now, timeZone, days).getTime();
     return room.bookings
         .filter((b) => b.end > now && b.start.getTime() < until)
@@ -69,14 +76,13 @@ export function overviewRows(
     entries: readonly RoomEntry[],
     now: Date,
     timeZone: string,
-    days: 1 | 2,
+    days: number,
 ): RoomRow[] {
-    const tomorrowStart = startOfZonedDay(now, timeZone, 1).getTime();
     const rows: RoomRow[] = [];
     for (const entry of entries) {
         const room = rooms.find((r) => r.resourceId === entry.resourceId);
         if (!room) continue;
-        const lines = upcoming(room, now, timeZone, days).map((b) => lineOf(b, entry, now, timeZone, tomorrowStart));
+        const lines = upcoming(room, now, timeZone, days).map((b) => lineOf(b, entry, now, timeZone));
         if (lines.length) rows.push({ resourceId: room.resourceId, name: room.name, hint: entry.hint.trim(), lines });
     }
     return rows;
@@ -88,7 +94,7 @@ export function doorSign(
     entries: readonly RoomEntry[],
     now: Date,
     timeZone: string,
-    days: 1 | 2,
+    days: number,
 ): DoorSign | null {
     const entry = entries[0];
     const room = entry && rooms.find((r) => r.resourceId === entry.resourceId);
@@ -102,14 +108,15 @@ export function doorSign(
         name: room.name,
         hint: entry.hint.trim(),
         current: running
-            ? { ...lineOf(running, entry, now, timeZone, tomorrowStart), until: running.allDay ? tp.time.allDay : tp.time.until(formatTime(running.end, timeZone)) }
+            ? { ...lineOf(running, entry, now, timeZone), until: running.allDay ? tp.time.allDay : tp.time.until(formatTime(running.end, timeZone)) }
             : null,
         freeUntil: !running && nextToday ? tp.time.until(formatTime(nextToday.start, timeZone)) : null,
-        next: rest.slice(0, DOOR_NEXT).map((b) => lineOf(b, entry, now, timeZone, tomorrowStart)),
+        next: rest.slice(0, DOOR_NEXT).map((b) => lineOf(b, entry, now, timeZone)),
     };
 }
 
 /** What the overview says when no room has a booking left. */
-export function emptyText(days: 1 | 2): string {
-    return days === 2 ? tp.rooms.emptyTodayTomorrow : tp.rooms.emptyToday;
+export function emptyText(days: number): string {
+    if (days <= 1) return tp.rooms.emptyToday;
+    return days === 2 ? tp.rooms.emptyTodayTomorrow : tp.rooms.emptyDays(days);
 }
