@@ -4,6 +4,16 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.29.0] – 2026-10-16
+
+### Neu
+
+- **Besucherübersicht in der Terminliste.** Unter „Darstellung" gibt es neben Zeilen und Karten die
+  „Besucherübersicht" für einen Bildschirm im Eingang: großzügige Zeilen mit „Heute", „Morgen" oder dem Datum und der
+  Uhrzeit links, Titel und Untertitel in der Mitte und rechts dem Raum, in den man gehen muss – ohne gebuchten Raum
+  dem eingetragenen Ort. Mit „Alle Termine, seitenweise" zeigt ein Balken je Seite, wie weit die Liste ist. Beigetragen
+  von Bernhard.
+
 ## [0.28.0] – 2026-10-16
 
 ### Neu
@@ -1160,6 +1170,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.29.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.29.0
 [0.28.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.28.0
 [0.27.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.27.0
 [0.26.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.26.0
