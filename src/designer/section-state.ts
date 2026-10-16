@@ -12,7 +12,7 @@ function stored(): Record<string, boolean> {
     }
 }
 
-/** Which inspector sections stand open (Plan.md 47), remembered per viewer; a section not listed is closed. */
+/** Which sections of the inspector and of the Design page stand open (Plan.md 47, 89), remembered per viewer; a section not listed is closed. */
 export const sectionState = reactive<Record<string, boolean>>(stored());
 
 watch(sectionState, (state) => {

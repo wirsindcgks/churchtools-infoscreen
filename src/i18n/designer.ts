@@ -1219,7 +1219,6 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             'Schrift bekommen neue Folien und Bausteine.',
         ratios: { wide: '16:9 – breit', square: '1:1 – quadratisch', free: 'Frei – wie das Bild' },
         corners: {
-            title: 'Ecken',
             round: 'Rund',
             square: 'Eckig',
             hint: 'Für Kacheln, Etiketten, Bilder und den Seitenbalken der Terminliste.',
@@ -1229,6 +1228,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             accentHint: 'Für Kalender ohne eigene Farbe, für Kacheln und den Seitenbalken.',
             textHint: 'Text und Hintergrund gelten für neue Folien und Bausteine; bestehende bleiben, wie sie sind.',
         },
+        surfaces: { title: 'Ecken und Karten', corners: 'Ecken' },
         cards: {
             title: 'Kartenhintergrund',
             tint: 'Leicht getönt',
@@ -1264,8 +1264,17 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             modernHint: 'Karten mit Datumskachel und Kalender; der nächste Termin hervorgehoben.',
         },
         images: {
-            title: 'Terminbilder',
+            title: 'Format der Bilder',
             hint: 'Das Bild eines Termins wird auf dieses Format zugeschnitten; „Frei" zeigt es, wie es ist.',
+        },
+        /** The folded sections say what is set inside (Plan.md 89). */
+        summary: {
+            palette: (n: number) => (n === 0 ? 'ohne Palette' : n === 1 ? 'Palette mit 1 Farbe' : `Palette mit ${n} Farben`),
+            corners: { round: 'Rund', square: 'Eckig' },
+            cards: { tint: 'leicht getönt', none: 'ohne Karten', color: (opacity: number) => `eigene Farbe, ${opacity} %` },
+            appointments: { native: 'Nativ', large: 'Modern' },
+            images: (ratio: string) => `Bilder ${ratio}`,
+            imagesFree: 'Bilder frei',
         },
         preview: {
             title: 'Vorschau',

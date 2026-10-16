@@ -3,7 +3,7 @@
  * The look of all screens (Plan.md, Nächste Schritte 27): corners, colours,
  * the font new blocks start with (40), the plain or the large appointment
  * blocks and the shape of their images –
- * set once instead of in every block. A live preview shows it with the
+ * set once instead of in every block, in four folding sections like the inspector's (89); the templates, which act at once, stand in a card of their own. A live preview shows it with the
  * player's own components and real appointments. Designers save it like a
  * playlist, against its revision.
  */
@@ -11,7 +11,9 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vu
 import { onBeforeRouteLeave } from 'vue-router';
 import { currentPerson, displayName } from '../ct/client';
 import ColorField from '../designer/ColorField.vue';
+import { appointmentsSummary, fontSummary, paletteSummary, surfacesSummary } from '../designer/design-summary';
 import Icon from '../designer/Icon.vue';
+import InspectorSection from '../designer/InspectorSection.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import { t } from '../i18n/designer';
@@ -276,158 +278,157 @@ function observe(el: unknown): void {
         <p v-if="error" class="d-banner d-banner--error" role="alert">{{ error }}</p>
         <p v-else-if="author === null || !repository" class="empty">{{ t.common.loading }}</p>
         <div v-else class="layout">
-            <div class="d-card settings">
-                <section class="box" aria-labelledby="box-corners">
-                    <h2 id="box-corners">{{ t.design.corners.title }}</h2>
-                    <div class="d-choices d-choices--two" role="radiogroup" aria-labelledby="box-corners">
-                        <label v-for="c in (['round', 'square'] as const)" :key="c" class="d-choice">
-                            <input v-model="look.corners" type="radio" name="corners" :value="c" :data-testid="`corners-${c}`">
-                            <span class="corner-sample" :class="`corner-sample--${c}`" aria-hidden="true" />
-                            {{ c === 'round' ? t.design.corners.round : t.design.corners.square }}
-                        </label>
-                    </div>
-                    <p class="hint">{{ t.design.corners.hint }}</p>
-                </section>
-
-                <section class="box" aria-labelledby="box-colours">
-                    <h2 id="box-colours">{{ t.design.colors.title }}</h2>
-                    <ColorField v-model="look.accent" :label="t.common.color.accent" testid="theme-accent" />
-                    <p class="hint">{{ t.design.colors.accentHint }}</p>
-                    <div class="grid2">
-                        <ColorField v-model="look.text" :label="t.common.color.text" testid="theme-text" />
-                        <ColorField v-model="look.background" :label="t.common.color.background" testid="theme-background" />
-                    </div>
-                    <p class="hint">{{ t.design.colors.textHint }}</p>
-                </section>
-
-                <section class="box" aria-labelledby="box-cards">
-                    <h2 id="box-cards">{{ t.design.cards.title }}</h2>
-                    <div class="d-choices" role="radiogroup" aria-labelledby="box-cards">
-                        <label class="d-choice">
-                            <input v-model="look.cards" type="radio" name="cards" value="tint" data-testid="cards-tint">
-                            <span class="d-choice-text"><strong>{{ t.design.cards.tint }}</strong><small>{{ t.design.cards.tintHint }}</small></span>
-                        </label>
-                        <label class="d-choice">
-                            <input v-model="look.cards" type="radio" name="cards" value="none" data-testid="cards-none">
-                            <span class="d-choice-text"><strong>{{ t.design.cards.none }}</strong><small>{{ t.design.cards.noneHint }}</small></span>
-                        </label>
-                        <label class="d-choice">
-                            <input v-model="look.cards" type="radio" name="cards" value="color" data-testid="cards-color">
-                            <span class="d-choice-text"><strong>{{ t.design.cards.color }}</strong><small>{{ t.design.cards.colorHint }}</small></span>
-                        </label>
-                    </div>
-                    <template v-if="look.cards === 'color'">
-                        <!-- Only this field offers the palette, as it is being edited; the page shows no swatches elsewhere (e2e/palette.spec.ts). -->
-                        <PaletteScope :theme="theme">
-                            <ColorField v-model="look.cardColor" :label="t.design.cards.colorLabel" testid="theme-card-color" />
-                        </PaletteScope>
-                        <label class="d-field">
-                            {{ t.design.cards.opacity }}
-                            <input v-model.number="look.cardOpacity" type="range" min="0" max="100" step="5" data-testid="theme-card-opacity">
-                            <output>{{ look.cardOpacity }} %</output>
-                        </label>
-                    </template>
-                    <p class="hint">{{ t.design.cards.hint }}</p>
-                </section>
-
-                <section class="box" aria-labelledby="box-palette">
-                    <h2 id="box-palette">{{ t.design.palette.title }}</h2>
-                    <p class="hint">{{ t.design.palette.hint }}</p>
-                    <div v-for="(entry, i) in look.palette" :key="i" class="palette-entry" data-testid="palette-entry">
-                        <ColorField v-model="entry.color" :label="t.design.palette.colorN(i + 1)" />
-                        <label class="d-field">
-                            {{ t.common.name }}
-                            <input
-                                v-model="entry.name"
-                                type="text"
-                                maxlength="40"
-                                :placeholder="t.design.palette.namePlaceholder"
-                                autocomplete="off"
-                                data-testid="palette-name"
-                            >
-                        </label>
-                        <div class="palette-actions">
+            <div class="column">
+                <div class="d-card settings">
+                    <InspectorSection id="design-colors" :title="t.design.colors.title" :summary="paletteSummary(look.palette)">
+                        <template #summary-extra>
+                            <span v-for="color in [look.accent, look.text, look.background]" :key="color" class="swatch" :style="{ background: color }" />
+                        </template>
+                        <template #info>
+                            <p>{{ t.design.colors.accentHint }}</p>
+                            <p>{{ t.design.colors.textHint }}</p>
+                        </template>
+                        <ColorField v-model="look.accent" :label="t.common.color.accent" testid="theme-accent" />
+                        <div class="grid2">
+                            <ColorField v-model="look.text" :label="t.common.color.text" testid="theme-text" />
+                            <ColorField v-model="look.background" :label="t.common.color.background" testid="theme-background" />
+                        </div>
+                        <h3>{{ t.design.palette.title }}</h3>
+                        <p class="hint">{{ t.design.palette.hint }}</p>
+                        <div v-for="(entry, i) in look.palette" :key="i" class="palette-entry" data-testid="palette-entry">
+                            <ColorField v-model="entry.color" :label="t.design.palette.colorN(i + 1)" />
+                            <label class="d-field">
+                                {{ t.common.name }}
+                                <input
+                                    v-model="entry.name"
+                                    type="text"
+                                    maxlength="40"
+                                    :placeholder="t.design.palette.namePlaceholder"
+                                    autocomplete="off"
+                                    data-testid="palette-name"
+                                >
+                            </label>
+                            <div class="palette-actions">
+                                <button
+                                    class="d-btn d-btn--icon"
+                                    type="button"
+                                    :disabled="i === 0"
+                                    :aria-label="t.design.palette.moveUp(i + 1)"
+                                    :title="t.common.moveUp"
+                                    data-testid="palette-up"
+                                    @click="movePaletteColor(i, -1)"
+                                >
+                                    <Icon name="layer-forward" />
+                                </button>
+                                <button
+                                    class="d-btn d-btn--icon"
+                                    type="button"
+                                    :disabled="i === look.palette.length - 1"
+                                    :aria-label="t.design.palette.moveDown(i + 1)"
+                                    :title="t.common.moveDown"
+                                    data-testid="palette-down"
+                                    @click="movePaletteColor(i, 1)"
+                                >
+                                    <Icon name="layer-backward" />
+                                </button>
+                                <button
+                                    class="d-btn d-btn--icon"
+                                    type="button"
+                                    :aria-label="t.design.palette.remove(i + 1)"
+                                    :title="t.common.remove"
+                                    data-testid="palette-remove"
+                                    @click="look.palette.splice(i, 1)"
+                                >
+                                    <Icon name="trash" />
+                                </button>
+                            </div>
+                        </div>
+                        <div>
                             <button
-                                class="d-btn d-btn--icon"
+                                class="d-btn"
                                 type="button"
-                                :disabled="i === 0"
-                                :aria-label="t.design.palette.moveUp(i + 1)"
-                                :title="t.common.moveUp"
-                                data-testid="palette-up"
-                                @click="movePaletteColor(i, -1)"
+                                :disabled="look.palette.length >= PALETTE_MAX"
+                                data-testid="palette-add"
+                                @click="addPaletteColor"
                             >
-                                <Icon name="layer-forward" />
-                            </button>
-                            <button
-                                class="d-btn d-btn--icon"
-                                type="button"
-                                :disabled="i === look.palette.length - 1"
-                                :aria-label="t.design.palette.moveDown(i + 1)"
-                                :title="t.common.moveDown"
-                                data-testid="palette-down"
-                                @click="movePaletteColor(i, 1)"
-                            >
-                                <Icon name="layer-backward" />
-                            </button>
-                            <button
-                                class="d-btn d-btn--icon"
-                                type="button"
-                                :aria-label="t.design.palette.remove(i + 1)"
-                                :title="t.common.remove"
-                                data-testid="palette-remove"
-                                @click="look.palette.splice(i, 1)"
-                            >
-                                <Icon name="trash" />
+                                <Icon name="plus" /> {{ t.design.palette.add }}
                             </button>
                         </div>
-                    </div>
-                    <div>
-                        <button
-                            class="d-btn"
-                            type="button"
-                            :disabled="look.palette.length >= PALETTE_MAX"
-                            data-testid="palette-add"
-                            @click="addPaletteColor"
-                        >
-                            <Icon name="plus" /> {{ t.design.palette.add }}
-                        </button>
-                    </div>
-                    <p v-if="look.palette.length >= PALETTE_MAX" class="hint">{{ t.design.palette.max(PALETTE_MAX) }}</p>
-                </section>
+                        <p v-if="look.palette.length >= PALETTE_MAX" class="hint">{{ t.design.palette.max(PALETTE_MAX) }}</p>
+                    </InspectorSection>
 
-                <section class="box" aria-labelledby="box-font">
-                    <h2 id="box-font">{{ t.design.font.title }}</h2>
-                    <!-- An unknown key stays stored until someone picks a font; it draws as Lato meanwhile. -->
-                    <FontField :model-value="look.font" :label="t.inspector.fontFamily" testid="theme-font" @update:model-value="look.font = $event" />
-                    <p class="hint">{{ t.design.font.hint }}</p>
-                </section>
+                    <InspectorSection id="design-surfaces" :title="t.design.surfaces.title" :summary="surfacesSummary(look)">
+                        <template #info>
+                            <p>{{ t.design.corners.hint }}</p>
+                            <p>{{ t.design.cards.hint }}</p>
+                        </template>
+                        <div class="d-choices d-choices--two" role="radiogroup" :aria-label="t.design.surfaces.corners">
+                            <label v-for="c in (['round', 'square'] as const)" :key="c" class="d-choice">
+                                <input v-model="look.corners" type="radio" name="corners" :value="c" :data-testid="`corners-${c}`">
+                                <span class="corner-sample" :class="`corner-sample--${c}`" aria-hidden="true" />
+                                {{ c === 'round' ? t.design.corners.round : t.design.corners.square }}
+                            </label>
+                        </div>
+                        <h3 id="box-cards">{{ t.design.cards.title }}</h3>
+                        <div class="d-choices" role="radiogroup" aria-labelledby="box-cards">
+                            <label class="d-choice">
+                                <input v-model="look.cards" type="radio" name="cards" value="tint" data-testid="cards-tint">
+                                <span class="d-choice-text"><strong>{{ t.design.cards.tint }}</strong><small>{{ t.design.cards.tintHint }}</small></span>
+                            </label>
+                            <label class="d-choice">
+                                <input v-model="look.cards" type="radio" name="cards" value="none" data-testid="cards-none">
+                                <span class="d-choice-text"><strong>{{ t.design.cards.none }}</strong><small>{{ t.design.cards.noneHint }}</small></span>
+                            </label>
+                            <label class="d-choice">
+                                <input v-model="look.cards" type="radio" name="cards" value="color" data-testid="cards-color">
+                                <span class="d-choice-text"><strong>{{ t.design.cards.color }}</strong><small>{{ t.design.cards.colorHint }}</small></span>
+                            </label>
+                        </div>
+                        <template v-if="look.cards === 'color'">
+                            <!-- Only this field offers the palette, as it is being edited; the page shows no swatches elsewhere (e2e/palette.spec.ts). -->
+                            <PaletteScope :theme="theme">
+                                <ColorField v-model="look.cardColor" :label="t.design.cards.colorLabel" testid="theme-card-color" />
+                            </PaletteScope>
+                            <label class="d-field">
+                                {{ t.design.cards.opacity }}
+                                <input v-model.number="look.cardOpacity" type="range" min="0" max="100" step="5" data-testid="theme-card-opacity">
+                                <output>{{ look.cardOpacity }} %</output>
+                            </label>
+                        </template>
+                    </InspectorSection>
 
-                <section class="box" aria-labelledby="box-appointments">
-                    <h2 id="box-appointments">{{ t.design.appointments.title }}</h2>
-                    <div class="d-choices" role="radiogroup" aria-labelledby="box-appointments">
-                        <label class="d-choice">
-                            <input v-model="look.appointments" type="radio" name="appointments" value="native" data-testid="appointments-native">
-                            <span class="d-choice-text"><strong>{{ t.design.appointments.native }}</strong><small>{{ t.design.appointments.nativeHint }}</small></span>
+                    <InspectorSection id="design-font" :title="t.design.font.title" :summary="fontSummary(look)">
+                        <template #info>
+                            <p>{{ t.design.font.hint }}</p>
+                        </template>
+                        <!-- An unknown key stays stored until someone picks a font; it draws as Lato meanwhile. -->
+                        <FontField :model-value="look.font" :label="t.inspector.fontFamily" testid="theme-font" @update:model-value="look.font = $event" />
+                    </InspectorSection>
+
+                    <InspectorSection id="design-appointments" :title="t.design.appointments.title" :summary="appointmentsSummary(look)">
+                        <template #info>
+                            <p>{{ t.design.images.hint }}</p>
+                        </template>
+                        <div class="d-choices" role="radiogroup" :aria-label="t.design.appointments.title">
+                            <label class="d-choice">
+                                <input v-model="look.appointments" type="radio" name="appointments" value="native" data-testid="appointments-native">
+                                <span class="d-choice-text"><strong>{{ t.design.appointments.native }}</strong><small>{{ t.design.appointments.nativeHint }}</small></span>
+                            </label>
+                            <label class="d-choice">
+                                <input v-model="look.appointments" type="radio" name="appointments" value="large" data-testid="appointments-large">
+                                <span class="d-choice-text"><strong>{{ t.design.appointments.modern }}</strong><small>{{ t.design.appointments.modernHint }}</small></span>
+                            </label>
+                        </div>
+                        <label class="d-field">
+                            {{ t.design.images.title }}
+                            <select v-model="look.imageRatio" data-testid="theme-image-ratio">
+                                <option v-for="r in RATIOS" :key="r.value" :value="r.value">{{ r.label }}</option>
+                            </select>
                         </label>
-                        <label class="d-choice">
-                            <input v-model="look.appointments" type="radio" name="appointments" value="large" data-testid="appointments-large">
-                            <span class="d-choice-text"><strong>{{ t.design.appointments.modern }}</strong><small>{{ t.design.appointments.modernHint }}</small></span>
-                        </label>
-                    </div>
-                </section>
+                    </InspectorSection>
+                </div>
 
-                <section class="box" aria-labelledby="box-images">
-                    <h2 id="box-images">{{ t.design.images.title }}</h2>
-                    <label class="d-field">
-                        {{ t.common.format }}
-                        <select v-model="look.imageRatio" data-testid="theme-image-ratio">
-                            <option v-for="r in RATIOS" :key="r.value" :value="r.value">{{ r.label }}</option>
-                        </select>
-                    </label>
-                    <p class="hint">{{ t.design.images.hint }}</p>
-                </section>
-
-                <section class="box" aria-labelledby="box-templates" data-testid="design-templates">
+                <section class="d-card box templates-card" aria-labelledby="box-templates" data-testid="design-templates">
                     <h2 id="box-templates">{{ t.templates.design.title }}</h2>
                     <p v-if="templateMessage" class="d-banner d-banner--error" role="alert">{{ templateMessage }}</p>
                     <p v-if="!templates.length" class="hint" data-testid="templates-empty">{{ t.templates.design.empty }}</p>
@@ -492,15 +493,20 @@ function observe(el: unknown): void {
     gap: 16px;
     align-items: start;
 }
-.settings {
+.column {
     display: grid;
     gap: 16px;
-    padding: 16px 20px 20px;
+    align-content: start;
 }
-/* The settings one below the other, a line between them. */
-.settings .box + .box {
-    padding-top: 16px;
-    border-top: 1px solid var(--d-divider);
+/* The sections bring their own lines; the topmost one would only double the edge of the card. */
+.settings {
+    padding: 0 20px;
+}
+.settings > :deep(.section:first-child) {
+    border-top: 0;
+}
+.templates-card {
+    padding: 16px 20px 20px;
 }
 .box,
 .preview {
@@ -514,6 +520,17 @@ function observe(el: unknown): void {
 h2 {
     margin: 0;
     font-size: 1.05em;
+}
+h3 {
+    margin: 0;
+    font-size: var(--d-size);
+    font-weight: var(--d-weight-heading);
+}
+.swatch {
+    width: 10px;
+    height: 10px;
+    border: 1px solid var(--d-divider);
+    border-radius: 50%;
 }
 .templates {
     display: grid;

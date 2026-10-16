@@ -45,6 +45,7 @@ async function fakeCalendars(page: Page): Promise<void> {
 /** Modern look, and a white background for the slides at these positions of the demo playlist. */
 async function whiteModern(page: Page, positions: number[]): Promise<void> {
     await page.goto('design');
+    await openSection(page, 'design-appointments');
     await page.getByTestId('appointments-large').check();
     await page.getByTestId('theme-save').click();
     await expect(page.getByTestId('theme-saved')).toBeVisible();

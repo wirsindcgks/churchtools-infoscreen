@@ -7,6 +7,7 @@ test.use({ viewport: { width: 1440, height: 900 } });
 async function makePalette(page: Page): Promise<void> {
     await page.goto('design');
     const entries = page.getByTestId('palette-entry');
+    await openSection(page, 'design-colors');
     await expect(page.getByTestId('theme-accent')).toBeVisible();
     await expect(entries).toHaveCount(0);
     for (const [i, [name, hex]] of [['Gemeindeblau', '#1d4ed8'], ['Sonnengelb', '#f5b301']].entries()) {
@@ -27,6 +28,7 @@ test('the Design page keeps a palette, in order, and shows no swatches itself', 
     await expect(page.locator('.palette-swatches')).toHaveCount(0);
 
     await page.reload();
+    await openSection(page, 'design-colors');
     const names = page.getByTestId('palette-name');
     await expect(names.nth(0)).toHaveValue('Gemeindeblau');
     await expect(names.nth(1)).toHaveValue('Sonnengelb');
