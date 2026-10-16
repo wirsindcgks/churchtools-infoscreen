@@ -148,6 +148,21 @@ export class PlaylistInUseError extends Error {
     }
 }
 
+/** A template that still sits on a slide is not deleted – the slide would lose its blocks. */
+export class TemplateInUseError extends Error {
+    constructor(readonly playlistNames: string[]) {
+        super(tr.templateInUse(playlistNames));
+        this.name = 'TemplateInUseError';
+    }
+}
+
+/** A place a template is used: the slides of a playlist, published or as drafts. */
+export interface TemplateUse {
+    playlist: { id: string; name: string };
+    slideIds: string[];
+    draft: boolean;
+}
+
 /** A screen as the playlist pages name it. */
 export interface ScreenRef {
     id: string;
@@ -571,7 +586,7 @@ export class ScreenRepository {
 
     /**
      * The designers' save of a template, against its revision like the theme: `expectedRevision` is null while
-     * it is new. Deleting and "where it is used" are not here yet.
+     * it is new.
      */
     async saveTemplate(
         template: Omit<TemplateDoc, 'schema' | 'kind' | 'revision' | 'updatedBy' | 'updatedAt'>,
@@ -600,6 +615,48 @@ export class ScreenRepository {
         const ids = await this.ensureCategories();
         await this.upsert(ids.playlists, stored?.valueId, text);
         return doc;
+    }
+
+    /**
+     * Where every template is used, by template id (Plan.md 87): the published playlists with their slides and the
+     * slide drafts. Derived, never stored – one pass like {@link mediaUses}.
+     */
+    async templateUses(): Promise<Map<string, TemplateUse[]>> {
+        const running = await this.readRunningScreens();
+        const screens = running.screens.map((s) => s.doc);
+        const slides = new Map((await this.readSlides()).docs.map((s) => [s.doc.id, s.doc]));
+        const names = new Map(running.playlists.map(({ doc }) => [doc.id, withPlaylistDefaults(doc, screens).name]));
+        const uses = new Map<string, TemplateUse[]>();
+        const add = (templateId: string, playlist: { id: string; name: string }, slideId: string, draft: boolean) => {
+            const list = uses.get(templateId) ?? [];
+            const found = list.find((u) => u.playlist.id === playlist.id && u.draft === draft);
+            if (found) found.slideIds.push(slideId);
+            else list.push({ playlist, slideIds: [slideId], draft });
+            uses.set(templateId, list);
+        };
+        for (const { doc } of running.playlists) {
+            const playlist = { id: doc.id, name: names.get(doc.id)! };
+            for (const slide of doc.slideIds.map((id) => slides.get(id))) {
+                if (slide) templateIdsOf(slide).forEach((id) => add(id, playlist, slide.id, false));
+            }
+        }
+        for (const { playlistId, slide } of await this.drafts.listSlides()) {
+            const playlist = { id: playlistId, name: names.get(playlistId) ?? tr.newPlaylist };
+            templateIdsOf(slide).forEach((id) => add(id, playlist, slide.id, true));
+        }
+        return uses;
+    }
+
+    /** Deletes a template nobody uses – no slide, no draft; otherwise {@link TemplateInUseError} names the playlists. */
+    async deleteTemplate(id: string): Promise<void> {
+        const used = (await this.templateUses()).get(id) ?? [];
+        if (used.length) {
+            const names = used.map((u) => (u.draft ? tr.draftSuffix(u.playlist.name) : u.playlist.name));
+            throw new TemplateInUseError([...new Set(names)].sort((a, b) => a.localeCompare(b, LOCALE)));
+        }
+        const ids = await this.ensureCategories();
+        const stored = (await this.readPlaylistCategory()).templates.find((t) => t.doc.id === id);
+        if (stored) await this.kv.deleteValue(ids.playlists, stored.valueId);
     }
 
     /** The look of all screens; null while nobody set one (Plan.md, Nächste Schritte 27). */
@@ -1010,9 +1067,9 @@ export class ScreenRepository {
 
     /** Every calendar a screen shows or switches on – what a device must be able to read. */
     async calendarIdsInUse(): Promise<number[]> {
-        const [{ screens }, slides] = await Promise.all([this.readRunningScreens(), this.readSlides()]);
+        const [{ screens }, slides] = await Promise.all([this.readRunningScreens(), this.readShownSlides()]);
         const ids = new Set<number>();
-        for (const block of slides.docs.flatMap((s) => s.doc.blocks)) {
+        for (const block of slides.flatMap((s) => s.blocks)) {
             blockCalendarIds(block).forEach((id) => ids.add(id));
         }
         for (const rule of screens.flatMap((s) => s.doc.schedule)) {
@@ -1023,9 +1080,9 @@ export class ScreenRepository {
 
     /** The calendars of every block that shows services – what a device must see the events of (Plan.md 51). */
     async serviceCalendarIdsInUse(): Promise<number[]> {
-        const slides = await this.readSlides();
+        const slides = await this.readShownSlides();
         const ids = new Set<number>();
-        for (const block of slides.docs.flatMap((s) => s.doc.blocks)) {
+        for (const block of slides.flatMap((s) => s.blocks)) {
             if (appointmentServiceIds(block).length) blockCalendarIds(block).forEach((id) => ids.add(id));
         }
         return [...ids].sort((a, b) => a - b);
@@ -1033,9 +1090,9 @@ export class ScreenRepository {
 
     /** Every room a screen's `rooms` blocks show – what a device must be able to see (G45). */
     async roomIdsInUse(): Promise<number[]> {
-        const slides = await this.readSlides();
+        const slides = await this.readShownSlides();
         const ids = new Set<number>();
-        for (const block of slides.docs.flatMap((s) => s.doc.blocks)) {
+        for (const block of slides.flatMap((s) => s.blocks)) {
             if (block.type === 'rooms') block.rooms.forEach((r) => ids.add(r.resourceId));
         }
         return [...ids].sort((a, b) => a - b);
@@ -1043,14 +1100,14 @@ export class ScreenRepository {
 
     /** Whether any block shows the rooms of its appointments – then a device must see every room (Plan.md 50). */
     async appointmentRoomsInUse(): Promise<boolean> {
-        const slides = await this.readSlides();
-        return needsAppointmentRooms(slides.docs.flatMap((s) => s.doc.blocks));
+        const slides = await this.readShownSlides();
+        return needsAppointmentRooms(slides.flatMap((s) => s.blocks));
     }
 
     /** Whether any slide shows a video – then a device must see the wiki category (Plan.md 52). */
     async videoInUse(): Promise<boolean> {
-        const slides = await this.readSlides();
-        return slides.docs.some((s) => s.doc.blocks.some((b) => b.type === 'video' && !!b.mediaId));
+        const slides = await this.readShownSlides();
+        return slides.some((s) => s.blocks.some((b) => b.type === 'video' && !!b.mediaId));
     }
 
     async saveMedia(doc: MediaDoc): Promise<void> {
@@ -1074,7 +1131,7 @@ export class ScreenRepository {
     async mediaUses(): Promise<Map<string, MediaUse[]>> {
         const running = await this.readRunningScreens();
         const screens = running.screens.map((s) => s.doc);
-        const slides = new Map((await this.readSlides()).docs.map((s) => [s.doc.id, s.doc]));
+        const slides = new Map((await this.readShownSlides()).map((s) => [s.id, s]));
         const uses = new Map<string, MediaUse[]>();
         for (const { doc } of running.playlists) {
             const playlist = { id: doc.id, name: withPlaylistDefaults(doc, screens).name };
@@ -1193,6 +1250,13 @@ export class ScreenRepository {
             templates: category.templates,
             issues: [...screens.issues, ...category.issues],
         };
+    }
+
+    /** The slides as devices show them: every template block already expanded (schema 1.41). */
+    private async readShownSlides(): Promise<SlideDoc[]> {
+        const [slides, { templates }] = await Promise.all([this.readSlides(), this.readPlaylistCategory()]);
+        const byId = new Map(templates.map((t) => [t.doc.id, t.doc]));
+        return slides.docs.map((s) => expandTemplates(s.doc, byId));
     }
 
     private async readSlides() {

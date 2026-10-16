@@ -16,7 +16,7 @@ import ArrangeField from './ArrangeField.vue';
 import Icon from './Icon.vue';
 import { BLOCK_INSPECTORS } from './inspector/blocks';
 import { INSPECTOR_MODE, QUICK_OPEN, QUICK_VARIANT } from './inspector/mode';
-import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, type Layer } from './ops';
+import { BLOCK_ICONS, blockBelow, type Layer } from './ops';
 import { quickMenuPlace, type Rect, type Size } from './quick-menu';
 import { KEYS, keyLabel, withKeys } from './shortcuts';
 import { vTip } from './tip';
@@ -36,7 +36,11 @@ const allLocked = computed(() => props.blocks.every((b) => b.locked));
 const cropable = computed(() => props.blocks.length === 1 && props.blocks[0]!.type === 'image' && !!props.blocks[0]!.mediaId && !props.blocks[0]!.locked);
 /** Whether a chosen, unlocked block is turned: then "Drehen zurücksetzen" is offered. */
 const turned = computed(() => props.blocks.some((b) => !b.locked && b.rotation));
-const title = computed(() => (block.value ? BLOCK_LABELS[block.value.type] : (editor.groupSelected ? t.editor.groupCount(props.blocks.length) : t.editor.blocksCount(props.blocks.length))));
+/** Blocks that can become a template: none of them is a template (schema 1.41, Plan.md 87). */
+const templatable = computed(() => !editor.templateEdit && props.blocks.length > 0 && props.blocks.every((b) => b.type !== 'template'));
+/** A chosen template block: it can be edited and dissolved into blocks of its own, a lock fixes only its place. */
+const dissolvable = computed(() => block.value?.type === 'template');
+const title = computed(() => (block.value ? editor.blockHead(block.value) : (editor.groupSelected ? t.editor.groupCount(props.blocks.length) : t.editor.blocksCount(props.blocks.length))));
 provide(INSPECTOR_MODE, 'quick');
 provide(QUICK_VARIANT, bar ? 'bar' : 'float');
 /** Only one field is open at a time. */
@@ -216,7 +220,9 @@ const below = computed(() => {
     if (!b) return null;
     return blockBelow(editor.slide?.blocks ?? [], b, { x: b.x + b.width / 2, y: b.y + b.height / 2 });
 });
-const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lock));
+/** The chosen block belongs to a template fixed in place: its lock stays. */
+const fixed = computed(() => !!block.value && editor.templateLocked(block.value));
+const lockLabel = computed(() => (fixed.value ? t.templates.fixedTitle : allLocked.value ? t.quick.unlock : t.common.lock));
 </script>
 
 <template>
@@ -269,6 +275,7 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
                 type="button"
                 :aria-label="t.common.lock"
                 :aria-pressed="allLocked"
+                :disabled="fixed"
                 data-testid="quick-lock"
                 data-quick-stop
                 @click="editor.setLocked(ids, !allLocked)"
@@ -331,7 +338,7 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
                     <button v-if="editor.canUngroup" role="menuitem" type="button" data-testid="quick-ungroup" @click="choose(() => editor.ungroupBlocks(ids))">
                         {{ t.common.ungroup }}<kbd v-if="!bar">{{ keyLabel(KEYS.ungroup) }}</kbd>
                     </button>
-                    <button v-if="bar" role="menuitem" type="button" data-testid="quick-lock" @click="choose(() => editor.setLocked(ids, !allLocked))">
+                    <button v-if="bar" role="menuitem" type="button" :disabled="fixed" data-testid="quick-lock" @click="choose(() => editor.setLocked(ids, !allLocked))">
                         {{ lockLabel }}
                     </button>
                     <hr v-if="bar" role="separator">
@@ -387,6 +394,15 @@ const lockLabel = computed(() => (allLocked.value ? t.quick.unlock : t.common.lo
                     </button>
                     <button v-if="turned" role="menuitem" type="button" data-testid="quick-reset-rotation" @click="choose(() => editor.resetRotation(ids))">
                         {{ t.quick.resetRotation }}
+                    </button>
+                    <button v-if="templatable" role="menuitem" type="button" data-testid="quick-save-template" @click="choose(() => (editor.templateNaming = [...ids]))">
+                        {{ t.templates.saveAs }}
+                    </button>
+                    <button v-if="dissolvable" role="menuitem" type="button" data-testid="quick-template-edit" @click="choose(() => editor.startTemplateEdit(ids[0]!))">
+                        {{ t.templates.edit.start }}
+                    </button>
+                    <button v-if="dissolvable" role="menuitem" type="button" data-testid="quick-template-unlink" @click="choose(() => editor.unlinkTemplate(ids[0]!))">
+                        {{ t.templates.unlink }}
                     </button>
                     <button v-if="below" role="menuitem" type="button" data-testid="quick-select-below" @click="choose(() => editor.selectBlock(below!.id))">
                         {{ t.quick.selectBelow }}

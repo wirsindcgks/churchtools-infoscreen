@@ -1,6 +1,6 @@
 import { inject, provide, type InjectionKey } from 'vue';
 import type { Appointment } from '../appointments/normalize';
-import { DEFAULT_THEME, type MediaDoc, type ThemeDoc } from '../model/schema';
+import { DEFAULT_THEME, type MediaDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
 import type { HomepageGroups } from '../groups/normalize';
 import type { Post } from '../posts/normalize';
 import type { RoomBookings } from '../rooms/normalize';
@@ -31,6 +31,8 @@ export interface StageContext {
     silent?: boolean;
     /** The look of all screens (schema 1.9); missing or null means the defaults. */
     theme?: ThemeDoc | null;
+    /** The templates the designer's slides use (schema 1.41), by id; the player's slides are already expanded. */
+    templates?: ReadonlyMap<string, TemplateDoc>;
 }
 
 export function themeOf(context: StageContext): ThemeDoc {

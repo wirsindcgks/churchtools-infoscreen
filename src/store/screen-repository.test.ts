@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ValueTooLargeError } from '../model/read';
 import { makePlaylist, makeScreen, makeSlide, makeTemplate, templateBlock, textBlock } from '../model/testing';
-import type { Banner, ScreenBundle } from '../model/schema';
+import { DEFAULT_THEME, type Banner, type ContentBlock, type ScreenBundle } from '../model/schema';
+import { createBlock } from '../designer/ops';
 import { MemoryKv } from './memory-kv';
 import {
     ConflictError,
@@ -12,6 +13,7 @@ import {
     ScreenRepository,
     SlideConflictError,
     SlugTakenError,
+    TemplateInUseError,
 } from './screen-repository';
 
 function bundle(overrides: Partial<ScreenBundle> = {}): ScreenBundle {
@@ -786,6 +788,7 @@ describe('ScreenRepository', () => {
     });
 
     describe('templates (schema 1.41, Plan.md 87)', () => {
+        const LANDSCAPE = { width: 1920, height: 1080 };
         const head = {
             id: 'template-1',
             name: 'Seitenkopf',
@@ -863,6 +866,66 @@ describe('ScreenRepository', () => {
             await repo.saveTemplate(head, { expectedRevision: null, updatedBy: 'Anna' });
             await repo.collectOrphans(new Date(Date.now() + ORPHAN_GRACE_MS + 1000));
             expect(await repo.listTemplates()).toHaveLength(1);
+        });
+
+        it('tells where a template is used, in playlists and in drafts, and keeps what is derived out of the store', async () => {
+            await repo.saveTemplate(head, { expectedRevision: null, updatedBy: 'Anna' });
+            await repo.saveScreen(withTemplate(), { ...save, expectedRevision: null });
+            await repo.drafts.ensureCategory();
+            await repo.drafts.save(
+                { playlistId: 'playlist-1', name: 'Standard', slideIds: ['slide-1', 'slide-3'], slides: [makeSlide({ id: 'slide-3', blocks: [templateBlock('k2'), templateBlock('k3')] })] },
+                { expectedRevision: 0, updatedBy: 'Anna' },
+            );
+            const uses = (await repo.templateUses()).get('template-1')!;
+            expect(uses).toEqual([
+                { playlist: { id: 'playlist-1', name: 'Standard' }, slideIds: ['slide-1'], draft: false },
+                { playlist: { id: 'playlist-1', name: 'Standard' }, slideIds: ['slide-3'], draft: true },
+            ]);
+            expect((await repo.templateUses()).has('unused')).toBe(false);
+        });
+
+        it('deletes a template nobody uses and refuses one on a slide or in a draft, naming the playlists', async () => {
+            await repo.saveTemplate(head, { expectedRevision: null, updatedBy: 'Anna' });
+            await repo.saveTemplate({ ...head, id: 'free', name: 'Frei' }, { expectedRevision: null, updatedBy: 'Anna' });
+            await repo.saveScreen(withTemplate(), { ...save, expectedRevision: null });
+            await repo.deleteTemplate('free');
+            expect((await repo.listTemplates()).map((t) => t.id)).toEqual(['template-1']);
+
+            const error = await repo.deleteTemplate('template-1').catch((e: unknown) => e);
+            expect(error).toBeInstanceOf(TemplateInUseError);
+            expect((error as TemplateInUseError).playlistNames).toEqual(['Standard']);
+
+            // Only in a draft: the playlist no longer shows it, but the draft would publish it again.
+            await repo.savePlaylist(
+                { playlist: { ...makePlaylist({ slideIds: ['slide-2'] }), stage: LANDSCAPE }, slides: [makeSlide({ id: 'slide-2' })] },
+                { expectedRevision: 0, updatedBy: 'Anna' },
+            );
+            await repo.drafts.ensureCategory();
+            await repo.drafts.save(
+                { playlistId: 'playlist-1', name: 'Standard', slideIds: ['slide-3'], slides: [makeSlide({ id: 'slide-3', blocks: [templateBlock('k2')] })] },
+                { expectedRevision: 0, updatedBy: 'Anna' },
+            );
+            const inDraft = await repo.deleteTemplate('template-1').catch((e: unknown) => e);
+            expect((inDraft as TemplateInUseError).playlistNames).toEqual(['Standard (Entwurf)']);
+            await repo.drafts.discard('playlist-1');
+            await repo.deleteTemplate('template-1');
+            expect(await repo.listTemplates()).toEqual([]);
+        });
+
+        it('lets calendars, rooms and media of a template count for the devices and the library', async () => {
+            await repo.saveTemplate(
+                {
+                    ...head,
+                    blocks: [
+                        { ...(createBlock('appointment-list', LANDSCAPE, [9], DEFAULT_THEME) as ContentBlock), id: 'liste' },
+                        head.blocks[0]!,
+                    ],
+                },
+                { expectedRevision: null, updatedBy: 'Anna' },
+            );
+            await repo.saveScreen(withTemplate(), { ...save, expectedRevision: null });
+            expect(await repo.calendarIdsInUse()).toEqual([9]);
+            expect(await repo.mediaUsage('logo')).toEqual([{ playlist: 'Standard', slide: 'Begrüßung' }]);
         });
 
         it('reads on when the category holds a document of a kind it does not know (an older player with a template)', async () => {

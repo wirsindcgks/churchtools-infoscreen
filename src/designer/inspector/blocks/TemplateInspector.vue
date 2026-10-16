@@ -1,7 +1,61 @@
 <script setup lang="ts">
-/** The template block (Plan.md 87): a placeholder until the editor round fills it. */
+/**
+ * The template block (schema 1.41, Plan.md 87): where it stands and how often, and the way out – "Lösen" turns it into
+ * blocks of the slide's own. Its size is its template's, so there are no further fields; the short menu shows nothing.
+ */
+import { computed, ref, watch } from 'vue';
+import { t } from '../../../i18n/designer';
+import type { Block } from '../../../model/schema';
+import HintRow from '../../HintRow.vue';
+import { useBlockEdit } from '../use-block';
+import { useInspectorMode } from '../mode';
+
+const props = defineProps<{ block: Extract<Block, { type: 'template' }> }>();
+const { editor } = useBlockEdit(() => props.block);
+const mode = useInspectorMode();
+
+const known = computed(() => editor.templateById.has(props.block.templateId));
+/** On how many slides the template stands; null while it is being counted. */
+const count = ref<number | null>(null);
+watch(
+    () => props.block.templateId,
+    async (id) => {
+        count.value = null;
+        const n = await editor.templateSlideCount(id);
+        if (props.block.templateId === id) count.value = n;
+    },
+    { immediate: true },
+);
 </script>
 
 <template>
-    <div />
+    <div v-if="mode === 'full'" class="template-inspector">
+        <HintRow>
+            <button class="d-btn d-btn--primary" type="button" :disabled="!known" data-testid="template-edit" @click="editor.startTemplateEdit(block.id)">
+                {{ t.templates.edit.start }}
+            </button>
+            <template #info>{{ t.templates.editInfo }}</template>
+        </HintRow>
+        <HintRow v-if="editor.templateLocked(block)" caption>
+            <span data-testid="template-fixed-note">{{ t.templates.fixedTitle }}</span>
+            <template #info>{{ t.templates.fixedInfo }}</template>
+        </HintRow>
+        <p v-if="known && count !== null" class="hint" data-testid="template-uses">{{ t.templates.onSlides(count) }}</p>
+        <button class="d-btn" type="button" :disabled="!known" data-testid="template-unlink" @click="editor.unlinkTemplate(block.id)">
+            {{ t.templates.unlink }}
+        </button>
+        <p class="hint">{{ t.templates.unlinkHint }}</p>
+    </div>
 </template>
+
+<style scoped>
+.template-inspector {
+    display: grid;
+    gap: var(--d-space-2);
+}
+.hint {
+    margin: 0;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+</style>

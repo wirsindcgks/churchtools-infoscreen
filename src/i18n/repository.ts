@@ -19,6 +19,10 @@ export const tr = {
     playlistNotFound: 'Diese Präsentation gibt es nicht (mehr).',
     playlistInUse: (screens: string[]) =>
         `Die Präsentation läuft noch auf ${screens.map((s) => `„${s}"`).join(', ')}. Erst dort im Zeitplan eine andere wählen.`,
+    templateInUse: (names: string[]) =>
+        `Diese Vorlage steckt noch in: ${names.join(', ')}. Zuerst dort lösen oder entfernen.`,
+    /** A playlist whose slides exist only as drafts. */
+    draftSuffix: (name: string) => `${name} (Entwurf)`,
     playlistMissing: 'Präsentation fehlt.',
     slideMissing: 'Folie fehlt.',
     templateMissing: 'Vorlage fehlt.',

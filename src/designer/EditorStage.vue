@@ -15,7 +15,7 @@ import Icon from './Icon.vue';
 import { isDoubleTap, longPress, TAP_SLOP, type Tap } from './gestures';
 import { handlesOutside } from './handles';
 import { neighbourGaps, pairGaps, sizeLabelPlace, type Measure } from './measure';
-import { BLOCK_ICONS, BLOCK_LABELS, blockBelow, boundingBox, clampFrame } from './ops';
+import { BLOCK_ICONS, blockBelow, boundingBox, clampFrame } from './ops';
 import QuickMenu from './QuickMenu.vue';
 import { cropPan, NO_CROP, type Crop } from './crop';
 import { handleAbove, handleReach, outerFrame, resizeRotated, snapAngle } from './rotate';
@@ -139,6 +139,59 @@ function dropHold(): void {
     hold = null;
 }
 const guides = ref<Guide[]>([]);
+
+// The frame of the template being edited (Plan.md 87): its right and lower edge and the corner are dragged to size it.
+type FrameHandle = 'e' | 's' | 'se';
+const FRAME_HANDLES: FrameHandle[] = ['e', 's', 'se'];
+let frameDrag: { handle: FrameHandle; startX: number; startY: number; width: number; height: number } | null = null;
+const frameSizing = ref(false);
+/** The frame of the template in stage pixels, where it stands on the slide. */
+const templateFrame = computed(() => {
+    const edit = editor.templateEdit;
+    return edit ? { x: edit.origin.x, y: edit.origin.y, ...edit.bundle.frame } : null;
+});
+function startFrame(event: PointerEvent, handle: FrameHandle): void {
+    const frame = templateFrame.value;
+    if (event.button !== 0 || !frame) return;
+    event.stopPropagation();
+    frameDrag = { handle, startX: event.clientX, startY: event.clientY, width: frame.width, height: frame.height };
+    (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+}
+function moveFrame(event: PointerEvent): void {
+    const frame = templateFrame.value;
+    if (!frameDrag || !frame) return;
+    event.stopPropagation();
+    const dx = (event.clientX - frameDrag.startX) / fit.value.scale;
+    const dy = (event.clientY - frameDrag.startY) / fit.value.scale;
+    const f = {
+        x: frame.x,
+        y: frame.y,
+        width: frameDrag.width + (frameDrag.handle.includes('e') ? dx : 0),
+        height: frameDrag.height + (frameDrag.handle.includes('s') ? dy : 0),
+    };
+    let sized = f;
+    if (event.altKey) guides.value = [];
+    else {
+        const snapped = snapResize(f, frameDrag.handle, {
+            grid: editor.gridSize,
+            threshold: (event.pointerType === 'touch' ? SNAP_SCREEN_PX_TOUCH : SNAP_SCREEN_PX) / fit.value.scale,
+            stage: editor.stage,
+            others: blocks.value.map((b) => ({ ...b, ...outerFrame(b) })),
+        });
+        guides.value = snapped.guides;
+        sized = snapped.frame;
+    }
+    editor.beginGesture();
+    frameSizing.value = true;
+    editor.resizeTemplateFrame(sized.width, sized.height);
+}
+function endFrame(): void {
+    if (!frameDrag) return;
+    frameDrag = null;
+    frameSizing.value = false;
+    guides.value = [];
+    editor.endGesture();
+}
 /** The block being dragged or resized – set with the first movement, not with a click. */
 const dragId = ref<string | null>(null);
 const dragIds = ref<string[]>([]);
@@ -283,7 +336,11 @@ function moveTo(event: PointerEvent): void {
     const f = { ...drag.frame };
     const h = drag.handle;
     // The others count by the box around them.
-    const others = blocks.value.filter((b) => !drag!.ids.includes(b.id)).map((b) => ({ ...b, ...outerFrame(b) }));
+    const others = [
+        ...blocks.value.filter((b) => !drag!.ids.includes(b.id)).map((b) => ({ ...b, ...outerFrame(b) })),
+        // The frame of a template being edited is a target, too: its edges and middles.
+        ...(templateFrame.value ? [templateFrame.value] : []),
+    ];
     if (h !== 'move' && drag.rotation) {
         // Turned: resized in its own axes, whole pixels, no snapping – the edges lie aslant.
         const resized = resizeRotated(f, drag.rotation, h, dx, dy);
@@ -477,7 +534,7 @@ const quickMenu = ref<InstanceType<typeof QuickMenu> | null>(null);
 const BUTTON_MIN = { width: 120, height: 40 };
 const emptyButtons = computed(() =>
     blocks.value.flatMap((b) => {
-        const text = emptyAction(b);
+        const text = emptyAction(b, editor.templateById);
         const frame = hostFrame(b);
         if (!text || b.locked || b.id === dragId.value || frame.width < BUTTON_MIN.width || frame.height < BUTTON_MIN.height || centerCovered(b, blocks.value)) return [];
         return [{ block: b, text, left: frame.left + frame.width / 2, top: frame.top + frame.height / 2 }];
@@ -785,6 +842,10 @@ function onDoubleClick(id: string): void {
         return;
     }
     const chosen = editor.block;
+    if (chosen?.type === 'template') {
+        editor.startTemplateEdit(chosen.id);
+        return;
+    }
     if (chosen?.type === 'text') {
         if (!chosen.locked) editor.startTextEdit(chosen.id);
         return;
@@ -936,14 +997,19 @@ function onEmptyAction(b: Block): void {
             :style="{ left: `${fit.offsetX}px`, top: `${fit.offsetY}px`, width: `${editor.stage.width * fit.scale}px`, height: `${editor.stage.height * fit.scale}px` }"
         />
         <StageView v-if="editor.slide" :width="editor.stage.width" :height="editor.stage.height" :fit="fit">
+            <!-- Editing a template: the real slide lies pale beneath it, out of reach; the helper slide has no background of its own. -->
+            <div v-if="editor.templateBackdrop" class="backdrop" data-testid="template-backdrop">
+                <SlideView :slide="editor.templateBackdrop" :width="editor.stage.width" :height="editor.stage.height" />
+            </div>
             <SlideView
+                :bare="!!editor.templateEdit"
                 :slide="editor.slide"
                 :width="editor.stage.width"
                 :height="editor.stage.height"
                 :hidden-block-id="editor.editingTextId ?? undefined"
             />
             <!-- The playlist's band lies over every slide (Plan.md 32); clicks go through to the blocks. -->
-            <BannerView v-if="banner" class="stage-banner" :banner="banner" :stage-width="editor.stage.width" />
+            <BannerView v-if="banner" class="stage-banner" :class="{ 'stage-banner--pale': editor.templateEdit }" :banner="banner" :stage-width="editor.stage.width" />
             <div
                 ref="overlay"
                 class="overlay"
@@ -974,6 +1040,25 @@ function onEmptyAction(b: Block): void {
                 </div>
                 <div v-if="sizeLabel" class="frame-size" :style="sizeLabel.style" data-testid="frame-size">{{ sizeLabel.text }}</div>
                 <div
+                    v-if="templateFrame"
+                    class="template-frame"
+                    :style="{ left: `${templateFrame.x}px`, top: `${templateFrame.y}px`, width: `${templateFrame.width}px`, height: `${templateFrame.height}px`, '--handle': `${12 / fit.scale}px` }"
+                    data-testid="template-frame"
+                >
+                    <span
+                        v-for="h in FRAME_HANDLES"
+                        :key="h"
+                        class="template-frame-handle"
+                        :class="`template-frame-handle--${h}`"
+                        :data-testid="`template-frame-${h}`"
+                        @pointerdown="startFrame($event, h)"
+                        @pointermove="moveFrame"
+                        @pointerup="endFrame"
+                        @pointercancel="endFrame"
+                    />
+                    <div v-if="frameSizing" class="frame-size template-frame-size" data-testid="template-frame-size">{{ t.editor.stage.size(templateFrame.width, templateFrame.height) }}</div>
+                </div>
+                <div
                     v-for="block in blocks"
                     :key="block.id"
                     class="frame"
@@ -989,7 +1074,7 @@ function onEmptyAction(b: Block): void {
                         '--turn': `${(2 * rotateRadius()) / fit.scale}px`,
                         '--line': `${1.5 / fit.scale}px`,
                     }"
-                    :title="block.locked ? t.editor.stage.lockedTitle(BLOCK_LABELS[block.type]) : undefined"
+                    :title="block.locked ? t.editor.stage.lockedTitle(editor.blockName(block)) : undefined"
                     :data-testid="`frame-${block.type}`"
                     :data-block-id="block.id"
                     @pointerdown="start($event, block, 'move')"
@@ -1002,7 +1087,7 @@ function onEmptyAction(b: Block): void {
                 >
                     <!-- Shown by CSS where there is a pointer to hover with, never on the chosen block or while dragging (A4). -->
                     <span class="frame-name" :class="{ 'frame-name--inside': block.y < 32 / fit.scale, 'frame-name--touch': block.id === touchNameId && !dragId }">
-                        <Icon :name="BLOCK_ICONS[block.type]" :size="14" />{{ BLOCK_LABELS[block.type] }}
+                        <Icon :name="BLOCK_ICONS[block.type]" :size="14" />{{ editor.blockName(block) }}
                     </span>
                     <span
                         v-if="block.locked && block.id === editor.block?.id"
@@ -1012,7 +1097,8 @@ function onEmptyAction(b: Block): void {
                     >
                         <Icon name="lock" :size="16" />
                     </span>
-                    <template v-else-if="block.id === editor.block?.id && block.id !== editor.croppingId">
+                    <!-- A template block has the size of its template and is not turned: no handles. -->
+                    <template v-else-if="block.id === editor.block?.id && block.id !== editor.croppingId && block.type !== 'template'">
                         <span
                             v-for="h in handlesOf(block)"
                             :key="h"
@@ -1226,6 +1312,42 @@ function onEmptyAction(b: Block): void {
 .overlay {
     position: absolute;
     inset: 0;
+}
+/* The band belongs to the slide, not to the template: it fades with it. */
+.stage-banner--pale {
+    opacity: 0.35;
+}
+.backdrop {
+    position: absolute;
+    inset: 0;
+    opacity: 0.35;
+    pointer-events: none;
+}
+/* The frame of the template being edited: dashed; only its handles take the pointer. */
+.template-frame {
+    position: absolute;
+    z-index: 3;
+    box-sizing: border-box;
+    pointer-events: none;
+    outline: calc(var(--s) * 2) dashed var(--d-accent);
+}
+.template-frame-handle {
+    position: absolute;
+    width: var(--handle);
+    height: var(--handle);
+    box-sizing: border-box;
+    border: calc(var(--s) * 2) solid var(--d-accent);
+    border-radius: 2px;
+    background: #fff;
+    pointer-events: auto;
+    touch-action: none;
+}
+.template-frame-handle--e { left: 100%; top: 50%; transform: translate(-50%, -50%); cursor: ew-resize; }
+.template-frame-handle--s { left: 50%; top: 100%; transform: translate(-50%, -50%); cursor: ns-resize; }
+.template-frame-handle--se { left: 100%; top: 100%; transform: translate(-50%, -50%); cursor: nwse-resize; }
+.template-frame-size {
+    top: calc(100% + var(--s) * 12);
+    left: 50%;
 }
 .guide {
     position: absolute;

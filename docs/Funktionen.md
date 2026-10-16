@@ -117,6 +117,40 @@ innerhalb der Gruppe.
 
 ![Editor mit allen fünf Bausteinen einer Folie gewählt: darüber das Kurzmenü „5 Bausteine" mit offenem „Ausrichten", rechts „Anordnen"](bilder/mehrere.png)
 
+## Vorlagen
+
+Was auf vielen Folien gleich aussehen soll – etwa ein Seitenkopf mit Name der Gemeinde und Uhrzeit –, baut ihr einmal
+als **Vorlage** und setzt sie auf beliebig viele Folien. Ändert ihr die Vorlage, ändern sich alle diese Folien mit.
+
+**Eine Vorlage anlegen:** Auf einer Folie die Bausteine wählen (mit gedrückter Umschalttaste mehrere), im Kurzmenü über
+den Bausteinen „⋯" öffnen und **„Als Vorlage speichern …"** wählen, dann einen Namen geben. Aus den Bausteinen wird ein
+einziger Vorlagen-Baustein.
+
+**Auf weitere Folien setzen:** „+ Baustein" zeigt unten den Abschnitt **„Vorlagen"** – angeboten werden die Vorlagen im
+Format der Präsentation (quer oder hochkant). Die Vorlage erscheint an der Stelle, an der sie gebaut wurde; das gilt auch
+für Kopieren und Einfügen. Auf der Folie lässt sie sich verschieben, Größe und Inhalt kommen aus der Vorlage.
+
+**Ändern – für alle Folien zugleich:** Doppelklick auf die Vorlage, „Vorlage bearbeiten" im Inspektor oder im Kurzmenü.
+Der Rest der Folie wird blass; die Bausteine der Vorlage bearbeitet ihr wie gewohnt, „+ Baustein" fügt neue hinzu, und
+der gestrichelte Rahmen lässt sich an der rechten und unteren Kante ziehen. Die Leiste oben sagt, auf wie vielen Folien
+die Vorlage steht. **„Fertig"** speichert, **„Abbrechen"** verwirft. Die Änderung gilt **sofort auf allen Folien und
+Bildschirmen** mit dieser Vorlage – ohne „Veröffentlichen".
+
+**Fest an ihrer Stelle:** Eine Vorlage aus gesperrten Bausteinen ist auf jeder Folie gesperrt und steht überall an
+derselben Stelle; auf einer einzelnen Folie lässt sie sich nicht entsperren. Ein- und ausschalten lässt sich das im
+Bearbeiten-Modus mit dem Schalter **„Fest an ihrer Stelle"**. Bearbeiten geht trotzdem.
+
+**Lösen:** Soll eine Folie abweichen, wählt ihr dort **„Lösen"**. Aus der Vorlage werden eigene Bausteine nur für diese
+Folie; spätere Änderungen an der Vorlage erreichen sie nicht mehr. Kopiert ihr eine Vorlage in eine Präsentation
+anderen Formats, kommt sie dort ebenfalls gelöst an.
+
+**Auf der Seite „Design"** stehen alle Vorlagen mit Vorschau, Format und der Zahl der Folien. **„Bearbeiten"** öffnet
+eine Vorlage direkt, ohne die Folie suchen zu müssen; „Fertig" führt zurück. Dort lassen sie sich auch umbenennen und
+löschen – löschen aber erst, wenn keine Folie und kein Entwurf sie mehr benutzt; sonst nennt die Meldung die
+Präsentationen.
+
+![Editor im Bearbeiten-Modus einer Vorlage: oben die Leiste „Vorlage Seitenkopf – auf 1 Folie" mit „Abbrechen" und „Fertig", die Bausteine im gestrichelten Rahmen, der Rest der Folie blass](bilder/vorlage.png)
+
 ## Galerie
 
 Bilder aus der Mediathek nacheinander, mit vier Übergängen (Überblenden, Schieben, Aufdecken oder harter Schnitt). Dazu zoomt jedes Bild auf Wunsch langsam hinein, heraus oder abwechselnd (Feld „Bewegung"). Mehrere Bilder auf einmal wählen, mit ↑/↓
@@ -281,7 +315,8 @@ Einmal für alle Bildschirme: Ecken, Akzentfarbe, Farben und Schrift für neue B
 das Format der Bilder – mit Vorschau. Dazu eine **Farbpalette**: bis zu zwölf Farben der Gemeinde mit Namen
 („Gemeindeblau"), in einer Reihenfolge, die ihr selbst bestimmt. Der **Kartenhintergrund** – leicht getönt, ohne oder
 in einer eigenen Farbe mit Deckkraft – gilt für die Karten von „Nächster Termin" (Form „Modern"), „Beiträge" und
-„Gruppen" sowie die Tür-Anzeige der Raumbelegung.
+„Gruppen" sowie die Tür-Anzeige der Raumbelegung. Unter **„Vorlagen"** stehen die [Vorlagen](#vorlagen) zum Bearbeiten,
+Umbenennen und Löschen.
 
 ![Design: Einstellungen links, Vorschau rechts](bilder/design.png)
 

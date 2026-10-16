@@ -23,11 +23,12 @@ import SearchField from '../designer/SearchField.vue';
 import ScreenCard from '../designer/ScreenCard.vue';
 import ScheduleDialog from '../designer/ScheduleDialog.vue';
 import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
-import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema';
+import { blockCalendarIds, type ScreenDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { ruleCalendarIds, runningNow } from '../designer/running';
 import { screenCounts, setScreenCounts } from '../designer/section-counts';
-import { usePreview } from '../designer/usePreview';
+import { usePreview, useTemplatesIn } from '../designer/usePreview';
+import { expandTemplates } from '../model/templates';
 import { getRepository, resetDemoStore } from '../store/backend';
 import type { ScreenOverview, ScreenRepository } from '../store/screen-repository';
 import { t } from '../i18n/designer';
@@ -81,6 +82,14 @@ const shown = computed(() => {
 const current = computed(() => FILTERS.find((f) => f.key === filter.value)!);
 
 const theme = ref<ThemeDoc | null>(null);
+const templates = ref<TemplateDoc[]>([]);
+const templateMap = computed(() => new Map(templates.value.map((t) => [t.id, t])));
+/** The first slides as the tiles draw them: templates expanded, so their blocks count for the data to fetch. */
+const firstSlides = computed(() =>
+    overviews.value.flatMap((o) =>
+        Object.values(o.playlists).flatMap((p) => (p.firstSlide ? [expandTemplates(p.firstSlide, templateMap.value)] : [])),
+    ),
+);
 
 /** The signs of life by screen slug (Plan.md 59); null while this person cannot see them or loading failed. */
 const { heartbeats, now, refreshHeartbeats } = useHeartbeats(repository);
@@ -94,35 +103,30 @@ const { context } = usePreview(
     computed(() => [
         ...new Set([
             ...ruleCalendarIds(overviews.value.map((o) => o.screen)),
-            ...overviews.value.flatMap((o) =>
-                Object.values(o.playlists).flatMap((p) => (p.firstSlide?.blocks ?? []).flatMap(blockCalendarIds)),
-            ),
+            ...firstSlides.value.flatMap((slide) => slide.blocks.flatMap(blockCalendarIds)),
         ]),
     ]),
     computed(() => overviews.value.flatMap((o) => o.media)),
     theme,
-    computed(() =>
-        postNeeds(overviews.value.flatMap((o) => Object.values(o.playlists).flatMap((p) => (p.firstSlide ? [p.firstSlide] : [])))),
-    ),
-    computed(() =>
-        groupNeeds(overviews.value.flatMap((o) => Object.values(o.playlists).flatMap((p) => (p.firstSlide ? [p.firstSlide] : [])))),
-    ),
-    computed(() =>
-        roomNeeds(overviews.value.flatMap((o) => Object.values(o.playlists).flatMap((p) => (p.firstSlide ? [p.firstSlide] : [])))),
-    ),
+    computed(() => postNeeds(firstSlides.value)),
+    computed(() => groupNeeds(firstSlides.value)),
+    computed(() => roomNeeds(firstSlides.value)),
 );
+useTemplatesIn(context, templates);
 
 async function refresh(): Promise<void> {
     if (!repository.value) return;
-    const [list, stored] = await Promise.all([
+    const [list, stored, storedTemplates] = await Promise.all([
         repository.value.listScreenOverviews(),
         // The tiles show the theme; without it they show the defaults.
         repository.value.loadTheme().catch(() => null),
+        repository.value.listTemplates().catch(() => []),
         refreshHeartbeats(),
     ]);
     overviews.value = list;
     setScreenCounts(list.map((o) => o.screen));
     theme.value = stored;
+    templates.value = storedTemplates;
 }
 
 onMounted(async () => {

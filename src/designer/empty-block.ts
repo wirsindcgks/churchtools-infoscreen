@@ -2,8 +2,8 @@ import { t } from '../i18n/designer';
 import type { Block } from '../model/schema';
 import { outerFrame } from './rotate';
 
-/** What a block still lacks, as the words of the button on it (Plan.md 79, C6); null where it has what it needs. */
-export function emptyAction(block: Block): string | null {
+/** What a block still lacks, as the words of the button on it (Plan.md 79, C6); null where it has what it needs. `templates`: the known ones by id. */
+export function emptyAction(block: Block, templates?: ReadonlyMap<string, unknown>): string | null {
     const say = t.quick.empty;
     switch (block.type) {
         case 'image':
@@ -24,6 +24,9 @@ export function emptyAction(block: Block): string | null {
             return block.rooms.length ? null : say.rooms;
         case 'social':
             return block.links.some((l) => l.url.trim()) ? null : say.social;
+        case 'template':
+            // Only where the templates are known: a template block whose template is gone shows nothing on the slide.
+            return templates && !templates.has(block.templateId) ? t.templates.missing : null;
         default:
             return null;
     }

@@ -16,14 +16,15 @@ import { provideInspectorContext } from '../designer/inspector/context';
 import LiveFlag from '../designer/LiveFlag.vue';
 import { providePalette } from '../designer/palette';
 import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
-import { BLOCK_LABELS } from '../designer/ops';
 import PlaylistPreview from '../designer/PlaylistPreview.vue';
 import ShortcutsDialog from '../designer/ShortcutsDialog.vue';
 import { KEYS, withKeys } from '../designer/shortcuts';
 import SlideList from '../designer/SlideList.vue';
 import type { SettingsDoc } from '../model/schema';
 import { useHeartbeats } from '../designer/useHeartbeats';
-import { usePreview } from '../designer/usePreview';
+import { usePreview, useTemplatesIn } from '../designer/usePreview';
+import TemplateNameDialog from '../designer/TemplateNameDialog.vue';
+import { expandTemplates } from '../model/templates';
 import type { HomepageEntry } from '../groups/normalize';
 import type { MediaDoc } from '../model/schema';
 import { MEDIA_PAGE } from '../media/library';
@@ -44,6 +45,9 @@ import { useConfirm } from '../designer/useConfirm';
 const { confirm } = useConfirm();
 
 const route = useRoute();
+const router = useRouter();
+/** The page "Design" edits one template here (Plan.md 87): the same editor, but only the mode "Vorlage bearbeiten" – no slides, no publishing. */
+const templatePage = route.name === 'template-editor';
 const playlistId = String(route.params.id);
 
 /**
@@ -52,7 +56,9 @@ const playlistId = String(route.params.id);
  * router's, not the browser's – nothing outside the module.
  */
 const cameFrom = String(useRouter().options.history.state.back ?? '');
-const back = cameFrom === '/' || cameFrom.startsWith('/?')
+const back = templatePage
+    ? { to: { name: 'design' }, label: t.templates.backToDesign }
+    : cameFrom === '/' || cameFrom.startsWith('/?')
     ? { to: { name: 'designer', query: useRouter().resolve(cameFrom).query }, label: t.editor.backToScreens }
     : { to: { name: 'playlists' }, label: t.editor.backToPlaylists };
 const editor = useEditorStore();
@@ -74,17 +80,36 @@ providePalette(
 );
 
 const calendarIds = computed(() => editor.calendarIds);
+/** The slides as the stage draws them: the blocks of a template count for the data to fetch. */
+const shownSlides = computed(() => editor.slides.map((s) => expandTemplates(s, editor.templateById)));
 const { context, calendars, hiddenCalendars, releasedCalendarIds, problem } = usePreview(
     calendarIds,
     computed(() => editor.media),
     computed(() => editor.theme),
-    computed(() => postNeeds(editor.slides)),
-    computed(() => groupNeeds(editor.slides)),
-    computed(() => roomNeeds(editor.slides)),
-    computed(() => needsAppointmentRooms(editor.slides.flatMap((s) => s.blocks))),
-    computed(() => allowedServiceIds(appointmentServicesInUse(editor.slides.flatMap((s) => s.blocks)), allowedServices.value)),
-    computed(() => needsAppointmentTags(editor.slides.flatMap((s) => s.blocks))),
+    computed(() => postNeeds(shownSlides.value)),
+    computed(() => groupNeeds(shownSlides.value)),
+    computed(() => roomNeeds(shownSlides.value)),
+    computed(() => needsAppointmentRooms(shownSlides.value.flatMap((s) => s.blocks))),
+    computed(() => allowedServiceIds(appointmentServicesInUse(shownSlides.value.flatMap((s) => s.blocks)), allowedServices.value)),
+    computed(() => needsAppointmentTags(shownSlides.value.flatMap((s) => s.blocks))),
 );
+useTemplatesIn(context, computed(() => editor.templates));
+
+/** The name dialog for "Als Vorlage speichern": the store knows which blocks wait for it, the failure shows in the dialog. */
+const namingBusy = ref(false);
+async function saveTemplate(name: string): Promise<void> {
+    if (!editor.templateNaming) return;
+    namingBusy.value = true;
+    try {
+        if (await editor.saveAsTemplate(editor.templateNaming, name)) editor.templateNaming = null;
+    } finally {
+        namingBusy.value = false;
+    }
+}
+function closeNaming(): void {
+    editor.templateNaming = null;
+    editor.error = null;
+}
 
 /** The playlist is on a screen right now, by that screen's own sign of life (Plan.md 77). */
 const repository = shallowRef<ScreenRepository | null>(null);
@@ -280,13 +305,14 @@ function onResize(): void {
 
 /** The name the sheet's bar and the "…" menu don't have room for otherwise. */
 const sheetLabel = computed(() => {
-    if (editor.block) return t.editor.blockNamed(BLOCK_LABELS[editor.block.type]);
+    if (editor.block) return t.editor.blockNamed(editor.blockName(editor.block));
     if (editor.selection.length > 1) return editor.groupSelected ? t.editor.groupCount(editor.selection.length) : t.editor.blocksCount(editor.selection.length);
     return editor.slide?.name ? t.editor.slideNamed(editor.slide.name) : t.editor.slide;
 });
 
 /** The drawer's head says where you are, whatever is chosen; the name and the block have their own heads below (Plan.md 48). */
 const drawerTitle = computed(() => {
+    if (editor.templateEdit) return t.templates.edit.title;
     const index = editor.slide ? editor.slides.indexOf(editor.slide) : -1;
     return index < 0 ? t.editor.slide : t.editor.slideOf(index + 1, editor.slides.length);
 });
@@ -459,7 +485,8 @@ onMounted(async () => {
         demo.value = handle.demo;
         editor.attach(handle.repository, author.value);
         repository.value = handle.repository;
-        await editor.open(playlistId);
+        if (templatePage) await editor.openTemplate(playlistId);
+        else await editor.open(playlistId);
         void refreshHeartbeats();
         await editor.refreshMedia();
     } catch (e) {
@@ -516,7 +543,28 @@ onBeforeUnmount(() => {
     document.removeEventListener('pointerdown', closeMoreMenuOnOutside);
 });
 
+/** "Abbrechen" of the template mode: with changes it asks first. */
+async function cancelTemplateEdit(): Promise<boolean> {
+    if (editor.templateEditDirty && !(await confirm({ message: t.templates.edit.discard, confirmLabel: t.common.discard, danger: true }))) return false;
+    await editor.cancelTemplateEdit();
+    return true;
+}
+
+/** On the page "Design" the mode is all there is: its end – "Fertig" or "Abbrechen" – leads back to the list. */
+async function leaveTemplatePage(): Promise<void> {
+    if (await cancelTemplateEdit()) await router.push({ name: 'design' });
+}
+async function finishTemplate(): Promise<void> {
+    if (await editor.finishTemplateEdit()) {
+        if (templatePage) await router.push({ name: 'design' });
+    }
+}
+const endTemplateEdit = (): Promise<void> => (templatePage ? leaveTemplatePage() : cancelTemplateEdit().then(() => undefined));
+
 onBeforeRouteLeave(async () => {
+    if (editor.templateEdit && !(await cancelTemplateEdit())) return false;
+    // Nothing of the stand-in playlist is saved: leaving asks nothing but the question about the template above.
+    if (templatePage) return true;
     if (editor.draftsOn) {
         // The draft is saved on the way out; only when that fails the old question comes (Plan.md 79, Paket E).
         if (editor.unsavedDraft) await editor.flushDraft();
@@ -527,6 +575,7 @@ onBeforeRouteLeave(async () => {
 });
 
 function onBeforeUnload(event: BeforeUnloadEvent): void {
+    if (editor.templateEditDirty) event.preventDefault();
     if (editor.draftsOn) {
         if (!editor.unsavedDraft) return;
         void editor.flushDraft();
@@ -635,6 +684,8 @@ function onKey(event: KeyboardEvent): void {
     } else if (event.key === 'Escape' && editor.multiSelect) {
         // The mode ends, the choice stays (D6).
         editor.endMultiSelect();
+    } else if (event.key === 'Escape' && editor.templateEdit && !editor.selection.length) {
+        void endTemplateEdit();
     } else if (event.key === 'Escape') {
         editor.selectBlock(null);
         inspectorOpen.value = false;
@@ -653,7 +704,7 @@ function onKey(event: KeyboardEvent): void {
     <div
         ref="root"
         class="infoscreen-designer editor"
-        :class="{ 'sheet-open': inspectorOpen }"
+        :class="{ 'sheet-open': inspectorOpen, 'template-page': templatePage }"
         :style="{
             '--editor-top': `${top}px`,
             '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}`,
@@ -674,7 +725,7 @@ function onKey(event: KeyboardEvent): void {
             <template #title>
                 <span class="heading">
                     <strong class="title">{{ editor.draft?.playlist.name || t.editor.playlistFallback }}</strong>
-                    <span class="status-line">
+                    <span v-if="!templatePage" class="status-line">
                         <LiveFlag
                             v-if="live.length"
                             class="live"
@@ -747,6 +798,7 @@ function onKey(event: KeyboardEvent): void {
                     <Icon name="redo" />
                 </button>
                 <button
+                    v-if="!templatePage"
                     class="d-btn preview-btn"
                     type="button"
                     :title="t.editor.previewTitle"
@@ -758,7 +810,7 @@ function onKey(event: KeyboardEvent): void {
                 </button>
                 <!-- The player shows screens, not playlists: offer the screens this playlist runs on. -->
                 <RouterLink
-                    v-for="s in editor.screens.slice(0, 1)"
+                    v-for="s in templatePage ? [] : editor.screens.slice(0, 1)"
                     :key="s.id"
                     class="link-btn player-link"
                     :to="{ name: 'player', query: { screen: s.slug } }"
@@ -769,7 +821,7 @@ function onKey(event: KeyboardEvent): void {
                     <Icon name="play" :size="16" /> {{ t.editor.player }}<span v-if="editor.screens.length > 1" class="muted">: {{ s.name }}</span>
                 </RouterLink>
                 <!-- Below 48rem "Vorschau" and "Player" move in here – Rückgängig/Wiederholen and Veröffentlichen stay outside (Plan.md 44, M2); "Entwurf verwerfen" is in it at any width. -->
-                <div ref="moreMenuRoot" class="more-menu">
+                <div v-if="!templatePage" ref="moreMenuRoot" class="more-menu">
                     <button
                         class="d-btn d-btn--icon"
                         type="button"
@@ -820,7 +872,7 @@ function onKey(event: KeyboardEvent): void {
                             role="menuitem"
                             type="button"
                             data-testid="more-discard-draft"
-                            :disabled="!editor.dirty && editor.draftRevision === 0"
+                            :disabled="(!editor.dirty && editor.draftRevision === 0) || !!editor.templateEdit"
                             @click="discardDraft"
                         >
                             <Icon name="trash" :size="16" /> {{ t.editor.discardDraft }}
@@ -828,11 +880,12 @@ function onKey(event: KeyboardEvent): void {
                     </div>
                 </div>
                 <button
+                    v-if="!templatePage"
                     class="d-btn d-btn--primary"
                     type="button"
                     data-testid="save"
                     :title="saveTitle"
-                    :disabled="!editor.dirty || editor.status === 'publishing'"
+                    :disabled="!editor.dirty || editor.status === 'publishing' || !!editor.templateEdit"
                     @click="publishWithCheck"
                 >
                     {{ t.editor.publish }}
@@ -844,10 +897,10 @@ function onKey(event: KeyboardEvent): void {
         <p v-if="demo" class="d-banner d-banner--warning banner" data-testid="demo-notice-editor">
             {{ t.editor.demoNotice }}
         </p>
-        <p v-if="!editor.draftsOn && !demo && editor.draft" class="d-banner d-banner--warning banner" data-testid="drafts-off">
+        <p v-if="!templatePage && !editor.draftsOn && !demo && editor.draft" class="d-banner d-banner--warning banner" data-testid="drafts-off">
             {{ t.editor.draftsOff }}
         </p>
-        <p v-if="editor.error" class="d-banner d-banner--error banner" role="alert">{{ editor.error }}</p>
+        <p v-if="editor.error && !editor.templateNaming" class="d-banner d-banner--error banner" role="alert">{{ editor.error }}</p>
         <p v-if="editor.draftError" class="d-banner d-banner--error banner" role="alert">{{ editor.draftError }}</p>
         <p v-if="problem" class="d-banner d-banner--error banner" role="alert">{{ t.editor.previewData(problem) }}</p>
 
@@ -858,7 +911,8 @@ function onKey(event: KeyboardEvent): void {
             :class="{ 'slides-folded': desktop && !desktopSlidesOpen, 'inspector-folded': !inspectorColumnOpen }"
         >
             <!-- Between 48rem and 75rem the slides are a drawer over the stage; over 75rem a column. A 53 px rail each stands in for a shut one (Plan.md 45). -->
-            <div class="tablet-rail tablet-rail--slides">
+            <div v-if="templatePage" class="slides-gap" />
+            <div v-if="!templatePage" class="tablet-rail tablet-rail--slides">
                 <div class="rail-head">
                     <button
                         type="button"
@@ -874,8 +928,26 @@ function onKey(event: KeyboardEvent): void {
                     </button>
                 </div>
             </div>
-            <SlideList v-if="!phone" :class="{ 'drawer-open': slidesDrawerOpen }" @click="closeSlidesDrawerOnPick" @collapse="collapseSlides" />
+            <SlideList v-if="!phone && !templatePage" :inert="editor.templateEdit ? true : undefined" :class="{ 'drawer-open': slidesDrawerOpen, 'slides-off': !!editor.templateEdit }" @click="closeSlidesDrawerOnPick" @collapse="collapseSlides" />
             <div class="stage-column">
+                <!-- Editing a template (Plan.md 87): what the bar says, and how to leave. -->
+                <div v-if="editor.templateEdit" class="template-bar" role="group" :aria-label="t.templates.edit.start" data-testid="template-edit-bar">
+                    <span class="template-bar-text" data-testid="template-edit-title">
+                        {{ t.templates.edit.bar(editor.templateEdit.name) }}<template v-if="editor.templateEdit.usedOn !== null"> – {{ t.templates.edit.onSlides(editor.templateEdit.usedOn) }}</template>
+                    </span>
+                    <span v-if="editor.templateEdit.error" class="template-bar-note template-bar-note--error" role="alert" data-testid="template-edit-error">{{ editor.templateEdit.error }}</span>
+                    <span v-else-if="!editor.slide?.blocks.length" class="template-bar-note" data-testid="template-edit-hint">{{ t.templates.edit.needsBlock }}</span>
+                    <button class="d-btn" type="button" data-testid="template-edit-cancel" @click="endTemplateEdit">{{ t.templates.edit.cancel }}</button>
+                    <button
+                        class="d-btn d-btn--primary"
+                        type="button"
+                        :disabled="!editor.slide?.blocks.length || editor.templateEdit.saving"
+                        data-testid="template-edit-done"
+                        @click="finishTemplate"
+                    >
+                        {{ t.templates.edit.done }}
+                    </button>
+                </div>
                 <BlockPalette />
                 <EditorStage @all-settings="showAllSettings" @open-content="openContent" @open-more="openMore" />
             </div>
@@ -936,7 +1008,7 @@ function onKey(event: KeyboardEvent): void {
             @all-settings="showAllSettings"
         />
         <div
-            v-if="phone && slidesSheetOpen"
+            v-if="phone && slidesSheetOpen && !templatePage"
             class="d-dialog-backdrop slides-sheet-backdrop"
             role="dialog"
             aria-modal="true"
@@ -960,7 +1032,7 @@ function onKey(event: KeyboardEvent): void {
 
         <PlaylistPreview
             v-if="previewing && editor.draft"
-            :slides="editor.slides"
+            :slides="shownSlides"
             :stage="editor.stage"
             :banner="editor.draft.playlist.banner"
             :progress="editor.draft.playlist.progress"
@@ -969,6 +1041,15 @@ function onKey(event: KeyboardEvent): void {
         />
 
         <ShortcutsDialog v-if="shortcutsOpen" @close="shortcutsOpen = false" />
+
+        <TemplateNameDialog
+            v-if="editor.templateNaming"
+            :title="t.templates.saveTitle"
+            :error="editor.error"
+            :busy="namingBusy"
+            @close="closeNaming"
+            @save="saveTemplate"
+        />
 
         <MediaLibraryDialog
             v-if="libraryFor && editor.draft"
@@ -1189,6 +1270,42 @@ function onKey(event: KeyboardEvent): void {
 }
 .stage-column > :last-child {
     flex: 1;
+}
+/* The bar over the stage while a template is edited (Plan.md 87). */
+.template-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--d-space-2);
+    margin: 0 var(--d-space-2) var(--d-space-2);
+    padding: var(--d-space-2) var(--d-space-3);
+    border: 1px solid var(--d-accent);
+    border-radius: var(--d-radius);
+    background: var(--d-accent-pale);
+}
+.template-bar-text {
+    flex: 1;
+    min-width: 0;
+    font-weight: var(--d-weight-button);
+}
+.template-bar-note {
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+.template-bar-note--error {
+    color: var(--d-danger);
+}
+.template-page .columns {
+    --slides-w: 0px;
+}
+/* Below 48rem there is one column: the gap would take a row of its own. */
+@media (max-width: 48rem) {
+    .slides-gap {
+        display: none;
+    }
+}
+.slides-off {
+    opacity: 0.5;
 }
 .columns {
     /* The widths of the two side columns; a collapsed one is a 53 px rail (Plan.md 45). */

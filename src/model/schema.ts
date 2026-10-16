@@ -709,6 +709,11 @@ export const TemplateDoc = v.object({
     stage: Stage,
     width: PositivePx,
     height: PositivePx,
+    /** Where the frame lay on the slide it was made from: a new placement starts there (a page head stays on top). */
+    x: v.optional(Px),
+    y: v.optional(Px),
+    /** Fest an ihrer Stelle: auf jeder Folie gesperrt; ändern heißt lösen. */
+    locked: v.optional(v.boolean()),
     blocks: v.array(ContentBlock),
     revision: v.pipe(v.number(), v.integer(), v.minValue(1)),
     updatedBy: v.string(),

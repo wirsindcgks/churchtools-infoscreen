@@ -589,6 +589,28 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await expect(notice).toBeHidden();
     await expect(page.getByTestId('notice-card').first()).toBeVisible();
     await shoot(page, 'hinweise');
+
+    // A page head as a template (Plan.md 87): a new slide with a headline and a clock, saved as a template and opened for editing.
+    await page.goto('playlists');
+    await page.getByTestId('playlist-card').filter({ hasText: 'Quer' }).first().getByTestId('open-playlist').click();
+    await page.getByTestId('add-slide').click();
+    await addBlock(page, 'text');
+    await inspector.getByTestId('text-input').fill('Gemeinde am Markt');
+    await frame(page, { x: 80, y: 40, width: 1240, height: 140 });
+    await page.keyboard.press('Escape');
+    await addBlock(page, 'clock');
+    await frame(page, { x: 1420, y: 40, width: 420, height: 140 });
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('ControlOrMeta+a');
+    await page.getByTestId('quick-more').click();
+    await page.getByTestId('quick-save-template').click();
+    await page.getByTestId('template-name').fill('Seitenkopf');
+    await page.getByTestId('template-name-save').click();
+    await expect(page.getByTestId('frame-template')).toHaveCount(1);
+    await page.getByTestId('quick-more').click();
+    await page.getByTestId('quick-template-edit').click();
+    await expect(page.getByTestId('template-edit-bar')).toBeVisible();
+    await shoot(page, 'vorlage');
 });
 
 test.describe('on a phone', () => {

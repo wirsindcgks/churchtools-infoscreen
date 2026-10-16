@@ -18,10 +18,11 @@ import InspectorSection from './InspectorSection.vue';
 import { BLOCK_INSPECTORS } from './inspector/blocks';
 import { provideInspectorContext } from './inspector/context';
 import NumberField from './inspector/fields/NumberField.vue';
+import ToggleField from './inspector/fields/ToggleField.vue';
 import SlideInspector from './inspector/SlideInspector.vue';
 import LayerList from './LayerList.vue';
 import { layerRows } from './layers';
-import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
+import { BLOCK_ICONS } from './ops';
 import { KEYS, withKeys } from './shortcuts';
 import { vTip } from './tip';
 
@@ -39,6 +40,8 @@ const selection = computed(() => editor.selection);
 const ids = computed(() => editor.selectedBlockIds);
 const allLocked = computed(() => selection.value.length > 0 && selection.value.every((b) => b.locked));
 const many = computed(() => selection.value.length > 1);
+/** The chosen block belongs to a template fixed in place: its lock cannot be taken off. */
+const fixed = computed(() => !!block.value && editor.templateLocked(block.value));
 
 const FRAME_FIELDS = [
     { key: 'x', min: undefined },
@@ -49,8 +52,14 @@ const FRAME_FIELDS = [
 
 /** Folded sections say what is set inside (Plan.md 47). */
 const positionSummary = computed(() =>
-    block.value ? `${block.value.x}, ${block.value.y} · ${block.value.width} × ${block.value.height}` : '',
+    !block.value
+        ? ''
+        : block.value.type === 'template'
+          ? `${block.value.x}, ${block.value.y}`
+          : `${block.value.x}, ${block.value.y} · ${block.value.width} × ${block.value.height}`,
 );
+/** A template block takes the size of its template: only its place can be set. */
+const frameFields = computed(() => (block.value?.type === 'template' ? FRAME_FIELDS.slice(0, 2) : FRAME_FIELDS));
 
 const frameLookSummary = computed(() => (block.value ? `${block.value.rotation ?? 0}° · ${block.value.opacity ?? 100} %` : ''));
 
@@ -72,7 +81,7 @@ const LAYERS = [
                 <h3>
                     <template v-if="block">
                         <Icon :name="BLOCK_ICONS[block.type]" :size="18" />
-                        {{ BLOCK_LABELS[block.type] }}
+                        {{ editor.blockHead(block) }}
                     </template>
                     <template v-else>
                         <Icon name="grid" :size="18" />
@@ -82,11 +91,12 @@ const LAYERS = [
                 <div class="head-actions">
                     <!-- Plan.md, 25: locked, the whole block stays as it is until unlocked. -->
                     <button
-                        v-tip="many ? (allLocked ? t.inspector.unlockBlocksTitle : t.inspector.lockBlocksTitle) : allLocked ? t.inspector.lockedTitle : t.inspector.lockTitle"
+                        v-tip="fixed ? t.templates.fixedTitle : many ? (allLocked ? t.inspector.unlockBlocksTitle : t.inspector.lockBlocksTitle) : allLocked ? t.inspector.lockedTitle : t.inspector.lockTitle"
                         class="d-btn d-btn--icon"
                         :class="{ 'lock-toggle--on': allLocked }"
                         type="button"
                         :aria-pressed="allLocked"
+                        :disabled="fixed"
                         :aria-label="allLocked ? t.common.locked : t.common.lock"
                         data-testid="lock-toggle"
                         @click="editor.setLocked(ids, !allLocked)"
@@ -148,14 +158,16 @@ const LAYERS = [
                     </button>
                 </div>
             </div>
-            <p v-if="block?.locked" class="hint" data-testid="locked-hint">
+            <p v-if="block?.locked && !fixed" class="hint" data-testid="locked-hint">
                 {{ t.inspector.lockedHint }}
             </p>
             <!-- A disabled fieldset disables every field and button inside it at once; a summary is none, so sections still fold. -->
+            <!-- A template block takes edit and dissolve whatever its lock says: it fixes only the place, so its content stands outside the fieldset. -->
+            <component :is="BLOCK_INSPECTORS[block.type]" v-if="block?.type === 'template'" :block="block" />
             <fieldset class="lockable" :disabled="!!block?.locked">
-                <component :is="BLOCK_INSPECTORS[block.type]" v-if="block" :block="block" />
+                <component :is="BLOCK_INSPECTORS[block.type]" v-if="block && block.type !== 'template'" :block="block" />
 
-                <InspectorSection v-if="block" id="frame-look" :title="t.inspector.frameLook" :summary="frameLookSummary">
+                <InspectorSection v-if="block && block.type !== 'template'" id="frame-look" :title="t.inspector.frameLook" :summary="frameLookSummary">
                     <NumberField
                         :model-value="block.rotation ?? 0"
                         unit="°"
@@ -198,7 +210,7 @@ const LAYERS = [
                 <InspectorSection v-if="block" id="measures" :title="t.inspector.measures" :summary="positionSummary">
                     <div class="measures">
                         <NumberField
-                            v-for="field in FRAME_FIELDS"
+                            v-for="field in frameFields"
                             :key="field.key"
                             stacked
                             unit="px"
@@ -211,6 +223,45 @@ const LAYERS = [
                     </div>
                 </InspectorSection>
             </fieldset>
+        </section>
+
+        <section v-else-if="editor.templateEdit" data-testid="template-inspector">
+            <!-- Editing a template and nothing chosen: its name, the size of its frame and its blocks instead of the slide's fields. -->
+            <div class="block-head">
+                <h3>
+                    <Icon :name="BLOCK_ICONS.template" :size="18" />
+                    {{ t.templates.head(editor.templateEdit.name) }}
+                </h3>
+            </div>
+            <ToggleField :model-value="!!editor.templateEdit.bundle.locked" :label="t.templates.fixed" testid="template-fixed" @update:model-value="editor.setTemplateFixed($event)">
+                <template #info>{{ t.templates.fixedInfo }}</template>
+            </ToggleField>
+            <InspectorSection id="template-measures" :title="t.inspector.measures" :summary="`${editor.templateEdit.bundle.frame.width} × ${editor.templateEdit.bundle.frame.height}`">
+                <div class="measures">
+                    <NumberField
+                        stacked
+                        unit="px"
+                        :model-value="editor.templateEdit.bundle.frame.width"
+                        :min="1"
+                        :label="t.inspector.frameFields.width"
+                        testid="template-frame-width"
+                        @update:model-value="editor.resizeTemplateFrame($event, editor.templateEdit!.bundle.frame.height)"
+                    />
+                    <NumberField
+                        stacked
+                        unit="px"
+                        :model-value="editor.templateEdit.bundle.frame.height"
+                        :min="1"
+                        :label="t.inspector.frameFields.height"
+                        testid="template-frame-height"
+                        @update:model-value="editor.resizeTemplateFrame(editor.templateEdit!.bundle.frame.width, $event)"
+                    />
+                </div>
+            </InspectorSection>
+            <InspectorSection v-if="rows.length" id="slide-blocks" :title="t.templates.edit.blocksTitle" default-open class="slide-blocks" data-testid="slide-blocks">
+                <p class="layer-position">{{ t.inspector.topIsFront }}</p>
+                <LayerList @picked="emit('picked')" />
+            </InspectorSection>
         </section>
 
         <template v-else>

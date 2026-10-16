@@ -26,6 +26,8 @@ export const router = createRouter({
         { path: '/player', name: 'player', component: PlayerView },
         { path: '/mediathek', name: 'media', component: MediaView },
         { path: '/design', name: 'design', component: DesignView },
+        // One template, opened from the page "Design": the editor in the mode "Vorlage bearbeiten" (Plan.md 87).
+        { path: '/design/vorlagen/:id', name: 'template-editor', component: PlaylistEditor },
         { path: '/ueber', name: 'about', component: AboutView },
         // An overview of cards (Plan.md 36); each card leads to a page of its own.
         { path: '/einstellungen', name: 'setup', component: SetupView },

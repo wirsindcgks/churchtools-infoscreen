@@ -16,16 +16,18 @@ import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import { t } from '../i18n/designer';
 import { useConfirm } from '../designer/useConfirm';
-import { usePreview } from '../designer/usePreview';
+import { usePreview, useTemplatesIn } from '../designer/usePreview';
+import SlideThumb from '../designer/SlideThumb.vue';
+import TemplateNameDialog from '../designer/TemplateNameDialog.vue';
 import { createBlock, createSlide } from '../designer/ops';
 import PaletteScope from '../designer/PaletteScope.vue';
-import { DEFAULT_THEME, type Block, type SlideDoc, type ThemeDoc } from '../model/schema';
+import { DEFAULT_THEME, type Block, type MediaDoc, type SlideDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
 import FontField from '../designer/inspector/fields/FontField.vue';
 import { fitStage } from '../player/stage';
 import { getRepository } from '../store/backend';
-import { ConflictError, type ScreenRepository } from '../store/screen-repository';
+import { ConflictError, TemplateInUseError, type ScreenRepository, type TemplateUse } from '../store/screen-repository';
 
 type Look = Pick<ThemeDoc, 'corners' | 'accent' | 'text' | 'background' | 'font' | 'appointments' | 'imageRatio' | 'cards' | 'cardColor' | 'cardOpacity'> & Required<Pick<ThemeDoc, 'palette'>>;
 
@@ -65,7 +67,7 @@ function movePaletteColor(index: number, by: -1 | 1): void {
 const dirty = computed(() => JSON.stringify(look.value) !== JSON.stringify(saved.value));
 
 /** Unsaved changes ask before they go – like the editor and the settings (2026-10-15). */
-const { confirm } = useConfirm();
+const { confirm, notice } = useConfirm();
 onBeforeRouteLeave(async () => !dirty.value || (await confirm({ message: t.editor.discardChanges, confirmLabel: t.common.discard, danger: true })));
 function onBeforeUnload(event: BeforeUnloadEvent): void {
     if (dirty.value) event.preventDefault();
@@ -76,7 +78,77 @@ const theme = computed<ThemeDoc>(() => ({ ...DEFAULT_THEME, ...look.value }));
 
 // The preview: real appointments of the first calendars, shown as the TV would show them.
 const calendarIds = ref<number[]>([]);
-const { calendars } = usePreview(calendarIds, ref([]), theme);
+const media = ref<MediaDoc[]>([]);
+const { context, calendars } = usePreview(calendarIds, media, theme);
+
+// The templates (schema 1.41, Plan.md 87): the thumbnails draw them with the player's components, so they need the media and templates, too.
+const templates = ref<TemplateDoc[]>([]);
+useTemplatesIn(context, templates);
+const uses = ref(new Map<string, TemplateUse[]>());
+const templateMessage = ref<string | null>(null);
+const renaming = ref<TemplateDoc | null>(null);
+const renameError = ref<string | null>(null);
+const renameBusy = ref(false);
+
+/** Per template: a slide of its blocks on the background of the design, in the format of its frame. */
+const thumbSlides = computed(
+    () => new Map(templates.value.map((tpl) => [tpl.id, { ...createSlide(tpl.name, theme.value), id: tpl.id, blocks: tpl.blocks }])),
+);
+const slidesCount = (template: TemplateDoc): number =>
+    new Set((uses.value.get(template.id) ?? []).flatMap((u) => u.slideIds)).size;
+
+async function loadTemplates(): Promise<void> {
+    if (!repository.value) return;
+    const repo = repository.value;
+    // A failure here leaves the section empty; the design itself must not stay closed for it.
+    const [list, used, library] = await Promise.all([
+        repo.listTemplates().catch(() => []),
+        repo.templateUses().catch(() => new Map<string, TemplateUse[]>()),
+        repo.listMedia().catch(() => []),
+    ]);
+    templates.value = list;
+    uses.value = used;
+    media.value = library;
+}
+
+async function rename(name: string): Promise<void> {
+    const template = renaming.value;
+    if (!template || !repository.value || !author.value) return;
+    renameBusy.value = true;
+    renameError.value = null;
+    try {
+        const { id, stage, width, height, x, y, locked, blocks } = template;
+        await repository.value.saveTemplate(
+            { id, name, stage, width, height, x, y, locked, blocks },
+            { expectedRevision: template.revision, updatedBy: author.value },
+        );
+        renaming.value = null;
+        await loadTemplates();
+    } catch (e) {
+        if (e instanceof ConflictError) {
+            renaming.value = null;
+            templateMessage.value = t.templates.design.conflict(e.current.updatedBy);
+            await loadTemplates();
+        } else {
+            renameError.value = e instanceof Error ? e.message : String(e);
+        }
+    } finally {
+        renameBusy.value = false;
+    }
+}
+
+async function removeTemplate(template: TemplateDoc): Promise<void> {
+    if (!repository.value) return;
+    if (!(await confirm({ message: t.templates.design.removeQuestion(template.name), confirmLabel: t.common.delete, danger: true }))) return;
+    templateMessage.value = null;
+    try {
+        await repository.value.deleteTemplate(template.id);
+    } catch (e) {
+        if (e instanceof TemplateInUseError) await notice(e.message);
+        else templateMessage.value = e instanceof Error ? e.message : String(e);
+    }
+    await loadTemplates();
+}
 
 const STAGE = { width: 1920, height: 1080 };
 /** Blocks without a layout of their own: they follow the theme, as every such block on the screens does. */
@@ -156,6 +228,7 @@ onMounted(async () => {
         const [person, handle] = await Promise.all([currentPerson(), getRepository()]);
         repository.value = handle.repository;
         await load();
+        await loadTemplates();
         author.value = displayName(person);
     } catch (e) {
         error.value = e instanceof Error ? e.message : String(e);
@@ -353,6 +426,31 @@ function observe(el: unknown): void {
                     </label>
                     <p class="hint">{{ t.design.images.hint }}</p>
                 </section>
+
+                <section class="box" aria-labelledby="box-templates" data-testid="design-templates">
+                    <h2 id="box-templates">{{ t.templates.design.title }}</h2>
+                    <p v-if="templateMessage" class="d-banner d-banner--error" role="alert">{{ templateMessage }}</p>
+                    <p v-if="!templates.length" class="hint" data-testid="templates-empty">{{ t.templates.design.empty }}</p>
+                    <ul v-else class="templates">
+                        <li v-for="template in templates" :key="template.id" class="template-row" data-testid="template-row" :data-template-id="template.id">
+                            <RouterLink class="template-thumb" :to="{ name: 'template-editor', params: { id: template.id } }" :title="t.templates.design.openTitle(template.name)" tabindex="-1" aria-hidden="true">
+                                <SlideThumb :slide="thumbSlides.get(template.id) ?? null" :stage="{ width: template.width, height: template.height }" :aspect="template.width / template.height" />
+                            </RouterLink>
+                            <div class="template-text">
+                                <strong data-testid="template-row-name">{{ template.name }}</strong>
+                                <small>
+                                    {{ template.stage.height > template.stage.width ? t.templates.design.portrait : t.templates.design.landscape }}
+                                    · <span data-testid="template-row-uses">{{ t.templates.design.usedOn(slidesCount(template)) }}</span>
+                                </small>
+                            </div>
+                            <div class="template-actions">
+                                <RouterLink class="d-btn" :to="{ name: 'template-editor', params: { id: template.id } }" data-testid="template-open">{{ t.templates.design.open }}</RouterLink>
+                                <button class="d-btn" type="button" data-testid="template-rename" @click="renaming = template; renameError = null">{{ t.templates.design.rename }}</button>
+                                <button class="d-btn d-btn--danger" type="button" data-testid="template-delete" @click="removeTemplate(template)">{{ t.templates.design.remove }}</button>
+                            </div>
+                        </li>
+                    </ul>
+                </section>
             </div>
 
             <section class="d-card preview" aria-labelledby="box-preview">
@@ -365,6 +463,15 @@ function observe(el: unknown): void {
                 <p class="hint">{{ t.design.preview.hint }}</p>
             </section>
         </div>
+        <TemplateNameDialog
+            v-if="renaming"
+            :title="t.templates.renameTitle"
+            :name="renaming.name"
+            :error="renameError"
+            :busy="renameBusy"
+            @close="renaming = null"
+            @save="rename"
+        />
     </ModulePage>
 </template>
 
@@ -407,6 +514,43 @@ function observe(el: unknown): void {
 h2 {
     margin: 0;
     font-size: 1.05em;
+}
+.templates {
+    display: grid;
+    gap: 12px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+/* With the buttons below, a rule keeps one template from running into the next. */
+.template-row + .template-row {
+    padding-top: 12px;
+    border-top: 1px solid var(--d-divider);
+}
+/* The name keeps the width beside the picture; the buttons get a line of their own below – the box is narrow, on a phone even more. */
+.template-row {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 8px 12px;
+    align-items: center;
+}
+.template-thumb {
+    display: block;
+    overflow: hidden;
+    border-radius: var(--d-radius);
+}
+.template-text {
+    display: grid;
+    min-width: 0;
+}
+.template-text small {
+    color: var(--d-text-muted);
+}
+.template-actions {
+    display: flex;
+    flex-wrap: wrap;
+    grid-column: 1 / -1;
+    gap: 6px;
 }
 .corner-sample {
     width: 22px;

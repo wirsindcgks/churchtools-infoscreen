@@ -232,6 +232,20 @@ export class DraftStore {
         return result;
     }
 
+    /** All slide drafts with the playlist they belong to. Empty without the category or the right to see it. */
+    async listSlides(): Promise<{ playlistId: string; slide: SlideDoc }[]> {
+        try {
+            const categoryId = await this.categoryId();
+            if (categoryId === null) return [];
+            return (await this.readEntries(categoryId)).entries.flatMap(({ doc, slide }) =>
+                doc.kind === 'slide-draft' && slide ? [{ playlistId: doc.playlistId, slide }] : [],
+            );
+        } catch (error) {
+            if (!missingRight(error)) throw error;
+            return [];
+        }
+    }
+
     private async guarded<T>(run: () => Promise<T>): Promise<T> {
         try {
             return await run();

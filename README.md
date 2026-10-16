@@ -26,7 +26,8 @@ ChurchTools und erscheinen von selbst auf dem Bildschirm. Ein Fernseher mit Kios
 - **Mehrere Bildschirme:** quer oder hochkant, jeder unter einer festen Adresse. Die Startseite zeigt, was jeder
   Bildschirm gerade zeigt und ob er online ist.
 - **Einheitliches Aussehen:** Farben, Schriften und Darstellung der Termine legt ihr einmal für alle Bildschirme fest.
-  Bilder lädt ihr einmal in die Mediathek und nutzt sie überall.
+  Bilder lädt ihr einmal in die Mediathek und nutzt sie überall. Einen Seitenkopf baut ihr einmal als Vorlage – ändert
+  ihr ihn, ändern sich alle Folien mit.
 
 Mehr Bilder zeigt [**Der Designer in Bildern**](docs/Funktionen.md).
 

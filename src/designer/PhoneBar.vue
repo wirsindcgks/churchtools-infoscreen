@@ -96,7 +96,10 @@ async function removeSlide(): Promise<void> {
             <button class="d-btn d-btn--create" type="button" data-testid="multi-select-done" @click="editor.endMultiSelect()">{{ t.quick.done }}</button>
         </div>
         <div v-else class="slide-row" data-testid="phone-slide-row">
+            <!-- A template's own page has one helper slide: nothing to count or to choose, the name stands there instead. -->
+            <span v-if="editor.templatePage" class="slides-btn slides-label" data-testid="phone-template-name">{{ editor.templateEdit?.name }}</span>
             <button
+                v-else
                 class="slides-btn"
                 type="button"
                 :disabled="!editor.slide"

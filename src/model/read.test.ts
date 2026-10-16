@@ -650,6 +650,13 @@ describe('templates (schema 1.41, Plan.md 87)', () => {
         expect(readPlaylistOrSchedule(template).doc).toEqual(template);
     });
 
+    it('keeps where it was made, and reads one without', () => {
+        const placed = makeTemplate({ x: 0, y: 40, locked: true });
+        expect(readTemplate(JSON.parse(serialize(placed))).doc).toMatchObject({ x: 0, y: 40, locked: true });
+        expect(readTemplate(JSON.parse(serialize(makeTemplate()))).doc.x).toBeUndefined();
+        expect(readTemplate(JSON.parse(serialize(makeTemplate()))).doc.locked).toBeUndefined();
+    });
+
     it('skips an unknown, a broken and a nested template block and says so', () => {
         const { doc, issues } = readTemplate(raw([textBlock('ok'), { id: 'x', type: 'hologram' }, templateBlock('nested'), { id: 'b', type: 'text' }]));
         expect(doc.blocks.map((b) => b.id)).toEqual(['ok']);

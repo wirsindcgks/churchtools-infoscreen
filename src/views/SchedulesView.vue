@@ -21,9 +21,10 @@ import { fromMinutes, playlistColors, ruleSummary, weekTimeline, WEEKDAYS } from
 import SearchField from '../designer/SearchField.vue';
 import SlideThumb from '../designer/SlideThumb.vue';
 import Tile from '../designer/Tile.vue';
-import { usePreview } from '../designer/usePreview';
+import { usePreview, useTemplatesIn } from '../designer/usePreview';
+import { expandTemplates } from '../model/templates';
 import WeekTimeline, { type TimelineDay } from '../designer/WeekTimeline.vue';
-import { blockCalendarIds, type ScreenDoc, type ThemeDoc } from '../model/schema';
+import { blockCalendarIds, type ScreenDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
@@ -36,6 +37,12 @@ const author = ref<string | null>(null);
 const screens = ref<ScreenDoc[]>([]);
 const playlists = ref(new Map<string, PlaylistOverview>());
 const theme = ref<ThemeDoc | null>(null);
+const templates = ref<TemplateDoc[]>([]);
+const templateMap = computed(() => new Map(templates.value.map((t) => [t.id, t])));
+/** The first slides as the previews draw them: templates expanded, so their blocks count for the data to fetch. */
+const firstSlides = computed(() =>
+    [...playlists.value.values()].flatMap((o) => (o.firstSlide ? [expandTemplates(o.firstSlide, templateMap.value)] : [])),
+);
 const error = ref<string | null>(null);
 const editing = ref<string | null>(null);
 const query = ref('');
@@ -49,15 +56,16 @@ const { context, calendars, hiddenCalendars } = usePreview(
     computed(() => [
         ...new Set([
             ...ruleCalendarIds(screens.value),
-            ...[...playlists.value.values()].flatMap((o) => (o.firstSlide?.blocks ?? []).flatMap(blockCalendarIds)),
+            ...firstSlides.value.flatMap((slide) => slide.blocks.flatMap(blockCalendarIds)),
         ]),
     ]),
     computed(() => [...playlists.value.values()].flatMap((o) => o.media)),
     theme,
-    computed(() => postNeeds([...playlists.value.values()].flatMap((o) => (o.firstSlide ? [o.firstSlide] : [])))),
-    computed(() => groupNeeds([...playlists.value.values()].flatMap((o) => (o.firstSlide ? [o.firstSlide] : [])))),
-    computed(() => roomNeeds([...playlists.value.values()].flatMap((o) => (o.firstSlide ? [o.firstSlide] : [])))),
+    computed(() => postNeeds(firstSlides.value)),
+    computed(() => groupNeeds(firstSlides.value)),
+    computed(() => roomNeeds(firstSlides.value)),
 );
+useTemplatesIn(context, templates);
 
 const shown = computed(() => {
     const needle = query.value.trim().toLocaleLowerCase(LOCALE);
@@ -168,15 +176,17 @@ function isLinked(screen: ScreenDoc, key: string): boolean {
 
 async function refresh(): Promise<void> {
     if (!repository.value) return;
-    const [list, overviews, stored] = await Promise.all([
+    const [list, overviews, stored, storedTemplates] = await Promise.all([
         repository.value.listScreens(),
         repository.value.listPlaylists(),
         repository.value.loadTheme().catch(() => null),
+        repository.value.listTemplates().catch(() => []),
     ]);
     screens.value = list;
     setScreenCounts(list);
     playlists.value = new Map(overviews.map((o) => [o.playlist.id, o]));
     theme.value = stored;
+    templates.value = storedTemplates;
     // A saved schedule may have fewer lines than the one clicked before.
     chosen.clear();
 }

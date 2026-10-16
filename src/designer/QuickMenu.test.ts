@@ -4,13 +4,15 @@ import { describe, expect, it } from 'vitest';
 import { defineComponent, h, provide, ref } from 'vue';
 import { provideStageContext } from '../player/context';
 import { INSPECTOR_CONTEXT } from './inspector/context';
+import { makeTemplate, templateBlock } from '../model/testing';
+import { useEditorStore } from './editor-store';
 import { createBlock } from './ops';
 import QuickMenu from './QuickMenu.vue';
 
-function mountMenu(variant?: 'bar', locked = false, count = 1) {
+function mountMenu(variant?: 'bar', locked = false, count = 1, template = false) {
     const pinia = createPinia();
     setActivePinia(pinia);
-    const block = { ...createBlock('clock', { width: 1920, height: 1080 }, [1]), locked };
+    const block = template ? { ...templateBlock('k'), locked } : { ...createBlock('clock', { width: 1920, height: 1080 }, [1]), locked };
     const blocks = Array.from({ length: count }, (_, i) => ({ ...block, id: `${block.id}-${i}` }));
     const frame = ref({ left: 400, top: 300, width: 200, height: 100 });
     const Host = defineComponent({
@@ -81,6 +83,7 @@ describe('QuickMenu (Plan.md 79, C1)', () => {
         await wrapper.find('[data-testid="quick-more"]').trigger('click');
         expect(wrapper.find('[data-testid="quick-lock"]').text()).toBe('Entsperren');
         expect(wrapper.find('[data-testid="quick-layer-front"]').exists()).toBe(false);
+        expect(wrapper.find('[data-testid="quick-save-template"]').exists()).toBe(true);
         wrapper.unmount();
     });
 
@@ -102,7 +105,7 @@ describe('QuickMenu (Plan.md 79, C1)', () => {
         for (const id of ['quick-lock', 'quick-duplicate', 'quick-delete']) expect(wrapper.find(`[data-testid="${id}"]`).exists()).toBe(true);
         await wrapper.find('[data-testid="quick-more"]').trigger('click');
         const items = wrapper.findAll('[data-testid="quick-more-list"] [role="menuitem"]').map((b) => b.attributes('data-testid'));
-        expect(items).toEqual(['quick-copy', 'quick-cut', 'quick-deselect']);
+        expect(items).toEqual(['quick-copy', 'quick-cut', 'quick-save-template', 'quick-deselect']);
         wrapper.unmount();
     });
 
@@ -113,7 +116,32 @@ describe('QuickMenu (Plan.md 79, C1)', () => {
         expect(wrapper.find('[data-testid="quick-duplicate"]').exists()).toBe(false);
         await wrapper.find('[data-testid="quick-more"]').trigger('click');
         const items = wrapper.findAll('[data-testid="quick-more-list"] [role="menuitem"]').map((b) => b.attributes('data-testid'));
-        expect(items).toEqual(['quick-lock', 'quick-duplicate', 'quick-copy', 'quick-cut', 'quick-multi-select', 'quick-all-settings', 'quick-delete']);
+        expect(items).toEqual(['quick-lock', 'quick-duplicate', 'quick-copy', 'quick-cut', 'quick-save-template', 'quick-multi-select', 'quick-all-settings', 'quick-delete']);
+        wrapper.unmount();
+    });
+
+    it('keeps the lock of a block of a fixed template, but offers editing and dissolving', async () => {
+        const { wrapper } = mountMenu(undefined, true, 1, true);
+        useEditorStore().templates = [makeTemplate({ locked: true })];
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find('[data-testid="quick-lock"]').attributes('disabled')).toBeDefined();
+        await wrapper.find('[data-testid="quick-more"]').trigger('click');
+        expect(wrapper.find('[data-testid="quick-template-edit"]').exists()).toBe(true);
+        expect(wrapper.find('[data-testid="quick-template-unlink"]').exists()).toBe(true);
+        wrapper.unmount();
+    });
+
+    it('offers "Als Vorlage speichern" for ordinary blocks and "Lösen" for a template block, never both (schema 1.41)', async () => {
+        const ordinary = mountMenu();
+        await ordinary.wrapper.find('[data-testid="quick-more"]').trigger('click');
+        expect(ordinary.wrapper.find('[data-testid="quick-save-template"]').exists()).toBe(true);
+        expect(ordinary.wrapper.find('[data-testid="quick-template-unlink"]').exists()).toBe(false);
+        ordinary.wrapper.unmount();
+
+        const { wrapper } = mountMenu(undefined, false, 1, true);
+        await wrapper.find('[data-testid="quick-more"]').trigger('click');
+        expect(wrapper.find('[data-testid="quick-save-template"]').exists()).toBe(false);
+        expect(wrapper.find('[data-testid="quick-template-unlink"]').exists()).toBe(true);
         wrapper.unmount();
     });
 });

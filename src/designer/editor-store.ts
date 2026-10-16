@@ -7,7 +7,7 @@
  */
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef, watch } from 'vue';
-import { blockCalendarIds, DEFAULT_THEME, type Block, type ContentBlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type ThemeDoc } from '../model/schema';
+import { blockCalendarIds, DEFAULT_THEME, SCHEMA_VERSION, sameStage, type Block, type ContentBlock, type ContentBlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
 import {
     ConflictError,
     copySlide,
@@ -25,8 +25,10 @@ import { align, alignTarget, distribute, distributeBlocker, unitsOf, type Axis, 
 import { History } from './history';
 import { layerUnits } from './layers';
 import { GRID_SIZES } from './snap';
-import { boundingBox, clampFrame, cloneJson, createBlock, createSlide, dropSingleGroups, duplicateSlide, freeSpot, gatherLayers, groupOf, move, moveAround, newId, reorderMany, withGroups, type Layer } from './ops';
+import { BLOCK_LABELS, boundingBox, clampFrame, MIN_BLOCK_SIZE, cloneJson, createBlock, createSlide, dropSingleGroups, duplicateSlide, freeSpot, gatherLayers, groupOf, move, moveAround, newId, reorderMany, withGroups, type Layer } from './ops';
 import { outerFrame } from './rotate';
+import { expandTemplates, templateIdsOf } from '../model/templates';
+import { dissolveTemplate, templateFromBlocks, withTemplateFrames, type TemplateBlock } from './templates';
 
 /** Publishing (Plan.md 79, Paket E): what the button "Veröffentlichen" is doing. */
 export type SaveStatus = 'idle' | 'publishing' | 'published' | 'conflict' | 'error';
@@ -36,6 +38,32 @@ export type DraftStatus = 'off' | 'clean' | 'pending' | 'saving' | 'saved' | 'co
 /** The draft is saved 2 s after the last change, and at the earliest 5 s after the start of the last save. */
 export const DRAFT_DELAY_MS = 2000;
 export const DRAFT_INTERVAL_MS = 5000;
+
+/** The template being edited (Plan.md 87): the editor works on a helper slide, not on the draft. */
+export interface TemplateEdit {
+    /** The template block on the slide, and the slide. */
+    blockId: string;
+    slideId: string;
+    templateId: string;
+    name: string;
+    /** Revision of the template when the mode began – what "Fertig" saves against. */
+    revision: number;
+    /** What the template keeps as it is. */
+    stage: { width: number; height: number };
+    x?: number;
+    y?: number;
+    /** Where the template block stands on the slide: the blocks of the helper slide are moved by it. */
+    origin: { x: number; y: number };
+    /** On how many slides the template stands; null while it is being counted. */
+    usedOn: number | null;
+    /** The helper: a copy of the playlist, one slide with the id of the real one and the blocks of the template, and the frame. */
+    bundle: PlaylistBundle & { frame: { width: number; height: number }; locked?: boolean };
+    /** The bundle as the mode began, as JSON. */
+    startJson: string;
+    saving: boolean;
+    error: string | null;
+    conflict: boolean;
+}
 
 export const useEditorStore = defineStore('editor', () => {
     const repository = shallowRef<ScreenRepository | null>(null);
@@ -67,6 +95,8 @@ export const useEditorStore = defineStore('editor', () => {
     /** Drafts are available: the category exists and this person may write there. */
     const draftsOn = ref(false);
     const draftStatus = ref<DraftStatus>('off');
+    /** The page "Design" edits one template here (`openTemplate`): the playlist is a stand-in in memory, never saved or published. */
+    const templatePage = ref(false);
     /** The bundle as last saved as a draft, as JSON; without a draft it is `savedJson`. */
     const draftJson = ref('');
     /** Revision of the saved draft; 0 = there is none. */
@@ -88,6 +118,9 @@ export const useEditorStore = defineStore('editor', () => {
     const media = ref<MediaDoc[]>([]);
     /** The look of all screens (Plan.md, 27): new slides and blocks start in its colours, the preview shows it. */
     const theme = ref<ThemeDoc>(DEFAULT_THEME);
+    /** The templates (schema 1.41, Plan.md 87) the slides may use; the "+ Baustein" sheet offers them. */
+    const templates = ref<TemplateDoc[]>([]);
+    const templateById = computed(() => new Map(templates.value.map((t) => [t.id, t])));
     /**
      * Copied blocks (Plan.md 79, A5): of this session only, not in `localStorage` and not the system clipboard.
      * `reset()` leaves it alone, so it survives a change of slide and of playlist.
@@ -96,6 +129,11 @@ export const useEditorStore = defineStore('editor', () => {
     /** The "+ Baustein" sheet is open – the button above the stage and the one on an empty slide both open it (A7). */
     const blockSheetOpen = ref(false);
     const history = new History<PlaylistBundle>();
+    /** "Vorlage bearbeiten" (Plan.md 87): while set, the editor works on its helper slide with a history of its own. */
+    const templateEdit = ref<TemplateEdit | null>(null);
+    let editHistory: History<PlaylistBundle> | null = null;
+    /** What `change`, `undo` and `redo` work on. */
+    const work = computed<PlaylistBundle | null>(() => templateEdit.value?.bundle ?? draft.value);
     const historyVersion = ref(0); // makes canUndo/canRedo reactive
     let gestureOpen = false;
     let gestureRecorded = false;
@@ -103,16 +141,31 @@ export const useEditorStore = defineStore('editor', () => {
     const bundleJson = computed(() => (draft.value ? JSON.stringify(draft.value) : ''));
     const dirty = computed(() => !!draft.value && bundleJson.value !== savedJson.value);
     const unsavedDraft = computed(() => draftsOn.value && !!draft.value && bundleJson.value !== draftJson.value);
-    const canUndo = computed(() => historyVersion.value >= 0 && history.canUndo);
-    const canRedo = computed(() => historyVersion.value >= 0 && history.canRedo);
+    const canUndo = computed(() => historyVersion.value >= 0 && (templateEdit.value ? !!editHistory?.canUndo : history.canUndo));
+    const canRedo = computed(() => historyVersion.value >= 0 && (templateEdit.value ? !!editHistory?.canRedo : history.canRedo));
     const stage = computed(() => draft.value?.playlist.stage ?? { width: 1920, height: 1080 });
     const playlist = computed(() => draft.value?.playlist ?? null);
-    /** Slides in playlist order. */
-    const slides = computed<SlideDoc[]>(() => {
+    /** Slides in playlist order, as the draft holds them – what is saved and compared. */
+    const draftSlides = computed<SlideDoc[]>(() => {
         const byId = new Map(draft.value?.slides.map((s) => [s.id, s]));
         return (playlist.value?.slideIds ?? []).map((id) => byId.get(id)).filter((s): s is SlideDoc => !!s);
     });
-    const slide = computed(() => slides.value.find((s) => s.id === selectedSlideId.value) ?? slides.value[0] ?? null);
+    /** Slides in playlist order for looking at: template blocks carry the frame of their template. Never changed in place – `change()` writes to the draft. */
+    const slides = computed<SlideDoc[]>(() => draftSlides.value.map((s) => withTemplateFrames(s, templateById.value)));
+    const slide = computed(() =>
+        templateEdit.value
+            ? (templateEdit.value.bundle.slides[0] ?? null)
+            : (slides.value.find((s) => s.id === selectedSlideId.value) ?? slides.value[0] ?? null),
+    );
+    /** While a template is edited: the real slide as a pale backdrop – expanded, without the template block being edited. */
+    const templateBackdrop = computed<SlideDoc | null>(() => {
+        const edit = templateEdit.value;
+        const real = edit ? draftSlides.value.find((s) => s.id === edit.slideId) : undefined;
+        if (!edit || !real) return null;
+        return expandTemplates({ ...real, blocks: real.blocks.filter((b) => b.id !== edit.blockId) }, templateById.value);
+    });
+    /** The mode has changes to lose. */
+    const templateEditDirty = computed(() => !!templateEdit.value && JSON.stringify(templateEdit.value.bundle) !== templateEdit.value.startJson);
     const selection = computed<Block[]>(() => slide.value?.blocks.filter((b) => selectedBlockIds.value.includes(b.id)) ?? []);
     /** The choice as aligning and distributing see it: a group counts as one (`unitsOf`). */
     const selectionUnits = computed(() => unitsOf(selection.value));
@@ -136,8 +189,10 @@ export const useEditorStore = defineStore('editor', () => {
     /** The picture whose crop is being chosen on the stage (Plan.md F2). */
     const croppingId = ref<string | null>(null);
     const calendarIds = computed(() => [
-        ...new Set(draft.value?.slides.flatMap((s) => s.blocks.flatMap(blockCalendarIds)) ?? []),
+        ...new Set(draftSlides.value.flatMap((s) => expandTemplates(s, templateById.value).blocks.flatMap(blockCalendarIds))),
     ]);
+    /** The blocks being made into a template wait for a name (the dialog sits in the editor page, the menus only ask for it). */
+    const templateNaming = ref<string[] | null>(null);
 
     function attach(repo: ScreenRepository, name = ''): void {
         repository.value = repo;
@@ -151,6 +206,36 @@ export const useEditorStore = defineStore('editor', () => {
         } catch {
             // Private windows may refuse storage; the choice then lasts for this page only.
         }
+    }
+
+    /** What a block is called in a list or a label: its type, a template block carries the name of its template. */
+    function blockName(target: Block): string {
+        if (target.type !== 'template') return BLOCK_LABELS[target.type];
+        return templateById.value.get(target.templateId)?.name ?? t.templates.missing;
+    }
+
+    /** The head of the inspector and the short menu: "Vorlage: Seitenkopf", else the type. */
+    function blockHead(target: Block): string {
+        if (target.type !== 'template') return BLOCK_LABELS[target.type];
+        const template = templateById.value.get(target.templateId);
+        return template ? t.templates.head(template.name) : t.templates.missing;
+    }
+
+    /** On how many slides a template stands: the stored playlists and drafts plus the slides of this draft; null if that cannot be told. */
+    async function templateSlideCount(templateId: string): Promise<number | null> {
+        const repo = repository.value;
+        if (!repo) return null;
+        try {
+            const ids = new Set((await repo.templateUses()).get(templateId)?.flatMap((u) => u.slideIds));
+            for (const s of draft.value?.slides ?? []) if (templateIdsOf(s).includes(templateId)) ids.add(s.id);
+            return ids.size;
+        } catch {
+            return null;
+        }
+    }
+
+    async function reloadTemplates(): Promise<void> {
+        if (repository.value) templates.value = await repository.value.listTemplates().catch(() => templates.value);
     }
 
     async function refreshMedia(): Promise<void> {
@@ -167,6 +252,7 @@ export const useEditorStore = defineStore('editor', () => {
         playlistRevision = bundle.playlist.revision ?? 0,
         shared: LoadedPlaylist['sharedWith'] = {},
     ): void {
+        leaveTemplateEdit();
         draft.value = cloneJson(bundle);
         markSaved();
         sharedWith.value = cloneJson(shared);
@@ -195,6 +281,8 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     async function open(playlistId: string): Promise<void> {
+        leaveTemplateEdit();
+        templatePage.value = false;
         const repo = repository.value;
         if (!repo) throw new Error(t.defaults.noStorage);
         draftsOn.value = await repo.drafts.categoryId().then((id) => id !== null, () => false);
@@ -207,12 +295,15 @@ export const useEditorStore = defineStore('editor', () => {
                 draftsOn.value = false;
             }
         }
-        const [loaded, storedTheme] = await Promise.all([
+        const [loaded, storedTheme, storedTemplates] = await Promise.all([
             repo.loadPlaylist(playlistId, stored?.playlist.slideIds ?? []),
             // A theme that cannot be read leaves the defaults; it must not keep the playlist closed.
             repo.loadTheme().catch(() => null),
+            // Likewise templates: without them template blocks show as missing, the rest works.
+            repo.listTemplates().catch(() => []),
         ]);
         theme.value = storedTheme ?? DEFAULT_THEME;
+        templates.value = storedTemplates;
         screens.value = loaded.screens;
         reset({ playlist: loaded.playlist, slides: loaded.slides }, loaded.playlist.revision, loaded.sharedWith);
         if (!stored || !draft.value) return;
@@ -239,19 +330,60 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     /**
+     * Opens one template for the page "Design" (Plan.md 87): a stand-in playlist in the template's format with one empty slide
+     * and a template block on it, held in memory only – no draft, no publishing – and the mode "Vorlage bearbeiten" on it.
+     */
+    async function openTemplate(templateId: string): Promise<void> {
+        const repo = repository.value;
+        if (!repo) throw new Error(t.defaults.noStorage);
+        leaveTemplateEdit();
+        templatePage.value = true;
+        draftsOn.value = false;
+        const [storedTheme, list] = await Promise.all([repo.loadTheme().catch(() => null), repo.listTemplates()]);
+        const template = list.find((x) => x.id === templateId);
+        if (!template) throw new Error(t.templates.notFound);
+        theme.value = storedTheme ?? DEFAULT_THEME;
+        templates.value = list;
+        screens.value = [];
+        const holder = createSlide(tr.newSlide, theme.value);
+        const created: TemplateBlock = {
+            id: newId(),
+            type: 'template',
+            templateId,
+            x: template.x ?? 0,
+            y: template.y ?? 0,
+            width: template.width,
+            height: template.height,
+        };
+        holder.blocks = [created];
+        reset(
+            {
+                playlist: { schema: { ...SCHEMA_VERSION }, kind: 'playlist', id: newId(), name: template.name, slideIds: [holder.id], stage: { ...template.stage }, revision: 0 },
+                slides: [holder],
+            },
+            0,
+            {},
+        );
+        selectedSlideId.value = holder.id;
+        selectedBlockIds.value = [created.id];
+        startTemplateEdit(created.id);
+    }
+
+    /**
      * Applies a change and records the state before it. Inside a gesture – a
      * drag, or typing in one field – only the first change records, so the
      * whole gesture is one undo step.
      */
     function change(mutate: (bundle: PlaylistBundle) => void): void {
-        if (!draft.value) return;
+        const target = work.value;
+        if (!target) return;
         if (!gestureOpen || !gestureRecorded) {
-            history.record(draft.value);
+            (templateEdit.value ? editHistory! : history).record(target);
             historyVersion.value++;
             gestureRecorded = gestureOpen;
         }
-        mutate(draft.value);
-        if (status.value === 'published') status.value = 'idle';
+        mutate(target);
+        if (!templateEdit.value && status.value === 'published') status.value = 'idle';
     }
 
     function beginGesture(): void {
@@ -311,22 +443,32 @@ export const useEditorStore = defineStore('editor', () => {
     );
 
     function undo(): void {
-        if (!draft.value) return;
+        if (!work.value) return;
         // The writing on the stage is one step: it ends first, and the undo takes all of it back.
         endTextEdit();
         endCrop();
-        const previous = history.undo(draft.value);
-        if (previous) draft.value = previous;
+        if (templateEdit.value) {
+            const previous = editHistory!.undo(templateEdit.value.bundle);
+            if (previous) templateEdit.value.bundle = previous as TemplateEdit['bundle'];
+        } else {
+            const previous = history.undo(draft.value!);
+            if (previous) draft.value = previous;
+        }
         historyVersion.value++;
         pruneSelection();
     }
 
     function redo(): void {
-        if (!draft.value) return;
+        if (!work.value) return;
         endTextEdit();
         endCrop();
-        const next = history.redo(draft.value);
-        if (next) draft.value = next;
+        if (templateEdit.value) {
+            const next = editHistory!.redo(templateEdit.value.bundle);
+            if (next) templateEdit.value.bundle = next as TemplateEdit['bundle'];
+        } else {
+            const next = history.redo(draft.value!);
+            if (next) draft.value = next;
+        }
         historyVersion.value++;
         pruneSelection();
     }
@@ -336,6 +478,7 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     function selectSlide(id: string): void {
+        if (templateEdit.value) return;
         selectedSlideId.value = id;
         selectedBlockIds.value = [];
         multiSelect.value = false;
@@ -410,6 +553,7 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     function addSlide(): void {
+        if (templateEdit.value) return;
         const created = createSlide(tr.newSlide, theme.value);
         change((b) => {
             b.slides.push(created);
@@ -420,8 +564,10 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     function duplicateCurrentSlide(): void {
+        if (templateEdit.value) return;
         if (!slide.value) return;
-        const copy = duplicateSlide(slide.value);
+        // The draft's slide, not the one for looking at: its template blocks carry no lock of their template.
+        const copy = duplicateSlide(draftSlides.value.find((s) => s.id === slide.value!.id) ?? slide.value);
         const originalId = slide.value.id;
         change((b) => {
             b.slides.push(copy);
@@ -446,7 +592,7 @@ export const useEditorStore = defineStore('editor', () => {
     /** The linked slides publishing would write, with where else they run – asked before, not told after (Plan.md 49). */
     const linkedToPublish = computed(() => {
         void savedJson.value; // the baseline is not reactive; it changes together with the saved state
-        return slides.value
+        return draftSlides.value
             .filter((s) => (baseline.get(s.id) !== JSON.stringify(s) || linkPending(s.id)) && linkedIn(s.id).length)
             .map((s) => ({ name: s.name, playlists: linkedIn(s.id).map((p) => p.name) }));
     });
@@ -461,6 +607,7 @@ export const useEditorStore = defineStore('editor', () => {
         sources: SlideDoc[],
         options: { linked?: boolean; from?: { id: string; name: string }; sharedWith?: LoadedPlaylist['sharedWith'] } = {},
     ): void {
+        if (templateEdit.value) return;
         const here = new Set(draft.value?.slides.map((s) => s.id));
         const taken = options.linked ? sources.filter((s) => !here.has(s.id)).map((s) => cloneJson(s)) : sources.map((s) => copySlide(s));
         if (!taken.length) return;
@@ -483,7 +630,8 @@ export const useEditorStore = defineStore('editor', () => {
 
     /** Turns a linked slide into an own copy for this playlist alone – a new id, so the other playlists keep the old one. */
     function unlinkSlide(id: string): void {
-        const original = slides.value.find((s) => s.id === id);
+        if (templateEdit.value) return;
+        const original = draftSlides.value.find((s) => s.id === id);
         if (!original) return;
         const copy = copySlide(original, original.updatedAt);
         change((b) => {
@@ -495,6 +643,7 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     function removeSlide(id: string): void {
+        if (templateEdit.value) return;
         const index = slides.value.findIndex((s) => s.id === id);
         change((b) => {
             b.playlist.slideIds = b.playlist.slideIds.filter((s) => s !== id);
@@ -506,11 +655,13 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     function moveSlide(from: number, to: number): void {
+        if (templateEdit.value) return;
         if (from === to) return;
         change((b) => (b.playlist.slideIds = move(b.playlist.slideIds, from, to)));
     }
 
     function updateSlide(patch: Partial<Omit<SlideDoc, 'id' | 'kind' | 'schema' | 'blocks'>>): void {
+        if (templateEdit.value) return;
         const id = slide.value?.id;
         change((b) => Object.assign(slideIn(b, id) ?? {}, patch));
     }
@@ -521,6 +672,219 @@ export const useEditorStore = defineStore('editor', () => {
         const id = slide.value.id;
         change((b) => slideIn(b, id)?.blocks.push(created));
         selectedBlockIds.value = [created.id];
+    }
+
+    /** Ends the mode without a word – for opening and resetting, which load something else. */
+    function leaveTemplateEdit(): void {
+        if (!templateEdit.value) return;
+        templateEdit.value = null;
+        editHistory = null;
+        historyVersion.value++;
+    }
+
+    /** Starts "Vorlage bearbeiten" on the chosen template block (a lock fixes only its place): the editor then works on a helper slide. */
+    function startTemplateEdit(blockId: string): void {
+        const target = slide.value?.blocks.find((b) => b.id === blockId);
+        if (templateEdit.value || !draft.value || !target || target.type !== 'template') return;
+        const template = templateById.value.get(target.templateId);
+        const real = draftSlides.value.find((s) => s.id === slide.value!.id);
+        if (!template || !real) return;
+        endTextEdit();
+        endCrop();
+        endGesture();
+        const origin = { x: target.x, y: target.y };
+        const helper: SlideDoc = {
+            ...cloneJson(real),
+            blocks: template.blocks.map((b): Block => ({ ...cloneJson(b), x: b.x + origin.x, y: b.y + origin.y })),
+        };
+        const bundle = cloneJson({
+            playlist: draft.value.playlist,
+            slides: [helper],
+            frame: { width: template.width, height: template.height },
+            ...(template.locked ? { locked: true } : {}),
+        });
+        editHistory = new History<PlaylistBundle>();
+        templateEdit.value = {
+            blockId,
+            slideId: real.id,
+            templateId: template.id,
+            name: template.name,
+            revision: template.revision,
+            stage: { ...template.stage },
+            x: template.x,
+            y: template.y,
+            origin,
+            usedOn: null,
+            bundle,
+            startJson: JSON.stringify(bundle),
+            saving: false,
+            error: null,
+            conflict: false,
+        };
+        historyVersion.value++;
+        selectedBlockIds.value = [];
+        multiSelect.value = false;
+        hoveredBlockId.value = null;
+        void templateSlideCount(template.id).then((n) => {
+            if (templateEdit.value?.blockId === blockId) templateEdit.value.usedOn = n;
+        });
+    }
+
+    /** The frame of the template at a new size, as a step of the mode: upper left stays, the smallest size is `MIN_BLOCK_SIZE`, the largest ends at the slide's edge. */
+    function resizeTemplateFrame(width: number, height: number): void {
+        const edit = templateEdit.value;
+        if (!edit) return;
+        const w = Math.max(MIN_BLOCK_SIZE, Math.min(Math.round(width), stage.value.width - edit.origin.x));
+        const h = Math.max(MIN_BLOCK_SIZE, Math.min(Math.round(height), stage.value.height - edit.origin.y));
+        const frame = edit.bundle.frame;
+        if (w === frame.width && h === frame.height) return;
+        change((b) => {
+            (b as TemplateEdit['bundle']).frame = { width: w, height: h };
+        });
+    }
+
+    /** "Fest an ihrer Stelle" of the template, as a step of the mode. */
+    function setTemplateFixed(fixed: boolean): void {
+        const edit = templateEdit.value;
+        if (!edit || !!edit.bundle.locked === fixed) return;
+        change((b) => {
+            const own = b as TemplateEdit['bundle'];
+            if (fixed) own.locked = true;
+            else delete own.locked;
+        });
+    }
+
+    /** "Fertig": the blocks relative to the frame and held in it, saved against the revision the mode began with. */
+    async function finishTemplateEdit(): Promise<boolean> {
+        const edit = templateEdit.value;
+        const repo = repository.value;
+        if (!edit || !repo || edit.saving) return false;
+        const helper = edit.bundle.slides[0];
+        const frame = edit.bundle.frame;
+        const blocks = (helper?.blocks ?? []).flatMap((b): ContentBlock[] => {
+            if (b.type === 'template') return [];
+            const moved = { ...cloneJson(b), x: b.x - edit.origin.x, y: b.y - edit.origin.y };
+            return [{ ...moved, ...clampFrame(moved, frame) }];
+        });
+        if (!blocks.length) return false;
+        edit.saving = true;
+        edit.error = null;
+        edit.conflict = false;
+        try {
+            const saved = await repo.saveTemplate(
+                { id: edit.templateId, name: edit.name, stage: edit.stage, width: frame.width, height: frame.height, x: edit.x, y: edit.y, ...(edit.bundle.locked ? { locked: true } : {}), blocks },
+                { expectedRevision: edit.revision, updatedBy: author.value },
+            );
+            templates.value = templates.value.map((x) => (x.id === saved.id ? saved : x));
+            selectedBlockIds.value = [edit.blockId];
+            leaveTemplateEdit();
+            return true;
+        } catch (e) {
+            if (e instanceof ConflictError) {
+                edit.conflict = true;
+                edit.error = t.templates.edit.conflict(e.current.updatedBy);
+            } else {
+                edit.error = e instanceof Error ? e.message : String(e);
+            }
+            return false;
+        } finally {
+            edit.saving = false;
+        }
+    }
+
+    /** "Abbrechen": ends the mode without saving. After a conflict the templates are loaded anew first. */
+    async function cancelTemplateEdit(): Promise<void> {
+        const edit = templateEdit.value;
+        if (!edit) return;
+        if (edit.conflict) await reloadTemplates();
+        endTextEdit();
+        endCrop();
+        endGesture();
+        selectedBlockIds.value = [edit.blockId];
+        leaveTemplateEdit();
+    }
+
+    /** Puts a template on the slide at the place it was made (a page head stays on top), on the stage; it is chosen. */
+    function addTemplate(templateId: string): void {
+        if (templateEdit.value) return;
+        const template = templateById.value.get(templateId);
+        if (!slide.value || !template) return;
+        let created: TemplateBlock = {
+            id: newId(),
+            type: 'template',
+            templateId,
+            x: template.x ?? 0,
+            y: template.y ?? 0,
+            width: template.width,
+            height: template.height,
+        };
+        if (template.x === undefined || template.y === undefined) created = freeSpot(created, slide.value.blocks, stage.value);
+        created = { ...created, ...clampFrame(created, stage.value) };
+        const id = slide.value.id;
+        change((b) => slideIn(b, id)?.blocks.push(created));
+        selectedBlockIds.value = [created.id];
+    }
+
+    /**
+     * Makes a template of the chosen blocks (with their groups; locked ones stay, template blocks are none to make one of).
+     * The template is saved first, then the slide changes in one step: the blocks go, one template block takes the place
+     * of the topmost in paint order. A failure leaves the slide as it was and says why in `error`.
+     */
+    async function saveAsTemplate(ids: readonly string[], name: string): Promise<boolean> {
+        if (templateEdit.value) return false;
+        const repo = repository.value;
+        const target = slide.value;
+        if (!repo || !target) return false;
+        const all = new Set(withGroups(target.blocks, ids));
+        const chosen = target.blocks.filter((x) => all.has(x.id));
+        if (!chosen.length || chosen.some((x) => x.type === 'template')) return false;
+        error.value = null;
+        let saved: TemplateDoc;
+        try {
+            const made = templateFromBlocks(chosen as ContentBlock[], stage.value, name);
+            // A locked head stays locked: the lock goes from its blocks to the template, so every slide has it fixed.
+            saved = await repo.saveTemplate(chosen.some((x) => x.locked) ? { ...made, locked: true } : made, { expectedRevision: null, updatedBy: author.value });
+        } catch (e) {
+            error.value = e instanceof Error ? e.message : String(e);
+            return false;
+        }
+        const slideId = target.id;
+        const topId = chosen[chosen.length - 1]!.id;
+        const created: TemplateBlock = {
+            id: newId(),
+            type: 'template',
+            templateId: saved.id,
+            x: saved.x ?? 0,
+            y: saved.y ?? 0,
+            width: saved.width,
+            height: saved.height,
+        };
+        templates.value = [...templates.value, saved];
+        change((b) => {
+            const own = slideIn(b, slideId);
+            if (!own) return;
+            own.blocks = own.blocks.flatMap((x): Block[] => (x.id === topId ? [created] : all.has(x.id) ? [] : [x]));
+            dropSingleGroups(own.blocks);
+        });
+        selectedBlockIds.value = [created.id];
+        return true;
+    }
+
+    /** Replaces a template block by blocks of its own, in its place in paint order, as one step; they are chosen. */
+    function unlinkTemplate(id: string): void {
+        if (templateEdit.value) return;
+        const target = slide.value?.blocks.find((x) => x.id === id);
+        // A lock fixes only the place: dissolving is the deliberate way out of it.
+        if (!target || target.type !== 'template') return;
+        const template = templateById.value.get(target.templateId);
+        if (!template) return;
+        const copies = dissolveTemplate(target, template);
+        const slideId = slide.value!.id;
+        change((b) => {
+            const own = slideIn(b, slideId);
+            if (own) own.blocks = own.blocks.flatMap((x): Block[] => (x.id === id ? copies : [x]));
+        });
+        selectedBlockIds.value = copies.map((x) => x.id);
     }
 
     /** The blocks of the slide with these ids, in layer order. */
@@ -549,9 +913,44 @@ export const useEditorStore = defineStore('editor', () => {
      * group steps on, `freeSpot` for its box); a group too big for this stage shrinks to fit in its aspect ratio. All of them are chosen.
      * With `at` (stage pixels) the group's middle goes there instead, pulled back onto the stage, and stays even over a block.
      */
-    function place(sources: Block[], at?: { x: number; y: number }): void {
+    function place(blocks: Block[], at?: { x: number; y: number }): void {
         const target = slide.value;
-        if (!target || !sources.length) return;
+        if (!target || !blocks.length) return;
+        // A template of another format cannot stand here, and a missing one has nothing to show: the first comes in dissolved, the second not at all.
+        const sources = blocks.flatMap((x): Block[] => {
+            if (x.type !== 'template') return [x];
+            const template = templateById.value.get(x.templateId);
+            if (!template) return [];
+            // A template holds no template: in the mode every one comes in dissolved.
+            return !templateEdit.value && sameStage(template.stage, stage.value) ? [x] : dissolveTemplate(x, template);
+        });
+        if (!sources.length) return;
+        const slideId = target.id;
+        // A template that stays one goes to the place it was made, clamped to the stage, apart from the others (and not stepped aside).
+        const anchored = sources.flatMap((x): TemplateBlock[] => {
+            const template = x.type === 'template' && !templateEdit.value ? templateById.value.get(x.templateId) : undefined;
+            if (x.type !== 'template' || !template || template.x === undefined || template.y === undefined) return [];
+            const frame = { x: template.x, y: template.y, width: template.width, height: template.height };
+            return [{ id: newId(), type: 'template', templateId: x.templateId, ...frame, ...clampFrame(frame, stage.value) }];
+        });
+        const anchoredSources = new Set(
+            sources.filter((x) => x.type === 'template' && !templateEdit.value && templateById.value.get(x.templateId)?.x !== undefined && templateById.value.get(x.templateId)?.y !== undefined),
+        );
+        if (anchoredSources.size) {
+            const rest = sources.filter((x) => !anchoredSources.has(x));
+            if (!rest.length) {
+                change((b) => slideIn(b, slideId)?.blocks.push(...anchored));
+                selectedBlockIds.value = anchored.map((x) => x.id);
+                return;
+            }
+            placeFree(rest, target, at, anchored);
+            return;
+        }
+        placeFree(sources, target, at, []);
+    }
+
+    /** The part of `place` for blocks that find their spot: copies, group, `freeSpot` or `at`; `extra` blocks go with them in the same step. */
+    function placeFree(sources: Block[], target: SlideDoc, at: { x: number; y: number } | undefined, extra: Block[]): void {
         const slideId = target.id;
         const groupIds = new Map<string, string>();
         let copies = sources.map((source): Block => {
@@ -588,8 +987,8 @@ export const useEditorStore = defineStore('editor', () => {
             const moved = { ...x, x: x.x + spot.x - box.x, y: x.y + spot.y - box.y };
             return { ...moved, ...clampFrame(moved, stageSize) };
         });
-        change((b) => slideIn(b, slideId)?.blocks.push(...placed));
-        selectedBlockIds.value = placed.map((x) => x.id);
+        change((b) => slideIn(b, slideId)?.blocks.push(...placed, ...extra));
+        selectedBlockIds.value = [...placed, ...extra].map((x) => x.id);
     }
 
     function pasteBlocks(at?: { x: number; y: number }): void {
@@ -606,13 +1005,19 @@ export const useEditorStore = defineStore('editor', () => {
         return !!slide.value?.blocks.find((x) => x.id === id)?.locked;
     }
 
-    /** Locks or unlocks all of them in one step. */
+    /** Whether a block is a template block of a template that is fixed in place: its lock cannot be taken off, only dissolved. */
+    function templateLocked(target: Block): boolean {
+        return target.type === 'template' && !!templateById.value.get(target.templateId)?.locked;
+    }
+
+    /** Locks or unlocks all of them in one step; a block of a fixed template stays locked. */
     function setLocked(ids: readonly string[], locked: boolean): void {
         const slideId = slide.value?.id;
         ids = withGroups(slide.value?.blocks ?? [], ids);
         change((b) => {
             for (const target of slideIn(b, slideId)?.blocks ?? []) {
                 if (!ids.includes(target.id)) continue;
+                if (!locked && templateLocked(target)) continue;
                 if (locked) target.locked = true;
                 else delete target.locked;
             }
@@ -636,9 +1041,16 @@ export const useEditorStore = defineStore('editor', () => {
         change((b) => {
             const target = slideIn(b, slideId)?.blocks.find((x) => x.id === id);
             if (!target) return;
-            Object.assign(target, patch);
+            // The frame of a template block is that of its template; it is not turned and has no opacity.
+            const fixed: (keyof Block)[] = target.type === 'template' ? ['width', 'height', 'rotation', 'opacity'] : [];
+            const entries = Object.entries(patch).filter(([key]) => !fixed.includes(key as keyof Block));
+            Object.assign(target, Object.fromEntries(entries));
+            if (target.type === 'template') {
+                const template = templateById.value.get(target.templateId);
+                if (template) Object.assign(target, { width: template.width, height: template.height });
+            }
             // An undefined value takes the field away instead of leaving the key behind (rotation 0, opacity 100).
-            for (const [key, value] of Object.entries(patch)) if (value === undefined) delete (target as Record<string, unknown>)[key];
+            for (const [key, value] of entries) if (value === undefined) delete (target as Record<string, unknown>)[key];
             Object.assign(target, clampFrame(target, b.playlist.stage));
         });
     }
@@ -678,7 +1090,10 @@ export const useEditorStore = defineStore('editor', () => {
         change((b) => {
             for (const target of slideIn(b, slideId)?.blocks ?? []) {
                 const frame = next.get(target.id);
-                if (frame) Object.assign(target, frame);
+                if (!frame) continue;
+                // Only the place changes for a template block; its size is that of its template.
+                if (target.type === 'template') Object.assign(target, { x: frame.x, y: frame.y });
+                else Object.assign(target, frame);
             }
         });
     }
@@ -829,7 +1244,7 @@ export const useEditorStore = defineStore('editor', () => {
     }
 
     function draftSaveAllowed(): boolean {
-        return draftsOn.value && draftStatus.value !== 'conflict' && status.value !== 'publishing';
+        return draftsOn.value && !templatePage.value && draftStatus.value !== 'conflict' && status.value !== 'publishing';
     }
 
     /** 2 s after this change, and 5 s after the start of the last save at the earliest. */
@@ -955,6 +1370,7 @@ export const useEditorStore = defineStore('editor', () => {
      * alone is written as the draft has it, not only the changed ones; linked slides still only when changed.
      */
     async function publish(options: { mine?: boolean } = {}): Promise<boolean> {
+        if (templateEdit.value || templatePage.value) return false;
         if (!repository.value || !draft.value) return false;
         if (!draft.value.playlist.name.trim()) {
             error.value = t.defaults.playlistNeedsName;
@@ -1062,6 +1478,24 @@ export const useEditorStore = defineStore('editor', () => {
         setGridSize,
         media,
         theme,
+        templates,
+        templateById,
+        reloadTemplates,
+        templateNaming,
+        templatePage,
+        openTemplate,
+        templateEdit,
+        templateBackdrop,
+        templateEditDirty,
+        startTemplateEdit,
+        resizeTemplateFrame,
+        setTemplateFixed,
+        templateLocked,
+        finishTemplateEdit,
+        cancelTemplateEdit,
+        blockName,
+        blockHead,
+        templateSlideCount,
         refreshMedia,
         dirty,
         revision,
@@ -1119,6 +1553,9 @@ export const useEditorStore = defineStore('editor', () => {
         moveSlide,
         updateSlide,
         addBlock,
+        addTemplate,
+        saveAsTemplate,
+        unlinkTemplate,
         updateBlock,
         resetRotation,
         moveBlocks,

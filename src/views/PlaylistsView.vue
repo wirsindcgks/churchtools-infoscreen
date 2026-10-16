@@ -18,8 +18,9 @@ import PageHeader from '../designer/PageHeader.vue';
 import PlaylistCard from '../designer/PlaylistCard.vue';
 import SearchField from '../designer/SearchField.vue';
 import { useHeartbeats } from '../designer/useHeartbeats';
-import { usePreview } from '../designer/usePreview';
-import { blockCalendarIds, type ThemeDoc } from '../model/schema';
+import { usePreview, useTemplatesIn } from '../designer/usePreview';
+import { expandTemplates } from '../model/templates';
+import { blockCalendarIds, type TemplateDoc, type ThemeDoc } from '../model/schema';
 import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
@@ -63,28 +64,34 @@ const shown = computed(() => {
 });
 
 const theme = ref<ThemeDoc | null>(null);
+const templates = ref<TemplateDoc[]>([]);
+const templateMap = computed(() => new Map(templates.value.map((t) => [t.id, t])));
+/** The first slides as the tiles draw them: templates expanded, so their blocks count for the data to fetch. */
+const firstSlides = computed(() =>
+    overviews.value.flatMap((o) => (o.firstSlide ? [expandTemplates(o.firstSlide, templateMap.value)] : [])),
+);
 
 /** Which playlist a screen shows right now (Plan.md 77); the tiles mark those that run. */
 const { heartbeats, now, refreshHeartbeats } = useHeartbeats(repository);
 
 // The tiles are the player's components: they need the same live data as the editor preview.
-usePreview(
-    computed(() => [
-        ...new Set(overviews.value.flatMap((o) => (o.firstSlide?.blocks ?? []).flatMap(blockCalendarIds))),
-    ]),
+const { context } = usePreview(
+    computed(() => [...new Set(firstSlides.value.flatMap((slide) => slide.blocks.flatMap(blockCalendarIds)))]),
     computed(() => overviews.value.flatMap((o) => o.media)),
     theme,
-    computed(() => postNeeds(overviews.value.flatMap((o) => (o.firstSlide ? [o.firstSlide] : [])))),
-    computed(() => groupNeeds(overviews.value.flatMap((o) => (o.firstSlide ? [o.firstSlide] : [])))),
-    computed(() => roomNeeds(overviews.value.flatMap((o) => (o.firstSlide ? [o.firstSlide] : [])))),
+    computed(() => postNeeds(firstSlides.value)),
+    computed(() => groupNeeds(firstSlides.value)),
+    computed(() => roomNeeds(firstSlides.value)),
 );
+useTemplatesIn(context, templates);
 
 async function refresh(): Promise<void> {
     if (!repository.value) return;
-    const [list, stored, drafted] = await Promise.all([
+    const [list, stored, storedTemplates, drafted] = await Promise.all([
         repository.value.listPlaylists(),
         // The tiles show the theme; without it they show the defaults.
         repository.value.loadTheme().catch(() => null),
+        repository.value.listTemplates().catch(() => []),
         // Without drafts (no category, no right) the tiles simply carry no mark.
         repository.value.drafts.list().catch(() => new Map<string, { updatedBy: string; updatedAt: string }>()),
         refreshHeartbeats(),
@@ -93,6 +100,7 @@ async function refresh(): Promise<void> {
     drafts.value = drafted;
     setSectionCount('playlists', list.length);
     theme.value = stored;
+    templates.value = storedTemplates;
 }
 
 onMounted(async () => {

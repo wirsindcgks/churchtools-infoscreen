@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { isVideo, type SlideDoc } from '../model/schema';
+import { isVideo, type SlideDoc, type TemplateDoc } from '../model/schema';
+import { expandTemplates } from '../model/templates';
 import BlockView from './blocks/BlockView.vue';
 import { imageSource, themeOf, useStageContext } from './context';
 import { fillStyle } from './fill';
 import { backgroundImageUrl } from './images';
 import { themeVars } from './theme';
 
-/** `hiddenBlockId`: see `BlockView` – only the editor sets it. */
-const props = defineProps<{ slide: SlideDoc; width: number; height: number; hiddenBlockId?: string }>();
+/** `hiddenBlockId`: see `BlockView` – only the editor sets it. `bare`: without the background – the editor lays this slide over another while it edits a template. */
+const props = defineProps<{ slide: SlideDoc; width: number; height: number; hiddenBlockId?: string; bare?: boolean }>();
 const context = useStageContext();
+const NO_TEMPLATES: ReadonlyMap<string, TemplateDoc> = new Map();
+const shown = computed(() => expandTemplates(props.slide, context.templates ?? NO_TEMPLATES));
 
 const background = computed(() => {
     const bg = props.slide.background;
@@ -23,16 +26,16 @@ const background = computed(() => {
           }
         : { background: '#000' };
 });
-const look = computed(() => ({ ...background.value, ...themeVars(themeOf(context)) }));
+const look = computed(() => ({ ...(props.bare ? {} : background.value), ...themeVars(themeOf(context)) }));
 </script>
 
 <template>
     <div class="slide" :style="look">
         <BlockView
-            v-for="block in slide.blocks"
+            v-for="block in shown.blocks"
             :key="block.id"
             :block="block"
-            :slide-seconds="slide.durationSeconds"
+            :slide-seconds="shown.durationSeconds"
             :hidden-block-id="hiddenBlockId"
         />
     </div>

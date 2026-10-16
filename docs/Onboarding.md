@@ -75,6 +75,11 @@ Menü „…". Die erste Zeile sagt, ob der Fernseher gerade **„online"** ist.
   gleichmäßig; ein gesperrter bleibt dabei stehen. **Gruppieren** (Strg/⌘ + G) hält sie zusammen: Ein Klick wählt
   dann alle, ein Doppelklick einen einzelnen; beim Ausrichten zählt die Gruppe wie ein Baustein. Umschalt +
   Strg/⌘ + G hebt die Gruppe auf.
+- **Vorlagen:** Was auf vielen Folien gleich sein soll (ein Seitenkopf), wählst du aus und speicherst es im Kurzmenü
+  unter „⋯" › **„Als Vorlage speichern …"**. „+ Baustein" setzt es an derselben Stelle auf andere Folien, und
+  **„Vorlage bearbeiten"** (Doppelklick, oder auf der Seite „Design") ändert es auf allen zugleich – sofort, auch an den
+  Fernsehern. **„Lösen"** macht daraus wieder eigene Bausteine nur für diese Folie. Mehr in
+  [Der Designer in Bildern](Funktionen.md#vorlagen).
 - **Rechts der Inspektor:** Sein Kopf sagt, wo du bist („Folie 2 von 5"). Oben steht der Inhalt des Bausteins (Text, Kalender, Adresse …), darunter aufklappbare
   Bereiche – **Darstellung**, **Schrift**, **Anordnen** (die Ebene) und ganz unten **Genaue Maße** (X, Y, Breite, Höhe), bei Gruppen auch **Angaben**. An/aus stellst du mit Schaltern ein, wenige Möglichkeiten mit Segmenten, die Darstellung mit kleinen Bildkacheln. Zugeklappt zeigt jeder Bereich in
   einer Zeile, was eingestellt ist; was du einmal aufklappst, bleibt offen. Im Kopf des Inspektors stehen

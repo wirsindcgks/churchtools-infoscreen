@@ -9,7 +9,7 @@ import type { Block } from '../model/schema';
 import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
 import { blockSummary, type SummaryLookup } from './layers';
-import { BLOCK_ICONS, BLOCK_LABELS } from './ops';
+import { BLOCK_ICONS } from './ops';
 import { vTip } from './tip';
 
 defineProps<{ block: Block; lookup: SummaryLookup; nested?: boolean }>();
@@ -47,7 +47,7 @@ function hint(event: PointerEvent, id: string | null): void {
             <Icon v-if="editor.isSelected(block.id)" name="check" :size="12" />
         </span>
         <Icon :name="BLOCK_ICONS[block.type]" :size="16" class="layer-icon" />
-        <span class="layer-name">{{ BLOCK_LABELS[block.type] }}</span>
+        <span class="layer-name">{{ editor.blockName(block) }}</span>
         <span class="layer-sub">{{ blockSummary(block, lookup) }}</span>
         <button
             v-tip="block.locked ? t.quick.unlock : t.common.lock"

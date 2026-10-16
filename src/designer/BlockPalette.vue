@@ -10,7 +10,8 @@
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
-import type { ContentBlockType } from '../model/schema';
+import { LOCALE } from '../i18n/player';
+import { sameStage, type ContentBlockType } from '../model/schema';
 import { useEditorStore } from './editor-store';
 import { searchBlocks } from './block-search';
 import Icon from './Icon.vue';
@@ -57,6 +58,14 @@ const query = ref('');
 const sheet = ref<HTMLElement | null>(null);
 const found = computed(() => new Set(searchBlocks(query.value)));
 const shown = computed(() => PALETTE.filter(([type]) => found.value.has(type)));
+/** The templates made for this format (schema 1.41), by name; the search finds them by it. */
+const templatesShown = computed(() => {
+    if (editor.templateEdit) return [];
+    const needle = query.value.trim().toLocaleLowerCase(LOCALE);
+    return editor.templates
+        .filter((tpl) => sameStage(tpl.stage, editor.stage) && (!needle || tpl.name.toLocaleLowerCase(LOCALE).includes(needle)))
+        .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
+});
 watch(sheetOpen, async (open) => {
     if (open) {
         document.addEventListener('keydown', closeOnEscape);
@@ -67,6 +76,10 @@ watch(sheetOpen, async (open) => {
 });
 function addFromSheet(type: ContentBlockType): void {
     editor.addBlock(type);
+    closeSheet();
+}
+function addTemplateFromSheet(id: string): void {
+    editor.addTemplate(id);
     closeSheet();
 }
 onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
@@ -144,7 +157,28 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
                         </span>
                     </button>
                 </div>
-                <p v-if="!shown.length" class="sheet-empty" data-testid="block-search-empty">{{ t.editor.palette.noBlockFound }}</p>
+                <template v-if="templatesShown.length">
+                    <h3 class="sheet-section">{{ t.templates.sheetTitle }}</h3>
+                    <div class="sheet-grid" data-testid="sheet-templates">
+                        <button
+                            v-for="template in templatesShown"
+                            :key="template.id"
+                            class="sheet-block"
+                            type="button"
+                            :disabled="!editor.slide"
+                            data-testid="sheet-add-template"
+                            :data-template-id="template.id"
+                            @click="addTemplateFromSheet(template.id)"
+                        >
+                            <Icon name="link" :size="24" />
+                            <span class="sheet-text">
+                                <span class="sheet-name">{{ template.name }}</span>
+                                <span class="sheet-description">{{ t.templates.blocks(template.blocks.length) }}</span>
+                            </span>
+                        </button>
+                    </div>
+                </template>
+                <p v-if="!shown.length && !templatesShown.length" class="sheet-empty" data-testid="block-search-empty">{{ t.editor.palette.noBlockFound }}</p>
             </div>
         </div>
     </div>
@@ -194,6 +228,10 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
     display: grid;
     grid-template-columns: 1fr;
     gap: 8px;
+}
+.sheet-section {
+    margin: 16px 0 8px;
+    font-size: 1em;
 }
 .sheet-block {
     display: flex;

@@ -8,9 +8,14 @@ import { onBeforeUnmount, reactive, ref, watch, type Ref } from 'vue';
 import { fetchCalendars, fetchPublicCalendars, type Calendar } from '../ct/api';
 import { instanceBaseUrl } from '../ct/client';
 import { getRepository } from '../store/backend';
-import type { MediaDoc, ThemeDoc } from '../model/schema';
+import type { MediaDoc, TemplateDoc, ThemeDoc } from '../model/schema';
 import { provideStageContext, type StageContext } from '../player/context';
 import { appointmentWindow, churchToolsPlayerData, mergePosts } from '../player/data';
+
+/** Gives the templates the slides use to the stage context, which expands them while drawing (schema 1.41). */
+export function useTemplatesIn(context: StageContext, templates: Ref<readonly TemplateDoc[]>): void {
+    watch(templates, (list) => (context.templates = new Map(list.map((t) => [t.id, t]))), { immediate: true });
+}
 
 export function usePreview(
     calendarIds: Ref<number[]>,
