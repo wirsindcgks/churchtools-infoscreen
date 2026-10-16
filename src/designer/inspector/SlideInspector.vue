@@ -5,7 +5,7 @@
  */
 import { computed, ref, watch } from 'vue';
 import { t } from '../../i18n/designer';
-import type { Fill } from '../../model/schema';
+import type { Fill, SlideLayout } from '../../model/schema';
 import { bannerShown } from '../../player/banner';
 import { useStageContext } from '../../player/context';
 import { sizedImageUrl } from '../../player/format';
@@ -23,7 +23,9 @@ import MediaField from './fields/MediaField.vue';
 import NumberField from './fields/NumberField.vue';
 import SegmentField from './fields/SegmentField.vue';
 import TextField from './fields/TextField.vue';
+import TileField from './fields/TileField.vue';
 import ToggleField from './fields/ToggleField.vue';
+import { splitTiles } from './layouts';
 
 const editor = useEditorStore();
 /** The preview's stage context: paged lists report their page count there. */
@@ -90,6 +92,22 @@ function setBackgroundKind(kind: string): void {
     if (next !== slide.value.background) editor.updateSlide({ background: next });
 }
 
+/** The division of the slide (Plan.md 87 B): the tiles, the summary in words, and a change keeps every block where it is. */
+const portrait = computed(() => editor.stage.height > editor.stage.width);
+const splitOptions = computed(() => splitTiles(portrait.value));
+const layout = computed(() => ({ split: slide.value?.layout?.split ?? 'none', header: slide.value?.layout?.header ?? false, footer: slide.value?.layout?.footer ?? false }));
+function setLayout(patch: Partial<SlideLayout>): void {
+    editor.updateSlide({ layout: { ...layout.value, ...patch } });
+}
+const layoutSummary = computed(() => {
+    const words = t.inspector.layoutSummary;
+    const { split, header, footer } = layout.value;
+    if (split === 'none' && (header || footer)) return header && footer ? words.onlyBoth : header ? words.onlyHeader : words.onlyFooter;
+    const base =
+        split === 'halves' ? (portrait.value ? words.halvesRows : words.halvesColumns) : split === 'wide-narrow' ? words.wideNarrow : split === 'narrow-wide' ? words.narrowWide : words.none;
+    return base + (header && footer ? words.withBoth : header ? words.withHeader : footer ? words.withFooter : '');
+});
+
 const playlistSummary = computed(() =>
     editor.screens.length ? editor.screens.map((s) => s.name).join(', ') : t.inspector.noScreen,
 );
@@ -138,6 +156,17 @@ const backgroundColors = computed(() => {
         <p v-if="runsLonger" class="hint" data-testid="duration-hint">
             {{ t.inspector.runsLonger(runsLonger) }}
         </p>
+        <InspectorSection id="layout" :title="t.inspector.layout" :summary="layoutSummary">
+            <TileField
+                :model-value="layout.split"
+                :options="splitOptions"
+                :label="t.inspector.layout"
+                testid="layout-split"
+                @update:model-value="setLayout({ split: $event as SlideLayout['split'] })"
+            />
+            <ToggleField :model-value="layout.header" :label="t.inspector.layoutHeader" testid="layout-header" @update:model-value="setLayout({ header: $event })" />
+            <ToggleField :model-value="layout.footer" :label="t.inspector.layoutFooter" testid="layout-footer" @update:model-value="setLayout({ footer: $event })" />
+        </InspectorSection>
         <InspectorSection id="background" :title="t.inspector.background" :summary="backgroundSummary">
             <template #summary-extra>
                 <span v-for="(color, i) in backgroundColors" :key="i" class="swatch" :style="{ background: color }" />

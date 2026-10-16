@@ -62,6 +62,15 @@ export const PICTOGRAMS = {
     'motion-in': [{ d: box(8, 6, 32, 20) }, { d: box(18, 12, 12, 8) }, { d: 'M10 8l5 3m23-3-5 3M10 24l5-3m23 3-5-3' }],
     'motion-out': [{ d: box(8, 6, 32, 20) }, { d: box(18, 12, 12, 8) }, { d: 'M15 11l-5-3m23 3 5-3M15 21l-5 3m23-3 5 3' }],
     'motion-alternate': [{ d: box(8, 6, 32, 20) }, { d: 'M15 16h18m-4-4 4 4-4 4m-10-8-4 4 4 4' }],
+    // The division of a slide: none, halves, two thirds and one third (the wide part at the left).
+    'split-none': [{ d: box(5, 3, 38, 26) }],
+    'split-halves': [{ d: box(5, 3, 18, 26) }, { d: box(25, 3, 18, 26) }],
+    'split-wide-narrow': [{ d: box(5, 3, 24, 26) }, { d: box(31, 3, 12, 26) }],
+    'split-narrow-wide': [{ d: box(5, 3, 12, 26) }, { d: box(19, 3, 24, 26) }],
+    // The same for a portrait slide, which divides into rows.
+    'split-halves-rows': [{ d: box(5, 3, 38, 12) }, { d: box(5, 17, 38, 12) }],
+    'split-wide-narrow-rows': [{ d: box(5, 3, 38, 16) }, { d: box(5, 21, 38, 8) }],
+    'split-narrow-wide-rows': [{ d: box(5, 3, 38, 8) }, { d: box(5, 13, 38, 16) }],
 } as const satisfies Record<string, readonly PictogramPath[]>;
 
 export type PictogramName = keyof typeof PICTOGRAMS;

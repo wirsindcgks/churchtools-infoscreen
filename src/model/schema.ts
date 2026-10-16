@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 41 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 42 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -520,6 +520,17 @@ const DocumentBase = {
     updatedAt: v.optional(v.string()),
 };
 
+/**
+ * Since 1.42 (Plan.md 87 B): how the designer divides a slide into areas – a guide for placing blocks, nothing the
+ * player draws. The player ignores it. Missing = no division.
+ */
+export const SlideLayout = v.object({
+    /** Landscape divides into columns, portrait into rows. */
+    split: v.optional(v.picklist(['none', 'halves', 'wide-narrow', 'narrow-wide']), 'none'),
+    header: v.optional(v.boolean(), false),
+    footer: v.optional(v.boolean(), false),
+});
+
 export const SlideDoc = v.object({
     ...DocumentBase,
     kind: v.literal('slide'),
@@ -527,6 +538,8 @@ export const SlideDoc = v.object({
     durationSeconds: v.pipe(v.number(), v.minValue(1), v.maxValue(3600)),
     enabled: v.optional(v.boolean(), true),
     background: Background,
+    /** Since 1.42 (Plan.md 87 B); the player ignores it. */
+    layout: v.optional(SlideLayout),
     /** Array order is paint order: later blocks lie on top. */
     blocks: v.array(Block),
 });
@@ -791,6 +804,7 @@ export type BlockType = Block['type'];
 export type ContentBlock = Exclude<Block, { type: 'template' }>;
 export type ContentBlockType = ContentBlock['type'];
 export type TemplateDoc = v.InferOutput<typeof TemplateDoc>;
+export type SlideLayout = v.InferOutput<typeof SlideLayout>;
 export type SlideDoc = v.InferOutput<typeof SlideDoc>;
 export type PlaylistDoc = v.InferOutput<typeof PlaylistDoc>;
 export type PlaylistDraftDoc = v.InferOutput<typeof PlaylistDraftDoc>;

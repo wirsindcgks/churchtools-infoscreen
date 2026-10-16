@@ -2,7 +2,7 @@
  * Snapping while dragging and resizing on the stage.
  *
  * Alignment targets win over the grid: an edge or centre that comes close to
- * the stage edges, the stage centre or an edge/centre of another block snaps
+ * the stage edges, the stage centre, an edge/centre of another block or of an area snaps
  * there and shows a guide line. Next come gap targets (Plan.md 79, A3): the same
  * gap to a neighbour as a pair of other blocks has, or exactly between two of
  * them; at equal distance an edge or centre wins, because flush matters more.
@@ -31,6 +31,8 @@ export interface SnapOptions {
     stage: { width: number; height: number };
     /** The other blocks on the slide. */
     others: Frame[];
+    /** The areas of the slide's division (Plan.md 87 B): their edges and centres are alignment targets, no gap targets. */
+    regions?: Frame[];
 }
 
 export type { Measure };
@@ -40,7 +42,7 @@ export type Handle = 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w' | 'nw';
 function targets(axis: 'x' | 'y', options: SnapOptions): number[] {
     const size = axis === 'x' ? options.stage.width : options.stage.height;
     const list = [0, size / 2, size];
-    for (const o of options.others) {
+    for (const o of [...options.others, ...(options.regions ?? [])]) {
         const start = axis === 'x' ? o.x : o.y;
         const length = axis === 'x' ? o.width : o.height;
         list.push(start, start + length / 2, start + length);

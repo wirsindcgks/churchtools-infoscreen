@@ -24,6 +24,7 @@ import { tr } from '../i18n/repository';
 import { align, alignTarget, distribute, distributeBlocker, unitsOf, type Axis, type Edge, type Frame, type Unit } from './arrange';
 import { History } from './history';
 import { layerUnits } from './layers';
+import type { Region } from './layout-regions';
 import { GRID_SIZES } from './snap';
 import { BLOCK_LABELS, boundingBox, clampFrame, MIN_BLOCK_SIZE, cloneJson, createBlock, createSlide, dropSingleGroups, duplicateSlide, freeSpot, gatherLayers, groupOf, move, moveAround, newId, reorderMany, withGroups, type Layer } from './ops';
 import { outerFrame } from './rotate';
@@ -128,6 +129,8 @@ export const useEditorStore = defineStore('editor', () => {
     const clipboard = ref<Block[]>([]);
     /** The "+ Baustein" sheet is open – the button above the stage and the one on an empty slide both open it (A7). */
     const blockSheetOpen = ref(false);
+    /** The empty area of the slide's division (Plan.md 87 B) whose "+" opened the sheet: the next block fills it. Reset when the sheet closes. */
+    const targetRegion = ref<Region | null>(null);
     const history = new History<PlaylistBundle>();
     /** "Vorlage bearbeiten" (Plan.md 87): while set, the editor works on its helper slide with a history of its own. */
     const templateEdit = ref<TemplateEdit | null>(null);
@@ -668,7 +671,11 @@ export const useEditorStore = defineStore('editor', () => {
 
     function addBlock(type: ContentBlockType): void {
         if (!slide.value) return;
-        const created = freeSpot(createBlock(type, stage.value, calendarIds.value, theme.value), slide.value.blocks, stage.value);
+        const made = createBlock(type, stage.value, calendarIds.value, theme.value);
+        const target = targetRegion.value;
+        const created = target
+            ? { ...made, x: target.x, y: target.y, width: target.width, height: target.height }
+            : freeSpot(made, slide.value.blocks, stage.value);
         const id = slide.value.id;
         change((b) => slideIn(b, id)?.blocks.push(created));
         selectedBlockIds.value = [created.id];
@@ -818,7 +825,9 @@ export const useEditorStore = defineStore('editor', () => {
             width: template.width,
             height: template.height,
         };
-        if (template.x === undefined || template.y === undefined) created = freeSpot(created, slide.value.blocks, stage.value);
+        const target = targetRegion.value;
+        if (target) created = { ...created, x: target.x, y: target.y };
+        else if (template.x === undefined || template.y === undefined) created = freeSpot(created, slide.value.blocks, stage.value);
         created = { ...created, ...clampFrame(created, stage.value) };
         const id = slide.value.id;
         change((b) => slideIn(b, id)?.blocks.push(created));
@@ -1573,6 +1582,7 @@ export const useEditorStore = defineStore('editor', () => {
         moveGroupLayer,
         clipboard,
         blockSheetOpen,
+        targetRegion,
         copyBlocks,
         cutBlocks,
         pasteBlocks,

@@ -66,7 +66,10 @@ const templatesShown = computed(() => {
         .filter((tpl) => sameStage(tpl.stage, editor.stage) && (!needle || tpl.name.toLocaleLowerCase(LOCALE).includes(needle)))
         .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
 });
+/** Header and footer are for what a template brings (Plan.md 87 B): the sheet then lists the templates first. */
+const templatesFirst = computed(() => editor.targetRegion?.id === 'header' || editor.targetRegion?.id === 'footer');
 watch(sheetOpen, async (open) => {
+    if (!open) editor.targetRegion = null;
     if (open) {
         document.addEventListener('keydown', closeOnEscape);
         query.value = '';
@@ -140,44 +143,46 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
                     </button>
                 </header>
                 <SearchField v-model="query" class="sheet-search" :placeholder="t.editor.palette.searchBlock" :label="t.editor.palette.searchBlock" testid="block-search" />
-                <div class="sheet-grid">
-                    <button
-                        v-for="[type, label] in shown"
-                        :key="type"
-                        class="sheet-block"
-                        type="button"
-                        :disabled="!editor.slide"
-                        :data-testid="`sheet-add-${type}`"
-                        @click="addFromSheet(type)"
-                    >
-                        <Icon :name="BLOCK_ICONS[type]" :size="24" />
-                        <span class="sheet-text">
-                            <span class="sheet-name">{{ label }}</span>
-                            <span class="sheet-description">{{ t.editor.palette.descriptions[type] }}</span>
-                        </span>
-                    </button>
-                </div>
-                <template v-if="templatesShown.length">
-                    <h3 class="sheet-section">{{ t.templates.sheetTitle }}</h3>
-                    <div class="sheet-grid" data-testid="sheet-templates">
+                <div class="sheet-lists">
+                    <div class="sheet-grid">
                         <button
-                            v-for="template in templatesShown"
-                            :key="template.id"
+                            v-for="[type, label] in shown"
+                            :key="type"
                             class="sheet-block"
                             type="button"
                             :disabled="!editor.slide"
-                            data-testid="sheet-add-template"
-                            :data-template-id="template.id"
-                            @click="addTemplateFromSheet(template.id)"
+                            :data-testid="`sheet-add-${type}`"
+                            @click="addFromSheet(type)"
                         >
-                            <Icon name="link" :size="24" />
+                            <Icon :name="BLOCK_ICONS[type]" :size="24" />
                             <span class="sheet-text">
-                                <span class="sheet-name">{{ template.name }}</span>
-                                <span class="sheet-description">{{ t.templates.blocks(template.blocks.length) }}</span>
+                                <span class="sheet-name">{{ label }}</span>
+                                <span class="sheet-description">{{ t.editor.palette.descriptions[type] }}</span>
                             </span>
                         </button>
                     </div>
-                </template>
+                    <div v-if="templatesShown.length" class="sheet-templates" :class="{ 'sheet-templates--first': templatesFirst }">
+                        <h3 class="sheet-section">{{ t.templates.sheetTitle }}</h3>
+                        <div class="sheet-grid" data-testid="sheet-templates">
+                            <button
+                                v-for="template in templatesShown"
+                                :key="template.id"
+                                class="sheet-block"
+                                type="button"
+                                :disabled="!editor.slide"
+                                data-testid="sheet-add-template"
+                                :data-template-id="template.id"
+                                @click="addTemplateFromSheet(template.id)"
+                            >
+                                <Icon name="link" :size="24" />
+                                <span class="sheet-text">
+                                    <span class="sheet-name">{{ template.name }}</span>
+                                    <span class="sheet-description">{{ t.templates.blocks(template.blocks.length) }}</span>
+                                </span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
                 <p v-if="!shown.length && !templatesShown.length" class="sheet-empty" data-testid="block-search-empty">{{ t.editor.palette.noBlockFound }}</p>
             </div>
         </div>
@@ -228,6 +233,17 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
     display: grid;
     grid-template-columns: 1fr;
     gap: 8px;
+}
+.sheet-lists {
+    display: flex;
+    flex-direction: column;
+}
+.sheet-templates--first {
+    order: -1;
+    margin-bottom: 16px;
+}
+.sheet-templates--first .sheet-section {
+    margin-top: 0;
 }
 .sheet-section {
     margin: 16px 0 8px;

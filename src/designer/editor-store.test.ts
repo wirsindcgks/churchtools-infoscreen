@@ -1301,6 +1301,25 @@ describe('templates (schema 1.41, Plan.md 87)', () => {
         expect(editor.block!.x).toBeLessThan(editor.stage.width);
     });
 
+    it('puts a block on the frame of the area whose "+" opened the sheet, in one step', async () => {
+        const { editor } = await setup();
+        const area = { id: 'a' as const, x: 43, y: 43, width: 896, height: 994 };
+        editor.targetRegion = area;
+        editor.addBlock('shape');
+        expect(editor.block).toMatchObject({ x: 43, y: 43, width: 896, height: 994 });
+        expect(editor.slide!.blocks).toHaveLength(1);
+        editor.undo();
+        expect(editor.slide!.blocks).toHaveLength(0);
+    });
+
+    it('puts a template at the upper left corner of the area, with its own size', async () => {
+        const { editor, repository } = await setup();
+        const template = await saved(editor, repository);
+        editor.targetRegion = { id: 'header', x: 43, y: 500, width: 1834, height: 151 };
+        editor.addTemplate(template.id);
+        expect(editor.block).toMatchObject({ type: 'template', x: 43, y: 500, width: 600, height: 120 });
+    });
+
     it('gives a template block the frame of its template and lets neither size nor turn change', async () => {
         const { editor, repository } = await setup();
         const template = await saved(editor, repository);

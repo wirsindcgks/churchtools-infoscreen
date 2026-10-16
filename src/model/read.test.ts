@@ -641,6 +641,14 @@ describe('readSlide – rooms in rows of lists from before 1.34 (Plan.md 82)', (
     });
 });
 
+describe('the division of a slide (schema 1.42, Plan.md 87 B)', () => {
+    it('reads a slide without one as before and keeps one with', () => {
+        expect(readSlide(JSON.parse(serialize(makeSlide()))).doc.layout).toBeUndefined();
+        const split = makeSlide({ layout: { split: 'wide-narrow', header: true, footer: false } });
+        expect(readSlide(JSON.parse(serialize(split)))).toEqual({ doc: split, issues: [] });
+    });
+});
+
 describe('templates (schema 1.41, Plan.md 87)', () => {
     const raw = (blocks: unknown[]) => ({ ...makeTemplate(), blocks });
 

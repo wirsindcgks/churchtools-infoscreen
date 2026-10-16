@@ -104,4 +104,23 @@ describe('the inspector of the slide (Plan.md 79, B2)', () => {
         await toggle.setValue(false);
         expect(editor.draft!.playlist.progress).toBeUndefined();
     });
+
+    it('names the division in words and keeps the blocks where they are', async () => {
+        const { editor, wrapper } = await setup();
+        editor.addBlock('shape');
+        const before = { ...editor.block! };
+        const summary = () => wrapper.get('[data-testid="section-layout"] .summary-line').text();
+        expect(summary()).toBe('Keine');
+        await wrapper.get('[data-testid="layout-split"] input[value="halves"]').setValue(true);
+        expect(editor.slide!.layout).toEqual({ split: 'halves', header: false, footer: false });
+        expect(summary()).toBe('Zwei Spalten');
+        await wrapper.get('[data-testid="layout-header"]').setValue(true);
+        expect(summary()).toBe('Zwei Spalten, mit Kopfzeile');
+        await wrapper.get('[data-testid="layout-footer"]').setValue(true);
+        await wrapper.get('[data-testid="layout-split"] input[value="narrow-wide"]').setValue(true);
+        expect(summary()).toBe('Schmal und breit, mit Kopf- und Fußzeile');
+        await wrapper.get('[data-testid="layout-split"] input[value="none"]').setValue(true);
+        expect(summary()).toBe('Kopf- und Fußzeile');
+        expect(editor.slide!.blocks[0]).toMatchObject({ x: before.x, y: before.y, width: before.width, height: before.height });
+    });
 });

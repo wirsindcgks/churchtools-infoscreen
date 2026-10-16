@@ -51,3 +51,20 @@ export const MOTION_TILES: TileOption[] = [
     { value: 'out', label: t.inspector.motions.out, pictogram: 'motion-out' },
     { value: 'alternate', label: t.inspector.motions.alternate, pictogram: 'motion-alternate' },
 ];
+
+/** The tiles for the division of a slide (Plan.md 87 B): a portrait slide divides into rows, a landscape one into columns. */
+export function splitTiles(portrait: boolean): TileOption[] {
+    return portrait
+        ? [
+              { value: 'none', label: t.inspector.layoutNone, pictogram: 'split-none' },
+              { value: 'halves', label: t.inspector.layoutHalves, pictogram: 'split-halves-rows' },
+              { value: 'wide-narrow', label: t.inspector.layoutWideNarrowRows, pictogram: 'split-wide-narrow-rows' },
+              { value: 'narrow-wide', label: t.inspector.layoutNarrowWideRows, pictogram: 'split-narrow-wide-rows' },
+          ]
+        : [
+              { value: 'none', label: t.inspector.layoutNone, pictogram: 'split-none' },
+              { value: 'halves', label: t.inspector.layoutHalves, pictogram: 'split-halves' },
+              { value: 'wide-narrow', label: t.inspector.layoutWideNarrowColumns, pictogram: 'split-wide-narrow' },
+              { value: 'narrow-wide', label: t.inspector.layoutNarrowWideColumns, pictogram: 'split-narrow-wide' },
+          ];
+}

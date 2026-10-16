@@ -116,3 +116,35 @@ describe('gap targets (Plan.md 79, A3)', () => {
         expect(spacings.length).toBeGreaterThan(0);
     });
 });
+
+describe('areas of the division (Plan.md 87 B)', () => {
+    const regions = [
+        { x: 43, y: 43, width: 896, height: 994 },
+        { x: 982, y: 43, width: 895, height: 994 },
+    ];
+
+    it('aligns an edge with the edge of an area and shows a guide', () => {
+        const { frame, guides } = snapMove({ x: 47, y: 301, width: 300, height: 100 }, { ...base, regions });
+        expect(frame.x).toBe(43);
+        expect(guides).toContainEqual({ axis: 'x', at: 43 });
+    });
+
+    it('centres on an area', () => {
+        // The centre of the first area is 491; the block's centre is 495.
+        const { frame, guides } = snapMove({ x: 345, y: 301, width: 300, height: 100 }, { ...base, regions });
+        expect(frame.x).toBe(341);
+        expect(guides).toContainEqual({ axis: 'x', at: 491 });
+    });
+
+    it('snaps a dragged edge to an area', () => {
+        const { frame } = snapResize({ x: 100, y: 100, width: 835, height: 100 }, 'e', { ...base, regions });
+        expect(frame.x + frame.width).toBe(939);
+    });
+
+    it('makes no gap target of an area', () => {
+        const withAreas = snapMove({ x: 501, y: 300, width: 100, height: 100 }, { ...base, grid: 0, regions });
+        const without = snapMove({ x: 501, y: 300, width: 100, height: 100 }, { ...base, grid: 0 });
+        expect(withAreas.spacings).toEqual([]);
+        expect(without.spacings).toEqual([]);
+    });
+});

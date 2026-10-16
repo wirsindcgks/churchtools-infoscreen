@@ -14,6 +14,7 @@ import { centerCovered, emptyAction } from './empty-block';
 import Icon from './Icon.vue';
 import { isDoubleTap, longPress, TAP_SLOP, type Tap } from './gestures';
 import { handlesOutside } from './handles';
+import { emptyRegions, layoutRegions } from './layout-regions';
 import { neighbourGaps, pairGaps, sizeLabelPlace, type Measure } from './measure';
 import { BLOCK_ICONS, blockBelow, boundingBox, clampFrame } from './ops';
 import QuickMenu from './QuickMenu.vue';
@@ -379,6 +380,7 @@ function moveTo(event: PointerEvent): void {
         threshold: drag.snapPx / fit.value.scale,
         stage: editor.stage,
         others,
+        regions: regions.value,
     };
     const snapped = h === 'move' ? snapMove(f, options) : snapResize(f, h, options);
     guides.value = snapped.guides;
@@ -507,6 +509,14 @@ const gridStyle = computed(() => {
 });
 
 const blocks = computed(() => editor.slide?.blocks ?? []);
+/** The areas of the slide's division (Plan.md 87 B): a guide in the slide's editor, not while a template is edited. */
+const regions = computed(() => (editor.templateEdit ? [] : layoutRegions(editor.slide?.layout, editor.stage)));
+/** The ones without a block get a "+" that opens the sheet for them. */
+const emptyIds = computed(() => new Set(emptyRegions(regions.value, blocks.value).map((r) => r.id)));
+function fillRegion(region: (typeof regions.value)[number]): void {
+    editor.targetRegion = region;
+    editor.blockSheetOpen = true;
+}
 
 /** The short menu (Plan.md 79, C1) stands from 48rem up – a phone has its bar at the bottom instead (C2); reactive, because the window may be resized. */
 const wideQuery = window.matchMedia('(min-width: 48.0625rem)');
@@ -1018,6 +1028,28 @@ function onEmptyAction(b: Block): void {
                 data-testid="grid"
             >
                 <div
+                    v-for="region in regions"
+                    :key="region.id"
+                    class="region"
+                    :style="{ left: `${region.x}px`, top: `${region.y}px`, width: `${region.width}px`, height: `${region.height}px`, '--line': `${1.5 / fit.scale}px` }"
+                    :data-region="region.id"
+                    data-testid="layout-region"
+                >
+                    <button
+                        v-if="emptyIds.has(region.id) && !dragId"
+                        class="region-add"
+                        type="button"
+                        :style="{ '--add': `${36 / fit.scale}px` }"
+                        :title="t.editor.stage.fillRegion"
+                        :aria-label="t.editor.stage.fillRegion"
+                        data-testid="layout-region-add"
+                        @pointerdown.stop
+                        @click.stop="fillRegion(region)"
+                    >
+                        <Icon name="plus" :size="16" />
+                    </button>
+                </div>
+                <div
                     v-for="(guide, i) in guides"
                     :key="i"
                     class="guide"
@@ -1348,6 +1380,35 @@ function onEmptyAction(b: Block): void {
 .template-frame-size {
     top: calc(100% + var(--s) * 12);
     left: 50%;
+}
+/* The areas of the division lie beneath the blocks' frames; only the "+" takes clicks. */
+.region {
+    position: absolute;
+    box-sizing: border-box;
+    pointer-events: none;
+    outline: var(--line) dashed rgba(236, 72, 153, 0.4);
+    outline-offset: calc(var(--line) * -1);
+}
+.region-add {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--add);
+    height: var(--add);
+    transform: translate(-50%, -50%);
+    display: grid;
+    place-items: center;
+    padding: 0;
+    border: var(--line) dashed rgba(236, 72, 153, 0.6);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.85);
+    color: rgb(190, 24, 93);
+    pointer-events: auto;
+    cursor: pointer;
+}
+.region-add :deep(.d-icon) {
+    width: 60%;
+    height: 60%;
 }
 .guide {
     position: absolute;

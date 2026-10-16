@@ -151,6 +151,19 @@ Präsentationen.
 
 ![Editor im Bearbeiten-Modus einer Vorlage: oben die Leiste „Vorlage Seitenkopf – auf 1 Folie" mit „Abbrechen" und „Fertig", die Bausteine im gestrichelten Rahmen, der Rest der Folie blass](bilder/vorlage.png)
 
+## Aufteilung
+
+Eine Folie lässt sich in **Bereiche** gliedern, damit Bausteine sauber nebeneinander stehen: Im Inspektor der Folie
+(nichts gewählt) öffnet ihr **„Aufteilung"** und wählt **Halb und halb**, **Zwei Drittel / ein Drittel** oder umgekehrt –
+auf einer querformatigen Folie in Spalten, auf einer hochkant in Zeilen. Dazu gibt es die Schalter **„Kopfzeile"** und
+**„Fußzeile"**. Die Bereiche erscheinen im Editor als gestrichelte Rahmen unter den Bausteinen; in Vorschau, Miniaturen
+und auf dem Bildschirm sind sie nicht zu sehen. Bausteine rasten an den Kanten und Mitten der Bereiche ein.
+
+In einem **leeren** Bereich steht ein „+": Es öffnet „+ Baustein", und der gewählte Baustein füllt den Bereich. In
+Kopf- und Fußzeile stehen dabei die Vorlagen vorn (die Vorlage behält ihre eigene Größe und sitzt an der linken oberen
+Ecke des Bereichs). Wechselt ihr die Aufteilung, bleiben alle Bausteine, wo sie sind. Neue Folien beginnen ohne
+Aufteilung.
+
 ## Galerie
 
 Bilder aus der Mediathek nacheinander, mit vier Übergängen (Überblenden, Schieben, Aufdecken oder harter Schnitt). Dazu zoomt jedes Bild auf Wunsch langsam hinein, heraus oder abwechselnd (Feld „Bewegung"). Mehrere Bilder auf einmal wählen, mit ↑/↓
