@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 40 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 41 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -438,7 +438,7 @@ export const SocialBlock = v.object({
     style: TextStyle,
 });
 
-export const Block = v.variant('type', [
+export const ContentBlock = v.variant('type', [
     TextBlock,
     ImageBlock,
     ShapeBlock,
@@ -457,6 +457,18 @@ export const Block = v.variant('type', [
     LineBlock,
     SocialBlock,
 ]);
+
+/**
+ * Since 1.41 (Plan.md 87): a template placed on a slide. Its frame is the template's – the slide decides
+ * only `x`/`y`; `width`/`height` here are a copy and not used when expanding. Older players skip it.
+ */
+export const TemplateBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('template'),
+    templateId: Id,
+});
+
+export const Block = v.variant('type', [...ContentBlock.options, TemplateBlock]);
 
 /** The calendars whose appointments a block shows or counts down to. */
 export function blockCalendarIds(block: Block): number[] {
@@ -684,6 +696,24 @@ export const ThemeDoc = v.object({
     updatedBy: v.optional(v.string()),
 });
 
+/**
+ * A template (schema 1.41, Plan.md 87): blocks made once and placed on many slides. One document in the
+ * category `playlists`, which designers write and devices read – no new rights, like `ThemeDoc`. The blocks lie
+ * relative to the top left corner of the frame (`width` x `height`); there is no template inside a template.
+ */
+export const TemplateDoc = v.object({
+    ...DocumentBase,
+    kind: v.literal('template'),
+    name: v.pipe(v.string(), v.minLength(1), v.maxLength(40)),
+    /** The format it is built for. */
+    stage: Stage,
+    width: PositivePx,
+    height: PositivePx,
+    blocks: v.array(ContentBlock),
+    revision: v.pipe(v.number(), v.integer(), v.minValue(1)),
+    updatedBy: v.string(),
+});
+
 /** A reference to a ChurchTools file – never the file itself (Plan.md, Medien). */
 export const MediaDoc = v.object({
     ...DocumentBase,
@@ -753,6 +783,9 @@ export type GroupFields = v.InferOutput<typeof GroupFields>;
 export type RoomEntry = v.InferOutput<typeof RoomEntry>;
 export type SocialLink = v.InferOutput<typeof SocialLink>;
 export type BlockType = Block['type'];
+export type ContentBlock = Exclude<Block, { type: 'template' }>;
+export type ContentBlockType = ContentBlock['type'];
+export type TemplateDoc = v.InferOutput<typeof TemplateDoc>;
 export type SlideDoc = v.InferOutput<typeof SlideDoc>;
 export type PlaylistDoc = v.InferOutput<typeof PlaylistDoc>;
 export type PlaylistDraftDoc = v.InferOutput<typeof PlaylistDraftDoc>;
@@ -773,6 +806,7 @@ export type AnyDoc =
     | MediaDoc
     | SettingsDoc
     | ThemeDoc
+    | TemplateDoc
     | PlaylistDraftDoc
     | SlideDraftDoc;
 

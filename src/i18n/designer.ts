@@ -3,7 +3,7 @@
  * a name is a function. No library. The player never imports this file – what it shows lives in `player.ts`, and
  * what the store tells the designer in `repository.ts`.
  */
-import type { BlockType } from '../model/schema';
+import type { ContentBlockType } from '../model/schema';
 
 /** The heading of the settings page for services, which the inspector names, too. */
 const SERVICES_TITLE = 'Dienste auf Bildschirmen';
@@ -261,7 +261,7 @@ export const t = {
                 rooms: 'Wer heute welchen Raum belegt',
                 social: 'Instagram, YouTube und Co. mit Symbol und Namen',
                 video: 'Ein Video aus der Mediathek',
-            } satisfies Record<BlockType, string>,
+            } satisfies Record<ContentBlockType, string>,
             paste: 'Einfügen',
             pasteWhat: (label: string) => `${label} einfügen`,
         },
@@ -717,6 +717,7 @@ export const t = {
         rooms: 'Raumbelegung',
         social: 'Social Media',
         video: 'Video',
+        template: 'Vorlage',
         /** What a new text block says, and what a new countdown says while its appointment runs. */
         defaultText: 'Text',
         defaultRunningText: 'Läuft gerade',

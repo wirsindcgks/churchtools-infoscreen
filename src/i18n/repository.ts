@@ -21,6 +21,7 @@ export const tr = {
         `Die Präsentation läuft noch auf ${screens.map((s) => `„${s}"`).join(', ')}. Erst dort im Zeitplan eine andere wählen.`,
     playlistMissing: 'Präsentation fehlt.',
     slideMissing: 'Folie fehlt.',
+    templateMissing: 'Vorlage fehlt.',
     mediaMissing: 'Medium fehlt.',
     slideMissingInStore: (id: string) => `Folie ${id} fehlt im Speicherstand.`,
     playlistMissingInStore: (id: string) => `Präsentation ${id} fehlt im Speicherstand.`,

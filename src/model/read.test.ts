@@ -7,6 +7,8 @@ import {
     readScreen,
     readSettings,
     readSlide,
+    readPlaylistOrSchedule,
+    readTemplate,
     readTheme,
     SchemaTooNewError,
     serialize,
@@ -15,7 +17,7 @@ import {
 } from './read';
 import { DEFAULT_FONT } from '../player/fonts';
 import { isVideo, MediaDoc, PlaylistDoc, SCHEMA_VERSION, SettingsDoc, THEME_ID, type SlideDoc } from './schema';
-import { makePlaylist, makeSlide, makeScreen, textBlock } from './testing';
+import { makePlaylist, makeSlide, makeScreen, makeTemplate, templateBlock, textBlock } from './testing';
 
 describe('readSlide – tolerant towards newer data', () => {
     it('skips a block of an unknown type and keeps the rest', () => {
@@ -636,5 +638,42 @@ describe('readSlide – rooms in rows of lists from before 1.34 (Plan.md 82)', (
         const kept = read(33, list({ layout: 'cards', showRooms: true }), { ...list({ showRooms: false }), id: 'a' }, { ...list(), id: 'b' }, next).doc.blocks;
         for (const b of kept) expect(b).not.toHaveProperty('roomsInRows');
         expect(read(34, list({ layout: 'rows', showRooms: true })).doc.blocks[0]).not.toHaveProperty('roomsInRows');
+    });
+});
+
+describe('templates (schema 1.41, Plan.md 87)', () => {
+    const raw = (blocks: unknown[]) => ({ ...makeTemplate(), blocks });
+
+    it('reads a valid template', () => {
+        const template = makeTemplate({ blocks: [textBlock('t')] });
+        expect(readTemplate(JSON.parse(serialize(template)))).toEqual({ doc: template, issues: [] });
+        expect(readPlaylistOrSchedule(template).doc).toEqual(template);
+    });
+
+    it('skips an unknown, a broken and a nested template block and says so', () => {
+        const { doc, issues } = readTemplate(raw([textBlock('ok'), { id: 'x', type: 'hologram' }, templateBlock('nested'), { id: 'b', type: 'text' }]));
+        expect(doc.blocks.map((b) => b.id)).toEqual(['ok']);
+        expect(issues).toHaveLength(3);
+        expect(issues.every((i) => i.documentId === 'template-1')).toBe(true);
+        expect(issues[1]?.message).toContain('(template)');
+    });
+
+    it('reports the skipped blocks through readPlaylistOrSchedule', () => {
+        expect(readPlaylistOrSchedule(raw([{ type: 'hologram' }])).issues).toHaveLength(1);
+    });
+
+    it('serializes strictly, with the size limit', () => {
+        expect(JSON.parse(serialize(makeTemplate())).kind).toBe('template');
+        const big = makeTemplate({ blocks: [textBlock('a', 'x'.repeat(MAX_VALUE_LENGTH))] });
+        expect(() => serialize(big)).toThrow(ValueTooLargeError);
+        expect(() => serialize({ ...makeTemplate(), name: '' })).toThrow(InvalidDocumentError);
+        expect(() => serialize({ ...makeTemplate(), name: 'x'.repeat(41) })).toThrow(InvalidDocumentError);
+    });
+
+    it('loses only the template block without templateId, not the slide', () => {
+        const rawSlide = { ...makeSlide(), blocks: [textBlock('a'), { ...templateBlock('k'), templateId: undefined }, templateBlock('ok')] };
+        const { doc, issues } = readSlide(rawSlide);
+        expect(doc.blocks.map((b) => b.id)).toEqual(['a', 'ok']);
+        expect(issues).toHaveLength(1);
     });
 });

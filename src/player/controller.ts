@@ -80,10 +80,14 @@ export const browserDeps: PlayerDeps = {
  * the designers' schedule revision (schema 1.2) and the revisions of the
  * playlists it shows (1.4) – a save of content touches only those.
  */
-/** Whether designers saved something the loaded screen does not show yet – content, schedule or the theme (1.9). */
+/** Whether designers saved something the loaded screen does not show yet – content, schedule, the theme (1.9) or a template it uses (1.41). */
 export function contentChanged(loaded: LoadedScreen, revisions: ContentRevisions): boolean {
     if ((loaded.schedule?.revision ?? null) !== revisions.schedule) return true;
     if (revisions.theme !== undefined && themeRevision(loaded) !== revisions.theme) return true;
+    if (revisions.templates !== undefined) {
+        const current = revisions.templates;
+        if ((loaded.templates ?? []).some((t) => current[t.id] !== t.revision)) return true;
+    }
     return loaded.playlists.some((p) => (revisions.playlists[p.id] ?? -1) !== (p.revision ?? 0));
 }
 
@@ -94,7 +98,8 @@ function themeRevision(loaded: LoadedScreen): number | null {
 function configVersion(loaded: LoadedScreen | null): string | undefined {
     if (!loaded) return undefined;
     const playlists = loaded.playlists.map((p) => `${p.id}:${p.revision ?? 0}`).join(',');
-    return `${loaded.screen.revision}/${loaded.schedule?.revision ?? 0}/${playlists}/${themeRevision(loaded) ?? '-'}`;
+    const templates = (loaded.templates ?? []).map((t) => `${t.id}:${t.revision}`).join(',');
+    return `${loaded.screen.revision}/${loaded.schedule?.revision ?? 0}/${playlists}/${themeRevision(loaded) ?? '-'}/${templates}`;
 }
 
 export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = browserDeps) {

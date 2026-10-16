@@ -10,6 +10,7 @@ import {
     type Banner,
     type Block,
     type BlockType,
+    type ContentBlockType,
     type ScreenBundle,
     type SlideDoc,
     type TextStyle,
@@ -132,6 +133,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     rooms: t.blocks.rooms,
     social: t.blocks.social,
     video: t.blocks.video,
+    template: t.blocks.template,
 };
 
 export const BLOCK_ICONS: Record<BlockType, IconName> = {
@@ -152,12 +154,16 @@ export const BLOCK_ICONS: Record<BlockType, IconName> = {
     rooms: 'door',
     social: 'share',
     video: 'video',
+    template: 'link',
 };
 
-/** Every block type in German alphabetical order (Plan.md 47): new types find their place by their label. */
-export const PALETTE: [BlockType, string][] = (Object.entries(BLOCK_LABELS) as [BlockType, string][]).sort((a, b) =>
-    a[1].localeCompare(b[1], LOCALE),
-);
+/**
+ * Every block type in German alphabetical order (Plan.md 47): new types find their place by their label. Not the
+ * template (Plan.md 87): it is placed from its own section, not made new.
+ */
+export const PALETTE: [ContentBlockType, string][] = (Object.entries(BLOCK_LABELS) as [BlockType, string][])
+    .filter((entry): entry is [ContentBlockType, string] => entry[0] !== 'template')
+    .sort((a, b) => a[1].localeCompare(b[1], LOCALE));
 
 export type TextLevel = 'heading' | 'subtitle' | 'body';
 
@@ -183,7 +189,7 @@ export function levelOf(style: { fontSize: number; fontWeight: number }, stage: 
 
 /** A new block with sensible defaults, centred on the stage. */
 export function createBlock(
-    type: BlockType,
+    type: ContentBlockType,
     stage: { width: number; height: number },
     calendarIds: number[] = [],
     theme: ThemeDoc = DEFAULT_THEME,

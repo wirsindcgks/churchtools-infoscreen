@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { describe, expect, it } from 'vitest';
 import { defineComponent, h, provide, type Component } from 'vue';
-import type { BlockType } from '../../../model/schema';
+import type { ContentBlockType } from '../../../model/schema';
 import { provideStageContext } from '../../../player/context';
 import { t } from '../../../i18n/designer';
 import { createBlock } from '../../ops';
@@ -15,7 +15,7 @@ import { BLOCK_INSPECTORS } from '.';
  * shows, in the order of the inspector – as the chips are named for a screen reader ("label: what it holds now", or just what it holds where that starts with the label), a
  * field that stands in the menu by its label, a medium by its button.
  */
-const QUICK: Record<BlockType, string[]> = {
+const QUICK: Record<ContentBlockType, string[]> = {
     text: ['Textstufe: Überschrift', 'Farbe', 'Ausrichtung', 'Schatten: Ohne Schatten', 'Hinterlegung'],
     image: ['Bild wählen', 'Einpassen: Ganz zeigen', 'Ton: Ohne Ton'], // "Bild tauschen" once a picture is in
     shape: ['Form: Rechteck', 'Farbe', 'Ecken 0 px'],
@@ -35,7 +35,7 @@ const QUICK: Record<BlockType, string[]> = {
     social: ['Profile: Profil hinzufügen', 'Anordnung: Untereinander', 'Markenfarben', 'Farbe', 'Ausrichtung'],
 };
 
-function draw(type: BlockType, mode: 'quick' | 'full' = 'quick') {
+function draw(type: ContentBlockType, mode: 'quick' | 'full' = 'quick') {
     const pinia = createPinia();
     setActivePinia(pinia);
     const block = createBlock(type, { width: 1920, height: 1080 }, [1]);
@@ -59,7 +59,7 @@ function draw(type: BlockType, mode: 'quick' | 'full' = 'quick') {
 }
 
 /** What the short menu shows of each field, in order: the name of a chip, the label of a field that stands there, the button of a medium. */
-function quickItems(type: BlockType): string[] {
+function quickItems(type: ContentBlockType): string[] {
     const found = draw(type).querySelectorAll('[data-testid="quick-chip"], [data-quick-inline], button.quick-chip[data-quick-open]');
     return [...found].map((el) => {
         if (el.getAttribute('data-testid') === 'quick-chip') return el.getAttribute('aria-label')!;
@@ -69,11 +69,11 @@ function quickItems(type: BlockType): string[] {
 }
 
 describe('the short menu of the blocks (Plan.md 79, B2)', () => {
-    it.each(Object.keys(QUICK) as BlockType[])('%s draws only the fields the table names', (type) => {
+    it.each(Object.keys(QUICK) as ContentBlockType[])('%s draws only the fields the table names', (type) => {
         expect(quickItems(type)).toEqual(QUICK[type]);
     });
 
-    it.each(Object.keys(QUICK) as BlockType[])('%s draws nothing but fields (no hint, count or button of its own)', (type) => {
+    it.each(Object.keys(QUICK) as ContentBlockType[])('%s draws nothing but fields (no hint, count or button of its own)', (type) => {
         const container = draw(type);
         // What a field draws is the chip, the field standing in the menu, or the button of a medium – take those away,
         // and no text, control or picture may be left (a bare wrapper of a layout is no harm).
@@ -97,7 +97,7 @@ describe('the days of a block', () => {
 
 /** A new block brings the default set of formatting with it (Plan.md, Konventionen); a block with a text style shows it. */
 describe('the font of the blocks (Plan.md 83)', () => {
-    const styled = (Object.keys(QUICK) as BlockType[]).filter(
+    const styled = (Object.keys(QUICK) as ContentBlockType[]).filter(
         (type) => 'style' in createBlock(type, { width: 1920, height: 1080 }, [1]),
     );
 

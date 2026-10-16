@@ -10,7 +10,7 @@
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
-import type { BlockType } from '../model/schema';
+import type { ContentBlockType } from '../model/schema';
 import { useEditorStore } from './editor-store';
 import { searchBlocks } from './block-search';
 import Icon from './Icon.vue';
@@ -65,7 +65,7 @@ watch(sheetOpen, async (open) => {
         if (window.matchMedia('(min-width: 48.0625rem)').matches) sheet.value?.querySelector('input')?.focus();
     } else document.removeEventListener('keydown', closeOnEscape);
 });
-function addFromSheet(type: BlockType): void {
+function addFromSheet(type: ContentBlockType): void {
     editor.addBlock(type);
     closeSheet();
 }

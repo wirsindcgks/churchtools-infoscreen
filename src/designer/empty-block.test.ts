@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import type { BlockType } from '../model/schema';
+import type { ContentBlockType } from '../model/schema';
 import { centerCovered, emptyAction } from './empty-block';
 import { createBlock } from './ops';
 
 const STAGE = { width: 1920, height: 1080 };
-const make = (type: BlockType) => createBlock(type, STAGE, [1]);
+const make = (type: ContentBlockType) => createBlock(type, STAGE, [1]);
 
 describe('emptyAction (Plan.md 79, C6)', () => {
     it('names what a fresh block lacks', () => {

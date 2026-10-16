@@ -2,7 +2,7 @@
  * Stores screens as several KV values (Plan.md, E):
  *
  * - `screens`   one index value per screen (slug, stage, revision) – the administrators'
- * - `playlists` one value per playlist, one schedule per screen and the theme – the designers'
+ * - `playlists` one value per playlist, one schedule per screen, the theme and the templates (1.41) – the designers'
  * - `slides`    one value per slide; slides are referenced, never owned
  *
  * Playlists stand on their own (schema 1.4): screens choose them through
@@ -27,7 +27,9 @@ import {
     SchemaTooNewError,
     serialize,
     type ReadIssue,
+    type ReadResult,
 } from '../model/read';
+import { expandTemplates, templateIdsOf } from '../model/templates';
 import {
     blockCalendarIds,
     playlistIdsOf,
@@ -48,6 +50,7 @@ import {
     type ScreenDoc,
     type SettingsDoc,
     type SlideDoc,
+    type TemplateDoc,
     THEME_ID,
     type ThemeDoc,
 } from '../model/schema';
@@ -196,6 +199,8 @@ export interface ContentRevisions {
     playlists: Record<string, number>;
     /** Revision of the theme (schema 1.9); null while there is none. Missing from older designers' data. */
     theme?: number | null;
+    /** Revision of every template of the category (schema 1.41), by id. Missing from older designers' data. */
+    templates?: Record<string, number>;
 }
 
 export interface LoadedScreen extends ScreenBundle {
@@ -209,6 +214,11 @@ export interface LoadedScreen extends ScreenBundle {
     media: MediaDoc[];
     /** The look of all screens (schema 1.9); null while nobody set one – then the defaults apply. */
     theme?: ThemeDoc | null;
+    /**
+     * The templates the slides use (schema 1.41, Plan.md 87) – the slides are already expanded, this is for the
+     * player's quick check. An offline copy of an older player lacks it.
+     */
+    templates?: TemplateDoc[];
     /**
      * The services an administrator allows on screens (schema 1.20, Plan.md 58); empty without settings.
      * An offline copy of an older player lacks it – read it with `?? []`.
@@ -463,10 +473,19 @@ export class ScreenRepository {
         }
 
         const slideIds = new Set(playlists.flatMap((p) => p.slideIds));
-        const slides = slidesRead.docs.map((s) => s.doc).filter((s) => slideIds.has(s.id));
+        const shown = slidesRead.docs.map((s) => s.doc).filter((s) => slideIds.has(s.id));
         for (const id of slideIds) {
-            if (!slides.some((s) => s.id === id)) issues.push({ documentId: id, message: tr.slideMissing });
+            if (!shown.some((s) => s.id === id)) issues.push({ documentId: id, message: tr.slideMissing });
         }
+
+        // Expanded before the media are collected, so that the pictures of a template come along (Plan.md 87).
+        const templateById = new Map(running.templates.map((t) => [t.doc.id, t.doc]));
+        const usedTemplateIds = new Set(shown.flatMap(templateIdsOf));
+        for (const id of usedTemplateIds) {
+            if (!templateById.has(id)) issues.push({ documentId: id, message: tr.templateMissing });
+        }
+        const slides = shown.map((s) => expandTemplates(s, templateById));
+        const templates = [...usedTemplateIds].map((id) => templateById.get(id)).filter((t): t is TemplateDoc => !!t);
 
         const mediaIds = new Set(slides.flatMap(referencedMedia));
         const mediaRead = mediaIds.size ? await this.readAll('media', this.readOwnMedia) : { docs: [], issues: [] };
@@ -480,7 +499,7 @@ export class ScreenRepository {
         const settings = await this.loadSettings().catch(() => null);
         const allowedServiceIds = settings?.allowedServiceIds ?? [];
         const roomTypeIds = settings?.roomTypeIds;
-        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, issues };
+        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, templates, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, issues };
     }
 
     /**
@@ -535,12 +554,52 @@ export class ScreenRepository {
      * something changed does the player load the whole screen.
      */
     async contentRevisions(screenId: string): Promise<ContentRevisions> {
-        const { playlists, schedules, theme } = await this.readPlaylistCategory();
+        const { playlists, schedules, theme, templates } = await this.readPlaylistCategory();
         return {
             schedule: schedules.find((s) => s.doc.screenId === screenId)?.doc.revision ?? null,
             playlists: Object.fromEntries(playlists.map((p) => [p.doc.id, p.doc.revision ?? 0])),
             theme: theme ? (theme.doc.revision ?? 0) : null,
+            templates: Object.fromEntries(templates.map((t) => [t.doc.id, t.doc.revision])),
         };
+    }
+
+    /** Every template (schema 1.41, Plan.md 87), sorted by name. */
+    async listTemplates(): Promise<TemplateDoc[]> {
+        const { templates } = await this.readPlaylistCategory();
+        return templates.map((t) => t.doc).sort((a, b) => a.name.localeCompare(b.name, LOCALE));
+    }
+
+    /**
+     * The designers' save of a template, against its revision like the theme: `expectedRevision` is null while
+     * it is new. Deleting and "where it is used" are not here yet.
+     */
+    async saveTemplate(
+        template: Omit<TemplateDoc, 'schema' | 'kind' | 'revision' | 'updatedBy' | 'updatedAt'>,
+        options: SaveOptions,
+    ): Promise<TemplateDoc> {
+        const { templates } = await this.readPlaylistCategory();
+        const stored = templates.find((t) => t.doc.id === template.id);
+        const current = stored ? stored.doc.revision : null;
+        if (current !== options.expectedRevision) {
+            throw new ConflictError({
+                name: stored?.doc.name ?? template.name,
+                revision: current ?? 0,
+                updatedBy: stored?.doc.updatedBy,
+                updatedAt: stored?.doc.updatedAt,
+            });
+        }
+        const doc: TemplateDoc = {
+            ...template,
+            schema: { ...SCHEMA_VERSION },
+            kind: 'template',
+            revision: (current ?? 0) + 1,
+            updatedBy: options.updatedBy,
+            updatedAt: (options.now ?? new Date()).toISOString(),
+        };
+        const text = serialize(doc);
+        const ids = await this.ensureCategories();
+        await this.upsert(ids.playlists, stored?.valueId, text);
+        return doc;
     }
 
     /** The look of all screens; null while nobody set one (Plan.md, Nächste Schritte 27). */
@@ -1103,18 +1162,20 @@ export class ScreenRepository {
         return this.readAll('screens', readScreen);
     }
 
-    /** The category `playlists`, split into playlists, schedule documents (schema 1.2) and the theme (1.9). */
+    /** The category `playlists`, split into playlists, schedule documents (schema 1.2), the theme (1.9) and templates (1.41). */
     private async readPlaylistCategory() {
-        const read = await this.readAll('playlists', readPlaylistOrSchedule);
+        const read = await this.readAllResults('playlists', readPlaylistOrSchedule);
         const playlists: Stored<PlaylistDoc>[] = [];
         const schedules: Stored<ScheduleDoc>[] = [];
+        const templates: Stored<TemplateDoc>[] = [];
         let theme: Stored<ThemeDoc> | null = null;
         for (const stored of read.docs) {
             if (stored.doc.kind === 'schedule') schedules.push(stored as Stored<ScheduleDoc>);
             else if (stored.doc.kind === 'theme') theme = stored as Stored<ThemeDoc>;
+            else if (stored.doc.kind === 'template') templates.push(stored as Stored<TemplateDoc>);
             else playlists.push(stored as Stored<PlaylistDoc>);
         }
-        return { playlists, schedules, theme, issues: read.issues };
+        return { playlists, schedules, theme, templates, issues: read.issues };
     }
 
     /** The screens with their schedule documents applied – what devices show and designers edit. */
@@ -1129,6 +1190,7 @@ export class ScreenRepository {
             playlists: category.playlists,
             schedules: category.schedules,
             theme: category.theme,
+            templates: category.templates,
             issues: [...screens.issues, ...category.issues],
         };
     }
@@ -1151,14 +1213,21 @@ export class ScreenRepository {
         return { docs, issues };
     }
 
-    private async readAll<T>(key: CategoryKey, read: (raw: unknown) => T) {
+    private readAll<T>(key: CategoryKey, read: (raw: unknown) => T) {
+        return this.readAllResults(key, (raw) => ({ doc: read(raw), issues: [] }));
+    }
+
+    /** Like {@link readAll} for readers that report what they skipped inside a document (templates, 1.41). */
+    private async readAllResults<T>(key: CategoryKey, read: (raw: unknown) => ReadResult<T>) {
         const ids = await this.ensureCategories();
         const values = await this.kv.listValues(ids[key]);
         const docs: Stored<T>[] = [];
         const issues: ReadIssue[] = [];
         for (const value of values) {
             try {
-                docs.push({ valueId: value.id, doc: read(JSON.parse(value.value)) });
+                const result = read(JSON.parse(value.value));
+                docs.push({ valueId: value.id, doc: result.doc });
+                issues.push(...result.issues);
             } catch (error) {
                 rethrowIfTooNew(error);
                 issues.push({ documentId: `${key}/${value.id}`, message: errorMessage(error) });

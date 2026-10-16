@@ -3,7 +3,7 @@ import { serialize } from '../model/read';
 import { textBlock, makeSlide } from '../model/testing';
 import { BLOCK_LABELS, PALETTE, blockBelow as below, clampFrame, createBanner, createBlock, createScreenBundle, levelOf, textLevels, duplicateSlide, fitToStage, freeSpot, move, reorder, reorderMany, boundingBox, slugify, groupOf, withGroups, dropSingleGroups, gatherLayers } from './ops';
 import { History } from './history';
-import { DEFAULT_THEME, type Block, type BlockType } from '../model/schema';
+import { DEFAULT_THEME, type Block, type BlockType, type ContentBlockType } from '../model/schema';
 
 const stage = { width: 1920, height: 1080 };
 
@@ -21,7 +21,7 @@ describe('designer operations', () => {
     });
 
     it('creates every block type valid and on the stage', () => {
-        for (const type of Object.keys(BLOCK_LABELS) as BlockType[]) {
+        for (const [type] of PALETTE) {
             const block = createBlock(type, stage, [2]);
             expect(() => serialize(makeSlide({ blocks: [block] }))).not.toThrow();
             expect(block.x + block.width).toBeLessThanOrEqual(stage.width);
@@ -68,6 +68,7 @@ describe('designer operations', () => {
     it('starts every block with a text style, and every banner, in the theme\'s font (Plan.md 40)', () => {
         const theme = { ...DEFAULT_THEME, font: 'oswald' };
         const styled = (Object.keys(BLOCK_LABELS) as BlockType[])
+            .filter((type): type is ContentBlockType => type !== 'template')
             .map((type) => createBlock(type, stage, [2], theme))
             .filter((block): block is Extract<Block, { style: unknown }> => 'style' in block);
         expect(styled.map((b) => b.type)).toEqual([

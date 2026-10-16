@@ -10,6 +10,7 @@
 import * as v from 'valibot';
 import {
     Block,
+    ContentBlock,
     MediaDoc,
     PlaylistDoc,
     PlaylistDraftDoc,
@@ -19,9 +20,11 @@ import {
     SettingsDoc,
     SlideDoc,
     SlideDraftDoc,
+    TemplateDoc,
     ThemeDoc,
     type AnyDoc,
     type Block as BlockValue,
+    type ContentBlock as ContentBlockValue,
 } from './schema';
 
 /** One value of the KV store holds at most this many characters (G2). */
@@ -134,12 +137,51 @@ export function readTheme(raw: unknown): ThemeDoc {
     return parseStrict(ThemeDoc, raw, 'theme');
 }
 
-/** The category `playlists` holds playlists, since schema 1.2 schedule documents and since 1.9 the theme. */
-export function readPlaylistOrSchedule(raw: unknown): PlaylistDoc | ScheduleDoc | ThemeDoc {
+/** Blocks are parsed one by one so that one unknown block cannot take the document down. */
+function readBlocks<S extends v.GenericSchema>(
+    schema: S,
+    rawBlocks: unknown[],
+    documentId: string,
+): { blocks: v.InferOutput<S>[]; issues: ReadIssue[] } {
+    const issues: ReadIssue[] = [];
+    const blocks: v.InferOutput<S>[] = [];
+    rawBlocks.forEach((rawBlock, index) => {
+        const result = v.safeParse(schema, rawBlock);
+        if (result.success) {
+            blocks.push(result.output);
+            return;
+        }
+        const type = (rawBlock as { type?: unknown })?.type;
+        issues.push({
+            documentId,
+            message: `Block ${index + 1} (${String(type)}) übersprungen: ${describe(result.issues)}`,
+        });
+    });
+    return { blocks, issues };
+}
+
+function rawBlocksOf(raw: unknown): unknown[] {
+    return Array.isArray((raw as { blocks?: unknown })?.blocks) ? (raw as { blocks: unknown[] }).blocks : [];
+}
+
+/** A template (1.41, Plan.md 87): blocks are read like a slide's, but one that is a template itself is skipped. */
+export function readTemplate(raw: unknown): ReadResult<TemplateDoc> {
+    checkVersion(raw);
+    const template = parseStrict(TemplateDoc, { ...(raw as object), blocks: [] }, 'template');
+    const { blocks, issues } = readBlocks<typeof ContentBlock>(ContentBlock, rawBlocksOf(raw), template.id);
+    return { doc: { ...template, blocks: blocks as ContentBlockValue[] }, issues };
+}
+
+/**
+ * The category `playlists` holds playlists, since schema 1.2 schedule documents, since 1.9 the theme and since
+ * 1.41 templates. The issues are those of a template's skipped blocks.
+ */
+export function readPlaylistOrSchedule(raw: unknown): ReadResult<PlaylistDoc | ScheduleDoc | ThemeDoc | TemplateDoc> {
     const kind = (raw as { kind?: unknown } | null)?.kind;
-    if (kind === 'schedule') return readSchedule(raw);
-    if (kind === 'theme') return readTheme(raw);
-    return readPlaylist(raw);
+    if (kind === 'schedule') return { doc: readSchedule(raw), issues: [] };
+    if (kind === 'theme') return { doc: readTheme(raw), issues: [] };
+    if (kind === 'template') return readTemplate(raw);
+    return { doc: readPlaylist(raw), issues: [] };
 }
 
 /**
@@ -161,26 +203,12 @@ function migrateRoomsInRows(raw: unknown, rawBlocks: unknown[]): { blocks: unkno
 /** Blocks are parsed one by one so that one unknown block cannot take the slide down. */
 export function readSlide(raw: unknown): ReadResult<SlideDoc> {
     checkVersion(raw);
-    const found: unknown[] = Array.isArray((raw as { blocks?: unknown })?.blocks) ? (raw as { blocks: unknown[] }).blocks : [];
-    const { blocks: rawBlocks, migrated } = migrateRoomsInRows(raw, found);
+    const { blocks: rawBlocks, migrated } = migrateRoomsInRows(raw, rawBlocksOf(raw));
     const slide = parseStrict(SlideDoc, { ...(raw as object), blocks: [] }, 'slide');
     if (migrated) slide.schema = { ...SCHEMA_VERSION };
 
-    const issues: ReadIssue[] = [];
-    const blocks: BlockValue[] = [];
-    rawBlocks.forEach((rawBlock, index) => {
-        const result = v.safeParse(Block, rawBlock);
-        if (result.success) {
-            blocks.push(result.output);
-            return;
-        }
-        const type = (rawBlock as { type?: unknown })?.type;
-        issues.push({
-            documentId: slide.id,
-            message: `Block ${index + 1} (${String(type)}) übersprungen: ${describe(result.issues)}`,
-        });
-    });
-    return { doc: { ...slide, blocks }, issues };
+    const { blocks, issues } = readBlocks<typeof Block>(Block, rawBlocks, slide.id);
+    return { doc: { ...slide, blocks: blocks as BlockValue[] }, issues };
 }
 
 /**
@@ -213,6 +241,7 @@ export function serialize(doc: AnyDoc): string {
         media: MediaDoc,
         settings: SettingsDoc,
         theme: ThemeDoc,
+        template: TemplateDoc,
         'playlist-draft': PlaylistDraftDoc,
         'slide-draft': SlideDraftDoc,
     } as const;

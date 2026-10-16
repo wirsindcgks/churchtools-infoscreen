@@ -7,7 +7,7 @@
  */
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef, watch } from 'vue';
-import { blockCalendarIds, DEFAULT_THEME, type Block, type BlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type ThemeDoc } from '../model/schema';
+import { blockCalendarIds, DEFAULT_THEME, type Block, type ContentBlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type ThemeDoc } from '../model/schema';
 import {
     ConflictError,
     copySlide,
@@ -515,7 +515,7 @@ export const useEditorStore = defineStore('editor', () => {
         change((b) => Object.assign(slideIn(b, id) ?? {}, patch));
     }
 
-    function addBlock(type: BlockType): void {
+    function addBlock(type: ContentBlockType): void {
         if (!slide.value) return;
         const created = freeSpot(createBlock(type, stage.value, calendarIds.value, theme.value), slide.value.blocks, stage.value);
         const id = slide.value.id;

@@ -3,6 +3,7 @@ import { NotAuthenticatedError, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import { DEMO_BUNDLE } from '../dev/demo';
 import { DEFAULT_THEME, type Block } from '../model/schema';
+import { makeTemplate } from '../model/testing';
 import type { Group, HomepageGroups } from '../groups/normalize';
 import type { Post } from '../posts/normalize';
 import type { RoomBookings } from '../rooms/normalize';
@@ -229,6 +230,36 @@ describe('player controller', () => {
         const themed = { ...base, theme: { ...DEFAULT_THEME, revision: 1 } };
         expect(contentChanged(themed, { schedule: null, playlists: { 'demo-playlist': 1 }, theme: 1 })).toBe(false);
         expect(contentChanged(themed, { schedule: null, playlists: { 'demo-playlist': 1 }, theme: 2 })).toBe(true);
+    });
+
+    it('notices a changed or vanished template, and ignores data from before templates (Plan.md 87)', () => {
+        const base = { ...loaded(), templates: [makeTemplate({ id: 'kopf', revision: 2 })] };
+        const at = (templates?: Record<string, number>) => ({ schedule: null, playlists: { 'demo-playlist': 1 }, templates });
+        expect(contentChanged(base, at({ kopf: 2 }))).toBe(false);
+        expect(contentChanged(base, at({ kopf: 3 }))).toBe(true);
+        expect(contentChanged(base, at({}))).toBe(true);
+        expect(contentChanged(base, at(undefined))).toBe(false);
+        expect(contentChanged(loaded(), at({ other: 1 }))).toBe(false); // a template no loaded slide uses
+    });
+
+    it('loads the screen again after a template changed, and fetches the data then (Plan.md 87)', async () => {
+        const first = { ...loaded(), templates: [makeTemplate({ id: 'kopf', revision: 1 })] };
+        const revisions = { schedule: null as number | null, playlists: { 'demo-playlist': 1 }, templates: { kopf: 1 } };
+        const data = fakeData({ loadScreen: vi.fn(async () => first), contentRevisions: vi.fn(async () => revisions) });
+        const player = createPlayer('demo', data, fakeDeps());
+        await player.start();
+        const loads = () => vi.mocked(data.loadScreen).mock.calls.length;
+        const fetches = () => vi.mocked(data.appointments).mock.calls.length;
+        await vi.advanceTimersByTimeAsync(25_000);
+        expect(loads()).toBe(1);
+
+        revisions.templates = { kopf: 2 };
+        vi.mocked(data.loadScreen).mockResolvedValue({ ...first, templates: [makeTemplate({ id: 'kopf', revision: 2 })] });
+        const before = fetches();
+        await vi.advanceTimersByTimeAsync(25_000);
+        expect(loads()).toBe(2);
+        expect(fetches()).toBeGreaterThan(before);
+        player.stop();
     });
 
     it('shows a screen with rules only after the first clock check, not the default playlist first', async () => {

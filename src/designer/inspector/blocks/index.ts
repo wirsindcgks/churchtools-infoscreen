@@ -14,6 +14,7 @@ import RoomsInspector from './RoomsInspector.vue';
 import ShapeInspector from './ShapeInspector.vue';
 import SlideshowInspector from './SlideshowInspector.vue';
 import SocialInspector from './SocialInspector.vue';
+import TemplateInspector from './TemplateInspector.vue';
 import TextInspector from './TextInspector.vue';
 import VideoInspector from './VideoInspector.vue';
 import WebInspector from './WebInspector.vue';
@@ -39,4 +40,5 @@ export const BLOCK_INSPECTORS: Record<BlockType, Component> = {
     posts: PostsInspector,
     groups: GroupsInspector,
     rooms: RoomsInspector,
+    template: TemplateInspector,
 };

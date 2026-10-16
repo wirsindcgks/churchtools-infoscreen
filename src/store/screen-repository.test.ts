@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ValueTooLargeError } from '../model/read';
-import { makePlaylist, makeScreen, makeSlide, textBlock } from '../model/testing';
+import { makePlaylist, makeScreen, makeSlide, makeTemplate, templateBlock, textBlock } from '../model/testing';
 import type { Banner, ScreenBundle } from '../model/schema';
 import { MemoryKv } from './memory-kv';
 import {
@@ -519,12 +519,12 @@ describe('ScreenRepository', () => {
         it('tells the player cheaply what was last saved: one read of the playlists (Plan.md 26)', async () => {
             const { screen } = await created();
             const ids = await repo.ensureCategories();
-            expect(await repo.contentRevisions(screen.id)).toEqual({ schedule: null, playlists: { [makePlaylist().id]: 0 }, theme: null });
+            expect(await repo.contentRevisions(screen.id)).toEqual({ schedule: null, playlists: { [makePlaylist().id]: 0 }, theme: null, templates: {} });
             const loaded = await repo.loadPlaylist(makePlaylist().id);
             await repo.savePlaylist(loaded, { expectedRevision: 0, updatedBy: 'Anna' });
             await repo.saveSchedule(screen.id, { defaultPlaylistId: makePlaylist().id, rules: [] }, { expectedRevision: null, updatedBy: 'Anna' });
             kv.reads.length = 0;
-            expect(await repo.contentRevisions(screen.id)).toEqual({ schedule: 1, playlists: { [makePlaylist().id]: 1 }, theme: null });
+            expect(await repo.contentRevisions(screen.id)).toEqual({ schedule: 1, playlists: { [makePlaylist().id]: 1 }, theme: null, templates: {} });
             expect(kv.reads).toEqual([ids.playlists]);
         });
 
@@ -782,6 +782,97 @@ describe('ScreenRepository', () => {
             const ids = await repo.ensureCategories();
             await kv.createValue(ids.settings, JSON.stringify({ ...settings, allowedServiceIds: ['x'] }));
             expect((await repo.loadScreen('foyer-links')).allowedServiceIds).toEqual([]);
+        });
+    });
+
+    describe('templates (schema 1.41, Plan.md 87)', () => {
+        const head = {
+            id: 'template-1',
+            name: 'Seitenkopf',
+            stage: { width: 1920, height: 1080 },
+            width: 1920,
+            height: 200,
+            blocks: [{ id: 'bild', type: 'image' as const, x: 0, y: 0, width: 100, height: 100, mediaId: 'logo', fit: 'contain' as const }],
+        };
+        const withTemplate = (templateId = 'template-1') =>
+            bundle({ slides: [makeSlide({ id: 'slide-1', blocks: [textBlock('t1'), templateBlock('kopf', templateId, 50, 60)] }), makeSlide({ id: 'slide-2' })] });
+        async function logo() {
+            await repo.saveMedia({ schema: { major: 1, minor: 1 }, kind: 'media', id: 'logo', name: 'Logo', fileId: 7, imageUrl: 'https://gemeinde.example/images/7/abc' });
+        }
+
+        it('saves new, updates against the revision and reports a conflict with the stored name', async () => {
+            const first = await repo.saveTemplate(head, { expectedRevision: null, updatedBy: 'Anna' });
+            expect(first).toMatchObject({ kind: 'template', revision: 1, updatedBy: 'Anna', name: 'Seitenkopf' });
+            expect(first.schema).toEqual({ major: 1, minor: 41 });
+            const second = await repo.saveTemplate({ ...head, name: 'Kopf' }, { expectedRevision: 1, updatedBy: 'Ben' });
+            expect(second.revision).toBe(2);
+            const error = await repo.saveTemplate({ ...head, name: 'Dritter' }, { expectedRevision: 1, updatedBy: 'Cleo' }).catch((e: unknown) => e);
+            expect(error).toBeInstanceOf(ConflictError);
+            expect((error as ConflictError).current).toMatchObject({ name: 'Kopf', revision: 2, updatedBy: 'Ben' });
+            await expect(repo.saveTemplate(head, { expectedRevision: null, updatedBy: 'Cleo' })).rejects.toBeInstanceOf(ConflictError);
+        });
+
+        it('lists them sorted by name', async () => {
+            await repo.saveTemplate({ ...head, id: 'a', name: 'Zeile' }, { expectedRevision: null, updatedBy: 'Anna' });
+            await repo.saveTemplate({ ...head, id: 'b', name: 'Ärger' }, { expectedRevision: null, updatedBy: 'Anna' });
+            await repo.saveTemplate({ ...head, id: 'c', name: 'Kopf' }, { expectedRevision: null, updatedBy: 'Anna' });
+            expect((await repo.listTemplates()).map((t) => t.name)).toEqual(['Ärger', 'Kopf', 'Zeile']);
+        });
+
+        it('expands the slides when loading, brings the picture of the template along and names only used templates', async () => {
+            await logo();
+            await repo.saveTemplate(head, { expectedRevision: null, updatedBy: 'Anna' });
+            await repo.saveTemplate({ ...head, id: 'unused', name: 'Unbenutzt' }, { expectedRevision: null, updatedBy: 'Anna' });
+            await repo.saveScreen(withTemplate(), { ...save, expectedRevision: null });
+            const loaded = await repo.loadScreen('foyer-links');
+            const blocks = loaded.slides.find((s) => s.id === 'slide-1')!.blocks;
+            expect(blocks.map((b) => b.id)).toEqual(['t1', 'kopf/bild']);
+            expect([blocks[1]?.x, blocks[1]?.y]).toEqual([50, 60]);
+            expect(loaded.media.map((m) => m.id)).toEqual(['logo']);
+            expect(loaded.templates?.map((t) => t.id)).toEqual(['template-1']);
+            expect(loaded.issues).toEqual([]);
+        });
+
+        it('reports a template that is missing and draws nothing for it', async () => {
+            await repo.saveScreen(withTemplate('weg'), { ...save, expectedRevision: null });
+            const loaded = await repo.loadScreen('foyer-links');
+            expect(loaded.slides.find((s) => s.id === 'slide-1')!.blocks.map((b) => b.id)).toEqual(['t1']);
+            expect(loaded.issues).toEqual([{ documentId: 'weg', message: 'Vorlage fehlt.' }]);
+            expect(loaded.templates).toEqual([]);
+        });
+
+        it('keeps the skipped blocks of a template in the issues', async () => {
+            await repo.saveScreen(bundle(), { ...save, expectedRevision: null });
+            const ids = await repo.ensureCategories();
+            await kv.createValue(ids.playlists, JSON.stringify({ ...makeTemplate(), blocks: [{ id: 'x', type: 'hologram' }] }));
+            const loaded = await repo.loadScreen('foyer-links');
+            expect(loaded.issues).toHaveLength(1);
+            expect(loaded.issues[0]).toMatchObject({ documentId: 'template-1' });
+        });
+
+        it('hands the quick check the revision of every template', async () => {
+            const { id } = await repo.saveScreen(bundle(), { ...save, expectedRevision: null });
+            await repo.saveTemplate(head, { expectedRevision: null, updatedBy: 'Anna' });
+            await repo.saveTemplate(head, { expectedRevision: 1, updatedBy: 'Anna' });
+            await repo.saveTemplate({ ...head, id: 'other' }, { expectedRevision: null, updatedBy: 'Anna' });
+            expect((await repo.contentRevisions(id)).templates).toEqual({ 'template-1': 2, other: 1 });
+        });
+
+        it('leaves templates standing when collecting orphans', async () => {
+            await repo.saveScreen(bundle(), { ...save, expectedRevision: null });
+            await repo.saveTemplate(head, { expectedRevision: null, updatedBy: 'Anna' });
+            await repo.collectOrphans(new Date(Date.now() + ORPHAN_GRACE_MS + 1000));
+            expect(await repo.listTemplates()).toHaveLength(1);
+        });
+
+        it('reads on when the category holds a document of a kind it does not know (an older player with a template)', async () => {
+            await repo.saveScreen(bundle(), { ...save, expectedRevision: null });
+            const ids = await repo.ensureCategories();
+            await kv.createValue(ids.playlists, JSON.stringify({ schema: { major: 1, minor: 41 }, kind: 'something-new', id: 'n' }));
+            const loaded = await repo.loadScreen('foyer-links');
+            expect(loaded.issues).toHaveLength(1);
+            expect(loaded.playlists.map((p) => p.id)).toEqual(['playlist-1']);
+            expect(loaded.slides).toHaveLength(2);
         });
     });
 });

@@ -1,9 +1,9 @@
 /** Builders for tests. They create data from the types, not from recorded fixtures. */
-import { SCHEMA_VERSION, type Block, type PlaylistDoc, type ScreenDoc, type SlideDoc } from './schema';
+import { SCHEMA_VERSION, type Block, type ContentBlock, type PlaylistDoc, type ScreenDoc, type SlideDoc, type TemplateDoc } from './schema';
 
 const version = { ...SCHEMA_VERSION };
 
-export function textBlock(id: string, text = 'Willkommen'): Block {
+export function textBlock(id: string, text = 'Willkommen'): ContentBlock {
     return {
         id,
         type: 'text',
@@ -48,4 +48,25 @@ export function makeScreen(overrides: Partial<ScreenDoc> = {}): ScreenDoc {
         revision: 0,
         ...overrides,
     };
+}
+
+export function makeTemplate(overrides: Partial<TemplateDoc> = {}): TemplateDoc {
+    return {
+        schema: version,
+        kind: 'template',
+        id: 'template-1',
+        name: 'Seitenkopf',
+        stage: { width: 1920, height: 1080 },
+        width: 1920,
+        height: 200,
+        blocks: [],
+        revision: 1,
+        updatedBy: 'Anna',
+        ...overrides,
+    };
+}
+
+/** A template block as a slide holds it. */
+export function templateBlock(id: string, templateId = 'template-1', x = 0, y = 0): Block {
+    return { id, type: 'template', templateId, x, y, width: 1920, height: 200 };
 }
