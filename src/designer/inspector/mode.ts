@@ -17,6 +17,9 @@ export const QUICK_VARIANT: InjectionKey<'float' | 'bar'> = Symbol('quick-varian
 /** Set inside the open field of the short menu: a foldable section there shows its content without the fold. */
 export const IN_QUICK_FIELD: InjectionKey<Readonly<Ref<boolean>>> = Symbol('in-quick-field');
 
+/** The group name the inspector gives its foldable sections, so only one stands open at a time (Plan.md 91); a section's own `group` wins, `false` leaves it out. */
+export const SECTION_GROUP: InjectionKey<string> = Symbol('section-group');
+
 /** The title of the open sheet of the phone's bar, below it (Plan.md 88, C): a field with the same label keeps it for the screen reader only. */
 export const SHEET_TITLE: InjectionKey<Readonly<Ref<string | null>>> = Symbol('sheet-title');
 

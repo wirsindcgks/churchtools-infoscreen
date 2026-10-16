@@ -177,3 +177,19 @@ test('dragged into an occupied area, a block stays free and keeps its size', asy
     await openSection(page, 'arrange');
     await expect(page.getByTestId('region-fixed')).not.toBeChecked();
 });
+
+test('opening one section of the inspector folds the other; "Bausteine dieser Folie" stays open (Plan.md 91)', async ({ page }) => {
+    await emptySlide(page);
+    await addBlock(page, 'shape');
+    await openSection(page, 'arrange');
+    await openSection(page, 'measures');
+    await expect(page.getByTestId('section-arrange')).not.toHaveAttribute('open', '');
+    await expect(page.getByTestId('section-measures')).toHaveAttribute('open', '');
+
+    // Without a block: the list of the slide's blocks is no setting, it stays beside any open section.
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
+    await expect(page.getByTestId('slide-inspector')).toBeVisible();
+    await openSection(page, 'layout');
+    await expect(page.getByTestId('slide-blocks')).toHaveAttribute('open', '');
+    await expect(page.getByTestId('section-layout')).toHaveAttribute('open', '');
+});

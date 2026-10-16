@@ -69,6 +69,8 @@ und Iststand in `docs/Plan-Archiv.md`, Punkt 88; was offen ist, in `Plan.md`, Pu
 - **„Darstellung" ist immer ein Klappmenü** (Kacheln zuerst, dann Zeitraum, Anzahl, Dauer, Schalter, Farben), nie die
   Beschriftung eines Feldes. **„Schrift"** enthält nur, was den Text betrifft.
 - **Zum Start sind alle Klappmenüs zu** (Ausnahme: „Bausteine dieser Folie", wenn nichts gewählt ist).
+- **Immer nur ein Klappmenü offen** – öffnet man eins, schließt sich das andere (Gruppe über `InspectorSection`); ausgenommen
+  ist nur „Bausteine dieser Folie". Neue Seiten mit Klappmenüs geben ihnen eine eigene Gruppe.
 - **Jedes Klappmenü hat eine Zusammenfassung in Worten;** Titel höchstens drei Wörter.
 - **Das (i) am Ende der Zeile, die es erklärt,** oder im Titel des Klappmenüs – nie eine Zeile nur fürs (i).
 - **Ein Bedienelement je Art,** Felder untereinander, kein Klappmenü im Klappmenü.

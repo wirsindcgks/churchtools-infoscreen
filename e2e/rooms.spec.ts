@@ -534,8 +534,10 @@ test('the services at an appointment: only open ones are offered, only accepted 
     await expect(stage(page).getByTestId('next-services')).toHaveText('Predigt: Anna Beispiel · Moderation: Ben Muster');
     for (const secret of ['Nochoffen', 'Dirk', 'Geheim']) await expect(stage(page)).not.toContainText(secret);
 
+    await openSection(page, 'appearance');
     await choose(page, 'next-layout', 'classic');
     await expect(stage(page).getByTestId('next-services')).toContainText('Predigt: Anna Beispiel');
+    await openSection(page, 'services');
     await page.getByTestId('service-2').uncheck();
     await expect(stage(page).getByTestId('next-services')).toHaveText('Predigt: Anna Beispiel');
 });
@@ -595,6 +597,7 @@ test('the services in the list of appointments: as cards, not as rows', async ({
     await page.getByTestId('service-1').check();
     await expect(stage(page).getByTestId('list-services')).toHaveText('Predigt: Anna Beispiel');
 
+    await openSection(page, 'appearance');
     await choose(page, 'list-layout', 'rows');
     await expect(page.getByTestId('services-fieldset')).toHaveCount(0);
     await expect(stage(page)).not.toContainText('Anna Beispiel');
@@ -652,12 +655,12 @@ test('the cards of the list: date column of one width, place under the date, thr
         await openSection(page, 'appearance');
         await choose(page, 'list-layout', 'cards');
         await openSection(page, 'services');
-        await openSection(page, 'rooms-for');
         await page.getByTestId('service-1').check();
         // Tall enough for all four cards on one page.
         await openSection(page, 'measures');
         await page.getByTestId('inspector-height').fill('900');
         await page.getByTestId('inspector-height').blur();
+        await openSection(page, 'rooms-for');
         await expect(stage(page).getByTestId('list-card')).toHaveCount(4);
         await expect(stage(page).getByTestId('list-services')).toHaveText('Predigt: Anna Beispiel');
         await expect(page.getByTestId('rooms-calendar-2')).toBeVisible();
@@ -723,6 +726,7 @@ test('visitor overview is offered by the appointment list and shares its rooms a
         await page.getByTestId(`inspector-${key}`).fill(String(value));
         await page.getByTestId(`inspector-${key}`).blur();
     }
+    await openSection(page, 'appearance');
     await page.getByTestId('show-all').check();
     const preview = stage(page).locator('.paged--visitor');
     await expect(preview.getByTestId('list-visitor-row').first()).toContainText('Gemeindefrühstück');

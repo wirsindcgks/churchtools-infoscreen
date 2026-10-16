@@ -5,7 +5,7 @@
  * Without a block the slide and the playlist show instead. What a block shows lives in
  * `inspector/blocks/`, one component per type.
  */
-import { computed } from 'vue';
+import { computed, provide } from 'vue';
 import type { AppointmentTag, Calendar, PostGroup } from '../ct/api';
 import { t } from '../i18n/designer';
 import type { HomepageEntry } from '../groups/normalize';
@@ -17,6 +17,7 @@ import Icon from './Icon.vue';
 import InspectorSection from './InspectorSection.vue';
 import { BLOCK_INSPECTORS } from './inspector/blocks';
 import { provideInspectorContext } from './inspector/context';
+import { SECTION_GROUP } from './inspector/mode';
 import NumberField from './inspector/fields/NumberField.vue';
 import ToggleField from './inspector/fields/ToggleField.vue';
 import SlideInspector from './inspector/SlideInspector.vue';
@@ -34,6 +35,9 @@ const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'sli
 
 // The inspectors below read the lists through getters, so they follow the props.
 provideInspectorContext(() => props, (kind) => emit('pick-image', kind));
+
+// One foldable section open at a time (Plan.md 91); the list of the slide's blocks opts out below.
+provide(SECTION_GROUP, 'inspector');
 
 const editor = useEditorStore();
 const block = computed(() => editor.block);
@@ -282,7 +286,7 @@ const LAYERS = [
                     />
                 </div>
             </InspectorSection>
-            <InspectorSection v-if="rows.length" id="slide-blocks" :title="t.templates.edit.blocksTitle" default-open class="slide-blocks" data-testid="slide-blocks">
+            <InspectorSection v-if="rows.length" id="slide-blocks" :group="false" :title="t.templates.edit.blocksTitle" default-open class="slide-blocks" data-testid="slide-blocks">
                 <p class="layer-position">{{ t.inspector.topIsFront }}</p>
                 <LayerList @picked="emit('picked')" />
             </InspectorSection>
@@ -290,7 +294,7 @@ const LAYERS = [
 
         <template v-else>
             <!-- Without a block chosen the slide's blocks come first, for the finger and for blocks hidden under others. -->
-            <InspectorSection v-if="rows.length" id="slide-blocks" :title="t.inspector.slideBlocks" default-open class="slide-blocks" data-testid="slide-blocks">
+            <InspectorSection v-if="rows.length" id="slide-blocks" :group="false" :title="t.inspector.slideBlocks" default-open class="slide-blocks" data-testid="slide-blocks">
                 <p class="layer-position">{{ t.inspector.topIsFront }}</p>
                 <LayerList @picked="emit('picked')" />
             </InspectorSection>
