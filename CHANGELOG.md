@@ -4,6 +4,21 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.28.0] – 2026-10-16
+
+### Neu
+
+- **Aufteilung der Folie.** Im Inspektor der Folie teilt „Aufteilung" die Fläche halb und halb oder zu zwei Dritteln
+  und einem Drittel, dazu auf Wunsch eine Kopf- und eine Fußzeile. Quer entstehen Spalten, hochkant Zeilen. Die
+  Bereiche stehen gestrichelt auf der Bildfläche, nur im Editor; Bausteine rasten an ihren Kanten ein.
+- **Ein Bereich füllt sich mit einem Klick.** Das „+" in einem leeren Bereich öffnet „+ Baustein", der gewählte
+  Baustein nimmt den ganzen Bereich ein. In Kopf- und Fußzeile stehen die Vorlagen zuerst zur Wahl.
+- **Im Bereich fest.** Ein Baustein im Bereich behält Lage und Größe, sein Inhalt bleibt bearbeitbar; das Schloss lässt
+  sich zusätzlich setzen. Der Schalter „Im Bereich fest" unter „Anordnen" löst ihn oder bindet ihn wieder. Wechselt die
+  Aufteilung, wandern feste Bausteine in ihren Bereich mit, freie bleiben stehen.
+- **Vorhandene Bausteine einziehen.** Wer einen Baustein in einen leeren Bereich zieht, setzt ihn dort fest; der
+  Bereich ist beim Ziehen hervorgehoben. In einem belegten Bereich bleibt er frei.
+
 ## [0.27.0] – 2026-10-16
 
 ### Neu
@@ -1145,6 +1160,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.28.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.28.0
 [0.27.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.27.0
 [0.26.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.26.0
 [0.25.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.25.0
