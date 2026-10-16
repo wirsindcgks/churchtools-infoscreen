@@ -360,7 +360,7 @@ dabei aussparen („Nur unbenutzte löschen").
 
 Einmal für alle Bildschirme: Ecken, Akzentfarbe, Farben und Schrift für neue Bausteine, Termine schlicht oder als Karten,
 das Format der Bilder – mit Vorschau. Die Einstellungen stehen in vier Klappmenüs – **Farben**, **Ecken und Karten**,
-**Schrift** und **Termine** –, die zugeklappt in Worten sagen, was eingestellt ist. Dazu eine **Farbpalette**: bis zu zwölf Farben der Gemeinde mit Namen
+**Schrift** und **Termine** –, die zugeklappt in Worten sagen, was eingestellt ist; offen ist immer nur eins. Dazu eine **Farbpalette**: bis zu zwölf Farben der Gemeinde mit Namen
 („Gemeindeblau"), in einer Reihenfolge, die ihr selbst bestimmt. Der **Kartenhintergrund** – leicht getönt, ohne oder
 in einer eigenen Farbe mit Deckkraft – gilt für die Karten von „Nächster Termin" (Form „Modern"), „Beiträge" und
 „Gruppen" sowie die Tür-Anzeige der Raumbelegung. Unter **„Vorlagen"** stehen die [Vorlagen](#vorlagen) zum Bearbeiten,

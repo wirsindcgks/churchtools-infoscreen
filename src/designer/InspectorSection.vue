@@ -3,7 +3,8 @@
  * A foldable part of the inspector (Plan.md 47) on a native `<details>`: the title, and while it
  * is folded a short summary of what is set inside. Open or closed is remembered per section id,
  * so a section opened once stays open for the next block, too (a section never touched is closed, unless `defaultOpen`). An `info` slot puts an (i) at the end of the
- * title line while the section is open; its text stands at the top of the body. In the short menu only the body shows, and
+ * title line while the section is open; its text stands at the top of the body. Sections sharing a `group` open one at a time
+ * (the native `name` of `<details>`): opening one folds the other, so the page keeps its overview (Plan.md 89). In the short menu only the body shows, and
  * so it does in the open field of a chip there (without the explanation: a fold would only be one more click, an (i) a row of its own).
  */
 import { computed, inject, ref, unref } from 'vue';
@@ -12,7 +13,7 @@ import InfoHint from './InfoHint.vue';
 import { IN_QUICK_FIELD, INSPECTOR_MODE } from './inspector/mode';
 import { sectionState } from './section-state';
 
-const props = defineProps<{ id: string; title: string; summary?: string; defaultOpen?: boolean }>();
+const props = defineProps<{ id: string; title: string; summary?: string; defaultOpen?: boolean; group?: string }>();
 const slots = defineSlots<{ default(): unknown; 'summary-extra'?(): unknown; info?(): unknown }>();
 const infoOpen = ref(false);
 /** In the short menu (Plan.md 79, B2) a section has no head: its fields stand there on their own. */
@@ -31,7 +32,7 @@ function onToggle(id: string, event: Event): void {
     <div v-else-if="inChip" class="body">
         <slot />
     </div>
-    <details v-else class="section" :open="isOpen" :data-testid="`section-${id}`" @toggle="onToggle(id, $event)">
+    <details v-else class="section" :name="group" :open="isOpen" :data-testid="`section-${id}`" @toggle="onToggle(id, $event)">
         <summary :data-testid="`section-${id}-toggle`">
             <Icon name="chevron-down" :size="14" class="chevron" />
             <span class="title">{{ title }}</span>

@@ -27,3 +27,14 @@ test('a change shows in the summary once the section is folded again (Plan.md 89
     await expect(page.getByTestId('section-design-surfaces')).not.toHaveAttribute('open', '');
     await expect(page.getByTestId('section-design-surfaces-toggle')).toContainText('Eckig · leicht getönt');
 });
+
+test('opening a section folds the one open before, so the page keeps its overview (Plan.md 89)', async ({ page }) => {
+    await page.goto('design');
+    await openSection(page, 'design-colors');
+    await openSection(page, 'design-surfaces');
+    await expect(page.getByTestId('section-design-colors')).not.toHaveAttribute('open', '');
+    await expect(page.getByTestId('section-design-surfaces')).toHaveAttribute('open', '');
+    await page.reload();
+    await expect(page.getByTestId('section-design-surfaces')).toHaveAttribute('open', '');
+    await expect(page.getByTestId('section-design-colors')).not.toHaveAttribute('open', '');
+});

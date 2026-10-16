@@ -393,8 +393,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     }
     await page.getByTestId('theme-save').click();
     await expect(page.getByTestId('theme-saved')).toBeVisible();
-    // Only the colours stay open: the palette shows, the other three stand folded with their summary (Plan.md 89).
-    await page.getByTestId('section-design-appointments-toggle').click();
+    // Only the colours stand open – opening them folded the appointments: the palette shows, the other three their summary (Plan.md 89).
     await shoot(page, 'design');
 
     // A second screen, upright, with a countdown and a picture from the media library.

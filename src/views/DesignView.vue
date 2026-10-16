@@ -158,14 +158,14 @@ const previewSlide = computed<SlideDoc>(() => {
     const ids = calendars.value.slice(0, 3).map((c) => c.id);
     const slide = createSlide('Vorschau', theme.value);
     const next = createBlock('next-appointment', STAGE, ids, theme.value) as Extract<Block, { type: 'next-appointment' }>;
-    const list = createBlock('appointment-list', STAGE, ids, theme.value);
+    const list = createBlock('appointment-list', STAGE, ids, theme.value) as Extract<Block, { type: 'appointment-list' }>;
     slide.blocks = [
         // Fixed ids: the blocks stay mounted while the look changes.
-        // The preview shows the look, not the size: at the default 64 px a long title takes three lines beside
-        // the image, and the card would crowd out the list (seen 2026-09-28). At 52 px title, subtitle, day
-        // and time fit the card with room to spare.
-        { ...next, id: 'preview-next', x: 80, y: 40, width: 1760, height: 560, style: { ...next.style, fontSize: 52 } },
-        { ...list, id: 'preview-list', x: 80, y: 640, width: 1760, height: 400, limit: 4 } as typeof list,
+        // The preview shows the look, not the size: at the default sizes a long title takes three lines beside
+        // the image, the description is cut and the list shows two of its four rows (seen 2026-09-28 and
+        // 2026-10-16). At 44 and 34 px the card shows its text whole and the list three rows.
+        { ...next, id: 'preview-next', x: 80, y: 40, width: 1760, height: 520, style: { ...next.style, fontSize: 44 } },
+        { ...list, id: 'preview-list', x: 80, y: 600, width: 1760, height: 440, limit: 4, style: { ...list.style, fontSize: 34 } },
     ];
     return slide;
 });
@@ -280,7 +280,7 @@ function observe(el: unknown): void {
         <div v-else class="layout">
             <div class="column">
                 <div class="d-card settings">
-                    <InspectorSection id="design-colors" :title="t.design.colors.title" :summary="paletteSummary(look.palette)">
+                    <InspectorSection id="design-colors" group="design" :title="t.design.colors.title" :summary="paletteSummary(look.palette)">
                         <template #summary-extra>
                             <span v-for="color in [look.accent, look.text, look.background]" :key="color" class="swatch" :style="{ background: color }" />
                         </template>
@@ -357,7 +357,7 @@ function observe(el: unknown): void {
                         <p v-if="look.palette.length >= PALETTE_MAX" class="hint">{{ t.design.palette.max(PALETTE_MAX) }}</p>
                     </InspectorSection>
 
-                    <InspectorSection id="design-surfaces" :title="t.design.surfaces.title" :summary="surfacesSummary(look)">
+                    <InspectorSection id="design-surfaces" group="design" :title="t.design.surfaces.title" :summary="surfacesSummary(look)">
                         <template #info>
                             <p>{{ t.design.corners.hint }}</p>
                             <p>{{ t.design.cards.hint }}</p>
@@ -397,7 +397,7 @@ function observe(el: unknown): void {
                         </template>
                     </InspectorSection>
 
-                    <InspectorSection id="design-font" :title="t.design.font.title" :summary="fontSummary(look)">
+                    <InspectorSection id="design-font" group="design" :title="t.design.font.title" :summary="fontSummary(look)">
                         <template #info>
                             <p>{{ t.design.font.hint }}</p>
                         </template>
@@ -405,7 +405,7 @@ function observe(el: unknown): void {
                         <FontField :model-value="look.font" :label="t.inspector.fontFamily" testid="theme-font" @update:model-value="look.font = $event" />
                     </InspectorSection>
 
-                    <InspectorSection id="design-appointments" :title="t.design.appointments.title" :summary="appointmentsSummary(look)">
+                    <InspectorSection id="design-appointments" group="design" :title="t.design.appointments.title" :summary="appointmentsSummary(look)">
                         <template #info>
                             <p>{{ t.design.images.hint }}</p>
                         </template>
@@ -483,13 +483,13 @@ function observe(el: unknown): void {
     font-size: var(--d-size-sm);
 }
 /*
- * Two boxes side by side: the settings one below the other, and the
- * preview. Both stop at a width where fields and stage are still easy to
- * take in – wider only makes them bigger, not clearer (2026-09-25).
+ * Half and half: the settings on the left, the preview on the right, both
+ * as wide as the page allows – a larger preview is a readable one
+ * (Nutzer, 2026-10-16).
  */
 .layout {
     display: grid;
-    grid-template-columns: minmax(320px, 640px) minmax(340px, 640px);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 16px;
     align-items: start;
 }
@@ -613,7 +613,7 @@ h3 {
     border-radius: var(--d-radius);
     background: var(--d-text);
 }
-/* Narrow: the preview on top, no wider than beside the cards. */
+/* Narrow: the preview on top. */
 @media (max-width: 60rem) {
     .layout {
         grid-template-columns: minmax(0, 1fr);
@@ -622,7 +622,6 @@ h3 {
         position: static;
         order: -1;
         width: 100%;
-        max-width: 640px;
         box-sizing: border-box;
     }
 }

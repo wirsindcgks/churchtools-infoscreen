@@ -1337,16 +1337,17 @@ test('the design page sets the look of all screens: corners, large appointments,
     await expect(preview.getByTestId('list-card')).toHaveCount(0); // native: plain rows
     await expect(page.getByTestId('theme-save')).toBeDisabled();
 
+    // One section open at a time (Plan.md 89): each field right after its section.
     await openSection(page, 'design-appointments');
-    await openSection(page, 'design-surfaces');
-    await openSection(page, 'design-colors');
     await page.getByTestId('appointments-large').check();
+    await page.getByTestId('theme-image-ratio').selectOption('1:1');
+    await openSection(page, 'design-surfaces');
     await page.getByTestId('corners-square').check();
     // The preview shows the first calendars of the instance: which of the four appointments that is, is theirs to say.
     await expect(preview.getByTestId('list-card').first()).toBeVisible();
     await expect(preview.getByTestId('next-card')).toBeVisible();
     await expect(preview.locator('.slide')).toHaveAttribute('style', /--isd-radius: 0/);
-    await page.getByTestId('theme-image-ratio').selectOption('1:1');
+    await openSection(page, 'design-colors');
     await page.getByTestId('theme-accent').fill('#e11d48');
     await page.getByTestId('theme-accent').blur();
     await page.getByTestId('theme-save').click();
@@ -1378,8 +1379,8 @@ test('the design page sets the card surface (Plan.md 74)', async ({ page, browse
     await page.getByTestId('sidebar-design').click();
     await expect(page.getByTestId('design-heading')).toBeVisible();
     await openSection(page, 'design-appointments');
-    await openSection(page, 'design-surfaces');
     await page.getByTestId('appointments-large').check();
+    await openSection(page, 'design-surfaces');
     const card = page.getByTestId('theme-preview').getByTestId('next-card');
     await expect(card).toBeVisible();
     const surface = () => card.evaluate((el) => getComputedStyle(el).backgroundColor);
