@@ -4,6 +4,22 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.27.0] – 2026-10-16
+
+### Neu
+
+- **Vorlagen: einmal bauen, auf vielen Folien zeigen.** Bausteine wählen und im Kurzmenü unter „⋯" „Als Vorlage
+  speichern …" – etwa einen Seitenkopf mit Name und Uhrzeit. „+ Baustein" setzt die Vorlage im Abschnitt „Vorlagen" auf
+  weitere Folien, an derselben Stelle, an der sie gebaut wurde.
+- **Eine Änderung für alle Folien.** Doppelklick auf eine Vorlage (oder „Vorlage bearbeiten") öffnet sie; der Rest der
+  Folie wird blass, die Leiste oben sagt, auf wie vielen Folien sie steht. „Fertig" ändert sofort alle Folien und
+  Bildschirme mit dieser Vorlage, ohne „Veröffentlichen".
+- **Fest an ihrer Stelle.** Eine Vorlage aus gesperrten Bausteinen bleibt auf jeder Folie gesperrt und an derselben
+  Stelle; der Schalter dafür steht im Bearbeiten-Modus. Wer auf einer Folie abweichen will, wählt „Lösen" – dann werden
+  daraus eigene Bausteine nur für diese Folie.
+- **Vorlagen auf der Seite „Design".** Alle Vorlagen mit Vorschau und der Zahl ihrer Folien, zum Bearbeiten,
+  Umbenennen und Löschen. Gelöscht wird eine Vorlage erst, wenn keine Folie sie mehr benutzt.
+
 ## [0.26.0] – 2026-10-16
 
 ### Geändert
@@ -1129,6 +1145,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.27.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.27.0
 [0.26.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.26.0
 [0.25.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.25.0
 [0.24.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.24.0
