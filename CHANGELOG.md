@@ -4,6 +4,25 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.26.0] – 2026-10-16
+
+### Geändert
+
+- **Kurzmenü in Worten.** Die Knöpfe über dem Baustein zeigen den eingestellten Wert. Wo der Wert allein nichts sagt,
+  steht das Wort dabei: „Ohne Schatten“, „Ohne Ton“, „Größe 100 %“. Listen nennen dieselbe Zahl wie ihr Klappmenü,
+  etwa „Kalender 3 von 4“; ist nichts gewählt, steht dort, was zu tun ist („Räume wählen“, „Profil hinzufügen“).
+- **Mehr Platz für das Kurzmenü am Handy.** Die Knöpfe stehen in einer eigenen Zeile über die ganze Breite, darunter
+  der Name des Bausteins mit „⋯“ und „×“. Ein geöffneter Knopf nennt seine Beschriftung nur noch einmal.
+- **„⋯“ am Handy ist kürzer:** ohne Tastenkürzel, „Einfügen“ nur, wenn etwas kopiert ist, und von den Ebenen nur
+  „Nach vorn“ und „Nach hinten“. Ganz nach vorn oder hinten geht unter „Alle Einstellungen“ › „Anordnen“.
+- **Eindeutigere Schalter:** „Gemeindename“ und „Terminbild“ statt „Name“ und „Bild“ im Kurzmenü von Gemeindekopf
+  und Nächstem Termin.
+- **Raumbelegung:** „+ Raum“ und „Alle Räume hinzufügen“ stehen untereinander.
+
+### Behoben
+
+- „1 Tag“ statt „1 Tage“ beim Zeitraum von Terminliste, Beiträgen und Raumbelegung.
+
 ## [0.25.0] – 2026-10-15
 
 ### Geändert
@@ -1110,6 +1129,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.26.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.26.0
 [0.25.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.25.0
 [0.24.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.24.0
 [0.23.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.23.0
