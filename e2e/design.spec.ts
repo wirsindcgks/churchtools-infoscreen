@@ -34,6 +34,10 @@ test('opening a section folds the one open before, so the page keeps its overvie
     await openSection(page, 'design-surfaces');
     await expect(page.getByTestId('section-design-colors')).not.toHaveAttribute('open', '');
     await expect(page.getByTestId('section-design-surfaces')).toHaveAttribute('open', '');
+    // The browser reports the change with a later event: wait for it to be remembered before the reload.
+    await expect
+        .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('infoscreen-designer:inspector-sections') ?? '{}') as Record<string, boolean>))
+        .toMatchObject({ 'design-colors': false, 'design-surfaces': true });
     await page.reload();
     await expect(page.getByTestId('section-design-surfaces')).toHaveAttribute('open', '');
     await expect(page.getByTestId('section-design-colors')).not.toHaveAttribute('open', '');
