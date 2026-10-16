@@ -1373,6 +1373,24 @@ describe('templates (schema 1.41, Plan.md 87)', () => {
         expect(get(fixed).width).toBe(896);
     });
 
+    it('drags a free block into an empty area and fixes it there in one undo step', async () => {
+        const { editor } = await setup();
+        editor.addBlock('shape');
+        const id = editor.block!.id;
+        editor.updateBlock(id, { x: 1200, y: 300, width: 200, height: 100 });
+        editor.endGesture();
+        editor.setSlideLayout({ split: 'halves', header: false, footer: false });
+        // What the stage does for a drag: moves inside a gesture, then fixes on release.
+        editor.beginGesture();
+        editor.moveBlocks([id], 10, 0);
+        editor.setRegionFixed(id, true);
+        editor.endGesture();
+        expect(editor.block).toMatchObject({ region: 'b', x: 982, y: 43, width: 895, height: 994 });
+        editor.undo();
+        expect(editor.block).toMatchObject({ x: 1200, y: 300, width: 200 });
+        expect(editor.block).not.toHaveProperty('region');
+    });
+
     it('lets go of a block whose area is gone', async () => {
         const { editor } = await setup();
         editor.setSlideLayout({ split: 'halves', header: false, footer: false });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyRegions, fitToRegions, frameFixed, type Region, FOOTER_SHARE, HEADER_SHARE, layoutRegions, REGION_MARGIN } from './layout-regions';
+import { dropRegion, emptyRegions, fitToRegions, frameFixed, type Region, FOOTER_SHARE, HEADER_SHARE, layoutRegions, REGION_MARGIN } from './layout-regions';
 
 type Two = [Region, Region];
 type Four = [Region, Region, Region, Region];
@@ -112,5 +112,32 @@ describe('fixed blocks', () => {
     it('moves only the corner of a template block', () => {
         const [moved] = fitToRegions([{ ...shape('t', 'b'), type: 'template' }], halves);
         expect(moved).toMatchObject({ x: b.x, y: b.y, width: 100, height: 100 });
+    });
+});
+
+describe('dropRegion', () => {
+    const halves = layoutRegions({ split: 'halves', header: false, footer: false }, landscape);
+    const block = (id: string, x: number, extra: Record<string, unknown> = {}) => ({ id, x, y: 300, width: 200, height: 100, ...extra });
+
+    it('is the empty area under the middle', () => {
+        expect(dropRegion(block('x', 1200), halves, [block('x', 1200)])?.id).toBe('b');
+    });
+
+    it('is none for an occupied area, even by a block fixed elsewhere in it', () => {
+        const other = block('o', 1300);
+        expect(dropRegion(block('x', 1200), halves, [block('x', 1200), other])).toBeUndefined();
+        expect(dropRegion(block('x', 1200), halves, [block('x', 1200), block('f', 0, { region: 'b' })])).toBeUndefined();
+    });
+
+    it('is none outside the areas, and for a locked or fixed block', () => {
+        expect(dropRegion(block('x', 860), halves, [])).toBeUndefined();
+        expect(dropRegion(block('x', 1200, { locked: true }), halves, [])).toBeUndefined();
+        expect(dropRegion(block('x', 1200, { region: 'b' }), halves, [])).toBeUndefined();
+    });
+
+    it('is none for a block moved within the area it started in, and the area for one coming from outside', () => {
+        expect(dropRegion(block('x', 1200), halves, [], block('x', 1100))).toBeUndefined();
+        expect(dropRegion(block('x', 1200), halves, [], block('x', 300))?.id).toBe('b');
+        expect(dropRegion(block('x', 1200), halves, [], block('x', 860))?.id).toBe('b');
     });
 });

@@ -108,3 +108,20 @@ function fills(b: Frame, r: Region): boolean {
     const h = Math.min(b.y + b.height, r.y + r.height) - Math.max(b.y, r.y);
     return w > 0 && h > 0 && w * h >= b.width * b.height * FILL_SHARE;
 }
+
+/**
+ * The area a dragged block snaps into when let go (Plan.md 87 B): the one its middle lies in, if it is empty without the
+ * block itself. A locked or already fixed block binds nowhere, nor does one moved within the area it started in (`from`,
+ * its frame when the drag began) – so a block let go with "Im Bereich fest" can be placed freely in its own area.
+ */
+export function dropRegion<T extends Frame & { id: string; locked?: boolean; region?: RegionId }>(
+    block: T,
+    regions: readonly Region[],
+    blocks: readonly T[],
+    from?: Frame,
+): Region | undefined {
+    if (block.locked || block.region) return undefined;
+    const area = regionAt(regions, block);
+    if (!area || (from && regionAt(regions, from)?.id === area.id)) return undefined;
+    return emptyRegions([area], blocks.filter((b) => b.id !== block.id)).length ? area : undefined;
+}

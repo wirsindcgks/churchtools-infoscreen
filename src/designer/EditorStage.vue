@@ -14,7 +14,7 @@ import { centerCovered, emptyAction } from './empty-block';
 import Icon from './Icon.vue';
 import { isDoubleTap, longPress, TAP_SLOP, type Tap } from './gestures';
 import { handlesOutside } from './handles';
-import { emptyRegions, frameFixed, layoutRegions } from './layout-regions';
+import { dropRegion, emptyRegions, frameFixed, layoutRegions } from './layout-regions';
 import { neighbourGaps, pairGaps, sizeLabelPlace, type Measure } from './measure';
 import { BLOCK_ICONS, blockBelow, boundingBox, clampFrame } from './ops';
 import QuickMenu from './QuickMenu.vue';
@@ -334,6 +334,7 @@ function moveTo(event: PointerEvent): void {
     togglePending = null;
     dragId.value = drag.id;
     dragIds.value = drag.ids;
+    dragMove.value = drag.handle === 'move';
     const f = { ...drag.frame };
     const h = drag.handle;
     // The others count by the box around them.
@@ -407,7 +408,10 @@ function end(): void {
     }
     dropHold();
     liftedId.value = null;
+    // Let go over an empty area: the block is fixed there, in the same step as the drag.
+    if (dropId.value && dragId.value) editor.setRegionFixed(dragId.value, true);
     drag = null;
+    dragMove.value = false;
     dragId.value = null;
     dragIds.value = [];
     guides.value = [];
@@ -513,6 +517,13 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
 const regions = computed(() => (editor.templateEdit ? [] : layoutRegions(editor.slide?.layout, editor.stage)));
 /** The ones without a block get a "+" that opens the sheet for them. */
 const emptyIds = computed(() => new Set(emptyRegions(regions.value, blocks.value).map((r) => r.id)));
+/** Whether the drag is a move (not a handle) of one free block: only that one snaps into an empty area on release. */
+const dragMove = ref(false);
+const dropId = computed(() => {
+    if (!dragId.value || !dragMove.value || dragIds.value.length !== 1 || editor.selection.length !== 1) return null;
+    const dragged = blocks.value.find((b) => b.id === dragId.value);
+    return dragged ? (dropRegion(dragged, regions.value, blocks.value, drag?.frame)?.id ?? null) : null;
+});
 function fillRegion(region: (typeof regions.value)[number]): void {
     editor.targetRegion = region;
     editor.blockSheetOpen = true;
@@ -1033,6 +1044,7 @@ function onEmptyAction(b: Block): void {
                     class="region"
                     :style="{ left: `${region.x}px`, top: `${region.y}px`, width: `${region.width}px`, height: `${region.height}px`, '--line': `${1.5 / fit.scale}px` }"
                     :data-region="region.id"
+                    :data-drop="dropId === region.id ? 'true' : undefined"
                     data-testid="layout-region"
                 >
                     <button
@@ -1388,6 +1400,10 @@ function onEmptyAction(b: Block): void {
     pointer-events: none;
     outline: var(--line) dashed rgba(236, 72, 153, 0.4);
     outline-offset: calc(var(--line) * -1);
+}
+.region[data-drop='true'] {
+    outline-style: solid;
+    background: rgba(236, 72, 153, 0.08);
 }
 .region-add {
     position: absolute;

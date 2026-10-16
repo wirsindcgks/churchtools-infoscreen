@@ -168,7 +168,8 @@ Was über das „+" in einen Bereich kommt, ist dort **fest**: Der Baustein läs
 Größe ändern, der Inhalt bleibt bearbeitbar. Unter „Anordnen" löst der Schalter **„Im Bereich fest"** die Bindung (oder
 bindet einen Baustein, dessen Mitte in einem Bereich liegt). Wechselt ihr die Aufteilung, **wandern feste Bausteine mit**
 und nehmen den Rahmen ihres Bereichs an; fällt der Bereich weg, bleibt der Baustein stehen und ist wieder frei. Kopien
-eines Bausteins sind immer frei.
+eines Bausteins sind immer frei. Wer einen vorhandenen Baustein in einen **leeren** Bereich zieht, setzt ihn dort
+fest (der Bereich ist beim Ziehen hervorgehoben); in einem belegten Bereich bleibt er frei.
 
 ## Galerie
 
