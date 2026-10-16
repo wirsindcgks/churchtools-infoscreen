@@ -722,6 +722,9 @@ export const t = {
         groupOpen: 'Gruppe aufklappen',
         groupClose: 'Gruppe zuklappen',
         layerOf: (n: number, total: number) => `Ebene ${n} von ${total}`,
+        regionFixed: 'Im Bereich fest',
+        regionFixedSummary: 'im Bereich fest',
+        regionFixedInfo: 'Der Baustein hat die Größe des Bereichs der Aufteilung und bleibt dort; wechselt die Aufteilung, wandert er mit.',
         /** The list of the slide's blocks above the slide's settings (Plan.md 79, D6). */
         slideBlocks: 'Bausteine dieser Folie',
         topIsFront: 'oben = vorne',

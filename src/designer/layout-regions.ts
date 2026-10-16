@@ -21,6 +21,35 @@ export interface Region extends Frame {
     id: RegionId;
 }
 
+/** A block whose place cannot be changed on the stage: locked, or fixed in an area of the division. */
+export function frameFixed(b: { locked?: boolean; region?: RegionId }): boolean {
+    return !!b.locked || !!b.region;
+}
+
+/** The area a block's centre lies in, if any. */
+export function regionAt(regions: readonly Region[], b: Frame): Region | undefined {
+    const cx = b.x + b.width / 2;
+    const cy = b.y + b.height / 2;
+    return regions.find((r) => cx >= r.x && cx <= r.x + r.width && cy >= r.y && cy <= r.y + r.height);
+}
+
+/**
+ * Blocks fixed in an area (`region`) take that area's frame in a new division – a template block only its upper left corner, it keeps
+ * its size. Where the area is gone the block is free and stays as it is. Other blocks come back as they are.
+ */
+export function fitToRegions<T extends Frame & { type: string; region?: RegionId }>(blocks: readonly T[], regions: readonly Region[]): T[] {
+    return blocks.map((b) => {
+        if (!b.region) return b;
+        const area = regions.find((r) => r.id === b.region);
+        if (!area) {
+            const free = { ...b };
+            delete free.region;
+            return free;
+        }
+        return b.type === 'template' ? { ...b, x: area.x, y: area.y } : { ...b, x: area.x, y: area.y, width: area.width, height: area.height };
+    });
+}
+
 /**
  * The areas of a layout: header and footer across the width, `split` divides the room between them – landscape into
  * columns, portrait into rows. Without a division and without header and footer there are none.
@@ -65,10 +94,10 @@ export function layoutRegions(layout: SlideLayout | undefined, stage: { width: n
 
 /**
  * The areas no block fills: none has its centre in it or at least `FILL_SHARE` of its area – so a block across two
- * columns, centred in the gap (a little under half in each), fills both. Locked, hidden and template blocks count like any other.
+ * columns, centred in the gap (a little under half in each), fills both. Locked, hidden and template blocks count like any other; a block fixed in an area always fills it.
  */
-export function emptyRegions(regions: readonly Region[], blocks: readonly Frame[]): Region[] {
-    return regions.filter((r) => !blocks.some((b) => fills(b, r)));
+export function emptyRegions(regions: readonly Region[], blocks: readonly (Frame & { region?: RegionId })[]): Region[] {
+    return regions.filter((r) => !blocks.some((b) => b.region === r.id || fills(b, r)));
 }
 
 function fills(b: Frame, r: Region): boolean {

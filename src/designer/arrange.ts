@@ -1,10 +1,11 @@
 /**
  * Aligning and distributing several blocks (Plan.md 79, D4): pure functions on frames, the store applies the result.
  */
+import { frameFixed, type RegionId } from './layout-regions';
 import { boundingBox } from './ops';
 
 export type Frame = { x: number; y: number; width: number; height: number };
-type Lockable = Frame & { locked?: boolean };
+type Lockable = Frame & { locked?: boolean; region?: RegionId };
 
 export type Edge = 'left' | 'center' | 'right' | 'top' | 'middle' | 'bottom';
 export type Axis = 'x' | 'y';
@@ -91,6 +92,6 @@ export function unitsOf(chosen: readonly (Lockable & { id: string; groupId?: str
         const key = b.groupId && members.get(b.groupId)! > 1 ? `group:${b.groupId}` : `block:${b.id}`;
         units.set(key, [...(units.get(key) ?? []), b]);
     }
-    return [...units.values()].map((list) => ({ ...boundingBox(list)!, ids: list.map((b) => b.id), locked: list.some((b) => !!b.locked) }));
+    return [...units.values()].map((list) => ({ ...boundingBox(list)!, ids: list.map((b) => b.id), locked: list.some((b) => frameFixed(b)) }));
 }
 

@@ -22,6 +22,7 @@ import ToggleField from './inspector/fields/ToggleField.vue';
 import SlideInspector from './inspector/SlideInspector.vue';
 import LayerList from './LayerList.vue';
 import { layerRows } from './layers';
+import { layoutRegions, regionAt } from './layout-regions';
 import { BLOCK_ICONS } from './ops';
 import { KEYS, withKeys } from './shortcuts';
 import { vTip } from './tip';
@@ -62,6 +63,19 @@ const positionSummary = computed(() =>
 const frameFields = computed(() => (block.value?.type === 'template' ? FRAME_FIELDS.slice(0, 2) : FRAME_FIELDS));
 
 const frameLookSummary = computed(() => (block.value ? `${block.value.rotation ?? 0}° · ${block.value.opacity ?? 100} %` : ''));
+
+/**
+ * "Im Bereich fest" (Plan.md 87 B): offered for a single block, bound to an area or lying with its middle in one – not for a member of a group.
+ */
+const canFixInRegion = computed(() => {
+    const b = block.value;
+    if (!b || many.value || b.groupId) return false;
+    const regions = layoutRegions(editor.slide?.layout, editor.stage);
+    return !!b.region || !!regionAt(regions, b);
+});
+const arrangeSummary = computed(() =>
+    block.value ? t.inspector.layerOf(layerNumber.value, rows.value.length) + (block.value.region ? ` · ${t.inspector.regionFixedSummary}` : '') : undefined,
+);
 
 /** The layers, top first. */
 const rows = computed(() => layerRows(editor.slide?.blocks ?? []));
@@ -188,8 +202,17 @@ const LAYERS = [
                     />
                 </InspectorSection>
 
-                <InspectorSection id="arrange" :title="t.inspector.arrange" :summary="block ? t.inspector.layerOf(layerNumber, rows.length) : undefined">
+                <InspectorSection id="arrange" :title="t.inspector.arrange" :summary="arrangeSummary">
                     <ArrangeField />
+                    <ToggleField
+                        v-if="canFixInRegion && block"
+                        :model-value="!!block.region"
+                        :label="t.inspector.regionFixed"
+                        testid="region-fixed"
+                        @update:model-value="editor.setRegionFixed(block.id, $event)"
+                    >
+                        <template #info>{{ t.inspector.regionFixedInfo }}</template>
+                    </ToggleField>
                     <p v-if="block" class="layer-position" data-testid="layer-position">{{ t.inspector.layerOf(layerNumber, rows.length) }}</p>
                     <div class="layer-buttons">
                         <button
@@ -216,6 +239,7 @@ const LAYERS = [
                             unit="px"
                             :model-value="block[field.key]"
                             :min="field.min"
+                            :disabled="!!block.region"
                             :label="t.inspector.frameFields[field.key]"
                             :testid="`inspector-${field.key}`"
                             @update:model-value="editor.updateBlock(block.id, { [field.key]: $event })"

@@ -97,7 +97,7 @@ const portrait = computed(() => editor.stage.height > editor.stage.width);
 const splitOptions = computed(() => splitTiles(portrait.value));
 const layout = computed(() => ({ split: slide.value?.layout?.split ?? 'none', header: slide.value?.layout?.header ?? false, footer: slide.value?.layout?.footer ?? false }));
 function setLayout(patch: Partial<SlideLayout>): void {
-    editor.updateSlide({ layout: { ...layout.value, ...patch } });
+    editor.setSlideLayout({ ...layout.value, ...patch });
 }
 const layoutSummary = computed(() => {
     const words = t.inspector.layoutSummary;

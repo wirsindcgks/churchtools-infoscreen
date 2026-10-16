@@ -18,8 +18,8 @@ async function emptySlide(page: Page): Promise<void> {
 const tile = (page: Page, value: string) => page.getByTestId('layout-split').locator(`input[value="${value}"]`);
 const region = (page: Page, id: string) => page.locator(`[data-testid="layout-region"][data-region="${id}"]`);
 const add = (page: Page, id: string) => region(page, id).getByTestId('layout-region-add');
-const frameStyle = (page: Page) =>
-    page.getByTestId('frame-shape').evaluate((el) => {
+const frameStyle = (page: Page, type = 'shape') =>
+    page.getByTestId(`frame-${type}`).evaluate((el) => {
         const { left, top, width, height } = (el as HTMLElement).style;
         return `${left} ${top} ${width} ${height}`;
     });
@@ -50,11 +50,13 @@ test('the "+" of an empty area fills it with the chosen block', async ({ page })
     await expect(add(page, 'b')).toBeVisible();
 });
 
-test('changing the division moves no block', async ({ page }) => {
+test('changing the division moves a free block no more', async ({ page }) => {
     await emptySlide(page);
     await tile(page, 'halves').check({ force: true });
     await add(page, 'b').click();
     await page.getByTestId('sheet-add-shape').click();
+    await openSection(page, 'arrange');
+    await page.getByTestId('region-fixed').uncheck();
     const before = await frameStyle(page);
     // Choosing a tile of the slide's inspector needs no block chosen: click the empty stage.
     await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
@@ -63,4 +65,62 @@ test('changing the division moves no block', async ({ page }) => {
     await page.getByTestId('layout-footer').check();
     await expect(region(page, 'footer')).toHaveCount(1);
     expect(await frameStyle(page)).toBe(before);
+});
+
+/** Drags the block's frame by a good distance on the stage. */
+async function dragFrame(page: Page, type: string): Promise<void> {
+    const box = (await page.getByTestId(`frame-${type}`).boundingBox())!;
+    const x = box.x + box.width / 2;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 40, y + 30, { steps: 5 });
+    await page.mouse.up();
+}
+
+test('a block put in by the "+" is fixed in its area, but its content stays editable', async ({ page }) => {
+    await emptySlide(page);
+    await tile(page, 'halves').check({ force: true });
+    await add(page, 'a').click();
+    await page.getByTestId('sheet-add-text').click();
+    const before = await frameStyle(page, 'text');
+    await dragFrame(page, 'text');
+    expect(await frameStyle(page, 'text')).toBe(before);
+    await expect(page.locator('.frame--selected [data-handle], .frame--selected .handle')).toHaveCount(0);
+    await page.getByTestId('text-input').fill('Im Bereich');
+    await expect(page.getByTestId('text-input')).toHaveValue('Im Bereich');
+});
+
+test('switching to two thirds takes the fixed block along and leaves the free one', async ({ page }) => {
+    await emptySlide(page);
+    await tile(page, 'halves').check({ force: true });
+    await add(page, 'a').click();
+    await page.getByTestId('sheet-add-shape').click();
+    const start = await frameStyle(page);
+    expect(start).toBe('43px 43px 896px 994px');
+    // A second block from the other area, freed by the switch.
+    await add(page, 'b').click();
+    await page.getByTestId('sheet-add-text').click();
+    await openSection(page, 'arrange');
+    await page.getByTestId('region-fixed').uncheck();
+    const free = await frameStyle(page, 'text');
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
+    await openSection(page, 'layout');
+    await tile(page, 'wide-narrow').check({ force: true });
+    // 2/3 of (1834 - 43) = 1194
+    expect(await frameStyle(page)).toBe('43px 43px 1194px 994px');
+    expect(await frameStyle(page, 'text')).toBe(free);
+});
+
+test('"Im Bereich fest" off lets the block be dragged again', async ({ page }) => {
+    await emptySlide(page);
+    await tile(page, 'halves').check({ force: true });
+    await add(page, 'a').click();
+    await page.getByTestId('sheet-add-shape').click();
+    await openSection(page, 'arrange');
+    await expect(page.getByTestId('region-fixed')).toBeChecked();
+    await page.getByTestId('region-fixed').uncheck();
+    const before = await frameStyle(page);
+    await dragFrame(page, 'shape');
+    expect(await frameStyle(page)).not.toBe(before);
 });

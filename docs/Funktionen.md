@@ -161,8 +161,14 @@ und auf dem Bildschirm sind sie nicht zu sehen. Bausteine rasten an den Kanten u
 
 In einem **leeren** Bereich steht ein „+": Es öffnet „+ Baustein", und der gewählte Baustein füllt den Bereich. In
 Kopf- und Fußzeile stehen dabei die Vorlagen vorn (die Vorlage behält ihre eigene Größe und sitzt an der linken oberen
-Ecke des Bereichs). Wechselt ihr die Aufteilung, bleiben alle Bausteine, wo sie sind. Neue Folien beginnen ohne
+Ecke des Bereichs). Wechselt ihr die Aufteilung, bleiben freie Bausteine, wo sie sind. Neue Folien beginnen ohne
 Aufteilung.
+
+Was über das „+" in einen Bereich kommt, ist dort **fest**: Der Baustein lässt sich nicht verschieben und nicht in der
+Größe ändern, der Inhalt bleibt bearbeitbar. Unter „Anordnen" löst der Schalter **„Im Bereich fest"** die Bindung (oder
+bindet einen Baustein, dessen Mitte in einem Bereich liegt). Wechselt ihr die Aufteilung, **wandern feste Bausteine mit**
+und nehmen den Rahmen ihres Bereichs an; fällt der Bereich weg, bleibt der Baustein stehen und ist wieder frei. Kopien
+eines Bausteins sind immer frei.
 
 ## Galerie
 

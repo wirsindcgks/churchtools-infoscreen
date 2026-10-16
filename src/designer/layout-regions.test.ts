@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyRegions, type Region, FOOTER_SHARE, HEADER_SHARE, layoutRegions, REGION_MARGIN } from './layout-regions';
+import { emptyRegions, fitToRegions, frameFixed, type Region, FOOTER_SHARE, HEADER_SHARE, layoutRegions, REGION_MARGIN } from './layout-regions';
 
 type Two = [Region, Region];
 type Four = [Region, Region, Region, Region];
@@ -81,5 +81,36 @@ describe('emptyRegions', () => {
     it('counts a block centred in the gap for both columns it spans', () => {
         const wide = { x: 200, y: 400, width: 1520, height: 300 };
         expect(emptyRegions(regions, [wide]).map((r) => r.id)).toEqual(['header']);
+    });
+});
+
+describe('fixed blocks', () => {
+    const halves = layoutRegions({ split: 'halves', header: false, footer: false }, landscape);
+    const [a, b] = halves as Two;
+    const shape = (id: string, region?: 'a' | 'b' | 'main') => ({ id, type: 'shape', x: 0, y: 0, width: 100, height: 100, ...(region ? { region } : {}) });
+
+    it('counts locked and bound blocks as fixed', () => {
+        expect(frameFixed({})).toBe(false);
+        expect(frameFixed({ locked: true })).toBe(true);
+        expect(frameFixed({ region: 'a' })).toBe(true);
+    });
+
+    it('fills its area wherever its middle is', () => {
+        expect(emptyRegions(halves, [{ ...shape('x', 'b'), x: 1500, y: 2000 }]).map((r) => r.id)).toEqual(['a']);
+    });
+
+    it('takes the new frame of the area, or lets go where the area is gone', () => {
+        const wide = layoutRegions({ split: 'wide-narrow', header: false, footer: false }, landscape) as Two;
+        const [fixed, free, gone] = fitToRegions([shape('f', 'a'), shape('p'), shape('g', 'main')], wide);
+        expect(fixed).toMatchObject({ x: wide[0].x, y: wide[0].y, width: wide[0].width, height: wide[0].height, region: 'a' });
+        expect(free).toEqual(shape('p'));
+        expect(gone).not.toHaveProperty('region');
+        expect(gone).toMatchObject({ x: 0, width: 100 });
+        expect(a.width).not.toBe(wide[0].width);
+    });
+
+    it('moves only the corner of a template block', () => {
+        const [moved] = fitToRegions([{ ...shape('t', 'b'), type: 'template' }], halves);
+        expect(moved).toMatchObject({ x: b.x, y: b.y, width: 100, height: 100 });
     });
 });

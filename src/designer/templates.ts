@@ -50,6 +50,7 @@ export function templateFromBlocks(
     const children = blocks.map((b): ContentBlock => {
         const child = { ...cloneJson(b), x: b.x - x, y: b.y - y };
         delete child.locked;
+        delete child.region;
         return child;
     });
     dropSingleGroups(children);

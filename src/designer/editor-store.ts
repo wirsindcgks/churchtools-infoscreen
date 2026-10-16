@@ -7,7 +7,7 @@
  */
 import { defineStore } from 'pinia';
 import { computed, ref, shallowRef, watch } from 'vue';
-import { blockCalendarIds, DEFAULT_THEME, SCHEMA_VERSION, sameStage, type Block, type ContentBlock, type ContentBlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
+import { blockCalendarIds, DEFAULT_THEME, SCHEMA_VERSION, sameStage, type Block, type ContentBlock, type ContentBlockType, type MediaDoc, type PlaylistBundle, type SlideDoc, type SlideLayout, type TemplateDoc, type ThemeDoc } from '../model/schema';
 import {
     ConflictError,
     copySlide,
@@ -24,7 +24,7 @@ import { tr } from '../i18n/repository';
 import { align, alignTarget, distribute, distributeBlocker, unitsOf, type Axis, type Edge, type Frame, type Unit } from './arrange';
 import { History } from './history';
 import { layerUnits } from './layers';
-import type { Region } from './layout-regions';
+import { fitToRegions, frameFixed, layoutRegions, regionAt, type Region } from './layout-regions';
 import { GRID_SIZES } from './snap';
 import { BLOCK_LABELS, boundingBox, clampFrame, MIN_BLOCK_SIZE, cloneJson, createBlock, createSlide, dropSingleGroups, duplicateSlide, freeSpot, gatherLayers, groupOf, move, moveAround, newId, reorderMany, withGroups, type Layer } from './ops';
 import { outerFrame } from './rotate';
@@ -669,12 +669,52 @@ export const useEditorStore = defineStore('editor', () => {
         change((b) => Object.assign(slideIn(b, id) ?? {}, patch));
     }
 
+    /**
+     * Sets the division of the slide (Plan.md 87 B). Blocks fixed in an area take the area's frame in the new division, or
+     * become free where it is gone; free blocks stay. One step.
+     */
+    function setSlideLayout(layout: SlideLayout): void {
+        if (templateEdit.value) return;
+        const id = slide.value?.id;
+        change((b) => {
+            const target = slideIn(b, id);
+            if (!target) return;
+            target.layout = layout;
+            target.blocks = fitToRegions(target.blocks, layoutRegions(layout, b.playlist.stage)).map((x) =>
+                x.region && x.type === 'template' ? { ...x, ...clampFrame(x, b.playlist.stage) } : x,
+            );
+        });
+    }
+
+    /**
+     * Fixes a free block in the area its middle lies in (its frame becomes the area's, a template block keeps its size), or frees it
+     * and leaves it where it is. One step; nothing happens where there is no area.
+     */
+    function setRegionFixed(id: string, on: boolean): void {
+        const target = slide.value?.blocks.find((x) => x.id === id);
+        if (!target || target.locked) return;
+        const area = on ? regionAt(layoutRegions(slide.value?.layout, stage.value), target) : undefined;
+        if (on && !area) return;
+        const slideId = slide.value?.id;
+        change((b) => {
+            const own = slideIn(b, slideId)?.blocks.find((x) => x.id === id);
+            if (!own) return;
+            if (!area) {
+                delete own.region;
+                return;
+            }
+            own.region = area.id;
+            if (own.type === 'template') Object.assign(own, { x: area.x, y: area.y }, clampFrame({ ...own, x: area.x, y: area.y }, b.playlist.stage));
+            else Object.assign(own, { x: area.x, y: area.y, width: area.width, height: area.height });
+        });
+    }
+
     function addBlock(type: ContentBlockType): void {
         if (!slide.value) return;
         const made = createBlock(type, stage.value, calendarIds.value, theme.value);
         const target = targetRegion.value;
         const created = target
-            ? { ...made, x: target.x, y: target.y, width: target.width, height: target.height }
+            ? { ...made, x: target.x, y: target.y, width: target.width, height: target.height, region: target.id }
             : freeSpot(made, slide.value.blocks, stage.value);
         const id = slide.value.id;
         change((b) => slideIn(b, id)?.blocks.push(created));
@@ -826,7 +866,7 @@ export const useEditorStore = defineStore('editor', () => {
             height: template.height,
         };
         const target = targetRegion.value;
-        if (target) created = { ...created, x: target.x, y: target.y };
+        if (target) created = { ...created, x: target.x, y: target.y, region: target.id };
         else if (template.x === undefined || template.y === undefined) created = freeSpot(created, slide.value.blocks, stage.value);
         created = { ...created, ...clampFrame(created, stage.value) };
         const id = slide.value.id;
@@ -965,6 +1005,7 @@ export const useEditorStore = defineStore('editor', () => {
         let copies = sources.map((source): Block => {
             const copy = cloneJson(source);
             delete copy.locked;
+            delete copy.region;
             if (copy.groupId) {
                 if (!groupIds.has(copy.groupId)) groupIds.set(copy.groupId, newId());
                 copy.groupId = groupIds.get(copy.groupId)!;
@@ -1052,6 +1093,8 @@ export const useEditorStore = defineStore('editor', () => {
             if (!target) return;
             // The frame of a template block is that of its template; it is not turned and has no opacity.
             const fixed: (keyof Block)[] = target.type === 'template' ? ['width', 'height', 'rotation', 'opacity'] : [];
+            // A block fixed in an area of the division has the area's frame (Plan.md 87 B).
+            if (target.region) fixed.push('x', 'y', 'width', 'height');
             const entries = Object.entries(patch).filter(([key]) => !fixed.includes(key as keyof Block));
             Object.assign(target, Object.fromEntries(entries));
             if (target.type === 'template') {
@@ -1069,7 +1112,7 @@ export const useEditorStore = defineStore('editor', () => {
      * clamped like one block, so the group does not warp at the edge. A move that changes nothing leaves no step.
      */
     function moveBlocks(ids: readonly string[], dx: number, dy: number): void {
-        const free = blocksOf(ids).filter((x) => !x.locked);
+        const free = blocksOf(ids).filter((x) => !frameFixed(x));
         const box = boundingBox(free);
         if (!box) return;
         const clamped = clampFrame({ ...box, x: box.x + dx, y: box.y + dy }, stage.value);
@@ -1561,6 +1604,8 @@ export const useEditorStore = defineStore('editor', () => {
         removeSlide,
         moveSlide,
         updateSlide,
+        setSlideLayout,
+        setRegionFixed,
         addBlock,
         addTemplate,
         saveAsTemplate,

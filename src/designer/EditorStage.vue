@@ -14,7 +14,7 @@ import { centerCovered, emptyAction } from './empty-block';
 import Icon from './Icon.vue';
 import { isDoubleTap, longPress, TAP_SLOP, type Tap } from './gestures';
 import { handlesOutside } from './handles';
-import { emptyRegions, layoutRegions } from './layout-regions';
+import { emptyRegions, frameFixed, layoutRegions } from './layout-regions';
 import { neighbourGaps, pairGaps, sizeLabelPlace, type Measure } from './measure';
 import { BLOCK_ICONS, blockBelow, boundingBox, clampFrame } from './ops';
 import QuickMenu from './QuickMenu.vue';
@@ -247,9 +247,9 @@ function start(event: PointerEvent, clicked: Block, handle: Handle | 'move'): vo
     // A finger first chooses (C3): a swipe over an unchosen block scrolls the page. Only the chosen block is moved.
     if (touch && !wasChosen) return;
     // Locked (Plan.md, 25): it can be chosen – to unlock it in the inspector – but not moved. In a group the locked stay and the rest goes.
-    const moving = handle === 'move' ? editor.selection.filter((b) => !b.locked) : block.locked ? [] : [block];
+    const moving = handle === 'move' ? editor.selection.filter((b) => !frameFixed(b)) : frameFixed(block) ? [] : [block];
     if (!moving.length) {
-        // Nothing to carry (a locked block): the press can only toggle.
+        // Nothing to carry (a locked block or one fixed in an area): the press can only toggle.
         if (togglePending) editor.toggleGroup(togglePending);
         togglePending = null;
         return;
@@ -1132,7 +1132,7 @@ function onEmptyAction(b: Block): void {
                     <!-- A template block has the size of its template and is not turned: no handles. -->
                     <template v-else-if="block.id === editor.block?.id && block.id !== editor.croppingId && block.type !== 'template'">
                         <span
-                            v-for="h in handlesOf(block)"
+                            v-for="h in frameFixed(block) ? [] : handlesOf(block)"
                             :key="h"
                             class="handle"
                             :class="`handle--${h}`"

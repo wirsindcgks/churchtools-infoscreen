@@ -72,6 +72,8 @@ const BlockFrame = {
      * does not care.
      */
     locked: v.optional(v.boolean()),
+    /** Since 1.42 (Plan.md 87 B): fixed in this area of the slide's division – its frame is the area's; the player ignores it. */
+    region: v.optional(v.picklist(['header', 'footer', 'main', 'a', 'b'])),
     /**
      * Since 1.29: blocks sharing a `groupId` on one slide are selected and moved together in the editor
      * (Plan.md D9). No nesting; the player draws every block on its own and ignores the field.
