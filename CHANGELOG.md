@@ -4,6 +4,21 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.31.0] – 2026-10-17
+
+### Neu
+
+- **Einführung in den Editor.** Wer den Editor zum ersten Mal öffnet, sieht unten links über der Bildfläche die Karte
+  „Neu hier?". Auf Wunsch zeigt ein kurzer Rundgang, wo was ist: die Folien, „+ Baustein", die Bildfläche, die
+  Einstellungen rechts samt (i), die Vorschau und „Veröffentlichen". Er startet nie von selbst, lässt sich jederzeit
+  mit Escape beenden und verändert nichts an der Präsentation. Am Handy gibt es ihn nicht.
+
+### Geändert
+
+- **„? Hilfe" statt „?".** Der Knopf oben im Editor trägt jetzt sein Wort und öffnet ein kleines Menü mit
+  „Tastenkürzel" und „Einführung". Auf schmalen Bildschirmen bleibt das runde Zeichen; die Taste „?" öffnet weiter
+  direkt die Tastenkürzel.
+
 ## [0.30.0] – 2026-10-17
 
 ### Geändert
@@ -1183,6 +1198,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.31.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.31.0
 [0.30.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.30.0
 [0.29.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.29.0
 [0.28.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.28.0
