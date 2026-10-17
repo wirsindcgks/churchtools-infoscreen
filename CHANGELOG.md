@@ -4,6 +4,19 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.30.0] – 2026-10-17
+
+### Geändert
+
+- **Aufgeräumte Seite „Design".** Die Einstellungen stehen in vier Klappmenüs – „Farben" samt Farbpalette, „Ecken und
+  Karten", „Schrift" und „Termine" samt Format der Bilder. Zugeklappt sagen sie in Worten, was eingestellt ist, etwa
+  „Rund · leicht getönt"; die Erklärungen stehen im (i). Die Vorlagen haben eine eigene Karte, weil Umbenennen und
+  Löschen sofort wirken und „Speichern" für sie nicht gilt.
+- **Größere Vorschau auf der Seite „Design".** Einstellungen und Vorschau teilen sich die Seite zur Hälfte; die
+  Vorschau zeigt ihre Termine in kleinerer Schrift, damit nichts abgeschnitten wird.
+- **Immer nur ein Klappmenü offen** – im Inspektor und auf der Seite „Design". Öffnet man eins, schließt sich das
+  andere; so bleibt der Überblick. „Bausteine dieser Folie" bleibt daneben offen.
+
 ## [0.29.0] – 2026-10-16
 
 ### Neu
@@ -1170,6 +1183,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.30.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.30.0
 [0.29.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.29.0
 [0.28.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.28.0
 [0.27.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.27.0
