@@ -358,12 +358,17 @@ test.describe('with a finger, in both browsers', () => {
         expect(overflow).toBeLessThanOrEqual(0);
     }
 
-    test('the header fits in one line, and "…" replaces Vorschau/Player (Plan.md 44, M2)', async ({ page }) => {
+    test('the header puts the title in a row of its own, and "…" replaces Vorschau/Player (Plan.md 44, M2)', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
         await expect(page.getByTestId('phone-slides')).toContainText('von 3');
         const bar = (await page.locator('.d-appbar').boundingBox())!;
-        expect(bar.height).toBeLessThanOrEqual(100);
+        expect(bar.height).toBeLessThanOrEqual(120);
+        // Below the way back, flush with it, so it can be read (user, 2026-10-17).
+        const back = (await page.getByTestId('leave-editor').boundingBox())!;
+        const title = (await page.locator('.d-appbar .heading').boundingBox())!;
+        expect(title.y).toBeGreaterThanOrEqual(back.y + back.height);
+        expect(Math.abs(title.x - back.x)).toBeLessThanOrEqual(1);
         await expect(page.getByTestId('save')).toBeVisible();
         await expect(page.getByTestId('editor-more')).toBeVisible();
         await expect(page.getByTestId('open-preview')).not.toBeVisible();
@@ -2283,9 +2288,10 @@ test.describe('the bar of the editor stands flush with the cards (third round of
         const inspector = (await page.getByTestId('inspector-sheet').boundingBox())!;
         expect(Math.abs(back.x - slides.x)).toBeLessThanOrEqual(1);
         expect(Math.abs(save.x + save.width - (inspector.x + inspector.width))).toBeLessThanOrEqual(1);
-        // The title and the state of the save stand in the middle of the window.
+        // The title and the state of the save start flush with "+ Baustein", not beside "Hilfe" (user, 2026-10-17).
         const title = (await page.locator('.d-appbar .heading').boundingBox())!;
-        expect(Math.abs(title.x + title.width / 2 - 1440 / 2)).toBeLessThanOrEqual(2);
+        const add = (await page.getByTestId('add-block-menu').boundingBox())!;
+        expect(Math.abs(title.x - add.x)).toBeLessThanOrEqual(1);
         // Nothing overlaps: back, title, actions in a row.
         expect(back.x + back.width).toBeLessThanOrEqual(title.x);
         expect(title.x + title.width).toBeLessThanOrEqual((await page.getByTestId('save').boundingBox())!.x);

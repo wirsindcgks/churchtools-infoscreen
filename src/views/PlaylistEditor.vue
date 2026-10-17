@@ -744,7 +744,7 @@ function onKey(event: KeyboardEvent): void {
     <div
         ref="root"
         class="infoscreen-designer editor"
-        :class="{ 'sheet-open': inspectorOpen, 'template-page': templatePage }"
+        :class="{ 'sheet-open': inspectorOpen, 'template-page': templatePage, 'slides-folded': desktop && !desktopSlidesOpen && !templatePage }"
         :style="{
             '--editor-top': `${top}px`,
             '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}`,
@@ -1187,6 +1187,8 @@ function onKey(event: KeyboardEvent): void {
      * 1 px that the cards no longer draw as a rule.
      */
     --editor-head-h: 53px;
+    /* The width of the slide column, here and not on `.columns`, so the bar above can put the title over the stage (AppBar.vue). */
+    --slides-w: 220px;
     display: flex;
     flex-direction: column;
     /* The window's visible height: on a tablet 100vh reaches under Safari's bar, and the inspector's lower part had to be scrolled to. */
@@ -1195,15 +1197,6 @@ function onKey(event: KeyboardEvent): void {
     min-height: 480px;
     /* The calm ground the cards and the stage lie on (Plan.md 79, B3). */
     background: var(--d-workspace);
-}
-@media (min-width: 48.0625rem) {
-    .heading {
-        align-items: center;
-        text-align: center;
-    }
-    .status-line {
-        justify-content: center;
-    }
 }
 /* A link that looks like a button: the way back and the player. */
 .link-btn {
@@ -1231,7 +1224,7 @@ function onKey(event: KeyboardEvent): void {
 .back {
     padding: 0 var(--d-space-3) 0 var(--d-space-2);
 }
-/* Title above, the state of the save below it, small – in the middle of the bar above 48rem (AppBar.vue). */
+/* Title above, the state of the save below it, small – above 48rem over the stage, below in a row of its own (AppBar.vue). */
 .heading {
     display: flex;
     flex-direction: column;
@@ -1370,7 +1363,7 @@ function onKey(event: KeyboardEvent): void {
 .template-bar-note--error {
     color: var(--d-danger);
 }
-.template-page .columns {
+.editor.template-page {
     --slides-w: 0px;
 }
 /* Below 48rem there is one column: the gap would take a row of its own. */
@@ -1383,8 +1376,7 @@ function onKey(event: KeyboardEvent): void {
     opacity: 0.5;
 }
 .columns {
-    /* The widths of the two side columns; a collapsed one is a 53 px rail (Plan.md 45). */
-    --slides-w: 220px;
+    /* The widths of the two side columns (`--slides-w` on `.editor`); a collapsed one is a 53 px rail (Plan.md 45). */
     --inspector-w: 300px;
     flex: 1;
     display: grid;
@@ -1775,9 +1767,11 @@ function onKey(event: KeyboardEvent): void {
  * stage does not move. No backdrop: what lies beside a drawer stays usable.
  */
 @media (min-width: 48.0625rem) and (max-width: 75rem) {
+    .editor {
+        --slides-w: 53px;
+    }
     .columns {
         position: relative;
-        --slides-w: 53px;
     }
     /*
      * The stage's frame fills the room below "+ Baustein", and the slide stands in its middle, upright and lying down –
@@ -1883,7 +1877,7 @@ function onKey(event: KeyboardEvent): void {
     .columns.inspector-folded {
         --inspector-w: 53px;
     }
-    .columns.slides-folded {
+    .editor.slides-folded {
         --slides-w: 53px;
     }
     .columns.slides-folded .slide-list,

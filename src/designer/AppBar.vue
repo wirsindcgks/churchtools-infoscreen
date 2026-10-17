@@ -2,9 +2,10 @@
 /**
  * The bar of the editor below the ChurchTools navigation: the way back on the left, the title and the state of the
  * save in the middle (slot `title`), the actions on the right. It lies calm on the workspace, without a surface of its own
- * (Plan.md 79, B3). Above 48rem the title stands in the middle of the window – left and right take equal room, unless
- * the actions are so wide that the title has to move aside; below it, there is no room for a middle, and the title
- * follows the way back. The overview pages have no bar – their sidebar carries the sections and their page head the actions.
+ * (Plan.md 79, B3). Above 48rem the title starts where the stage does, flush with "+ Baustein" – the editor hands down
+ * the width of its slide column as `--slides-w` – unless the way back is wider and pushes it aside; below it, the title
+ * takes a row of its own under the way back and the actions, so it stays readable (user, 2026-10-17). The overview
+ * pages have no bar – their sidebar carries the sections and their page head the actions.
  */
 </script>
 
@@ -47,12 +48,16 @@
 @media (min-width: 48.0625rem) {
     .d-appbar {
         display: grid;
-        /* Equal sides, but never narrower than their content; the middle gives way first. */
-        grid-template-columns: minmax(auto, 1fr) minmax(0, auto) minmax(auto, 1fr);
-        column-gap: var(--d-space-4);
+        /*
+         * The columns of the editor below: the way back over the slides, the title over the stage, with the same gap.
+         * Never narrower than its content, so a wide way back pushes the title aside; the title gives way first.
+         */
+        grid-template-columns: minmax(auto, var(--slides-w, auto)) minmax(0, 1fr) auto;
+        column-gap: var(--d-space-3);
     }
+    /* The padding of the bar with "+ Baustein" (BlockPalette.vue). */
     .middle {
-        justify-content: center;
+        padding-left: var(--d-space-2);
     }
     /* An automatic minimum, not 0: the sides keep the room of their content, so nothing overlaps. */
     .start,
@@ -62,8 +67,17 @@
 }
 @media (max-width: 48rem) {
     .d-appbar {
+        flex-wrap: wrap;
         min-height: 56px;
         padding-block: var(--d-space-1);
+    }
+    /* The title in a row of its own below the way back and the actions. */
+    .middle {
+        order: 1;
+        flex-basis: 100%;
+    }
+    .end {
+        margin-left: auto;
     }
 }
 </style>
