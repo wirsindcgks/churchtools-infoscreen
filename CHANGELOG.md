@@ -4,6 +4,20 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.32.0] – 2026-10-17
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für die Vorschläge zum Abstand der Aufteilung und zur Suche in
+langen Listen.
+
+### Neu
+
+- **Abstand in der Aufteilung.** Im Klappmenü „Aufteilung" wählt „Abstand" zwischen Ohne, Eng, Normal und Weit. Er gilt
+  zwischen den Bereichen und zum Rand der Folie; „Ohne" reicht bis an den Rand. Bausteine, die im Bereich fest sind,
+  rücken mit. Bisherige Folien behalten den gewohnten Abstand (Normal).
+- **Suche in langen Listen.** Ab neun Einträgen steht ein Suchfeld über den Kalendern, den Gruppen der Beiträge und den
+  Gruppen des Bausteins „Gruppen". Es findet Teile des Namens in ihrer Reihenfolge, wie die Schnellsuche von ChurchTools
+  – „haus nord" findet „Hauskreis Nord". Gewählte Einträge bleiben stehen, auch wenn sie nicht passen.
+
 ## [0.31.0] – 2026-10-17
 
 ### Neu
@@ -1198,6 +1212,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.32.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.32.0
 [0.31.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.31.0
 [0.30.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.30.0
 [0.29.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.29.0
