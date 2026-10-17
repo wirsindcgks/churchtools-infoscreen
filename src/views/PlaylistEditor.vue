@@ -744,7 +744,7 @@ function onKey(event: KeyboardEvent): void {
     <div
         ref="root"
         class="infoscreen-designer editor"
-        :class="{ 'sheet-open': inspectorOpen, 'template-page': templatePage, 'slides-folded': desktop && !desktopSlidesOpen && !templatePage }"
+        :class="{ 'sheet-open': inspectorOpen, 'template-page': templatePage, 'slides-folded': desktop && !desktopSlidesOpen && !templatePage, 'stage-upright': editor.stage.height > editor.stage.width }"
         :style="{
             '--editor-top': `${top}px`,
             '--stage-aspect': `${editor.stage.width} / ${editor.stage.height}`,
@@ -1525,6 +1525,15 @@ function onKey(event: KeyboardEvent): void {
     .editor.sheet-open {
         padding-bottom: calc(50vh + env(safe-area-inset-bottom));
         padding-bottom: calc(50dvh + env(safe-area-inset-bottom));
+    }
+}
+/*
+ * Phone: an upright slide fills the height and leaves no free room below. There the room of a block's row – two rows
+ * of 56 px and the rule (PhoneBar.vue) – stays free always, so the slide is smaller but still does not move (user, 2026-10-17).
+ */
+@media (max-width: 48rem) {
+    .editor.stage-upright:not(.sheet-open) {
+        padding-bottom: calc(56px + 2 * 56px + 1px + env(safe-area-inset-bottom));
     }
 }
 

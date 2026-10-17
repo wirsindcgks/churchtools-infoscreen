@@ -385,6 +385,30 @@ test.describe('with a finger, in both browsers', () => {
         await expect(page.getByTestId('playlist-preview')).toHaveCount(0);
     });
 
+    test('an upright slide stays whole above the row of a chosen block, and does not move (user, 2026-10-17)', async ({ page }) => {
+        // A new portrait screen is made at the desktop's width, then edited on the phone.
+        await page.setViewportSize({ width: 1440, height: 900 });
+        await page.goto('./');
+        await page.getByTestId('new-screen').click();
+        await page.getByTestId('new-name').fill('Foyer Hochkant');
+        await page.getByTestId('create-dialog').getByText('Hochkant').click();
+        await page.getByTestId('create').click();
+        await expect(page).toHaveURL(/playlists\/[\w-]+$/);
+        await addBlock(page, 'text');
+        await page.setViewportSize({ width: 390, height: 844 });
+        await page.reload();
+        const stage = page.locator('.editor-stage .stage');
+        await expect(stage).toBeVisible();
+        const before = (await stage.boundingBox())!;
+        await page.getByTestId('frame-text').first().tap();
+        await expect(page.getByTestId('phone-block-row')).toBeVisible();
+        const after = (await stage.boundingBox())!;
+        expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(1);
+        expect(Math.abs(after.height - before.height)).toBeLessThanOrEqual(1);
+        const row = (await page.getByTestId('phone-block-row').boundingBox())!;
+        expect(after.y + after.height).toBeLessThanOrEqual(row.y);
+    });
+
     test('"+ Baustein" opens a sheet with every block, and the inspector is its own sheet on request (Plan.md 44, M3, M4; 79, C2)', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
