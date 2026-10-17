@@ -4,6 +4,25 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.33.0] – 2026-10-17
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Vorschlag, die Rechte der Gerätekonten genauer zu prüfen.
+
+### Geändert
+
+- **Rechte weiterer Gruppen eines Gerätekontos.** Steht ein Gerätekonto außer in „Infoscreen-Devices" noch in anderen
+  Gruppen, liest die Prüfung unter Einstellungen → Gruppen und Rechte jetzt, welche Rechte jede dieser Gruppen dem Konto
+  gibt – auch die innerhalb der Gruppe, etwa Mitglieder sehen oder Beiträge schreiben – und warnt mit der Gruppe als
+  Herkunft. Eine Gruppe ohne Rechte, etwa eine zum Sammeln von Systemkonten, beanstandet sie nicht mehr. Was sich nicht
+  lesen lässt, heißt „ungeklärt".
+- **Titel über der Bühne.** Der Name der Präsentation steht oben im Editor bündig mit „+ Baustein" statt in der Mitte
+  neben „Hilfe"; am Handy in einer eigenen Zeile, damit er lesbar bleibt.
+
+### Behoben
+
+- **Hochkant-Folien am Handy.** War ein Baustein gewählt, deckte seine Zeile eine 9:16-Folie unten ab. Jetzt ist die
+  Folie etwas kleiner und bleibt ganz sichtbar; sie rückt beim Wählen weiterhin nicht.
+
 ## [0.32.0] – 2026-10-17
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für die Vorschläge zum Abstand der Aufteilung und zur Suche in
