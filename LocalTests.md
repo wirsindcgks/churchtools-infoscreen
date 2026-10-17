@@ -158,7 +158,9 @@ npm run release
 Baut `dist/` und packt es als ZIP nach `releases/` (nicht versioniert), benannt nach Version und Commit, etwa
 `churchtools-infoscreen-v0.1.0-8c241d9.zip`. Das ZIP lässt sich zum Ausprobieren direkt in ChurchTools hochladen:
 **Extension-Verwaltung → Infoscreen Designer → Bearbeiten → ZIP wählen**. Welche Fassung installiert ist, steht unten
-auf der Seite „Einstellungen" des Designers.
+auf der Seite „Einstellungen" des Designers – ein lokales ZIP mit Commit, etwa „0.32.0+798980c“. **Nach dem Hochladen
+eine Weile warten:** ChurchTools liefert noch einige Zeit die alte Fassung aus, auch bei neu geladener Seite (beobachtet
+am 2026-10-17); erst danach zeigt „Einstellungen“ den Commit.
 
 ### Eine Wegwerf-Installation per API
 
