@@ -3,7 +3,7 @@
  * The groups block (Plan.md 43, 79 B2): the groups of a ChurchTools group homepage, one at a time with a QR code or as a
  * list. Homepage and look go to the short menu. The groups (all, or a chosen list) and the look are foldable.
  */
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { t } from '../../../i18n/designer';
 import { homepageGroups, selectGroups, type Group } from '../../../groups/normalize';
 import type { Block, GroupFields } from '../../../model/schema';
@@ -18,6 +18,8 @@ import SortList, { type SortItem } from '../fields/SortList.vue';
 import TileField from '../fields/TileField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import FontSection from '../FontSection.vue';
+import { LIST_SEARCH_FROM, matchesName } from '../../name-search';
+import SearchField from '../../SearchField.vue';
 import { GROUPS_TILES } from '../layouts';
 import { move as moveItem } from '../../ops';
 import { useBlockEdit } from '../use-block';
@@ -91,6 +93,11 @@ const pickable = computed(() => {
     return homepageGroupList.value.filter((g) => !picked.has(g.id));
 });
 
+/** A long homepage gets a search over the groups still to pick (Plan.md 93). */
+const query = ref('');
+const searchable = computed(() => homepageGroupList.value.length >= LIST_SEARCH_FROM);
+const pickableShown = computed(() => pickable.value.filter((g) => matchesName(g.name, query.value)));
+
 /** New ones join at the end. */
 function pick(id: number): void {
     setBlock({ groupIds: [...props.block.groupIds, id] });
@@ -141,14 +148,16 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
         />
         <template v-if="block.groupIds.length">
             <SortList :items="chosen" :remove-label="t.common.remove" testid="group" @move="move" @remove="removeAt" />
+            <SearchField v-if="searchable" v-model="query" :placeholder="t.common.searchList" :label="t.common.searchList" testid="groups-search" />
             <ToggleField
-                v-for="g in pickable"
+                v-for="g in pickableShown"
                 :key="g.id"
                 :model-value="false"
                 :label="g.name"
                 :testid="`group-pick-${g.id}`"
                 @update:model-value="pick(g.id)"
             />
+            <p v-if="searchable && query.trim() && !pickableShown.length" class="hint" data-testid="groups-search-empty">{{ t.common.nothingFound(query) }}</p>
         </template>
     </InspectorSection>
 

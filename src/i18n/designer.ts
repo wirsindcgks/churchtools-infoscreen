@@ -36,6 +36,9 @@ export const t = {
         dragToSort: 'Ziehen zum Sortieren',
         explanation: 'Erklärung',
         countOf: (n: number, total: number) => `${n} von ${total}`,
+        /** The search above a long list (Plan.md 93): parts of the name, separated by spaces. */
+        searchList: 'Suchen',
+        nothingFound: (query: string) => `Nichts gefunden zu „${query.trim()}“.`,
         chosen: (n: number) => `${n} gewählt`,
         none: 'keine',
         loading: 'Lade …',

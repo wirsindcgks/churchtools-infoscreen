@@ -3,7 +3,7 @@
  * The posts block (Plan.md 33, 79 B2): the groups whose posts show (with the hint on non-public ones), then as the look the picture tiles, how many posts from
  * how long ago, how long each stays and what a post shows. Groups and look go to the short menu.
  */
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { t } from '../../../i18n/designer';
 import type { Block } from '../../../model/schema';
 import { POST_SECONDS } from '../../../player/paging';
@@ -14,6 +14,8 @@ import TileField from '../fields/TileField.vue';
 import QuickField from '../fields/QuickField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import FontSection from '../FontSection.vue';
+import { LIST_SEARCH_FROM, matchesName } from '../../name-search';
+import SearchField from '../../SearchField.vue';
 import { POSTS_TILES } from '../layouts';
 import { useBlockEdit } from '../use-block';
 import { useInspectorMode } from '../mode';
@@ -29,6 +31,13 @@ const summary = computed(() => `${POSTS_TILES.find((o) => o.value === props.bloc
 /** The fold and the chip of the short menu say it alike: "2 von 10". */
 const groupsSummary = computed(() => t.common.countOf(props.block.groupIds.length, context.groups.length));
 
+/** Many groups get a search (Plan.md 93); a chosen group stays in the list whatever it says. */
+const query = ref('');
+const searchable = computed(() => context.groups.length >= LIST_SEARCH_FROM);
+const groupsShown = computed(() => context.groups.filter((g) => props.block.groupIds.includes(g.id) || matchesName(g.name, query.value)));
+/** Only chosen ones left: the search found nothing new. */
+const nothingFound = computed(() => searchable.value && !!query.value.trim() && groupsShown.value.every((g) => props.block.groupIds.includes(g.id)));
+
 /** Empty is allowed here (Plan.md 33): a fresh block starts without a group until one is chosen. */
 function toggleGroup(id: number, on: boolean): void {
     const next = on ? [...props.block.groupIds, id] : props.block.groupIds.filter((g) => g !== id);
@@ -41,14 +50,16 @@ function toggleGroup(id: number, on: boolean): void {
     <QuickField quick :label="t.inspector.groups" :face="block.groupIds.length ? t.quick.listFace(t.inspector.groups, groupsSummary) : t.quick.empty.posts">
         <InspectorSection id="post-groups" :title="t.inspector.groups" :summary="block.groupIds.length ? groupsSummary : t.common.none">
             <template #info>{{ t.inspector.postGroupsInfo }}</template>
+            <SearchField v-if="searchable" v-model="query" :placeholder="t.common.searchList" :label="t.common.searchList" testid="post-groups-search" />
             <ToggleField
-                v-for="g in context.groups"
+                v-for="g in groupsShown"
                 :key="g.id"
                 :model-value="block.groupIds.includes(g.id)"
                 :label="g.visibility !== 'public' ? `${g.name} · ${t.inspector.notPublic}` : g.name"
                 :testid="`post-group-${g.id}`"
                 @update:model-value="toggleGroup(g.id, $event)"
             />
+            <p v-if="nothingFound" class="hint" data-testid="post-groups-search-empty">{{ t.common.nothingFound(query) }}</p>
             <p v-if="!context.groups.length" class="hint">{{ t.inspector.noPostGroups }}</p>
             <p v-if="mode === 'full' && block.groupIds.some((id) => context.groups.find((g) => g.id === id)?.visibility !== 'public')" class="hint" data-testid="posts-not-public">
                 {{ t.inspector.postsNotPublic }}

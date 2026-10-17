@@ -1,16 +1,7 @@
 import { t } from '../i18n/designer';
 import type { ContentBlockType } from '../model/schema';
+import { normalise } from './name-search';
 import { PALETTE } from './ops';
-
-/** Lower case, umlauts as their two letters: "ä" and "ae" meet (Plan.md 79, C7). */
-function normalise(text: string): string {
-    return text
-        .toLowerCase()
-        .replaceAll('ä', 'ae')
-        .replaceAll('ö', 'oe')
-        .replaceAll('ü', 'ue')
-        .replaceAll('ß', 'ss');
-}
 
 /** The blocks whose name or sentence contains the query, in the order of the palette; an empty query finds all. */
 export function searchBlocks(query: string): ContentBlockType[] {

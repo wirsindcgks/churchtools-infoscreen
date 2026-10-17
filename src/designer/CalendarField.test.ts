@@ -20,3 +20,23 @@ describe('CalendarField – released calendars (Plan.md 85 b)', () => {
         expect(wrapper.text()).not.toContain('nicht öffentlich');
     });
 });
+
+describe('CalendarField – search in a long list (Plan.md 93)', () => {
+    const many = ['Gottesdienst', 'Jugendkreis', 'Kinderkirche', 'Chor', 'Hauskreis Nord', 'Hauskreis Süd', 'Senioren', 'Frauenfrühstück', 'Männertreff'].map((name, i) => ({ id: i + 1, name }));
+    const names = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('label').map((l) => l.text()).filter((text) => many.some((c) => c.name === text));
+
+    it('has no search with up to eight calendars', () => {
+        const wrapper = mount(CalendarField, { props: { calendars: many.slice(0, 8), chosenIds: [], hidden: [] } });
+        expect(wrapper.find('[data-testid="calendars-search"]').exists()).toBe(false);
+    });
+
+    it('finds by parts of the name and keeps the chosen ones', async () => {
+        const wrapper = mount(CalendarField, { props: { calendars: many, chosenIds: [1], hidden: [] } });
+        await wrapper.get('[data-testid="calendars-search"]').setValue('haus sü');
+        expect(names(wrapper)).toEqual(['Gottesdienst', 'Hauskreis Süd']);
+        expect(wrapper.find('[data-testid="calendars-search-empty"]').exists()).toBe(false);
+        await wrapper.get('[data-testid="calendars-search"]').setValue('orgel');
+        expect(names(wrapper)).toEqual(['Gottesdienst']);
+        expect(wrapper.get('[data-testid="calendars-search-empty"]').text()).toBe('Nichts gefunden zu „orgel“.');
+    });
+});

@@ -45,6 +45,11 @@ Interne Termine (nur für angemeldete Benutzer) zeigt kein Fernseher. Hat ein Ba
 öffentlich ist, nennt ihn der Editor und bietet an, ihn zu entfernen; fehlt einer, sagt der Editor, wie man ihn in
 ChurchTools freigibt.
 
+**Suche in langen Listen:** Ab neun Einträgen steht über den Kalendern, den Gruppen der Beiträge und den Gruppen des
+Bausteins „Gruppen" ein Suchfeld. Es findet Teile des Namens in ihrer Reihenfolge, wie die Schnellsuche von ChurchTools –
+„haus nord" findet „Hauskreis Nord"; Groß- und Kleinschreibung zählt nicht, „ae" findet „ä". Gewählte Einträge bleiben
+stehen, auch wenn sie nicht passen.
+
 **Termine über Tags ausblenden.** Terminliste, Nächster Termin und Countdown lassen Termine weg, die einen bestimmten
 Tag tragen – etwa „Intern" oder „Probe". Unter den Kalendern steht **„Tags ausblenden"**; dort schaltet
 man die Tags ein, die der Baustein auslassen soll. Tags vergibt man in ChurchTools am Termin und verwaltet sie im Kalender
