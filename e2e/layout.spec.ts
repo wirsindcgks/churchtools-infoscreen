@@ -193,3 +193,19 @@ test('opening one section of the inspector folds the other; "Bausteine dieser Fo
     await expect(page.getByTestId('slide-blocks')).toHaveAttribute('open', '');
     await expect(page.getByTestId('section-layout')).toHaveAttribute('open', '');
 });
+
+test('a wider or no gap takes the fixed block along (Plan.md 92)', async ({ page }) => {
+    await emptySlide(page);
+    await tile(page, 'halves').check({ force: true });
+    await add(page, 'a').click();
+    await page.getByTestId('sheet-add-shape').click();
+    expect(await frameStyle(page)).toBe('43px 43px 896px 994px');
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
+    await openSection(page, 'layout');
+    const gap = (value: string) => page.getByTestId('layout-gap').locator(`input[value="${value}"]`);
+    // 6 % of 1080 = 65 px as margin and gap: (1920 - 3 · 65) / 2 rounds to 863.
+    await gap('wide').check({ force: true });
+    expect(await frameStyle(page)).toBe('65px 65px 863px 950px');
+    await gap('none').check({ force: true });
+    expect(await frameStyle(page)).toBe('0px 0px 960px 1080px');
+});

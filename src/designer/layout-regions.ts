@@ -5,8 +5,10 @@
 import type { SlideLayout } from '../model/schema';
 import type { Frame } from './snap';
 
-/** Margin and gap between the areas, as a share of the stage's shorter side. */
-export const REGION_MARGIN = 0.04;
+/** Margin and gap between the areas, as a share of the stage's shorter side – one value for both (Plan.md 92). */
+export const REGION_GAPS = { none: 0, tight: 0.02, normal: 0.04, wide: 0.06 } as const;
+/** The margin of a division without a chosen gap. */
+export const REGION_MARGIN = REGION_GAPS.normal;
 /** The header's height, as a share of the stage's height. */
 export const HEADER_SHARE = 0.14;
 /** The footer's height, as a share of the stage's height. */
@@ -59,7 +61,7 @@ export function layoutRegions(layout: SlideLayout | undefined, stage: { width: n
     const header = layout?.header ?? false;
     const footer = layout?.footer ?? false;
     if (split === 'none' && !header && !footer) return [];
-    const margin = Math.round(Math.min(stage.width, stage.height) * REGION_MARGIN);
+    const margin = Math.round(Math.min(stage.width, stage.height) * REGION_GAPS[layout?.gap ?? 'normal']);
     const width = stage.width - 2 * margin;
     const regions: Region[] = [];
     let top = margin;

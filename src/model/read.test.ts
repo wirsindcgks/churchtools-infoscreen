@@ -111,6 +111,16 @@ describe('readSlide – tolerant towards newer data', () => {
         expect(read({ letterSpacing: 'x' }).issues).not.toHaveLength(0);
     });
 
+    it('reads the gap of a division (schema 1.44, Plan.md 92): optional, four steps', () => {
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(44);
+        const layout = { split: 'halves', header: false, footer: false };
+        const plain = readSlide({ ...makeSlide(), layout });
+        expect(plain.issues).toHaveLength(0);
+        expect(plain.doc.layout).not.toHaveProperty('gap');
+        expect(readSlide({ ...makeSlide(), layout: { ...layout, gap: 'wide' } }).doc.layout).toMatchObject({ gap: 'wide' });
+        expect(() => readSlide({ ...makeSlide(), layout: { ...layout, gap: 'huge' } })).toThrow();
+    });
+
     it('reads hideTagIds on the appointment blocks (schema 1.37): optional, at most 20', () => {
         expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(37);
         const old = makeSlide({ blocks: [textBlock('a')] });

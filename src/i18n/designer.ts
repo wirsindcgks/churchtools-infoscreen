@@ -783,6 +783,9 @@ export const t = {
         layoutNarrowWideRows: 'Zwei Drittel unten',
         layoutHeader: 'Kopfzeile',
         layoutFooter: 'Fußzeile',
+        layoutGap: 'Abstand',
+        layoutGapInfo: 'Der Abstand zwischen den Bereichen und zum Rand der Folie. Feste Bausteine passen sich an.',
+        layoutGaps: { none: 'Ohne', tight: 'Eng', normal: 'Normal', wide: 'Weit' },
         layoutSummary: {
             none: 'Keine',
             halvesColumns: 'Zwei Spalten',
@@ -796,6 +799,8 @@ export const t = {
             onlyHeader: 'Kopfzeile',
             onlyFooter: 'Fußzeile',
             onlyBoth: 'Kopf- und Fußzeile',
+            /** Only when it is not `normal`. */
+            gap: { none: ', ohne Abstand', tight: ', Abstand eng', wide: ', Abstand weit' },
         },
         playlist: 'Präsentation',
         format: 'Format',

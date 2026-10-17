@@ -112,7 +112,7 @@ describe('the inspector of the slide (Plan.md 79, B2)', () => {
         const summary = () => wrapper.get('[data-testid="section-layout"] .summary-line').text();
         expect(summary()).toBe('Keine');
         await wrapper.get('[data-testid="layout-split"] input[value="halves"]').setValue(true);
-        expect(editor.slide!.layout).toEqual({ split: 'halves', header: false, footer: false });
+        expect(editor.slide!.layout).toEqual({ split: 'halves', header: false, footer: false, gap: 'normal' });
         expect(summary()).toBe('Zwei Spalten');
         await wrapper.get('[data-testid="layout-header"]').setValue(true);
         expect(summary()).toBe('Zwei Spalten, mit Kopfzeile');
@@ -122,5 +122,19 @@ describe('the inspector of the slide (Plan.md 79, B2)', () => {
         await wrapper.get('[data-testid="layout-split"] input[value="none"]').setValue(true);
         expect(summary()).toBe('Kopf- und Fußzeile');
         expect(editor.slide!.blocks[0]).toMatchObject({ x: before.x, y: before.y, width: before.width, height: before.height });
+    });
+
+    it('offers the gap only with areas and names it when it is not normal (Plan.md 92)', async () => {
+        const { editor, wrapper } = await setup();
+        const summary = () => wrapper.get('[data-testid="section-layout"] .summary-line').text();
+        expect(wrapper.find('[data-testid="layout-gap"]').exists()).toBe(false);
+        await wrapper.get('[data-testid="layout-split"] input[value="halves"]').setValue(true);
+        await wrapper.get('[data-testid="layout-gap"] input[value="wide"]').setValue(true);
+        expect(editor.slide!.layout).toEqual({ split: 'halves', header: false, footer: false, gap: 'wide' });
+        expect(summary()).toBe('Zwei Spalten, Abstand weit');
+        await wrapper.get('[data-testid="layout-gap"] input[value="none"]').setValue(true);
+        expect(summary()).toBe('Zwei Spalten, ohne Abstand');
+        await wrapper.get('[data-testid="layout-gap"] input[value="normal"]').setValue(true);
+        expect(summary()).toBe('Zwei Spalten');
     });
 });

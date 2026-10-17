@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 43 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 44 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -532,6 +532,8 @@ export const SlideLayout = v.object({
     split: v.optional(v.picklist(['none', 'halves', 'wide-narrow', 'narrow-wide']), 'none'),
     header: v.optional(v.boolean(), false),
     footer: v.optional(v.boolean(), false),
+    /** Since 1.44 (Plan.md 92): margin and gap between the areas, in steps. Missing = `normal`. */
+    gap: v.optional(v.picklist(['none', 'tight', 'normal', 'wide'])),
 });
 
 export const SlideDoc = v.object({

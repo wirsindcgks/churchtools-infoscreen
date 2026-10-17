@@ -158,7 +158,8 @@ Präsentationen.
 Eine Folie lässt sich in **Bereiche** gliedern, damit Bausteine sauber nebeneinander stehen: Im Inspektor der Folie
 (nichts gewählt) öffnet ihr **„Aufteilung"** und wählt **Halb und halb**, **Zwei Drittel / ein Drittel** oder umgekehrt –
 auf einer querformatigen Folie in Spalten, auf einer hochkant in Zeilen. Dazu gibt es die Schalter **„Kopfzeile"** und
-**„Fußzeile"**. Die Bereiche erscheinen im Editor als gestrichelte Rahmen unter den Bausteinen; in Vorschau, Miniaturen
+**„Fußzeile"**. Unter **„Abstand"** wählt ihr **Ohne**, **Eng**, **Normal** oder **Weit** – er gilt zwischen den
+Bereichen und zum Rand der Folie; „Ohne" reicht bis an den Rand. Die Bereiche erscheinen im Editor als gestrichelte Rahmen unter den Bausteinen; in Vorschau, Miniaturen
 und auf dem Bildschirm sind sie nicht zu sehen. Bausteine rasten an den Kanten und Mitten der Bereiche ein.
 
 In einem **leeren** Bereich steht ein „+": Es öffnet „+ Baustein", und der gewählte Baustein füllt den Bereich. In
@@ -168,7 +169,7 @@ Aufteilung.
 
 Was über das „+" in einen Bereich kommt, ist dort **fest**: Der Baustein lässt sich nicht verschieben und nicht in der
 Größe ändern, der Inhalt bleibt bearbeitbar. Unter „Anordnen" löst der Schalter **„Im Bereich fest"** die Bindung (oder
-bindet einen Baustein, dessen Mitte in einem Bereich liegt). Wechselt ihr die Aufteilung, **wandern feste Bausteine mit**
+bindet einen Baustein, dessen Mitte in einem Bereich liegt). Wechselt ihr die Aufteilung oder den Abstand, **wandern feste Bausteine mit**
 und nehmen den Rahmen ihres Bereichs an; fällt der Bereich weg, bleibt der Baustein stehen und ist wieder frei. Kopien
 eines Bausteins sind immer frei. Wer einen vorhandenen Baustein in einen **leeren** Bereich zieht, setzt ihn dort
 fest (der Bereich ist beim Ziehen hervorgehoben); in einem belegten Bereich bleibt er frei.

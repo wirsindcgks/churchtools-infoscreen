@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dropRegion, emptyRegions, fitToRegions, frameFixed, type Region, FOOTER_SHARE, HEADER_SHARE, layoutRegions, REGION_MARGIN } from './layout-regions';
+import { dropRegion, emptyRegions, fitToRegions, frameFixed, type Region, FOOTER_SHARE, HEADER_SHARE, layoutRegions, REGION_GAPS, REGION_MARGIN } from './layout-regions';
 
 type Two = [Region, Region];
 type Four = [Region, Region, Region, Region];
@@ -60,6 +60,25 @@ describe('layoutRegions', () => {
         expect(a.y + a.height + 43).toBe(footer.y);
         expect(b.y).toBe(a.y);
         expect(footer.y + footer.height).toBe(1080 - 43);
+    });
+
+    it('takes margin and gap from the chosen step (Plan.md 92)', () => {
+        expect(REGION_GAPS).toEqual({ none: 0, tight: 0.02, normal: 0.04, wide: 0.06 });
+        const halves = (gap?: 'none' | 'tight' | 'normal' | 'wide') => layoutRegions({ split: 'halves', header: false, footer: false, gap }, landscape) as Two;
+        expect(halves('normal')).toEqual(halves());
+        // none: from edge to edge, the areas touch
+        expect(halves('none')).toEqual([
+            { id: 'a', x: 0, y: 0, width: 960, height: 1080 },
+            { id: 'b', x: 960, y: 0, width: 960, height: 1080 },
+        ]);
+        // wide: 65 (6 % of 1080) as margin and as gap, everything still fits
+        const [a, b] = halves('wide');
+        expect(a).toMatchObject({ x: 65, y: 65, height: 950 });
+        expect(b.x).toBe(a.x + a.width + 65);
+        expect(b.x + b.width).toBe(1920 - 65);
+        const [header, main] = layoutRegions({ split: 'none', header: true, footer: false, gap: 'tight' }, landscape) as Two;
+        expect(header).toMatchObject({ x: 22, y: 22 });
+        expect(main.y).toBe(header.y + header.height + 22);
     });
 });
 

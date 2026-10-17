@@ -95,17 +95,26 @@ function setBackgroundKind(kind: string): void {
 /** The division of the slide (Plan.md 87 B): the tiles, the summary in words, and a change keeps every block where it is. */
 const portrait = computed(() => editor.stage.height > editor.stage.width);
 const splitOptions = computed(() => splitTiles(portrait.value));
-const layout = computed(() => ({ split: slide.value?.layout?.split ?? 'none', header: slide.value?.layout?.header ?? false, footer: slide.value?.layout?.footer ?? false }));
+const layout = computed(() => ({
+    split: slide.value?.layout?.split ?? 'none',
+    header: slide.value?.layout?.header ?? false,
+    footer: slide.value?.layout?.footer ?? false,
+    gap: slide.value?.layout?.gap ?? 'normal',
+}));
+/** The gap only matters where there are areas (Plan.md 92). */
+const hasRegions = computed(() => layout.value.split !== 'none' || layout.value.header || layout.value.footer);
+const gapOptions = computed(() => (['none', 'tight', 'normal', 'wide'] as const).map((value) => ({ value, label: t.inspector.layoutGaps[value] })));
 function setLayout(patch: Partial<SlideLayout>): void {
     editor.setSlideLayout({ ...layout.value, ...patch });
 }
 const layoutSummary = computed(() => {
     const words = t.inspector.layoutSummary;
-    const { split, header, footer } = layout.value;
-    if (split === 'none' && (header || footer)) return header && footer ? words.onlyBoth : header ? words.onlyHeader : words.onlyFooter;
+    const { split, header, footer, gap } = layout.value;
+    const gapWords = hasRegions.value && gap !== 'normal' ? words.gap[gap] : '';
+    if (split === 'none' && (header || footer)) return (header && footer ? words.onlyBoth : header ? words.onlyHeader : words.onlyFooter) + gapWords;
     const base =
         split === 'halves' ? (portrait.value ? words.halvesRows : words.halvesColumns) : split === 'wide-narrow' ? words.wideNarrow : split === 'narrow-wide' ? words.narrowWide : words.none;
-    return base + (header && footer ? words.withBoth : header ? words.withHeader : footer ? words.withFooter : '');
+    return base + (header && footer ? words.withBoth : header ? words.withHeader : footer ? words.withFooter : '') + gapWords;
 });
 
 const playlistSummary = computed(() =>
@@ -166,6 +175,16 @@ const backgroundColors = computed(() => {
             />
             <ToggleField :model-value="layout.header" :label="t.inspector.layoutHeader" testid="layout-header" @update:model-value="setLayout({ header: $event })" />
             <ToggleField :model-value="layout.footer" :label="t.inspector.layoutFooter" testid="layout-footer" @update:model-value="setLayout({ footer: $event })" />
+            <SegmentField
+                v-if="hasRegions"
+                :model-value="layout.gap"
+                :options="gapOptions"
+                :label="t.inspector.layoutGap"
+                testid="layout-gap"
+                @update:model-value="setLayout({ gap: $event as SlideLayout['gap'] })"
+            >
+                <template #info>{{ t.inspector.layoutGapInfo }}</template>
+            </SegmentField>
         </InspectorSection>
         <InspectorSection id="background" :title="t.inspector.background" :summary="backgroundSummary">
             <template #summary-extra>
