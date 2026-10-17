@@ -185,6 +185,42 @@ export async function personGroupIds(personId: number): Promise<number[]> {
     return (await personGroups(personId)).map((g) => g.id);
 }
 
+interface RightOrigin {
+    type: string;
+    groupId?: number;
+    value: boolean | number | number[];
+    revokedByGroupRoleId: number | null;
+}
+
+interface OriginPermission {
+    authId: number;
+    origins: RightOrigin[];
+}
+
+/**
+ * Which rights a person holds through which group, global and group internal (G61, measured 2026-10-17;
+ * both reads need „Berechtigungen verwalten"). Only sources of type group role and group type role count,
+ * not revoked and with an effective value; a source from a parent group names that group. Errors pass on.
+ */
+export async function loadRightOrigins(personId: number): Promise<{ authId: number; groupId: number }[]> {
+    const [global, internal] = await Promise.all([
+        churchtoolsClient.get<{ permissions?: OriginPermission[] }>(`/permissions/origins/global/persons/${personId}`),
+        churchtoolsClient.get<{ groups?: { permissions?: OriginPermission[] }[] }>(`/permissions/origins/internal/persons/${personId}`),
+    ]);
+    const permissions = [...(global.permissions ?? []), ...(internal.groups ?? []).flatMap((g) => g.permissions ?? [])];
+    const seen = new Map<string, { authId: number; groupId: number }>();
+    for (const p of permissions) {
+        for (const o of p.origins ?? []) {
+            if (o.type !== 'groupRole' && o.type !== 'groupTypeRole') continue;
+            if (o.groupId == null || o.revokedByGroupRoleId != null) continue;
+            const effective = Array.isArray(o.value) ? o.value.length > 0 : typeof o.value === 'number' ? o.value > 0 : o.value === true;
+            if (!effective) continue;
+            seen.set(`${p.authId}:${o.groupId}`, { authId: p.authId, groupId: o.groupId });
+        }
+    }
+    return [...seen.values()];
+}
+
 export const churchToolsProvisionApi: ProvisionApi = {
     async createGroup(name, groupTypeId) {
         const group = await churchtoolsClient.post<{ id: number }>('/groups', { name, groupTypeId, groupStatusId: 1 });

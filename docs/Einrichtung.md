@@ -209,14 +209,16 @@ Standort** („Infoscreen Foyer", „Infoscreen Café") – dann lässt sich ein
 3. **Personenstatus mit möglichst wenig Rechten wählen.** Rechte in ChurchTools addieren sich: Was der Status
    erlaubt, darf das Gerät zusätzlich zu seiner Gruppe. Ein Status für Mitarbeiter mit weitreichenden Rechten
    gehört nicht auf ein Gerät im Foyer.
-4. **In die Gruppe „Infoscreen-Devices" aufnehmen – und in keine weitere.** Rechte addieren sich: Was eine andere
-   Gruppe erlaubt, darf auch der Fernseher, und mit ihm jeder, der seine Adresse kennt. Rechte aus anderen Gruppen
-   sieht die Prüfung nicht; sie nennt seit Version 0.7.3 nur die Gruppen.
+4. **In die Gruppe „Infoscreen-Devices" aufnehmen – am besten in keine weitere.** Rechte addieren sich: Was eine andere
+   Gruppe erlaubt, darf auch der Fernseher, und mit ihm jeder, der seine Adresse kennt. Die Prüfung liest, welche
+   Rechte jede weitere Gruppe dem Konto gibt – auch die innerhalb der Gruppe, etwa Mitglieder sehen oder Beiträge
+   schreiben –, und warnt mit der Gruppe als Herkunft. Eine Gruppe ohne Rechte beanstandet sie nicht; eine Gruppe nur
+   zum Sammeln von Systemkonten ist in Ordnung.
 
 Einrichtung prüfen: Unter **Einstellungen → Gruppen und Rechte** die Gruppe „Infoscreen-Devices" wählen – die
 Prüfung zeigt je Kalender der Bildschirme, ob er öffentlich ist – auch ohne Geräte-Benutzer –, warnt vor nicht öffentlichen Kalendern in Bildschirmen und vor Konten, die einen internen Kalender lesen dürfen, und nennt jedes Recht des Kontos, das ein Gerät
 nicht braucht. Steht dort eine Warnung, dem Konto einen Personenstatus ohne diese Rechte geben: Wer die Adresse des
-Fernsehers kennt, hat sie sonst auch. Ist das Konto noch in weiteren Gruppen, nennt die Prüfung sie mit Namen.
+Fernsehers kennt, hat sie sonst auch. Gibt eine weitere Gruppe dem Konto Rechte, nennt die Prüfung die Gruppe als Herkunft.
 
 ## 7. Den Fernseher einrichten
 

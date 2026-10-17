@@ -30,6 +30,7 @@ import {
     loadGroupRights,
     loadGroups,
     loadPersonGrants,
+    loadRightOrigins,
     personGroupIds,
     personGroups,
     type GroupSummary,
@@ -780,10 +781,20 @@ async function check(side: Side): Promise<void> {
             const members = await Promise.all(
                 rights.members.map(async (m) => {
                     const person = await loadPersonGrants(m.personId);
-                    // Only the warning depends on this read: if it fails, the member is checked without it.
-                    const otherGroups = await personGroups(m.personId)
-                        .then((list) => list.filter((g) => g.id !== groupId).map((g) => g.name))
-                        .catch(() => undefined);
+                    // Only the warning depends on these reads: if they fail, the member is checked without it.
+                    const [memberships, origins] = await Promise.all([
+                        personGroups(m.personId).catch(() => null),
+                        loadRightOrigins(m.personId).catch(() => null),
+                    ]);
+                    const names = new Map((memberships ?? []).filter((g) => g.id !== groupId).map((g) => [g.id, g.name]));
+                    for (const o of origins ?? []) if (o.groupId !== groupId && !names.has(o.groupId)) names.set(o.groupId, t.setup.groupFallback(o.groupId));
+                    const otherGroups =
+                        memberships === null && origins === null
+                            ? null
+                            : [...names].map(([id, name]) => ({
+                                  name,
+                                  authIds: origins ? origins.filter((o) => o.groupId === id).map((o) => o.authId) : null,
+                              }));
                     return { label: person.label, grants: [...m.roleGrants, ...person.grants], otherGroups };
                 }),
             );

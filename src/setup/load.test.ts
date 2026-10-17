@@ -1,6 +1,6 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { groupMemberNames, loadGroupTypes, personGroupIds } from './load';
+import { groupMemberNames, loadGroupTypes, loadRightOrigins, personGroupIds } from './load';
 
 describe('personGroupIds', () => {
     afterEach(() => vi.restoreAllMocks());
@@ -46,6 +46,44 @@ describe('loadGroupTypes (Plan.md 71)', () => {
             { id: 3, name: 'Zeta', rawName: 'Zeta' },
             { id: 4, name: 'Attribute', rawName: 'merkmal' },
             { id: 2, name: 'Beta', rawName: 'Beta' },
+        ]);
+    });
+});
+
+describe('loadRightOrigins (G61)', () => {
+    afterEach(() => vi.restoreAllMocks());
+
+    const origin = (type: string, groupId: number | undefined, value: boolean | number | number[] = true, revokedByGroupRoleId: number | null = null) => ({
+        type,
+        groupId,
+        value,
+        revokedByGroupRoleId,
+    });
+
+    it('joins global and internal, keeps only effective group sources and each pair once', async () => {
+        vi.spyOn(churchtoolsClient, 'get').mockImplementation(async (path: string) => {
+            if (path === '/permissions/origins/global/persons/22') {
+                return {
+                    personId: 22,
+                    permissions: [
+                        { authId: 1, origins: [origin('groupTypeRole', 8, 2), origin('status', undefined), origin('publicUser', undefined)] },
+                        { authId: 2, origins: [origin('groupRole', 9, true, 5), origin('groupRole', 9, false), origin('groupRole', 9, 0), origin('groupRole', 9, [])] },
+                    ],
+                };
+            }
+            if (path === '/permissions/origins/internal/persons/22') {
+                return {
+                    personId: 22,
+                    groups: [
+                        { groupId: 8, permissions: [{ authId: 1, origins: [origin('groupRole', 8)] }, { authId: 3, origins: [origin('groupRole', 4, [7])] }] },
+                    ],
+                };
+            }
+            throw new Error(`unexpected ${path}`);
+        });
+        expect(await loadRightOrigins(22)).toEqual([
+            { authId: 1, groupId: 8 },
+            { authId: 3, groupId: 4 },
         ]);
     });
 });

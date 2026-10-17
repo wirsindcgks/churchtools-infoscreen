@@ -1657,9 +1657,14 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             noDevice: 'Noch kein Geräte-Benutzer in der Gruppe.',
             noDeviceDetail: 'Das Konto, mit dem sich die Fernseher anmelden, gehört hierher.',
             devices: (n: number) => `${n} Geräte-Benutzer.`,
-            otherGroups: (label: string, groups: string) => `${label} ist auch Mitglied in ${groups}.`,
-            otherGroupsDetail:
-                'Rechte aus diesen Gruppen bekommt auch der Fernseher – und jeder, der seine Adresse kennt. Die Prüfung sieht sie nicht. Ein Gerätekonto gehört nur in „Infoscreen-Devices".',
+            otherGroupRights: (label: string, group: string, count: number, names: string, more: number) =>
+                `Über ${group} hat ${label} ${count === 1 ? 'ein Recht' : `${count} Rechte`}, ${count === 1 ? 'das' : 'die'} ein Gerät nicht braucht: ${names}${more > 0 ? ` und ${more} weitere` : ''}.`,
+            otherGroupRightsDetail:
+                'Wer die Adresse des Fernsehers kennt, hat diese Rechte auch. Das Konto aus der Gruppe nehmen – oder die Rechte an seiner Rolle dort zurücknehmen (Rechteverwaltung → Gruppen). Gezählt sind auch Rechte innerhalb der Gruppe, etwa Mitglieder sehen oder Beiträge schreiben.',
+            otherGroupUnread: (label: string, group: string) => `${label} ist auch Mitglied in ${group} – welche Rechte die Gruppe gibt, ist ungeklärt.`,
+            otherGroupsUnread: (label: string) => `Ob ${label} in weiteren Gruppen ist, ist ungeklärt.`,
+            otherGroupsUnreadDetail:
+                'Die Herkunft der Rechte lesen darf nur, wer „Berechtigungen verwalten" hat. Rechte aus weiteren Gruppen bekommt auch der Fernseher – und jeder, der seine Adresse kennt.',
             internalCalendar: (label: string, calendar: string) => `${label} darf den internen Kalender „${calendar}" lesen.`,
             internalCalendarDetail:
                 'Der Fernseher zeigt ihn nicht, aber wer seine Adresse kennt, kann ihn lesen. Das Recht kommt aus Status oder einer anderen Gruppe des Kontos.',

@@ -197,12 +197,18 @@ export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
     return checks;
 }
 
+export interface OtherGroup {
+    name: string;
+    /** Rights this group gives the account, global and group internal; null: they could not be read. */
+    authIds: number[] | null;
+}
+
 export interface DeviceMember {
     label: string;
     /** Everything this person holds: group role, group type role, person status and direct rights. */
     grants: Grant[];
-    /** Names of the person's groups besides the device group; left out when they could not be read. */
-    otherGroups?: string[];
+    /** The person's groups besides the device group; undefined: not asked, null: the groups could not be read. */
+    otherGroups?: OtherGroup[] | null;
 }
 
 export interface CalendarInfo {
@@ -306,13 +312,37 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
     }
     checks.push({ level: 'ok', category: 'group', text: t.setup.checks.devices(input.members.length) });
     for (const m of input.members) {
-        if (!m.otherGroups?.length) continue;
-        checks.push({
-            level: 'warn',
-            category: 'rights',
-            text: t.setup.checks.otherGroups(m.label, m.otherGroups.map((g) => `„${g}"`).join(', ')),
-            detail: t.setup.checks.otherGroupsDetail,
-        });
+        if (m.otherGroups === null) {
+            checks.push({
+                level: 'warn',
+                category: 'rights',
+                text: t.setup.checks.otherGroupsUnread(m.label),
+                detail: t.setup.checks.otherGroupsUnreadDetail,
+            });
+            continue;
+        }
+        for (const group of m.otherGroups ?? []) {
+            if (group.authIds === null) {
+                checks.push({
+                    level: 'warn',
+                    category: 'rights',
+                    text: t.setup.checks.otherGroupUnread(m.label, `„${group.name}"`),
+                    detail: t.setup.checks.otherGroupsUnreadDetail,
+                });
+                continue;
+            }
+            const rights = input.plannedAuthIds
+                ? excessRights(group.authIds.map((authId) => ({ authId, dataId: null })), input.plannedAuthIds)
+                : [...new Set(group.authIds)].sort((a, b) => a - b);
+            if (!rights.length) continue;
+            const names = rights.slice(0, EXCESS_NAMED).map((id) => input.authName?.(id) ?? t.setup.checks.excessFallback(id));
+            checks.push({
+                level: 'warn',
+                category: 'rights',
+                text: t.setup.checks.otherGroupRights(m.label, `„${group.name}"`, rights.length, names.join(', '), rights.length - names.length),
+                detail: t.setup.checks.otherGroupRightsDetail,
+            });
+        }
     }
 
     // A device account that may read an internal calendar (one the public user does not see): the TV does not show it, but its address reads it (Plan.md 62).

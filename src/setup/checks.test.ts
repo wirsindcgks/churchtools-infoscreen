@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, excessRights, groupChecks, has, type Check, type Grant, type RoleRights } from './checks';
+import { AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, excessRights, groupChecks, has, type Check, type Grant, type OtherGroup, type RoleRights } from './checks';
 import { PUBLIC_CALENDAR_PATH } from '../ct/api';
 
 const grant = (authId: number, dataId: number | null = null): Grant => ({ authId, dataId, type: 'grant' });
@@ -319,16 +319,47 @@ describe('checkDeviceGroup', () => {
         expect(check([], [])).toEqual([]);
     });
 
-    it('warns when a device account is also in other groups, naming them – and says nothing without', () => {
-        const check = (otherGroups?: string[]) =>
-            checkDeviceGroup({ statusId: 1, members: [{ label: 'Gerät A', grants: [], otherGroups }], calendars, usedCalendarIds: [], publicCalendarIds: [2], wikiCategoryId: WIKI }).filter(
-                (c) => c.category === 'rights',
-            );
-        const [warning] = check(['Gemeindeleitung', 'Küche']);
-        expect(warning).toMatchObject({ level: 'warn', text: 'Gerät A ist auch Mitglied in „Gemeindeleitung", „Küche".' });
-        expect(warning?.detail).toContain('Ein Gerätekonto gehört nur in „Infoscreen-Devices"');
-        expect(check([])).toEqual([]);
-        expect(check(undefined)).toEqual([]);
+    describe('other groups of a device account', () => {
+        const check = (otherGroups?: OtherGroup[] | null, plannedAuthIds?: number[]) =>
+            checkDeviceGroup({
+                statusId: 1,
+                members: [{ label: 'Gerät A', grants: [], otherGroups }],
+                calendars,
+                usedCalendarIds: [],
+                publicCalendarIds: [2],
+                wikiCategoryId: WIKI,
+                plannedAuthIds,
+                authName: (id) => (id === 7 ? 'Mitglieder sehen' : undefined),
+            }).filter((c) => c.category === 'rights');
+
+        it('says nothing about a group that gives no rights, or when not asked', () => {
+            expect(check([{ name: 'Küche', authIds: [] }])).toEqual([]);
+            expect(check(undefined)).toEqual([]);
+        });
+
+        it('names the group and the rights it gives', () => {
+            const [warning] = check([{ name: 'Küche', authIds: [7, 7, 9] }]);
+            expect(warning).toMatchObject({ level: 'warn', text: 'Über „Küche" hat Gerät A 2 Rechte, die ein Gerät nicht braucht: Mitglieder sehen, Recht 9.' });
+            expect(warning?.detail).toContain('Rechteverwaltung');
+        });
+
+        it('leaves out rights the plan covers', () => {
+            expect(check([{ name: 'Küche', authIds: [7, 9] }], [7, 9])).toEqual([]);
+        });
+
+        it('counts the rest beyond six names', () => {
+            const [warning] = check([{ name: 'Küche', authIds: [1, 2, 3, 4, 5, 6, 7, 8, 9] }]);
+            expect(warning?.text).toContain('9 Rechte');
+            expect(warning?.text).toContain('und 3 weitere.');
+        });
+
+        it('is unsettled when a group or the groups cannot be read', () => {
+            expect(check([{ name: 'Küche', authIds: null }])[0]).toMatchObject({
+                level: 'warn',
+                text: 'Gerät A ist auch Mitglied in „Küche" – welche Rechte die Gruppe gibt, ist ungeklärt.',
+            });
+            expect(check(null)[0]).toMatchObject({ level: 'warn', text: 'Ob Gerät A in weiteren Gruppen ist, ist ungeklärt.' });
+        });
     });
 
     it('adds no row for rooms at appointments when no block asks for them', () => {

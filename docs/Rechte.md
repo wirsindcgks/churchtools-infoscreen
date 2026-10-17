@@ -240,7 +240,9 @@ warnt, wenn Gestalter mehr dürfen als vorgesehen.
 - **Rechte addieren sich.** Was der **Personenstatus**, der **Gruppentyp** der beiden Gruppen oder eine andere Gruppe
   erlaubt, kommt dazu. Deshalb bekommt ein Geräte-Konto einen Status mit möglichst wenig Rechten, und für die beiden
   Gruppen taugt ein Gruppentyp, der seinen Rollen wenig mitgibt.
-- **Ein Geräte-Konto ist kein echtes Personenkonto,** sondern eine eigene Person je Standort, und gehört in **keine
+- **Ein Geräte-Konto ist kein echtes Personenkonto,** sondern eine eigene Person je Standort, und gehört am besten in **keine
   weitere Gruppe** als „Infoscreen-Devices". Rechte aus anderen Gruppen bekommt der Fernseher mit – und jeder, der
-  seine Adresse kennt. Die Prüfung sieht diese Rechte nicht; sie nennt seit Version 0.7.3 nur die Gruppen.
+  seine Adresse kennt. Die Prüfung liest, welche Rechte jede weitere Gruppe dem Konto gibt – auch die innerhalb der
+  Gruppe, etwa Mitglieder sehen oder Beiträge schreiben –, und warnt mit der Gruppe als Herkunft. Eine Gruppe ohne
+  Rechte beanstandet sie nicht; eine Gruppe nur zum Sammeln von Systemkonten ist in Ordnung.
 - **Gruppenrechte wirken nur, solange die Gruppe den Status „aktiv" hat.**
