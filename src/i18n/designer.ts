@@ -111,6 +111,37 @@ export const t = {
         },
     },
 
+    /** The introduction to the editor (Plan.md 81): the card that offers it, the tour of six places, and the menu entries behind the "?". */
+    intro: {
+        help: 'Hilfe',
+        helpTip: 'Tastenkürzel und Einführung',
+        menuShortcuts: 'Tastenkürzel',
+        menuIntro: 'Einführung',
+        cardTitle: 'Neu hier?',
+        cardText: 'In ein paar Schritten zeigt dir die Einführung, wo was ist.',
+        cardStart: 'Einführung starten',
+        cardLater: 'Nicht jetzt',
+        cardClose: 'Karte schließen',
+        tourLabel: 'Einführung in den Editor',
+        step: (n: number, total: number) => `Schritt ${n} von ${total}`,
+        back: 'Zurück',
+        next: 'Weiter',
+        done: 'Fertig',
+        close: 'Einführung beenden',
+        steps: {
+            slides: { title: 'Folien', text: 'Hier liegen die Folien dieser Präsentation. Wähle eine aus, um sie zu bearbeiten, und ziehe sie, um die Reihenfolge zu ändern.' },
+            add: { title: 'Baustein hinzufügen', text: 'Mit „+ Baustein“ legst du Texte, Bilder, Termine und mehr auf die Folie.' },
+            stage: { title: 'Die Bildfläche', text: 'Klicke einen Baustein an: Du kannst ihn an seinen Platz ziehen, und über ihm erscheint sein Kurzmenü mit den häufigsten Einstellungen.' },
+            inspector: { title: 'Einstellungen', text: 'Rechts stellst du die Folie oder den gewählten Baustein ein. Das (i) neben einem Feld erklärt, was es tut.' },
+            preview: { title: 'Vorschau', text: 'Hier siehst du die Präsentation so, wie sie auf dem Fernseher läuft – ohne dass etwas verändert wird.' },
+            publish: {
+                title: 'Veröffentlichen',
+                text: 'Mit „Veröffentlichen“ geht deine Arbeit auf die Fernseher.',
+                textDrafts: 'Mit „Veröffentlichen“ geht deine Arbeit auf die Fernseher. Bis dahin sichert der Entwurf alles von selbst.',
+            },
+        },
+    },
+
     /** The overview of the editor's handles behind the "?" (Plan.md 79, B3); Mac and other keyboards name the keys differently. */
     shortcuts: {
         button: 'Tastenkürzel',

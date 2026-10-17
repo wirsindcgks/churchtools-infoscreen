@@ -183,6 +183,7 @@ Auf dem Tablet steht das Kurzmenü wie am Rechner über dem Baustein; Tippen, Zi
 ### Gut zu wissen
 
 - **Rückgängig** mit ⌘Z / Strg+Z; ein Ziehen ist ein Schritt.
+- **Neu im Editor?** Beim ersten Öffnen bietet eine Karte „Neu hier?" eine kurze Einführung an; wiederfinden kannst du sie über „? Hilfe" oben im Editor. Am Handy gibt es sie nicht.
 - **Arbeitet jemand anderes gleichzeitig an derselben Präsentation**, fragt der Editor beim Sichern oder
   Veröffentlichen, welche Fassung gelten soll.
 - **Neuer Kalender auf einem Bildschirm** – in einer Terminliste, einem Countdown oder einer Termin-Regel? Zur Wahl

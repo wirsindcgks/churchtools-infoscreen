@@ -17,6 +17,9 @@ import LiveFlag from '../designer/LiveFlag.vue';
 import { providePalette } from '../designer/palette';
 import MediaLibraryDialog from '../designer/MediaLibraryDialog.vue';
 import PlaylistPreview from '../designer/PlaylistPreview.vue';
+import IntroCard from '../designer/IntroCard.vue';
+import IntroTour from '../designer/IntroTour.vue';
+import { introSeen, markIntroSeen } from '../designer/intro-seen';
 import ShortcutsDialog from '../designer/ShortcutsDialog.vue';
 import { KEYS, withKeys } from '../designer/shortcuts';
 import SlideList from '../designer/SlideList.vue';
@@ -357,6 +360,34 @@ function openPreviewFromMenu(): void {
 /** The overview of the handles behind the "?" (Plan.md 79, B3). */
 const shortcutsOpen = ref(false);
 
+/** The "?" from a tablet's width on: a small menu of "Tastenkürzel" and "Einführung" (Plan.md 81); on a phone and on a template's page it stays one button. */
+const helpMenuOpen = ref(false);
+const helpMenuRoot = ref<HTMLElement | null>(null);
+function closeHelpMenuOnOutside(event: Event): void {
+    if (!helpMenuRoot.value?.contains(event.target as Node)) helpMenuOpen.value = false;
+}
+watch(helpMenuOpen, (open) => {
+    if (open) document.addEventListener('pointerdown', closeHelpMenuOnOutside);
+    else document.removeEventListener('pointerdown', closeHelpMenuOnOutside);
+});
+function onHelpClick(): void {
+    if (phone.value || templatePage) shortcutsOpen.value = true;
+    else helpMenuOpen.value = !helpMenuOpen.value;
+}
+function shortcutsFromMenu(): void {
+    helpMenuOpen.value = false;
+    shortcutsOpen.value = true;
+}
+
+/** The introduction to the editor (Plan.md 81): a card offers it, the tour shows the places. */
+const introOpen = ref(false);
+const showIntroCard = computed(() => !introSeen.value && !introOpen.value && !phone.value && !templatePage && !editor.templateEdit && !!editor.draft);
+function startIntro(): void {
+    markIntroSeen();
+    helpMenuOpen.value = false;
+    introOpen.value = true;
+}
+
 /** Which picker the media library was opened for. */
 const libraryFor = ref<'block' | 'background' | 'logo' | 'slideshow' | 'video' | null>(null);
 const libraryTarget = ref<string | null>(null);
@@ -608,6 +639,15 @@ function onKey(event: KeyboardEvent): void {
         if (event.key === 'Escape') moreMenuOpen.value = false;
         return;
     }
+    if (helpMenuOpen.value) {
+        if (event.key === 'Escape') helpMenuOpen.value = false;
+        return;
+    }
+    // The tour owns the keys while it is open.
+    if (introOpen.value) {
+        if (event.key === 'Escape') introOpen.value = false;
+        return;
+    }
     if (slidesSheetOpen.value) {
         if (event.key === 'Escape') slidesSheetOpen.value = false;
         return;
@@ -767,16 +807,25 @@ function onKey(event: KeyboardEvent): void {
             </template>
             <template #actions>
                 <!-- Help first and apart from the actions, round and tinted like the (i) of the fields. -->
-                <button
-                    v-tip="withKeys(t.shortcuts.button, KEYS.help)"
-                    class="d-btn d-btn--icon shortcuts-btn"
-                    type="button"
-                    :aria-label="t.shortcuts.button"
-                    data-testid="shortcuts"
-                    @click="shortcutsOpen = true"
-                >
-                    ?
-                </button>
+                <div ref="helpMenuRoot" class="more-menu help-menu">
+                    <!-- "? Hilfe" in words, so it is found without hovering (Plan.md 81); the key "?" still opens the shortcuts. -->
+                    <button
+                        v-tip="phone || templatePage ? withKeys(t.shortcuts.button, KEYS.help) : t.intro.helpTip"
+                        class="d-btn shortcuts-btn"
+                        type="button"
+                        :aria-label="t.intro.help"
+                        :aria-haspopup="phone || templatePage ? undefined : 'menu'"
+                        :aria-expanded="phone || templatePage ? undefined : helpMenuOpen"
+                        data-testid="shortcuts"
+                        @click="onHelpClick"
+                    >
+                        <span class="help-mark" aria-hidden="true">?</span><span class="help-word">{{ t.intro.help }}</span>
+                    </button>
+                    <div v-if="helpMenuOpen" class="more-menu-list" role="menu">
+                        <button role="menuitem" type="button" data-testid="help-shortcuts" @click="shortcutsFromMenu">{{ t.intro.menuShortcuts }}</button>
+                        <button role="menuitem" type="button" data-testid="help-intro" @click="startIntro">{{ t.intro.menuIntro }}</button>
+                    </div>
+                </div>
                 <button
                     v-tip="withKeys(t.editor.undo, KEYS.undo)"
                     class="d-btn d-btn--icon d-btn--ghost"
@@ -948,6 +997,8 @@ function onKey(event: KeyboardEvent): void {
                         {{ t.templates.edit.done }}
                     </button>
                 </div>
+                <!-- Over the stage, bottom left, not over the slides (Plan.md 81); out of the flow, so the stage keeps its size. -->
+                <IntroCard v-if="showIntroCard" @start="startIntro" @later="markIntroSeen" @close="markIntroSeen" />
                 <BlockPalette />
                 <EditorStage @all-settings="showAllSettings" @open-content="openContent" @open-more="openMore" />
             </div>
@@ -1041,6 +1092,7 @@ function onKey(event: KeyboardEvent): void {
         />
 
         <ShortcutsDialog v-if="shortcutsOpen" @close="shortcutsOpen = false" />
+        <IntroTour v-if="introOpen" :drafts="editor.draftsOn" @close="introOpen = false" />
 
         <TemplateNameDialog
             v-if="editor.templateNaming"
@@ -1203,15 +1255,38 @@ function onKey(event: KeyboardEvent): void {
     gap: var(--d-space-2);
 }
 .shortcuts-btn {
+    gap: var(--d-space-2);
     margin-right: var(--d-space-3);
-    border-color: color-mix(in oklab, var(--d-accent) 35%, transparent);
-    border-radius: 50%;
+    padding-left: 6px;
+    border-color: color-mix(in oklab, var(--d-accent) 55%, transparent);
+    border-radius: 999px;
     background: var(--d-accent-pale);
     color: var(--d-accent);
+    font-weight: 600;
 }
 .shortcuts-btn:hover {
     border-color: var(--d-accent);
     background: var(--d-accent-pale);
+}
+.help-mark {
+    display: inline-grid;
+    place-items: center;
+    width: 1.5em;
+    height: 1.5em;
+    border-radius: 50%;
+    background: var(--d-accent);
+    color: var(--d-accent-text);
+    font-weight: 600;
+    line-height: 1;
+}
+/* Below 60rem the word would push the title away: then the round mark alone. */
+@media (max-width: 60rem) {
+    .shortcuts-btn {
+        padding: 0 5px;
+    }
+    .help-word {
+        display: none;
+    }
 }
 .status {
     color: var(--d-text-muted);
@@ -1336,6 +1411,10 @@ function onKey(event: KeyboardEvent): void {
 }
 .more-menu-list .more-narrow {
     display: none;
+}
+.help-menu .more-menu-list {
+    right: auto;
+    left: 0;
 }
 .more-menu-list {
     position: absolute;

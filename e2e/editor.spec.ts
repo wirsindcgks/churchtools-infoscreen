@@ -57,6 +57,7 @@ test('"?" opens the overview of the handles, Escape closes it, and the hints nam
     const ctrl = mac ? '⌘' : 'Strg+';
 
     await page.getByTestId('shortcuts').click();
+    await page.getByTestId('help-shortcuts').click();
     const dialog = page.getByTestId('shortcuts-dialog');
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('heading', { name: 'Tastenkürzel' })).toBeVisible();
