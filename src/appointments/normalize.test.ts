@@ -212,6 +212,27 @@ describe.skipIf(!hasFixture('api/appointments-series.json'))('recorded series fr
         expect(a?.location).toBe('Gemeindezentrum, Saal');
         expect(a?.description).toBe('Mit Kinderprogramm & Kirchencafé. Alle sind willkommen.');
     });
+
+    it('reads Markdown descriptions from the editor without its characters', () => {
+        const [a] = normalizeAppointments(
+            [
+                {
+                    appointment: {
+                        base: {
+                            id: 9,
+                            title: 'Treffen',
+                            allDay: false,
+                            calendar: { id: 2, name: 'Treffen' },
+                            description: 'Bitte **pünktlich** kommen:\n\n- Bibel\n- [Max](https://x.church.tools/persons/5?ctmd_layout=mention)',
+                        },
+                        calculated: { startDate: '2026-10-04T08:00:00Z', endDate: '2026-10-04T09:30:00Z' },
+                    },
+                },
+            ],
+            BERLIN,
+        );
+        expect(a?.description).toBe('Bitte pünktlich kommen: Bibel, Max');
+    });
 });
 
 describe('the rooms of an appointment (Plan.md 50)', () => {

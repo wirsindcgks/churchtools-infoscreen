@@ -1,7 +1,7 @@
 /**
  * Display helpers for the `posts` block's card (Plan.md, Nächste Schritte 33,
  * "Nachgezogen am 2026-09-25"): how old a post reads and how its own image is
- * shaped – both independent of `postParagraphs`' text handling.
+ * shaped – both independent of the Markdown handling in `src/ct/markdown.ts`.
  */
 import { zonedParts } from '../appointments/zoned';
 import { formatDate } from '../player/format';

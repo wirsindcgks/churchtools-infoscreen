@@ -14,11 +14,12 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Block } from '../../model/schema';
 import { imageAspect, relativeAge } from '../../posts/display';
 import { selectPosts } from '../../posts/normalize';
-import { postParagraphs, postSummary } from '../../posts/text';
+import { markdownBlocks, markdownText } from '../../ct/markdown';
 import { themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
 import { paginateByHeight, pageInterval, POST_SECONDS } from '../paging';
 import CalendarBadge from './CalendarBadge.vue';
+import MdInlines from './MdInlines.vue';
 import DateTile from './DateTile.vue';
 import { tp } from '../../i18n/player';
 
@@ -121,7 +122,7 @@ onMounted(() => {
                 <DateTile :start="p.publishedAt" :time-zone="context.timeZone" :color="p.color" />
                 <span class="body">
                     <span class="title">{{ p.title }}</span>
-                    <span class="summary">{{ postSummary(p.content) }}</span>
+                    <span class="summary">{{ markdownText(p.content, true) }}</span>
                 </span>
                 <CalendarBadge class="row-badge" :name="p.groupName" :color="p.color" />
             </li>
@@ -131,7 +132,7 @@ onMounted(() => {
                 <DateTile :start="p.publishedAt" :time-zone="context.timeZone" :color="p.color" />
                 <span class="body">
                     <span class="title">{{ p.title }}</span>
-                    <span class="summary">{{ postSummary(p.content) }}</span>
+                    <span class="summary">{{ markdownText(p.content, true) }}</span>
                 </span>
                 <CalendarBadge class="row-badge" :name="p.groupName" :color="p.color" />
             </li>
@@ -169,12 +170,20 @@ onMounted(() => {
                 </div>
                 <div class="hero-title">{{ current.title }}</div>
                 <div class="hero-body">
-                    <div v-for="(paragraph, i) in postParagraphs(current.content)" :key="i" class="paragraph">
-                        <template v-for="(inline, j) in paragraph" :key="j">
-                            <strong v-if="inline.kind === 'strong'">{{ inline.text }}</strong>
-                            <template v-else>{{ inline.text }}</template>
-                        </template>
-                    </div>
+                    <template v-for="(mdBlock, i) in markdownBlocks(current.content)" :key="i">
+                        <ul v-if="mdBlock.kind === 'list' && !mdBlock.ordered" class="md-list">
+                            <li v-for="(item, j) in mdBlock.items" :key="j"><MdInlines :parts="item" /></li>
+                        </ul>
+                        <ol v-else-if="mdBlock.kind === 'list'" class="md-list" :start="mdBlock.start">
+                            <li v-for="(item, j) in mdBlock.items" :key="j"><MdInlines :parts="item" /></li>
+                        </ol>
+                        <blockquote v-else-if="mdBlock.kind === 'quote'" class="paragraph md-quote">
+                            <MdInlines :parts="mdBlock.inlines" />
+                        </blockquote>
+                        <div v-else :class="['paragraph', { 'md-heading': mdBlock.kind === 'heading' }]">
+                            <MdInlines :parts="mdBlock.inlines" />
+                        </div>
+                    </template>
                 </div>
             </div>
         </template>
@@ -296,10 +305,20 @@ onMounted(() => {
 .paragraph:last-child {
     margin-bottom: 0;
 }
-/* The page around the player styles <strong> of its own – dark on a dark card (seen with groups, 2026-09-29). */
-.paragraph strong {
-    color: inherit;
+.md-heading {
+    font-size: 1.15em;
     font-weight: 700;
+}
+.md-list {
+    margin: 0 0 0.8em;
+    padding-left: 1.4em;
+    white-space: pre-line;
+}
+.md-quote {
+    margin-left: 0;
+    padding-left: 0.8em;
+    border-left: 0.2em solid color-mix(in srgb, currentColor 40%, transparent);
+    opacity: 0.85;
 }
 
 /* List, after AppointmentRow's .card rows. */

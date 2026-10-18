@@ -209,6 +209,8 @@ oder nach Name, auf- oder absteigend – oder in einer eigenen Auswahl und Reihe
 
 Gezeigt wird nur, was ChurchTools auf der Gruppen-Homepage ohnehin öffentlich zeigt.
 
+Die Beschreibung erscheint formatiert, wie sie im Editor von ChurchTools steht: fett, kursiv, durchgestrichen, Überschriften, Listen und Zitate; Erwähnungen (@Person, @Gruppe) als Name. Tabellen und Bilder im Text fehlen; auf der Karte steht jeder Listenpunkt in einer eigenen Zeile.
+
 ## Raumbelegung
 
 „Was ist heute im Saal los?" – die Buchungen der **Räume** aus ChurchTools, als **Übersicht** aller gewählten Räume oder
@@ -315,6 +317,8 @@ Liste. Abgelaufene Beiträge erscheinen nie; den Namen der Autorin oder des Auto
 einschaltet.
 
 ![Editor mit dem Baustein „Beiträge": ein Beitrag mit Bild links und Text rechts](bilder/beitraege.png)
+
+Der Text eines Beitrags erscheint formatiert, wie er im Editor von ChurchTools steht: fett, kursiv, durchgestrichen, Überschriften, Listen und Zitate; Erwähnungen (@Person, @Gruppe) als Name. Tabellen und Bilder im Text fehlen. Dasselbe gilt für die Beschreibung eines Termins, dort ohne Formatierung auf einer Zeile.
 
 ## Hinweise
 

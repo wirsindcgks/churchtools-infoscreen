@@ -6,6 +6,7 @@
  * recurrence math: it reads `calculated` for the occurrence and `base` for
  * the description, and does everything else in the instance time zone.
  */
+import { markdownText } from '../ct/markdown';
 import { calendarColor } from '../player/format';
 import { BOOKING_CONFIRMED, type RoomInfo } from '../rooms/normalize';
 import { servicesByAppointment, type AppointmentService, type ServiceInput } from './services';
@@ -154,7 +155,7 @@ function normalizeOne(response: AppointmentResponse, timeZone: string, rooms: Ro
         multiDay: endDate > startDate,
         imageUrl: base.image?.imageUrl ?? null,
         location: [base.address?.name, base.address?.addition].map((part) => part?.trim()).filter(Boolean).join(', ') || null,
-        description: plainText(base.description ?? ''),
+        description: markdownText(htmlToMarkdown(base.description ?? '')),
         tagIds: (response.tags ?? response.appointment.tags ?? []).map((tag) => tag.id),
         ...(booked.length ? { rooms: booked.map((r) => r.name), roomIds: booked.map((r) => r.id) } : {}),
     };
@@ -172,18 +173,20 @@ function bookedRooms(bookings: BookingEntry[] | null | undefined, rooms: RoomInf
     return rooms.filter((r) => booked.has(r.id));
 }
 
-/** Text without tags and entities, on one line – enough for three lines on a TV. */
-export function plainText(value: string): string {
+/**
+ * Old appointments carry HTML, new ones Markdown (G62): tags and entities go, line structure stays
+ * so that lists and `**bold**` are still read by `markdownText`.
+ */
+export function htmlToMarkdown(value: string): string {
     return value
-        .replace(/<br\s*\/?>|<\/p>/gi, ' ')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
         .replace(/<[^>]*>/g, '')
         .replace(/&nbsp;/g, ' ')
         .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
-        .replace(/&quot;/g, '"')
-        .replace(/\s+/g, ' ')
-        .trim();
+        .replace(/&quot;/g, '"');
 }
 
 function parseInstant(value: string, timeZone: string): Date | null {

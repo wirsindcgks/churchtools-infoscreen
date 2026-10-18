@@ -11,7 +11,8 @@ import { homepageGroups, placesText, selectGroups, whenText, type Group } from '
 import { IMAGE_RATIOS, type Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
-import { postParagraphs } from '../../posts/text';
+import { markdownLines } from '../../ct/markdown';
+import MdInlines from './MdInlines.vue';
 import { GROUP_SECONDS, pageInterval, paginateByHeight } from '../paging';
 import { qrShape } from '../qr';
 import CalendarBadge from './CalendarBadge.vue';
@@ -203,8 +204,8 @@ const cards = computed(() =>
                         image: props.block.show.leaderImages && leader.imageUrl ? leaderImage(leader.imageUrl) : null,
                     }))
                   : [],
-              // `**bold**` and links read as in posts; paragraphs become line breaks, so three lines stay three.
-              note: props.block.show.note ? postParagraphs(group.note) : [],
+              // Markdown as in posts, but every block becomes lines, so three lines stay three.
+              note: props.block.show.note ? markdownLines(group.note) : [],
           })),
 );
 
@@ -388,12 +389,9 @@ onMounted(() => {
                             <span>{{ fact.text }}</span>
                         </div>
                         <div v-if="c.note.length" class="group-note" data-testid="group-note">
-                            <template v-for="(paragraph, i) in c.note" :key="i">
+                            <template v-for="(line, i) in c.note" :key="i">
                                 <template v-if="i > 0">{{ '\n' }}</template>
-                                <template v-for="(inline, j) in paragraph" :key="j">
-                                    <strong v-if="inline.kind === 'strong'">{{ inline.text }}</strong>
-                                    <template v-else>{{ inline.text }}</template>
-                                </template>
+                                <MdInlines :parts="line" />
                             </template>
                         </div>
                         <!-- Bottom left, flush with the code: "Leitung:" on one line, the names below. -->
@@ -555,11 +553,6 @@ onMounted(() => {
 .group-note--cut {
     -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 2.8em), transparent 100%);
     mask-image: linear-gradient(to bottom, black calc(100% - 2.8em), transparent 100%);
-}
-/* The page around the player styles <strong> of its own – dark on a dark card. */
-.group-note strong {
-    color: inherit;
-    font-weight: 700;
 }
 .leaders-box {
     position: absolute;
