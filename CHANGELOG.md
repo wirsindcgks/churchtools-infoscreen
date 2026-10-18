@@ -164,7 +164,7 @@ langen Listen.
 ## [0.23.0] – 2026-10-15
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für die Ideen zu Tags, Zeitraum und Fortschrittsbalken und an
-einen zweiten Tester für den Wunsch nach internen Kalendern.
+Manuel von der [CredoKirche](https://github.com/CredoKirche) für den Wunsch nach internen Kalendern.
 
 ### Wichtig beim Update
 
@@ -210,8 +210,8 @@ einen zweiten Tester für den Wunsch nach internen Kalendern.
 
 ## [0.21.0] – 2026-10-15
 
-Danke an Bernhard ([@bwl21](https://github.com/bwl21)) und einen zweiten Tester für die Rückmeldungen zu Räumen und
-Kalendern.
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) und Manuel von der [CredoKirche](https://github.com/CredoKirche) für die Rückmeldungen zu
+Räumen und Kalendern.
 
 ### Wichtig beim Update
 
@@ -239,6 +239,8 @@ Kalendern.
   ein Fenster, ob man sie gleich aktualisieren will; eine Vorschau zeigt vorher, was sich ändert.
 
 ## [0.20.1] – 2026-10-14
+
+Danke an Manuel von der [CredoKirche](https://github.com/CredoKirche) für den Wunsch nach Schrift-Einstellungen bei Social Media.
 
 ### Geändert
 
