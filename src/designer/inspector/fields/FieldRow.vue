@@ -16,6 +16,7 @@ const props = defineProps<{ label: string; for?: string; labelId?: string; stack
 defineSlots<{ default(): unknown; info?(): unknown; before?(): unknown }>();
 const sheetTitle = inject(SHEET_TITLE, ref(null));
 const besideNow = computed(() => props.stacked && props.infoBeside);
+const infoOpen = ref(false);
 </script>
 
 <template>
@@ -29,10 +30,12 @@ const besideNow = computed(() => props.stacked && props.infoBeside);
                 </div>
                 <div class="field-control" :class="{ 'field-control--end': end }">
                     <slot />
-                    <!-- `infoBeside` on a stacked row: the (i) stands beside the control, centred on it, not between label and control. -->
-                    <InfoHint v-if="besideNow && $slots.info" class="field-info"><slot name="info" /></InfoHint>
+                    <!-- `infoBeside` on a stacked row: the (i) stands beside the control, centred on it, not between label and control;
+                         its text unfolds below the row over the full width like every other (i). -->
+                    <InfoHint v-if="besideNow && $slots.info" v-model:open="infoOpen" class="field-info" part="button" />
                 </div>
             </div>
+            <InfoHint v-if="besideNow && $slots.info" v-model:open="infoOpen" part="text"><slot name="info" /></InfoHint>
             <template v-if="!besideNow && $slots.info" #info><slot name="info" /></template>
         </HintRow>
     </QuickField>
