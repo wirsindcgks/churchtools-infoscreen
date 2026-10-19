@@ -4,6 +4,16 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.37.0] – 2026-10-19
+
+### Hinzugefügt
+
+- **Eigene Schriften.** Auf der Seite „Design“ lädt „Schrift hochladen“ im Klappmenü „Schrift“ die Hausschrift der
+  Gemeinde hoch, als WOFF2, WOFF, TTF oder OTF bis 5 MB je Datei. Zu einer Schrift gehören bis zu drei Dateien:
+  Normal, Halbfett und Fett. Sie steht danach in jeder Schriftauswahl unter „Eigene Schriften“. Der Fernseher legt die
+  Dateien auf dem Gerät ab, die Schrift läuft also auch ohne Netz. „Löschen“ nennt vorher, wo die Schrift verwendet
+  wird; dort erscheint danach Lato.
+
 ## [0.36.0] – 2026-10-19
 
 ### Hinzugefügt
@@ -1270,6 +1280,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.37.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.37.0
 [0.36.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.36.0
 [0.35.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.35.0
 [0.34.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.34.0
