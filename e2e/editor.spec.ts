@@ -1616,6 +1616,7 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await inspector.getByTestId('inspector-width').fill('1600');
     await inspector.getByTestId('inspector-height').fill('900');
     await inspector.getByTestId('inspector-height').blur();
+    await openSection(page, 'appearance');
     await choose(inspector, 'groups-per-page', '2');
     await expect(groupCard.first()).toHaveClass(/hero--portrait/);
     const shownCards = await groupCard.count();
@@ -1633,6 +1634,7 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await expect(inspector.getByTestId('group-show-leaderImages')).toBeEnabled();
     await inspector.getByTestId('group-show-leaderImages').check();
     // One to four a page, for comparing them side by side (third test, 2026-09-29).
+    await openSection(page, 'appearance');
     for (const perPage of ['1', '2', '3', '4']) {
         await choose(inspector, 'groups-per-page', perPage);
         await page.waitForTimeout(600);
