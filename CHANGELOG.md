@@ -4,6 +4,22 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.38.0] – 2026-10-19
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Vorschlag, die Abstände der Aufteilung am Raster auszurichten.
+
+### Geändert
+
+- **Die Aufteilung liegt im Raster.** Die Abstände Eng, Normal und Weit sind jetzt 20, 40 und 60 px, also genau die
+  Weiten des Rasters. Auch Kopf- und Fußzeile und die Bereiche haben volle 20 px. Wer mit eingeschaltetem Raster
+  gestaltet, richtet Bausteine damit zugleich am Raster und an den Bereichen aus. Bestehende Folien rücken um wenige
+  Pixel. Feste Bausteine wandern mit, sobald Aufteilung oder Abstand der Folie neu gesetzt werden.
+
+### Behoben
+
+- Das (i) neben einer Knopfreihe, etwa beim „Abstand“, klappt seine Erklärung jetzt unter der Zeile auf wie jedes
+  andere (i).
+
 ## [0.37.0] – 2026-10-19
 
 ### Hinzugefügt
@@ -1280,6 +1296,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.38.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.38.0
 [0.37.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.37.0
 [0.36.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.36.0
 [0.35.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.35.0
