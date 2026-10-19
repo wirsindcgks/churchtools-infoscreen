@@ -4,6 +4,17 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.34.0] – 2026-10-19
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Vorschlag, Formatierungen aus ChurchTools zu zeigen.
+
+### Geändert
+
+- **Formatierter Text aus ChurchTools.** Beiträge, Gruppenbeschreibungen und die Beschreibung beim „Nächsten Termin"
+  zeigen, was im Editor von ChurchTools formatiert wurde – fett, kursiv, durchgestrichen, Überschriften, Listen und
+  Zitate – statt Sternchen und Rauten. Erwähnungen und Links erscheinen als Name; Tabellen und Bilder im Text bleiben
+  weg. Schrift und Farbe kommen wie bisher vom Baustein.
+
 ## [0.33.0] – 2026-10-17
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Vorschlag, die Rechte der Gerätekonten genauer zu prüfen.
