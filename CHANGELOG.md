@@ -4,6 +4,15 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.36.0] – 2026-10-19
+
+### Hinzugefügt
+
+- **Videos laufen ohne Netz.** Der Fernseher lädt die Videos einer Präsentation gleich mit ihr auf das Gerät, eines
+  nach dem anderen. Danach spielt er sie von dort, auch während eines Netzausfalls und nach einem Neustart ohne Netz.
+  Passt ein Video nicht mehr in den Speicher des Geräts, kommt es weiter aus dem Netz. Videos, die keine Folie mehr
+  zeigt, löscht er wieder.
+
 ## [0.35.0] – 2026-10-19
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Vorschlag, mehr Einstellungen für Beiträge anzubieten.
@@ -1261,6 +1270,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.36.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.36.0
 [0.35.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.35.0
 [0.34.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.34.0
 [0.33.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.33.0
