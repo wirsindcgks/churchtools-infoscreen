@@ -137,6 +137,11 @@ nicht die Änderungen, sondern lange Sitzungen, Testläufe, Bilder und Berichte.
 - **Commit-Nachrichten deutsch, im Betreff ohne Umlaute.** Der Betreff sagt, was sich geändert hat, der Rumpf warum.
 - Markdown mit deutschen Anführungszeichen („…"), Dateiverweise als relative Links.
 - `CHANGELOG.md` folgt *Keep a Changelog*, ohne „Unreleased"-Abschnitt – Einträge erst beim Versionssprung.
+- **PRs nennen ihre Issues.** Der PR, der baut, verweist mit „Teil von #N“ – das verlinkt, schließt aber nicht.
+  Der Versions-PR schreibt für jedes Issue, das mit dem Release ganz erledigt ist, „Closes #N“ in die
+  Beschreibung; GitHub schließt es beim Merge, also mit dem Release. Bleibt an einem Issue etwas offen, steht dort
+  weiter „Teil von #N“, und das Issue bekommt einen Kommentar, was erschienen ist und was offen bleibt.
+  *(Nutzer, 2026-10-19.)*
 
 ## Technischer Rahmen
 
