@@ -4,6 +4,20 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.39.0] – 2026-10-19
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Vorschlag, auch die Reichweite der Geräterechte zu prüfen.
+
+### Geändert
+
+- **Die Prüfung der Gerätegruppe sieht auch, worauf sich ein Recht erstreckt.** Unter „Einstellungen“ warnt sie jetzt,
+  wenn ein Gerätekonto mehr erreicht, als es braucht: Schreiben außerhalb von „Status“ – damit ließe sich über die
+  Adresse eines Fernsehers ändern, was die Bildschirme zeigen –, Entwürfe sehen oder weitere Wiki-Bereiche sehen. Die
+  Warnung nennt Recht und Kategorie beim Namen, etwa „Daten in Kategorie bearbeiten auch für Slides“, und greift auch,
+  wenn das Recht aus einer weiteren Gruppe des Kontos kommt.
+- Kalender- und Wiki-Rechte aus weiteren Gruppen eines Gerätekontos zählen jetzt auch in den Zeilen „interner
+  Kalender“ und „Wiki-Rechte“ der Prüfung.
+
 ## [0.38.0] – 2026-10-19
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Vorschlag, die Abstände der Aufteilung am Raster auszurichten.
@@ -1296,6 +1310,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.39.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.39.0
 [0.38.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.38.0
 [0.37.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.37.0
 [0.36.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.36.0
