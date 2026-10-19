@@ -198,6 +198,26 @@ describe('readSlide – tolerant towards newer data', () => {
         });
     });
 
+    it('reads the post details and the picture fit with their defaults (schema 1.45, Plan.md 96)', () => {
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(45);
+        const block = {
+            id: 'p',
+            type: 'posts',
+            x: 0,
+            y: 0,
+            width: 1400,
+            height: 700,
+            groupIds: [],
+            limit: 3,
+            style: { fontFamily: 'sans', fontSize: 56, fontWeight: 400, color: '#fff', align: 'left' },
+        };
+        const { doc, issues } = readSlide({ ...makeSlide(), blocks: [block] });
+        expect(issues).toEqual([]);
+        expect(doc.blocks[0]).toMatchObject({ showGroup: true, showTitle: true, showText: true, showDate: true, imageFit: 'cover', imageFocus: 'center' });
+        const set = readSlide({ ...makeSlide(), blocks: [{ ...block, showText: false, imageFit: 'contain', imageFocus: 'left' }] });
+        expect(set.doc.blocks[0]).toMatchObject({ showText: false, imageFit: 'contain', imageFocus: 'left' });
+    });
+
     it('reads a minimal groups block with its defaults – leaders off (schema 1.14, Plan.md 43)', () => {
         const block = {
             id: 'g',

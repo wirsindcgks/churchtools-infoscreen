@@ -1552,6 +1552,7 @@ test('a posts block shows a public group\'s posts, as a card and as a list (Plan
     await inspector.getByTestId('inspector-width').fill('1400');
     await inspector.getByTestId('inspector-height').fill('700');
     await inspector.getByTestId('inspector-height').blur();
+    await openSection(page, 'fields');
     const showImage = inspector.getByTestId('posts-image');
     await showImage.uncheck();
     await expect(card.getByTestId('post-image')).toHaveCount(0);
@@ -1559,6 +1560,7 @@ test('a posts block shows a public group\'s posts, as a card and as a list (Plan
     await card.screenshot({ path: `test-results/posts-card-text.png` });
     await showImage.check();
 
+    await openSection(page, 'appearance');
     await choose(inspector, 'posts-layout', 'list');
     await expect(stage.getByTestId('posts-list')).toBeVisible();
     await expect(stage.getByTestId('post-row').first()).toBeVisible();

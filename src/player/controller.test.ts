@@ -38,6 +38,12 @@ const postsBlock: Block = {
     layout: 'card',
     showImage: true,
     showAuthor: false,
+    showGroup: true,
+    showTitle: true,
+    showText: true,
+    showDate: true,
+    imageFit: 'cover',
+    imageFocus: 'center',
     style: { fontFamily: 'sans', fontSize: 56, fontWeight: 400, color: '#fff', align: 'left' },
 };
 const withPosts = (): LoadedScreen => {

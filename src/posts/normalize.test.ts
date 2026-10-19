@@ -33,6 +33,23 @@ describe('normalizePosts', () => {
         expect(withoutImage).toMatchObject({ id: 5, imageUrl: null, imageRatio: null });
     });
 
+    it('keeps every picture in order, the first one as imageUrl (Plan.md 96)', () => {
+        const [post] = normalizePosts([
+            raw(6, {
+                imagesMeta: [
+                    { imageUrl: 'https://example.church.tools/images/1/a', aspectRatio: 1 },
+                    { imageUrl: null, aspectRatio: 2 },
+                    { imageUrl: 'https://example.church.tools/images/2/b', aspectRatio: 1.5 },
+                ],
+            }),
+        ]);
+        expect(post?.images).toEqual([
+            { url: 'https://example.church.tools/images/1/a', ratio: 1 },
+            { url: 'https://example.church.tools/images/2/b', ratio: 1.5 },
+        ]);
+        expect(post).toMatchObject({ imageUrl: 'https://example.church.tools/images/1/a', imageRatio: 1 });
+    });
+
     it('reads the group avatar: its own initials and image, else the first letter of its name', () => {
         const [withInitials, withImage, withNeither] = normalizePosts([
             raw(20, { group: { domainIdentifier: '31', title: 'ISD-Beitragstest', initials: 'IB' } }),

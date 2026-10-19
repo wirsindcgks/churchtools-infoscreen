@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 44 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 45 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -281,6 +281,15 @@ export const PostsBlock = v.object({
     showImage: v.optional(v.boolean(), true),
     /** Off until switched on: the API hands the author's real name to anyone (G37). */
     showAuthor: v.optional(v.boolean(), false),
+    /** Since 1.45 (Plan.md 96): what else a post shows; off takes no room. Missing = on. */
+    showGroup: v.optional(v.boolean(), true),
+    showTitle: v.optional(v.boolean(), true),
+    showText: v.optional(v.boolean(), true),
+    showDate: v.optional(v.boolean(), true),
+    /** Since 1.45 (Plan.md 96): `cover` fills the picture area, `contain` shows the whole picture. Missing = `cover`. */
+    imageFit: v.optional(v.picklist(['cover', 'contain']), 'cover'),
+    /** Since 1.45 (Plan.md 96): the part that stays visible when `cover` crops. Missing = `center`. */
+    imageFocus: v.optional(v.picklist(['center', 'top', 'bottom', 'left', 'right']), 'center'),
     /** Seconds per post while `card` pages through them; default POST_SECONDS. */
     pageSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(120))),
     style: TextStyle,

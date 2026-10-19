@@ -10,6 +10,7 @@ import { POST_SECONDS } from '../../../player/paging';
 import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
 import NumberField from '../fields/NumberField.vue';
+import SegmentField from '../fields/SegmentField.vue';
 import TileField from '../fields/TileField.vue';
 import QuickField from '../fields/QuickField.vue';
 import ToggleField from '../fields/ToggleField.vue';
@@ -25,6 +26,23 @@ const props = defineProps<{ block: Extract<Block, { type: 'posts' }> }>();
 const mode = useInspectorMode();
 const { setBlock } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
+
+const fits = [
+    { value: 'cover', label: t.inspector.fitCover },
+    { value: 'contain', label: t.inspector.fitContain },
+];
+const focuses = [
+    { value: 'center', label: t.inspector.focusCenter },
+    { value: 'top', label: t.inspector.focusTop },
+    { value: 'bottom', label: t.inspector.focusBottom },
+    { value: 'left', label: t.inspector.focusLeft },
+    { value: 'right', label: t.inspector.focusRight },
+];
+
+/** Labels in the order the switches stand (Plan.md 96); the list shows neither picture nor name. */
+const SHOW_LABELS = t.inspector.postShow;
+const SHOW_KEYS = ['showGroup', 'showTitle', 'showImage', 'showText', 'showAuthor', 'showDate'] as const satisfies readonly (keyof typeof SHOW_LABELS)[];
+const fieldsSummary = computed(() => t.common.countOf(SHOW_KEYS.filter((key) => props.block[key]).length, SHOW_KEYS.length));
 
 const summary = computed(() => `${POSTS_TILES.find((o) => o.value === props.block.layout)?.label} · ${t.inspector.days(props.block.maxAgeDays)}`);
 
@@ -90,9 +108,33 @@ function toggleGroup(id: number, on: boolean): void {
             testid="post-seconds"
             @update:model-value="setBlock({ pageSeconds: $event })"
         />
-        <ToggleField :model-value="block.showImage" :label="t.inspector.showImage" testid="posts-image" @update:model-value="setBlock({ showImage: $event })" />
-        <ToggleField :model-value="block.showAuthor" :label="t.inspector.showAuthor" testid="posts-author" @update:model-value="setBlock({ showAuthor: $event })">
-            <template #info>{{ t.inspector.showAuthorInfo }}</template>
+        <template v-if="block.layout === 'card' && block.showImage">
+            <SegmentField :model-value="block.imageFit" :options="fits" :label="t.inspector.fit" testid="posts-fit" @update:model-value="setBlock({ imageFit: $event })" />
+            <SegmentField
+                v-if="block.imageFit === 'cover'"
+                :model-value="block.imageFocus"
+                :options="focuses"
+                :label="t.inspector.focus"
+                testid="posts-focus"
+                stacked
+                @update:model-value="setBlock({ imageFocus: $event })"
+            >
+                <template #info>{{ t.inspector.focusInfo }}</template>
+            </SegmentField>
+        </template>
+    </InspectorSection>
+    <InspectorSection id="fields" :title="t.inspector.details" :summary="fieldsSummary">
+        <template #info>{{ t.inspector.postDetailsInfo }}</template>
+        <ToggleField
+            v-for="key in SHOW_KEYS"
+            :key="key"
+            :model-value="block[key]"
+            :label="SHOW_LABELS[key]"
+            :disabled="block.layout === 'list' && (key === 'showImage' || key === 'showAuthor')"
+            :testid="key === 'showImage' ? 'posts-image' : key === 'showAuthor' ? 'posts-author' : `posts-${key.slice(4).toLowerCase()}`"
+            @update:model-value="setBlock({ [key]: $event })"
+        >
+            <template v-if="key === 'showAuthor'" #info>{{ t.inspector.showAuthorInfo }}</template>
         </ToggleField>
     </InspectorSection>
     <FontSection :block="block" effects="shadow" />

@@ -267,6 +267,12 @@ export function createBlock(
                 layout: 'card',
                 showImage: true,
                 showAuthor: false,
+                showGroup: true,
+                showTitle: true,
+                showText: true,
+                showDate: true,
+                imageFit: 'cover',
+                imageFocus: 'center',
                 style: textStyle(56),
             };
         case 'rooms':

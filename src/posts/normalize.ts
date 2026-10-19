@@ -40,6 +40,13 @@ export interface Post {
     author: string | null;
     imageUrl: string | null;
     imageRatio: number | null;
+    /** All pictures in order (Plan.md 96); missing in a cached state from before – then only the first (`imageUrl`). */
+    images?: PostImage[];
+}
+
+export interface PostImage {
+    url: string;
+    ratio: number | null;
 }
 
 export function groupColor(color: { key?: string | null } | null | undefined): string | null {
@@ -68,6 +75,7 @@ function normalizeOne(post: PostResponse): Post | null {
     if (!publishedAt || Number.isNaN(publishedAt.getTime())) return null;
     const groupId = post.group?.domainIdentifier ? Number(post.group.domainIdentifier) : NaN;
     if (!Number.isFinite(groupId)) return null;
+    const images = (post.imagesMeta ?? []).flatMap((m) => (m.imageUrl ? [{ url: m.imageUrl, ratio: m.aspectRatio ?? null }] : []));
     const image = post.imagesMeta?.[0];
     const expiresAt = post.expirationDate ? new Date(post.expirationDate) : null;
     return {
@@ -84,6 +92,7 @@ function normalizeOne(post: PostResponse): Post | null {
         author: post.actor?.title ?? null,
         imageUrl: image?.imageUrl ?? null,
         imageRatio: image?.aspectRatio ?? null,
+        images,
     };
 }
 

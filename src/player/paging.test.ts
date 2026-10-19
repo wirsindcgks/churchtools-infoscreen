@@ -31,6 +31,12 @@ const posts = (overrides: Partial<Extract<Block, { type: 'posts' }>> = {}): Bloc
     layout: 'card',
     showImage: true,
     showAuthor: false,
+    showGroup: true,
+    showTitle: true,
+    showText: true,
+    showDate: true,
+    imageFit: 'cover',
+    imageFocus: 'center',
     style,
     ...overrides,
 });

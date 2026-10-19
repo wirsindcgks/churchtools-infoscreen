@@ -806,7 +806,7 @@ describe('ScreenRepository', () => {
         it('saves new, updates against the revision and reports a conflict with the stored name', async () => {
             const first = await repo.saveTemplate(head, { expectedRevision: null, updatedBy: 'Anna' });
             expect(first).toMatchObject({ kind: 'template', revision: 1, updatedBy: 'Anna', name: 'Seitenkopf' });
-            expect(first.schema).toEqual({ major: 1, minor: 44 });
+            expect(first.schema).toEqual({ major: 1, minor: 45 });
             const second = await repo.saveTemplate({ ...head, name: 'Kopf' }, { expectedRevision: 1, updatedBy: 'Ben' });
             expect(second.revision).toBe(2);
             const error = await repo.saveTemplate({ ...head, name: 'Dritter' }, { expectedRevision: 1, updatedBy: 'Cleo' }).catch((e: unknown) => e);

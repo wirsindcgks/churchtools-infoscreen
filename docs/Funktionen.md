@@ -316,6 +316,12 @@ Die neuesten Beiträge öffentlicher Gruppen – mit Bild, Gruppe und Alter des 
 Liste. Abgelaufene Beiträge erscheinen nie; den Namen der Autorin oder des Autors zeigt der Baustein nur, wenn man es
 einschaltet.
 
+Im Klappmenü „Angaben“ wählt der Bildschirm, was er zeigt: Gruppe, Titel, Bild, Text, Name und Datum. Was aus ist, nimmt
+keinen Platz; bleibt kein Text übrig, füllt das Bild die Karte. Das Bild lässt sich „Füllen“ – mit einem Ausschnitt (Mitte,
+oben, unten, links, rechts), der beim Zuschneiden sichtbar bleibt – oder „Ganz zeigen“; dann wählt der Baustein unter den
+Bildern eines Beitrags das, das am wenigsten Rand lässt. Die Einstellungen gelten für alle Beiträge des Bausteins, der
+Beitrag in ChurchTools bleibt, wie er ist.
+
 ![Editor mit dem Baustein „Beiträge": ein Beitrag mit Bild links und Text rechts](bilder/beitraege.png)
 
 Der Text eines Beitrags erscheint formatiert, wie er im Editor von ChurchTools steht: fett, kursiv, durchgestrichen, Überschriften, Listen und Zitate; Erwähnungen (@Person, @Gruppe) als Name. Tabellen und Bilder im Text fehlen. Dasselbe gilt für die Beschreibung eines Termins, dort ohne Formatierung auf einer Zeile.

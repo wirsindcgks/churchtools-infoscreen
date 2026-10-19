@@ -270,6 +270,12 @@ describe('rendering posts (Plan.md 33)', () => {
         layout: 'card',
         showImage: true,
         showAuthor: false,
+        showGroup: true,
+        showTitle: true,
+        showText: true,
+        showDate: true,
+        imageFit: 'cover',
+        imageFocus: 'center',
         style,
         ...overrides,
     });
@@ -353,6 +359,62 @@ describe('rendering posts (Plan.md 33)', () => {
             posts: [post({ imageUrl: 'https://example.church.tools/images/9/hash', imageRatio: 1 })],
         });
         expect(switchedOff.find('[data-testid="post-image"]').exists()).toBe(false);
+    });
+
+    it('leaves hidden details out without leaving room (Plan.md 96)', () => {
+        const card = (overrides: Partial<Extract<Block, { type: 'posts' }>>) =>
+            render(makeSlide({ blocks: [postsBlock({ showAuthor: true, ...overrides })] }), { posts: [post()] }).get('[data-testid="posts-card"]');
+        const noGroup = card({ showGroup: false });
+        expect(noGroup.find('.hero-avatar').exists()).toBe(false);
+        expect(noGroup.find('.hero-group').exists()).toBe(false);
+        expect(noGroup.get('.hero-age').text()).toContain('Erika Beispiel');
+        expect(card({ showDate: false }).get('.hero-age').text()).toBe('Erika Beispiel');
+        expect(card({ showGroup: false, showAuthor: false, showDate: false }).find('.hero-head').exists()).toBe(false);
+        expect(card({ showTitle: false }).find('.hero-title').exists()).toBe(false);
+        expect(card({ showText: false }).find('.hero-body').exists()).toBe(false);
+    });
+
+    it('lets the image fill the card when no text is left', () => {
+        const wrapper = render(
+            makeSlide({ blocks: [postsBlock({ showGroup: false, showAuthor: false, showDate: false, showTitle: false, showText: false })] }),
+            { posts: [post({ imageUrl: 'https://example.church.tools/images/9/hash', imageRatio: 1 })] },
+        );
+        expect(wrapper.find('.hero-text').exists()).toBe(false);
+        const image = wrapper.get('[data-testid="post-image"]');
+        expect(image.attributes('style')).toContain('width: 100%');
+        expect(image.attributes('style')).toContain('height: 100%');
+    });
+
+    it('shows the whole best fitting picture with "Ganz zeigen" and sets object-position for the focus', () => {
+        const images = [
+            { url: 'https://example.church.tools/images/1/a', ratio: 0.8 },
+            { url: 'https://example.church.tools/images/2/b', ratio: 1.9 },
+        ];
+        const multi = post({ imageUrl: images[0]!.url, imageRatio: 0.8, images });
+        const contain = render(makeSlide({ blocks: [postsBlock({ imageFit: 'contain', showGroup: false, showAuthor: false, showDate: false, showTitle: false, showText: false })] }), { posts: [multi] });
+        const image = contain.get('[data-testid="post-image"]');
+        expect(image.attributes('src')).toContain('/images/2/b');
+        expect(image.attributes('src')).toContain('fit=max');
+        expect(image.attributes('style')).toContain('object-fit: contain');
+        const first = render(makeSlide({ blocks: [postsBlock({ imageFit: 'contain' })] }), { posts: [multi] });
+        expect(first.get('[data-testid="post-image"]').attributes('src')).toContain('fit=max');
+
+        const fill = render(makeSlide({ blocks: [postsBlock({ imageFocus: 'top' })] }), { posts: [multi] }).get('[data-testid="post-image"]');
+        expect(fill.attributes('src')).toContain('/images/1/a');
+        expect(fill.attributes('src')).toContain('fit=max');
+        expect(fill.attributes('style')).toContain('object-position: 50% 0%');
+        const centred = render(makeSlide({ blocks: [postsBlock()] }), { posts: [multi] }).get('[data-testid="post-image"]');
+        expect(centred.attributes('src')).toContain('fit=crop');
+    });
+
+    it('drops hidden parts of a list row without an empty column', () => {
+        const row = (overrides: Partial<Extract<Block, { type: 'posts' }>>) =>
+            render(makeSlide({ blocks: [postsBlock({ layout: 'list', ...overrides })] }), { posts: [post()] }).get('[data-testid="post-row"]');
+        expect(row({ showTitle: false }).find('.title').exists()).toBe(false);
+        expect(row({ showTitle: false, showText: false }).find('.body').exists()).toBe(false);
+        const bare = row({ showGroup: false, showDate: false });
+        expect(bare.attributes('style')).toContain('grid-template-columns: minmax(0, 1fr)');
+        expect(row({}).attributes('style')).toContain('grid-template-columns: auto minmax(0, 1fr) auto');
     });
 
     it('never renders a <p>, whose font size a ChurchTools host page would otherwise override', () => {

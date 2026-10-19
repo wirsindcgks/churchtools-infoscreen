@@ -54,6 +54,12 @@ const postsBlock: Block = {
     layout: 'card',
     showImage: true,
     showAuthor: false,
+    showGroup: true,
+    showTitle: true,
+    showText: true,
+    showDate: true,
+    imageFit: 'cover',
+    imageFocus: 'center',
     style,
 };
 const groupsBlock: Block = {
