@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dropRegion, emptyRegions, fitToRegions, frameFixed, type Region, FOOTER_SHARE, HEADER_SHARE, layoutRegions, REGION_GAPS, REGION_MARGIN } from './layout-regions';
+import { dropRegion, emptyRegions, fitToRegions, frameFixed, type Region, FOOTER_SHARE, HEADER_SHARE, layoutRegions, REGION_GAPS, REGION_MARGIN, REGION_STEP } from './layout-regions';
 
 type Two = [Region, Region];
 type Four = [Region, Region, Region, Region];
@@ -8,7 +8,7 @@ const portrait = { width: 1080, height: 1920 };
 
 describe('layoutRegions', () => {
     it('keeps its numbers', () => {
-        expect([REGION_MARGIN, HEADER_SHARE, FOOTER_SHARE]).toEqual([0.04, 0.14, 0.1]);
+        expect([REGION_MARGIN, HEADER_SHARE, FOOTER_SHARE, REGION_STEP]).toEqual([40, 0.14, 0.1, 20]);
     });
 
     it('has no areas without a division, header and footer', () => {
@@ -17,38 +17,34 @@ describe('layoutRegions', () => {
     });
 
     it('makes one main area of the rest when only header or footer is on', () => {
-        // margin 43 (4 % of 1080), header 151
+        // margin 40, header 160 (14 % of 1080 = 151 on the 20 px step), footer 100 (108)
         expect(layoutRegions({ split: 'none', header: true, footer: false }, landscape)).toEqual([
-            { id: 'header', x: 43, y: 43, width: 1834, height: 151 },
-            { id: 'main', x: 43, y: 237, width: 1834, height: 800 },
+            { id: 'header', x: 40, y: 40, width: 1840, height: 160 },
+            { id: 'main', x: 40, y: 240, width: 1840, height: 800 },
         ]);
         expect(layoutRegions({ split: 'none', header: false, footer: true }, landscape)).toEqual([
-            { id: 'footer', x: 43, y: 929, width: 1834, height: 108 },
-            { id: 'main', x: 43, y: 43, width: 1834, height: 843 },
+            { id: 'footer', x: 40, y: 940, width: 1840, height: 100 },
+            { id: 'main', x: 40, y: 40, width: 1840, height: 860 },
         ]);
     });
 
     it('divides landscape into columns', () => {
         const halves = layoutRegions({ split: 'halves', header: false, footer: false }, landscape);
         expect(halves).toEqual([
-            { id: 'a', x: 43, y: 43, width: 896, height: 994 },
-            { id: 'b', x: 982, y: 43, width: 895, height: 994 },
+            { id: 'a', x: 40, y: 40, width: 900, height: 1000 },
+            { id: 'b', x: 980, y: 40, width: 900, height: 1000 },
         ]);
         const [a, b] = layoutRegions({ split: 'wide-narrow', header: false, footer: false }, landscape) as Two;
-        expect(a.width).toBeGreaterThan(b.width);
-        expect(a.width).toBe(Math.round((1834 - 43) * (2 / 3)));
-        expect(a.x + a.width + 43).toBe(b.x);
-        expect(b.x + b.width).toBe(1877);
+        expect([a.width, b.x, b.width]).toEqual([1200, 1280, 600]);
         const [c, d] = layoutRegions({ split: 'narrow-wide', header: false, footer: false }, landscape) as Two;
-        expect(c.width).toBeLessThan(d.width);
+        expect([c.width, d.x, d.width]).toEqual([600, 680, 1200]);
     });
 
     it('divides portrait into rows', () => {
         const [a, b] = layoutRegions({ split: 'halves', header: false, footer: false }, portrait) as Two;
-        expect(a).toMatchObject({ x: 43, y: 43, width: 994 });
-        expect(b.y).toBe(a.y + a.height + 43);
-        expect(b.y + b.height).toBe(1920 - 43);
-        const [w, n] = layoutRegions({ split: 'wide-narrow', header: false, footer: false }, portrait) as Two;
+        expect(a).toEqual({ id: 'a', x: 40, y: 40, width: 1000, height: 900 });
+        expect(b).toEqual({ id: 'b', x: 40, y: 980, width: 1000, height: 900 });
+        const [w, n] = layoutRegions({ split: 'wide-narrow', header: true, footer: true }, portrait).slice(2) as Two;
         expect(w.height).toBeGreaterThan(n.height);
     });
 
@@ -56,14 +52,16 @@ describe('layoutRegions', () => {
         const regions = layoutRegions({ split: 'wide-narrow', header: true, footer: true }, landscape);
         expect(regions.map((r) => r.id)).toEqual(['header', 'footer', 'a', 'b']);
         const [header, footer, a, b] = regions as Four;
-        expect(a.y).toBe(header.y + header.height + 43);
-        expect(a.y + a.height + 43).toBe(footer.y);
+        expect(a.y).toBe(header.y + header.height + 40);
+        expect(a.y + a.height + 40).toBe(footer.y);
         expect(b.y).toBe(a.y);
-        expect(footer.y + footer.height).toBe(1080 - 43);
+        expect(footer.y + footer.height).toBe(1080 - 40);
+        const [ph, pf] = layoutRegions({ split: 'none', header: true, footer: true }, portrait) as Two;
+        expect([ph.height, pf.height]).toEqual([260, 200]);
     });
 
     it('takes margin and gap from the chosen step (Plan.md 92)', () => {
-        expect(REGION_GAPS).toEqual({ none: 0, tight: 0.02, normal: 0.04, wide: 0.06 });
+        expect(REGION_GAPS).toEqual({ none: 0, tight: 20, normal: 40, wide: 60 });
         const halves = (gap?: 'none' | 'tight' | 'normal' | 'wide') => layoutRegions({ split: 'halves', header: false, footer: false, gap }, landscape) as Two;
         expect(halves('normal')).toEqual(halves());
         // none: from edge to edge, the areas touch
@@ -71,14 +69,31 @@ describe('layoutRegions', () => {
             { id: 'a', x: 0, y: 0, width: 960, height: 1080 },
             { id: 'b', x: 960, y: 0, width: 960, height: 1080 },
         ]);
-        // wide: 65 (6 % of 1080) as margin and as gap, everything still fits
-        const [a, b] = halves('wide');
-        expect(a).toMatchObject({ x: 65, y: 65, height: 950 });
-        expect(b.x).toBe(a.x + a.width + 65);
-        expect(b.x + b.width).toBe(1920 - 65);
+        // wide: 60 as margin and as gap, everything still fits
+        expect(halves('wide')).toEqual([
+            { id: 'a', x: 60, y: 60, width: 870, height: 960 },
+            { id: 'b', x: 990, y: 60, width: 870, height: 960 },
+        ]);
         const [header, main] = layoutRegions({ split: 'none', header: true, footer: false, gap: 'tight' }, landscape) as Two;
-        expect(header).toMatchObject({ x: 22, y: 22 });
-        expect(main.y).toBe(header.y + header.height + 22);
+        expect(header).toMatchObject({ x: 20, y: 20 });
+        expect(main.y).toBe(header.y + header.height + 20);
+    });
+
+    it('puts every edge on the 20 px grid, halves stay equal (Plan.md 104)', () => {
+        for (const stage of [landscape, portrait]) {
+            for (const gap of ['none', 'tight', 'normal', 'wide'] as const) {
+                for (const split of ['none', 'halves', 'wide-narrow', 'narrow-wide'] as const) {
+                    const regions = layoutRegions({ split, header: true, footer: true, gap }, stage);
+                    const edges = regions.flatMap((r) => [r.x, r.y, r.x + r.width, r.y + r.height]);
+                    // equal halves may leave the middle on the 10 px grid
+                    expect(edges.every((e) => e % (split === 'halves' ? 10 : 20) === 0)).toBe(true);
+                    if (split === 'halves') {
+                        const [, , a, b] = regions as Four;
+                        expect(stage.width > stage.height ? a.width === b.width : a.height === b.height).toBe(true);
+                    }
+                }
+            }
+        }
     });
 });
 

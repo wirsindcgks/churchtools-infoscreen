@@ -1303,10 +1303,10 @@ describe('templates (schema 1.41, Plan.md 87)', () => {
 
     it('puts a block on the frame of the area whose "+" opened the sheet, in one step', async () => {
         const { editor } = await setup();
-        const area = { id: 'a' as const, x: 43, y: 43, width: 896, height: 994 };
+        const area = { id: 'a' as const, x: 40, y: 40, width: 900, height: 1000 };
         editor.targetRegion = area;
         editor.addBlock('shape');
-        expect(editor.block).toMatchObject({ x: 43, y: 43, width: 896, height: 994 });
+        expect(editor.block).toMatchObject({ x: 40, y: 40, width: 900, height: 1000 });
         expect(editor.slide!.blocks).toHaveLength(1);
         editor.undo();
         expect(editor.slide!.blocks).toHaveLength(0);
@@ -1315,14 +1315,14 @@ describe('templates (schema 1.41, Plan.md 87)', () => {
     it('puts a template at the upper left corner of the area, with its own size', async () => {
         const { editor, repository } = await setup();
         const template = await saved(editor, repository);
-        editor.targetRegion = { id: 'header', x: 43, y: 500, width: 1834, height: 151 };
+        editor.targetRegion = { id: 'header', x: 40, y: 500, width: 1840, height: 160 };
         editor.addTemplate(template.id);
-        expect(editor.block).toMatchObject({ type: 'template', x: 43, y: 500, width: 600, height: 120 });
+        expect(editor.block).toMatchObject({ type: 'template', x: 40, y: 500, width: 600, height: 120 });
     });
 
     it('binds what comes in through the "+" of an area, and a fixed block takes neither move nor size from the stage or the fields', async () => {
         const { editor } = await setup();
-        const area = { id: 'a' as const, x: 43, y: 43, width: 896, height: 994 };
+        const area = { id: 'a' as const, x: 40, y: 40, width: 900, height: 1000 };
         editor.targetRegion = area;
         editor.addBlock('shape');
         editor.targetRegion = null;
@@ -1330,7 +1330,7 @@ describe('templates (schema 1.41, Plan.md 87)', () => {
         expect(editor.block).toMatchObject({ region: 'a' });
         editor.moveBlocks([id], 100, 100);
         editor.updateBlock(id, { x: 5, width: 10, rotation: 10 });
-        expect(editor.block).toMatchObject({ x: 43, y: 43, width: 896, height: 994, rotation: 10 });
+        expect(editor.block).toMatchObject({ x: 40, y: 40, width: 900, height: 1000, rotation: 10 });
     });
 
     it('fixes a free block in the area of its middle and frees it again, each in one step', async () => {
@@ -1341,21 +1341,21 @@ describe('templates (schema 1.41, Plan.md 87)', () => {
         editor.updateBlock(id, { x: 100, y: 100, width: 200, height: 100 });
         editor.endGesture();
         editor.setRegionFixed(id, true);
-        expect(editor.block).toMatchObject({ region: 'a', x: 43, y: 43, width: 896, height: 994 });
+        expect(editor.block).toMatchObject({ region: 'a', x: 40, y: 40, width: 900, height: 1000 });
         editor.undo();
         expect(editor.block).toMatchObject({ x: 100, y: 100, width: 200 });
         expect(editor.block).not.toHaveProperty('region');
         editor.redo();
         editor.setRegionFixed(id, false);
         expect(editor.block).not.toHaveProperty('region');
-        expect(editor.block).toMatchObject({ x: 43, width: 896 });
+        expect(editor.block).toMatchObject({ x: 40, width: 900 });
         editor.moveBlocks([id], 10, 0);
-        expect(editor.block!.x).toBe(53);
+        expect(editor.block!.x).toBe(50);
     });
 
     it('takes fixed blocks along to the new division in one step and leaves free ones', async () => {
         const { editor } = await setup();
-        editor.targetRegion = { id: 'a', x: 43, y: 43, width: 896, height: 994 };
+        editor.targetRegion = { id: 'a', x: 40, y: 40, width: 900, height: 1000 };
         editor.addBlock('shape');
         editor.targetRegion = null;
         const fixed = editor.block!.id;
@@ -1366,11 +1366,11 @@ describe('templates (schema 1.41, Plan.md 87)', () => {
         editor.setSlideLayout({ split: 'halves', header: false, footer: false });
         editor.setSlideLayout({ split: 'wide-narrow', header: false, footer: false });
         const get = (id: string) => editor.slide!.blocks.find((x) => x.id === id)!;
-        expect(get(fixed).width).toBe(Math.round((1834 - 43) * (2 / 3)));
+        expect(get(fixed).width).toBe(1200);
         expect(get(free)).toMatchObject({ x: 1000, y: 100, width: 200 });
         editor.undo();
         expect(editor.slide!.layout!.split).toBe('halves');
-        expect(get(fixed).width).toBe(896);
+        expect(get(fixed).width).toBe(900);
     });
 
     it('drags a free block into an empty area and fixes it there in one undo step', async () => {
@@ -1385,7 +1385,7 @@ describe('templates (schema 1.41, Plan.md 87)', () => {
         editor.moveBlocks([id], 10, 0);
         editor.setRegionFixed(id, true);
         editor.endGesture();
-        expect(editor.block).toMatchObject({ region: 'b', x: 982, y: 43, width: 895, height: 994 });
+        expect(editor.block).toMatchObject({ region: 'b', x: 980, y: 40, width: 900, height: 1000 });
         editor.undo();
         expect(editor.block).toMatchObject({ x: 1200, y: 300, width: 200 });
         expect(editor.block).not.toHaveProperty('region');
@@ -1394,17 +1394,17 @@ describe('templates (schema 1.41, Plan.md 87)', () => {
     it('lets go of a block whose area is gone', async () => {
         const { editor } = await setup();
         editor.setSlideLayout({ split: 'halves', header: false, footer: false });
-        editor.targetRegion = { id: 'a', x: 43, y: 43, width: 896, height: 994 };
+        editor.targetRegion = { id: 'a', x: 40, y: 40, width: 900, height: 1000 };
         editor.addBlock('shape');
         editor.targetRegion = null;
         editor.setSlideLayout({ split: 'none', header: true, footer: false });
         expect(editor.block).not.toHaveProperty('region');
-        expect(editor.block).toMatchObject({ x: 43, width: 896 });
+        expect(editor.block).toMatchObject({ x: 40, width: 900 });
     });
 
     it('pastes and duplicates a fixed block as a free one', async () => {
         const { editor } = await setup();
-        editor.targetRegion = { id: 'a', x: 43, y: 43, width: 896, height: 994 };
+        editor.targetRegion = { id: 'a', x: 40, y: 40, width: 900, height: 1000 };
         editor.addBlock('shape');
         editor.targetRegion = null;
         const id = editor.block!.id;

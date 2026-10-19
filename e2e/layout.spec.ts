@@ -44,8 +44,8 @@ test('the "+" of an empty area fills it with the chosen block', async ({ page })
     await expect(page.getByTestId('block-sheet')).toBeVisible();
     await page.getByTestId('sheet-add-shape').click();
     await expect(page.getByTestId('block-sheet')).toHaveCount(0);
-    // 4 % of 1080 = 43 px margin; two columns of 896 and 895 px.
-    expect(await frameStyle(page)).toBe('43px 43px 896px 994px');
+    // 40 px margin and gap; two columns of 900 px (Plan.md 104).
+    expect(await frameStyle(page)).toBe('40px 40px 900px 1000px');
     await expect(add(page, 'a')).toHaveCount(0);
     await expect(add(page, 'b')).toBeVisible();
 });
@@ -97,7 +97,7 @@ test('switching to two thirds takes the fixed block along and leaves the free on
     await add(page, 'a').click();
     await page.getByTestId('sheet-add-shape').click();
     const start = await frameStyle(page);
-    expect(start).toBe('43px 43px 896px 994px');
+    expect(start).toBe('40px 40px 900px 1000px');
     // A second block from the other area, freed by the switch.
     await add(page, 'b').click();
     await page.getByTestId('sheet-add-text').click();
@@ -107,8 +107,8 @@ test('switching to two thirds takes the fixed block along and leaves the free on
     await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
     await openSection(page, 'layout');
     await tile(page, 'wide-narrow').check({ force: true });
-    // 2/3 of (1834 - 43) = 1194
-    expect(await frameStyle(page)).toBe('43px 43px 1194px 994px');
+    // 2/3 of (1840 - 40) = 1200
+    expect(await frameStyle(page)).toBe('40px 40px 1200px 1000px');
     expect(await frameStyle(page, 'text')).toBe(free);
 });
 
@@ -151,7 +151,7 @@ test('an existing block dragged into an empty area takes its frame and is fixed'
     await openSection(page, 'layout');
     await tile(page, 'halves').check({ force: true });
     await dragTo(page, 'shape', { x: 0.75, y: 0.5 });
-    expect(await frameStyle(page)).toBe('982px 43px 895px 994px');
+    expect(await frameStyle(page)).toBe('980px 40px 900px 1000px');
     await openSection(page, 'arrange');
     await expect(page.getByTestId('region-fixed')).toBeChecked();
 });
@@ -199,13 +199,13 @@ test('a wider or no gap takes the fixed block along (Plan.md 92)', async ({ page
     await tile(page, 'halves').check({ force: true });
     await add(page, 'a').click();
     await page.getByTestId('sheet-add-shape').click();
-    expect(await frameStyle(page)).toBe('43px 43px 896px 994px');
+    expect(await frameStyle(page)).toBe('40px 40px 900px 1000px');
     await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
     await openSection(page, 'layout');
     const gap = (value: string) => page.getByTestId('layout-gap').locator(`input[value="${value}"]`);
-    // 6 % of 1080 = 65 px as margin and gap: (1920 - 3 · 65) / 2 rounds to 863.
+    // 60 px as margin and gap: (1920 - 3 · 60) / 2 = 870.
     await gap('wide').check({ force: true });
-    expect(await frameStyle(page)).toBe('65px 65px 863px 950px');
+    expect(await frameStyle(page)).toBe('60px 60px 870px 960px');
     await gap('none').check({ force: true });
     expect(await frameStyle(page)).toBe('0px 0px 960px 1080px');
 });

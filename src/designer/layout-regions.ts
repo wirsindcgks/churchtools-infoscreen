@@ -5,14 +5,20 @@
 import type { SlideLayout } from '../model/schema';
 import type { Frame } from './snap';
 
-/** Margin and gap between the areas, as a share of the stage's shorter side – one value for both (Plan.md 92). */
-export const REGION_GAPS = { none: 0, tight: 0.02, normal: 0.04, wide: 0.06 } as const;
+/** Margin and gap between the areas in stage pixels – one value for both (Plan.md 92), each a width of the guide grid (Plan.md 104). */
+export const REGION_GAPS = { none: 0, tight: 20, normal: 40, wide: 60 } as const;
 /** The margin of a division without a chosen gap. */
 export const REGION_MARGIN = REGION_GAPS.normal;
-/** The header's height, as a share of the stage's height. */
+/** The header's height, as a share of the stage's height (rounded to `REGION_STEP`). */
 export const HEADER_SHARE = 0.14;
-/** The footer's height, as a share of the stage's height. */
+/** The footer's height, as a share of the stage's height (rounded to `REGION_STEP`). */
 export const FOOTER_SHARE = 0.1;
+/** Sizes of the areas are whole multiples of this, so their edges lie on the 10 and 20 px grid (Plan.md 104). */
+export const REGION_STEP = 20;
+
+function toStep(value: number): number {
+    return Math.round(value / REGION_STEP) * REGION_STEP;
+}
 
 /** The share of a block's area that fills an area its centre is not in. */
 export const FILL_SHARE = 0.4;
@@ -54,25 +60,26 @@ export function fitToRegions<T extends Frame & { type: string; region?: RegionId
 
 /**
  * The areas of a layout: header and footer across the width, `split` divides the room between them – landscape into
- * columns, portrait into rows. Without a division and without header and footer there are none.
+ * columns, portrait into rows. Without a division and without header and footer there are none. Halves stay equal even
+ * where that leaves the middle on the 10 px grid only.
  */
 export function layoutRegions(layout: SlideLayout | undefined, stage: { width: number; height: number }): Region[] {
     const split = layout?.split ?? 'none';
     const header = layout?.header ?? false;
     const footer = layout?.footer ?? false;
     if (split === 'none' && !header && !footer) return [];
-    const margin = Math.round(Math.min(stage.width, stage.height) * REGION_GAPS[layout?.gap ?? 'normal']);
+    const margin = REGION_GAPS[layout?.gap ?? 'normal'];
     const width = stage.width - 2 * margin;
     const regions: Region[] = [];
     let top = margin;
     let bottom = stage.height - margin;
     if (header) {
-        const height = Math.round(stage.height * HEADER_SHARE);
+        const height = toStep(stage.height * HEADER_SHARE);
         regions.push({ id: 'header', x: margin, y: top, width, height });
         top += height + margin;
     }
     if (footer) {
-        const height = Math.round(stage.height * FOOTER_SHARE);
+        const height = toStep(stage.height * FOOTER_SHARE);
         regions.push({ id: 'footer', x: margin, y: bottom - height, width, height });
         bottom -= height + margin;
     }
@@ -80,13 +87,14 @@ export function layoutRegions(layout: SlideLayout | undefined, stage: { width: n
     if (split === 'none') {
         regions.push({ id: 'main', ...room });
     } else {
-        const first = split === 'halves' ? 1 / 2 : split === 'wide-narrow' ? 2 / 3 : 1 / 3;
+        const first = split === 'wide-narrow' ? 2 / 3 : 1 / 3;
+        const share = (length: number) => (split === 'halves' ? Math.round(length / 2) : toStep(length * first));
         if (stage.width >= stage.height) {
-            const a = Math.round((room.width - margin) * first);
+            const a = share(room.width - margin);
             regions.push({ id: 'a', x: room.x, y: room.y, width: a, height: room.height });
             regions.push({ id: 'b', x: room.x + a + margin, y: room.y, width: room.width - margin - a, height: room.height });
         } else {
-            const a = Math.round((room.height - margin) * first);
+            const a = share(room.height - margin);
             regions.push({ id: 'a', x: room.x, y: room.y, width: room.width, height: a });
             regions.push({ id: 'b', x: room.x, y: room.y + a + margin, width: room.width, height: room.height - margin - a });
         }

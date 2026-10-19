@@ -134,7 +134,7 @@ nicht die Änderungen, sondern lange Sitzungen, Testläufe, Bilder und Berichte.
   Kürzel, keine Instanzadresse in Key, Code, Oberfläche oder Beispieldaten. Beispiele verwenden `<instanz>`.
 
 - **Oberfläche und Dokumentation deutsch, Code und Bezeichner englisch.**
-- **Commit-Nachrichten deutsch, im Betreff ohne Umlaute.** Der Betreff sagt, was sich geändert hat, der Rumpf warum.
+- **Commit-Nachrichten deutsch, mit Umlauten** *(seit 2026-10-19, Nutzer; ältere Betreffe sind ohne)*. Der Betreff sagt, was sich geändert hat, der Rumpf warum.
 - Markdown mit deutschen Anführungszeichen („…"), Dateiverweise als relative Links.
 - `CHANGELOG.md` folgt *Keep a Changelog*, ohne „Unreleased"-Abschnitt – Einträge erst beim Versionssprung.
 - **PRs nennen ihre Issues.** Der PR, der baut, verweist mit „Teil von #N“ – das verlinkt, schließt aber nicht.

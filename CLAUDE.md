@@ -14,4 +14,4 @@ Das Wichtigste in Kürze:
 - **Ein `404` der API beweist nichts**, und **eine leere Liste ist kein Beweis für „es gibt nichts"**.
 - **Schreibende Zugriffe auf die Testinstanz vorher besprechen.** Lesen ist frei.
 - **Keine Zugangsdaten und keine Instanz-URL ins Repo**; `fixtures/` ist nicht versioniert.
-- **Dokumentation deutsch, Code englisch, Commit-Betreff deutsch ohne Umlaute.**
+- **Dokumentation deutsch, Code englisch, Commit-Nachrichten deutsch mit Umlauten.**

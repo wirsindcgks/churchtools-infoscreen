@@ -164,7 +164,8 @@ Eine Folie lässt sich in **Bereiche** gliedern, damit Bausteine sauber nebenein
 (nichts gewählt) öffnet ihr **„Aufteilung"** und wählt **Halb und halb**, **Zwei Drittel / ein Drittel** oder umgekehrt –
 auf einer querformatigen Folie in Spalten, auf einer hochkant in Zeilen. Dazu gibt es die Schalter **„Kopfzeile"** und
 **„Fußzeile"**. Unter **„Abstand"** wählt ihr **Ohne**, **Eng**, **Normal** oder **Weit** – er gilt zwischen den
-Bereichen und zum Rand der Folie; „Ohne" reicht bis an den Rand. Die Bereiche erscheinen im Editor als gestrichelte Rahmen unter den Bausteinen; in Vorschau, Miniaturen
+Bereichen und zum Rand der Folie; „Ohne" reicht bis an den Rand. Eng, Normal und Weit sind 20, 40 und 60 px, genau die
+Weiten des Rasters, und alle Kanten der Bereiche liegen auf dem 20er-Raster – wer mit Raster gestaltet, trifft beides. Die Bereiche erscheinen im Editor als gestrichelte Rahmen unter den Bausteinen; in Vorschau, Miniaturen
 und auf dem Bildschirm sind sie nicht zu sehen. Bausteine rasten an den Kanten und Mitten der Bereiche ein.
 
 In einem **leeren** Bereich steht ein „+": Es öffnet „+ Baustein", und der gewählte Baustein füllt den Bereich. In
