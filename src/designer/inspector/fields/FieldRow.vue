@@ -6,14 +6,16 @@
  * (`quick` mode) the row goes through `QuickField`: not drawn without `quick`, else a chip with `face` or, with `inline`, in the menu itself.
  * In the sheet of a phone's bar, whose title is the label already, the label is kept for a screen reader only (Plan.md 88, C).
  */
-import { inject, ref } from 'vue';
+import { computed, inject, ref } from 'vue';
 import HintRow from '../../HintRow.vue';
+import InfoHint from '../../InfoHint.vue';
 import { SHEET_TITLE } from '../mode';
 import QuickField from './QuickField.vue';
 
-const props = defineProps<{ label: string; for?: string; labelId?: string; stacked?: boolean; end?: boolean; wide?: boolean; quick?: boolean; face?: string; inline?: boolean }>();
+const props = defineProps<{ label: string; for?: string; labelId?: string; stacked?: boolean; end?: boolean; wide?: boolean; quick?: boolean; face?: string; inline?: boolean; infoBeside?: boolean }>();
 defineSlots<{ default(): unknown; info?(): unknown; before?(): unknown }>();
 const sheetTitle = inject(SHEET_TITLE, ref(null));
+const besideNow = computed(() => props.stacked && props.infoBeside);
 </script>
 
 <template>
@@ -27,9 +29,11 @@ const sheetTitle = inject(SHEET_TITLE, ref(null));
                 </div>
                 <div class="field-control" :class="{ 'field-control--end': end }">
                     <slot />
+                    <!-- `infoBeside` on a stacked row: the (i) stands beside the control, centred on it, not between label and control. -->
+                    <InfoHint v-if="besideNow && $slots.info" class="field-info"><slot name="info" /></InfoHint>
                 </div>
             </div>
-            <template v-if="$slots.info" #info><slot name="info" /></template>
+            <template v-if="!besideNow && $slots.info" #info><slot name="info" /></template>
         </HintRow>
     </QuickField>
 </template>
@@ -76,10 +80,16 @@ const sheetTitle = inject(SHEET_TITLE, ref(null));
     color: var(--d-text);
     font-size: var(--d-size);
 }
+.field-row--stacked .field-control {
+    gap: 8px;
+}
 .field-control--end {
     justify-content: flex-end;
 }
 .field-control > :deep(*) {
     min-width: 0;
+}
+.field-control > .field-info {
+    flex: none;
 }
 </style>

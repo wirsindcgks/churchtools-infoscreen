@@ -38,7 +38,7 @@ const name = useId();
 </script>
 
 <template>
-    <FieldRow :label="label" :label-id="labelId" :stacked="stackedNow" :quick="quick" :face="chosenFace" :inline="withSymbols">
+    <FieldRow :label="label" :label-id="labelId" :stacked="stackedNow" :quick="quick" :face="chosenFace" :inline="withSymbols" info-beside>
         <div class="segment" role="radiogroup" :aria-labelledby="labelId" :data-testid="testid">
             <label v-for="option in options" :key="option.value" class="segment-option" :title="option.icon ? option.label : undefined">
                 <input
