@@ -3,9 +3,13 @@ import {
     cacheName,
     classify,
     isPlayerNavigation,
+    isVideoDownload,
     looksLikePlayerPage,
     pageCacheKey,
+    parseRange,
+    partialHeaders,
     shouldCachePlayerPage,
+    unsatisfiableHeaders,
     type RequestLike,
 } from './logic';
 
@@ -152,5 +156,94 @@ describe('cacheName', () => {
     it('embeds the version so a new one never reuses an old cache', () => {
         expect(cacheName('0.2.3+abc1234')).not.toBe(cacheName('0.2.4+def5678'));
         expect(cacheName('0.2.3+abc1234')).toContain('0.2.3+abc1234');
+    });
+});
+
+const VIDEO_URL = `${ORIGIN}/?q=public/filedownload&id=451&filename=abc123`;
+
+describe('isVideoDownload', () => {
+    it('recognises the download address of a library file', () => {
+        expect(isVideoDownload(VIDEO_URL)).toBe(true);
+    });
+
+    it('rejects other addresses and garbage', () => {
+        expect(isVideoDownload(`${ORIGIN}/?q=churchwiki`)).toBe(false);
+        expect(isVideoDownload(`${ORIGIN}${BASE}player`)).toBe(false);
+        expect(isVideoDownload('not a url')).toBe(false);
+    });
+});
+
+describe('classify (video)', () => {
+    const video = (overrides: Partial<RequestLike> = {}) =>
+        request({ url: VIDEO_URL, destination: 'video', clientUrl: PLAYER_URL, ...overrides });
+
+    it('is a video when a player page asks for a download', () => {
+        expect(classify(video(), BASE)).toBe('video');
+    });
+
+    it('passes the same request from the designer', () => {
+        expect(classify(video({ clientUrl: `${ORIGIN}${BASE}` }), BASE)).toBe('pass');
+    });
+
+    it('passes a request without a known client', () => {
+        expect(classify(video({ clientUrl: null }), BASE)).toBe('pass');
+    });
+
+    it('passes a video from another origin, a non-GET and a video of another address', () => {
+        expect(classify(video({ url: 'https://other.example/?q=public/filedownload&id=1' }), BASE)).toBe('pass');
+        expect(classify(video({ method: 'POST' }), BASE)).toBe('pass');
+        expect(classify(video({ url: `${ORIGIN}/clip.mp4` }), BASE)).toBe('pass');
+    });
+
+    it('passes a download that is no video request', () => {
+        expect(classify(video({ destination: 'image' }), BASE)).toBe('pass');
+    });
+});
+
+describe('parseRange', () => {
+    it('reads bytes=a-b', () => {
+        expect(parseRange('bytes=10-19', 100)).toEqual({ kind: 'range', start: 10, end: 19 });
+    });
+
+    it('cuts an end behind the file to its last byte', () => {
+        expect(parseRange('bytes=90-500', 100)).toEqual({ kind: 'range', start: 90, end: 99 });
+    });
+
+    it('reads bytes=a- up to the end', () => {
+        expect(parseRange('bytes=40-', 100)).toEqual({ kind: 'range', start: 40, end: 99 });
+        expect(parseRange('bytes=0-', 100)).toEqual({ kind: 'range', start: 0, end: 99 });
+    });
+
+    it('reads bytes=-n as the last n bytes', () => {
+        expect(parseRange('bytes=-10', 100)).toEqual({ kind: 'range', start: 90, end: 99 });
+        expect(parseRange('bytes=-500', 100)).toEqual({ kind: 'range', start: 0, end: 99 });
+    });
+
+    it('is unsatisfiable behind the end, for an empty suffix and for an empty file', () => {
+        expect(parseRange('bytes=100-', 100)).toEqual({ kind: 'unsatisfiable' });
+        expect(parseRange('bytes=200-300', 100)).toEqual({ kind: 'unsatisfiable' });
+        expect(parseRange('bytes=-0', 100)).toEqual({ kind: 'unsatisfiable' });
+        expect(parseRange('bytes=-5', 0)).toEqual({ kind: 'unsatisfiable' });
+    });
+
+    it('treats a missing, malformed or multiple range as none', () => {
+        for (const header of [null, '', 'bytes=', 'bytes=-', 'bytes=5-2', 'bytes=a-b', 'items=0-1', 'bytes=0-1,5-6']) {
+            expect(parseRange(header, 100)).toEqual({ kind: 'none' });
+        }
+    });
+});
+
+describe('range headers', () => {
+    it('describes a partial answer', () => {
+        expect(partialHeaders(10, 19, 100, 'video/mp4')).toEqual({
+            'Content-Type': 'video/mp4',
+            'Content-Range': 'bytes 10-19/100',
+            'Content-Length': '10',
+            'Accept-Ranges': 'bytes',
+        });
+    });
+
+    it('describes the 416 answer', () => {
+        expect(unsatisfiableHeaders(100)).toEqual({ 'Content-Range': 'bytes */100' });
     });
 });

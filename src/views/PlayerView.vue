@@ -9,6 +9,8 @@ import { createChurchToolsPlayerData } from '../player/data';
 import { readDeviceLogin, reloadWithDeviceLogin, withDeviceLogin } from '../player/device-login';
 import { screenImageUrls, slideImageUrls } from '../player/images';
 import { createMediaCache } from '../player/media-cache';
+import { createVideoCache } from '../player/video-cache';
+import { screenVideoUrls } from '../player/video';
 import { createPreloader } from '../player/preload';
 import { useRotation } from '../player/rotation';
 import { activePlaylistId } from '../player/schedule';
@@ -78,6 +80,8 @@ watch(
 // Every loaded configuration – from the offline copy or fresh – brings its images onto the device,
 // the church logo included: a new logo is a new address (G29).
 const mediaCache = createMediaCache();
+// Videos too, but one at a time and only where the service worker runs – it is what plays them from the device.
+const videoCache = createVideoCache();
 watch(
     () => state && ([state.screen, state.churchLogo] as const),
     async (current) => {
@@ -85,6 +89,7 @@ watch(
         if (!loaded) return;
         const stage = loaded.screen.stage;
         context.images = await mediaCache.sync(screenImageUrls(loaded.slides, loaded.media, stage, churchLogo ?? null));
+        if (import.meta.env.PROD && 'serviceWorker' in navigator) void videoCache.sync(screenVideoUrls(loaded.slides, loaded.media));
     },
     { immediate: true },
 );

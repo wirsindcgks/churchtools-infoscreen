@@ -192,10 +192,11 @@ einmal zu sehen war; höchstens 30 Bilder. Die Bilder liegen auf dem Gerät, die
 Ein Video aus der Mediathek, als Endlosschleife und von vorn bei jedem Durchlauf der Folie. Hochgeladen wird **MP4 mit
 H.264, bis 128 MB**; das Video bleibt, wie es ist – es wird nicht umgerechnet. Der **Ton** lässt sich je Baustein
 einschalten (Vorgabe: aus); er startet nur, wenn der Browser des Fernsehers es erlaubt, sonst läuft das Video stumm.
-Die Folie dauert mindestens so lange wie das Video. **Ohne Netz zeigt der Fernseher an dieser Stelle nichts:** Videos
-werden nicht auf dem Gerät gespeichert, sondern bei jedem Durchlauf von ChurchTools geladen. Dafür braucht das Gerät
-das Recht „Wiki-Bereich „Infoscreen" sehen" – der Assistent vergibt es. In der Vorschau laufen Videos stumm; ein Knopf
-am Video schaltet den Ton zu. Auf einem Kiosk-Gerät noch nicht im Dauerbetrieb geprüft.
+Die Folie dauert mindestens so lange wie das Video. Der Fernseher lädt die Videos einer Präsentation gleich mit ihr auf
+das Gerät. Danach laufen sie auch ohne Netz, solange der Speicher des Geräts reicht. Passt ein Video nicht mehr hinein,
+kommt es weiter aus dem Netz. Zum Laden braucht das Gerät das Recht „Wiki-Bereich „Infoscreen" sehen" – der Assistent
+vergibt es. In der Vorschau laufen Videos stumm; ein Knopf am Video schaltet den Ton zu. Auf einem Kiosk-Gerät noch
+nicht im Dauerbetrieb geprüft.
 
 ## Gruppen aus ChurchTools
 

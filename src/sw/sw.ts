@@ -13,7 +13,19 @@
  * it, so it never imports anything from the app; only `./logic`, its sibling, which stays free of any
  * global (`self`, `caches`, `fetch`) so its decisions are unit-testable without a worker.
  */
-import { cacheName, CACHE_PREFIX, classify, isPlayerNavigation, pageCacheKey, shouldCachePlayerPage } from './logic';
+import {
+    cacheName,
+    CACHE_PREFIX,
+    classify,
+    isPlayerNavigation,
+    isVideoDownload,
+    pageCacheKey,
+    parseRange,
+    partialHeaders,
+    shouldCachePlayerPage,
+    unsatisfiableHeaders,
+    VIDEO_CACHE_NAME,
+} from './logic';
 
 interface SwExtendableEvent extends Event {
     waitUntil(promise: Promise<unknown>): void;
@@ -192,6 +204,41 @@ async function handleSubresource(event: SwFetchEvent): Promise<Response> {
     return fetch(event.request);
 }
 
+/**
+ * A video of a player page. The player fills `VIDEO_CACHE_NAME` (`../player/video-cache.ts`); what is in there is
+ * answered here, including the byte ranges a `<video>` asks for – the whole file for a range does not work (G63).
+ * The slice comes from `Blob.slice`, which does not read the whole file into memory. Any other video goes unchanged to the network.
+ */
+async function handleVideo(event: SwFetchEvent): Promise<Response> {
+    const client = event.clientId ? await scope.clients.get(event.clientId) : undefined;
+    const classification = classify(
+        {
+            method: event.request.method,
+            url: event.request.url,
+            destination: event.request.destination,
+            origin: location.origin,
+            clientUrl: client?.url ?? null,
+        },
+        BASE,
+    );
+    if (classification !== 'video') return fetch(event.request);
+    const cached = await (await caches.open(VIDEO_CACHE_NAME)).match(event.request.url, { ignoreVary: true });
+    if (!cached) return fetch(event.request);
+
+    const header = event.request.headers.get('range');
+    if (header === null) return cached;
+    const whole = cached.clone();
+    const blob = await cached.blob();
+    const range = parseRange(header, blob.size);
+    if (range.kind === 'none') return whole;
+    if (range.kind === 'unsatisfiable') return new Response(null, { status: 416, headers: unsatisfiableHeaders(blob.size) });
+    const type = cached.headers.get('content-type') ?? 'video/mp4';
+    return new Response(blob.slice(range.start, range.end + 1), {
+        status: 206,
+        headers: partialHeaders(range.start, range.end, blob.size, type),
+    });
+}
+
 scope.addEventListener('fetch', (event) => {
     const request = event.request;
     // Everything below mirrors `classify`'s synchronously decidable guards (method, origin, the API/logo/
@@ -210,6 +257,10 @@ scope.addEventListener('fetch', (event) => {
     if (request.destination === 'document') {
         if (isPlayerNavigation(url.toString(), BASE)) event.respondWith(handlePlayerNavigation(request));
         return; // the designer, or any other page of the module: untouched
+    }
+    if (request.destination === 'video' && isVideoDownload(url.toString())) {
+        event.respondWith(handleVideo(event));
+        return;
     }
     if (!CACHEABLE_SUBRESOURCE_DESTINATIONS.has(request.destination)) return;
     event.respondWith(handleSubresource(event));

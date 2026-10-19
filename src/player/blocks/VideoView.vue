@@ -1,11 +1,12 @@
 <script setup lang="ts">
 /**
  * One library video in a loop (schema 1.18, Plan.md, Nächste Schritte 52),
- * played from the download address of its file – not from the cache: the
- * device needs the network for it, and without it the block stays empty. It
- * starts from the beginning each time the slide comes up. With sound on, the
- * browser may refuse to start unmuted without a click; the video then runs
- * muted. Once the length is known the block reports it as seconds in
+ * played from the download address of its file. The service worker answers
+ * that request from the video cache when the file is on the device (so it also
+ * plays without a network); otherwise it comes from the network, and without
+ * it the block stays empty. It starts from the beginning each time the slide
+ * comes up. With sound on, the browser may refuse to start unmuted without a
+ * click; the video then runs muted. Once the length is known the block reports it as seconds in
  * `context.pages`, where a list reports its pages, and the slide stays that
  * long – not rounded up, or the loop would show its first frames again before
  * the slide leaves. On the designer's stage (`paging` off) only a still shows.

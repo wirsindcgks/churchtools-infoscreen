@@ -31,7 +31,7 @@ export function looksLikePlayerPage(html: string, base: string): boolean {
     return false;
 }
 
-export type Classification = 'player-page' | 'own-asset' | 'host-asset' | 'pass';
+export type Classification = 'player-page' | 'own-asset' | 'host-asset' | 'video' | 'pass';
 
 /** What the fetch handler sees of a request – kept minimal so tests need no real `Request`. */
 export interface RequestLike {
@@ -52,6 +52,7 @@ const SUBRESOURCE_DESTINATIONS = new Set(['script', 'style', 'font']);
 
 /**
  * Only `GET`, only the own origin. A navigation is either the player or `'pass'` (the designer, unchanged).
+ * A video download of a player page is `'video'`: the worker answers it from the video cache when it holds it.
  * A subresource is only ours to cache when a player page asked for it – a script tag on the designer, or
  * anything that is not a script, style or font (the API, `/logo`, the image service, images themselves),
  * is `'pass'`: `event.respondWith` is never called for it, and the request goes to the network untouched.
@@ -72,8 +73,10 @@ export function classify(request: RequestLike, base: string): Classification {
     if (request.destination === 'document') {
         return isPlayerNavigation(url.toString(), base) ? 'player-page' : 'pass';
     }
-    if (!SUBRESOURCE_DESTINATIONS.has(request.destination)) return 'pass';
+    const isVideoRequest = request.destination === 'video' && isVideoDownload(url.toString());
+    if (!isVideoRequest && !SUBRESOURCE_DESTINATIONS.has(request.destination)) return 'pass';
     if (!request.clientUrl || !isPlayerNavigation(request.clientUrl, base)) return 'pass';
+    if (isVideoRequest) return 'video';
     return url.pathname.startsWith(`${base}assets/`) ? 'own-asset' : 'host-asset';
 }
 
@@ -99,4 +102,60 @@ export const CACHE_PREFIX = 'infoscreen-player-';
 
 export function cacheName(version: string): string {
     return `${CACHE_PREFIX}${version}`;
+}
+
+/**
+ * Cache Storage name of the downloaded videos (filled by the player, `../player/video-cache.ts`, read by the
+ * worker). Deliberately without `CACHE_PREFIX`: a new worker version must not delete the videos.
+ */
+export const VIDEO_CACHE_NAME = 'infoscreen-video-v1';
+
+/** Whether `url` is the download address of a file from the library (`?q=public/filedownload`), where videos live (G42). */
+export function isVideoDownload(url: string): boolean {
+    try {
+        return new URL(url).search.startsWith('?q=public/filedownload');
+    } catch {
+        return false;
+    }
+}
+
+/** What a `Range` header asks of a file of `size` bytes; `end` is inclusive. */
+export type RangeRequest =
+    | { kind: 'none' }
+    | { kind: 'range'; start: number; end: number }
+    | { kind: 'unsatisfiable' };
+
+/**
+ * Reads `bytes=a-b`, `bytes=a-` and `bytes=-n`. A missing, malformed or multi-range header counts as no range
+ * (the whole file is answered); a range that starts behind the end is unsatisfiable (`416`).
+ */
+export function parseRange(header: string | null, size: number): RangeRequest {
+    const match = /^bytes=(\d*)-(\d*)$/.exec((header ?? '').trim());
+    if (!match) return { kind: 'none' };
+    const [, from = '', to = ''] = match;
+    if (from === '' && to === '') return { kind: 'none' };
+    if (from === '') {
+        const length = Number(to);
+        if (length === 0 || size === 0) return { kind: 'unsatisfiable' };
+        return { kind: 'range', start: Math.max(0, size - length), end: size - 1 };
+    }
+    const start = Number(from);
+    if (to !== '' && Number(to) < start) return { kind: 'none' };
+    if (start >= size) return { kind: 'unsatisfiable' };
+    return { kind: 'range', start, end: to === '' ? size - 1 : Math.min(Number(to), size - 1) };
+}
+
+/** Headers of the `206` answer to a satisfied range; `end` is inclusive. */
+export function partialHeaders(start: number, end: number, size: number, contentType: string): Record<string, string> {
+    return {
+        'Content-Type': contentType,
+        'Content-Range': `bytes ${start}-${end}/${size}`,
+        'Content-Length': String(end - start + 1),
+        'Accept-Ranges': 'bytes',
+    };
+}
+
+/** Headers of the `416` answer to a range behind the end of the file. */
+export function unsatisfiableHeaders(size: number): Record<string, string> {
+    return { 'Content-Range': `bytes */${size}` };
 }
