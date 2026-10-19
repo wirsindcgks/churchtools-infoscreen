@@ -57,7 +57,8 @@ import {
 import { isAdministrator } from '../designer/administrator';
 import { useConfirm } from '../designer/useConfirm';
 import { getRepository } from '../store/backend';
-import { CATEGORIES, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
+import { CATEGORIES, STATUS_CATEGORY, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
+import { DRAFTS_CATEGORY } from '../store/drafts';
 
 const { confirm, notice } = useConfirm();
 const router = useRouter();
@@ -170,6 +171,8 @@ let serviceCalendarIds: number[] = [];
 /** A screen shows a video (Plan.md 52). */
 let videoInUse = false;
 let catalog: AuthCatalog | null = null;
+/** Names of the wiki areas by id, to name what a device sees beyond its own (Plan.md 94 B). */
+let wikiNames = new Map<number, string>();
 /** `status` is the category of the signs of life (Plan.md 59), no required one: the plan takes it when it is there. */
 /** `drafts` likewise (Plan.md 79): the designers' drafts, which a device never gets rights on. */
 let categories: Partial<Record<CategoryKey, number>> & { status?: number; drafts?: number } = {};
@@ -759,6 +762,17 @@ function explain(e: unknown): string {
     return e instanceof Error ? e.message : String(e);
 }
 
+/** The name of the data a right is for, to name what a device holds beyond its plan (Plan.md 94 B). */
+function dataName(authId: number, dataId: number): string | undefined {
+    if (authId === AUTH.wikiCategoryView || authId === AUTH.wikiCategoryEdit) {
+        return wikiNames.get(dataId);
+    }
+    if (dataId === categories.status) return STATUS_CATEGORY.name;
+    if (dataId === categories.drafts) return DRAFTS_CATEGORY.name;
+    const key = (Object.keys(CATEGORIES) as CategoryKey[]).find((k) => categories[k] === dataId);
+    return key && CATEGORIES[key].name;
+}
+
 async function check(side: Side): Promise<void> {
     const groupId = selected[side];
     checks[side] = null;
@@ -793,7 +807,9 @@ async function check(side: Side): Promise<void> {
                             ? null
                             : [...names].map(([id, name]) => ({
                                   name,
-                                  authIds: origins ? origins.filter((o) => o.groupId === id).map((o) => o.authId) : null,
+                                  grants: origins
+                                      ? origins.filter((o) => o.groupId === id).flatMap((o) => (o.dataIds ?? [null]).map((dataId) => ({ authId: o.authId, dataId })))
+                                      : null,
                               }));
                     return { label: person.label, grants: [...m.roleGrants, ...person.grants], otherGroups };
                 }),
@@ -815,6 +831,8 @@ async function check(side: Side): Promise<void> {
                 moduleRights: moduleRights('device'),
                 // Only with the catalogue: without the plan nobody knows what a device needs (Plan.md 58 E).
                 plannedAuthIds: plan.value?.find((spec) => spec.key === 'device')?.grants.map((g) => g.authId),
+                plannedGrants: plan.value?.find((spec) => spec.key === 'device')?.grants,
+                dataName,
                 authName: (authId) => catalog?.name(authId),
             });
         }
@@ -881,6 +899,7 @@ onMounted(async () => {
         screens.value = screenList;
         device.slug = screenList[0]?.slug ?? '';
         groups.value = list;
+        wikiNames = new Map(wikiCategories.map((c) => [c.id, c.name]));
         wikiCategory.value = pickCategory(wikiCategories, settings);
         wikiCategoryId = wikiCategory.value?.id ?? null;
         // Kept by id from now on, so renaming the area in the wiki loses nothing (Plan.md 84, G58).

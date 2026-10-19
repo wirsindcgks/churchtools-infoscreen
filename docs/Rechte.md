@@ -244,5 +244,8 @@ warnt, wenn Gestalter mehr dürfen als vorgesehen.
   weitere Gruppe** als „Infoscreen-Devices". Rechte aus anderen Gruppen bekommt der Fernseher mit – und jeder, der
   seine Adresse kennt. Die Prüfung liest, welche Rechte jede weitere Gruppe dem Konto gibt – auch die innerhalb der
   Gruppe, etwa Mitglieder sehen oder Beiträge schreiben –, und warnt mit der Gruppe als Herkunft. Eine Gruppe ohne
-  Rechte beanstandet sie nicht; eine Gruppe nur zum Sammeln von Systemkonten ist in Ordnung.
+  Rechte beanstandet sie nicht; eine Gruppe nur zum Sammeln von Systemkonten ist in Ordnung. Die Prüfung sieht auch auf
+  den **Geltungsbereich**: Schreiben darf ein Gerät nur in „Status", nichts in „Entwürfe", und im Wiki nur den
+  Bereich „Infoscreen" sehen – auch wenn das Recht aus einer weiteren Gruppe kommt. Räume und Events-Kalender sind
+  davon ausgenommen.
 - **Gruppenrechte wirken nur, solange die Gruppe den Status „aktiv" hat.**

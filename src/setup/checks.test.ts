@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, excessRights, groupChecks, has, type Check, type Grant, type OtherGroup, type RoleRights } from './checks';
+import { AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, excessRights, groupChecks, has, scopeExcess, ALL_DATA, type Check, type DeviceMember, type Grant, type OtherGroup, type RoleRights } from './checks';
 import { PUBLIC_CALENDAR_PATH } from '../ct/api';
 
 const grant = (authId: number, dataId: number | null = null): Grant => ({ authId, dataId, type: 'grant' });
@@ -333,32 +333,99 @@ describe('checkDeviceGroup', () => {
             }).filter((c) => c.category === 'rights');
 
         it('says nothing about a group that gives no rights, or when not asked', () => {
-            expect(check([{ name: 'Küche', authIds: [] }])).toEqual([]);
+            expect(check([{ name: 'Küche', grants: [] }])).toEqual([]);
             expect(check(undefined)).toEqual([]);
         });
 
         it('names the group and the rights it gives', () => {
-            const [warning] = check([{ name: 'Küche', authIds: [7, 7, 9] }]);
+            const [warning] = check([{ name: 'Küche', grants: [7, 7, 9].map((a) => ({ authId: a, dataId: null })) }]);
             expect(warning).toMatchObject({ level: 'warn', text: 'Über „Küche" hat Gerät A 2 Rechte, die ein Gerät nicht braucht: Mitglieder sehen, Recht 9.' });
             expect(warning?.detail).toContain('Rechteverwaltung');
         });
 
         it('leaves out rights the plan covers', () => {
-            expect(check([{ name: 'Küche', authIds: [7, 9] }], [7, 9])).toEqual([]);
+            expect(check([{ name: 'Küche', grants: [7, 9].map((a) => ({ authId: a, dataId: null })) }], [7, 9])).toEqual([]);
         });
 
         it('counts the rest beyond six names', () => {
-            const [warning] = check([{ name: 'Küche', authIds: [1, 2, 3, 4, 5, 6, 7, 8, 9] }]);
+            const [warning] = check([{ name: 'Küche', grants: [1, 2, 3, 4, 5, 6, 7, 8, 9].map((a) => ({ authId: a, dataId: null })) }]);
             expect(warning?.text).toContain('9 Rechte');
             expect(warning?.text).toContain('und 3 weitere.');
         });
 
         it('is unsettled when a group or the groups cannot be read', () => {
-            expect(check([{ name: 'Küche', authIds: null }])[0]).toMatchObject({
+            expect(check([{ name: 'Küche', grants: null }])[0]).toMatchObject({
                 level: 'warn',
                 text: 'Gerät A ist auch Mitglied in „Küche" – welche Rechte die Gruppe gibt, ist ungeklärt.',
             });
             expect(check(null)[0]).toMatchObject({ level: 'warn', text: 'Ob Gerät A in weiteren Gruppen ist, ist ungeklärt.' });
+        });
+    });
+
+    describe('scope of a device account (Plan.md 94 B)', () => {
+        const VIEW = 1001;
+        const EDIT = 1002;
+        const planned = [
+            { authId: VIEW, dataId: [10, 11], label: 'Daten sehen' },
+            { authId: EDIT, dataId: [12], label: 'Daten bearbeiten' },
+            { authId: AUTH.wikiCategoryView, dataId: [WIKI], label: 'Wiki' },
+            { authId: AUTH.calendarView, dataId: [1], label: 'Kalender' },
+            { authId: 1000, label: 'Modul' },
+        ];
+        const g = (authId: number, dataId: number, type?: string): Grant => ({ authId, dataId, type });
+
+        it('finds data beyond the plan, per right', () => {
+            expect(scopeExcess([g(VIEW, 10), g(VIEW, 13), g(EDIT, 12), g(EDIT, 11), g(AUTH.wikiCategoryView, 99)], planned)).toEqual([
+                { authId: AUTH.wikiCategoryView, dataIds: [99] },
+                { authId: VIEW, dataIds: [13] },
+                { authId: EDIT, dataIds: [11] },
+            ]);
+        });
+
+        it('counts all data as beyond, not a revoked one, and leaves calendars, rooms and events alone', () => {
+            expect(scopeExcess([g(VIEW, ALL_DATA)], planned)).toEqual([{ authId: VIEW, dataIds: [ALL_DATA] }]);
+            expect(scopeExcess([g(VIEW, 13), g(VIEW, 13, 'revoke')], planned)).toEqual([]);
+            expect(scopeExcess([g(AUTH.calendarView, 5), g(AUTH.resourceView, 5), g(AUTH.eventView, 5)], [...planned, { authId: AUTH.resourceView, dataId: [1], label: 'R' }])).toEqual([]);
+        });
+
+        it('is empty when everything lies in the plan, or the right is not planned', () => {
+            expect(scopeExcess([g(VIEW, 10), g(VIEW, 11), g(EDIT, 12), { authId: 1000, dataId: null }, g(777, 3)], planned)).toEqual([]);
+        });
+
+        const check = (member: Partial<DeviceMember>, plannedGrants: typeof planned | null = planned) =>
+            checkDeviceGroup({
+                statusId: 1,
+                members: [{ label: 'Gerät A', grants: [], ...member }],
+                calendars,
+                usedCalendarIds: [],
+                publicCalendarIds: [2],
+                wikiCategoryId: WIKI,
+                plannedGrants: plannedGrants ?? undefined,
+                authName: (id) => ({ [VIEW]: 'Daten sehen', [EDIT]: 'Daten bearbeiten', [AUTH.wikiCategoryView]: 'Wiki sehen' })[id],
+                dataName: (_a, d) => (d === 13 ? 'Entwürfe' : undefined),
+            }).filter((c) => c.category === 'rights');
+
+        it('warns once per account, with names and fallbacks', () => {
+            const warnings = check({ grants: [g(VIEW, 13), g(EDIT, 20), g(EDIT, ALL_DATA), g(AUTH.wikiCategoryView, 99)] });
+            expect(warnings).toHaveLength(1);
+            expect(warnings[0]).toMatchObject({
+                level: 'warn',
+                text: 'Gerät A darf mehr als nötig: Wiki sehen auch für Wiki-Bereich 99; Daten sehen auch für Entwürfe; Daten bearbeiten auch für alle, Kategorie 20.',
+            });
+            expect(warnings[0]?.detail).toContain('Entwürfe');
+        });
+
+        it('says nothing without a plan or when the account stays inside it', () => {
+            expect(check({ grants: [g(VIEW, 13)] }, null)).toEqual([]);
+            expect(check({ grants: [g(VIEW, 10)] })).toEqual([]);
+        });
+
+        it('counts a right from another group, in the scope row, the internal calendar and the wiki holders', () => {
+            const other = [{ name: 'Küche', grants: [g(VIEW, 13), g(AUTH.calendarView, 4), g(AUTH.wikiView, 0)] }];
+            const texts = check({ otherGroups: other }).map((c) => c.text);
+            expect(texts).toContain('Gerät A darf mehr als nötig: Daten sehen auch für Entwürfe.');
+            expect(texts).toContain('Gerät A darf den internen Kalender „Gemeindeleitung" lesen.');
+            expect(texts.some((x) => x.includes('Wiki-Rechte'))).toBe(true);
         });
     });
 

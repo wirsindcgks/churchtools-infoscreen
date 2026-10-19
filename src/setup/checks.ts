@@ -199,8 +199,8 @@ export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
 
 export interface OtherGroup {
     name: string;
-    /** Rights this group gives the account, global and group internal; null: they could not be read. */
-    authIds: number[] | null;
+    /** Rights this group gives the account, global and group internal, one grant per data id; null: they could not be read. */
+    grants: Grant[] | null;
 }
 
 export interface DeviceMember {
@@ -243,6 +243,10 @@ export interface DeviceGroupInput {
      * device account holds beyond – without them (no catalogue, as in development) it says nothing.
      */
     plannedAuthIds?: number[];
+    /** The same with the data they cover (Plan.md 94 B): with them the check also names what a device may reach beyond. */
+    plannedGrants?: RequiredRight[];
+    /** The name of the data a right is for (a category, a wiki area); undefined where unknown. */
+    dataName?: (authId: number, dataId: number) => string | undefined;
     /** A right's name for people; the bare number where there is none. */
     authName?: (authId: number) => string | undefined;
 }
@@ -262,6 +266,29 @@ export function excessRights(grants: Grant[], plannedAuthIds: readonly number[])
     const planned = new Set<number>([...plannedAuthIds, AUTH.wikiView, AUTH.wikiCategoryEdit, AUTH.ownDataView, AUTH.calendarView]);
     const held = [...new Set(grants.map((g) => g.authId))].filter((authId) => has(grants, authId));
     return held.filter((authId) => !planned.has(authId)).sort((a, b) => a - b);
+}
+
+/** Rights whose scope the check leaves alone: the calendars, rooms and events a device sees are set elsewhere. */
+const SCOPE_FREE = new Set<number>([AUTH.calendarView, AUTH.resourceView, AUTH.eventView]);
+
+/**
+ * The data a device account holds beyond its plan, per right: for each planned right with data – except
+ * those in `SCOPE_FREE` – every data id of that right the grants hold but the plan does not name.
+ * `ALL_DATA` counts as beyond. Revoked data does not count.
+ */
+export function scopeExcess(grants: Grant[], planned: RequiredRight[]): { authId: number; dataIds: number[] }[] {
+    const result: { authId: number; dataIds: number[] }[] = [];
+    const authIds = [...new Set(planned.filter((r) => r.dataId && !SCOPE_FREE.has(r.authId)).map((r) => r.authId))].sort((a, b) => a - b);
+    for (const authId of authIds) {
+        const allowed = new Set(planned.filter((r) => r.authId === authId).flatMap((r) => r.dataId ?? []));
+        const beyond = new Set<number>();
+        for (const g of grants) {
+            if (g.authId !== authId || g.dataId === null || (g.type ?? 'grant') !== 'grant') continue;
+            if (!allowed.has(g.dataId) && has(grants, authId, g.dataId)) beyond.add(g.dataId);
+        }
+        if (beyond.size) result.push({ authId, dataIds: [...beyond].sort((a, b) => a - b) });
+    }
+    return result;
 }
 
 export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
@@ -311,6 +338,8 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         return checks;
     }
     checks.push({ level: 'ok', category: 'group', text: t.setup.checks.devices(input.members.length) });
+    // What each account holds in all: its own rights and those of its other groups. Whoever knows the address has them all.
+    const holdings = new Map(input.members.map((m) => [m, [...m.grants, ...(m.otherGroups ?? []).flatMap((g) => g.grants ?? [])]]));
     for (const m of input.members) {
         if (m.otherGroups === null) {
             checks.push({
@@ -322,7 +351,7 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
             continue;
         }
         for (const group of m.otherGroups ?? []) {
-            if (group.authIds === null) {
+            if (group.grants === null) {
                 checks.push({
                     level: 'warn',
                     category: 'rights',
@@ -332,8 +361,8 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                 continue;
             }
             const rights = input.plannedAuthIds
-                ? excessRights(group.authIds.map((authId) => ({ authId, dataId: null })), input.plannedAuthIds)
-                : [...new Set(group.authIds)].sort((a, b) => a - b);
+                ? excessRights(group.grants, input.plannedAuthIds)
+                : [...new Set(group.grants.map((g) => g.authId))].sort((a, b) => a - b);
             if (!rights.length) continue;
             const names = rights.slice(0, EXCESS_NAMED).map((id) => input.authName?.(id) ?? t.setup.checks.excessFallback(id));
             checks.push({
@@ -348,7 +377,7 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
     // A device account that may read an internal calendar (one the public user does not see): the TV does not show it, but its address reads it (Plan.md 62).
     // Not so for a released one: reading it is the point (Plan.md 85 b).
     for (const calendar of input.calendars.filter((c) => !publicIds.has(c.id) && !releasedIds.has(c.id))) {
-        for (const member of input.members.filter((m) => has(m.grants, AUTH.calendarView, calendar.id))) {
+        for (const member of input.members.filter((m) => has(holdings.get(m)!, AUTH.calendarView, calendar.id))) {
             checks.push({
                 level: 'warn',
                 category: 'rights',
@@ -446,7 +475,7 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
 
     // Least privilege (Plan.md, F): images come through the image service without sign-in (G14), videos need only 502.
     const wikiHolders = input.members
-        .filter((m) => [AUTH.wikiView, AUTH.wikiCategoryEdit].some((a) => has(m.grants, a)))
+        .filter((m) => [AUTH.wikiView, AUTH.wikiCategoryEdit].some((a) => has(holdings.get(m)!, a)))
         .map((m) => m.label);
     if (wikiHolders.length) {
         checks.push({
@@ -455,6 +484,24 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
             text: t.setup.checks.wikiHolders(wikiHolders.join(', '), wikiHolders.length),
             detail: t.setup.checks.wikiHoldersDetail,
         });
+    }
+
+    // Not only which right but which data (Plan.md 94 B): writing beyond "Status", seeing the drafts, other wiki areas.
+    if (input.plannedGrants) {
+        for (const member of input.members) {
+            const beyond = scopeExcess(holdings.get(member)!, input.plannedGrants);
+            if (!beyond.length) continue;
+            const parts = beyond.map(({ authId, dataIds }) => {
+                const data = dataIds.map((id) => (id === ALL_DATA ? t.setup.checks.scopeAll : input.dataName?.(authId, id) ?? t.setup.checks.scopeFallback(authId === AUTH.wikiCategoryView, id)));
+                return t.setup.checks.scopePart(input.authName?.(authId) ?? t.setup.checks.excessFallback(authId), data.join(', '));
+            });
+            checks.push({
+                level: 'warn',
+                category: 'rights',
+                text: t.setup.checks.scope(member.label, parts.slice(0, EXCESS_NAMED).join('; '), parts.length - EXCESS_NAMED),
+                detail: t.setup.checks.scopeDetail,
+            });
+        }
     }
 
     if (input.plannedAuthIds) {

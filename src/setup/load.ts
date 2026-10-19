@@ -201,21 +201,30 @@ interface OriginPermission {
  * Which rights a person holds through which group, global and group internal (G61, measured 2026-10-17;
  * both reads need „Berechtigungen verwalten"). Only sources of type group role and group type role count,
  * not revoked and with an effective value; a source from a parent group names that group. Errors pass on.
+ * `dataIds` is the scope: the list a source carries (calendars, rooms, wiki areas, module categories – "all" arrives
+ * resolved, G65), `null` for rights without data and for security levels. Sources of one group are joined.
  */
-export async function loadRightOrigins(personId: number): Promise<{ authId: number; groupId: number }[]> {
+export async function loadRightOrigins(personId: number): Promise<{ authId: number; groupId: number; dataIds: number[] | null }[]> {
     const [global, internal] = await Promise.all([
         churchtoolsClient.get<{ permissions?: OriginPermission[] }>(`/permissions/origins/global/persons/${personId}`),
         churchtoolsClient.get<{ groups?: { permissions?: OriginPermission[] }[] }>(`/permissions/origins/internal/persons/${personId}`),
     ]);
     const permissions = [...(global.permissions ?? []), ...(internal.groups ?? []).flatMap((g) => g.permissions ?? [])];
-    const seen = new Map<string, { authId: number; groupId: number }>();
+    const seen = new Map<string, { authId: number; groupId: number; dataIds: number[] | null }>();
     for (const p of permissions) {
         for (const o of p.origins ?? []) {
             if (o.type !== 'groupRole' && o.type !== 'groupTypeRole') continue;
             if (o.groupId == null || o.revokedByGroupRoleId != null) continue;
             const effective = Array.isArray(o.value) ? o.value.length > 0 : typeof o.value === 'number' ? o.value > 0 : o.value === true;
             if (!effective) continue;
-            seen.set(`${p.authId}:${o.groupId}`, { authId: p.authId, groupId: o.groupId });
+            const key = `${p.authId}:${o.groupId}`;
+            const dataIds = Array.isArray(o.value) ? o.value : null;
+            const before = seen.get(key)?.dataIds ?? null;
+            seen.set(key, {
+                authId: p.authId,
+                groupId: o.groupId,
+                dataIds: dataIds || before ? [...new Set([...(before ?? []), ...(dataIds ?? [])])] : null,
+            });
         }
     }
     return [...seen.values()];

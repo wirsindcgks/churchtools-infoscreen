@@ -82,8 +82,18 @@ describe('loadRightOrigins (G61)', () => {
             throw new Error(`unexpected ${path}`);
         });
         expect(await loadRightOrigins(22)).toEqual([
-            { authId: 1, groupId: 8 },
-            { authId: 3, groupId: 4 },
+            { authId: 1, groupId: 8, dataIds: null },
+            { authId: 3, groupId: 4, dataIds: [7] },
         ]);
+    });
+
+    it('joins the lists of several sources of one group (G65)', async () => {
+        vi.spyOn(churchtoolsClient, 'get').mockImplementation(async (path: string) => {
+            if (path === '/permissions/origins/global/persons/22') {
+                return { personId: 22, permissions: [{ authId: 4, origins: [origin('groupRole', 8, [1, 2]), origin('groupTypeRole', 8, [2, 3])] }] };
+            }
+            return { personId: 22, groups: [] };
+        });
+        expect(await loadRightOrigins(22)).toEqual([{ authId: 4, groupId: 8, dataIds: [1, 2, 3] }]);
     });
 });

@@ -1740,6 +1740,13 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             excess: (label: string, count: number, names: string, more: number) =>
                 `${label} hat ${count === 1 ? 'ein Recht' : `${count} Rechte`}, ${count === 1 ? 'das' : 'die'} ein Gerät nicht braucht: ${names}${more > 0 ? ` und ${more} weitere` : ''}.`,
             excessFallback: (id: number) => `Recht ${id}`,
+            scope: (label: string, parts: string, more: number) =>
+                `${label} darf mehr als nötig: ${parts}${more > 0 ? ` und ${more} weitere` : ''}.`,
+            scopePart: (right: string, data: string) => `${right} auch für ${data}`,
+            scopeAll: 'alle',
+            scopeFallback: (wiki: boolean, id: number) => `${wiki ? 'Wiki-Bereich' : 'Kategorie'} ${id}`,
+            scopeDetail:
+                'Wer die Adresse des Fernsehers kennt, hat diese Rechte auch. Mit Schreibrechten außerhalb von „Status" kann er ändern, was die Bildschirme zeigen; ein Gerät sieht keine Entwürfe und nur den Wiki-Bereich der Mediathek. Die Rechte kommen aus dem Status, der Person, einer Rolle der Gerätegruppe oder einer weiteren Gruppe – dort in der Rechteverwaltung zurücknehmen.',
             excessDetail:
                 'Ein Gerät soll nur lesen – bis auf sein Lebenszeichen –, und nur, was seine Bildschirme zeigen: Wer die Adresse des Fernsehers kennt, hat diese Rechte auch. Meist kommen sie aus dem Personenstatus oder einer anderen Gruppe des Kontos. Die Namen sind die der Rechteverwaltung von ChurchTools; dort der Person einen Status ohne diese Rechte geben.',
             categories: {
