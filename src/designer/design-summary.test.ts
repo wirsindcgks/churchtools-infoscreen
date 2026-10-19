@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { setCustomFonts } from '../player/fonts';
 import { appointmentsSummary, fontSummary, paletteSummary, surfacesSummary } from './design-summary';
 
 describe('paletteSummary', () => {
@@ -21,6 +22,13 @@ describe('surfacesSummary', () => {
 });
 
 describe('fontSummary', () => {
+    afterEach(() => setCustomFonts([]));
+
+    it('names a custom font as the church called it (Plan.md 103)', () => {
+        setCustomFonts([{ key: 'custom-1', name: 'Hausschrift', files: { 400: { fileId: 1, fileUrl: 'https://x.example/f', name: 'a.woff2' } } }]);
+        expect(fontSummary({ font: 'custom-1' })).toBe('Hausschrift');
+    });
+
     it('names the font, an unknown key as the default font', () => {
         expect(fontSummary({ font: 'oswald' })).toBe('Oswald');
         expect(fontSummary({ font: 'gibt-es-nicht' })).toBe(fontSummary({ font: 'lato' }));

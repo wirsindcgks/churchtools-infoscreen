@@ -7,6 +7,7 @@
  * once, checked against every revision before anything is written.
  */
 import { computed, onMounted, ref, shallowRef, watch } from 'vue';
+import { applyCustomFonts } from '../player/custom-fonts';
 import { setSectionCount } from '../designer/section-counts';
 import { zonedDateKey, zonedParts } from '../appointments/zoned';
 import { currentPerson, displayName } from '../ct/client';
@@ -91,6 +92,7 @@ async function refresh(): Promise<void> {
     overviews.value = list;
     screens.value = screenList;
     theme.value = stored;
+    void applyCustomFonts(stored);
     counted = true;
     setSectionCount('playlists', list.length);
     setSectionCount('notices', running.value.length);

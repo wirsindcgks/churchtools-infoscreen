@@ -806,7 +806,7 @@ describe('ScreenRepository', () => {
         it('saves new, updates against the revision and reports a conflict with the stored name', async () => {
             const first = await repo.saveTemplate(head, { expectedRevision: null, updatedBy: 'Anna' });
             expect(first).toMatchObject({ kind: 'template', revision: 1, updatedBy: 'Anna', name: 'Seitenkopf' });
-            expect(first.schema).toEqual({ major: 1, minor: 45 });
+            expect(first.schema).toEqual({ major: 1, minor: 46 });
             const second = await repo.saveTemplate({ ...head, name: 'Kopf' }, { expectedRevision: 1, updatedBy: 'Ben' });
             expect(second.revision).toBe(2);
             const error = await repo.saveTemplate({ ...head, name: 'Dritter' }, { expectedRevision: 1, updatedBy: 'Cleo' }).catch((e: unknown) => e);
@@ -937,5 +937,33 @@ describe('ScreenRepository', () => {
             expect(loaded.playlists.map((p) => p.id)).toEqual(['playlist-1']);
             expect(loaded.slides).toHaveLength(2);
         });
+    });
+});
+
+describe('ScreenRepository.fontUses (Plan.md 103)', () => {
+    it('names the slides and banners that use a custom font, and only custom fonts', async () => {
+        const repo = new ScreenRepository(new MemoryKv());
+        const styled = (id: string, fontFamily: string): ContentBlock => {
+            const block = textBlock(id) as Extract<ContentBlock, { type: 'text' }>;
+            return { ...block, style: { ...block.style, fontFamily } };
+        };
+        const playlist = makePlaylist({ slideIds: ['slide-1', 'slide-2'], banner: banner({ style: { ...banner().style, fontFamily: 'custom-a' } }) });
+        await repo.saveScreen(
+            bundle({
+                playlists: [playlist],
+                slides: [
+                    makeSlide({ id: 'slide-1', name: 'Begrüßung', blocks: [styled('a', 'custom-a'), styled('b', 'custom-a'), styled('c', 'lato')] }),
+                    makeSlide({ id: 'slide-2', name: 'Termine', blocks: [styled('d', 'custom-b')] }),
+                ],
+            }),
+            { ...save, expectedRevision: null },
+        );
+        const uses = await repo.fontUses();
+        expect([...uses.keys()].sort()).toEqual(['custom-a', 'custom-b']);
+        expect(uses.get('custom-a')).toEqual([
+            { playlist: { id: playlist.id, name: playlist.name }, slide: null, blocks: 1 },
+            { playlist: { id: playlist.id, name: playlist.name }, slide: { id: 'slide-1', name: 'Begrüßung' }, blocks: 2 },
+        ]);
+        expect(uses.get('custom-b')).toHaveLength(1);
     });
 });

@@ -6,6 +6,7 @@
  * 48rem the filters become a row to swipe and the tiles one or two columns.
  */
 import { computed, onMounted, ref, shallowRef } from 'vue';
+import { applyCustomFonts } from '../player/custom-fonts';
 import { useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName, NotAuthenticatedError } from '../ct/client';
 import { aliveState } from '../designer/alive';
@@ -126,6 +127,7 @@ async function refresh(): Promise<void> {
     overviews.value = list;
     setScreenCounts(list.map((o) => o.screen));
     theme.value = stored;
+    void applyCustomFonts(stored);
     templates.value = storedTemplates;
 }
 

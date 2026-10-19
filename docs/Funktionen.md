@@ -385,6 +385,16 @@ in einer eigenen Farbe mit Deckkraft – gilt für die Karten von „Nächster T
 „Gruppen" sowie die Tür-Anzeige der Raumbelegung. Unter **„Vorlagen"** stehen die [Vorlagen](#vorlagen) zum Bearbeiten,
 Umbenennen und Löschen – in einer eigenen Karte, weil sie sofort wirken und nicht mit „Speichern" oben gespeichert werden.
 
+**Eigene Schriften:** Im Klappmenü „Schrift" lädt „Schrift hochladen" die Hausschrift der Gemeinde hoch. Erlaubt sind
+WOFF2, WOFF, TTF und OTF bis 5 MB je Datei; eine Datei, die der Browser nicht als Schrift lädt, geht nicht hoch. Eine
+Schrift hat bis zu drei Dateien: **Normal** (Pflicht), **Halbfett** und **Fett**. Fehlt ein Schnitt, nimmt der Browser
+den nächsten vorhandenen. Den Namen schlägt der Designer aus dem Dateinamen vor, ihr ändert ihn im Feld. Die Schrift
+steht danach in jeder Schriftauswahl unter „Eigene Schriften", jede in sich selbst gezeigt. Die Liste gilt erst mit
+„Speichern". „Löschen" nennt vorher, wo die Schrift verwendet wird; dort zeigt der Fernseher danach Lato. Die Dateien
+liegen im Wiki-Bereich, erscheinen aber nicht in der Mediathek, und der Fernseher legt sie auf dem Gerät ab: Die Schrift
+läuft auch ohne Netz. Ladet nur Schriften hoch, die die Gemeinde auf Bildschirmen zeigen darf. Das entscheidet die
+Lizenz der Schrift.
+
 ![Design: Einstellungen links, Vorschau rechts](bilder/design.png)
 
 ## Am Handy und auf dem Tablet

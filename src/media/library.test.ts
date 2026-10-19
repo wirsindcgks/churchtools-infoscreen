@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { createScreenBundle } from '../designer/ops';
 import { MemoryKv } from '../store/memory-kv';
 import { ScreenRepository } from '../store/screen-repository';
-import { filterMedia, MediaInUseError, MediaLibrary, neighbours, usageLines, VIDEO_MAX_BYTES, VIDEO_TYPES, type MediaBackend, type MediaItem } from './library';
+import { FONT_MAX_BYTES, filterMedia, MediaInUseError, MediaLibrary, neighbours, usageLines, VIDEO_MAX_BYTES, VIDEO_TYPES, type MediaBackend, type MediaItem } from './library';
 import type { WikiFile, WikiPage } from './wiki';
 
 class FakeWiki implements MediaBackend {
@@ -29,7 +29,7 @@ class FakeWiki implements MediaBackend {
         return page;
     }
     async upload(_: number, guid: string, __: Blob, name: string) {
-        const video = /\.mp4$/i.test(name);
+        const video = /\.(mp4|woff2?|ttf|otf)$/i.test(name);
         const file: WikiFile = video
             ? { id: this.nextId++, name, imageUrl: null, fileUrl: `https://example.church.tools/?q=public/filedownload&id=${this.nextId}&filename=h` }
             : { id: this.nextId++, name, imageUrl: `https://example.church.tools/images/${this.nextId}/h` };
@@ -50,12 +50,14 @@ describe('MediaLibrary', () => {
     let repository: ScreenRepository;
     let library: MediaLibrary;
     let metadata: () => Promise<{ durationSeconds?: number; width?: number; height?: number }>;
+    let loadsAsFont: () => Promise<void>;
 
     beforeEach(() => {
         wiki = new FakeWiki();
         repository = new ScreenRepository(new MemoryKv());
         metadata = async () => ({ durationSeconds: 12, width: 1920, height: 1080 });
-        library = new MediaLibrary(wiki, repository, () => metadata());
+        loadsAsFont = async () => undefined;
+        library = new MediaLibrary(wiki, repository, () => metadata(), () => loadsAsFont());
     });
 
     const video = (name: string, size = 1000, type = 'video/mp4') => {
@@ -237,6 +239,42 @@ describe('MediaLibrary', () => {
             expect(wiki.removed).toEqual([]);
             await library.remove(item!, true);
             expect(wiki.removed).toEqual([item!.fileId]);
+        });
+    });
+
+    describe('fonts (Plan.md 103)', () => {
+        const font = (name: string, size = 1000) => {
+            const file = new File(['x'], name, { type: 'font/woff2' });
+            Object.defineProperty(file, 'size', { value: size });
+            return file;
+        };
+
+        it('uploads to the media page and returns where the file lies, without a media document and out of the list', async () => {
+            const uploaded = await library.uploadFont(font('Haus-Regular.woff2'));
+            expect(uploaded).toMatchObject({ fileId: 100, name: 'Haus-Regular.woff2' });
+            expect(uploaded.fileUrl).toContain('public/filedownload');
+            expect([...wiki.pagesById.values()].map((p) => p.title)).toContain('mediathek');
+            expect(await repository.listMedia()).toEqual([]);
+            expect(await library.list()).toEqual([]);
+        });
+
+        it('refuses a wrong ending or size and a file the browser cannot load as a font, before anything is sent', async () => {
+            await expect(library.uploadFont(font('a.pdf'))).rejects.toThrow('Nur Schriften als WOFF2');
+            await expect(library.uploadFont(font('gross.ttf', FONT_MAX_BYTES + 1))).rejects.toThrow('größer als 5 MB');
+            loadsAsFont = async () => {
+                throw new Error('„kaputt.otf" lässt sich nicht als Schrift laden.');
+            };
+            await expect(library.uploadFont(font('kaputt.otf'))).rejects.toThrow('lässt sich nicht als Schrift laden');
+            expect(wiki.filesByPage.size).toBe(0);
+        });
+
+        it('fails in German when the answer has no download address, and deletes a file on request', async () => {
+            wiki.withoutFileUrl = true;
+            await expect(library.uploadFont(font('a.woff'))).rejects.toThrow('keine Schriftdatei');
+            wiki.withoutFileUrl = false;
+            const { fileId } = await library.uploadFont(font('b.woff'));
+            await library.removeFont(fileId);
+            expect(wiki.removed).toEqual([fileId]);
         });
     });
 });

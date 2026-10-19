@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 45 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 46 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -689,6 +689,26 @@ export const ScheduleDoc = v.object({
  * for text and background and the font are what new slides and blocks start
  * with.
  */
+/** Keys of custom fonts start with this; the bundled ones never do. */
+export const CUSTOM_FONT_PREFIX = 'custom-';
+
+/** One file of a font from the media library's wiki page: where it lies and what it was called when uploaded. */
+const FontFile = v.object({
+    fileId: v.pipe(v.number(), v.integer(), v.minValue(1)),
+    fileUrl: v.pipe(v.string(), v.maxLength(300)),
+    name: v.pipe(v.string(), v.maxLength(120)),
+});
+
+/**
+ * Since 1.46 (Plan.md 103): a font the church uploaded. `key` goes into `TextStyle.fontFamily` and `ThemeDoc.font` like
+ * the key of a bundled font; `files` holds up to three cuts – normal (400, required), semibold (600) and bold (700).
+ */
+export const CustomFont = v.object({
+    key: v.pipe(v.string(), v.regex(/^custom-[A-Za-z0-9-]+$/), v.maxLength(64)),
+    name: v.pipe(v.string(), v.minLength(1), v.maxLength(40)),
+    files: v.object({ 400: FontFile, 600: v.optional(FontFile), 700: v.optional(FontFile) }),
+});
+
 export const ThemeDoc = v.object({
     ...DocumentBase,
     kind: v.literal('theme'),
@@ -708,6 +728,12 @@ export const ThemeDoc = v.object({
      * test keeps the two equal.
      */
     font: v.optional(v.string(), 'lato'),
+    /**
+     * Since 1.46 (Plan.md 103): the church's own fonts, at most 10, offered in every font list next to the bundled ones.
+     * Older players do not know the keys and draw Lato (`fontDef`). The document is one KV value of 10,000 characters:
+     * ten fonts with three cuts each fit with their download addresses, next to the palette.
+     */
+    customFonts: v.optional(v.pipe(v.array(CustomFont), v.maxLength(10))),
     /** Since 1.21: the church's named colours (Plan.md 64), offered at every colour field in the editor; copied on use, so none is referenced. */
     palette: v.optional(v.pipe(v.array(v.object({ name: v.pipe(v.string(), v.maxLength(40)), color: Color })), v.maxLength(12))),
     /**
@@ -831,6 +857,8 @@ export type AppointmentPoint = v.InferOutput<typeof AppointmentPoint>;
 export type MediaDoc = v.InferOutput<typeof MediaDoc>;
 export type SettingsDoc = v.InferOutput<typeof SettingsDoc>;
 export type ThemeDoc = v.InferOutput<typeof ThemeDoc>;
+export type CustomFont = v.InferOutput<typeof CustomFont>;
+export type FontFile = CustomFont['files'][400];
 export type AnyDoc =
     | ScreenDoc
     | PlaylistDoc

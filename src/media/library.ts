@@ -6,10 +6,11 @@
  * category itself – that stays the setup assistant's job, so that only it
  * remembers the id and only it may ever remove it (Plan.md, F).
  */
-import { SCHEMA_VERSION, type MediaDoc } from '../model/schema';
+import { SCHEMA_VERSION, type FontFile, type MediaDoc } from '../model/schema';
 import type { MediaUse, ScreenRepository } from '../store/screen-repository';
 import { videoSrc } from '../player/video';
 import type { PreparedImage } from './scale';
+import { checkFontFile, fontProblem } from './font';
 import { readVideoMetadata, videoProblem, type VideoMetadata } from './video';
 import * as wiki from './wiki';
 import type { WikiCategory, WikiFile, WikiPage } from './wiki';
@@ -17,6 +18,7 @@ import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 
 export { VIDEO_MAX_BYTES, VIDEO_TYPES } from './video';
+export { FONT_EXTENSIONS, FONT_MAX_BYTES } from './font';
 
 export interface MediaItem {
     fileId: number;
@@ -134,6 +136,7 @@ export class MediaLibrary {
         private readonly backend: MediaBackend,
         private readonly repository: ScreenRepository,
         private readonly readMetadata: (url: string) => Promise<VideoMetadata> = readVideoMetadata,
+        private readonly checkFont: (file: File) => Promise<void> = checkFontFile,
     ) {}
 
     /** The id of the wiki category, found through the ids the settings keep (Plan.md 84). */
@@ -250,6 +253,26 @@ export class MediaLibrary {
             uses: [],
             ...metadata,
         });
+    }
+
+    /**
+     * Uploads a font file as it is (Plan.md 103). Name, size and a trial load in the browser are checked before
+     * anything is sent. Nothing is saved in the module store: the design keeps the address, and `list()` does not show it.
+     */
+    async uploadFont(file: File): Promise<FontFile> {
+        const problem = fontProblem(file);
+        if (problem) throw new Error(problem);
+        await this.checkFont(file);
+        const categoryId = await this.categoryId();
+        const page = await this.backend.ensurePage(categoryId, MEDIA_PAGE.slug, MEDIA_PAGE.name);
+        const uploaded = await this.backend.upload(categoryId, page.guid, file, file.name);
+        if (!uploaded.fileUrl) throw new Error(t.media.library.notAFont(file.name));
+        return { fileId: uploaded.id, fileUrl: uploaded.fileUrl, name: uploaded.name.slice(0, 120) };
+    }
+
+    /** Deletes the file of a font that left the design. */
+    removeFont(fileId: number): Promise<void> {
+        return this.backend.remove(fileId);
     }
 
     async usage(item: MediaItem): Promise<{ playlist: string; slide: string }[]> {

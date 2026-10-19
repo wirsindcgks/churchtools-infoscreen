@@ -10,6 +10,8 @@
  * Latin and Latin Extended only; and weights 400, 600 and 700 only – the
  * weights the schema allows. A font is downloaded when text first uses it.
  */
+import { shallowRef } from 'vue';
+import type { CustomFont } from '../model/schema';
 import interLatin from '@fontsource-variable/inter/files/inter-latin-wght-normal.woff2?url';
 import interLatinExt from '@fontsource-variable/inter/files/inter-latin-ext-wght-normal.woff2?url';
 import merriweatherLatin from '@fontsource-variable/merriweather/files/merriweather-latin-wght-normal.woff2?url';
@@ -63,6 +65,8 @@ export interface FontDef {
     family: string;
     generic: 'sans-serif' | 'serif';
     faces: Face[];
+    /** A font the church uploaded (schema 1.46); its faces are registered by `custom-fonts.ts`, not here. */
+    custom?: true;
 }
 
 const variable = (weights: string, latin: string, latinExt: string): Face[] => [
@@ -169,13 +173,28 @@ export const DEFAULT_FONT = 'lato';
 /** Keys of schema 1.0, when the stage still used system fonts. Saved screens keep working. */
 const ALIASES: Record<string, string> = { sans: 'lato', serif: 'merriweather', mono: 'lato' };
 
+/** The church's own fonts (schema 1.46, Plan.md 103): set from the loaded design, by the player and by every designer page. */
+export const customFonts = shallowRef<CustomFont[]>([]);
+
+export function setCustomFonts(list: readonly CustomFont[] | undefined): void {
+    const next = [...(list ?? [])];
+    if (JSON.stringify(next) !== JSON.stringify(customFonts.value)) customFonts.value = next;
+}
+
+/** The name a custom font is registered under – like the bundled ones with "ISD", so the host page's fonts never merge with it. */
+export const customFamily = (key: string): string => `ISD ${key}`;
+
 export function fontDef(key: string): FontDef {
+    const custom = customFonts.value.find((f) => f.key === key);
+    if (custom) return { key, label: custom.name, family: customFamily(key), generic: 'sans-serif', faces: [], custom: true };
     const resolved = ALIASES[key] ?? key;
     return FONTS.find((f) => f.key === resolved) ?? FONTS.find((f) => f.key === DEFAULT_FONT)!;
 }
 
+/** A custom font falls back to Lato until its file is loaded and where it is missing; an unknown key is Lato itself. */
 export function fontStack(key: string): string {
     const font = fontDef(key);
+    if (font.custom) return `"${font.family}", "${fontDef(DEFAULT_FONT).family}", ${font.generic}`;
     return `"${font.family}", ${font.generic}`;
 }
 

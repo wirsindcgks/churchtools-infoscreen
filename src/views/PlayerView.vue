@@ -8,6 +8,7 @@ import { browserDeps, createPlayer } from '../player/controller';
 import { createChurchToolsPlayerData } from '../player/data';
 import { readDeviceLogin, reloadWithDeviceLogin, withDeviceLogin } from '../player/device-login';
 import { screenImageUrls, slideImageUrls } from '../player/images';
+import { applyCustomFonts } from '../player/custom-fonts';
 import { createMediaCache } from '../player/media-cache';
 import { createVideoCache } from '../player/video-cache';
 import { screenVideoUrls } from '../player/video';
@@ -120,6 +121,8 @@ watch(
         context.rooms = state.rooms;
         context.media = new Map((state.screen?.media ?? []).map((m) => [m.id, m]));
         context.theme = state.screen?.theme ?? null;
+        // The church's own fonts (Plan.md 103): without a copy and without a network the text keeps drawing in Lato.
+        void applyCustomFonts(state.screen?.theme);
     },
     { immediate: true },
 );

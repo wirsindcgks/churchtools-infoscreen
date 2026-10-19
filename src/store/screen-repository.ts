@@ -32,6 +32,7 @@ import {
 import { expandTemplates, templateIdsOf } from '../model/templates';
 import {
     blockCalendarIds,
+    CUSTOM_FONT_PREFIX,
     playlistIdsOf,
     sameStage,
     SCHEMA_VERSION,
@@ -178,6 +179,14 @@ export interface MediaUse {
     slide: { id: string; name: string };
     /** Empty for a playlist no screen shows – the image is still in use there. */
     screens: ScreenRef[];
+}
+
+/** A place a custom font is used (Plan.md 103): the blocks of one slide, or the banner of the playlist (`slide` null). */
+export interface FontUse {
+    playlist: { id: string; name: string };
+    slide: { id: string; name: string } | null;
+    /** How many blocks of the slide use it; 1 for the banner. */
+    blocks: number;
 }
 
 /** A playlist as the playlists page shows it (Plan.md, Nächste Schritte 19). */
@@ -1150,6 +1159,34 @@ export class ScreenRepository {
     /** Where a medium is shown – asked before deleting it, so nobody deletes blind. */
     async mediaUsage(mediaId: string): Promise<{ playlist: string; slide: string }[]> {
         return ((await this.mediaUses()).get(mediaId) ?? []).map((u) => ({ playlist: u.playlist.name, slide: u.slide.name }));
+    }
+
+    /**
+     * Where each custom font is used, by font key: the slides of the playlists and their banners (Plan.md 103). Asked
+     * before a font is deleted, so nobody deletes blind. Drafts and unused templates are not counted.
+     */
+    async fontUses(): Promise<Map<string, FontUse[]>> {
+        const running = await this.readRunningScreens();
+        const screens = running.screens.map((s) => s.doc);
+        const slides = new Map((await this.readShownSlides()).map((s) => [s.id, s]));
+        const uses = new Map<string, FontUse[]>();
+        const add = (key: string, use: FontUse) => {
+            if (key.startsWith(CUSTOM_FONT_PREFIX)) uses.set(key, [...(uses.get(key) ?? []), use]);
+        };
+        for (const { doc } of running.playlists) {
+            const playlist = { id: doc.id, name: withPlaylistDefaults(doc, screens).name };
+            if (doc.banner) add(doc.banner.style.fontFamily, { playlist, slide: null, blocks: 1 });
+            for (const slide of doc.slideIds.map((id) => slides.get(id))) {
+                if (!slide) continue;
+                const counts = new Map<string, number>();
+                for (const block of slide.blocks) {
+                    const key = (block as { style?: { fontFamily?: string } }).style?.fontFamily;
+                    if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
+                }
+                for (const [key, blocks] of counts) add(key, { playlist, slide: { id: slide.id, name: slide.name }, blocks });
+            }
+        }
+        return uses;
     }
 
     /** Removes only the index; playlists and slides become orphans for {@link collectOrphans}. */

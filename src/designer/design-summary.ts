@@ -14,7 +14,7 @@ export function surfacesSummary(theme: Pick<ThemeDoc, 'corners' | 'cards' | 'car
     return `${s.corners[theme.corners]} · ${cards}`;
 }
 
-/** An unknown key draws as the default font, and so it is named. */
+/** An unknown key draws as the default font, and so it is named; a custom font is named as the church called it. */
 export function fontSummary(theme: Pick<ThemeDoc, 'font'>): string {
     return fontDef(theme.font).label;
 }

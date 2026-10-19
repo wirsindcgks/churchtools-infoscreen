@@ -2,13 +2,14 @@
 /**
  * The choice of a font, in the fonts themselves (Plan.md 79, B2): a list of our own instead of a `<select>`, because
  * Safari does not set a font in an `<option>`. The button shows the current font in itself; unfolded, the list starts
- * with the font of the design (mark „Design", only where a page provides the theme) and goes on with „Alle Schriften".
+ * with the font of the design (mark „Design", only where a page provides the theme), goes on with „Eigene Schriften" (the church's
+ * uploads, Plan.md 103; only where there are any) and ends with „Alle Schriften".
  * Keyboard: arrows, Home and End move, Enter and Space take, Escape and Tab close. The list unfolds in the flow of the
  * inspector, not over it, so no scrolling parent clips it.
  */
 import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue';
 import { t } from '../../../i18n/designer';
-import { fontDef, FONTS } from '../../../player/fonts';
+import { customFonts, fontDef, fontStack, FONTS, type FontDef } from '../../../player/fonts';
 import Icon from '../../Icon.vue';
 import { usePalette } from '../../palette';
 import FieldRow from './FieldRow.vue';
@@ -27,8 +28,25 @@ const current = computed(() => fontDef(props.modelValue));
 const lists = usePalette();
 const design = computed(() => (lists?.value.designFont ? fontDef(lists.value.designFont) : null));
 
-/** The rows in the order of the keyboard: the design's font first, then all of them. */
-const entries = computed(() => [...(design.value ? [{ font: design.value, design: true }] : []), ...FONTS.map((font) => ({ font, design: false }))]);
+type Group = 'design' | 'custom' | 'all';
+interface Entry {
+    font: FontDef;
+    group: Group;
+}
+
+/** The rows in the order of the keyboard: the design's font first, then the church's own, then all the bundled ones. */
+const entries = computed<Entry[]>(() => [
+    ...(design.value ? [{ font: design.value, group: 'design' as const }] : []),
+    ...customFonts.value.map((c) => ({ font: fontDef(c.key), group: 'custom' as const })),
+    ...FONTS.map((font) => ({ font, group: 'all' as const })),
+]);
+
+/** The caption stands before the first row of its group. */
+function captionBefore(index: number): string | null {
+    const entry = entries.value[index];
+    if (!entry || entry.group === 'design' || entries.value[index - 1]?.group === entry.group) return null;
+    return entry.group === 'custom' ? t.inspector.customFonts : t.inspector.allFonts;
+}
 
 const open = ref(false);
 const active = ref(0);
@@ -39,8 +57,8 @@ function optionId(index: number): string {
 
 async function show(): Promise<void> {
     open.value = true;
-    // The row of the current font, in the „Alle Schriften" part where there is one.
-    const at = entries.value.findIndex((e) => e.font.key === current.value.key && !e.design);
+    // The row of the current font, not the „Design" mark in front of it.
+    const at = entries.value.findIndex((e) => e.font.key === current.value.key && e.group !== 'design');
     active.value = Math.max(at, 0);
     await nextTick();
     list.value?.focus();
@@ -112,7 +130,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside));
                 :aria-controls="open ? listId : undefined"
                 :aria-labelledby="labelId"
                 :title="current.label"
-                :style="{ fontFamily: `'${current.family}'` }"
+                :style="{ fontFamily: fontStack(current.key) }"
                 :data-testid="testid"
                 :data-value="current.key"
                 @click="open ? close(false) : show()"
@@ -133,20 +151,20 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', onOutside));
                 @keydown="onListKey"
             >
                 <template v-for="(entry, index) in entries" :key="index">
-                    <li v-if="index === (design ? 1 : 0)" class="font-caption" role="presentation">{{ t.inspector.allFonts }}</li>
+                    <li v-if="captionBefore(index)" class="font-caption" role="presentation">{{ captionBefore(index) }}</li>
                     <li
                         :id="optionId(index)"
                         class="font-option"
                         :class="{ active: index === active }"
                         role="option"
                         :aria-selected="entry.font.key === current.key"
-                        :style="{ fontFamily: `'${entry.font.family}'` }"
-                        :data-testid="testid ? `${testid}-${entry.design ? 'design' : entry.font.key}` : undefined"
+                        :style="{ fontFamily: fontStack(entry.font.key) }"
+                        :data-testid="testid ? `${testid}-${entry.group === 'design' ? 'design' : entry.font.key}` : undefined"
                         @click="pick(index)"
                         @pointermove="active = index"
                     >
                         <span class="font-name">{{ entry.font.label }}</span>
-                        <span v-if="entry.design" class="font-mark">{{ t.inspector.designFont }}</span>
+                        <span v-if="entry.group === 'design'" class="font-mark">{{ t.inspector.designFont }}</span>
                     </li>
                 </template>
             </ul>

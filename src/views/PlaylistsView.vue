@@ -6,6 +6,7 @@
  * and delete playlists here – a playlist still shown somewhere stays.
  */
 import { computed, onMounted, ref, shallowRef } from 'vue';
+import { applyCustomFonts } from '../player/custom-fonts';
 import { useRouter } from 'vue-router';
 import { currentPerson, displayName } from '../ct/client';
 import CreatePlaylistDialog from '../designer/CreatePlaylistDialog.vue';
@@ -100,6 +101,7 @@ async function refresh(): Promise<void> {
     drafts.value = drafted;
     setSectionCount('playlists', list.length);
     theme.value = stored;
+    void applyCustomFonts(stored);
     templates.value = storedTemplates;
 }
 

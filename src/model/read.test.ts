@@ -722,3 +722,50 @@ describe('templates (schema 1.41, Plan.md 87)', () => {
         expect(issues).toHaveLength(1);
     });
 });
+
+describe('readTheme – the church\'s own fonts (schema 1.46, Plan.md 103)', () => {
+    const theme = { schema: { ...SCHEMA_VERSION }, kind: 'theme', id: THEME_ID };
+    const file = (id: number) => ({ fileId: id, fileUrl: `https://gemeinde.example/?q=public/filedownload&id=${id}&filename=h`, name: `Haus-${id}.woff2` });
+    const font = (i: number, extra: object = {}) => ({ key: `custom-${i}`, name: `Hausschrift ${i}`, files: { 400: file(i), ...extra } });
+
+    it('reads a theme from before 1.46 without fonts', () => {
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(46);
+        expect(readTheme({ ...theme, schema: { major: 1, minor: 45 } }).customFonts).toBeUndefined();
+    });
+
+    it('reads a font with one, two or three cuts', () => {
+        const customFonts = [font(1), font(2, { 600: file(21) }), font(3, { 600: file(31), 700: file(32) })];
+        const read = readTheme({ ...theme, customFonts }).customFonts!;
+        expect(read.map((f) => Object.keys(f.files))).toEqual([['400'], ['400', '600'], ['400', '600', '700']]);
+    });
+
+    it('takes 10 fonts and refuses 11', () => {
+        const many = (n: number) => Array.from({ length: n }, (_, i) => font(i + 1));
+        expect(readTheme({ ...theme, customFonts: many(10) }).customFonts).toHaveLength(10);
+        expect(() => readTheme({ ...theme, customFonts: many(11) })).toThrow();
+    });
+
+    it('fits ten fonts with three cuts, with realistic addresses, into one value', () => {
+        const real = (i: number, cut: number) => ({
+            fileId: 1000 + i * 3 + cut,
+            fileUrl: `https://gemeinde.church.tools/?q=public/filedownload&id=${1000 + i * 3 + cut}&filename=0123456789abcdef0123456789abcdef`,
+            name: 'Hausschrift-SemiBold-Italic.woff2',
+        });
+        const customFonts = Array.from({ length: 10 }, (_, i) => ({
+            key: `custom-${crypto.randomUUID()}`,
+            name: 'Hausschrift Gemeindeschrift Lang',
+            files: { 400: real(i, 0), 600: real(i, 1), 700: real(i, 2) },
+        }));
+        const palette = Array.from({ length: 12 }, (_, i) => ({ name: `Farbe ${i}`, color: '#1d4ed8' }));
+        const doc = readTheme({ ...theme, customFonts, palette });
+        expect(() => serialize(doc)).not.toThrow();
+    });
+
+    it('refuses a font without the normal cut, with a foreign key or with a name over 40 characters', () => {
+        expect(() => readTheme({ ...theme, customFonts: [{ ...font(1), files: { 600: file(1) } }] })).toThrow();
+        expect(() => readTheme({ ...theme, customFonts: [{ ...font(1), key: 'lato' }] })).toThrow();
+        expect(() => readTheme({ ...theme, customFonts: [{ ...font(1), name: 'x'.repeat(41) }] })).toThrow();
+        expect(() => readTheme({ ...theme, customFonts: [{ ...font(1), name: '' }] })).toThrow();
+        expect(readTheme({ ...theme, customFonts: [{ ...font(1), name: 'x'.repeat(40) }] }).customFonts).toHaveLength(1);
+    });
+});

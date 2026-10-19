@@ -27,6 +27,7 @@ import { layerUnits } from './layers';
 import { fitToRegions, frameFixed, layoutRegions, regionAt, type Region } from './layout-regions';
 import { GRID_SIZES } from './snap';
 import { BLOCK_LABELS, boundingBox, clampFrame, MIN_BLOCK_SIZE, cloneJson, createBlock, createSlide, dropSingleGroups, duplicateSlide, freeSpot, gatherLayers, groupOf, move, moveAround, newId, reorderMany, withGroups, type Layer } from './ops';
+import { applyCustomFonts } from '../player/custom-fonts';
 import { outerFrame } from './rotate';
 import { expandTemplates, templateIdsOf } from '../model/templates';
 import { dissolveTemplate, templateFromBlocks, withTemplateFrames, type TemplateBlock } from './templates';
@@ -306,6 +307,7 @@ export const useEditorStore = defineStore('editor', () => {
             repo.listTemplates().catch(() => []),
         ]);
         theme.value = storedTheme ?? DEFAULT_THEME;
+        void applyCustomFonts(theme.value);
         templates.value = storedTemplates;
         screens.value = loaded.screens;
         reset({ playlist: loaded.playlist, slides: loaded.slides }, loaded.playlist.revision, loaded.sharedWith);
@@ -346,6 +348,7 @@ export const useEditorStore = defineStore('editor', () => {
         const template = list.find((x) => x.id === templateId);
         if (!template) throw new Error(t.templates.notFound);
         theme.value = storedTheme ?? DEFAULT_THEME;
+        void applyCustomFonts(theme.value);
         templates.value = list;
         screens.value = [];
         const holder = createSlide(tr.newSlide, theme.value);

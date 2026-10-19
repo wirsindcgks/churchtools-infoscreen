@@ -8,6 +8,7 @@
  * is about schedules; the playlist's name in the "Jetzt" section leads to its editor.
  */
 import { computed, onMounted, reactive, ref, shallowRef } from 'vue';
+import { applyCustomFonts } from '../player/custom-fonts';
 import { zonedDateKey, zonedParts } from '../appointments/zoned';
 import { currentPerson, displayName } from '../ct/client';
 import GroupCard from '../designer/GroupCard.vue';
@@ -186,6 +187,7 @@ async function refresh(): Promise<void> {
     setScreenCounts(list);
     playlists.value = new Map(overviews.map((o) => [o.playlist.id, o]));
     theme.value = stored;
+    void applyCustomFonts(stored);
     templates.value = storedTemplates;
     // A saved schedule may have fewer lines than the one clicked before.
     chosen.clear();

@@ -59,11 +59,13 @@ Die Anleitungen:
 
 ## Datenschutz
 
-Die zehn mitgelieferten Schriften kommen von eurer eigenen Instanz, es gibt keinen Aufruf an Dritte. Der Fernseher
-hat ein eigenes Konto, das nur lesen darf – bis auf sein Lebenszeichen, das die Startseite als „online" zeigt. Seine
-Adresse trägt statt eines Passworts einen Login-Token, den ein Passwortwechsel ungültig macht. Gruppen und Beiträge
-erscheinen nur, wenn ChurchTools sie ohnehin öffentlich zeigt, und Namen von Diensten nur nach Freigabe durch einen
-Administrator.
+Die zehn mitgelieferten Schriften kommen von eurer eigenen Instanz, es gibt keinen Aufruf an Dritte. Eigene Schriften
+(WOFF2, WOFF, TTF oder OTF, in bis zu drei Schnitten) ladet ihr selbst hoch: Sie liegen im Wiki-Bereich eurer Instanz
+und auf dem Gerät und laufen auch ohne Netz. Hochladen sollt ihr nur Schriften, die eure Gemeinde auf Bildschirmen
+zeigen darf. Der Fernseher hat ein eigenes Konto, das nur lesen darf – bis auf sein Lebenszeichen, das die Startseite
+als „online" zeigt. Seine Adresse trägt statt eines Passworts einen Login-Token, den ein Passwortwechsel ungültig
+macht. Gruppen und Beiträge erscheinen nur, wenn ChurchTools sie ohnehin öffentlich zeigt, und Namen von Diensten nur
+nach Freigabe durch einen Administrator.
 
 ## Stand
 

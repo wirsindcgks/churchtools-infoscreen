@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { DEFAULT_FONT, fontDef, FONTS, fontStack, registerFonts } from './fonts';
+import { afterEach, describe, expect, it } from 'vitest';
+import { DEFAULT_FONT, fontDef, FONTS, fontStack, registerFonts, setCustomFonts } from './fonts';
 
 describe('fonts', () => {
     it('offers at most ten fonts, each under a name of its own', () => {
@@ -54,5 +54,25 @@ describe('fonts', () => {
         const lato = added.filter((f) => f.family === 'ISD Lato') as unknown as FakeFontFace[];
         expect(lato.map((f) => f.descriptors.weight)).toEqual(['400', '400', '700', '700']);
         expect(lato.every((f) => f.descriptors.display === 'block')).toBe(true);
+    });
+});
+
+describe('custom fonts (schema 1.46, Plan.md 103)', () => {
+    const custom = { key: 'custom-1234', name: 'Hausschrift', files: { 400: { fileId: 1, fileUrl: 'https://x.example/f', name: 'a.woff2' } } };
+
+    afterEach(() => setCustomFonts([]));
+
+    it('knows a custom key only while the list holds it, and draws Lato otherwise', () => {
+        expect(fontDef('custom-1234').key).toBe(DEFAULT_FONT);
+        setCustomFonts([custom]);
+        expect(fontDef('custom-1234')).toMatchObject({ key: 'custom-1234', label: 'Hausschrift', family: 'ISD custom-1234', custom: true });
+        setCustomFonts([]);
+        expect(fontDef('custom-1234').key).toBe(DEFAULT_FONT);
+    });
+
+    it('stacks a custom font before Lato, so text stays readable until the file is loaded or when it is missing', () => {
+        setCustomFonts([custom]);
+        expect(fontStack('custom-1234')).toBe('"ISD custom-1234", "ISD Lato", sans-serif');
+        expect(fontStack('lato')).toBe('"ISD Lato", sans-serif');
     });
 });

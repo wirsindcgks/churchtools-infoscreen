@@ -11,6 +11,7 @@ import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vu
 import { onBeforeRouteLeave } from 'vue-router';
 import { currentPerson, displayName } from '../ct/client';
 import ColorField from '../designer/ColorField.vue';
+import CustomFontsField from '../designer/CustomFontsField.vue';
 import { appointmentsSummary, fontSummary, paletteSummary, surfacesSummary } from '../designer/design-summary';
 import Icon from '../designer/Icon.vue';
 import InspectorSection from '../designer/InspectorSection.vue';
@@ -23,7 +24,9 @@ import SlideThumb from '../designer/SlideThumb.vue';
 import TemplateNameDialog from '../designer/TemplateNameDialog.vue';
 import { createBlock, createSlide } from '../designer/ops';
 import PaletteScope from '../designer/PaletteScope.vue';
+import { MediaLibrary, wikiBackend } from '../media/library';
 import { DEFAULT_THEME, type Block, type MediaDoc, type SlideDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
+import { applyCustomFonts } from '../player/custom-fonts';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
 import FontField from '../designer/inspector/fields/FontField.vue';
@@ -31,7 +34,7 @@ import { fitStage } from '../player/stage';
 import { getRepository } from '../store/backend';
 import { ConflictError, TemplateInUseError, type ScreenRepository, type TemplateUse } from '../store/screen-repository';
 
-type Look = Pick<ThemeDoc, 'corners' | 'accent' | 'text' | 'background' | 'font' | 'appointments' | 'imageRatio' | 'cards' | 'cardColor' | 'cardOpacity'> & Required<Pick<ThemeDoc, 'palette'>>;
+type Look = Pick<ThemeDoc, 'corners' | 'accent' | 'text' | 'background' | 'font' | 'appointments' | 'imageRatio' | 'cards' | 'cardColor' | 'cardOpacity'> & Required<Pick<ThemeDoc, 'palette' | 'customFonts'>>;
 
 const repository = shallowRef<ScreenRepository | null>(null);
 const author = ref<string | null>(null);
@@ -45,12 +48,16 @@ const message = ref<string | null>(null);
 
 function pick(theme: ThemeDoc): Look {
     const { corners, accent, text, background, font, appointments, imageRatio, cards, cardColor, cardOpacity } = theme;
-    return { corners, accent, text, background, font, appointments, imageRatio, cards, cardColor, cardOpacity, palette: theme.palette ?? [] };
+    return { corners, accent, text, background, font, appointments, imageRatio, cards, cardColor, cardOpacity, palette: theme.palette ?? [], customFonts: theme.customFonts ?? [] };
 }
 
-/** The palette is a list: a copy must not share it, or editing `look` would change `saved`, too. */
+/** The palette and the fonts are lists: a copy must not share them, or editing `look` would change `saved`, too. */
 function copyLook(from: Look): Look {
-    return { ...from, palette: from.palette.map((p) => ({ ...p })) };
+    return {
+        ...from,
+        palette: from.palette.map((p) => ({ ...p })),
+        customFonts: from.customFonts.map((f) => ({ ...f, files: { ...f.files } })),
+    };
 }
 
 const PALETTE_MAX = 12;
@@ -65,6 +72,12 @@ function movePaletteColor(index: number, by: -1 | 1): void {
     if (target < 0 || target >= list.length) return;
     [list[index], list[target]] = [list[target]!, list[index]!];
 }
+
+// The preview and the font lists draw the church's fonts, also those uploaded a moment ago and not saved yet (Plan.md 103).
+watch(
+    () => JSON.stringify(look.value.customFonts),
+    () => void applyCustomFonts(look.value),
+);
 
 const dirty = computed(() => JSON.stringify(look.value) !== JSON.stringify(saved.value));
 
@@ -193,6 +206,34 @@ async function load(): Promise<void> {
     revision.value = stored ? (stored.revision ?? 0) : null;
     saved.value = copyLook(pick(stored ?? DEFAULT_THEME));
     look.value = copyLook(saved.value);
+    void applyCustomFonts(look.value);
+}
+
+let library: MediaLibrary | null = null;
+function mediaLibrary(): MediaLibrary {
+    library ??= new MediaLibrary(wikiBackend, repository.value!);
+    return library;
+}
+
+/** Where a custom font is used, one line each: the design's font, the banners and the slides of the playlists. */
+async function fontUsage(key: string): Promise<string[]> {
+    const c = t.design.font.custom;
+    const uses = (await repository.value!.fontUses()).get(key) ?? [];
+    return [
+        ...(look.value.font === key ? [c.usedAsDesign] : []),
+        ...uses.map((u) => (u.slide ? c.usedOnSlide(u.playlist.name, u.slide.name, u.blocks) : c.usedInBanner(u.playlist.name))),
+    ];
+}
+
+/** The files of fonts the list does not hold any more go with a successful save – not before, or "Verwerfen" would lose them. */
+async function removeFiles(before: Look, after: Look): Promise<void> {
+    const ids = (look: Look) => look.customFonts.flatMap((f) => Object.values(f.files).map((file) => file.fileId));
+    const kept = new Set(ids(after));
+    for (const id of ids(before).filter((i) => !kept.has(i))) {
+        await mediaLibrary()
+            .removeFont(id)
+            .catch((e: unknown) => console.warn('Schriftdatei nicht gelöscht:', e));
+    }
 }
 
 async function save(): Promise<void> {
@@ -205,8 +246,10 @@ async function save(): Promise<void> {
             updatedBy: author.value,
         });
         revision.value = stored.revision ?? 0;
+        const before = saved.value;
         saved.value = copyLook(look.value);
         status.value = 'saved';
+        void removeFiles(before, saved.value);
     } catch (e) {
         if (e instanceof ConflictError) {
             status.value = 'conflict';
@@ -403,6 +446,7 @@ function observe(el: unknown): void {
                         </template>
                         <!-- An unknown key stays stored until someone picks a font; it draws as Lato meanwhile. -->
                         <FontField :model-value="look.font" :label="t.inspector.fontFamily" testid="theme-font" @update:model-value="look.font = $event" />
+                        <CustomFontsField v-model="look.customFonts" :upload="(file) => mediaLibrary().uploadFont(file)" :usage="fontUsage" />
                     </InspectorSection>
 
                     <InspectorSection id="design-appointments" group="design" :title="t.design.appointments.title" :summary="appointmentsSummary(look)">
