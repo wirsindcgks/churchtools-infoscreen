@@ -4,6 +4,23 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.41.0] – 2026-10-20
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach formatierten Erklärungen und den Hinweis,
+dass das (i) an jeder Zeile wie ein Bedienelement wirkt.
+
+### Geändert
+
+- **Hilfe zu den Einstellungen in einer eigenen Leiste.** Statt eines (i) an jeder Zeile hat jeder aufgeklappte
+  Bereich des Inspektors rechts ein türkises „?“, ebenso der Kopf neben dem Namen des Bausteins oder der Folie. Ein
+  Klick öffnet die Hilfe unter der Folie: ein Reiter je Bereich, „Allgemein“ für alles außerhalb der Bereiche, eine
+  Suche über alle Reiter. Geschlossen wird sie mit ✕, mit Esc oder mit einem zweiten Klick aufs „?“; wählt man einen
+  anderen Baustein, wechselt sie zu dessen Hilfe. Am Handy kommt sie von unten, auf der Seite „Design“ steht sie unter
+  der Vorschau, und „? Hilfe“ → „Hilfe zu den Einstellungen“ öffnet sie ebenfalls. Die Texte werden nach und nach
+  ausführlicher.
+- Jeder Bereich zeigt zugeklappt seine Einstellung in Kurzform, auch „Angaben“ und die Farben des QR-Codes.
+- In den Einstellungen eines Bildschirms und im Laufband steht die Erklärung jetzt sichtbar unter dem Feld.
+
 ## [0.40.0] – 2026-10-20
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach Suchfeldern in langen Auswahllisten und den
@@ -1325,6 +1342,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.41.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.41.0
 [0.40.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.40.0
 [0.39.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.39.0
 [0.38.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.38.0
