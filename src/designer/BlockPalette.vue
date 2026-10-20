@@ -21,6 +21,7 @@ import SelectMenu from './SelectMenu.vue';
 import { KEYS, withKeys } from './shortcuts';
 import { GRID_SIZES } from './snap';
 import { usePhone } from './usePhone';
+import { vTip } from './tip';
 
 const editor = useEditorStore();
 const phone = usePhone();
@@ -105,17 +106,17 @@ const gridOptions = GRID_SIZES.map((size) => ({ value: size, label: size ? `${si
         </button>
         <button
             v-if="!phone && editor.clipboard.length"
+            v-tip="withKeys(pasteTitle, KEYS.paste)"
             class="d-btn"
             type="button"
             :disabled="!editor.slide"
-            :title="withKeys(pasteTitle, KEYS.paste)"
             data-testid="paste-block"
             @click="editor.pasteBlocks()"
         >
             {{ t.editor.palette.paste }}
         </button>
         <!-- The symbol alone was not recognised (Plan.md 47): the word stays beside it. -->
-        <label v-if="!phone" class="grid-select" :title="t.editor.palette.guidesTitle">
+        <label v-if="!phone" v-tip="t.editor.palette.guidesTitle" class="grid-select">
             <Icon name="grid" :size="16" />
             <span class="grid-label">{{ t.editor.palette.guides }}</span>
             <SelectMenu
@@ -140,7 +141,7 @@ const gridOptions = GRID_SIZES.map((size) => ({ value: size, label: size ? `${si
             <div ref="sheet" class="block-sheet-panel">
                 <header class="sheet-head">
                     <h2>{{ t.editor.palette.insertBlock }}</h2>
-                    <button class="d-btn d-btn--icon" type="button" :aria-label="t.common.close" @click="closeSheet">
+                    <button v-tip="t.common.close" class="d-btn d-btn--icon" type="button" :aria-label="t.common.close" @click="closeSheet">
                         <Icon name="close" :size="16" />
                     </button>
                 </header>

@@ -51,7 +51,7 @@ describe('PlaylistCard – "Läuft gerade" (Plan.md 77)', () => {
     it('shows the mark with the tooltip when a screen reports this playlist', () => {
         const flag = card(new Map([['foyer-links', beat()]])).get('[data-testid="playlist-live"]');
         expect(flag.text()).toBe('Läuft gerade');
-        expect(flag.attributes('title')).toBe('Läuft gerade auf „Foyer links“ – laut Lebenszeichen von 14:32');
+        expect(flag.attributes('data-tip')).toBe('Läuft gerade auf „Foyer links“ – laut Lebenszeichen von 14:32');
         expect(flag.classes()).toContain('overlay');
         expect(flag.find('.alive-dot').classes()).toContain('is-online');
     });
@@ -70,7 +70,7 @@ describe('PlaylistCard – "Entwurf" (Plan.md 79, Paket E)', () => {
     it('carries the mark with who and when once a draft exists', () => {
         const flag = card(null, { updatedBy: 'Anna', updatedAt: '2026-10-05T12:32:00Z' }).get('[data-testid="draft-flag"]');
         expect(flag.text()).toBe('Entwurf');
-        expect(flag.attributes('title')).toBe('Entwurf von Anna, heute 14:32 – noch nicht veröffentlicht');
+        expect(flag.attributes('data-tip')).toBe('Entwurf von Anna, heute 14:32 – noch nicht veröffentlicht');
     });
 
     it('has no mark without a draft', () => {
@@ -92,7 +92,7 @@ describe('LiveFlag', () => {
             },
         });
         const title = 'Läuft gerade auf „Foyer links“, „Foyer rechts“ – laut Lebenszeichen von 14:35';
-        expect(flag.attributes('title')).toBe(title);
+        expect(flag.attributes('data-tip')).toBe(title);
         expect(flag.attributes('aria-label')).toBe(`Läuft gerade – ${title}`);
     });
 });

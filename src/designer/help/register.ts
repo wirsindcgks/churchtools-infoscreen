@@ -36,6 +36,9 @@ export interface HelpRegister {
 
 export const HELP_REGISTER: InjectionKey<HelpRegister> = Symbol('help-register');
 
+/** The topic of the section a field stands in; `FieldRow` looks its label up there (Plan.md 98, C). */
+export const SECTION_HELP: InjectionKey<Ref<HelpTopic | undefined>> = Symbol('section-help');
+
 /** Document order of two registered sections; a pair the browser cannot place keeps the order of registering. */
 function byPosition(a: Entry, b: Entry): number {
     const position = a.el.compareDocumentPosition(b.el);

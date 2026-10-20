@@ -107,9 +107,9 @@ test('without a palette the three colours of the design stand as swatches', asyn
     await openSection(page, 'font');
     const swatches = page.getByTestId('palette-group').first().getByTestId('text-color-swatch');
     await expect(swatches).toHaveCount(3);
-    await expect(swatches.nth(0)).toHaveAttribute('title', 'Akzent (#3B82F6)');
-    await expect(swatches.nth(1)).toHaveAttribute('title', 'Text (#FFFFFF)');
-    await expect(swatches.nth(2)).toHaveAttribute('title', 'Hintergrund (#1E293B)');
+    await expect(swatches.nth(0)).toHaveAttribute('data-tip', 'Akzent (#3B82F6)');
+    await expect(swatches.nth(1)).toHaveAttribute('data-tip', 'Text (#FFFFFF)');
+    await expect(swatches.nth(2)).toHaveAttribute('data-tip', 'Hintergrund (#1E293B)');
     await swatches.nth(2).click();
     await expect(await customColor(page, 'text-color')).toHaveValue('#1e293b');
 });

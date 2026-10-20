@@ -50,10 +50,10 @@ test('a saved notice shows when and by whom it was last changed, one fact per li
     const card = page.getByTestId('notice-card').first();
     await expect(card).toContainText('Parkplatz gesperrt');
     await expect(card.getByTestId('notice-edited-at')).toHaveText(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
-    await expect(card.getByTestId('notice-edited-at')).toHaveAttribute('title', /^Zuletzt geändert am .+ um \d{2}:\d{2}$/);
+    await expect(card.getByTestId('notice-edited-at')).toHaveAttribute('data-tip', /^Zuletzt geändert am .+ um \d{2}:\d{2}$/);
     // The signed-in test user's name, whoever that is.
     await expect(card.getByTestId('notice-edited-by')).toHaveText(/\S/);
-    await expect(card.getByTestId('notice-edited-by')).toHaveAttribute('title', /^Zuletzt geändert von /);
+    await expect(card.getByTestId('notice-edited-by')).toHaveAttribute('data-tip', /^Zuletzt geändert von /);
     // Under each other: the date's line lies above the name's line.
     const at = (await card.getByTestId('notice-edited-at').boundingBox())!;
     const by = (await card.getByTestId('notice-edited-by').boundingBox())!;
@@ -122,7 +122,7 @@ test('a running notice shows a strip for each of the next seven days; hovering a
     await lines.filter({ hasText: 'Foyer' }).hover();
     await expect(card.locator('[data-testid=week-segment][data-dim=false]')).toHaveCount(1);
     await expect(card.locator('[data-testid=week-segment][data-dim=true]')).not.toHaveCount(0);
-    await expect(card.locator('[data-testid=week-segment][data-dim=false]')).toHaveAttribute('title', /^So 09:00–12:00: .*Foyer/);
+    await expect(card.locator('[data-testid=week-segment][data-dim=false]')).toHaveAttribute('data-tip', /^So 09:00–12:00: .*Foyer/);
 });
 
 test('a notice on a playlist no screen shows says so, with a pale strip (Plan.md 69)', async ({ page }) => {

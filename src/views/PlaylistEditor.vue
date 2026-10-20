@@ -774,9 +774,9 @@ function onKey(event: KeyboardEvent): void {
     >
         <AppBar>
             <RouterLink
+                v-tip="t.editor.leaveTitle(back.label)"
                 class="link-btn back"
                 :to="back.to"
-                :title="t.editor.leaveTitle(back.label)"
                 :aria-label="t.editor.backAria(back.label)"
                 data-testid="leave-editor"
             >
@@ -796,8 +796,8 @@ function onKey(event: KeyboardEvent): void {
                         <!-- Changed but not published, whatever the saving says beside it (Plan.md 79, Paket E, Teil 3). -->
                         <span
                             v-if="editor.draftsOn && editor.dirty"
+                            v-tip="t.editor.draftFlagTitle"
                             class="d-draft-mark draft-mark"
-                            :title="t.editor.draftFlagTitle"
                             data-testid="unpublished-flag"
                         >
                             <Icon name="pencil" :size="14" /><span class="draft-mark-text">{{ t.editor.draftFlag }}</span>
@@ -869,9 +869,9 @@ function onKey(event: KeyboardEvent): void {
                 </button>
                 <button
                     v-if="!templatePage"
+                    v-tip="t.editor.previewTitle"
                     class="d-btn preview-btn"
                     type="button"
-                    :title="t.editor.previewTitle"
                     data-testid="open-preview"
                     :disabled="!editor.slides.length"
                     @click="previewing = true"
@@ -882,10 +882,10 @@ function onKey(event: KeyboardEvent): void {
                 <RouterLink
                     v-for="s in templatePage ? [] : editor.screens.slice(0, 1)"
                     :key="s.id"
+                    v-tip="t.editor.playerTitle(s.name)"
                     class="link-btn player-link"
                     :to="{ name: 'player', query: { screen: s.slug } }"
                     target="_blank"
-                    :title="t.editor.playerTitle(s.name)"
                     data-testid="open-player"
                 >
                     <Icon name="play" :size="16" /> {{ t.editor.player }}<span v-if="editor.screens.length > 1" class="muted">: {{ s.name }}</span>
@@ -893,9 +893,9 @@ function onKey(event: KeyboardEvent): void {
                 <!-- Below 48rem "Vorschau" and "Player" move in here – Rückgängig/Wiederholen and Veröffentlichen stay outside (Plan.md 44, M2); "Entwurf verwerfen" is in it at any width. -->
                 <div v-if="!templatePage" ref="moreMenuRoot" class="more-menu">
                     <button
+                        v-tip="t.editor.moreActions"
                         class="d-btn d-btn--icon"
-                        type="button"
-                        :aria-label="t.editor.moreActions"
+                        type="button" :aria-label="t.editor.moreActions"
                         aria-haspopup="menu"
                         :aria-expanded="moreMenuOpen"
                         data-testid="editor-more"
@@ -951,10 +951,10 @@ function onKey(event: KeyboardEvent): void {
                 </div>
                 <button
                     v-if="!templatePage"
+                    v-tip="saveTitle"
                     class="d-btn d-btn--primary"
                     type="button"
                     data-testid="save"
-                    :title="saveTitle"
                     :disabled="!editor.dirty || editor.status === 'publishing' || !!editor.templateEdit"
                     @click="publishWithCheck"
                 >
@@ -1096,7 +1096,7 @@ function onKey(event: KeyboardEvent): void {
                     <h2>
                         {{ t.editor.slideList.title }} <span class="slides-sheet-count">{{ editor.slides.length }}</span>
                     </h2>
-                    <button class="d-btn d-btn--icon" type="button" :aria-label="t.common.close" data-testid="slides-sheet-close" @click="slidesSheetOpen = false">
+                    <button v-tip="t.common.close" class="d-btn d-btn--icon" type="button" :aria-label="t.common.close" data-testid="slides-sheet-close" @click="slidesSheetOpen = false">
                         <Icon name="close" :size="16" />
                     </button>
                 </header>

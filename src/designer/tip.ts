@@ -1,7 +1,8 @@
 /**
  * The hint of a button that shows only a symbol (Plan.md 79, B3): `v-tip="'Duplizieren (Strg+D)'"`. A small dark
  * face under the button, 300 ms after the pointer arrives and at once for the keyboard (`:focus-visible`); it goes
- * on leaving, on Escape and on a click. A finger never sees it – `aria-label` carries the name there. One face for
+ * on leaving, on Escape and on a click. A finger never sees it – `aria-label` carries the name there – and a pointer
+ * without hover does not either. The text is also written to `data-tip`, for the tests. One face for
  * the whole page, set into the designer's own element so the theme's variables reach it.
  */
 import type { Directive } from 'vue';
@@ -58,6 +59,12 @@ function show(el: HTMLElement): void {
     document.addEventListener('keydown', onEscape, true);
 }
 
+/** The text as an attribute the tests can read; no text, no attribute. */
+function mark(el: HTMLElement, text: string): void {
+    if (text) el.setAttribute('data-tip', text);
+    else el.removeAttribute('data-tip');
+}
+
 function keyboardFocus(el: HTMLElement): boolean {
     try {
         return el.matches(':focus-visible');
@@ -78,8 +85,9 @@ export const vTip: Directive<HTMLElement, string | undefined> = {
             if (owner === el) hide();
         };
         const enter = (event: Event): void => {
-            // A finger has no hover; the name is in `aria-label`.
+            // A finger has no hover, nor has a pen on some tablets; the name is in `aria-label`.
             if ((event as PointerEvent).pointerType === 'touch') return;
+            if (window.matchMedia?.('(hover: hover)').matches === false) return;
             later();
         };
         const focus = (): void => {
@@ -101,10 +109,12 @@ export const vTip: Directive<HTMLElement, string | undefined> = {
             el.removeEventListener('blur', gone);
         };
         states.set(el, state);
+        mark(el, state.text);
     },
     updated(el, binding) {
         const state = states.get(el);
         if (!state || state.text === (binding.value ?? '')) return;
+        mark(el, binding.value ?? '');
         state.text = binding.value ?? '';
         if (owner === el && face) {
             face.textContent = state.text;

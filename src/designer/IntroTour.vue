@@ -9,6 +9,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 import { t } from '../i18n/designer';
 import Icon from './Icon.vue';
 import { INTRO_STEPS, bubblePlace, firstVisible, type Box, type IntroStepId } from './intro';
+import { vTip } from './tip';
 
 const props = defineProps<{ drafts: boolean }>();
 const emit = defineEmits<{ close: [] }>();
@@ -103,7 +104,7 @@ function next(): void {
         <div v-if="ring" class="focus-ring" :style="ring" />
         <div v-else class="dim" />
         <div ref="bubble" class="bubble" :style="place">
-            <button class="d-btn d-btn--icon d-btn--ghost close" type="button" :aria-label="t.intro.close" data-testid="intro-close" @click="emit('close')">
+            <button v-tip="t.intro.close" class="d-btn d-btn--icon d-btn--ghost close" type="button" :aria-label="t.intro.close" data-testid="intro-close" @click="emit('close')">
                 <Icon name="close" :size="16" />
             </button>
             <p class="count" data-testid="intro-step">{{ t.intro.step(index + 1, steps.length) }}</p>

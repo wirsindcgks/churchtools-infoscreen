@@ -434,9 +434,9 @@ const lockLabel = computed(() => (fixed.value ? t.templates.fixedTitle : allLock
             </div>
             <button
                 v-if="bar"
+                v-tip="t.quick.deselect"
                 class="d-btn d-btn--icon d-btn--ghost quick-action"
-                type="button"
-                :aria-label="t.quick.deselect"
+                type="button" :aria-label="t.quick.deselect"
                 data-testid="quick-deselect"
                 data-quick-stop
                 @click="deselect"

@@ -46,7 +46,7 @@ describe('ScreenCard – sign of life', () => {
             '[data-testid="screen-alive"]',
         );
         expect(line.text()).toBe('nicht online seit 05.10.2026, 14:32');
-        expect(line.attributes('title')).toBe('Letztes Lebenszeichen …');
+        expect(line.attributes('data-tip')).toBe('Letztes Lebenszeichen …');
         expect(line.attributes('data-alive')).toBe('offline');
         expect(line.find('.alive-dot').attributes('aria-hidden')).toBe('true');
     });

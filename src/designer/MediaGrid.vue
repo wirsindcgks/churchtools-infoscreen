@@ -18,6 +18,7 @@ import { videoSrc } from '../player/video';
 import Icon from './Icon.vue';
 import { lastEdited } from './last-edited';
 import Tile from './Tile.vue';
+import { vTip } from './tip';
 
 const props = defineProps<{
     items: MediaItem[];
@@ -66,9 +67,9 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
         >
             <template #media>
                 <button
+                    v-tip="choosable ? (multiple ? t.media.grid.mark(item.name) : t.media.grid.use(item.name)) : t.media.grid.view(item.name)"
                     class="pick d-tile-media"
                     type="button"
-                    :title="choosable ? (multiple ? t.media.grid.mark(item.name) : t.media.grid.use(item.name)) : t.media.grid.view(item.name)"
                     :aria-pressed="choosable && multiple ? numberOf(item) > 0 : undefined"
                     @click="choosable ? emit('choose', item) : emit('preview', item)"
                 >
@@ -82,16 +83,16 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                 <!-- Beside the tile button, not in it: a button in a button is not valid. -->
                 <button
                     v-if="choosable"
+                    v-tip="t.media.grid.view(item.name)"
                     class="look"
                     type="button"
                     :aria-label="t.media.grid.view(item.name)"
-                    :title="t.media.grid.view(item.name)"
                     data-testid="media-preview-open"
                     @click="emit('preview', item)"
                 >
                     <Icon name="eye" :size="16" />
                 </button>
-                <label v-if="selectable" class="tile-check" :title="t.media.grid.select(item.name)">
+                <label v-if="selectable" v-tip="t.media.grid.select(item.name)" class="tile-check">
                     <input
                         type="checkbox"
                         :checked="selected?.includes(item.fileId)"
@@ -101,7 +102,7 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                     >
                 </label>
             </template>
-            <template #title><span :title="item.name">{{ item.name }}</span></template>
+            <template #title><span v-tip="item.name">{{ item.name }}</span></template>
             <template #menu="{ close }">
                 <button role="menuitem" type="button" class="danger" data-testid="media-delete" @click="close(); emit('remove', item)">
                     <Icon name="trash" :size="16" /> {{ t.common.delete }}
@@ -113,12 +114,12 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                         <li
                             v-for="line in places.get(item.fileId)!.slice(0, SHOWN)"
                             :key="line"
-                            :title="places.get(item.fileId)!.join('\n')"
+                            v-tip="places.get(item.fileId)!.join('\n')"
                         >
                             <Icon :name="USE_ICON" :size="16" />
                             <span>{{ line }}</span>
                         </li>
-                        <li v-if="places.get(item.fileId)!.length > SHOWN" :title="places.get(item.fileId)!.join('\n')">
+                        <li v-if="places.get(item.fileId)!.length > SHOWN" v-tip="places.get(item.fileId)!.join('\n')">
                             <span class="more">{{ t.media.grid.more(places.get(item.fileId)!.length - SHOWN) }}</span>
                         </li>
                     </template>
@@ -132,7 +133,7 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                 <ul class="d-facts">
                     <li
                         v-if="uploads.get(item.fileId)?.when"
-                        :title="uploads.get(item.fileId)!.whenTitle!"
+                        v-tip="uploads.get(item.fileId)!.whenTitle!"
                         data-testid="media-edited-at"
                     >
                         <Icon name="clock" :size="16" />
@@ -140,7 +141,7 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                     </li>
                     <li
                         v-if="uploads.get(item.fileId)?.by"
-                        :title="uploads.get(item.fileId)!.byTitle!"
+                        v-tip="uploads.get(item.fileId)!.byTitle!"
                         data-testid="media-edited-by"
                     >
                         <Icon name="person" :size="16" />

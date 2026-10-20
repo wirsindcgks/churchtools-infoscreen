@@ -9,6 +9,7 @@ import { computed, nextTick, onMounted, ref } from 'vue';
 import { t } from '../i18n/designer';
 import type { StagedPlaylist } from '../store/screen-repository';
 import SelectMenu from './SelectMenu.vue';
+import { vTip } from './tip';
 
 const props = defineProps<{
     modelValue: string;
@@ -73,9 +74,9 @@ async function submit(): Promise<void> {
         <span class="pick-row">
             <SelectMenu class="pick-menu" :model-value="modelValue" :options="options" :aria-label="label" :testid="testid" @update:model-value="changed" />
             <button
+                v-tip="t.playlists.picker.editTitle"
                 class="d-btn edit"
                 type="button"
-                :title="t.playlists.picker.editTitle"
                 data-testid="playlist-edit"
                 @click="emit('edit', modelValue)"
             >

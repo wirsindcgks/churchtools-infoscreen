@@ -12,6 +12,7 @@ import Icon from './Icon.vue';
 import { matchesName } from './name-search';
 import SearchField from './SearchField.vue';
 import { usePhone } from './usePhone';
+import { vTip } from './tip';
 
 const help = useHelp();
 const phone = usePhone();
@@ -85,7 +86,7 @@ watch(visible, (now) => {
             <header class="help-head">
                 <strong class="help-title" data-testid="help-title">{{ t.help.subject(help.subject.value) }}</strong>
                 <SearchField v-model="query" class="help-search" :placeholder="t.help.search" :label="t.help.search" testid="help-search" />
-                <button class="d-btn d-btn--icon" type="button" :aria-label="t.help.close" data-testid="help-close" @click="help.close()">
+                <button v-tip="t.help.close" class="d-btn d-btn--icon" type="button" :aria-label="t.help.close" data-testid="help-close" @click="help.close()">
                     <Icon name="close" :size="16" />
                 </button>
             </header>

@@ -6,6 +6,7 @@
 import { computed } from 'vue';
 import { t } from '../i18n/designer';
 import { liveTitle, type LiveScreen } from './alive';
+import { vTip } from './tip';
 
 const props = defineProps<{ live: LiveScreen[]; timeZone: string; overlay?: boolean }>();
 
@@ -13,7 +14,7 @@ const title = computed(() => liveTitle(props.live, props.timeZone));
 </script>
 
 <template>
-    <span class="live-flag" :class="{ overlay }" role="img" :title="title" :aria-label="t.common.runningAria(title)">
+    <span v-tip="title" class="live-flag" :class="{ overlay }" role="img" :aria-label="t.common.runningAria(title)">
         <span class="alive-dot is-online" aria-hidden="true" />
         <span class="live-text">{{ t.common.running }}</span>
     </span>

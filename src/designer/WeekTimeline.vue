@@ -5,6 +5,7 @@
  * `color: null` is "nothing here" (a notice that is not shown, Plan.md 69): a pale, inert area.
  * `highlight` is a key; every other stretch fades, so a line elsewhere can point at its stretches.
  */
+import { vTip } from './tip';
 export interface TimelineSegment {
     /** Minutes after local midnight, 0 to 1440; `end` is exclusive. */
     start: number;
@@ -37,18 +38,18 @@ const emit = defineEmits<{
 
 <template>
     <div class="week" data-testid="week-timeline">
-        <div v-for="(day, dayIndex) in days" :key="dayIndex" class="day" :title="day.title" data-testid="week-day">
+        <div v-for="(day, dayIndex) in days" :key="dayIndex" v-tip="day.title" class="day" data-testid="week-day">
             <span class="label" aria-hidden="true">{{ day.label }}</span>
             <div class="strip">
                 <template v-for="segment in day.segments" :key="segment.start">
                     <button
                         v-if="segment.color !== null"
+                        v-tip="segment.label"
                         type="button"
                         class="segment"
                         :class="{ dim: highlight != null && highlight !== segment.key }"
                         :style="{ flexGrow: segment.end - segment.start, background: segment.color }"
                         :aria-label="segment.label"
-                        :title="segment.label"
                         :data-key="segment.key"
                         :data-dim="highlight != null && highlight !== segment.key"
                         data-testid="week-segment"
@@ -60,9 +61,9 @@ const emit = defineEmits<{
                     />
                     <span
                         v-else
+                        v-tip="segment.label"
                         class="segment segment--none"
                         :style="{ flexGrow: segment.end - segment.start }"
-                        :title="segment.label"
                         :data-key="segment.key"
                         data-testid="week-segment-none"
                     />

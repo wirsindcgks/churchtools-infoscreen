@@ -10,6 +10,7 @@ import { t } from '../../../i18n/designer';
 import Icon from '../../Icon.vue';
 import { useSortable } from '../../useSortable';
 import { useFieldVisible } from '../mode';
+import { vTip } from '../../tip';
 
 export interface SortItem {
     key: string | number;
@@ -34,17 +35,17 @@ useSortable({ container: list, onMove: (from, to) => emit('move', from, to) });
     <ol v-if="visible" ref="list" class="sort-list" :data-testid="`${testid}-list`">
         <li v-for="(item, index) in items" :key="item.key" class="sort-row" data-sort-item :data-testid="rowTestid ?? `${testid}-row`">
             <div class="sort-head">
-                <button class="sort-handle" type="button" data-sort-handle :aria-label="t.common.dragToSort" :data-testid="`${testid}-handle`">
+                <button v-tip="t.common.dragToSort" class="sort-handle" type="button" data-sort-handle :aria-label="t.common.dragToSort" :data-testid="`${testid}-handle`">
                     <Icon name="grip" :size="16" />
                 </button>
                 <slot name="lead" :item="item" :index="index" />
                 <img v-if="item.thumb" :src="item.thumb" alt="">
                 <span v-else-if="item.thumb === null" class="sort-missing" />
-                <span class="sort-label" :class="{ 'sort-label--dimmed': item.dimmed }" :title="item.label" :data-testid="`${testid}-name`">{{ item.label }}</span>
+                <span v-tip="item.label" class="sort-label" :class="{ 'sort-label--dimmed': item.dimmed }" :data-testid="`${testid}-name`">{{ item.label }}</span>
                 <button
+                    v-tip="removeLabel"
                     class="sort-remove"
-                    type="button"
-                    :aria-label="removeLabel"
+                    type="button" :aria-label="removeLabel"
                     :disabled="item.keep"
                     :data-testid="`${testid}-remove`"
                     @click="$emit('remove', index)"

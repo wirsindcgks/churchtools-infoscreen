@@ -170,7 +170,7 @@ for (const size of [
         else if (size.width === 1180) await page.getByTestId('tablet-inspector-toggle').click();
         const row = page.getByTestId('slide-linked');
         await expect(row).toBeVisible();
-        await expect(page.getByTestId('slide-linked-in')).toHaveAttribute('title', new RegExp(long));
+        await expect(page.getByTestId('slide-linked-in')).toHaveAttribute('data-tip', new RegExp(long));
         const frame = (await page.locator('aside.inspector').boundingBox())!;
         for (const id of ['slide-linked', 'slide-unlink']) {
             const box = (await page.getByTestId(id).boundingBox())!;

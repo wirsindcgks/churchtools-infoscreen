@@ -9,11 +9,11 @@
  * `group="…"` picks another, `:group="false"` leaves a section out of any group. In the short menu only the body shows, and
  * so it does in the open field of a chip there (without the "?": neither announces itself, the bar belongs to the inspector).
  */
-import { computed, inject, ref, unref } from 'vue';
+import { computed, inject, provide, ref, unref } from 'vue';
 import { t } from '../i18n/designer';
 import HelpButton from './HelpButton.vue';
 import { hasHelp, type HelpTopic } from './help/types';
-import { useHelp, useHelpSection } from './help/register';
+import { SECTION_HELP, useHelp, useHelpSection } from './help/register';
 import Icon from './Icon.vue';
 import { IN_QUICK_FIELD, INSPECTOR_MODE, SECTION_GROUP } from './inspector/mode';
 import { sectionState } from './section-state';
@@ -38,6 +38,11 @@ useHelpSection(
     () => props.id,
     () => props.title,
     () => props.help,
+);
+/** The fields inside find the explanation of their label here (`FieldRow`). */
+provide(
+    SECTION_HELP,
+    computed(() => props.help),
 );
 const helpShown = computed(() => !!register && register.shown(props.id));
 

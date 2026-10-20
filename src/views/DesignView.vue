@@ -36,6 +36,7 @@ import FontField from '../designer/inspector/fields/FontField.vue';
 import { fitStage } from '../player/stage';
 import { getRepository } from '../store/backend';
 import { ConflictError, TemplateInUseError, type ScreenRepository, type TemplateUse } from '../store/screen-repository';
+import { vTip } from '../designer/tip';
 
 type Look = Pick<ThemeDoc, 'corners' | 'accent' | 'text' | 'background' | 'font' | 'appointments' | 'imageRatio' | 'cards' | 'cardColor' | 'cardOpacity'> & Required<Pick<ThemeDoc, 'palette' | 'customFonts'>>;
 
@@ -359,32 +360,32 @@ function observe(el: unknown): void {
                             </label>
                             <div class="palette-actions">
                                 <button
+                                    v-tip="t.common.moveUp"
                                     class="d-btn d-btn--icon"
                                     type="button"
                                     :disabled="i === 0"
                                     :aria-label="t.design.palette.moveUp(i + 1)"
-                                    :title="t.common.moveUp"
                                     data-testid="palette-up"
                                     @click="movePaletteColor(i, -1)"
                                 >
                                     <Icon name="layer-forward" />
                                 </button>
                                 <button
+                                    v-tip="t.common.moveDown"
                                     class="d-btn d-btn--icon"
                                     type="button"
                                     :disabled="i === look.palette.length - 1"
                                     :aria-label="t.design.palette.moveDown(i + 1)"
-                                    :title="t.common.moveDown"
                                     data-testid="palette-down"
                                     @click="movePaletteColor(i, 1)"
                                 >
                                     <Icon name="layer-backward" />
                                 </button>
                                 <button
+                                    v-tip="t.common.remove"
                                     class="d-btn d-btn--icon"
                                     type="button"
                                     :aria-label="t.design.palette.remove(i + 1)"
-                                    :title="t.common.remove"
                                     data-testid="palette-remove"
                                     @click="look.palette.splice(i, 1)"
                                 >
@@ -477,7 +478,7 @@ function observe(el: unknown): void {
                     <p v-if="!templates.length" class="hint" data-testid="templates-empty">{{ t.templates.design.empty }}</p>
                     <ul v-else class="templates">
                         <li v-for="template in templates" :key="template.id" class="template-row" data-testid="template-row" :data-template-id="template.id">
-                            <RouterLink class="template-thumb" :to="{ name: 'template-editor', params: { id: template.id } }" :title="t.templates.design.openTitle(template.name)" tabindex="-1" aria-hidden="true">
+                            <RouterLink v-tip="t.templates.design.openTitle(template.name)" class="template-thumb" :to="{ name: 'template-editor', params: { id: template.id } }" tabindex="-1" aria-hidden="true">
                                 <SlideThumb :slide="thumbSlides.get(template.id) ?? null" :stage="{ width: template.width, height: template.height }" :aspect="template.width / template.height" />
                             </RouterLink>
                             <div class="template-text">

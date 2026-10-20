@@ -100,9 +100,9 @@ test('a tile opens the preview; page through the files, switch the background, c
 
     // When and by whom each file was uploaded, a line each (Plan.md 66); 500 has no known uploader.
     await expect(items.first().getByTestId('media-edited-at')).toHaveText('01.09.2026, 12:00');
-    await expect(items.first().getByTestId('media-edited-at')).toHaveAttribute('title', 'Hochgeladen am 1. September 2026 um 12:00');
+    await expect(items.first().getByTestId('media-edited-at')).toHaveAttribute('data-tip', 'Hochgeladen am 1. September 2026 um 12:00');
     await expect(items.first().getByTestId('media-edited-by')).toHaveText('Anna Beispiel');
-    await expect(items.first().getByTestId('media-edited-by')).toHaveAttribute('title', 'Hochgeladen von Anna Beispiel');
+    await expect(items.first().getByTestId('media-edited-by')).toHaveAttribute('data-tip', 'Hochgeladen von Anna Beispiel');
     const upAt = (await items.first().getByTestId('media-edited-at').boundingBox())!;
     const upBy = (await items.first().getByTestId('media-edited-by').boundingBox())!;
     expect(upBy.y).toBeGreaterThanOrEqual(upAt.y + upAt.height - 1);

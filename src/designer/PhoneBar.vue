@@ -16,6 +16,7 @@ import { GRID_SIZES } from './snap';
 import { KEYS, keyLabel } from './shortcuts';
 import { useConfirm } from './useConfirm';
 import { useKeyboardInset } from './usePhone';
+import { vTip } from './tip';
 
 const emit = defineEmits<{ slides: []; 'edit-slide': []; blocks: []; 'all-settings': [] }>();
 
@@ -115,9 +116,9 @@ const gridOptions = GRID_SIZES.map((size) => ({ value: size, label: size ? `${si
                 <Icon name="chevron-down" :size="16" class="slides-chevron" />
             </button>
             <button
+                v-tip="t.editor.palette.addBlock"
                 class="d-btn d-btn--create add"
-                type="button"
-                :aria-label="t.editor.palette.addBlock"
+                type="button" :aria-label="t.editor.palette.addBlock"
                 :disabled="!editor.slide"
                 data-testid="add-block-menu"
                 @click="editor.blockSheetOpen = true"
@@ -126,10 +127,10 @@ const gridOptions = GRID_SIZES.map((size) => ({ value: size, label: size ? `${si
             </button>
             <div ref="moreWrap" class="more">
                 <button
+                    v-tip="t.editor.moreActions"
                     class="d-btn d-btn--icon d-btn--ghost"
                     :class="{ on: moreOpen }"
-                    type="button"
-                    :aria-label="t.editor.moreActions"
+                    type="button" :aria-label="t.editor.moreActions"
                     aria-haspopup="menu"
                     :aria-expanded="moreOpen"
                     :disabled="!editor.slide"

@@ -19,6 +19,7 @@ import Icon from './Icon.vue';
 import PlaylistPicker from './PlaylistPicker.vue';
 import { useConfirm } from './useConfirm';
 import { usePreview } from './usePreview';
+import { vTip } from './tip';
 import {
     createAppointmentRule,
     createTimeRule,
@@ -304,7 +305,7 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
         >
             <header class="head">
                 <h2 id="schedule-title">{{ screen ? t.schedules.dialog.titleFor(screen.name) : t.schedules.title }}</h2>
-                <button class="d-btn d-btn--icon" type="button" :aria-label="t.common.close" @click="close">
+                <button v-tip="t.common.close" class="d-btn d-btn--icon" type="button" :aria-label="t.common.close" @click="close">
                     <Icon name="close" />
                 </button>
             </header>
@@ -346,10 +347,10 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                                 <strong>{{ rule.kind === 'time' ? t.schedules.dialog.atTimes : t.schedules.dialog.aroundAppointments }}</strong>
                                 <span class="spacer" />
                                 <button
+                                    v-tip="t.schedules.dialog.moveUp"
                                     class="d-btn d-btn--icon"
                                     type="button"
                                     :aria-label="t.schedules.dialog.moveUp"
-                                    :title="t.schedules.dialog.moveUp"
                                     :disabled="index === 0"
                                     data-testid="rule-up"
                                     @click="moveRule(index, index - 1)"
@@ -357,20 +358,20 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                                     ↑
                                 </button>
                                 <button
+                                    v-tip="t.common.moveDown"
                                     class="d-btn d-btn--icon"
                                     type="button"
                                     :aria-label="t.common.moveDown"
-                                    :title="t.common.moveDown"
                                     :disabled="index === rules.length - 1"
                                     @click="moveRule(index, index + 1)"
                                 >
                                     ↓
                                 </button>
                                 <button
+                                    v-tip="t.schedules.dialog.removeRule"
                                     class="d-btn d-btn--icon d-btn--danger"
                                     type="button"
                                     :aria-label="t.schedules.dialog.removeRule"
-                                    :title="t.schedules.dialog.removeRule"
                                     data-testid="rule-remove"
                                     @click="removeRule(index)"
                                 >
@@ -383,11 +384,11 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                                     <button
                                         v-for="d in WEEKDAYS"
                                         :key="d.day"
+                                        v-tip="d.long"
                                         type="button"
                                         class="day"
                                         :class="{ on: rule.weekdays.includes(d.day) }"
                                         :aria-pressed="rule.weekdays.includes(d.day)"
-                                        :title="d.long"
                                         data-testid="rule-day"
                                         @click="toggleDay(index, rule, d.day)"
                                     >
@@ -484,11 +485,11 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                             <Icon name="clock" :size="16" /> {{ t.schedules.dialog.atTimes }}
                         </button>
                         <button
+                            v-tip="calendars.length ? t.schedules.dialog.appointmentRuleTitle : t.schedules.dialog.noCalendars"
                             class="d-btn"
                             type="button"
                             data-testid="add-appointment-rule"
                             :disabled="!calendars.length"
-                            :title="calendars.length ? t.schedules.dialog.appointmentRuleTitle : t.schedules.dialog.noCalendars"
                             @click="addAppointmentRule"
                         >
                             <Icon name="calendar" :size="16" /> {{ t.schedules.dialog.aroundAppointments }}
@@ -509,13 +510,13 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                         <button
                             v-for="segment in timeline"
                             :key="segment.start"
+                            v-tip="`${fromMinutes(segment.start)}–${fromMinutes(segment.end === 1440 ? 1439 : segment.end)}: ${nameOf(segment.playlistId)}`"
                             type="button"
                             class="segment"
                             :style="{
                                 flexGrow: segment.end - segment.start,
                                 background: colorOf(segment.playlistId),
                             }"
-                            :title="`${fromMinutes(segment.start)}–${fromMinutes(segment.end === 1440 ? 1439 : segment.end)}: ${nameOf(segment.playlistId)}`"
                             @click="previewMinute = segment.start"
                         />
                         <span class="needle" :style="{ left: `${(previewMinute / 1440) * 100}%` }" aria-hidden="true" />

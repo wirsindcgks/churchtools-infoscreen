@@ -33,7 +33,7 @@ function hint(event: PointerEvent, id: string | null): void {
         @pointerenter="hint($event, block.id)"
         @pointerleave="hint($event, null)"
     >
-        <button class="layer-handle" type="button" data-sort-handle :disabled="!!block.locked" :aria-label="t.common.dragToSort" data-testid="layer-handle" @click.stop>
+        <button v-tip="t.common.dragToSort" class="layer-handle" type="button" data-sort-handle :disabled="!!block.locked" :aria-label="t.common.dragToSort" data-testid="layer-handle" @click.stop>
             <Icon name="grip" :size="14" />
         </button>
         <span

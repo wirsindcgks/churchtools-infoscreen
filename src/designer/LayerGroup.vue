@@ -33,15 +33,15 @@ useSortable({
 <template>
     <li class="layer-group" data-sort-item data-testid="layer-group">
         <div class="layer-item" :class="{ 'layer-item--on': whole }" data-testid="layer-group-row" @click="emit('chooseGroup', $event)">
-            <button class="layer-handle" type="button" data-sort-handle :disabled="locked" :aria-label="t.common.dragToSort" data-testid="layer-handle" @click.stop>
+            <button v-tip="t.common.dragToSort" class="layer-handle" type="button" data-sort-handle :disabled="locked" :aria-label="t.common.dragToSort" data-testid="layer-handle" @click.stop>
                 <Icon name="grip" :size="14" />
             </button>
             <button
+                v-tip="open ? t.inspector.groupClose : t.inspector.groupOpen"
                 class="layer-group-toggle"
                 :class="{ 'layer-group-toggle--closed': !open }"
                 type="button"
-                :aria-expanded="open"
-                :aria-label="open ? t.inspector.groupClose : t.inspector.groupOpen"
+                :aria-expanded="open" :aria-label="open ? t.inspector.groupClose : t.inspector.groupOpen"
                 data-testid="layer-group-toggle"
                 @click.stop="emit('toggle')"
             >

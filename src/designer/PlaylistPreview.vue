@@ -17,6 +17,7 @@ import { fitStage } from '../player/stage';
 import StageView from '../player/StageView.vue';
 import { t } from '../i18n/designer';
 import Icon from './Icon.vue';
+import { vTip } from './tip';
 
 const props = defineProps<{
     slides: SlideDoc[];
@@ -157,22 +158,22 @@ onBeforeUnmount(() => {
 
         <div class="controls" data-testid="preview-controls">
             <span class="badge">{{ t.editor.previewDialog.badge }}</span>
-            <button type="button" :aria-label="t.editor.previewDialog.previous" :title="t.editor.previewDialog.previousTitle" @click="rotation.step(-1)">
+            <button v-tip="t.editor.previewDialog.previousTitle" type="button" :aria-label="t.editor.previewDialog.previous" @click="rotation.step(-1)">
                 <Icon name="back" />
             </button>
             <button
+                v-tip="paused ? t.editor.previewDialog.resumeTitle : t.editor.previewDialog.pauseTitle"
                 type="button"
                 :aria-label="paused ? t.editor.previewDialog.resume : t.editor.previewDialog.pause"
-                :title="paused ? t.editor.previewDialog.resumeTitle : t.editor.previewDialog.pauseTitle"
                 data-testid="preview-pause"
                 @click="paused = !paused"
             >
                 <Icon :name="paused ? 'play' : 'pause'" />
             </button>
             <button
+                v-tip="t.editor.previewDialog.nextTitle"
                 type="button"
                 :aria-label="t.editor.previewDialog.next"
-                :title="t.editor.previewDialog.nextTitle"
                 data-testid="preview-next"
                 @click="rotation.step(1)"
             >
@@ -181,7 +182,7 @@ onBeforeUnmount(() => {
             <span v-if="current" class="where" data-testid="preview-where">
                 {{ (index % shown.length) + 1 }}/{{ shown.length }} · {{ current.name }} · {{ seconds }} s{{ paused ? t.editor.previewDialog.paused : '' }}
             </span>
-            <button type="button" class="close" :title="t.editor.previewDialog.closeTitle" data-testid="preview-close" @click="emit('close')">
+            <button v-tip="t.editor.previewDialog.closeTitle" type="button" class="close" data-testid="preview-close" @click="emit('close')">
                 <Icon name="close" /> {{ t.common.close }}
             </button>
         </div>

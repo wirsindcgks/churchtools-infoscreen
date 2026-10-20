@@ -32,6 +32,7 @@ import type { PlaylistOverview, ScreenRepository } from '../store/screen-reposit
 import { setScreenCounts } from '../designer/section-counts';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
+import { vTip } from '../designer/tip';
 
 const repository = shallowRef<ScreenRepository | null>(null);
 const author = ref<string | null>(null);
@@ -239,10 +240,10 @@ onMounted(async () => {
                     >
                         <template #media>
                             <button
+                                v-tip="t.schedules.editOf(screen.name)"
                                 class="thumb d-tile-media"
                                 type="button"
                                 :aria-label="t.schedules.editOf(screen.name)"
-                                :title="t.schedules.editOf(screen.name)"
                                 data-testid="schedule-preview"
                                 @click="editing = screen.slug"
                             >
@@ -269,9 +270,9 @@ onMounted(async () => {
                                         {{ t.schedules.now }}
                                         <RouterLink
                                             v-if="playlists.get(running(screen).playlistId)"
+                                            v-tip="t.schedules.openInEditor(playlistName(running(screen).playlistId))"
                                             class="now"
                                             :to="{ name: 'editor', params: { id: running(screen).playlistId } }"
-                                            :title="t.schedules.openInEditor(playlistName(running(screen).playlistId))"
                                             data-testid="schedule-playlist"
                                         >
                                             {{ playlistName(running(screen).playlistId) }}
@@ -343,7 +344,7 @@ onMounted(async () => {
                         </section>
                         <section class="d-tile-section">
                             <ul class="d-facts">
-                                <li :title="screen.stage.height > screen.stage.width ? t.common.portrait : t.common.landscape">
+                                <li v-tip="screen.stage.height > screen.stage.width ? t.common.portrait : t.common.landscape">
                                     <Icon :name="screen.stage.height > screen.stage.width ? 'portrait' : 'landscape'" :size="16" />
                                     {{ screen.stage.height > screen.stage.width ? t.common.portrait : t.common.landscape }}
                                 </li>
@@ -351,11 +352,11 @@ onMounted(async () => {
                         </section>
                         <template v-if="edited(screen)" #foot>
                             <ul class="d-facts">
-                                <li v-if="edited(screen)!.when" :title="edited(screen)!.whenTitle!" data-testid="schedule-edited-at">
+                                <li v-if="edited(screen)!.when" v-tip="edited(screen)!.whenTitle!" data-testid="schedule-edited-at">
                                     <Icon name="clock" :size="16" />
                                     <span>{{ edited(screen)!.when }}</span>
                                 </li>
-                                <li v-if="edited(screen)!.by" :title="edited(screen)!.byTitle!" data-testid="schedule-edited-by">
+                                <li v-if="edited(screen)!.by" v-tip="edited(screen)!.byTitle!" data-testid="schedule-edited-by">
                                     <Icon name="person" :size="16" />
                                     <span>{{ edited(screen)!.by }}</span>
                                 </li>

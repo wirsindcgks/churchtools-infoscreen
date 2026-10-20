@@ -17,6 +17,7 @@ import { lastEdited, relativeWhen } from './last-edited';
 import LiveFlag from './LiveFlag.vue';
 import SlideThumb from './SlideThumb.vue';
 import Tile from './Tile.vue';
+import { vTip } from './tip';
 
 const props = defineProps<{
     overview: PlaylistOverview;
@@ -60,16 +61,16 @@ const edited = computed(() => lastEdited(props.overview.editedAt, props.overview
             <LiveFlag v-if="live.length" overlay :live="live" :time-zone="context.timeZone" data-testid="playlist-live" />
             <span
                 v-if="hasBanner"
+                v-tip="t.playlists.card.bannerTitle(playlist.banner!.text)"
                 class="d-tile-mark"
-                :title="t.playlists.card.bannerTitle(playlist.banner!.text)"
                 data-testid="playlist-banner"
             >
                 <Icon name="megaphone" :size="14" /> {{ t.playlists.card.banner }}
             </span>
             <span
                 v-if="draft"
+                v-tip="t.playlists.card.draftTitle(draft.updatedBy, relativeWhen(draft.updatedAt, context.timeZone, props.now ?? context.now))"
                 class="d-tile-mark d-draft-mark"
-                :title="t.playlists.card.draftTitle(draft.updatedBy, relativeWhen(draft.updatedAt, context.timeZone, props.now ?? context.now))"
                 data-testid="draft-flag"
             >
                 <Icon name="pencil" :size="14" /> {{ t.playlists.card.draft }}
@@ -85,11 +86,11 @@ const edited = computed(() => lastEdited(props.overview.editedAt, props.overview
                 <Icon name="copy" :size="16" /> {{ t.playlists.card.duplicate }}
             </button>
             <button
+                v-tip="inUse ? t.playlists.card.deleteBlocked : undefined"
                 role="menuitem"
                 type="button"
                 class="danger"
                 :disabled="inUse"
-                :title="inUse ? t.playlists.card.deleteBlocked : undefined"
                 data-testid="delete-playlist"
                 @click="close(); emit('remove')"
             >
@@ -98,11 +99,11 @@ const edited = computed(() => lastEdited(props.overview.editedAt, props.overview
         </template>
         <section class="d-tile-section">
             <ul class="d-facts">
-                <li :title="portrait ? t.common.portrait : t.common.landscape">
+                <li v-tip="portrait ? t.common.portrait : t.common.landscape">
                     <Icon :name="portrait ? 'portrait' : 'landscape'" :size="16" />
                     {{ portrait ? t.common.portrait : t.common.landscape }}
                 </li>
-                <li :title="t.playlists.card.slides">
+                <li v-tip="t.playlists.card.slides">
                     <Icon name="slides" :size="16" />
                     {{ overview.slideCount }}
                 </li>
@@ -110,7 +111,7 @@ const edited = computed(() => lastEdited(props.overview.editedAt, props.overview
         </section>
         <section class="d-tile-section">
             <ul class="d-facts">
-                <li :title="inUse ? t.playlists.card.runsOn : t.playlists.card.runsNowhere" data-testid="playlist-screens">
+                <li v-tip="inUse ? t.playlists.card.runsOn : t.playlists.card.runsNowhere" data-testid="playlist-screens">
                     <Icon name="tv" :size="16" />
                     {{ inUse ? overview.screens.map((s) => s.name).join(', ') : t.common.onNoScreen }}
                 </li>
@@ -118,11 +119,11 @@ const edited = computed(() => lastEdited(props.overview.editedAt, props.overview
         </section>
         <template v-if="edited" #foot>
             <ul class="d-facts">
-                <li v-if="edited.when" :title="edited.whenTitle!" data-testid="playlist-edited">
+                <li v-if="edited.when" v-tip="edited.whenTitle!" data-testid="playlist-edited">
                     <Icon name="clock" :size="16" />
                     <span data-testid="playlist-edited-at">{{ edited.when }}</span>
                 </li>
-                <li v-if="edited.by" :title="edited.byTitle!" data-testid="playlist-edited-by">
+                <li v-if="edited.by" v-tip="edited.byTitle!" data-testid="playlist-edited-by">
                     <Icon name="person" :size="16" />
                     <span>{{ edited.by }}</span>
                 </li>

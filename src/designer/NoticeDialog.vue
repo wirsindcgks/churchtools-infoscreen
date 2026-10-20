@@ -19,6 +19,7 @@ import BannerEditor from './BannerEditor.vue';
 import Icon from './Icon.vue';
 import { cloneJson, createBanner } from './ops';
 import { useConfirm } from './useConfirm';
+import { vTip } from './tip';
 
 const { confirm } = useConfirm();
 
@@ -166,7 +167,7 @@ function observe(el: unknown): void {
         >
             <header class="head">
                 <h2 id="notice-title">{{ editing ? t.notices.dialog.edit : t.notices.new }}</h2>
-                <button class="d-btn d-btn--icon" type="button" :aria-label="t.common.close" @click="close">
+                <button v-tip="t.common.close" class="d-btn d-btn--icon" type="button" :aria-label="t.common.close" @click="close">
                     <Icon name="close" />
                 </button>
             </header>

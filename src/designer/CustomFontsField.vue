@@ -11,6 +11,7 @@ import { CUSTOM_FONT_PREFIX, type CustomFont, type FontFile } from '../model/sch
 import { fontStack } from '../player/fonts';
 import Icon from './Icon.vue';
 import { useConfirm } from './useConfirm';
+import { vTip } from './tip';
 
 type Cut = 400 | 600 | 700;
 const CUTS: Cut[] = [400, 600, 700];
@@ -120,7 +121,7 @@ async function remove(font: CustomFont): Promise<void> {
                 <ul class="cuts">
                     <li v-for="cut in CUTS" :key="cut" class="cut" :data-testid="`custom-font-cut-${cut}`">
                         <span class="cut-label">{{ text.cuts[cut] }}</span>
-                        <span class="cut-file" :title="font.files[cut]?.name">{{ font.files[cut]?.name ?? '–' }}</span>
+                        <span v-tip="font.files[cut]?.name" class="cut-file">{{ font.files[cut]?.name ?? '–' }}</span>
                         <button
                             class="d-btn"
                             type="button"

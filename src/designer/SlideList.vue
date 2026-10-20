@@ -108,11 +108,11 @@ async function remove(id: string, name: string): Promise<void> {
             <li
                 v-for="(slide, index) in editor.slides"
                 :key="slide.id"
+                v-tip="`${index + 1}. ${slide.name}`"
                 :class="{
                     active: slide.id === editor.slide?.id,
                     disabled: !slide.enabled,
                 }"
-                :title="`${index + 1}. ${slide.name}`"
                 :aria-label="`${index + 1}. ${slide.name}`"
                 data-sort-item
                 data-testid="slide-item"
@@ -120,7 +120,7 @@ async function remove(id: string, name: string): Promise<void> {
             >
                 <div class="lead">
                     <span class="num">{{ index + 1 }}</span>
-                    <button class="grip" type="button" data-sort-handle :aria-label="t.common.dragToSort" data-testid="slide-handle" @click.stop>
+                    <button v-tip="t.common.dragToSort" class="grip" type="button" data-sort-handle :aria-label="t.common.dragToSort" data-testid="slide-handle" @click.stop>
                         <Icon name="grip" :size="14" />
                     </button>
                 </div>
@@ -130,8 +130,8 @@ async function remove(id: string, name: string): Promise<void> {
                     </StageView>
                     <span
                         v-if="editor.linkedIn(slide.id).length"
+                        v-tip="linkedLabel(slide.id)"
                         class="linked-badge"
-                        :title="linkedLabel(slide.id)"
                         :aria-label="linkedLabel(slide.id)"
                         data-testid="slide-linked-badge"
                     >
@@ -141,9 +141,9 @@ async function remove(id: string, name: string): Promise<void> {
                 <div class="meta">
                     <span class="name">{{ slide.name }}</span>
                     <span
+                        v-tip="runs(slide).longer ? t.editor.slideList.runsLonger(slide.durationSeconds, runs(slide).seconds) : undefined"
                         class="duration"
                         :class="{ longer: runs(slide).longer }"
-                        :title="runs(slide).longer ? t.editor.slideList.runsLonger(slide.durationSeconds, runs(slide).seconds) : undefined"
                         data-testid="slide-duration"
                     >
                         <template v-if="runs(slide).longer">{{ slide.durationSeconds }} → </template>{{ runs(slide).seconds }} s{{ slide.enabled ? '' : t.editor.slideList.off }}
@@ -174,9 +174,9 @@ async function remove(id: string, name: string): Promise<void> {
             <!-- Where one looks for the next slide: below the last (Plan.md, Nächste Schritte 11); in the sheet a tile of the grid. -->
             <li class="add-item">
                 <button
+                    v-tip="t.editor.slideList.newSlide"
                     class="add"
                     type="button"
-                    :title="t.editor.slideList.newSlide"
                     :aria-label="t.editor.slideList.newSlide"
                     data-testid="add-slide"
                     :style="{ minHeight: `${thumb.height}px` }"
@@ -186,9 +186,9 @@ async function remove(id: string, name: string): Promise<void> {
                     <span class="add-label">{{ t.editor.slideList.newSlide }}</span>
                 </button>
                 <button
+                    v-tip="t.editor.slideList.importTitle"
                     class="import"
                     type="button"
-                    :title="t.editor.slideList.importTitle"
                     :aria-label="t.editor.slideList.importTitle"
                     data-testid="import-slides"
                     @click="importing = true"

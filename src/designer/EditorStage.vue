@@ -23,6 +23,7 @@ import { cropPan, NO_CROP, type Crop } from './crop';
 import { handleAbove, handleReach, outerFrame, resizeRotated, snapAngle } from './rotate';
 import { snapMove, snapResize, type Guide, type Handle } from './snap';
 import { clampPan, viewOnto, WHOLE, zoomAt, zoomedFit, type View } from './stage-zoom';
+import { vTip } from './tip';
 
 const emit = defineEmits<{ 'all-settings': []; 'open-content': []; 'open-more': [] }>();
 const editor = useEditorStore();
@@ -1051,10 +1052,10 @@ function onEmptyAction(b: Block): void {
                 >
                     <button
                         v-if="emptyIds.has(region.id) && !dragId"
+                        v-tip="t.editor.stage.fillRegion"
                         class="region-add"
                         type="button"
                         :style="{ '--add': `${36 / fit.scale}px` }"
-                        :title="t.editor.stage.fillRegion"
                         :aria-label="t.editor.stage.fillRegion"
                         data-testid="layout-region-add"
                         @pointerdown.stop
@@ -1107,6 +1108,7 @@ function onEmptyAction(b: Block): void {
                 <div
                     v-for="block in blocks"
                     :key="block.id"
+                    v-tip="block.locked ? t.editor.stage.lockedTitle(editor.blockName(block)) : undefined"
                     class="frame"
                     :class="{ 'frame--selected': editor.isSelected(block.id), 'frame--crop': block.id === editor.croppingId, 'frame--locked': block.locked, 'frame--tight': tight(block), 'frame--pressed': block.id === pressedId, 'frame--lifted': block.id === liftedId, 'frame--hinted': block.id === editor.hoveredBlockId && !editor.isSelected(block.id) }"
                     :style="{
@@ -1120,7 +1122,6 @@ function onEmptyAction(b: Block): void {
                         '--turn': `${(2 * rotateRadius()) / fit.scale}px`,
                         '--line': `${1.5 / fit.scale}px`,
                     }"
-                    :title="block.locked ? t.editor.stage.lockedTitle(editor.blockName(block)) : undefined"
                     :data-testid="`frame-${block.type}`"
                     :data-block-id="block.id"
                     @pointerdown="start($event, block, 'move')"
@@ -1137,8 +1138,8 @@ function onEmptyAction(b: Block): void {
                     </span>
                     <span
                         v-if="block.locked && block.id === editor.block?.id"
+                        v-tip="t.editor.stage.lockBadge"
                         class="lock"
-                        :title="t.editor.stage.lockBadge"
                         data-testid="frame-lock"
                     >
                         <Icon name="lock" :size="16" />
@@ -1156,9 +1157,9 @@ function onEmptyAction(b: Block): void {
                             @pointercancel="end"
                         />
                         <span
+                            v-tip="t.editor.stage.rotateHandle"
                             class="rotate-handle"
                             :class="{ 'rotate-handle--above': rotateAbove(block) }"
-                            :title="t.editor.stage.rotateHandle"
                             data-testid="handle-rotate"
                             @pointerdown="startTurn($event, block)"
                             @pointermove="moveTurn"

@@ -16,6 +16,7 @@ import type { Running } from './running';
 import { copyPlayerUrl } from './player-url';
 import SlideThumb from './SlideThumb.vue';
 import Tile from './Tile.vue';
+import { vTip } from './tip';
 
 /**
  * `admin`: configure and delete are the administrators' (Plan.md, F).
@@ -98,7 +99,7 @@ const scheduleLabel = computed(() => {
         </template>
         <section v-if="alive" class="d-tile-section">
             <ul class="d-facts">
-                <li :title="alive.title" data-testid="screen-alive" :data-alive="alive.kind">
+                <li v-tip="alive.title" data-testid="screen-alive" :data-alive="alive.kind">
                     <span class="alive-dot" :class="`is-${alive.kind}`" aria-hidden="true" />
                     <span>{{ alive.text }}</span>
                 </li>
@@ -108,9 +109,9 @@ const scheduleLabel = computed(() => {
             <ul class="d-facts">
                 <li>
                     <Icon name="id" :size="16" />
-                    <code :title="t.home.card.addressTitle(screen.slug)">{{ screen.slug }}</code>
+                    <code v-tip="t.home.card.addressTitle(screen.slug)">{{ screen.slug }}</code>
                 </li>
-                <li :title="portrait ? t.common.portrait : t.common.landscape">
+                <li v-tip="portrait ? t.common.portrait : t.common.landscape">
                     <Icon :name="portrait ? 'portrait' : 'landscape'" :size="16" />
                     {{ portrait ? t.common.portrait : t.common.landscape }}
                 </li>
@@ -119,7 +120,7 @@ const scheduleLabel = computed(() => {
         <section class="d-tile-section">
             <ul class="d-facts">
                 <li
-                    :title="byRule ? t.home.card.byRuleTitle(shown?.slideCount ?? 0) : t.home.card.defaultTitle(shown?.slideCount ?? 0)"
+                    v-tip="byRule ? t.home.card.byRuleTitle(shown?.slideCount ?? 0) : t.home.card.defaultTitle(shown?.slideCount ?? 0)"
                     :class="{ 'by-rule': byRule }"
                     data-testid="screen-playlist"
                 >
@@ -131,9 +132,9 @@ const scheduleLabel = computed(() => {
                 </li>
                 <li>
                     <button
+                        v-tip="screen.schedule.length ? t.home.card.scheduleTitle : t.home.card.scheduleCreateTitle"
                         class="schedule-link"
                         type="button"
-                        :title="screen.schedule.length ? t.home.card.scheduleTitle : t.home.card.scheduleCreateTitle"
                         data-testid="open-schedule"
                         @click="emit('schedule')"
                     >
@@ -145,11 +146,11 @@ const scheduleLabel = computed(() => {
         </section>
         <template v-if="edited" #foot>
             <ul class="d-facts">
-                <li v-if="edited.when" :title="edited.whenTitle!" data-testid="screen-edited-at">
+                <li v-if="edited.when" v-tip="edited.whenTitle!" data-testid="screen-edited-at">
                     <Icon name="clock" :size="16" />
                     <span>{{ edited.when }}</span>
                 </li>
-                <li v-if="edited.by" :title="edited.byTitle!" data-testid="screen-edited-by">
+                <li v-if="edited.by" v-tip="edited.byTitle!" data-testid="screen-edited-by">
                     <Icon name="person" :size="16" />
                     <span>{{ edited.by }}</span>
                 </li>

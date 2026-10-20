@@ -22,6 +22,7 @@ describe('v-tip (Plan.md 79, B3)', () => {
     beforeEach(() => vi.useFakeTimers());
     afterEach(() => {
         vi.useRealTimers();
+        vi.unstubAllGlobals();
         document.body.innerHTML = '';
     });
 
@@ -66,5 +67,31 @@ describe('v-tip (Plan.md 79, B3)', () => {
         expect(face()?.textContent).toBe('Kopieren (Strg+C)');
         wrapper.unmount();
         expect(face()).toBeNull();
+    });
+
+    it('writes the text to data-tip and keeps it up to date', async () => {
+        const wrapper = mount(Host, { attachTo: document.body });
+        const button = wrapper.get('button');
+        expect(button.attributes('data-tip')).toBe('Duplizieren (Strg+D)');
+        await wrapper.setProps({ text: 'Kopieren (Strg+C)' });
+        expect(button.attributes('data-tip')).toBe('Kopieren (Strg+C)');
+        await wrapper.setProps({ text: '' });
+        expect(button.attributes('data-tip')).toBeUndefined();
+    });
+
+    it('shows nothing for a mouse on a device without hover', () => {
+        vi.stubGlobal('matchMedia', (query: string) => ({ matches: query !== '(hover: hover)' }));
+        const wrapper = mount(Host, { attachTo: document.body });
+        wrapper.get('button').element.dispatchEvent(new Event('pointerenter'));
+        vi.advanceTimersByTime(1000);
+        expect(face()).toBeNull();
+    });
+
+    it('shows for a mouse where the device hovers', () => {
+        vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === '(hover: hover)' }));
+        const wrapper = mount(Host, { attachTo: document.body });
+        wrapper.get('button').element.dispatchEvent(new Event('pointerenter'));
+        vi.advanceTimersByTime(300);
+        expect(face()).not.toBeNull();
     });
 });

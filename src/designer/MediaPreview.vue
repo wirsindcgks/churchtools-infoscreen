@@ -21,6 +21,7 @@ import { videoSrc } from '../player/video';
 import FilterChips from './FilterChips.vue';
 import Icon from './Icon.vue';
 import { LOCALE } from '../i18n/player';
+import { vTip } from './tip';
 
 const props = defineProps<{ items: MediaItem[]; fileId: number; actionLabel?: string; notice?: string }>();
 const emit = defineEmits<{ 'update:fileId': [number]; action: [MediaItem]; close: [] }>();
@@ -90,10 +91,10 @@ onBeforeUnmount(() => {
         <div class="preview">
             <header>
                 <button
+                    v-tip="t.media.preview.previous"
                     class="d-btn d-btn--icon"
                     type="button"
                     :aria-label="t.media.preview.previous"
-                    :title="t.media.preview.previous"
                     :disabled="!position?.prev"
                     data-testid="preview-prev"
                     @click="go(position?.prev)"
@@ -102,10 +103,10 @@ onBeforeUnmount(() => {
                 </button>
                 <span class="position" aria-live="polite" data-testid="preview-position">{{ t.common.countOf((position?.index ?? 0) + 1, position?.count ?? 0) }}</span>
                 <button
+                    v-tip="t.media.preview.next"
                     class="d-btn d-btn--icon"
                     type="button"
                     :aria-label="t.media.preview.next"
-                    :title="t.media.preview.next"
                     :disabled="!position?.next"
                     data-testid="preview-next"
                     @click="go(position?.next)"

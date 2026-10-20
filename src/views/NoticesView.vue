@@ -31,6 +31,7 @@ import type { PlaylistOverview, ScreenRepository } from '../store/screen-reposit
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 import { useConfirm } from '../designer/useConfirm';
+import { vTip } from '../designer/tip';
 
 const { confirm, notice } = useConfirm();
 
@@ -239,10 +240,10 @@ async function end(group: BannerGroup): Promise<void> {
                     >
                         <template #media>
                             <button
+                                v-tip="t.schedules.edit"
                                 class="thumb d-tile-media"
                                 type="button"
                                 :aria-label="t.schedules.edit"
-                                :title="t.schedules.edit"
                                 data-testid="notice-preview"
                                 @click="edit(group)"
                             >
@@ -310,11 +311,11 @@ async function end(group: BannerGroup): Promise<void> {
                         </section>
                         <template v-if="edited(group)" #foot>
                             <ul class="d-facts">
-                                <li v-if="edited(group)!.when" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
+                                <li v-if="edited(group)!.when" v-tip="edited(group)!.whenTitle!" data-testid="notice-edited-at">
                                     <Icon name="clock" :size="16" />
                                     <span>{{ edited(group)!.when }}</span>
                                 </li>
-                                <li v-if="edited(group)!.by" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
+                                <li v-if="edited(group)!.by" v-tip="edited(group)!.byTitle!" data-testid="notice-edited-by">
                                     <Icon name="person" :size="16" />
                                     <span>{{ edited(group)!.by }}</span>
                                 </li>
@@ -382,11 +383,11 @@ async function end(group: BannerGroup): Promise<void> {
                         </section>
                         <template v-if="edited(group)" #foot>
                             <ul class="d-facts">
-                                <li v-if="edited(group)!.when" :title="edited(group)!.whenTitle!" data-testid="notice-edited-at">
+                                <li v-if="edited(group)!.when" v-tip="edited(group)!.whenTitle!" data-testid="notice-edited-at">
                                     <Icon name="clock" :size="16" />
                                     <span>{{ edited(group)!.when }}</span>
                                 </li>
-                                <li v-if="edited(group)!.by" :title="edited(group)!.byTitle!" data-testid="notice-edited-by">
+                                <li v-if="edited(group)!.by" v-tip="edited(group)!.byTitle!" data-testid="notice-edited-by">
                                     <Icon name="person" :size="16" />
                                     <span>{{ edited(group)!.by }}</span>
                                 </li>

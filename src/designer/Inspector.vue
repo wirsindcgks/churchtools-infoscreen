@@ -162,16 +162,6 @@ const LAYERS = [
                         <Icon name="duplicate" :size="18" />
                     </button>
                     <button
-                        v-tip="withKeys(many ? t.inspector.copyBlocks : t.inspector.copyBlock, KEYS.copy)"
-                        class="d-btn d-btn--icon"
-                        type="button"
-                        :aria-label="many ? t.inspector.copyBlocks : t.inspector.copyBlock"
-                        data-testid="block-copy"
-                        @click="editor.copyBlocks(ids)"
-                    >
-                        <Icon name="copy" :size="18" />
-                    </button>
-                    <button
                         v-tip="withKeys(many ? t.inspector.deleteBlocks : t.inspector.deleteBlock, KEYS.delete)"
                         class="d-btn d-btn--icon d-btn--danger delete-btn"
                         type="button"

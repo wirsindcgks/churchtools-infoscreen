@@ -528,10 +528,8 @@ export const t = {
             back: 'Ganz nach hinten',
         },
         duplicateBlock: 'Baustein duplizieren',
-        copyBlock: 'Baustein kopieren',
         /** The same buttons while several blocks are chosen (Plan.md 79, D5). */
         duplicateBlocks: 'Bausteine duplizieren',
-        copyBlocks: 'Bausteine kopieren',
         deleteBlocks: 'Bausteine löschen',
         lockBlocksTitle: 'Alle sperren: nicht mehr verschieben, ändern oder löschen',
         unlockBlocksTitle: 'Alle entsperren',

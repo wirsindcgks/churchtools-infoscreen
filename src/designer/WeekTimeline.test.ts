@@ -21,7 +21,7 @@ describe('WeekTimeline (Plan.md 68)', () => {
         expect(wrapper.findAll('[data-testid="week-day"]')).toHaveLength(2);
         const first = wrapper.findAll('[data-testid="week-segment"]')[1]!;
         expect(first.attributes('aria-label')).toBe('So 09:00–12:00: Sonntag – Regel 1');
-        expect(first.attributes('title')).toBe('So 09:00–12:00: Sonntag – Regel 1');
+        expect(first.attributes('data-tip')).toBe('So 09:00–12:00: Sonntag – Regel 1');
     });
 
     it('shows a stretch without color as inert nothing', async () => {

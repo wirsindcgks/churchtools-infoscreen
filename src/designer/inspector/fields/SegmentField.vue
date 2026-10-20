@@ -7,6 +7,7 @@ import { computed, useId } from 'vue';
 import Icon, { type IconName } from '../../Icon.vue';
 import { chipFace, type ChipFace } from './chip-face';
 import FieldRow from './FieldRow.vue';
+import { vTip } from '../../tip';
 
 export interface SegmentOption {
     value: string | number;
@@ -39,7 +40,7 @@ const name = useId();
 <template>
     <FieldRow :label="label" :label-id="labelId" :stacked="stackedNow" :quick="quick" :face="chosenFace" :inline="withSymbols">
         <div class="segment" role="radiogroup" :aria-labelledby="labelId" :data-testid="testid">
-            <label v-for="option in options" :key="option.value" class="segment-option" :title="option.icon ? option.label : undefined">
+            <label v-for="option in options" :key="option.value" v-tip="option.icon ? option.label : undefined" class="segment-option">
                 <input
                     type="radio"
                     :name="name"

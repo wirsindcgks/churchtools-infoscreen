@@ -26,6 +26,7 @@ import TextField from './fields/TextField.vue';
 import TileField from './fields/TileField.vue';
 import ToggleField from './fields/ToggleField.vue';
 import { splitTiles } from './layouts';
+import { vTip } from '../tip';
 
 const editor = useEditorStore();
 /** The preview's stage context: paged lists report their page count there. */
@@ -152,7 +153,7 @@ const backgroundColors = computed(() => {
         </div>
         <!-- A slide that other playlists show too (Plan.md 49): changes here count there as well. -->
         <div v-if="linkedNames" class="linked" data-testid="slide-linked">
-            <span class="linked-text" :title="t.inspector.linkedAlso(linkedNames)" data-testid="slide-linked-in">
+            <span v-tip="t.inspector.linkedAlso(linkedNames)" class="linked-text" data-testid="slide-linked-in">
                 <Icon name="link" :size="14" />
                 <span class="linked-names">{{ t.inspector.linkedAlso(linkedNames) }}</span>
                 <span v-if="editor.linkPending(slide.id)" class="linked-pending" data-testid="slide-link-pending">

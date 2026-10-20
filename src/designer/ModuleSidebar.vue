@@ -16,6 +16,7 @@ import { administrator, isAdministrator } from './administrator';
 import { ensureSectionCounts, sectionCounts, type Section } from './section-counts';
 import { unseenRelease } from '../about/seen';
 import Icon, { type IconName } from './Icon.vue';
+import { vTip } from './tip';
 
 const route = useRoute();
 onMounted(() => {
@@ -136,10 +137,10 @@ watch(
                         {{ ABOUT.label }}
                         <span
                             v-if="unseenRelease"
+                            v-tip="t.sidebar.newTitle"
                             class="new"
                             role="img"
                             :aria-label="t.sidebar.new"
-                            :title="t.sidebar.newTitle"
                             data-testid="about-new"
                         />
                     </RouterLink>

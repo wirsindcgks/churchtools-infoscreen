@@ -12,6 +12,7 @@ import { TOGGLE_LIST_SEARCH_FROM, matchesName } from './name-search';
 import SearchField from './SearchField.vue';
 import ToggleField from './inspector/fields/ToggleField.vue';
 import QuickField from './inspector/fields/QuickField.vue';
+import { vTip } from './tip';
 
 const props = defineProps<{ calendars: Calendar[]; chosenIds: number[]; hidden: Calendar[]; released?: number[]; quick?: boolean; extraIntro?: string }>();
 const emit = defineEmits<{ toggle: [id: number, on: boolean] }>();
@@ -54,10 +55,10 @@ const face = computed(() => (chosenCount.value ? t.quick.listFace(t.common.calen
         <p v-for="c in hidden" :key="c.id" class="hint hidden-calendar" :data-testid="`hidden-calendar-${c.id}`">
             {{ t.common.calendars.notPublic(c.name) }}
             <button
+                v-tip="chosenIds.length < 2 ? t.common.calendars.chooseAnotherFirst : undefined"
                 class="d-btn"
                 type="button"
                 :disabled="chosenIds.length < 2"
-                :title="chosenIds.length < 2 ? t.common.calendars.chooseAnotherFirst : undefined"
                 @click="emit('toggle', c.id, false)"
             >
                 {{ t.common.remove }}

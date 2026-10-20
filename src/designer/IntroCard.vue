@@ -5,13 +5,14 @@
  */
 import { t } from '../i18n/designer';
 import Icon from './Icon.vue';
+import { vTip } from './tip';
 
 const emit = defineEmits<{ start: []; later: []; close: [] }>();
 </script>
 
 <template>
     <aside class="intro-card" role="region" aria-labelledby="intro-card-title" data-testid="intro-card">
-        <button class="d-btn d-btn--icon d-btn--ghost close" type="button" :aria-label="t.intro.cardClose" data-testid="intro-card-close" @click="emit('close')">
+        <button v-tip="t.intro.cardClose" class="d-btn d-btn--icon d-btn--ghost close" type="button" :aria-label="t.intro.cardClose" data-testid="intro-card-close" @click="emit('close')">
             <Icon name="close" :size="16" />
         </button>
         <h2 id="intro-card-title">{{ t.intro.cardTitle }}</h2>

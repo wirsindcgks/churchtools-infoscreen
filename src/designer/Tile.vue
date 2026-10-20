@@ -9,6 +9,7 @@ import { anchored } from './floating';
 import { onBeforeUnmount, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
 import Icon from './Icon.vue';
+import { vTip } from './tip';
 
 const props = withDefaults(defineProps<{ as?: string; menuLabel?: string; menuTestid?: string }>(), { as: 'article', menuLabel: undefined, menuTestid: undefined });
 
@@ -54,12 +55,12 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
                 <h3 class="d-tile-title"><slot name="title" /></h3>
                 <div v-if="$slots.menu" class="menu">
                     <button
+                        v-tip="t.home.card.actions"
                         class="d-btn d-btn--icon menu-button"
                         type="button"
                         :aria-expanded="menuOpen"
                         aria-haspopup="menu"
                         :aria-label="menuLabel"
-                        :title="t.home.card.actions"
                         :data-testid="menuTestid"
                         @click="menuOpen = !menuOpen"
                     >

@@ -46,7 +46,7 @@ test('the bar says nothing about a running playlist without a sign of life (Plan
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('save-status')).toHaveText('Alles veröffentlicht');
     await expect(page.getByTestId('editor-live')).toHaveCount(0);
-    await expect(page.getByTestId('save')).not.toHaveAttribute('title', /Läuft gerade/);
+    await expect(page.getByTestId('save')).not.toHaveAttribute('data-tip', /Läuft gerade/);
 });
 
 test('"?" opens the overview of the handles, Escape closes it, and the hints name their handle (Plan.md 79, B3)', async ({ page }) => {
@@ -77,7 +77,7 @@ test('"?" opens the overview of the handles, Escape closes it, and the hints nam
     await page.keyboard.press('Shift+?');
     await expect(dialog).toHaveCount(0);
 
-    await expect(page.getByTestId('save')).toHaveAttribute('title', 'Erst Veröffentlichen bringt die Änderungen auf die Fernseher');
+    await expect(page.getByTestId('save')).toHaveAttribute('data-tip', 'Erst Veröffentlichen bringt die Änderungen auf die Fernseher');
     await page.getByTestId('frame-text').first().click();
     await expect(page.getByTestId('block-duplicate')).not.toHaveAttribute('title', /.+/);
     await expect(page.getByTestId('block-duplicate')).toHaveAccessibleName('Baustein duplizieren');
@@ -109,8 +109,8 @@ test('a symbol button names itself in a small face – at once for the keyboard,
     await expect(page.getByTestId('block-inspector')).toBeVisible();
 
     // The mouse sees it after a moment, and it goes with the pointer.
-    await page.getByTestId('block-copy').hover();
-    await expect(tip).toHaveText(`Baustein kopieren (${ctrl}C)`);
+    await page.getByTestId('block-delete').hover();
+    await expect(tip).toContainText('Baustein löschen');
     await page.mouse.move(5, 5);
     await expect(tip).toHaveCount(0);
 });
@@ -957,7 +957,7 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     // When and by whom it was last edited, each on a line of its own (Plan.md 66).
     const demoCard = page.getByTestId('playlist-card');
     await expect(demoCard.getByTestId('playlist-edited-at')).toHaveText(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
-    await expect(demoCard.getByTestId('playlist-edited')).toHaveAttribute('title', /^Zuletzt geändert am .+ um \d{2}:\d{2}$/);
+    await expect(demoCard.getByTestId('playlist-edited')).toHaveAttribute('data-tip', /^Zuletzt geändert am .+ um \d{2}:\d{2}$/);
 
     // A new playlist runs nowhere yet; it opens straight in the editor.
     await page.getByTestId('new-playlist').click();
@@ -1862,8 +1862,8 @@ test.describe('the heads of the editor stand on one line (Plan.md 47)', () => {
     });
 });
 
-async function copyButtonColor(page: Page): Promise<string> {
-    return page.getByTestId('block-copy').evaluate((el) => getComputedStyle(el).color);
+async function duplicateButtonColor(page: Page): Promise<string> {
+    return page.getByTestId('block-duplicate').evaluate((el) => getComputedStyle(el).color);
 }
 
 test.describe('the slides "<" and the two-line block head (Plan.md 47)', () => {
@@ -1889,7 +1889,7 @@ test.describe('the slides "<" and the two-line block head (Plan.md 47)', () => {
         });
     }
 
-    test('at a desktop, lock, duplicate and copy are 40 px symbol buttons on the left, the wastebasket alone on the right, below the name (Plan.md 79, B3)', async ({ page }) => {
+    test('at a desktop, lock and duplicate are 40 px symbol buttons on the left, the wastebasket alone on the right, below the name (Plan.md 79, B3)', async ({ page }) => {
         await openEditor(page);
         await page.getByTestId('add-block-menu').click();
         await page.getByTestId('sheet-add-next-appointment').click();
@@ -1899,23 +1899,22 @@ test.describe('the slides "<" and the two-line block head (Plan.md 47)', () => {
                 await page.getByTestId('add-block-menu').click();
                 await page.getByTestId('sheet-add-text').click();
             }
-            const [h3, lock, duplicate, copy, remove, head] = await Promise.all([
+            const [h3, lock, duplicate, remove, head] = await Promise.all([
                 page.locator('.block-head h3').boundingBox(),
-                ...['lock-toggle', 'block-duplicate', 'block-copy', 'block-delete'].map((id) => page.getByTestId(id).boundingBox()),
+                ...['lock-toggle', 'block-duplicate', 'block-delete'].map((id) => page.getByTestId(id).boundingBox()),
                 page.locator('.head-actions').boundingBox(),
             ]);
-            for (const box of [lock, duplicate, copy, remove]) {
+            for (const box of [lock, duplicate, remove]) {
                 expect(Math.round(box!.width)).toBe(40);
                 expect(Math.round(box!.height)).toBe(40);
                 expect(Math.abs(box!.y - lock!.y)).toBeLessThanOrEqual(1);
                 expect(box!.y).toBeGreaterThan(h3!.y + h3!.height);
             }
             expect(duplicate!.x).toBeGreaterThan(lock!.x);
-            expect(copy!.x).toBeGreaterThan(duplicate!.x);
-            expect(remove!.x).toBeGreaterThan(copy!.x + copy!.width);
+            expect(remove!.x).toBeGreaterThan(duplicate!.x + duplicate!.width);
             expect(Math.abs(remove!.x + remove!.width - (head!.x + head!.width))).toBeLessThanOrEqual(1);
             // Red only on the wastebasket.
-            expect(await page.getByTestId('block-delete').evaluate((el) => getComputedStyle(el).color)).not.toBe(await copyButtonColor(page));
+            expect(await page.getByTestId('block-delete').evaluate((el) => getComputedStyle(el).color)).not.toBe(await duplicateButtonColor(page));
         }
     });
 });
@@ -2239,7 +2238,6 @@ test.describe('on a phone (Plan.md 79)', () => {
         for (const [id, name] of [
             ['lock-toggle', 'Sperren'],
             ['block-duplicate', 'Baustein duplizieren'],
-            ['block-copy', 'Baustein kopieren'],
             ['block-delete', 'Baustein löschen'],
         ]) {
             await expect(page.getByTestId(id!)).toHaveAccessibleName(name!);
@@ -2414,6 +2412,6 @@ test.describe('drafts (Plan.md 79, Paket E)', () => {
         await page.getByTestId('leave-editor').click();
         const flag = page.getByTestId('draft-flag');
         await expect(flag).toHaveText('Entwurf');
-        await expect(flag).toHaveAttribute('title', /^Entwurf von .+, heute \d\d:\d\d – noch nicht veröffentlicht$/);
+        await expect(flag).toHaveAttribute('data-tip', /^Entwurf von .+, heute \d\d:\d\d – noch nicht veröffentlicht$/);
     });
 });

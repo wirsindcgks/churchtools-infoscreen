@@ -13,6 +13,7 @@ import QuickField from './inspector/fields/QuickField.vue';
 import { SHEET_TITLE } from './inspector/mode';
 import { parseHex, pickerValue } from './color';
 import { usePalette, type PaletteColor } from './palette';
+import { vTip } from './tip';
 
 const props = defineProps<{ modelValue: string; label: string; testid?: string; quick?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [string]; focus: []; blur: [] }>();
@@ -69,10 +70,10 @@ function onTextBlur(): void {
                     <button
                         v-for="entry in lists.palette"
                         :key="entry.color"
+                        v-tip="swatchLabel(entry)"
                         type="button"
                         class="swatch"
                         :style="{ background: entry.color }"
-                        :title="swatchLabel(entry)"
                         :aria-label="swatchLabel(entry)"
                         :aria-pressed="entry.color.toLowerCase() === modelValue.toLowerCase()"
                         :data-testid="testid ? `${testid}-swatch` : 'color-swatch'"
@@ -86,10 +87,10 @@ function onTextBlur(): void {
                     <button
                         v-for="entry in lists.slide"
                         :key="entry.color"
+                        v-tip="swatchLabel(entry)"
                         type="button"
                         class="swatch"
                         :style="{ background: entry.color }"
-                        :title="swatchLabel(entry)"
                         :aria-label="swatchLabel(entry)"
                         :aria-pressed="entry.color.toLowerCase() === modelValue.toLowerCase()"
                         :data-testid="testid ? `${testid}-swatch` : 'color-swatch'"
@@ -108,6 +109,7 @@ function onTextBlur(): void {
                     @input="emit('update:modelValue', ($event.target as HTMLInputElement).value)"
                 >
                 <input
+                    v-tip="invalid ? t.common.color.invalidHex : undefined"
                     type="text"
                     class="hex"
                     :class="{ invalid }"
@@ -118,7 +120,6 @@ function onTextBlur(): void {
                     autocomplete="off"
                     :aria-label="t.common.color.asHex(label)"
                     :aria-invalid="invalid"
-                    :title="invalid ? t.common.color.invalidHex : undefined"
                     :data-testid="testid"
                     @focus="onTextFocus"
                     @blur="onTextBlur"
