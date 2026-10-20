@@ -1,11 +1,13 @@
 <script setup lang="ts">
 /** The QR code block (Plan.md 79, B2): what it encodes, then its colours. Content and colour go to the short menu. */
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
 import { qrShape } from '../../../player/qr';
 import type { Block } from '../../../model/schema';
 import ColorField from '../../ColorField.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import { useEdit } from '../edit';
+import { useGeneralHelp } from '../../help/register';
 import TextField from '../fields/TextField.vue';
 import { useBlockEdit } from '../use-block';
 import { useInspectorMode } from '../mode';
@@ -15,6 +17,7 @@ const props = defineProps<{ block: Extract<Block, { type: 'qr' }> }>();
 const mode = useInspectorMode();
 const { setBlock } = useBlockEdit(() => props.block);
 const edit = useEdit();
+useGeneralHelp(() => [th.qr.content]);
 </script>
 
 <template>
@@ -29,7 +32,7 @@ const edit = useEdit();
         @update:model-value="setBlock({ data: $event })"
     />
     <p v-if="mode === 'full' && block.data.trim() && !qrShape(block.data)" class="hint">{{ t.inspector.qrTooLong }}</p>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="`${block.color} · ${block.background}`" :help="{ intro: t.inspector.qrColorsInfo }">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="`${block.color} · ${block.background}`" :help="th.qr.look">
         <template #summary-extra>
             <span class="swatch" :style="{ background: block.color }" />
             <span class="swatch" :style="{ background: block.background }" />

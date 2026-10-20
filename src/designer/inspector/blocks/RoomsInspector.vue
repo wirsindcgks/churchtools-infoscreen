@@ -5,6 +5,7 @@
  */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
 import type { Block, RoomEntry } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
 import { PAGE_SECONDS } from '../../../player/paging';
@@ -12,6 +13,7 @@ import type { RoomInfo } from '../../../rooms/normalize';
 import InspectorSection from '../../InspectorSection.vue';
 import SelectMenu from '../../SelectMenu.vue';
 import { useInspectorContext } from '../context';
+import { useGeneralHelp } from '../../help/register';
 import QuickField from '../fields/QuickField.vue';
 import NumberField from '../fields/NumberField.vue';
 import SortList, { type SortItem } from '../fields/SortList.vue';
@@ -62,8 +64,10 @@ const roomTotal = computed(() => {
     return there > ROOMS_MAX ? `${ROOMS_MAX}+` : there;
 });
 
-/** The explanation of the list; "Titel zeigen" stands in every row, so it is explained once here. */
-const roomsHelp = { intro: t.inspector.roomsInfo, items: [{ term: t.inspector.showTitles, text: t.inspector.showTitlesInfo }] };
+/** "Wegweiser" and "Titel zeigen" stand in every row, so the list explains them once. */
+const r = th.rooms;
+useGeneralHelp(() => (context.rooms?.length ? [r.add] : []));
+const appearanceHelp = computed(() => ({ intro: r.intro, items: [r.view, r.period, ...(props.block.layout === 'overview' ? [r.seconds] : [])] }));
 
 function addRooms(infos: RoomInfo[]): void {
     const next = [...props.block.rooms, ...infos.map((r): RoomEntry => ({ resourceId: r.id, hint: '', showTitles: true }))];
@@ -113,7 +117,7 @@ function remove(index: number): void {
             </button>
         </div>
         <p v-if="!block.rooms.length" class="hint">{{ t.inspector.noRoomsChosen }}</p>
-        <InspectorSection v-else id="room-list" :title="t.inspector.rooms" :summary="t.common.countOf(block.rooms.length, roomTotal)" :help="roomsHelp">
+        <InspectorSection v-else id="room-list" :title="t.inspector.rooms" :summary="t.common.countOf(block.rooms.length, roomTotal)" :help="r.list">
             <SortList :items="chosen" :remove-label="t.inspector.removeRoom" testid="room" row-testid="room-entry" @move="move" @remove="remove">
                 <template #row="{ index }">
                     <TextField
@@ -130,7 +134,7 @@ function remove(index: number): void {
         </InspectorSection>
     </QuickField>
 
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="appearanceHelp">
         <TileField quick :model-value="block.layout" :options="ROOMS_TILES" :label="t.inspector.view" testid="rooms-layout" @update:model-value="setBlock({ layout: $event })" />
         <NumberField
             quick

@@ -439,7 +439,6 @@ export const t = {
         /** The page of a template that no longer exists. */
         notFound: 'Diese Vorlage gibt es nicht (mehr).',
         onSlides: (n: number) => `Auf ${n} ${n === 1 ? 'Folie' : 'Folien'}`,
-        editInfo: 'Änderungen erscheinen auf allen Folien mit dieser Vorlage.',
         unlink: 'Lösen',
         unlinkHint: 'Macht daraus eigene Bausteine nur für diese Folie.',
         saveAs: 'Als Vorlage speichern …',
@@ -649,7 +648,6 @@ export const t = {
         servicesNotAllowed:
             `Noch kein Dienst freigegeben – ein Administrator legt in den Einstellungen unter „${SERVICES_TITLE}“ fest, welche gezeigt werden dürfen.`,
         groups: 'Gruppen',
-        postGroupsInfo: 'Zeigt die neuesten Beiträge der gewählten Gruppen; abgelaufene nie.',
         notPublic: 'nicht öffentlich',
         noPostGroups: 'Keine Gruppe mit Beiträgen sichtbar.',
         postsNotPublic:
@@ -657,7 +655,6 @@ export const t = {
         postsLayoutCard: 'Hervorgehoben',
         layoutList: 'Liste',
         count: 'Anzahl',
-        periodPostsInfo: 'Zeigt nur Beiträge der letzten … Tage.',
         secondsPerPost: 'Dauer je Beitrag',
         postShow: {
             showGroup: 'Gruppe',
@@ -667,38 +664,28 @@ export const t = {
             showAuthor: 'Name',
             showDate: 'Datum',
         },
-        postDetailsInfo: 'Was ausgeschaltet ist, nimmt keinen Platz. Bild und Name gibt es nur in der Darstellung „Hervorgehoben“.',
         focus: 'Ausschnitt',
-        focusInfo: 'Der Teil des Bildes, der sichtbar bleibt, wenn es zugeschnitten wird – für alle Beiträge dieses Bausteins.',
         focusCenter: 'Mitte',
         focusTop: 'Oben',
         focusBottom: 'Unten',
         focusLeft: 'Links',
         focusRight: 'Rechts',
-        showAuthorInfo: 'Der Name der Person, die den Beitrag geschrieben hat.',
         groupsHomepage: 'Gruppen-Homepage',
         choose: '– wählen –',
         homepageGone: '(nicht mehr vorhanden)',
-        homepageInfo: 'Zeigt nur Gruppen, die ChurchTools auf der Homepage öffentlich zeigt – mit und ohne Anmeldung dieselben.',
         noHomepage:
             'Noch keine Gruppen-Homepage. In ChurchTools die Obergruppe öffnen, dann Einstellungen → Allgemein → Außendarstellung → „Gruppenhomepage erstellen".',
         allGroups: 'Alle Gruppen der Homepage',
         order: 'Reihenfolge',
         sortWeekday: 'Wochentag',
-        sortWeekdayInfo: 'Nach Wochentag sortiert, die Woche beginnt mit Montag.',
         sortNameAsc: 'Name A–Z',
         sortNameDesc: 'Name Z–A',
         groupNumber: (id: number) => `Gruppe ${id}`,
         groupGone: (id: number) => `Gruppe ${id} – nicht mehr auf der Homepage`,
         groupsLayoutCard: 'Hervorgehoben',
         groupsPerPage: 'Je Seite',
-        perPageInfo: (wide: boolean) =>
-            `${wide ? 'Nebeneinander' : 'Untereinander'}; jede Karte richtet sich nach ihrer eigenen Form – zwei in einem breiten Baustein stehen hochkant.`,
         secondsPerGroup: 'Dauer je Gruppe',
         details: 'Angaben',
-        detailsInfo:
-            'Beschreibung, QR-Code und Bild der Leitung gibt es nur in der Darstellung „Hervorgehoben". Namen der Leitung erscheinen nur, ' +
-            'wenn die Gruppen-Homepage in ChurchTools die Leiter zeigt – dann sind sie ohnehin öffentlich.',
         roomsOverview: 'Übersicht',
         roomsDoor: 'Türschild',
         doorHint: 'Das Türschild zeigt den ersten Raum der Liste.',
@@ -709,14 +696,12 @@ export const t = {
         addAllRooms: 'Alle Räume hinzufügen',
         noRoomsChosen: 'Noch keine Räume gewählt.',
         rooms: 'Räume',
-        roomsInfo: 'Gezeigt werden nur bestätigte Buchungen, keine, die noch warten.',
         roomHidden: (id: number) => `Raum ${id} – nicht sichtbar`,
         removeRoom: 'Raum entfernen',
         socialProfiles: 'Profile',
         socialAdd: 'Link einfügen',
         socialAddPlaceholder: 'z. B. instagram.com/wirsindcgks',
         socialFull: 'Mehr als 12 Profile passen nicht in einen Baustein.',
-        socialInfo: 'Das Zeichen und der Name werden aus dem Link erkannt – ohne Internet-Abfrage, auch ohne Netz auf dem Fernseher.',
         socialEmpty: 'Noch kein Profil eingetragen.',
         socialRemove: 'Profil entfernen',
         socialLink: 'Link',
@@ -728,21 +713,13 @@ export const t = {
         signpost: 'Wegweiser',
         signpostPlaceholder: 'z. B. 1. OG, links',
         showTitles: 'Titel zeigen',
-        showTitlesInfo:
-            'Buchungstitel können Namen enthalten, etwa „Gespräch Familie X". Für solche Räume den Titel ausschalten – dann steht dort „Belegt".',
         showChurchName: 'Gemeindenamen zeigen',
         showLogo: 'Logo zeigen',
-        logoInfo: 'Ein eigenes Logo hilft, wenn das aus ChurchTools auf dem Hintergrund nicht zu sehen ist.',
         churchLogo: 'Das Logo aus den Gemeindeinfos von ChurchTools.',
         pickLogo: 'Logo wählen',
         swapLogo: 'Logo tauschen',
         resetLogo: 'Logo zurücksetzen',
         webAddress: 'Adresse oder Einbettungscode',
-        webInfo:
-            'Viele Seiten verbieten, dass andere sie einbetten, auch manche Gemeinde-Website. Dann bleibt der Rahmen leer oder zeigt einen Fehler; ' +
-            'erkennen kann der Designer das nicht, aber man sieht es gleich auf der Folie. Die Adresse gilt nach Enter oder beim Verlassen des Feldes, ' +
-            'erst dann lädt die Seite. Statt der Adresse geht auch der Einbettungscode („iframe"), den Karten, Umfragen oder Pinnwände anbieten; ' +
-            'übernommen wird nur die Adresse darin. Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer.',
         webNoAddressInCode: 'Im Einbettungscode steht keine Adresse.',
         webSize: 'Größe der Seite',
         webZooms: {
@@ -756,7 +733,6 @@ export const t = {
         qrContent: 'Inhalt',
         qrPlaceholder: 'meist eine Adresse, https://…',
         qrTooLong: 'Zu lang für einen QR-Code.',
-        qrColorsInfo: 'Dunkel auf hell lesen alle Handykameras am sichersten.',
         font: 'Schrift',
         fontFamily: 'Schriftart',
         designFont: 'Design',

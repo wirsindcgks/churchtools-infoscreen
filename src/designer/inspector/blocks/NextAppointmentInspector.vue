@@ -5,6 +5,7 @@
  */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
 import type { Block } from '../../../model/schema';
 import { themeOf, useStageContext } from '../../../player/context';
 import { nextLayout } from '../../../player/theme';
@@ -30,7 +31,11 @@ const { tags, toggleTag } = useTagChoice(() => props.block);
 const layouts = computed(() => nextAppointmentTiles(props.block, themeOf(stage)));
 /** The badge is part of the card only. */
 const card = computed(() => nextLayout(props.block, themeOf(stage)) === 'card');
-const appearanceHelp = computed(() => ({ items: [showRoomHelp(props.block, themeOf(stage))] }));
+const n = th.nextAppointment;
+const appearanceHelp = computed(() => ({
+    intro: n.intro,
+    items: [n.view, ...(card.value ? [n.showCalendar] : []), n.showImage, showRoomHelp(props.block, themeOf(stage))],
+}));
 const summary = computed(() => (card.value ? t.inspector.layoutCard : t.inspector.layoutClassic));
 </script>
 

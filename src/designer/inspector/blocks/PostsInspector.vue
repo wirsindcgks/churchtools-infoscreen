@@ -5,6 +5,7 @@
  */
 import { computed, ref } from 'vue';
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
 import type { Block } from '../../../model/schema';
 import { POST_SECONDS } from '../../../player/paging';
 import InspectorSection from '../../InspectorSection.vue';
@@ -45,14 +46,23 @@ const SHOW_LABELS = t.inspector.postShow;
 const SHOW_KEYS = ['showGroup', 'showTitle', 'showImage', 'showText', 'showAuthor', 'showDate'] as const satisfies readonly (keyof typeof SHOW_LABELS)[];
 const fieldsSummary = computed(() => t.common.countOf(SHOW_KEYS.filter((key) => props.block[key]).length, SHOW_KEYS.length));
 
-const fieldsHelp = { intro: t.inspector.postDetailsInfo, items: [{ term: SHOW_LABELS.showAuthor, text: t.inspector.showAuthorInfo }] };
 /** The settings of "Darstellung" that explain themselves – only those that are there now. */
-const appearanceHelp = computed<HelpTopic>(() => ({
-    items: [
-        { term: t.inspector.period, text: t.inspector.periodPostsInfo },
-        ...(props.block.layout === 'card' && props.block.showImage && props.block.imageFit === 'cover' ? [{ term: t.inspector.focus, text: t.inspector.focusInfo }] : []),
-    ],
-}));
+const p = th.posts;
+const appearanceHelp = computed<HelpTopic>(() => {
+    const card = props.block.layout === 'card';
+    const image = card && props.block.showImage;
+    return {
+        intro: p.intro,
+        items: [
+            p.view,
+            p.count,
+            p.period,
+            ...(card ? [p.seconds] : []),
+            ...(image ? [p.fit] : []),
+            ...(image && props.block.imageFit === 'cover' ? [p.focus] : []),
+        ],
+    };
+});
 
 const summary = computed(() => `${POSTS_TILES.find((o) => o.value === props.block.layout)?.label} · ${t.inspector.days(props.block.maxAgeDays)}`);
 
@@ -76,7 +86,7 @@ function toggleGroup(id: number, on: boolean): void {
 <template>
     <!-- One chip "Gruppen 2 von 10" in the short menu, so a double click on the block can lead here (Plan.md 79, C5). -->
     <QuickField quick :label="t.inspector.groups" :face="block.groupIds.length ? t.quick.listFace(t.inspector.groups, groupsSummary) : t.quick.empty.posts">
-        <InspectorSection id="post-groups" :title="t.inspector.groups" :summary="block.groupIds.length ? groupsSummary : t.common.none" :help="{ intro: t.inspector.postGroupsInfo }">
+        <InspectorSection id="post-groups" :title="t.inspector.groups" :summary="block.groupIds.length ? groupsSummary : t.common.none" :help="p.groups">
             <SearchField v-if="searchable" v-model="query" :placeholder="t.common.searchList" :label="t.common.searchList" testid="post-groups-search" />
             <ToggleField
                 v-for="g in groupsShown"
@@ -128,7 +138,7 @@ function toggleGroup(id: number, on: boolean): void {
             />
         </template>
     </InspectorSection>
-    <InspectorSection id="fields" :title="t.inspector.details" :summary="fieldsSummary" :help="fieldsHelp">
+    <InspectorSection id="fields" :title="t.inspector.details" :summary="fieldsSummary" :help="p.details">
         <ToggleField
             v-for="key in SHOW_KEYS"
             :key="key"

@@ -5,6 +5,7 @@
  */
 import { computed, ref } from 'vue';
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
 import { homepageGroups, selectGroups, type Group } from '../../../groups/normalize';
 import type { Block, GroupFields } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
@@ -127,19 +128,24 @@ const summary = computed(() => {
 const homepageTitle = computed(() => homepages.value.find((o) => o.value !== '' && String(o.value) === String(props.block.parentGroupId ?? ''))?.label ?? null);
 const choiceSummary = computed(() => (homepageTitle.value ? `${homepageTitle.value} · ${groupsSummary.value}` : t.common.none));
 /** The settings of "Darstellung" that explain themselves – only those that are there now. */
-const appearanceHelp = computed<HelpTopic>(() => ({
-    items: [
-        ...(props.block.groupIds.length === 0 ? [{ term: t.inspector.order, text: t.inspector.sortWeekdayInfo }] : []),
-        ...(props.block.layout === 'card' && props.block.perPage > 1
-            ? [{ term: t.inspector.groupsPerPage, text: t.inspector.perPageInfo(props.block.width >= props.block.height) }]
-            : []),
-    ],
-}));
+const help = th.groups;
+const appearanceHelp = computed<HelpTopic>(() => {
+    const card = props.block.layout === 'card';
+    return {
+        intro: help.intro,
+        items: [
+            help.view,
+            ...(props.block.groupIds.length === 0 ? [help.order] : []),
+            ...(card ? [help.perPage(props.block.width >= props.block.height)] : []),
+            help.seconds(card && props.block.perPage === 1 ? t.inspector.secondsPerGroup : t.inspector.secondsPerPage),
+        ],
+    };
+});
 const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((key) => props.block.show[key]).length, GROUP_SHOW_KEYS.length));
 </script>
 
 <template>
-    <InspectorSection id="group-list" :title="t.inspector.groupsHomepage" :summary="choiceSummary" :help="{ items: [{ term: t.inspector.groupsHomepage, text: t.inspector.homepageInfo }] }">
+    <InspectorSection id="group-list" :title="t.inspector.groupsHomepage" :summary="choiceSummary" :help="help.homepage">
         <SelectField
             quick
             :model-value="block.parentGroupId ?? ''"
@@ -204,7 +210,7 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
         />
     </InspectorSection>
 
-    <InspectorSection id="fields" :title="t.inspector.details" :summary="fieldsSummary" :help="{ intro: t.inspector.detailsInfo }">
+    <InspectorSection id="fields" :title="t.inspector.details" :summary="fieldsSummary" :help="help.details">
         <ToggleField
             v-for="key in GROUP_SHOW_KEYS"
             :key="key"

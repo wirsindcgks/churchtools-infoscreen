@@ -9,6 +9,9 @@ const list = th.appointmentList;
 const frame = th.pictureFrame;
 const show = th.slideshow;
 const shape = th.shape;
+const next = th.nextAppointment;
+const posts = th.posts;
+const groups = th.groups;
 
 /**
  * Every topic of the help, whatever is chosen (Plan.md 98, D): the search of the bar looks here as well, so "Schrift" finds
@@ -20,6 +23,11 @@ export const HELP_CATALOG: HelpSection[] = [
     { id: 'all-image', title: t.blocks.image, topic: { items: [th.general.image] } },
     { id: 'all-video', title: t.blocks.video, topic: { items: [th.general.video, th.general.videoRuntime, th.general.sound] } },
     { id: 'all-slideshow', title: t.blocks.slideshow, topic: { items: [th.general.slideshowAdd] } },
+    { id: 'all-rooms', title: t.blocks.rooms, topic: { items: [th.rooms.add] } },
+    { id: 'all-social', title: t.blocks.social, topic: { items: [th.social.add] } },
+    { id: 'all-web', title: t.blocks.web, topic: { items: [th.web.address] } },
+    { id: 'all-qr', title: t.blocks.qr, topic: { items: [th.qr.content] } },
+    { id: 'all-template', title: t.blocks.template, topic: { items: [th.template.edit, th.template.unlink] } },
     {
         id: 'all-font',
         title: i.font,
@@ -44,6 +52,32 @@ export const HELP_CATALOG: HelpSection[] = [
     { id: 'all-shape-look', title: `${t.blocks.shape} · ${i.appearance}`, topic: { intro: shape.intro, items: [shape.form, shape.kind, shape.corners, shape.border, shape.borderColor] } },
     { id: 'all-line-look', title: `${t.blocks.line} · ${i.appearance}`, topic: th.line },
     { id: 'all-background', title: `${t.help.slide} · ${i.background}`, topic: th.background },
+    {
+        id: 'all-next-look',
+        title: `${t.blocks['next-appointment']} · ${i.appearance}`,
+        topic: { intro: next.intro, items: [next.view, next.showCalendar, next.showImage] },
+    },
+    { id: 'all-post-groups', title: `${t.blocks.posts} · ${i.groups}`, topic: posts.groups },
+    {
+        id: 'all-posts-look',
+        title: `${t.blocks.posts} · ${i.appearance}`,
+        topic: { intro: posts.intro, items: [posts.view, posts.count, posts.period, posts.seconds, posts.fit, posts.focus] },
+    },
+    { id: 'all-posts-details', title: `${t.blocks.posts} · ${i.details}`, topic: posts.details },
+    { id: 'all-group-list', title: i.groupsHomepage, topic: groups.homepage },
+    {
+        id: 'all-groups-look',
+        title: `${t.blocks.groups} · ${i.appearance}`,
+        topic: { intro: groups.intro, items: [groups.view, groups.order, groups.perPage(true), groups.seconds(i.secondsPerPage)] },
+    },
+    { id: 'all-groups-details', title: `${t.blocks.groups} · ${i.details}`, topic: groups.details },
+    { id: 'all-room-list', title: `${t.blocks.rooms} · ${i.rooms}`, topic: th.rooms.list },
+    { id: 'all-rooms-look', title: `${t.blocks.rooms} · ${i.appearance}`, topic: { intro: th.rooms.intro, items: [th.rooms.view, th.rooms.period, th.rooms.seconds] } },
+    { id: 'all-social-list', title: `${t.blocks.social} · ${i.socialProfiles}`, topic: th.social.list },
+    { id: 'all-social-look', title: `${t.blocks.social} · ${i.appearance}`, topic: th.social.look },
+    { id: 'all-web-look', title: `${t.blocks.web} · ${i.appearance}`, topic: th.web.look },
+    { id: 'all-qr-look', title: `${t.blocks.qr} · ${i.appearance}`, topic: th.qr.look },
+    { id: 'all-church-header-look', title: `${t.blocks['church-header']} · ${i.appearance}`, topic: th.churchHeader },
     {
         id: 'all-appointment-list',
         title: `${t.blocks['appointment-list']} · ${i.appearance}`,

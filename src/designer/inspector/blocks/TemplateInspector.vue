@@ -5,6 +5,7 @@
  */
 import { computed, ref, watch } from 'vue';
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
 import type { Block } from '../../../model/schema';
 import { useGeneralHelp } from '../../help/register';
 import { useBlockEdit } from '../use-block';
@@ -14,8 +15,9 @@ const props = defineProps<{ block: Extract<Block, { type: 'template' }> }>();
 const { editor } = useBlockEdit(() => props.block);
 const mode = useInspectorMode();
 useGeneralHelp(() => [
-    { term: t.templates.edit.start, text: t.templates.editInfo },
+    th.template.edit,
     ...(editor.templateLocked(props.block) ? [{ term: t.templates.fixed, text: t.templates.fixedInfo }] : []),
+    th.template.unlink,
 ]);
 
 const known = computed(() => editor.templateById.has(props.block.templateId));

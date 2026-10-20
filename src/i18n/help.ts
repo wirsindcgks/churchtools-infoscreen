@@ -259,6 +259,221 @@ export const th = {
         ],
     } satisfies HelpTopic,
 
+    /** "Darstellung" of the next appointment; "Raum zeigen" comes from `appointment-help.ts`. */
+    nextAppointment: {
+        intro: 'Wie der nächste Termin der gewählten Kalender aussieht.',
+        view: {
+            term: i.view,
+            text:
+                '„Schlicht“ zeigt den Termin als Text, „Hervorgehoben“ als Karte. „Wie im Design“ folgt der Wahl auf der Seite „Design“ und ändert sich mit ihr.',
+        },
+        showCalendar: { term: i.showCalendar, text: 'Zeigt auf der Karte, aus welchem Kalender der Termin stammt.' },
+        showImage: {
+            term: i.showAppointmentImage,
+            text: 'Zeigt das Bild, das der Termin in ChurchTools hat, neben dem Text. Hat der Termin keins, bekommt der Text den ganzen Platz.',
+        },
+    },
+
+    /** The sections of the posts block. */
+    posts: {
+        groups: {
+            intro:
+                'Die Gruppen, deren Beiträge der Baustein zeigt, die neuesten zuerst; abgelaufene Beiträge nie. Der Fernseher zeigt nur Beiträge ' +
+                'öffentlicher Gruppen – die übrigen sind hier als „nicht öffentlich“ markiert, die Vorschau zeigt sie mit deinen Rechten trotzdem.',
+        } satisfies HelpTopic,
+        intro: 'Wie die Beiträge erscheinen und welche in Frage kommen.',
+        view: {
+            term: i.view,
+            text: 'Einer nach dem anderen oder mehrere untereinander. „Hervorgehoben“ zeigt je einen Beitrag groß, mit Bild; „Liste“ so viele, wie in den Rahmen passen.',
+        },
+        count: { term: i.count, text: 'Wie viele Beiträge der Baustein höchstens zeigt, von 1 bis 10, die neuesten zuerst.' },
+        period: { term: i.period, text: 'Zeigt nur Beiträge, die höchstens so viele Tage alt sind, von 1 bis 365.' },
+        seconds: {
+            term: i.secondsPerPost,
+            text: 'Wie lange jeder Beitrag stehen bleibt, vorgegeben sind 15 Sekunden. Die Folie läuft so lange, bis jeder Beitrag einmal zu sehen war.',
+        },
+        fit: {
+            term: i.fit,
+            text: 'Ob das Bild des Beitrags ganz zu sehen ist oder seinen Platz füllt. „Füllen“ schneidet ab, was übersteht; welcher Teil bleibt, sagt „Ausschnitt“.',
+        },
+        focus: { term: i.focus, text: 'Der Teil des Bildes, der beim Zuschneiden sichtbar bleibt. Er gilt für alle Beiträge dieses Bausteins.' },
+        details: {
+            intro: 'Was ein Beitrag zeigt. Was ausgeschaltet ist, nimmt keinen Platz. Bild und Name gibt es nur in der Ansicht „Hervorgehoben“.',
+            items: [{ term: i.postShow.showAuthor, text: 'Der Name der Person, die den Beitrag geschrieben hat.' }],
+        } satisfies HelpTopic,
+    },
+
+    /** The sections of the groups block. */
+    groups: {
+        homepage: {
+            intro: 'Die Gruppen einer Gruppen-Homepage aus ChurchTools – alle oder eine Auswahl in eigener Reihenfolge.',
+            items: [
+                {
+                    term: i.groupsHomepage,
+                    text:
+                        'Zeigt nur Gruppen, die ChurchTools auf dieser Homepage öffentlich zeigt. Eine Gruppen-Homepage legt man in ChurchTools ' +
+                        'an der Obergruppe an: Einstellungen → Allgemein → Außendarstellung.',
+                },
+                {
+                    term: i.allGroups,
+                    text:
+                        'Zeigt jede Gruppe der Homepage, auch neue, sobald sie dort erscheinen. Ausgeschaltet wählt man Gruppen einzeln ' +
+                        'und legt ihre Reihenfolge durch Ziehen fest.',
+                },
+            ],
+        } satisfies HelpTopic,
+        intro: 'Ob die Gruppen als Karten mit QR-Code erscheinen oder als Liste, und wie lange jede Seite steht.',
+        view: {
+            term: i.view,
+            text:
+                '„Hervorgehoben“ zeigt Karten mit QR-Code zur Gruppenseite, „Liste“ so viele Zeilen, wie in den Rahmen passen. ' +
+                'Beide blättern, wenn nicht alle Gruppen Platz haben.',
+        },
+        order: {
+            term: i.order,
+            text: 'Nach Wochentag, beginnend mit Montag, oder nach Namen. Eine eigene Auswahl behält die Reihenfolge, die man ihr gibt.',
+        },
+        perPage: (wide: boolean): HelpItem => ({
+            term: i.groupsPerPage,
+            text:
+                `Wie viele Karten auf einer Seite stehen, 1 bis 4. In diesem Baustein stehen sie ${wide ? 'nebeneinander' : 'untereinander'}; ` +
+                'jede Karte richtet sich nach ihrer eigenen Form – zwei in einem breiten Baustein stehen hochkant.',
+        }),
+        seconds: (term: string): HelpItem => ({
+            term,
+            text:
+                'Wie lange jede Seite stehen bleibt, vorgegeben sind 15 Sekunden – Zeit genug, den QR-Code zu fotografieren. ' +
+                'Die Folie läuft so lange, bis jede Seite einmal zu sehen war.',
+        }),
+        details: {
+            intro:
+                'Was eine Gruppe zeigt. Beschreibung, QR-Code und Bild der Leitung gibt es nur in der Ansicht „Hervorgehoben“. Namen der Leitung erscheinen nur, ' +
+                'wenn die Gruppen-Homepage in ChurchTools die Leiter zeigt – dann sind sie ohnehin öffentlich.',
+        } satisfies HelpTopic,
+    },
+
+    /** The sections of the room occupancy. */
+    rooms: {
+        add: {
+            term: i.addAllRooms,
+            text: 'Nimmt alle Räume auf, die du sehen darfst, höchstens 30. Einzelne kommen über „+ Raum“ dazu.',
+        },
+        list: {
+            intro:
+                'Die Räume in der Reihenfolge, in der sie erscheinen; zum Umsortieren einen Eintrag ziehen. ' +
+                'Gezeigt werden nur bestätigte Buchungen, keine, die noch warten.',
+            items: [
+                { term: i.signpost, text: 'Ein kurzer Hinweis, wie man den Raum findet, etwa „1. OG, links“. Er steht beim Namen des Raums.' },
+                {
+                    term: i.showTitles,
+                    text:
+                        'Zeigt, wofür der Raum gebucht ist. Buchungstitel können Namen enthalten, etwa „Gespräch Familie X“ – ' +
+                        'für solche Räume den Titel ausschalten, dann steht dort „Belegt“.',
+                },
+            ],
+        } satisfies HelpTopic,
+        intro: 'Ob der Baustein mehrere Räume im Überblick zeigt oder das Türschild eines Raums.',
+        view: {
+            term: i.view,
+            text:
+                '„Übersicht“ zeigt die Belegung aller gewählten Räume und blättert, wenn sie nicht auf eine Seite passt. ' +
+                '„Türschild“ zeigt den ersten Raum der Liste: was gerade läuft, bis wann er frei ist und was danach kommt.',
+        },
+        period: { term: i.period, text: 'Wie viele Tage ab heute der Baustein vorausschaut, von 1 bis 14.' },
+        seconds: {
+            term: i.secondsPerPage,
+            text: 'Wie lange jede Seite der Übersicht stehen bleibt, vorgegeben sind 10 Sekunden. Die Folie läuft so lange, bis jede Seite einmal zu sehen war.',
+        },
+    },
+
+    /** The sections of the social media block. */
+    social: {
+        add: {
+            term: i.socialAdd,
+            text:
+                'Der Link zu einem Profil, etwa instagram.com/gemeinde; mit Enter kommt er in die Liste. Zeichen und Name erkennt der Designer ' +
+                'aus dem Link, ohne Abfrage im Internet. Ein Baustein fasst höchstens 12 Profile.',
+        },
+        list: {
+            intro: 'Die Profile in der Reihenfolge, in der sie erscheinen; zum Umsortieren einen Eintrag ziehen.',
+            items: [
+                { term: i.socialLink, text: 'Der Link zum Profil. Ändert man ihn, erkennt der Designer Zeichen und Name neu.' },
+                { term: i.socialLabel, text: 'Ersetzt den aus dem Link erkannten Namen, etwa durch „@gemeinde“. Bleibt das Feld leer, gilt der erkannte Name.' },
+            ],
+        } satisfies HelpTopic,
+        look: {
+            intro: 'Wie die Profile angeordnet sind und wie ihre Zeichen aussehen.',
+            items: [
+                { term: i.socialLayout, text: 'Die Profile untereinander oder nebeneinander. Nebeneinander passt gut in eine Fußzeile.' },
+                { term: i.socialBrand, text: 'Zeigt jedes Zeichen weiß auf der Farbe seiner Plattform. Ausgeschaltet steht das Zeichen allein in der Schriftfarbe.' },
+            ],
+        } satisfies HelpTopic,
+    },
+
+    /** The web page block. */
+    web: {
+        address: {
+            term: i.webAddress,
+            text:
+                'Die Adresse der Seite, die im Rahmen erscheint, oder ihr Einbettungscode. Sie gilt nach Enter oder beim Verlassen des Feldes; ' +
+                'erst dann lädt die Seite. Aus einem Einbettungscode („iframe“), wie ihn Karten, Umfragen oder Pinnwände anbieten, wird nur die ' +
+                'Adresse übernommen. Viele Seiten verbieten, dass andere sie einbetten, auch manche Gemeinde-Website – dann bleibt der Rahmen leer ' +
+                'oder zeigt einen Fehler; man sieht es gleich auf der Folie. Die Seite wird nur gezeigt, nicht bedient. Ohne Netz bleibt der Rahmen leer.',
+        },
+        look: {
+            intro: 'Wie groß die Seite im Rahmen erscheint.',
+            items: [
+                {
+                    term: i.webSize,
+                    text: 'Vergrößert oder verkleinert die Seite im Rahmen. Bei 50 % passt mehr von ihr hinein, 200 % passt zu Seiten, die fürs Handy gemacht sind.',
+                },
+            ],
+        } satisfies HelpTopic,
+    },
+
+    /** The QR code block. */
+    qr: {
+        content: {
+            term: i.qrContent,
+            text:
+                'Was der Code enthält, meist eine Adresse mit https://. Je kürzer der Inhalt, desto gröber das Muster – ' +
+                'und desto weiter weg kann man noch fotografieren.',
+        },
+        look: {
+            intro: 'Dunkel auf hell lesen alle Handykameras am sichersten.',
+            items: [
+                { term: t.common.fill.solid, text: 'Die Farbe des Musters.' },
+                { term: t.common.color.background, text: 'Die Farbe hinter dem Muster. Sie muss sich deutlich davon abheben.' },
+            ],
+        } satisfies HelpTopic,
+    },
+
+    /** "Darstellung" of the church header. */
+    churchHeader: {
+        intro: 'Name und Logo der Gemeinde, wie sie in ChurchTools in den Gemeindeinfos stehen.',
+        items: [
+            { term: i.showChurchName, text: 'Zeigt den Namen der Gemeinde aus ChurchTools.' },
+            {
+                term: i.showLogo,
+                text:
+                    'Zeigt das Logo aus den Gemeindeinfos von ChurchTools. Ist es auf dem Hintergrund nicht gut zu sehen, nimmt „Logo wählen“ ' +
+                    'ein eigenes aus der Mediathek; „Logo zurücksetzen“ nimmt wieder das aus ChurchTools.',
+            },
+        ],
+    } satisfies HelpTopic,
+
+    /** The loose buttons of a template block. */
+    template: {
+        edit: {
+            term: t.templates.edit.start,
+            text: 'Öffnet die Vorlage zum Bearbeiten. Änderungen erscheinen auf allen Folien mit dieser Vorlage.',
+        },
+        unlink: {
+            term: t.templates.unlink,
+            text: 'Macht aus der Vorlage eigene Bausteine nur für diese Folie. Spätere Änderungen an der Vorlage erreichen sie dann nicht mehr.',
+        },
+    },
+
     /** "Hintergrund" of the slide. */
     background: {
         intro:

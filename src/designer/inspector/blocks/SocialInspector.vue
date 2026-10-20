@@ -6,6 +6,7 @@
  */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
 import type { Block, SocialLink } from '../../../model/schema';
 import SocialMark from '../../../player/blocks/SocialMark.vue';
 import { socialName, socialProfile } from '../../../player/social';
@@ -25,7 +26,7 @@ const SOCIAL_MAX = 12;
 
 const props = defineProps<{ block: Extract<Block, { type: 'social' }> }>();
 const { setBlock } = useBlockEdit(() => props.block);
-useGeneralHelp(() => [{ term: t.inspector.socialAdd, text: t.inspector.socialInfo }]);
+useGeneralHelp(() => [th.social.add]);
 
 const layouts = [
     { value: 'column', label: t.inspector.socialColumn },
@@ -75,7 +76,7 @@ function remove(index: number): void {
         />
         <p v-if="block.links.length >= SOCIAL_MAX" class="hint">{{ t.inspector.socialFull }}</p>
         <p v-if="!block.links.length" class="hint">{{ t.inspector.socialEmpty }}</p>
-        <InspectorSection v-else id="social-list" :title="t.inspector.socialProfiles" :summary="t.common.countOf(block.links.length, SOCIAL_MAX)">
+        <InspectorSection v-else id="social-list" :title="t.inspector.socialProfiles" :summary="t.common.countOf(block.links.length, SOCIAL_MAX)" :help="th.social.list">
             <SortList :items="chosen" :remove-label="t.inspector.socialRemove" testid="social" row-testid="social-entry" @move="move" @remove="remove">
                 <template #lead="{ index }">
                     <span class="mark"><SocialMark :kind="socialProfile(block.links[index]!.url).platform" :brand="block.brandColors !== false" :block-id="block.id" /></span>
@@ -105,7 +106,7 @@ function remove(index: number): void {
         </InspectorSection>
     </QuickField>
 
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="look">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="look" :help="th.social.look">
         <SegmentField quick stacked :model-value="block.layout ?? 'column'" :options="layouts" :label="t.inspector.socialLayout" testid="social-layout" @update:model-value="setBlock({ layout: $event as 'column' | 'row' })" />
         <ToggleField quick :model-value="block.brandColors !== false" :label="t.inspector.socialBrand" testid="social-brand" @update:model-value="setBlock({ brandColors: $event })" />
     </InspectorSection>
