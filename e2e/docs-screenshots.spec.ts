@@ -441,6 +441,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     // Groups of a group homepage: two a page, with leaders and their pictures (Plan.md 43).
     await page.getByTestId('add-slide').click();
     await addBlock(page, 'groups');
+    await openSection(page, 'group-list');
     await choose(page, 'groups-homepage', '40');
     await frame(page, { x: 60, y: 60, width: 1800, height: 960 });
     await openSection(page, 'appearance');

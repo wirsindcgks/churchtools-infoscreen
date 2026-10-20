@@ -22,7 +22,6 @@ import { TOGGLE_LIST_SEARCH_FROM, matchesName } from '../../name-search';
 import SearchField from '../../SearchField.vue';
 import { GROUPS_TILES } from '../layouts';
 import { move as moveItem } from '../../ops';
-import { useGeneralHelp } from '../../help/register';
 import type { HelpTopic } from '../../help/types';
 import { useBlockEdit } from '../use-block';
 import { useInspectorMode } from '../mode';
@@ -121,7 +120,12 @@ const summary = computed(() => {
     const order = props.block.groupIds.length === 0 && sorts.find((o) => o.value === props.block.sort)?.label;
     return [layout, order].filter(Boolean).join(' · ');
 });
-useGeneralHelp(() => [{ term: t.inspector.groupsHomepage, text: t.inspector.homepageInfo }]);
+/**
+ * Homepage and groups are one section named after the homepage, as other blocks choose in one section (Kalender, Gruppen,
+ * Räume): a section "Gruppen" under the block "Gruppen" said the same twice (user, 2026-10-20).
+ */
+const homepageTitle = computed(() => homepages.value.find((o) => o.value !== '' && String(o.value) === String(props.block.parentGroupId ?? ''))?.label ?? null);
+const choiceSummary = computed(() => (homepageTitle.value ? `${homepageTitle.value} · ${groupsSummary.value}` : t.common.none));
 /** The settings of "Darstellung" that explain themselves – only those that are there now. */
 const appearanceHelp = computed<HelpTopic>(() => ({
     items: [
@@ -135,20 +139,19 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
 </script>
 
 <template>
-    <SelectField
-        quick
-        :model-value="block.parentGroupId ?? ''"
-        :options="homepages"
-        :face="homepageFace"
-        :label="t.inspector.groupsHomepage"
-        testid="groups-homepage"
-        @update:model-value="setHomepage"
-    />
-    <p v-if="mode === 'full' && !context.homepages.length" class="hint">
-        {{ t.inspector.noHomepage }}
-    </p>
-
-    <InspectorSection id="group-list" :title="t.inspector.groups" :summary="groupsSummary">
+    <InspectorSection id="group-list" :title="t.inspector.groupsHomepage" :summary="choiceSummary" :help="{ items: [{ term: t.inspector.groupsHomepage, text: t.inspector.homepageInfo }] }">
+        <SelectField
+            quick
+            :model-value="block.parentGroupId ?? ''"
+            :options="homepages"
+            :face="homepageFace"
+            :label="t.inspector.groupsHomepage"
+            testid="groups-homepage"
+            @update:model-value="setHomepage"
+        />
+        <p v-if="mode === 'full' && !context.homepages.length" class="hint">
+            {{ t.inspector.noHomepage }}
+        </p>
         <ToggleField
             :model-value="block.groupIds.length === 0"
             :label="t.inspector.allGroups"

@@ -773,6 +773,9 @@ test.describe('at a desktop the two columns fold (Plan.md 45)', () => {
         await expect(page.getByTestId('tablet-slides-toggle')).toHaveAttribute('aria-expanded', 'false');
         await expect.poll(() => stageWidth(page)).toBeGreaterThan(open);
         const slidesFolded = await stageWidth(page);
+        // The way back is wider than the folded rail: it pushes the title aside instead of reaching into it (user, 2026-10-20).
+        const [back, title] = await Promise.all([page.getByTestId('leave-editor').boundingBox(), page.locator('.d-appbar .middle').boundingBox()]);
+        expect(back!.x + back!.width).toBeLessThanOrEqual(title!.x);
 
         await page.getByTestId('desktop-inspector-collapse').click();
         await expect(page.getByTestId('inspector-sheet')).not.toBeVisible();
@@ -1580,6 +1583,7 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
 
     await addBlock(page, 'groups');
     const inspector = page.getByTestId('block-inspector');
+    await openSection(page, 'group-list');
     const homepageSelect = inspector.getByTestId('groups-homepage');
     // The title carries a non-breaking space ("Gottesdienst | Gottesdienste") – matched by part of the text, not by label.
     await homepageSelect.click();
