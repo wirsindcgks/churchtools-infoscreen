@@ -12,7 +12,9 @@ const list = th.appointmentList;
  * something while only the slide is chosen (user, 2026-10-20). Titles name the block where the section is its own.
  */
 export const HELP_CATALOG: HelpSection[] = [
-    { id: 'all-general', title: t.help.general, topic: { items: [th.general.text, th.general.image] } },
+    // Out of its block "Allgemein" says nothing: the loose fields stand under the name of their block.
+    { id: 'all-text', title: t.blocks.text, topic: { items: [th.general.text] } },
+    { id: 'all-image', title: t.blocks.image, topic: { items: [th.general.image] } },
     {
         id: 'all-font',
         title: i.font,
@@ -24,7 +26,7 @@ export const HELP_CATALOG: HelpSection[] = [
     { id: 'all-frame-look', title: i.frameLook, topic: th.frameLook },
     { id: 'all-arrange', title: i.arrange, topic: { intro: th.arrange.intro, items: [th.arrange.regionFixed] } },
     { id: 'all-measures', title: i.measures, topic: th.measures },
-    { id: 'all-image', title: `${t.blocks.image} · ${i.appearance}`, topic: th.image },
+    { id: 'all-image-look', title: `${t.blocks.image} · ${i.appearance}`, topic: th.image },
     {
         id: 'all-appointment-list',
         title: `${t.blocks['appointment-list']} · ${i.appearance}`,

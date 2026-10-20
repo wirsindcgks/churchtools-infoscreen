@@ -6,13 +6,13 @@
  * every other block (`HELP_CATALOG`), so it finds "Schrift" while only the slide is chosen. Closing is up to the
  * caller's keys (Esc) and to the "?" that opened it; here are the ✕ and, on a phone, a tap beside the sheet.
  */
-import { computed, nextTick, ref, watch } from 'vue';
+import { computed, h, nextTick, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
 import { HELP_CATALOG } from './help/catalog';
 import { useHelp } from './help/register';
 import type { HelpItem, HelpSection } from './help/types';
 import Icon from './Icon.vue';
-import { matchesName } from './name-search';
+import { markMatches, matchesName } from './name-search';
 import SearchField from './SearchField.vue';
 import { usePhone } from './usePhone';
 import { vTip } from './tip';
@@ -28,18 +28,35 @@ const current = computed(() => sections.value.find((s) => s.id === help?.active.
 const paragraphs = (intro: string | undefined): string[] => (intro ?? '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 
 /** What the search finds, topic by topic: the introduction if it matches, and the settings whose label or text does. */
+/**
+ * Sorted by how close they come (user, 2026-10-20): first the topics whose title matches, then those with a matching label,
+ * last those that only mention the word; in each step the order of the page.
+ */
 function search(list: HelpSection[], known: { intros: Set<string>; items: Set<string> } = { intros: new Set(), items: new Set() }) {
     const key = (item: HelpItem) => `${item.term}\n${item.text}`;
+    const q = query.value;
     return list
-        .map((s) => ({
-            id: s.id,
-            title: s.title,
-            intro: s.topic.intro && !known.intros.has(s.topic.intro) && matchesName(s.topic.intro, query.value) ? paragraphs(s.topic.intro) : [],
-            items: (s.topic.items ?? []).filter((item) => !known.items.has(key(item)) && matchesName(`${item.term} ${item.text}`, query.value)),
-        }))
-        .filter((hit) => hit.intro.length || hit.items.length);
+        .map((s) => {
+            const items = (s.topic.items ?? []).filter((item) => !known.items.has(key(item)) && matchesName(`${item.term} ${item.text}`, q));
+            const intro = s.topic.intro && !known.intros.has(s.topic.intro) && matchesName(s.topic.intro, q) ? paragraphs(s.topic.intro) : [];
+            const rank = matchesName(s.title, q) ? 0 : items.some((item) => matchesName(item.term, q)) ? 1 : 2;
+            return { id: s.id, title: s.title, intro, items, rank };
+        })
+        .filter((hit) => hit.intro.length || hit.items.length)
+        .sort((a, b) => a.rank - b.rank);
 }
 const hits = computed(() => search(sections.value));
+/** The hits as the bar lists them; a group without hits has no head. */
+const groups = computed(() =>
+    [
+        { id: 'own', head: t.help.here(help?.subject.value ?? ''), hits: hits.value },
+        { id: 'elsewhere', head: t.help.elsewhere, hits: elsewhere.value },
+    ].filter((group) => group.hits.length),
+);
+/** A text with the words of the search marked. */
+const Marked = (props: { text: string }) =>
+    markMatches(props.text, query.value).map((piece) => (piece.hit ? h('mark', { class: 'help-mark' }, piece.text) : piece.text));
+Marked.props = ['text'];
 /** Hits in the help of other blocks, without what the open topics already say. */
 const elsewhere = computed(() =>
     search(HELP_CATALOG, {
@@ -102,7 +119,7 @@ watch(visible, (now) => {
                     <Icon name="close" :size="16" />
                 </button>
             </header>
-            <div ref="tabs" class="help-tabs" role="tablist" :aria-label="t.help.topics" @keydown="onTabKey">
+            <div v-if="!searching" ref="tabs" class="help-tabs" role="tablist" :aria-label="t.help.topics" @keydown="onTabKey">
                 <button
                     v-for="s in sections"
                     :id="`help-tab-${s.id}`"
@@ -123,15 +140,16 @@ watch(visible, (now) => {
             <div id="help-panel" ref="panel" class="help-panel" role="tabpanel" :aria-labelledby="current ? `help-tab-${current.id}` : undefined" data-testid="help-panel">
                 <template v-if="searching">
                     <p v-if="!hits.length && !elsewhere.length" class="help-empty" data-testid="help-empty">{{ t.help.noMatches }}</p>
-                    <template v-for="(group, g) in [hits, elsewhere]" :key="g">
-                        <p v-if="g === 1 && group.length" class="help-elsewhere" data-testid="help-elsewhere">{{ t.help.elsewhere }}</p>
-                        <section v-for="hit in group" :key="hit.id" class="help-topic" :data-testid="`help-hit-${hit.id}`">
-                            <h3>{{ hit.title }}</h3>
-                            <p v-for="(p, i) in hit.intro" :key="i">{{ p }}</p>
+                    <!-- Two lists under their own heads: what the choice explains, then the other blocks (user, 2026-10-20). -->
+                    <template v-for="group in groups" :key="group.id">
+                        <h3 class="help-group" :data-testid="`help-group-${group.id}`">{{ group.head }}</h3>
+                        <section v-for="hit in group.hits" :key="hit.id" class="help-topic help-topic--hit" :data-testid="`help-hit-${hit.id}`">
+                            <h4><Marked :text="hit.title" /></h4>
+                            <p v-for="(p, i) in hit.intro" :key="i"><Marked :text="p" /></p>
                             <dl v-if="hit.items.length">
                                 <template v-for="item in hit.items" :key="item.term">
-                                    <dt>{{ item.term }}</dt>
-                                    <dd>{{ item.text }}</dd>
+                                    <dt><Marked :text="item.term" /></dt>
+                                    <dd><Marked :text="item.text" /></dd>
                                 </template>
                             </dl>
                         </section>
@@ -259,18 +277,36 @@ dd {
 .help-empty {
     color: var(--d-text-muted);
 }
-/* Above the hits from other blocks: a quiet rule, so they read as a second list, not as part of the chosen block. */
-.help-elsewhere {
-    margin-top: var(--d-space-3);
-    padding-top: var(--d-space-2);
-    border-top: 1px solid var(--d-divider);
+/* The hits of a search (user, 2026-10-20): a group head in small capitals, each topic under a rule with its title in the
+   colour of the help, the words of the search marked – three steps one can tell apart at a glance. */
+.help-group {
+    margin: var(--d-space-4) 0 0;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
+    font-weight: var(--d-weight-heading);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
-.help-elsewhere:first-child {
+.help-group:first-child {
     margin-top: 0;
-    padding-top: 0;
-    border-top: 0;
+}
+.help-topic--hit,
+.help-topic + .help-topic--hit {
+    margin-top: var(--d-space-2);
+    padding-top: var(--d-space-2);
+    border-top: 1px solid var(--d-divider);
+}
+h4 {
+    margin: 0;
+    color: var(--d-help);
+    font-size: 1.05em;
+}
+/* `Marked` renders outside this template's scope, so the rule reaches in. */
+.help-panel :deep(.help-mark) {
+    border-radius: 3px;
+    background: var(--d-help-pale);
+    color: inherit;
+    box-shadow: 0 0 0 1px var(--d-help-pale);
 }
 
 /* A phone: a sheet from below over the inspector's sheet, like the sheet of slides. */

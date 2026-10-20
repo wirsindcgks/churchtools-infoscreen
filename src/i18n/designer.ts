@@ -125,6 +125,8 @@ export const t = {
         search: 'In der Hilfe suchen',
         close: 'Hilfe schließen',
         noMatches: 'Dazu steht nichts in der Hilfe.',
+        /** The two lists of hits: what the choice explains, then the other blocks. */
+        here: (name: string) => `Bei „${name}“`,
         elsewhere: 'Bei anderen Bausteinen',
         menuSettings: 'Hilfe zu den Einstellungen',
         /** Labels of explanations that belong to no single row: the run time of a video, a slide shared with other playlists. */
