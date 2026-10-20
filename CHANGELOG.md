@@ -4,6 +4,20 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.42.0] – 2026-10-20
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach einer kurzen Erklärung beim Überfahren mit
+der Maus.
+
+### Geändert
+
+- **Kurze Erklärung beim Überfahren.** Mit der Maus zeigen Symbolknöpfe und die Bezeichnungen im Inspektor nach einem
+  Augenblick einen kurzen Satz – gestaltet statt des grauen Kästchens des Browsers. Bei Bezeichnungen ist es der
+  erste Satz aus der Hilfe-Leiste. Am Tablet erscheint nichts; die ausführliche Hilfe bleibt hinter dem „?“.
+- Jeder Symbolknopf hat jetzt eine Erklärung, auch ✕, die Griffe zum Ziehen und „⋯“.
+- Im Kopf des Inspektors fehlt „Kopieren“: Das Symbol sah fast aus wie „Duplizieren“. Kopieren geht weiter über das
+  „⋯“ am Baustein und mit Strg/⌘ + C.
+
 ## [0.41.0] – 2026-10-20
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach formatierten Erklärungen und den Hinweis,
@@ -1342,6 +1356,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.42.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.42.0
 [0.41.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.41.0
 [0.40.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.40.0
 [0.39.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.39.0
