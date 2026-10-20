@@ -1762,10 +1762,17 @@ test('the text block explains itself: "Allgemein" from the head, one tab per sec
     expect((await bar.boundingBox())!.height).toBe(height);
     await page.getByTestId('help-search').fill('');
     await page.getByTestId('help-tab-general').click();
+    // "Allgemein" opens with the sentence of the "+ Baustein" sheet; the tab names the topic, the panel does not repeat it.
+    await expect(page.getByTestId('help-panel')).toContainText('Überschrift, Untertitel oder ein paar Zeilen.');
+    await expect(page.getByTestId('help-panel').locator('h3')).toHaveCount(0);
     await expect(page.getByTestId('help-panel')).toContainText('Doppelklick auf den Text');
     const tabs = await page.locator('[data-testid^="help-tab-"]').evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
     expect(tabs).toEqual(['help-tab-general', 'help-tab-font', 'help-tab-frame-look', 'help-tab-arrange', 'help-tab-measures']);
     await expect(page.locator('[data-tip="Die Schriftgröße in Bildpunkten der Folie."]')).toHaveCount(1);
+    // A block without loose fields has its "Allgemein" too.
+    await addBlock(page, 'shape');
+    await expect(page.getByTestId('help-tab-general')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('help-panel')).toContainText('Eine farbige Fläche, etwa hinter einem Text.');
 });
 
 test('the block is layered from the "Anordnen" section and deleted from its header (Plan.md 47, 79)', async ({ page }) => {

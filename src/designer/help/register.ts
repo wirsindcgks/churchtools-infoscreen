@@ -46,8 +46,11 @@ function byPosition(a: Entry, b: Entry): number {
     return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : position & Node.DOCUMENT_POSITION_PRECEDING ? 1 : 0;
 }
 
-/** The register a page provides (Plan.md 98): `subject` names what the help is about. */
-export function createHelpRegister(subject: () => string): HelpRegister {
+/**
+ * The register a page provides (Plan.md 98): `subject` names what the help is about; `intro` opens "Allgemein" with what the
+ * chosen thing is – for a block the sentence of the "+ Baustein" sheet – so every block has a "?" in its head (user, 2026-10-20).
+ */
+export function createHelpRegister(subject: () => string, intro: () => string | undefined = () => undefined): HelpRegister {
     const entries = shallowRef<Entry[]>([]);
     const general = shallowRef<Array<() => HelpItem[]>>([]);
     const open = ref(false);
@@ -56,7 +59,8 @@ export function createHelpRegister(subject: () => string): HelpRegister {
     const sections = computed<HelpSection[]>(() => {
         const found: HelpSection[] = [];
         const items = general.value.flatMap((get) => get());
-        if (items.length) found.push({ id: GENERAL_ID, title: t.help.general, topic: { items } });
+        const opening = intro();
+        if (items.length || opening) found.push({ id: GENERAL_ID, title: t.help.general, topic: { intro: opening, items } });
         for (const entry of [...entries.value].sort(byPosition)) {
             const topic = entry.topic();
             if (hasHelp(topic)) found.push({ id: entry.id, title: entry.title(), topic });
@@ -118,8 +122,8 @@ export function createHelpRegister(subject: () => string): HelpRegister {
 }
 
 /** Provides a register to everything below the calling page. */
-export function provideHelp(subject: () => string): HelpRegister {
-    const register = createHelpRegister(subject);
+export function provideHelp(subject: () => string, intro?: () => string | undefined): HelpRegister {
+    const register = createHelpRegister(subject, intro);
     provide(HELP_REGISTER, register);
     return register;
 }

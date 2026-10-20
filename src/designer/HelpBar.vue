@@ -155,8 +155,8 @@ watch(visible, (now) => {
                         </section>
                     </template>
                 </template>
+                <!-- The tab names the topic: no second title (user, 2026-10-20). -->
                 <section v-else-if="current" class="help-topic">
-                    <h3>{{ current.title }}</h3>
                     <p v-for="(p, i) in paragraphs(current.topic.intro)" :key="i">{{ p }}</p>
                     <dl v-if="current.topic.items?.length">
                         <template v-for="item in current.topic.items" :key="item.term">

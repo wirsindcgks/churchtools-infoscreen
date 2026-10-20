@@ -82,7 +82,7 @@ const help = provideHelp(() => {
     if (editor.block) return editor.blockHead(editor.block);
     if (editor.selection.length > 1) return editor.groupSelected ? t.editor.groupCount(editor.selection.length) : t.editor.blocksCount(editor.selection.length);
     return editor.templateEdit ? t.templates.head(editor.templateEdit.name) : t.help.slide;
-});
+}, () => (editor.block && editor.block.type !== 'template' ? `${t.editor.palette.descriptions[editor.block.type]}.` : undefined));
 
 /** The services an administrator allows on screens (Plan.md 58); none until loaded, and where the settings cannot be read. */
 const allowedServices = ref<number[]>([]);
