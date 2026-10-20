@@ -59,10 +59,13 @@
     .middle {
         padding-left: var(--d-space-2);
     }
-    /* An automatic minimum, not 0: the sides keep the room of their content, so nothing overlaps. */
+    /*
+     * The sides keep the room of their content, so nothing overlaps. `auto` is not enough: a grid track with a fixed maximum
+     * (53 px with the slides folded) ignores the automatic minimum, and the way back reached into the title (user, 2026-10-20).
+     */
     .start,
     .end {
-        min-width: auto;
+        min-width: max-content;
     }
 }
 @media (max-width: 48rem) {

@@ -2048,6 +2048,7 @@ test('a groups block sorts every group by weekday, name A–Z or Z–A, until a 
     await page.getByTestId('add-slide').click();
     await addBlock(page, 'groups');
     const inspector = page.getByTestId('block-inspector');
+    await openSection(page, 'group-list');
     await choose(inspector, 'groups-homepage', '40');
     await openSection(page, 'appearance');
     await choose(inspector, 'groups-layout', 'list');
