@@ -4,6 +4,23 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.44.0] – 2026-10-20
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach ausführlichen, formatierten Erklärungen.
+
+### Geändert
+
+- **Jeder Baustein erklärt jetzt alle seine Einstellungen.** Neu dazu kommen Video, Galerie, Uhr, Countdown, Fläche,
+  Linie, Nächster Termin, Beiträge, Gruppen, Raumbelegung, Social Media, Webseite, QR-Code, Gemeindekopf und Vorlage,
+  dazu der Hintergrund der Folie. Jeder Bereich hat eine Einleitung und eine Erklärung je Option; die Hilfe nennt nur,
+  was am Baustein gerade zu sehen ist. Alles ist auch über die Suche in der Hilfe zu finden.
+- **Unter der Präsentation** steht statt des bloßen Worts „Zeitplan“ ein Satz mit Verweis auf „Zeitpläne“.
+
+### Behoben
+
+- Die Hilfe zum Video sagte noch, ohne Netz bleibe die Stelle leer. Seit `0.36.0` spielt der Fernseher Videos auch
+  ohne Netz.
+
 ## [0.43.0] – 2026-10-20
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach ausführlichen, formatierten Erklärungen.
@@ -1375,6 +1392,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.44.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.44.0
 [0.43.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.43.0
 [0.42.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.42.0
 [0.41.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.41.0
