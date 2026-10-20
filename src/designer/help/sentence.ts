@@ -2,11 +2,11 @@
 const ABBREVIATION = /(?:^|[\s(„"])(?:z\.\s?B|d\.\s?h|u\.\s?a|z|d|u|bzw|ca|usw|ggf|evtl|vgl|inkl|max|min)\.$/i;
 
 /**
- * The first sentence of a help text: it ends at the first `.`, `!` or `?` followed by a space and a capital letter,
+ * The first sentence of a help text: it ends at the first `.`, `!` or `?` followed by a space and a capital letter (or an opening quote before it),
  * skipping German abbreviations; a text without such a boundary is returned whole (Plan.md 98, C).
  */
 export function firstSentence(text: string): string {
-    const boundary = /[.!?](?=\s+[A-ZÄÖÜ])/g;
+    const boundary = /[.!?](?=\s+[„"]?[A-ZÄÖÜ])/g;
     for (let match = boundary.exec(text); match; match = boundary.exec(text)) {
         if (match[0] === '.' && ABBREVIATION.test(text.slice(0, match.index + 1))) continue;
         return text.slice(0, match.index + 1);

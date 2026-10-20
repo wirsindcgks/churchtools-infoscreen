@@ -8,6 +8,7 @@
 import { computed, provide } from 'vue';
 import type { AppointmentTag, Calendar, PostGroup } from '../ct/api';
 import { t } from '../i18n/designer';
+import { th } from '../i18n/help';
 import type { HomepageEntry } from '../groups/normalize';
 import type { RoomInfo } from '../rooms/normalize';
 import type { ServiceInfo } from '../appointments/services';
@@ -82,7 +83,7 @@ const canFixInRegion = computed(() => {
 const arrangeSummary = computed(() =>
     block.value ? t.inspector.layerOf(layerNumber.value, rows.value.length) + (block.value.region ? ` · ${t.inspector.regionFixedSummary}` : '') : '',
 );
-const arrangeHelp = computed(() => ({ items: canFixInRegion.value ? [{ term: t.inspector.regionFixed, text: t.inspector.regionFixedInfo }] : [] }));
+const arrangeHelp = computed(() => ({ intro: th.arrange.intro, items: canFixInRegion.value ? [th.arrange.regionFixed] : [] }));
 /** Editing a template with nothing chosen: its lock is explained under "Allgemein". */
 useGeneralHelp(() => (editor.templateEdit && !selection.value.length ? [{ term: t.templates.fixed, text: t.templates.fixedInfo }] : []));
 
@@ -183,7 +184,7 @@ const LAYERS = [
             <fieldset class="lockable" :disabled="!!block?.locked">
                 <component :is="BLOCK_INSPECTORS[block.type]" v-if="block && block.type !== 'template'" :block="block" />
 
-                <InspectorSection v-if="block && block.type !== 'template'" id="frame-look" :title="t.inspector.frameLook" :summary="frameLookSummary">
+                <InspectorSection v-if="block && block.type !== 'template'" id="frame-look" :title="t.inspector.frameLook" :summary="frameLookSummary" :help="th.frameLook">
                     <NumberField
                         :model-value="block.rotation ?? 0"
                         unit="°"
@@ -230,7 +231,7 @@ const LAYERS = [
                     </div>
                 </InspectorSection>
 
-                <InspectorSection v-if="block" id="measures" :title="t.inspector.measures" :summary="positionSummary">
+                <InspectorSection v-if="block" id="measures" :title="t.inspector.measures" :summary="positionSummary" :help="th.measures">
                     <div class="measures">
                         <NumberField
                             v-for="field in frameFields"

@@ -6,6 +6,7 @@
  */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
 import type { Block } from '../../../model/schema';
 import { themeOf, useStageContext } from '../../../player/context';
 import { PAGE_SECONDS } from '../../../player/paging';
@@ -43,7 +44,21 @@ const layout = computed(() => listLayout(props.block, themeOf(stage)));
 /** The folded look: the layout the list really has, and how far ahead it looks. */
 const summary = computed(() => `${layout.value === 'visitor' ? t.inspector.layoutVisitor : layout.value === 'cards' ? t.inspector.layoutCards : t.inspector.layoutRows} · ${t.inspector.days(props.block.horizonDays)}`);
 
-const appearanceHelp = computed(() => ({ items: [showRoomHelp(props.block, themeOf(stage))] }));
+/** Only the fields the list shows: the calendar badge with cards, count or seconds per page as paging is off or on. */
+const appearanceHelp = computed(() => {
+    const h = th.appointmentList;
+    return {
+        intro: h.intro,
+        items: [
+            h.view,
+            ...(layout.value === 'cards' ? [h.showCalendar] : []),
+            h.period,
+            props.block.showAll ? h.secondsPerPage : h.count,
+            h.showAll,
+            showRoomHelp(props.block, themeOf(stage)),
+        ],
+    };
+});
 
 /** How a paged list will run – with the page count the stage preview measured. */
 const pageHint = computed(() => {

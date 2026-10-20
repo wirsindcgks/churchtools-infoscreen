@@ -7,6 +7,7 @@
  */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
 import { pruneRoomOffIds, roomsShownInLayout, pruneRoomsOff, toggleRoomOff, toggleRoomsOff } from '../../../appointments/rooms';
 import { allowedServiceIds, SERVICES_MAX, toggleServiceIds, type ServiceInfo } from '../../../appointments/services';
 import type { Calendar } from '../../../ct/api';
@@ -104,7 +105,7 @@ const servicesSummary = computed(() => (shownServiceCount.value ? t.common.chose
     </template>
     <template v-else-if="visible">
         <!-- Plan.md, 51 and 82: rooms can be left out for single calendars and single rooms. -->
-        <InspectorSection v-if="roomsOn" id="rooms-for" :title="t.inspector.roomsFor" :summary="roomsForSummary">
+        <InspectorSection v-if="roomsOn" id="rooms-for" :title="t.inspector.roomsFor" :summary="roomsForSummary" :help="th.roomsFor">
             <div class="groups" data-testid="rooms-for">
                 <div v-if="roomsFor" class="group">
                     <h4 class="group-title">{{ t.inspector.roomsForCalendars }}</h4>

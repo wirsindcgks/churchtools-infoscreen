@@ -8,6 +8,10 @@ describe('firstSentence (Plan.md 98, C)', () => {
         expect(firstSentence('Achtung! Danach nichts.')).toBe('Achtung!');
     });
 
+    it('ends before a sentence that opens with a quote (Plan.md 98, D)', () => {
+        expect(firstSentence('Die Form der Liste. „Wie im Design“ folgt.')).toBe('Die Form der Liste.');
+    });
+
     it('skips German abbreviations', () => {
         expect(firstSentence('Zeigt z. B. den Namen. Mehr nicht.')).toBe('Zeigt z. B. den Namen.');
         expect(firstSentence('Das gilt, d. h. immer. Sonst Ende.')).toBe('Das gilt, d. h. immer.');

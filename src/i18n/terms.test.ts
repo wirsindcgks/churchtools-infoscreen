@@ -8,6 +8,7 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { t } from './designer';
 import { tp } from './player';
+import { th } from './help';
 import { tr } from './repository';
 
 const OLD_WORDS = /\b(Slides?|Playlists?|Screens?)\b/;
@@ -48,7 +49,7 @@ describe('the words of the interface (Plan.md 79, B1)', () => {
     });
 
     it('no text says Slide, Playlist or Screen', () => {
-        const all = [...texts(t, 't'), ...texts(tp, 'tp'), ...texts(tr, 'tr')];
+        const all = [...texts(t, 't'), ...texts(tp, 'tp'), ...texts(tr, 'tr'), ...texts(th, 'th')];
         expect(all.filter(([, text]) => OLD_WORDS.test(text)).map(([where, text]) => `${where}: ${text}`)).toEqual([]);
     });
 

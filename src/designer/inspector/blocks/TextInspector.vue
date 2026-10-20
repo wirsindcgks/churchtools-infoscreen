@@ -1,6 +1,8 @@
 <script setup lang="ts">
 /** The text block (Plan.md 79, B2): the text itself, then the font section with the text level first. The short menu will take level, colour and alignment. */
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
+import { useGeneralHelp } from '../../help/register';
 import type { Block } from '../../../model/schema';
 import { computed } from 'vue';
 import { levelOf, textLevels, type TextLevel } from '../../ops';
@@ -11,6 +13,7 @@ import { useBlockEdit } from '../use-block';
 
 const props = defineProps<{ block: Extract<Block, { type: 'text' }> }>();
 const { editor, setBlock, setStyle } = useBlockEdit(() => props.block);
+useGeneralHelp(() => [th.general.text]);
 
 const levelOptions = [
     { value: 'heading', label: t.inspector.textLevels.heading },

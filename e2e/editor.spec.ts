@@ -1743,6 +1743,18 @@ test('an explanation stays behind the "?" of its section until asked for, and Es
     await expect(page.getByTestId('block-inspector')).toBeVisible();
 });
 
+test('the text block explains itself: "Allgemein" from the head, one tab per section, the first sentence as tip (Plan.md 98, D)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await addBlock(page, 'text');
+    await page.getByTestId('inspector-help').click();
+    await expect(page.getByTestId('help-tab-general')).toHaveAttribute('aria-selected', 'true');
+    await expect(page.getByTestId('help-panel')).toContainText('Doppelklick auf den Text');
+    const tabs = await page.locator('[data-testid^="help-tab-"]').evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
+    expect(tabs).toEqual(['help-tab-general', 'help-tab-font', 'help-tab-frame-look', 'help-tab-arrange', 'help-tab-measures']);
+    await expect(page.locator('[data-tip="Die Schriftgröße in Bildpunkten der Folie."]')).toHaveCount(1);
+});
+
 test('the block is layered from the "Anordnen" section and deleted from its header (Plan.md 47, 79)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();

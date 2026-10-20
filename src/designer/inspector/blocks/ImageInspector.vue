@@ -2,6 +2,8 @@
 /** The image block (Plan.md 79, B2; F2): the picture, then how it fits the box, its tone and, at "Füllen", crop, corners and shadow. Picture, fit and tone go to the short menu. */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
+import { useGeneralHelp } from '../../help/register';
 import type { Block } from '../../../model/schema';
 import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
@@ -15,6 +17,7 @@ import PictureFrameFields from './PictureFrameFields.vue';
 const props = defineProps<{ block: Extract<Block, { type: 'image' }> }>();
 const { editor, setBlock, mediaUrl } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
+useGeneralHelp(() => [th.general.image]);
 /** Only fields stand in the short menu; the button belongs to the inspector. */
 const mode = useInspectorMode();
 
@@ -50,7 +53,7 @@ const summary = computed(() =>
         testid="pick-image"
         @pick="context.pickImage('block')"
     />
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="th.image">
         <SegmentField quick :model-value="block.fit" :options="fits" :label="t.inspector.fit" testid="image-fit" @update:model-value="setBlock({ fit: $event })" />
         <SegmentField quick stacked :face="toneFace" :model-value="block.tone ?? 'none'" :options="tones" :label="t.inspector.tone" testid="image-tone" @update:model-value="setBlock({ tone: $event === 'none' ? undefined : $event })" />
         <template v-if="block.fit === 'cover'">

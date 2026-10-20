@@ -6,6 +6,7 @@
  */
 import { computed } from 'vue';
 import { t } from '../../i18n/designer';
+import { th } from '../../i18n/help';
 import { fontDef } from '../../player/fonts';
 import { verticalAlignOf } from '../../player/format';
 import ColorField from '../ColorField.vue';
@@ -59,6 +60,25 @@ const shadows = [
 ];
 const hasShadow = computed(() => !!style.value.shadow && style.value.shadow !== 'none');
 
+/** The help of the section (Plan.md 98, D): only the fields this block shows. */
+const help = computed(() => {
+    const f = th.font;
+    const effects = props.effects === 'all' ? [f.shadow, f.highlight, ...(style.value.highlight ? [f.highlightColor, f.highlightOpacity] : [])] : props.effects ? [f.shadow] : [];
+    const items = [
+        ...(props.block.type === 'text' ? [f.level] : []),
+        f.family,
+        f.size,
+        f.weight,
+        f.uppercase,
+        f.color,
+        f.align,
+        f.lineHeight,
+        f.letterSpacing,
+        ...effects,
+        ...(verticalAlignOf(props.block) ? [f.vertical] : []),
+    ];
+    return { intro: f.intro, items };
+});
 /** Folded sections say what is set inside (Plan.md 47). */
 const summary = computed(() => {
     const base = t.inspector.fontSummary(fontDef(style.value.fontFamily).label, style.value.fontSize, !!style.value.uppercase);
@@ -68,7 +88,7 @@ const summary = computed(() => {
 </script>
 
 <template>
-    <InspectorSection id="font" :title="t.inspector.font" :summary="summary">
+    <InspectorSection id="font" :title="t.inspector.font" :summary="summary" :help="help">
         <template #summary-extra>
             <span class="swatch" :style="{ background: style.color }" />
         </template>
