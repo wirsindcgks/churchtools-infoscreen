@@ -1747,8 +1747,14 @@ test('the text block explains itself: "Allgemein" from the head, one tab per sec
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await addBlock(page, 'text');
+    // The bar lies over the stage: the slide keeps its size (user, 2026-10-20).
+    const stage = page.locator('.stage-column > .editor-stage');
+    const before = await stage.boundingBox();
     await page.getByTestId('inspector-help').click();
     await expect(page.getByTestId('help-tab-general')).toHaveAttribute('aria-selected', 'true');
+    await page.getByTestId('help-tab-font').click();
+    expect(await stage.boundingBox()).toEqual(before);
+    await page.getByTestId('help-tab-general').click();
     await expect(page.getByTestId('help-panel')).toContainText('Doppelklick auf den Text');
     const tabs = await page.locator('[data-testid^="help-tab-"]').evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
     expect(tabs).toEqual(['help-tab-general', 'help-tab-font', 'help-tab-frame-look', 'help-tab-arrange', 'help-tab-measures']);

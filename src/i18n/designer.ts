@@ -125,6 +125,7 @@ export const t = {
         search: 'In der Hilfe suchen',
         close: 'Hilfe schließen',
         noMatches: 'Dazu steht nichts in der Hilfe.',
+        elsewhere: 'Bei anderen Bausteinen',
         menuSettings: 'Hilfe zu den Einstellungen',
         /** Labels of explanations that belong to no single row: the run time of a video, a slide shared with other playlists. */
         terms: { runtime: 'Laufzeit', linked: 'Verknüpfte Folie' },

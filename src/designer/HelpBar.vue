@@ -1,13 +1,16 @@
 <script setup lang="ts">
 /**
- * The help bar (Plan.md 98): the explanations of the open page, in the bar below the slide of the editor (and below the preview
+ * The help bar (Plan.md 98): the explanations of the open page, over the lower part of the editor's stage (below the preview
  * of the page "Design"), on a phone as a sheet from below. It reads the register the page provides: one tab per announced topic,
- * "Allgemein" first, then the sections in the order of the inspector; the search runs over all topics. Closing is up to the
+ * "Allgemein" first, then the sections in the order of the inspector; the search runs over all topics, and then over the help of
+ * every other block (`HELP_CATALOG`), so it finds "Schrift" while only the slide is chosen. Closing is up to the
  * caller's keys (Esc) and to the "?" that opened it; here are the ✕ and, on a phone, a tap beside the sheet.
  */
 import { computed, nextTick, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
+import { HELP_CATALOG } from './help/catalog';
 import { useHelp } from './help/register';
+import type { HelpItem, HelpSection } from './help/types';
 import Icon from './Icon.vue';
 import { matchesName } from './name-search';
 import SearchField from './SearchField.vue';
@@ -25,15 +28,24 @@ const current = computed(() => sections.value.find((s) => s.id === help?.active.
 const paragraphs = (intro: string | undefined): string[] => (intro ?? '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
 
 /** What the search finds, topic by topic: the introduction if it matches, and the settings whose label or text does. */
-const hits = computed(() =>
-    sections.value
+function search(list: HelpSection[], known: { intros: Set<string>; items: Set<string> } = { intros: new Set(), items: new Set() }) {
+    const key = (item: HelpItem) => `${item.term}\n${item.text}`;
+    return list
         .map((s) => ({
             id: s.id,
             title: s.title,
-            intro: s.topic.intro && matchesName(s.topic.intro, query.value) ? paragraphs(s.topic.intro) : [],
-            items: (s.topic.items ?? []).filter((item) => matchesName(`${item.term} ${item.text}`, query.value)),
+            intro: s.topic.intro && !known.intros.has(s.topic.intro) && matchesName(s.topic.intro, query.value) ? paragraphs(s.topic.intro) : [],
+            items: (s.topic.items ?? []).filter((item) => !known.items.has(key(item)) && matchesName(`${item.term} ${item.text}`, query.value)),
         }))
-        .filter((hit) => hit.intro.length || hit.items.length),
+        .filter((hit) => hit.intro.length || hit.items.length);
+}
+const hits = computed(() => search(sections.value));
+/** Hits in the help of other blocks, without what the open topics already say. */
+const elsewhere = computed(() =>
+    search(HELP_CATALOG, {
+        intros: new Set(sections.value.map((s) => s.topic.intro ?? '')),
+        items: new Set(sections.value.flatMap((s) => (s.topic.items ?? []).map((item) => `${item.term}\n${item.text}`))),
+    }),
 );
 
 const panel = ref<HTMLElement | null>(null);
@@ -110,17 +122,20 @@ watch(visible, (now) => {
             </div>
             <div id="help-panel" ref="panel" class="help-panel" role="tabpanel" :aria-labelledby="current ? `help-tab-${current.id}` : undefined" data-testid="help-panel">
                 <template v-if="searching">
-                    <p v-if="!hits.length" class="help-empty" data-testid="help-empty">{{ t.help.noMatches }}</p>
-                    <section v-for="hit in hits" :key="hit.id" class="help-topic" :data-testid="`help-hit-${hit.id}`">
-                        <h3>{{ hit.title }}</h3>
-                        <p v-for="(p, i) in hit.intro" :key="i">{{ p }}</p>
-                        <dl v-if="hit.items.length">
-                            <template v-for="item in hit.items" :key="item.term">
-                                <dt>{{ item.term }}</dt>
-                                <dd>{{ item.text }}</dd>
-                            </template>
-                        </dl>
-                    </section>
+                    <p v-if="!hits.length && !elsewhere.length" class="help-empty" data-testid="help-empty">{{ t.help.noMatches }}</p>
+                    <template v-for="(group, g) in [hits, elsewhere]" :key="g">
+                        <p v-if="g === 1 && group.length" class="help-elsewhere" data-testid="help-elsewhere">{{ t.help.elsewhere }}</p>
+                        <section v-for="hit in group" :key="hit.id" class="help-topic" :data-testid="`help-hit-${hit.id}`">
+                            <h3>{{ hit.title }}</h3>
+                            <p v-for="(p, i) in hit.intro" :key="i">{{ p }}</p>
+                            <dl v-if="hit.items.length">
+                                <template v-for="item in hit.items" :key="item.term">
+                                    <dt>{{ item.term }}</dt>
+                                    <dd>{{ item.text }}</dd>
+                                </template>
+                            </dl>
+                        </section>
+                    </template>
                 </template>
                 <section v-else-if="current" class="help-topic">
                     <h3>{{ current.title }}</h3>
@@ -243,6 +258,19 @@ dd {
 }
 .help-empty {
     color: var(--d-text-muted);
+}
+/* Above the hits from other blocks: a quiet rule, so they read as a second list, not as part of the chosen block. */
+.help-elsewhere {
+    margin-top: var(--d-space-3);
+    padding-top: var(--d-space-2);
+    border-top: 1px solid var(--d-divider);
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+.help-elsewhere:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
 }
 
 /* A phone: a sheet from below over the inspector's sheet, like the sheet of slides. */

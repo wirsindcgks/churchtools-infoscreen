@@ -106,6 +106,18 @@ describe('HelpBar (Plan.md 98)', () => {
         expect(wrapper.find('[data-testid="help-empty"]').exists()).toBe(true);
     });
 
+    it('finds the help of other blocks below the own hits, as when only the slide is chosen (Plan.md 98, D)', async () => {
+        sectionState.calendars = true;
+        const { wrapper, register } = page();
+        await nextTick();
+        register.toggleStart();
+        await nextTick();
+        await wrapper.get('[data-testid="help-search"]').setValue('schriftart');
+        expect(wrapper.find('[data-testid="help-empty"]').exists()).toBe(false);
+        expect(wrapper.get('[data-testid="help-elsewhere"]').text()).toBe('Bei anderen Bausteinen');
+        expect(wrapper.get('[data-testid="help-hit-all-font"]').text()).toContain('Schriftart');
+    });
+
     it('closes with the ✕ and forgets the search', async () => {
         sectionState.calendars = true;
         const { wrapper, register } = page();

@@ -1,0 +1,37 @@
+import { PUBLIC_CALENDAR_PATH } from '../../ct/api';
+import { t } from '../../i18n/designer';
+import { th } from '../../i18n/help';
+import type { HelpSection } from './types';
+
+const i = t.inspector;
+const f = th.font;
+const list = th.appointmentList;
+
+/**
+ * Every topic of the help, whatever is chosen (Plan.md 98, D): the search of the bar looks here as well, so "Schrift" finds
+ * something while only the slide is chosen (user, 2026-10-20). Titles name the block where the section is its own.
+ */
+export const HELP_CATALOG: HelpSection[] = [
+    { id: 'all-general', title: t.help.general, topic: { items: [th.general.text, th.general.image] } },
+    {
+        id: 'all-font',
+        title: i.font,
+        topic: {
+            intro: f.intro,
+            items: [f.level, f.family, f.size, f.weight, f.uppercase, f.color, f.align, f.lineHeight, f.letterSpacing, f.shadow, f.highlight, f.highlightColor, f.highlightOpacity, f.vertical],
+        },
+    },
+    { id: 'all-frame-look', title: i.frameLook, topic: th.frameLook },
+    { id: 'all-arrange', title: i.arrange, topic: { intro: th.arrange.intro, items: [th.arrange.regionFixed] } },
+    { id: 'all-measures', title: i.measures, topic: th.measures },
+    { id: 'all-image', title: `${t.blocks.image} · ${i.appearance}`, topic: th.image },
+    {
+        id: 'all-appointment-list',
+        title: `${t.blocks['appointment-list']} · ${i.appearance}`,
+        topic: { intro: list.intro, items: [list.view, list.showCalendar, list.period, list.count, list.showAll, list.secondsPerPage] },
+    },
+    { id: 'all-calendars', title: t.common.calendars.title, topic: { intro: t.common.calendars.info(PUBLIC_CALENDAR_PATH) } },
+    { id: 'all-hide-tags', title: i.hideTagsTitle, topic: { intro: i.hideTagsInfo } },
+    { id: 'all-services', title: i.servicesTitle, topic: { intro: i.servicesInfo } },
+    { id: 'all-rooms-for', title: i.roomsFor, topic: th.roomsFor },
+];
