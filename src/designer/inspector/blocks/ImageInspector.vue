@@ -18,6 +18,7 @@ const props = defineProps<{ block: Extract<Block, { type: 'image' }> }>();
 const { editor, setBlock, mediaUrl } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
 useGeneralHelp(() => [th.general.image]);
+const help = { intro: th.image.intro, items: [...th.image.items, th.pictureFrame.corners, th.pictureFrame.shadow] };
 /** Only fields stand in the short menu; the button belongs to the inspector. */
 const mode = useInspectorMode();
 
@@ -53,7 +54,7 @@ const summary = computed(() =>
         testid="pick-image"
         @pick="context.pickImage('block')"
     />
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="th.image">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="help">
         <SegmentField quick :model-value="block.fit" :options="fits" :label="t.inspector.fit" testid="image-fit" @update:model-value="setBlock({ fit: $event })" />
         <SegmentField quick stacked :face="toneFace" :model-value="block.tone ?? 'none'" :options="tones" :label="t.inspector.tone" testid="image-tone" @update:model-value="setBlock({ tone: $event === 'none' ? undefined : $event })" />
         <template v-if="block.fit === 'cover'">

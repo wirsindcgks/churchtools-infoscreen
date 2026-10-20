@@ -2,6 +2,7 @@
 /** The line block (Plan.md F1): colour, thickness and solid or dashed. All three go to the short menu. */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
 import type { Block } from '../../../model/schema';
 import ColorField from '../../ColorField.vue';
 import InspectorSection from '../../InspectorSection.vue';
@@ -27,7 +28,7 @@ function setThickness(thickness: number): void {
 </script>
 
 <template>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="th.line">
         <ColorField quick :label="t.common.fill.solid" :model-value="block.color" @focus="edit.onFocus" @blur="edit.onBlur" @update:model-value="setBlock({ color: $event })" />
         <NumberField quick named :model-value="block.thickness" :label="t.inspector.lineThickness" unit="px" :min="1" testid="line-thickness" @update:model-value="setThickness" />
         <SegmentField quick :model-value="block.dash ?? 'solid'" :options="dashes" :label="t.inspector.lineDash" testid="line-dash" @update:model-value="setBlock({ dash: $event })" />

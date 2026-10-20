@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /** The video block (Plan.md 52, 79 B2): the video, the sound, then how it fits the box. Video and sound go to the short menu. */
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
 import type { Block } from '../../../model/schema';
 import InspectorSection from '../../InspectorSection.vue';
 import { useGeneralHelp } from '../../help/register';
@@ -15,10 +16,8 @@ import { useBlockEdit } from '../use-block';
 const props = defineProps<{ block: Extract<Block, { type: 'video' }> }>();
 const { setBlock, videoLabel } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
-useGeneralHelp(() => [
-    { term: t.help.terms.runtime, text: t.inspector.videoRuntimeInfo },
-    { term: t.inspector.sound, text: t.inspector.soundInfo },
-]);
+useGeneralHelp(() => [th.general.video, th.general.videoRuntime, th.general.sound]);
+const help = { intro: th.video.intro, items: [th.video.fit, th.pictureFrame.corners, th.pictureFrame.shadow] };
 
 const fits = [
     { value: 'contain', label: t.inspector.fitContain },
@@ -44,7 +43,7 @@ function caption(): string {
         @pick="context.pickImage('video')"
     />
     <ToggleField quick :model-value="block.sound ?? false" :label="t.inspector.sound" testid="video-sound" @update:model-value="setBlock({ sound: $event })" />
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="lookSummary(block, fits.find((f) => f.value === (block.fit ?? 'contain'))?.label)">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="lookSummary(block, fits.find((f) => f.value === (block.fit ?? 'contain'))?.label)" :help="help">
         <SegmentField :model-value="block.fit ?? 'contain'" :options="fits" :label="t.inspector.fit" testid="video-fit" @update:model-value="setBlock({ fit: $event })" />
         <PictureFrameFields v-if="block.fit === 'cover'" :block="block" />
     </InspectorSection>

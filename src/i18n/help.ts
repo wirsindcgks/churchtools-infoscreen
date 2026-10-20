@@ -23,6 +23,30 @@ export const th = {
                 'Das Bild kommt aus der Mediathek; dort lädt man auch neue hoch. Der Fernseher bekommt es höchstens in 1920 × 1080 Bildpunkten – ' +
                 'größere Dateien schaden nicht, werden aber nicht schärfer.',
         },
+        video: {
+            term: t.blocks.video,
+            text:
+                'Das Video kommt aus der Mediathek; dort lädt man MP4-Dateien hoch. Es beginnt jedes Mal von vorn, wenn die Folie erscheint, ' +
+                'und läuft in Schleife, solange sie steht. Im Designer zeigt die Folie nur ein Standbild.',
+        },
+        videoRuntime: {
+            term: t.help.terms.runtime,
+            text:
+                'Die Folie dauert mindestens so lange wie das Video. Der Fernseher lädt es mit der Präsentation vorab und spielt es dann auch ohne Netz, ' +
+                'solange sein Speicher reicht.',
+        },
+        sound: {
+            term: i.sound,
+            text:
+                'Spielt den Ton des Videos mit. Viele Browser starten Ton erst nach einem Klick auf die Seite; bis dahin läuft das Video stumm, ' +
+                'und auf dem Fernseher steht ein Knopf „Ton an“.',
+        },
+        slideshowAdd: {
+            term: i.addImages,
+            text:
+                'Wählt Bilder aus der Mediathek, mehrere auf einmal; sie kommen in der Reihenfolge des Anklickens ans Ende der Galerie. ' +
+                'Eine Galerie fasst höchstens 30 Bilder.',
+        },
     } satisfies Record<string, HelpItem>,
 
     /** "Schrift" – items by field; `FontSection` takes the ones it shows. */
@@ -123,6 +147,12 @@ export const th = {
             'Y vom oberen Rand bis zur linken oberen Ecke des Bausteins. Ist der Baustein im Bereich fest, gibt die Aufteilung die Maße vor.',
     } satisfies HelpTopic,
 
+    /** Corners and shadow of a picture, video or gallery that fills its frame (`PictureFrameFields`). */
+    pictureFrame: {
+        corners: { term: i.cornerRadius, text: 'Rundet die Ecken ab, in Bildpunkten. 0 heißt eckig; das Feld steht nur bei „Füllen“.' },
+        shadow: { term: i.shadow, text: 'Ein Schatten unter dem Rahmen, weich oder kräftig. Er hebt den Baustein vom Hintergrund ab.' },
+    } satisfies Record<string, HelpItem>,
+
     /** "Darstellung" of the image block. */
     image: {
         intro: 'Wie das Bild im Rahmen sitzt und wirkt.',
@@ -140,9 +170,100 @@ export const th = {
                     'Bei „Füllen“ der Teil des Bildes, der sichtbar bleibt. Auf der Folie verschiebt man das Bild im Rahmen und vergrößert es mit „Zoom“; ' +
                     '„Fertig“ übernimmt, „Zurücksetzen“ nimmt wieder die Mitte.',
             },
-            { term: i.cornerRadius, text: 'Rundet die Ecken des Bildes ab, in Bildpunkten. 0 heißt eckig.' },
-            { term: i.shadow, text: 'Ein Schatten unter dem Bild, weich oder kräftig. Er hebt das Bild vom Hintergrund ab.' },
         ],
+    },
+
+    /** "Darstellung" of the video block. */
+    video: {
+        intro: 'Wie das Video im Rahmen sitzt.',
+        fit: {
+            term: i.fit,
+            text:
+                'Ob das Video ganz zu sehen ist oder den Rahmen füllt. „Ganz zeigen“ lässt freie Ränder, wenn die Seitenverhältnisse nicht passen; ' +
+                '„Füllen“ deckt den Rahmen und schneidet ab, was übersteht.',
+        },
+    },
+
+    /** "Bilder" and "Darstellung" of the gallery. */
+    slideshow: {
+        images: {
+            intro:
+                'Die Bilder der Galerie in der Reihenfolge, in der sie erscheinen. Zum Umsortieren einen Eintrag ziehen; ✕ nimmt das Bild ' +
+                'aus der Galerie, in der Mediathek bleibt es.',
+        } satisfies HelpTopic,
+        intro: 'Wie lange jedes Bild steht, wie es wechselt und wie es im Rahmen sitzt.',
+        seconds: {
+            term: i.secondsPerImage,
+            text: 'Wie lange jedes Bild stehen bleibt, von 3 bis 60 Sekunden. Die Folie läuft so lange, bis jedes Bild einmal zu sehen war.',
+        },
+        transition: {
+            term: i.transition,
+            text: 'Wie ein Bild dem nächsten Platz macht: überblenden, schieben oder aufdecken. „Ohne“ wechselt sofort.',
+        },
+        motion: {
+            term: i.motion,
+            text: 'Ein langsamer Zoom, solange ein Bild steht. „Abwechselnd“ zoomt beim einen Bild hinein, beim nächsten heraus.',
+        },
+        fit: {
+            term: i.fit,
+            text:
+                'Ob jedes Bild ganz zu sehen ist oder den Rahmen füllt. Vorgegeben ist „Füllen“: Es deckt den Rahmen und schneidet ab, was übersteht; ' +
+                '„Ganz zeigen“ lässt freie Ränder.',
+        },
+    },
+
+    /** "Darstellung" of the clock. */
+    clock: {
+        view: {
+            term: i.view,
+            text:
+                'Was die Uhr zeigt: Uhrzeit, Datum oder beides. Sie geht nach der Uhr des Fernsehers; solange er deren Zeit nach einem Neustart ' +
+                'noch nicht bestätigen konnte, bleibt der Baustein leer statt eine falsche Zeit zu zeigen.',
+        },
+    },
+
+    /** "Darstellung" of the countdown. */
+    countdown: {
+        intro:
+            'Ab einem Tag zeigt der Countdown Tage und Stunden, darunter die Zeit bis auf die Sekunde. Steht kein Termin an, ' +
+            'steht dort „Kein Termin in Sicht“.',
+        showTitle: { term: i.showTitle, text: 'Nennt den Titel des Termins, bis zu dem gezählt wird.' },
+        running: {
+            term: i.duringAppointment,
+            text:
+                'Ein Text, der statt der Zeit erscheint, solange ein Termin läuft – etwa „Der Gottesdienst hat begonnen“. ' +
+                'Bleibt das Feld leer, zählt der Baustein gleich zum nächsten Termin.',
+        },
+    },
+
+    /** "Darstellung" of the shape. */
+    shape: {
+        intro: 'Eine Fläche als Hintergrund für Text, als farbiger Balken oder als Kreis.',
+        form: { term: i.shapeForm, text: 'Rechteck oder Ellipse. Eine Ellipse in einem quadratischen Rahmen ist ein Kreis.' },
+        kind: {
+            term: t.common.fill.kind,
+            text: 'Eine Farbe oder ein Verlauf zwischen zwei Farben. Der Winkel gibt die Richtung des Verlaufs: 0° läuft von unten nach oben, 90° von links nach rechts.',
+        },
+        corners: { term: i.cornerRadius, text: 'Rundet die Ecken des Rechtecks ab, in Bildpunkten. 0 heißt eckig.' },
+        border: { term: i.shapeBorder, text: 'Eine Linie um die Form, so breit wie angegeben. 0 nimmt den Rand weg.' },
+        borderColor: { term: i.shapeBorderColor, text: 'Die Farbe des Rands. Anfangs ist es die Textfarbe des Designs.' },
+    },
+
+    /** "Darstellung" of the line. */
+    line: {
+        intro: 'Eine waagrechte Linie, etwa als Trenner zwischen Überschrift und Text; schräg oder senkrecht wird sie mit der Drehung.',
+        items: [
+            { term: t.common.fill.solid, text: 'Die Farbe der Linie.' },
+            { term: i.lineThickness, text: 'Wie dick die Linie ist, in Bildpunkten der Folie. Wird sie dicker als ihr Rahmen, wächst der Rahmen mit.' },
+            { term: i.lineDash, text: 'Durchgezogen oder gestrichelt.' },
+        ],
+    } satisfies HelpTopic,
+
+    /** "Hintergrund" of the slide. */
+    background: {
+        intro:
+            'Was hinter allen Bausteinen der Folie liegt: eine Farbe, ein Verlauf oder ein Bild aus der Mediathek. Ein Bild füllt die ganze Folie; ' +
+            'was übersteht, wird abgeschnitten.',
     } satisfies HelpTopic,
 
     /** "Darstellung" of the appointment list; "Raum zeigen" depends on the form, see `appointment-help.ts`. */

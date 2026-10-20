@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /** The clock block (Plan.md 79, B2): what it shows, as picture tiles, then the font. The short menu takes the tiles and the colour. */
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
 import type { Block } from '../../../model/schema';
 import InspectorSection from '../../InspectorSection.vue';
 import TileField from '../fields/TileField.vue';
@@ -18,7 +19,7 @@ const formats = [
 </script>
 
 <template>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="formats.find((f) => f.value === block.format)?.label ?? ''">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="formats.find((f) => f.value === block.format)?.label ?? ''" :help="{ items: [th.clock.view] }">
         <TileField quick :model-value="block.format" :options="formats" :label="t.inspector.view" testid="clock-format" @update:model-value="setBlock({ format: $event })" />
     </InspectorSection>
     <FontSection :block="block" effects="shadow" />

@@ -105,6 +105,11 @@ describe('the inspector of the slide (Plan.md 79, B2)', () => {
         expect(editor.draft!.playlist.progress).toBeUndefined();
     });
 
+    it('says where the times of the playlist are set instead of a bare "Zeitplan" (Plan.md 98, D)', async () => {
+        const { wrapper } = await setup();
+        expect(wrapper.get('[data-testid="schedule-hint"]').text()).toContain('legt der Zeitplan des Bildschirms fest');
+    });
+
     it('names the division in words and keeps the blocks where they are', async () => {
         const { editor, wrapper } = await setup();
         editor.addBlock('shape');

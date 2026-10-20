@@ -6,6 +6,8 @@
  */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
+import { useGeneralHelp } from '../../help/register';
 import type { Block } from '../../../model/schema';
 import { effectiveMotion, effectiveTransition } from '../../../player/slideshow';
 import InspectorSection from '../../InspectorSection.vue';
@@ -30,6 +32,9 @@ const props = defineProps<{ block: Extract<Block, { type: 'slideshow' }> }>();
 const mode = useInspectorMode();
 const { editor, setBlock, mediaUrl } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
+useGeneralHelp(() => [th.general.slideshowAdd]);
+const s = th.slideshow;
+const help = { intro: s.intro, items: [s.seconds, s.transition, s.motion, s.fit, th.pictureFrame.corners, th.pictureFrame.shadow] };
 
 const fits = [
     { value: 'contain', label: t.inspector.fitContain },
@@ -75,14 +80,14 @@ function remove(index: number): void {
         @pick="context.pickImage('slideshow')"
     />
     <p v-if="mode === 'full' && !block.mediaIds.length" class="hint">{{ t.inspector.noImages }}</p>
-    <InspectorSection v-else id="slideshow-images" :title="t.inspector.images" :summary="t.common.countOf(block.mediaIds.length, SLIDESHOW_MAX)">
+    <InspectorSection v-else id="slideshow-images" :title="t.inspector.images" :summary="t.common.countOf(block.mediaIds.length, SLIDESHOW_MAX)" :help="s.images">
         <SortList :items="items" :remove-label="t.inspector.removeImage" testid="slideshow" @move="move" @remove="remove" />
     </InspectorSection>
     <InspectorSection
         id="appearance"
         :title="t.inspector.appearance"
         :summary="lookSummary(block, `${block.seconds ?? 6} ${t.inspector.unitSeconds}`, TRANSITION_TILES.find((o) => o.value === effectiveTransition(block))?.label)"
-        :help="{ items: [{ term: t.inspector.secondsPerImage, text: t.inspector.slideshowRuntimeInfo }] }"
+        :help="help"
     >
         <NumberField
             :model-value="block.seconds ?? 6"

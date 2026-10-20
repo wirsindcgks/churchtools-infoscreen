@@ -5,6 +5,7 @@
  */
 import { computed, ref, watch } from 'vue';
 import { t } from '../../i18n/designer';
+import { th } from '../../i18n/help';
 import type { Fill, SlideLayout } from '../../model/schema';
 import { bannerShown } from '../../player/banner';
 import { useStageContext } from '../../player/context';
@@ -196,7 +197,7 @@ const backgroundColors = computed(() => {
                 @update:model-value="setLayout({ gap: $event as SlideLayout['gap'] })"
             />
         </InspectorSection>
-        <InspectorSection id="background" :title="t.inspector.background" :summary="backgroundSummary">
+        <InspectorSection id="background" :title="t.inspector.background" :summary="backgroundSummary" :help="th.background">
             <template #summary-extra>
                 <span v-for="(color, i) in backgroundColors" :key="i" class="swatch" :style="{ background: color }" />
             </template>
@@ -253,7 +254,10 @@ const backgroundColors = computed(() => {
                     <dt>{{ t.inspector.runsOn }}</dt>
                     <dd data-testid="playlist-screens">{{ playlistSummary }}</dd>
                 </dl>
-                <p class="hint">{{ t.inspector.schedule }}</p>
+                <p class="hint" data-testid="schedule-hint">
+                    {{ t.inspector.scheduleBefore }}
+                    <RouterLink :to="{ name: 'schedules' }">{{ t.inspector.scheduleLink }}</RouterLink>
+                </p>
                 <p v-if="bannerRunning" class="hint" data-testid="banner-status">
                     {{ t.inspector.bannerRunningBefore(editor.draft.playlist.banner!.text) }}
                     <RouterLink :to="{ name: 'notices' }">{{ t.inspector.bannerLink }}</RouterLink>

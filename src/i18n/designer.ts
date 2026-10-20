@@ -581,9 +581,7 @@ export const t = {
         pickVideo: 'Video wählen',
         swapVideo: 'Video tauschen',
         sound: 'Ton',
-        soundInfo: 'Ton startet nur, wenn der Browser des Fernsehers es erlaubt – sonst läuft das Video stumm.',
         runtime: 'Laufzeit',
-        videoRuntimeInfo: 'Die Folie dauert mindestens so lange wie das Video. Ohne Netz zeigt der Fernseher an dieser Stelle nichts.',
         addImages: 'Bilder hinzufügen',
         noImages: 'Noch keine Bilder gewählt.',
         images: 'Bilder',
@@ -594,7 +592,6 @@ export const t = {
         transitions: { fade: 'Überblenden', slide: 'Schieben', wipe: 'Aufdecken', none: 'Ohne' },
         motion: 'Bewegung',
         motions: { none: 'Keine', in: 'Hineinzoomen', out: 'Herauszoomen', alternate: 'Abwechselnd' },
-        slideshowRuntimeInfo: 'Die Folie läuft so lange, bis jedes Bild einmal zu sehen war.',
                 clockFormats: { time: 'Uhrzeit', date: 'Datum', datetime: 'Datum und Uhrzeit' },
         showTitle: 'Titel des Termins zeigen',
         duringAppointment: 'Während des Termins',
@@ -843,6 +840,9 @@ export const t = {
         landscape: 'Quer',
         runsOn: 'Läuft auf',
         schedule: 'Zeitplan',
+        /** The line under the playlist: where its times are set, with a link there. */
+        scheduleBefore: 'Wann sie wo läuft, legt der Zeitplan des Bildschirms fest – unter',
+        scheduleLink: 'Zeitpläne',
         scheduleInfo:
             'Auf welchem Bildschirm sie wann läuft, legt der Zeitplan des Bildschirms fest – unter „Zeitpläne" oder an ' +
             'der Kachel des Bildschirms. Veröffentlichen ändert alle Bildschirme, die sie zeigen.',

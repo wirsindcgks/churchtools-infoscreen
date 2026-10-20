@@ -1777,6 +1777,9 @@ test('the text block explains itself: "Allgemein" from the head, one tab per sec
     await addBlock(page, 'shape');
     await expect(page.getByTestId('help-tab-general')).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByTestId('help-panel')).toContainText('Eine farbige Fläche, etwa hinter einem Text.');
+    // Its "Darstellung" explains itself as well; an ellipse has no corners to explain.
+    await page.getByTestId('help-tab-appearance').click();
+    await expect(page.getByTestId('help-panel')).toContainText('Rundet die Ecken des Rechtecks ab');
 });
 
 test('the block is layered from the "Anordnen" section and deleted from its header (Plan.md 47, 79)', async ({ page }) => {

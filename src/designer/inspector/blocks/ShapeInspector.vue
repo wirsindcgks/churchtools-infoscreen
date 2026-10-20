@@ -2,6 +2,7 @@
 /** The shape block (Plan.md 79, B2; F1): everything in "Darstellung": form, fill, corners and edge. Form, fill and corners go to the short menu. */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
 import type { Block } from '../../../model/schema';
 import ColorField from '../../ColorField.vue';
 import FillEditor from '../../FillEditor.vue';
@@ -20,6 +21,9 @@ const forms = [
     { value: 'ellipse', label: t.inspector.shapeEllipse },
 ];
 const ellipse = computed(() => props.block.shape === 'ellipse');
+/** Corners only where the form has them. */
+const sh = th.shape;
+const help = computed(() => ({ intro: sh.intro, items: ellipse.value ? [sh.form, sh.kind, sh.border, sh.borderColor] : [sh.form, sh.kind, sh.corners, sh.border, sh.borderColor] }));
 const borderWidth = computed(() => props.block.border?.width ?? 0);
 const summary = computed(() => {
     const form = ellipse.value ? t.inspector.shapeEllipse : t.inspector.shapeRect;
@@ -37,7 +41,7 @@ function setBorderWidth(width: number): void {
 </script>
 
 <template>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="help">
         <SegmentField quick :model-value="block.shape ?? 'rect'" :options="forms" :label="t.inspector.shapeForm" testid="shape-form" @update:model-value="setBlock({ shape: $event })" />
         <FillEditor quick :model-value="block.fill" @focus="edit.onFocus" @blur="edit.onBlur" @update:model-value="setBlock({ fill: $event })" />
         <NumberField v-if="!ellipse" quick named :model-value="block.cornerRadius ?? 0" :label="t.inspector.cornerRadius" unit="px" :min="0" testid="shape-corners" @update:model-value="setBlock({ cornerRadius: $event })" />
