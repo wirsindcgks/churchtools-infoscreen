@@ -4,6 +4,25 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.43.0] – 2026-10-20
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach ausführlichen, formatierten Erklärungen.
+
+### Geändert
+
+- **Mehr Hilfe zu den Einstellungen.** „Schrift“, „Drehung und Deckkraft“, „Anordnen“ und „Genaue Maße“ erklären
+  sich jetzt Feld für Feld, ebenso die Bausteine Text, Bild und Terminliste. Jeder Baustein hat ein „?“ im Kopf des
+  Inspektors; es öffnet „Allgemein“ mit einem Satz dazu, was der Baustein zeigt.
+- **Die Hilfe-Leiste liegt über der Folie** und hat eine feste Höhe: Die Folie springt nicht mehr, wenn die Leiste
+  aufgeht, und die Leiste nicht, wenn man den Bereich wechselt oder sucht.
+- **Die Suche in der Hilfe findet auch, was andere Bausteine erklären** – etwa „Schrift“, wenn nur die Folie gewählt
+  ist. Die Treffer stehen in zwei Gruppen, passende Titel zuerst, und das Suchwort ist markiert.
+- **Gruppen:** Homepage und Auswahl der Gruppen stehen in einem Bereich „Gruppen-Homepage“.
+
+### Behoben
+
+- Bei zugeklappter Folienliste lief der Knopf „Präsentationen“ in den Titel der Präsentation.
+
 ## [0.42.0] – 2026-10-20
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach einer kurzen Erklärung beim Überfahren mit
@@ -1356,6 +1375,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.43.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.43.0
 [0.42.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.42.0
 [0.41.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.41.0
 [0.40.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.40.0
