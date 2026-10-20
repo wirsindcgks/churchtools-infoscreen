@@ -4,6 +4,21 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.40.0] – 2026-10-20
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach Suchfeldern in langen Auswahllisten und den
+Hinweis, die Listen des Browsers ganz zu ersetzen.
+
+### Geändert
+
+- **Eine eigene Auswahlliste statt der des Browsers.** Wo eins aus mehreren gewählt wird – Schrift, Gruppen-Homepage,
+  Raum, Raster, Bildformat, Laufband, Zeitpunkt in Zeitplänen und in der Einrichtung –, klappt jetzt überall dieselbe
+  Liste auf, in jedem Browser gleich und am Tablet mit großen Einträgen. Ab fünf Einträgen steht oben ein Suchfeld,
+  das gleich den Cursor hat; es findet Teile des Namens wie die Schnellsuche von ChurchTools („kue“ findet „Küche“).
+  Mit der Tastatur wählen Pfeile, Enter und Anfangsbuchstaben.
+- Die Raumbelegung zählt die gewählten Räume gegen die vorhandenen: „3 von 3“ statt „3 von 30“. Gibt es mehr als 30,
+  steht dort „12 von 30+“ – mehr nimmt ein Baustein nicht auf.
+
 ## [0.39.0] – 2026-10-19
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Vorschlag, auch die Reichweite der Geräterechte zu prüfen.
@@ -1310,6 +1325,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.40.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.40.0
 [0.39.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.39.0
 [0.38.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.38.0
 [0.37.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.37.0
