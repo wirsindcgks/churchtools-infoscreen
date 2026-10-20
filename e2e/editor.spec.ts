@@ -1,5 +1,5 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
-import { addBlock, dragRow, nudgeRow, chooseFont, chosen, choose, customColor, openInspector, openSection, openSlides } from './helpers';
+import { addBlock, dragRow, nudgeRow, chooseFont, chosen, choose, customColor, openInspector, openSection, openSlides, pickOption } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -150,7 +150,7 @@ test('blocks snap to the grid and to the stage centre with a guide line', async 
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
-    await page.getByTestId('grid-size').selectOption('20');
+    await choose(page, 'grid-size', '20');
     await addBlock(page, 'shape'); // created centred, 600 × 300
     await openSection(page, 'measures');
     await page.getByTestId('inspector-x').fill('100');
@@ -867,12 +867,12 @@ test('a rule without a second playlist asks for one on the spot, and the new one
     await rule.getByTestId('inline-create-name').fill('Sonntag');
     await rule.getByTestId('inline-create-save').click();
     await expect(rule.getByTestId('inline-create')).toHaveCount(0);
-    await expect(rule.getByTestId('rule-playlist').locator('option:checked')).toHaveText('Sonntag');
+    await expect(rule.getByTestId('rule-playlist')).toHaveText('Sonntag');
     await expect(dialog.getByTestId('schedule-playlist')).toHaveCount(2); // the legend below the day
 
     // The default can take a new one the same way: the last entry of the list.
-    await dialog.getByTestId('default-playlist').selectOption({ label: '＋ Neue Präsentation anlegen …' });
-    await expect(dialog.getByTestId('default-playlist')).toHaveValue(/.+/);
+    await pickOption(dialog, 'default-playlist', '＋ Neue Präsentation anlegen …');
+    await expect(dialog.getByTestId('default-playlist')).toHaveAttribute('data-value', /.+/);
     await expect(dialog.getByTestId('inline-create')).toHaveCount(1);
     await page.screenshot({ path: 'test-results/schedule-inline.png' });
 
@@ -917,8 +917,8 @@ test('greeting before the service: a window from 30 min before to 10 min after t
     await rule.getByTestId('rule-preset-before').click();
     const to = rule.getByTestId('rule-window-to');
     await to.getByTestId('point-minutes').fill('10');
-    await to.getByTestId('point-direction').selectOption('after');
-    await expect(to.getByTestId('point-anchor')).toHaveValue('start');
+    await choose(to, 'point-direction', 'after');
+    await expect(to.getByTestId('point-anchor')).toHaveAttribute('data-value', 'start');
     await expect(rule.getByTestId('rule-preset-before')).toHaveAttribute('aria-pressed', 'false');
     await expect(dialog.getByTestId('schedule-problems')).toHaveCount(0);
 
@@ -933,10 +933,10 @@ test('greeting before the service: a window from 30 min before to 10 min after t
     await page.screenshot({ path: 'test-results/schedule-appointment.png' });
 
     // "bis" before "von" is named, not saved.
-    await to.getByTestId('point-direction').selectOption('before');
+    await choose(to, 'point-direction', 'before');
     await to.getByTestId('point-minutes').fill('45');
     await expect(dialog.getByTestId('schedule-problems')).toContainText('„bis" muss nach „von" liegen');
-    await to.getByTestId('point-direction').selectOption('after');
+    await choose(to, 'point-direction', 'after');
     await to.getByTestId('point-minutes').fill('10');
 
     await dialog.getByTestId('schedule-save').click();
@@ -976,11 +976,11 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await expect(card.getByTestId('open-schedule')).toHaveText('Zeitplan');
     await card.getByTestId('open-schedule').click();
     const dialog = page.getByTestId('schedule-dialog');
-    await expect(dialog.getByTestId('default-playlist').locator('option:checked')).toHaveText('Wochenüberblick');
+    await expect(dialog.getByTestId('default-playlist')).toHaveText('Wochenüberblick');
     await expect(dialog.getByTestId('schedule-save')).toBeDisabled(); // nothing changed yet
     await dialog.getByTestId('add-time-rule').click();
     const rule = dialog.getByTestId('schedule-rule');
-    await expect(rule.getByTestId('rule-playlist').locator('option:checked')).toHaveText('Gottesdienst');
+    await expect(rule.getByTestId('rule-playlist')).toHaveText('Gottesdienst');
 
     // An impossible time is named and keeps the schedule from being saved.
     await rule.getByTestId('rule-to').fill('08:00');
@@ -1370,7 +1370,7 @@ test('the design page sets the look of all screens: corners, large appointments,
     // One section open at a time (Plan.md 89): each field right after its section.
     await openSection(page, 'design-appointments');
     await page.getByTestId('appointments-large').check();
-    await page.getByTestId('theme-image-ratio').selectOption('1:1');
+    await choose(page, 'theme-image-ratio', '1:1');
     await openSection(page, 'design-surfaces');
     await page.getByTestId('corners-square').check();
     // The preview shows the first calendars of the instance: which of the four appointments that is, is theirs to say.
@@ -1480,7 +1480,7 @@ test('a website and a QR code (Plan.md 28)', async ({ page }) => {
     await expect(frame).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
     await expect(page.frameLocator('.editor-stage [data-testid="web-frame"]').locator('h1')).toHaveText('Wochenblatt');
     await openSection(page, 'appearance');
-    await page.getByTestId('web-zoom').selectOption('2');
+    await choose(page, 'web-zoom', '2');
     await expect(frame).toHaveAttribute('style', /scale\(2\)/);
 
     await addBlock(page, 'qr');
@@ -1581,10 +1581,11 @@ test('a groups block shows a group homepage\'s groups, as a card and as a list (
     await addBlock(page, 'groups');
     const inspector = page.getByTestId('block-inspector');
     const homepageSelect = inspector.getByTestId('groups-homepage');
-    // The title carries a non-breaking space ("Gottesdienst | Gottesdienste") – matched by value, not by label.
-    const homepageOption = homepageSelect.locator('option', { hasText: 'Gottesdienst' });
+    // The title carries a non-breaking space ("Gottesdienst | Gottesdienste") – matched by part of the text, not by label.
+    await homepageSelect.click();
+    const homepageOption = page.getByTestId('groups-homepage-option').filter({ hasText: 'Gottesdienst' });
     await expect(homepageOption).toHaveCount(1, { timeout: 15_000 }); // the homepage list comes from ChurchTools
-    await homepageSelect.selectOption((await homepageOption.getAttribute('value'))!);
+    await homepageOption.click();
 
     const stage = page.locator('.editor-stage');
     const card = stage.getByTestId('groups-card');
@@ -2005,7 +2006,7 @@ test('a groups block sorts every group by weekday, name A–Z or Z–A, until a 
     await page.getByTestId('add-slide').click();
     await addBlock(page, 'groups');
     const inspector = page.getByTestId('block-inspector');
-    await inspector.getByTestId('groups-homepage').selectOption('40');
+    await choose(inspector, 'groups-homepage', '40');
     await openSection(page, 'appearance');
     await choose(inspector, 'groups-layout', 'list');
 

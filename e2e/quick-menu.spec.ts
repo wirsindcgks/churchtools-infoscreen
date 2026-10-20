@@ -70,9 +70,10 @@ test('duplicate and lock from the short menu; locked, only unlock and "⋯" are 
     await menu.getByTestId('quick-more').click();
     const list = page.getByTestId('quick-more-list');
     // The copy lies under it (C3): the list offers to choose that one.
-    await expect(list.getByRole('menuitem')).toHaveCount(3);
+    await expect(list.getByRole('menuitem')).toHaveCount(4);
     await expect(list.getByTestId('quick-select-below')).toHaveText('Darunterliegenden wählen');
     await expect(list.getByTestId('quick-copy')).toBeVisible();
+    await expect(list.getByTestId('quick-save-template')).toBeVisible(); // "Als Vorlage speichern" (Plan.md 87)
     await expect(list.getByTestId('quick-all-settings')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(list).toHaveCount(0);
@@ -347,4 +348,16 @@ test('an empty text shows a pale hint in the editor, and Enter on a chosen text 
     await page.keyboard.type('Neu');
     await page.keyboard.press('Escape');
     await expect(drawn(page)).toHaveText('Neu');
+});
+
+test('a list in a chip takes the choice: its floating list counts as part of the chip (Plan.md 98 A)', async ({ page }) => {
+    await openEditor(page);
+    await addBlock(page, 'web');
+    await chip(page, /Größe der Seite/).click();
+    const popover = page.getByTestId('quick-popover');
+    await popover.getByTestId('web-zoom').click();
+    await page.getByRole('option', { name: '50 % – mehr passt hinein' }).click();
+    await expect(popover).toBeVisible();
+    await expect(popover.getByTestId('web-zoom')).toHaveAttribute('data-value', '0.5');
+    await expect(chip(page, /Größe der Seite/)).toContainText('50 %');
 });

@@ -8,6 +8,7 @@
  * unseen to the right (Plan.md 44, M1). Now a button names the current page and opens a panel with the same
  * list as on a desktop, stacked vertically.
  */
+import { anchored } from './floating';
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { t } from '../i18n/designer';
@@ -59,7 +60,7 @@ function toggleMenu(): void {
     menuOpen.value = !menuOpen.value;
 }
 function closeOnOutside(event: Event): void {
-    if (!nav.value?.contains(event.target as Node)) menuOpen.value = false;
+    if (!nav.value?.contains(anchored(event.target))) menuOpen.value = false;
 }
 /**
  * Escape closes the panel, focus goes back to the button. A document

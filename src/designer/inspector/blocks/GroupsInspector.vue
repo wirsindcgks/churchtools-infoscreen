@@ -18,7 +18,7 @@ import SortList, { type SortItem } from '../fields/SortList.vue';
 import TileField from '../fields/TileField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import FontSection from '../FontSection.vue';
-import { LIST_SEARCH_FROM, matchesName } from '../../name-search';
+import { TOGGLE_LIST_SEARCH_FROM, matchesName } from '../../name-search';
 import SearchField from '../../SearchField.vue';
 import { GROUPS_TILES } from '../layouts';
 import { move as moveItem } from '../../ops';
@@ -95,7 +95,7 @@ const pickable = computed(() => {
 
 /** A long homepage gets a search over the groups still to pick (Plan.md 93). */
 const query = ref('');
-const searchable = computed(() => homepageGroupList.value.length >= LIST_SEARCH_FROM);
+const searchable = computed(() => homepageGroupList.value.length >= TOGGLE_LIST_SEARCH_FROM);
 const pickableShown = computed(() => pickable.value.filter((g) => matchesName(g.name, query.value)));
 
 /** New ones join at the end. */

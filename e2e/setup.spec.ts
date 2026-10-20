@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { pickOption } from './helpers';
 
 test.use({ viewport: { width: 1280, height: 900 } });
 
@@ -25,12 +26,12 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
 
     // Group checks read live from the test instance, which can take longer than the default 5 s.
     const LIVE = { timeout: 15_000 };
-    await page.getByTestId('group-device').selectOption({ label: 'Infoscreen-Devices' });
+    await pickOption(page, 'group-device', 'Infoscreen-Devices');
     const device = page.getByTestId('setup-device');
     await expect(device.locator('.checks')).toContainText('Die Gruppe ist aktiv.', LIVE);
     await expect(device.locator('.checks')).toContainText('1 Geräte-Benutzer.', LIVE);
 
-    await page.getByTestId('group-designer').selectOption({ label: 'Gemeindeleitung' });
+    await pickOption(page, 'group-designer', 'Gemeindeleitung');
     await expect(page.getByTestId('setup-designer').locator('.checks')).toContainText('Rolle', LIVE);
 
     await page.getByTestId('settings-save').click();
@@ -38,7 +39,7 @@ test('the setup page checks the chosen groups and keeps the choice', async ({ pa
     await page.screenshot({ path: 'test-results/setup.png', fullPage: true });
 
     await page.reload();
-    await expect(page.getByTestId('group-device')).toHaveValue(/\d+/);
+    await expect(page.getByTestId('group-device')).toHaveAttribute('data-value', /\d+/);
     await expect(device.locator('.checks')).toContainText('Die Gruppe ist aktiv.', LIVE);
 });
 
@@ -72,7 +73,7 @@ test('the overview is one column of whole rows: symbol, title with its sentence,
 test('the checks of a group are folded by category, and the head names what is not fine', async ({ page }, testInfo) => {
     const LIVE = { timeout: 15_000 };
     await page.goto('./einstellungen/gruppen');
-    await page.getByTestId('group-device').selectOption({ label: 'Infoscreen-Devices' });
+    await pickOption(page, 'group-device', 'Infoscreen-Devices');
     const device = page.getByTestId('checks-device');
     await expect(device.getByTestId('check-group').first()).toBeVisible(LIVE);
 
@@ -112,7 +113,7 @@ test('the folded checks fit a phone', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'chromium', 'one screenshot is enough');
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('./einstellungen/gruppen');
-    await page.getByTestId('group-device').selectOption({ label: 'Infoscreen-Devices' });
+    await pickOption(page, 'group-device', 'Infoscreen-Devices');
     await expect(page.getByTestId('checks-device').getByTestId('check-group').first()).toBeVisible({ timeout: 15_000 });
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBeLessThanOrEqual(0);

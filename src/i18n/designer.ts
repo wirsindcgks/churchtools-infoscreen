@@ -35,7 +35,7 @@ export const t = {
         moveDown: 'Nach unten',
         dragToSort: 'Ziehen zum Sortieren',
         explanation: 'Erklärung',
-        countOf: (n: number, total: number) => `${n} von ${total}`,
+        countOf: (n: number, total: number | string) => `${n} von ${total}`,
         /** The search above a long list (Plan.md 93): parts of the name, separated by spaces. */
         searchList: 'Suchen',
         nothingFound: (query: string) => `Nichts gefunden zu „${query.trim()}“.`,

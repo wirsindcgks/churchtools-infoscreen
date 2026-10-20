@@ -4,8 +4,11 @@
  * umlauts as their two letters, so "ä" and "ae" meet (Plan.md 79, C7).
  */
 
-/** From this many entries on, a list gets a search field. */
-export const LIST_SEARCH_FROM = 9;
+/** From this many entries on, a list of switches in the inspector gets a search field. */
+export const TOGGLE_LIST_SEARCH_FROM = 9;
+
+/** From this many entries on, a `SelectMenu` gets one: it stands only in the unfolded list (Plan.md 98). */
+export const SELECT_SEARCH_FROM = 5;
 
 export function normalise(text: string): string {
     return text

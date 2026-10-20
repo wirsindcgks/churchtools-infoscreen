@@ -234,11 +234,13 @@ test('choose rooms, see the bookings, and keep the titles private where asked', 
     // Nothing chosen yet: a calm placeholder, and the choice offers rooms only – no Beamer.
     await expect(stage(page).getByTestId('rooms-placeholder')).toHaveText('Räume wählen');
     const add = page.getByTestId('rooms-add');
-    await expect(add.locator('option')).toHaveText(['+ Raum', 'Saal', 'Gruppenraum 1', 'Jugendkeller']);
-    await add.selectOption('2');
+    await expect(add).toHaveText('+ Raum');
+    await add.click();
+    await expect(page.getByTestId('rooms-add-option')).toHaveText(['Saal', 'Gruppenraum 1', 'Jugendkeller']);
+    await page.getByTestId('rooms-add-option').and(page.locator('[data-value="2"]')).click();
     await expect(page.getByTestId('room-entry')).toHaveCount(1);
     await page.getByTestId('rooms-add-all').click();
-    await expect(page.getByTestId('section-room-list-toggle')).toContainText('3 von 30');
+    await expect(page.getByTestId('section-room-list-toggle')).toContainText('3 von 3');
     await openSection(page, 'room-list');
     await expect(page.getByTestId('room-name')).toHaveText(['Gruppenraum 1', 'Saal', 'Jugendkeller']);
     await expect(page.getByTestId('rooms-add')).toBeDisabled();
@@ -278,6 +280,39 @@ test('choose rooms, see the bookings, and keep the titles private where asked', 
     await expect(page.getByRole('note').filter({ hasText: 'Gespräch Familie X' })).toBeVisible();
 });
 
+test('many rooms: the list to add one has a search, and the block takes at most 30 (Plan.md 98 A)', async ({ page }) => {
+    const rooms = Array.from({ length: 35 }, (_, i) => ({ id: 100 + i, name: `Raum ${String(i + 1).padStart(2, '0')}`, nameTranslated: `Raum ${String(i + 1).padStart(2, '0')}`, sortKey: i, resourceTypeId: 1 }));
+    rooms[34] = { ...rooms[34]!, name: 'Küche', nameTranslated: 'Küche' };
+    await fakeChurch(page, { bookingRequests: [], rooms });
+    await newRoomsBlock(page);
+
+    const add = page.getByTestId('rooms-add');
+    await add.click();
+    const search = page.getByTestId('rooms-add-search');
+    await expect(search).toBeFocused();
+    await expect(page.getByTestId('rooms-add-option')).toHaveCount(35);
+    // "kue" finds "Küche"; Enter takes the first hit, and the list reads "+ Raum" again.
+    await search.fill('kue');
+    await expect(page.getByTestId('rooms-add-option')).toHaveText(['Küche']);
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('room-entry')).toHaveCount(1);
+    await expect(add).toHaveText('+ Raum');
+    await expect(add).toBeFocused();
+
+    // The keyboard from the button: down opens, down moves, Enter takes the second room still to pick.
+    await page.keyboard.press('ArrowDown');
+    await expect(search).toBeFocused();
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('Enter');
+    await expect(page.getByTestId('room-entry')).toHaveCount(2);
+
+    // "Alle hinzufügen" stops at 30; then both are off.
+    await page.getByTestId('rooms-add-all').click();
+    await expect(page.getByTestId('section-room-list-toggle')).toContainText('30 von 30+');
+    await expect(add).toBeDisabled();
+    await expect(page.getByTestId('rooms-add-all')).toBeDisabled();
+});
+
 test('the door sign shows the first room: now, then what follows – or free', async ({ page }) => {
     await fakeChurch(page);
     await newRoomsBlock(page);
@@ -315,7 +350,7 @@ test('the door sign shows the first room: now, then what follows – or free', a
 test('an empty day says so, and the period is a number of days', async ({ page }) => {
     await fakeChurch(page);
     await newRoomsBlock(page);
-    await page.getByTestId('rooms-add').selectOption('3'); // only the Jugendkeller, no booking
+    await choose(page, 'rooms-add', '3'); // only the Jugendkeller, no booking
     await expect(stage(page).getByTestId('rooms-empty')).toHaveText('Heute sind keine Räume belegt.');
     await openSection(page, 'appearance');
     await page.getByTestId('rooms-days').fill('2');
@@ -325,11 +360,11 @@ test('an empty day says so, and the period is a number of days', async ({ page }
 test('rooms that answer 403 are "nicht verfügbar", not an empty day', async ({ page }) => {
     await fakeChurch(page, { forbidden: [3], bookingRequests: [] });
     await newRoomsBlock(page);
-    await page.getByTestId('rooms-add').selectOption('3');
+    await choose(page, 'rooms-add', '3');
     await expect(stage(page).getByTestId('rooms-unreadable')).toHaveText('Raumbelegung nicht verfügbar');
     await expect(stage(page).getByTestId('rooms-empty')).toHaveCount(0);
     // One readable room is enough for the usual rows; the forbidden one simply drops out.
-    await page.getByTestId('rooms-add').selectOption('1');
+    await choose(page, 'rooms-add', '1');
     await expect(stage(page).getByTestId('room-row')).toHaveCount(1);
     await expect(stage(page).getByTestId('rooms-unreadable')).toHaveCount(0);
 });
@@ -376,7 +411,9 @@ test('without the type "Raum" the inspector points to the settings, where an adm
     await expectSlides(page, 4);
     await page.getByTestId('add-slide').click();
     await addBlock(page, 'rooms');
-    await expect(page.getByTestId('rooms-add').locator('option')).toHaveText(['+ Raum', 'Saal']);
+    await page.getByTestId('rooms-add').click();
+    await expect(page.getByTestId('rooms-add-option')).toHaveText(['Saal']);
+    await page.keyboard.press('Escape');
 });
 
 for (const size of [

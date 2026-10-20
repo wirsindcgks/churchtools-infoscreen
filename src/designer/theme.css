@@ -172,12 +172,6 @@
     align-items: center;
     gap: 0 0.6em;
 }
-/* A dropdown shows its whole text: label above, the select over the full width. */
-.infoscreen-designer :where(.d-field--inline:has(> select)) {
-    grid-template-columns: minmax(0, 1fr);
-    align-items: stretch;
-    gap: 4px 0;
-}
 /*
  * A choice among settings, radio or checkbox, in a frame of its own – one look across the module (2026-10-15).
  * The box stands centred beside its text, however many lines that has; the chosen frame is tinted.

@@ -8,6 +8,7 @@
  * With several blocks chosen (D5) it stands over their box and shows "3 Bausteine", the chip "Ausrichten" (D4), lock, duplicate,
  * delete and "⋯" (copy, cut, let go).
  */
+import { anchored } from './floating';
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, reactive, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
 import type { Block } from '../model/schema';
@@ -109,7 +110,7 @@ const moreList = ref<HTMLElement | null>(null);
 const coarse = ref(false);
 
 function closeMoreOnOutside(event: PointerEvent): void {
-    if (!moreWrap.value?.contains(event.target as Node)) moreOpen.value = false;
+    if (!moreWrap.value?.contains(anchored(event.target))) moreOpen.value = false;
 }
 watch(moreOpen, async (open) => {
     if (!open) {

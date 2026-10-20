@@ -8,7 +8,7 @@ import { t } from '../i18n/designer';
 import { PUBLIC_CALENDAR_PATH, type Calendar } from '../ct/api';
 import { calendarColor } from '../player/format';
 import InspectorSection from './InspectorSection.vue';
-import { LIST_SEARCH_FROM, matchesName } from './name-search';
+import { TOGGLE_LIST_SEARCH_FROM, matchesName } from './name-search';
 import SearchField from './SearchField.vue';
 import ToggleField from './inspector/fields/ToggleField.vue';
 import QuickField from './inspector/fields/QuickField.vue';
@@ -21,7 +21,7 @@ const chosenCount = computed(() => props.calendars.filter((c) => props.chosenIds
 const summary = computed(() => t.common.countOf(chosenCount.value, props.calendars.length));
 /** Many calendars get a search (Plan.md 93); a chosen one stays in the list whatever it says. */
 const query = ref('');
-const searchable = computed(() => props.calendars.length >= LIST_SEARCH_FROM);
+const searchable = computed(() => props.calendars.length >= TOGGLE_LIST_SEARCH_FROM);
 const shown = computed(() => props.calendars.filter((c) => props.chosenIds.includes(c.id) || matchesName(c.name, query.value)));
 /** Only chosen ones left: the search found nothing new. */
 const nothingFound = computed(() => searchable.value && !!query.value.trim() && shown.value.every((c) => props.chosenIds.includes(c.id)));

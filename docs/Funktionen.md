@@ -50,6 +50,10 @@ Bausteins „Gruppen" ein Suchfeld. Es findet Teile des Namens in ihrer Reihenfo
 „haus nord" findet „Hauskreis Nord"; Groß- und Kleinschreibung zählt nicht, „ae" findet „ä". Gewählte Einträge bleiben
 stehen, auch wenn sie nicht passen.
 
+**Auswahllisten:** Wo eins aus mehreren gewählt wird – Schrift, Gruppen-Homepage, Raum, Raster, Bildformat und in der
+Einrichtung –, klappt eine eigene Liste auf statt der des Browsers, überall gleich, auch am Tablet und in Safari. Ab fünf
+Einträgen steht oben ein Suchfeld, das gleich den Cursor hat; mit der Tastatur wählen Pfeile, Enter und Anfangsbuchstaben.
+
 **Termine über Tags ausblenden.** Terminliste, Nächster Termin und Countdown lassen Termine weg, die einen bestimmten
 Tag tragen – etwa „Intern" oder „Probe". Unter den Kalendern steht **„Tags ausblenden"**; dort schaltet
 man die Tags ein, die der Baustein auslassen soll. Tags vergibt man in ChurchTools am Termin und verwaltet sie im Kalender

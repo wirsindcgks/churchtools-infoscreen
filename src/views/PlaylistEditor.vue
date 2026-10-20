@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { anchored } from '../designer/floating';
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import { onBeforeRouteLeave, useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName, instanceBaseUrl } from '../ct/client';
@@ -342,7 +343,7 @@ function showAllSettings(): void {
 const moreMenuOpen = ref(false);
 const moreMenuRoot = ref<HTMLElement | null>(null);
 function closeMoreMenuOnOutside(event: Event): void {
-    if (!moreMenuRoot.value?.contains(event.target as Node)) moreMenuOpen.value = false;
+    if (!moreMenuRoot.value?.contains(anchored(event.target))) moreMenuOpen.value = false;
 }
 watch(moreMenuOpen, (open) => {
     if (open) document.addEventListener('pointerdown', closeMoreMenuOnOutside);
@@ -364,7 +365,7 @@ const shortcutsOpen = ref(false);
 const helpMenuOpen = ref(false);
 const helpMenuRoot = ref<HTMLElement | null>(null);
 function closeHelpMenuOnOutside(event: Event): void {
-    if (!helpMenuRoot.value?.contains(event.target as Node)) helpMenuOpen.value = false;
+    if (!helpMenuRoot.value?.contains(anchored(event.target))) helpMenuOpen.value = false;
 }
 watch(helpMenuOpen, (open) => {
     if (open) document.addEventListener('pointerdown', closeHelpMenuOnOutside);

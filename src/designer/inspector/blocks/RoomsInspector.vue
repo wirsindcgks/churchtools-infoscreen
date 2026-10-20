@@ -9,8 +9,8 @@ import type { Block, RoomEntry } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
 import { PAGE_SECONDS } from '../../../player/paging';
 import type { RoomInfo } from '../../../rooms/normalize';
-import Icon from '../../Icon.vue';
 import InspectorSection from '../../InspectorSection.vue';
+import SelectMenu from '../../SelectMenu.vue';
 import { useInspectorContext } from '../context';
 import QuickField from '../fields/QuickField.vue';
 import NumberField from '../fields/NumberField.vue';
@@ -56,15 +56,21 @@ const pickable = computed(() => {
     return (context.rooms ?? []).filter((r) => !picked.has(r.id));
 });
 
+/** What "3 von …" counts against: the rooms there are, or "30+" where there are more than a block takes. */
+const roomTotal = computed(() => {
+    const there = context.rooms?.length ?? ROOMS_MAX;
+    return there > ROOMS_MAX ? `${ROOMS_MAX}+` : there;
+});
+
 function addRooms(infos: RoomInfo[]): void {
     const next = [...props.block.rooms, ...infos.map((r): RoomEntry => ({ resourceId: r.id, hint: '', showTitles: true }))];
     setBlock({ rooms: next.slice(0, ROOMS_MAX) });
 }
 
 /** The chosen room joins the list, and the select reads "+ Raum" again. */
-function pickRoom(select: HTMLSelectElement): void {
-    addRooms(pickable.value.filter((r) => r.id === Number(select.value)));
-    select.value = '';
+/** The list shows its placeholder again after the choice: the room has moved to the chosen ones. */
+function pickRoom(id: string | number): void {
+    addRooms(pickable.value.filter((r) => r.id === Number(id)));
 }
 
 function setRoom(index: number, patch: Partial<RoomEntry>): void {
@@ -82,33 +88,29 @@ function remove(index: number): void {
 </script>
 
 <template>
-    <!-- Choosing and ordering the rooms are one chip "Räume 2 von 30" in the short menu, the first field of the block (Plan.md 79, C5). -->
-    <QuickField quick :label="t.inspector.rooms" :face="block.rooms.length ? t.quick.listFace(t.inspector.rooms, t.common.countOf(block.rooms.length, ROOMS_MAX)) : t.quick.empty.rooms">
+    <!-- Choosing and ordering the rooms are one chip "Räume 2 von 3" in the short menu, the first field of the block (Plan.md 79, C5). -->
+    <QuickField quick :label="t.inspector.rooms" :face="block.rooms.length ? t.quick.listFace(t.inspector.rooms, t.common.countOf(block.rooms.length, roomTotal)) : t.quick.empty.rooms">
         <!-- Plan.md 86: an instance without the type "Raum" shows no room until an administrator chooses a type. -->
         <p v-if="context.rooms && !context.rooms.length" class="hint" data-testid="rooms-none">
             {{ context.roomTypeMissing ? t.inspector.roomTypeMissing : t.inspector.noRooms }}
         </p>
         <div v-else-if="context.rooms" class="room-add">
-            <!-- Looks like `SelectField` (Plan.md 88): the chevron instead of the global arrow. -->
-            <span class="select-box">
-                <select
-                    :disabled="!pickable.length || block.rooms.length >= ROOMS_MAX"
-                    value=""
-                    :aria-label="t.inspector.addRoomLabel"
-                    data-testid="rooms-add"
-                    @change="pickRoom($event.target as HTMLSelectElement)"
-                >
-                    <option value="">{{ t.inspector.addRoom }}</option>
-                    <option v-for="r in pickable" :key="r.id" :value="r.id">{{ r.name }}</option>
-                </select>
-                <Icon name="chevron-down" :size="14" class="select-icon" />
-            </span>
+            <SelectMenu
+                class="room-menu"
+                :model-value="undefined"
+                :options="pickable.map((r) => ({ value: r.id, label: r.name }))"
+                :placeholder="t.inspector.addRoom"
+                :disabled="!pickable.length || block.rooms.length >= ROOMS_MAX"
+                :aria-label="t.inspector.addRoomLabel"
+                testid="rooms-add"
+                @update:model-value="pickRoom"
+            />
             <button class="d-btn" type="button" :disabled="!pickable.length || block.rooms.length >= ROOMS_MAX" data-testid="rooms-add-all" @click="addRooms(pickable)">
                 {{ t.inspector.addAllRooms }}
             </button>
         </div>
         <p v-if="!block.rooms.length" class="hint">{{ t.inspector.noRoomsChosen }}</p>
-        <InspectorSection v-else id="room-list" :title="t.inspector.rooms" :summary="t.common.countOf(block.rooms.length, ROOMS_MAX)">
+        <InspectorSection v-else id="room-list" :title="t.inspector.rooms" :summary="t.common.countOf(block.rooms.length, roomTotal)">
             <template #info>{{ t.inspector.roomsInfo }}</template>
             <SortList :items="chosen" :remove-label="t.inspector.removeRoom" testid="room" row-testid="room-entry" @move="move" @remove="remove">
                 <template #row="{ index }">
@@ -164,22 +166,8 @@ function remove(index: number): void {
     gap: 6px;
     min-width: 0;
 }
-.select-box {
-    position: relative;
-    display: flex;
-    min-width: 0;
-}
-.select-box select {
-    flex: 1;
-    padding-right: 32px;
-    background-image: none;
-}
-.select-icon {
-    position: absolute;
-    top: 50%;
-    right: 12px;
-    transform: translateY(-50%);
-    pointer-events: none;
+.room-add .room-menu {
+    flex: none;
 }
 .room-add .d-btn {
     flex: none;

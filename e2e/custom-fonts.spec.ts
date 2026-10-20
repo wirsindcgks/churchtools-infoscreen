@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page, type Route } from '@playwright/test';
-import { openSection } from './helpers';
+import { chooseFont, openSection } from './helpers';
 
 test.use({ viewport: { width: 1440, height: 900 } });
 
@@ -100,8 +100,9 @@ test('own fonts: upload, add a cut, save, choose in a block, delete with the pla
     // The list counts with "Speichern"; the font is the design's font, too.
     await expect(page.getByTestId('theme-save')).toBeEnabled();
     await page.getByTestId('theme-font').click();
-    await expect(page.getByTestId('theme-font').locator('xpath=following::*[@role="listbox"][1]').getByText('Eigene Schriften', { exact: true })).toBeVisible();
-    await page.getByTestId(`theme-font-${key}`).click();
+    await expect(page.getByRole('listbox').getByText('Eigene Schriften', { exact: true })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await chooseFont(page, 'theme-font', key);
     await expect(page.getByTestId('theme-font')).toHaveAttribute('data-value', key);
     await expect(page.getByTestId('theme-font')).toContainText('Haus');
     await page.getByTestId('theme-save').click();
@@ -114,8 +115,7 @@ test('own fonts: upload, add a cut, save, choose in a block, delete with the pla
     await page.getByTestId('playlist-card').first().getByTestId('open-playlist').click();
     await page.getByTestId('frame-text').first().click();
     await openSection(page, 'font');
-    await page.getByTestId('font-family').click();
-    await page.getByTestId(`font-family-${key}`).click();
+    await chooseFont(page, 'font-family', key);
     const title = page.locator('.editor-stage .block--text').filter({ hasText: 'Herzlich willkommen!' }).locator('.text');
     await expect(title).toHaveCSS('font-family', new RegExp(`ISD ${key}.*ISD Lato`));
     await expect(page.getByTestId('font-family')).toHaveAttribute('data-value', key);

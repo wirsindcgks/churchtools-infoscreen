@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { anchored } from './floating';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import type { Block } from '../model/schema';
 import { bannerShown } from '../player/banner';
@@ -908,7 +909,8 @@ function onTextKey(event: KeyboardEvent): void {
 }
 /** A press outside the field and the short menu (with its open panels) ends the writing. Captured: blocks stop their `pointerdown`. */
 function endOnOutside(event: PointerEvent): void {
-    const target = event.target as Element | null;
+    const node = anchored(event.target);
+    const target = node instanceof Element ? node : (node?.parentElement ?? null);
     if (target?.closest('[data-testid="text-edit"], [data-testid="quick-menu"]')) return;
     editor.endTextEdit();
 }

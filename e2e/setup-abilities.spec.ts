@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { pickOption } from './helpers';
 
 test.use({ viewport: { width: 1280, height: 900 } });
 
@@ -65,17 +66,20 @@ test('the group type is preselected with „Merkmal"', async ({ page }) => {
     await answerGroupTypes(page, ['Kleingruppe', 'Dienst', 'Merkmal']);
     await page.goto('./einstellungen/gruppen');
     const select = page.getByTestId('group-type');
-    await expect(select.locator('option')).toHaveText(['Kleingruppe', 'Dienst', 'Merkmal']);
-    await expect(select.locator('option:checked')).toHaveText('Merkmal');
+    await select.click();
+    await expect(page.getByTestId('group-type-option')).toHaveText(['Kleingruppe', 'Dienst', 'Merkmal']);
+    await page.keyboard.press('Escape');
+    await expect(select).toHaveText('Merkmal');
 });
 
 test('without „Merkmal" nothing is preselected until a type is chosen', async ({ page }) => {
     await answerGroupTypes(page, ['Kleingruppe', 'Dienst']);
     await page.goto('./einstellungen/gruppen');
     const select = page.getByTestId('group-type');
-    await expect(select.locator('option:checked')).toHaveText('– bitte wählen –');
+    await expect(select).toHaveText('– bitte wählen –');
     await expect(page.getByTestId('run-assistant')).toBeDisabled();
-    await select.selectOption({ label: 'Dienst' });
-    await expect(select.locator('option:checked')).toHaveText('Dienst');
-    await expect(select.locator('option')).toHaveText(['Kleingruppe', 'Dienst']);
+    await pickOption(page, 'group-type', 'Dienst');
+    await expect(select).toHaveText('Dienst');
+    await select.click();
+    await expect(page.getByTestId('group-type-option')).toHaveText(['Kleingruppe', 'Dienst']);
 });

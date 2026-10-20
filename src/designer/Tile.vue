@@ -5,6 +5,7 @@
  * left out by its owner with `v-if`), the foot last. The owner brings the picture's link or button, the name and
  * the menu's entries; the menu closes on Escape, on a click beside it and – by `close` – after an entry.
  */
+import { anchored } from './floating';
 import { onBeforeUnmount, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
 import Icon from './Icon.vue';
@@ -33,7 +34,7 @@ function close(): void {
     menuOpen.value = false;
 }
 function closeOnOutside(event: Event): void {
-    if (!root.value?.contains(event.target as Node)) close();
+    if (!root.value?.contains(anchored(event.target))) close();
 }
 watch(menuOpen, (open) => {
     if (open) document.addEventListener('pointerdown', closeOnOutside);

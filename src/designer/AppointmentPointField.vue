@@ -5,6 +5,16 @@
  */
 import { t } from '../i18n/designer';
 import type { AppointmentPoint } from '../model/schema';
+import SelectMenu from './SelectMenu.vue';
+
+const DIRECTIONS = [
+    { value: 'before', label: t.common.point.before },
+    { value: 'after', label: t.common.point.after },
+];
+const ANCHORS = [
+    { value: 'start', label: t.common.point.start },
+    { value: 'end', label: t.common.point.end },
+];
 
 const props = defineProps<{ point: AppointmentPoint; label: string; testid: string }>();
 const emit = defineEmits<{ change: [point: AppointmentPoint] }>();
@@ -38,24 +48,22 @@ function setAnchor(value: string): void {
             @input="setMinutes(($event.target as HTMLInputElement).value)"
         >
         {{ t.common.point.min }}
-        <select
-            :value="point.minutes < 0 ? 'before' : 'after'"
+        <SelectMenu
+            class="point-menu"
+            :model-value="point.minutes < 0 ? 'before' : 'after'"
+            :options="DIRECTIONS"
             :aria-label="t.common.point.directionLabel"
-            data-testid="point-direction"
-            @change="setDirection(($event.target as HTMLSelectElement).value)"
-        >
-            <option value="before">{{ t.common.point.before }}</option>
-            <option value="after">{{ t.common.point.after }}</option>
-        </select>
-        <select
-            :value="point.anchor"
+            testid="point-direction"
+            @update:model-value="setDirection(String($event))"
+        />
+        <SelectMenu
+            class="point-menu"
+            :model-value="point.anchor"
+            :options="ANCHORS"
             :aria-label="t.common.point.anchorLabel"
-            data-testid="point-anchor"
-            @change="setAnchor(($event.target as HTMLSelectElement).value)"
-        >
-            <option value="start">{{ t.common.point.start }}</option>
-            <option value="end">{{ t.common.point.end }}</option>
-        </select>
+            testid="point-anchor"
+            @update:model-value="setAnchor(String($event))"
+        />
     </span>
 </template>
 
@@ -66,9 +74,11 @@ function setAnchor(value: string): void {
     align-items: center;
     gap: 6px;
 }
-.point input,
-.point select {
+.point input {
     width: auto;
+}
+.point .point-menu {
+    flex: none;
 }
 .minutes {
     width: 5em !important;

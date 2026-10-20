@@ -5,11 +5,13 @@
  * short menu of the block in its bar form (`QuickMenu`, `variant="bar"`): a row of its fields, if it has any, and the row with its name (Plan.md 88, C); in the mode "Mehrere auswählen" the lower row
  * counts the chosen ones and ends the mode instead of the slide's (D6). The sheets themselves belong to the editor; this bar only asks for them.
  */
+import { anchored } from './floating';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { t } from '../i18n/designer';
 import { useEditorStore } from './editor-store';
 import Icon from './Icon.vue';
 import QuickMenu from './QuickMenu.vue';
+import SelectMenu from './SelectMenu.vue';
 import { GRID_SIZES } from './snap';
 import { KEYS, keyLabel } from './shortcuts';
 import { useConfirm } from './useConfirm';
@@ -56,7 +58,7 @@ const slideIndex = computed(() => (editor.slide ? editor.slides.indexOf(editor.s
 const moreOpen = ref(false);
 const moreWrap = ref<HTMLElement | null>(null);
 function closeOnOutside(event: PointerEvent): void {
-    if (!moreWrap.value?.contains(event.target as Node)) moreOpen.value = false;
+    if (!moreWrap.value?.contains(anchored(event.target))) moreOpen.value = false;
 }
 watch(moreOpen, (open) => {
     if (open) document.addEventListener('pointerdown', closeOnOutside, true);
@@ -79,6 +81,7 @@ async function removeSlide(): Promise<void> {
     moreOpen.value = false;
     if (await confirm({ message: t.editor.slideList.confirmRemove(slide.name), confirmLabel: t.common.remove, danger: true })) editor.removeSlide(slide.id);
 }
+const gridOptions = GRID_SIZES.map((size) => ({ value: size, label: size ? `${size} px` : t.editor.palette.gridOff }));
 </script>
 
 <template>
@@ -163,9 +166,14 @@ async function removeSlide(): Promise<void> {
                     <hr role="separator">
                     <label class="guides">
                         <span>{{ t.editor.palette.guides }}</span>
-                        <select :value="editor.gridSize" data-testid="grid-size" @change="editor.setGridSize(Number(($event.target as HTMLSelectElement).value))">
-                            <option v-for="size in GRID_SIZES" :key="size" :value="size">{{ size ? `${size} px` : t.editor.palette.gridOff }}</option>
-                        </select>
+                        <SelectMenu
+                            class="guides-menu"
+                            :model-value="editor.gridSize"
+                            :options="gridOptions"
+                            :aria-label="t.editor.palette.guides"
+                            testid="grid-size"
+                            @update:model-value="editor.setGridSize(Number($event))"
+                        />
                     </label>
                 </div>
             </div>
@@ -312,7 +320,7 @@ async function removeSlide(): Promise<void> {
     border: 0;
     border-top: 1px solid var(--d-divider);
 }
-.guides select {
-    width: auto;
+.guides .guides-menu {
+    flex: none;
 }
 </style>

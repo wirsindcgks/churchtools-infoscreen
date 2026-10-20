@@ -11,6 +11,7 @@ import type { Banner } from '../model/schema';
 import { wallTime } from '../player/banner';
 import ColorField from './ColorField.vue';
 import HintRow from './HintRow.vue';
+import SelectMenu from './SelectMenu.vue';
 import FontField from './inspector/fields/FontField.vue';
 
 const props = withDefaults(defineProps<{ modelValue: Banner; timeZone: string; now?: Date }>(), {
@@ -22,6 +23,19 @@ function update(patch: Partial<Banner>): void {
     emit('update:modelValue', { ...props.modelValue, ...patch });
 }
 
+const MODES = [
+    { value: 'scroll', label: t.notices.modeTicker },
+    { value: 'static', label: t.notices.modeStatic },
+];
+const POSITIONS = [
+    { value: 'bottom', label: t.inspector.verticals.bottom },
+    { value: 'top', label: t.inspector.verticals.top },
+];
+const WEIGHTS = [
+    { value: 400, label: t.inspector.weights.normal },
+    { value: 600, label: t.inspector.weights.semibold },
+    { value: 700, label: t.inspector.weights.bold },
+];
 const SPEEDS = [
     { value: 80, label: t.notices.banner.speeds.slow },
     { value: 140, label: t.notices.banner.speeds.medium },
@@ -65,30 +79,25 @@ function setFontSize(value: string): void {
         <div class="grid2">
             <label class="d-field">
                 {{ t.notices.banner.kind }}
-                <select
-                    :value="modelValue.mode"
-                    data-testid="banner-mode"
-                    @change="update({ mode: ($event.target as HTMLSelectElement).value as 'scroll' | 'static' })"
-                >
-                    <option value="scroll">{{ t.notices.modeTicker }}</option>
-                    <option value="static">{{ t.notices.modeStatic }}</option>
-                </select>
+                <SelectMenu
+                    :model-value="modelValue.mode"
+                    :options="MODES"
+                    testid="banner-mode"
+                    @update:model-value="update({ mode: $event as 'scroll' | 'static' })"
+                />
             </label>
             <label class="d-field">
                 {{ t.notices.banner.position }}
-                <select
-                    :value="modelValue.position"
-                    @change="update({ position: ($event.target as HTMLSelectElement).value as 'bottom' | 'top' })"
-                >
-                    <option value="bottom">{{ t.inspector.verticals.bottom }}</option>
-                    <option value="top">{{ t.inspector.verticals.top }}</option>
-                </select>
+                <SelectMenu
+                    :model-value="modelValue.position"
+                    :options="POSITIONS"
+                    testid="banner-position"
+                    @update:model-value="update({ position: $event as 'bottom' | 'top' })"
+                />
             </label>
             <label v-if="modelValue.mode !== 'static'" class="d-field">
                 {{ t.notices.banner.speed }}
-                <select :value="speed" @change="update({ speed: Number(($event.target as HTMLSelectElement).value) })">
-                    <option v-for="s in SPEEDS" :key="s.value" :value="s.value">{{ s.label }}</option>
-                </select>
+                <SelectMenu :model-value="speed" :options="SPEEDS" testid="banner-speed" @update:model-value="update({ speed: Number($event) })" />
             </label>
             <label class="d-field">
                 {{ t.notices.banner.height }}
@@ -119,19 +128,12 @@ function setFontSize(value: string): void {
             />
             <label class="d-field">
                 {{ t.inspector.fontWeight }}
-                <select
-                    data-testid="banner-weight"
-                    :value="modelValue.style.fontWeight"
-                    @change="
-                        update({
-                            style: { ...modelValue.style, fontWeight: Number(($event.target as HTMLSelectElement).value) as 400 | 600 | 700 },
-                        })
-                    "
-                >
-                    <option :value="400">{{ t.inspector.weights.normal }}</option>
-                    <option :value="600">{{ t.inspector.weights.semibold }}</option>
-                    <option :value="700">{{ t.inspector.weights.bold }}</option>
-                </select>
+                <SelectMenu
+                    :model-value="modelValue.style.fontWeight"
+                    :options="WEIGHTS"
+                    testid="banner-weight"
+                    @update:model-value="update({ style: { ...modelValue.style, fontWeight: Number($event) as 400 | 600 | 700 } })"
+                />
             </label>
         </div>
         <div class="grid2">

@@ -19,20 +19,37 @@ export function isAnonymous(request: Request): boolean {
     return request.headers()['x-infoscreen-anonymous'] === '1';
 }
 
+/** The page of a locator or of the page itself: the list of a `SelectMenu` floats in the designer's root, outside any dialog. */
+function pageOf(scope: Page | Locator): Page {
+    return 'page' in scope && typeof scope.page === 'function' ? scope.page() : (scope as Page);
+}
+
+/** Opens the list of a `SelectMenu` (its button carries the `testid`) and takes the option with this text. */
+export async function pickOption(scope: Page | Locator, testid: string, label: string): Promise<void> {
+    await scope.getByTestId(testid).click();
+    await pageOf(scope).getByRole('option', { name: label, exact: true }).click();
+}
+
+/** Opens the list of a `SelectMenu` and takes the option with this value (`data-value`). */
+async function pickValue(scope: Page | Locator, testid: string, value: string): Promise<void> {
+    await scope.getByTestId(testid).click();
+    await pageOf(scope).getByTestId(`${testid}-option`).and(pageOf(scope).locator(`[data-value="${value}"]`)).click();
+}
+
 /**
- * Picks a value in a field of the inspector, whatever it looks like: a `<select>` takes `selectOption`, a segment or a
- * tile group (the `data-testid` stands on the group) checks the radio button with that value.
+ * Picks a value in a field of the inspector, whatever it looks like: a `SelectMenu` (a combobox button) opens and takes
+ * the option with that value, a segment or a tile group (the `data-testid` stands on the group) checks the radio button.
  */
 export async function choose(scope: Page | Locator, testid: string, value: string): Promise<void> {
     const control = scope.getByTestId(testid);
-    if ((await control.evaluate((element) => element.tagName)) === 'SELECT') await control.selectOption(value);
+    if ((await control.getAttribute('role')) === 'combobox') await pickValue(scope, testid, value);
     else await control.locator(`input[value="${value}"]`).check();
 }
 
-/** The value a field of the inspector shows: a `<select>`'s value, or the radio button checked in a segment or tile group. */
+/** The value a field of the inspector shows: the `data-value` of a `SelectMenu`, or the radio button checked in a segment or tile group. */
 export async function chosen(scope: Page | Locator, testid: string): Promise<string | null> {
     const control = scope.getByTestId(testid);
-    if ((await control.evaluate((element) => element.tagName)) === 'SELECT') return control.inputValue();
+    if ((await control.getAttribute('role')) === 'combobox') return control.getAttribute('data-value');
     const checked = control.locator('input:checked');
     return (await checked.count()) ? checked.getAttribute('value') : null;
 }
@@ -44,8 +61,7 @@ export async function customColor(scope: Page | Locator, testid: string): Promis
 
 /** Picks a font from the list of a font field by its key. */
 export async function chooseFont(scope: Page | Locator, testid: string, key: string): Promise<void> {
-    await scope.getByTestId(testid).click();
-    await scope.getByTestId(`${testid}-${key}`).click();
+    await pickValue(scope, testid, key);
 }
 
 /** The sortable row (`useSortable`) a handle or any part of it belongs to. */

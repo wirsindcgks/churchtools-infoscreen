@@ -15,7 +15,7 @@ import TileField from '../fields/TileField.vue';
 import QuickField from '../fields/QuickField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import FontSection from '../FontSection.vue';
-import { LIST_SEARCH_FROM, matchesName } from '../../name-search';
+import { TOGGLE_LIST_SEARCH_FROM, matchesName } from '../../name-search';
 import SearchField from '../../SearchField.vue';
 import { POSTS_TILES } from '../layouts';
 import { useBlockEdit } from '../use-block';
@@ -51,7 +51,7 @@ const groupsSummary = computed(() => t.common.countOf(props.block.groupIds.lengt
 
 /** Many groups get a search (Plan.md 93); a chosen group stays in the list whatever it says. */
 const query = ref('');
-const searchable = computed(() => context.groups.length >= LIST_SEARCH_FROM);
+const searchable = computed(() => context.groups.length >= TOGGLE_LIST_SEARCH_FROM);
 const groupsShown = computed(() => context.groups.filter((g) => props.block.groupIds.includes(g.id) || matchesName(g.name, query.value)));
 /** Only chosen ones left: the search found nothing new. */
 const nothingFound = computed(() => searchable.value && !!query.value.trim() && groupsShown.value.every((g) => props.block.groupIds.includes(g.id)));

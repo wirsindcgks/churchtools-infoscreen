@@ -5,9 +5,10 @@
  * chosen right away (Plan.md, Nächste Schritte 17). A playlist made here is
  * written at once; the schedule that uses it is saved with the dialog.
  */
-import { nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { t } from '../i18n/designer';
 import type { StagedPlaylist } from '../store/screen-repository';
+import SelectMenu from './SelectMenu.vue';
 
 const props = defineProps<{
     modelValue: string;
@@ -38,13 +39,16 @@ onMounted(() => {
     if (props.startCreating) void openCreate();
 });
 
-function changed(event: Event): void {
-    const select = event.target as HTMLSelectElement;
-    if (select.value === NEW) {
-        select.value = props.modelValue; // the choice stays until the new one exists
-        void openCreate();
+const options = computed(() => [
+    ...props.choices.map((p) => ({ value: p.id, label: p.name })),
+    { value: NEW, label: t.playlists.picker.newOption },
+]);
+
+function changed(value: string | number): void {
+    if (value === NEW) {
+        void openCreate(); // the choice stays until the new one exists
     } else {
-        emit('update:modelValue', select.value);
+        emit('update:modelValue', String(value));
     }
 }
 
@@ -67,10 +71,7 @@ async function submit(): Promise<void> {
 <template>
     <span class="picker">
         <span class="pick-row">
-            <select :value="modelValue" :aria-label="label" :data-testid="testid" @change="changed">
-                <option v-for="p in choices" :key="p.id" :value="p.id">{{ p.name }}</option>
-                <option :value="NEW">{{ t.playlists.picker.newOption }}</option>
-            </select>
+            <SelectMenu class="pick-menu" :model-value="modelValue" :options="options" :aria-label="label" :testid="testid" @update:model-value="changed" />
             <button
                 class="d-btn edit"
                 type="button"
@@ -117,9 +118,9 @@ async function submit(): Promise<void> {
     font-size: var(--d-size-sm);
     white-space: nowrap;
 }
-.pick-row select {
-    width: auto;
-    min-width: 12em;
+.pick-row .pick-menu {
+    flex: none;
+    width: 12em;
     max-width: 100%;
 }
 .create {

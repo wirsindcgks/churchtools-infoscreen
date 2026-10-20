@@ -8,6 +8,7 @@
  * In the bar of a phone (Plan.md 79, C2) the panel is a sheet from below over the bar: a grip and the label on top,
  * a swipe down or a tap beside closes it.
  */
+import { anchored } from '../../floating';
 import { computed, inject, nextTick, onBeforeUnmount, provide, ref, useId, watch } from 'vue';
 import { t } from '../../../i18n/designer';
 import Icon from '../../Icon.vue';
@@ -66,7 +67,7 @@ function onKeydown(event: KeyboardEvent): void {
 
 /** Captured: the menu stops `pointerdown` from bubbling, so a plain document listener would never hear a click inside it. */
 function onOutside(event: PointerEvent): void {
-    if (!root.value?.contains(event.target as Node)) close();
+    if (!root.value?.contains(anchored(event.target))) close();
 }
 
 function place(): void {

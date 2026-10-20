@@ -28,6 +28,7 @@ import { MediaLibrary, wikiBackend } from '../media/library';
 import { DEFAULT_THEME, type Block, type MediaDoc, type SlideDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
 import { applyCustomFonts } from '../player/custom-fonts';
 import SlideView from '../player/SlideView.vue';
+import SelectMenu from '../designer/SelectMenu.vue';
 import StageView from '../player/StageView.vue';
 import FontField from '../designer/inspector/fields/FontField.vue';
 import { fitStage } from '../player/stage';
@@ -465,9 +466,12 @@ function observe(el: unknown): void {
                         </div>
                         <label class="d-field">
                             {{ t.design.images.title }}
-                            <select v-model="look.imageRatio" data-testid="theme-image-ratio">
-                                <option v-for="r in RATIOS" :key="r.value" :value="r.value">{{ r.label }}</option>
-                            </select>
+                            <SelectMenu
+                                :model-value="look.imageRatio"
+                                :options="RATIOS"
+                                testid="theme-image-ratio"
+                                @update:model-value="look.imageRatio = $event as ThemeDoc['imageRatio']"
+                            />
                         </label>
                     </InspectorSection>
                 </div>

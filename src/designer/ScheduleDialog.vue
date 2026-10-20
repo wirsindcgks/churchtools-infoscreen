@@ -574,8 +574,7 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
     width: min(760px, 100%);
     overflow-y: auto;
 }
-.inline input,
-.inline select {
+.inline input {
     width: auto;
 }
 .head {

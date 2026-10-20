@@ -17,6 +17,7 @@ import { searchBlocks } from './block-search';
 import Icon from './Icon.vue';
 import { BLOCK_ICONS, BLOCK_LABELS, PALETTE } from './ops';
 import SearchField from './SearchField.vue';
+import SelectMenu from './SelectMenu.vue';
 import { KEYS, withKeys } from './shortcuts';
 import { GRID_SIZES } from './snap';
 import { usePhone } from './usePhone';
@@ -86,6 +87,7 @@ function addTemplateFromSheet(id: string): void {
     closeSheet();
 }
 onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
+const gridOptions = GRID_SIZES.map((size) => ({ value: size, label: size ? `${size} px` : t.editor.palette.gridOff }));
 </script>
 
 <template>
@@ -116,14 +118,14 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
         <label v-if="!phone" class="grid-select" :title="t.editor.palette.guidesTitle">
             <Icon name="grid" :size="16" />
             <span class="grid-label">{{ t.editor.palette.guides }}</span>
-            <select
+            <SelectMenu
+                class="grid-menu"
                 :aria-label="t.editor.palette.guides"
-                :value="editor.gridSize"
-                data-testid="grid-size"
-                @change="editor.setGridSize(Number(($event.target as HTMLSelectElement).value))"
-            >
-                <option v-for="size in GRID_SIZES" :key="size" :value="size">{{ size ? `${size} px` : t.editor.palette.gridOff }}</option>
-            </select>
+                :model-value="editor.gridSize"
+                :options="gridOptions"
+                testid="grid-size"
+                @update:model-value="editor.setGridSize(Number($event))"
+            />
         </label>
 
         <div
@@ -211,8 +213,8 @@ onBeforeUnmount(() => document.removeEventListener('keydown', closeOnEscape));
 .grid-label {
     font-size: var(--d-size-sm);
 }
-.grid-select select {
-    width: auto;
+.grid-select .grid-menu {
+    flex: none;
     font-size: var(--d-size-sm);
 }
 

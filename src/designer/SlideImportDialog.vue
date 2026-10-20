@@ -10,6 +10,7 @@ import { sameStage, type SlideDoc } from '../model/schema';
 import { getRepository } from '../store/backend';
 import type { LoadedPlaylist, PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 import { useEditorStore } from './editor-store';
+import SelectMenu from './SelectMenu.vue';
 import SlideThumb from './SlideThumb.vue';
 
 const emit = defineEmits<{ close: [] }>();
@@ -23,6 +24,9 @@ const sourceShared = ref<LoadedPlaylist['sharedWith']>({});
 const chosen = ref(new Set<string>());
 const mode = ref<'copy' | 'linked'>('copy');
 const loading = ref(true);
+const playlistOptions = computed(() =>
+    candidates.value.map((o) => ({ value: o.playlist.id, label: `${o.playlist.name} (${t.editor.import.slideCount(o.slideCount)})` })),
+);
 const sourceName = computed(() => playlists.value.find((o) => o.playlist.id === playlistId.value)?.playlist.name ?? '');
 /** A slide already in this playlist cannot be linked a second time. */
 const here = computed(() => new Set(editor.draft?.slides.map((s) => s.id)));
@@ -122,11 +126,7 @@ function take(): void {
             <template v-else>
                 <label class="d-field">
                     {{ t.editor.import.playlist }}
-                    <select v-model="playlistId" data-testid="slide-import-playlist">
-                        <option v-for="o in candidates" :key="o.playlist.id" :value="o.playlist.id">
-                            {{ o.playlist.name }} ({{ t.editor.import.slideCount(o.slideCount) }})
-                        </option>
-                    </select>
+                    <SelectMenu :model-value="playlistId" :options="playlistOptions" testid="slide-import-playlist" @update:model-value="playlistId = String($event)" />
                 </label>
                 <ul class="slides">
                     <li v-for="slide in slides" :key="slide.id">

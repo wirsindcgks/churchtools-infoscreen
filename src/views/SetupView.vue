@@ -7,6 +7,7 @@ import { t } from '../i18n/designer';
 import Icon, { type IconName } from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
+import SelectMenu from '../designer/SelectMenu.vue';
 import { fetchCalendars, fetchPublicCalendars, fetchResourceMasterdata, fetchServiceGroups, fetchServices, type Calendar } from '../ct/api';
 import { serviceChoices, type ServiceInfo } from '../appointments/services';
 import { currentPerson, httpStatus, instanceBaseUrl, personUrl } from '../ct/client';
@@ -851,6 +852,9 @@ async function check(side: Side): Promise<void> {
     }
 }
 
+/** „keine" stays a choice of its own: a group can be let go again. */
+const groupOptions = computed(() => [{ value: '', label: t.setup.groups.noneChosen }, ...groups.value.map((g) => ({ value: g.id, label: g.name }))]);
+
 function choose(side: Side, value: string): void {
     selected[side] = value ? Number(value) : null;
     void check(side);
@@ -1177,14 +1181,13 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                             </details>
                             <label class="d-field">
                                 {{ t.setup.groups.type }}
-                                <select
-                                    :value="chosenTypeId ?? ''"
-                                    data-testid="group-type"
-                                    @change="chosenTypeId = Number(($event.target as HTMLSelectElement).value) || null"
-                                >
-                                    <option v-if="chosenTypeId === null" value="">{{ t.setup.groups.pleaseChoose }}</option>
-                                    <option v-for="type in groupTypes ?? []" :key="type.id" :value="type.id">{{ type.name }}</option>
-                                </select>
+                                <SelectMenu
+                                    :model-value="chosenTypeId ?? undefined"
+                                    :options="(groupTypes ?? []).map((type) => ({ value: type.id, label: type.name }))"
+                                    :placeholder="t.setup.groups.pleaseChoose"
+                                    testid="group-type"
+                                    @update:model-value="chosenTypeId = Number($event) || null"
+                                />
                             </label>
                             <p v-if="groupTypes === null" class="muted small">{{ t.setup.groups.typesFailed }}</p>
                             <p v-else class="muted small">{{ t.setup.groups.typeRecommended }}</p>
@@ -1214,14 +1217,12 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                             <p class="muted">{{ purpose }}</p>
                             <label class="d-field">
                                 {{ t.setup.groups.group }}
-                                <select
-                                    :value="selected[side] ?? ''"
-                                    :data-testid="`group-${side}`"
-                                    @change="choose(side, ($event.target as HTMLSelectElement).value)"
-                                >
-                                    <option value="">{{ t.setup.groups.noneChosen }}</option>
-                                    <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
-                                </select>
+                                <SelectMenu
+                                    :model-value="selected[side] ?? ''"
+                                    :options="groupOptions"
+                                    :testid="`group-${side}`"
+                                    @update:model-value="choose(side, String($event))"
+                                />
                             </label>
                             <p v-if="!groups.length && !error" class="muted">{{ t.setup.groups.loadingGroups }}</p>
                             <p class="muted small">{{ t.setup.groups.noSuitable }}</p>
@@ -1377,9 +1378,12 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     <form v-else class="tv-form" autocomplete="off" @submit.prevent="createTvAddress">
                         <label class="d-field">
                             {{ t.setup.tv.screen }}
-                            <select v-model="device.slug" data-testid="tv-screen">
-                                <option v-for="screen in screens" :key="screen.id" :value="screen.slug">{{ screen.name }}</option>
-                            </select>
+                            <SelectMenu
+                                :model-value="device.slug"
+                                :options="screens.map((screen) => ({ value: screen.slug, label: screen.name }))"
+                                testid="tv-screen"
+                                @update:model-value="device.slug = String($event)"
+                            />
                         </label>
                         <label class="d-field">
                             {{ t.setup.tv.username }}

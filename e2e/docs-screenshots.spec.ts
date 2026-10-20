@@ -441,7 +441,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     // Groups of a group homepage: two a page, with leaders and their pictures (Plan.md 43).
     await page.getByTestId('add-slide').click();
     await addBlock(page, 'groups');
-    await page.getByTestId('groups-homepage').selectOption('40');
+    await choose(page, 'groups-homepage', '40');
     await frame(page, { x: 60, y: 60, width: 1800, height: 960 });
     await openSection(page, 'appearance');
     await choose(page, 'groups-per-page', '2');
@@ -572,7 +572,8 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
         await rule.getByTestId('inline-create-name').fill('Sonntag');
         await rule.getByTestId('inline-create-save').click();
     } else {
-        await rule.getByTestId('rule-playlist').selectOption({ index: 0 });
+        await rule.getByTestId('rule-playlist').click();
+        await page.getByTestId('rule-playlist-option').first().click();
     }
     await dialog.getByTestId('schedule-save').click();
     await expect(dialog).toBeHidden();
@@ -597,7 +598,7 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     const notice = page.getByTestId('notice-dialog');
     await notice.getByTestId('banner-text').fill('Nach dem Gottesdienst: Kirchencafé im Foyer – herzlich willkommen!');
     // Standing for the picture: running text would be caught halfway in the frame.
-    await notice.getByTestId('banner-mode').selectOption('static');
+    await choose(notice, 'banner-mode', 'static');
     await notice.getByTestId('notice-save').click();
     await expect(notice).toBeHidden();
     await expect(page.getByTestId('notice-card').first()).toBeVisible();
