@@ -1752,8 +1752,15 @@ test('the text block explains itself: "Allgemein" from the head, one tab per sec
     const before = await stage.boundingBox();
     await page.getByTestId('inspector-help').click();
     await expect(page.getByTestId('help-tab-general')).toHaveAttribute('aria-selected', 'true');
+    const bar = page.getByTestId('help-bar');
+    const height = (await bar.boundingBox())!.height;
     await page.getByTestId('help-tab-font').click();
     expect(await stage.boundingBox()).toEqual(before);
+    // One height for every topic and every search.
+    expect((await bar.boundingBox())!.height).toBe(height);
+    await page.getByTestId('help-search').fill('gibtesnicht');
+    expect((await bar.boundingBox())!.height).toBe(height);
+    await page.getByTestId('help-search').fill('');
     await page.getByTestId('help-tab-general').click();
     await expect(page.getByTestId('help-panel')).toContainText('Doppelklick auf den Text');
     const tabs = await page.locator('[data-testid^="help-tab-"]').evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));

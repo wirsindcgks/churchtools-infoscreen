@@ -1365,15 +1365,17 @@ function onKey(event: KeyboardEvent): void {
 }
 /* The help bar lies over the lower part of the stage, a card that ends on the line of the slides and the inspector below: out of
    the flow, so the slide keeps its size whatever the topic's length (user, 2026-10-20). At most 48rem wide and centred – across
-   a wide monitor it would be heavy – and at most a little over half the column high; longer topics scroll inside. Above the
-   stage's own layers, below the introduction card (it is a sheet outside the flow on a phone). */
+   a wide monitor it would be heavy. One height for every topic and every search, so the bar does not jump either (user,
+   2026-10-20): a little over half the column, at most 26rem; longer topics scroll inside. Above the stage's own layers, below
+   the introduction card (it is a sheet outside the flow on a phone). */
 .stage-column :deep(.help-bar:not(.help-bar--sheet)) {
     position: absolute;
     z-index: 25;
     bottom: 0;
     left: 50%;
     width: min(100% - 2 * var(--d-space-3), 48rem);
-    max-height: 55%;
+    height: min(55%, 26rem);
+    max-height: none;
     transform: translateX(-50%);
     box-shadow: var(--d-shadow);
 }
