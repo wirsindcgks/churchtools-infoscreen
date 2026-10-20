@@ -82,6 +82,7 @@ function remove(index: number): void {
         id="appearance"
         :title="t.inspector.appearance"
         :summary="lookSummary(block, `${block.seconds ?? 6} ${t.inspector.unitSeconds}`, TRANSITION_TILES.find((o) => o.value === effectiveTransition(block))?.label)"
+        :help="{ items: [{ term: t.inspector.secondsPerImage, text: t.inspector.slideshowRuntimeInfo }] }"
     >
         <NumberField
             :model-value="block.seconds ?? 6"
@@ -91,9 +92,7 @@ function remove(index: number): void {
             :max="60"
             testid="slideshow-seconds"
             @update:model-value="setBlock({ seconds: $event })"
-        >
-            <template #info>{{ t.inspector.slideshowRuntimeInfo }}</template>
-        </NumberField>
+        />
         <TileField
             quick
             :model-value="effectiveTransition(block)"

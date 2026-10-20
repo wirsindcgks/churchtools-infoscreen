@@ -14,6 +14,8 @@ import ColorField from '../designer/ColorField.vue';
 import CustomFontsField from '../designer/CustomFontsField.vue';
 import { appointmentsSummary, fontSummary, paletteSummary, surfacesSummary } from '../designer/design-summary';
 import Icon from '../designer/Icon.vue';
+import HelpBar from '../designer/HelpBar.vue';
+import { provideHelp } from '../designer/help/register';
 import InspectorSection from '../designer/InspectorSection.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
@@ -84,6 +86,13 @@ const dirty = computed(() => JSON.stringify(look.value) !== JSON.stringify(saved
 
 /** Unsaved changes ask before they go – like the editor and the settings (2026-10-15). */
 const { confirm, notice } = useConfirm();
+const help = provideHelp(() => t.help.design);
+/** Escape closes the help bar here, too (Plan.md 98); the page has no other keys. */
+function onKey(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && help.open.value) help.close();
+}
+window.addEventListener('keydown', onKey);
+onBeforeUnmount(() => window.removeEventListener('keydown', onKey));
 onBeforeRouteLeave(async () => !dirty.value || (await confirm({ message: t.editor.discardChanges, confirmLabel: t.common.discard, danger: true })));
 function onBeforeUnload(event: BeforeUnloadEvent): void {
     if (dirty.value) event.preventDefault();
@@ -324,13 +333,9 @@ function observe(el: unknown): void {
         <div v-else class="layout">
             <div class="column">
                 <div class="d-card settings">
-                    <InspectorSection id="design-colors" group="design" :title="t.design.colors.title" :summary="paletteSummary(look.palette)">
+                    <InspectorSection id="design-colors" group="design" :title="t.design.colors.title" :summary="paletteSummary(look.palette)" :help="{ intro: [t.design.colors.accentHint, t.design.colors.textHint].join('\n\n') }">
                         <template #summary-extra>
                             <span v-for="color in [look.accent, look.text, look.background]" :key="color" class="swatch" :style="{ background: color }" />
-                        </template>
-                        <template #info>
-                            <p>{{ t.design.colors.accentHint }}</p>
-                            <p>{{ t.design.colors.textHint }}</p>
                         </template>
                         <ColorField v-model="look.accent" :label="t.common.color.accent" testid="theme-accent" />
                         <div class="grid2">
@@ -401,11 +406,7 @@ function observe(el: unknown): void {
                         <p v-if="look.palette.length >= PALETTE_MAX" class="hint">{{ t.design.palette.max(PALETTE_MAX) }}</p>
                     </InspectorSection>
 
-                    <InspectorSection id="design-surfaces" group="design" :title="t.design.surfaces.title" :summary="surfacesSummary(look)">
-                        <template #info>
-                            <p>{{ t.design.corners.hint }}</p>
-                            <p>{{ t.design.cards.hint }}</p>
-                        </template>
+                    <InspectorSection id="design-surfaces" group="design" :title="t.design.surfaces.title" :summary="surfacesSummary(look)" :help="{ intro: [t.design.corners.hint, t.design.cards.hint].join('\n\n') }">
                         <div class="d-choices d-choices--two" role="radiogroup" :aria-label="t.design.surfaces.corners">
                             <label v-for="c in (['round', 'square'] as const)" :key="c" class="d-choice">
                                 <input v-model="look.corners" type="radio" name="corners" :value="c" :data-testid="`corners-${c}`">
@@ -441,19 +442,13 @@ function observe(el: unknown): void {
                         </template>
                     </InspectorSection>
 
-                    <InspectorSection id="design-font" group="design" :title="t.design.font.title" :summary="fontSummary(look)">
-                        <template #info>
-                            <p>{{ t.design.font.hint }}</p>
-                        </template>
+                    <InspectorSection id="design-font" group="design" :title="t.design.font.title" :summary="fontSummary(look)" :help="{ intro: t.design.font.hint }">
                         <!-- An unknown key stays stored until someone picks a font; it draws as Lato meanwhile. -->
                         <FontField :model-value="look.font" :label="t.inspector.fontFamily" testid="theme-font" @update:model-value="look.font = $event" />
                         <CustomFontsField v-model="look.customFonts" :upload="(file) => mediaLibrary().uploadFont(file)" :usage="fontUsage" />
                     </InspectorSection>
 
-                    <InspectorSection id="design-appointments" group="design" :title="t.design.appointments.title" :summary="appointmentsSummary(look)">
-                        <template #info>
-                            <p>{{ t.design.images.hint }}</p>
-                        </template>
+                    <InspectorSection id="design-appointments" group="design" :title="t.design.appointments.title" :summary="appointmentsSummary(look)" :help="{ intro: t.design.images.hint }">
                         <div class="d-choices" role="radiogroup" :aria-label="t.design.appointments.title">
                             <label class="d-choice">
                                 <input v-model="look.appointments" type="radio" name="appointments" value="native" data-testid="appointments-native">
@@ -509,6 +504,7 @@ function observe(el: unknown): void {
                         <SlideView :slide="previewSlide" :width="STAGE.width" :height="STAGE.height" />
                     </StageView>
                 </div>
+                <HelpBar />
                 <p class="hint">{{ t.design.preview.hint }}</p>
             </section>
         </div>

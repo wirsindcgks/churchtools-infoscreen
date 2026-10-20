@@ -3,6 +3,7 @@
 import { t } from '../../../i18n/designer';
 import type { Block } from '../../../model/schema';
 import InspectorSection from '../../InspectorSection.vue';
+import { useGeneralHelp } from '../../help/register';
 import { useInspectorContext } from '../context';
 import MediaField from '../fields/MediaField.vue';
 import SegmentField from '../fields/SegmentField.vue';
@@ -14,6 +15,10 @@ import { useBlockEdit } from '../use-block';
 const props = defineProps<{ block: Extract<Block, { type: 'video' }> }>();
 const { setBlock, videoLabel } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
+useGeneralHelp(() => [
+    { term: t.help.terms.runtime, text: t.inspector.videoRuntimeInfo },
+    { term: t.inspector.sound, text: t.inspector.soundInfo },
+]);
 
 const fits = [
     { value: 'contain', label: t.inspector.fitContain },
@@ -37,12 +42,8 @@ function caption(): string {
         :caption-testid="block.mediaId ? 'video-name' : undefined"
         testid="pick-video"
         @pick="context.pickImage('video')"
-    >
-        <template #info>{{ t.inspector.videoRuntimeInfo }}</template>
-    </MediaField>
-    <ToggleField quick :model-value="block.sound ?? false" :label="t.inspector.sound" testid="video-sound" @update:model-value="setBlock({ sound: $event })">
-        <template #info>{{ t.inspector.soundInfo }}</template>
-    </ToggleField>
+    />
+    <ToggleField quick :model-value="block.sound ?? false" :label="t.inspector.sound" testid="video-sound" @update:model-value="setBlock({ sound: $event })" />
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="lookSummary(block, fits.find((f) => f.value === (block.fit ?? 'contain'))?.label)">
         <SegmentField :model-value="block.fit ?? 'contain'" :options="fits" :label="t.inspector.fit" testid="video-fit" @update:model-value="setBlock({ fit: $event })" />
         <PictureFrameFields v-if="block.fit === 'cover'" :block="block" />

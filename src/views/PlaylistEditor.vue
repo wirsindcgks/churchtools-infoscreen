@@ -9,6 +9,8 @@ import { clockTime, relativeWhen } from '../designer/last-edited';
 import AppBar from '../designer/AppBar.vue';
 import BlockPalette from '../designer/BlockPalette.vue';
 import EditorStage from '../designer/EditorStage.vue';
+import HelpBar from '../designer/HelpBar.vue';
+import { provideHelp } from '../designer/help/register';
 import { useEditorStore } from '../designer/editor-store';
 import Icon from '../designer/Icon.vue';
 import Inspector from '../designer/Inspector.vue';
@@ -74,6 +76,13 @@ const top = useOffsetTop(root);
 /** Up to 48rem: one bar at the bottom instead of the slides and "+ Baustein" above the stage (Plan.md 79, C2). */
 const phone = usePhone();
 const phoneBar = ref<InstanceType<typeof PhoneBar> | null>(null);
+
+/** What the help bar is about (Plan.md 98): the chosen block, the blocks, the template or the slide – as the inspector's head says it. */
+const help = provideHelp(() => {
+    if (editor.block) return editor.blockHead(editor.block);
+    if (editor.selection.length > 1) return editor.groupSelected ? t.editor.groupCount(editor.selection.length) : t.editor.blocksCount(editor.selection.length);
+    return editor.templateEdit ? t.templates.head(editor.templateEdit.name) : t.help.slide;
+});
 
 /** The services an administrator allows on screens (Plan.md 58); none until loaded, and where the settings cannot be read. */
 const allowedServices = ref<number[]>([]);
@@ -375,6 +384,11 @@ function onHelpClick(): void {
     if (phone.value || templatePage) shortcutsOpen.value = true;
     else helpMenuOpen.value = !helpMenuOpen.value;
 }
+/** "Hilfe zu den Einstellungen": the bar opens like the "?" in the head of the inspector, and stays open if it is there already. */
+function helpFromMenu(): void {
+    helpMenuOpen.value = false;
+    if (!help.startShown.value) help.toggleStart();
+}
 function shortcutsFromMenu(): void {
     helpMenuOpen.value = false;
     shortcutsOpen.value = true;
@@ -663,6 +677,11 @@ function onKey(event: KeyboardEvent): void {
         return;
     }
     if (previewing.value) return; // the preview has its own keys
+    // The help bar closes first, before Escape deselects, ends a mode or folds the sheet (Plan.md 98).
+    if (help.open.value && event.key === 'Escape') {
+        help.close();
+        return;
+    }
     const mod = event.metaKey || event.ctrlKey;
     const target = event.target as HTMLElement | null;
     const typing = target?.closest('input, textarea, select');
@@ -823,6 +842,7 @@ function onKey(event: KeyboardEvent): void {
                         <span class="help-mark" aria-hidden="true">?</span><span class="help-word">{{ t.intro.help }}</span>
                     </button>
                     <div v-if="helpMenuOpen" class="more-menu-list" role="menu">
+                        <button role="menuitem" type="button" :disabled="!help.sections.value.length" data-testid="help-settings" @click="helpFromMenu">{{ t.help.menuSettings }}</button>
                         <button role="menuitem" type="button" data-testid="help-shortcuts" @click="shortcutsFromMenu">{{ t.intro.menuShortcuts }}</button>
                         <button role="menuitem" type="button" data-testid="help-intro" @click="startIntro">{{ t.intro.menuIntro }}</button>
                     </div>
@@ -1002,6 +1022,8 @@ function onKey(event: KeyboardEvent): void {
                 <IntroCard v-if="showIntroCard" @start="startIntro" @later="markIntroSeen" @close="markIntroSeen" />
                 <BlockPalette />
                 <EditorStage @all-settings="showAllSettings" @open-content="openContent" @open-more="openMore" />
+                <!-- Plan.md 98: below the slide, in the column of the stage; on a phone it is a sheet from below instead. -->
+                <HelpBar />
             </div>
             <!-- Below 48rem and upright above it this becomes a sheet at the bottom; otherwise a column beside the stage (Plan.md 44, M4; 45). -->
             <div class="tablet-rail tablet-rail--inspector">
@@ -1248,19 +1270,20 @@ function onKey(event: KeyboardEvent): void {
 .preview-btn {
     gap: var(--d-space-2);
 }
+/* In the turquoise of the help (Plan.md 98), like every "?" of the inspector – not in the blue of the buttons. */
 .shortcuts-btn {
     gap: var(--d-space-2);
     margin-right: var(--d-space-3);
     padding-left: 6px;
-    border-color: color-mix(in oklab, var(--d-accent) 55%, transparent);
+    border-color: color-mix(in oklab, var(--d-help) 55%, transparent);
     border-radius: 999px;
-    background: var(--d-accent-pale);
-    color: var(--d-accent);
+    background: var(--d-help-pale);
+    color: var(--d-help);
     font-weight: 600;
 }
 .shortcuts-btn:hover {
-    border-color: var(--d-accent);
-    background: var(--d-accent-pale);
+    border-color: var(--d-help);
+    background: var(--d-help-pale);
 }
 .help-mark {
     display: inline-grid;
@@ -1268,8 +1291,8 @@ function onKey(event: KeyboardEvent): void {
     width: 1.5em;
     height: 1.5em;
     border-radius: 50%;
-    background: var(--d-accent);
-    color: var(--d-accent-text);
+    background: var(--d-help);
+    color: var(--d-surface);
     font-weight: 600;
     line-height: 1;
 }
@@ -1337,8 +1360,16 @@ function onKey(event: KeyboardEvent): void {
     min-width: 0;
     min-height: 0;
 }
-.stage-column > :last-child {
+.stage-column > .editor-stage {
     flex: 1;
+}
+/* The help bar is a card like the slides and the inspector and ends on their line below; 12 px from the stage, whose own
+   margin gives 8 of them. At most 48rem wide and centred under the slide: across a wide monitor it would be heavy, and the
+   lines stay readable without making the text so narrow that it scrolls long (it is a sheet outside the flow on a phone). */
+.stage-column :deep(.help-bar:not(.help-bar--sheet)) {
+    align-self: center;
+    width: min(100%, 48rem);
+    margin: calc(var(--d-space-3) - var(--d-space-2)) 0 0;
 }
 /* The bar over the stage while a template is edited (Plan.md 87). */
 .template-bar {
@@ -1388,7 +1419,7 @@ function onKey(event: KeyboardEvent): void {
     min-height: 0;
 }
 /* The stage a little in from the cards, so its shadow has room. */
-.stage-column > :last-child {
+.stage-column > .editor-stage {
     margin: 0 var(--d-space-2) var(--d-space-2);
 }
 
@@ -1561,7 +1592,7 @@ function onKey(event: KeyboardEvent): void {
     .banner {
         margin: 0 var(--d-space-2) var(--d-space-2);
     }
-    .stage-column > :last-child {
+    .stage-column > .editor-stage {
         margin: 0 var(--d-space-3) var(--d-space-2);
         flex: none;
         height: auto;
@@ -1577,7 +1608,7 @@ function onKey(event: KeyboardEvent): void {
         align-content: stretch;
         grid-template-rows: minmax(0, 1fr);
     }
-    .editor:not(.sheet-open) .stage-column > :last-child {
+    .editor:not(.sheet-open) .stage-column > .editor-stage {
         flex: 1;
         min-height: 0;
         max-height: none;
@@ -1629,7 +1660,7 @@ function onKey(event: KeyboardEvent): void {
     }
 
     /* The stage no taller than the room above the open sheet (showStageAboveSheet). */
-    .editor.sheet-open .stage-column > :last-child {
+    .editor.sheet-open .stage-column > .editor-stage {
         max-height: var(--stage-max, 40vh);
     }
     /* Above the open sheet it stays on top, where showStageAboveSheet measured it. */
@@ -1652,7 +1683,7 @@ function onKey(event: KeyboardEvent): void {
         gap: 8px;
         box-sizing: border-box;
         height: 52px;
-        padding: 0 var(--d-space-3) 0 var(--d-space-4);
+        padding: 0 var(--d-space-4);
     }
     .drawer-title {
         overflow: hidden;
@@ -1787,7 +1818,7 @@ function onKey(event: KeyboardEvent): void {
      * The stage's frame fills the room below "+ Baustein", and the slide stands in its middle, upright and lying down –
      * zoomed in, it reaches into that room (user, 2026-10-09).
      */
-    .stage-column > :last-child {
+    .stage-column > .editor-stage {
         margin-inline: 0;
         min-height: 0;
     }
@@ -1865,7 +1896,7 @@ function onKey(event: KeyboardEvent): void {
         gap: 8px;
         box-sizing: border-box;
         height: var(--editor-head-h);
-        padding: 0 var(--d-space-3) 0 var(--d-space-4);
+        padding: 0 var(--d-space-4);
     }
     .drawer-title {
         overflow: hidden;

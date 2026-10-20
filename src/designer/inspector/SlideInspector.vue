@@ -13,9 +13,9 @@ import { slideSeconds } from '../../player/paging';
 import { useEditorStore } from '../editor-store';
 import { fillOfKind } from '../fill-kind';
 import FillEditor from '../FillEditor.vue';
-import HintRow from '../HintRow.vue';
+import { useGeneralHelp } from '../help/register';
 import Icon from '../Icon.vue';
-import InfoHint from '../InfoHint.vue';
+import InspectorHelp from '../InspectorHelp.vue';
 import InspectorSection from '../InspectorSection.vue';
 import { useInspectorContext } from './context';
 import { useEdit } from './edit';
@@ -117,6 +117,16 @@ const layoutSummary = computed(() => {
     return base + (header && footer ? words.withBoth : header ? words.withHeader : footer ? words.withFooter : '') + gapWords;
 });
 
+/** A slide shared with other playlists is explained under "Allgemein" while it is shared. */
+useGeneralHelp(() => (linkedNames.value ? [{ term: t.help.terms.linked, text: t.inspector.linkedInfo }] : []));
+const layoutHelp = computed(() => ({ items: hasRegions.value ? [{ term: t.inspector.layoutGap, text: t.inspector.layoutGapInfo }] : [] }));
+const playlistHelp = {
+    items: [
+        { term: t.inspector.progress, text: t.inspector.progressInfo },
+        { term: t.inspector.schedule, text: t.inspector.scheduleInfo },
+    ],
+};
+
 const playlistSummary = computed(() =>
     editor.screens.length ? editor.screens.map((s) => s.name).join(', ') : t.inspector.noScreen,
 );
@@ -135,7 +145,11 @@ const backgroundColors = computed(() => {
 
 <template>
     <section v-if="slide" data-testid="slide-inspector">
-        <TextField :model-value="slide.name" :label="t.common.name" :maxlength="100" testid="slide-name" @update:model-value="editor.updateSlide({ name: $event })" />
+        <!-- The line that names the slide carries the "?" of the help (Plan.md 98), as the head of a block's inspector does. -->
+        <div class="slide-head">
+            <TextField :model-value="slide.name" :label="t.common.name" :maxlength="100" testid="slide-name" @update:model-value="editor.updateSlide({ name: $event })" />
+            <InspectorHelp />
+        </div>
         <!-- A slide that other playlists show too (Plan.md 49): changes here count there as well. -->
         <div v-if="linkedNames" class="linked" data-testid="slide-linked">
             <span class="linked-text" :title="t.inspector.linkedAlso(linkedNames)" data-testid="slide-linked-in">
@@ -145,9 +159,6 @@ const backgroundColors = computed(() => {
                     {{ t.inspector.linkedPending }}
                 </span>
             </span>
-            <InfoHint>
-                {{ t.inspector.linkedInfo }}
-            </InfoHint>
             <button class="d-btn" type="button" data-testid="slide-unlink" @click="editor.unlinkSlide(slide.id)">
                 {{ t.inspector.unlink }}
             </button>
@@ -165,7 +176,7 @@ const backgroundColors = computed(() => {
         <p v-if="runsLonger" class="hint" data-testid="duration-hint">
             {{ t.inspector.runsLonger(runsLonger) }}
         </p>
-        <InspectorSection id="layout" :title="t.inspector.layout" :summary="layoutSummary">
+        <InspectorSection id="layout" :title="t.inspector.layout" :summary="layoutSummary" :help="layoutHelp">
             <TileField
                 :model-value="layout.split"
                 :options="splitOptions"
@@ -182,9 +193,7 @@ const backgroundColors = computed(() => {
                 :label="t.inspector.layoutGap"
                 testid="layout-gap"
                 @update:model-value="setLayout({ gap: $event as SlideLayout['gap'] })"
-            >
-                <template #info>{{ t.inspector.layoutGapInfo }}</template>
-            </SegmentField>
+            />
         </InspectorSection>
         <InspectorSection id="background" :title="t.inspector.background" :summary="backgroundSummary">
             <template #summary-extra>
@@ -219,7 +228,7 @@ const backgroundColors = computed(() => {
 
     <!-- The playlist is the designers' own (schema 1.4); where it runs, the screens' schedules decide. -->
     <section v-if="editor.draft">
-        <InspectorSection id="playlist" :title="t.inspector.playlist" :summary="playlistSummary">
+        <InspectorSection id="playlist" :title="t.inspector.playlist" :summary="playlistSummary" :help="playlistHelp">
             <div data-testid="playlist-info" class="playlist-info">
                 <TextField
                     :model-value="editor.draft.playlist.name"
@@ -233,9 +242,7 @@ const backgroundColors = computed(() => {
                     :label="t.inspector.progress"
                     testid="playlist-progress"
                     @update:model-value="editor.setProgress($event)"
-                >
-                    <template #info>{{ t.inspector.progressInfo }}</template>
-                </ToggleField>
+                />
                 <dl>
                     <dt>{{ t.inspector.format }}</dt>
                     <dd>
@@ -245,12 +252,7 @@ const backgroundColors = computed(() => {
                     <dt>{{ t.inspector.runsOn }}</dt>
                     <dd data-testid="playlist-screens">{{ playlistSummary }}</dd>
                 </dl>
-                <HintRow caption>
-                    <span>{{ t.inspector.schedule }}</span>
-                    <template #info>
-                        {{ t.inspector.scheduleInfo }}
-                    </template>
-                </HintRow>
+                <p class="hint">{{ t.inspector.schedule }}</p>
                 <p v-if="bannerRunning" class="hint" data-testid="banner-status">
                     {{ t.inspector.bannerRunningBefore(editor.draft.playlist.banner!.text) }}
                     <RouterLink :to="{ name: 'notices' }">{{ t.inspector.bannerLink }}</RouterLink>
@@ -264,6 +266,16 @@ const backgroundColors = computed(() => {
 </template>
 
 <style scoped>
+/* The name takes the room, the "?" stands at the end of its line. */
+.slide-head {
+    display: flex;
+    align-items: center;
+    gap: var(--d-space-2);
+}
+.slide-head > :first-child {
+    flex: 1;
+    min-width: 0;
+}
 section {
     display: grid;
     grid-template-columns: minmax(0, 1fr);

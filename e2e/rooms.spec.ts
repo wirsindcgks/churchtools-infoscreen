@@ -276,8 +276,8 @@ test('choose rooms, see the bookings, and keep the titles private where asked', 
     await expect(rows.nth(1)).toContainText('Belegt');
     await expect(stage(page)).not.toContainText('Familie Beispiel');
     await expect(rows.nth(0)).toContainText('Gottesdienst');
-    await page.getByTestId('room-entry').nth(1).locator('.info-btn').click();
-    await expect(page.getByRole('note').filter({ hasText: 'Gespräch Familie X' })).toBeVisible();
+    await page.getByTestId('section-room-list-help').click();
+    await expect(page.getByTestId('help-bar').getByText('Gespräch Familie X')).toBeVisible();
 });
 
 test('many rooms: the list to add one has a search, and the block takes at most 30 (Plan.md 98 A)', async ({ page }) => {
@@ -434,7 +434,6 @@ for (const size of [
         await page.getByTestId('rooms-add-all').click();
         await openSection(page, 'room-list');
         await page.getByTestId('room-entry').first().getByTestId('room-hint').fill('z'.repeat(100));
-        await page.getByTestId('room-entry').first().locator('.info-btn').click();
         await expect(page.getByTestId('room-entry')).toHaveCount(3);
 
         const frame = (await page.locator('aside.inspector').boundingBox())!;
@@ -449,7 +448,6 @@ for (const size of [
         }
         await inside(page.getByTestId('rooms-add'));
         await inside(page.getByTestId('rooms-add-all'));
-        await inside(page.getByRole('note').filter({ hasText: 'Gespräch Familie X' }).first());
         await page.screenshot({ path: `test-results/rooms-inspector-${size.width}.png` });
     });
 }

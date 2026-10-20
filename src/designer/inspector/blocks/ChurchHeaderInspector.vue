@@ -20,11 +20,9 @@ const look = computed(() => [props.block.showName && t.quick.short.name, props.b
 </script>
 
 <template>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="look">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="look" :help="{ items: [{ term: t.inspector.showLogo, text: t.inspector.logoInfo }] }">
         <ToggleField quick :model-value="block.showName" :label="t.inspector.showChurchName" :quick-label="t.quick.short.name" testid="show-name" @update:model-value="setBlock({ showName: $event })" />
-        <ToggleField quick :model-value="block.showLogo" :label="t.inspector.showLogo" :quick-label="t.quick.short.logo" testid="show-logo" @update:model-value="setBlock({ showLogo: $event })">
-            <template #info>{{ t.inspector.logoInfo }}</template>
-        </ToggleField>
+        <ToggleField quick :model-value="block.showLogo" :label="t.inspector.showLogo" :quick-label="t.quick.short.logo" testid="show-logo" @update:model-value="setBlock({ showLogo: $event })" />
         <MediaField
             v-if="block.showLogo"
             contain

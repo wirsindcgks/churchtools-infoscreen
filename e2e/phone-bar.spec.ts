@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { openInspector, openSlides } from './helpers';
+import { addBlock, openInspector, openSection, openSlides } from './helpers';
 
 // The bar at the bottom of a phone (Plan.md 79, C2): the slide or the chosen block, in one place.
 test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
@@ -254,6 +254,23 @@ test('"⋯ → Alle Einstellungen" opens the big sheet, which closes with its ow
     await page.getByTestId('inspector-sheet-close').tap();
     await expect(sheet).toBeHidden();
     await expect(page.getByTestId('phone-bar').getByTestId('quick-menu')).toBeVisible();
+});
+
+test('the "?" of a section opens the help from below, over the sheet; the ✕ closes it (Plan.md 98)', async ({ page }) => {
+    await openEditor(page);
+    await addBlock(page, 'qr');
+    await openInspector(page);
+    await openSection(page, 'appearance');
+    await page.getByTestId('section-appearance-help').tap();
+    const help = page.getByTestId('help-bar');
+    await expect(help).toBeVisible();
+    await expect(help).toContainText('Dunkel auf hell lesen alle Handykameras am sichersten.');
+    const [bar, window] = [(await help.boundingBox())!, page.viewportSize()!];
+    expect(bar.y + bar.height).toBeGreaterThan(window.height - 2);
+    expect(bar.height).toBeLessThanOrEqual(window.height * 0.76);
+    await page.getByTestId('help-close').tap();
+    await expect(help).toHaveCount(0);
+    await expect(page.getByTestId('block-inspector')).toBeVisible();
 });
 
 test('a locked block shows only its symbol and "⋯", with Entsperren inside', async ({ page }) => {

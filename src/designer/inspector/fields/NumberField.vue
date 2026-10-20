@@ -23,7 +23,6 @@ const props = defineProps<{
     named?: boolean;
 }>();
 const emit = defineEmits<{ 'update:modelValue': [number] }>();
-defineSlots<{ info?(): unknown }>();
 
 const id = useId();
 /** What the chip of the short menu shows: "14 Tage", with `named` "Ecken 12 px". */
@@ -101,7 +100,6 @@ function onBlur(): void {
             >
             <span v-if="unit" class="unit" aria-hidden="true">{{ unit }}</span>
         </div>
-        <template v-if="$slots.info" #info><slot name="info" /></template>
     </FieldRow>
 </template>
 

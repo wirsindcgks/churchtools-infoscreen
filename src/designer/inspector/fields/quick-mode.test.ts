@@ -114,9 +114,9 @@ describe('the mode of the inspector (Plan.md 79, B2 and C1: the short menu)', ()
 
     it('a section has no head in the short menu, only its fields', () => {
         const slots = { default: '<span data-testid="inside">Feld</span>' };
-        const full = mount(InspectorSection, { props: { id: 'x-test', title: 'Darstellung' }, slots });
+        const full = mount(InspectorSection, { props: { id: 'x-test', title: 'Darstellung', summary: '' }, slots });
         expect(full.find('summary').exists()).toBe(true);
-        const quick = mount(InspectorSection, { props: { id: 'x-test', title: 'Darstellung' }, slots, global: { provide: { [INSPECTOR_MODE as symbol]: 'quick' } } });
+        const quick = mount(InspectorSection, { props: { id: 'x-test', title: 'Darstellung', summary: '' }, slots, global: { provide: { [INSPECTOR_MODE as symbol]: 'quick' } } });
         expect(quick.find('summary').exists()).toBe(false);
         expect(quick.find('[data-testid="inside"]').exists()).toBe(true);
     });

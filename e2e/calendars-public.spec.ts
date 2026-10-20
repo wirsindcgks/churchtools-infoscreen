@@ -26,8 +26,8 @@ test('the inspector offers no calendar that is not public, and names one the blo
     const inspector = page.getByTestId('block-inspector');
     await openSection(page, 'calendars');
     const calendars = page.getByTestId('section-calendars');
-    await calendars.getByRole('button', { name: 'Erklärung' }).click();
-    await expect(calendars.getByText('Zur Wahl stehen öffentliche Kalender und die, die ein Administrator für Bildschirme freigegeben hat.')).toBeVisible();
+    await calendars.getByTestId('section-calendars-help').click();
+    await expect(page.getByTestId('help-bar').getByText('Zur Wahl stehen öffentliche Kalender und die, die ein Administrator für Bildschirme freigegeben hat.')).toBeVisible();
     await expect(inspector.getByRole('switch', { name: 'Gottesdienst' })).toBeChecked();
     await expect(inspector.getByRole('switch', { name: 'Gemeindeleitung' })).toHaveCount(0);
 

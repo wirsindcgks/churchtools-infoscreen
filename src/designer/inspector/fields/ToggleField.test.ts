@@ -17,11 +17,4 @@ describe('ToggleField', () => {
         await wrapper.get('[data-testid="sound"]').setValue(true);
         expect(wrapper.emitted('update:modelValue')).toEqual([[true]]);
     });
-
-    it('keeps its (i) at a distance from label and switch, as a real button', () => {
-        const wrapper = mount(ToggleField, { props: { modelValue: false, label: 'Ton' }, slots: { info: 'Erklärung' } });
-        const button = wrapper.get('button.info-btn');
-        expect(button.attributes('aria-label')).toBeTruthy();
-        expect(button.attributes('type')).toBe('button');
-    });
 });

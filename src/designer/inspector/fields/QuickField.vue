@@ -262,12 +262,6 @@ onBeforeUnmount(() => {
     flex: none;
     align-items: center;
 }
-.quick-inline :deep(.hint-row) {
-    flex-wrap: nowrap;
-}
-.quick-inline :deep(.info-hint) {
-    display: none;
-}
 .quick-inline :deep(.field-row) {
     grid-template-columns: minmax(0, 1fr);
 }

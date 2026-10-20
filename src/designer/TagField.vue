@@ -25,10 +25,7 @@ const summary = computed(() => (chosenCount.value ? t.common.countOf(chosenCount
 
 <template>
     <QuickField :label="t.inspector.hideTagsTitle">
-        <InspectorSection v-if="tags.length || gone.length" id="hide-tags" :title="t.inspector.hideTagsTitle" :summary="summary">
-            <template #info>
-                {{ t.inspector.hideTagsInfo }}
-            </template>
+        <InspectorSection v-if="tags.length || gone.length" id="hide-tags" :title="t.inspector.hideTagsTitle" :summary="summary" :help="{ intro: t.inspector.hideTagsInfo }">
             <div class="list" data-testid="hide-tags">
                 <ToggleField
                     v-for="tag in tags"

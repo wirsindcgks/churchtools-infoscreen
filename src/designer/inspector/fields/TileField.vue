@@ -18,7 +18,6 @@ export interface TileOption {
 
 const props = defineProps<{ modelValue: string | number | undefined; options: readonly TileOption[]; label: string; testid?: string; disabled?: boolean; quick?: boolean; face?: ChipFace }>();
 const emit = defineEmits<{ 'update:modelValue': [string | number] }>();
-defineSlots<{ info?(): unknown }>();
 const labelId = useId();
 /** What the chip of the short menu shows: the chosen tile's word. */
 const chosenFace = computed(() => chipFace(props.face, props.modelValue, props.options.find((o) => o.value === props.modelValue)?.label));
@@ -43,7 +42,6 @@ const name = useId();
                 </span>
             </label>
         </div>
-        <template v-if="$slots.info" #info><slot name="info" /></template>
     </FieldRow>
 </template>
 

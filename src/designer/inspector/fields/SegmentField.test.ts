@@ -35,13 +35,4 @@ describe('SegmentField', () => {
         expect(radios[1]!.attributes('aria-label')).toBeUndefined();
         expect(wrapper.text()).toContain('Rechts');
     });
-    it('unfolds the text of its (i) below the row, not beside the segment, like every other (i)', async () => {
-        const options = ['Ohne', 'Eng', 'Normal', 'Weit'].map((label) => ({ value: label, label }));
-        const wrapper = mount(SegmentField, { props: { modelValue: 'Normal', options, label: 'Abstand' }, slots: { info: 'Erklärung' } });
-        expect(wrapper.find('.hint').exists()).toBe(false);
-        await wrapper.get('button.info-btn').trigger('click');
-        const hint = wrapper.get('.hint');
-        expect(hint.text()).toBe('Erklärung');
-        expect(hint.element.closest('.field-control')).toBeNull();
-    });
 });

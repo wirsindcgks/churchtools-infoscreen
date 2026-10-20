@@ -99,9 +99,7 @@ const servicesSummary = computed(() => (shownServiceCount.value ? t.common.chose
             :label="t.inspector.showRoom"
             testid="show-rooms"
             @update:model-value="setShowRooms($event)"
-        >
-            <template #info>{{ t.inspector.showRoomInfo(block.type === 'appointment-list' && listLayout(block, themeOf(stage)) === 'visitor') }}</template>
-        </ToggleField>
+        />
         <p v-if="roomsOn && context.roomTypeMissing" class="hint" data-testid="room-type-missing">{{ t.inspector.roomTypeMissing }}</p>
     </template>
     <template v-else-if="visible">
@@ -140,10 +138,7 @@ const servicesSummary = computed(() => (shownServiceCount.value ? t.common.chose
         </InspectorSection>
         <!-- Plan.md, 51: who takes a service – only accepted assignments of services in groups open to all. -->
         <template v-if="withServices">
-            <InspectorSection id="services" :title="t.inspector.servicesTitle" :summary="servicesSummary">
-                <template #info>
-                    {{ t.inspector.servicesInfo }}
-                </template>
+            <InspectorSection id="services" :title="t.inspector.servicesTitle" :summary="servicesSummary" :help="{ intro: t.inspector.servicesInfo }">
                 <div class="list" data-testid="services-fieldset">
                     <ToggleField
                         v-for="s in choosableServices ?? []"

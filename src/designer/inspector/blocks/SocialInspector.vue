@@ -17,6 +17,7 @@ import TextField from '../fields/TextField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import { move as moveItem } from '../../ops';
 import FontSection from '../FontSection.vue';
+import { useGeneralHelp } from '../../help/register';
 import { useBlockEdit } from '../use-block';
 
 /** Most links a block holds – the schema's limit. */
@@ -24,6 +25,7 @@ const SOCIAL_MAX = 12;
 
 const props = defineProps<{ block: Extract<Block, { type: 'social' }> }>();
 const { setBlock } = useBlockEdit(() => props.block);
+useGeneralHelp(() => [{ term: t.inspector.socialAdd, text: t.inspector.socialInfo }]);
 
 const layouts = [
     { value: 'column', label: t.inspector.socialColumn },
@@ -70,9 +72,7 @@ function remove(index: number): void {
             :disabled="block.links.length >= SOCIAL_MAX"
             testid="social-add"
             @update:model-value="add"
-        >
-            <template #info>{{ t.inspector.socialInfo }}</template>
-        </TextField>
+        />
         <p v-if="block.links.length >= SOCIAL_MAX" class="hint">{{ t.inspector.socialFull }}</p>
         <p v-if="!block.links.length" class="hint">{{ t.inspector.socialEmpty }}</p>
         <InspectorSection v-else id="social-list" :title="t.inspector.socialProfiles" :summary="t.common.countOf(block.links.length, SOCIAL_MAX)">

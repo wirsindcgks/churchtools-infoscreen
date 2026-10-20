@@ -9,7 +9,7 @@ import FieldRow from './FieldRow.vue';
 
 defineProps<{ modelValue: boolean; label: string; /** A shorter word for the chip in the short menu; the checkbox keeps the full label. */ quickLabel?: string; testid?: string; disabled?: boolean; quick?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [boolean] }>();
-defineSlots<{ info?(): unknown; before?(): unknown }>();
+defineSlots<{ before?(): unknown }>();
 const id = useId();
 const mode = useInspectorMode();
 </script>
@@ -43,7 +43,6 @@ const mode = useInspectorMode();
             :data-testid="testid"
             @change="emit('update:modelValue', ($event.target as HTMLInputElement).checked)"
         >
-        <template v-if="$slots.info" #info><slot name="info" /></template>
     </FieldRow>
 </template>
 

@@ -26,6 +26,9 @@
     --d-warning: var(--color-warning-bright, oklch(76.9% 0.188 70.08));
     --d-warning-pale: var(--color-warning-b-pale, oklch(97.3% 0.071 103.193));
     --d-success: var(--color-success-bright, oklch(62.7% 0.194 149.214));
+    /* The "?" of the help (Plan.md 98): turquoise, apart from the blue of switches and buttons; teal-700 on white reads at about 5:1, teal-300 on the dark surface at more. */
+    --d-help: var(--color-teal-700, oklch(51.1% 0.096 186.391));
+    --d-help-pale: color-mix(in oklab, var(--d-help) 12%, var(--d-surface));
     /* Green of "+ Gruppe erstellen": creating something new. */
     --d-create: var(--color-constructive-b-bright, oklch(72.3% 0.219 149.579));
     --d-create-text: var(--color-constructive-inverted, #fff);
@@ -67,6 +70,10 @@
     font-size: var(--d-size);
     line-height: 1.45;
     color: var(--d-text);
+}
+/* The dark mode of the host (G25) sets `.dark` on an ancestor. */
+.dark .infoscreen-designer {
+    --d-help: var(--color-teal-300, oklch(85.5% 0.138 181.071));
 }
 /* Headings and `strong` are semi-bold, never bold – whether the host resets them (Tailwind) or not. */
 .infoscreen-designer :where(h1, h2, h3, h4, strong, b) {

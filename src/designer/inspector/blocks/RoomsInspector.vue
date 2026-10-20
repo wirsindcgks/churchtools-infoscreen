@@ -62,6 +62,9 @@ const roomTotal = computed(() => {
     return there > ROOMS_MAX ? `${ROOMS_MAX}+` : there;
 });
 
+/** The explanation of the list; "Titel zeigen" stands in every row, so it is explained once here. */
+const roomsHelp = { intro: t.inspector.roomsInfo, items: [{ term: t.inspector.showTitles, text: t.inspector.showTitlesInfo }] };
+
 function addRooms(infos: RoomInfo[]): void {
     const next = [...props.block.rooms, ...infos.map((r): RoomEntry => ({ resourceId: r.id, hint: '', showTitles: true }))];
     setBlock({ rooms: next.slice(0, ROOMS_MAX) });
@@ -110,8 +113,7 @@ function remove(index: number): void {
             </button>
         </div>
         <p v-if="!block.rooms.length" class="hint">{{ t.inspector.noRoomsChosen }}</p>
-        <InspectorSection v-else id="room-list" :title="t.inspector.rooms" :summary="t.common.countOf(block.rooms.length, roomTotal)">
-            <template #info>{{ t.inspector.roomsInfo }}</template>
+        <InspectorSection v-else id="room-list" :title="t.inspector.rooms" :summary="t.common.countOf(block.rooms.length, roomTotal)" :help="roomsHelp">
             <SortList :items="chosen" :remove-label="t.inspector.removeRoom" testid="room" row-testid="room-entry" @move="move" @remove="remove">
                 <template #row="{ index }">
                     <TextField
@@ -122,9 +124,7 @@ function remove(index: number): void {
                         testid="room-hint"
                         @update:model-value="setRoom(index, { hint: $event })"
                     />
-                    <ToggleField :model-value="block.rooms[index]!.showTitles" :label="t.inspector.showTitles" testid="room-titles" @update:model-value="setRoom(index, { showTitles: $event })">
-                        <template #info>{{ t.inspector.showTitlesInfo }}</template>
-                    </ToggleField>
+                    <ToggleField :model-value="block.rooms[index]!.showTitles" :label="t.inspector.showTitles" testid="room-titles" @update:model-value="setRoom(index, { showTitles: $event })" />
                 </template>
             </SortList>
         </InspectorSection>

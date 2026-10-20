@@ -18,6 +18,7 @@ import FontSection from '../FontSection.vue';
 import { TOGGLE_LIST_SEARCH_FROM, matchesName } from '../../name-search';
 import SearchField from '../../SearchField.vue';
 import { POSTS_TILES } from '../layouts';
+import type { HelpTopic } from '../../help/types';
 import { useBlockEdit } from '../use-block';
 import { useInspectorMode } from '../mode';
 
@@ -44,6 +45,15 @@ const SHOW_LABELS = t.inspector.postShow;
 const SHOW_KEYS = ['showGroup', 'showTitle', 'showImage', 'showText', 'showAuthor', 'showDate'] as const satisfies readonly (keyof typeof SHOW_LABELS)[];
 const fieldsSummary = computed(() => t.common.countOf(SHOW_KEYS.filter((key) => props.block[key]).length, SHOW_KEYS.length));
 
+const fieldsHelp = { intro: t.inspector.postDetailsInfo, items: [{ term: SHOW_LABELS.showAuthor, text: t.inspector.showAuthorInfo }] };
+/** The settings of "Darstellung" that explain themselves – only those that are there now. */
+const appearanceHelp = computed<HelpTopic>(() => ({
+    items: [
+        { term: t.inspector.period, text: t.inspector.periodPostsInfo },
+        ...(props.block.layout === 'card' && props.block.showImage && props.block.imageFit === 'cover' ? [{ term: t.inspector.focus, text: t.inspector.focusInfo }] : []),
+    ],
+}));
+
 const summary = computed(() => `${POSTS_TILES.find((o) => o.value === props.block.layout)?.label} · ${t.inspector.days(props.block.maxAgeDays)}`);
 
 /** The fold and the chip of the short menu say it alike: "2 von 10". */
@@ -66,8 +76,7 @@ function toggleGroup(id: number, on: boolean): void {
 <template>
     <!-- One chip "Gruppen 2 von 10" in the short menu, so a double click on the block can lead here (Plan.md 79, C5). -->
     <QuickField quick :label="t.inspector.groups" :face="block.groupIds.length ? t.quick.listFace(t.inspector.groups, groupsSummary) : t.quick.empty.posts">
-        <InspectorSection id="post-groups" :title="t.inspector.groups" :summary="block.groupIds.length ? groupsSummary : t.common.none">
-            <template #info>{{ t.inspector.postGroupsInfo }}</template>
+        <InspectorSection id="post-groups" :title="t.inspector.groups" :summary="block.groupIds.length ? groupsSummary : t.common.none" :help="{ intro: t.inspector.postGroupsInfo }">
             <SearchField v-if="searchable" v-model="query" :placeholder="t.common.searchList" :label="t.common.searchList" testid="post-groups-search" />
             <ToggleField
                 v-for="g in groupsShown"
@@ -84,7 +93,7 @@ function toggleGroup(id: number, on: boolean): void {
             </p>
         </InspectorSection>
     </QuickField>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="appearanceHelp">
         <TileField quick :model-value="block.layout" :options="POSTS_TILES" :label="t.inspector.view" testid="posts-layout" @update:model-value="setBlock({ layout: $event })" />
         <NumberField :model-value="block.limit" :label="t.inspector.count" :min="1" :max="10" testid="posts-limit" @update:model-value="setBlock({ limit: $event })" />
         <NumberField
@@ -95,9 +104,7 @@ function toggleGroup(id: number, on: boolean): void {
             :max="365"
             testid="posts-days"
             @update:model-value="setBlock({ maxAgeDays: $event })"
-        >
-            <template #info>{{ t.inspector.periodPostsInfo }}</template>
-        </NumberField>
+        />
         <NumberField
             v-if="block.layout === 'card'"
             :model-value="block.pageSeconds ?? POST_SECONDS"
@@ -118,13 +125,10 @@ function toggleGroup(id: number, on: boolean): void {
                 testid="posts-focus"
                 stacked
                 @update:model-value="setBlock({ imageFocus: $event })"
-            >
-                <template #info>{{ t.inspector.focusInfo }}</template>
-            </SegmentField>
+            />
         </template>
     </InspectorSection>
-    <InspectorSection id="fields" :title="t.inspector.details" :summary="fieldsSummary">
-        <template #info>{{ t.inspector.postDetailsInfo }}</template>
+    <InspectorSection id="fields" :title="t.inspector.details" :summary="fieldsSummary" :help="fieldsHelp">
         <ToggleField
             v-for="key in SHOW_KEYS"
             :key="key"
@@ -133,9 +137,7 @@ function toggleGroup(id: number, on: boolean): void {
             :disabled="block.layout === 'list' && (key === 'showImage' || key === 'showAuthor')"
             :testid="key === 'showImage' ? 'posts-image' : key === 'showAuthor' ? 'posts-author' : `posts-${key.slice(4).toLowerCase()}`"
             @update:model-value="setBlock({ [key]: $event })"
-        >
-            <template v-if="key === 'showAuthor'" #info>{{ t.inspector.showAuthorInfo }}</template>
-        </ToggleField>
+        />
     </InspectorSection>
     <FontSection :block="block" effects="shadow" />
 </template>

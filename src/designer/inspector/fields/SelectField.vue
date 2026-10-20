@@ -10,7 +10,6 @@ import FieldRow from './FieldRow.vue';
 
 const props = defineProps<{ modelValue: string | number | undefined; options: readonly SelectOption[]; label: string; testid?: string; inline?: boolean; disabled?: boolean; quick?: boolean; face?: ChipFace }>();
 const emit = defineEmits<{ 'update:modelValue': [string | number] }>();
-defineSlots<{ info?(): unknown }>();
 const labelId = useId();
 /** What the chip of the short menu shows: the chosen option's text. */
 const chosenFace = computed(() => chipFace(props.face, props.modelValue, props.options.find((o) => String(o.value) === String(props.modelValue))?.label));
@@ -19,6 +18,5 @@ const chosenFace = computed(() => chipFace(props.face, props.modelValue, props.o
 <template>
     <FieldRow :label="label" :label-id="labelId" :stacked="!inline" :quick="quick" :face="chosenFace">
         <SelectMenu :model-value="modelValue" :options="options" :labelledby="labelId" :disabled="disabled" :testid="testid" @update:model-value="emit('update:modelValue', $event)" />
-        <template v-if="$slots.info" #info><slot name="info" /></template>
     </FieldRow>
 </template>

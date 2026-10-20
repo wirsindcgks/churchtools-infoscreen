@@ -27,7 +27,6 @@ const props = defineProps<{
     face?: string;
 }>();
 const emit = defineEmits<{ 'update:modelValue': [string] }>();
-defineSlots<{ info?(): unknown }>();
 
 const generated = useId();
 const edit = useEdit();
@@ -77,6 +76,5 @@ function onChange(event: Event): void {
             @focus="edit.onFocus"
             @blur="edit.onBlur"
         >
-        <template v-if="$slots.info" #info><slot name="info" /></template>
     </FieldRow>
 </template>

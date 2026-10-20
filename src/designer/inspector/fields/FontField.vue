@@ -14,7 +14,6 @@ import FieldRow from './FieldRow.vue';
 
 const props = defineProps<{ modelValue: string; label: string; testid?: string; quick?: boolean }>();
 const emit = defineEmits<{ 'update:modelValue': [string] }>();
-defineSlots<{ info?(): unknown }>();
 
 const labelId = useId();
 
@@ -44,6 +43,5 @@ function choose(value: string | number): void {
 <template>
     <FieldRow :label="label" :label-id="labelId" stacked :quick="quick">
         <SelectMenu :model-value="current.key" :options="options" :labelledby="labelId" :placeholder="current.label" :testid="testid" @update:model-value="choose" />
-        <template v-if="$slots.info" #info><slot name="info" /></template>
     </FieldRow>
 </template>

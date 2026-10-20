@@ -24,6 +24,7 @@ import { appointmentListTiles } from '../layouts';
 import { useBlockEdit } from '../use-block';
 import { useInspectorMode } from '../mode';
 import AppointmentExtras from './AppointmentExtras.vue';
+import { showRoomHelp } from './appointment-help';
 
 const props = defineProps<{ block: Extract<Block, { type: 'appointment-list' }> }>();
 /** Only fields stand in the short menu; a hint or a line of text belongs to the inspector. */
@@ -42,6 +43,8 @@ const layout = computed(() => listLayout(props.block, themeOf(stage)));
 /** The folded look: the layout the list really has, and how far ahead it looks. */
 const summary = computed(() => `${layout.value === 'visitor' ? t.inspector.layoutVisitor : layout.value === 'cards' ? t.inspector.layoutCards : t.inspector.layoutRows} · ${t.inspector.days(props.block.horizonDays)}`);
 
+const appearanceHelp = computed(() => ({ items: [showRoomHelp(props.block, themeOf(stage))] }));
+
 /** How a paged list will run – with the page count the stage preview measured. */
 const pageHint = computed(() => {
     const pages = stage.pages?.[props.block.id] ?? 1;
@@ -59,7 +62,7 @@ const pageHint = computed(() => {
     <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" :released="released" @toggle="toggleCalendar" />
     <!-- Plan.md 82 C: appointments with these tags stay off the screen. Without the tags (not loaded, unreadable) there is no field. -->
     <TagField v-if="tags" :tags="tags" :chosen-ids="block.hideTagIds ?? []" @toggle="toggleTag" />
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="appearanceHelp">
         <!-- Plan.md, 20: the look of the WordPress plugin's list and highlighted event. '' follows the theme (Plan.md 27). -->
         <TileField
             quick

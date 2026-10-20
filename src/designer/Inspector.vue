@@ -14,6 +14,8 @@ import type { ServiceInfo } from '../appointments/services';
 import { useEditorStore } from './editor-store';
 import ArrangeField from './ArrangeField.vue';
 import Icon from './Icon.vue';
+import { useGeneralHelp } from './help/register';
+import InspectorHelp from './InspectorHelp.vue';
 import InspectorSection from './InspectorSection.vue';
 import { BLOCK_INSPECTORS } from './inspector/blocks';
 import { provideInspectorContext } from './inspector/context';
@@ -78,8 +80,11 @@ const canFixInRegion = computed(() => {
     return !!b.region || !!regionAt(regions, b);
 });
 const arrangeSummary = computed(() =>
-    block.value ? t.inspector.layerOf(layerNumber.value, rows.value.length) + (block.value.region ? ` · ${t.inspector.regionFixedSummary}` : '') : undefined,
+    block.value ? t.inspector.layerOf(layerNumber.value, rows.value.length) + (block.value.region ? ` · ${t.inspector.regionFixedSummary}` : '') : '',
 );
+const arrangeHelp = computed(() => ({ items: canFixInRegion.value ? [{ term: t.inspector.regionFixed, text: t.inspector.regionFixedInfo }] : [] }));
+/** Editing a template with nothing chosen: its lock is explained under "Allgemein". */
+useGeneralHelp(() => (editor.templateEdit && !selection.value.length ? [{ term: t.templates.fixed, text: t.templates.fixedInfo }] : []));
 
 /** The layers, top first. */
 const rows = computed(() => layerRows(editor.slide?.blocks ?? []));
@@ -96,16 +101,19 @@ const LAYERS = [
     <aside class="inspector">
         <section v-if="selection.length" data-testid="block-inspector">
             <div class="block-head">
-                <h3>
-                    <template v-if="block">
-                        <Icon :name="BLOCK_ICONS[block.type]" :size="18" />
-                        {{ editor.blockHead(block) }}
-                    </template>
-                    <template v-else>
-                        <Icon name="grid" :size="18" />
-                        <span data-testid="multi-title">{{ editor.groupSelected ? t.editor.groupCount(selection.length) : t.editor.blocksCount(selection.length) }}</span>
-                    </template>
-                </h3>
+                <div class="head-title">
+                    <h3>
+                        <template v-if="block">
+                            <Icon :name="BLOCK_ICONS[block.type]" :size="18" />
+                            {{ editor.blockHead(block) }}
+                        </template>
+                        <template v-else>
+                            <Icon name="grid" :size="18" />
+                            <span data-testid="multi-title">{{ editor.groupSelected ? t.editor.groupCount(selection.length) : t.editor.blocksCount(selection.length) }}</span>
+                        </template>
+                    </h3>
+                    <InspectorHelp />
+                </div>
                 <div class="head-actions">
                     <!-- Plan.md, 25: locked, the whole block stays as it is until unlocked. -->
                     <button
@@ -206,7 +214,7 @@ const LAYERS = [
                     />
                 </InspectorSection>
 
-                <InspectorSection id="arrange" :title="t.inspector.arrange" :summary="arrangeSummary">
+                <InspectorSection id="arrange" :title="t.inspector.arrange" :summary="arrangeSummary" :help="arrangeHelp">
                     <ArrangeField />
                     <ToggleField
                         v-if="canFixInRegion && block"
@@ -214,9 +222,7 @@ const LAYERS = [
                         :label="t.inspector.regionFixed"
                         testid="region-fixed"
                         @update:model-value="editor.setRegionFixed(block.id, $event)"
-                    >
-                        <template #info>{{ t.inspector.regionFixedInfo }}</template>
-                    </ToggleField>
+                    />
                     <p v-if="block" class="layer-position" data-testid="layer-position">{{ t.inspector.layerOf(layerNumber, rows.length) }}</p>
                     <div class="layer-buttons">
                         <button
@@ -256,14 +262,15 @@ const LAYERS = [
         <section v-else-if="editor.templateEdit" data-testid="template-inspector">
             <!-- Editing a template and nothing chosen: its name, the size of its frame and its blocks instead of the slide's fields. -->
             <div class="block-head">
-                <h3>
-                    <Icon :name="BLOCK_ICONS.template" :size="18" />
-                    {{ t.templates.head(editor.templateEdit.name) }}
-                </h3>
+                <div class="head-title">
+                    <h3>
+                        <Icon :name="BLOCK_ICONS.template" :size="18" />
+                        {{ t.templates.head(editor.templateEdit.name) }}
+                    </h3>
+                    <InspectorHelp />
+                </div>
             </div>
-            <ToggleField :model-value="!!editor.templateEdit.bundle.locked" :label="t.templates.fixed" testid="template-fixed" @update:model-value="editor.setTemplateFixed($event)">
-                <template #info>{{ t.templates.fixedInfo }}</template>
-            </ToggleField>
+            <ToggleField :model-value="!!editor.templateEdit.bundle.locked" :label="t.templates.fixed" testid="template-fixed" @update:model-value="editor.setTemplateFixed($event)" />
             <InspectorSection id="template-measures" :title="t.inspector.measures" :summary="`${editor.templateEdit.bundle.frame.width} × ${editor.templateEdit.bundle.frame.height}`">
                 <div class="measures">
                     <NumberField
@@ -286,7 +293,7 @@ const LAYERS = [
                     />
                 </div>
             </InspectorSection>
-            <InspectorSection v-if="rows.length" id="slide-blocks" :group="false" :title="t.templates.edit.blocksTitle" default-open class="slide-blocks" data-testid="slide-blocks">
+            <InspectorSection v-if="rows.length" id="slide-blocks" summary="" :group="false" :title="t.templates.edit.blocksTitle" default-open class="slide-blocks" data-testid="slide-blocks">
                 <p class="layer-position">{{ t.inspector.topIsFront }}</p>
                 <LayerList @picked="emit('picked')" />
             </InspectorSection>
@@ -294,7 +301,7 @@ const LAYERS = [
 
         <template v-else>
             <!-- Without a block chosen the slide's blocks come first, for the finger and for blocks hidden under others. -->
-            <InspectorSection v-if="rows.length" id="slide-blocks" :group="false" :title="t.inspector.slideBlocks" default-open class="slide-blocks" data-testid="slide-blocks">
+            <InspectorSection v-if="rows.length" id="slide-blocks" summary="" :group="false" :title="t.inspector.slideBlocks" default-open class="slide-blocks" data-testid="slide-blocks">
                 <p class="layer-position">{{ t.inspector.topIsFront }}</p>
                 <LayerList @picked="emit('picked')" />
             </InspectorSection>
@@ -329,10 +336,19 @@ section {
 }
 h3 {
     display: flex;
+    flex: 1;
     align-items: center;
     gap: 8px;
+    min-width: 0;
     margin: 0;
     font-size: 1.05em;
+}
+/* The name, and the "?" of the help at the end of the line (Plan.md 98). */
+.head-title {
+    display: flex;
+    align-items: center;
+    gap: var(--d-space-2);
+    min-width: 0;
 }
 .layer-position {
     margin: 0;

@@ -85,8 +85,8 @@ Menü „…". Die erste Zeile sagt, ob der Fernseher gerade **„online"** ist.
   einer Zeile, was eingestellt ist; was du einmal aufklappst, bleibt offen. Im Kopf des Inspektors stehen
   **„Sperren"** – damit ein Logo oder Hintergrund nicht verrutscht, ein Klick darauf erreicht dann den Baustein
   darunter, mit gedrückter Alt-Taste (Mac: Option) den gesperrten selbst –, bei mehreren **„Gruppieren"**, **„Duplizieren"**, **„Kopieren"** und **„Löschen"**. Eine Kopie fügst du mit **„Einfügen"** neben „+ Baustein" oder Strg/⌘ + V an derselben Stelle ein, auch auf einer anderen Folie; Strg/⌘ + D dupliziert. Ist nichts gewählt, zeigt der Inspektor **„Bausteine dieser Folie"** (oben = vorne): Klick wählt, das Schloss
-  sperrt, Ziehen ändert die Ebene – so erreichst du auch Verdecktes. Ein **ⓘ** klappt eine
-  Erklärung auf. Folien und Inspektor lassen sich einklappen, damit die Bildfläche mehr Platz bekommt; auf dem
+  sperrt, Ziehen ändert die Ebene – so erreichst du auch Verdecktes. Ein türkises **?** an einem aufgeklappten
+  Bereich – und im Kopf des Inspektors – öffnet die Hilfe: eine Leiste unter der Folie (am Handy von unten) mit einem Reiter je Bereich und einer Suche. Folien und Inspektor lassen sich einklappen, damit die Bildfläche mehr Platz bekommt; auf dem
   Tablet sind sie das von Anfang an.
 - **Hinweise** haben eine eigene Seite in der Seitenleiste: ein Band über allen Folien der gewählten Präsentationen – als
   Laufschrift oder stehend, etwa „Heute Parkplatz gesperrt", mit **„Zeigen bis"**, danach verschwindet es von selbst.
@@ -183,13 +183,13 @@ Auf dem Tablet steht das Kurzmenü wie am Rechner über dem Baustein; Tippen, Zi
 ### Gut zu wissen
 
 - **Rückgängig** mit ⌘Z / Strg+Z; ein Ziehen ist ein Schritt.
-- **Neu im Editor?** Beim ersten Öffnen bietet eine Karte „Neu hier?" eine kurze Einführung an; wiederfinden kannst du sie über „? Hilfe" oben im Editor. Am Handy gibt es sie nicht.
+- **Neu im Editor?** Beim ersten Öffnen bietet eine Karte „Neu hier?" eine kurze Einführung an; wiederfinden kannst du sie über „? Hilfe" oben im Editor; dort öffnet „Hilfe zu den Einstellungen" auch die Hilfe-Leiste. Am Handy gibt es sie nicht.
 - **Arbeitet jemand anderes gleichzeitig an derselben Präsentation**, fragt der Editor beim Sichern oder
   Veröffentlichen, welche Fassung gelten soll.
 - **Neuer Kalender auf einem Bildschirm** – in einer Terminliste, einem Countdown oder einer Termin-Regel? Zur Wahl
   stehen nur öffentliche Kalender, also solche, die man in ChurchTools auch ohne Anmeldung sieht; die zeigen die
-  Fernseher ohne weiteren Handgriff. Fehlt einer, kann ihn ein Administrator freigeben – den Weg nennt das (i) am
-  Kalender-Feld. Ein interner Kalender erscheint auf keinem Fernseher, es sei denn, ein Administrator hat ihn unter „Einstellungen → Interne Kalender für Bildschirme“ freigegeben.
+  Fernseher ohne weiteren Handgriff. Fehlt einer, kann ihn ein Administrator freigeben – den Weg nennt das ? am
+  Bereich „Kalender“. Ein interner Kalender erscheint auf keinem Fernseher, es sei denn, ein Administrator hat ihn unter „Einstellungen → Interne Kalender für Bildschirme“ freigegeben.
 - **Sagt die Startseite „Dir fehlen Rechte"**, nennt sie das Recht – gib die Meldung an einen Administrator weiter.
 - **Was neu ist**, steht unter **„Über & Neuigkeiten"** unten in der Seitenleiste; ein blauer Punkt zeigt eine neue
   Version an.

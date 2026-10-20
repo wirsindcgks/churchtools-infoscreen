@@ -10,7 +10,6 @@ import { t } from '../i18n/designer';
 import type { Banner } from '../model/schema';
 import { wallTime } from '../player/banner';
 import ColorField from './ColorField.vue';
-import HintRow from './HintRow.vue';
 import SelectMenu from './SelectMenu.vue';
 import FontField from './inspector/fields/FontField.vue';
 
@@ -148,18 +147,16 @@ function setFontSize(value: string): void {
                 @update:model-value="update({ style: { ...modelValue.style, color: $event } })"
             />
         </div>
-        <HintRow>
-            <label class="d-field">
-                {{ t.notices.banner.until }}
-                <input
-                    type="datetime-local"
-                    :value="modelValue.until ?? ''"
-                    data-testid="banner-until"
-                    @change="update({ until: ($event.target as HTMLInputElement).value || undefined })"
-                >
-            </label>
-            <template #info>{{ t.notices.banner.untilInfo }}</template>
-        </HintRow>
+        <label class="d-field">
+            {{ t.notices.banner.until }}
+            <input
+                type="datetime-local"
+                :value="modelValue.until ?? ''"
+                data-testid="banner-until"
+                @change="update({ until: ($event.target as HTMLInputElement).value || undefined })"
+            >
+            <small class="hint">{{ t.notices.banner.untilInfo }}</small>
+        </label>
         <p v-if="expired" class="hint hint--warn" data-testid="banner-expired">
             {{ t.notices.banner.expired }}
         </p>

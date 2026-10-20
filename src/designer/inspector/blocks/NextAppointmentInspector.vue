@@ -19,6 +19,7 @@ import FontSection from '../FontSection.vue';
 import { nextAppointmentTiles } from '../layouts';
 import { useBlockEdit } from '../use-block';
 import AppointmentExtras from './AppointmentExtras.vue';
+import { showRoomHelp } from './appointment-help';
 
 const props = defineProps<{ block: Extract<Block, { type: 'next-appointment' }> }>();
 const stage = useStageContext();
@@ -29,6 +30,7 @@ const { tags, toggleTag } = useTagChoice(() => props.block);
 const layouts = computed(() => nextAppointmentTiles(props.block, themeOf(stage)));
 /** The badge is part of the card only. */
 const card = computed(() => nextLayout(props.block, themeOf(stage)) === 'card');
+const appearanceHelp = computed(() => ({ items: [showRoomHelp(props.block, themeOf(stage))] }));
 const summary = computed(() => (card.value ? t.inspector.layoutCard : t.inspector.layoutClassic));
 </script>
 
@@ -36,7 +38,7 @@ const summary = computed(() => (card.value ? t.inspector.layoutCard : t.inspecto
     <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" :released="released" @toggle="toggleCalendar" />
     <!-- Plan.md 82 C: appointments with these tags stay off the screen. Without the tags (not loaded, unreadable) there is no field. -->
     <TagField v-if="tags" :tags="tags" :chosen-ids="block.hideTagIds ?? []" @toggle="toggleTag" />
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="appearanceHelp">
         <!-- Plan.md, 20: the highlighted event of the WordPress plugin. '' follows the theme (Plan.md 27). -->
         <TileField
             quick

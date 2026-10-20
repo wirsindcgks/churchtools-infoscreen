@@ -7,6 +7,7 @@ import { embedAddress, webRefusal, withScheme } from '../../../player/web';
 import InspectorSection from '../../InspectorSection.vue';
 import SelectField from '../fields/SelectField.vue';
 import TextField from '../fields/TextField.vue';
+import { useGeneralHelp } from '../../help/register';
 import { useBlockEdit } from '../use-block';
 import { useInspectorMode } from '../mode';
 
@@ -14,6 +15,7 @@ const props = defineProps<{ block: Extract<Block, { type: 'web' }> }>();
 /** Only fields stand in the short menu; a hint or a line of text belongs to the inspector. */
 const mode = useInspectorMode();
 const { setBlock } = useBlockEdit(() => props.block);
+useGeneralHelp(() => [{ term: t.inspector.webAddress, text: t.inspector.webInfo }]);
 
 const zooms = [
     { value: 0.5, label: t.inspector.webZooms[50] },
@@ -68,12 +70,10 @@ function setUrl(pasted: string): void {
         :label="t.inspector.webAddress"
         testid="web-url"
         @update:model-value="setUrl"
-    >
-        <template #info>{{ t.inspector.webInfo }}</template>
-    </TextField>
+    />
     <p v-if="mode === 'full' && embedProblemBlock === block.id" class="hint" data-testid="web-problem">{{ t.inspector.webNoAddressInCode }}</p>
     <p v-else-if="mode === 'full' && webProblem(block.url)" class="hint" data-testid="web-problem">{{ webProblem(block.url) }}</p>
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="zooms.find((z) => z.value === block.zoom)?.label">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="zooms.find((z) => z.value === block.zoom)?.label ?? ''">
         <SelectField quick :face="(value) => t.inspector.webSizeFace(Math.round(Number(value) * 100))" :model-value="block.zoom" :options="zooms" :label="t.inspector.webSize" testid="web-zoom" @update:model-value="setBlock({ zoom: Number($event) })" />
     </InspectorSection>
 </template>

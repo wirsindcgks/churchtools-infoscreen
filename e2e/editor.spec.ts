@@ -1719,21 +1719,28 @@ test('a locked block: delete is off, sections still fold, fields stay locked (Pl
     await expect(page.getByTestId('section-measures')).not.toHaveAttribute('open', '');
 });
 
-test('an explanation stays behind its (i) until asked for (Plan.md 47)', async ({ page }) => {
+test('an explanation stays behind the "?" of its section until asked for, and Esc closes the bar (Plan.md 98)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
     await addBlock(page, 'qr');
     await openSection(page, 'appearance');
-    const inspector = page.getByTestId('block-inspector');
-    const hint = inspector.getByText('Dunkel auf hell lesen alle Handykameras am sichersten.');
-    await expect(hint).toHaveCount(0);
-    const info = inspector.getByRole('button', { name: 'Erklärung' });
-    await expect(info).toHaveAttribute('aria-expanded', 'false');
-    await info.click();
-    await expect(info).toHaveAttribute('aria-expanded', 'true');
-    await expect(hint).toBeVisible();
-    await info.click();
-    await expect(hint).toHaveCount(0);
+    const bar = page.getByTestId('help-bar');
+    const text = 'Dunkel auf hell lesen alle Handykameras am sichersten.';
+    await expect(bar).toHaveCount(0);
+    const help = page.getByTestId('section-appearance-help');
+    await expect(help).toHaveAttribute('aria-expanded', 'false');
+    await help.click();
+    await expect(help).toHaveAttribute('aria-expanded', 'true');
+    await expect(bar).toContainText(text);
+    await expect(page.getByTestId('section-appearance')).toHaveAttribute('open', '');
+    await help.click();
+    await expect(bar).toHaveCount(0);
+    // Esc closes the bar first; the block stays chosen.
+    await help.click();
+    await expect(bar).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(bar).toHaveCount(0);
+    await expect(page.getByTestId('block-inspector')).toBeVisible();
 });
 
 test('the block is layered from the "Anordnen" section and deleted from its header (Plan.md 47, 79)', async ({ page }) => {

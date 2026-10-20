@@ -22,6 +22,8 @@ import { TOGGLE_LIST_SEARCH_FROM, matchesName } from '../../name-search';
 import SearchField from '../../SearchField.vue';
 import { GROUPS_TILES } from '../layouts';
 import { move as moveItem } from '../../ops';
+import { useGeneralHelp } from '../../help/register';
+import type { HelpTopic } from '../../help/types';
 import { useBlockEdit } from '../use-block';
 import { useInspectorMode } from '../mode';
 
@@ -119,6 +121,16 @@ const summary = computed(() => {
     const order = props.block.groupIds.length === 0 && sorts.find((o) => o.value === props.block.sort)?.label;
     return [layout, order].filter(Boolean).join(' · ');
 });
+useGeneralHelp(() => [{ term: t.inspector.groupsHomepage, text: t.inspector.homepageInfo }]);
+/** The settings of "Darstellung" that explain themselves – only those that are there now. */
+const appearanceHelp = computed<HelpTopic>(() => ({
+    items: [
+        ...(props.block.groupIds.length === 0 ? [{ term: t.inspector.order, text: t.inspector.sortWeekdayInfo }] : []),
+        ...(props.block.layout === 'card' && props.block.perPage > 1
+            ? [{ term: t.inspector.groupsPerPage, text: t.inspector.perPageInfo(props.block.width >= props.block.height) }]
+            : []),
+    ],
+}));
 const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((key) => props.block.show[key]).length, GROUP_SHOW_KEYS.length));
 </script>
 
@@ -131,9 +143,7 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
         :label="t.inspector.groupsHomepage"
         testid="groups-homepage"
         @update:model-value="setHomepage"
-    >
-        <template #info>{{ t.inspector.homepageInfo }}</template>
-    </SelectField>
+    />
     <p v-if="mode === 'full' && !context.homepages.length" class="hint">
         {{ t.inspector.noHomepage }}
     </p>
@@ -161,7 +171,7 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
         </template>
     </InspectorSection>
 
-    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary">
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="appearanceHelp">
         <TileField quick :model-value="block.layout" :options="GROUPS_TILES" :label="t.inspector.view" testid="groups-layout" @update:model-value="setBlock({ layout: $event })" />
         <SegmentField
             v-if="block.groupIds.length === 0"
@@ -171,9 +181,7 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
             testid="groups-sort"
             stacked
             @update:model-value="setBlock({ sort: $event })"
-        >
-            <template #info>{{ t.inspector.sortWeekdayInfo }}</template>
-        </SegmentField>
+        />
         <SegmentField
             v-if="block.layout === 'card'"
             :model-value="block.perPage"
@@ -181,9 +189,7 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
             :label="t.inspector.groupsPerPage"
             testid="groups-per-page"
             @update:model-value="setBlock({ perPage: Number($event) })"
-        >
-            <template v-if="block.perPage > 1" #info>{{ t.inspector.perPageInfo(block.width >= block.height) }}</template>
-        </SegmentField>
+        />
         <NumberField
             :model-value="block.pageSeconds ?? GROUP_SECONDS"
             :label="block.layout === 'card' && block.perPage === 1 ? t.inspector.secondsPerGroup : t.inspector.secondsPerPage"
@@ -195,10 +201,7 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
         />
     </InspectorSection>
 
-    <InspectorSection id="fields" :title="t.inspector.details" :summary="fieldsSummary">
-        <template #info>
-            {{ t.inspector.detailsInfo }}
-        </template>
+    <InspectorSection id="fields" :title="t.inspector.details" :summary="fieldsSummary" :help="{ intro: t.inspector.detailsInfo }">
         <ToggleField
             v-for="key in GROUP_SHOW_KEYS"
             :key="key"

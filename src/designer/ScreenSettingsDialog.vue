@@ -8,7 +8,6 @@
  */
 import { computed, onMounted, ref } from 'vue';
 import { t } from '../i18n/designer';
-import HintRow from './HintRow.vue';
 import type { ScreenDoc } from '../model/schema';
 import { ConflictError, type ScreenRepository } from '../store/screen-repository';
 
@@ -71,13 +70,11 @@ async function save(): Promise<void> {
                 <input ref="nameInput" v-model="name" type="text" maxlength="100" data-testid="settings-name">
                 <small v-if="!name.trim()" class="invalid">{{ t.home.settings.nameRequired }}</small>
             </label>
-            <HintRow v-if="mode === 'settings'">
-                <label class="d-field">
-                    {{ t.home.settings.overscan }}
-                    <input v-model.number="overscan" type="number" min="0" max="20" data-testid="settings-overscan">
-                </label>
-                <template #info>{{ t.home.settings.overscanInfo }}</template>
-            </HintRow>
+            <label v-if="mode === 'settings'" class="d-field">
+                {{ t.home.settings.overscan }}
+                <input v-model.number="overscan" type="number" min="0" max="20" data-testid="settings-overscan">
+                <small class="hint">{{ t.home.settings.overscanInfo }}</small>
+            </label>
             <dl v-if="mode === 'settings'">
                 <dt>{{ t.common.format }}</dt>
                 <dd>{{ portrait ? t.common.portrait : t.common.landscape }}, {{ screen.stage.width }} × {{ screen.stage.height }}</dd>
@@ -117,6 +114,7 @@ dt {
 dd {
     margin: 0;
 }
+.hint,
 .muted {
     margin: 0;
     color: var(--d-text-muted);

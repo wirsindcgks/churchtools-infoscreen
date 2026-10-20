@@ -34,7 +34,6 @@ export const t = {
         moveUp: 'Nach oben',
         moveDown: 'Nach unten',
         dragToSort: 'Ziehen zum Sortieren',
-        explanation: 'Erklärung',
         countOf: (n: number, total: number | string) => `${n} von ${total}`,
         /** The search above a long list (Plan.md 93): parts of the name, separated by spaces. */
         searchList: 'Suchen',
@@ -114,6 +113,23 @@ export const t = {
         },
     },
 
+    /** The help bar (Plan.md 98): the "?" of a section or of the inspector's head opens it; the texts themselves stand under the keys of their settings. */
+    help: {
+        subject: (name: string) => `Hilfe · ${name}`,
+        general: 'Allgemein',
+        slide: 'Folie',
+        design: 'Design',
+        about: (title: string) => `Hilfe zu „${title}“`,
+        aboutSubject: (name: string) => `Hilfe zu „${name}“`,
+        topics: 'Themen der Hilfe',
+        search: 'In der Hilfe suchen',
+        close: 'Hilfe schließen',
+        noMatches: 'Dazu steht nichts in der Hilfe.',
+        menuSettings: 'Hilfe zu den Einstellungen',
+        /** Labels of explanations that belong to no single row: the run time of a video, a slide shared with other playlists. */
+        terms: { runtime: 'Laufzeit', linked: 'Verknüpfte Folie' },
+    },
+
     /** The introduction to the editor (Plan.md 81): the card that offers it, the tour of six places, and the menu entries behind the "?". */
     intro: {
         help: 'Hilfe',
@@ -135,7 +151,7 @@ export const t = {
             slides: { title: 'Folien', text: 'Hier liegen die Folien dieser Präsentation. Wähle eine aus, um sie zu bearbeiten, und ziehe sie, um die Reihenfolge zu ändern.' },
             add: { title: 'Baustein hinzufügen', text: 'Mit „+ Baustein“ legst du Texte, Bilder, Termine und mehr auf die Folie.' },
             stage: { title: 'Die Bildfläche', text: 'Klicke einen Baustein an: Du kannst ihn an seinen Platz ziehen, und über ihm erscheint sein Kurzmenü mit den häufigsten Einstellungen.' },
-            inspector: { title: 'Einstellungen', text: 'Rechts stellst du die Folie oder den gewählten Baustein ein. Das (i) neben einem Feld erklärt, was es tut.' },
+            inspector: { title: 'Einstellungen', text: 'Rechts stellst du die Folie oder den gewählten Baustein ein. Das „?“ an einem Bereich öffnet die Hilfe dazu.' },
             preview: { title: 'Vorschau', text: 'Hier siehst du die Präsentation so, wie sie auf dem Fernseher läuft – ohne dass etwas verändert wird.' },
             publish: {
                 title: 'Veröffentlichen',

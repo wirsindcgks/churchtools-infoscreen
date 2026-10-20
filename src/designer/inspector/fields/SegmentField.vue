@@ -16,7 +16,6 @@ export interface SegmentOption {
 
 const props = defineProps<{ modelValue: string | number | undefined; options: readonly SegmentOption[]; label: string; testid?: string; stacked?: boolean; disabled?: boolean; quick?: boolean; face?: ChipFace }>();
 const emit = defineEmits<{ 'update:modelValue': [string | number] }>();
-defineSlots<{ info?(): unknown }>();
 const labelId = useId();
 
 /**
@@ -38,7 +37,7 @@ const name = useId();
 </script>
 
 <template>
-    <FieldRow :label="label" :label-id="labelId" :stacked="stackedNow" :quick="quick" :face="chosenFace" :inline="withSymbols" info-beside>
+    <FieldRow :label="label" :label-id="labelId" :stacked="stackedNow" :quick="quick" :face="chosenFace" :inline="withSymbols">
         <div class="segment" role="radiogroup" :aria-labelledby="labelId" :data-testid="testid">
             <label v-for="option in options" :key="option.value" class="segment-option" :title="option.icon ? option.label : undefined">
                 <input
@@ -56,7 +55,6 @@ const name = useId();
                 </span>
             </label>
         </div>
-        <template v-if="$slots.info" #info><slot name="info" /></template>
     </FieldRow>
 </template>
 

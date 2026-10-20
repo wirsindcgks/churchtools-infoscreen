@@ -24,9 +24,7 @@ const look = computed(() => [props.block.showTitle && t.quick.short.title, props
 </script>
 
 <template>
-    <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" :released="released" @toggle="toggleCalendar">
-        <template #info>{{ t.inspector.countInfo }}</template>
-    </CalendarField>
+    <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" :released="released" :extra-intro="t.inspector.countInfo" @toggle="toggleCalendar" />
     <!-- Plan.md 82 C: appointments with these tags stay off the screen. Without the tags (not loaded, unreadable) there is no field. -->
     <TagField v-if="tags" :tags="tags" :chosen-ids="block.hideTagIds ?? []" @toggle="toggleTag" />
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="look">

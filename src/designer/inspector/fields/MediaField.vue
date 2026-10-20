@@ -5,8 +5,6 @@
  * default slot takes further buttons, such as "Logo zurücksetzen". In the short menu (Plan.md 79, C1) it is
  * only the button, a chip that opens the library.
  */
-import { ref } from 'vue';
-import InfoHint from '../../InfoHint.vue';
 import { useInspectorMode } from '../mode';
 
 defineProps<{
@@ -25,9 +23,8 @@ defineProps<{
     quick?: boolean;
 }>();
 defineEmits<{ pick: [] }>();
-defineSlots<{ default?(): unknown; info?(): unknown }>();
+defineSlots<{ default?(): unknown }>();
 const mode = useInspectorMode();
-const infoOpen = ref(false);
 </script>
 
 <template>
@@ -52,9 +49,7 @@ const infoOpen = ref(false);
             <button class="d-btn media-pick" type="button" :disabled="disabled" :data-testid="testid" @click="$emit('pick')">
                 {{ filled ? swapLabel : pickLabel }}
             </button>
-            <InfoHint v-if="$slots.info" v-model:open="infoOpen" part="button" />
         </div>
-        <InfoHint v-if="$slots.info" v-model:open="infoOpen" part="text"><slot name="info" /></InfoHint>
         <slot />
     </div>
 </template>
