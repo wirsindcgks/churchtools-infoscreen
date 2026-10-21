@@ -1066,6 +1066,7 @@ function onEmptyAction(b: Block): void {
                 :font-family="fontStack(themeOf(stage).font)"
                 :number="progress.number"
                 :total="progress.total"
+                :edge="editor.draft?.playlist.progressPlacement === 'edge'"
             />
             <div
                 ref="overlay"

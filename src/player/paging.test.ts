@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
-import { GROUP_SECONDS, PAGE_SECONDS, pageInterval, pageProgressOn, paginateByHeight, POST_SECONDS, slideSeconds } from './paging';
+import { GROUP_SECONDS, PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressOn, paginateByHeight, POST_SECONDS, slideSeconds } from './paging';
 
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
 const list = (overrides: Partial<Extract<Block, { type: 'appointment-list' }>> = {}): Block => ({
@@ -201,5 +201,14 @@ describe('pageProgressOn (schema 1.47, Plan.md 105)', () => {
         expect(pageProgressOn({ ...gallery, pageProgress: true } as unknown as Block)).toBe(true);
         expect(pageProgressOn({ ...gallery, pageProgress: false } as unknown as Block)).toBe(false);
         expect(pageProgressOn({ id: 't', type: 'text', x: 0, y: 0, width: 1, height: 1, text: '', style } as unknown as Block)).toBe(false);
+    });
+});
+
+describe('pageProgressEdge (schema 1.48, Plan.md 107)', () => {
+    it('is set off from the edge without the field and flush with it for edge', () => {
+        expect(pageProgressEdge(list())).toBe(false);
+        expect(pageProgressEdge(list({ pageProgressPlacement: 'inset' }))).toBe(false);
+        expect(pageProgressEdge(list({ pageProgressPlacement: 'edge' }))).toBe(true);
+        expect(pageProgressEdge({ id: 't', type: 'text', x: 0, y: 0, width: 1, height: 1, text: '', style } as unknown as Block)).toBe(false);
     });
 });

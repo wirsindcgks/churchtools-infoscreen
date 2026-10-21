@@ -11,7 +11,7 @@ import type { Block } from '../../model/schema';
 import { doorSign, emptyText, overviewRows } from '../../rooms/display';
 import { useStageContext } from '../context';
 import { textStyle } from '../format';
-import { PAGE_SECONDS, pageInterval, pageProgressOn, paginateByHeight } from '../paging';
+import { PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressOn, paginateByHeight } from '../paging';
 import RoomRow from './RoomRow.vue';
 import { tp } from '../../i18n/player';
 
@@ -51,7 +51,9 @@ function measure(): void {
 
 /** The page bar at the bottom: 0.55em text and a little air, like AppointmentListView's. */
 const progressOn = computed(() => pageProgressOn(props.block));
-const reserve = computed(() => (progressOn.value ? props.block.style.fontSize * 0.9 : 0));
+const edge = computed(() => pageProgressEdge(props.block));
+/** Room kept free for the page bar; the edge line is thinner and has no number beside it. */
+const reserve = computed(() => (progressOn.value ? props.block.style.fontSize * (edge.value ? 0.365 : 0.9) : 0));
 const pages = computed(() => paginateByHeight(rows.value, heights.value, props.block.height, reserve.value));
 const page = ref(0);
 const shown = computed(() => pages.value[page.value % Math.max(1, pages.value.length)] ?? []);
@@ -149,7 +151,7 @@ onBeforeUnmount(() => clearInterval(timer));
                 <li v-else-if="rows.length === 0" class="empty" data-testid="rooms-empty">{{ emptyText(block.days) }}</li>
             </ul>
         </Transition>
-        <div v-if="progressOn && pages.length > 1" class="pager" data-testid="rooms-pager">
+        <div v-if="progressOn && pages.length > 1" class="pager" :class="{ 'pager--edge': edge }" data-testid="rooms-pager">
             <span class="track">
                 <span
                     v-if="turnSeconds"
@@ -159,7 +161,7 @@ onBeforeUnmount(() => clearInterval(timer));
                     :style="{ animationDuration: `${turnSeconds}s` }"
                 />
             </span>
-            <span class="page-number" data-testid="rooms-page">{{ page + 1 }}/{{ pages.length }}</span>
+            <span v-if="!edge" class="page-number" data-testid="rooms-page">{{ page + 1 }}/{{ pages.length }}</span>
         </div>
     </div>
 </template>
@@ -296,6 +298,9 @@ onBeforeUnmount(() => clearInterval(timer));
     align-items: center;
     gap: 0.6em;
     font-size: 0.55em;
+}
+.pager--edge .track {
+    border-radius: 0;
 }
 .track {
     position: relative;

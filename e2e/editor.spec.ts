@@ -1114,6 +1114,37 @@ test('the gallery gets a progress switch under "Darstellung", off by default, an
     await expect(page.getByTestId('block-inspector')).toHaveCount(0);
 });
 
+test('the gallery lets one choose the placement of its progress bar, and the draft keeps it (Plan.md 107)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await addBlock(page, 'slideshow');
+    await openSection(page, 'appearance');
+    await expect(page.getByTestId('page-progress-placement')).toHaveCount(0);
+    await page.getByTestId('page-progress').check();
+    const placement = (value: string) => page.getByTestId('page-progress-placement').locator(`input[value="${value}"]`);
+    await expect(placement('inset')).toBeChecked();
+    await placement('edge').check({ force: true });
+    await expect(page.getByTestId('save-status')).toHaveText(/^Entwurf gesichert · \d\d:\d\d$/, { timeout: 10_000 });
+
+    await page.reload();
+    await page.getByTestId('frame-slideshow').last().click({ position: { x: 4, y: 4 } });
+    await openSection(page, 'appearance');
+    await expect(placement('edge')).toBeChecked();
+});
+
+test('the presentation lets one choose the placement of its progress bar under "Fortschritt" of the slide (Plan.md 107)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await openSection(page, 'progress');
+    await expect(page.getByTestId('playlist-progress-placement')).toHaveCount(0);
+    await page.getByTestId('playlist-progress').check();
+    await expect(page.locator('.editor-stage [data-testid="slide-progress"]')).toBeVisible();
+    await expect(page.locator('.editor-stage [data-testid="slide-number"]')).toBeVisible();
+    await page.getByTestId('playlist-progress-placement').locator('input[value="edge"]').check({ force: true });
+    await expect(page.locator('.editor-stage [data-testid="slide-number"]')).toHaveCount(0);
+    await expect(page.locator('.editor-stage [data-testid="slide-progress"]')).toBeVisible();
+});
+
 test('the preview plays the unsaved draft like the TV, and saves nothing', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();

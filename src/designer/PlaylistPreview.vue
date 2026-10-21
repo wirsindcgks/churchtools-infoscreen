@@ -28,6 +28,8 @@ const props = defineProps<{
     banner?: Banner | null;
     /** The playlist's progress bar (schema 1.39, Plan.md 86). */
     progress?: boolean;
+    /** Plan.md 107: the bar as a line flush with the bottom edge. */
+    progressEdge?: boolean;
 }>();
 const emit = defineEmits<{ close: [] }>();
 
@@ -158,6 +160,7 @@ onBeforeUnmount(() => {
                 :font-family="fontStack(themeOf(context).font)"
                 :number="(index % shown.length) + 1"
                 :total="shown.length"
+                :edge="progressEdge"
             />
         </StageView>
 

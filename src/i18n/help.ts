@@ -190,6 +190,14 @@ export const th = {
         text: `Ein dünner Balken unten im Baustein zeigt, wann ${next} kommt. Aus ändert nichts am Takt.`,
     }),
 
+    /** "Lage" of that bar (Plan.md 107); the posts and the gallery have no number to leave out. */
+    pageProgressPlacement: (withNumber: boolean): HelpItem => ({
+        term: i.progressPlacement,
+        text:
+            `Abgesetzt: eine Pille${withNumber ? ' mit Seitenzahl' : ''}, etwas über dem Rand. ` +
+            'Am Rand: eine dünne Linie über die ganze Breite, bündig unten, ohne Zahl.',
+    }),
+
     /** "Bilder" and "Darstellung" of the gallery. */
     slideshow: {
         images: {

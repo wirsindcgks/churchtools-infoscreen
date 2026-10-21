@@ -27,6 +27,8 @@ const props = defineProps<{
     /** Place of the slide in the playlist, from 1, and how many there are; the number shows from two on. */
     number: number;
     total: number;
+    /** Plan.md 107: a line flush with the sides and the bottom, without the number, instead of the pill set off from the edge. */
+    edge?: boolean;
 }>();
 
 const bar = ref<HTMLElement | null>(null);
@@ -50,11 +52,16 @@ watch(() => [props.startedAt, props.seconds, props.held], apply, { flush: 'post'
 </script>
 
 <template>
-    <div class="progress" :style="{ left: `${INSET}px`, right: `${INSET}px`, bottom: `${bottom + INSET}px`, color: textColor, fontFamily }" data-testid="slide-progress">
+    <div
+        class="progress"
+        :class="{ 'progress--edge': edge }"
+        :style="edge ? { left: 0, right: 0, bottom: `${bottom}px`, color: textColor, fontFamily } : { left: `${INSET}px`, right: `${INSET}px`, bottom: `${bottom + INSET}px`, color: textColor, fontFamily }"
+        data-testid="slide-progress"
+    >
         <div class="track">
             <div ref="bar" class="fill" :style="{ background: color }" />
         </div>
-        <span v-if="total > 1" class="slide-number" data-testid="slide-number">{{ number }}/{{ total }}</span>
+        <span v-if="total > 1 && !edge" class="slide-number" data-testid="slide-number">{{ number }}/{{ total }}</span>
     </div>
 </template>
 
@@ -75,6 +82,9 @@ watch(() => [props.startedAt, props.seconds, props.held], apply, { flush: 'post'
     height: 0.3em;
     overflow: hidden;
     border-radius: var(--isd-pill, 999px);
+}
+.progress--edge .track {
+    border-radius: 0;
 }
 /* The pale track as its own layer – an opacity on .track would pale the bar too. */
 .track::before {

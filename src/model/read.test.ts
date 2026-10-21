@@ -600,6 +600,24 @@ describe('the progress bar of a playlist (schema 1.39, Plan.md 86)', () => {
     });
 });
 
+describe('the placement of the progress bars (schema 1.48, Plan.md 107)', () => {
+    const gallery = { id: 'g', type: 'slideshow', x: 0, y: 0, width: 800, height: 400, mediaIds: [] };
+
+    it('is optional on the playlist, its draft and the five blocks, and a 1.47 document stays valid', () => {
+        expect(SCHEMA_VERSION.minor).toBe(48);
+        expect(v.parse(PlaylistDoc, makePlaylist({ progress: true, progressPlacement: 'edge' })).progressPlacement).toBe('edge');
+        expect(v.parse(PlaylistDoc, makePlaylist({ schema: { major: 1, minor: 47 }, progress: true })).progressPlacement).toBeUndefined();
+        expect(v.safeParse(PlaylistDoc, makePlaylist({ progressPlacement: 'middle' as 'edge' })).success).toBe(false);
+        const { doc, issues } = readSlide({
+            ...makeSlide(),
+            schema: { major: 1, minor: 47 },
+            blocks: [{ ...gallery, pageProgress: true, pageProgressPlacement: 'edge' }, { ...gallery, id: 'h', pageProgress: true }],
+        });
+        expect(issues).toEqual([]);
+        expect(doc.blocks.map((b) => (b as { pageProgressPlacement?: string }).pageProgressPlacement)).toEqual(['edge', undefined]);
+    });
+});
+
 describe('the released calendars of the settings (schema 1.40, Plan.md 85 b)', () => {
     const settings = { schema: { ...SCHEMA_VERSION }, kind: 'settings' as const, id: 'settings' };
 

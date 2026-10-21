@@ -14,7 +14,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { isVideo, type Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { blockImageUrl } from '../images';
-import { pageInterval, pageProgressOn } from '../paging';
+import { pageInterval, pageProgressEdge, pageProgressOn } from '../paging';
 import { effectiveTransition, pictureMotion, type PictureMotion } from '../slideshow';
 import PageProgress from './PageProgress.vue';
 
@@ -146,7 +146,7 @@ const motionSeconds = computed(() => pageInterval(props.block.seconds ?? 6, prop
             <img v-if="url" class="picture" :src="url" :style="{ objectFit: block.fit }" alt="">
         </div>
         <!-- Keyed by the picture really on show: `advance` waits for the decoding, the bar starts over with the picture. -->
-        <PageProgress v-if="turnSeconds && pageProgressOn(block)" :key="index" :seconds="turnSeconds" :size="8" :inset="16" :color="themeOf(context).text" />
+        <PageProgress v-if="turnSeconds && pageProgressOn(block)" :key="index" :seconds="turnSeconds" :size="8" :inset="16" :color="themeOf(context).text" :edge="pageProgressEdge(block)" />
     </div>
     <!-- A calm placeholder, never a broken-image icon on a TV. -->
     <div v-else class="placeholder" />

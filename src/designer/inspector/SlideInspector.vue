@@ -122,7 +122,16 @@ const layoutSummary = computed(() => {
 /** A slide shared with other playlists is explained under "Allgemein" while it is shared. */
 useGeneralHelp(() => (linkedNames.value ? [{ term: t.help.terms.linked, text: t.inspector.linkedInfo }] : []));
 const layoutHelp = computed(() => ({ items: hasRegions.value ? [{ term: t.inspector.layoutGap, text: t.inspector.layoutGapInfo }] : [] }));
-const progressHelp = { intro: t.inspector.progressSectionInfo, items: [{ term: t.inspector.progress, text: t.inspector.progressInfo }] };
+const progressPlacementOptions = [
+    { value: 'inset', label: t.inspector.progressPlacements.inset },
+    { value: 'edge', label: t.inspector.progressPlacements.edge },
+];
+const progressSummary = computed(() => {
+    const playlist = editor.draft?.playlist;
+    if (!playlist?.progress) return t.inspector.progressOff;
+    return playlist.progressPlacement === 'edge' ? t.inspector.progressOnEdge : t.inspector.progressOn;
+});
+const progressHelp = { intro: t.inspector.progressSectionInfo, items: [{ term: t.inspector.progress, text: t.inspector.progressInfo }, th.pageProgressPlacement(true)] };
 const playlistHelp = {
     items: [
         { term: t.inspector.schedule, text: t.inspector.scheduleInfo },
@@ -183,7 +192,7 @@ const backgroundColors = computed(() => {
             v-if="editor.draft"
             id="progress"
             :title="t.inspector.progressSection"
-            :summary="editor.draft.playlist.progress ? t.inspector.progressOn : t.inspector.progressOff"
+            :summary="progressSummary"
             :help="progressHelp"
         >
             <ToggleField
@@ -191,6 +200,14 @@ const backgroundColors = computed(() => {
                 :label="t.inspector.progress"
                 testid="playlist-progress"
                 @update:model-value="editor.setProgress($event)"
+            />
+            <SegmentField
+                v-if="editor.draft.playlist.progress"
+                :model-value="editor.draft.playlist.progressPlacement ?? 'inset'"
+                :options="progressPlacementOptions"
+                :label="t.inspector.progressPlacement"
+                testid="playlist-progress-placement"
+                @update:model-value="editor.setProgressPlacement($event === 'edge' ? 'edge' : 'inset')"
             />
         </InspectorSection>
         <InspectorSection id="layout" :title="t.inspector.layout" :summary="layoutSummary" :help="layoutHelp">

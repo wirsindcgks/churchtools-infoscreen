@@ -17,7 +17,7 @@ import { selectPosts } from '../../posts/normalize';
 import { markdownBlocks, markdownText } from '../../ct/markdown';
 import { themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
-import { paginateByHeight, pageInterval, pageProgressOn, POST_SECONDS } from '../paging';
+import { paginateByHeight, pageInterval, pageProgressEdge, pageProgressOn, POST_SECONDS } from '../paging';
 import CalendarBadge from './CalendarBadge.vue';
 import MdInlines from './MdInlines.vue';
 import PageProgress from './PageProgress.vue';
@@ -229,7 +229,7 @@ onMounted(() => {
             </div>
         </template>
         <div v-else class="hero-text hero-subtitle" data-testid="posts-empty">{{ tp.posts.none }}</div>
-        <PageProgress v-if="turnSeconds && pageProgressOn(block)" :key="page" :seconds="turnSeconds" :size="block.style.fontSize * 0.165" :inset="block.style.fontSize * 0.8" />
+        <PageProgress v-if="turnSeconds && pageProgressOn(block)" :key="page" :seconds="turnSeconds" :size="block.style.fontSize * 0.165" :inset="block.style.fontSize * 0.8" :edge="pageProgressEdge(block)" />
     </div>
 </template>
 

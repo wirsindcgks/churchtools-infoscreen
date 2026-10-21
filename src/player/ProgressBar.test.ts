@@ -26,6 +26,15 @@ describe('ProgressBar (Plan.md 86)', () => {
         expect(wrapper.find('[data-testid="slide-number"]').exists()).toBe(false);
     });
 
+    it('lies flush with the sides and the bottom without a number or rounding when set to the edge', () => {
+        const wrapper = mount(ProgressBar, { props: { ...props(), edge: true } });
+        const style = wrapper.get('[data-testid="slide-progress"]').attributes('style');
+        expect(style).toContain('left: 0px');
+        expect(style).toContain('right: 0px');
+        expect(style).toContain('bottom: 90px');
+        expect(wrapper.find('[data-testid="slide-number"]').exists()).toBe(false);
+    });
+
     it('continues from where it stands when the duration grows', async () => {
         const wrapper = mount(ProgressBar, { props: props() });
         vi.advanceTimersByTime(4000);

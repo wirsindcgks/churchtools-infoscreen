@@ -208,6 +208,15 @@ describe('the progress bar can be switched off or on (schema 1.47, Plan.md 105)'
         ...overrides,
     });
 
+    it('draws the list bar at the edge without the page number', async () => {
+        const edge = render(list({ height: 650, pageProgressPlacement: 'edge' }), 8);
+        await flushPromises();
+        expect(edge.wrapper.find('[data-testid="list-progress"]').exists()).toBe(true);
+        expect(edge.wrapper.find('[data-testid="list-page"]').exists()).toBe(false);
+        expect(edge.wrapper.find('.pager').classes()).toContain('pager--edge');
+        edge.wrapper.unmount();
+    });
+
     it('shows no bar on posts without the field; with true one that starts over with every post', async () => {
         const without = render(posts(), 8, true, { posts: [post(1), post(2)] });
         await flushPromises();
@@ -235,6 +244,13 @@ describe('the progress bar can be switched off or on (schema 1.47, Plan.md 105)'
         }
     });
 
+    it('lays the bar of posts flush with the bottom at the edge', async () => {
+        const edge = render(posts({ pageProgress: true, pageProgressPlacement: 'edge' }), 8, true, { posts: [post(1), post(2)] });
+        await flushPromises();
+        expect(edge.wrapper.get('[data-testid="page-progress"]').attributes('style')).toContain('bottom: 0px');
+        edge.wrapper.unmount();
+    });
+
     describe('the gallery', () => {
         const media = new Map<string, MediaDoc>(
             ['m1', 'm2'].map((id) => [id, { id, kind: 'media', name: id, fileId: 1, imageUrl: `https://example.test/images/${id}/h` } as MediaDoc]),
@@ -259,6 +275,13 @@ describe('the progress bar can be switched off or on (schema 1.47, Plan.md 105)'
         });
         afterEach(() => {
             Reflect.deleteProperty(HTMLImageElement.prototype, 'decode');
+        });
+
+        it('lays the bar flush with the bottom at the edge', async () => {
+            const edge = render(gallery({ pageProgress: true, pageProgressPlacement: 'edge' }), 6, true, { media });
+            await flushPromises();
+            expect(edge.wrapper.get('[data-testid="page-progress"]').attributes('style')).toContain('bottom: 0px');
+            edge.wrapper.unmount();
         });
 
         it('has no bar without the field; with true one that starts over with each picture', async () => {

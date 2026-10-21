@@ -300,6 +300,11 @@ Segmente: **Aus** nimmt die ganze Zeile weg, und der Platz geht an die Inhalte �
 Seite. Beiträge und Galerie zeigen nur den Balken. Der Takt bleibt in allen Fällen, wie er ist; der Balken läuft
 unabhängig von dem der Präsentation, der bei Bedarf zusätzlich läuft (Abschnitt „Fortschritt“ der Folie; ein Hinweis unter dem Schalter führt dorthin). Bestehende Folien sehen aus wie vorher.
 
+Bei eingeschaltetem Fortschritt wählt **„Lage“** darunter, wo der Balken liegt: **„Abgesetzt“** (Vorgabe) ist die Pille mit
+blasser Spur, etwas über dem Rand; **„Am Rand“** ist eine dünne Linie in gleicher Stärke über die ganze Breite des Bausteins,
+bündig an der Unterkante, ohne Rundung und ohne Seitenzahl. Abgerundete Ecken des Bausteins schneiden die Linie mit ab. Die
+Terminliste hält dafür weniger Platz frei, und bei der Besucherübersicht stehen die Segmente ebenso bündig über die ganze Breite.
+
 ## Der Raum am Termin
 
 Beim **Nächsten Termin** und bei der **Terminliste** – als Karten wie als Zeilen – zeigt der Schalter **„Raum zeigen"** die
@@ -374,7 +379,7 @@ eigenen Folien – oder auf Wunsch eine Präsentation mit denselben, verknüpfte
 Präsentation oder eine ihrer Folien zuletzt geändert wurde und von wem; liegt ein Entwurf vor, trägt sie die Marke
 „Entwurf". Im Inspektor der Folie, ganz oben im Abschnitt „Fortschritt", zeigt der Schalter „Fortschrittsbalken" am unteren Rand der
 Bildfläche einen dünnen Balken in der Akzentfarbe des Designs, der anzeigt, wie lange die Folie noch steht, daneben die wievielte
-Folie es ist („3/7“, ab zwei Folien); er hält zum unteren Rand denselben Abstand wie zu den Seiten und sitzt über dem Hinweisband, wenn dieses unten steht, und steht still, solange die Vorschau angehalten ist. Auf der Folie im Editor steht er bei 40 % (nur zum Ansehen, ohne Wirkung), damit man sieht, wo er liegt.
+Folie es ist („3/7“, ab zwei Folien); er hält zum unteren Rand denselben Abstand wie zu den Seiten und sitzt über dem Hinweisband, wenn dieses unten steht, und steht still, solange die Vorschau angehalten ist. Darunter wählt **„Lage“** wie bei den Bausteinen zwischen **„Abgesetzt“** (Vorgabe) und **„Am Rand“**: eine dünne Linie über die ganze Breite, bündig an der Unterkante der Bildfläche (über einem unten stehenden Hinweisband), ohne Rundung und ohne Foliennummer. Auf der Folie im Editor steht er bei 40 % (nur zum Ansehen, ohne Wirkung), damit man sieht, wo er liegt.
 
 ![Präsentationen als Kacheln mit Format, Zahl der Folien und den Bildschirmen, die sie zeigen](bilder/playlists.png)
 

@@ -64,6 +64,7 @@ export interface DraftChange {
     name: string;
     slideIds: string[];
     progress?: boolean;
+    progressPlacement?: 'inset' | 'edge';
     /** The slides to write as drafts; every other slide draft of this playlist is deleted. */
     slides: SlideDoc[];
 }
@@ -168,6 +169,7 @@ export class DraftStore {
                 name: change.name,
                 slideIds: change.slideIds,
                 ...(change.progress ? { progress: true } : {}),
+                ...(change.progressPlacement === 'edge' ? { progressPlacement: 'edge' as const } : {}),
                 revision: current + 1,
                 updatedBy: options.updatedBy,
                 updatedAt,

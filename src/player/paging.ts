@@ -23,6 +23,11 @@ export function pageProgressOn(block: Block): boolean {
     return own ?? (block.type === 'appointment-list' || block.type === 'groups' || block.type === 'rooms');
 }
 
+/** Whether the progress bar of a block lies flush with the bottom edge instead of set off from it (schema 1.48, Plan.md 107). */
+export function pageProgressEdge(block: Block): boolean {
+    return 'pageProgressPlacement' in block && block.pageProgressPlacement === 'edge';
+}
+
 /**
  * Splits rows into pages by their measured heights – rows of the card layout
  * differ, with or without subtitle and place. When they need more than one

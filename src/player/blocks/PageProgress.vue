@@ -5,11 +5,17 @@
  * the edge, without the page number. The parent restarts it with a `:key` whenever the page changes; sizes are stage pixels.
  */
 /** `color` tints the pale track; without it the block's text colour does – a gallery has none of its own. */
-defineProps<{ seconds: number; size: number; inset: number; color?: string }>();
+defineProps<{ seconds: number; size: number; inset: number; color?: string; edge?: boolean }>();
 </script>
 
 <template>
-    <div class="page-progress" :style="{ height: `${size}px`, right: `${inset}px`, bottom: `${inset}px`, left: `${inset}px`, color }" data-testid="page-progress" aria-hidden="true">
+    <div
+        class="page-progress"
+        :class="{ 'page-progress--edge': edge }"
+        :style="{ height: `${size}px`, right: `${edge ? 0 : inset}px`, bottom: `${edge ? 0 : inset}px`, left: `${edge ? 0 : inset}px`, color }"
+        data-testid="page-progress"
+        aria-hidden="true"
+    >
         <span class="progress" data-testid="page-progress-bar" :style="{ animationDuration: `${seconds}s` }" />
     </div>
 </template>
@@ -22,6 +28,10 @@ defineProps<{ seconds: number; size: number; inset: number; color?: string }>();
     overflow: hidden;
     border-radius: var(--isd-pill, 999px);
     pointer-events: none;
+}
+/* Plan.md 107: flush with the sides and the bottom, square. */
+.page-progress--edge {
+    border-radius: 0;
 }
 /* The pale track as its own layer – an opacity on the track would pale the bar too. */
 .page-progress::before {

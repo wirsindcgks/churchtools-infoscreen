@@ -12,6 +12,7 @@ import type { Block } from '../../../model/schema';
 import { pageProgressOn } from '../../../player/paging';
 import { effectiveMotion, effectiveTransition } from '../../../player/slideshow';
 import PageProgressHint from '../PageProgressHint.vue';
+import PageProgressPlacement from '../PageProgressPlacement.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
 import MediaField from '../fields/MediaField.vue';
@@ -37,7 +38,7 @@ const { editor, setBlock, mediaUrl } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
 useGeneralHelp(() => [th.general.slideshowAdd]);
 const s = th.slideshow;
-const help = { intro: s.intro, items: [s.seconds, th.pageProgress('das nächste Bild'), s.transition, s.motion, s.fit, th.pictureFrame.corners, th.pictureFrame.shadow] };
+const help = { intro: s.intro, items: [s.seconds, th.pageProgress('das nächste Bild'), th.pageProgressPlacement(false), s.transition, s.motion, s.fit, th.pictureFrame.corners, th.pictureFrame.shadow] };
 
 const fits = [
     { value: 'contain', label: t.inspector.fitContain },
@@ -107,6 +108,7 @@ function remove(index: number): void {
             testid="page-progress"
             @update:model-value="setBlock({ pageProgress: $event })"
         />
+        <PageProgressPlacement :block="block" />
         <PageProgressHint />
         <TileField
             quick

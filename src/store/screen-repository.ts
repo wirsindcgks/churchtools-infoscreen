@@ -841,6 +841,7 @@ export class ScreenRepository {
             slideIds: slides.map((s) => s.id),
             stage: { ...source.playlist.stage },
             ...(source.playlist.progress ? { progress: true } : {}),
+            ...(source.playlist.progressPlacement === 'edge' ? { progressPlacement: 'edge' as const } : {}),
             revision: 1,
             updatedBy,
             updatedAt: time,

@@ -265,6 +265,7 @@ onBeforeUnmount(() => {
                     :font-family="fontStack(themeOf(context).font)"
                     :number="(index % slides.length) + 1"
                     :total="slides.length"
+                    :edge="playlist?.progressPlacement === 'edge'"
                 />
             </StageView>
             <!-- Old content with a discreet marker beats a black screen. -->

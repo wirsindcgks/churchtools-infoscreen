@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 47 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 48 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -164,6 +164,8 @@ export const AppointmentListBlock = v.object({
      * appointment list, groups and rooms, off for posts and the gallery, as before. Older players ignore it.
      */
     pageProgress: v.optional(v.boolean()),
+    /** Since 1.48 (Plan.md 107): where that bar lies – `edge`: a line flush with the bottom edge, no number. Missing: set off from the edge. */
+    pageProgressPlacement: v.optional(v.picklist(['inset', 'edge'])),
     /**
      * Since 1.8: `cards` – date tile, calendar badge, title, time and place, after
      * the list of the WordPress plugin (Plan.md, 20); `rows` is the plain list.
@@ -302,6 +304,8 @@ export const PostsBlock = v.object({
      * appointment list, groups and rooms, off for posts and the gallery, as before. Older players ignore it.
      */
     pageProgress: v.optional(v.boolean()),
+    /** Since 1.48 (Plan.md 107): where that bar lies – `edge`: a line flush with the bottom edge, no number. Missing: set off from the edge. */
+    pageProgressPlacement: v.optional(v.picklist(['inset', 'edge'])),
     style: TextStyle,
 });
 
@@ -368,6 +372,8 @@ export const GroupsBlock = v.object({
      * appointment list, groups and rooms, off for posts and the gallery, as before. Older players ignore it.
      */
     pageProgress: v.optional(v.boolean()),
+    /** Since 1.48 (Plan.md 107): where that bar lies – `edge`: a line flush with the bottom edge, no number. Missing: set off from the edge. */
+    pageProgressPlacement: v.optional(v.picklist(['inset', 'edge'])),
     style: TextStyle,
 });
 
@@ -389,6 +395,8 @@ export const SlideshowBlock = v.object({
      * appointment list, groups and rooms, off for posts and the gallery, as before. Older players ignore it.
      */
     pageProgress: v.optional(v.boolean()),
+    /** Since 1.48 (Plan.md 107): where that bar lies – `edge`: a line flush with the bottom edge, no number. Missing: set off from the edge. */
+    pageProgressPlacement: v.optional(v.picklist(['inset', 'edge'])),
     /**
      * How the next image comes: fade, push from the right, wipe from the left, or a cut. `zoom` (a fade with a slow
      * zoom in) is only read since 1.19, for old data: it plays as a fade with `motion: 'in'`.
@@ -432,6 +440,8 @@ export const RoomsBlock = v.object({
      * appointment list, groups and rooms, off for posts and the gallery, as before. Older players ignore it.
      */
     pageProgress: v.optional(v.boolean()),
+    /** Since 1.48 (Plan.md 107): where that bar lies – `edge`: a line flush with the bottom edge, no number. Missing: set off from the edge. */
+    pageProgressPlacement: v.optional(v.picklist(['inset', 'edge'])),
     style: TextStyle,
 });
 
@@ -596,6 +606,8 @@ export const PlaylistDraftDoc = v.object({
     slideIds: v.array(Id),
     /** Since 1.39, as on the playlist. */
     progress: v.optional(v.boolean()),
+    /** Since 1.48, as on the playlist. */
+    progressPlacement: v.optional(v.picklist(['inset', 'edge'])),
     /** Counts up with every save; the second designer saving against an older one gets a conflict. */
     revision: v.pipe(v.number(), v.integer(), v.minValue(1)),
     updatedBy: v.string(),
@@ -632,6 +644,8 @@ export const PlaylistDoc = v.object({
     banner: v.optional(Banner),
     /** Since 1.39: a thin bar at the bottom of the stage shows how long the slide stays (Plan.md 86). Missing = off. */
     progress: v.optional(v.boolean()),
+    /** Since 1.48 (Plan.md 107): `edge` draws the bar as a line flush with the bottom edge, without the slide number. Missing = set off from the edge. */
+    progressPlacement: v.optional(v.picklist(['inset', 'edge'])),
     /** The designers save against it; missing counts as 0. */
     revision: v.optional(v.pipe(v.number(), v.integer(), v.minValue(0))),
     updatedBy: v.optional(v.string()),
