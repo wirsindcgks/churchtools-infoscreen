@@ -4,6 +4,14 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.46.1] – 2026-10-21
+
+### Behoben
+
+- **Fortschritt der Präsentation im Editor.** Bilder einer Galerie und der Fortschritt eines Bausteins konnten den
+  Balken der Präsentation samt Foliennummer auf der Folie im Editor verdecken. Er liegt jetzt dort wie im Player
+  über allen Bausteinen.
+
 ## [0.46.0] – 2026-10-21
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für die Rückmeldung, dass zwei Balken übereinander unruhig wirken.
@@ -1434,6 +1442,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.46.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.46.1
 [0.46.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.46.0
 [0.45.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.45.1
 [0.45.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.45.0
