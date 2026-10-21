@@ -4,6 +4,24 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.45.0] – 2026-10-21
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch, den Fortschritt je Baustein einstellen zu können.
+
+### Hinzugefügt
+
+- **Fortschritt je Baustein ein- und ausschalten.** Terminliste („Alle zeigen“), Beiträge („Hervorgehoben“), Gruppen,
+  Raumbelegung („Übersicht“) und Galerie haben unter „Darstellung“ einen Schalter „Fortschritt“. Aus blendet Balken
+  und Seitenzahl aus, der Platz geht an die Inhalte; am Takt ändert sich nichts. Beiträge und Galerie zeigen jetzt auf
+  Wunsch ebenfalls einen Balken. Bestehende Folien sehen aus wie bisher.
+
+### Geändert
+
+- **Der Fortschrittsbalken der Präsentation** sieht aus wie der Balken der Bausteine, steht mit etwas Abstand zum
+  Rand und zeigt daneben die Nummer der Folie, etwa „3/7“. Sein Schalter hat einen eigenen Abschnitt „Fortschritt“
+  ganz oben im Inspektor der Folie, und der Schalter jedes Bausteins verweist dorthin. Ist er an, steht er auch auf
+  der Folie im Editor, angehalten, damit er beim Gestalten nicht übersehen wird.
+
 ## [0.44.0] – 2026-10-20
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach ausführlichen, formatierten Erklärungen.
@@ -1392,6 +1410,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.45.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.45.0
 [0.44.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.44.0
 [0.43.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.43.0
 [0.42.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.42.0
