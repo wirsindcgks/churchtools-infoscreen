@@ -4,6 +4,27 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.47.0] – 2026-10-21
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach einem Änderungsprotokoll.
+
+### Hinzugefügt
+
+- **Verlauf: wer wann was geändert hat.** Die neue Seite „Verlauf“ in der Seitenleiste zeigt jede Änderung mit
+  Zeitpunkt und Person, etwa „„Foyer“ veröffentlicht: 2 Folien geändert, 1 neu“ – für Präsentationen, Zeitpläne,
+  Bildschirme, Hinweisbänder, Design, Vorlagen, Medien und die Einrichtung. Filter nach Person und Bereich grenzen die
+  Liste ein. Im Editor zeigt „Verlauf dieser Präsentation“ im Menü „…“ nur die Einträge dieser Präsentation.
+  Entwürfe erscheinen nicht.
+- **30 Tage, nur lesen.** Einträge bleiben 30 Tage. Gestalter sehen und schreiben das Protokoll, ändern und löschen
+  können sie es nicht; ältere Einträge räumt ein Administrator beim Öffnen der Seite auf. Die Person trägt der
+  Designer selbst ein – das Protokoll macht Änderungen nachvollziehbar, ist aber nicht fälschungssicher.
+
+### Einrichtung
+
+- **Einmal die Einrichtung öffnen.** Das Protokoll beginnt, sobald ein Administrator nach dem Update die Einrichtung
+  öffnet: Dann entsteht die Kategorie „Protokoll“, und die Gestaltergruppe bekommt ihre Rechte darauf. Geräte bekommen
+  keine; die Prüfung der Gerätegruppe meldet es, falls doch.
+
 ## [0.46.1] – 2026-10-21
 
 ### Behoben
@@ -1442,6 +1463,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.47.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.47.0
 [0.46.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.46.1
 [0.46.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.46.0
 [0.45.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.45.1
