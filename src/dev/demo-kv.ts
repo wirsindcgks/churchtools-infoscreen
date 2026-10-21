@@ -14,11 +14,20 @@ const CHANNEL = 'infoscreen-designer.demo';
 class PersistentMemoryKv extends MemoryKv {
     private readonly channel = typeof BroadcastChannel === 'undefined' ? null : new BroadcastChannel(CHANNEL);
 
+    /**
+     * The copy in the storage as this tab last wrote or read it. A write that has reached the memory but not yet the
+     * storage must not be undone by a read in between (the changelog writes beside the save, Plan.md 100).
+     */
+    private seen: string | null = null;
+
     /** Another tab may have written since: read the shared copy before every read. */
     private reload(): void {
         try {
             const stored = localStorage.getItem(STORAGE_KEY);
-            if (stored) this.restore(JSON.parse(stored) as MemoryKvState);
+            if (stored && stored !== this.seen) {
+                this.restore(JSON.parse(stored) as MemoryKvState);
+                this.seen = stored;
+            }
         } catch {
             // Keep what this tab has.
         }
@@ -36,7 +45,9 @@ class PersistentMemoryKv extends MemoryKv {
 
     private persist(): void {
         try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(this.snapshot()));
+            const text = JSON.stringify(this.snapshot());
+            localStorage.setItem(STORAGE_KEY, text);
+            this.seen = text;
         } catch {
             // Storage refused (private window): the demo then lives in this tab only.
         }

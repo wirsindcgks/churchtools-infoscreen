@@ -937,6 +937,14 @@ function onKey(event: KeyboardEvent): void {
                         >
                             <Icon name="play" :size="16" /> {{ t.editor.player }}
                         </RouterLink>
+                        <RouterLink
+                            role="menuitem"
+                            :to="{ name: 'history', query: { playlist: playlistId } }"
+                            data-testid="more-history"
+                            @click="moreMenuOpen = false"
+                        >
+                            <Icon name="clock" :size="16" /> {{ t.history.menuEntry }}
+                        </RouterLink>
                         <button
                             v-if="editor.draftsOn"
                             role="menuitem"

@@ -41,6 +41,7 @@ const PAGES: PageLink[] = [
     { name: 'playlists', label: t.common.playlists, icon: 'list', testid: 'sidebar-playlists', count: 'playlists' },
     { name: 'media', label: t.media.title, icon: 'image', testid: 'sidebar-media', count: 'media' },
     { name: 'design', label: t.design.title, icon: 'palette', testid: 'sidebar-design' },
+    { name: 'history', label: t.history.title, icon: 'clock', testid: 'sidebar-history' },
 ];
 const ABOUT: PageLink = { name: 'about', label: t.about.title, icon: 'info', testid: 'sidebar-about' };
 /** The four settings routes are one entry. */

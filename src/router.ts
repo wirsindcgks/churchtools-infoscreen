@@ -9,6 +9,7 @@ import NotFoundView from './views/NotFoundView.vue';
 import SetupView from './views/SetupView.vue';
 import MediaView from './views/MediaView.vue';
 import DesignView from './views/DesignView.vue';
+import HistoryView from './views/HistoryView.vue';
 import AboutView from './views/AboutView.vue';
 
 // No lazy routes: a kiosk tab open for weeks would request a chunk that a
@@ -28,6 +29,8 @@ export const router = createRouter({
         { path: '/design', name: 'design', component: DesignView },
         // One template, opened from the page "Design": the editor in the mode "Vorlage bearbeiten" (Plan.md 87).
         { path: '/design/vorlagen/:id', name: 'template-editor', component: PlaylistEditor },
+        // Who changed what, the last 30 days; the editor links here with ?playlist=<id> (Plan.md 100).
+        { path: '/verlauf', name: 'history', component: HistoryView },
         { path: '/ueber', name: 'about', component: AboutView },
         // An overview of cards (Plan.md 36); each card leads to a page of its own.
         { path: '/einstellungen', name: 'setup', component: SetupView },

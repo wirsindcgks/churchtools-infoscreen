@@ -1,5 +1,5 @@
 import { EXTENSION_KEY } from '../config';
-import { displayName, fetchCurrentPerson, httpStatus, instanceBaseUrl } from '../ct/client';
+import { currentPerson, displayName, httpStatus, instanceBaseUrl } from '../ct/client';
 import { seedDemo } from '../dev/demo';
 import { createDemoKv, onDemoChange, resetDemo } from '../dev/demo-kv';
 import { ChurchToolsKv, findCustomModule } from './churchtools-kv';
@@ -40,6 +40,8 @@ async function create(): Promise<RepositoryHandle> {
         const repository = withActor(new ScreenRepository(kv));
         if (!restored) await seedDemo(repository);
         await repository.drafts.ensureCategory();
+        // After the seed has settled: the demo's own data is no change anybody made (Plan.md 100).
+        await repository.changelogSettled();
         await repository.changelog.ensureCategory();
         return { repository, demo: true };
     }
@@ -50,7 +52,7 @@ async function create(): Promise<RepositoryHandle> {
 function withActor(repository: ScreenRepository): ScreenRepository {
     let person: Promise<{ by: string; personId?: number } | null> | null = null;
     repository.actor = () =>
-        (person ??= fetchCurrentPerson()
+        (person ??= currentPerson()
             .then((p) => ({ by: displayName(p), personId: p.id }))
             .catch(() => null));
     return repository;

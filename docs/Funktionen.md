@@ -430,6 +430,20 @@ Lizenz der Schrift.
 
 ![Design: Einstellungen links, Vorschau rechts](bilder/design.png)
 
+## Verlauf
+
+Wer hat wann was geändert? Die Seite **„Verlauf"** in der Seitenleiste listet es auf, neueste zuerst: eine Zeile je Vorgang,
+etwa „„Foyer" veröffentlicht: 2 Folien geändert, 1 neu", dazu Zeitpunkt, Person und Bereich. Festgehalten werden das
+Veröffentlichen, Anlegen, Kopieren und Löschen von Präsentationen, Zeitpläne, Bildschirme, Hinweisbänder, das Design,
+Vorlagen, Medien und die Einstellungen des Moduls – nicht die Entwürfe, die der Designer alle paar Sekunden sichert. Die
+Liste lässt sich nach **Person** und nach **Bereich** eingrenzen. Im Editor führt „…" → **„Verlauf dieser Präsentation"**
+zur gleichen Liste, begrenzt auf diese eine Präsentation.
+
+Der Verlauf reicht **30 Tage** zurück; ältere Einträge werden beim Öffnen der Seite aufgeräumt. Alle Gestalter dürfen ihn
+lesen, ändern oder löschen können sie Einträge nicht. **Nicht fälschungssicher:** ChurchTools merkt sich zu einem Eintrag
+keinen Urheber, den Namen trägt der Designer ein. Der Verlauf hilft beim Nachfragen, er ist kein Beweis. Er beginnt, sobald
+ein Administrator nach der Aktualisierung die Einrichtung öffnet; vorher sagt die Seite das.
+
 ## Am Handy und auf dem Tablet
 
 Der Designer ist für den Finger gebaut. Am Handy steht die Folie mittig, unten die **Folienzeile** („Folie 2 von 5",

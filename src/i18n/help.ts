@@ -9,6 +9,27 @@ import { t } from './designer';
 const i = t.inspector;
 
 export const th = {
+    /** The page "Verlauf" (Plan.md 100). */
+    history: {
+        intro:
+            'Hier steht, wer wann etwas gespeichert hat: eine Zeile je Vorgang, die letzten 30 Tage. Bei einer überraschenden Änderung weißt du so, ' +
+            'wen du fragen kannst. Die Zeilen sagen, was und wo geändert wurde, nicht jedes einzelne Feld.',
+        items: [
+            {
+                term: 'Person',
+                text: 'Zeigt nur die Änderungen einer Person. Die Liste nennt alle, die in den letzten 30 Tagen etwas gespeichert haben.',
+            },
+            {
+                term: 'Bereich',
+                text: 'Zeigt nur Präsentationen, Bildschirme, das Design, Vorlagen, Medien oder die Einstellungen des Moduls.',
+            },
+            {
+                term: 'Nicht fälschungssicher',
+                text: 'ChurchTools merkt sich zu einem Eintrag keinen Urheber, den Namen trägt der Designer ein. Der Verlauf hilft beim Nachfragen, er ist kein Beweis.',
+            },
+        ] satisfies HelpItem[],
+    },
+
     /** Loose fields at the top of a block, shown under "Allgemein". */
     general: {
         text: {
