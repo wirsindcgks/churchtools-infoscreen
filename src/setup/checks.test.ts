@@ -402,7 +402,7 @@ describe('checkDeviceGroup', () => {
                 wikiCategoryId: WIKI,
                 plannedGrants: plannedGrants ?? undefined,
                 authName: (id) => ({ [VIEW]: 'Daten sehen', [EDIT]: 'Daten bearbeiten', [AUTH.wikiCategoryView]: 'Wiki sehen' })[id],
-                dataName: (_a, d) => (d === 13 ? 'Entwürfe' : undefined),
+                dataName: (_a, d) => ({ 13: 'Entwürfe', 31: 'Protokoll' })[d],
             }).filter((c) => c.category === 'rights');
 
         it('warns once per account, with names and fallbacks', () => {
@@ -413,6 +413,11 @@ describe('checkDeviceGroup', () => {
                 text: 'Gerät A darf mehr als nötig: Wiki sehen auch für Wiki-Bereich 99; Daten sehen auch für Entwürfe; Daten bearbeiten auch für alle, Kategorie 20.',
             });
             expect(warnings[0]?.detail).toContain('Entwürfe');
+        });
+
+        it('names the changelog when a device holds a right on it (Plan.md 100)', () => {
+            const [warning] = check({ grants: [g(VIEW, 31)] });
+            expect(warning?.text).toBe('Gerät A darf mehr als nötig: Daten sehen auch für Protokoll.');
         });
 
         it('says nothing without a plan or when the account stays inside it', () => {

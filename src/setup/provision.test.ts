@@ -515,3 +515,28 @@ describe('planProvisioning with the drafts category (Plan.md 79)', () => {
         expect(plainDesigner!.grants.flatMap((g) => g.dataId ?? [])).not.toContain(28);
     });
 });
+
+describe('planProvisioning with the changelog category (Plan.md 100)', () => {
+    const [designer, device] = planProvisioning({ ...input, categories: { ...categories, drafts: 28, changelog: 31 } });
+    const [plainDesigner, plainDevice] = planProvisioning(input);
+
+    it('gives designers seeing and adding, but neither editing nor deleting', () => {
+        for (const authId of [2011, 2015]) {
+            expect(designer!.grants.find((g) => g.authId === authId)?.dataId).toEqual([1, 4, 7, 10, 13, 28, 31]);
+        }
+        expect(designer!.grants.find((g) => g.authId === 2016)?.dataId).toEqual([4, 7, 10, 28, 31]);
+        for (const authId of [2017, 2018]) {
+            expect(designer!.grants.find((g) => g.authId === authId)?.dataId).toEqual([4, 7, 10, 28]);
+        }
+    });
+
+    it('gives a device nothing on it', () => {
+        expect(device!.grants.flatMap((g) => g.dataId ?? [])).not.toContain(31);
+    });
+
+    it('stays as it was without it', () => {
+        const [d, v] = planProvisioning({ ...input, categories });
+        expect(d).toEqual(plainDesigner);
+        expect(v).toEqual(plainDevice);
+    });
+});

@@ -1,5 +1,5 @@
 import { EXTENSION_KEY } from '../config';
-import { httpStatus, instanceBaseUrl } from '../ct/client';
+import { displayName, fetchCurrentPerson, httpStatus, instanceBaseUrl } from '../ct/client';
 import { seedDemo } from '../dev/demo';
 import { createDemoKv, onDemoChange, resetDemo } from '../dev/demo-kv';
 import { ChurchToolsKv, findCustomModule } from './churchtools-kv';
@@ -32,17 +32,28 @@ async function create(): Promise<RepositoryHandle> {
     // VITE_USE_MODULE=true in .env opts in (LocalTests.md).
     const demoFirst = import.meta.env.DEV && import.meta.env.VITE_USE_MODULE !== 'true';
     if (!demoFirst && (await moduleExists())) {
-        return { repository: new ScreenRepository(new ChurchToolsKv(EXTENSION_KEY), ownOrigins()), demo: false };
+        return { repository: withActor(new ScreenRepository(new ChurchToolsKv(EXTENSION_KEY), ownOrigins())), demo: false };
     }
     // Written as a positive branch so that the release build drops the demo entirely.
     if (import.meta.env.DEV) {
         const { kv, restored } = createDemoKv();
-        const repository = new ScreenRepository(kv);
+        const repository = withActor(new ScreenRepository(kv));
         if (!restored) await seedDemo(repository);
         await repository.drafts.ensureCategory();
+        await repository.changelog.ensureCategory();
         return { repository, demo: true };
     }
     throw new Error('Das Custom Module ist auf dieser Instanz nicht verfügbar.');
+}
+
+/** The person the changelog (Plan.md 100) names: asked once, the name as the views write it into `updatedBy`. */
+function withActor(repository: ScreenRepository): ScreenRepository {
+    let person: Promise<{ by: string; personId?: number } | null> | null = null;
+    repository.actor = () =>
+        (person ??= fetchCurrentPerson()
+            .then((p) => ({ by: displayName(p), personId: p.id }))
+            .catch(() => null));
+    return repository;
 }
 
 /**

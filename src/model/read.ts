@@ -10,6 +10,7 @@
 import * as v from 'valibot';
 import {
     Block,
+    ChangeDoc,
     ContentBlock,
     MediaDoc,
     PlaylistDoc,
@@ -227,12 +228,18 @@ export function readDraft(
     return { doc: { ...doc, slide: inner.doc }, issues: inner.issues };
 }
 
+/** An entry of the category `protokoll` (Plan.md 100). */
+export function readChange(raw: unknown): ChangeDoc {
+    checkVersion(raw);
+    return parseStrict(ChangeDoc, raw, 'change');
+}
+
 /**
  * Serializes a document for storage. Strict: what the designer writes must be
  * fully valid, and the size limit is checked here – before any write – so it
  * never matters whether the server would reject or silently truncate (C4).
  */
-export function serialize(doc: AnyDoc): string {
+export function serialize(doc: AnyDoc | ChangeDoc): string {
     const schemas = {
         screen: ScreenDoc,
         playlist: PlaylistDoc,
@@ -244,6 +251,7 @@ export function serialize(doc: AnyDoc): string {
         template: TemplateDoc,
         'playlist-draft': PlaylistDraftDoc,
         'slide-draft': SlideDraftDoc,
+        change: ChangeDoc,
     } as const;
     const schema = schemas[doc.kind];
     const valid = parseStrict(schema, doc, doc.kind);

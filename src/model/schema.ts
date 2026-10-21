@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 48 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 49 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -626,6 +626,32 @@ export const SlideDraftDoc = v.object({
     updatedAt: v.string(),
 });
 
+/** Where a change happened (schema 1.49, Plan.md 100). */
+export const CHANGE_AREAS = ['playlist', 'screen', 'theme', 'template', 'media', 'settings'] as const;
+export type ChangeArea = (typeof CHANGE_AREAS)[number];
+
+/**
+ * One line of the changelog (schema 1.49, Plan.md 100): who changed what, when. One value each, in the category
+ * `protokoll`, which devices cannot see. The player does not know it. `by` is what the designer writes down –
+ * ChurchTools keeps no author with a value, so the entries are no proof.
+ */
+export const ChangeDoc = v.object({
+    schema: SchemaVersion,
+    kind: v.literal('change'),
+    id: Id,
+    /** ISO time of the change. */
+    at: v.string(),
+    by: v.pipe(v.string(), v.maxLength(100)),
+    personId: v.optional(v.number()),
+    area: v.picklist(CHANGE_AREAS),
+    targetId: v.pipe(v.string(), v.maxLength(100)),
+    /** The name at the time of the change. */
+    targetName: v.pipe(v.string(), v.maxLength(100)),
+    /** A short key: published, created, duplicated, deleted, schedule, banners, settings, saved. */
+    action: v.pipe(v.string(), v.maxLength(30)),
+    details: v.optional(v.pipe(v.array(v.pipe(v.string(), v.maxLength(120))), v.maxLength(30))),
+});
+
 const Stage = v.object({ width: PositivePx, height: PositivePx });
 
 /**
@@ -898,6 +924,7 @@ export type SettingsDoc = v.InferOutput<typeof SettingsDoc>;
 export type ThemeDoc = v.InferOutput<typeof ThemeDoc>;
 export type CustomFont = v.InferOutput<typeof CustomFont>;
 export type FontFile = CustomFont['files'][400];
+export type ChangeDoc = v.InferOutput<typeof ChangeDoc>;
 export type AnyDoc =
     | ScreenDoc
     | PlaylistDoc

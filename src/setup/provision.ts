@@ -77,9 +77,10 @@ export interface PlanInput {
     /**
      * Ids of the module's data categories, as they exist after the first start. `status` (Plan.md 59) is not
      * one of them: it is there only once an administrator opened the start page; without it the plan leaves
-     * the signs of life out. The same goes for `drafts` (Plan.md 79): designers get it, devices never.
+     * the signs of life out. The same goes for `drafts` (Plan.md 79): designers get it, devices never. And for
+     * `changelog`, the category `protokoll` (Plan.md 100): designers see and add, but never edit or delete; devices get nothing.
      */
-    categories: Record<CategoryKey, number> & { status?: number; drafts?: number };
+    categories: Record<CategoryKey, number> & { status?: number; drafts?: number; changelog?: number };
     wikiCategoryId: number | null;
     /**
      * Every room the administrator sees: designers may choose among all of
@@ -110,7 +111,7 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
         return id;
     };
     // Explicit category ids, as ChurchTools itself stores them (G33); "all" by omission is unmeasured (G34).
-    const { drafts, ...others } = input.categories;
+    const { drafts, changelog, ...others } = input.categories;
     const all = Object.values(others)
         .filter((id): id is number => id !== undefined)
         .sort((a, b) => a - b);
@@ -125,14 +126,16 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     ];
 
     // The drafts are the designers' alone (Plan.md 79): a device gets no right on them, not even to see.
-    const designerAll = drafts === undefined ? all : [...all, drafts].sort((a, b) => a - b);
+    // The changelog (Plan.md 100) is seen and added to, never edited or deleted: ChurchTools checks "edit" for deleting (G54).
     const designerWritten = drafts === undefined ? written : [...written, drafts];
+    const designerSeen = [...all, ...(drafts === undefined ? [] : [drafts]), ...(changelog === undefined ? [] : [changelog])].sort((a, b) => a - b);
+    const designerCreated = changelog === undefined ? designerWritten : [...designerWritten, changelog];
 
     const designer: GrantSpec[] = [
         { authId: moduleRight('view'), label: t.setup.provision.grants.viewModule },
-        { authId: moduleRight('view custom category'), dataId: designerAll, label: t.setup.provision.grants.viewCategories },
-        { authId: moduleRight('view custom data'), dataId: designerAll, label: t.setup.provision.grants.viewData },
-        { authId: moduleRight('create custom data'), dataId: designerWritten, label: t.setup.provision.grants.createData },
+        { authId: moduleRight('view custom category'), dataId: designerSeen, label: t.setup.provision.grants.viewCategories },
+        { authId: moduleRight('view custom data'), dataId: designerSeen, label: t.setup.provision.grants.viewData },
+        { authId: moduleRight('create custom data'), dataId: designerCreated, label: t.setup.provision.grants.createData },
         { authId: moduleRight('edit custom data'), dataId: designerWritten, label: t.setup.provision.grants.editData },
         { authId: moduleRight('delete custom data'), dataId: designerWritten, label: t.setup.provision.grants.deleteData },
         { authId: AUTH.wikiView, label: t.setup.provision.grants.viewWiki },

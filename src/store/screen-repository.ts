@@ -58,6 +58,7 @@ import {
 import type { KvBackend, KvCategory, KvValue } from './kv';
 import { LOCALE, tp } from '../i18n/player';
 import { tr } from '../i18n/repository';
+import { ChangelogStore, type ChangeEntry } from './changelog';
 import { DraftStore } from './drafts';
 
 export const CATEGORIES = {
@@ -303,6 +304,11 @@ export class ScreenRepository {
     private readonly heartbeatValueIds = new Map<string, number>();
     /** The drafts of playlists and slides (Plan.md 79, Paket E). */
     readonly drafts: DraftStore;
+    /** The changelog (Plan.md 100): written after a save has succeeded, never part of it. */
+    readonly changelog: ChangelogStore;
+    /** Who is working, for the changelog: the name as in `updatedBy`, and the person. Set where the repository is made. */
+    actor: (() => Promise<{ by: string; personId?: number } | null>) | null = null;
+    private readonly logging = new Set<Promise<void>>();
 
     /**
      * `mediaOrigins`: the origins media addresses may point to – the instance's own (`withOwnAddresses`).
@@ -313,6 +319,33 @@ export class ScreenRepository {
         private readonly mediaOrigins: readonly string[] = [],
     ) {
         this.drafts = new DraftStore(kv);
+        this.changelog = new ChangelogStore(kv);
+    }
+
+    /**
+     * Writes a line of the changelog without making the caller wait; a failure here never reaches the save it
+     * follows. `by` overrides the name of the actor, as the caller knows it from `updatedBy`.
+     */
+    private log(entry: Omit<ChangeEntry, 'by' | 'personId'> & { by?: string }): void {
+        const task = (async () => {
+            try {
+                const actor = await this.actor?.();
+                await this.changelog.record({
+                    ...entry,
+                    by: entry.by || actor?.by || '',
+                    ...(actor?.personId === undefined ? {} : { personId: actor.personId }),
+                });
+            } catch (error) {
+                console.warn('Die Änderung konnte nicht protokolliert werden:', error);
+            }
+        })();
+        this.logging.add(task);
+        void task.finally(() => this.logging.delete(task));
+    }
+
+    /** Resolves when every changelog line started so far is written or has failed. For tests. */
+    async changelogSettled(): Promise<void> {
+        while (this.logging.size) await Promise.all([...this.logging]);
     }
 
     private readonly readOwnMedia = (raw: unknown): MediaDoc => {
@@ -568,6 +601,14 @@ export class ScreenRepository {
         }
         // Last: until this write succeeds, the old index stays authoritative.
         await this.upsert(ids.screens, existing?.valueId, serialized.screen);
+        this.log({
+            area: 'screen',
+            targetId: screen.id,
+            targetName: screen.name,
+            action: existing ? 'saved' : 'created',
+            by: options.updatedBy,
+            now: options.now,
+        });
         return screen;
     }
 
@@ -623,6 +664,14 @@ export class ScreenRepository {
         const text = serialize(doc);
         const ids = await this.ensureCategories();
         await this.upsert(ids.playlists, stored?.valueId, text);
+        this.log({
+            area: 'template',
+            targetId: doc.id,
+            targetName: doc.name,
+            action: stored ? 'saved' : 'created',
+            by: options.updatedBy,
+            now: options.now,
+        });
         return doc;
     }
 
@@ -665,7 +714,10 @@ export class ScreenRepository {
         }
         const ids = await this.ensureCategories();
         const stored = (await this.readPlaylistCategory()).templates.find((t) => t.doc.id === id);
-        if (stored) await this.kv.deleteValue(ids.playlists, stored.valueId);
+        if (stored) {
+            await this.kv.deleteValue(ids.playlists, stored.valueId);
+            this.log({ area: 'template', targetId: id, targetName: stored.doc.name, action: 'deleted' });
+        }
     }
 
     /** The look of all screens; null while nobody set one (Plan.md, Nächste Schritte 27). */
@@ -701,6 +753,7 @@ export class ScreenRepository {
         const text = serialize(doc);
         const ids = await this.ensureCategories();
         await this.upsert(ids.playlists, stored?.valueId, text);
+        this.log({ area: 'theme', targetId: THEME_ID, targetName: tr.themeName, action: 'saved', by: options.updatedBy, now: options.now });
         return doc;
     }
 
@@ -810,6 +863,7 @@ export class ScreenRepository {
         const ids = await this.ensureCategories();
         await this.kv.createValue(ids.slides, texts.slide);
         await this.kv.createValue(ids.playlists, texts.playlist);
+        this.log({ area: 'playlist', targetId: playlist.id, targetName: playlist.name, action: 'created', by: updatedBy, now });
         return playlist;
     }
 
@@ -849,6 +903,15 @@ export class ScreenRepository {
         const ids = await this.ensureCategories();
         if (!options.linked) for (const slide of slides) await this.kv.createValue(ids.slides, serialize(slide));
         await this.kv.createValue(ids.playlists, serialize(playlist));
+        this.log({
+            area: 'playlist',
+            targetId: playlist.id,
+            targetName: playlist.name,
+            action: 'duplicated',
+            details: [`source:${source.playlist.name}`],
+            by: updatedBy,
+            now,
+        });
         return playlist;
     }
 
@@ -918,6 +981,22 @@ export class ScreenRepository {
         const storedSlides = await this.valueIdsById('slides');
         for (const [i, doc] of toWrite.entries()) await this.upsert(ids.slides, storedSlides.get(doc.id), slides[i]!);
         await this.kv.updateValue(ids.playlists, stored.valueId, text);
+        const before = new Set(stored.doc.slideIds);
+        const names = new Map(bundle.slides.map((s) => [s.id, s.name]));
+        const removed = stored.doc.slideIds.filter((id) => !playlist.slideIds.includes(id)).length;
+        this.log({
+            area: 'playlist',
+            targetId: playlist.id,
+            targetName: playlist.name,
+            action: 'published',
+            details: [
+                ...toWrite.filter((s) => before.has(s.id)).map((s) => `changed:${s.name}`),
+                ...playlist.slideIds.filter((id) => !before.has(id)).map((id) => `added:${names.get(id) ?? ''}`),
+                ...(removed ? [`removed:${removed}`] : []),
+            ],
+            by: options.updatedBy,
+            now: options.now,
+        });
         return playlist;
     }
 
@@ -962,6 +1041,15 @@ export class ScreenRepository {
             else delete playlist.banner;
             await this.kv.updateValue(ids.playlists, stored.valueId, serialize(playlist));
             saved.push(playlist);
+            this.log({
+                area: 'playlist',
+                targetId: playlist.id,
+                targetName: playlist.name,
+                action: 'banners',
+                details: [change.banner ? 'banner:set' : 'banner:cleared'],
+                by: options.updatedBy,
+                now: options.now,
+            });
         }
         return saved;
     }
@@ -975,6 +1063,7 @@ export class ScreenRepository {
         if (users.length) throw new PlaylistInUseError(users.map((s) => s.name));
         const ids = await this.ensureCategories();
         await this.kv.deleteValue(ids.playlists, stored.valueId);
+        this.log({ area: 'playlist', targetId: id, targetName: stored.doc.name, action: 'deleted' });
         try {
             await this.drafts.discard(id);
         } catch (error) {
@@ -1029,6 +1118,15 @@ export class ScreenRepository {
         const ids = await this.ensureCategories();
         const stored = running.schedules.find((s) => s.doc.screenId === screenId);
         await this.upsert(ids.playlists, stored?.valueId, text);
+        this.log({
+            area: 'screen',
+            targetId: screenId,
+            targetName: current.doc.name,
+            action: 'schedule',
+            details: [`rules:${choice.rules.length}`],
+            by: options.updatedBy,
+            now: options.now,
+        });
         return schedule;
     }
 
@@ -1055,6 +1153,18 @@ export class ScreenRepository {
             updatedAt: (options.now ?? new Date()).toISOString(),
         };
         await this.upsert(ids.screens, existing.valueId, serialize(screen));
+        this.log({
+            area: 'screen',
+            targetId: screen.id,
+            targetName: screen.name,
+            action: 'settings',
+            details: [
+                ...(patch.name !== undefined && patch.name !== existing.doc.name ? [`renamed:${existing.doc.name}`] : []),
+                ...(patch.overscanPercent !== undefined && patch.overscanPercent !== existing.doc.overscanPercent ? ['overscan'] : []),
+            ],
+            by: options.updatedBy,
+            now: options.now,
+        });
         return screen;
     }
 
@@ -1073,6 +1183,7 @@ export class ScreenRepository {
         const text = serialize({ ...doc, id: SETTINGS_ID, kind: 'settings' });
         const stored = await this.valueIdsById('settings');
         await this.upsert(ids.settings, stored.get(SETTINGS_ID), text);
+        this.log({ area: 'settings', targetId: SETTINGS_ID, targetName: tr.settingsName, action: 'settings' });
     }
 
     /** Every calendar a screen shows or switches on – what a device must be able to read. */
@@ -1125,12 +1236,16 @@ export class ScreenRepository {
         const text = serialize(doc);
         const stored = await this.valueIdsById('media');
         await this.upsert(ids.media, stored.get(doc.id), text);
+        this.log({ area: 'media', targetId: doc.id, targetName: doc.name, action: stored.has(doc.id) ? 'saved' : 'created' });
     }
 
     async deleteMedia(id: string): Promise<void> {
         const ids = await this.ensureCategories();
         const valueId = (await this.valueIdsById('media')).get(id);
-        if (valueId !== undefined) await this.kv.deleteValue(ids.media, valueId);
+        if (valueId === undefined) return;
+        const name = (await this.listMedia().catch(() => [])).find((m) => m.id === id)?.name ?? id;
+        await this.kv.deleteValue(ids.media, valueId);
+        this.log({ area: 'media', targetId: id, targetName: name, action: 'deleted' });
     }
 
     /**
@@ -1197,6 +1312,7 @@ export class ScreenRepository {
         const target = docs.find((s) => s.doc.slug === slug);
         if (!target) throw new ScreenNotFoundError(slug);
         await this.kv.deleteValue(ids.screens, target.valueId);
+        this.log({ area: 'screen', targetId: target.doc.id, targetName: target.doc.name, action: 'deleted' });
     }
 
     /**

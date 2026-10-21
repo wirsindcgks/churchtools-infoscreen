@@ -604,7 +604,7 @@ describe('the placement of the progress bars (schema 1.48, Plan.md 107)', () => 
     const gallery = { id: 'g', type: 'slideshow', x: 0, y: 0, width: 800, height: 400, mediaIds: [] };
 
     it('is optional on the playlist, its draft and the five blocks, and a 1.47 document stays valid', () => {
-        expect(SCHEMA_VERSION.minor).toBe(48);
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(48);
         expect(v.parse(PlaylistDoc, makePlaylist({ progress: true, progressPlacement: 'edge' })).progressPlacement).toBe('edge');
         expect(v.parse(PlaylistDoc, makePlaylist({ schema: { major: 1, minor: 47 }, progress: true })).progressPlacement).toBeUndefined();
         expect(v.safeParse(PlaylistDoc, makePlaylist({ progressPlacement: 'middle' as 'edge' })).success).toBe(false);

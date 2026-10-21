@@ -32,5 +32,7 @@ export const tr = {
     otherFormat: (staged: string, current: string) => `„${staged}" ist für ein anderes Format gestaltet als „${current}".`,
     newSlide: 'Neue Folie',
     newPlaylist: 'Neue Präsentation',
+    themeName: 'Design',
+    settingsName: 'Einstellungen',
     copyOf: (name: string) => `${name} (Kopie)`,
 };

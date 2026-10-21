@@ -59,6 +59,7 @@ import { isAdministrator } from '../designer/administrator';
 import { useConfirm } from '../designer/useConfirm';
 import { getRepository } from '../store/backend';
 import { CATEGORIES, STATUS_CATEGORY, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
+import { CHANGELOG_CATEGORY } from '../store/changelog';
 import { DRAFTS_CATEGORY } from '../store/drafts';
 
 const { confirm, notice } = useConfirm();
@@ -176,7 +177,7 @@ let catalog: AuthCatalog | null = null;
 let wikiNames = new Map<number, string>();
 /** `status` is the category of the signs of life (Plan.md 59), no required one: the plan takes it when it is there. */
 /** `drafts` likewise (Plan.md 79): the designers' drafts, which a device never gets rights on. */
-let categories: Partial<Record<CategoryKey, number>> & { status?: number; drafts?: number } = {};
+let categories: Partial<Record<CategoryKey, number>> & { status?: number; drafts?: number; changelog?: number } = {};
 
 /** The setup assistant (Plan.md, 9): what it would do, and what it did. */
 const demo = ref(false);
@@ -271,7 +272,7 @@ function computePlan(): void {
         plan.value = planProvisioning({
             catalog,
             moduleKey: EXTENSION_KEY,
-            categories: categories as Record<CategoryKey, number> & { status?: number; drafts?: number },
+            categories: categories as Record<CategoryKey, number> & { status?: number; drafts?: number; changelog?: number },
             wikiCategoryId,
             roomIds: rooms.map((r) => r.id),
             usedRoomIds,
@@ -770,6 +771,7 @@ function dataName(authId: number, dataId: number): string | undefined {
     }
     if (dataId === categories.status) return STATUS_CATEGORY.name;
     if (dataId === categories.drafts) return DRAFTS_CATEGORY.name;
+    if (dataId === categories.changelog) return CHANGELOG_CATEGORY.name;
     const key = (Object.keys(CATEGORIES) as CategoryKey[]).find((k) => categories[k] === dataId);
     return key && CATEGORIES[key].name;
 }
@@ -939,14 +941,17 @@ onMounted(async () => {
             // An administrator's visit creates the category of the signs of life, if it is missing (Plan.md 59).
             const statusId = (admin.value ? repository.ensureStatusCategory() : repository.statusCategoryId()).catch(() => null);
             const draftsId = (admin.value ? repository.drafts.ensureCategory() : repository.drafts.categoryId()).catch(() => null);
+            const changelogId = (admin.value ? repository.changelog.ensureCategory() : repository.changelog.categoryId()).catch(() => null);
             let visible: Partial<Record<CategoryKey, number>>;
             [visible, catalog] = await Promise.all([repository.visibleCategories(), loadAuthCatalog().catch(() => null)]);
             const status = await statusId;
             const drafts = await draftsId;
+            const changelog = await changelogId;
             categories = {
                 ...visible,
                 ...(status === null ? {} : { status }),
                 ...(drafts === null ? {} : { drafts }),
+                ...(changelog === null ? {} : { changelog }),
             };
             assistant.allowed = true;
         }
