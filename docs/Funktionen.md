@@ -279,6 +279,25 @@ Die Dauer je Seite ist einstellbar; die segmentierte Fortschrittsanzeige zeigt d
 ihren zeitlichen Fortschritt. Die Folie bleibt mindestens so lange sichtbar, bis alle Seiten gezeigt
 wurden. Im Designer bleibt die erste Seite stehen.
 
+## Fortschritt der Seiten
+
+Wechselt ein Baustein von selbst, zeigt ein dünner Balken unten, wann die nächste Seite kommt. Unter **„Darstellung“**
+schaltet **„Fortschritt“** ihn ein oder aus, direkt unter der Dauer. Den Schalter gibt es dort, wo der Baustein
+wechseln kann:
+
+| Baustein | Wann | Ohne Angabe (wie bisher) |
+| --- | --- | --- |
+| Terminliste | bei „Alle Termine, seitenweise“ | an |
+| Gruppen | immer | an |
+| Raumbelegung | als Übersicht | an |
+| Beiträge | als „Hervorgehoben“ | aus |
+| Galerie | immer | aus |
+
+Bei Terminliste, Gruppen und Raumbelegung gehört zum Balken die Seitenzahl („2/3“), bei der Besucherübersicht die
+Segmente: **Aus** nimmt die ganze Zeile weg, und der Platz geht an die Inhalte – es passt oft eine Zeile mehr auf die
+Seite. Beiträge und Galerie zeigen nur den Balken. Der Takt bleibt in allen Fällen, wie er ist; der Balken läuft
+unabhängig von dem der Präsentation, der bei Bedarf zusätzlich läuft (Abschnitt „Fortschritt“ der Folie; ein Hinweis unter dem Schalter führt dorthin). Bestehende Folien sehen aus wie vorher.
+
 ## Der Raum am Termin
 
 Beim **Nächsten Termin** und bei der **Terminliste** – als Karten wie als Zeilen – zeigt der Schalter **„Raum zeigen"** die
@@ -351,9 +370,9 @@ einer Folie zählt dabei nicht.
 Eine Präsentation ist der Inhalt eines Bildschirms und kann auf mehreren Bildschirmen laufen. Duplizieren ergibt eine Kopie mit
 eigenen Folien – oder auf Wunsch eine Präsentation mit denselben, verknüpften Folien. Jede Kachel zeigt, wann die
 Präsentation oder eine ihrer Folien zuletzt geändert wurde und von wem; liegt ein Entwurf vor, trägt sie die Marke
-„Entwurf". Im Inspektor der Folie, Abschnitt „Präsentation", zeigt der Schalter „Fortschrittsbalken" am unteren Rand der
-Bildfläche einen dünnen Balken in der Akzentfarbe des Designs, der anzeigt, wie lange die Folie noch steht; er sitzt auf dem Hinweisband,
-wenn dieses unten steht, und steht still, solange die Vorschau angehalten ist.
+„Entwurf". Im Inspektor der Folie, ganz oben im Abschnitt „Fortschritt", zeigt der Schalter „Fortschrittsbalken" am unteren Rand der
+Bildfläche einen dünnen Balken in der Akzentfarbe des Designs, der anzeigt, wie lange die Folie noch steht, daneben die wievielte
+Folie es ist („3/7“, ab zwei Folien); er hält zum unteren Rand denselben Abstand wie zu den Seiten und sitzt über dem Hinweisband, wenn dieses unten steht, und steht still, solange die Vorschau angehalten ist. Auf der Folie im Editor steht er bei 40 % (nur zum Ansehen, ohne Wirkung), damit man sieht, wo er liegt.
 
 ![Präsentationen als Kacheln mit Format, Zahl der Folien und den Bildschirmen, die sie zeigen](bilder/playlists.png)
 

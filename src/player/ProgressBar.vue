@@ -1,10 +1,14 @@
 <script setup lang="ts">
 /**
- * The thin bar at the bottom of the stage that shows how long the slide stays (schema 1.39, Plan.md 86). One CSS
+ * The thin bar at the bottom of the stage that shows how long the slide stays (schema 1.39, Plan.md 86), lifted off the
+ * edge like the page bar of the appointment list, with the number of the slide beside it. One CSS
  * transition over the time that is left – no frame loop and no recount every second, which a Pi would feel. A new
  * slide starts it at 0; a changed duration continues it from where it stands; a held preview freezes it.
  */
 import { onMounted, ref, watch } from 'vue';
+
+/** The gap to the left, right and bottom edge of the stage (stage pixels), the same on all three sides. */
+const INSET = 32;
 
 const props = defineProps<{
     /** When the slide began (ms). */
@@ -15,7 +19,14 @@ const props = defineProps<{
     held: number | null;
     /** Distance from the stage's bottom edge – the height of a band standing there. */
     bottom: number;
+    /** The bar's colour: the theme's accent. */
     color: string;
+    /** The pale track and the number: the theme's text colour, in its font. */
+    textColor: string;
+    fontFamily: string;
+    /** Place of the slide in the playlist, from 1, and how many there are; the number shows from two on. */
+    number: number;
+    total: number;
 }>();
 
 const bar = ref<HTMLElement | null>(null);
@@ -39,26 +50,52 @@ watch(() => [props.startedAt, props.seconds, props.held], apply, { flush: 'post'
 </script>
 
 <template>
-    <div class="progress" :style="{ bottom: `${bottom}px` }" data-testid="slide-progress">
-        <div ref="bar" class="fill" :style="{ background: color }" />
+    <div class="progress" :style="{ left: `${INSET}px`, right: `${INSET}px`, bottom: `${bottom + INSET}px`, color: textColor, fontFamily }" data-testid="slide-progress">
+        <div class="track">
+            <div ref="bar" class="fill" :style="{ background: color }" />
+        </div>
+        <span v-if="total > 1" class="slide-number" data-testid="slide-number">{{ number }}/{{ total }}</span>
     </div>
 </template>
 
 <style scoped>
-/* On top of the blocks and on the band's upper edge. */
+/* On top of the blocks, in stage pixels; the same look as the page bar of AppointmentListView. */
 .progress {
     position: absolute;
-    left: 0;
-    right: 0;
-    z-index: 6;
-    height: 6px;
+    z-index: var(--progress-z, 6);
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    font-size: 24px;
     pointer-events: none;
 }
+.track {
+    position: relative;
+    flex: 1;
+    height: 0.3em;
+    overflow: hidden;
+    border-radius: var(--isd-pill, 999px);
+}
+/* The pale track as its own layer – an opacity on .track would pale the bar too. */
+.track::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0.25;
+}
 .fill {
+    position: relative;
     width: 100%;
     height: 100%;
     transform: scaleX(0);
     transform-origin: left;
     will-change: transform;
+}
+.slide-number {
+    opacity: 0.6;
+    line-height: 1;
+    white-space: nowrap;
+    text-box: trim-both cap alphabetic;
 }
 </style>

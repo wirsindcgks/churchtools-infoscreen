@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 46 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 47 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -160,6 +160,11 @@ export const AppointmentListBlock = v.object({
     /** Seconds per page, at least; default 10. */
     pageSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(3), v.maxValue(120))),
     /**
+     * Since 1.47 (Plan.md 105): the thin bar that shows when the next page comes. Missing: the block decides – on for the
+     * appointment list, groups and rooms, off for posts and the gallery, as before. Older players ignore it.
+     */
+    pageProgress: v.optional(v.boolean()),
+    /**
      * Since 1.8: `cards` – date tile, calendar badge, title, time and place, after
      * the list of the WordPress plugin (Plan.md, 20); `rows` is the plain list.
      * Since 1.43: `visitor` – generous rows with date/time, subtitle and a place column, the rooms before the place.
@@ -292,6 +297,11 @@ export const PostsBlock = v.object({
     imageFocus: v.optional(v.picklist(['center', 'top', 'bottom', 'left', 'right']), 'center'),
     /** Seconds per post while `card` pages through them; default POST_SECONDS. */
     pageSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(120))),
+    /**
+     * Since 1.47 (Plan.md 105): the thin bar that shows when the next page comes. Missing: the block decides – on for the
+     * appointment list, groups and rooms, off for posts and the gallery, as before. Older players ignore it.
+     */
+    pageProgress: v.optional(v.boolean()),
     style: TextStyle,
 });
 
@@ -353,6 +363,11 @@ export const GroupsBlock = v.object({
     show: v.optional(GroupFields, {}),
     /** Seconds per page, in both layouts; default GROUP_SECONDS. */
     pageSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(120))),
+    /**
+     * Since 1.47 (Plan.md 105): the thin bar that shows when the next page comes. Missing: the block decides – on for the
+     * appointment list, groups and rooms, off for posts and the gallery, as before. Older players ignore it.
+     */
+    pageProgress: v.optional(v.boolean()),
     style: TextStyle,
 });
 
@@ -369,6 +384,11 @@ export const SlideshowBlock = v.object({
     fit: v.optional(v.picklist(['contain', 'cover']), 'cover'),
     /** Seconds per image; default 6. */
     seconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(3), v.maxValue(60)), 6),
+    /**
+     * Since 1.47 (Plan.md 105): the thin bar that shows when the next page comes. Missing: the block decides – on for the
+     * appointment list, groups and rooms, off for posts and the gallery, as before. Older players ignore it.
+     */
+    pageProgress: v.optional(v.boolean()),
     /**
      * How the next image comes: fade, push from the right, wipe from the left, or a cut. `zoom` (a fade with a slow
      * zoom in) is only read since 1.19, for old data: it plays as a fade with `motion: 'in'`.
@@ -407,6 +427,11 @@ export const RoomsBlock = v.object({
     days: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(14)), 1),
     /** Seconds per page of the overview; default PAGE_SECONDS. */
     pageSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(120))),
+    /**
+     * Since 1.47 (Plan.md 105): the thin bar that shows when the next page comes. Missing: the block decides – on for the
+     * appointment list, groups and rooms, off for posts and the gallery, as before. Older players ignore it.
+     */
+    pageProgress: v.optional(v.boolean()),
     style: TextStyle,
 });
 

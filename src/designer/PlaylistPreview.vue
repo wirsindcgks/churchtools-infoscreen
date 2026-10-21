@@ -11,6 +11,7 @@ import { bandInset, bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
 import { provideStageContext, themeOf, useStageContext, type StageContext } from '../player/context';
 import { useRotation } from '../player/rotation';
+import { fontStack } from '../player/fonts';
 import ProgressBar from '../player/ProgressBar.vue';
 import SlideView from '../player/SlideView.vue';
 import { fitStage } from '../player/stage';
@@ -153,6 +154,10 @@ onBeforeUnmount(() => {
                 :held="heldAt"
                 :bottom="bannerShown(banner, parent.now, parent.timeZone) ? bandInset(banner) : 0"
                 :color="themeOf(context).accent"
+                :text-color="themeOf(context).text"
+                :font-family="fontStack(themeOf(context).font)"
+                :number="(index % shown.length) + 1"
+                :total="shown.length"
             />
         </StageView>
 

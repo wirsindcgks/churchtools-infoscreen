@@ -105,6 +105,15 @@ describe('the inspector of the slide (Plan.md 79, B2)', () => {
         expect(editor.draft!.playlist.progress).toBeUndefined();
     });
 
+    it('puts the progress bar of the playlist in a section of its own, before the division of the slide (Plan.md 105)', async () => {
+        const { wrapper } = await setup();
+        const ids = wrapper.findAll('details.section').map((el) => el.attributes('data-testid'));
+        expect(ids.indexOf('section-progress')).toBeGreaterThanOrEqual(0);
+        expect(ids.indexOf('section-progress')).toBeLessThan(ids.indexOf('section-layout'));
+        expect(wrapper.find('[data-testid="section-progress"] [data-testid="playlist-progress"]').exists()).toBe(true);
+        expect(wrapper.get('[data-testid="section-playlist"]').find('[data-testid="playlist-progress"]').exists()).toBe(false);
+    });
+
     it('says where the times of the playlist are set instead of a bare "Zeitplan" (Plan.md 98, D)', async () => {
         const { wrapper } = await setup();
         expect(wrapper.get('[data-testid="schedule-hint"]').text()).toContain('legt der Zeitplan des Bildschirms fest');

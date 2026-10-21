@@ -122,9 +122,9 @@ const layoutSummary = computed(() => {
 /** A slide shared with other playlists is explained under "Allgemein" while it is shared. */
 useGeneralHelp(() => (linkedNames.value ? [{ term: t.help.terms.linked, text: t.inspector.linkedInfo }] : []));
 const layoutHelp = computed(() => ({ items: hasRegions.value ? [{ term: t.inspector.layoutGap, text: t.inspector.layoutGapInfo }] : [] }));
+const progressHelp = { intro: t.inspector.progressSectionInfo, items: [{ term: t.inspector.progress, text: t.inspector.progressInfo }] };
 const playlistHelp = {
     items: [
-        { term: t.inspector.progress, text: t.inspector.progressInfo },
         { term: t.inspector.schedule, text: t.inspector.scheduleInfo },
     ],
 };
@@ -178,6 +178,21 @@ const backgroundColors = computed(() => {
         <p v-if="runsLonger" class="hint" data-testid="duration-hint">
             {{ t.inspector.runsLonger(runsLonger) }}
         </p>
+        <!-- The bar belongs to the presentation, not to the slide: first, where the designer looks for it (Plan.md 105). -->
+        <InspectorSection
+            v-if="editor.draft"
+            id="progress"
+            :title="t.inspector.progressSection"
+            :summary="editor.draft.playlist.progress ? t.inspector.progressOn : t.inspector.progressOff"
+            :help="progressHelp"
+        >
+            <ToggleField
+                :model-value="!!editor.draft.playlist.progress"
+                :label="t.inspector.progress"
+                testid="playlist-progress"
+                @update:model-value="editor.setProgress($event)"
+            />
+        </InspectorSection>
         <InspectorSection id="layout" :title="t.inspector.layout" :summary="layoutSummary" :help="layoutHelp">
             <TileField
                 :model-value="layout.split"
@@ -238,12 +253,6 @@ const backgroundColors = computed(() => {
                     :maxlength="100"
                     testid="playlist-name-input"
                     @update:model-value="editor.renamePlaylist($event)"
-                />
-                <ToggleField
-                    :model-value="!!editor.draft.playlist.progress"
-                    :label="t.inspector.progress"
-                    testid="playlist-progress"
-                    @update:model-value="editor.setProgress($event)"
                 />
                 <dl>
                     <dt>{{ t.inspector.format }}</dt>

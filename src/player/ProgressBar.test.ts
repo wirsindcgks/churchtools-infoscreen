@@ -9,14 +9,21 @@ describe('ProgressBar (Plan.md 86)', () => {
     });
     afterEach(() => vi.useRealTimers());
 
-    const props = () => ({ startedAt: Date.now(), seconds: 10, held: null, bottom: 90, color: '#ff0000' });
+    const props = () => ({ startedAt: Date.now(), seconds: 10, held: null, bottom: 90, color: '#ff0000', textColor: '#ffffff', fontFamily: 'sans-serif', number: 3, total: 7 });
     const fill = (wrapper: ReturnType<typeof mount>) => wrapper.get<HTMLElement>('.fill').element;
 
     it('runs linearly over the time that is left, up to the full width', () => {
         const wrapper = mount(ProgressBar, { props: props() });
         expect(fill(wrapper).style.transition).toBe('transform 10000ms linear');
         expect(fill(wrapper).style.transform).toBe('scaleX(1)');
-        expect(wrapper.get('[data-testid="slide-progress"]').attributes('style')).toContain('bottom: 90px');
+        expect(wrapper.get('[data-testid="slide-progress"]').attributes('style')).toContain('bottom: 122px');
+    });
+
+    it('names the slide by its place in the playlist, from two slides on', async () => {
+        const wrapper = mount(ProgressBar, { props: props() });
+        expect(wrapper.get('[data-testid="slide-number"]').text()).toBe('3/7');
+        await wrapper.setProps({ number: 1, total: 1 });
+        expect(wrapper.find('[data-testid="slide-number"]').exists()).toBe(false);
     });
 
     it('continues from where it stands when the duration grows', async () => {

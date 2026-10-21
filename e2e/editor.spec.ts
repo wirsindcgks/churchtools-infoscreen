@@ -1091,6 +1091,29 @@ test('an appointment list shows every appointment page by page; the inspector sa
     await page.screenshot({ path: 'test-results/editor-paged-list.png' });
 });
 
+test('the gallery gets a progress switch under "Darstellung", off by default, and the draft keeps it (Plan.md 105)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await addBlock(page, 'slideshow');
+    await openSection(page, 'appearance');
+    await expect(page.getByTestId('page-progress')).not.toBeChecked();
+    await page.getByTestId('page-progress').check();
+    await expect(page.getByTestId('save-status')).toHaveText(/^Entwurf gesichert · \d\d:\d\d$/, { timeout: 10_000 });
+
+    await page.reload();
+    // An empty gallery carries a button in its middle; the corner selects the block.
+    await page.getByTestId('frame-slideshow').last().click({ position: { x: 4, y: 4 } });
+    await openSection(page, 'appearance');
+    await expect(page.getByTestId('page-progress')).toBeChecked();
+
+    // The line under the switch leads to the bar of the whole presentation: it lets go of the block and opens that section.
+    await expect(page.getByTestId('page-progress-hint')).toContainText('Für die ganze Folie');
+    await page.getByTestId('page-progress-hint-link').click();
+    await expect(page.getByTestId('section-progress')).toHaveAttribute('open', '');
+    await expect(page.getByTestId('playlist-progress')).toBeVisible();
+    await expect(page.getByTestId('block-inspector')).toHaveCount(0);
+});
+
 test('the preview plays the unsaved draft like the TV, and saves nothing', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();

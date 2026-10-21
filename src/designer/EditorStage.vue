@@ -2,9 +2,13 @@
 import { anchored } from './floating';
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import type { Block } from '../model/schema';
-import { bannerShown } from '../player/banner';
+import { bandInset, bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
-import { useStageContext } from '../player/context';
+import { themeOf, useStageContext } from '../player/context';
+import { fontStack } from '../player/fonts';
+import { slideSeconds } from '../player/paging';
+import ProgressBar from '../player/ProgressBar.vue';
+import { placeInRotation } from '../player/rotation';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
 import { textStyle, verticalAlignOf, verticalStyle } from '../player/format';
@@ -32,6 +36,16 @@ const stage = useStageContext();
 const banner = computed(() => {
     const b = editor.draft?.playlist.banner;
     return bannerShown(b, stage.now, stage.timeZone) ? b : null;
+});
+/**
+ * The presentation's progress bar on the slide being edited (Plan.md 105), standing at 40 % like a held preview: it shows where
+ * the bar will be and what the blocks must leave free. Not in a template's own editing, and no part of the slide.
+ */
+const progress = computed(() => {
+    const slide = editor.slide;
+    if (!editor.draft?.playlist.progress || editor.templateEdit || !slide) return null;
+    const place = placeInRotation(editor.slides, slide.id);
+    return { seconds: slideSeconds(slide, stage.pages ?? {}), number: place.number, total: place.number ? place.total : 0 };
 });
 const host = ref<HTMLElement | null>(null);
 const overlay = ref<HTMLElement | null>(null);
@@ -1034,6 +1048,20 @@ function onEmptyAction(b: Block): void {
             />
             <!-- The playlist's band lies over every slide (Plan.md 32); clicks go through to the blocks. -->
             <BannerView v-if="banner" class="stage-banner" :class="{ 'stage-banner--pale': editor.templateEdit }" :banner="banner" :stage-width="editor.stage.width" />
+            <!-- Over the blocks, under everything the editor draws (z-index 0 against its 1 and up); clicks go through. -->
+            <ProgressBar
+                v-if="progress"
+                :style="{ '--progress-z': 0 }"
+                :started-at="0"
+                :seconds="progress.seconds"
+                :held="progress.seconds * 400"
+                :bottom="bandInset(banner)"
+                :color="themeOf(stage).accent"
+                :text-color="themeOf(stage).text"
+                :font-family="fontStack(themeOf(stage).font)"
+                :number="progress.number"
+                :total="progress.total"
+            />
             <div
                 ref="overlay"
                 class="overlay"

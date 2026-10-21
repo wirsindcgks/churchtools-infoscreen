@@ -11,7 +11,7 @@ import type { Block } from '../../model/schema';
 import { doorSign, emptyText, overviewRows } from '../../rooms/display';
 import { useStageContext } from '../context';
 import { textStyle } from '../format';
-import { PAGE_SECONDS, pageInterval, paginateByHeight } from '../paging';
+import { PAGE_SECONDS, pageInterval, pageProgressOn, paginateByHeight } from '../paging';
 import RoomRow from './RoomRow.vue';
 import { tp } from '../../i18n/player';
 
@@ -50,7 +50,8 @@ function measure(): void {
 }
 
 /** The page bar at the bottom: 0.55em text and a little air, like AppointmentListView's. */
-const reserve = computed(() => props.block.style.fontSize * 0.9);
+const progressOn = computed(() => pageProgressOn(props.block));
+const reserve = computed(() => (progressOn.value ? props.block.style.fontSize * 0.9 : 0));
 const pages = computed(() => paginateByHeight(rows.value, heights.value, props.block.height, reserve.value));
 const page = ref(0);
 const shown = computed(() => pages.value[page.value % Math.max(1, pages.value.length)] ?? []);
@@ -148,7 +149,7 @@ onBeforeUnmount(() => clearInterval(timer));
                 <li v-else-if="rows.length === 0" class="empty" data-testid="rooms-empty">{{ emptyText(block.days) }}</li>
             </ul>
         </Transition>
-        <div v-if="pages.length > 1" class="pager" data-testid="rooms-pager">
+        <div v-if="progressOn && pages.length > 1" class="pager" data-testid="rooms-pager">
             <span class="track">
                 <span
                     v-if="turnSeconds"

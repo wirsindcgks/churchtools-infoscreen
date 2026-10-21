@@ -12,10 +12,11 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { isVideo, type Block } from '../../model/schema';
-import { imageSource, useStageContext } from '../context';
+import { imageSource, themeOf, useStageContext } from '../context';
 import { blockImageUrl } from '../images';
-import { pageInterval } from '../paging';
+import { pageInterval, pageProgressOn } from '../paging';
 import { effectiveTransition, pictureMotion, type PictureMotion } from '../slideshow';
+import PageProgress from './PageProgress.vue';
 
 const props = defineProps<{ block: Extract<Block, { type: 'slideshow' }>; slideSeconds?: number }>();
 const context = useStageContext();
@@ -52,6 +53,8 @@ const layerEls = ref<HTMLElement[]>([]);
 let turn = 0;
 
 let timer: ReturnType<typeof setInterval> | undefined;
+/** Seconds one picture stands while the pictures turn, for the progress bar; 0 while they do not. */
+const turnSeconds = ref(0);
 let held: HTMLImageElement | undefined;
 
 /** Starts decoding a picture; resolves when done, on error, or after a wait. */
@@ -101,11 +104,12 @@ function start(): void {
     states.value = ['shown', 'staged'];
     turn = 0;
     motions.value = [pictureMotion(props.block, 0), 'none'];
+    turnSeconds.value = 0;
     const count = urls.value.length;
     if (count < 2 || context.paging === false) return;
     prepareNext();
-    const seconds = pageInterval(props.block.seconds ?? 6, props.slideSeconds ?? 0, count);
-    timer = setInterval(() => void advance(), seconds * 1000);
+    turnSeconds.value = pageInterval(props.block.seconds ?? 6, props.slideSeconds ?? 0, count);
+    timer = setInterval(() => void advance(), turnSeconds.value * 1000);
 }
 watch(
     [urls, () => props.block.seconds, () => props.slideSeconds, () => context.paging, () => props.block.transition, () => props.block.motion],
@@ -141,6 +145,8 @@ const motionSeconds = computed(() => pageInterval(props.block.seconds ?? 6, prop
         >
             <img v-if="url" class="picture" :src="url" :style="{ objectFit: block.fit }" alt="">
         </div>
+        <!-- Keyed by the picture really on show: `advance` waits for the decoding, the bar starts over with the picture. -->
+        <PageProgress v-if="turnSeconds && pageProgressOn(block)" :key="index" :seconds="turnSeconds" :size="8" :inset="16" :color="themeOf(context).text" />
     </div>
     <!-- A calm placeholder, never a broken-image icon on a TV. -->
     <div v-else class="placeholder" />

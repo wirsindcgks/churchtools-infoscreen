@@ -10,6 +10,12 @@ import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue';
 import type { SlideDoc } from '../model/schema';
 import { slideSeconds } from './paging';
 
+/** A slide's place among the slides the rotation shows (the enabled ones), from 1; 0 where it is not among them. */
+export function placeInRotation(slides: readonly SlideDoc[], slideId: string): { number: number; total: number } {
+    const shown = slides.filter((s) => s.enabled);
+    return { number: shown.findIndex((s) => s.id === slideId) + 1, total: shown.length };
+}
+
 export function useRotation(slides: Readonly<Ref<SlideDoc[]>>, pages: () => Readonly<Record<string, number>>) {
     const index = ref(0);
     /** The preview can hold a slide; the player never pauses. */

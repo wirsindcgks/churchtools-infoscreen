@@ -17,9 +17,10 @@ import { selectPosts } from '../../posts/normalize';
 import { markdownBlocks, markdownText } from '../../ct/markdown';
 import { themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
-import { paginateByHeight, pageInterval, POST_SECONDS } from '../paging';
+import { paginateByHeight, pageInterval, pageProgressOn, POST_SECONDS } from '../paging';
 import CalendarBadge from './CalendarBadge.vue';
 import MdInlines from './MdInlines.vue';
+import PageProgress from './PageProgress.vue';
 import DateTile from './DateTile.vue';
 import { tp } from '../../i18n/player';
 
@@ -48,13 +49,16 @@ watch(
 );
 
 let timer: ReturnType<typeof setInterval> | undefined;
+/** Seconds one post shows while the posts turn, for the progress bar; 0 while they do not. */
+const turnSeconds = ref(0);
 function turnPages(): void {
     clearInterval(timer);
     page.value = 0;
+    turnSeconds.value = 0;
     const count = items.value.length;
     if (props.block.layout !== 'card' || count < 2 || context.paging === false) return;
-    const seconds = pageInterval(props.block.pageSeconds ?? POST_SECONDS, props.slideSeconds ?? 0, count);
-    timer = setInterval(() => (page.value = (page.value + 1) % count), seconds * 1000);
+    turnSeconds.value = pageInterval(props.block.pageSeconds ?? POST_SECONDS, props.slideSeconds ?? 0, count);
+    timer = setInterval(() => (page.value = (page.value + 1) % count), turnSeconds.value * 1000);
 }
 watch(
     [() => items.value.length, () => props.block.layout, () => props.block.pageSeconds, () => props.slideSeconds, () => context.paging],
@@ -225,12 +229,14 @@ onMounted(() => {
             </div>
         </template>
         <div v-else class="hero-text hero-subtitle" data-testid="posts-empty">{{ tp.posts.none }}</div>
+        <PageProgress v-if="turnSeconds && pageProgressOn(block)" :key="page" :seconds="turnSeconds" :size="block.style.fontSize * 0.165" :inset="block.style.fontSize * 0.8" />
     </div>
 </template>
 
 <style scoped>
 /* Card: the post itself in ChurchTools, not the old date-tile/badge/meta-row layout. */
 .hero {
+    position: relative;
     display: flex;
     box-sizing: border-box;
     width: 100%;

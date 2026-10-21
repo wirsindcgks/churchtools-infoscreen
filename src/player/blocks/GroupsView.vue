@@ -13,7 +13,7 @@ import { imageSource, themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
 import { markdownLines } from '../../ct/markdown';
 import MdInlines from './MdInlines.vue';
-import { GROUP_SECONDS, pageInterval, paginateByHeight } from '../paging';
+import { GROUP_SECONDS, pageInterval, pageProgressOn, paginateByHeight } from '../paging';
 import { qrShape } from '../qr';
 import CalendarBadge from './CalendarBadge.vue';
 import { LOCALE, tp } from '../../i18n/player';
@@ -36,7 +36,8 @@ function hideOnError(event: Event): void {
 // --- pages: both layouts turn them the same way, with the same bar as AppointmentListView ---
 
 /** The page bar at the bottom: 0.55em text and a little air, like AppointmentListView's. */
-const reserve = computed(() => props.block.style.fontSize * 0.9);
+const progressOn = computed(() => pageProgressOn(props.block));
+const reserve = computed(() => (progressOn.value ? props.block.style.fontSize * 0.9 : 0));
 
 /** Card: `perPage` groups a page (wish of the user, 2026-09-29). */
 const cardPages = computed(() => {
@@ -329,7 +330,7 @@ onMounted(() => {
             </li>
             <li v-if="items.length === 0" class="empty" data-testid="groups-empty">{{ emptyMessage }}</li>
         </ul>
-        <div v-if="paged" class="pager" data-testid="groups-pager">
+        <div v-if="paged && progressOn" class="pager" data-testid="groups-pager">
             <span class="track">
                 <span v-if="turnSeconds" :key="page" class="progress" :style="{ animationDuration: `${turnSeconds}s` }" />
             </span>
@@ -420,7 +421,7 @@ onMounted(() => {
             </div>
         </div>
         <div v-else class="hero hero-subtitle" data-testid="groups-empty">{{ emptyMessage }}</div>
-        <div v-if="paged" class="pager" data-testid="groups-pager">
+        <div v-if="paged && progressOn" class="pager" data-testid="groups-pager">
             <span class="track">
                 <span v-if="turnSeconds" :key="page" class="progress" :style="{ animationDuration: `${turnSeconds}s` }" />
             </span>

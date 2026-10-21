@@ -20,6 +20,7 @@ import { fitStage } from '../player/stage';
 import { loadingVars } from '../player/theme';
 import { bandInset, bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
+import { fontStack } from '../player/fonts';
 import ProgressBar from '../player/ProgressBar.vue';
 import SlideView from '../player/SlideView.vue';
 import { onStoreChanged } from '../store/backend';
@@ -260,6 +261,10 @@ onBeforeUnmount(() => {
                     :held="heldAt"
                     :bottom="bandInset(banner)"
                     :color="themeOf(context).accent"
+                    :text-color="themeOf(context).text"
+                    :font-family="fontStack(themeOf(context).font)"
+                    :number="(index % slides.length) + 1"
+                    :total="slides.length"
                 />
             </StageView>
             <!-- Old content with a discreet marker beats a black screen. -->

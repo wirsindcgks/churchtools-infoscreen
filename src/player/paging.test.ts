@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
-import { GROUP_SECONDS, PAGE_SECONDS, pageInterval, paginateByHeight, POST_SECONDS, slideSeconds } from './paging';
+import { GROUP_SECONDS, PAGE_SECONDS, pageInterval, pageProgressOn, paginateByHeight, POST_SECONDS, slideSeconds } from './paging';
 
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
 const list = (overrides: Partial<Extract<Block, { type: 'appointment-list' }>> = {}): Block => ({
@@ -183,5 +183,23 @@ describe('paging a rooms block (Plan.md 46)', () => {
 
     it('does not page the door sign', () => {
         expect(slideSeconds(makeSlide({ durationSeconds: 8, blocks: [rooms({ layout: 'door' })] }), { raeume: 3 })).toBe(8);
+    });
+});
+
+describe('pageProgressOn (schema 1.47, Plan.md 105)', () => {
+    const gallery = { id: 'galerie', type: 'slideshow', x: 0, y: 0, width: 400, height: 300, mediaIds: [] } as unknown as Block;
+    const roomBlock = { id: 'raeume', type: 'rooms', x: 0, y: 0, width: 400, height: 300, rooms: [], style } as unknown as Block;
+
+    it('keeps what blocks showed before the field: the list, groups and rooms yes, posts and the gallery no', () => {
+        expect([list(), groups(), roomBlock].map(pageProgressOn)).toEqual([true, true, true]);
+        expect([posts(), gallery].map(pageProgressOn)).toEqual([false, false]);
+    });
+
+    it('follows the field when it is there, and ignores it on blocks that cannot turn', () => {
+        expect(pageProgressOn(list({ pageProgress: false }))).toBe(false);
+        expect(pageProgressOn(posts({ pageProgress: true }))).toBe(true);
+        expect(pageProgressOn({ ...gallery, pageProgress: true } as unknown as Block)).toBe(true);
+        expect(pageProgressOn({ ...gallery, pageProgress: false } as unknown as Block)).toBe(false);
+        expect(pageProgressOn({ id: 't', type: 'text', x: 0, y: 0, width: 1, height: 1, text: '', style } as unknown as Block)).toBe(false);
     });
 });

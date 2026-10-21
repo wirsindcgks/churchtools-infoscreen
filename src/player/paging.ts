@@ -3,7 +3,7 @@
  * rows fit a block, how the rows split into pages, how long each page shows
  * and how long the slide must then stay so that every page is seen.
  */
-import type { SlideDoc } from '../model/schema';
+import type { Block, SlideDoc } from '../model/schema';
 
 /** Seconds per page unless the block says otherwise. */
 export const PAGE_SECONDS = 10;
@@ -13,6 +13,15 @@ export const SHOW_ALL_CAP = 200;
 export const POST_SECONDS = 15;
 /** Seconds per group (card) or per page (list) of a `groups` block, unless set otherwise – time to scan the QR code. */
 export const GROUP_SECONDS = 15;
+
+/**
+ * Whether a block shows the bar that tells when the next page comes (schema 1.47, Plan.md 105). A block without the
+ * field keeps its look from before: the list, groups and rooms show it, posts and the gallery do not.
+ */
+export function pageProgressOn(block: Block): boolean {
+    const own = 'pageProgress' in block ? block.pageProgress : undefined;
+    return own ?? (block.type === 'appointment-list' || block.type === 'groups' || block.type === 'rooms');
+}
 
 /**
  * Splits rows into pages by their measured heights – rows of the card layout
