@@ -4,6 +4,18 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.46.0] – 2026-10-21
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für die Rückmeldung, dass zwei Balken übereinander unruhig wirken.
+
+### Hinzugefügt
+
+- **Lage des Fortschritts wählbar.** Unter „Fortschritt“ wählt man jetzt „Abgesetzt“ oder „Am Rand“, bei
+  Terminliste, Beiträgen, Gruppen, Raumbelegung und Galerie ebenso wie im Abschnitt „Fortschritt“ der Folie für die
+  Präsentation. „Am Rand“ zeichnet eine dünne Linie über die ganze Breite, bündig an der Unterkante, gleich stark wie
+  der abgesetzte Balken und ohne Seitenzahl; Listen gewinnen dadurch etwas Platz. Bestehende Folien bleiben
+  „Abgesetzt“ und sehen aus wie bisher.
+
 ## [0.45.1] – 2026-10-21
 
 ### Behoben
@@ -1422,6 +1434,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.46.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.46.0
 [0.45.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.45.1
 [0.45.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.45.0
 [0.44.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.44.0
