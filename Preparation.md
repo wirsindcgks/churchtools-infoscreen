@@ -332,7 +332,7 @@ Hardware, nicht an der Instanz, und kann warten.
       privaten Fenster aufrufen. **Prüfen, dass wirklich der Infoscreen-Benutzer angemeldet ist** – ChurchTools
       antwortet anonym als öffentlicher Benutzer, ein fehlgeschlagener Login fällt sonst nicht auf.
 
-- [ ] **E5 · Auf der echten Hardware ansehen** – als Praxistest über mehrere Tage (`Plan.md`, „Als Nächstes" 2).
+- [x] **E5 · Auf der echten Hardware ansehen** – als Praxistest über mehrere Tage. **Erledigt am 2026-10-14:** P4 bestanden, beide Screens der Produktivinstanz laufen (`Plan.md`, „Auf einen Blick").
       **Seit 2026-09-28:** Nur auf der Produktivinstanz, erst mit Testinhalten, dann mit echten; kein Gerät
       an der Testinstanz, damit dort keine produktive Nutzung erkannt wird (F1, Entscheidung des Nutzers).
       Setzt die Abnahme in Abschnitt P voraus (P4).
