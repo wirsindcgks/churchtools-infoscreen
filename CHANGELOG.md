@@ -4,6 +4,18 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.45.1] – 2026-10-21
+
+### Behoben
+
+- **Einrasten in die Aufteilung.** Ein Baustein rastet jetzt in jeden leeren Bereich ein, auch in den, in dem er
+  beim Ziehen liegt. Bisher blieb bei „breit | schmal“ und „schmal | breit“ der breite Bereich ohne Markierung, weil
+  ein neuer Baustein mittig und damit schon darin liegt. Welcher Bereich gemeint ist, entscheidet jetzt der
+  Mauszeiger oder Finger statt der Mitte des Bausteins. Ein Hintergrund über die ganze Folie belegt keinen Bereich
+  mehr. Wer einen Baustein mit „Im Bereich fest“ löst, kann ihn in seinem Bereich weiter frei verschieben.
+- **Textschatten auf hellem Grund.** Der Schatten unter Text, Uhr, Countdown und Gemeindekopf ist jetzt immer dunkel.
+  Dunkle Schrift bekam bisher einen hellen Schein, der auf Weiß nicht zu sehen war.
+
 ## [0.45.0] – 2026-10-21
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch, den Fortschritt je Baustein einstellen zu können.
@@ -1410,6 +1422,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.45.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.45.1
 [0.45.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.45.0
 [0.44.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.44.0
 [0.43.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.43.0
