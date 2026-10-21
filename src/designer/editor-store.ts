@@ -24,7 +24,7 @@ import { tr } from '../i18n/repository';
 import { align, alignTarget, distribute, distributeBlocker, unitsOf, type Axis, type Edge, type Frame, type Unit } from './arrange';
 import { History } from './history';
 import { layerUnits } from './layers';
-import { fitToRegions, frameFixed, layoutRegions, regionAt, type Region } from './layout-regions';
+import { fitToRegions, frameFixed, layoutRegions, regionAt, type Region, type RegionId } from './layout-regions';
 import { GRID_SIZES } from './snap';
 import { BLOCK_LABELS, boundingBox, clampFrame, MIN_BLOCK_SIZE, cloneJson, createBlock, createSlide, dropSingleGroups, duplicateSlide, freeSpot, gatherLayers, groupOf, move, moveAround, newId, reorderMany, withGroups, type Layer } from './ops';
 import { applyCustomFonts } from '../player/custom-fonts';
@@ -132,6 +132,8 @@ export const useEditorStore = defineStore('editor', () => {
     const blockSheetOpen = ref(false);
     /** The empty area of the slide's division (Plan.md 87 B) whose "+" opened the sheet: the next block fills it. Reset when the sheet closes. */
     const targetRegion = ref<Region | null>(null);
+    /** The area each block was let go from by "Im Bereich fest" off: moved within it, it stays free (2026-10-21). Not saved. */
+    const releasedFrom = ref<Record<string, RegionId>>({});
     const history = new History<PlaylistBundle>();
     /** "Vorlage bearbeiten" (Plan.md 87): while set, the editor works on its helper slide with a history of its own. */
     const templateEdit = ref<TemplateEdit | null>(null);
@@ -698,6 +700,9 @@ export const useEditorStore = defineStore('editor', () => {
         if (!target || target.locked) return;
         const area = on ? regionAt(layoutRegions(slide.value?.layout, stage.value), target) : undefined;
         if (on && !area) return;
+        const rest = { ...releasedFrom.value };
+        delete rest[id];
+        releasedFrom.value = !on && target.region ? { ...rest, [id]: target.region } : rest;
         const slideId = slide.value?.id;
         change((b) => {
             const own = slideIn(b, slideId)?.blocks.find((x) => x.id === id);
@@ -1631,6 +1636,7 @@ export const useEditorStore = defineStore('editor', () => {
         clipboard,
         blockSheetOpen,
         targetRegion,
+        releasedFrom,
         copyBlocks,
         cutBlocks,
         pasteBlocks,

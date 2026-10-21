@@ -345,6 +345,7 @@ function moveTo(event: PointerEvent): void {
     const dx = (event.clientX - drag.startX) / fit.value.scale;
     const dy = (event.clientY - drag.startY) / fit.value.scale;
     if (Math.abs(dx) < 1 && Math.abs(dy) < 1) return;
+    dragPoint.value = stagePoint(event);
     editor.beginGesture();
     soloPending = null;
     togglePending = null;
@@ -428,6 +429,7 @@ function end(): void {
     if (dropId.value && dragId.value) editor.setRegionFixed(dragId.value, true);
     drag = null;
     dragMove.value = false;
+    dragPoint.value = null;
     dragId.value = null;
     dragIds.value = [];
     guides.value = [];
@@ -532,13 +534,16 @@ const blocks = computed(() => editor.slide?.blocks ?? []);
 /** The areas of the slide's division (Plan.md 87 B): a guide in the slide's editor, not while a template is edited. */
 const regions = computed(() => (editor.templateEdit ? [] : layoutRegions(editor.slide?.layout, editor.stage)));
 /** The ones without a block get a "+" that opens the sheet for them. */
-const emptyIds = computed(() => new Set(emptyRegions(regions.value, blocks.value).map((r) => r.id)));
+const emptyIds = computed(() => new Set(emptyRegions(regions.value, blocks.value, editor.stage).map((r) => r.id)));
 /** Whether the drag is a move (not a handle) of one free block: only that one snaps into an empty area on release. */
 const dragMove = ref(false);
+/** Where the pointer of that drag is on the stage: it picks the area to snap into. */
+const dragPoint = ref<{ x: number; y: number } | null>(null);
 const dropId = computed(() => {
     if (!dragId.value || !dragMove.value || dragIds.value.length !== 1 || editor.selection.length !== 1) return null;
     const dragged = blocks.value.find((b) => b.id === dragId.value);
-    return dragged ? (dropRegion(dragged, regions.value, blocks.value, drag?.frame)?.id ?? null) : null;
+    const options = { point: dragPoint.value ?? undefined, stage: editor.stage, released: editor.releasedFrom[dragId.value] };
+    return dragged ? (dropRegion(dragged, regions.value, blocks.value, options)?.id ?? null) : null;
 });
 function fillRegion(region: (typeof regions.value)[number]): void {
     editor.targetRegion = region;

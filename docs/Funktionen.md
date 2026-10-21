@@ -184,7 +184,9 @@ Größe ändern, der Inhalt bleibt bearbeitbar. Unter „Anordnen" löst der Sch
 bindet einen Baustein, dessen Mitte in einem Bereich liegt). Wechselt ihr die Aufteilung oder den Abstand, **wandern feste Bausteine mit**
 und nehmen den Rahmen ihres Bereichs an; fällt der Bereich weg, bleibt der Baustein stehen und ist wieder frei. Kopien
 eines Bausteins sind immer frei. Wer einen vorhandenen Baustein in einen **leeren** Bereich zieht, setzt ihn dort
-fest (der Bereich ist beim Ziehen hervorgehoben); in einem belegten Bereich bleibt er frei.
+fest (der Bereich unter dem Mauszeiger oder Finger ist beim Ziehen hervorgehoben); in einem belegten Bereich bleibt er frei.
+Ein Hintergrund über die ganze Folie belegt keinen Bereich. Wer einen Baustein mit „Im Bereich fest" gelöst hat, kann ihn in
+seinem Bereich frei verschieben, ohne dass er wieder einrastet.
 
 ## Galerie
 

@@ -102,12 +102,17 @@ export function layoutRegions(layout: SlideLayout | undefined, stage: { width: n
     return regions;
 }
 
+/** A block over at least this share of the stage is a backdrop: it fills no area, so the areas above it stay free (Plan.md 79, 2026-10-21). */
+export const BACKDROP_SHARE = 0.9;
+
 /**
  * The areas no block fills: none has its centre in it or at least `FILL_SHARE` of its area – so a block across two
- * columns, centred in the gap (a little under half in each), fills both. Locked, hidden and template blocks count like any other; a block fixed in an area always fills it.
+ * columns, centred in the gap (a little under half in each), fills both. Locked, hidden and template blocks count like any other,
+ * except a backdrop (`BACKDROP_SHARE` of `stage`); a block fixed in an area always fills it.
  */
-export function emptyRegions(regions: readonly Region[], blocks: readonly (Frame & { region?: RegionId })[]): Region[] {
-    return regions.filter((r) => !blocks.some((b) => b.region === r.id || fills(b, r)));
+export function emptyRegions(regions: readonly Region[], blocks: readonly (Frame & { region?: RegionId })[], stage?: { width: number; height: number }): Region[] {
+    const backdrop = (b: Frame) => !!stage && b.width * b.height >= stage.width * stage.height * BACKDROP_SHARE;
+    return regions.filter((r) => !blocks.some((b) => b.region === r.id || (!backdrop(b) && fills(b, r))));
 }
 
 function fills(b: Frame, r: Region): boolean {
@@ -119,19 +124,30 @@ function fills(b: Frame, r: Region): boolean {
     return w > 0 && h > 0 && w * h >= b.width * b.height * FILL_SHARE;
 }
 
+export interface DropOptions {
+    /** Where the pointer is, in stage pixels: it picks the area rather than the block's middle, which a block grabbed at its edge reaches late. */
+    point?: { x: number; y: number };
+    /** The stage, to tell a backdrop (`emptyRegions`). */
+    stage?: { width: number; height: number };
+    /** The area the block was let go from by "Im Bereich fest" off: it does not snap back into it. */
+    released?: RegionId;
+}
+
 /**
- * The area a dragged block snaps into when let go (Plan.md 87 B): the one its middle lies in, if it is empty without the
- * block itself. A locked or already fixed block binds nowhere, nor does one moved within the area it started in (`from`,
- * its frame when the drag began) – so a block let go with "Im Bereich fest" can be placed freely in its own area.
+ * The area a dragged block snaps into when let go (Plan.md 87 B): the one under the pointer (else its middle), if it is empty without
+ * the block itself. A locked or already fixed block binds nowhere, nor does one into the area it was let go from – so a block
+ * let go with "Im Bereich fest" can be placed freely in its own area. Where a block started does not count: a new block starts in
+ * the middle of the stage, which lies in the wide area of two thirds (user, 2026-10-21).
  */
 export function dropRegion<T extends Frame & { id: string; locked?: boolean; region?: RegionId }>(
     block: T,
     regions: readonly Region[],
     blocks: readonly T[],
-    from?: Frame,
+    options: DropOptions = {},
 ): Region | undefined {
     if (block.locked || block.region) return undefined;
-    const area = regionAt(regions, block);
-    if (!area || (from && regionAt(regions, from)?.id === area.id)) return undefined;
-    return emptyRegions([area], blocks.filter((b) => b.id !== block.id)).length ? area : undefined;
+    const { point, stage, released } = options;
+    const area = point ? regionAt(regions, { ...point, width: 0, height: 0 }) : regionAt(regions, block);
+    if (!area || area.id === released) return undefined;
+    return emptyRegions([area], blocks.filter((b) => b.id !== block.id), stage).length ? area : undefined;
 }

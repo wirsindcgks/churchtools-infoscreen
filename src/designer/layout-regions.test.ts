@@ -169,9 +169,23 @@ describe('dropRegion', () => {
         expect(dropRegion(block('x', 1200, { region: 'b' }), halves, [])).toBeUndefined();
     });
 
-    it('is none for a block moved within the area it started in, and the area for one coming from outside', () => {
-        expect(dropRegion(block('x', 1200), halves, [], block('x', 1100))).toBeUndefined();
-        expect(dropRegion(block('x', 1200), halves, [], block('x', 300))?.id).toBe('b');
-        expect(dropRegion(block('x', 1200), halves, [], block('x', 860))?.id).toBe('b');
+    it('is the area a block starts in, but not the one it was let go from', () => {
+        expect(dropRegion(block('x', 1200), halves, [])?.id).toBe('b');
+        expect(dropRegion(block('x', 1200), halves, [], { released: 'b' })).toBeUndefined();
+        expect(dropRegion(block('x', 300), halves, [], { released: 'b' })?.id).toBe('a');
+    });
+
+    it('takes the area under the pointer, not under the middle of a block grabbed at its edge', () => {
+        const big = { id: 'x', x: 400, y: 300, width: 800, height: 400 };
+        expect(dropRegion(big, halves, [], { point: { x: 1150, y: 500 } })?.id).toBe('b');
+        expect(dropRegion(big, halves, [], { point: { x: 300, y: 500 } })?.id).toBe('a');
+        expect(dropRegion(big, halves, [], { point: { x: 960, y: 500 } })).toBeUndefined();
+    });
+
+    it('lets a backdrop over the whole stage leave the areas free', () => {
+        const backdrop = { id: 'bg', x: 0, y: 0, width: 1920, height: 1080 };
+        expect(dropRegion(block('x', 1200), halves, [backdrop], { stage: landscape })?.id).toBe('b');
+        expect(dropRegion(block('x', 1200), halves, [backdrop])).toBeUndefined();
+        expect(emptyRegions(halves, [backdrop], landscape).map((r) => r.id)).toEqual(['a', 'b']);
     });
 });

@@ -1349,8 +1349,11 @@ describe('templates (schema 1.41, Plan.md 87)', () => {
         editor.setRegionFixed(id, false);
         expect(editor.block).not.toHaveProperty('region');
         expect(editor.block).toMatchObject({ x: 40, width: 900 });
+        expect(editor.releasedFrom[id]).toBe('a');
         editor.moveBlocks([id], 10, 0);
         expect(editor.block!.x).toBe(50);
+        editor.setRegionFixed(id, true);
+        expect(editor.releasedFrom).not.toHaveProperty(id);
     });
 
     it('takes fixed blocks along to the new division in one step and leaves free ones', async () => {

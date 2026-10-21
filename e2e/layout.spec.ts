@@ -156,6 +156,16 @@ test('an existing block dragged into an empty area takes its frame and is fixed'
     await expect(page.getByTestId('region-fixed')).toBeChecked();
 });
 
+test('a new block snaps into the wide area it starts in, at the middle of the stage (2026-10-21)', async ({ page }) => {
+    await emptySlide(page);
+    await addBlock(page, 'shape');
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
+    await openSection(page, 'layout');
+    await tile(page, 'wide-narrow').check({ force: true });
+    await dragTo(page, 'shape', { x: 0.25, y: 0.5 });
+    expect(await frameStyle(page)).toBe('40px 40px 1200px 1000px');
+});
+
 test('dragged into an occupied area, a block stays free and keeps its size', async ({ page }) => {
     await emptySlide(page);
     await openSection(page, 'layout');
