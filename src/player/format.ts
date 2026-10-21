@@ -4,10 +4,13 @@ import { fontStack } from './fonts';
 import { GROUP_COLORS } from './palette';
 import { LOCALE, tp } from '../i18n/player';
 
-/** Shadows of a text (Plan.md F3): the dark kind under light text, a light glow around dark text; `a` is the strength. */
+/**
+ * Shadows of a text (Plan.md F3), always dark: a light glow around dark text vanished on a white slide, and the
+ * player cannot know what lies behind a block.
+ */
 const TEXT_SHADOWS = {
-    soft: (rgb: string) => `0 2px 8px rgba(${rgb}, 0.5)`,
-    strong: (rgb: string) => `0 3px 6px rgba(${rgb}, 0.8), 0 0 2px rgba(${rgb}, 0.8)`,
+    soft: '0 2px 8px rgba(0, 0, 0, 0.5)',
+    strong: '0 3px 6px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.8)',
 } as const;
 const LINE_HEIGHTS = { tight: '1.05', loose: '1.6' } as const;
 const LETTER_SPACINGS = { tight: '-0.02em', wide: '0.08em' } as const;
@@ -22,9 +25,7 @@ export function textStyle(style: TextStyle): Record<string, string> {
         ...(style.uppercase === true && { textTransform: 'uppercase' }),
         ...(style.lineHeight && style.lineHeight !== 'normal' && { lineHeight: LINE_HEIGHTS[style.lineHeight] }),
         ...(style.letterSpacing && style.letterSpacing !== 'normal' && { letterSpacing: LETTER_SPACINGS[style.letterSpacing] }),
-        ...(style.shadow && style.shadow !== 'none' && {
-            textShadow: TEXT_SHADOWS[style.shadow](textOn(style.color) === '#111827' ? '0, 0, 0' : '255, 255, 255'),
-        }),
+        ...(style.shadow && style.shadow !== 'none' && { textShadow: TEXT_SHADOWS[style.shadow] }),
     };
 }
 

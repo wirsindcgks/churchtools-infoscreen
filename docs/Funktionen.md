@@ -108,7 +108,7 @@ stehen im Inspektor unter „Drehung und Deckkraft“, „Drehen zurücksetzen�
 Regler vergrößern, „Fertig“. Bei „Füllen“ bekommen Bild, Video und Galerie runde Ecken und einen weichen oder starken
 Schatten; der **Ton** dunkelt ein Bild ab, hellt es auf oder macht es grau, damit Text darauf lesbar bleibt.
 
-**Text gestalten:** Schatten (weich oder stark, in der Gegenfarbe zur Schrift) sowie Zeilen- und Buchstabenabstand
+**Text gestalten:** Schatten (weich oder stark, immer dunkel, damit er auch auf Weiß zu sehen ist) sowie Zeilen- und Buchstabenabstand
 (eng, normal, weit) hat jeder Baustein mit Schrift; beim Text kommt eine farbige **Hinterlegung** hinter jeder Zeile
 dazu.
 

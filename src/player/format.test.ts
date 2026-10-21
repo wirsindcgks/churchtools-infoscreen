@@ -134,11 +134,11 @@ describe('textStyle', () => {
         expect(textStyle({ ...style, letterSpacing: 'wide' }).letterSpacing).toBe('0.08em');
     });
 
-    it('shadows light text dark and dark text light, soft or strong', () => {
+    it('shadows light and dark text alike in black, soft or strong', () => {
         expect(textStyle({ ...style, shadow: 'soft' }).textShadow).toBe('0 2px 8px rgba(0, 0, 0, 0.5)');
-        expect(textStyle({ ...style, color: '#111827', shadow: 'soft' }).textShadow).toBe('0 2px 8px rgba(255, 255, 255, 0.5)');
+        expect(textStyle({ ...style, color: '#111827', shadow: 'soft' }).textShadow).toBe('0 2px 8px rgba(0, 0, 0, 0.5)');
         expect(textStyle({ ...style, shadow: 'strong' }).textShadow).toBe('0 3px 6px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.8)');
-        expect(textStyle({ ...style, color: '#111827', shadow: 'strong' }).textShadow).toContain('rgba(255, 255, 255, 0.8)');
+        expect(textStyle({ ...style, color: '#111827', shadow: 'strong' }).textShadow).toContain('rgba(0, 0, 0, 0.8)');
     });
 });
 
