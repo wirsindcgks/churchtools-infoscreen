@@ -1140,6 +1140,8 @@ test('the presentation lets one choose the placement of its progress bar under "
     await page.getByTestId('playlist-progress').check();
     await expect(page.locator('.editor-stage [data-testid="slide-progress"]')).toBeVisible();
     await expect(page.locator('.editor-stage [data-testid="slide-number"]')).toBeVisible();
+    // Layers inside blocks (a gallery's pictures) must not cover the bar: the slide keeps them to itself.
+    await expect(page.locator('.editor-stage .slide').first()).toHaveCSS('isolation', 'isolate');
     await page.getByTestId('playlist-progress-placement').locator('input[value="edge"]').check({ force: true });
     await expect(page.locator('.editor-stage [data-testid="slide-number"]')).toHaveCount(0);
     await expect(page.locator('.editor-stage [data-testid="slide-progress"]')).toBeVisible();

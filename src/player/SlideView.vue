@@ -50,5 +50,7 @@ const look = computed(() => ({ ...(props.bare ? {} : background.value), ...theme
      * Works where the font has tabular figures (or has only those); Oswald and Poppins have neither.
      */
     font-variant-numeric: tabular-nums;
+    /* Layers inside blocks (gallery, page bar) stay inside the slide: whatever the stage lays over it stays on top (Plan.md 107). */
+    isolation: isolate;
 }
 </style>
