@@ -4,6 +4,33 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.48.0] – 2026-10-22
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Test des Fortschritts und den Hinweis auf die fehlende
+Seitenzahl bei Beiträgen.
+
+### Hinzugefügt
+
+- **Form des Fortschritts: Balken oder Segmente.** Unter „Fortschritt“ wählt man jetzt vor der Lage die Form – bei
+  Terminliste, Gruppen, Raumbelegung, Beiträgen und Galerie ebenso wie im Abschnitt „Fortschritt“ der Folie für die
+  Präsentation. Der Balken zeigt abgesetzt die Seitenzahl („2/3“), Segmente zeigen ein Stück je Seite, Beitrag, Bild
+  oder Folie, ohne Zahl. Die Besucherübersicht der Terminliste zeigt wie bisher Segmente, alles andere den Balken.
+- **Fortschritt der Bausteine im Editor.** Ist er an, steht er auf der Folie im Editor still bei 40 %, wie der der
+  Präsentation – so sieht man, wo er liegt.
+
+### Geändert
+
+- **Ein Fortschritt je Folie.** Ist der Fortschritt der Präsentation an, zeigen die Bausteine keinen eigenen mehr; zwei
+  Balken übereinander entfallen, Listen gewinnen den Platz. Ihr Schalter ist solange gesperrt, die Einstellung bleibt
+  und gilt wieder, sobald die Präsentation ihren Fortschritt ausschaltet.
+
+### Behoben
+
+- **Seitenzahl bei Beiträgen und Galerie.** Beide zeigen bei „Abgesetzt“ jetzt wie die übrigen Bausteine die Seitenzahl
+  neben dem Balken.
+- **Zahl der Präsentation auf dunklen Folien.** Foliennummer und Spur richten sich nach dem Hintergrund der Folie statt
+  nach der Textfarbe des Designs: auf Dunkel hell, auf Hell dunkel, auf Bildern weiß mit Schatten.
+
 ## [0.47.0] – 2026-10-21
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach einem Änderungsprotokoll.
@@ -1463,6 +1490,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.48.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.48.0
 [0.47.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.47.0
 [0.46.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.46.1
 [0.46.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.46.0
