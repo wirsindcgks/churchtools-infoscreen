@@ -471,4 +471,5 @@ daneben. Am Rechner lassen sich Folien und Einstellungen einklappen.
 
 Ohne Bild, weil es dort nichts zu bedienen gibt: Der Fernseher meldet sich über seine Adresse selbst an, holt
 Änderungen in etwa 20 Sekunden, hält Daten und Bilder auf dem Gerät, zeigt bei einem Netzausfall den letzten Stand
-und lädt jede Nacht neu. Er braucht weder Tastatur noch Maus.
+und lädt jede Nacht neu. Er braucht weder Tastatur noch Maus. Was er tut, wenn ChurchTools nicht erreichbar ist,
+zeigt [Wenn ChurchTools ausfällt](Ausfall.md).

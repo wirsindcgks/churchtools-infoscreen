@@ -56,6 +56,7 @@ Die Anleitungen:
 - **[Einrichtung für Administratoren](docs/Einrichtung.md)** – Installation, Rechte, Geräte-Benutzer, Kiosk-Browser,
   Updates und Datenschutz.
 - **[Rechte-Übersicht](docs/Rechte.md)** – wer welche Rechte braucht, als Tabelle.
+- **[Wenn ChurchTools ausfällt](docs/Ausfall.md)** – was der Fernseher dann zeigt, als Ablauf.
 
 ## Datenschutz
 

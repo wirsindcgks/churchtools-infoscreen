@@ -26,6 +26,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
   - der Baustein „Video“ über eine Nacht und mit Ton (Archiv, Punkt 52);
   - Laufschrift, ein Beiträge-Block (Archiv, Punkt 33) und das Lebenszeichen über Wochen (G54 hat nur Minuten gemessen);
   - in der Prüfung der Gerätegruppe: jeder Kalender der Screens meldet „ist öffentlich“ (Archiv, Punkt 73).
+- **Ausfall der Instanz** *(nach der Abschaltung durch ChurchTools am 2026-10-21, beide Screens seither „nicht online“)*: Antwortet der Server beim Neuladen mit einer Fehler- oder Wartungsseite, zeigt der Fernseher diese statt der Kopie und bleibt dort; das nächtliche Neuladen prüft nichts. Ablauf, Lücken und Vorschlag in [`docs/Ausfall.md`](docs/Ausfall.md); gebaut wird nach Entscheidung des Nutzers.
   - Für den Pi im Serverraum braucht es im Fehlerfall jemanden mit Schlüssel, der ihn aus- und wieder einsteckt.
 - **Änderungsprotokoll auf der Produktivinstanz** *(aus Punkt 100)*: `v0.48.0` läuft dort seit dem 2026-10-22; jetzt einmal die Einrichtung als Administrator öffnen – erst dann entsteht die Kategorie `protokoll`, und die Gestalter bekommen ihre Rechte darauf. Auf der Testinstanz bleibt der Testwert 490 in `protokoll` stehen, bis ein Administrator ihn löscht (G67).
 - **„the preview plays the unsaved draft“ in `editor.spec.ts` ist in WebKit rot** (`save-status` nicht gefunden), bemerkt am 2026-10-16 bei Punkt 89 – auch auf dem Stand davor rot, zuletzt bestätigt am 2026-10-22 vor `v0.48.0`; in Chromium grün.
