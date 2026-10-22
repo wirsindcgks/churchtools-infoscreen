@@ -199,6 +199,18 @@ describe('editor store', () => {
         expect((await repository.loadPlaylist(playlistId)).playlist.progress).toBeUndefined();
     });
 
+    it('keeps the form of the progress bar through publishing; the bar is saved as missing (Plan.md 109)', async () => {
+        const { editor, repository, playlistId } = await setup();
+        editor.setProgress(true);
+        editor.setProgressStyle('segments');
+        expect(await editor.publish()).toBe(true);
+        expect((await repository.loadPlaylist(playlistId)).playlist.progressStyle).toBe('segments');
+        editor.setProgressStyle('bar');
+        expect(editor.draft!.playlist).not.toHaveProperty('progressStyle', 'bar');
+        expect(await editor.publish()).toBe(true);
+        expect((await repository.loadPlaylist(playlistId)).playlist.progressStyle).toBeUndefined();
+    });
+
     it('stops at a conflict and lets the user decide', async () => {
         const { editor, repository, playlistId } = await setup();
         // Another designer saves in between.

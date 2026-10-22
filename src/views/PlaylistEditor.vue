@@ -1119,6 +1119,7 @@ function onKey(event: KeyboardEvent): void {
             :banner="editor.draft.playlist.banner"
             :progress="editor.draft.playlist.progress"
             :progress-edge="editor.draft.playlist.progressPlacement === 'edge'"
+            :progress-segments="editor.draft.playlist.progressStyle === 'segments'"
             :start-slide-id="editor.slide?.id"
             @close="previewing = false"
         />

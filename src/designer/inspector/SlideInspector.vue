@@ -122,6 +122,10 @@ const layoutSummary = computed(() => {
 /** A slide shared with other playlists is explained under "Allgemein" while it is shared. */
 useGeneralHelp(() => (linkedNames.value ? [{ term: t.help.terms.linked, text: t.inspector.linkedInfo }] : []));
 const layoutHelp = computed(() => ({ items: hasRegions.value ? [{ term: t.inspector.layoutGap, text: t.inspector.layoutGapInfo }] : [] }));
+const progressStyleOptions = [
+    { value: 'bar', label: t.inspector.progressStyles.bar },
+    { value: 'segments', label: t.inspector.progressStyles.segments },
+];
 const progressPlacementOptions = [
     { value: 'inset', label: t.inspector.progressPlacements.inset },
     { value: 'edge', label: t.inspector.progressPlacements.edge },
@@ -129,9 +133,13 @@ const progressPlacementOptions = [
 const progressSummary = computed(() => {
     const playlist = editor.draft?.playlist;
     if (!playlist?.progress) return t.inspector.progressOff;
-    return playlist.progressPlacement === 'edge' ? t.inspector.progressOnEdge : t.inspector.progressOn;
+    return [
+        t.inspector.progressOn,
+        ...(playlist.progressStyle === 'segments' ? [t.inspector.progressStyles.segments] : []),
+        ...(playlist.progressPlacement === 'edge' ? [t.inspector.progressEdgeShort] : []),
+    ].join(' · ');
 });
-const progressHelp = { intro: t.inspector.progressSectionInfo, items: [{ term: t.inspector.progress, text: t.inspector.progressInfo }, th.pageProgressPlacement(true)] };
+const progressHelp = { intro: t.inspector.progressSectionInfo, items: [{ term: t.inspector.progress, text: t.inspector.progressInfo }, th.pageProgressStyle, th.pageProgressPlacement] };
 const playlistHelp = {
     items: [
         { term: t.inspector.schedule, text: t.inspector.scheduleInfo },
@@ -200,6 +208,14 @@ const backgroundColors = computed(() => {
                 :label="t.inspector.progress"
                 testid="playlist-progress"
                 @update:model-value="editor.setProgress($event)"
+            />
+            <SegmentField
+                v-if="editor.draft.playlist.progress"
+                :model-value="editor.draft.playlist.progressStyle ?? 'bar'"
+                :options="progressStyleOptions"
+                :label="t.inspector.progressStyle"
+                testid="playlist-progress-style"
+                @update:model-value="editor.setProgressStyle($event === 'segments' ? 'segments' : 'bar')"
             />
             <SegmentField
                 v-if="editor.draft.playlist.progress"

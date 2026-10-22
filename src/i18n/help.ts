@@ -208,16 +208,22 @@ export const th = {
     /** "Fortschritt" of the blocks that turn by themselves (Plan.md 105); `next` names what comes next. */
     pageProgress: (next: string): HelpItem => ({
         term: i.pageProgress,
-        text: `Ein dünner Balken unten im Baustein zeigt, wann ${next} kommt. Aus ändert nichts am Takt.`,
+        text: `Ein dünner Balken unten im Baustein zeigt, wann ${next} kommt. Aus ändert nichts am Takt. Zeigt die Präsentation ihren Fortschritt, bleibt der des Bausteins aus.`,
     }),
 
-    /** "Lage" of that bar (Plan.md 107); the posts and the gallery have no number to leave out. */
-    pageProgressPlacement: (withNumber: boolean): HelpItem => ({
-        term: i.progressPlacement,
+    /** "Form" of that bar (Plan.md 109), the same for every block and for the slide. */
+    pageProgressStyle: {
+        term: i.progressStyle,
         text:
-            `Abgesetzt: eine Pille${withNumber ? ' mit Seitenzahl' : ''}, etwas über dem Rand. ` +
-            'Am Rand: eine dünne Linie über die ganze Breite, bündig unten, ohne Zahl.',
-    }),
+            'Balken: eine Spur, die sich je Seite füllt, abgesetzt mit Seitenzahl. Segmente: ein Abschnitt je Seite, Beitrag, Bild oder Folie; ' +
+            'man sieht, wie viele kommen – ohne Zahl.',
+    } satisfies HelpItem,
+
+    /** "Lage" of that bar (Plan.md 107), the same for every block and for the slide. */
+    pageProgressPlacement: {
+        term: i.progressPlacement,
+        text: 'Abgesetzt: etwas über dem Rand, beim Balken mit Seitenzahl. Am Rand: eine dünne Linie über die ganze Breite, bündig unten, ohne Zahl.',
+    } satisfies HelpItem,
 
     /** "Bilder" and "Darstellung" of the gallery. */
     slideshow: {

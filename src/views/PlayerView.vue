@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, watch, watchEffect } from 'vue';
 import { useRoute } from 'vue-router';
 import { enableTokenLogin } from '../ct/client';
 import type { MediaDoc, SlideDoc } from '../model/schema';
@@ -21,6 +21,7 @@ import { loadingVars } from '../player/theme';
 import { bandInset, bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
 import { fontStack } from '../player/fonts';
+import { progressTextColor } from '../player/progress-color';
 import ProgressBar from '../player/ProgressBar.vue';
 import SlideView from '../player/SlideView.vue';
 import { onStoreChanged } from '../store/backend';
@@ -144,6 +145,11 @@ const playlist = computed(() => {
     );
 });
 
+// With the presentation's progress on, the blocks show none of their own (Plan.md 109).
+watchEffect(() => {
+    context.slideProgress = !!playlist.value?.progress;
+});
+
 const slides = computed<SlideDoc[]>(() => {
     const loaded = state?.screen;
     if (!loaded || !playlist.value) return [];
@@ -261,11 +267,13 @@ onBeforeUnmount(() => {
                     :held="heldAt"
                     :bottom="bandInset(banner)"
                     :color="themeOf(context).accent"
-                    :text-color="themeOf(context).text"
+                    :text-color="progressTextColor(current.background).color"
+                    :shadow="progressTextColor(current.background).shadow"
                     :font-family="fontStack(themeOf(context).font)"
                     :number="(index % slides.length) + 1"
                     :total="slides.length"
                     :edge="playlist?.progressPlacement === 'edge'"
+                    :segments="playlist?.progressStyle === 'segments'"
                 />
             </StageView>
             <!-- Old content with a discreet marker beats a black screen. -->

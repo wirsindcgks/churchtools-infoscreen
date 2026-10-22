@@ -324,7 +324,7 @@ export const useEditorStore = defineStore('editor', () => {
             ...loaded.slides.filter((s) => wanted.has(s.id)).map((s) => drafted.get(s.id) ?? s),
             ...ids.filter((id) => !published.has(id)).map((id) => drafted.get(id)!),
         ];
-        draft.value = cloneJson({ playlist: { ...loaded.playlist, name: stored.playlist.name, slideIds: ids, progress: stored.playlist.progress, progressPlacement: stored.playlist.progressPlacement }, slides: composed });
+        draft.value = cloneJson({ playlist: { ...loaded.playlist, name: stored.playlist.name, slideIds: ids, progress: stored.playlist.progress, progressPlacement: stored.playlist.progressPlacement, progressStyle: stored.playlist.progressStyle }, slides: composed });
         draftJson.value = bundleJson.value;
         draftRevision.value = stored.playlist.revision;
         draftInfo.value = { updatedBy: stored.playlist.updatedBy, updatedAt: stored.playlist.updatedAt };
@@ -558,6 +558,11 @@ export const useEditorStore = defineStore('editor', () => {
     /** Off is saved as missing, not as `false`. */
     function setProgress(on: boolean): void {
         change((b) => (b.playlist.progress = on ? true : undefined));
+    }
+
+    /** The bar is saved as missing, segments as `segments`. */
+    function setProgressStyle(style: 'bar' | 'segments'): void {
+        change((b) => (b.playlist.progressStyle = style === 'segments' ? 'segments' : undefined));
     }
 
     /** Set off from the edge is saved as missing. */
@@ -1382,7 +1387,7 @@ export const useEditorStore = defineStore('editor', () => {
             const published = savedSlideIds.value;
             const changed = bundle.slides.filter((s) => baseline.get(s.id) !== JSON.stringify(s) || !published.has(s.id));
             const saved = await repo.drafts.save(
-                { playlistId, name: bundle.playlist.name, slideIds: [...bundle.playlist.slideIds], progress: bundle.playlist.progress, progressPlacement: bundle.playlist.progressPlacement, slides: cloneJson(changed) },
+                { playlistId, name: bundle.playlist.name, slideIds: [...bundle.playlist.slideIds], progress: bundle.playlist.progress, progressPlacement: bundle.playlist.progressPlacement, progressStyle: bundle.playlist.progressStyle, slides: cloneJson(changed) },
                 { expectedRevision: draftRevision.value, updatedBy: author.value },
             );
             draftRevision.value = saved.revision;
@@ -1610,6 +1615,7 @@ export const useEditorStore = defineStore('editor', () => {
         selectArea,
         renamePlaylist,
         setProgress,
+        setProgressStyle,
         setProgressPlacement,
         addSlide,
         duplicateCurrentSlide,

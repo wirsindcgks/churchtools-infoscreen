@@ -12,6 +12,7 @@ import BannerView from '../player/BannerView.vue';
 import { provideStageContext, themeOf, useStageContext, type StageContext } from '../player/context';
 import { useRotation } from '../player/rotation';
 import { fontStack } from '../player/fonts';
+import { progressTextColor } from '../player/progress-color';
 import ProgressBar from '../player/ProgressBar.vue';
 import SlideView from '../player/SlideView.vue';
 import { fitStage } from '../player/stage';
@@ -30,6 +31,8 @@ const props = defineProps<{
     progress?: boolean;
     /** Plan.md 107: the bar as a line flush with the bottom edge. */
     progressEdge?: boolean;
+    /** Plan.md 109: one segment per slide instead of the bar with the number. */
+    progressSegments?: boolean;
 }>();
 const emit = defineEmits<{ close: [] }>();
 
@@ -69,6 +72,10 @@ const context = reactive<StageContext>({
     // The theme too: accent, corners and layouts as on the TV (Plan.md, 27).
     get theme() {
         return parent.theme;
+    },
+    // The preview's own bar stands in for the blocks' (Plan.md 109).
+    get slideProgress() {
+        return !!props.progress;
     },
     pages: {},
     get paging() {
@@ -156,11 +163,13 @@ onBeforeUnmount(() => {
                 :held="heldAt"
                 :bottom="bannerShown(banner, parent.now, parent.timeZone) ? bandInset(banner) : 0"
                 :color="themeOf(context).accent"
-                :text-color="themeOf(context).text"
+                :text-color="progressTextColor(current.background).color"
+                :shadow="progressTextColor(current.background).shadow"
                 :font-family="fontStack(themeOf(context).font)"
                 :number="(index % shown.length) + 1"
                 :total="shown.length"
                 :edge="progressEdge"
+                :segments="progressSegments"
             />
         </StageView>
 

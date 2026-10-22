@@ -23,9 +23,29 @@ export function pageProgressOn(block: Block): boolean {
     return own ?? (block.type === 'appointment-list' || block.type === 'groups' || block.type === 'rooms');
 }
 
+/** Whether a block really draws its progress: it is on, and the presentation does not draw its own on the slide (Plan.md 109). */
+export function pageProgressShown(block: Block, context: { slideProgress?: boolean }): boolean {
+    return pageProgressOn(block) && !context.slideProgress;
+}
+
 /** Whether the progress bar of a block lies flush with the bottom edge instead of set off from it (schema 1.48, Plan.md 107). */
 export function pageProgressEdge(block: Block): boolean {
     return 'pageProgressPlacement' in block && block.pageProgressPlacement === 'edge';
+}
+
+/**
+ * Whether the progress of a block draws one segment per page instead of the bar with the page number (schema 1.50,
+ * Plan.md 109). A block without the field keeps its look from before: the visitor overview of the list shows segments,
+ * everything else the bar.
+ */
+export function pageProgressSegments(block: Block): boolean {
+    const own = 'pageProgressStyle' in block ? block.pageProgressStyle : undefined;
+    return own ? own === 'segments' : pageProgressSegmentsByDefault(block);
+}
+
+/** What `pageProgressSegments` falls back to without the field: the form the block had before it could be chosen. */
+export function pageProgressSegmentsByDefault(block: Block): boolean {
+    return block.type === 'appointment-list' && block.layout === 'visitor';
 }
 
 /**

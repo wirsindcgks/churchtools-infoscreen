@@ -8,10 +8,11 @@ import { t } from '../../../i18n/designer';
 import { th } from '../../../i18n/help';
 import type { Block, RoomEntry } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
-import { PAGE_SECONDS, pageProgressOn } from '../../../player/paging';
+import { PAGE_SECONDS } from '../../../player/paging';
 import type { RoomInfo } from '../../../rooms/normalize';
 import PageProgressHint from '../PageProgressHint.vue';
-import PageProgressPlacement from '../PageProgressPlacement.vue';
+import PageProgressOptions from '../PageProgressOptions.vue';
+import PageProgressToggle from '../PageProgressToggle.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import SelectMenu from '../../SelectMenu.vue';
 import { useInspectorContext } from '../context';
@@ -69,7 +70,7 @@ const roomTotal = computed(() => {
 /** "Wegweiser" and "Titel zeigen" stand in every row, so the list explains them once. */
 const r = th.rooms;
 useGeneralHelp(() => (context.rooms?.length ? [r.add] : []));
-const appearanceHelp = computed(() => ({ intro: r.intro, items: [r.view, r.period, ...(props.block.layout === 'overview' ? [r.seconds, th.pageProgress('die nächste Seite'), th.pageProgressPlacement(true)] : [])] }));
+const appearanceHelp = computed(() => ({ intro: r.intro, items: [r.view, r.period, ...(props.block.layout === 'overview' ? [r.seconds, th.pageProgress('die nächste Seite'), th.pageProgressStyle, th.pageProgressPlacement] : [])] }));
 
 function addRooms(infos: RoomInfo[]): void {
     const next = [...props.block.rooms, ...infos.map((r): RoomEntry => ({ resourceId: r.id, hint: '', showTitles: true }))];
@@ -158,14 +159,8 @@ function remove(index: number): void {
             testid="rooms-seconds"
             @update:model-value="setBlock({ pageSeconds: $event })"
         />
-        <ToggleField
-            v-if="block.layout === 'overview'"
-            :model-value="pageProgressOn(block)"
-            :label="t.inspector.pageProgress"
-            testid="page-progress"
-            @update:model-value="setBlock({ pageProgress: $event })"
-        />
-        <PageProgressPlacement v-if="block.layout === 'overview'" :block="block" />
+        <PageProgressToggle v-if="block.layout === 'overview'" :block="block" />
+        <PageProgressOptions v-if="block.layout === 'overview'" :block="block" />
         <PageProgressHint v-if="block.layout === 'overview'" />
         <p v-if="mode === 'full' && block.layout === 'door'" class="hint" data-testid="rooms-door-hint">
             {{ t.inspector.doorHint }}

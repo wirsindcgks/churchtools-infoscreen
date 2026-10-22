@@ -17,7 +17,7 @@ import { selectPosts } from '../../posts/normalize';
 import { markdownBlocks, markdownText } from '../../ct/markdown';
 import { themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
-import { paginateByHeight, pageInterval, pageProgressEdge, pageProgressOn, POST_SECONDS } from '../paging';
+import { paginateByHeight, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, POST_SECONDS } from '../paging';
 import CalendarBadge from './CalendarBadge.vue';
 import MdInlines from './MdInlines.vue';
 import PageProgress from './PageProgress.vue';
@@ -51,6 +51,8 @@ watch(
 let timer: ReturnType<typeof setInterval> | undefined;
 /** Seconds one post shows while the posts turn, for the progress bar; 0 while they do not. */
 const turnSeconds = ref(0);
+/** The designer's stage turns nothing: the progress then stands at 40 % (Plan.md 109). */
+const still = computed(() => context.paging === false);
 function turnPages(): void {
     clearInterval(timer);
     page.value = 0;
@@ -229,7 +231,7 @@ onMounted(() => {
             </div>
         </template>
         <div v-else class="hero-text hero-subtitle" data-testid="posts-empty">{{ tp.posts.none }}</div>
-        <PageProgress v-if="turnSeconds && pageProgressOn(block)" :key="page" :seconds="turnSeconds" :size="block.style.fontSize * 0.165" :inset="block.style.fontSize * 0.8" :edge="pageProgressEdge(block)" />
+        <PageProgress v-if="(turnSeconds || (still && block.layout === 'card' && items.length > 1)) && pageProgressShown(block, context)" :key="page" :seconds="turnSeconds" :held="still" :segments="pageProgressSegments(block)" :size="block.style.fontSize * 0.165" :inset="block.style.fontSize * 0.8" :edge="pageProgressEdge(block)" :number="(page % items.length) + 1" :total="items.length" />
     </div>
 </template>
 

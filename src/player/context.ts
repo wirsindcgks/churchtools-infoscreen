@@ -27,6 +27,8 @@ export interface StageContext {
     pages?: Record<string, number>;
     /** Whether paged lists turn their pages; the designer preview holds page 1. */
     paging?: boolean;
+    /** The presentation shows its own progress on this slide, so the blocks show none (Plan.md 109); missing = they do. */
+    slideProgress?: boolean;
     /** Videos stay mute whatever their block says – the designer preview, which offers a button for the sound (Plan.md 52). */
     silent?: boolean;
     /** The look of all screens (schema 1.9); missing or null means the defaults. */

@@ -9,10 +9,10 @@ import { t } from '../../../i18n/designer';
 import { th } from '../../../i18n/help';
 import { useGeneralHelp } from '../../help/register';
 import type { Block } from '../../../model/schema';
-import { pageProgressOn } from '../../../player/paging';
 import { effectiveMotion, effectiveTransition } from '../../../player/slideshow';
 import PageProgressHint from '../PageProgressHint.vue';
-import PageProgressPlacement from '../PageProgressPlacement.vue';
+import PageProgressOptions from '../PageProgressOptions.vue';
+import PageProgressToggle from '../PageProgressToggle.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
 import MediaField from '../fields/MediaField.vue';
@@ -20,7 +20,6 @@ import NumberField from '../fields/NumberField.vue';
 import SegmentField from '../fields/SegmentField.vue';
 import SortList, { type SortItem } from '../fields/SortList.vue';
 import TileField from '../fields/TileField.vue';
-import ToggleField from '../fields/ToggleField.vue';
 import { MOTION_TILES, TRANSITION_TILES } from '../layouts';
 import { move as moveItem } from '../../ops';
 import { lookSummary } from './picture-look';
@@ -38,7 +37,7 @@ const { editor, setBlock, mediaUrl } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
 useGeneralHelp(() => [th.general.slideshowAdd]);
 const s = th.slideshow;
-const help = { intro: s.intro, items: [s.seconds, th.pageProgress('das nächste Bild'), th.pageProgressPlacement(false), s.transition, s.motion, s.fit, th.pictureFrame.corners, th.pictureFrame.shadow] };
+const help = { intro: s.intro, items: [s.seconds, th.pageProgress('das nächste Bild'), th.pageProgressStyle, th.pageProgressPlacement, s.transition, s.motion, s.fit, th.pictureFrame.corners, th.pictureFrame.shadow] };
 
 const fits = [
     { value: 'contain', label: t.inspector.fitContain },
@@ -102,13 +101,8 @@ function remove(index: number): void {
             testid="slideshow-seconds"
             @update:model-value="setBlock({ seconds: $event })"
         />
-        <ToggleField
-            :model-value="pageProgressOn(block)"
-            :label="t.inspector.pageProgress"
-            testid="page-progress"
-            @update:model-value="setBlock({ pageProgress: $event })"
-        />
-        <PageProgressPlacement :block="block" />
+        <PageProgressToggle :block="block" />
+        <PageProgressOptions :block="block" />
         <PageProgressHint />
         <TileField
             quick
