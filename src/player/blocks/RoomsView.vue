@@ -11,7 +11,8 @@ import type { Block } from '../../model/schema';
 import { doorSign, emptyText, overviewRows } from '../../rooms/display';
 import { useStageContext } from '../context';
 import { textStyle } from '../format';
-import { PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressOn, paginateByHeight } from '../paging';
+import { PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressOn, pageProgressSegments, paginateByHeight } from '../paging';
+import PageSegments from './PageSegments.vue';
 import RoomRow from './RoomRow.vue';
 import { tp } from '../../i18n/player';
 
@@ -52,6 +53,10 @@ function measure(): void {
 /** The page bar at the bottom: 0.55em text and a little air, like AppointmentListView's. */
 const progressOn = computed(() => pageProgressOn(props.block));
 const edge = computed(() => pageProgressEdge(props.block));
+/** One segment per page instead of the bar with the number (Plan.md 109). */
+const segments = computed(() => pageProgressSegments(props.block));
+/** The designer's stage turns no pages: the bar then stands at 40 % (Plan.md 109). */
+const held = computed(() => context.paging === false);
 /** Room kept free for the page bar; the edge line is thinner and has no number beside it. */
 const reserve = computed(() => (progressOn.value ? props.block.style.fontSize * (edge.value ? 0.365 : 0.9) : 0));
 const pages = computed(() => paginateByHeight(rows.value, heights.value, props.block.height, reserve.value));
@@ -152,16 +157,20 @@ onBeforeUnmount(() => clearInterval(timer));
             </ul>
         </Transition>
         <div v-if="progressOn && pages.length > 1" class="pager" :class="{ 'pager--edge': edge }" data-testid="rooms-pager">
-            <span class="track">
-                <span
-                    v-if="turnSeconds"
-                    :key="page"
-                    class="progress"
-                    data-testid="rooms-progress"
-                    :style="{ animationDuration: `${turnSeconds}s` }"
-                />
-            </span>
-            <span v-if="!edge" class="page-number" data-testid="rooms-page">{{ page + 1 }}/{{ pages.length }}</span>
+            <PageSegments v-if="segments" :count="pages.length" :current="page" :seconds="turnSeconds" :held="held" :edge="edge" fill-testid="rooms-progress" />
+            <template v-else>
+                <span class="track">
+                    <span
+                        v-if="turnSeconds"
+                        :key="page"
+                        class="progress"
+                        data-testid="rooms-progress"
+                        :style="{ animationDuration: `${turnSeconds}s` }"
+                    />
+                    <span v-else-if="held" class="progress progress--held" />
+                </span>
+                <span v-if="!edge" class="page-number" data-testid="rooms-page">{{ page + 1 }}/{{ pages.length }}</span>
+            </template>
         </div>
     </div>
 </template>
@@ -324,6 +333,10 @@ onBeforeUnmount(() => clearInterval(timer));
     background: var(--isd-accent, currentColor);
     transform-origin: left;
     animation: page-progress linear forwards;
+}
+.progress--held {
+    animation: none;
+    transform: scaleX(0.4);
 }
 @keyframes page-progress {
     from {

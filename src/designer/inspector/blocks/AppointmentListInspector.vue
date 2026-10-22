@@ -12,7 +12,7 @@ import { themeOf, useStageContext } from '../../../player/context';
 import { PAGE_SECONDS, pageProgressOn } from '../../../player/paging';
 import { listLayout } from '../../../player/theme';
 import PageProgressHint from '../PageProgressHint.vue';
-import PageProgressPlacement from '../PageProgressPlacement.vue';
+import PageProgressOptions from '../PageProgressOptions.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import CalendarField from '../../CalendarField.vue';
 import TagField from '../../TagField.vue';
@@ -56,7 +56,7 @@ const appearanceHelp = computed(() => {
             ...(layout.value === 'cards' ? [h.showCalendar] : []),
             h.period,
             props.block.showAll ? h.secondsPerPage : h.count,
-            ...(props.block.showAll ? [th.pageProgress('die nächste Seite'), th.pageProgressPlacement] : []),
+            ...(props.block.showAll ? [th.pageProgress('die nächste Seite'), th.pageProgressStyle, th.pageProgressPlacement] : []),
             h.showAll,
             showRoomHelp(props.block, themeOf(stage)),
         ],
@@ -136,7 +136,7 @@ const pageHint = computed(() => {
             testid="page-progress"
             @update:model-value="setBlock({ pageProgress: $event })"
         />
-        <PageProgressPlacement v-if="block.showAll" :block="block" />
+        <PageProgressOptions v-if="block.showAll" :block="block" />
         <PageProgressHint v-if="block.showAll" />
         <!-- Plan.md, 23: every appointment of the horizon, page by page. -->
         <ToggleField :model-value="block.showAll ?? false" :label="t.inspector.showAll" testid="show-all" @update:model-value="setBlock({ showAll: $event })" />

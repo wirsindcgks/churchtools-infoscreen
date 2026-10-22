@@ -99,11 +99,11 @@ describe('visitor overview as a layout of the appointment list', () => {
         expect(slideSeconds(slide, context.pages!)).toBe(30);
         context.now = new Date('2026-10-15T12:00:01Z');
         await vi.advanceTimersByTimeAsync(10_000);
-        expect(wrapper.get('[data-testid="list-visitor-pager"]').attributes('aria-label')).toBe('Seite 2 von 3');
+        expect(wrapper.get('[data-testid="list-segments"]').attributes('aria-label')).toBe('Seite 2 von 3');
         expect(wrapper.findAll('[data-testid="list-visitor-row"]')[0]!.text()).toContain('Termin 4');
-        expect(wrapper.findAll('.segment-fill')).toHaveLength(1);
+        expect(wrapper.findAll('.fill--done')).toHaveLength(1);
         await vi.advanceTimersByTimeAsync(20_000);
-        expect(wrapper.get('[data-testid="list-visitor-pager"]').attributes('aria-label')).toBe('Seite 1 von 3');
+        expect(wrapper.get('[data-testid="list-segments"]').attributes('aria-label')).toBe('Seite 1 von 3');
         wrapper.unmount();
     });
 
@@ -112,12 +112,12 @@ describe('visitor overview as a layout of the appointment list', () => {
         await flushPromises();
         expect(held.wrapper.find('[data-testid="list-progress"]').exists()).toBe(false);
         await vi.advanceTimersByTimeAsync(30_000);
-        expect(held.wrapper.get('[data-testid="list-visitor-pager"]').attributes('aria-label')).toBe('Seite 1 von 3');
+        expect(held.wrapper.get('[data-testid="list-segments"]').attributes('aria-label')).toBe('Seite 1 von 3');
         held.wrapper.unmount();
         const limited = render({ showAll: false, limit: 2 });
         await flushPromises();
         expect(limited.wrapper.findAll('[data-testid="list-visitor-row"]')).toHaveLength(2);
-        expect(limited.wrapper.find('[data-testid="list-visitor-pager"]').exists()).toBe(false);
+        expect(limited.wrapper.find('[data-testid="list-segments"]').exists()).toBe(false);
         limited.wrapper.unmount();
     });
 });

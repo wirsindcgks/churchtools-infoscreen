@@ -266,6 +266,7 @@ onBeforeUnmount(() => {
                     :number="(index % slides.length) + 1"
                     :total="slides.length"
                     :edge="playlist?.progressPlacement === 'edge'"
+                    :segments="playlist?.progressStyle === 'segments'"
                 />
             </StageView>
             <!-- Old content with a discreet marker beats a black screen. -->

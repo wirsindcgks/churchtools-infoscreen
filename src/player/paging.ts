@@ -29,6 +29,21 @@ export function pageProgressEdge(block: Block): boolean {
 }
 
 /**
+ * Whether the progress of a block draws one segment per page instead of the bar with the page number (schema 1.50,
+ * Plan.md 109). A block without the field keeps its look from before: the visitor overview of the list shows segments,
+ * everything else the bar.
+ */
+export function pageProgressSegments(block: Block): boolean {
+    const own = 'pageProgressStyle' in block ? block.pageProgressStyle : undefined;
+    return own ? own === 'segments' : pageProgressSegmentsByDefault(block);
+}
+
+/** What `pageProgressSegments` falls back to without the field: the form the block had before it could be chosen. */
+export function pageProgressSegmentsByDefault(block: Block): boolean {
+    return block.type === 'appointment-list' && block.layout === 'visitor';
+}
+
+/**
  * Splits rows into pages by their measured heights – rows of the card layout
  * differ, with or without subtitle and place. When they need more than one
  * page, `reserve` stays free at the bottom for the page bar. Every page has

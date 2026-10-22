@@ -105,6 +105,15 @@ describe('the inspector of the slide (Plan.md 79, B2)', () => {
         expect(editor.draft!.playlist.progress).toBeUndefined();
     });
 
+    it('offers the form and the placement of the progress, and names them in the summary (Plan.md 109)', async () => {
+        const { editor, wrapper } = await setup();
+        await wrapper.get<HTMLInputElement>('[data-testid="playlist-progress"]').setValue(true);
+        await wrapper.get('[data-testid="playlist-progress-style"] input[value="segments"]').setValue(true);
+        expect(editor.draft!.playlist.progressStyle).toBe('segments');
+        await wrapper.get('[data-testid="playlist-progress-placement"] input[value="edge"]').setValue(true);
+        expect(wrapper.get('[data-testid="section-progress"]').text()).toContain('An · Segmente · am Rand');
+    });
+
     it('puts the progress bar of the playlist in a section of its own, before the division of the slide (Plan.md 105)', async () => {
         const { wrapper } = await setup();
         const ids = wrapper.findAll('details.section').map((el) => el.attributes('data-testid'));

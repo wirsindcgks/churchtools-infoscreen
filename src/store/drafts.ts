@@ -65,6 +65,7 @@ export interface DraftChange {
     slideIds: string[];
     progress?: boolean;
     progressPlacement?: 'inset' | 'edge';
+    progressStyle?: 'bar' | 'segments';
     /** The slides to write as drafts; every other slide draft of this playlist is deleted. */
     slides: SlideDoc[];
 }
@@ -170,6 +171,7 @@ export class DraftStore {
                 slideIds: change.slideIds,
                 ...(change.progress ? { progress: true } : {}),
                 ...(change.progressPlacement === 'edge' ? { progressPlacement: 'edge' as const } : {}),
+                ...(change.progressStyle === 'segments' ? { progressStyle: 'segments' as const } : {}),
                 revision: current + 1,
                 updatedBy: options.updatedBy,
                 updatedAt,

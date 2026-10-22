@@ -30,6 +30,8 @@ const props = defineProps<{
     progress?: boolean;
     /** Plan.md 107: the bar as a line flush with the bottom edge. */
     progressEdge?: boolean;
+    /** Plan.md 109: one segment per slide instead of the bar with the number. */
+    progressSegments?: boolean;
 }>();
 const emit = defineEmits<{ close: [] }>();
 
@@ -161,6 +163,7 @@ onBeforeUnmount(() => {
                 :number="(index % shown.length) + 1"
                 :total="shown.length"
                 :edge="progressEdge"
+                :segments="progressSegments"
             />
         </StageView>
 

@@ -208,6 +208,37 @@ describe('the progress bar can be switched off or on (schema 1.47, Plan.md 105)'
         ...overrides,
     });
 
+    it('draws the list as segments without the number; the visitor overview keeps them, with "bar" it gets the number', async () => {
+        const segments = render(list({ height: 650, pageProgressStyle: 'segments' }), 8);
+        await flushPromises();
+        expect(segments.wrapper.findAll('[data-testid="page-segment"]')).toHaveLength(3);
+        expect(segments.wrapper.find('[data-testid="list-page"]').exists()).toBe(false);
+        expect(segments.wrapper.find('[data-testid="list-progress"]').exists()).toBe(true);
+        segments.wrapper.unmount();
+
+        const visitor = render(list({ layout: 'visitor' }), 8);
+        await flushPromises();
+        expect(visitor.wrapper.findAll('[data-testid="page-segment"]').length).toBeGreaterThan(1);
+        expect(visitor.wrapper.find('[data-testid="list-page"]').exists()).toBe(false);
+        visitor.wrapper.unmount();
+
+        const visitorBar = render(list({ layout: 'visitor', pageProgressStyle: 'bar' }), 8);
+        await flushPromises();
+        expect(visitorBar.wrapper.find('[data-testid="page-segment"]').exists()).toBe(false);
+        expect(visitorBar.wrapper.find('[data-testid="list-page"]').exists()).toBe(true);
+        visitorBar.wrapper.unmount();
+
+        // Held: the bar (or the first segment) stands at 40 %.
+        const held = render(list({ height: 650, pageProgressStyle: 'segments' }), 8, false);
+        await flushPromises();
+        expect(held.wrapper.findAll('.fill--held')).toHaveLength(1);
+        held.wrapper.unmount();
+        const heldBar = render(list({ height: 650 }), 8, false);
+        await flushPromises();
+        expect(heldBar.wrapper.find('.progress--held').exists()).toBe(true);
+        heldBar.wrapper.unmount();
+    });
+
     it('draws the list bar at the edge without the page number', async () => {
         const edge = render(list({ height: 650, pageProgressPlacement: 'edge' }), 8);
         await flushPromises();
@@ -235,15 +266,39 @@ describe('the progress bar can be switched off or on (schema 1.47, Plan.md 105)'
         expect(on.wrapper.get('[data-testid="page-progress-number"]').text()).toBe('2/2');
         on.wrapper.unmount();
 
-        // One post, a list, or a stage that holds the posts: nothing turns, so nothing runs.
+        // One post or a list: nothing turns, so there is nothing to show.
         const single = render(posts({ pageProgress: true }), 8, true, { posts: [post(1)] });
         const list = render(posts({ pageProgress: true, layout: 'list' }), 8, true, { posts: [post(1), post(2)] });
-        const held = render(posts({ pageProgress: true }), 8, false, { posts: [post(1), post(2)] });
         await flushPromises();
-        for (const other of [single, list, held]) {
+        for (const other of [single, list]) {
             expect(other.wrapper.find('[data-testid="page-progress"]').exists()).toBe(false);
             other.wrapper.unmount();
         }
+
+        // A stage that holds the posts (the designer's) shows the bar standing at 40 %, with the number.
+        const held = render(posts({ pageProgress: true }), 8, false, { posts: [post(1), post(2)] });
+        await flushPromises();
+        expect(held.wrapper.find('[data-testid="page-progress-bar"]').exists()).toBe(false);
+        expect(held.wrapper.find('.progress--held').exists()).toBe(true);
+        expect(held.wrapper.get('[data-testid="page-progress-number"]').text()).toBe('1/2');
+        held.wrapper.unmount();
+    });
+
+    it('draws posts as segments without the number, one per post, standing at 40 % where nothing turns', async () => {
+        const running = render(posts({ pageProgress: true, pageProgressStyle: 'segments' }), 8, true, { posts: [post(1), post(2), post(3)] });
+        await flushPromises();
+        expect(running.wrapper.findAll('[data-testid="page-segment"]')).toHaveLength(3);
+        expect(running.wrapper.find('[data-testid="page-progress-number"]').exists()).toBe(false);
+        expect(running.wrapper.get('[data-testid="page-progress-bar"]').attributes('style')).toContain('animation-duration: 15s');
+        await vi.advanceTimersByTimeAsync(15_000);
+        expect(running.wrapper.findAll('.fill--done')).toHaveLength(1);
+        running.wrapper.unmount();
+
+        const held = render(posts({ pageProgress: true, pageProgressStyle: 'segments' }), 8, false, { posts: [post(1), post(2), post(3)] });
+        await flushPromises();
+        expect(held.wrapper.findAll('[data-testid="page-segment"]')).toHaveLength(3);
+        expect(held.wrapper.findAll('.fill--held')).toHaveLength(1);
+        held.wrapper.unmount();
     });
 
     it('lays the bar of posts flush with the bottom at the edge, without the number', async () => {
@@ -306,12 +361,21 @@ describe('the progress bar can be switched off or on (schema 1.47, Plan.md 105)'
             on.wrapper.unmount();
 
             const one = render(gallery({ pageProgress: true, mediaIds: ['m1'] }), 6, true, { media });
-            const held = render(gallery({ pageProgress: true }), 6, false, { media });
             await flushPromises();
             expect(one.wrapper.find('[data-testid="page-progress"]').exists()).toBe(false);
-            expect(held.wrapper.find('[data-testid="page-progress"]').exists()).toBe(false);
             one.wrapper.unmount();
+
+            // The designer's stage holds the pictures: the bar stands at 40 %, or the first segment does.
+            const held = render(gallery({ pageProgress: true }), 6, false, { media });
+            const heldSegments = render(gallery({ pageProgress: true, pageProgressStyle: 'segments' }), 6, false, { media });
+            await flushPromises();
+            expect(held.wrapper.find('.progress--held').exists()).toBe(true);
+            expect(held.wrapper.get('[data-testid="page-progress-number"]').text()).toBe('1/2');
+            expect(heldSegments.wrapper.findAll('[data-testid="page-segment"]')).toHaveLength(2);
+            expect(heldSegments.wrapper.findAll('.fill--held')).toHaveLength(1);
+            expect(heldSegments.wrapper.find('[data-testid="page-progress-number"]').exists()).toBe(false);
             held.wrapper.unmount();
+            heldSegments.wrapper.unmount();
         });
     });
 });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
-import { GROUP_SECONDS, PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressOn, paginateByHeight, POST_SECONDS, slideSeconds } from './paging';
+import { GROUP_SECONDS, PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressOn, paginateByHeight, POST_SECONDS, slideSeconds } from './paging';
 
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
 const list = (overrides: Partial<Extract<Block, { type: 'appointment-list' }>> = {}): Block => ({
@@ -210,5 +210,19 @@ describe('pageProgressEdge (schema 1.48, Plan.md 107)', () => {
         expect(pageProgressEdge(list({ pageProgressPlacement: 'inset' }))).toBe(false);
         expect(pageProgressEdge(list({ pageProgressPlacement: 'edge' }))).toBe(true);
         expect(pageProgressEdge({ id: 't', type: 'text', x: 0, y: 0, width: 1, height: 1, text: '', style } as unknown as Block)).toBe(false);
+    });
+});
+
+describe('pageProgressSegments (schema 1.50, Plan.md 109)', () => {
+    it('is the bar without the field, except in the visitor overview of the list, which keeps its segments', () => {
+        expect(pageProgressSegments(list())).toBe(false);
+        expect(pageProgressSegments(list({ layout: 'visitor' }))).toBe(true);
+        expect(pageProgressSegments(posts())).toBe(false);
+    });
+
+    it('follows the field when it is there', () => {
+        expect(pageProgressSegments(list({ pageProgressStyle: 'segments' }))).toBe(true);
+        expect(pageProgressSegments(list({ layout: 'visitor', pageProgressStyle: 'bar' }))).toBe(false);
+        expect(pageProgressSegments(posts({ pageProgressStyle: 'segments' }))).toBe(true);
     });
 });

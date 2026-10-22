@@ -1123,6 +1123,10 @@ test('the gallery lets one choose the placement of its progress bar, and the dra
     await page.getByTestId('page-progress').check();
     const placement = (value: string) => page.getByTestId('page-progress-placement').locator(`input[value="${value}"]`);
     await expect(placement('inset')).toBeChecked();
+    // Plan.md 109: the form comes before the placement; the bar is the form of a gallery without the field.
+    const form = (value: string) => page.getByTestId('page-progress-style').locator(`input[value="${value}"]`);
+    await expect(form('bar')).toBeChecked();
+    await form('segments').check({ force: true });
     await placement('edge').check({ force: true });
     await expect(page.getByTestId('save-status')).toHaveText(/^Entwurf gesichert · \d\d:\d\d$/, { timeout: 10_000 });
 
@@ -1130,6 +1134,7 @@ test('the gallery lets one choose the placement of its progress bar, and the dra
     await page.getByTestId('frame-slideshow').last().click({ position: { x: 4, y: 4 } });
     await openSection(page, 'appearance');
     await expect(placement('edge')).toBeChecked();
+    await expect(form('segments')).toBeChecked();
 });
 
 test('the presentation lets one choose the placement of its progress bar under "Fortschritt" of the slide (Plan.md 107)', async ({ page }) => {
@@ -1145,6 +1150,12 @@ test('the presentation lets one choose the placement of its progress bar under "
     await page.getByTestId('playlist-progress-placement').locator('input[value="edge"]').check({ force: true });
     await expect(page.locator('.editor-stage [data-testid="slide-number"]')).toHaveCount(0);
     await expect(page.locator('.editor-stage [data-testid="slide-progress"]')).toBeVisible();
+    // Plan.md 109: as segments there is one track per slide and no number, inset or at the edge.
+    await expect(page.locator('.editor-stage [data-testid="slide-segment"]')).toHaveCount(0);
+    await page.getByTestId('playlist-progress-style').locator('input[value="segments"]').check({ force: true });
+    await expect(page.locator('.editor-stage [data-testid="slide-segment"]').first()).toBeVisible();
+    await page.getByTestId('playlist-progress-placement').locator('input[value="inset"]').check({ force: true });
+    await expect(page.locator('.editor-stage [data-testid="slide-number"]')).toHaveCount(0);
 });
 
 test('the preview plays the unsaved draft like the TV, and saves nothing', async ({ page }) => {

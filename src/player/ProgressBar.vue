@@ -5,7 +5,7 @@
  * transition over the time that is left – no frame loop and no recount every second, which a Pi would feel. A new
  * slide starts it at 0; a changed duration continues it from where it stands; a held preview freezes it.
  */
-import { onMounted, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 /** The gap to the left, right and bottom edge of the stage (stage pixels), the same on all three sides. */
 const INSET = 32;
@@ -29,9 +29,16 @@ const props = defineProps<{
     total: number;
     /** Plan.md 107: a line flush with the sides and the bottom, without the number, instead of the pill set off from the edge. */
     edge?: boolean;
+    /** Plan.md 109: one track per slide instead of one for the whole – the finished ones full, the running one fills, no number. */
+    segments?: boolean;
 }>();
 
 const bar = ref<HTMLElement | null>(null);
+/** The running slide among the segments, from 0. */
+const current = computed(() => Math.min(Math.max(props.number - 1, 0), Math.max(props.total - 1, 0)));
+function setBar(el: unknown): void {
+    if (el) bar.value = el as HTMLElement;
+}
 
 function apply(): void {
     const el = bar.value;
@@ -48,7 +55,7 @@ function apply(): void {
 }
 
 onMounted(apply);
-watch(() => [props.startedAt, props.seconds, props.held], apply, { flush: 'post' });
+watch(() => [props.startedAt, props.seconds, props.held, props.number, props.segments], apply, { flush: 'post' });
 </script>
 
 <template>
@@ -58,10 +65,16 @@ watch(() => [props.startedAt, props.seconds, props.held], apply, { flush: 'post'
         :style="edge ? { left: 0, right: 0, bottom: `${bottom}px`, color: textColor, fontFamily } : { left: `${INSET}px`, right: `${INSET}px`, bottom: `${bottom + INSET}px`, color: textColor, fontFamily }"
         data-testid="slide-progress"
     >
-        <div class="track">
+        <div v-if="segments" class="segments">
+            <div v-for="index in Math.max(total, 1)" :key="index" class="track" data-testid="slide-segment">
+                <div v-if="index - 1 < current" class="fill fill--done" :style="{ background: color }" />
+                <div v-else-if="index - 1 === current" :ref="setBar" class="fill" :style="{ background: color }" />
+            </div>
+        </div>
+        <div v-else class="track">
             <div ref="bar" class="fill" :style="{ background: color }" />
         </div>
-        <span v-if="total > 1 && !edge" class="slide-number" data-testid="slide-number">{{ number }}/{{ total }}</span>
+        <span v-if="!segments && total > 1 && !edge" class="slide-number" data-testid="slide-number">{{ number }}/{{ total }}</span>
     </div>
 </template>
 
@@ -83,6 +96,12 @@ watch(() => [props.startedAt, props.seconds, props.held], apply, { flush: 'post'
     overflow: hidden;
     border-radius: var(--isd-pill, 999px);
 }
+.segments {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.3em;
+}
 .progress--edge .track {
     border-radius: 0;
 }
@@ -101,6 +120,9 @@ watch(() => [props.startedAt, props.seconds, props.held], apply, { flush: 'post'
     transform: scaleX(0);
     transform-origin: left;
     will-change: transform;
+}
+.fill--done {
+    transform: scaleX(1);
 }
 .slide-number {
     opacity: 0.6;

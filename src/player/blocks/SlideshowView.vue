@@ -14,7 +14,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { isVideo, type Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { blockImageUrl } from '../images';
-import { pageInterval, pageProgressEdge, pageProgressOn } from '../paging';
+import { pageInterval, pageProgressEdge, pageProgressOn, pageProgressSegments } from '../paging';
 import { effectiveTransition, pictureMotion, type PictureMotion } from '../slideshow';
 import PageProgress from './PageProgress.vue';
 
@@ -55,6 +55,8 @@ let turn = 0;
 let timer: ReturnType<typeof setInterval> | undefined;
 /** Seconds one picture stands while the pictures turn, for the progress bar; 0 while they do not. */
 const turnSeconds = ref(0);
+/** The designer's stage turns nothing: the progress then stands at 40 % (Plan.md 109). */
+const still = computed(() => context.paging === false);
 let held: HTMLImageElement | undefined;
 
 /** Starts decoding a picture; resolves when done, on error, or after a wait. */
@@ -146,7 +148,7 @@ const motionSeconds = computed(() => pageInterval(props.block.seconds ?? 6, prop
             <img v-if="url" class="picture" :src="url" :style="{ objectFit: block.fit }" alt="">
         </div>
         <!-- Keyed by the picture really on show: `advance` waits for the decoding, the bar starts over with the picture. -->
-        <PageProgress v-if="turnSeconds && pageProgressOn(block)" :key="index" :seconds="turnSeconds" :size="8" :inset="16" :color="themeOf(context).text" :edge="pageProgressEdge(block)" :number="index + 1" :total="urls.length" />
+        <PageProgress v-if="(turnSeconds || (still && urls.length > 1)) && pageProgressOn(block)" :key="index" :seconds="turnSeconds" :held="still" :segments="pageProgressSegments(block)" :size="8" :inset="16" :color="themeOf(context).text" :edge="pageProgressEdge(block)" :number="index + 1" :total="urls.length" />
     </div>
     <!-- A calm placeholder, never a broken-image icon on a TV. -->
     <div v-else class="placeholder" />

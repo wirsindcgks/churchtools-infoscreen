@@ -13,9 +13,10 @@ import { imageSource, themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
 import { markdownLines } from '../../ct/markdown';
 import MdInlines from './MdInlines.vue';
-import { GROUP_SECONDS, pageInterval, pageProgressEdge, pageProgressOn, paginateByHeight } from '../paging';
+import { GROUP_SECONDS, pageInterval, pageProgressEdge, pageProgressOn, pageProgressSegments, paginateByHeight } from '../paging';
 import { qrShape } from '../qr';
 import CalendarBadge from './CalendarBadge.vue';
+import PageSegments from './PageSegments.vue';
 import { LOCALE, tp } from '../../i18n/player';
 
 const props = defineProps<{ block: Extract<Block, { type: 'groups' }>; slideSeconds?: number }>();
@@ -38,6 +39,10 @@ function hideOnError(event: Event): void {
 /** The page bar at the bottom: 0.55em text and a little air, like AppointmentListView's. */
 const progressOn = computed(() => pageProgressOn(props.block));
 const edge = computed(() => pageProgressEdge(props.block));
+/** One segment per page instead of the bar with the number (Plan.md 109). */
+const segments = computed(() => pageProgressSegments(props.block));
+/** The designer's stage turns no pages: the bar then stands at 40 % (Plan.md 109). */
+const held = computed(() => context.paging === false);
 /** Room kept free for the page bar; the edge line is thinner and has no number beside it. */
 const reserve = computed(() => (progressOn.value ? props.block.style.fontSize * (edge.value ? 0.365 : 0.9) : 0));
 
@@ -333,10 +338,14 @@ onMounted(() => {
             <li v-if="items.length === 0" class="empty" data-testid="groups-empty">{{ emptyMessage }}</li>
         </ul>
         <div v-if="paged && progressOn" class="pager" :class="{ 'pager--edge': edge }" data-testid="groups-pager">
-            <span class="track">
-                <span v-if="turnSeconds" :key="page" class="progress" :style="{ animationDuration: `${turnSeconds}s` }" />
-            </span>
-            <span v-if="!edge" class="page-number">{{ page + 1 }}/{{ pages.length }}</span>
+            <PageSegments v-if="segments" :count="pages.length" :current="page" :seconds="turnSeconds" :held="held" :edge="edge" />
+            <template v-else>
+                <span class="track">
+                    <span v-if="turnSeconds" :key="page" class="progress" :style="{ animationDuration: `${turnSeconds}s` }" />
+                    <span v-else-if="held" class="progress progress--held" />
+                </span>
+                <span v-if="!edge" class="page-number">{{ page + 1 }}/{{ pages.length }}</span>
+            </template>
         </div>
     </div>
 
@@ -424,10 +433,14 @@ onMounted(() => {
         </div>
         <div v-else class="hero hero-subtitle" data-testid="groups-empty">{{ emptyMessage }}</div>
         <div v-if="paged && progressOn" class="pager" :class="{ 'pager--edge': edge }" data-testid="groups-pager">
-            <span class="track">
-                <span v-if="turnSeconds" :key="page" class="progress" :style="{ animationDuration: `${turnSeconds}s` }" />
-            </span>
-            <span v-if="!edge" class="page-number">{{ page + 1 }}/{{ pages.length }}</span>
+            <PageSegments v-if="segments" :count="pages.length" :current="page" :seconds="turnSeconds" :held="held" :edge="edge" />
+            <template v-else>
+                <span class="track">
+                    <span v-if="turnSeconds" :key="page" class="progress" :style="{ animationDuration: `${turnSeconds}s` }" />
+                    <span v-else-if="held" class="progress progress--held" />
+                </span>
+                <span v-if="!edge" class="page-number">{{ page + 1 }}/{{ pages.length }}</span>
+            </template>
         </div>
     </div>
 </template>
@@ -718,6 +731,10 @@ onMounted(() => {
     background: var(--isd-accent, currentColor);
     transform-origin: left;
     animation: page-progress linear forwards;
+}
+.progress--held {
+    animation: none;
+    transform: scaleX(0.4);
 }
 @keyframes page-progress {
     from {

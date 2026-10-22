@@ -13,9 +13,10 @@ import { roomsShownInLayout, shownRoomNames, showsRoomsAt } from '../../appointm
 import type { Block } from '../../model/schema';
 import { themeOf, useStageContext } from '../context';
 import { textStyle } from '../format';
-import { PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressOn, paginateByHeight, SHOW_ALL_CAP } from '../paging';
+import { PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressOn, pageProgressSegments, paginateByHeight, SHOW_ALL_CAP } from '../paging';
 import { listLayout } from '../theme';
 import AppointmentRow from './AppointmentRow.vue';
+import PageSegments from './PageSegments.vue';
 import { tp } from '../../i18n/player';
 
 const props = defineProps<{ block: Extract<Block, { type: 'appointment-list' }>; slideSeconds?: number }>();
@@ -53,6 +54,10 @@ function measure(): void {
 const progressOn = computed(() => pageProgressOn(props.block));
 /** The page bar at the bottom: 0.55em text and a little air. */
 const edge = computed(() => pageProgressEdge(props.block));
+/** One segment per page instead of the bar with the number (Plan.md 109). */
+const segments = computed(() => pageProgressSegments(props.block));
+/** The designer's stage turns no pages: the bar then stands at 40 % (Plan.md 109). */
+const held = computed(() => context.paging === false);
 /** Room kept free for the page bar; the edge line is thinner and has no number beside it. */
 const reserve = computed(() => (progressOn.value ? props.block.style.fontSize * (edge.value ? 0.365 : 0.9) : 0));
 /** Without "alle Termine" only the rows that fit whole – a row cut off at the bottom looks broken. */
@@ -130,24 +135,29 @@ onBeforeUnmount(() => clearInterval(timer));
                 <li v-if="items.length === 0" class="empty">{{ tp.appointments.noneInDays(block.horizonDays) }}</li>
             </ul>
         </Transition>
-        <div v-if="progressOn && pages.length > 1 && visitor" class="pager pager--segments" :class="{ 'pager--edge': edge }" role="img" :aria-label="tp.appointments.page(page + 1, pages.length)" data-testid="list-visitor-pager">
-            <span v-for="(_, index) in pages" :key="index" class="track">
-                <span v-if="index < page" key="complete" class="segment-fill" />
-                <span v-else-if="index === page && turnSeconds" :key="`active-${page}`" class="progress" data-testid="list-progress" :style="{ animationDuration: `${turnSeconds}s` }" />
-            </span>
-        </div>
-        <div v-else-if="progressOn && pages.length > 1 && !visitor" class="pager" :class="{ 'pager--edge': edge }">
-            <!-- Fills up over the time of one page, anew on each page: how long until the next. -->
-            <span class="track">
-                <span
-                    v-if="turnSeconds"
-                    :key="page"
-                    class="progress"
-                    data-testid="list-progress"
-                    :style="{ animationDuration: `${turnSeconds}s` }"
-                />
-            </span>
-            <span v-if="!edge" class="page-number" data-testid="list-page">{{ page + 1 }}/{{ pages.length }}</span>
+        <div
+            v-if="progressOn && pages.length > 1"
+            class="pager"
+            :class="{ 'pager--edge': edge, 'pager--segments': segments }"
+            :role="segments ? 'img' : undefined"
+            :aria-label="segments ? tp.appointments.page(page + 1, pages.length) : undefined"
+            :data-testid="segments ? 'list-segments' : undefined"
+        >
+            <PageSegments v-if="segments" :count="pages.length" :current="page" :seconds="turnSeconds" :held="held" :edge="edge" fill-testid="list-progress" />
+            <template v-else>
+                <!-- Fills up over the time of one page, anew on each page: how long until the next. -->
+                <span class="track">
+                    <span
+                        v-if="turnSeconds"
+                        :key="page"
+                        class="progress"
+                        data-testid="list-progress"
+                        :style="{ animationDuration: `${turnSeconds}s` }"
+                    />
+                    <span v-else-if="held" class="progress progress--held" />
+                </span>
+                <span v-if="!edge" class="page-number" data-testid="list-page">{{ page + 1 }}/{{ pages.length }}</span>
+            </template>
         </div>
     </div>
 </template>
@@ -173,22 +183,13 @@ onBeforeUnmount(() => clearInterval(timer));
     right: var(--list-inset);
 }
 .paged--visitor .pager--segments {
-    gap: 0.3em;
     font-size: 1em;
+    --segment-height: 0.16em;
 }
 .paged--visitor .pager--edge {
     right: 0;
     bottom: 0;
     left: 0;
-}
-.pager--segments .track {
-    height: 0.16em;
-}
-.pager--segments .progress,
-.segment-fill {
-    display: block;
-    height: 100%;
-    background: var(--isd-accent, currentColor);
 }
 .pager--edge .track {
     border-radius: 0;
@@ -244,6 +245,10 @@ onBeforeUnmount(() => clearInterval(timer));
     background: var(--isd-accent, currentColor);
     transform-origin: left;
     animation: page-progress linear forwards;
+}
+.progress--held {
+    animation: none;
+    transform: scaleX(0.4);
 }
 @keyframes page-progress {
     from {

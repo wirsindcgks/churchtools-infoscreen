@@ -771,7 +771,7 @@ test('visitor overview is offered by the appointment list and shares its rooms a
     await expect(preview.getByTestId('list-visitor-room').nth(1)).toHaveText('Saal');
     await expect(preview.getByTestId('list-visitor-room').nth(1)).toHaveCSS('text-align', 'right');
     await expect(preview).not.toContainText('Eingetragener Ort');
-    await expect(preview.getByTestId('list-visitor-pager')).toBeVisible();
+    await expect(preview.getByTestId('list-segments')).toBeVisible();
     // Existing room choices affect the names, never the appointments.
     const count = await preview.getByTestId('list-visitor-row').count();
     await page.getByTestId('show-rooms').uncheck();
@@ -788,9 +788,9 @@ test('visitor overview is offered by the appointment list and shares its rooms a
     await page.clock.install({ time: NOW });
     await page.goto('./player?screen=demo');
     const player = page.getByTestId('player').locator('.paged--visitor');
-    await expect(player.getByTestId('list-visitor-pager')).toHaveAttribute('aria-label', /^Seite 1 von/);
+    await expect(player.getByTestId('list-segments')).toHaveAttribute('aria-label', /^Seite 1 von/);
     await expect(player.getByTestId('list-progress')).toBeVisible();
     await page.clock.fastForward(10_500);
-    await expect(player.getByTestId('list-visitor-pager')).toHaveAttribute('aria-label', /^Seite 2 von/);
-    await expect(player.locator('.segment-fill')).toHaveCount(1);
+    await expect(player.getByTestId('list-segments')).toHaveAttribute('aria-label', /^Seite 2 von/);
+    await expect(player.locator('.fill--done')).toHaveCount(1);
 });

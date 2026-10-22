@@ -896,6 +896,7 @@ export class ScreenRepository {
             stage: { ...source.playlist.stage },
             ...(source.playlist.progress ? { progress: true } : {}),
             ...(source.playlist.progressPlacement === 'edge' ? { progressPlacement: 'edge' as const } : {}),
+            ...(source.playlist.progressStyle === 'segments' ? { progressStyle: 'segments' as const } : {}),
             revision: 1,
             updatedBy,
             updatedAt: time,

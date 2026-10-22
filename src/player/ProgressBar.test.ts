@@ -35,6 +35,19 @@ describe('ProgressBar (Plan.md 86)', () => {
         expect(wrapper.find('[data-testid="slide-number"]').exists()).toBe(false);
     });
 
+    it('draws one track per slide as segments, the finished ones full, without a number (Plan.md 109)', async () => {
+        const wrapper = mount(ProgressBar, { props: { ...props(), segments: true } });
+        expect(wrapper.findAll('[data-testid="slide-segment"]')).toHaveLength(7);
+        expect(wrapper.find('[data-testid="slide-number"]').exists()).toBe(false);
+        expect(wrapper.findAll('.fill--done')).toHaveLength(2);
+        const running = () => wrapper.findAll<HTMLElement>('.fill').filter((f) => f.element.style.transition);
+        expect(running()).toHaveLength(1);
+        expect(running()[0]!.element.style.transition).toBe('transform 10000ms linear');
+        await wrapper.setProps({ number: 4 });
+        expect(wrapper.findAll('.fill--done')).toHaveLength(3);
+        expect(running()).toHaveLength(1);
+    });
+
     it('continues from where it stands when the duration grows', async () => {
         const wrapper = mount(ProgressBar, { props: props() });
         vi.advanceTimersByTime(4000);

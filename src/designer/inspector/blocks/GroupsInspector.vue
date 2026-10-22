@@ -11,7 +11,7 @@ import type { Block, GroupFields } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
 import { GROUP_SECONDS, pageProgressOn } from '../../../player/paging';
 import PageProgressHint from '../PageProgressHint.vue';
-import PageProgressPlacement from '../PageProgressPlacement.vue';
+import PageProgressOptions from '../PageProgressOptions.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
 import NumberField from '../fields/NumberField.vue';
@@ -140,7 +140,7 @@ const appearanceHelp = computed<HelpTopic>(() => {
             ...(props.block.groupIds.length === 0 ? [help.order] : []),
             ...(card ? [help.perPage(props.block.width >= props.block.height)] : []),
             help.seconds(card && props.block.perPage === 1 ? t.inspector.secondsPerGroup : t.inspector.secondsPerPage),
-            th.pageProgress('die nächste Seite'), th.pageProgressPlacement,
+            th.pageProgress('die nächste Seite'), th.pageProgressStyle, th.pageProgressPlacement,
         ],
     };
 });
@@ -217,7 +217,7 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
             testid="page-progress"
             @update:model-value="setBlock({ pageProgress: $event })"
         />
-        <PageProgressPlacement :block="block" />
+        <PageProgressOptions :block="block" />
         <PageProgressHint />
     </InspectorSection>
 

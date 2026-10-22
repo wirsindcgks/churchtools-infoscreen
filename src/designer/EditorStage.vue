@@ -1067,6 +1067,7 @@ function onEmptyAction(b: Block): void {
                 :number="progress.number"
                 :total="progress.total"
                 :edge="editor.draft?.playlist.progressPlacement === 'edge'"
+                :segments="editor.draft?.playlist.progressStyle === 'segments'"
             />
             <div
                 ref="overlay"

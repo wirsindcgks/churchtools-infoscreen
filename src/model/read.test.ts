@@ -787,3 +787,20 @@ describe('readTheme – the church\'s own fonts (schema 1.46, Plan.md 103)', () 
         expect(readTheme({ ...theme, customFonts: [{ ...font(1), name: 'x'.repeat(40) }] }).customFonts).toHaveLength(1);
     });
 });
+
+describe('the form of the progress bars (schema 1.50, Plan.md 109)', () => {
+    it('is optional on the playlist and the blocks, and a 1.49 document stays valid', () => {
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(50);
+        expect(v.parse(PlaylistDoc, makePlaylist({ progress: true, progressStyle: 'segments' })).progressStyle).toBe('segments');
+        expect(v.parse(PlaylistDoc, makePlaylist({ schema: { major: 1, minor: 49 }, progress: true })).progressStyle).toBeUndefined();
+        expect(v.safeParse(PlaylistDoc, makePlaylist({ progressStyle: 'dots' as 'bar' })).success).toBe(false);
+        const gallery = { id: 'g', type: 'slideshow', x: 0, y: 0, width: 800, height: 400, mediaIds: [] };
+        const { doc, issues } = readSlide({
+            ...makeSlide(),
+            schema: { major: 1, minor: 49 },
+            blocks: [{ ...gallery, pageProgress: true, pageProgressStyle: 'segments' }, { ...gallery, id: 'h', pageProgress: true }],
+        });
+        expect(issues).toEqual([]);
+        expect(doc.blocks.map((b) => (b as { pageProgressStyle?: string }).pageProgressStyle)).toEqual(['segments', undefined]);
+    });
+});

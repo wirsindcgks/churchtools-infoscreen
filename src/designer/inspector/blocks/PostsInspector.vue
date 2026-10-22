@@ -9,7 +9,7 @@ import { th } from '../../../i18n/help';
 import type { Block } from '../../../model/schema';
 import { POST_SECONDS, pageProgressOn } from '../../../player/paging';
 import PageProgressHint from '../PageProgressHint.vue';
-import PageProgressPlacement from '../PageProgressPlacement.vue';
+import PageProgressOptions from '../PageProgressOptions.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
 import NumberField from '../fields/NumberField.vue';
@@ -59,7 +59,7 @@ const appearanceHelp = computed<HelpTopic>(() => {
             p.view,
             p.count,
             p.period,
-            ...(card ? [p.seconds, th.pageProgress('der nächste Beitrag'), th.pageProgressPlacement] : []),
+            ...(card ? [p.seconds, th.pageProgress('der nächste Beitrag'), th.pageProgressStyle, th.pageProgressPlacement] : []),
             ...(image ? [p.fit] : []),
             ...(image && props.block.imageFit === 'cover' ? [p.focus] : []),
         ],
@@ -134,7 +134,7 @@ function toggleGroup(id: number, on: boolean): void {
             testid="page-progress"
             @update:model-value="setBlock({ pageProgress: $event })"
         />
-        <PageProgressPlacement v-if="block.layout === 'card'" :block="block" />
+        <PageProgressOptions v-if="block.layout === 'card'" :block="block" />
         <PageProgressHint v-if="block.layout === 'card'" />
         <template v-if="block.layout === 'card' && block.showImage">
             <SegmentField :model-value="block.imageFit" :options="fits" :label="t.inspector.fit" testid="posts-fit" @update:model-value="setBlock({ imageFit: $event })" />

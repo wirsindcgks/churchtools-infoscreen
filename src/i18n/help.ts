@@ -211,10 +211,18 @@ export const th = {
         text: `Ein dünner Balken unten im Baustein zeigt, wann ${next} kommt. Aus ändert nichts am Takt.`,
     }),
 
+    /** "Form" of that bar (Plan.md 109), the same for every block and for the slide. */
+    pageProgressStyle: {
+        term: i.progressStyle,
+        text:
+            'Balken: eine Spur, die sich je Seite füllt, abgesetzt mit Seitenzahl. Segmente: ein Abschnitt je Seite, Beitrag, Bild oder Folie; ' +
+            'man sieht, wie viele kommen – ohne Zahl.',
+    } satisfies HelpItem,
+
     /** "Lage" of that bar (Plan.md 107), the same for every block and for the slide. */
     pageProgressPlacement: {
         term: i.progressPlacement,
-        text: 'Abgesetzt: eine Pille mit Seitenzahl, etwas über dem Rand. Am Rand: eine dünne Linie über die ganze Breite, bündig unten, ohne Zahl.',
+        text: 'Abgesetzt: etwas über dem Rand, beim Balken mit Seitenzahl. Am Rand: eine dünne Linie über die ganze Breite, bündig unten, ohne Zahl.',
     } satisfies HelpItem,
 
     /** "Bilder" and "Darstellung" of the gallery. */
