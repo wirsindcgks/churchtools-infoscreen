@@ -69,7 +69,7 @@ const roomTotal = computed(() => {
 /** "Wegweiser" and "Titel zeigen" stand in every row, so the list explains them once. */
 const r = th.rooms;
 useGeneralHelp(() => (context.rooms?.length ? [r.add] : []));
-const appearanceHelp = computed(() => ({ intro: r.intro, items: [r.view, r.period, ...(props.block.layout === 'overview' ? [r.seconds, th.pageProgress('die nächste Seite'), th.pageProgressPlacement(true)] : [])] }));
+const appearanceHelp = computed(() => ({ intro: r.intro, items: [r.view, r.period, ...(props.block.layout === 'overview' ? [r.seconds, th.pageProgress('die nächste Seite'), th.pageProgressPlacement] : [])] }));
 
 function addRooms(infos: RoomInfo[]): void {
     const next = [...props.block.rooms, ...infos.map((r): RoomEntry => ({ resourceId: r.id, hint: '', showTitles: true }))];

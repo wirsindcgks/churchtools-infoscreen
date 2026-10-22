@@ -38,7 +38,7 @@ const { editor, setBlock, mediaUrl } = useBlockEdit(() => props.block);
 const context = useInspectorContext();
 useGeneralHelp(() => [th.general.slideshowAdd]);
 const s = th.slideshow;
-const help = { intro: s.intro, items: [s.seconds, th.pageProgress('das nächste Bild'), th.pageProgressPlacement(false), s.transition, s.motion, s.fit, th.pictureFrame.corners, th.pictureFrame.shadow] };
+const help = { intro: s.intro, items: [s.seconds, th.pageProgress('das nächste Bild'), th.pageProgressPlacement, s.transition, s.motion, s.fit, th.pictureFrame.corners, th.pictureFrame.shadow] };
 
 const fits = [
     { value: 'contain', label: t.inspector.fitContain },

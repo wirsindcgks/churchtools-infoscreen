@@ -227,10 +227,12 @@ describe('the progress bar can be switched off or on (schema 1.47, Plan.md 105)'
         await flushPromises();
         const bar = () => on.wrapper.find('[data-testid="page-progress-bar"]');
         expect(bar().attributes('style')).toContain('animation-duration: 15s');
+        expect(on.wrapper.get('[data-testid="page-progress-number"]').text()).toBe('1/2');
         const first = bar().element;
         await vi.advanceTimersByTimeAsync(15_000);
         expect(on.wrapper.text()).toContain('Beitrag 2');
         expect(bar().element).not.toBe(first);
+        expect(on.wrapper.get('[data-testid="page-progress-number"]').text()).toBe('2/2');
         on.wrapper.unmount();
 
         // One post, a list, or a stage that holds the posts: nothing turns, so nothing runs.
@@ -244,10 +246,11 @@ describe('the progress bar can be switched off or on (schema 1.47, Plan.md 105)'
         }
     });
 
-    it('lays the bar of posts flush with the bottom at the edge', async () => {
+    it('lays the bar of posts flush with the bottom at the edge, without the number', async () => {
         const edge = render(posts({ pageProgress: true, pageProgressPlacement: 'edge' }), 8, true, { posts: [post(1), post(2)] });
         await flushPromises();
         expect(edge.wrapper.get('[data-testid="page-progress"]').attributes('style')).toContain('bottom: 0px');
+        expect(edge.wrapper.find('[data-testid="page-progress-number"]').exists()).toBe(false);
         edge.wrapper.unmount();
     });
 
@@ -277,10 +280,11 @@ describe('the progress bar can be switched off or on (schema 1.47, Plan.md 105)'
             Reflect.deleteProperty(HTMLImageElement.prototype, 'decode');
         });
 
-        it('lays the bar flush with the bottom at the edge', async () => {
+        it('lays the bar flush with the bottom at the edge, without the number', async () => {
             const edge = render(gallery({ pageProgress: true, pageProgressPlacement: 'edge' }), 6, true, { media });
             await flushPromises();
             expect(edge.wrapper.get('[data-testid="page-progress"]').attributes('style')).toContain('bottom: 0px');
+            expect(edge.wrapper.find('[data-testid="page-progress-number"]').exists()).toBe(false);
             edge.wrapper.unmount();
         });
 
@@ -294,9 +298,11 @@ describe('the progress bar can be switched off or on (schema 1.47, Plan.md 105)'
             await flushPromises();
             const bar = () => on.wrapper.find('[data-testid="page-progress-bar"]');
             expect(bar().attributes('style')).toContain('animation-duration: 6s');
+            expect(on.wrapper.get('[data-testid="page-progress-number"]').text()).toBe('1/2');
             const first = bar().element;
             await vi.advanceTimersByTimeAsync(6_000);
             expect(bar().element).not.toBe(first);
+            expect(on.wrapper.get('[data-testid="page-progress-number"]').text()).toBe('2/2');
             on.wrapper.unmount();
 
             const one = render(gallery({ pageProgress: true, mediaIds: ['m1'] }), 6, true, { media });

@@ -140,7 +140,7 @@ const appearanceHelp = computed<HelpTopic>(() => {
             ...(props.block.groupIds.length === 0 ? [help.order] : []),
             ...(card ? [help.perPage(props.block.width >= props.block.height)] : []),
             help.seconds(card && props.block.perPage === 1 ? t.inspector.secondsPerGroup : t.inspector.secondsPerPage),
-            th.pageProgress('die nächste Seite'), th.pageProgressPlacement(true),
+            th.pageProgress('die nächste Seite'), th.pageProgressPlacement,
         ],
     };
 });

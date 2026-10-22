@@ -56,7 +56,7 @@ const appearanceHelp = computed(() => {
             ...(layout.value === 'cards' ? [h.showCalendar] : []),
             h.period,
             props.block.showAll ? h.secondsPerPage : h.count,
-            ...(props.block.showAll ? [th.pageProgress('die nächste Seite'), th.pageProgressPlacement(true)] : []),
+            ...(props.block.showAll ? [th.pageProgress('die nächste Seite'), th.pageProgressPlacement] : []),
             h.showAll,
             showRoomHelp(props.block, themeOf(stage)),
         ],

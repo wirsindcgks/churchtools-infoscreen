@@ -59,7 +59,7 @@ const appearanceHelp = computed<HelpTopic>(() => {
             p.view,
             p.count,
             p.period,
-            ...(card ? [p.seconds, th.pageProgress('der nächste Beitrag'), th.pageProgressPlacement(false)] : []),
+            ...(card ? [p.seconds, th.pageProgress('der nächste Beitrag'), th.pageProgressPlacement] : []),
             ...(image ? [p.fit] : []),
             ...(image && props.block.imageFit === 'cover' ? [p.focus] : []),
         ],

@@ -295,9 +295,9 @@ wechseln kann:
 | Beiträge | als „Hervorgehoben“ | aus |
 | Galerie | immer | aus |
 
-Bei Terminliste, Gruppen und Raumbelegung gehört zum Balken die Seitenzahl („2/3“), bei der Besucherübersicht die
-Segmente: **Aus** nimmt die ganze Zeile weg, und der Platz geht an die Inhalte – es passt oft eine Zeile mehr auf die
-Seite. Beiträge und Galerie zeigen nur den Balken. Der Takt bleibt in allen Fällen, wie er ist; der Balken läuft
+Zum Balken gehört bei allen Bausteinen die Seitenzahl („2/3“) – bei Beiträgen die Nummer des Beitrags, bei der Galerie
+die des Bildes –, bei der Besucherübersicht stattdessen die Segmente. Bei Terminliste, Gruppen und Raumbelegung nimmt
+**Aus** die ganze Zeile weg, und der Platz geht an die Inhalte – es passt oft eine Zeile mehr auf die Seite. Der Takt bleibt in allen Fällen, wie er ist; der Balken läuft
 unabhängig von dem der Präsentation, der bei Bedarf zusätzlich läuft (Abschnitt „Fortschritt“ der Folie; ein Hinweis unter dem Schalter führt dorthin). Bestehende Folien sehen aus wie vorher.
 
 Bei eingeschaltetem Fortschritt wählt **„Lage“** darunter, wo der Balken liegt: **„Abgesetzt“** (Vorgabe) ist die Pille mit

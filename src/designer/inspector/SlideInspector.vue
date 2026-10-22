@@ -131,7 +131,7 @@ const progressSummary = computed(() => {
     if (!playlist?.progress) return t.inspector.progressOff;
     return playlist.progressPlacement === 'edge' ? t.inspector.progressOnEdge : t.inspector.progressOn;
 });
-const progressHelp = { intro: t.inspector.progressSectionInfo, items: [{ term: t.inspector.progress, text: t.inspector.progressInfo }, th.pageProgressPlacement(true)] };
+const progressHelp = { intro: t.inspector.progressSectionInfo, items: [{ term: t.inspector.progress, text: t.inspector.progressInfo }, th.pageProgressPlacement] };
 const playlistHelp = {
     items: [
         { term: t.inspector.schedule, text: t.inspector.scheduleInfo },
