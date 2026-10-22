@@ -51,19 +51,23 @@ export interface PlayerDeps {
 }
 
 /**
- * `canReload()` for the browser: a `HEAD` on the page itself, as before. Without a network that fails –
- * but a service worker (`../sw/sw.ts`, G10) may still hold the page from before the outage, which reload
- * would show fine. `hasPage` is the messaging call alone, so a test can replace it without a real worker.
+ * `canReload()` for the browser. A service worker (`../sw/sw.ts`, G10) holding the page answers every reload
+ * with the player – from the network, or from its copy when the network fails or brings an error or
+ * maintenance page (docs/Ausfall.md). Without one, the page itself must come back as the player: a `200`
+ * alone may be ChurchTools's maintenance page, and a reload into it never comes back.
+ * `hasPage` is the messaging call alone, so a test can replace it without a real worker.
  */
 export function createCanReload(hasPage: (url: string) => Promise<boolean> = askServiceWorkerHasPage): () => Promise<boolean> {
     return async () => {
+        if (await hasPage(window.location.href)) return true;
         try {
-            const response = await withTimeout(fetch(window.location.href, { method: 'HEAD', cache: 'no-store' }));
-            if (response.ok) return true;
+            const response = await withTimeout(fetch(window.location.href, { cache: 'no-store' }));
+            // Our bundle in the page, as `looksLikePlayerPage` (`../sw/logic.ts`) checks – not imported, so the
+            // worker's code stays out of the app's bundle.
+            return response.ok && (await response.text()).includes(`${import.meta.env.BASE_URL}assets/`);
         } catch {
-            // no network – ask the service worker below instead of giving up right away
+            return false;
         }
-        return hasPage(window.location.href);
     };
 }
 
@@ -386,6 +390,12 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         }
     }
 
+    /** The nightly fresh start – only into a page that loads (docs/Ausfall.md); else another try in an hour. */
+    async function nightlyReload(): Promise<void> {
+        if (await deps.canReload()) deps.reload();
+        else later(INTERVALS.nightlyRetryMs, () => void nightlyReload());
+    }
+
     async function start(): Promise<void> {
         const cached = await deps.loadCached(slug);
         if (cached) {
@@ -402,7 +412,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                 staleSince: new Date(cached.savedAt),
             } satisfies Partial<PlayerState>);
         }
-        later(msUntilNightlyReload(deps.now()), deps.reload);
+        later(msUntilNightlyReload(deps.now()), () => void nightlyReload());
         later(withJitter(INTERVALS.quickCheckMs), quickCycle);
         await configCycle();
         // Cached content or a failed first load: fetch data now, not in ten minutes.

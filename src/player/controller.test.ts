@@ -623,6 +623,23 @@ describe('player controller', () => {
         });
     });
 
+    describe('the nightly reload (docs/Ausfall.md)', () => {
+        it('waits an hour while the page would not load, then reloads', async () => {
+            vi.setSystemTime(NOW);
+            let loads = false;
+            const deps = { ...fakeDeps(), now: () => new Date(), canReload: vi.fn(async () => loads) };
+            const player = createPlayer('demo', fakeData(), deps);
+            await player.start();
+            await vi.advanceTimersByTimeAsync(24 * 60 * 60_000);
+            expect(deps.canReload).toHaveBeenCalled();
+            expect(deps.reload).not.toHaveBeenCalled();
+            loads = true;
+            await vi.advanceTimersByTimeAsync(INTERVALS.nightlyRetryMs);
+            expect(deps.reload).toHaveBeenCalledTimes(1);
+            player.stop();
+        });
+    });
+
     it('names an unknown slug', async () => {
         const player = createPlayer(
             'foyer',
@@ -788,11 +805,21 @@ describe('a screen whose calendar data fails', () => {
 describe('createCanReload (Plan.md, 37; G10)', () => {
     afterEach(() => vi.unstubAllGlobals());
 
-    it('is true when the network answers the page itself', async () => {
-        const hasPage = vi.fn(async () => false);
-        vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 200 })));
-        await expect(createCanReload(hasPage)()).resolves.toBe(true);
-        expect(hasPage).not.toHaveBeenCalled();
+    const playerPage = `<script type="module" src="${import.meta.env.BASE_URL}assets/index-abc123.js"></script>`;
+
+    it('is true when the network answers the player page itself', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(playerPage, { status: 200 })));
+        await expect(createCanReload(async () => false)()).resolves.toBe(true);
+    });
+
+    it('is false when the network answers with a maintenance page instead (docs/Ausfall.md)', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response('<h1>Wartungsarbeiten</h1>', { status: 200 })));
+        await expect(createCanReload(async () => false)()).resolves.toBe(false);
+    });
+
+    it('is false when the network answers with a server error', async () => {
+        vi.stubGlobal('fetch', vi.fn(async () => new Response(playerPage, { status: 503 })));
+        await expect(createCanReload(async () => false)()).resolves.toBe(false);
     });
 
     it('is false when the network fails and no service worker answers', async () => {
@@ -801,11 +828,13 @@ describe('createCanReload (Plan.md, 37; G10)', () => {
         await expect(createCanReload()()).resolves.toBe(false);
     });
 
-    it('is true when the network fails but the worker still has the page cached', async () => {
-        vi.stubGlobal('fetch', vi.fn(() => Promise.reject(new Error('offline'))));
+    it('is true without asking the network when the worker has the page cached', async () => {
+        const fetch = vi.fn(() => Promise.reject(new Error('offline')));
+        vi.stubGlobal('fetch', fetch);
         const hasPage = vi.fn(async () => true);
         await expect(createCanReload(hasPage)()).resolves.toBe(true);
         expect(hasPage).toHaveBeenCalledWith(window.location.href);
+        expect(fetch).not.toHaveBeenCalled();
     });
 
     it('is false when the worker never answers within the time limit', async () => {
