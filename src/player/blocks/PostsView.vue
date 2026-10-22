@@ -17,7 +17,7 @@ import { selectPosts } from '../../posts/normalize';
 import { markdownBlocks, markdownText } from '../../ct/markdown';
 import { themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
-import { paginateByHeight, pageInterval, pageProgressEdge, pageProgressOn, pageProgressSegments, POST_SECONDS } from '../paging';
+import { paginateByHeight, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, POST_SECONDS } from '../paging';
 import CalendarBadge from './CalendarBadge.vue';
 import MdInlines from './MdInlines.vue';
 import PageProgress from './PageProgress.vue';
@@ -231,7 +231,7 @@ onMounted(() => {
             </div>
         </template>
         <div v-else class="hero-text hero-subtitle" data-testid="posts-empty">{{ tp.posts.none }}</div>
-        <PageProgress v-if="(turnSeconds || (still && block.layout === 'card' && items.length > 1)) && pageProgressOn(block)" :key="page" :seconds="turnSeconds" :held="still" :segments="pageProgressSegments(block)" :size="block.style.fontSize * 0.165" :inset="block.style.fontSize * 0.8" :edge="pageProgressEdge(block)" :number="(page % items.length) + 1" :total="items.length" />
+        <PageProgress v-if="(turnSeconds || (still && block.layout === 'card' && items.length > 1)) && pageProgressShown(block, context)" :key="page" :seconds="turnSeconds" :held="still" :segments="pageProgressSegments(block)" :size="block.style.fontSize * 0.165" :inset="block.style.fontSize * 0.8" :edge="pageProgressEdge(block)" :number="(page % items.length) + 1" :total="items.length" />
     </div>
 </template>
 

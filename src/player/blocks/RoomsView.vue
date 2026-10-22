@@ -11,7 +11,7 @@ import type { Block } from '../../model/schema';
 import { doorSign, emptyText, overviewRows } from '../../rooms/display';
 import { useStageContext } from '../context';
 import { textStyle } from '../format';
-import { PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressOn, pageProgressSegments, paginateByHeight } from '../paging';
+import { PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, paginateByHeight } from '../paging';
 import PageSegments from './PageSegments.vue';
 import RoomRow from './RoomRow.vue';
 import { tp } from '../../i18n/player';
@@ -51,7 +51,7 @@ function measure(): void {
 }
 
 /** The page bar at the bottom: 0.55em text and a little air, like AppointmentListView's. */
-const progressOn = computed(() => pageProgressOn(props.block));
+const progressOn = computed(() => pageProgressShown(props.block, context));
 const edge = computed(() => pageProgressEdge(props.block));
 /** One segment per page instead of the bar with the number (Plan.md 109). */
 const segments = computed(() => pageProgressSegments(props.block));

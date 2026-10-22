@@ -208,7 +208,7 @@ export const th = {
     /** "Fortschritt" of the blocks that turn by themselves (Plan.md 105); `next` names what comes next. */
     pageProgress: (next: string): HelpItem => ({
         term: i.pageProgress,
-        text: `Ein dünner Balken unten im Baustein zeigt, wann ${next} kommt. Aus ändert nichts am Takt.`,
+        text: `Ein dünner Balken unten im Baustein zeigt, wann ${next} kommt. Aus ändert nichts am Takt. Zeigt die Präsentation ihren Fortschritt, bleibt der des Bausteins aus.`,
     }),
 
     /** "Form" of that bar (Plan.md 109), the same for every block and for the slide. */

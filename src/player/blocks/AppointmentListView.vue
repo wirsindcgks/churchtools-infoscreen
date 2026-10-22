@@ -13,7 +13,7 @@ import { roomsShownInLayout, shownRoomNames, showsRoomsAt } from '../../appointm
 import type { Block } from '../../model/schema';
 import { themeOf, useStageContext } from '../context';
 import { textStyle } from '../format';
-import { PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressOn, pageProgressSegments, paginateByHeight, SHOW_ALL_CAP } from '../paging';
+import { PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, paginateByHeight, SHOW_ALL_CAP } from '../paging';
 import { listLayout } from '../theme';
 import AppointmentRow from './AppointmentRow.vue';
 import PageSegments from './PageSegments.vue';
@@ -51,7 +51,7 @@ function measure(): void {
 }
 
 /** The whole bar, the figures included, can be switched off (Plan.md 105); its room then goes to the rows. */
-const progressOn = computed(() => pageProgressOn(props.block));
+const progressOn = computed(() => pageProgressShown(props.block, context));
 /** The page bar at the bottom: 0.55em text and a little air. */
 const edge = computed(() => pageProgressEdge(props.block));
 /** One segment per page instead of the bar with the number (Plan.md 109). */

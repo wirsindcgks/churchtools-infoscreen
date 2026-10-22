@@ -8,10 +8,11 @@ import { t } from '../../../i18n/designer';
 import { th } from '../../../i18n/help';
 import type { Block, RoomEntry } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
-import { PAGE_SECONDS, pageProgressOn } from '../../../player/paging';
+import { PAGE_SECONDS } from '../../../player/paging';
 import type { RoomInfo } from '../../../rooms/normalize';
 import PageProgressHint from '../PageProgressHint.vue';
 import PageProgressOptions from '../PageProgressOptions.vue';
+import PageProgressToggle from '../PageProgressToggle.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import SelectMenu from '../../SelectMenu.vue';
 import { useInspectorContext } from '../context';
@@ -158,13 +159,7 @@ function remove(index: number): void {
             testid="rooms-seconds"
             @update:model-value="setBlock({ pageSeconds: $event })"
         />
-        <ToggleField
-            v-if="block.layout === 'overview'"
-            :model-value="pageProgressOn(block)"
-            :label="t.inspector.pageProgress"
-            testid="page-progress"
-            @update:model-value="setBlock({ pageProgress: $event })"
-        />
+        <PageProgressToggle v-if="block.layout === 'overview'" :block="block" />
         <PageProgressOptions v-if="block.layout === 'overview'" :block="block" />
         <PageProgressHint v-if="block.layout === 'overview'" />
         <p v-if="mode === 'full' && block.layout === 'door'" class="hint" data-testid="rooms-door-hint">

@@ -6,6 +6,7 @@
  * slide starts it at 0; a changed duration continues it from where it stands; a held preview freezes it.
  */
 import { computed, onMounted, ref, watch } from 'vue';
+import { TEXT_SHADOWS } from './format';
 
 /** The gap to the left, right and bottom edge of the stage (stage pixels), the same on all three sides. */
 const INSET = 32;
@@ -21,8 +22,10 @@ const props = defineProps<{
     bottom: number;
     /** The bar's colour: the theme's accent. */
     color: string;
-    /** The pale track and the number: the theme's text colour, in its font. */
+    /** The pale track and the number: dark or white after the slide's background (`progressTextColor`), in the theme's font. */
     textColor: string;
+    /** The number and track get the dark text shadow, as text on a picture does (Plan.md 109). */
+    shadow?: boolean;
     fontFamily: string;
     /** Place of the slide in the playlist, from 1, and how many there are; the number shows from two on. */
     number: number;
@@ -62,7 +65,7 @@ watch(() => [props.startedAt, props.seconds, props.held, props.number, props.seg
     <div
         class="progress"
         :class="{ 'progress--edge': edge }"
-        :style="edge ? { left: 0, right: 0, bottom: `${bottom}px`, color: textColor, fontFamily } : { left: `${INSET}px`, right: `${INSET}px`, bottom: `${bottom + INSET}px`, color: textColor, fontFamily }"
+        :style="edge ? { left: 0, right: 0, bottom: `${bottom}px`, color: textColor, fontFamily, ...(shadow ? { textShadow: TEXT_SHADOWS.soft } : {}) } : { left: `${INSET}px`, right: `${INSET}px`, bottom: `${bottom + INSET}px`, color: textColor, fontFamily, ...(shadow ? { textShadow: TEXT_SHADOWS.soft } : {}) }"
         data-testid="slide-progress"
     >
         <div v-if="segments" class="segments">

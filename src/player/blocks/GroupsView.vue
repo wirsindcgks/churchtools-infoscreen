@@ -13,7 +13,7 @@ import { imageSource, themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
 import { markdownLines } from '../../ct/markdown';
 import MdInlines from './MdInlines.vue';
-import { GROUP_SECONDS, pageInterval, pageProgressEdge, pageProgressOn, pageProgressSegments, paginateByHeight } from '../paging';
+import { GROUP_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, paginateByHeight } from '../paging';
 import { qrShape } from '../qr';
 import CalendarBadge from './CalendarBadge.vue';
 import PageSegments from './PageSegments.vue';
@@ -37,7 +37,7 @@ function hideOnError(event: Event): void {
 // --- pages: both layouts turn them the same way, with the same bar as AppointmentListView ---
 
 /** The page bar at the bottom: 0.55em text and a little air, like AppointmentListView's. */
-const progressOn = computed(() => pageProgressOn(props.block));
+const progressOn = computed(() => pageProgressShown(props.block, context));
 const edge = computed(() => pageProgressEdge(props.block));
 /** One segment per page instead of the bar with the number (Plan.md 109). */
 const segments = computed(() => pageProgressSegments(props.block));

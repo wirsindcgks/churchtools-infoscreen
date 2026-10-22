@@ -239,6 +239,19 @@ describe('the progress bar can be switched off or on (schema 1.47, Plan.md 105)'
         heldBar.wrapper.unmount();
     });
 
+    it('shows no progress of its own while the presentation shows one (Plan.md 109)', async () => {
+        const own = render(list({ height: 650 }), 8, true, { slideProgress: true });
+        await flushPromises();
+        expect(own.wrapper.find('.pager').exists()).toBe(false);
+        expect(own.wrapper.find('[data-testid="list-progress"]').exists()).toBe(false);
+        own.wrapper.unmount();
+
+        const postsShown = render(posts({ pageProgress: true }), 8, true, { posts: [post(1), post(2)], slideProgress: true });
+        await flushPromises();
+        expect(postsShown.wrapper.find('[data-testid="page-progress"]').exists()).toBe(false);
+        postsShown.wrapper.unmount();
+    });
+
     it('draws the list bar at the edge without the page number', async () => {
         const edge = render(list({ height: 650, pageProgressPlacement: 'edge' }), 8);
         await flushPromises();

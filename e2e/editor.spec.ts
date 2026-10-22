@@ -1114,6 +1114,25 @@ test('the gallery gets a progress switch under "Darstellung", off by default, an
     await expect(page.getByTestId('block-inspector')).toHaveCount(0);
 });
 
+test('while the presentation shows its progress, the block\'s switch is locked and its form and placement are gone (Plan.md 109)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await addBlock(page, 'slideshow');
+    await openSection(page, 'appearance');
+    await page.getByTestId('page-progress').check();
+    await expect(page.getByTestId('page-progress-style')).toBeVisible();
+    await page.getByTestId('page-progress-hint-link').click();
+    await page.getByTestId('playlist-progress').check();
+    await page.getByTestId('frame-slideshow').last().click({ position: { x: 4, y: 4 } });
+    await openSection(page, 'appearance');
+    await expect(page.getByTestId('page-progress')).toBeDisabled();
+    await expect(page.getByTestId('page-progress')).toBeChecked();
+    await expect(page.getByTestId('page-progress-style')).toHaveCount(0);
+    await expect(page.getByTestId('page-progress-placement')).toHaveCount(0);
+    await expect(page.getByTestId('page-progress-hint')).toContainText('Die Präsentation zeigt ihren Fortschritt');
+    await expect(page.getByTestId('page-progress-hint-link')).toBeVisible();
+});
+
 test('the gallery lets one choose the placement of its progress bar, and the draft keeps it (Plan.md 107)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();

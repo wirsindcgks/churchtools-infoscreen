@@ -8,7 +8,7 @@ import { LOCALE, tp } from '../i18n/player';
  * Shadows of a text (Plan.md F3), always dark: a light glow around dark text vanished on a white slide, and the
  * player cannot know what lies behind a block.
  */
-const TEXT_SHADOWS = {
+export const TEXT_SHADOWS = {
     soft: '0 2px 8px rgba(0, 0, 0, 0.5)',
     strong: '0 3px 6px rgba(0, 0, 0, 0.8), 0 0 2px rgba(0, 0, 0, 0.8)',
 } as const;

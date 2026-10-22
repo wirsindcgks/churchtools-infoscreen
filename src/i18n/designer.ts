@@ -834,7 +834,7 @@ export const t = {
         progressStyles: { bar: 'Balken', segments: 'Segmente' },
         progressPlacement: 'Lage',
         progressPlacements: { inset: 'Abgesetzt', edge: 'Am Rand' },
-        pageProgressHintOn: 'Die Präsentation zeigt zusätzlich ihren Fortschritt.',
+        pageProgressHintOn: 'Die Präsentation zeigt ihren Fortschritt – ',
         pageProgressHintOff: 'Für die ganze Folie: ',
         pageProgressHintLink: 'Abschnitt „Fortschritt“ der Folie.',
         progressInfo:

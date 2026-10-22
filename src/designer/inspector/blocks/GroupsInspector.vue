@@ -9,9 +9,10 @@ import { th } from '../../../i18n/help';
 import { homepageGroups, selectGroups, type Group } from '../../../groups/normalize';
 import type { Block, GroupFields } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
-import { GROUP_SECONDS, pageProgressOn } from '../../../player/paging';
+import { GROUP_SECONDS } from '../../../player/paging';
 import PageProgressHint from '../PageProgressHint.vue';
 import PageProgressOptions from '../PageProgressOptions.vue';
+import PageProgressToggle from '../PageProgressToggle.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
 import NumberField from '../fields/NumberField.vue';
@@ -211,12 +212,7 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
             testid="group-seconds"
             @update:model-value="setBlock({ pageSeconds: $event })"
         />
-        <ToggleField
-            :model-value="pageProgressOn(block)"
-            :label="t.inspector.pageProgress"
-            testid="page-progress"
-            @update:model-value="setBlock({ pageProgress: $event })"
-        />
+        <PageProgressToggle :block="block" />
         <PageProgressOptions :block="block" />
         <PageProgressHint />
     </InspectorSection>

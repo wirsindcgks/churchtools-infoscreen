@@ -7,9 +7,10 @@ import { computed, ref } from 'vue';
 import { t } from '../../../i18n/designer';
 import { th } from '../../../i18n/help';
 import type { Block } from '../../../model/schema';
-import { POST_SECONDS, pageProgressOn } from '../../../player/paging';
+import { POST_SECONDS } from '../../../player/paging';
 import PageProgressHint from '../PageProgressHint.vue';
 import PageProgressOptions from '../PageProgressOptions.vue';
+import PageProgressToggle from '../PageProgressToggle.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import { useInspectorContext } from '../context';
 import NumberField from '../fields/NumberField.vue';
@@ -127,13 +128,7 @@ function toggleGroup(id: number, on: boolean): void {
             testid="post-seconds"
             @update:model-value="setBlock({ pageSeconds: $event })"
         />
-        <ToggleField
-            v-if="block.layout === 'card'"
-            :model-value="pageProgressOn(block)"
-            :label="t.inspector.pageProgress"
-            testid="page-progress"
-            @update:model-value="setBlock({ pageProgress: $event })"
-        />
+        <PageProgressToggle v-if="block.layout === 'card'" :block="block" />
         <PageProgressOptions v-if="block.layout === 'card'" :block="block" />
         <PageProgressHint v-if="block.layout === 'card'" />
         <template v-if="block.layout === 'card' && block.showImage">

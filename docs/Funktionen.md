@@ -297,8 +297,8 @@ wechseln kann:
 
 Zum Balken gehört bei allen Bausteinen die Seitenzahl („2/3“) – bei Beiträgen die Nummer des Beitrags, bei der Galerie
 die des Bildes –, bei der Besucherübersicht stattdessen die Segmente (siehe „Form“ unten). Bei Terminliste, Gruppen und Raumbelegung nimmt
-**Aus** die ganze Zeile weg, und der Platz geht an die Inhalte – es passt oft eine Zeile mehr auf die Seite. Der Takt bleibt in allen Fällen, wie er ist; der Balken läuft
-unabhängig von dem der Präsentation, der bei Bedarf zusätzlich läuft (Abschnitt „Fortschritt“ der Folie; ein Hinweis unter dem Schalter führt dorthin). Bestehende Folien sehen aus wie vorher.
+**Aus** die ganze Zeile weg, und der Platz geht an die Inhalte – es passt oft eine Zeile mehr auf die Seite. Der Takt bleibt in allen Fällen, wie er ist; eine Folie zeigt nur einen Fortschritt:
+Ist der der Präsentation an (Abschnitt „Fortschritt“ der Folie), zeigen die Bausteine keinen eigenen – der Schalter des Bausteins ist dann gesperrt, „Form“ und „Lage“ fehlen, ein Hinweis unter dem Schalter führt zum Abschnitt der Folie. Die Einstellung des Bausteins bleibt gespeichert und gilt wieder, sobald die Präsentation ihren ausschaltet. Bestehende Folien sehen aus wie vorher.
 
 Bei eingeschaltetem Fortschritt wählt **„Form“** darunter: **„Balken“** ist eine Spur, die sich je Seite füllt, abgesetzt mit
 Seitenzahl; **„Segmente“** zeigt einen Abschnitt je Seite, Beitrag oder Bild – abgeschlossene voll, den laufenden sich füllend, die
@@ -382,7 +382,7 @@ eigenen Folien – oder auf Wunsch eine Präsentation mit denselben, verknüpfte
 Präsentation oder eine ihrer Folien zuletzt geändert wurde und von wem; liegt ein Entwurf vor, trägt sie die Marke
 „Entwurf". Im Inspektor der Folie, ganz oben im Abschnitt „Fortschritt", zeigt der Schalter „Fortschrittsbalken" am unteren Rand der
 Bildfläche einen dünnen Balken in der Akzentfarbe des Designs, der anzeigt, wie lange die Folie noch steht, daneben die wievielte
-Folie es ist („3/7“, ab zwei Folien); er hält zum unteren Rand denselben Abstand wie zu den Seiten und sitzt über dem Hinweisband, wenn dieses unten steht, und steht still, solange die Vorschau angehalten ist. Darunter wählt **„Form“** wie bei den Bausteinen zwischen **„Balken“** (Vorgabe) und **„Segmente“** (ein Abschnitt je Folie, ohne Foliennummer), dann **„Lage“** wie bei den Bausteinen zwischen **„Abgesetzt“** (Vorgabe) und **„Am Rand“**: eine dünne Linie über die ganze Breite, bündig an der Unterkante der Bildfläche (über einem unten stehenden Hinweisband), ohne Rundung und ohne Foliennummer. Auf der Folie im Editor steht er bei 40 % (nur zum Ansehen, ohne Wirkung), damit man sieht, wo er liegt.
+Folie es ist („3/7“, ab zwei Folien); er hält zum unteren Rand denselben Abstand wie zu den Seiten und sitzt über dem Hinweisband, wenn dieses unten steht, und steht still, solange die Vorschau angehalten ist. Darunter wählt **„Form“** wie bei den Bausteinen zwischen **„Balken“** (Vorgabe) und **„Segmente“** (ein Abschnitt je Folie, ohne Foliennummer), dann **„Lage“** wie bei den Bausteinen zwischen **„Abgesetzt“** (Vorgabe) und **„Am Rand“**: eine dünne Linie über die ganze Breite, bündig an der Unterkante der Bildfläche (über einem unten stehenden Hinweisband), ohne Rundung und ohne Foliennummer. Zahl und blasse Spur richten sich nach dem Hintergrund der Folie: dunkel oder weiß auf einer Farbe, nach der Farbe am unteren Rand bei einem Verlauf, weiß mit dunklem Schatten bei Bild oder Video. Auf der Folie im Editor steht er bei 40 % (nur zum Ansehen, ohne Wirkung), damit man sieht, wo er liegt.
 
 ![Präsentationen als Kacheln mit Format, Zahl der Folien und den Bildschirmen, die sie zeigen](bilder/playlists.png)
 

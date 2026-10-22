@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { anchored } from './floating';
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue';
 import type { Block } from '../model/schema';
 import { bandInset, bannerShown } from '../player/banner';
 import BannerView from '../player/BannerView.vue';
@@ -8,6 +8,7 @@ import { themeOf, useStageContext } from '../player/context';
 import { fontStack } from '../player/fonts';
 import { slideSeconds } from '../player/paging';
 import ProgressBar from '../player/ProgressBar.vue';
+import { progressTextColor } from '../player/progress-color';
 import { placeInRotation } from '../player/rotation';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
@@ -45,7 +46,14 @@ const progress = computed(() => {
     const slide = editor.slide;
     if (!editor.draft?.playlist.progress || editor.templateEdit || !slide) return null;
     const place = placeInRotation(editor.slides, slide.id);
-    return { seconds: slideSeconds(slide, stage.pages ?? {}), number: place.number, total: place.number ? place.total : 0 };
+    return { textColor: progressTextColor(slide.background), seconds: slideSeconds(slide, stage.pages ?? {}), number: place.number, total: place.number ? place.total : 0 };
+});
+// The same on the stage: with the presentation's bar on the slide, the blocks leave theirs out (Plan.md 109).
+watchEffect(() => {
+    stage.slideProgress = !!editor.draft?.playlist.progress && !editor.templateEdit;
+});
+onBeforeUnmount(() => {
+    stage.slideProgress = false;
 });
 const host = ref<HTMLElement | null>(null);
 const overlay = ref<HTMLElement | null>(null);
@@ -1062,7 +1070,8 @@ function onEmptyAction(b: Block): void {
                 :held="progress.seconds * 400"
                 :bottom="bandInset(banner)"
                 :color="themeOf(stage).accent"
-                :text-color="themeOf(stage).text"
+                :text-color="progress.textColor.color"
+                :shadow="progress.textColor.shadow"
                 :font-family="fontStack(themeOf(stage).font)"
                 :number="progress.number"
                 :total="progress.total"
