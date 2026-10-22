@@ -4,6 +4,17 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.48.1] – 2026-10-22
+
+### Behoben
+
+- **Fernseher bleiben nach einem Ausfall von ChurchTools nicht mehr hängen.** Antwortete ChurchTools beim Neuladen
+  mit einer Fehler- oder Wartungsseite, zeigte der Fernseher genau diese Seite – und blieb dort, bis jemand ihn neu
+  startete, auch wenn ChurchTools längst wieder lief. Jetzt zeigt er in diesem Fall weiter den letzten Stand aus der
+  Kopie auf dem Gerät und erholt sich von selbst, sobald ChurchTools wieder antwortet. Auch das nächtliche Neuladen
+  wartet, bis die Seite wieder lädt. Wie sich ein Fernseher bei einem Ausfall verhält, zeigt
+  [Wenn ChurchTools ausfällt](docs/Ausfall.md).
+
 ## [0.48.0] – 2026-10-22
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Test des Fortschritts und den Hinweis auf die fehlende
@@ -1490,6 +1501,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.48.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.48.1
 [0.48.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.48.0
 [0.47.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.47.0
 [0.46.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.46.1
