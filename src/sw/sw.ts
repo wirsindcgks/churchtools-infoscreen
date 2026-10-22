@@ -94,13 +94,15 @@ function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
  * Stores a network response as the player page, iff it really is one (`shouldCachePlayerPage`) – never
  * ChurchTools's login page, which answers the very same address with `200` when there is no session.
  * Used both for a navigation's own fetch and for the refresh of an already open tab on `activate`.
+ * Answers whether it was the player page.
  */
-async function cachePlayerPageIfMatching(cache: Cache, url: string, response: Response): Promise<void> {
+async function cachePlayerPageIfMatching(cache: Cache, url: string, response: Response): Promise<boolean> {
     const contentType = response.headers.get('content-type');
-    if (response.status !== 200 || !contentType?.includes('text/html')) return;
+    if (response.status !== 200 || !contentType?.includes('text/html')) return false;
     const html = await response.clone().text();
-    if (!shouldCachePlayerPage({ status: response.status, contentType, html }, BASE)) return;
+    if (!shouldCachePlayerPage({ status: response.status, contentType, html }, BASE)) return false;
     await cache.put(pageCacheKey(url), response.clone());
+    return true;
 }
 
 /** Deletes the caches of every other version – a new one never reuses or reads an old one. */
@@ -145,21 +147,25 @@ scope.addEventListener('activate', (event) => {
     );
 });
 
-/** Network first, with a time limit; the cached page only when the network fails or is too slow. */
+/**
+ * Network first, with a time limit; the cached page when the network fails, is too slow, or answers with
+ * something other than the player.
+ */
 async function handlePlayerNavigation(request: Request): Promise<Response> {
     const cache = await caches.open(CURRENT_CACHE);
+    let response: Response;
     try {
-        const response = await withTimeout(fetch(request), NAVIGATION_TIMEOUT_MS);
-        // A redirect (still carrying the login token, or the opaque one a navigation's own fetch gets for
-        // it) is passed through unchanged – the browser follows it itself and asks again without the token.
-        if (!response.redirected && response.type !== 'opaqueredirect') {
-            await cachePlayerPageIfMatching(cache, request.url, response);
-        }
-        return response;
+        response = await withTimeout(fetch(request), NAVIGATION_TIMEOUT_MS);
     } catch {
-        const cached = await cache.match(pageCacheKey(request.url));
-        return cached ?? Response.error();
+        return (await cache.match(pageCacheKey(request.url))) ?? Response.error();
     }
+    // A redirect (still carrying the login token, or the opaque one a navigation's own fetch gets for
+    // it) is passed through unchanged – the browser follows it itself and asks again without the token.
+    if (response.redirected || response.type === 'opaqueredirect') return response;
+    if (await cachePlayerPageIfMatching(cache, request.url, response)) return response;
+    // An error or maintenance page of a ChurchTools that is down (docs/Ausfall.md): on a page without our
+    // script nothing would ever load the player again – the copy shows the last state and keeps trying.
+    return (await cache.match(pageCacheKey(request.url))) ?? response;
 }
 
 /**
