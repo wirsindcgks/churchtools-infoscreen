@@ -22,6 +22,22 @@ export function registerPlayerServiceWorker(base: string): void {
 }
 
 /**
+ * Asks the browser to keep the player's storage (`navigator.storage.persist()`). Without it, storage is
+ * "best effort": on a full SD card Chromium may clear the origin – the worker's copy, IndexedDB and the
+ * videos at once – and the next outage finds no copy (docs/Ausfall.md). Chromium decides without asking
+ * anyone; the answer only goes to the console, like everything the TV cannot show.
+ */
+export async function keepPlayerStorage(storage: Pick<StorageManager, 'persist' | 'persisted'> | undefined = navigator.storage): Promise<void> {
+    if (!storage?.persist) return;
+    try {
+        if (await storage.persisted()) return;
+        if (!(await storage.persist())) console.warn('Speicher des Players nicht dauerhaft: der Browser darf ihn räumen.');
+    } catch (error) {
+        console.warn('Speicher des Players nicht dauerhaft:', error);
+    }
+}
+
+/**
  * Asks the service worker controlling this page whether it has `url` cached (message `has-page`) – the
  * fallback `canReload()` uses when a `HEAD` request to the network itself fails. `false` without a
  * controller, on any error, and when no answer arrives within `timeoutMs`.

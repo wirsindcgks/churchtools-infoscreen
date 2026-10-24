@@ -59,7 +59,10 @@ Gerät keine Kopie hat (unten, 2).
    ein neuer Token gehört in die Kiosk-Adresse –, es ist aber am Fernseher sichtbar.
 2. **Ohne Kopie.** Ein Gerät, das noch nie erfolgreich gezeigt hat, oder ein Browser ohne Service Worker hat
    keine Kopie. Ohne Kopie lädt der Player nur neu, wenn das Netz die Player-Seite selbst bringt – eine
-   Wartungsseite mit `200` zählt nicht.
+   Wartungsseite mit `200` zählt nicht. Die Kopie kann auch verschwinden: Wird der Speicher knapp, darf der
+   Browser alles räumen, was die Seite abgelegt hat. Deshalb bittet der Player nach dem ersten erfolgreichen
+   Anzeigen darum, seinen Speicher zu behalten (`navigator.storage.persist()`). Chromium entscheidet darüber
+   selbst, ohne zu fragen; lehnt es ab, steht das nur in der Konsole.
 3. **Eine Weiterleitung auf eine Wartungsseite.** Weiterleitungen reicht der Service Worker unverändert durch,
    weil die Anmeldung über den Token eine ist. Leitet ChurchTools während eines Ausfalls auf eine eigene Adresse
    um, landet der Fernseher dort. Wie ChurchTools einen Ausfall ausliefert, ist nicht gemessen.
