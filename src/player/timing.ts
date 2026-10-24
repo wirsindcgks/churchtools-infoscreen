@@ -25,6 +25,8 @@ export const INTERVALS = {
     maxBackoffMs: 30 * 60_000,
     /** Failing this long without a break, the player starts afresh – if the page itself can load. */
     reloadAfterFailingMs: 30 * 60_000,
+    /** Least time between two reloads for newer data, so a stale copy of the page cannot loop (docs/Ausfall.md). */
+    newerDataReloadPauseMs: 10 * 60_000,
     /** The nightly reload waits this long when the page would not load (docs/Ausfall.md). */
     nightlyRetryMs: 60 * 60_000,
 } as const;

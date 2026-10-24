@@ -13,6 +13,10 @@ Netzausfall oder wenn ChurchTools die Systeme vorsorglich herunterfährt. Stand 
 - **Neu geladen wird nur, wenn danach wieder der Player läuft** – nach 30 Minuten nur Fehlern und jede Nacht
   gegen 3 Uhr. Kommt beim Neuladen statt des Players eine Fehler- oder Wartungsseite, zeigt der Service Worker
   die Kopie auf dem Gerät. Ist ChurchTools wieder da, erholt sich der Fernseher von selbst.
+- **Neue Daten brauchen neuen Code – aber ohne Schleife.** Findet der Player Daten einer neueren Version, lädt
+  er neu, höchstens alle zehn Minuten und nur in eine ladbare Seite. Bei langsamem Netz kann der Service Worker
+  die alte Kopie liefern, die die neuen Daten wieder findet; ohne Pause hätte das den Fernseher im Kreis
+  neu laden lassen, bis ChurchTools die Adresse sperrt (G16).
 
 ## Ablauf
 
