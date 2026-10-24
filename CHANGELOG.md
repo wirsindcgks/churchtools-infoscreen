@@ -4,6 +4,20 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.48.2] – 2026-10-24
+
+### Behoben
+
+- **Die Vorschau schließt in Safari nicht mehr den Editor.** Die Rücktaste ging dort im Verlauf zurück und verließ
+  damit den Editor samt Vorschau. Jetzt tut sie in der Vorschau nichts.
+- **Fernseher laden nach einem Update nicht im Kreis neu.** Findet ein Fernseher Daten einer neueren Version, lädt er
+  neu – bisher sofort und immer wieder. Bei langsamem Netz kam dabei die alte Fassung aus der Kopie auf dem Gerät, und
+  das Spiel begann von vorn, bis ChurchTools die Anfragen ablehnte. Jetzt lädt er höchstens alle zehn Minuten neu und
+  nur, wenn die Seite auch lädt; bis dahin zeigt er weiter den letzten Stand.
+- **Die Kopie auf dem Fernseher übersteht einen vollen Speicher.** Der Fernseher bittet den Browser jetzt, seinen
+  Speicher zu behalten. Bisher durfte der Browser ihn räumen, wenn der Platz knapp wurde – samt der Kopie, die bei
+  einem Ausfall von ChurchTools den letzten Stand zeigt. Mehr dazu in [Wenn ChurchTools ausfällt](docs/Ausfall.md).
+
 ## [0.48.1] – 2026-10-22
 
 ### Behoben
@@ -1501,6 +1515,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.48.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.48.2
 [0.48.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.48.1
 [0.48.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.48.0
 [0.47.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.47.0
