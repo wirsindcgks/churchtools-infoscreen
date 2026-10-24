@@ -162,6 +162,7 @@ function fakeDeps(cached: CachedState | null = null) {
         now: () => NOW,
         reload: vi.fn(),
         canReload: vi.fn(async () => true),
+        newerDataReload: { get: vi.fn((): number | null => null), set: vi.fn() },
         loadCached: async () => cached,
         saveCached: async (_slug, state) => {
             deps.saved.push(state);
@@ -655,7 +656,35 @@ describe('player controller', () => {
         const deps = fakeDeps();
         const player = createPlayer('demo', fakeData({ loadScreen: () => Promise.reject(new SchemaTooNewError(2)) }), deps);
         await player.start();
-        expect(deps.reload).toHaveBeenCalled();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(deps.reload).toHaveBeenCalledTimes(1);
+        expect(deps.newerDataReload.set).toHaveBeenCalledWith(NOW.getTime());
+        player.stop();
+    });
+
+    it('does not reload again for a newer schema within ten minutes – a stale copy would loop (docs/Ausfall.md)', async () => {
+        const deps = fakeDeps({
+            screen: loaded(1),
+            appointments: [],
+            timeZone: 'Europe/Berlin',
+            churchName: 'Gemeinde',
+            savedAt: NOW.toISOString(),
+        });
+        vi.mocked(deps.newerDataReload.get).mockReturnValue(NOW.getTime() - 5 * 60_000);
+        const player = createPlayer('demo', fakeData({ loadScreen: () => Promise.reject(new SchemaTooNewError(2)) }), deps);
+        await player.start();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(deps.reload).not.toHaveBeenCalled();
+        expect(player.state.phase).toBe('running'); // the old content stays
+        player.stop();
+    });
+
+    it('does not reload for a newer schema into a page that would not load', async () => {
+        const deps = { ...fakeDeps(), canReload: vi.fn(async () => false) };
+        const player = createPlayer('demo', fakeData({ loadScreen: () => Promise.reject(new SchemaTooNewError(2)) }), deps);
+        await player.start();
+        await vi.advanceTimersByTimeAsync(0);
+        expect(deps.reload).not.toHaveBeenCalled();
         player.stop();
     });
 

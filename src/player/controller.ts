@@ -46,6 +46,11 @@ export interface PlayerDeps {
      * than the old content it replaces.
      */
     canReload: () => Promise<boolean>;
+    /**
+     * When the player last reloaded for newer data. It must outlive the reload: a service worker whose
+     * network is slow answers with its copy of the old code, which finds the newer data again (docs/Ausfall.md).
+     */
+    newerDataReload: { get: () => number | null; set: (ms: number) => void };
     loadCached: (slug: string) => Promise<CachedState | null>;
     saveCached: (slug: string, state: CachedState) => Promise<void>;
 }
@@ -71,10 +76,29 @@ export function createCanReload(hasPage: (url: string) => Promise<boolean> = ask
     };
 }
 
+const NEWER_DATA_RELOAD_KEY = 'infoscreen-newer-data-reload';
+
 export const browserDeps: PlayerDeps = {
     now: () => new Date(),
     reload: () => window.location.reload(),
     canReload: createCanReload(),
+    newerDataReload: {
+        get: () => {
+            try {
+                const value = Number(sessionStorage.getItem(NEWER_DATA_RELOAD_KEY));
+                return value > 0 ? value : null;
+            } catch {
+                return null;
+            }
+        },
+        set: (ms) => {
+            try {
+                sessionStorage.setItem(NEWER_DATA_RELOAD_KEY, String(ms));
+            } catch {
+                // Without storage the pause is lost with the reload – the old behaviour, no worse.
+            }
+        },
+    },
     loadCached,
     saveCached,
 };
@@ -153,6 +177,16 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         }
     }
 
+    /** Newer data needs newer code – but at most every ten minutes, and only into a page that loads. */
+    async function reloadForNewerData(): Promise<void> {
+        const now = deps.now().getTime();
+        const last = deps.newerDataReload.get();
+        if (last !== null && last <= now && now - last < INTERVALS.newerDataReloadPauseMs) return;
+        if (!(await deps.canReload())) return;
+        deps.newerDataReload.set(now);
+        deps.reload();
+    }
+
     function later(ms: number, action: () => void): ReturnType<typeof setTimeout> | undefined {
         if (stopped) return undefined;
         const timer = setTimeout(() => {
@@ -202,10 +236,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
     }
 
     function fail(error: unknown): void {
-        if (error instanceof SchemaTooNewError) {
-            deps.reload(); // newer data needs newer code
-            return;
-        }
+        if (error instanceof SchemaTooNewError) void reloadForNewerData();
         // On a TV the one who reads this can fix it: say how, not only what (G32: sessions end).
         const message =
             error instanceof NotAuthenticatedError
