@@ -15,7 +15,7 @@ import { screenVideoUrls } from '../player/video';
 import { createPreloader } from '../player/preload';
 import { useRotation } from '../player/rotation';
 import { activePlaylistId } from '../player/schedule';
-import { registerPlayerServiceWorker } from '../player/service-worker';
+import { keepPlayerStorage, registerPlayerServiceWorker } from '../player/service-worker';
 import { fitStage } from '../player/stage';
 import { loadingVars } from '../player/theme';
 import { bandInset, bannerShown } from '../player/banner';
@@ -69,7 +69,7 @@ provideStageContext(context);
 
 // Once the player has shown something for the first time (Plan.md, 37; G10) – registering earlier would
 // still leave a restart before that first success with the browser's error page, since nothing is cached
-// yet. The designer never reaches this view, so it never registers.
+// yet. The designer never reaches this view, so it never registers. Then there is something worth keeping, too.
 let serviceWorkerRegistered = false;
 watch(
     () => state?.phase,
@@ -77,6 +77,7 @@ watch(
         if (phase !== 'running' || serviceWorkerRegistered) return;
         serviceWorkerRegistered = true;
         registerPlayerServiceWorker(import.meta.env.BASE_URL);
+        if (import.meta.env.PROD) void keepPlayerStorage();
     },
 );
 
