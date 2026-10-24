@@ -301,6 +301,21 @@ describe('ScreenRepository', () => {
             expect(await find(twin.id)).toMatchObject({ editedAt: '2026-09-03T08:00:00.000Z', editedBy: 'Ben' });
         });
 
+        it('copies the progress with its placement and style (Plan.md 109)', async () => {
+            const made = await repo.createPlaylist({ name: 'Gottesdienst', stage: LANDSCAPE }, 'Anna');
+            const { playlist, slides } = await repo.loadPlaylist(made.id);
+            await repo.savePlaylist(
+                { playlist: { ...playlist, progress: true, progressPlacement: 'edge', progressStyle: 'segments' }, slides },
+                { expectedRevision: playlist.revision, updatedBy: 'Anna' },
+            );
+            const copy = await repo.duplicatePlaylist(made.id, 'Ben');
+            expect((await repo.loadPlaylist(copy.id)).playlist).toMatchObject({
+                progress: true,
+                progressPlacement: 'edge',
+                progressStyle: 'segments',
+            });
+        });
+
         it('creates a playlist that runs nowhere yet and keeps it through a tidy-up', async () => {
             const made = await repo.createPlaylist({ name: 'Gottesdienst', stage: LANDSCAPE }, 'Anna');
             const loaded = await repo.loadPlaylist(made.id);

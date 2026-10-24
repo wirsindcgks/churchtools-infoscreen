@@ -120,7 +120,7 @@ function onKey(event: KeyboardEvent): void {
     else if (event.key === ' ') {
         event.preventDefault();
         paused.value = !paused.value;
-    } else return;
+    } else if (event.key !== 'Backspace') return; // WebKit would go back in the history and leave the editor
     event.preventDefault();
 }
 
