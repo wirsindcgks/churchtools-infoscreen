@@ -79,3 +79,8 @@ bis jemand sie neu startete. `v0.48.1` schließt diese Lücke.
 
 **Woran man einen hängenden Fernseher erkennt:** im Designer „nicht online“, und im Protokoll seit mehr als
 24 Stunden keine Anmeldung des Geräte-Benutzers.
+
+**Ausgang:** Nach einem Neustart beider Pis sind beide Screens wieder dauerhaft „online“ (bestätigt am
+2026-10-27) – der Token war also gültig geblieben, es reichte, die hängende Seite zu verlassen. Seit `v0.48.1`
+sollte ein solcher Ausfall ohne Neustart überstanden werden. Hängt ein Gerät trotzdem, braucht es für den Pi im
+Serverraum jemanden mit Schlüssel, der ihn aus- und wieder einsteckt.

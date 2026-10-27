@@ -95,8 +95,12 @@ const firstSlides = computed(() =>
 /** The signs of life by screen slug (Plan.md 59); null while this person cannot see them or loading failed. */
 const { heartbeats, now, refreshHeartbeats } = useHeartbeats(repository);
 
-const aliveOf = (slug: string) =>
-    heartbeats.value ? aliveState(heartbeats.value.get(slug), now.value, context.timeZone) : null;
+const aliveOf = (o: ScreenOverview) => {
+    if (!heartbeats.value) return null;
+    const heartbeat = heartbeats.value.get(o.screen.slug);
+    const published = heartbeat?.playlistId ? (o.playlists[heartbeat.playlistId]?.editedAt ?? null) : null;
+    return aliveState(heartbeat, now.value, context.timeZone, published);
+};
 
 // The tiles are the player's components: they need the same live data as the editor preview –
 // and the appointments of the rule calendars, to know which playlist runs now (Plan.md 17).
@@ -264,7 +268,7 @@ async function remove(overview: ScreenOverview): Promise<void> {
                         :overview="o"
                         :admin="screensAdmin"
                         :running="runningNow(o.screen, context)"
-                        :alive="aliveOf(o.screen.slug)"
+                        :alive="aliveOf(o)"
                         @remove="remove(o)"
                         @settings="configuring = { screen: o.screen, mode: 'settings' }"
                         @rename="configuring = { screen: o.screen, mode: 'rename' }"
