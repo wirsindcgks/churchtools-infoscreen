@@ -56,7 +56,8 @@ export function fetchAppointmentTags(): Promise<AppointmentTag[]> {
 
 /**
  * The events between two local dates with their services (`eventServices`). One request:
- * how `/events` pages is not measured (G46) – a window longer than the page would lose events.
+ * without `direction` the range is not paged (G68). `to` counts only up to its midnight, so the
+ * day of `to` itself is left out (G68).
  * Without the right to see the events of a calendar the answer is a 403 or an empty list (G46).
  */
 export function fetchEvents(from: Date, to: Date, timeZone: string): Promise<EventResponse[]> {
