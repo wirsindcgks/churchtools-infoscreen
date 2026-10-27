@@ -4,6 +4,26 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.49.0] – 2026-10-27
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch, auf der Bildschirmkarte zu sehen, welche
+Software ein Fernseher ausführt und welchen Stand er zeigt.
+
+### Hinzugefügt
+
+- **Die Bildschirmkarte zeigt, was der Fernseher wirklich zeigt.** Unter „online“ steht jetzt, ob der Fernseher die
+  installierte Version des Moduls ausführt – sonst etwa „Player 0.48.2, installiert 0.49.0“ –, und von wann der
+  Stand der Präsentation ist, die er gerade zeigt. Hätte er eine neuere Veröffentlichung schon übernehmen müssen,
+  steht „veraltet“ dabei; Entwürfe zählen nicht. Nach einer Veröffentlichung meldet sich der Fernseher sofort, die
+  Karte ist also nach etwa einer halben Minute auf dem neuen Stand. Ist ein Fernseher nicht online, zeigen beide
+  Zeilen blass, was er zuletzt gemeldet hat. Fernseher mit einer älteren Version zeigen „Stand unbekannt“, bis sie
+  die neue geladen haben.
+
+### Geändert
+
+- **Social-Media-Logos sitzen mittig zum Namen.** Bisher standen sie mittig zu den Großbuchstaben und wirkten neben
+  den meist klein geschriebenen Namen etwas zu hoch.
+
 ## [0.48.2] – 2026-10-24
 
 ### Behoben
@@ -1515,6 +1535,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.49.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.49.0
 [0.48.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.48.2
 [0.48.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.48.1
 [0.48.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.48.0
