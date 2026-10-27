@@ -26,7 +26,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
   - der Baustein „Video“ über eine Nacht und mit Ton (Archiv, Punkt 52);
   - Laufschrift, ein Beiträge-Block (Archiv, Punkt 33) und das Lebenszeichen über Wochen (G54 hat nur Minuten gemessen);
   - in der Prüfung der Gerätegruppe: jeder Kalender der Screens meldet „ist öffentlich“ (Archiv, Punkt 73).
-- **Änderungsprotokoll auf der Produktivinstanz** *(aus Punkt 100)*: `v0.49.0` läuft dort seit dem 2026-10-27; jetzt einmal die Einrichtung als Administrator öffnen – erst dann entsteht die Kategorie `protokoll`, und die Gestalter bekommen ihre Rechte darauf. Auf der Testinstanz bleibt der Testwert 490 in `protokoll` stehen, bis ein Administrator ihn löscht (G67).
+- **Testwert im Protokoll der Testinstanz** *(aus Punkt 100)*: Der Wert 490 in `protokoll` bleibt stehen, bis ein Administrator ihn löscht (G67). *(Auf der Produktivinstanz ist `protokoll` seit dem 2026-10-27 angelegt.)*
 - **Assistent mit einem anderen Gruppentyp als „Merkmal"** ist nur gegen nachgestellte Antworten geprüft (Archiv, Punkt 71); spätestens die Einrichtung auf der Produktivinstanz zeigt es, wenn dort ein anderer Typ gewählt wird.
 - Der Abbruch des Assistenten bei unsichtbarem Wiki-Bereich ist gegen kein echtes ChurchTools geprüft; ein fremder Bereich gleichen Namens, den der Administrator trotz Wiki-Recht nicht sieht, bleibt unerkennbar (Archiv, Punkt 55 B).
 - Beiträge: interne Gruppen, und ob Mitglieder eingeschränkter Gruppen deren Beiträge lesen (G37).
