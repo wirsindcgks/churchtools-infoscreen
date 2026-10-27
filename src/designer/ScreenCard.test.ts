@@ -51,3 +51,42 @@ describe('ScreenCard – sign of life', () => {
         expect(line.find('.alive-dot').attributes('aria-hidden')).toBe('true');
     });
 });
+
+// The two lines under "online" (Plan.md 111).
+describe('ScreenCard – software and state', () => {
+    const detailed: AliveState = {
+        kind: 'online',
+        text: 'online',
+        title: '',
+        software: { text: 'Player 0.48.1, installiert 0.48.2', title: '', notice: true },
+        content: { text: 'Stand vom 05.10.2026, 12:00', title: '', notice: false },
+    };
+
+    it('shows both lines, the deviation as a hint', () => {
+        const wrapper = card(detailed);
+        const software = wrapper.get('[data-testid="screen-alive-software"]');
+        expect(software.text()).toBe('Player 0.48.1, installiert 0.48.2');
+        expect(software.classes()).toContain('is-notice');
+        const content = wrapper.get('[data-testid="screen-alive-content"]');
+        expect(content.text()).toBe('Stand vom 05.10.2026, 12:00');
+        expect(content.classes()).not.toContain('is-notice');
+        expect(content.classes()).not.toContain('is-muted');
+    });
+
+    it('dims them while the screen is offline, with the tooltip', () => {
+        const wrapper = card({
+            ...detailed,
+            kind: 'offline',
+            content: { text: 'Stand vom 05.10.2026, 12:00', title: 'Zuletzt gemeldet', notice: false },
+        });
+        const content = wrapper.get('[data-testid="screen-alive-content"]');
+        expect(content.classes()).toContain('is-muted');
+        expect(content.attributes('data-tip')).toBe('Zuletzt gemeldet');
+    });
+
+    it('has no lines for a screen that never reported, or without a sign of life', () => {
+        expect(card({ kind: 'never', text: 'noch nie abgerufen', title: '' }).find('[data-testid="screen-alive-software"]').exists()).toBe(false);
+        expect(card(null).find('[data-testid="screen-alive-content"]').exists()).toBe(false);
+    });
+});
+

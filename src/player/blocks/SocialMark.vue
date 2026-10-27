@@ -61,5 +61,10 @@ const inset = 'translate(4.56 4.56) scale(0.62)';
     flex: none;
     width: 1.4em;
     height: 1.4em;
+    /*
+     * Centred in the row, the mark sits on the middle of the capitals; names are mostly lower case, so it moves down
+     * to the middle of the x-height – measured within 0.05em for every bundled font. Without `cap`, as before.
+     */
+    transform: translateY(calc((1cap - 1ex) / 2));
 }
 </style>

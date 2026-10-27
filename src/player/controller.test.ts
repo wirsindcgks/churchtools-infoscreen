@@ -779,6 +779,69 @@ describe('the sign of life (Plan.md 59)', () => {
         expect(reportAlive).toHaveBeenCalledTimes(3);
     });
 
+    it('reports the state of the loaded playlist as contentAt – the latest of playlist and slides, no more', async () => {
+        const base = loaded();
+        const slideId = base.playlists[0]!.slideIds[0]!;
+        const withTimes: LoadedScreen = {
+            ...base,
+            playlists: base.playlists.map((p) => ({ ...p, updatedAt: '2026-10-01T10:00:00.000Z' })),
+            slides: base.slides.map((sl) => (sl.id === slideId ? { ...sl, updatedAt: '2026-10-02T09:00:00.000Z' } : sl)),
+        };
+        const reportAlive = vi.fn<PlayerData['reportAlive']>(async () => {});
+        const player = createPlayer('demo', fakeData({ reportAlive, loadScreen: vi.fn(async () => withTimes) }), fakeDeps());
+        await player.start();
+        expect(reportAlive.mock.calls[0]![0].contentAt).toBe('2026-10-02T09:00:00.000Z');
+        player.stop();
+    });
+
+    it('leaves contentAt out without a time', async () => {
+        const base = loaded();
+        const bare: LoadedScreen = {
+            ...base,
+            playlists: base.playlists.map((p) => ({ ...p, updatedAt: undefined })),
+            slides: base.slides.map((sl) => ({ ...sl, updatedAt: undefined })),
+        };
+        const reportAlive = vi.fn<PlayerData['reportAlive']>(async () => {});
+        const player = createPlayer('demo', fakeData({ reportAlive, loadScreen: vi.fn(async () => bare) }), fakeDeps());
+        await player.start();
+        expect(reportAlive.mock.calls[0]![0]).not.toHaveProperty('contentAt');
+        player.stop();
+    });
+
+    it('reports at once after a new state was taken over, and keeps the rhythm', async () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0.5);
+        let revision = 1;
+        const reportAlive = vi.fn<PlayerData['reportAlive']>(async () => {});
+        const player = createPlayer('demo', fakeData({ reportAlive, loadScreen: vi.fn(async () => loaded(revision)) }), fakeDeps());
+        await player.start();
+        expect(reportAlive).toHaveBeenCalledTimes(1);
+        // An unchanged refresh sends nothing extra.
+        await vi.advanceTimersByTimeAsync(INTERVALS.configMs);
+        expect(reportAlive).toHaveBeenCalledTimes(1);
+        revision = 2;
+        await vi.advanceTimersByTimeAsync(INTERVALS.configMs);
+        expect(reportAlive).toHaveBeenCalledTimes(2);
+        // The beat started anew with the extra one: not two beats within one interval.
+        await vi.advanceTimersByTimeAsync(INTERVALS.aliveMs * 0.9);
+        expect(reportAlive).toHaveBeenCalledTimes(2);
+        await vi.advanceTimersByTimeAsync(INTERVALS.aliveMs * 0.2);
+        expect(reportAlive).toHaveBeenCalledTimes(3);
+        player.stop();
+    });
+
+    it('does not break the display when the extra sign fails', async () => {
+        let revision = 1;
+        const reportAlive = vi.fn<PlayerData['reportAlive']>().mockResolvedValueOnce().mockRejectedValue(new Error('Network Error'));
+        const player = createPlayer('demo', fakeData({ reportAlive, loadScreen: vi.fn(async () => loaded(revision)) }), fakeDeps());
+        await player.start();
+        revision = 2;
+        await vi.advanceTimersByTimeAsync(3 * 60_000);
+        expect(reportAlive).toHaveBeenCalledTimes(2);
+        expect(player.state.screen?.screen.revision).toBe(2);
+        expect(player.state.error).toBeNull();
+        player.stop();
+    });
+
     it('stamps the time of ChurchTools: device clock plus the skew', async () => {
         const server = new Date(NOW.getTime() + 90_000); // the device runs 90 s behind
         const reportAlive = vi.fn<PlayerData['reportAlive']>(async () => {});

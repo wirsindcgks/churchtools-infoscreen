@@ -10,23 +10,76 @@ import { LOCALE } from '../i18n/player';
  */
 export const ALIVE_WINDOW_MS = 15 * 60_000;
 
+/** A line under "online" (Plan.md 111): the software of the player, or the state of the presentation it shows. */
+export interface AliveDetail {
+    text: string;
+    /** Tooltip; empty when there is nothing to add. */
+    title: string;
+    /** Differs from what is expected – coloured as a hint. */
+    notice: boolean;
+}
+
 export interface AliveState {
     kind: 'online' | 'offline' | 'never';
     text: string;
     title: string;
+    /** Only while the screen has reported at all; both lines are the state of its last sign of life. */
+    software?: AliveDetail;
+    content?: AliveDetail;
+}
+
+/**
+ * The sign of life is taken for the player's report if it is this much younger than the publication: the quick
+ * check takes over a change in about 20 seconds (`INTERVALS.quickCheckMs`); with the pause until the next beat
+ * the player could not have said anything yet.
+ */
+export const REPORT_GRACE_MS = 2 * 60_000;
+
+/** "Player aktuell", or the deviation; the version of the designer is the installed one (Plan.md 111). */
+function softwareDetail(version: string, installed: string, notice: string): AliveDetail {
+    if (!version) return { text: t.common.alive.playerUnknown, title: notice, notice: false };
+    if (version === installed) return { text: t.common.alive.playerCurrent, title: notice, notice: false };
+    return { text: t.common.alive.playerDiffers(version, installed), title: notice, notice: true };
+}
+
+/**
+ * "Stand vom …" of what the player loaded. "veraltet" when the playlist has a newer published state that the
+ * player had time to take over – see `REPORT_GRACE_MS`.
+ */
+function contentDetail(heartbeat: HeartbeatDoc, publishedAt: string | null, timeZone: string, notice: string): AliveDetail {
+    const when = heartbeat.contentAt ? lastEdited(heartbeat.contentAt, null, timeZone)?.when : null;
+    if (!heartbeat.contentAt || !when) return { text: t.common.alive.standUnknown, title: notice, notice: false };
+    const published = publishedAt ? Date.parse(publishedAt) : Number.NaN;
+    const stale =
+        published > Date.parse(heartbeat.contentAt) && published < Date.parse(heartbeat.at) - REPORT_GRACE_MS;
+    return { text: stale ? t.common.alive.standStale(when) : t.common.alive.standOf(when), title: notice, notice: stale };
 }
 
 /**
  * What a tile says about the life of a screen. Compared with the clock of this browser; a sign of life
  * in the future (a device clock that runs ahead) counts as online. Unreadable counts as never.
  */
-export function aliveState(heartbeat: HeartbeatDoc | undefined, now: Date, timeZone: string): AliveState {
+export function aliveState(
+    heartbeat: HeartbeatDoc | undefined,
+    now: Date,
+    timeZone: string,
+    /** The published state of the playlist the screen reported (`ScreenPlaylist.editedAt`), if known. */
+    publishedAt: string | null = null,
+    installed: string = __APP_VERSION__,
+): AliveState {
     const at = heartbeat ? Date.parse(heartbeat.at) : Number.NaN;
     if (!heartbeat || Number.isNaN(at)) return { kind: 'never', text: t.common.alive.neverText, title: t.common.alive.neverTitle };
     const when = lastEdited(heartbeat.at, null, timeZone, t.common.edited.lastSign);
     const title = `${when?.whenTitle ?? ''}${heartbeat.version ? t.common.alive.playerVersion(heartbeat.version) : ''}`;
-    if (now.getTime() - at <= ALIVE_WINDOW_MS) return { kind: 'online', text: t.common.alive.online, title };
-    return { kind: 'offline', text: t.common.alive.offlineSince(when?.when ?? ''), title };
+    const online = now.getTime() - at <= ALIVE_WINDOW_MS;
+    // Offline, the lines are the state of the last sign of life, not of now (Plan.md 111).
+    const notice = online ? '' : t.common.alive.lastReported;
+    const details = {
+        software: softwareDetail(heartbeat.version, installed, notice),
+        content: contentDetail(heartbeat, publishedAt, timeZone, notice),
+    };
+    if (online) return { kind: 'online', text: t.common.alive.online, title, ...details };
+    return { kind: 'offline', text: t.common.alive.offlineSince(when?.when ?? ''), title, ...details };
 }
 
 /** A screen whose sign of life says it shows a playlist right now, with the time of that sign. */

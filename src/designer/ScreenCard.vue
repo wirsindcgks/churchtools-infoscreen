@@ -39,6 +39,15 @@ const shown = computed(() => {
 /** A rule decides right now – the tile says so, since it shows another playlist than the default. */
 const byRule = computed(() => (props.running?.ruleIndex ?? -1) >= 0);
 
+/** The lines under "online" (Plan.md 111): software and state of the presentation; none while it never reported. */
+const details = computed(() => {
+    const { software, content } = props.alive ?? {};
+    return [
+        ...(software ? [{ id: 'software', detail: software }] : []),
+        ...(content ? [{ id: 'content', detail: content }] : []),
+    ];
+});
+
 const copied = ref(false);
 
 /** Stays open for a moment to say "Kopiert", then closes. */
@@ -102,6 +111,16 @@ const scheduleLabel = computed(() => {
                 <li v-tip="alive.title" data-testid="screen-alive" :data-alive="alive.kind">
                     <span class="alive-dot" :class="`is-${alive.kind}`" aria-hidden="true" />
                     <span>{{ alive.text }}</span>
+                </li>
+                <li
+                    v-for="line in details"
+                    :key="line.id"
+                    v-tip="line.detail.title"
+                    class="alive-detail"
+                    :class="{ 'is-notice': line.detail.notice, 'is-muted': alive.kind === 'offline' }"
+                    :data-testid="`screen-alive-${line.id}`"
+                >
+                    {{ line.detail.text }}
                 </li>
             </ul>
         </section>
@@ -182,6 +201,21 @@ const scheduleLabel = computed(() => {
 }
 .alive-dot.is-offline {
     background: var(--d-danger);
+}
+.alive-detail {
+    /* Under the words of "online", not under the dot. */
+    padding-left: 16px;
+}
+.alive-detail.is-notice {
+    margin-left: 16px;
+    padding: 0 6px;
+    border-radius: var(--d-radius);
+    background: var(--d-warning-pale);
+    box-shadow: inset 0 0 0 1px var(--d-warning);
+    color: var(--d-text);
+}
+.alive-detail.is-muted {
+    opacity: 0.6;
 }
 .by-rule {
     color: var(--d-text);

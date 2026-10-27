@@ -29,6 +29,7 @@ import {
     type ReadIssue,
     type ReadResult,
 } from '../model/read';
+import { playlistStand } from '../model/stand';
 import { expandTemplates, templateIdsOf } from '../model/templates';
 import {
     blockCalendarIds,
@@ -280,6 +281,8 @@ export interface ScreenPlaylist {
     /** The first enabled slide; null for a playlist without slides. */
     firstSlide: SlideDoc | null;
     slideCount: number;
+    /** Latest `updatedAt` of the playlist and its slides (Plan.md 111); null without any. */
+    editedAt: string | null;
 }
 
 interface Stored<T> {
@@ -487,6 +490,7 @@ export class ScreenRepository {
                     name: withPlaylistDefaults(playlist, screens).name,
                     firstSlide: shown.find((s) => s.enabled) ?? shown[0] ?? null,
                     slideCount: shown.length,
+                    editedAt: playlistStand(playlist, shown),
                 };
             }
             const standard = own[screen.defaultPlaylistId];
@@ -764,8 +768,7 @@ export class ScreenRepository {
         const slides = new Map((await this.readSlides()).docs.map((s) => [s.doc.id, s.doc]));
         const overviews = running.playlists.map(({ doc }) => {
             const own = doc.slideIds.map((id) => slides.get(id)).filter((s): s is SlideDoc => s !== undefined);
-            // ISO instants of one clock: the latest is the greatest string.
-            const editedAt = [doc, ...own].reduce((latest, d) => ((d.updatedAt ?? '') > latest ? d.updatedAt! : latest), '');
+            const editedAt = playlistStand(doc, own) ?? '';
             return {
                 playlist: withPlaylistDefaults(doc, screens),
                 firstSlide: own.find((s) => s.enabled) ?? own[0] ?? null,

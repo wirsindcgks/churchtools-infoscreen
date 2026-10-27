@@ -54,6 +54,64 @@ describe('aliveState (Plan.md 59)', () => {
     });
 });
 
+describe('aliveState – software and presentation (Plan.md 111)', () => {
+    const state = (heartbeat: HeartbeatDoc, published: string | null = null, now = after(0)) =>
+        aliveState(heartbeat, now, 'Europe/Berlin', published, '0.48.2');
+    const CONTENT = '2026-10-05T10:00:00Z';
+
+    it('says "Player aktuell" for the installed version', () => {
+        expect(state(beat({ version: '0.48.2' })).software).toMatchObject({ text: 'Player aktuell', notice: false });
+    });
+
+    it('names the deviation as a hint', () => {
+        expect(state(beat({ version: '0.48.1' })).software).toMatchObject({ text: 'Player 0.48.1, installiert 0.48.2', notice: true });
+    });
+
+    it('says the version is unknown when there is none', () => {
+        expect(state(beat({ version: '' })).software).toMatchObject({ text: 'Player-Version unbekannt', notice: false });
+    });
+
+    it('shows the state in the time zone of the instance', () => {
+        expect(state(beat({ contentAt: CONTENT })).content).toMatchObject({ text: 'Stand vom 05.10.2026, 12:00', notice: false });
+    });
+
+    it('says "Stand unbekannt" for an older player', () => {
+        expect(state(beat()).content).toMatchObject({ text: 'Stand unbekannt', notice: false });
+        expect(state(beat({ contentAt: 'kein Datum' })).content?.text).toBe('Stand unbekannt');
+    });
+
+    it('adds "veraltet" when a newer state was published long enough before the sign of life', () => {
+        // Published 11:00, reported at 12:32 with the state of 10:00.
+        const content = state(beat({ contentAt: CONTENT }), '2026-10-05T11:00:00Z').content;
+        expect(content).toMatchObject({ text: 'Stand vom 05.10.2026, 12:00 · veraltet', notice: true });
+    });
+
+    it('adds nothing for a publication younger than the sign of life minus two minutes', () => {
+        expect(state(beat({ contentAt: CONTENT }), '2026-10-05T12:31:00Z').content).toMatchObject({ notice: false, text: 'Stand vom 05.10.2026, 12:00' });
+        expect(state(beat({ contentAt: CONTENT }), '2026-10-05T12:30:00Z').content?.notice).toBe(false);
+        expect(state(beat({ contentAt: CONTENT }), '2026-10-05T12:29:59Z').content?.notice).toBe(true);
+    });
+
+    it('adds nothing when the player shows the published state, or none is known', () => {
+        expect(state(beat({ contentAt: CONTENT }), CONTENT).content?.notice).toBe(false);
+        expect(state(beat({ contentAt: CONTENT }), null).content?.notice).toBe(false);
+    });
+
+    it('marks the lines as the last report when the screen is offline', () => {
+        const offline = state(beat({ contentAt: CONTENT }), null, after(ALIVE_WINDOW_MS + 1));
+        expect(offline.kind).toBe('offline');
+        expect(offline.software?.title).toContain('Zuletzt gemeldet');
+        expect(offline.content?.title).toContain('Zuletzt gemeldet');
+        expect(state(beat({ contentAt: CONTENT })).content?.title).toBe('');
+    });
+
+    it('has no lines for a screen that never reported', () => {
+        const never = aliveState(undefined, after(0), 'Europe/Berlin');
+        expect(never.software).toBeUndefined();
+        expect(never.content).toBeUndefined();
+    });
+});
+
 describe('liveScreens (Plan.md 77)', () => {
     const left: ScreenRef = { id: 's1', slug: 'foyer-links', name: 'Foyer links' };
     const right: ScreenRef = { id: 's2', slug: 'foyer-rechts', name: 'Foyer rechts' };

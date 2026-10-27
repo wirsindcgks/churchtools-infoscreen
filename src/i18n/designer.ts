@@ -65,6 +65,13 @@ export const t = {
             neverTitle: 'Dieser Bildschirm hat sich noch nie gemeldet – ein Fernseher meldet sich alle fünf Minuten, sobald er läuft und das Recht dazu hat.',
             playerVersion: (version: string) => ` · Player ${version}`,
             offlineSince: (when: string) => `nicht online seit ${when}`,
+            playerCurrent: 'Player aktuell',
+            playerDiffers: (version: string, installed: string) => `Player ${version}, installiert ${installed}`,
+            playerUnknown: 'Player-Version unbekannt',
+            standOf: (when: string) => `Stand vom ${when}`,
+            standStale: (when: string) => `Stand vom ${when} · veraltet`,
+            standUnknown: 'Stand unbekannt',
+            lastReported: 'Zuletzt gemeldet – so war es beim letzten Lebenszeichen',
         },
         /** The mark on a presentation that runs on a screen right now (Plan.md 77). */
         running: 'Läuft gerade',

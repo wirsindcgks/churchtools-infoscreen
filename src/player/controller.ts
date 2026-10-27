@@ -9,6 +9,7 @@ import { reactive } from 'vue';
 import type { Appointment } from '../appointments/normalize';
 import { httpStatus, NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
+import { playlistStand } from '../model/stand';
 import type { HomepageGroups } from '../groups/normalize';
 import { revivePosts, type Post } from '../posts/normalize';
 import { reviveRooms, type RoomBookings } from '../rooms/normalize';
@@ -158,6 +159,9 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
     /** Server time minus device time from the last clock check; 0 while none is known. */
     let clockSkewMs = 0;
     let aliveStarted = false;
+    let aliveTimer: ReturnType<typeof setTimeout> | undefined;
+    /** True while a sign of life is on its way, and during the pause after a 403 – no extra one then. */
+    let aliveBusy = false;
     /** Start of the current run of failures, per cycle; null while it succeeds. */
     const failingSince: Record<'config' | 'data', Date | null> = { config: null, data: null };
 
@@ -346,6 +350,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         try {
             const before = configVersion(state.screen);
             await refreshConfig();
+            const adopted = configVersion(state.screen) !== before;
             configFailures = 0;
             failingSince.config = null;
             const recovered = blocked;
@@ -356,6 +361,8 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             } finally {
                 // The configuration is there; whether the calendar data came is none of the sign of life's business.
                 startAlive();
+                // Say at once which state the screen shows now (Plan.md 111); the beat after it stays.
+                if (adopted) beatNow();
             }
             scheduleConfig(withJitter(INTERVALS.configMs));
         } catch (error) {
@@ -372,6 +379,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
      */
     async function aliveCycle(): Promise<void> {
         let wait = withJitter(INTERVALS.aliveMs);
+        aliveBusy = true;
         try {
             const loaded = state.screen;
             if (loaded && !blocked) {
@@ -382,6 +390,8 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                     clockConfirmed: state.clockConfirmed,
                     appointments: state.appointments,
                 });
+                const playlist = loaded.playlists.find((p) => p.id === playlistId);
+                const contentAt = playlist ? playlistStand(playlist, loaded.slides) : null;
                 await data.reportAlive({
                     kind: 'heartbeat',
                     screen: slug,
@@ -389,13 +399,25 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                     version: __APP_VERSION__,
                     playlistId,
                     clockConfirmed: state.clockConfirmed,
+                    ...(contentAt ? { contentAt } : {}),
                 });
             }
         } catch (error) {
             // 403: the right to write it is not granted yet – no point in asking every five minutes.
             if (httpStatus(error) === 403) wait = INTERVALS.aliveForbiddenMs;
         }
-        later(wait, aliveCycle);
+        aliveBusy = wait === INTERVALS.aliveForbiddenMs;
+        aliveTimer = later(wait, aliveCycle);
+    }
+
+    /** An extra sign of life now: the pending beat is replaced, so the regular rhythm is not doubled. */
+    function beatNow(): void {
+        if (!aliveStarted || stopped || aliveBusy) return;
+        if (aliveTimer) {
+            clearTimeout(aliveTimer);
+            timers.delete(aliveTimer);
+        }
+        void aliveCycle();
     }
 
     function startAlive(): void {
