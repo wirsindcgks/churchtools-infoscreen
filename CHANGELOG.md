@@ -4,6 +4,20 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.49.1] – 2026-10-28
+
+### Geändert
+
+- **Die Bildschirmkarte sagt deutlicher, welches Datum was bedeutet.** Der Stand der gezeigten Präsentation heißt
+  jetzt „Präsentation vom …“ und steht mit eigenem Icon direkt unter der Präsentation; der Tooltip erklärt ihn. Das
+  Datum unten heißt „Bildschirm geändert …“ – es gehört zu Einstellungen und Zeitplan des Bildschirms. Die Zeile zum
+  Player erscheint nur noch, wenn er von der installierten Version abweicht.
+
+### Behoben
+
+- **Kein dunkler Strich mehr am Rand der Vorschaubilder.** Je nach Fensterbreite schien am Rand einer Folienvorschau
+  eine dünne dunkle Linie durch.
+
 ## [0.49.0] – 2026-10-27
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch, auf der Bildschirmkarte zu sehen, welche
@@ -1535,6 +1549,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.49.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.49.1
 [0.49.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.49.0
 [0.48.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.48.2
 [0.48.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.48.1
