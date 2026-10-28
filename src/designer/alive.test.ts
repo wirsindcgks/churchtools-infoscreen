@@ -72,7 +72,7 @@ describe('aliveState – software and presentation (Plan.md 111)', () => {
     });
 
     it('shows the state in the time zone of the instance', () => {
-        expect(state(beat({ contentAt: CONTENT })).content).toMatchObject({ text: 'Präsentation vom 05.10.2026, 12:00', notice: false });
+        expect(state(beat({ contentAt: CONTENT })).content).toMatchObject({ text: 'Stand 05.10.2026, 12:00', notice: false });
     });
 
     it('says the state is unknown for an older player', () => {
@@ -83,11 +83,11 @@ describe('aliveState – software and presentation (Plan.md 111)', () => {
     it('adds "veraltet" when a newer state was published long enough before the sign of life', () => {
         // Published 11:00, reported at 12:32 with the state of 10:00.
         const content = state(beat({ contentAt: CONTENT }), '2026-10-05T11:00:00Z').content;
-        expect(content).toMatchObject({ text: 'Präsentation vom 05.10.2026, 12:00 · veraltet', notice: true });
+        expect(content).toMatchObject({ text: 'Stand 05.10.2026, 12:00 · veraltet', notice: true });
     });
 
     it('adds nothing for a publication younger than the sign of life minus two minutes', () => {
-        expect(state(beat({ contentAt: CONTENT }), '2026-10-05T12:31:00Z').content).toMatchObject({ notice: false, text: 'Präsentation vom 05.10.2026, 12:00' });
+        expect(state(beat({ contentAt: CONTENT }), '2026-10-05T12:31:00Z').content).toMatchObject({ notice: false, text: 'Stand 05.10.2026, 12:00' });
         expect(state(beat({ contentAt: CONTENT }), '2026-10-05T12:30:00Z').content?.notice).toBe(false);
         expect(state(beat({ contentAt: CONTENT }), '2026-10-05T12:29:59Z').content?.notice).toBe(true);
     });

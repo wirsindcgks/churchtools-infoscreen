@@ -29,7 +29,7 @@ const emit = defineEmits<{ remove: []; settings: []; rename: []; schedule: [] }>
 const screen = computed(() => props.overview.screen);
 const context = useStageContext();
 /** When and by whom the screen or its schedule was last saved (Plan.md 66). */
-const edited = computed(() => lastEdited(screen.value.updatedAt, screen.value.updatedBy, context.timeZone));
+const edited = computed(() => lastEdited(screen.value.updatedAt, screen.value.updatedBy, context.timeZone, t.home.card.screenChanged));
 const portrait = computed(() => screen.value.stage.height > screen.value.stage.width);
 /** The playlist the tile shows and opens. */
 const shown = computed(() => {
@@ -170,7 +170,7 @@ const scheduleLabel = computed(() => {
             <ul class="d-facts">
                 <li v-if="edited.when" v-tip="edited.whenTitle!" data-testid="screen-edited-at">
                     <Icon name="clock" :size="16" />
-                    <span>{{ t.home.card.screenEdited(edited.when) }}</span>
+                    <span>{{ edited.when }}</span>
                 </li>
                 <li v-if="edited.by" v-tip="edited.byTitle!" data-testid="screen-edited-by">
                     <Icon name="person" :size="16" />

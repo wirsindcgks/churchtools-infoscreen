@@ -43,7 +43,7 @@ function softwareDetail(version: string, installed: string, notice: string): Ali
 }
 
 /**
- * "Präsentation vom …": the state of what the player loaded. "veraltet" when the playlist has a newer published state that the
+ * "Stand …": the state of the presentation the player loaded. "veraltet" when the playlist has a newer published state that the
  * player had time to take over – see `REPORT_GRACE_MS`.
  */
 function contentDetail(heartbeat: HeartbeatDoc, publishedAt: string | null, timeZone: string, offline: string): AliveDetail {

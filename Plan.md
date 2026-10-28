@@ -547,7 +547,7 @@ Volltext in [`docs/Plan-Archiv.md`](docs/Plan-Archiv.md). Die Punkte 1 bis 6 der
 | 107 | Lage des Fortschritts wählbar: abgesetzt oder als Linie am Rand, ohne Seitenzahl, auch für die Präsentation (Schema 1.48) |
 | 108 | ChurchTools 3.138 geprüft: nur Dokumentation geändert, Modul unverändert lauffähig (G68) |
 | 109 | Form des Fortschritts: Balken mit Seitenzahl oder Segmente, auch für die Präsentation; ein Fortschritt je Folie, im Editor bei 40 % (Schema 1.50) |
-| 111 | Stand des Players auf der Bildschirmkarte: Software nur bei Abweichung, „Präsentation vom …“ mit Icon unter der Präsentation, „veraltet“ (`contentAt` im Lebenszeichen); unten „Bildschirm geändert …“, damit die beiden Daten nicht verwechselt werden |
+| 111 | Stand des Players auf der Bildschirmkarte: Software nur bei Abweichung, „Stand …“ mit Icon unter der Präsentation, „veraltet“ (`contentAt` im Lebenszeichen); unten das Datum mit Tooltip „Bildschirm zuletzt geändert …“, damit die beiden Daten nicht verwechselt werden |
 
 ## Quellen
 
