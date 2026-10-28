@@ -44,7 +44,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 
 **Gestrichen am 2026-10-01 (Nutzer):** der Umschalter „läuft gerade" auf der Kachel (der Zeitplan ist seit `v0.4.2` einen Klick aufs Bild entfernt), die Warnung bei schlechter Lesbarkeit (die Vorschau zeigt es), die Vorschau in einem stilisierten Bildschirm (reine Optik), eigene Skripte in einem Web-Code-Block (trägt unter der CSP nicht, G15) und Auswertungen.
 
-**Beobachten:** ob die Griffe am Handy im Alltag reichen und der Zoom-Schutz (16 px) auf jedem Gerät greift (Archiv, Punkt 44). Und die Arbeitsteilung: Opus plant und sieht durch, der Umsetzer baut – auch die Feedback-Runden zum Layout (AGENTS.md).
+**Beobachten:** **die neue Extension-Grundlage von ChurchTools** (G69, angekündigt am 2026-10-28, ohne Termin). Gelegentlich in der Gruppe „Development", im Forum und im Wiki nach Neuigkeiten sehen und sie in G69 nachtragen. Das erste Feedback ging am 2026-10-28 an Thomas Boch; der Nutzer ist Mitglied der Forumsrubrik „Extensions". Außerdem: ob die Griffe am Handy im Alltag reichen und der Zoom-Schutz (16 px) auf jedem Gerät greift (Archiv, Punkt 44). Und die Arbeitsteilung: Opus plant und sieht durch, der Umsetzer baut – auch die Feedback-Runden zum Layout (AGENTS.md).
 
 **Bewusst geparkt** – nicht falsch, aber nicht jetzt: **der Token aus der Adresszeile** (Punkt 95, #140; geparkt mit dem Nutzer am 2026-10-20) – gemessen (G66), Bauplan fertig; der Nutzen ist klein: Der Kiosk der Produktivinstanz läuft mit `--app` ohne Adresszeile, F5 trägt heute schon, und hinter einer öffentlichen Weiterleitung bleibt der Token ohnehin auslesbar; im Issue keine Dringlichkeit („unschön, ein Problem ist es nicht“). Wieder aufnehmen, wenn jemand ihn im Betrieb braucht. alles Weitere am Betriebsbenutzer (G21-Reste), eine gemeinsame Bibliothek mit `ct-pass-store`, Koppeln am Fernseher (geprüft am 2026-09-25; die Geräte haben weder Tastatur noch Maus – Begründung im Archiv, „Funktionsumfang – Später"), der Extension Store (G17), YouTube/Vimeo (Punkt 46.6; erste Anfrage von außen am 2026-10-14, auch Twitch – laut Autor nicht dringend, gedacht für Imagefilme, und die gehen schon heute als MP4 über den Baustein „Video“), **4K** (Nutzer, 2026-10-01: „bauen es ein, falls von dritten gefordert"; ein eigenes Format braucht es nicht – die Bildfläche wird skaliert, Schrift bleibt scharf, nur Bilder fordert der Player höchstens in 1920 × 1080 an, `src/player/images.ts`; ungemessen). **Nicht anfassen, bis ein Produktschritt es braucht:** C4, `attachments`, `ct-events-load`, das Gespräch mit dem Autor von `ct-pass-store`.
 
@@ -133,7 +133,7 @@ ChurchTools-Instanz
 
 ### E. Datenspeicherung
 
-Eigene Daten liegen im KV-Store des Moduls: Modul → Kategorie → Datenwert, jeder Wert ein JSON-String. **Ein Datenwert hat keinen Namen, keine Version und fasst höchstens 10.000 Zeichen** (G2, G3, G11). Daraus folgt der Zuschnitt:
+Eigene Daten liegen im KV-Store des Moduls: Modul → Kategorie → Datenwert, jeder Wert ein JSON-String. *(Der KV-Store gehört zum Extensions-PoC; sein angekündigter Nachfolger heißt „Persistenz", G69.)* **Ein Datenwert hat keinen Namen, keine Version und fasst höchstens 10.000 Zeichen** (G2, G3, G11). Daraus folgt der Zuschnitt:
 
 | Kategorie | Inhalt |
 | --- | --- |
@@ -210,11 +210,10 @@ Das Messprotokoll steht in [`Befunde.md`](Befunde.md). Stand:
 
 | | Punkte |
 | --- | --- |
-| **Beantwortet** | G1–G8, G11, G14, G15, G16 (600 Anfragen je Minute und IP), G18, G19, G20, G22; G21 für den Bau ausreichend |
-| **Blockiert und zwingend** | **G9** (Login-Token unter `/ccm/`) |
-| **Blockiert, aber verzichtbar** | G10 (Service Worker – ohne ihn bleibt Offline-Festigkeit halb, siehe Risiko 2) |
+| **Beantwortet** | G1–G8, G11, G14, G15, G16 (600 Anfragen je Minute und IP), G18, G19, G20, G22; G21 für den Bau ausreichend; **G9** (Login-Token unter `/ccm/`, 2026-09-25) und **G10** (Service Worker, 2026-09-28) – die Phase-0-Punkte, die einmal blockierten; alles Spätere steht in `Befunde.md` |
+| **Beobachten** | **G69** (neue Extension-Grundlage, „Persistenz" statt KV-Store, 2026-10-28) |
 | **Hinfällig** | G12, G13 – die Felder gibt es nicht (G22) |
-| **Geparkt** | G17 (Extension Store) · G21-Reste |
+| **Geparkt** | G17 (Extension Store – seit G69 mit Richtung) · G21-Reste |
 
 **Die Testinstanz** ist leer angelegt, Build und Upload-Grenze wie produktiv. Dort darf ausprobiert, liegengelassen und zerschossen werden; gegen die Produktivinstanz wird nur gelesen. **Ihr Ertrag sind die Fixtures unter `fixtures/`** (nicht versioniert) – gegen sie läuft die gesamte Entwicklung, und sie sind **seit dem 2026-09-24 außerhalb des Repos gesichert**. Neu Aufgezeichnetes wird nachgesichert – seit dem 2026-09-28 ohne Frist, weil die Instanz für die Entwicklung bleibt.
 
@@ -333,7 +332,7 @@ Sprache, Geheimnisse, Commit-Form und die drei Bauregeln stehen in [`AGENTS.md`]
 2. **Das Gerät läuft unbeaufsichtigt.** Speicherlecks, abgelaufene Sitzungen, Netz- und Stromausfälle, schwache Hardware. Der Player muss von selbst wieder hochkommen. Daten und Bilder liegen nach dem ersten Durchlauf auf dem Gerät (G28); die Seite selbst aber nicht – ohne Service Worker (G10) zeigt ein Gerät, das während eines Netzausfalls neu startet, nichts. Das ist dann zu benennen, nicht zu übergehen.
 3. **Login-Token auf der SD-Karte.** Tragbar, weil der Rückzugsweg gemessen ist (Passwortwechsel, G18) und das Konto nur liest.
 4. **Stilgrenze zur Hostseite.** Ohne sie hängt das Aussehen der Bildfläche von ChurchTools-Updates ab – und unsere Stile beschädigen fremde Oberflächen.
-5. **ChurchTools ändert die Extension-Schnittstelle.** Deshalb eine Naht (Repository), nicht KV-Zugriffe quer durch die Anwendung.
+5. **ChurchTools ändert die Extension-Schnittstelle.** Deshalb eine Naht (Repository), nicht KV-Zugriffe quer durch die Anwendung. **Seit dem 2026-10-28 angekündigt (G69):** Extensions bekommen eine neue Grundlage, der KV-Store einen Nachfolger („Persistenz"). Der PoC, auf dem das Modul läuft, bekommt nur noch Sicherheitsfixes, bleibt aber über das Release hinaus bestehen. Einen Termin gibt es nicht. Hinter der Naht liegt nur die Datenschicht; Gerätelogin (G9) und Service Worker (G10) hängen an Verhalten des PoC, das keine Doku zusagt.
 6. **Stilles gegenseitiges Überschreiben.** Kein ETag, keine Transaktion (G3). Revisionsprüfung und „Index zuletzt" erkennen den Konflikt, verhindern ihn nicht.
 7. **Ein Update der Extension bricht laufende Player.** Neue Asset-Namen, alter Kiosk-Tab, `404` auf einen Chunk. Deshalb ein Bündel und Neuladen bei Modul-Ladefehlern, im CI geprüft.
 8. **Die Instanz-URL landet im Release-Build.** Vite ersetzt `import.meta.env.*` zur Bauzeit. Deshalb tragen Instanz-URL und Token kein `VITE_`-Präfix und leben nur im Dev-Proxy; `scripts/check-dist.js` sucht bei jedem Build nach `*.church.tools` im `dist/`.
@@ -558,4 +557,5 @@ Volltext in [`docs/Plan-Archiv.md`](docs/Plan-Archiv.md). Die Punkte 1 bis 6 der
 - Extension mit Termin-Persistenz: <https://github.com/bensteUEM/ct-events-load>
 - Forum: [Infoscreen mit FullPageOS](https://forum.church.tools/topic/10280), [Wünsche der Anwender](https://forum.church.tools/topic/6252), [Login-Token für den Infoscreen](https://forum.church.tools/topic/11910)
 - ChurchTools Academy: [Rechteverwaltung verstehen](https://churchtools.academy/de/help/rechteverwaltung/rechteverwaltung-verstehen/), [CORS](https://churchtools.academy/help/system-einstellungen/api/0-cors/)
+- ChurchTools-Community, Themengruppe „Development": Ankündigung „Wie es mit ChurchTools Extensions weitergeht" und Wiki-Seite „Development" (2026-10-28, G69); technische Fragen in der privaten Forumsrubrik „Extensions" (Zugang über <extensions@churchtools.de>)
 - 30-Tage-Testinstanz: <https://church.tools/de/test-churchtools/> · Support: <support@churchtools.de>
