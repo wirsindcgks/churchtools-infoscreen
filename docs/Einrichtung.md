@@ -24,6 +24,14 @@ steht im [Onboarding](Onboarding.md), alle Rechte als Tabelle in der [Rechte-Üb
 „Infoscreen-Designer") gestalten, was die Bildschirme zeigen. Das **Gerät** (Gruppe „Infoscreen-Devices") zeigt
 einen Bildschirm an und darf nur lesen.
 
+```mermaid
+flowchart LR
+    A["Administrator"] -->|"richtet ein,<br>legt Bildschirme an"| D["Infoscreen Designer<br>in ChurchTools"]
+    G["Gestalter<br>Gruppe „Infoscreen-Designer“"] -->|"gestaltet Folien,<br>veröffentlicht"| D
+    K["Öffentliche Kalender,<br>Räume, Bilder"] --> F
+    D -->|"Bildschirm"| F["Fernseher<br>Gruppe „Infoscreen-Devices“<br>nur lesen"]
+```
+
 ### Voraussetzungen
 
 - **Extensions müssen für eure Instanz freigeschaltet sein.** Gibt es die Extension-Verwaltung aus Schritt 1 nicht,
