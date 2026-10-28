@@ -28,7 +28,7 @@ test.describe('start page on a desktop', () => {
         await expect(tile).toContainText('Quer');
         await expect(tile).toContainText('demo');
         // When and by whom, each on a line of its own (Plan.md 66); the demo seed is saved by "Demo".
-        await expect(tile.getByTestId('screen-edited-at')).toHaveText(/^\d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
+        await expect(tile.getByTestId('screen-edited-at')).toHaveText(/^Bildschirm geändert \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
         await expect(tile.getByTestId('screen-edited-by')).toHaveText('Demo');
         await expect(tile.getByTestId('screen-edited-by')).toHaveAttribute('data-tip', 'Zuletzt geändert von Demo');
         // An administrator's visit creates the category "Status" in the demo store, and no screen has reported yet (Plan.md 59);

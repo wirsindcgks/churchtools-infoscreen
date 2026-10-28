@@ -59,8 +59,8 @@ describe('aliveState – software and presentation (Plan.md 111)', () => {
         aliveState(heartbeat, now, 'Europe/Berlin', published, '0.48.2');
     const CONTENT = '2026-10-05T10:00:00Z';
 
-    it('says "Player aktuell" for the installed version', () => {
-        expect(state(beat({ version: '0.48.2' })).software).toMatchObject({ text: 'Player aktuell', notice: false });
+    it('says nothing about the installed version – only a deviation is worth a line', () => {
+        expect(state(beat({ version: '0.48.2' })).software).toBeUndefined();
     });
 
     it('names the deviation as a hint', () => {
@@ -72,22 +72,22 @@ describe('aliveState – software and presentation (Plan.md 111)', () => {
     });
 
     it('shows the state in the time zone of the instance', () => {
-        expect(state(beat({ contentAt: CONTENT })).content).toMatchObject({ text: 'Stand vom 05.10.2026, 12:00', notice: false });
+        expect(state(beat({ contentAt: CONTENT })).content).toMatchObject({ text: 'Präsentation vom 05.10.2026, 12:00', notice: false });
     });
 
-    it('says "Stand unbekannt" for an older player', () => {
-        expect(state(beat()).content).toMatchObject({ text: 'Stand unbekannt', notice: false });
-        expect(state(beat({ contentAt: 'kein Datum' })).content?.text).toBe('Stand unbekannt');
+    it('says the state is unknown for an older player', () => {
+        expect(state(beat()).content).toMatchObject({ text: 'Stand der Präsentation unbekannt', notice: false });
+        expect(state(beat({ contentAt: 'kein Datum' })).content?.text).toBe('Stand der Präsentation unbekannt');
     });
 
     it('adds "veraltet" when a newer state was published long enough before the sign of life', () => {
         // Published 11:00, reported at 12:32 with the state of 10:00.
         const content = state(beat({ contentAt: CONTENT }), '2026-10-05T11:00:00Z').content;
-        expect(content).toMatchObject({ text: 'Stand vom 05.10.2026, 12:00 · veraltet', notice: true });
+        expect(content).toMatchObject({ text: 'Präsentation vom 05.10.2026, 12:00 · veraltet', notice: true });
     });
 
     it('adds nothing for a publication younger than the sign of life minus two minutes', () => {
-        expect(state(beat({ contentAt: CONTENT }), '2026-10-05T12:31:00Z').content).toMatchObject({ notice: false, text: 'Stand vom 05.10.2026, 12:00' });
+        expect(state(beat({ contentAt: CONTENT }), '2026-10-05T12:31:00Z').content).toMatchObject({ notice: false, text: 'Präsentation vom 05.10.2026, 12:00' });
         expect(state(beat({ contentAt: CONTENT }), '2026-10-05T12:30:00Z').content?.notice).toBe(false);
         expect(state(beat({ contentAt: CONTENT }), '2026-10-05T12:29:59Z').content?.notice).toBe(true);
     });
@@ -102,7 +102,8 @@ describe('aliveState – software and presentation (Plan.md 111)', () => {
         expect(offline.kind).toBe('offline');
         expect(offline.software?.title).toContain('Zuletzt gemeldet');
         expect(offline.content?.title).toContain('Zuletzt gemeldet');
-        expect(state(beat({ contentAt: CONTENT })).content?.title).toBe('');
+        expect(state(beat({ contentAt: CONTENT })).content?.title).toMatch(/^Stand der Präsentation, wie der Fernseher sie geladen hat/);
+        expect(state(beat({ contentAt: CONTENT })).content?.title).not.toContain('Zuletzt gemeldet');
     });
 
     it('has no lines for a screen that never reported', () => {
