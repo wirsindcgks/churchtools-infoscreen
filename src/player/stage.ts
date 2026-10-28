@@ -25,3 +25,20 @@ export function fitStage(
         offsetY: (viewport.height - stage.height * scale) / 2,
     };
 }
+
+/**
+ * A fit for a small picture of a slide: where the stage fills the box along an axis, it reaches one pixel
+ * beyond – a box seldom measures whole pixels, and the half-covered last column lets the dark ground
+ * behind show as a hairline at the edge. Half a pixel cut off at each side shows nowhere.
+ */
+export function fitThumb(viewport: { width: number; height: number }, stage: { width: number; height: number }): StageFit {
+    const fit = fitStage(viewport, stage);
+    let scale = fit.scale;
+    if (fit.offsetX < 1) scale = Math.max(scale, (viewport.width + 1) / stage.width);
+    if (fit.offsetY < 1) scale = Math.max(scale, (viewport.height + 1) / stage.height);
+    return {
+        scale,
+        offsetX: (viewport.width - stage.width * scale) / 2,
+        offsetY: (viewport.height - stage.height * scale) / 2,
+    };
+}

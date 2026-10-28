@@ -10,7 +10,7 @@ import { t } from '../i18n/designer';
 import type { SlideDoc } from '../model/schema';
 import SlideView from '../player/SlideView.vue';
 import StageView from '../player/StageView.vue';
-import { fitStage } from '../player/stage';
+import { fitThumb } from '../player/stage';
 
 const props = withDefaults(
     defineProps<{ slide: SlideDoc | null; stage: { width: number; height: number }; aspect?: number }>(),
@@ -19,7 +19,7 @@ const props = withDefaults(
 
 const box = ref<HTMLElement | null>(null);
 const size = ref({ width: 0, height: 0 });
-const fit = computed(() => fitStage(size.value, props.stage));
+const fit = computed(() => fitThumb(size.value, props.stage));
 
 let observer: ResizeObserver | null = null;
 onMounted(() => {
