@@ -33,7 +33,7 @@ Etwa eine halbe Stunde, den Fernseher nicht mitgezählt.
 
 **Danach gelegentlich:**
 
-- **Nach jedem Update** und wenn ein Bildschirm einen neuen Kalender zeigt: Einstellungen → Gruppen und Rechte →
+- **Nach jedem Update** und wenn ein Bildschirm neue Räume zeigt: Einstellungen → Gruppen und Rechte →
   **„Rechte aktualisieren"** (eine Vorschau zeigt vorher, was sich ändert; was kein Bildschirm mehr braucht, fällt weg).
 - **Gerät verloren?** Passwort des Geräte-Kontos ändern, neue Adresse erzeugen
   ([Notbremse](Einrichtung.md#wenn-ein-gerät-verloren-geht--die-notbremse)).
