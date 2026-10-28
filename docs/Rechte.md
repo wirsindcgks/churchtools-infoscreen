@@ -1,251 +1,151 @@
 # Rechte im Infoscreen Designer – wer braucht was?
 
-Die Übersicht für ChurchTools-Administratoren: welche Rolle welche Rechte braucht, woher sie kommen und was fehlt,
-wenn etwas nicht geht. Wie man einrichtet, steht in der [Einrichtungsanleitung](Einrichtung.md); den Einstieg je
-Rolle zeigt das [Onboarding](Onboarding.md).
-
-> **Diese Tabellen werden mitgepflegt.** Die Rechte der beiden Gruppen vergibt der Einrichtungsassistent
-> (`src/setup/provision.ts`); ein Test prüft bei jedem Build, dass jedes Recht, das er vergibt oder zurücknimmt, hier
-> steht. Ändert sich der Assistent, schlägt der Test fehl, bis diese Seite nachgezogen ist.
+Die Übersicht für ChurchTools-Administratoren: welche Rolle welche Rechte braucht und woher sie kommen. Wie man
+einrichtet, steht in der [Einrichtungsanleitung](Einrichtung.md).
 
 ## Die drei Rollen auf einen Blick
 
-| Rolle | Wer | Darf | Darf nicht |
-| --- | --- | --- | --- |
-| **Administrator** | ChurchTools-Admins mit „Personen administrieren" | Extension installieren, **Einstellungen** öffnen (Assistent, Rechte prüfen, Adressen für Fernseher), **Bildschirme anlegen, einstellen, löschen** | – |
-| **Gestalter** | Mitglieder der Gruppe **„Infoscreen-Designer"** | gestalten, was die Bildschirme zeigen: Folien, Präsentationen, Zeitpläne, Bilder in der Mediathek | Bildschirme anlegen, einstellen, löschen; Einstellungen |
-| **Gerät** | Konten der Fernseher, Mitglieder von **„Infoscreen-Devices"** | nur lesen: die Bildschirme, die Kalender und die Räume, die sie zeigen – und die Videos der Mediathek; schreiben nur ihr Lebenszeichen („Status") | alles andere |
+| Rolle | Wer | Darf |
+| --- | --- | --- |
+| **Administrator** | ChurchTools-Admins | Extension installieren, **Einstellungen** öffnen, **Bildschirme anlegen, einstellen, löschen** |
+| **Gestalter** | Mitglieder von **„Infoscreen-Designer"** | Folien, Präsentationen, Zeitpläne und Bilder gestalten – nicht die Bildschirme selbst und nicht die Einstellungen |
+| **Gerät** | Konten der Fernseher in **„Infoscreen-Devices"** | nur lesen; schreiben nur sein Lebenszeichen |
 
-**Die Sperre sitzt bei ChurchTools, nicht im Designer.** ChurchTools prüft bei jedem Lesen und Speichern das Recht;
-der Designer blendet nur aus, was ohnehin scheitern würde. Auch Administratoren über Gruppen brauchen die Rechte am
-Modul ausdrücklich – ChurchTools-Adminrechte schließen sie nicht ein (sie können sie sich aber jederzeit selbst geben);
-ein Super-Admin braucht sie nicht.
+```mermaid
+flowchart LR
+    AS["Einrichtungs-<br>assistent"] --> GD["„Infoscreen-Designer“<br>Gestalter"]
+    AS --> GV["„Infoscreen-Devices“<br>Fernseher"]
+    GD --> M1["Modul: gestalten"]
+    GD --> W1["Wiki „Infoscreen“:<br>Bilder hochladen"]
+    GD --> R1["alle Räume sehen"]
+    GV --> M2["Modul: lesen,<br>Lebenszeichen schreiben"]
+    GV --> W2["Wiki „Infoscreen“:<br>Videos laden"]
+    GV --> R2["Räume und Dienste,<br>die Bildschirme zeigen"]
+    OB["Öffentlicher Benutzer"] -.->|"öffentliche Kalender"| GV
+```
 
-**Gruppen und Beiträge brauchen kein eigenes Recht.** Der Baustein „Gruppen" liest eine Gruppen-Homepage ohne
-Anmeldung, so wie jeder Besucher sie sieht; der Baustein „Beiträge" zeigt Beiträge öffentlicher Gruppen, die auch
-ohne Anmeldung sichtbar sind. Deshalb vergibt der Assistent dafür nichts – und der Fernseher zeigt nie mehr, als
-ChurchTools ohnehin öffentlich zeigt.
+**Rechte vergibt niemand von Hand an Personen.** Der Assistent gibt sie den beiden Gruppen
+([Einrichtung, Schritt 4](Einrichtung.md#4-gruppen-und-rechte-anlegen-lassen)); du nimmst danach nur noch Personen auf
+oder heraus. Einzige Ausnahme sind die Modulrechte der Administratoren
+([Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)). Die Tabellen unten sind zum Nachschlagen und Prüfen.
+
+**Gruppen und Beiträge brauchen kein eigenes Recht** – die Bausteine zeigen nur, was ChurchTools ohnehin öffentlich
+zeigt.
 
 ## Rechte je Rolle
 
-> **Diese Rechte vergibt niemand von Hand an Personen.** Der Assistent legt die Gruppen „Infoscreen-Designer" und
-> „Infoscreen-Devices" an und gibt ihnen die Rechte ([Einrichtung, Schritt 4](Einrichtung.md#4-gruppen-und-rechte-anlegen-lassen));
-> danach nimmst du nur noch Personen in die passende Gruppe auf – oder nimmst sie wieder heraus. Wer gestaltet, wird
-> Mitglied von „Infoscreen-Designer"; jeder Fernseher bekommt ein Konto in „Infoscreen-Devices". Ausnahme sind die
-> Modulrechte der Administratoren ([Einrichtung, Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)), und
-> auch die gehören an die Rolle einer Admin-Gruppe, nicht an die Person. Wer kein Recht hat, Rechte zu vergeben,
-> lässt das einen Administrator machen. ChurchTools selbst rät dazu: Rechte direkt an einen Benutzer nur im
-> Ausnahmefall, weil die Rechte sonst schnell unübersichtlich werden
-> ([Academy](https://churchtools.academy/en/help/permissions-management/basics-understanding-permissions/21-useful-permissions-management-from-high-level-to-subtle-details/)).
-> Die Tabellen unten sind zum Nachschlagen und Prüfen da.
-
-**Kategorien** sind die Ablagen des Moduls in ChurchTools: **Screens**, **Playlists**, **Slides**, **Medien** und
-**Einstellungen** – dazu **Status**, in der die Fernseher ihr Lebenszeichen ablegen. Die Datenrechte werden je Kategorie vergeben.
+**Kategorien** sind die Ablagen des Moduls: **Screens**, **Playlists**, **Slides**, **Medien**, **Einstellungen**,
+**Entwürfe** und **Status** (Lebenszeichen der Fernseher).
 
 ### Modul „Infoscreen Designer"
-
-In der Rechteverwaltung unter **„Infoscreen Designer"**.
 
 | Im Assistenten | In der Rechteverwaltung (API) | Administrator | Gestalter | Gerät |
 | --- | --- | --- | --- | --- |
 | „Infoscreen Designer" sehen | `view` | ✓ | ✓ | ✓ |
-| Kategorien sehen | `view custom category` | alle | alle | alle ² |
+| Kategorien sehen | `view custom category` | alle | alle | alle außer Entwürfe |
 | – | `create custom category` | ✓ ¹ | – | – |
-| Daten in Kategorie sehen | `view custom data` | alle | alle | alle ² |
+| Daten in Kategorie sehen | `view custom data` | alle | alle | alle außer Entwürfe |
 | Daten in Kategorie erstellen | `create custom data` | alle | Playlists, Slides, Medien, Entwürfe | Status |
 | Daten in Kategorie bearbeiten | `edit custom data` | alle | Playlists, Slides, Medien, Entwürfe | Status |
 | Daten in Kategorie löschen | `delete custom data` | alle | Playlists, Slides, Medien, Entwürfe | – |
 | – | `edit custom category`, `delete custom category` | – | – | – |
 
-¹ Nur für den allerersten Start: Beim ersten Öffnen legt der Designer seine Kategorien an. Die Kategorie „Status" legt ein
-Administrator an, wenn er die Startseite öffnet; die Kategorie „Entwürfe" legt er an, wenn er die Einstellungen öffnet.
+¹ Nur damit der Designer beim ersten Öffnen seine Kategorien anlegen kann.
 
-² Außer „Entwürfe": Dort hat das Gerät **nichts**, weder die Kategorie zu sehen noch Daten. Gestalter sehen, erstellen,
-bearbeiten und löschen dort die Entwürfe ihrer Präsentationen – ein Fernseher kann einen Entwurf also nie zeigen. Die
-Kategorie erscheint unter „alle" für Administratoren und Gestalter, nicht für Geräte.
-
-**„Alle" schließt „Status" ein:** Auch Gestalter und Geräte sehen die Kategorie – Gestalter, damit die Kacheln zeigen, ob
-ein Bildschirm online ist, Geräte, weil sie ihren Wert dort lesen, bevor sie ihn ändern. **Schreiben darf nur das Gerät, und nur
-in „Status":** sein Lebenszeichen, alle fünf Minuten. **Ein Löschrecht bekommt es nicht, weil es überflüssig wäre:**
-ChurchTools prüft beim Löschen eines Werts „bearbeiten" (Befunde G54) – wer bearbeiten darf, darf auch löschen. Wer die
-Adresse eines Fernsehers kennt, kann also Lebenszeichen fälschen oder löschen, sonst nichts.
-
-**Ausdrücklich nicht für Gestalter und Geräte:** das Anlegen, Bearbeiten und Löschen von Bildschirmen und Einstellungen.
-Der Assistent nimmt diese Rechte zurück, wenn eine seiner Gruppen sie noch hat – siehe
-[„Was „Rechte aktualisieren" zurücknimmt"](#was-rechte-aktualisieren-zurücknimmt).
+Weil das Gerät die Entwürfe nicht sieht, kann ein Fernseher **nie einen Entwurf zeigen**. Wer die Adresse eines
+Fernsehers kennt, kann höchstens dessen Lebenszeichen ändern.
 
 ### Wiki – für die Mediathek
 
-Bilder und Videos der Mediathek liegen im Wiki-Bereich **„Infoscreen"**. In der Rechteverwaltung unter **„Wiki"**.
-
 | Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
 | --- | --- | --- | --- | --- |
-| „Wiki" sehen | „Wiki" sehen (`view`, 501) | ✓ | ✓ | – ² |
+| „Wiki" sehen | „Wiki" sehen (`view`, 501) | ✓ | ✓ | – |
 | Wiki-Bereich „Infoscreen" sehen | Einzelne Wiki-Kategorien sehen (`view category`, 502) | ✓ | ✓ | ✓ ² |
-| Wiki-Bereich „Infoscreen" bearbeiten | Einzelne Wiki-Kategorien bearbeiten (`edit category`, 503) | ✓ | ✓ | – ² |
+| Wiki-Bereich „Infoscreen" bearbeiten | Einzelne Wiki-Kategorien bearbeiten (`edit category`, 503) | ✓ | ✓ | – |
 
-² Bilder kommen ohne Anmeldung über den Bilddienst von ChurchTools. Videos gibt es nur über die Download-Adresse der
-Datei, und die verlangt dieses eine Recht – deshalb bekommt das Gerät „Wiki-Bereich „Infoscreen" sehen", immer, auch
-bevor ein Bildschirm ein Video zeigt. Damit sieht das Gerät die Dateien dieses Bereichs. „Wiki" sehen und das Bearbeiten
-braucht ein Gerät nicht; die Einstellungsseite warnt, wenn es sie hat.
+² Für Videos; Bilder kommen ohne Anmeldung.
 
-**Das Bearbeiten des Wiki-Bereichs „Infoscreen" eng vergeben.** Wer es hat, kann im Wiki Bilder löschen – an der
-Warnung der Mediathek vorbei –, und auf den Fernsehern fehlen sie dann. Jedes Mitglied von „Infoscreen-Designer" hat
-dieses Recht; deshalb auch die Mitgliedschaft dort bewusst vergeben.
+**Das Bearbeiten eng vergeben:** Wer es hat, kann im Wiki Bilder löschen, an der Warnung der Mediathek vorbei.
 
 ### Kalender – für Termine auf den Bildschirmen
 
-In der Rechteverwaltung unter **„Kalender"**.
-
 | Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
 | --- | --- | --- | --- | --- |
-| Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | für die Vorschau | für die Vorschau; dazu die freigegebenen internen Kalender ⁶ | –, sieht öffentliche Kalender über den öffentlichen Benutzer ³; freigegebene interne Kalender über ein eigenes Recht ⁶ |
+| Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | für die Vorschau | freigegebene interne Kalender | freigegebene interne Kalender ³ |
 
-³ **Nur öffentliche Kalender.** Ein Fernseher zeigt nur Termine aus Kalendern, die der **öffentliche Benutzer** sehen
-darf – Kalender, die in ChurchTools auch ohne Anmeldung sichtbar sind, nicht jeder Gemeindekalender – und von diesen
-**nie interne Termine** („nur für angemeldete Benutzer"). Freigeben kann, wer in ChurchTools Berechtigungen verwalten
-darf: Berechtigungen → Benutzer → „Öffentlicher Benutzer" → Kalender → „Einzelnen Kalender sehen". „Kalender sehen"
-braucht es dafür nicht. Das Gerät braucht **kein eigenes Kalenderrecht:** Jedes angemeldete Konto sieht mit, was der
-öffentliche Benutzer sieht. Der Fernseher fragt nur öffentliche Kalender ab – auch dann nicht andere, wenn sein Konto sie
-über Status oder eine andere Gruppe lesen dürfte. Gestalter können nur öffentliche Kalender wählen. Welche Kalender
-öffentlich sind, entscheidet die Gemeinde; es gilt auch für die Website und den öffentlichen Kalender.
-
-⁶ **Freigegebene interne Kalender.** Ein Administrator kann unter Einstellungen → „Interne Kalender für Bildschirme"
-einzelne nicht öffentliche Kalender freigeben. „Rechte aktualisieren" gibt dann der **Gerätegruppe und der
-Gestaltergruppe** „Einzelnen Kalender sehen" (403) auf genau diese Kalender – nur auf Kalender, die der Administrator
-sieht. Das Gerät liest sie damit samt Terminen (gemessen, Befunde G60); intern markierte Termine zeigt der Fernseher
-trotzdem nie, über die Adresse des Fernsehers sind sie aber lesbar. Der Fernseher folgt der Freigabe in den
-Einstellungen, nicht dem Recht: Endet die Freigabe, verschwindet der Kalender sofort; das Recht nimmt „Rechte
-aktualisieren" zurück und es wirkt bis zu einer halben Stunde nach.
+³ **Öffentliche Kalender** sieht das Gerät ohne eigenes Recht, über den öffentlichen Benutzer (Berechtigungen →
+Benutzer → „Öffentlicher Benutzer" → Kalender). Das Recht gibt der Assistent nur für **interne Kalender, die ein
+Administrator für Bildschirme freigegeben hat** – über die Adresse des Fernsehers sind sie dann ganz lesbar.
 
 ### Ressourcen – für die Raumbelegung
 
-In der Rechteverwaltung unter **„Ressourcen"**.
-
 | Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
 | --- | --- | --- | --- | --- |
-| Ressource sehen | Ressource sehen (`view resource`, 205) | für die Vorschau | **alle Räume** | **jeden Raum, den ein Bildschirm zeigt** – und **alle Räume**, sobald ein Termin-Baustein „Raum zeigen" an hat ⁴ |
+| Ressource sehen | Ressource sehen (`view resource`, 205) | für die Vorschau | **alle Räume** | **jeden Raum, den ein Bildschirm zeigt** – alle Räume, sobald ein Termin-Baustein „Raum zeigen" an hat |
 
-⁴ **Nur Räume,** nicht Gegenstände und Fahrzeuge. Das Recht „„Ressourcen" sehen" (201) braucht niemand – das Recht
-je Ressource genügt. Gestalter sehen nur Räume, für die sie das Recht haben; fehlt es, steht der Raum im Baustein
-„Raumbelegung" nicht zur Auswahl. Zeigt ein Bildschirm einen weiteren Raum, einmal „Rechte aktualisieren".
-**Raum am Termin:** Welche Räume künftige Termine buchen, weiß der Assistent nicht vorher – deshalb bekommt das Gerät
-„Ressource sehen" für alle Räume, sobald ein „Nächster Termin" oder eine Terminliste (als Karten) „Raum zeigen" an hat.
-Am Termin steht nur der Raumname, nie ein Buchungstitel.
-**Ein entzogenes Recht wirkt bei ChurchTools noch eine Weile nach – gemessen gut 40 Minuten.**
+Nur Räume, nicht Gegenstände und Fahrzeuge.
 
 ### Events – für Dienste am Termin
 
-In der Rechteverwaltung unter **„Events"**.
-
 | Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
 | --- | --- | --- | --- | --- |
-| Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | für die Vorschau | für die Vorschau | **jeden Kalender, dessen Termine Dienste zeigen** ⁵ |
+| Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | für die Vorschau | für die Vorschau | **jeden Kalender, dessen Termine Dienste zeigen** |
 
-⁵ **Kommt aus dem Events-Modul** (in der Rechteverwaltung unter „Events"). Das Gerät sieht damit nur die Dienste
-offen einsehbarer Dienstgruppen („Ohne Berechtigung einsehbar"), keine anderen – und nur zugesagte Einteilungen. Das
-Recht an den Dienstgruppen selbst bekommt das Gerät nicht.
+Das Gerät sieht damit nur zugesagte Dienste aus Dienstgruppen, die „Ohne Berechtigung einsehbar" sind.
 
 ### ChurchTools selbst – nur für Administratoren
 
-Wer das Modul installiert und einrichtet, braucht diese Rechte. „Gemessen" heißt: auf der Testinstanz ausprobiert;
-„Katalog" heißt: der Name steht so in der Rechteverwaltung bzw. die API-Spezifikation der Instanz verlangt es, ausprobiert
-ist es nicht.
+| Bereich | Recht | Wofür |
+| --- | --- | --- |
+| Administration | „Erweiterungen verwalten" | Extension hochladen und aktualisieren |
+| Administration | „Berechtigungen verwalten" | Einstellungen des Designers, der Assistent, „Rechte aktualisieren", Adressen für Fernseher |
+| Gruppen | „Gruppen eines Gruppentyps erstellen" und „… sehen" für den gewählten Gruppentyp | „Gruppen und Rechte anlegen" |
+| Gruppen | „Gruppen eines Gruppentyps löschen" für diesen Typ | „Automatische Einrichtung rückgängig machen" |
+| Gruppen | „Gruppenmitgliedschaften … bearbeiten" für diesen Typ | Gestalter und Gerätekonten aufnehmen |
+| Gruppen | statt der drei Zeilen oben: „Gruppen verwalten" | alles davon auf einmal |
+| Wiki | „„Wiki" sehen" und „Stammdaten bearbeiten" | den Wiki-Bereich „Infoscreen" anlegen |
+| Personen | „Personen erstellen" und „Personen bearbeiten" | das Gerätekonto anlegen |
+| Administration | „Personen simulieren, Passwort ändern und Zugang sperren" | dem Gerätekonto ein Passwort setzen |
+| Infoscreen Designer | die Modulrechte aus [Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben) | Bildschirme anlegen, einstellen, löschen |
 
-**Einmalig – Installation und Einrichtung**
-
-| Bereich in der Rechteverwaltung | Recht | Wofür | Beleg |
-| --- | --- | --- | --- |
-| Administration | „Erweiterungen verwalten" | Die Extension hochladen und aktualisieren | Katalog |
-| Administration | „Berechtigungen verwalten" | Einstellungsseite des Designers öffnen; der Assistent vergibt damit die Rechte der beiden Gruppen; sich selbst die Modulrechte geben ([Einrichtung, Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)) | gemessen |
-| Gruppen | „Gruppen eines Gruppentyps erstellen" **und** „Gruppen eines Gruppentyps sehen", je für den Gruppentyp, den du im Assistenten wählst (vorgewählt „Merkmal") | „Gruppen und Rechte anlegen" – ohne Sehen bräche der Assistent nach dem Anlegen ab | gemessen |
-| Gruppen | „Gruppen eines Gruppentyps löschen" für diesen Typ (oder „Gruppe löschen" je Gruppe) | „Automatische Einrichtung rückgängig machen" | gemessen |
-| Gruppen | „Gruppenmitgliedschaften von Gruppen eines Gruppentyps bearbeiten" für diesen Typ | Gestalter und Gerätekonten in die beiden Gruppen aufnehmen | Katalog |
-| Gruppen | statt der vier Zeilen oben: „Gruppen verwalten" | alles davon auf einmal | gemessen (ersetzt die Gruppenrechte) |
-| Wiki | „„Wiki" sehen" **und** „Stammdaten bearbeiten" | Der Assistent legt den Wiki-Bereich „Infoscreen" an | Katalog (API-Spezifikation) |
-| Personen | „Personen erstellen" und „Personen bearbeiten" | Das Gerätekonto anlegen und ihm einen Status geben | Katalog |
-| Administration | „Personen simulieren, Passwort ändern und Zugang sperren" | Dem Gerätekonto Benutzername und Passwort setzen | Katalog |
-
-**Dauerhaft – Bildschirme betreuen**
-
-| Bereich in der Rechteverwaltung | Recht | Wofür | Beleg |
-| --- | --- | --- | --- |
-| Infoscreen Designer | alle Rechte, die Datenrechte für alle Kategorien (Tabelle oben, Spalte „Administrator") | Bildschirme anlegen, einstellen, löschen | gemessen |
-| Kalender | „Einzelnen Kalender sehen" für die Kalender, die du in der Vorschau sehen willst | Nur für die Vorschau; die Fernseher brauchen kein Kalenderrecht (³ oben) | gemessen |
-| Ressourcen | „Ressource sehen" für die Räume | Gestalter bekommen die Räume, die du siehst | gemessen |
-| Administration | „Berechtigungen verwalten" (siehe oben) | Einstellungen: „Rechte aktualisieren", Adressen für Fernseher, Dienste freigeben | gemessen |
-| Gruppen | „Gruppen eines Gruppentyps sehen" für den Typ der beiden Gruppen (siehe oben) | „Rechte aktualisieren" und die Prüfung der Gruppen | gemessen |
-
-**„Berechtigungen verwalten" ist ein mächtiges Recht:** Wer es hat, kann sich jedes andere Recht selbst geben. Wo es nur
-für die Einrichtung vergeben werden soll, kann ein Super-Admin die einmaligen Schritte selbst übernehmen oder das Recht
-danach wieder entziehen – „Rechte aktualisieren" und die Adressen für neue Fernseher brauchen es dann wieder.
-
-Fehlt ein Gruppenrecht, graut die Einstellungsseite den Knopf aus und nennt darunter, was fehlt (gemessen am 2026-10-05).
-
-**Ein Super-Admin hat all das – nur Kalender nicht:** „Einzelnen Kalender sehen" bekommt er nur für Kalender, die ihm
-Status oder Person geben; für die Vorschau im Designer sieht er trotzdem alle öffentlichen. Die Modulrechte des Designers braucht er nicht ausdrücklich. Einen Administrator über
-Gruppen (ohne Super-Admin) trifft das nicht: Er hat, was seine Gemeinde ihm gibt.
+Fehlt ein Recht, nennt es die Einstellungsseite. **„Berechtigungen verwalten" ist mächtig** – wer es hat, kann sich jedes
+andere Recht selbst geben. Ein **Super-Admin** hat alles davon und braucht auch die Modulrechte nicht ausdrücklich.
 
 ## Was „Rechte aktualisieren" zurücknimmt
 
-„Rechte aktualisieren" vergibt nicht nur, was fehlt, sondern nimmt auch zurück, was kein Bildschirm mehr braucht. Vorher zeigt
-ein Fenster, was dazukommt und was wegfällt; erst „Übernehmen" schreibt. Zurückgenommen wird **nur an den Gruppen, die
-der Assistent selbst angelegt hat**, und nur das, was er selbst verwaltet:
+„Rechte aktualisieren" nimmt auch zurück, was kein Bildschirm mehr braucht – **nur an den Gruppen des Assistenten** und
+nur an Kalendern und Räumen, die du selbst siehst. Vorher zeigt eine Vorschau, was wegfällt.
 
 | Im Assistenten | In der Rechteverwaltung (API) | Gruppe | Wann es wegfällt |
 | --- | --- | --- | --- |
-| Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | Gerät, Gestalter | Der Kalender ist nicht (mehr) für Bildschirme freigegeben – öffentliche Kalender sieht das Gerät über den öffentlichen Benutzer (⁶ oben) |
+| Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | Gerät, Gestalter | Der Kalender ist nicht mehr für Bildschirme freigegeben |
 | Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | Gerät | Kein Baustein zeigt mehr Dienste dieses Kalenders |
-| Ressource sehen | Ressource sehen (`view resource`, 205) | Gerät, Gestalter | Der Raum ist kein Raum mehr in dem, was die Gruppe haben soll |
+| Ressource sehen | Ressource sehen (`view resource`, 205) | Gerät, Gestalter | Der Raum wird nicht mehr gebraucht |
 | Anlegen von Bildschirmen und Einstellungen | `create custom data` | Gestalter, Gerät | immer – das ist Sache der Administratoren |
 | Bearbeiten von Bildschirmen und Einstellungen | `edit custom data` | Gestalter, Gerät | immer |
 | Löschen von Bildschirmen und Einstellungen | `delete custom data` | Gestalter, Gerät | immer |
 
-**Nur was der Administrator sieht.** Ein Recht an einem Kalender oder Raum, den der Administrator selbst nicht sieht, bleibt
-unangetastet – der Assistent weiß nicht, ob es dort gebraucht wird. Das gilt auch, wenn die Raumliste nicht lädt: Dann
-nimmt er keinem Gestalter einen Raum. Alle anderen Rechte an diesen Gruppen bleiben, auch fremde Gruppen werden nicht angefasst.
-
-**An den Gruppen des Assistenten nichts von Hand ergänzen.** Was dort an Kalendern, Events oder Räumen von Hand vergeben
-wurde, nimmt „Rechte aktualisieren" bei der nächsten Gelegenheit zurück, sobald es kein Bildschirm braucht. Wer mehr vergeben
-will, nimmt eine eigene Gruppe.
-
-**Ein entzogenes Recht wirkt bei ChurchTools noch bis zu einer Dreiviertelstunde nach.**
+**Deshalb an den Gruppen des Assistenten nichts von Hand ergänzen** – wer mehr vergeben will, nimmt eine eigene
+Gruppe. Entzogene Rechte wirken bei ChurchTools noch bis zu einer Dreiviertelstunde nach.
 
 ## Was brauche ich für …?
 
 | Ich will … | Rolle | Fehlt es, dann … |
 | --- | --- | --- |
 | den Menüpunkt „Infoscreen Designer" sehen | alle | „Infoscreen Designer" sehen |
-| Bildschirme auf der Startseite sehen | alle | Kategorien sehen, Daten in Kategorie sehen |
-| Folien gestalten und speichern | Gestalter | Daten in Kategorie erstellen / bearbeiten / löschen für Playlists und Slides |
-| Bilder und Videos hochladen | Gestalter | „Wiki" sehen und Wiki-Bereich „Infoscreen" sehen / bearbeiten, dazu Medien schreiben |
-| einen Bildschirm anlegen, umbenennen, löschen | Administrator | Daten in Kategorie erstellen / bearbeiten / löschen für **Screens** |
-| die Einstellungen öffnen | Administrator | „Personen administrieren" |
-| dass der Fernseher Termine zeigt | – | der Kalender muss **öffentlich** sein (³ oben); das Gerät braucht kein Recht |
-| dass der Fernseher Videos abspielt | Gerät | Wiki-Bereich „Infoscreen" sehen |
-| dass der Fernseher die Raumbelegung zeigt | Gerät | Ressource sehen für jeden Raum des Bildschirms |
-| dass der Fernseher den Raum am Termin zeigt | Gerät | Ressource sehen für alle Räume |
-| Räume im Baustein „Raumbelegung" wählen | Gestalter | Ressource sehen für die Räume |
+| Folien gestalten und speichern | Gestalter | Mitglied in „Infoscreen-Designer" werden |
+| Bilder und Videos hochladen | Gestalter | Mitglied in „Infoscreen-Designer" werden |
+| einen Bildschirm anlegen, umbenennen, löschen | Administrator | Modulrechte für **Screens** ([Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)) |
+| dass der Fernseher Termine zeigt | – | der Kalender muss **öffentlich** oder für Bildschirme freigegeben sein |
+| dass der Fernseher Räume oder Dienste zeigt | Administrator | „Rechte aktualisieren" |
 
-Die Startseite des Designers nennt fehlende Rechte selbst; die Einstellungsseite prüft die Rechte beider Gruppen und
-warnt, wenn Gestalter mehr dürfen als vorgesehen.
+Die Startseite des Designers nennt fehlende Rechte selbst.
 
 ## Woher die Rechte kommen
 
-- **Über die Gruppen des Assistenten** – der empfohlene Weg, und für Gestalter und Geräte der einzige. Alle Rollen
-  einer Gruppe (bei „Merkmal" „Teilnehmer" und „Leiter") bekommen dieselben Rechte; wer Mitglied wird, hat sie. Nach einem Update der Extension einmal **„Rechte
-  aktualisieren"**.
-- **Administratoren** geben sich die Modulrechte einmal selbst, am besten über die Rolle ihrer Admin-Gruppe
-  ([Einrichtung, Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)).
-- **Rechte addieren sich.** Was der **Personenstatus**, der **Gruppentyp** der beiden Gruppen oder eine andere Gruppe
-  erlaubt, kommt dazu. Deshalb bekommt ein Geräte-Konto einen Status mit möglichst wenig Rechten, und für die beiden
-  Gruppen taugt ein Gruppentyp, der seinen Rollen wenig mitgibt.
-- **Ein Geräte-Konto ist kein echtes Personenkonto,** sondern eine eigene Person je Standort, und gehört am besten in **keine
-  weitere Gruppe** als „Infoscreen-Devices". Rechte aus anderen Gruppen bekommt der Fernseher mit – und jeder, der
-  seine Adresse kennt. Die Prüfung liest, welche Rechte jede weitere Gruppe dem Konto gibt – auch die innerhalb der
-  Gruppe, etwa Mitglieder sehen oder Beiträge schreiben –, und warnt mit der Gruppe als Herkunft. Eine Gruppe ohne
-  Rechte beanstandet sie nicht; eine Gruppe nur zum Sammeln von Systemkonten ist in Ordnung. Die Prüfung sieht auch auf
-  den **Geltungsbereich**: Schreiben darf ein Gerät nur in „Status", nichts in „Entwürfe", und im Wiki nur den
-  Bereich „Infoscreen" sehen – auch wenn das Recht aus einer weiteren Gruppe kommt. Räume und Events-Kalender sind
-  davon ausgenommen.
-- **Gruppenrechte wirken nur, solange die Gruppe den Status „aktiv" hat.**
+- **Über die Gruppen des Assistenten** – alle Rollen einer Gruppe bekommen dieselben Rechte. Nach einem Update einmal
+  **„Rechte aktualisieren"**.
+- **Rechte addieren sich.** Was der Personenstatus, der Gruppentyp oder eine andere Gruppe erlaubt, kommt dazu. Ein
+  Gerätekonto bekommt deshalb einen Status mit wenig Rechten und gehört in **keine weitere Gruppe** – sonst darf jeder,
+  der die Adresse des Fernsehers kennt, mehr. Die Prüfung in den Einstellungen warnt davor und nennt die Herkunft.
+- **Gruppenrechte wirken nur, solange die Gruppe „aktiv" ist.**
