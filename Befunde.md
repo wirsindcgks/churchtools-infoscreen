@@ -767,6 +767,21 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 
 ---
 
+**G70 – Beantwortet: Mitgliedsfelder einer Gruppe erreicht das Gerät ohne E-Mail nur mit zwei Rechten – einem globalen an der Gerätegruppe und einem gruppeninternen an einer Rolle der Zielgruppe.** *(2026-10-28, Testinstanz 3.138.0; **schreibend mit OK des Nutzers:** Gruppe „ISD-Personentest" (56, Typ Merkmal, eingeschränkt) mit den Mitgliedsfeldern `funktion` (2, Sicherheitsstufe 1) und `buero` (5, Stufe 2) angelegt, die Personen 1 (Leiter), 16 und 19 mit Testwerten aufgenommen, Rechte an der Rolle „Teilnehmer" der Gerätegruppe (397) und der Teilnehmerrolle von 56 (1427) gegeben und genommen, das Geräte-Konto (22) zeitweise als Teilnehmer aufgenommen; danach 56 gelöscht, beide Rollen der Gerätegruppe stehen Eintrag für Eintrag wie vorher; gelesen als Geräte-Konto; Anlass: Plan.md, Punkt 112, Issue #129)* **Academy vorab:** „Gruppe inkl. Mitglieder sehen" gibt es global je Gruppe, „Gruppenmitglieder sehen" auch gruppenintern ([Sichtbarkeit von Gruppen](https://churchtools.academy/en/help/permissions-management/authorise-groups/group-visibility-settings/)); jedes Mitgliedsfeld hat eine Sicherheitsstufe ([Mitgliedsfelder](https://churchtools.academy/en/help/churchtools-modules/my-group/how-to-create-group-member-fields/)). **Neu in 3.138:** `GET /permissions/definitions` liefert den Rechtekatalog mit ids, Namen und Vergabezielen (`scope=internal` für die gruppeninternen mit `+`) – die Lücke aus G30 ist damit in der neuen API geschlossen. Die Gruppenrechte stehen jetzt im Modul `churchgroup` (1101 ff.), nicht mehr in `churchdb`. Mitgliedsfelder legt `POST /groups/{id}/memberfields/group` an, Werte setzt `PUT /groups/{id}/members/{personId}` mit `fields` je Feld-id.
+
+| Rechte des Geräts (gelesen: `/groups/56/members`, `/persons/19`) | Gruppe und Mitglieder | Mitgliedsfelder | E-Mail von Person 19 |
+| --- | --- | --- | --- |
+| keine | `403` | – | `403` |
+| nur Mitglied in 56 (Teilnehmerrolle ohne eigene Rechte) | `403` | – | `403` |
+| global 1104 „Gruppe inkl. ihrer Gruppenmitglieder sehen" auf `[56]` an 397 | `200`: Name, Bild, Rolle, Archiv- und Todesvermerk, `guid` | leer | leer (`/persons/19` jetzt `200`, nur Name und `guid`) |
+| dazu 1114 „Gruppeninfos sehen" Stufe 1 | wie oben | leer | leer |
+| dazu 125 „Personendaten sehen" Stufe 1 | wie oben | leer | **gefüllt** |
+| 1104, Gerät Mitglied, gruppenintern 10126 „Gruppenmitgliedsfelder sehen" Stufe 1 an 1427 | wie oben, das Gerät selbst als Mitglied darunter | `funktion` | leer |
+| dasselbe mit 10126 Stufe 2 | wie oben | `funktion` und `buero` | leer |
+| ohne 1104, Gerät Mitglied, gruppenintern 10102, 10101 „Gruppenmitglieder sehen" und 10126 je Stufe 1 | wie oben | `funktion` | **gefüllt** |
+
+**Die Sicherheitsstufe trennt sauber:** 10126 gibt genau die Felder bis zur Stufe frei. **Die E-Mail hängt an einer Personenstufe**, nicht an der Gruppe: 125 global wie 10101 gruppenintern geben sie schon bei Stufe 1. **Ein gruppeninternes Recht lässt sich nicht an eine Person geben** (`PUT /permissions/person/22` mit 10126 → `400` „authId must be < 10000 for domain type person"), und Rollen kommen aus dem Gruppentyp – 10126 gilt also für alle Inhaber der Rolle in der Zielgruppe, nicht nur für das Gerät. `/groups/{id}/roles` lässt sich ändern, aber nicht ergänzen. **Nebenbefund zu G61:** Über seine Mitgliedschaft in „Predigt" (6; dort `+see persons` Stufe 1 aus dem Gruppentyp) liest das Geräte-Konto schon heute die E-Mail-Adressen der Mitglieder (Personen 1 und 16); `/groups/6/members` selbst bringt nur Name und Bild. **Folgen:** Plan.md, Punkt 112. Name, Bild und Rolle trägt 1104 allein, an der eigenen Gerätegruppe, ohne die Zielgruppe anzufassen. Mitgliedsfelder brauchen zusätzlich die Mitgliedschaft des Geräts und 10126 an einer Rolle der Zielgruppe. Nie 125 oder 10101: Beide geben die E-Mail frei. Der Player muss sich selbst aus der Liste nehmen.
+
 ## Der Betriebsbenutzer – wie er eingerichtet wird und wie nicht
 
 
