@@ -19,7 +19,7 @@ ChurchTools und erscheinen von selbst auf dem Bildschirm. Ein Fernseher mit Kios
   „Veröffentlichen".
 - **Inhalte aus ChurchTools zeigen:** Termine als Liste oder als Karten (auf Wunsch mit Ort, Raum und Diensten),
   den nächsten Termin, Gruppen mit Treffzeit und QR-Code zur Anmeldung, aktuelle Beiträge und die Raumbelegung.
-  Was in ChurchTools geändert wird, steht nach etwa 20 Sekunden auf dem Bildschirm.
+  Was in ChurchTools geändert wird, erscheint von selbst auf dem Bildschirm.
 - **Wechseln nach Plan:** Mehrere Folien laufen als Präsentation. Zeitpläne schalten um, etwa „30 Minuten vor dem
   Gottesdienst die Begrüßung". Hinweise und Laufschrift liegen über allen Folien und verschwinden zur eingestellten
   Zeit von selbst.

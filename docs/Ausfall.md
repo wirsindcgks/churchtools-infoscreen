@@ -1,24 +1,39 @@
 # Der Fernseher, wenn ChurchTools ausfällt
 
-Was der Player tut, wenn die ChurchTools-Instanz nicht erreichbar ist – etwa bei einer Wartung, einem
-Netzausfall oder wenn ChurchTools die Systeme vorsorglich herunterfährt. Stand `v0.48.1`, abgelesen aus
-`src/player/controller.ts`, `src/player/timing.ts`, `src/sw/sw.ts` und `src/views/PlayerView.vue`.
+Was ein Fernseher tut, wenn ChurchTools nicht erreichbar ist – etwa bei einer Wartung oder einem Netzausfall.
 
 ## Kurz gesagt
 
-- **Der Fernseher zeigt weiter seinen letzten Stand**, mit einem kleinen Punkt in der Ecke („keine
-  Verbindung“). Bilder, Videos und eigene Schriften liegen auf dem Gerät.
-- **Er fragt immer seltener nach**: erst nach 30 Sekunden, dann doppelt so lange, höchstens alle 30 Minuten.
-- **Das Lebenszeichen fällt aus**: Im Designer steht der Screen nach 15 Minuten als „nicht online“.
-- **Neu geladen wird nur, wenn danach wieder der Player läuft** – nach 30 Minuten nur Fehlern und jede Nacht
-  gegen 3 Uhr. Kommt beim Neuladen statt des Players eine Fehler- oder Wartungsseite, zeigt der Service Worker
-  die Kopie auf dem Gerät. Ist ChurchTools wieder da, erholt sich der Fernseher von selbst.
-- **Neue Daten brauchen neuen Code – aber ohne Schleife.** Findet der Player Daten einer neueren Version, lädt
-  er neu, höchstens alle zehn Minuten und nur in eine ladbare Seite. Bei langsamem Netz kann der Service Worker
-  die alte Kopie liefern, die die neuen Daten wieder findet; ohne Pause hätte das den Fernseher im Kreis
-  neu laden lassen, bis ChurchTools die Adresse sperrt (G16).
+```mermaid
+flowchart LR
+    A["ChurchTools<br>nicht erreichbar"] --> B["Fernseher zeigt<br>den letzten Stand"]
+    B --> C["fragt immer seltener nach,<br>höchstens alle 30 Minuten"]
+    C --> D["ChurchTools<br>wieder da"]
+    D --> E["Fernseher holt sich<br>den neuen Stand selbst"]
+```
 
-## Ablauf
+- **Der Fernseher zeigt weiter seinen letzten Stand**, mit einem kleinen Punkt in der Ecke („keine Verbindung“).
+  Bilder, Videos und eigene Schriften liegen auf dem Gerät.
+- **Im Designer** steht der Bildschirm nach 15 Minuten als „nicht online“.
+- **Ist ChurchTools wieder da, erholt sich der Fernseher von selbst** – auch nach einem Neustart ohne Netz, wenn er
+  vorher schon einmal gelaufen ist.
+
+## Wann ihr eingreifen müsst
+
+- **Der Fernseher zeigt „abgemeldet“:** Seine Anmeldung gilt nicht mehr, etwa nach einer Passwortänderung oder
+  wenn ChurchTools nach einem Sicherheitsvorfall Anmeldungen zurücksetzt. Eine neue Adresse erzeugen
+  ([Einrichtung, Schritt 7](Einrichtung.md#7-den-fernseher-einrichten)).
+- **Der Bildschirm bleibt lange nach dem Ausfall „nicht online“:** den Kiosk-Browser oder das Gerät neu starten.
+
+<details>
+<summary>Für Entwickler: der Ablauf im Einzelnen</summary>
+
+Stand `v0.48.1`, abgelesen aus `src/player/controller.ts`, `src/player/timing.ts`, `src/sw/sw.ts` und
+`src/views/PlayerView.vue`. Neu geladen wird nur, wenn danach wieder der Player läuft – nach 30 Minuten nur Fehlern
+und jede Nacht gegen 3 Uhr. Findet der Player Daten einer neueren Version, lädt er höchstens alle zehn Minuten neu
+(Befunde G16).
+
+### Ablauf im Einzelnen
 
 ```mermaid
 flowchart TD
@@ -52,7 +67,7 @@ Der rote Kasten ist eine Sackgasse: Auf einer Seite ohne unser Skript versucht n
 führen nur ein Neuladen von Hand oder ein Neustart des Kiosk-Browsers. Er ist nur noch erreichbar, wenn das
 Gerät keine Kopie hat (unten, 2).
 
-## Was offen bleibt
+### Was offen bleibt
 
 1. **Ungültige Anmeldung.** Setzt ChurchTools nach einem Sicherheitsvorfall Sitzungen oder Login-Token zurück,
    zeigt der Fernseher „abgemeldet“ und meldet kein Lebenszeichen mehr. Das kann das Modul nicht selbst lösen –
@@ -67,7 +82,7 @@ Gerät keine Kopie hat (unten, 2).
    weil die Anmeldung über den Token eine ist. Leitet ChurchTools während eines Ausfalls auf eine eigene Adresse
    um, landet der Fernseher dort. Wie ChurchTools einen Ausfall ausliefert, ist nicht gemessen.
 
-## Der Ausfall vom 21.10.2026
+### Der Ausfall vom 21.10.2026
 
 ChurchTools hat die Systeme am Nachmittag des 21.10. wegen einer PHP-Lücke kurzzeitig heruntergefahren. Beide
 Screens meldeten sich zuletzt um 15:52 und 15:54 und danach nicht mehr – auch nicht, als ChurchTools wieder lief.
@@ -84,3 +99,5 @@ bis jemand sie neu startete. `v0.48.1` schließt diese Lücke.
 2026-10-27) – der Token war also gültig geblieben, es reichte, die hängende Seite zu verlassen. Seit `v0.48.1`
 sollte ein solcher Ausfall ohne Neustart überstanden werden. Hängt ein Gerät trotzdem, braucht es für den Pi im
 Serverraum jemanden mit Schlüssel, der ihn aus- und wieder einsteckt.
+
+</details>
