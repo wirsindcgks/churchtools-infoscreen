@@ -52,32 +52,37 @@ describe('ScreenCard – sign of life', () => {
     });
 });
 
-// The two lines under "online" (Plan.md 111).
+// Software under "online", the state of the presentation with the presentation (Plan.md 111).
 describe('ScreenCard – software and state', () => {
     const detailed: AliveState = {
         kind: 'online',
         text: 'online',
         title: '',
         software: { text: 'Player 0.48.1, installiert 0.48.2', title: '', notice: true },
-        content: { text: 'Stand vom 05.10.2026, 12:00', title: '', notice: false },
+        content: { text: 'Präsentation vom 05.10.2026, 12:00', title: '', notice: false },
     };
 
-    it('shows both lines, the deviation as a hint', () => {
+    it('shows both lines, the deviation as a hint, the state next to the presentation', () => {
         const wrapper = card(detailed);
         const software = wrapper.get('[data-testid="screen-alive-software"]');
         expect(software.text()).toBe('Player 0.48.1, installiert 0.48.2');
         expect(software.classes()).toContain('is-notice');
         const content = wrapper.get('[data-testid="screen-alive-content"]');
-        expect(content.text()).toBe('Stand vom 05.10.2026, 12:00');
+        expect(content.text()).toBe('Präsentation vom 05.10.2026, 12:00');
         expect(content.classes()).not.toContain('is-notice');
         expect(content.classes()).not.toContain('is-muted');
+        expect(wrapper.get('[data-testid="screen-playlist"]').element.nextElementSibling).toBe(content.element);
+    });
+
+    it('has no software line for the installed player', () => {
+        expect(card({ ...detailed, software: undefined }).find('[data-testid="screen-alive-software"]').exists()).toBe(false);
     });
 
     it('dims them while the screen is offline, with the tooltip', () => {
         const wrapper = card({
             ...detailed,
             kind: 'offline',
-            content: { text: 'Stand vom 05.10.2026, 12:00', title: 'Zuletzt gemeldet', notice: false },
+            content: { text: 'Präsentation vom 05.10.2026, 12:00', title: 'Zuletzt gemeldet', notice: false },
         });
         const content = wrapper.get('[data-testid="screen-alive-content"]');
         expect(content.classes()).toContain('is-muted');

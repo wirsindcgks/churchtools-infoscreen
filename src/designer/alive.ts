@@ -10,7 +10,7 @@ import { LOCALE } from '../i18n/player';
  */
 export const ALIVE_WINDOW_MS = 15 * 60_000;
 
-/** A line under "online" (Plan.md 111): the software of the player, or the state of the presentation it shows. */
+/** What the last sign of life says beyond "online" (Plan.md 111): the software of the player, or the state of the presentation it shows. */
 export interface AliveDetail {
     text: string;
     /** Tooltip; empty when there is nothing to add. */
@@ -23,7 +23,7 @@ export interface AliveState {
     kind: 'online' | 'offline' | 'never';
     text: string;
     title: string;
-    /** Only while the screen has reported at all; both lines are the state of its last sign of life. */
+    /** Only while the screen has reported at all; both are the state of its last sign of life. Software only when it is not the installed one. */
     software?: AliveDetail;
     content?: AliveDetail;
 }
@@ -35,24 +35,25 @@ export interface AliveState {
  */
 export const REPORT_GRACE_MS = 2 * 60_000;
 
-/** "Player aktuell", or the deviation; the version of the designer is the installed one (Plan.md 111). */
-function softwareDetail(version: string, installed: string, notice: string): AliveDetail {
+/** The deviation from the installed version (the designer's), or nothing while there is none (Plan.md 111). */
+function softwareDetail(version: string, installed: string, notice: string): AliveDetail | undefined {
     if (!version) return { text: t.common.alive.playerUnknown, title: notice, notice: false };
-    if (version === installed) return { text: t.common.alive.playerCurrent, title: notice, notice: false };
+    if (version === installed) return undefined;
     return { text: t.common.alive.playerDiffers(version, installed), title: notice, notice: true };
 }
 
 /**
- * "Stand vom …" of what the player loaded. "veraltet" when the playlist has a newer published state that the
+ * "Präsentation vom …": the state of what the player loaded. "veraltet" when the playlist has a newer published state that the
  * player had time to take over – see `REPORT_GRACE_MS`.
  */
-function contentDetail(heartbeat: HeartbeatDoc, publishedAt: string | null, timeZone: string, notice: string): AliveDetail {
+function contentDetail(heartbeat: HeartbeatDoc, publishedAt: string | null, timeZone: string, offline: string): AliveDetail {
+    const title = offline ? `${t.common.alive.standTitle}. ${offline}` : t.common.alive.standTitle;
     const when = heartbeat.contentAt ? lastEdited(heartbeat.contentAt, null, timeZone)?.when : null;
-    if (!heartbeat.contentAt || !when) return { text: t.common.alive.standUnknown, title: notice, notice: false };
+    if (!heartbeat.contentAt || !when) return { text: t.common.alive.standUnknown, title, notice: false };
     const published = publishedAt ? Date.parse(publishedAt) : Number.NaN;
     const stale =
         published > Date.parse(heartbeat.contentAt) && published < Date.parse(heartbeat.at) - REPORT_GRACE_MS;
-    return { text: stale ? t.common.alive.standStale(when) : t.common.alive.standOf(when), title: notice, notice: stale };
+    return { text: stale ? t.common.alive.standStale(when) : t.common.alive.standOf(when), title, notice: stale };
 }
 
 /**

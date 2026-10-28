@@ -9,7 +9,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import type { Banner } from '../model/schema';
 import BannerView from '../player/BannerView.vue';
 import StageView from '../player/StageView.vue';
-import { fitStage } from '../player/stage';
+import { fitThumb } from '../player/stage';
 
 const props = defineProps<{ banner: Banner; background: string }>();
 const still = computed<Banner>(() => ({ ...props.banner, mode: 'static' }));
@@ -17,7 +17,7 @@ const still = computed<Banner>(() => ({ ...props.banner, mode: 'static' }));
 const STAGE = { width: 1920, height: 1080 };
 const box = ref<HTMLElement | null>(null);
 const size = ref({ width: 0, height: 0 });
-const fit = computed(() => fitStage(size.value, STAGE));
+const fit = computed(() => fitThumb(size.value, STAGE));
 
 let observer: ResizeObserver | null = null;
 onMounted(() => {

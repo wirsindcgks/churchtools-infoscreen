@@ -39,15 +39,6 @@ const shown = computed(() => {
 /** A rule decides right now – the tile says so, since it shows another playlist than the default. */
 const byRule = computed(() => (props.running?.ruleIndex ?? -1) >= 0);
 
-/** The lines under "online" (Plan.md 111): software and state of the presentation; none while it never reported. */
-const details = computed(() => {
-    const { software, content } = props.alive ?? {};
-    return [
-        ...(software ? [{ id: 'software', detail: software }] : []),
-        ...(content ? [{ id: 'content', detail: content }] : []),
-    ];
-});
-
 const copied = ref(false);
 
 /** Stays open for a moment to say "Kopiert", then closes. */
@@ -112,15 +103,16 @@ const scheduleLabel = computed(() => {
                     <span class="alive-dot" :class="`is-${alive.kind}`" aria-hidden="true" />
                     <span>{{ alive.text }}</span>
                 </li>
+                <!-- Only when the player is not the installed one (Plan.md 111). -->
                 <li
-                    v-for="line in details"
-                    :key="line.id"
-                    v-tip="line.detail.title"
+                    v-if="alive.software"
+                    v-tip="alive.software.title"
                     class="alive-detail"
-                    :class="{ 'is-notice': line.detail.notice, 'is-muted': alive.kind === 'offline' }"
-                    :data-testid="`screen-alive-${line.id}`"
+                    :class="{ 'is-notice': alive.software.notice, 'is-muted': alive.kind === 'offline' }"
+                    data-testid="screen-alive-software"
                 >
-                    {{ line.detail.text }}
+                    <Icon name="tv" :size="16" />
+                    <span>{{ alive.software.text }}</span>
                 </li>
             </ul>
         </section>
@@ -149,6 +141,17 @@ const scheduleLabel = computed(() => {
                         <span v-if="byRule" class="now-tag" data-testid="screen-running">{{ t.home.card.now }}</span>
                     </span>
                 </li>
+                <!-- The state of the presentation on the TV sits with the presentation (Plan.md 111). -->
+                <li
+                    v-if="alive?.content"
+                    v-tip="alive.content.title"
+                    class="alive-detail"
+                    :class="{ 'is-notice': alive.content.notice, 'is-muted': alive.kind === 'offline' }"
+                    data-testid="screen-alive-content"
+                >
+                    <Icon name="rotate" :size="16" />
+                    <span>{{ alive.content.text }}</span>
+                </li>
                 <li>
                     <button
                         v-tip="screen.schedule.length ? t.home.card.scheduleTitle : t.home.card.scheduleCreateTitle"
@@ -167,7 +170,7 @@ const scheduleLabel = computed(() => {
             <ul class="d-facts">
                 <li v-if="edited.when" v-tip="edited.whenTitle!" data-testid="screen-edited-at">
                     <Icon name="clock" :size="16" />
-                    <span>{{ edited.when }}</span>
+                    <span>{{ t.home.card.screenEdited(edited.when) }}</span>
                 </li>
                 <li v-if="edited.by" v-tip="edited.byTitle!" data-testid="screen-edited-by">
                     <Icon name="person" :size="16" />
@@ -202,12 +205,8 @@ const scheduleLabel = computed(() => {
 .alive-dot.is-offline {
     background: var(--d-danger);
 }
-.alive-detail {
-    /* Under the words of "online", not under the dot. */
-    padding-left: 16px;
-}
 .alive-detail.is-notice {
-    margin-left: 16px;
+    margin-left: -6px;
     padding: 0 6px;
     border-radius: var(--d-radius);
     background: var(--d-warning-pale);

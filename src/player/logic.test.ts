@@ -3,10 +3,26 @@ import { normalizeAppointments } from '../appointments/normalize';
 import { makeScreen } from '../model/testing';
 import { checkClock } from './clock';
 import { activePlaylistId } from './schedule';
-import { fitStage } from './stage';
+import { fitStage, fitThumb } from './stage';
 import { backoffDelay, msUntilNightlyReload, TimeoutError, withJitter, withTimeout } from './timing';
 
 const BERLIN = 'Europe/Berlin';
+
+describe('fitThumb', () => {
+    it('reaches a pixel beyond the edges a slide fills, so no ground shows as a hairline', () => {
+        const fit = fitThumb({ width: 239.6, height: 134.775 }, { width: 1920, height: 1080 });
+        expect(1920 * fit.scale).toBeGreaterThanOrEqual(240.6);
+        expect(1080 * fit.scale).toBeGreaterThanOrEqual(135.775 - 1e-9);
+        expect(fit.offsetX).toBeLessThanOrEqual(-0.5);
+        expect(fit.offsetY).toBeLessThanOrEqual(-0.5 + 1e-9);
+    });
+
+    it('keeps the letterbox of another format, filling only the other axis', () => {
+        const fit = fitThumb({ width: 240, height: 135 }, { width: 1080, height: 1920 });
+        expect(1920 * fit.scale).toBeCloseTo(136);
+        expect(fit.offsetX).toBeGreaterThan(40);
+    });
+});
 
 describe('fitStage', () => {
     it('fills a matching viewport exactly', () => {
