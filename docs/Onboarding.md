@@ -41,170 +41,53 @@ Etwa eine halbe Stunde, den Fernseher nicht mitgezählt.
 
 ## Gestalter – Inhalte gestalten
 
-Du brauchst nur die Mitgliedschaft in „Infoscreen-Designer"; alles Weitere kommt von dort. Die Bilder hier zeigen
-eine erfundene Gemeinde.
+Du brauchst nur die Mitgliedschaft in „Infoscreen-Designer". Was der Designer alles kann, zeigt
+[Der Designer in Bildern](Funktionen.md); hier steht der Weg zur ersten eigenen Folie.
 
-### 1. Die Bildschirme
+```mermaid
+flowchart LR
+    S["Bildschirm<br>anklicken"] --> E["Folie<br>gestalten"]
+    E --> V["Vorschau"]
+    V --> P["Veröffentlichen"]
+    P --> F["Fernseher zeigt es<br>nach etwa 20 Sekunden"]
+```
 
-In ChurchTools oben auf **„Infoscreen Designer"**. Die Startseite zeigt jeden Fernseher als Kachel – mit dem, was er
-**gerade** zeigt. Ein Klick auf die Kachel öffnet diese Präsentation im Editor; Adresse, Zeitplan und Player stecken im
-Menü „…". Die erste Zeile sagt, ob der Fernseher gerade **„online"** ist. Neue Bildschirme legt ein Administrator an.
+- [ ] **Designer öffnen:** in ChurchTools oben auf **„Infoscreen Designer"**. Die Startseite zeigt jeden Fernseher als
+      Kachel mit dem, was er gerade zeigt.
+- [ ] **Kachel anklicken** – die laufende Präsentation öffnet sich im Editor.
+- [ ] **Gestalten:** links die Folien, oben **„+ Baustein"**, in der Mitte die Folie. Ein Doppelklick auf einen Text
+      schreibt direkt darauf. Das türkise **„?"** erklärt jede Einstellung.
+- [ ] **Speichern musst du nicht** – der Editor sichert alles als **Entwurf**. Die Fernseher sehen davon noch nichts.
+- [ ] **„Vorschau"** spielt die Präsentation im Vollbild ab, genau wie am Fernseher.
+- [ ] **„Veröffentlichen"** – erst jetzt übernehmen die Fernseher die Änderung.
 
-![Startseite mit zwei Bildschirmen als Kacheln](bilder/startseite.png)
+![Editor: links die Folien, oben „+ Baustein", in der Mitte die Bildfläche, rechts die Einstellungen](bilder/editor.png)
 
-### 2. Folien gestalten
+**Danach lohnt sich ein Blick auf:**
 
-![Editor: links die Folien, oben „+ Baustein", in der Mitte die Bildfläche, rechts der Inspektor](bilder/editor.png)
-
-- **Links die Folien** – „Neue Folie" unter der letzten, ziehen zum Umsortieren, darunter **„Aus anderer Präsentation
-  …"**, um Folien einer anderen Präsentation zu übernehmen – **„Als Kopie"** (Vorgabe: was du hier änderst, bleibt in der
-  anderen Präsentation, wie es ist) oder **„Verknüpft"**: dann ist es dieselbe Folie, und eine Änderung gilt in beiden
-  Präsentationen. Verknüpfte Folien tragen ein Kettensymbol auf dem Vorschaubild; im Inspektor steht unter dem Namen
-  „Auch in: …", dort löst **„Verknüpfung lösen"** die Folie zu einer eigenen Kopie nur für diese Präsentation. Hat
-  jemand eine verknüpfte Folie inzwischen woanders geändert, veröffentlicht der Editor nichts, sondern fragt: **„Neu laden"**
-  oder **„Als eigene Kopie behalten"**.
-- **„+ Baustein"** öffnet alle Bausteine, alphabetisch und je mit einem Satz, was sie zeigen; oben sucht ein Feld nach Name und Satz: Beiträge, Bild, Countdown („Gottesdienst beginnt in 12:34"),
-  Fläche, Galerie (siehe unten), Gemeindekopf, Gruppen (siehe unten), Nächster Termin, QR-Code, Raumbelegung (siehe unten), Terminliste, Text, Uhr und Webseite.
-- **In der Mitte die Bildfläche:** ziehen, an den Griffen skalieren, an den **Hilfslinien** ausrichten (oben rechts: Abstand wählen oder aus; mit gedrückter Alt-Taste frei platzieren).
-  Über dem gewählten Baustein steht das **Kurzmenü** mit seinen wichtigsten Feldern, dazu Sperren, Duplizieren,
-  Löschen und „⋯" (Kopieren, Einfügen, Ebenen, **„Alle Einstellungen"**). Ein **Doppelklick** führt zum Inhalt: Auf
-  einen Text schreibst du direkt auf der Folie (Esc oder ein Klick daneben beendet), ein Bild öffnet die Mediathek,
-  eine Terminliste die Kalender. Fehlt einem Baustein noch etwas, steht mittig ein Knopf wie „Bild wählen".
-- **Mehrere Bausteine:** Umschalt-Klick, ein Rahmen auf der leeren Fläche oder Strg/⌘ + A wählt mehrere; sie ziehen,
-  kopieren und löschen sich gemeinsam. **„Ausrichten"** im Kurzmenü richtet sie aneinander aus oder verteilt sie
-  gleichmäßig; ein gesperrter bleibt dabei stehen. **Gruppieren** (Strg/⌘ + G) hält sie zusammen: Ein Klick wählt
-  dann alle, ein Doppelklick einen einzelnen; beim Ausrichten zählt die Gruppe wie ein Baustein. Umschalt +
-  Strg/⌘ + G hebt die Gruppe auf.
-- **Vorlagen:** Was auf vielen Folien gleich sein soll (ein Seitenkopf), wählst du aus und speicherst es im Kurzmenü
-  unter „⋯" › **„Als Vorlage speichern …"**. „+ Baustein" setzt es an derselben Stelle auf andere Folien, und
-  **„Vorlage bearbeiten"** (Doppelklick, oder auf der Seite „Design") ändert es auf allen zugleich – sofort, auch an den
-  Fernsehern. **„Lösen"** macht daraus wieder eigene Bausteine nur für diese Folie. Mehr in
-  [Der Designer in Bildern](Funktionen.md#vorlagen).
-- **Rechts der Inspektor:** Sein Kopf sagt, wo du bist („Folie 2 von 5"). Oben steht der Inhalt des Bausteins (Text, Kalender, Adresse …), darunter aufklappbare
-  Bereiche – **Darstellung**, **Schrift**, **Anordnen** (die Ebene) und ganz unten **Genaue Maße** (X, Y, Breite, Höhe), bei Gruppen auch **Angaben**. An/aus stellst du mit Schaltern ein, wenige Möglichkeiten mit Segmenten, die Darstellung mit kleinen Bildkacheln. Zugeklappt zeigt jeder Bereich in
-  einer Zeile, was eingestellt ist; was du einmal aufklappst, bleibt offen. Im Kopf des Inspektors stehen
-  **„Sperren"** – damit ein Logo oder Hintergrund nicht verrutscht, ein Klick darauf erreicht dann den Baustein
-  darunter, mit gedrückter Alt-Taste (Mac: Option) den gesperrten selbst –, bei mehreren **„Gruppieren"**, **„Duplizieren"** und **„Löschen"**; **„Kopieren"** steht im „⋯" über dem Baustein (Strg/⌘ + C). Fährst du mit der Maus über ein Symbol oder eine Bezeichnung, erscheint ein kurzer Satz dazu. Eine Kopie fügst du mit **„Einfügen"** neben „+ Baustein" oder Strg/⌘ + V an derselben Stelle ein, auch auf einer anderen Folie; Strg/⌘ + D dupliziert. Ist nichts gewählt, zeigt der Inspektor **„Bausteine dieser Folie"** (oben = vorne): Klick wählt, das Schloss
-  sperrt, Ziehen ändert die Ebene – so erreichst du auch Verdecktes. Ein türkises **?** an einem aufgeklappten
-  Bereich – und im Kopf des Inspektors – öffnet die Hilfe: eine Leiste unter der Folie (am Handy von unten) mit einem Reiter je Bereich und einer Suche. Folien und Inspektor lassen sich einklappen, damit die Bildfläche mehr Platz bekommt; auf dem
-  Tablet sind sie das von Anfang an.
-- **Hinweise** haben eine eigene Seite in der Seitenleiste: ein Band über allen Folien der gewählten Präsentationen – als
-  Laufschrift oder stehend, etwa „Heute Parkplatz gesperrt", mit **„Zeigen bis"**, danach verschwindet es von selbst.
-- **Vorschau** (oben): spielt die Präsentation mit deinen Änderungen im Vollbild ab, wie der Fernseher – ohne zu
-  veröffentlichen. Esc schließt sie.
-- **Speichern musst du nicht:** Der Editor sichert jede Änderung nach ein, zwei Sekunden als **Entwurf** („Entwurf
-  gesichert · 14:32"; sofort mit ⌘S / Strg+S). Die Fernseher sehen davon nichts, bis du **„Veröffentlichen"** drückst –
-  dann übernehmen alle, die diese Präsentation zeigen, die Änderung in etwa 20 Sekunden. Bis dahin trägt die
-  Präsentation die Marke **„Entwurf"**, im Editor und auf ihrer Kachel. Wer sie danach öffnet, auch am Handy, macht
-  am selben Entwurf weiter. **„Entwurf verwerfen"** im Menü „⋯" holt den veröffentlichten Stand zurück.
-
-**Galerie:** Der Baustein zeigt Bilder aus der Mediathek nacheinander. Mit **„Bilder hinzufügen"** wählst du mehrere auf einmal
-(die Zahl auf dem Bild ist die Reihenfolge), im Inspektor sortierst du sie mit ↑ und ↓ oder nimmst eins heraus. Du
-stellst die **Dauer je Bild** ein und den **Übergang** – Überblenden, Schieben, Aufdecken, Heranzoomen oder ohne. Die Folie läuft so lange, bis jedes Bild einmal zu sehen
-war; höchstens 30 Bilder je Galerie. Sie läuft auch ohne Netz, denn die Bilder liegen auf dem Gerät.
-
-![Editor mit dem Baustein „Galerie": rechts die Liste der Bilder mit Reihenfolge, Dauer und Übergang](bilder/galerie.png)
-
-### 3. Gruppen aus ChurchTools
-
-Der Baustein **„Gruppen"** zeigt, was es in der Gemeinde für Gruppen gibt – aus einer **Gruppen-Homepage** von
-ChurchTools. Die legt ein Administrator an der Obergruppe an: Gruppe öffnen → **Einstellungen → Allgemein →
-Außendarstellung → „Gruppenhomepage erstellen"**
-([Academy](https://churchtools.academy/de/help/churchtools-module/einstellungen-gruppen/wie-passe-ich-die-gruppenhomepage-meiner-obergruppe-an/)).
-Darauf erscheinen die Untergruppen, deren öffentliche Seite eingeschaltet ist.
-
-- **Im Inspektor** die Homepage wählen; dann **alle Gruppen** (nach Wochentag, Name A–Z oder Z–A) oder eine **Auswahl** in eigener
-  Reihenfolge (↑/↓). Eine Gruppe allein ist ein Highlight – daneben ein zweiter Baustein mit den übrigen.
-- **Darstellung:** Karten mit **ein bis vier Gruppen je Seite** oder eine Liste. Jede Karte trägt einen **QR-Code**
-  auf die öffentliche Gruppenseite, über den man sich anmelden kann.
-- **Angaben:** Name, Bild, Wochentag und Uhrzeit, Zielgruppe, Kategorie, Beschreibung, Leitung, Bild der Leitung,
-  freie Plätze, QR-Code – jede einzeln abschaltbar. **Leitung und Bild der Leitung sind aus**, bis du sie
-  einschaltest; sie erscheinen nur, wenn die Gruppen-Homepage in ChurchTools die Leiter ohnehin zeigt.
-- **Wird es eng**, gibt zuerst die Beschreibung nach, dann die Leitung; Name und Angaben bleiben. Bei drei oder vier
-  Gruppen je Seite passt eine kleinere Schrift (etwa 40 px) besser.
-- Was du in ChurchTools an einer Gruppe änderst, steht nach spätestens zehn Minuten auf dem Fernseher.
-
-![Editor mit dem Baustein „Gruppen": zwei Karten mit QR-Code, rechts die Schalter für jede Angabe](bilder/gruppen.png)
-
-### 4. Präsentationen
-
-Eine **Präsentation** ist der Inhalt, den ein Bildschirm zeigt; sie kann auf mehreren Bildschirmen laufen. Unter **„Präsentationen"**
-legst du neue an (oben rechts) und **duplizierst** bestehende (Menü „…") – du wählst **„Kopie"** (eigene Folien,
-Änderungen daran berühren das Original nicht) oder **„Verknüpft"** (dieselben Folien, Änderungen gelten in beiden).
-
-![Präsentationen als Kacheln mit Format, Zahl der Folien und den Bildschirmen, die sie zeigen](bilder/playlists.png)
-
-### 5. Zeitpläne
-
-Welche Präsentation ein Bildschirm wann zeigt. Die **Standard-Präsentation** läuft, wenn keine **Regel** passt. Regeln schalten auf
-eine andere – nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten vor Beginn bis 10 Minuten nach
-Beginn" für eine Begrüßung); passen mehrere, gewinnt die obere. Die Seite **„Zeitpläne"** zeigt alle Bildschirme mit
-ihren Regeln und daneben die Präsentation, die gerade läuft; ein Klick auf eine Regel zeigt deren Präsentation.
-„Bearbeiten" öffnet denselben Dialog wie „Zeitplan" an der Kachel.
-
-![Zeitpläne: je Bildschirm die Regeln und eine Vorschau der laufenden Präsentation](bilder/zeitplaene.png)
-
-### 6. Bilder
-
-Über den Baustein „Bild" oder in der **Mediathek**. Unter jedem Bild steht, wo es läuft („Foyer › Gottesdienst ›
-Begrüßung"); „Unbenutzt" hilft beim Aufräumen. Ein Bild lässt sich beliebig oft verwenden. **Nichts Vertrauliches
-hochladen** – Bilder sind über ihre Adresse ohne Anmeldung abrufbar.
-
-![Mediathek mit Suche, Filtern und der Angabe, wo ein Bild verwendet wird](bilder/mediathek.png)
-
-### 7. Design
-
-Einmal für alle Bildschirme: Ecken rund oder eckig, Akzentfarbe, Farben für neue Folien, die Schrift für neue Bausteine
-und Hinweise, Termine **„Nativ"** (schlichte Zeilen) oder **„Modern"** (Karten mit Datumskachel) und das Format der
-Terminbilder sowie der Kartenhintergrund (leicht getönt, ohne oder eigene Farbe) – mit Vorschau. Ein Baustein, der eine eigene Darstellung gewählt hat, behält sie; bestehende Bausteine
-behalten auch ihre Schrift.
-
-![Design: Einstellungen links, Vorschau rechts](bilder/design.png)
-
-### Am Handy und auf dem Tablet
-
-Am Handy steht unten die **Folienzeile**: „Folie 2 von 5" öffnet die Folien zum Wählen, Hinzufügen und Umsortieren
-(Folie halten und ziehen), daneben „+ Baustein" und „⋯".
-
-- **Erst tippen, dann ziehen.** Ein Wisch über die Folie scrollt die Seite; ein angetippter Baustein ist gewählt und
-  lässt sich dann verschieben und an den Griffen skalieren. Über der Folienzeile erscheint seine eigene Zeile mit den
-  Feldern aus dem Kurzmenü; **„⋯ → Alle Einstellungen"** zieht das große Blatt hoch, „✕" hebt die Auswahl auf.
-- **Zwei Finger zoomen** die Folie. Gezoomt verschiebt ein Wisch die Fläche; halte einen gewählten Baustein kurz, bis
-  er sich mit einem Schatten anhebt, dann folgt er dem Finger. **„Ganze Folie"** oben rechts setzt zurück.
-- **Doppeltippen** auf einen Text öffnet das Schreiben, auf einen anderen Baustein seinen Inhalt. **Langes Drücken**
-  öffnet „⋯", auf der leeren Fläche „Einfügen".
-- **Mehrere Bausteine:** „⋯ → Mehrere auswählen", dann jeden antippen; „Fertig" beendet. Verdeckte Bausteine
-  erreichst du über „⋯ → Bausteine dieser Folie" oder „⋯ → Darunterliegenden wählen".
-
-Auf dem Tablet steht das Kurzmenü wie am Rechner über dem Baustein; Tippen, Ziehen und Zoomen gehen wie am Handy.
-
-<img src="bilder/handy.png" alt="Editor am Handy: die Folie mit einer gewählten Terminliste, darunter die Zeile des Bausteins und die Folienzeile" width="320">
+- [Vorlagen](Funktionen.md#vorlagen) – ein Seitenkopf, der auf allen Folien gleich ist.
+- [Zeitpläne](Funktionen.md#zeitpläne) – wann ein Bildschirm welche Präsentation zeigt.
+- [Hinweise](Funktionen.md#hinweise) – ein Band wie „Heute Parkplatz gesperrt" über allen Folien.
+- [Die Bausteine](Funktionen.md#die-bausteine) – Termine, Gruppen, Raumbelegung und mehr aus ChurchTools.
 
 ### Gut zu wissen
 
-- **Rückgängig** mit ⌘Z / Strg+Z; ein Ziehen ist ein Schritt.
-- **Neu im Editor?** Beim ersten Öffnen bietet eine Karte „Neu hier?" eine kurze Einführung an; wiederfinden kannst du sie über „? Hilfe" oben im Editor; dort öffnet „Hilfe zu den Einstellungen" auch die Hilfe-Leiste. Am Handy gibt es sie nicht.
-- **Arbeitet jemand anderes gleichzeitig an derselben Präsentation**, fragt der Editor beim Sichern oder
-  Veröffentlichen, welche Fassung gelten soll.
-- **Neuer Kalender auf einem Bildschirm** – in einer Terminliste, einem Countdown oder einer Termin-Regel? Zur Wahl
-  stehen nur öffentliche Kalender, also solche, die man in ChurchTools auch ohne Anmeldung sieht; die zeigen die
-  Fernseher ohne weiteren Handgriff. Fehlt einer, kann ihn ein Administrator freigeben – den Weg nennt das ? am
-  Bereich „Kalender“. Ein interner Kalender erscheint auf keinem Fernseher, es sei denn, ein Administrator hat ihn unter „Einstellungen → Interne Kalender für Bildschirme“ freigegeben.
-- **Sagt die Startseite „Dir fehlen Rechte"**, nennt sie das Recht – gib die Meldung an einen Administrator weiter.
-- **Was neu ist**, steht unter **„Über & Neuigkeiten"** unten in der Seitenleiste; ein blauer Punkt zeigt eine neue
-  Version an.
-- **Alles auf einem Bildschirm sieht jeder im Foyer.** Personenbezogenes gehört nicht darauf. Die Leitung einer Gruppe
-  zeigt der Baustein nur, wenn du sie einschaltest und ChurchTools sie ohnehin öffentlich zeigt.
+- **Rückgängig** mit ⌘Z / Strg+Z. **„Entwurf verwerfen"** im Menü „⋯" holt den veröffentlichten Stand zurück.
+- **Der Entwurf gehört der Präsentation:** Wer sie als Nächstes öffnet, auch am Handy, macht daran weiter.
+- **Zur Wahl stehen nur öffentliche Kalender** (und vom Administrator freigegebene). Fehlt einer, sagt das „?" am
+  Bereich „Kalender", wie er freigegeben wird.
+- **Alles auf einem Bildschirm sieht jeder im Foyer.** Personenbezogenes gehört nicht darauf, und Bilder sind über
+  ihre Adresse ohne Anmeldung abrufbar.
+- **Sagt die Startseite „Dir fehlen Rechte"**, gib die Meldung an einen Administrator weiter.
+- **Was neu ist**, steht unter **„Über & Neuigkeiten"** unten in der Seitenleiste.
 
 ## Gerät – der Fernseher
 
 Das Gerät tut nichts selbst; es braucht nur einmal die richtige Adresse.
 
 - [ ] Ein Administrator hat ein **Geräte-Konto** angelegt und unter **Einstellungen → Adressen der Bildschirme die Adresse** erzeugt.
-- [ ] Die Adresse ist die **Startseite des Kiosk-Browsers**, im Vollbild; auf einem Raspberry Pi mit FullPageOS in
-      `fullpageos.txt`. Tastatur und Maus braucht es nicht.
+- [ ] Die Adresse ist die **Startseite des Kiosk-Browsers**, im Vollbild. Tastatur und Maus braucht es nicht.
 - [ ] **Bildschirmschoner und Energiesparen aus.**
 
-Danach meldet sich der Fernseher bei jedem Start selbst an, holt Änderungen in etwa 20 Sekunden, zeigt bei Netzausfall
-den letzten Stand und lädt jede Nacht neu. Zeigt er „nicht angemeldet", eine neue Adresse erzeugen – meist wurde das
-Passwort des Geräte-Kontos geändert.
+Danach läuft der Fernseher von selbst ([Einrichtung, Schritt 7](Einrichtung.md#7-den-fernseher-einrichten)). Zeigt er
+„nicht angemeldet", eine neue Adresse erzeugen – meist wurde das Passwort des Geräte-Kontos geändert.
