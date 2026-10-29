@@ -175,6 +175,10 @@ onBeforeUnmount(() => clearInterval(timer));
     </div>
 </template>
 
+<style scoped src="./paged-list.css"></style>
+<style scoped src="./room-line.css"></style>
+<style scoped src="./pager.css"></style>
+<style scoped src="./page-bar.css"></style>
 <style scoped>
 .placeholder {
     display: flex;
@@ -190,20 +194,6 @@ onBeforeUnmount(() => clearInterval(timer));
     position: relative;
     width: 100%;
     height: 100%;
-}
-.list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-}
-/* Laid out like the shown list, but never seen and never in the way. */
-.measure {
-    position: absolute;
-    top: 0;
-    left: 0;
-    visibility: hidden;
-    pointer-events: none;
 }
 .empty {
     padding: 0.25em 0;
@@ -276,82 +266,7 @@ onBeforeUnmount(() => clearInterval(timer));
 .door-gone {
     opacity: 0.7;
 }
-.time {
-    flex: none;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-.title {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.day {
-    flex: none;
-    padding: 0 0.45em;
-    font-size: 0.7em;
-    font-weight: 600;
-    line-height: 1.5;
-    border: 1px solid currentColor;
-    border-radius: var(--isd-pill, 999px);
-    opacity: 0.8;
-}
 
-.pager {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.6em;
-    font-size: 0.55em;
-}
-.pager--edge .track {
-    border-radius: 0;
-}
-.track {
-    position: relative;
-    flex: 1;
-    height: 0.3em;
-    overflow: hidden;
-    border-radius: var(--isd-pill, 999px);
-}
-.track::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: currentColor;
-    opacity: 0.25;
-}
-.progress {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 100%;
-    background: var(--isd-accent, currentColor);
-    transform-origin: left;
-    animation: page-progress linear forwards;
-}
-.progress--held {
-    animation: none;
-    transform: scaleX(0.4);
-}
-@keyframes page-progress {
-    from {
-        transform: scaleX(0);
-    }
-    to {
-        transform: scaleX(1);
-    }
-}
-.page-number {
-    opacity: 0.6;
-    line-height: 1;
-    white-space: nowrap;
-    text-box: trim-both cap alphabetic;
-}
 .page-enter-active,
 .page-leave-active {
     transition: opacity 0.4s ease;

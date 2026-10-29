@@ -1,0 +1,49 @@
+/* Track, bar and page number shared by the page bar of the lists (pager.css) and PageProgress.vue. */
+.track {
+    position: relative;
+    flex: 1;
+    height: 0.3em;
+    overflow: hidden;
+    border-radius: var(--isd-pill, 999px);
+}
+/* The pale track as its own layer – an opacity on .track would pale the bar too. */
+.track::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0.25;
+}
+/* Its own layer, scaled from nothing to full: the compositor draws it, nothing is laid out again. */
+.progress {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--isd-accent, currentColor);
+    transform-origin: left;
+    animation: page-progress linear forwards;
+}
+.progress--held {
+    animation: none;
+    transform: scaleX(0.4);
+}
+@keyframes page-progress {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+/*
+ * The digits, not the line, decide the middle (Plan.md 47): a line keeps room below for descenders
+ * that "1/2" has not, and the bar sat below the figures. Trimmed to cap height and baseline, the
+ * box is the figures themselves; where `text-box` is unknown, line-height 1 comes close.
+ */
+.page-number {
+    opacity: 0.6;
+    line-height: 1;
+    white-space: nowrap;
+    text-box: trim-both cap alphabetic;
+}

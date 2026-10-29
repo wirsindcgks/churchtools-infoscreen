@@ -18,6 +18,8 @@ import { lastEdited } from '../designer/last-edited';
 import { type BannerGroup, groupBanners, noticeTimeline, untilLabel } from '../designer/notices';
 import { providePalette } from '../designer/palette';
 import NoticeDialog from '../designer/NoticeDialog.vue';
+import NoticeEdited from '../designer/NoticeEdited.vue';
+import NoticeFacts from '../designer/NoticeFacts.vue';
 import NoticeThumb from '../designer/NoticeThumb.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import Tile from '../designer/Tile.vue';
@@ -271,18 +273,7 @@ async function end(group: BannerGroup): Promise<void> {
                                 {{ t.notices.nowhere }}
                             </p>
                         </section>
-                        <section class="d-tile-section">
-                            <ul class="d-facts">
-                                <li>
-                                    <Icon name="banner" :size="16" />
-                                    <span>{{ modeLabel(group.banner) }}</span>
-                                </li>
-                                <li>
-                                    <Icon name="timer" :size="16" />
-                                    <span>{{ endLabel(group) }}</span>
-                                </li>
-                            </ul>
-                        </section>
+                        <NoticeFacts :mode="modeLabel(group.banner)" :end="endLabel(group)" />
                         <section class="d-tile-section">
                             <ul class="d-facts">
                                 <li>
@@ -310,16 +301,7 @@ async function end(group: BannerGroup): Promise<void> {
                             </ul>
                         </section>
                         <template v-if="edited(group)" #foot>
-                            <ul class="d-facts">
-                                <li v-if="edited(group)!.when" v-tip="edited(group)!.whenTitle!" data-testid="notice-edited-at">
-                                    <Icon name="clock" :size="16" />
-                                    <span>{{ edited(group)!.when }}</span>
-                                </li>
-                                <li v-if="edited(group)!.by" v-tip="edited(group)!.byTitle!" data-testid="notice-edited-by">
-                                    <Icon name="person" :size="16" />
-                                    <span>{{ edited(group)!.by }}</span>
-                                </li>
-                            </ul>
+                            <NoticeEdited :edited="edited(group)!" />
                         </template>
                     </Tile>
                 </ul>
@@ -353,18 +335,7 @@ async function end(group: BannerGroup): Promise<void> {
                                 <Icon name="trash" :size="16" /> {{ t.common.remove }}
                             </button>
                         </template>
-                        <section class="d-tile-section">
-                            <ul class="d-facts">
-                                <li>
-                                    <Icon name="banner" :size="16" />
-                                    <span>{{ modeLabel(group.banner) }}</span>
-                                </li>
-                                <li>
-                                    <Icon name="timer" :size="16" />
-                                    <span>{{ endLabel(group) }}</span>
-                                </li>
-                            </ul>
-                        </section>
+                        <NoticeFacts :mode="modeLabel(group.banner)" :end="endLabel(group)" />
                         <section class="d-tile-section">
                             <ul class="d-facts">
                                 <li>
@@ -382,16 +353,7 @@ async function end(group: BannerGroup): Promise<void> {
                             </ul>
                         </section>
                         <template v-if="edited(group)" #foot>
-                            <ul class="d-facts">
-                                <li v-if="edited(group)!.when" v-tip="edited(group)!.whenTitle!" data-testid="notice-edited-at">
-                                    <Icon name="clock" :size="16" />
-                                    <span>{{ edited(group)!.when }}</span>
-                                </li>
-                                <li v-if="edited(group)!.by" v-tip="edited(group)!.byTitle!" data-testid="notice-edited-by">
-                                    <Icon name="person" :size="16" />
-                                    <span>{{ edited(group)!.by }}</span>
-                                </li>
-                            </ul>
+                            <NoticeEdited :edited="edited(group)!" />
                         </template>
                     </Tile>
                 </ul>
@@ -411,27 +373,8 @@ async function end(group: BannerGroup): Promise<void> {
     </ModulePage>
 </template>
 
+<style scoped src="./tile-list.css"></style>
 <style scoped>
-/* A list, but laid out like the tiles' div elsewhere. */
-ul.d-tiles {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-.thumb {
-    width: 100%;
-    padding: 0;
-    border: 0;
-    background: none;
-    cursor: pointer;
-}
-.thumb:focus-visible {
-    outline: 2px solid var(--d-accent);
-    outline-offset: 2px;
-}
-.week {
-    margin: 6px 0;
-}
 .nowhere {
     margin: 0 0 4px;
     color: var(--d-text-muted);

@@ -380,27 +380,8 @@ onMounted(async () => {
     </ModulePage>
 </template>
 
+<style scoped src="./tile-list.css"></style>
 <style scoped>
-/* A list, but laid out like the tiles' div elsewhere. */
-ul.d-tiles {
-    margin: 0;
-    padding: 0;
-    list-style: none;
-}
-.thumb {
-    width: 100%;
-    padding: 0;
-    border: 0;
-    background: none;
-    cursor: pointer;
-}
-.thumb:focus-visible {
-    outline: 2px solid var(--d-accent);
-    outline-offset: 2px;
-}
-.week {
-    margin: 6px 0;
-}
 .now {
     color: var(--d-success);
     font-weight: var(--d-weight-normal);

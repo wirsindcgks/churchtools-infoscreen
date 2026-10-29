@@ -445,6 +445,9 @@ onMounted(() => {
     </div>
 </template>
 
+<style scoped src="./paged-list.css"></style>
+<style scoped src="./pager.css"></style>
+<style scoped src="./page-bar.css"></style>
 <style scoped>
 /* Cards: the cells fill the block above the page bar. */
 .groups-cards {
@@ -626,19 +629,6 @@ onMounted(() => {
     width: 100%;
     height: 100%;
 }
-.rows {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-}
-.measure {
-    position: absolute;
-    top: 0;
-    left: 0;
-    visibility: hidden;
-    pointer-events: none;
-}
 .row {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr) auto;
@@ -695,64 +685,5 @@ onMounted(() => {
 .empty {
     padding: 0.55em 0;
     opacity: 0.7;
-}
-.pager {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.6em;
-    font-size: 0.55em;
-}
-.pager--edge .track {
-    border-radius: 0;
-}
-.track {
-    position: relative;
-    flex: 1;
-    height: 0.3em;
-    overflow: hidden;
-    border-radius: var(--isd-pill, 999px);
-}
-.track::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: currentColor;
-    opacity: 0.25;
-}
-.progress {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 100%;
-    background: var(--isd-accent, currentColor);
-    transform-origin: left;
-    animation: page-progress linear forwards;
-}
-.progress--held {
-    animation: none;
-    transform: scaleX(0.4);
-}
-@keyframes page-progress {
-    from {
-        transform: scaleX(0);
-    }
-    to {
-        transform: scaleX(1);
-    }
-}
-/*
- * The digits, not the line, decide the middle (Plan.md 47): a line keeps room below for descenders
- * that "1/2" has not, and the bar sat below the figures. Trimmed to cap height and baseline, the
- * box is the figures themselves; where `text-box` is unknown, line-height 1 comes close.
- */
-.page-number {
-    opacity: 0.6;
-    line-height: 1;
-    white-space: nowrap;
-    text-box: trim-both cap alphabetic;
 }
 </style>

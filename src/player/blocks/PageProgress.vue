@@ -30,6 +30,7 @@ defineProps<{ seconds: number; size: number; inset: number; color?: string; edge
     </div>
 </template>
 
+<style scoped src="./page-bar.css"></style>
 <style scoped>
 /* Over the content, never in its way. */
 .page-progress {
@@ -40,51 +41,8 @@ defineProps<{ seconds: number; size: number; inset: number; color?: string; edge
     gap: 0.6em;
     pointer-events: none;
 }
-.track {
-    position: relative;
-    flex: 1;
-    overflow: hidden;
-    border-radius: var(--isd-pill, 999px);
-}
 /* Plan.md 107: flush with the sides and the bottom, square. */
 .page-progress--edge .track {
     border-radius: 0;
-}
-/* The pale track as its own layer – an opacity on the track would pale the bar too. */
-.track::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: currentColor;
-    opacity: 0.25;
-}
-/* Its own layer, scaled from nothing to full: the compositor draws it, nothing is laid out again. */
-.progress {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 100%;
-    background: var(--isd-accent, currentColor);
-    transform-origin: left;
-    animation: page-progress linear forwards;
-}
-.progress--held {
-    animation: none;
-    transform: scaleX(0.4);
-}
-@keyframes page-progress {
-    from {
-        transform: scaleX(0);
-    }
-    to {
-        transform: scaleX(1);
-    }
-}
-/* As in AppointmentListView.vue (Plan.md 47): the figures, not the line, decide the middle. */
-.page-number {
-    opacity: 0.6;
-    line-height: 1;
-    white-space: nowrap;
-    text-box: trim-both cap alphabetic;
 }
 </style>

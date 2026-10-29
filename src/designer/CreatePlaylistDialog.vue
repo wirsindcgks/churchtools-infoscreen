@@ -91,36 +91,4 @@ async function create(): Promise<void> {
     </div>
 </template>
 
-<style scoped>
-.create {
-    display: grid;
-    gap: 16px;
-}
-.create h2 {
-    margin-bottom: 0;
-}
-small {
-    line-height: 1.35;
-}
-.orientation {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    margin: 0;
-    padding: 0;
-    border: 0;
-    color: var(--d-text-muted);
-    font-size: var(--d-size-sm);
-}
-.orientation legend {
-    margin-bottom: 0.2em;
-    padding: 0;
-}
-.orientation > small {
-    grid-column: 1 / -1;
-}
-.invalid {
-    margin: 0;
-    color: var(--d-danger);
-}
-</style>
+<style scoped src="./create-dialog.css"></style>

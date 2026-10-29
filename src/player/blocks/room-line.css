@@ -1,0 +1,22 @@
+/* The parts of a booking line, shared by the door sign (RoomsView.vue) and the room rows (RoomRow.vue). */
+.time {
+    flex: none;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+}
+.title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.day {
+    flex: none;
+    padding: 0 0.45em;
+    font-size: 0.7em;
+    font-weight: 600;
+    line-height: 1.5;
+    border: 1px solid currentColor;
+    border-radius: var(--isd-pill, 999px);
+    opacity: 0.8;
+}
