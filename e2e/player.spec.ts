@@ -82,11 +82,23 @@ test('way B: the nightly reload goes through the address with the token, so the 
     await page.route('**/api/whoami**', (route) =>
         route.fulfill({ json: { data: { id: 22, firstName: 'Infoscreen', lastName: 'Foyer' } } }),
     );
+    // Before reloading, the player fetches the page and looks for its bundle (canReload); the dev server has none.
+    await page.route('**/player?**', (route) =>
+        route.request().isNavigationRequest()
+            ? route.fallback()
+            : route.fulfill({ contentType: 'text/html', body: '<script src="/ccm/infoscreen-designer/assets/index.js"></script>' }),
+    );
     await page.goto('./player?screen=demo&user_id=22#login_token=geraet&user_id=22');
     await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
-    const reload = page.waitForRequest((r) => r.isNavigationRequest() && new URL(r.url()).searchParams.get('login_token') === 'geraet');
-    await page.clock.runFor('02:00:00');
-    const url = new URL((await reload).url());
+    let reload: URL | null = null;
+    page.on('request', (r) => {
+        if (r.isNavigationRequest() && new URL(r.url()).searchParams.get('login_token') === 'geraet') reload = new URL(r.url());
+    });
+    // Minute by minute: before reloading, the player fetches the page with a timeout (canReload); one jump of two
+    // hours would let that timeout run out in fake time before the real fetch answers.
+    for (let minute = 0; minute < 120 && !reload; minute++) await page.clock.runFor('01:00');
+    await expect.poll(() => reload).not.toBeNull();
+    const url = reload as unknown as URL;
     expect(url.searchParams.get('screen')).toBe('demo');
 });
 
