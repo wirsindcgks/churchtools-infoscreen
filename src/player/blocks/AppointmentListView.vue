@@ -162,6 +162,9 @@ onBeforeUnmount(() => clearInterval(timer));
     </div>
 </template>
 
+<style scoped src="./paged-list.css"></style>
+<style scoped src="./pager.css"></style>
+<style scoped src="./page-bar.css"></style>
 <style scoped>
 .paged {
     position: relative;
@@ -191,83 +194,8 @@ onBeforeUnmount(() => clearInterval(timer));
     bottom: 0;
     left: 0;
 }
-.pager--edge .track {
-    border-radius: 0;
-}
-.list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-}
-/* Laid out like the shown list, but never seen and never in the way. */
-.measure {
-    position: absolute;
-    top: 0;
-    left: 0;
-    visibility: hidden;
-    pointer-events: none;
-}
 .empty {
     opacity: 0.7;
-}
-.pager {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.6em;
-    font-size: 0.55em;
-}
-.track {
-    position: relative;
-    flex: 1;
-    height: 0.3em;
-    overflow: hidden;
-    border-radius: var(--isd-pill, 999px);
-}
-/* The pale track as its own layer – an opacity on .track would pale the bar too. */
-.track::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: currentColor;
-    opacity: 0.25;
-}
-/* Its own layer, scaled from nothing to full: the compositor draws it, nothing is laid out again. */
-.progress {
-    position: relative;
-    display: block;
-    width: 100%;
-    height: 100%;
-    background: var(--isd-accent, currentColor);
-    transform-origin: left;
-    animation: page-progress linear forwards;
-}
-.progress--held {
-    animation: none;
-    transform: scaleX(0.4);
-}
-@keyframes page-progress {
-    from {
-        transform: scaleX(0);
-    }
-    to {
-        transform: scaleX(1);
-    }
-}
-/*
- * The digits, not the line, decide the middle (Plan.md 47): a line keeps room below for descenders
- * that "1/2" has not, and the bar sat below the figures. Trimmed to cap height and baseline, the
- * box is the figures themselves; where `text-box` is unknown, line-height 1 comes close.
- */
-.page-number {
-    opacity: 0.6;
-    line-height: 1;
-    white-space: nowrap;
-    text-box: trim-both cap alphabetic;
 }
 /* Pages cross-fade calmly; opacity alone, which the compositor handles. */
 .page-enter-active,

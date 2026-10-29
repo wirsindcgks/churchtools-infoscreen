@@ -235,6 +235,7 @@ onMounted(() => {
     </div>
 </template>
 
+<style scoped src="./paged-list.css"></style>
 <style scoped>
 /* Card: the post itself in ChurchTools, not the old date-tile/badge/meta-row layout. */
 .hero {
@@ -370,19 +371,6 @@ onMounted(() => {
     position: relative;
     width: 100%;
     height: 100%;
-}
-.rows {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    width: 100%;
-}
-.measure {
-    position: absolute;
-    top: 0;
-    left: 0;
-    visibility: hidden;
-    pointer-events: none;
 }
 .row {
     display: grid;

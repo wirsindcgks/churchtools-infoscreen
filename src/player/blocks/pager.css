@@ -1,0 +1,14 @@
+/* The page bar at the bottom edge of a paged list: pale track, bar filling up over the time one page stays, page number. */
+.pager {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    font-size: 0.55em;
+}
+.pager--edge .track {
+    border-radius: 0;
+}

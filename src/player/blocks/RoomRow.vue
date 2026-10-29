@@ -26,6 +26,7 @@ defineProps<{ row: RoomRow; measuring?: boolean }>();
     </li>
 </template>
 
+<style scoped src="./room-line.css"></style>
 <style scoped>
 .row {
     display: grid;
@@ -80,26 +81,5 @@ defineProps<{ row: RoomRow; measuring?: boolean }>();
     background: color-mix(in srgb, var(--isd-accent, currentColor) 22%, transparent);
     border-left-color: var(--isd-accent, currentColor);
     border-radius: 0 var(--isd-radius, 0.3em) var(--isd-radius, 0.3em) 0;
-}
-.time {
-    flex: none;
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
-}
-.title {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.day {
-    flex: none;
-    padding: 0 0.45em;
-    font-size: 0.7em;
-    font-weight: 600;
-    line-height: 1.5;
-    border: 1px solid currentColor;
-    border-radius: var(--isd-pill, 999px);
-    opacity: 0.8;
 }
 </style>
