@@ -1555,6 +1555,18 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             wikiCreated: (name: string) => `Wiki-Bereich „${name}" angelegt.`,
             aborted: (reason: string) => `Abgebrochen: ${reason}`,
         },
+        /** „Gruppe nachrüsten": an installation from before gets „Infoscreen-People" (Plan.md 112). */
+        addPeople: {
+            missing: 'Die Gruppe „Infoscreen-People“ für den Baustein „Personen“ fehlt noch. Sie lässt sich nachrüsten, ohne etwas Bestehendes zu ändern.',
+            button: 'Gruppe „Infoscreen-People“ nachrüsten',
+            title: 'Gruppe nachrüsten',
+            createGroup: (name: string, type: string | undefined) => `Die Gruppe „${name}" wird angelegt${type ? ` (Typ „${type}")` : ''}.`,
+            grantDefault: (right: string, group: string) => `Die Standardrolle von „${group}" bekommt: ${right}.`,
+            grantDevice: (right: string, group: string) => `Die Rollen von „${group}" bekommen: ${right}.`,
+            addDevices: 'Die Konten der Gerätegruppe werden in die neue Gruppe aufgenommen, ihre Liste kommt in die Einstellungen.',
+            untouched: 'Bestehende Rollen und Rechte sowie fremde Gruppen bleiben unberührt. „Automatische Einrichtung rückgängig machen“ löscht die Gruppe wieder.',
+            confirm: 'Nachrüsten',
+        },
         removeNotAllowed403:
             'Rückgängig machen nicht möglich: Du darfst die Einstellungen des Designers nicht ändern. Danach wüsste der Designer nicht, dass die Gruppen gelöscht sind. Gib deiner Administratoren-Gruppe die Modulrechte (Einrichtung, Schritt 2) und versuche es erneut.',
         removeNotSaved: (reason: string) => `Rückgängig machen nicht möglich: Die Einstellungen ließen sich nicht speichern (${reason}).`,
@@ -1659,6 +1671,8 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             title: 'Rechte aktualisieren',
             adds: 'Kommt dazu',
             removes: 'Fällt weg',
+            membersToAdd: (n: number) => `${n} ${n === 1 ? 'Gerät wird' : 'Geräte werden'} in die Gruppe aufgenommen`,
+            deviceListStale: 'Die Liste der Gerätekonten in den Einstellungen wird aktualisiert (damit sie nicht als Karten erscheinen)',
             delay: 'Ein entzogenes Recht wirkt bei ChurchTools noch bis zu einer Dreiviertelstunde nach.',
             apply: 'Übernehmen',
             logLine: (name: string, added: number, removed: number) =>

@@ -256,6 +256,8 @@ export interface LoadedScreen extends ScreenBundle {
     screenCalendarIds?: number[];
     /** The group "Infoscreen-People" the `people` block reads (schema 1.51, Plan.md 112); missing = none set up. */
     peopleGroupId?: number;
+    /** The device accounts to leave out of the people cards (schema 1.52); missing = none. */
+    peopleDeviceIds?: number[];
     issues: ReadIssue[];
 }
 
@@ -562,7 +564,7 @@ export class ScreenRepository {
         const settings = await this.loadSettings().catch(() => null);
         const allowedServiceIds = settings?.allowedServiceIds ?? [];
         const roomTypeIds = settings?.roomTypeIds;
-        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, templates, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, peopleGroupId: settings?.peopleGroupId, issues };
+        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, templates, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, peopleGroupId: settings?.peopleGroupId, peopleDeviceIds: settings?.peopleDeviceIds, issues };
     }
 
     /**

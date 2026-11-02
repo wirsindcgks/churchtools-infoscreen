@@ -6,21 +6,19 @@ const member = (personId: number, first: string, last: string, extra: Record<str
     groupTypeRoleId: 5,
     groupMemberStatus: 'active',
     person: { title: `${last}, ${first}`, imageUrl: `https://x.example/images/${personId}`, domainAttributes: { firstName: first, lastName: last, guid: `guid-${personId}` } },
-    fields: {},
+    fields: [],
     ...extra,
 });
 const roles = [
     { groupTypeRoleId: 5, name: 'Teilnehmer' },
     { groupTypeRoleId: 6, name: 'Leiter' },
 ];
-const fieldDefinitions = [
-    { id: 2, name: 'Funktion' },
-    { id: 5, name: 'Büro' },
-];
+/** The measured form (G71): a list of `{ id, name, value, sortKey }`. */
+const field = (id: number, name: string, value: unknown, sortKey = id) => ({ id, name, value, sortKey });
 
 describe('normalizeMembers (Plan.md 112, G70)', () => {
     it('keeps name, picture, role and the named member fields – nothing else of a person', () => {
-        const group = normalizeMembers(40, [member(1, 'Anna', 'Berg', { fields: { '2': 'Pastorin', '5': ' 12 ' }, comment: 'privat', email: 'a@x.example' })], roles, fieldDefinitions);
+        const group = normalizeMembers(40, [member(1, 'Anna', 'Berg', { fields: [field(2, 'Funktion', 'Pastorin'), field(5, 'Büro', ' 12 ')], comment: 'privat', email: 'a@x.example' })], roles);
         expect(group.denied).toBe(false);
         expect(group.people).toEqual([
             { firstName: 'Anna', lastName: 'Berg', name: 'Anna Berg', imageUrl: 'https://x.example/images/1', roleId: 5, fields: { Funktion: 'Pastorin', Büro: '12' } },
@@ -41,8 +39,7 @@ describe('normalizeMembers (Plan.md 112, G70)', () => {
                 member(1, 'Anna', 'Berg'),
             ],
             roles,
-            fieldDefinitions,
-            22,
+            [22],
         );
         expect(group.people.map((p) => p.name)).toEqual(['Anna Berg']);
     });
@@ -55,18 +52,22 @@ describe('normalizeMembers (Plan.md 112, G70)', () => {
         expect(group.people).toEqual([expect.objectContaining({ name: 'Pastor Berg', imageUrl: null })]);
     });
 
-    it('reads fields by name too, as a list, and leaves out empty values', () => {
-        const byName = normalizeMembers(40, [member(1, 'A', 'B', { fields: { Funktion: 'Leitung', Büro: '' } })]);
-        expect(byName.people[0]!.fields).toEqual({ Funktion: 'Leitung' });
-        expect(byName.fields.map((f) => f.key)).toEqual(['Funktion', 'Büro']);
-        const asList = normalizeMembers(40, [member(1, 'A', 'B', { fields: [{ id: 2, value: 'Pastorin' }, { name: 'Raum', value: ['A', 'B'] }] })], roles, fieldDefinitions);
-        expect(asList.people[0]!.fields).toEqual({ Funktion: 'Pastorin', Raum: 'A, B' });
+    it('reads the fields as the list ChurchTools sends, and leaves out empty values and nameless entries', () => {
+        const group = normalizeMembers(40, [member(1, 'A', 'B', { fields: [field(2, 'Funktion', 'Leitung'), field(5, 'Büro', ''), field(7, 'Raum', ['A', 'B']), { id: 9, value: 'x' }] })]);
+        expect(group.people[0]!.fields).toEqual({ Funktion: 'Leitung', Raum: 'A, B' });
+        // An object keyed by id is not the measured form: nothing is read from it.
+        expect(normalizeMembers(40, [member(1, 'A', 'B', { fields: { '2': 'Pastorin' } as never })]).people[0]!.fields).toEqual({});
     });
 
-    it('offers the roles and fields there are to choose from – the defined ones first, each once', () => {
-        const group = normalizeMembers(40, [member(1, 'A', 'B', { fields: { '5': 'x', '9': 'y' } })], [...roles, roles[0]!], fieldDefinitions);
+    it('leaves out every device account of the setup, whoever asks', () => {
+        const group = normalizeMembers(40, [member(22, 'A', 'TV'), member(23, 'B', 'TV'), member(1, 'Anna', 'Berg')], roles, [22, 23]);
+        expect(group.people.map((p) => p.name)).toEqual(['Anna Berg']);
+    });
+
+    it('offers the roles and fields there are to choose from – the fields in the order of the group, each once', () => {
+        const group = normalizeMembers(40, [member(1, 'A', 'B', { fields: [field(9, 'Raum', 'y', 3), field(5, 'Büro', 'x', 1)] })], [...roles, roles[0]!]);
         expect(group.roles).toEqual([{ id: 5, name: 'Teilnehmer' }, { id: 6, name: 'Leiter' }]);
-        expect(group.fields.map((f) => f.key)).toEqual(['Funktion', 'Büro', '9']);
+        expect(group.fields.map((f) => f.key)).toEqual(['Büro', 'Raum']);
     });
 
     it('takes no more people than a card wall can show', () => {
@@ -114,7 +115,7 @@ describe('selectPeople', () => {
 
 describe('shownFields', () => {
     it('lists the chosen fields in the order of the block, only those with a value', () => {
-        const [person] = normalizeMembers(40, [member(1, 'A', 'B', { fields: { Funktion: 'Pastorin', Büro: '12' } })]).people;
+        const [person] = normalizeMembers(40, [member(1, 'A', 'B', { fields: [field(1, 'Funktion', 'Pastorin'), field(2, 'Büro', '12')] })]).people;
         expect(shownFields(person!, ['Büro', 'Raum', 'Funktion'])).toEqual([
             { key: 'Büro', text: '12' },
             { key: 'Funktion', text: 'Pastorin' },

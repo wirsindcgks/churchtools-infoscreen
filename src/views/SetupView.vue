@@ -45,6 +45,7 @@ import {
     defaultGroupTypeId,
     planProvisioning,
     provision,
+    provisionPeople,
     applyRefresh,
     readRefresh,
     refreshIsEmpty,
@@ -54,6 +55,7 @@ import {
     removeCreatedGroups,
     type GroupSpec,
     type GroupTypeChoice,
+    type PlanInput,
 } from '../setup/provision';
 import { isAdministrator } from '../designer/administrator';
 import { useConfirm } from '../designer/useConfirm';
@@ -188,6 +190,8 @@ const planProblem = ref<string | null>(null);
 const createdGroupIds = ref<number[]>([]);
 /** The group "Infoscreen-People" of the block "Personen" (Plan.md 112), from the settings; null for installations from before. */
 const peopleGroupId = ref<number | null>(null);
+/** The person ids of the device accounts in that group, from the settings: the player leaves them out of the cards (schema 1.52). */
+const peopleDeviceIds = ref<number[]>([]);
 /** The group rights of this account (Plan.md 63); `undefined` while unknown or unreadable – then nothing is greyed out. */
 const groupPermissions = ref<GroupPermissions | undefined>(undefined);
 /** The group types of the instance (Plan.md 71); `undefined` while unknown, `null` when they could not be loaded. */
@@ -273,22 +277,27 @@ function computePlan(): void {
         return;
     }
     try {
-        plan.value = planProvisioning({
-            catalog,
-            moduleKey: EXTENSION_KEY,
-            categories: categories as Record<CategoryKey, number> & { status?: number; drafts?: number; changelog?: number },
-            // Before the first run the group is about to be created; later it is the one the settings name – or none (installations from before).
-            peopleGroupId: createdGroupIds.value.length === 0 ? 'new' : (peopleGroupId.value ?? undefined),
-            wikiCategoryId,
-            roomIds: rooms.map((r) => r.id),
-            usedRoomIds,
-            appointmentRooms,
-            serviceCalendarIds: grantableCalendars(serviceCalendarIds),
-            screenCalendarIds: releasedCalendars.value,
-        });
+        plan.value = planProvisioning(planInput());
     } catch (e) {
         planProblem.value = explain(e);
     }
+}
+
+/** What the plan is made from; `people` overrides the group's state – the retrofit plans it as new next to existing groups. */
+function planInput(people?: 'new'): PlanInput {
+    return {
+        catalog: catalog!,
+        moduleKey: EXTENSION_KEY,
+        categories: categories as Record<CategoryKey, number> & { status?: number; drafts?: number; changelog?: number },
+        // Before the first run the group is about to be created; later it is the one the settings name – or none (installations from before).
+        peopleGroupId: people ?? (createdGroupIds.value.length === 0 ? 'new' : (peopleGroupId.value ?? undefined)),
+        wikiCategoryId,
+        roomIds: rooms.map((r) => r.id),
+        usedRoomIds,
+        appointmentRooms,
+        serviceCalendarIds: grantableCalendars(serviceCalendarIds),
+        screenCalendarIds: releasedCalendars.value,
+    };
 }
 
 /** Saves `changes` over the stored settings, read fresh – what they do not name stays (see `settingsToSave`). By default the assistant's fields. */
@@ -302,6 +311,7 @@ async function persistSettings(changes?: Partial<SettingsFields>): Promise<void>
                 designerGroupId: selected.designer ?? undefined,
                 deviceGroupId: selected.device ?? undefined,
                 peopleGroupId: peopleGroupId.value ?? undefined,
+                peopleDeviceIds: peopleGroupId.value === null ? undefined : peopleDeviceIds.value,
                 createdGroupIds: createdGroupIds.value.length ? createdGroupIds.value : undefined,
                 createdGroupTypeId: createdGroupIds.value.length ? (createdTypeId.value ?? undefined) : undefined,
                 createdWikiCategoryId: createdWikiCategoryId.value ?? undefined,
@@ -562,10 +572,60 @@ async function runAssistant(): Promise<void> {
         selected.designer = result.groupIds.designer ?? selected.designer;
         selected.device = result.groupIds.device ?? selected.device;
         peopleGroupId.value = result.groupIds.people ?? peopleGroupId.value;
+        if (result.deviceIds) peopleDeviceIds.value = result.deviceIds;
         // Saved even after a failure: what was created must stay removable.
         await persistSettings();
         groups.value = await loadGroups();
         // The device's right on the people group names its id now.
+        computePlan();
+        await Promise.all([check('designer'), check('device')]);
+    } catch (e) {
+        assistant.error = explain(e);
+        assistant.log.push(t.setup.assistantRun.aborted(assistant.error));
+    } finally {
+        assistant.running = false;
+    }
+}
+
+/**
+ * „Gruppe nachrüsten" (Plan.md 112): an installation from before has the other two groups but not „Infoscreen-People".
+ * Asks first, with what happens; then creates only that group, gives its default role the member-field right, puts the
+ * devices in and gives the roles of the device group the right on the new group – nothing else is touched.
+ */
+async function addPeopleGroup(): Promise<void> {
+    const typeId = createdTypeId.value ?? chosenTypeId.value;
+    const deviceId = selected.device;
+    if (!repository || !catalog || typeId === null || deviceId === null) return;
+    let spec: GroupSpec[];
+    try {
+        spec = planProvisioning(planInput('new'));
+    } catch (e) {
+        assistant.error = explain(e);
+        return;
+    }
+    const people = spec.find((s) => s.key === 'people')!;
+    const seen = spec.find((s) => s.key === 'device')!.grants.filter((g) => g.dataGroup === 'people');
+    const lines = [
+        t.setup.addPeople.createGroup(GROUP_NAMES.people, typeName(typeId)),
+        ...(people.defaultRoleGrants ?? []).map((g) => t.setup.addPeople.grantDefault(g.label, GROUP_NAMES.people)),
+        ...seen.map((g) => t.setup.addPeople.grantDevice(g.label, groupName('device'))),
+        t.setup.addPeople.addDevices,
+    ];
+    const message = `${lines.join('\n')}\n\n${t.setup.addPeople.untouched}`;
+    if (!(await confirm({ title: t.setup.addPeople.title, message, confirmLabel: t.setup.addPeople.confirm }))) return;
+    assistant.running = true;
+    assistant.error = null;
+    assistant.log = [];
+    try {
+        const result = await provisionPeople(spec, typeId, deviceId, churchToolsProvisionApi);
+        assistant.log = result.log;
+        assistant.error = result.error;
+        createdGroupIds.value = [...createdGroupIds.value, ...Object.values(result.groupIds)];
+        peopleGroupId.value = result.groupIds.people ?? peopleGroupId.value;
+        if (result.deviceIds) peopleDeviceIds.value = result.deviceIds;
+        // Saved even after a failure: what was created must stay removable.
+        await persistSettings();
+        groups.value = await loadGroups();
         computePlan();
         await Promise.all([check('designer'), check('device')]);
     } catch (e) {
@@ -599,7 +659,7 @@ async function updateRights(): Promise<void> {
             calendars: new Map(calendars.map((c) => [c.id, c.name] as const)),
             rooms: new Map(rooms.map((r) => [r.id, r.name] as const)),
         };
-        const state = await readRefresh(plan.value, groupIds, known, names, churchToolsProvisionApi);
+        const state = await readRefresh(plan.value, groupIds, known, names, churchToolsProvisionApi, peopleDeviceIds.value);
         if (refreshIsEmpty(state.groups)) {
             assistant.log = state.groups.map(refreshLogLine);
             return;
@@ -624,6 +684,10 @@ async function confirmRefresh(): Promise<void> {
         const result = await applyRefresh(plan.value, open.state, churchToolsProvisionApi);
         assistant.log = result.log;
         assistant.error = result.error;
+        if (result.deviceIds && peopleGroupId.value !== null) {
+            peopleDeviceIds.value = result.deviceIds;
+            await persistSettings().catch((e: unknown) => assistant.log.push(t.setup.assistantRun.aborted(explain(e))));
+        }
         await Promise.all([check('designer'), check('device')]);
     } finally {
         assistant.running = false;
@@ -953,6 +1017,7 @@ onMounted(async () => {
         selected.designer = settings?.designerGroupId ?? null;
         selected.device = settings?.deviceGroupId ?? null;
         peopleGroupId.value = settings?.peopleGroupId ?? null;
+        peopleDeviceIds.value = settings?.peopleDeviceIds ?? [];
         Object.assign(savedGroups, selected);
         createdGroupIds.value = settings?.createdGroupIds ?? [];
         // Known from the settings read above; `loadServices` reads them again before the list can change anything.
@@ -1175,6 +1240,20 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         <template v-if="createdGroupIds.length">
                             <p>{{ t.setup.groups.done(groupName('designer'), groupName('device')) }}</p>
                             <p v-if="peopleGroupId !== null" data-testid="people-group-hint">{{ t.setup.groups.donePeople(groups.find((g) => g.id === peopleGroupId)?.name ?? GROUP_NAMES.people) }}</p>
+                            <template v-if="peopleGroupId === null && !demo">
+                                <p class="muted" data-testid="people-missing">{{ t.setup.addPeople.missing }}</p>
+                                <div class="actions">
+                                    <button
+                                        class="d-btn"
+                                        type="button"
+                                        :disabled="!assistant.allowed || !catalog || assistant.running || selected.device === null || !createdGroupIds.includes(selected.device) || foreignGroups.length > 0 || (createdTypeId ?? chosenTypeId) === null || !abilities.create.allowed"
+                                        data-testid="add-people-group"
+                                        @click="addPeopleGroup"
+                                    >
+                                        {{ t.setup.addPeople.button }}
+                                    </button>
+                                </div>
+                            </template>
                             <p class="muted small">{{ t.setup.groups.doneHint }}</p>
                             <div class="actions">
                                 <button

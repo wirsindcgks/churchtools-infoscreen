@@ -425,7 +425,7 @@ describe('player controller', () => {
             rows: 2,
             style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' },
         };
-        return { ...base, peopleGroupId, slides: first ? [{ ...first, blocks: [...first.blocks, block] }, ...rest] : base.slides };
+        return { ...base, peopleGroupId, peopleDeviceIds: [22, 23], slides: first ? [{ ...first, blocks: [...first.blocks, block] }, ...rest] : base.slides };
     };
 
     it('reads the people group the settings name for the people blocks, and keeps it for offline use (Plan.md 112)', async () => {
@@ -433,7 +433,7 @@ describe('player controller', () => {
         const deps = fakeDeps();
         const player = createPlayer('demo', fakeData({ loadScreen: async () => withPeople(40), people }), deps);
         await player.start();
-        expect(people).toHaveBeenCalledWith(40);
+        expect(people).toHaveBeenCalledWith(40, [22, 23]);
         expect(player.state.people).toMatchObject({ groupId: 40, denied: false });
         expect(deps.saved[0]?.people).toMatchObject({ groupId: 40 });
         player.stop();

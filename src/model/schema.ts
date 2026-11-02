@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 51 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 52 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -939,6 +939,11 @@ export const SettingsDoc = v.object({
     roomTypeIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
     /** Since 1.51: the group "Infoscreen-People" the assistant created (Plan.md 112) – the one the people block reads. Missing: none. */
     peopleGroupId: v.optional(v.pipe(v.number(), v.integer())),
+    /**
+     * Since 1.52: the person ids of the device accounts the setup put into the people group (Plan.md 112). The player leaves
+     * them out of the cards – a device may not read the device group (measured), so it cannot tell them itself. Missing = none.
+     */
+    peopleDeviceIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(200))),
     /** Since 1.40: calendars that are not public but released for screens by an administrator (Plan.md 85 b). Missing = none. */
     screenCalendarIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
 });

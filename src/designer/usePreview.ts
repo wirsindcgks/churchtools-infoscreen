@@ -59,11 +59,12 @@ export function usePreview(
     let screenCalendarIds: number[] | undefined;
     /** The group "Infoscreen-People" from the settings (schema 1.51, Plan.md 112); missing = none set up. */
     let peopleGroupId: number | undefined;
+    let peopleDeviceIds: number[] | undefined;
 
     async function loadBasics(): Promise<void> {
         const settings = getRepository()
             .then((handle) => handle.repository.loadSettings())
-            .then((doc) => ({ roomTypeIds: doc?.roomTypeIds, screenCalendarIds: doc?.screenCalendarIds, peopleGroupId: doc?.peopleGroupId }), () => undefined);
+            .then((doc) => ({ roomTypeIds: doc?.roomTypeIds, screenCalendarIds: doc?.screenCalendarIds, peopleGroupId: doc?.peopleGroupId, peopleDeviceIds: doc?.peopleDeviceIds }), () => undefined);
         try {
             const [timeZone, churchName, own, publicList, churchLogo] = await Promise.all([
                 churchToolsPlayerData.timeZone(),
@@ -89,6 +90,7 @@ export function usePreview(
         roomTypeIds = read?.roomTypeIds;
         screenCalendarIds = read?.screenCalendarIds;
         peopleGroupId = read?.peopleGroupId;
+        peopleDeviceIds = read?.peopleDeviceIds;
     }
 
     let request = 0;
@@ -160,7 +162,7 @@ export function usePreview(
             return;
         }
         try {
-            const list = await churchToolsPlayerData.people(peopleGroupId);
+            const list = await churchToolsPlayerData.people(peopleGroupId, peopleDeviceIds);
             if (mine === peopleRequest) context.people = list;
         } catch (error) {
             problem.value = error instanceof Error ? error.message : String(error);

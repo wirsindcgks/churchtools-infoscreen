@@ -264,6 +264,8 @@ export interface ProvisionResult {
     /** Plain-language account of every step, also of the one that failed. */
     log: string[];
     error: string | null;
+    /** The person ids of the device accounts in the people group (Plan.md 112): `settings.peopleDeviceIds`. Missing: not read. */
+    deviceIds?: number[];
 }
 
 /**
@@ -271,7 +273,12 @@ export interface ProvisionResult {
  * group type ("Merkmal": "Teilnehmer" and "Leiter"), so whoever is added,
  * in whichever role, gets the same rights.
  */
-export async function provision(plan: GroupSpec[], groupTypeId: number, api: ProvisionApi): Promise<ProvisionResult> {
+export async function provision(
+    plan: GroupSpec[],
+    groupTypeId: number,
+    api: ProvisionApi,
+    existing: Partial<Record<GroupKey, number>> = {},
+): Promise<ProvisionResult> {
     const result: ProvisionResult = { groupIds: {}, log: [], error: null };
     // A group whose id another group's right needs (the people group, Plan.md 112) is created first.
     const needed = (spec: GroupSpec): boolean => plan.some((other) => other.grants.some((g) => g.dataGroup === spec.key));
@@ -284,14 +291,16 @@ export async function provision(plan: GroupSpec[], groupTypeId: number, api: Pro
             const roles = await api.roleIds(groupId);
             for (const roleId of roles) {
                 for (const g of spec.grants) {
-                    const dataId = resolvedDataId(g, result.groupIds);
+                    const dataId = resolvedDataId(g, { ...existing, ...result.groupIds });
                     if (dataId !== 'unknown') await api.grant(roleId, g.authId, dataId);
                 }
             }
             result.log.push(t.setup.provision.rightsGranted(spec.grants.length, roles.length, spec.name));
             if (spec.defaultRoleGrants?.length || spec.membersFrom) {
-                const added = await grantDefaultRole(spec, groupId, api, spec.membersFrom ? result.groupIds[spec.membersFrom] : undefined);
+                const from = spec.membersFrom ? (result.groupIds[spec.membersFrom] ?? existing[spec.membersFrom]) : undefined;
+                const { added, deviceIds } = await grantDefaultRole(spec, groupId, api, from);
                 if (added) result.log.push(t.setup.provision.devicesAdded(added, spec.name));
+                if (deviceIds) result.deviceIds = deviceIds;
             }
         }
     } catch (e) {
@@ -313,15 +322,43 @@ function resolvedDataId(grant: GrantSpec, groupIds: Partial<Record<GroupKey, num
  * come from another group – each is put in once, whoever is in already stays. `from` is the group they come from, if it exists.
  * Returns how many were put in.
  */
-async function grantDefaultRole(spec: GroupSpec, groupId: number, api: ProvisionApi, from: number | undefined): Promise<number> {
+async function grantDefaultRole(
+    spec: GroupSpec,
+    groupId: number,
+    api: ProvisionApi,
+    from: number | undefined,
+): Promise<{ added: number; deviceIds?: number[] }> {
     const role = await api.defaultRole(groupId);
-    if (!role) return 0;
+    if (!role) return { added: 0 };
     for (const g of spec.defaultRoleGrants ?? []) await api.grant(role.roleId, g.authId, g.dataId);
-    if (from === undefined) return 0;
+    if (from === undefined) return { added: 0 };
     const [there, here] = await Promise.all([api.memberIds(from), api.memberIds(groupId)]);
     const missing = there.filter((personId) => !here.includes(personId));
     for (const personId of missing) await api.addMember(groupId, personId, role.groupTypeRoleId);
-    return missing.length;
+    return { added: missing.length, deviceIds: there };
+}
+
+/**
+ * Adds the people group to an installation that has the other two (Plan.md 112): creates this group alone, gives its
+ * default role 10126, puts the device accounts in, and gives the roles of the device group 1104 on the new group –
+ * nothing else of either group is touched. `plan` is a plan made with `peopleGroupId: 'new'`.
+ */
+export async function provisionPeople(plan: GroupSpec[], groupTypeId: number, deviceGroupId: number, api: ProvisionApi): Promise<ProvisionResult> {
+    const people = plan.find((spec) => spec.key === 'people');
+    const seen = (plan.find((spec) => spec.key === 'device')?.grants ?? []).filter((g) => g.dataGroup === 'people');
+    if (!people) return { groupIds: {}, log: [], error: t.setup.plan.none };
+    const result = await provision([people], groupTypeId, api, { device: deviceGroupId });
+    const peopleId = result.groupIds.people;
+    if (result.error || peopleId === undefined) return result;
+    try {
+        const roles = await api.roleIds(deviceGroupId);
+        for (const roleId of roles) for (const g of seen) await api.grant(roleId, g.authId, [peopleId]);
+        result.log.push(t.setup.provision.rightsGranted(seen.length, roles.length, GROUP_NAMES.device));
+    } catch (e) {
+        result.error = e instanceof Error ? e.message : String(e);
+        result.log.push(t.setup.provision.aborted(result.error));
+    }
+    return result;
 }
 
 export interface RemovalResult {
@@ -414,6 +451,8 @@ export interface RefreshGroup {
     add: RefreshItem[];
     /** Held, managed by the assistant, no longer planned, and known to the administrator. */
     remove: RefreshItem[];
+    /** Changes that are no rights (Plan.md 112): devices not yet in the people group, the list of device accounts in the settings. */
+    extras?: string[];
 }
 
 /** What the administrator sees – only for these an unplanned right is taken back (Plan.md 62). */
@@ -500,6 +539,10 @@ export function planRefresh(
     });
 }
 
+function sameIds(a: readonly number[], b: readonly number[]): boolean {
+    return a.length === b.length && a.every((id) => b.includes(id));
+}
+
 /** A right whose data is known. One that names a group not created yet (`dataGroup` without `dataId`) is not granted by a refresh. */
 function concrete(grant: GrantSpec): boolean {
     return !grant.dataGroup || grant.dataId !== undefined;
@@ -511,6 +554,8 @@ export interface RefreshState {
     roles: Partial<Record<GroupKey, { roleId: number; grants: Grant[] }[]>>;
     /** The groups they were read from – the devices of one become members of another (Plan.md 112). */
     groupIds: Partial<Record<GroupKey, number>>;
+    /** The device accounts as they are now, for `settings.peopleDeviceIds`; missing where the plan has no people group. */
+    deviceIds?: number[];
     /** The default role of each group that has rights for it alone. */
     defaultRoleIds: Partial<Record<GroupKey, { roleId: number; groupTypeRoleId: number }>>;
 }
@@ -525,6 +570,7 @@ export async function readRefresh(
     known: KnownData,
     names: DataNames,
     api: ProvisionApi,
+    storedDeviceIds: readonly number[] = [],
 ): Promise<RefreshState> {
     const roles: RefreshState['roles'] = {};
     const defaultRoleIds: RefreshState['defaultRoleIds'] = {};
@@ -545,7 +591,22 @@ export async function readRefresh(
     }
     const held = Object.fromEntries(Object.entries(roles).map(([key, list]) => [key, list.map((r) => r.grants)]));
     const groups = planRefresh(plan, held, known, names, heldDefault).filter((g) => roles[g.key] !== undefined);
-    return { groups, roles, groupIds: { ...groupIds }, defaultRoleIds };
+    // The devices of the device group belong in the people group and in the list the player leaves out (Plan.md 112).
+    let deviceIds: number[] | undefined;
+    for (const spec of plan) {
+        const from = spec.membersFrom ? groupIds[spec.membersFrom] : undefined;
+        const groupId = groupIds[spec.key];
+        const change = groups.find((g) => g.key === spec.key);
+        if (from === undefined || groupId === undefined || !change) continue;
+        const [there, here] = await Promise.all([api.memberIds(from), api.memberIds(groupId)]);
+        deviceIds = there;
+        const missing = there.filter((personId) => !here.includes(personId));
+        const extras: string[] = [];
+        if (missing.length) extras.push(t.setup.refresh.membersToAdd(missing.length));
+        if (!sameIds(there, storedDeviceIds)) extras.push(t.setup.refresh.deviceListStale);
+        if (extras.length) change.extras = extras;
+    }
+    return { groups, roles, groupIds: { ...groupIds }, defaultRoleIds, deviceIds };
 }
 
 /**
@@ -579,6 +640,7 @@ export async function applyRefresh(plan: GroupSpec[], state: RefreshState, api: 
                     const missing = there.filter((personId) => !here.includes(personId));
                     for (const personId of missing) await api.addMember(groupId, personId, role.groupTypeRoleId);
                     if (missing.length) result.log.push(t.setup.provision.devicesAdded(missing.length, spec.name));
+                    result.deviceIds = there;
                 }
             }
         }
@@ -596,5 +658,5 @@ export function refreshLogLine(change: RefreshGroup): string {
 
 /** Nothing to add and nothing to take back anywhere: no dialog, no writing. */
 export function refreshIsEmpty(groups: RefreshGroup[]): boolean {
-    return groups.every((g) => !g.add.length && !g.remove.length);
+    return groups.every((g) => !g.add.length && !g.remove.length && !g.extras?.length);
 }

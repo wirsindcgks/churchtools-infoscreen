@@ -34,12 +34,12 @@ function lines(items: RefreshItem[]): string[] {
             @submit.prevent="emit('confirm')"
         >
             <h2 id="refresh-rights-title">{{ t.setup.refresh.title }}</h2>
-            <section v-for="g in props.groups.filter((x) => x.add.length || x.remove.length)" :key="g.key" :data-testid="`refresh-group-${g.key}`">
+            <section v-for="g in props.groups.filter((x) => x.add.length || x.remove.length || x.extras?.length)" :key="g.key" :data-testid="`refresh-group-${g.key}`">
                 <strong>{{ g.name }}</strong>
-                <template v-if="g.add.length">
+                <template v-if="g.add.length || g.extras?.length">
                     <p class="heading">{{ t.setup.refresh.adds }}</p>
                     <ul data-testid="refresh-add">
-                        <li v-for="line in lines(g.add)" :key="line">{{ line }}</li>
+                        <li v-for="line in [...lines(g.add), ...(g.extras ?? [])]" :key="line">{{ line }}</li>
                     </ul>
                 </template>
                 <template v-if="g.remove.length">

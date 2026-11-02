@@ -28,21 +28,21 @@ export interface MemberResponse {
     groupTypeRoleId?: number | string | null;
     groupMemberStatus?: string | null;
     person?: PersonResponse | null;
-    /** Keyed by the field's id, or by its name – the answer is not measured for both (G70). */
-    fields?: unknown;
+    /** Measured (G71): a list of `{ id, name, value, sortKey }`, the name as the field is called in the group. */
+    fields?: MemberFieldValueResponse[] | null;
+}
+
+interface MemberFieldValueResponse {
+    id?: number | string | null;
+    name?: string | null;
+    value?: unknown;
+    sortKey?: number | null;
 }
 
 /** An entry of `GET /groups/{id}/roles`. */
 export interface RoleResponse {
     groupTypeRoleId?: number | string | null;
     name?: string | null;
-}
-
-/** An entry of `GET /groups/{id}/memberfields`. */
-export interface MemberFieldResponse {
-    id?: number | string | null;
-    name?: string | null;
-    sortKey?: number | null;
 }
 
 export interface PeopleRole {
@@ -104,42 +104,24 @@ function valueText(value: unknown): string {
     return '';
 }
 
-/** The entries of a `fields` answer as key/value pairs, whether it is an object or a list of `{ id | name, value }`. */
-function fieldEntries(fields: unknown): [string, unknown][] {
-    if (Array.isArray(fields)) {
-        return fields.flatMap((entry): [string, unknown][] => {
-            const e = entry as { id?: unknown; name?: unknown; fieldId?: unknown; value?: unknown } | null;
-            const key = e?.id ?? e?.fieldId ?? e?.name;
-            return key === undefined || key === null ? [] : [[String(key), e?.value]];
-        });
-    }
-    return fields && typeof fields === 'object' ? Object.entries(fields as Record<string, unknown>) : [];
-}
-
 /**
- * The people of the group in the order ChurchTools sends them. `ownPersonId` is the account that asks – the device
- * itself, which sits in the group for the sake of the field rights and is no one to show.
+ * The people of the group in the order ChurchTools sends them. `excludedPersonIds` are the accounts that sit in
+ * the group for the sake of the field rights and are no one to show: the one that asks and the device accounts of the setup.
  */
 export function normalizeMembers(
     groupId: number,
     rawMembers: unknown[],
     rawRoles: unknown[] = [],
-    rawFields: unknown[] = [],
-    ownPersonId?: number,
+    excludedPersonIds: readonly number[] = [],
 ): PeopleGroup {
-    const definitions = new Map<string, string>();
-    for (const field of rawFields as MemberFieldResponse[]) {
-        const name = (field?.name ?? '').trim();
-        const id = field?.id;
-        if (name && id !== undefined && id !== null) definitions.set(String(id), name);
-    }
     const roles: PeopleRole[] = [];
     for (const role of rawRoles as RoleResponse[]) {
         const id = idOf(role?.groupTypeRoleId);
         const name = (role?.name ?? '').trim();
         if (id !== null && name && !roles.some((r) => r.id === id)) roles.push({ id, name });
     }
-    const fieldNames: string[] = [...new Set(definitions.values())];
+    /** The fields seen on any member, in the group's own order (`sortKey`). */
+    const seenFields = new Map<string, number>();
 
     const people: Person[] = [];
     for (const member of rawMembers as MemberResponse[]) {
@@ -147,22 +129,23 @@ export function normalizeMembers(
         const person = member?.person;
         if (person?.domainAttributes?.isArchived || person?.domainAttributes?.dateOfDeath) continue;
         const personId = idOf(member?.personId) ?? idOf(person?.domainIdentifier);
-        if (ownPersonId !== undefined && personId === ownPersonId) continue;
+        if (personId !== null && excludedPersonIds.includes(personId)) continue;
         const firstName = (person?.domainAttributes?.firstName ?? '').trim();
         const lastName = (person?.domainAttributes?.lastName ?? '').trim();
         const name = `${firstName} ${lastName}`.trim() || (person?.title ?? '').trim();
         if (!name) continue;
         const fields: Record<string, string> = {};
-        for (const [key, value] of fieldEntries(member.fields)) {
-            const text = valueText(value);
-            const fieldName = definitions.get(key) ?? key;
-            if (text) fields[fieldName] = text;
-            if (!fieldNames.includes(fieldName)) fieldNames.push(fieldName);
+        for (const field of Array.isArray(member.fields) ? member.fields : []) {
+            const name = (field?.name ?? '').trim();
+            if (!name) continue;
+            const text = valueText(field.value);
+            if (text) fields[name] = text;
+            if (!seenFields.has(name)) seenFields.set(name, typeof field.sortKey === 'number' ? field.sortKey : Infinity);
         }
         people.push({ firstName, lastName, name, imageUrl: person?.imageUrl || null, roleId: idOf(member.groupTypeRoleId), fields });
         if (people.length >= PEOPLE_CAP) break;
     }
-    return { groupId, denied: false, people, roles, fields: fieldNames.map((name) => ({ key: name, name })) };
+    return { groupId, denied: false, people, roles, fields: [...seenFields].sort((a, b) => a[1] - b[1]).map(([name]) => ({ key: name, name })) };
 }
 
 /**

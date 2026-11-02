@@ -363,11 +363,17 @@ describe('people (Plan.md 112)', () => {
 
     it('reads the members through the group alone and leaves out the account that asks', async () => {
         vi.mocked(client.currentPerson).mockResolvedValue({ id: 22 } as Awaited<ReturnType<typeof client.currentPerson>>);
-        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(1, 'Anna')], roles: [], fields: [] });
+        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(1, 'Anna')], roles: [] });
         const group = await churchToolsPlayerData.people(40);
         expect(api.fetchGroupMembers).toHaveBeenCalledWith(40);
         expect(group.denied).toBe(false);
         expect(group.people.map((p) => p.name)).toEqual(['Anna X']);
+    });
+
+    it('leaves out the device accounts the setup names as well', async () => {
+        vi.mocked(client.currentPerson).mockResolvedValue({ id: 22 } as Awaited<ReturnType<typeof client.currentPerson>>);
+        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(23, 'Cafe'), member(1, 'Anna')], roles: [] });
+        expect((await churchToolsPlayerData.people(40, [23])).people.map((p) => p.name)).toEqual(['Anna X']);
     });
 
     it('answers a 403 with a group marked as denied – not as an empty one', async () => {

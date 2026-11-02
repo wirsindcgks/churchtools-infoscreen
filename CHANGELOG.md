@@ -4,7 +4,7 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
-## [0.50.0] – noch nicht veröffentlicht
+## [0.50.0] – 2026-11-02
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch, Ansprechpartner als Karten auf dem Bildschirm zu
 zeigen – und für seine Antworten, die den Zuschnitt bestimmt haben.
@@ -18,9 +18,12 @@ zeigen – und für seine Antworten, die den Zuschnitt bestimmt haben.
 - **Der Einrichtungsassistent legt dazu die Gruppe „Infoscreen-People“ an.** Wer dort Mitglied ist, darf auf den
   Bildschirmen erscheinen. Die Geräte sehen genau diese Gruppe und ihre Mitgliedsfelder bis Sicherheitsstufe 1; der
   Assistent nimmt die vorhandenen Gerätekonten in die Gruppe auf, „Rechte aktualisieren“ holt später hinzugekommene
-  nach. Die Prüfung der Gerätegruppe kennt diese Rechte und warnt vor „Personendaten sehen“ und „Gruppenmitglieder
-  sehen“, die E-Mail-Adressen freigeben würden. Bei Installationen, die schon eingerichtet sind, fehlt die Gruppe zunächst
-  (siehe [Einrichtung](docs/Einrichtung.md#personen-auf-den-bildschirmen)).
+  nach. Die Konten der Geräte erscheinen nicht als Karten. Die Prüfung der Gerätegruppe kennt diese Rechte und warnt vor
+  „Personendaten sehen“ und „Gruppenmitglieder sehen“, die E-Mail-Adressen freigeben würden.
+- **Bestehende Einrichtungen rüsten die Gruppe nach.** Unter Einstellungen → Gruppen und Rechte legt „Gruppe
+  „Infoscreen-People“ nachrüsten“ nach einer Vorschau nur diese Gruppe an; bestehende Rollen und Gruppen bleiben
+  unberührt (siehe [Einrichtung](docs/Einrichtung.md#personen-auf-den-bildschirmen)). „Rechte aktualisieren“ greift
+  jetzt auch, wenn nur ein neues Gerätekonto nachzutragen ist.
 
 ## [0.49.2] – 2026-10-28
 
@@ -1575,6 +1578,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.50.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.50.0
 [0.49.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.49.2
 [0.49.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.49.1
 [0.49.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.49.0

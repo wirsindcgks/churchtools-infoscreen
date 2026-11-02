@@ -137,8 +137,9 @@ auf einer Freizeit. Er liest **nur** die Gruppe **„Infoscreen-People"**:
   höherer Stufe bleiben für ihn verborgen. Die Stufe ist dein Regler.
 - **Die Geräte müssen Mitglied der Gruppe sein**, sonst bleiben die Mitgliedsfelder leer. Der Assistent nimmt die
   Konten der Gerätegruppe auf, die schon da sind; ein **neues Gerätekonto** nimmst du ebenfalls in „Infoscreen-People"
-  auf – oder klickst **„Rechte aktualisieren"**, das holt alle Geräte nach. Die Geräte erscheinen nicht als Karten; **andere**
-  Mitglieder mit der Standardrolle erscheinen aber, auch weitere Gerätekonten – lege für sie, falls nötig, eine eigene Rolle an und wähle im Baustein nur die Rollen der Personen.
+  auf – oder klickst **„Rechte aktualisieren"**, das holt alle Geräte nach. Die Geräte erscheinen nicht als Karten: Der Assistent
+  merkt sich ihre Konten in den Einstellungen und der Fernseher lässt sie weg. Ein **neues Gerätekonto** gehört in
+  „Infoscreen-Devices" **und** in „Infoscreen-People"; „Rechte aktualisieren" erledigt beides nach und aktualisiert die Liste.
 - **Name, Bild und Rolle** sieht das Gerät über das Recht „Gruppe inkl. ihrer Gruppenmitglieder sehen“ für genau diese
   Gruppe; die **Mitgliedsfelder** über „Gruppenmitgliedsfelder sehen“ (Stufe 1) an der Standardrolle der Gruppe. Das
   Recht gilt für **alle Mitglieder dieser Rolle** – was dort an Mitgliedsfeldern mit Stufe 1 steht, ist für den
@@ -149,8 +150,10 @@ auf einer Freizeit. Er liest **nur** die Gruppe **„Infoscreen-People"**:
 - **Automatische Gruppen?** Eine Gruppe mit der Aktion „Aus Gruppe entfernen“ wirft von Hand aufgenommene Mitglieder beim
   nächsten Lauf wieder hinaus – auch das Gerät. Nimm „Infoscreen-Devices“ als Oder-Bedingung in den Filter auf, dann
   wird das Gerät von selbst Mitglied. Stück 1 des Bausteins arbeitet mit der Gruppe „Infoscreen-People“; eigene Gruppen folgen.
-- **Bestehende Installation:** Die Gruppe „Infoscreen-People“ legt der Assistent nur beim ersten Einrichten an. Wer
-  schon eingerichtet hat, hat sie noch nicht und kann den Baustein erst nutzen, wenn sie da ist.
+- **Bestehende Installation:** Wer schon eingerichtet hat, findet unter **Einstellungen → Gruppen und Rechte** den Knopf
+  **„Gruppe „Infoscreen-People“ nachrüsten"**. Eine Vorschau sagt vorher, was geschieht: Er legt nur diese Gruppe an,
+  gibt ihr und der Gerätegruppe die beiden Rechte und nimmt die Geräte auf. Bestehende Rollen, Rechte und fremde Gruppen
+  bleiben unberührt.
 
 ## 5. Gestalter aufnehmen
 

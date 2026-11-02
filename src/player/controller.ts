@@ -320,7 +320,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             ? undefined
             : peopleGroupId === undefined
               ? null
-              : await data.people(peopleGroupId).catch((error: unknown) => {
+              : await data.people(peopleGroupId, state.screen.peopleDeviceIds ?? []).catch((error: unknown) => {
                     console.warn('Personen konnten nicht geladen werden:', error);
                     return state.people;
                 });

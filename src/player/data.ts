@@ -71,9 +71,9 @@ export interface PlayerData {
     groupHomepages(parentGroupIds: number[]): Promise<HomepageGroups[]>;
     /**
      * The members of the people group with their member fields (schema 1.51, Plan.md 112). The account that asks is
-     * left out. A `403` comes back as a group marked `denied`, other errors fail.
+     * left out, and the device accounts of the setup (`settings.peopleDeviceIds`). A `403` comes back as a group marked `denied`, other errors fail.
      */
-    people(groupId: number): Promise<PeopleGroup>;
+    people(groupId: number, deviceIds?: readonly number[]): Promise<PeopleGroup>;
     /**
      * The confirmed bookings of these rooms within `[from, to)` (schema 1.16).
      * A room the caller may not read (403), that the stammdaten do not name or
@@ -180,12 +180,12 @@ export const churchToolsPlayerData: PlayerData = {
             }),
         );
     },
-    async people(groupId) {
+    async people(groupId, deviceIds = []) {
         try {
             const raw = await withTimeout(fetchGroupMembers(groupId));
             // Who asks is the device, or the designer in the preview; either is no card (Plan.md 112).
             const own = await currentPerson().then((person) => person.id, () => undefined);
-            return normalizeMembers(groupId, raw.members, raw.roles, raw.fields, own);
+            return normalizeMembers(groupId, raw.members, raw.roles, own === undefined ? deviceIds : [own, ...deviceIds]);
         } catch (error) {
             if (httpStatus(error) !== 403) throw error;
             return deniedPeople(groupId);

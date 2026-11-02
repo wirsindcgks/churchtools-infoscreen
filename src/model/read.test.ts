@@ -831,4 +831,11 @@ describe('the people block and the group of the settings (schema 1.51, Plan.md 1
         expect(v.parse(SettingsDoc, { ...base, schema: { major: 1, minor: 51 }, peopleGroupId: 40 }).peopleGroupId).toBe(40);
         expect(v.safeParse(SettingsDoc, { ...base, peopleGroupId: 'vierzig' }).success).toBe(false);
     });
+
+    it('reads settings of 1.51 without the device accounts as an empty list of them (schema 1.52)', () => {
+        const base = { schema: { major: 1, minor: 51 }, kind: 'settings', id: 'settings', peopleGroupId: 40 };
+        expect(v.parse(SettingsDoc, base).peopleDeviceIds).toBeUndefined();
+        expect(v.parse(SettingsDoc, { ...base, schema: { major: 1, minor: 52 }, peopleDeviceIds: [22, 23] }).peopleDeviceIds).toEqual([22, 23]);
+        expect(v.safeParse(SettingsDoc, { ...base, peopleDeviceIds: ['x'] }).success).toBe(false);
+    });
 });
