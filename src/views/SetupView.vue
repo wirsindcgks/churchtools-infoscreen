@@ -46,6 +46,8 @@ import {
     planProvisioning,
     provision,
     provisionPeople,
+    completePeople,
+    orphanPeopleGroup,
     applyRefresh,
     readRefresh,
     refreshIsEmpty,
@@ -58,6 +60,7 @@ import {
     type PlanInput,
 } from '../setup/provision';
 import { isAdministrator } from '../designer/administrator';
+import { maySaveSettings, type ModulePermissions } from '../designer/rights';
 import { useConfirm } from '../designer/useConfirm';
 import { getRepository } from '../store/backend';
 import { CATEGORIES, STATUS_CATEGORY, type CategoryKey, type ScreenRepository } from '../store/screen-repository';
@@ -192,6 +195,10 @@ const createdGroupIds = ref<number[]>([]);
 const peopleGroupId = ref<number | null>(null);
 /** The person ids of the device accounts in that group, from the settings: the player leaves them out of the cards (schema 1.52). */
 const peopleDeviceIds = ref<number[]>([]);
+/** Whether this person may save the settings (module right on the category); `undefined` while unknown – then nothing is blocked. */
+const settingsWritable = ref<boolean | undefined>(undefined);
+/** A group „Infoscreen-People" that an interrupted retrofit left behind (Plan.md 112): active, not entered, seen by the device group. */
+const orphanPeopleId = ref<number | null>(null);
 /** The group rights of this account (Plan.md 63); `undefined` while unknown or unreadable – then nothing is greyed out. */
 const groupPermissions = ref<GroupPermissions | undefined>(undefined);
 /** The group types of the instance (Plan.md 71); `undefined` while unknown, `null` when they could not be loaded. */
@@ -237,7 +244,7 @@ const wikiCategoryIdKnown = ref(true);
 
 const foreignGroups = computed(() =>
     groups.value.filter(
-        (g) => Object.values(GROUP_NAMES).includes(g.name as never) && !createdGroupIds.value.includes(g.id),
+        (g) => Object.values(GROUP_NAMES).includes(g.name as never) && !createdGroupIds.value.includes(g.id) && g.id !== orphanPeopleId.value,
     ),
 );
 
@@ -492,7 +499,7 @@ async function saveForm(): Promise<void> {
         formState.value = 'saved';
     } catch (e) {
         formState.value = 'idle';
-        error.value = explain(e);
+        error.value = explainSave(e);
         return;
     }
     if (rightsSignature() !== before) await askForRights();
@@ -617,22 +624,77 @@ async function addPeopleGroup(): Promise<void> {
     assistant.error = null;
     assistant.log = [];
     try {
-        const result = await provisionPeople(spec, typeId, deviceId, churchToolsProvisionApi);
-        assistant.log = result.log;
-        assistant.error = result.error;
-        createdGroupIds.value = [...createdGroupIds.value, ...Object.values(result.groupIds)];
-        peopleGroupId.value = result.groupIds.people ?? peopleGroupId.value;
-        if (result.deviceIds) peopleDeviceIds.value = result.deviceIds;
-        // Saved even after a failure: what was created must stay removable.
-        await persistSettings();
-        groups.value = await loadGroups();
-        computePlan();
-        await Promise.all([check('designer'), check('device')]);
+        await finishPeopleResult(await provisionPeople(spec, typeId, deviceId, churchToolsProvisionApi));
     } catch (e) {
         assistant.error = explain(e);
         assistant.log.push(t.setup.assistantRun.aborted(assistant.error));
     } finally {
         assistant.running = false;
+    }
+}
+
+/** Takes over what `provisionPeople` or `completePeople` did: remembers the group and the devices, saves the settings, checks anew. */
+async function finishPeopleResult(result: Awaited<ReturnType<typeof provisionPeople>>): Promise<void> {
+    assistant.log = result.log;
+    assistant.error = result.error;
+    createdGroupIds.value = [...new Set([...createdGroupIds.value, ...Object.values(result.groupIds)])];
+    peopleGroupId.value = result.groupIds.people ?? peopleGroupId.value;
+    if (result.deviceIds) peopleDeviceIds.value = result.deviceIds;
+    try {
+        // Saved even after a failure: what was created must stay removable.
+        await persistSettings();
+        orphanPeopleId.value = null;
+    } catch (e) {
+        assistant.error = explainSave(e);
+    }
+    groups.value = await loadGroups();
+    computePlan();
+    await Promise.all([check('designer'), check('device')]);
+}
+
+/**
+ * „Einrichtung abschließen": a retrofit that stopped after the group and its rights were made (the settings could not be
+ * saved) left a group the page takes for a foreign one. Asks, then adopts it and adds what is missing.
+ */
+async function finishPeopleSetup(): Promise<void> {
+    const groupId = orphanPeopleId.value;
+    const deviceId = selected.device;
+    if (!repository || !catalog || groupId === null || deviceId === null) return;
+    let spec: GroupSpec[];
+    try {
+        spec = planProvisioning(planInput('new'));
+    } catch (e) {
+        assistant.error = explain(e);
+        return;
+    }
+    const name = groups.value.find((g) => g.id === groupId)?.name ?? GROUP_NAMES.people;
+    const message = `${t.setup.addPeople.finishAdopt(name)}\n${t.setup.addPeople.finishMissing}\n\n${t.setup.addPeople.untouched}`;
+    if (!(await confirm({ title: t.setup.addPeople.finishTitle, message, confirmLabel: t.setup.addPeople.finishConfirm }))) return;
+    assistant.running = true;
+    assistant.error = null;
+    assistant.log = [];
+    try {
+        await finishPeopleResult(await completePeople(spec, groupId, deviceId, churchToolsProvisionApi));
+    } catch (e) {
+        assistant.error = explain(e);
+    } finally {
+        assistant.running = false;
+    }
+}
+
+/**
+ * Whether a group „Infoscreen-People" that is not entered belongs to an interrupted retrofit: exactly one such group, active,
+ * and the device group holds the right to see it (1104). Anything else stays foreign and untouched.
+ */
+async function findOrphanPeople(): Promise<void> {
+    orphanPeopleId.value = null;
+    if (demo.value || peopleGroupId.value !== null || selected.device === null || !createdGroupIds.value.includes(selected.device)) return;
+    if (!groups.value.some((g) => g.name === GROUP_NAMES.people && !createdGroupIds.value.includes(g.id))) return;
+    try {
+        const rights = await loadGroupRights(selected.device);
+        orphanPeopleId.value = orphanPeopleGroup(groups.value, createdGroupIds.value, rights.roles.map((r) => r.grants));
+    } catch {
+        // Not readable: the group stays foreign, as before.
     }
 }
 
@@ -832,6 +894,12 @@ async function confirmRemoveSetup(): Promise<void> {
     } finally {
         assistant.running = false;
     }
+}
+
+/** A failed save of the settings: 401 and 403 name the missing module right instead of the bare status. */
+function explainSave(e: unknown): string {
+    const status = httpStatus(e);
+    return status === 401 || status === 403 ? t.setup.settingsNotSaved401 : explain(e);
 }
 
 function explain(e: unknown): string {
@@ -1048,6 +1116,15 @@ onMounted(async () => {
         computePlan();
         await roomTypesRead;
         await Promise.all([check('designer'), check('device')]);
+        if (!demo.value) {
+            await findOrphanPeople();
+            await churchtoolsClient
+                .get<Record<string, unknown>>('/permissions/global')
+                .then((global) => {
+                    settingsWritable.value = maySaveSettings(global[EXTENSION_KEY] as Partial<ModulePermissions> | undefined, categories.settings);
+                })
+                .catch(() => undefined);
+        }
     } catch (e) {
         error.value = explain(e);
     }
@@ -1240,19 +1317,29 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         <template v-if="createdGroupIds.length">
                             <p>{{ t.setup.groups.done(groupName('designer'), groupName('device')) }}</p>
                             <p v-if="peopleGroupId !== null" data-testid="people-group-hint">{{ t.setup.groups.donePeople(groups.find((g) => g.id === peopleGroupId)?.name ?? GROUP_NAMES.people) }}</p>
-                            <template v-if="peopleGroupId === null && !demo">
+                            <template v-if="peopleGroupId === null && orphanPeopleId !== null && !demo">
+                                <p class="muted" data-testid="people-orphan">{{ t.setup.addPeople.finishHint }}</p>
+                                <div class="actions">
+                                    <button class="d-btn" type="button" :disabled="assistant.running || settingsWritable === false" data-testid="finish-people-group" @click="finishPeopleSetup">
+                                        {{ t.setup.addPeople.finishButton }}
+                                    </button>
+                                </div>
+                                <p v-if="settingsWritable === false" class="muted small" data-testid="people-no-settings-right">{{ t.setup.addPeople.noSettingsRight }}</p>
+                            </template>
+                            <template v-else-if="peopleGroupId === null && !demo">
                                 <p class="muted" data-testid="people-missing">{{ t.setup.addPeople.missing }}</p>
                                 <div class="actions">
                                     <button
                                         class="d-btn"
                                         type="button"
-                                        :disabled="!assistant.allowed || !catalog || assistant.running || selected.device === null || !createdGroupIds.includes(selected.device) || foreignGroups.length > 0 || (createdTypeId ?? chosenTypeId) === null || !abilities.create.allowed"
+                                        :disabled="!assistant.allowed || settingsWritable === false || !catalog || assistant.running || selected.device === null || !createdGroupIds.includes(selected.device) || foreignGroups.length > 0 || (createdTypeId ?? chosenTypeId) === null || !abilities.create.allowed"
                                         data-testid="add-people-group"
                                         @click="addPeopleGroup"
                                     >
                                         {{ t.setup.addPeople.button }}
                                     </button>
                                 </div>
+                                <p v-if="settingsWritable === false" class="muted small" data-testid="people-no-settings-right">{{ t.setup.addPeople.noSettingsRight }}</p>
                             </template>
                             <p class="muted small">{{ t.setup.groups.doneHint }}</p>
                             <div class="actions">

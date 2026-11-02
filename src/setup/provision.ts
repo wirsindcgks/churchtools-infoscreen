@@ -295,7 +295,12 @@ export async function provision(
                     if (dataId !== 'unknown') await api.grant(roleId, g.authId, dataId);
                 }
             }
-            result.log.push(t.setup.provision.rightsGranted(spec.grants.length, roles.length, spec.name));
+            if (spec.grants.length || !spec.defaultRoleGrants?.length) {
+                result.log.push(t.setup.provision.rightsGranted(spec.grants.length, roles.length, spec.name));
+            }
+            if (spec.defaultRoleGrants?.length) {
+                result.log.push(t.setup.provision.rightsGranted(spec.defaultRoleGrants.length, 1, spec.name));
+            }
             if (spec.defaultRoleGrants?.length || spec.membersFrom) {
                 const from = spec.membersFrom ? (result.groupIds[spec.membersFrom] ?? existing[spec.membersFrom]) : undefined;
                 const { added, deviceIds } = await grantDefaultRole(spec, groupId, api, from);
@@ -336,6 +341,47 @@ async function grantDefaultRole(
     const missing = there.filter((personId) => !here.includes(personId));
     for (const personId of missing) await api.addMember(groupId, personId, role.groupTypeRoleId);
     return { added: missing.length, deviceIds: there };
+}
+
+/**
+ * Finishes an interrupted retrofit (Plan.md 112): the people group exists, but the rights, the devices or the entry in the
+ * settings are missing. Grants again what a retrofit grants – a grant is a PUT that creates or updates, so nothing is
+ * doubled – and puts in only the devices that are not in yet.
+ */
+export async function completePeople(plan: GroupSpec[], peopleGroupId: number, deviceGroupId: number, api: ProvisionApi): Promise<ProvisionResult> {
+    const people = plan.find((spec) => spec.key === 'people');
+    const result: ProvisionResult = { groupIds: { people: peopleGroupId }, log: [], error: null };
+    if (!people) return { ...result, groupIds: {}, error: t.setup.plan.none };
+    const seen = (plan.find((spec) => spec.key === 'device')?.grants ?? []).filter((g) => g.dataGroup === 'people');
+    try {
+        const { added, deviceIds } = await grantDefaultRole(people, peopleGroupId, api, deviceGroupId);
+        result.log.push(t.setup.provision.rightsGranted(people.defaultRoleGrants?.length ?? 0, 1, people.name));
+        if (added) result.log.push(t.setup.provision.devicesAdded(added, people.name));
+        result.deviceIds = deviceIds;
+        const roles = await api.roleIds(deviceGroupId);
+        for (const roleId of roles) for (const g of seen) await api.grant(roleId, g.authId, [peopleGroupId]);
+        result.log.push(t.setup.provision.rightsGranted(seen.length, roles.length, GROUP_NAMES.device));
+    } catch (e) {
+        result.error = e instanceof Error ? e.message : String(e);
+        result.log.push(t.setup.provision.aborted(result.error));
+    }
+    return result;
+}
+
+/**
+ * The group an interrupted retrofit left behind (Plan.md 112), or null: exactly one group named „Infoscreen-People" that
+ * the setup did not record, active – and `deviceGrants` (what the roles of the device group hold) give it 1104. Only that
+ * mark tells it from a foreign group of the same name, which stays foreign and untouched.
+ */
+export function orphanPeopleGroup(
+    groups: readonly { id: number; name: string; statusId: number | null }[],
+    createdGroupIds: readonly number[],
+    deviceGrants: readonly Grant[][],
+): number | null {
+    const candidates = groups.filter((g) => g.name === GROUP_NAMES.people && !createdGroupIds.includes(g.id));
+    const only = candidates.length === 1 ? candidates[0]! : undefined;
+    if (!only || only.statusId !== 1) return null;
+    return deviceGrants.some((grants) => has(grants, AUTH.groupWithMembersView, only.id)) ? only.id : null;
 }
 
 /**

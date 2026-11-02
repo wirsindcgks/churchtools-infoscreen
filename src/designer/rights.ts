@@ -135,6 +135,17 @@ export function mayConfigureScreens(module: Partial<ModulePermissions> | null | 
     return covers(module['create custom data']) && covers(module['edit custom data']) && covers(module['delete custom data']);
 }
 
+/**
+ * Whether this person may change the settings of the module: "Daten in Kategorie bearbeiten" on the category `settings`
+ * (Plan.md 112). Saving them is the last step of every action of the setup page; without the right it ends in a 401,
+ * after groups and rights are already made.
+ */
+export function maySaveSettings(module: Partial<ModulePermissions> | null | undefined, settingsCategoryId: number | undefined): boolean {
+    if (!module || settingsCategoryId === undefined) return false;
+    const ids = module['edit custom data'];
+    return !!ids && (ids.includes(settingsCategoryId) || ids.includes(-1));
+}
+
 export interface DesignerRights {
     missing: MissingRight[];
     /** See {@link mayConfigureScreens}; null in demo mode, which has no module rights to ask. */

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mayConfigureScreens, missingDesignerRights, type ModulePermissions, type RightsInput } from './rights';
+import { mayConfigureScreens, maySaveSettings, missingDesignerRights, type ModulePermissions, type RightsInput } from './rights';
 
 const categories = { screens: 11, playlists: 12, slides: 13, media: 14, settings: 15 };
 const all = [11, 12, 13, 14, 15];
@@ -109,3 +109,14 @@ describe('mayConfigureScreens', () => {
     });
 });
 
+
+describe('maySaveSettings (Plan.md 112)', () => {
+    it('needs "Daten in Kategorie bearbeiten" on the settings category – by id or for all', () => {
+        expect(maySaveSettings({ 'edit custom data': [13] }, 13)).toBe(true);
+        expect(maySaveSettings({ 'edit custom data': [-1] }, 13)).toBe(true);
+        expect(maySaveSettings({ 'edit custom data': [11, 12] }, 13)).toBe(false);
+        expect(maySaveSettings({ 'create custom data': [13] }, 13)).toBe(false);
+        expect(maySaveSettings(null, 13)).toBe(false);
+        expect(maySaveSettings({ 'edit custom data': [13] }, undefined)).toBe(false);
+    });
+});

@@ -1566,7 +1566,17 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             addDevices: 'Die Konten der Gerätegruppe werden in die neue Gruppe aufgenommen, ihre Liste kommt in die Einstellungen.',
             untouched: 'Bestehende Rollen und Rechte sowie fremde Gruppen bleiben unberührt. „Automatische Einrichtung rückgängig machen“ löscht die Gruppe wieder.',
             confirm: 'Nachrüsten',
+            noSettingsRight:
+                'Dafür fehlt dir das Modulrecht „Daten in Kategorie bearbeiten“ auf die Kategorie „Einstellungen“ (Einrichtung, Schritt 2). Ohne es ließe sich nicht speichern, was angelegt wurde.',
+            finishHint: 'Eine Gruppe „Infoscreen-People“ ist schon da, aber nicht eingetragen – ein Nachrüsten wurde offenbar abgebrochen. Du kannst es abschließen.',
+            finishButton: 'Einrichtung abschließen',
+            finishTitle: 'Einrichtung abschließen',
+            finishAdopt: (name: string) => `Die vorhandene Gruppe „${name}" wird übernommen und in den Einstellungen eingetragen.`,
+            finishMissing: 'Was fehlt, wird nachgetragen; was schon da ist, bleibt wie es ist.',
+            finishConfirm: 'Abschließen',
         },
+        settingsNotSaved401:
+            'Die Einstellungen ließen sich nicht speichern: Dir fehlt das Modulrecht „Daten in Kategorie bearbeiten“ auf die Kategorie „Einstellungen“ (Einrichtung, Schritt 2). Was schon angelegt wurde, bleibt bestehen.',
         removeNotAllowed403:
             'Rückgängig machen nicht möglich: Du darfst die Einstellungen des Designers nicht ändern. Danach wüsste der Designer nicht, dass die Gruppen gelöscht sind. Gib deiner Administratoren-Gruppe die Modulrechte (Einrichtung, Schritt 2) und versuche es erneut.',
         removeNotSaved: (reason: string) => `Rückgängig machen nicht möglich: Die Einstellungen ließen sich nicht speichern (${reason}).`,
@@ -1726,7 +1736,8 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         provision: {
             missingAuth: (auth: string) => `Das Recht „${auth}" fehlt im Rechtekatalog – ist die Extension installiert?`,
             groupCreated: (name: string) => `Gruppe „${name}" angelegt.`,
-            rightsGranted: (rights: number, roles: number, name: string) => `${rights} Rechte an ${roles} Rollen von „${name}" vergeben.`,
+            rightsGranted: (rights: number, roles: number, name: string) =>
+                `${rights} ${rights === 1 ? 'Recht' : 'Rechte'} an ${roles} ${roles === 1 ? 'Rolle' : 'Rollen'} von „${name}" vergeben.`,
             aborted: (reason: string) => `Abgebrochen: ${reason}`,
             roomFallback: (label: string, id: number) => `${label}: Raum ${id}`,
             calendarFallback: (label: string, id: number) => `${label}: Kalender ${id}`,

@@ -10,6 +10,8 @@ import {
     applyRefresh,
     planRefresh,
     provisionPeople,
+    completePeople,
+    orphanPeopleGroup,
     readRefresh,
     refreshIsEmpty,
     REMOVE_SETUP_NEXT_STEPS_LOG_LINE,
@@ -716,5 +718,63 @@ describe('the people group: device list, refresh and retrofit (Plan.md 112)', ()
         const { api } = fakeApi({ 12: [5, 6], 40: [5] });
         const state = await readRefresh(plan, { device: 12, people: 40 }, { calendarIds: [], roomIds: [] }, {}, api);
         expect((await applyRefresh(plan, state, api)).deviceIds).toEqual([5, 6]);
+    });
+});
+
+describe('log lines and finishing a retrofit (Plan.md 112)', () => {
+    const withPeople = { ...input, peopleGroupId: 'new' as const };
+    function fakeApi(members: Record<number, number[]> = {}) {
+        const calls: string[] = [];
+        let nextGroup = 40;
+        const api: ProvisionApi = {
+            createGroup: async () => nextGroup++,
+            roleIds: async (groupId) => [groupId * 10, groupId * 10 + 1],
+            grant: async (roleId, authId, dataId) => {
+                calls.push(`grant ${roleId} ${authId}${dataId ? ` [${dataId.join(',')}]` : ''}`);
+            },
+            grants: async () => [],
+            revoke: async () => {},
+            ...peopleStubs(calls, members),
+        };
+        return { api, calls };
+    }
+
+    it('counts what was granted and says it in the right number: "1 Recht an 1 Rolle", "1 Recht an 2 Rollen"', async () => {
+        const { api } = fakeApi();
+        const result = await provisionPeople(planProvisioning(withPeople), 4, 12, api);
+        expect(result.log).toContain('1 Recht an 1 Rolle von „Infoscreen-People" vergeben.');
+        expect(result.log).toContain('1 Recht an 2 Rollen von „Infoscreen-Devices" vergeben.');
+        expect(result.log.some((line) => line.startsWith('0 Rechte'))).toBe(false);
+        const all = await provision(planProvisioning(withPeople), 4, fakeApi().api);
+        expect(all.log).toContain('1 Recht an 1 Rolle von „Infoscreen-People" vergeben.');
+        expect(all.log.some((line) => line.startsWith('0 Rechte'))).toBe(false);
+    });
+
+    it('finishes a stopped retrofit: grants again, puts in only the devices that are not in, creates no group', async () => {
+        const { api, calls } = fakeApi({ 12: [5, 6], 40: [5] });
+        const result = await completePeople(planProvisioning(withPeople), 40, 12, api);
+        expect(result.error).toBeNull();
+        expect(result.groupIds).toEqual({ people: 40 });
+        expect(result.deviceIds).toEqual([5, 6]);
+        expect(calls).toEqual(['grant 401 10126 [1]', 'member 40 6 940', 'grant 120 1104 [40]', 'grant 121 1104 [40]']);
+        expect(result.log).toContain('1 Gerät in „Infoscreen-People" aufgenommen.');
+    });
+});
+
+describe('orphanPeopleGroup (Plan.md 112)', () => {
+    const group = (id: number, name = 'Infoscreen-People', statusId: number | null = 1) => ({ id, name, statusId });
+    const sees = (id: number) => [[held(1104, id)], [held(1104, id)]];
+
+    it('recognises the one active group the device group can see – and nothing else', () => {
+        expect(orphanPeopleGroup([group(40), group(7, 'Hauskreis')], [12], sees(40))).toBe(40);
+    });
+
+    it('leaves a foreign group alone: not seen by the device group, not active, not alone, or already recorded', () => {
+        expect(orphanPeopleGroup([group(40)], [12], [[held(1104, 99)], []])).toBeNull();
+        expect(orphanPeopleGroup([group(40)], [12], [[held(403, 40)]])).toBeNull();
+        expect(orphanPeopleGroup([group(40, 'Infoscreen-People', 2)], [12], sees(40))).toBeNull();
+        expect(orphanPeopleGroup([group(40), group(41)], [12], sees(40))).toBeNull();
+        expect(orphanPeopleGroup([group(40)], [12, 40], sees(40))).toBeNull();
+        expect(orphanPeopleGroup([], [12], sees(40))).toBeNull();
     });
 });
