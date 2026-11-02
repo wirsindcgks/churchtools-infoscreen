@@ -33,6 +33,9 @@ export const AUTH = {
 } as const;
 
 /** The two rights that open a person's e-mail address to whoever holds them – the device group is checked for them. */
+/** The posts rights a group of the type „Merkmal" gives its roles: `+create post group intern` and `+create post group visible` (G61). */
+export const POST_AUTH_IDS: readonly number[] = [10130, 10131];
+
 export const PERSON_DATA_AUTH_IDS: readonly number[] = [AUTH.personDataView, AUTH.groupMembersViewIntern];
 
 /** `dataId` of a right granted for all data, e.g. all calendars – seen on person rights (G30). */
@@ -207,6 +210,8 @@ export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
 }
 
 export interface OtherGroup {
+    /** One of the assistant's groups: whether posts are switched off in it (Plan.md 112). Missing: not its group – its posts rights count. */
+    postsDisabled?: boolean;
     /** The group's id – to tell whether the device is a member of the people group. */
     id?: number;
     name: string;
@@ -252,6 +257,8 @@ export interface DeviceGroupInput {
     peopleGroup?: { id: number; name: string };
     /** A block "Personen" is in use: a device that cannot read the group makes the block empty – a failure, not a hint. */
     peopleInUse?: boolean;
+    /** The device group is the assistant's own: whether posts are switched off in it. Missing: not its group. */
+    devicePostsDisabled?: boolean;
     moduleRights?: ModuleRights;
     /**
      * The rights the assistant plans for a device, by id (Plan.md 58 E). With them the check names what a
@@ -376,16 +383,19 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                 });
                 continue;
             }
-            const rights = input.plannedAuthIds
+            const held = input.plannedAuthIds
                 ? excessRights(group.grants, input.plannedAuthIds)
                 : [...new Set(group.grants.map((g) => g.authId))].sort((a, b) => a - b);
+            // The posts rights of the assistant's own groups do nothing while posts are off there; while they are on, "Rechte aktualisieren" fixes it.
+            const rights = group.postsDisabled ? held.filter((id) => !POST_AUTH_IDS.includes(id)) : held;
             if (!rights.length) continue;
+            const postsOn = group.postsDisabled === false && rights.some((id) => POST_AUTH_IDS.includes(id));
             const names = rights.slice(0, EXCESS_NAMED).map((id) => input.authName?.(id) ?? t.setup.checks.excessFallback(id));
             checks.push({
                 level: 'warn',
                 category: 'rights',
                 text: t.setup.checks.otherGroupRights(m.label, `„${group.name}"`, rights.length, names.join(', '), rights.length - names.length),
-                detail: t.setup.checks.otherGroupRightsDetail,
+                detail: postsOn ? `${t.setup.checks.otherGroupRightsDetail} ${t.setup.checks.postsOnDetail}` : t.setup.checks.otherGroupRightsDetail,
             });
         }
     }
@@ -563,15 +573,18 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
 
     if (input.plannedAuthIds) {
         for (const member of input.members) {
-            const excess = excessRights(member.grants, input.plannedAuthIds);
+            // The posts rights come from the device group's own role (they are group-internal, no status or person holds them).
+            const held = excessRights(member.grants, input.plannedAuthIds);
+            const excess = input.devicePostsDisabled ? held.filter((id) => !POST_AUTH_IDS.includes(id)) : held;
             if (!excess.length) continue;
+            const postsOn = input.devicePostsDisabled === false && excess.some((id) => POST_AUTH_IDS.includes(id));
             const names = excess.slice(0, EXCESS_NAMED).map((id) => input.authName?.(id) ?? t.setup.checks.excessFallback(id));
             const more = excess.length - names.length;
             checks.push({
                 level: 'warn',
                 category: 'rights',
                 text: t.setup.checks.excess(member.label, excess.length, names.join(', '), more),
-                detail: t.setup.checks.excessDetail,
+                detail: postsOn ? `${t.setup.checks.excessDetail} ${t.setup.checks.postsOnDetail}` : t.setup.checks.excessDetail,
             });
         }
     }

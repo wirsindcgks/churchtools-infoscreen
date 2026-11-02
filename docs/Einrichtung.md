@@ -147,6 +147,11 @@ auf einer Freizeit. Er liest **nur** die Gruppe **„Infoscreen-People"**:
 - **E-Mail-Adressen und andere Kontaktdaten zeigt der Baustein nicht.** Gib dem Gerät **nie** „Personendaten sehen“ oder
   „Gruppenmitglieder sehen“: Beide geben schon in der ersten Sicherheitsstufe die E-Mail-Adresse frei, und wer die
   Adresse eines Fernsehers kennt, liest sie mit. Die Prüfung warnt davor.
+- **Beiträge sind in „Infoscreen-Devices“ und „Infoscreen-People“ abgeschaltet.** Der Gruppentyp „Merkmal“ gäbe den
+  Konten dort sonst das Recht, Beiträge zu schreiben, und niemand liest sie dort. Der Assistent schaltet sie bei der
+  Einrichtung ab, auch beim Nachrüsten; bei einer älteren Einrichtung holt „Rechte aktualisieren“ das nach (die Vorschau
+  nennt es). Nur Gruppen, die der Assistent angelegt hat, fasst er an – eigene Gruppen nie. Die Lebenszeichen und der
+  Baustein „Beiträge“ brauchen diese Gruppen nicht.
 - **Automatische Gruppen?** Eine Gruppe mit der Aktion „Aus Gruppe entfernen“ wirft von Hand aufgenommene Mitglieder beim
   nächsten Lauf wieder hinaus – auch das Gerät. Nimm „Infoscreen-Devices“ als Oder-Bedingung in den Filter auf, dann
   wird das Gerät von selbst Mitglied. Stück 1 des Bausteins arbeitet mit der Gruppe „Infoscreen-People“; eigene Gruppen folgen.

@@ -111,6 +111,11 @@ Das zweite Recht ist **gruppenintern** und gilt für alle, die diese Rolle haben
 Mitgliedsfelder bis Stufe 1. **Nie** vergeben werden „Personendaten sehen" (`125`) und „Gruppenmitglieder sehen" (`10101`) –
 beide geben schon in der ersten Stufe die E-Mail-Adresse einer Person frei. Die Prüfung der Gerätegruppe warnt davor.
 
+**Beiträge** sind in „Infoscreen-Devices“ und „Infoscreen-People“ abgeschaltet: Der Gruppentyp „Merkmal“ gibt seinen Rollen
+sonst „Beitrag in Gruppe schreiben“ (`10130`, `10131`, gruppenintern). Mit abgeschalteten Beiträgen lehnt ChurchTools das
+Schreiben ab (`422`), Lesen von Mitgliedern und Feldern bleibt. Die Prüfung der Gerätegruppe warnt vor diesen
+Beitragsrechten nur, solange die Beiträge noch eingeschaltet sind.
+
 ### ChurchTools selbst – nur für Administratoren
 
 | Bereich | Recht | Wofür |

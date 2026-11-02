@@ -20,6 +20,10 @@ zeigen – und für seine Antworten, die den Zuschnitt bestimmt haben.
   Assistent nimmt die vorhandenen Gerätekonten in die Gruppe auf, „Rechte aktualisieren“ holt später hinzugekommene
   nach. Die Konten der Geräte erscheinen nicht als Karten. Die Prüfung der Gerätegruppe kennt diese Rechte und warnt vor
   „Personendaten sehen“ und „Gruppenmitglieder sehen“, die E-Mail-Adressen freigeben würden.
+- **Beiträge sind in den Gruppen der Geräte und der Personen abgeschaltet.** Dort brauchen sie nichts, und der Gruppentyp
+  gäbe den Gerätekonten sonst das Recht, Beiträge zu schreiben. Der Assistent schaltet sie ab (auch beim Nachrüsten),
+  „Rechte aktualisieren“ holt es bei älteren Einrichtungen nach; die Prüfung warnt vor den Beitragsrechten nur noch,
+  solange die Beiträge an sind.
 - **Bestehende Einrichtungen rüsten die Gruppe nach.** Unter Einstellungen → Gruppen und Rechte legt „Gruppe
   „Infoscreen-People“ nachrüsten“ nach einer Vorschau nur diese Gruppe an; bestehende Rollen und Gruppen bleiben
   unberührt (siehe [Einrichtung](docs/Einrichtung.md#personen-auf-den-bildschirmen)). „Rechte aktualisieren“ greift

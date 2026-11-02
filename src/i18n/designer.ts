@@ -1551,6 +1551,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         assistantRun: {
             question: (typeName: string | undefined, designer: string, device: string, people: string) =>
                 `Drei Gruppen vom Typ „${typeName}" anlegen – „${designer}", „${device}" und „${people}" – und ihren Rollen die Rechte geben?\n\n` +
+                'In „Infoscreen-Devices“ und „Infoscreen-People“ werden die Beiträge abgeschaltet – dort liest sie niemand. ' +
                 'Bestehende Gruppen und Rollen bleiben unberührt. „Automatische Einrichtung rückgängig machen" nimmt es zurück.',
             wikiCreated: (name: string) => `Wiki-Bereich „${name}" angelegt.`,
             aborted: (reason: string) => `Abgebrochen: ${reason}`,
@@ -1563,6 +1564,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             createGroup: (name: string, type: string | undefined) => `Die Gruppe „${name}" wird angelegt${type ? ` (Typ „${type}")` : ''}.`,
             grantDefault: (right: string, group: string) => `Die Standardrolle von „${group}" bekommt: ${right}.`,
             grantDevice: (right: string, group: string) => `Die Rollen von „${group}" bekommen: ${right}.`,
+            postsOff: (name: string) => `Beiträge in „${name}" werden abgeschaltet – dort braucht sie niemand.`,
             addDevices: 'Die Konten der Gerätegruppe werden in die neue Gruppe aufgenommen, ihre Liste kommt in die Einstellungen.',
             untouched: 'Bestehende Rollen und Rechte sowie fremde Gruppen bleiben unberührt. „Automatische Einrichtung rückgängig machen“ löscht die Gruppe wieder.',
             confirm: 'Nachrüsten',
@@ -1681,6 +1683,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             title: 'Rechte aktualisieren',
             adds: 'Kommt dazu',
             removes: 'Fällt weg',
+            postsToSwitchOff: (name: string) => `Beiträge in „${name}" werden abgeschaltet`,
             membersToAdd: (n: number) => `${n} ${n === 1 ? 'Gerät wird' : 'Geräte werden'} in die Gruppe aufgenommen`,
             deviceListStale: 'Die Liste der Gerätekonten in den Einstellungen wird aktualisiert (damit sie nicht als Karten erscheinen)',
             delay: 'Ein entzogenes Recht wirkt bei ChurchTools noch bis zu einer Dreiviertelstunde nach.',
@@ -1765,6 +1768,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 viewPeopleGroup: 'Gruppe „Infoscreen-People" inkl. ihrer Gruppenmitglieder sehen',
                 viewMemberFields: 'Gruppenmitgliedsfelder sehen (bis Sicherheitsstufe 1)',
             },
+            postsOff: (name: string) => `Beiträge in „${name}" abgeschaltet.`,
             devicesAdded: (n: number, group: string) => `${n} ${n === 1 ? 'Gerät' : 'Geräte'} in „${group}" aufgenommen.`,
             named: (label: string, name: string) => `${label}: ${name}`,
         },
@@ -1864,6 +1868,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             excess: (label: string, count: number, names: string, more: number) =>
                 `${label} hat ${count === 1 ? 'ein Recht' : `${count} Rechte`}, ${count === 1 ? 'das' : 'die'} ein Gerät nicht braucht: ${names}${more > 0 ? ` und ${more} weitere` : ''}.`,
             excessFallback: (id: number) => `Recht ${id}`,
+            postsOnDetail: 'Die Beitragsrechte stammen von den eingeschalteten Beiträgen der Gruppe: „Rechte aktualisieren“ schaltet sie ab, dann entfallen sie.',
             // The people group (Plan.md 112, G70, G71).
             peopleVisible: (name: string) => `Die Geräte sehen die Gruppe „${name}" mit ihren Mitgliedern.`,
             peopleBlind: (labels: string, name: string, inUse: boolean) =>

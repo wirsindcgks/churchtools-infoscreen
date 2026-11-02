@@ -616,6 +616,7 @@ async function addPeopleGroup(): Promise<void> {
         t.setup.addPeople.createGroup(GROUP_NAMES.people, typeName(typeId)),
         ...(people.defaultRoleGrants ?? []).map((g) => t.setup.addPeople.grantDefault(g.label, GROUP_NAMES.people)),
         ...seen.map((g) => t.setup.addPeople.grantDevice(g.label, groupName('device'))),
+        t.setup.addPeople.postsOff(GROUP_NAMES.people),
         t.setup.addPeople.addDevices,
     ];
     const message = `${lines.join('\n')}\n\n${t.setup.addPeople.untouched}`;
@@ -668,7 +669,7 @@ async function finishPeopleSetup(): Promise<void> {
         return;
     }
     const name = groups.value.find((g) => g.id === groupId)?.name ?? GROUP_NAMES.people;
-    const message = `${t.setup.addPeople.finishAdopt(name)}\n${t.setup.addPeople.finishMissing}\n\n${t.setup.addPeople.untouched}`;
+    const message = `${t.setup.addPeople.finishAdopt(name)}\n${t.setup.addPeople.postsOff(name)}\n${t.setup.addPeople.finishMissing}\n\n${t.setup.addPeople.untouched}`;
     if (!(await confirm({ title: t.setup.addPeople.finishTitle, message, confirmLabel: t.setup.addPeople.finishConfirm }))) return;
     assistant.running = true;
     assistant.error = null;
@@ -750,6 +751,8 @@ async function confirmRefresh(): Promise<void> {
             peopleDeviceIds.value = result.deviceIds;
             await persistSettings().catch((e: unknown) => assistant.log.push(t.setup.assistantRun.aborted(explain(e))));
         }
+        // Posts may have been switched off: the check reads them from the list of groups.
+        groups.value = await loadGroups();
         await Promise.all([check('designer'), check('device')]);
     } finally {
         assistant.running = false;
@@ -921,6 +924,16 @@ function dataName(authId: number, dataId: number): string | undefined {
     return key && CATEGORIES[key].name;
 }
 
+/**
+ * Whether posts are switched off in a group the assistant made and keeps them off in (the devices and the people, Plan.md 112);
+ * `undefined` for any other group – its posts rights count – and where the list did not say.
+ */
+function postsDisabledIn(groupId: number): boolean | undefined {
+    if (!createdGroupIds.value.includes(groupId) || (groupId !== peopleGroupId.value && groupId !== selected.device)) return undefined;
+    const enabled = groups.value.find((g) => g.id === groupId)?.postsEnabled;
+    return typeof enabled === 'boolean' ? !enabled : undefined;
+}
+
 async function check(side: Side): Promise<void> {
     const groupId = selected[side];
     checks[side] = null;
@@ -956,6 +969,7 @@ async function check(side: Side): Promise<void> {
                             : [...names].map(([id, name]) => ({
                                   id,
                                   name,
+                                  postsDisabled: postsDisabledIn(id),
                                   grants: origins
                                       ? origins.filter((o) => o.groupId === id).flatMap((o) => (o.dataIds ?? [null]).map((dataId) => ({ authId: o.authId, dataId })))
                                       : null,
@@ -978,6 +992,7 @@ async function check(side: Side): Promise<void> {
                 videoInUse,
                 peopleGroup: peopleGroupId.value === null ? undefined : { id: peopleGroupId.value, name: groups.value.find((g) => g.id === peopleGroupId.value)?.name ?? GROUP_NAMES.people },
                 peopleInUse,
+                devicePostsDisabled: postsDisabledIn(groupId),
                 wikiCategoryId,
                 moduleRights: moduleRights('device'),
                 // Only with the catalogue: without the plan nobody knows what a device needs (Plan.md 58 E). The member fields

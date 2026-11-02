@@ -82,6 +82,8 @@ export interface GroupSpec {
     defaultRoleGrants?: GrantSpec[];
     /** The devices of this group become members of the new group, in its default role, so that they read the member fields. */
     membersFrom?: GroupKey;
+    /** Posts are switched off in this group (`postsEnabled` false at the group): nobody reads them there, and the type „Merkmal" would give the device the right to write them. */
+    postsOff?: boolean;
 }
 
 export interface PlanInput {
@@ -228,7 +230,7 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
 
     const specs: GroupSpec[] = [
         { key: 'designer', name: GROUP_NAMES.designer, grants: designer, forbidden: writing },
-        { key: 'device', name: GROUP_NAMES.device, grants: device, forbidden: writing },
+        { key: 'device', name: GROUP_NAMES.device, grants: device, forbidden: writing, postsOff: true },
     ];
     if (people !== undefined) {
         specs.push({
@@ -239,6 +241,7 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
             // Within the group the right is for security level 1 (`dataId` [1]), not for a group.
             defaultRoleGrants: [{ authId: AUTH.memberFieldsView, dataId: [1], label: t.setup.provision.grants.viewMemberFields }],
             membersFrom: 'device',
+            postsOff: true,
         });
     }
     return specs;
@@ -257,6 +260,9 @@ export interface ProvisionApi {
     /** The people in a group, as person ids. */
     memberIds(groupId: number): Promise<number[]>;
     addMember(groupId: number, personId: number, groupTypeRoleId: number): Promise<void>;
+    /** Whether posts are on in a group (`settings.postsEnabled`). */
+    postsEnabled(groupId: number): Promise<boolean>;
+    setPostsEnabled(groupId: number, enabled: boolean): Promise<void>;
 }
 
 export interface ProvisionResult {
@@ -288,6 +294,10 @@ export async function provision(
             const groupId = await api.createGroup(spec.name, groupTypeId);
             result.groupIds[spec.key] = groupId;
             result.log.push(t.setup.provision.groupCreated(spec.name));
+            if (spec.postsOff) {
+                await api.setPostsEnabled(groupId, false);
+                result.log.push(t.setup.provision.postsOff(spec.name));
+            }
             const roles = await api.roleIds(groupId);
             for (const roleId of roles) {
                 for (const g of spec.grants) {
@@ -354,6 +364,10 @@ export async function completePeople(plan: GroupSpec[], peopleGroupId: number, d
     if (!people) return { ...result, groupIds: {}, error: t.setup.plan.none };
     const seen = (plan.find((spec) => spec.key === 'device')?.grants ?? []).filter((g) => g.dataGroup === 'people');
     try {
+        if (people.postsOff && (await api.postsEnabled(peopleGroupId))) {
+            await api.setPostsEnabled(peopleGroupId, false);
+            result.log.push(t.setup.provision.postsOff(people.name));
+        }
         const { added, deviceIds } = await grantDefaultRole(people, peopleGroupId, api, deviceGroupId);
         result.log.push(t.setup.provision.rightsGranted(people.defaultRoleGrants?.length ?? 0, 1, people.name));
         if (added) result.log.push(t.setup.provision.devicesAdded(added, people.name));
@@ -600,6 +614,8 @@ export interface RefreshState {
     roles: Partial<Record<GroupKey, { roleId: number; grants: Grant[] }[]>>;
     /** The groups they were read from – the devices of one become members of another (Plan.md 112). */
     groupIds: Partial<Record<GroupKey, number>>;
+    /** The groups of the assistant in which posts are still on and are switched off by the refresh. */
+    postsOn: GroupKey[];
     /** The device accounts as they are now, for `settings.peopleDeviceIds`; missing where the plan has no people group. */
     deviceIds?: number[];
     /** The default role of each group that has rights for it alone. */
@@ -637,6 +653,15 @@ export async function readRefresh(
     }
     const held = Object.fromEntries(Object.entries(roles).map(([key, list]) => [key, list.map((r) => r.grants)]));
     const groups = planRefresh(plan, held, known, names, heldDefault).filter((g) => roles[g.key] !== undefined);
+    // Posts are off in the assistant's groups for devices and people (Plan.md 112): groups from before still have them on.
+    const postsOn: GroupKey[] = [];
+    for (const spec of plan) {
+        const groupId = groupIds[spec.key];
+        const change = groups.find((g) => g.key === spec.key);
+        if (!spec.postsOff || groupId === undefined || !change || !(await api.postsEnabled(groupId))) continue;
+        postsOn.push(spec.key);
+        change.extras = [...(change.extras ?? []), t.setup.refresh.postsToSwitchOff(spec.name)];
+    }
     // The devices of the device group belong in the people group and in the list the player leaves out (Plan.md 112).
     let deviceIds: number[] | undefined;
     for (const spec of plan) {
@@ -652,7 +677,7 @@ export async function readRefresh(
         if (!sameIds(there, storedDeviceIds)) extras.push(t.setup.refresh.deviceListStale);
         if (extras.length) change.extras = extras;
     }
-    return { groups, roles, groupIds: { ...groupIds }, defaultRoleIds, deviceIds };
+    return { groups, roles, groupIds: { ...groupIds }, defaultRoleIds, deviceIds, postsOn };
 }
 
 /**
@@ -676,6 +701,11 @@ export async function applyRefresh(plan: GroupSpec[], state: RefreshState, api: 
                 }
             }
             result.log.push(refreshLogLine(change));
+            const groupOfSpec = state.groupIds[spec.key];
+            if (state.postsOn.includes(spec.key) && groupOfSpec !== undefined) {
+                await api.setPostsEnabled(groupOfSpec, false);
+                result.log.push(t.setup.provision.postsOff(spec.name));
+            }
             const role = state.defaultRoleIds[spec.key];
             if (role) {
                 for (const g of spec.defaultRoleGrants ?? []) await api.grant(role.roleId, g.authId, g.dataId);

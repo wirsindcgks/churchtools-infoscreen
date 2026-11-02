@@ -37,8 +37,17 @@ const catalog = catalogFrom({
     ),
 });
 /** The calls the people group needs (Plan.md 112): a default role per group, the device group's members, adding one. */
-function peopleStubs(calls: string[], members: Record<number, number[]> = {}): Pick<ProvisionApi, 'defaultRole' | 'memberIds' | 'addMember'> {
+function peopleStubs(
+    calls: string[],
+    members: Record<number, number[]> = {},
+    /** Whether posts are on, by group; a group not named has them off already. */
+    posts: Record<number, boolean> = {},
+): Pick<ProvisionApi, 'defaultRole' | 'memberIds' | 'addMember' | 'postsEnabled' | 'setPostsEnabled'> {
     return {
+        postsEnabled: async (groupId) => posts[groupId] ?? false,
+        setPostsEnabled: async (groupId, enabled) => {
+            posts[groupId] = enabled;
+        },
         defaultRole: async (groupId) => ({ roleId: groupId * 10 + 1, groupTypeRoleId: 900 + groupId }),
         memberIds: async (groupId) => members[groupId] ?? [],
         addMember: async (groupId, personId, groupTypeRoleId) => {
@@ -776,5 +785,76 @@ describe('orphanPeopleGroup (Plan.md 112)', () => {
         expect(orphanPeopleGroup([group(40), group(41)], [12], sees(40))).toBeNull();
         expect(orphanPeopleGroup([group(40)], [12, 40], sees(40))).toBeNull();
         expect(orphanPeopleGroup([], [12], sees(40))).toBeNull();
+    });
+});
+
+describe('posts off in the groups of the devices and the people (Plan.md 112, G71)', () => {
+    const withPeople = { ...input, peopleGroupId: 'new' as const };
+    const keys = (plan: ReturnType<typeof planProvisioning>) => plan.filter((g) => g.postsOff).map((g) => g.key);
+
+    function fakeApi(posts: Record<number, boolean>, members: Record<number, number[]> = {}) {
+        const calls: string[] = [];
+        let nextGroup = 40;
+        const api: ProvisionApi = {
+            createGroup: async () => nextGroup++,
+            roleIds: async (groupId) => [groupId * 10, groupId * 10 + 1],
+            grant: async (roleId, authId) => {
+                calls.push(`grant ${roleId} ${authId}`);
+            },
+            grants: async () => [],
+            revoke: async () => {},
+            ...peopleStubs(calls, members, posts),
+        };
+        return { api, calls };
+    }
+
+    it('plans it for the devices and the people, never for the designers', () => {
+        expect(keys(planProvisioning(withPeople))).toEqual(['device', 'people']);
+        expect(keys(planProvisioning(input))).toEqual(['device']);
+    });
+
+    it('switches posts off in each new group and says so in the log', async () => {
+        const posts: Record<number, boolean> = { 40: true, 41: true, 42: true };
+        const { api } = fakeApi(posts);
+        const result = await provision(planProvisioning(withPeople), 4, api);
+        // The people group is created first (40), then the designers (41) and the devices (42).
+        expect(posts).toEqual({ 40: false, 41: true, 42: false });
+        expect(result.log).toContain('Beiträge in „Infoscreen-People" abgeschaltet.');
+        expect(result.log).toContain('Beiträge in „Infoscreen-Devices" abgeschaltet.');
+    });
+
+    it('switches them off when a retrofit is finished, but only if they are still on', async () => {
+        const posts: Record<number, boolean> = { 40: true };
+        const { api } = fakeApi(posts, { 12: [5] });
+        const result = await completePeople(planProvisioning(withPeople), 40, 12, api);
+        expect(posts[40]).toBe(false);
+        expect(result.log).toContain('Beiträge in „Infoscreen-People" abgeschaltet.');
+        const again = await completePeople(planProvisioning(withPeople), 40, 12, api);
+        expect(again.log.some((line) => line.includes('Beiträge'))).toBe(false);
+    });
+
+    it('lets a refresh switch them off where they are on – as a line of the preview, not as an empty refresh', async () => {
+        const plan = planProvisioning({ ...input, peopleGroupId: 40 });
+        const posts: Record<number, boolean> = { 12: true, 40: false };
+        const { api } = fakeApi(posts, { 12: [5], 40: [5] });
+        api.grants = async () => plan.flatMap((s) => [...s.grants, ...(s.defaultRoleGrants ?? [])]).flatMap((g) => (g.dataId ?? [null]).map((d) => held(g.authId, d)));
+        const state = await readRefresh(plan, { device: 12, people: 40 }, { calendarIds: [], roomIds: [] }, {}, api, [5]);
+        expect(state.groups.find((g) => g.key === 'device')!.extras).toEqual(['Beiträge in „Infoscreen-Devices" werden abgeschaltet']);
+        expect(state.groups.find((g) => g.key === 'people')!.extras).toBeUndefined();
+        expect(refreshIsEmpty(state.groups)).toBe(false);
+        await applyRefresh(plan, state, api);
+        expect(posts).toEqual({ 12: false, 40: false });
+        const after = await readRefresh(plan, { device: 12, people: 40 }, { calendarIds: [], roomIds: [] }, {}, api, [5]);
+        expect(refreshIsEmpty(after.groups)).toBe(true);
+    });
+
+    it('never touches a group the administrator chose: a refresh reads only the groups of the assistant', async () => {
+        const plan = planProvisioning({ ...input, peopleGroupId: 40 });
+        const posts: Record<number, boolean> = { 99: true };
+        const { api } = fakeApi(posts);
+        const state = await readRefresh(plan, { designer: 7 }, { calendarIds: [], roomIds: [] }, {}, api);
+        await applyRefresh(plan, state, api);
+        expect(posts).toEqual({ 99: true });
+        expect(state.postsOn).toEqual([]);
     });
 });
