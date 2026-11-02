@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils';
 import { defineComponent, h, reactive } from 'vue';
 import { describe, expect, it } from 'vitest';
 import { normalizeAppointments } from '../appointments/normalize';
+import type { PeopleGroup } from '../groups/members';
 import type { Group } from '../groups/normalize';
 import { readSlide } from '../model/read';
 import { makeSlide, textBlock } from '../model/testing';
@@ -872,5 +873,77 @@ describe('the social media block (Plan.md 80)', () => {
             expect(view.find('.placeholder').exists()).toBe(true);
             expect(view.find('[data-testid="social-row"]').exists()).toBe(false);
         }
+    });
+});
+
+describe('rendering people (Plan.md 112)', () => {
+    const peopleBlock = (overrides: Partial<Extract<Block, { type: 'people' }>> = {}): Block => ({
+        id: 'p1',
+        type: 'people',
+        x: 0,
+        y: 0,
+        width: 1600,
+        height: 800,
+        roleIds: [],
+        fieldKeys: ['Funktion'],
+        sort: 'last-name',
+        showImage: true,
+        columns: 3,
+        rows: 2,
+        style,
+        ...overrides,
+    });
+    const person = (first: string, last: string, extra: Partial<PeopleGroup['people'][number]> = {}) => ({
+        firstName: first,
+        lastName: last,
+        name: `${first} ${last}`,
+        imageUrl: null,
+        roleId: 5,
+        fields: { Funktion: 'Pastorin', Büro: '12' },
+        ...extra,
+    });
+    const group = (...people: PeopleGroup['people']): PeopleGroup => ({ groupId: 40, denied: false, people, roles: [{ id: 5, name: 'Teilnehmer' }], fields: [] });
+
+    it('shows a card per person with the name and the chosen fields only', () => {
+        const wrapper = render(makeSlide({ blocks: [peopleBlock()] }), { people: group(person('Anna', 'Berg'), person('Ben', 'Adler')) });
+        expect(wrapper.findAll('[data-testid="person-card"]')).toHaveLength(2);
+        expect(wrapper.findAll('[data-testid="person-name"]').map((n) => n.text())).toEqual(['Ben Adler', 'Anna Berg']);
+        const text = wrapper.get('[data-testid="people-cards"]').text();
+        expect(text).toContain('Pastorin');
+        expect(text).not.toContain('12');
+    });
+
+    it('shows the picture of the card, or the initial; none at all when the picture is switched off', () => {
+        const withPicture = person('Anna', 'Berg', { imageUrl: 'https://x.example/images/abc' });
+        const on = render(makeSlide({ blocks: [peopleBlock()] }), { people: group(withPicture, person('Ben', 'Adler')) });
+        expect(on.findAll('[data-testid="person-image"]')).toHaveLength(1);
+        expect(on.get('[data-testid="person-card"] .card-initial').text()).toBe('B');
+        const off = render(makeSlide({ blocks: [peopleBlock({ showImage: false })] }), { people: group(withPicture) });
+        expect(off.find('[data-testid="person-image"]').exists()).toBe(false);
+        expect(off.find('.card-initial').exists()).toBe(false);
+    });
+
+    it('turns pages of columns × rows cards and reports the page count to the rotation', () => {
+        const many = Array.from({ length: 5 }, (_, i) => person('P', String(i)));
+        const context = { people: group(...many), pages: {} as Record<string, number> };
+        const wrapper = render(makeSlide({ blocks: [peopleBlock({ columns: 2, rows: 1 })] }), context);
+        expect(wrapper.findAll('[data-testid="person-card"]')).toHaveLength(2);
+        expect(wrapper.find('[data-testid="people-pager"]').exists()).toBe(true);
+        expect(context.pages).toEqual({ p1: 3 });
+    });
+
+    it('shows only the chosen roles', () => {
+        const wrapper = render(makeSlide({ blocks: [peopleBlock({ roleIds: [6] })] }), { people: group(person('Anna', 'Berg')) });
+        expect(wrapper.find('[data-testid="person-card"]').exists()).toBe(false);
+        expect(wrapper.get('[data-testid="people-empty"]').text()).toBe('Keine Personen');
+    });
+
+    it('says what is wrong instead of "no people": group not set up, device not allowed to read it', () => {
+        const none = render(makeSlide({ blocks: [peopleBlock()] }), { people: null });
+        expect(none.get('[data-testid="people-empty"]').text()).toContain('noch nicht eingerichtet');
+        const denied = render(makeSlide({ blocks: [peopleBlock()] }), { people: { groupId: 40, denied: true, people: [], roles: [], fields: [] } });
+        expect(denied.get('[data-testid="people-empty"]').text()).toContain('Recht');
+        // Not loaded yet: calm, no claim at all.
+        expect(render(makeSlide({ blocks: [peopleBlock()] })).get('[data-testid="people-empty"]').text()).toBe('');
     });
 });

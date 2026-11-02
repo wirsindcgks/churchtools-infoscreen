@@ -318,6 +318,7 @@ export const t = {
                 countdown: 'Zählt bis zum nächsten Termin herunter',
                 posts: 'Beiträge aus einer Gruppe in ChurchTools',
                 groups: 'Gruppen einer Gruppen-Homepage, etwa Hauskreise',
+                people: 'Personen der Gruppe „Infoscreen-People“ als Karten, etwa Ansprechpartner',
                 slideshow: 'Mehrere Bilder nacheinander',
                 rooms: 'Wer heute welchen Raum belegt',
                 social: 'Instagram, YouTube und Co. mit Symbol und Namen',
@@ -434,6 +435,7 @@ export const t = {
             qr: 'Inhalt eingeben',
             posts: 'Gruppen wählen',
             groups: 'Homepage wählen',
+            people: 'Angaben wählen',
             rooms: 'Räume wählen',
             social: 'Profil hinzufügen',
         },
@@ -694,6 +696,24 @@ export const t = {
         groupsLayoutCard: 'Hervorgehoben',
         groupsPerPage: 'Je Seite',
         secondsPerGroup: 'Dauer je Gruppe',
+        peopleRoles: 'Rollen',
+        allRoles: 'Alle Rollen',
+        roleGone: (id: number) => `Rolle ${id}`,
+        peopleFields: 'Angaben',
+        peopleFieldGone: 'nicht mehr in der Gruppe',
+        addField: '+ Angabe',
+        addFieldLabel: 'Angabe hinzufügen',
+        removeField: 'Angabe entfernen',
+        noFieldsChosen: 'Noch keine Angaben gewählt. Die Karten zeigen nur Name und Bild.',
+        noFieldsThere: 'Die Gruppe hat noch keine Mitgliedsfelder, oder sie sind für das Gerät nicht sichtbar.',
+        peopleSortLastName: 'Nachname',
+        peopleSortFirstName: 'Vorname',
+        peopleSortRole: 'Rolle',
+        showPicture: 'Bild zeigen',
+        columns: 'Spalten',
+        peopleRows: 'Reihen',
+        peopleNoGroup: 'Die Gruppe „Infoscreen-People“ ist noch nicht eingerichtet. Ein Administrator legt sie unter Einstellungen → Gruppen und Rechte an.',
+        peopleDenied: 'Das Gerät darf die Gruppe „Infoscreen-People“ nicht lesen. Ein Administrator gibt ihr mit „Rechte aktualisieren“ die nötigen Rechte.',
         details: 'Angaben',
         roomsOverview: 'Übersicht',
         roomsDoor: 'Türschild',
@@ -867,6 +887,7 @@ export const t = {
         countdown: 'Countdown',
         posts: 'Beiträge',
         groups: 'Gruppen',
+        people: 'Personen',
         slideshow: 'Galerie',
         rooms: 'Raumbelegung',
         social: 'Social Media',
@@ -1476,15 +1497,17 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         groups: {
             title: 'Gruppen und Rechte',
             intro: 'Der Assistent legt die Gruppen für Gestalter und Geräte samt Rechten an; hier prüfst und aktualisierst du sie oder entfernst die Einrichtung.',
-            lead: 'Rechte vergibt ChurchTools an Rollen in Gruppen. Am einfachsten legt der Assistent die beiden Gruppen samt Rechten an. Wer eigene Gruppen nutzt, wählt sie unten aus – die Prüfung sagt, was fehlt, und ändert nichts.',
+            lead: 'Rechte vergibt ChurchTools an Rollen in Gruppen. Am einfachsten legt der Assistent die Gruppen samt Rechten an. Wer eigene Gruppen nutzt, wählt sie unten aus – die Prüfung sagt, was fehlt, und ändert nichts.',
             assistant: 'Automatisch einrichten',
             done: (designer: string, device: string) =>
                 `Die Gruppen des Infoscreens sind eingerichtet. Wer gestalten soll, wird Mitglied in „${designer}", die Konten der Fernseher in „${device}" – mehr ist nicht zu tun.`,
             doneHint:
                 'Zeigt ein Bildschirm einen weiteren Kalender, bringt „Rechte aktualisieren" die Gruppen auf den Stand – und nimmt zurück, was kein Bildschirm mehr braucht. Vorher zeigt eine Vorschau, was sich ändert; geändert werden nur Rechte an Kalendern und Räumen, die du selbst siehst.',
+            donePeople: (people: string) =>
+                `In „${people}“ nimmst du auf, wer im Baustein „Personen“ erscheinen darf; die Mitgliedsfelder legst du dort in ChurchTools an. Die Geräte sind schon Mitglied – sie müssen es bleiben, sonst bleiben die Felder leer.`,
             updateRights: 'Rechte aktualisieren',
             removeSetup: 'Automatische Einrichtung rückgängig machen',
-            fresh: 'Legt zwei leere Gruppen vom gewählten Typ an und gibt ihren Rollen die nötigen Rechte. Danach müssen nur noch Personen in die Gruppen aufgenommen werden.',
+            fresh: 'Legt drei Gruppen vom gewählten Typ an – Gestalter, Geräte und „Infoscreen-People“ für den Baustein „Personen“ – und gibt ihren Rollen die nötigen Rechte. Danach müssen nur noch Personen in die Gruppen aufgenommen werden.',
             foreign: (names: string) =>
                 `Es gibt schon ${names}. Der Assistent übernimmt keine fremden Gruppen – wähle sie unten aus und prüfe ihre Rechte.`,
             whatHappens: 'Was genau passiert',
@@ -1526,8 +1549,8 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         abilityHint: (missing: string[], typeName: string | undefined) =>
             `Dafür fehlt dir in ChurchTools unter „Gruppen": ${missing.join(' und ')}${typeName ? ` (für „${typeName}")` : ''}. Oder alles zusammen: „Gruppen verwalten".`,
         assistantRun: {
-            question: (typeName: string | undefined, designer: string, device: string) =>
-                `Zwei Gruppen vom Typ „${typeName}" anlegen – „${designer}" und „${device}" – und ihren Rollen die Rechte geben?\n\n` +
+            question: (typeName: string | undefined, designer: string, device: string, people: string) =>
+                `Drei Gruppen vom Typ „${typeName}" anlegen – „${designer}", „${device}" und „${people}" – und ihren Rollen die Rechte geben?\n\n` +
                 'Bestehende Gruppen und Rollen bleiben unberührt. „Automatische Einrichtung rückgängig machen" nimmt es zurück.',
             wikiCreated: (name: string) => `Wiki-Bereich „${name}" angelegt.`,
             aborted: (reason: string) => `Abgebrochen: ${reason}`,
@@ -1714,7 +1737,10 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 createAdminData: 'Anlegen von Bildschirmen und Einstellungen',
                 editAdminData: 'Bearbeiten von Bildschirmen und Einstellungen',
                 deleteAdminData: 'Löschen von Bildschirmen und Einstellungen',
+                viewPeopleGroup: 'Gruppe „Infoscreen-People" inkl. ihrer Gruppenmitglieder sehen',
+                viewMemberFields: 'Gruppenmitgliedsfelder sehen (bis Sicherheitsstufe 1)',
             },
+            devicesAdded: (n: number, group: string) => `${n} ${n === 1 ? 'Gerät' : 'Geräte'} in „${group}" aufgenommen.`,
             named: (label: string, name: string) => `${label}: ${name}`,
         },
         deviceLogin: {
@@ -1813,6 +1839,16 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             excess: (label: string, count: number, names: string, more: number) =>
                 `${label} hat ${count === 1 ? 'ein Recht' : `${count} Rechte`}, ${count === 1 ? 'das' : 'die'} ein Gerät nicht braucht: ${names}${more > 0 ? ` und ${more} weitere` : ''}.`,
             excessFallback: (id: number) => `Recht ${id}`,
+            // The people group (Plan.md 112, G70, G71).
+            peopleVisible: (name: string) => `Die Geräte sehen die Gruppe „${name}" mit ihren Mitgliedern.`,
+            peopleBlind: (labels: string, name: string, inUse: boolean) =>
+                `${labels} sieht die Gruppe „${name}" nicht${inUse ? ' – der Baustein „Personen" bleibt leer' : ''}.`,
+            peopleBlindDetail: 'Es fehlt „Gruppe inkl. ihrer Gruppenmitglieder sehen" für diese Gruppe. „Rechte aktualisieren" vergibt es.',
+            peopleNotMember: (labels: string, name: string) => `${labels} ist nicht Mitglied in „${name}" – die Mitgliedsfelder bleiben leer.`,
+            peopleNotMemberDetail: 'Mitgliedsfelder sieht ein Gerät nur als Mitglied der Gruppe. Das Gerätekonto dort aufnehmen oder „Rechte aktualisieren" – das nimmt alle Geräte der Gerätegruppe auf.',
+            personData: (labels: string) => `${labels} darf Personendaten sehen – damit auch E-Mail-Adressen.`,
+            personDataDetail:
+                'Die Rechte „Personendaten sehen" und „Gruppenmitglieder sehen" geben schon in der ersten Sicherheitsstufe die E-Mail-Adresse frei, und wer die Adresse eines Fernsehers kennt, liest sie mit. Für den Baustein „Personen" sind sie nicht nötig – wegnehmen.',
             scope: (label: string, parts: string, more: number) =>
                 `${label} darf mehr als nötig: ${parts}${more > 0 ? ` und ${more} weitere` : ''}.`,
             scopePart: (right: string, data: string) => `${right} auch für ${data}`,
@@ -1830,6 +1866,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 module: 'Infoscreen Designer',
                 media: 'Mediathek und Videos',
                 rights: 'Weitere Rechte',
+                people: 'Personen',
             },
             counted: {
                 fail: ['Fehler', 'Fehler'],

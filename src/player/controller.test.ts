@@ -151,6 +151,7 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
         appointments: vi.fn(async () => []),
         posts: vi.fn(async () => []),
         groupHomepages: vi.fn(async () => []),
+        people: vi.fn(async (groupId: number) => ({ groupId, denied: false, people: [], roles: [], fields: [] })),
         rooms: vi.fn(async () => []),
         reportAlive: vi.fn(async () => {}),
         ...overrides,
@@ -402,6 +403,64 @@ describe('player controller', () => {
         expect(to.getTime() - from.getTime()).toBeGreaterThanOrEqual(47 * 3600_000); // two days
         expect(player.state.rooms).toEqual(sampleRooms);
         expect(deps.saved[0]?.rooms).toEqual(sampleRooms);
+        player.stop();
+    });
+
+    /** A `people` block on the first slide; the settings name the group "Infoscreen-People" or not (Plan.md 112). */
+    const withPeople = (peopleGroupId?: number): LoadedScreen => {
+        const base = loaded();
+        const [first, ...rest] = base.slides;
+        const block: Block = {
+            id: 'personen',
+            type: 'people',
+            x: 0,
+            y: 0,
+            width: 1400,
+            height: 700,
+            roleIds: [],
+            fieldKeys: [],
+            sort: 'last-name',
+            showImage: true,
+            columns: 3,
+            rows: 2,
+            style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' },
+        };
+        return { ...base, peopleGroupId, slides: first ? [{ ...first, blocks: [...first.blocks, block] }, ...rest] : base.slides };
+    };
+
+    it('reads the people group the settings name for the people blocks, and keeps it for offline use (Plan.md 112)', async () => {
+        const people = vi.fn<PlayerData['people']>(async (groupId) => ({ groupId, denied: false, people: [], roles: [], fields: [] }));
+        const deps = fakeDeps();
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withPeople(40), people }), deps);
+        await player.start();
+        expect(people).toHaveBeenCalledWith(40);
+        expect(player.state.people).toMatchObject({ groupId: 40, denied: false });
+        expect(deps.saved[0]?.people).toMatchObject({ groupId: 40 });
+        player.stop();
+    });
+
+    it('knows no group where none is set up (null), and asks for nobody without a people block (undefined)', async () => {
+        const people = vi.fn<PlayerData['people']>();
+        const without = createPlayer('demo', fakeData({ loadScreen: async () => withPeople(), people }), fakeDeps());
+        await without.start();
+        expect(without.state.people).toBeNull();
+        without.stop();
+        const noBlock = createPlayer('demo', fakeData({ people }), fakeDeps());
+        await noBlock.start();
+        expect(noBlock.state.people).toBeUndefined();
+        expect(people).not.toHaveBeenCalled();
+        noBlock.stop();
+    });
+
+    it('keeps the last people when they cannot be read, and lets the data cycle succeed anyway', async () => {
+        const first = { groupId: 40, denied: false, people: [], roles: [], fields: [] };
+        const people = vi.fn<PlayerData['people']>().mockResolvedValueOnce(first).mockRejectedValue(new Error('Network Error'));
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withPeople(40), people }), fakeDeps());
+        await player.start();
+        await vi.advanceTimersByTimeAsync(15 * 60_000);
+        expect(people.mock.calls.length).toBeGreaterThanOrEqual(2);
+        expect(player.state.people).toEqual(first);
+        expect(player.state.phase).toBe('running');
         player.stop();
     });
 

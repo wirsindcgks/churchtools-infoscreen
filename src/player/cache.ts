@@ -4,6 +4,7 @@
  * here are never fatal: without storage the player just has no fallback.
  */
 import type { Appointment } from '../appointments/normalize';
+import type { PeopleGroup } from '../groups/members';
 import type { HomepageGroups } from '../groups/normalize';
 import type { Post } from '../posts/normalize';
 import type { RoomBookings } from '../rooms/normalize';
@@ -20,6 +21,8 @@ export interface CachedState {
     posts?: Post[];
     /** Missing in states saved before groups came (schema 1.14). Leaders' names only, nothing else of a person. */
     groupHomepages?: HomepageGroups[];
+    /** Missing in states saved before people came (schema 1.51). Name, picture, role and the chosen member fields only – see `src/groups/members.ts`. */
+    people?: PeopleGroup | null;
     /** Missing in states saved before rooms came (schema 1.16). Titles of confirmed bookings only – see `src/rooms/normalize.ts`. */
     rooms?: RoomBookings[];
     savedAt: string;

@@ -244,6 +244,19 @@ export const churchToolsProvisionApi: ProvisionApi = {
     grants(roleId) {
         return permissions('group_role', roleId);
     },
+    async defaultRole(groupId) {
+        const roles = await churchtoolsClient.get<RoleResponse[]>(`/groups/${groupId}/roles`);
+        const role = roles.find((r) => r.isDefault);
+        return role ? { roleId: role.id, groupTypeRoleId: role.groupTypeRoleId } : null;
+    },
+    async memberIds(groupId) {
+        const members = await churchtoolsClient.getAllPages<MemberResponse>(`/groups/${groupId}/members`);
+        return members.filter((m) => (m.groupMemberStatus ?? 'active') === 'active').map((m) => m.personId);
+    },
+    async addMember(groupId, personId, groupTypeRoleId) {
+        // Measured in G34/G70: PUT adds, with the role and the status.
+        await churchtoolsClient.put(`/groups/${groupId}/members/${personId}`, { groupTypeRoleId, groupMemberStatus: 'active' });
+    },
     async revoke(roleId, authId, dataId) {
         // Spec: DELETE removes the raw assignment named by authId and dataId (Build 32882). Measured with G34's follow-up.
         await churchtoolsClient.deleteApi(`/permissions/group_role/${roleId}`, { authId, dataId });

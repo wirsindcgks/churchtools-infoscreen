@@ -59,13 +59,13 @@ sich die Aufteilung ändert.
 
 ## Die Bausteine
 
-Siebzehn Bausteine stehen unter „+ Baustein" zur Wahl, jeder mit einem Satz, was er zeigt:
+Achtzehn Bausteine stehen unter „+ Baustein" zur Wahl, jeder mit einem Satz, was er zeigt:
 
 | Gruppe | Bausteine |
 | --- | --- |
 | Gestalten | Text, Bild, Fläche, Linie, QR-Code, Uhr, Countdown |
 | Termine aus ChurchTools | Terminliste, Nächster Termin |
-| Mehr aus ChurchTools | Gruppen, Beiträge, Raumbelegung, Gemeindekopf mit Logo |
+| Mehr aus ChurchTools | Gruppen, Personen, Beiträge, Raumbelegung, Gemeindekopf mit Logo |
 | Medien und mehr | Galerie, Video, Webseite, Social Media |
 
 Bausteine, die mehrere Seiten haben – etwa eine lange Terminliste –, wechseln von selbst; ein dünner **Fortschritt**
@@ -87,6 +87,14 @@ Die Gruppen der Gemeinde direkt aus einer **Gruppen-Homepage** von ChurchTools �
 auf Wunsch der Leitung und einem **QR-Code zum Anmelden**. Gezeigt wird nur, was die Homepage ohnehin öffentlich zeigt.
 
 ![Editor mit dem Baustein „Gruppen": zwei Karten nebeneinander, rechts die Schalter für jede Angabe](bilder/gruppen.png)
+
+### Personen
+
+Ansprechpartner als **Karten** mit Name, Bild und Angaben wie Funktion oder Büro – aus den Mitgliedern der Gruppe
+**„Infoscreen-People"**, die der Einrichtungsassistent anlegt. Wer dort Mitglied ist, darf erscheinen; die Angaben
+sind Mitgliedsfelder der Gruppe. Man wählt Rollen, Angaben samt Reihenfolge, Sortierung und ob das Bild erscheint.
+E-Mail-Adresse, Telefon und Anschrift zeigt der Baustein nie. Einrichtung und Datenschutz stehen
+[in der Einrichtungsanleitung](Einrichtung.md#personen-auf-den-bildschirmen).
 
 ### Beiträge
 

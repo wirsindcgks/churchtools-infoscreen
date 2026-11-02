@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
-import { GROUP_SECONDS, PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressOn, paginateByHeight, POST_SECONDS, slideSeconds } from './paging';
+import { GROUP_SECONDS, PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressOn, paginateByHeight, PEOPLE_SECONDS, POST_SECONDS, slideSeconds } from './paging';
 
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
 const list = (overrides: Partial<Extract<Block, { type: 'appointment-list' }>> = {}): Block => ({
@@ -224,5 +224,36 @@ describe('pageProgressSegments (schema 1.50, Plan.md 109)', () => {
         expect(pageProgressSegments(list({ pageProgressStyle: 'segments' }))).toBe(true);
         expect(pageProgressSegments(list({ layout: 'visitor', pageProgressStyle: 'bar' }))).toBe(false);
         expect(pageProgressSegments(posts({ pageProgressStyle: 'segments' }))).toBe(true);
+    });
+});
+
+describe('paging a people block (Plan.md 112)', () => {
+    const people = (overrides: Partial<Extract<Block, { type: 'people' }>> = {}): Block => ({
+        id: 'personen',
+        type: 'people',
+        x: 0,
+        y: 0,
+        width: 1400,
+        height: 700,
+        roleIds: [],
+        fieldKeys: [],
+        sort: 'last-name',
+        showImage: true,
+        columns: 3,
+        rows: 2,
+        style,
+        ...overrides,
+    });
+
+    it('keeps the slide until every page has shown, like the groups', () => {
+        const slide = makeSlide({ durationSeconds: 8, blocks: [people()] });
+        expect(slideSeconds(slide, { personen: 3 })).toBe(3 * PEOPLE_SECONDS);
+        expect(slideSeconds(slide, { personen: 1 })).toBe(8);
+        expect(slideSeconds(makeSlide({ durationSeconds: 8, blocks: [people({ pageSeconds: 5 })] }), { personen: 3 })).toBe(15);
+    });
+
+    it('shows the progress bar unless it is switched off, as the other lists do', () => {
+        expect(pageProgressOn(people())).toBe(true);
+        expect(pageProgressOn(people({ pageProgress: false }))).toBe(false);
     });
 });

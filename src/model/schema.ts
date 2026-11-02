@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 50 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 51 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -384,6 +384,34 @@ export const GroupsBlock = v.object({
 });
 
 /**
+ * Since 1.51: the people of the module's own group "Infoscreen-People" as cards (Plan.md 112, Stück 1) – name, picture,
+ * and the chosen member fields of the group. The group is fixed (`SettingsDoc.peopleGroupId`); the privacy rule lives
+ * in `src/groups/members.ts`. Older players skip the block.
+ */
+export const PeopleBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('people'),
+    /** Empty: every role of the group; else only the people in these roles (ids of the group type's roles). */
+    roleIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50)),
+    /** The member fields shown under the name, in this order – the field's name as ChurchTools holds it. */
+    fieldKeys: v.pipe(v.array(v.pipe(v.string(), v.maxLength(100))), v.maxLength(8)),
+    /** `last-name` – by last name, then first name; `first-name` the other way round; `role` – by role, then last name. */
+    sort: v.optional(v.picklist(['last-name', 'first-name', 'role']), 'last-name'),
+    /** The picture on the card; off: name and fields only. */
+    showImage: v.optional(v.boolean(), true),
+    /** Cards side by side, 1–6; a page holds `columns` × `rows`. */
+    columns: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(6)), 3),
+    rows: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(6)), 2),
+    /** Seconds per page; default PEOPLE_SECONDS. */
+    pageSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(120))),
+    /** The thin bar that shows when the next page comes (Plan.md 105, 107, 109); missing: on, like the other lists. */
+    pageProgress: v.optional(v.boolean()),
+    pageProgressPlacement: v.optional(v.picklist(['inset', 'edge'])),
+    pageProgressStyle: v.optional(v.picklist(['bar', 'segments'])),
+    style: TextStyle,
+});
+
+/**
  * Since 1.15: several library images one after the other, with a fade or a cut
  * (Plan.md, Nächste Schritte 46). Empty until images are chosen; the player then
  * shows a calm placeholder. The slide stays until every image has run once. At
@@ -508,6 +536,7 @@ export const ContentBlock = v.variant('type', [
     CountdownBlock,
     PostsBlock,
     GroupsBlock,
+    PeopleBlock,
     SlideshowBlock,
     RoomsBlock,
     VideoBlock,
@@ -908,6 +937,8 @@ export const SettingsDoc = v.object({
      * Missing = the type "Raum"; empty = none, so no resource is a room.
      */
     roomTypeIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
+    /** Since 1.51: the group "Infoscreen-People" the assistant created (Plan.md 112) – the one the people block reads. Missing: none. */
+    peopleGroupId: v.optional(v.pipe(v.number(), v.integer())),
     /** Since 1.40: calendars that are not public but released for screens by an administrator (Plan.md 85 b). Missing = none. */
     screenCalendarIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
 });
@@ -916,7 +947,8 @@ export type Fill = v.InferOutput<typeof Fill>;
 export type TextStyle = v.InferOutput<typeof TextStyle>;
 export type Block = v.InferOutput<typeof Block>;
 export type GroupSort = NonNullable<v.InferOutput<typeof GroupsBlock>['sort']>;
-export type GroupFields = v.InferOutput<typeof GroupFields>;
+export type PeopleSort = NonNullable<v.InferOutput<typeof PeopleBlock>['sort']>;
+export type GroupFields =v.InferOutput<typeof GroupFields>;
 export type RoomEntry = v.InferOutput<typeof RoomEntry>;
 export type SocialLink = v.InferOutput<typeof SocialLink>;
 export type BlockType = Block['type'];

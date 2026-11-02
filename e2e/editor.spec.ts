@@ -417,7 +417,7 @@ test.describe('with a finger, in both browsers', () => {
         await page.getByTestId('add-block-menu').click();
         const sheet = page.getByTestId('block-sheet');
         await expect(sheet).toBeVisible();
-        await expect(sheet.locator('[data-testid^="sheet-add-"]')).toHaveCount(17);
+        await expect(sheet.locator('[data-testid^="sheet-add-"]')).toHaveCount(18);
         await sheet.getByTestId('sheet-add-qr').click();
         await expect(sheet).toHaveCount(0);
 
@@ -1753,7 +1753,7 @@ test('the blocks stand in German alphabetical order in the "+ Baustein" sheet; t
     const types = await sheet.locator('[data-testid^="sheet-add-"]').evaluateAll((buttons) =>
         buttons.map((b) => b.getAttribute('data-testid')!.replace('sheet-add-', '')),
     );
-    // Beiträge, Bild, Countdown, Fläche, Galerie, Gemeindekopf, Gruppen, Linie, Nächster Termin, QR-Code, Raumbelegung, Social Media, Terminliste, Text, Uhr, Video, Webseite
+    // Beiträge, Bild, Countdown, Fläche, Galerie, Gemeindekopf, Gruppen, Linie, Nächster Termin, Personen, QR-Code, Raumbelegung, Social Media, Terminliste, Text, Uhr, Video, Webseite
     expect(types).toEqual([
         'posts',
         'image',
@@ -1764,6 +1764,7 @@ test('the blocks stand in German alphabetical order in the "+ Baustein" sheet; t
         'groups',
         'line',
         'next-appointment',
+        'people',
         'qr',
         'rooms',
         'social',
@@ -2325,7 +2326,7 @@ test('the "+ Baustein" sheet describes each block and searches name and sentence
     await expect(sheet).toHaveCount(0);
     await page.getByTestId('add-block-menu').click();
     await expect(page.getByTestId('block-search')).toHaveValue('');
-    await expect(page.getByTestId('block-sheet').locator('[data-testid^="sheet-add-"]')).toHaveCount(17);
+    await expect(page.getByTestId('block-sheet').locator('[data-testid^="sheet-add-"]')).toHaveCount(18);
 });
 
 test('a new text begins as a heading; the text level sets size and weight in one step (Plan.md 79, C8)', async ({ page }) => {

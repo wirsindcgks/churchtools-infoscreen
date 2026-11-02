@@ -27,6 +27,7 @@ export function usePreview(
     appointmentRooms: Ref<boolean> = ref(false),
     appointmentServices: Ref<number[]> = ref([]),
     appointmentTags: Ref<boolean> = ref(false),
+    people: Ref<boolean> = ref(false),
 ) {
     const context = reactive<StageContext>({
         now: new Date(),
@@ -37,6 +38,7 @@ export function usePreview(
         appointments: [],
         posts: [],
         groupHomepages: [],
+        people: undefined,
         rooms: [],
         media: new Map(),
         // Paged lists report their pages (the inspector names them) but hold page 1 while designing.
@@ -55,11 +57,13 @@ export function usePreview(
     let roomTypeIds: number[] | undefined;
     /** The calendars an administrator released for screens, from the settings (schema 1.40, Plan.md 85 b). */
     let screenCalendarIds: number[] | undefined;
+    /** The group "Infoscreen-People" from the settings (schema 1.51, Plan.md 112); missing = none set up. */
+    let peopleGroupId: number | undefined;
 
     async function loadBasics(): Promise<void> {
         const settings = getRepository()
             .then((handle) => handle.repository.loadSettings())
-            .then((doc) => ({ roomTypeIds: doc?.roomTypeIds, screenCalendarIds: doc?.screenCalendarIds }), () => undefined);
+            .then((doc) => ({ roomTypeIds: doc?.roomTypeIds, screenCalendarIds: doc?.screenCalendarIds, peopleGroupId: doc?.peopleGroupId }), () => undefined);
         try {
             const [timeZone, churchName, own, publicList, churchLogo] = await Promise.all([
                 churchToolsPlayerData.timeZone(),
@@ -84,6 +88,7 @@ export function usePreview(
         const read = await settings;
         roomTypeIds = read?.roomTypeIds;
         screenCalendarIds = read?.screenCalendarIds;
+        peopleGroupId = read?.peopleGroupId;
     }
 
     let request = 0;
@@ -143,6 +148,25 @@ export function usePreview(
         }
     }
 
+    let peopleRequest = 0;
+    async function loadPeople(): Promise<void> {
+        const mine = ++peopleRequest;
+        if (!people.value) {
+            context.people = undefined;
+            return;
+        }
+        if (peopleGroupId === undefined) {
+            context.people = null;
+            return;
+        }
+        try {
+            const list = await churchToolsPlayerData.people(peopleGroupId);
+            if (mine === peopleRequest) context.people = list;
+        } catch (error) {
+            problem.value = error instanceof Error ? error.message : String(error);
+        }
+    }
+
     let roomsRequest = 0;
     async function loadRooms(): Promise<void> {
         const { resourceIds, days } = rooms.value;
@@ -166,10 +190,12 @@ export function usePreview(
     watch(() => JSON.stringify(posts.value), () => void loadPosts());
     watch(() => groupHomepages.value.join(), () => void loadGroupHomepages());
     watch(() => JSON.stringify(rooms.value), () => void loadRooms());
+    watch(people, () => void loadPeople());
     // Appointments and rooms need the instance time zone.
     void loadBasics().then(() => {
         void loadAppointments();
         void loadRooms();
+        void loadPeople();
     });
     void loadPosts();
     void loadGroupHomepages();

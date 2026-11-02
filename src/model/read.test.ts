@@ -804,3 +804,31 @@ describe('the form of the progress bars (schema 1.50, Plan.md 109)', () => {
         expect(doc.blocks.map((b) => (b as { pageProgressStyle?: string }).pageProgressStyle)).toEqual(['segments', undefined]);
     });
 });
+
+describe('the people block and the group of the settings (schema 1.51, Plan.md 112)', () => {
+    const person = { id: 'p', type: 'people', x: 0, y: 0, width: 1400, height: 700, roleIds: [], fieldKeys: [], style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' } };
+
+    it('reads a block with its defaults filled in, and a 1.50 slide next to it stays as it was', () => {
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(51);
+        const { doc, issues } = readSlide({ ...makeSlide(), schema: { major: 1, minor: 50 }, blocks: [person, { ...textBlock('t'), type: 'text' }] });
+        expect(issues).toEqual([]);
+        expect(doc.blocks[0]).toMatchObject({ type: 'people', sort: 'last-name', showImage: true, columns: 3, rows: 2 });
+        expect(doc.blocks).toHaveLength(2);
+    });
+
+    it('skips a block whose choice is out of range – without taking the slide down', () => {
+        const { doc, issues } = readSlide({
+            ...makeSlide(),
+            blocks: [{ ...person, columns: 9 }, { ...person, id: 'q', fieldKeys: Array.from({ length: 9 }, (_, i) => `F${i}`) }, { ...person, id: 'r', sort: 'role', roleIds: [5, 6], fieldKeys: ['Funktion'] }],
+        });
+        expect(doc.blocks.map((b) => b.id)).toEqual(['r']);
+        expect(issues).toHaveLength(2);
+    });
+
+    it('reads settings without the group as before, and with it', () => {
+        const base = { schema: { major: 1, minor: 50 }, kind: 'settings', id: 'settings' };
+        expect(v.parse(SettingsDoc, base).peopleGroupId).toBeUndefined();
+        expect(v.parse(SettingsDoc, { ...base, schema: { major: 1, minor: 51 }, peopleGroupId: 40 }).peopleGroupId).toBe(40);
+        expect(v.safeParse(SettingsDoc, { ...base, peopleGroupId: 'vierzig' }).success).toBe(false);
+    });
+});

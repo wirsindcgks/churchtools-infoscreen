@@ -1,0 +1,169 @@
+<script setup lang="ts">
+/**
+ * The people block (Plan.md 112, Stück 1): the people of the group "Infoscreen-People" as cards. The roles and the member
+ * fields (in their order) each have a section named after what they choose; look and page time stand in "Darstellung".
+ * The group itself is fixed – the assistant creates it; there is nothing to choose.
+ */
+import { computed } from 'vue';
+import { t } from '../../../i18n/designer';
+import { th } from '../../../i18n/help';
+import type { Block } from '../../../model/schema';
+import { useStageContext } from '../../../player/context';
+import { PEOPLE_SECONDS } from '../../../player/paging';
+import PageProgressHint from '../PageProgressHint.vue';
+import PageProgressOptions from '../PageProgressOptions.vue';
+import PageProgressToggle from '../PageProgressToggle.vue';
+import InspectorSection from '../../InspectorSection.vue';
+import SelectMenu from '../../SelectMenu.vue';
+import QuickField from '../fields/QuickField.vue';
+import NumberField from '../fields/NumberField.vue';
+import SegmentField from '../fields/SegmentField.vue';
+import SortList, { type SortItem } from '../fields/SortList.vue';
+import ToggleField from '../fields/ToggleField.vue';
+import FontSection from '../FontSection.vue';
+import { move as moveItem } from '../../ops';
+import { useBlockEdit } from '../use-block';
+import { useInspectorMode } from '../mode';
+
+/** Most member fields a card shows – the schema's limit. */
+const FIELDS_MAX = 8;
+
+const props = defineProps<{ block: Extract<Block, { type: 'people' }> }>();
+/** Only fields stand in the short menu; a hint or a line of text belongs to the inspector. */
+const mode = useInspectorMode();
+const { setBlock } = useBlockEdit(() => props.block);
+/** The preview's stage context: roles and fields come from the live members of the group. */
+const stage = useStageContext();
+
+const group = computed(() => stage.people ?? null);
+const roles = computed(() => group.value?.roles ?? []);
+const fields = computed(() => group.value?.fields ?? []);
+/** Whether the preview has the group yet – until then a chosen field is not "gone", only not loaded. */
+const loaded = computed(() => stage.people !== undefined && stage.people !== null && !stage.people.denied);
+
+const sorts = [
+    { value: 'last-name', label: t.inspector.peopleSortLastName },
+    { value: 'first-name', label: t.inspector.peopleSortFirstName },
+    { value: 'role', label: t.inspector.peopleSortRole },
+];
+const columns = [1, 2, 3, 4, 5, 6].map((n) => ({ value: n, label: String(n) }));
+
+// --- roles: none chosen = every role ---
+
+function toggleAllRoles(all: boolean): void {
+    setBlock({ roleIds: all ? [] : roles.value.map((r) => r.id) });
+}
+function toggleRole(id: number, on: boolean): void {
+    setBlock({ roleIds: on ? [...props.block.roleIds, id] : props.block.roleIds.filter((r) => r !== id) });
+}
+const rolesSummary = computed(() => (props.block.roleIds.length ? t.common.countOf(props.block.roleIds.length, roles.value.length) : t.inspector.all));
+
+// --- member fields: chosen ones in their order, the rest to pick ---
+
+const chosen = computed<SortItem[]>(() =>
+    props.block.fieldKeys.map((key) => {
+        const known = fields.value.some((f) => f.key === key);
+        return { key, label: known || !loaded.value ? key : `${key} – ${t.inspector.peopleFieldGone}`, dimmed: loaded.value && !known };
+    }),
+);
+const pickable = computed(() => fields.value.filter((f) => !props.block.fieldKeys.includes(f.key)));
+function addField(key: string | number): void {
+    if (props.block.fieldKeys.length >= FIELDS_MAX) return;
+    setBlock({ fieldKeys: [...props.block.fieldKeys, String(key)] });
+}
+function removeField(index: number): void {
+    setBlock({ fieldKeys: props.block.fieldKeys.filter((_, i) => i !== index) });
+}
+function moveField(from: number, to: number): void {
+    if (to < 0 || to >= props.block.fieldKeys.length) return;
+    setBlock({ fieldKeys: moveItem(props.block.fieldKeys, from, to) });
+}
+const fieldsFace = computed(() =>
+    props.block.fieldKeys.length ? t.quick.listFace(t.inspector.peopleFields, t.common.countOf(props.block.fieldKeys.length, fields.value.length || props.block.fieldKeys.length)) : t.quick.empty.people,
+);
+
+const summary = computed(() => [sorts.find((o) => o.value === props.block.sort)?.label, `${props.block.columns} × ${props.block.rows}`].join(' · '));
+const appearanceHelp = computed(() => ({
+    intro: th.people.intro,
+    items: [th.people.sort, th.people.picture, th.people.grid, th.people.seconds, th.pageProgress('die nächste Seite'), th.pageProgressStyle, th.pageProgressPlacement],
+}));
+</script>
+
+<template>
+    <p v-if="mode === 'full' && stage.people === null" class="hint" data-testid="people-no-group">{{ t.inspector.peopleNoGroup }}</p>
+    <p v-else-if="mode === 'full' && stage.people?.denied" class="hint" data-testid="people-denied">{{ t.inspector.peopleDenied }}</p>
+
+    <InspectorSection id="people-roles" :title="t.inspector.peopleRoles" :summary="rolesSummary" :help="th.people.roles">
+        <ToggleField
+            :model-value="block.roleIds.length === 0"
+            :label="t.inspector.allRoles"
+            :disabled="block.roleIds.length === 0 && roles.length === 0"
+            testid="people-roles-all"
+            @update:model-value="toggleAllRoles"
+        />
+        <template v-if="block.roleIds.length">
+            <ToggleField
+                v-for="role in roles"
+                :key="role.id"
+                :model-value="block.roleIds.includes(role.id)"
+                :label="role.name"
+                :disabled="block.roleIds.length === 1 && block.roleIds.includes(role.id)"
+                :testid="`people-role-${role.id}`"
+                @update:model-value="toggleRole(role.id, $event)"
+            />
+        </template>
+    </InspectorSection>
+
+    <!-- Choosing and ordering the member fields are one chip "Angaben 2 von 5" in the short menu (Plan.md 79, C5). -->
+    <QuickField quick :label="t.inspector.peopleFields" :face="fieldsFace">
+        <SelectMenu
+            :model-value="undefined"
+            :options="pickable.map((f) => ({ value: f.key, label: f.name }))"
+            :placeholder="t.inspector.addField"
+            :disabled="!pickable.length || block.fieldKeys.length >= FIELDS_MAX"
+            :aria-label="t.inspector.addFieldLabel"
+            testid="people-fields-add"
+            @update:model-value="addField"
+        />
+        <p v-if="!block.fieldKeys.length" class="hint">{{ loaded && !fields.length ? t.inspector.noFieldsThere : t.inspector.noFieldsChosen }}</p>
+        <InspectorSection v-else id="people-fields" :title="t.inspector.peopleFields" :summary="t.common.countOf(block.fieldKeys.length, fields.length || block.fieldKeys.length)" :help="th.people.fields">
+            <SortList :items="chosen" :remove-label="t.inspector.removeField" testid="people-field" @move="moveField" @remove="removeField" />
+        </InspectorSection>
+    </QuickField>
+
+    <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="appearanceHelp">
+        <SegmentField
+            quick
+            :model-value="block.sort"
+            :options="sorts"
+            :label="t.inspector.order"
+            testid="people-sort"
+            stacked
+            @update:model-value="setBlock({ sort: $event })"
+        />
+        <ToggleField :model-value="block.showImage" :label="t.inspector.showPicture" testid="people-show-image" @update:model-value="setBlock({ showImage: $event })" />
+        <SegmentField :model-value="block.columns" :options="columns" :label="t.inspector.columns" testid="people-columns" @update:model-value="setBlock({ columns: Number($event) })" />
+        <SegmentField :model-value="block.rows" :options="columns" :label="t.inspector.peopleRows" testid="people-rows" @update:model-value="setBlock({ rows: Number($event) })" />
+        <NumberField
+            :model-value="block.pageSeconds ?? PEOPLE_SECONDS"
+            :label="t.inspector.secondsPerPage"
+            :unit="t.inspector.unitSeconds"
+            :min="5"
+            :max="120"
+            testid="people-seconds"
+            @update:model-value="setBlock({ pageSeconds: $event })"
+        />
+        <PageProgressToggle :block="block" />
+        <PageProgressOptions :block="block" />
+        <PageProgressHint />
+    </InspectorSection>
+    <FontSection :block="block" effects="shadow" />
+</template>
+
+<style scoped>
+.hint {
+    margin: 0;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
+}
+</style>

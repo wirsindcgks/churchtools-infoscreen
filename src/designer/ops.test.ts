@@ -65,6 +65,11 @@ describe('designer operations', () => {
         expect(BLOCK_LABELS.rooms).toBe('Raumbelegung');
     });
 
+    it('creates a people block with every role and no member field: name and picture, until the inspector adds some (Plan.md 112)', () => {
+        expect(createBlock('people', stage)).toMatchObject({ type: 'people', roleIds: [], fieldKeys: [], sort: 'last-name', showImage: true, columns: 3, rows: 2, width: 1400, height: 700 });
+        expect(BLOCK_LABELS.people).toBe('Personen');
+    });
+
     it('starts every block with a text style, and every banner, in the theme\'s font (Plan.md 40)', () => {
         const theme = { ...DEFAULT_THEME, font: 'oswald' };
         const styled = (Object.keys(BLOCK_LABELS) as BlockType[])
@@ -80,6 +85,7 @@ describe('designer operations', () => {
             'countdown',
             'posts',
             'groups',
+            'people',
             'rooms',
             'social',
         ]);
@@ -230,6 +236,7 @@ describe('the palette (Plan.md 47)', () => {
             'Gruppen',
             'Linie',
             'Nächster Termin',
+            'Personen',
             'QR-Code',
             'Raumbelegung',
             'Social Media',

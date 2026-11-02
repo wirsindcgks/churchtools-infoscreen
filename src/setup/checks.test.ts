@@ -584,3 +584,72 @@ describe('groupChecks', () => {
         expect(groupChecks([c('warn', 'a', 'module')])[0]?.summary).toBe('1 Warnung');
     });
 });
+
+describe('the people group on the device check (Plan.md 112, G70, G71)', () => {
+    const PEOPLE = { id: 40, name: 'Infoscreen-People' };
+    const base = { statusId: 1, calendars: [], usedCalendarIds: [], publicCalendarIds: [], wikiCategoryId: null };
+    /** What a set-up device holds: 1104 on the people group, and – through its membership there – 10126 on that group's role. */
+    const planned = [AUTH.groupWithMembersView, AUTH.memberFieldsView];
+    const inPeople: OtherGroup = { id: 40, name: PEOPLE.name, grants: [grant(AUTH.memberFieldsView)] };
+    const device = (grants: Grant[], otherGroups?: OtherGroup[] | null): DeviceMember => ({ label: 'Foyer-TV', grants, otherGroups });
+    const people = (checks: Check[]) => checks.filter((c) => c.category === 'people');
+
+    it('is content when the device sees the group and sits in it – 1104 and 10126 are wanted, not excess', () => {
+        const checks = checkDeviceGroup({
+            ...base,
+            members: [device([grant(AUTH.groupWithMembersView, 40)], [inPeople])],
+            peopleGroup: PEOPLE,
+            plannedAuthIds: planned,
+            plannedGrants: [{ authId: AUTH.groupWithMembersView, dataId: [40], label: 'x' }],
+        });
+        expect(people(checks)).toEqual([{ level: 'ok', category: 'people', text: 'Die Geräte sehen die Gruppe „Infoscreen-People" mit ihren Mitgliedern.' }]);
+        expect(checks.filter((c) => c.level === 'warn' && c.category === 'rights')).toEqual([]);
+    });
+
+    it('names a device that does not see the group – a failure while a block uses it, else a hint', () => {
+        const input = { ...base, members: [device([], [inPeople])], peopleGroup: PEOPLE, plannedAuthIds: planned };
+        expect(people(checkDeviceGroup({ ...input, peopleInUse: true }))[0]).toMatchObject({ level: 'fail', text: expect.stringContaining('Foyer-TV sieht die Gruppe „Infoscreen-People" nicht') });
+        expect(people(checkDeviceGroup(input))[0]).toMatchObject({ level: 'warn' });
+    });
+
+    it('sees 1104 for another group as beyond the plan', () => {
+        const checks = checkDeviceGroup({
+            ...base,
+            members: [device([grant(AUTH.groupWithMembersView, 40), grant(AUTH.groupWithMembersView, 6)], [inPeople])],
+            peopleGroup: PEOPLE,
+            plannedAuthIds: planned,
+            plannedGrants: [{ authId: AUTH.groupWithMembersView, dataId: [40], label: 'x' }],
+        });
+        expect(checks.find((c) => c.text.includes('darf mehr als nötig'))?.text).toContain('6');
+    });
+
+    it('warns of a device that is not a member of the group – its member fields stay empty', () => {
+        const checks = checkDeviceGroup({ ...base, members: [device([grant(AUTH.groupWithMembersView, 40)], [])], peopleGroup: PEOPLE, plannedAuthIds: planned });
+        expect(people(checks).find((c) => c.level === 'warn')?.text).toContain('nicht Mitglied');
+        // The groups of the device could not be read: that says nothing about membership.
+        const unknown = checkDeviceGroup({ ...base, members: [device([grant(AUTH.groupWithMembersView, 40)], null)], peopleGroup: PEOPLE, plannedAuthIds: planned });
+        expect(people(unknown).some((c) => c.text.includes('nicht Mitglied'))).toBe(false);
+    });
+
+    it.each([AUTH.personDataView, AUTH.groupMembersViewIntern])('warns of %i at the device – it opens the e-mail address, from its own role or a group it sits in', (authId) => {
+        const own = checkDeviceGroup({ ...base, members: [device([grant(authId)])], plannedAuthIds: planned });
+        const viaGroup = checkDeviceGroup({ ...base, members: [device([], [{ name: 'Andere', grants: [grant(authId)] }])], plannedAuthIds: planned });
+        for (const checks of [own, viaGroup]) {
+            const warning = checks.filter((c) => c.text.includes('Personendaten sehen'));
+            expect(warning).toHaveLength(1);
+            expect(warning[0]).toMatchObject({ level: 'warn', category: 'rights' });
+            // One line for it, not a second one about "a right a device does not need".
+            expect(checks.some((c) => c.text.includes('ein Gerät nicht braucht'))).toBe(false);
+        }
+    });
+
+    it('says nothing about people where the assistant set up no such group', () => {
+        const checks = checkDeviceGroup({ ...base, members: [device([])] });
+        expect(people(checks)).toEqual([]);
+    });
+
+    it('does not count 1104 or 10126 as excess (planned), and leaves 125 and 10101 to their own line', () => {
+        expect(excessRights([grant(AUTH.groupWithMembersView, 40), grant(AUTH.memberFieldsView)], planned)).toEqual([]);
+        expect(excessRights([grant(AUTH.personDataView)], planned)).toEqual([]);
+    });
+});

@@ -143,6 +143,21 @@ export function fetchPosts(groupIds: number[], limit: number): Promise<PostRespo
     return churchtoolsClient.get<PostResponse[]>('/posts', { group_ids: groupIds, limit });
 }
 
+/**
+ * The members of the people group with their member fields, the group's roles and its field definitions (Plan.md 112).
+ * Only the members are essential: a `403` there is passed on, so the block can say that the right is missing. Roles and
+ * field definitions only name what the members carry – without them the block still shows names and pictures.
+ * No call goes to `/persons` (G70).
+ */
+export async function fetchGroupMembers(groupId: number): Promise<{ members: unknown[]; roles: unknown[]; fields: unknown[] }> {
+    const members = await churchtoolsClient.getAllPages<unknown>(`/groups/${groupId}/members`);
+    const [roles, fields] = await Promise.all([
+        churchtoolsClient.get<unknown[]>(`/groups/${groupId}/roles`).catch(() => []),
+        churchtoolsClient.get<unknown[]>(`/groups/${groupId}/memberfields`).catch(() => []),
+    ]);
+    return { members, roles: Array.isArray(roles) ? roles : [], fields: Array.isArray(fields) ? fields : [] };
+}
+
 export interface PostGroup {
     id: number;
     name: string;

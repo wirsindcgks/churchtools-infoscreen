@@ -393,6 +393,23 @@ export const th = {
         } satisfies HelpTopic,
     },
 
+    /** The sections of the people block. */
+    people: {
+        roles: {
+            intro: 'Die Rollen der Gruppe „Infoscreen-People“, deren Personen erscheinen. Ohne Auswahl erscheinen alle.',
+        } satisfies HelpTopic,
+        fields: {
+            intro:
+                'Die Mitgliedsfelder der Gruppe, die unter dem Namen stehen, in der Reihenfolge der Liste; zum Umsortieren einen Eintrag ziehen. ' +
+                'Mitgliedsfelder legt man in ChurchTools an der Gruppe an. Der Fernseher sieht nur Felder bis zu der Sicherheitsstufe, die ihm ein Administrator freigegeben hat.',
+        } satisfies HelpTopic,
+        intro: 'Wie die Karten erscheinen: Reihenfolge, Bild, wie viele auf einer Seite stehen und wie lange jede Seite bleibt.',
+        sort: { term: i.order, text: 'Nach Nachname, nach Vorname oder nach Rolle – in der Reihenfolge der Rollen in ChurchTools, darin nach Nachname.' },
+        picture: { term: i.showPicture, text: 'Zeigt das Bild, das die Person in ChurchTools hat. Ohne Bild steht der Anfangsbuchstabe.' },
+        grid: { term: i.columns, text: 'Wie viele Karten nebeneinander und untereinander auf einer Seite stehen, je 1 bis 6. Passen nicht alle Personen darauf, blättert der Baustein.' },
+        seconds: { term: i.secondsPerPage, text: 'Wie lange jede Seite stehen bleibt, vorgegeben sind 15 Sekunden. Die Folie läuft so lange, bis jede Seite einmal zu sehen war.' },
+    },
+
     /** The sections of the room occupancy. */
     rooms: {
         add: {

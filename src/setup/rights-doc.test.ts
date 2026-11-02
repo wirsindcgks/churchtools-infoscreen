@@ -38,11 +38,12 @@ const plan = [true, false].flatMap((appointmentRooms) => planProvisioning({
     usedRoomIds: [1],
     appointmentRooms,
     serviceCalendarIds: [1],
+    peopleGroupId: 'new',
 }));
 
 describe('docs/Rechte.md', () => {
     it('names every right the assistant grants or takes back, as the assistant labels it', () => {
-        const labels = new Set(plan.flatMap((g) => [...g.grants, ...g.forbidden]).map((g) => g.label));
+        const labels = new Set(plan.flatMap((g) => [...g.grants, ...g.forbidden, ...(g.defaultRoleGrants ?? [])]).map((g) => g.label));
         const missing = [...labels].filter((label) => !doc.includes(label));
         expect(missing).toEqual([]);
     });
@@ -57,7 +58,7 @@ describe('docs/Rechte.md', () => {
 
     it('names every permission key of the module and the core rights by number', () => {
         expect(MODULE_AUTHS.filter((auth) => !doc.includes(`\`${auth}\``))).toEqual([]);
-        for (const id of [AUTH.calendarView, AUTH.resourceView, AUTH.eventView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit]) {
+        for (const id of [AUTH.calendarView, AUTH.resourceView, AUTH.eventView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit, AUTH.groupWithMembersView, AUTH.memberFieldsView, AUTH.personDataView, AUTH.groupMembersViewIntern]) {
             expect(doc).toContain(String(id));
         }
     });

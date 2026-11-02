@@ -11,6 +11,9 @@ einrichtet, steht in der [Einrichtungsanleitung](Einrichtung.md).
 | **Gestalter** | Mitglieder von **„Infoscreen-Designer"** | Folien, Präsentationen, Zeitpläne und Bilder gestalten – nicht die Bildschirme selbst und nicht die Einstellungen |
 | **Gerät** | Konten der Fernseher in **„Infoscreen-Devices"** | nur lesen; schreiben nur sein Lebenszeichen |
 
+Dazu kommt die Gruppe **„Infoscreen-People"**: Wer dort Mitglied ist, darf im Baustein „Personen" auf den Bildschirmen erscheinen.
+Sie ist keine Rolle mit eigenen Rechten, sondern die Freigabe von Personen ([unten](#personen--für-den-baustein-personen)).
+
 ```mermaid
 flowchart LR
     AS["Einrichtungs-<br>assistent"] --> GD["„Infoscreen-Designer“<br>Gestalter"]
@@ -21,6 +24,8 @@ flowchart LR
     GV --> M2["Modul: lesen,<br>Lebenszeichen schreiben"]
     GV --> W2["Wiki „Infoscreen“:<br>Videos laden"]
     GV --> R2["Räume und Dienste,<br>die Bildschirme zeigen"]
+    AS --> GP["„Infoscreen-People“<br>Personen auf Bildschirmen"]
+    GV --> P2["Gruppe und Mitglieder<br>sehen (nur diese Gruppe)"]
     OB["Öffentlicher Benutzer"] -.->|"öffentliche Kalender"| GV
 ```
 
@@ -93,6 +98,19 @@ Nur Räume, nicht Gegenstände und Fahrzeuge.
 
 Das Gerät sieht damit nur zugesagte Dienste aus Dienstgruppen, die „Ohne Berechtigung einsehbar" sind.
 
+### Personen – für den Baustein „Personen"
+
+Das Gerät liest die Mitglieder der Gruppe „Infoscreen-People" mit zwei Rechten und **nur** diese Gruppe:
+
+| Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
+| --- | --- | --- | --- | --- |
+| Gruppe „Infoscreen-People" inkl. ihrer Gruppenmitglieder sehen | Gruppe inkl. ihrer Gruppenmitglieder sehen (`1104`, global, für diese Gruppe) | für die Vorschau | für die Vorschau | **nur „Infoscreen-People"** – Name, Bild, Rolle |
+| Gruppenmitgliedsfelder sehen (bis Sicherheitsstufe 1) | Gruppenmitgliedsfelder sehen (`10126`, gruppenintern, Stufe 1) | – | – | an der **Standardrolle von „Infoscreen-People"**, in der die Geräte Mitglied sind |
+
+Das zweite Recht ist **gruppenintern** und gilt für alle, die diese Rolle haben; die Sicherheitsstufe 1 begrenzt es auf
+Mitgliedsfelder bis Stufe 1. **Nie** vergeben werden „Personendaten sehen" (`125`) und „Gruppenmitglieder sehen" (`10101`) –
+beide geben schon in der ersten Stufe die E-Mail-Adresse einer Person frei. Die Prüfung der Gerätegruppe warnt davor.
+
 ### ChurchTools selbst – nur für Administratoren
 
 | Bereich | Recht | Wofür |
@@ -138,6 +156,7 @@ Gruppe. Entzogene Rechte wirken bei ChurchTools noch bis zu einer Dreiviertelstu
 | einen Bildschirm anlegen, umbenennen, löschen | Administrator | Modulrechte für **Screens** ([Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)) |
 | dass der Fernseher Termine zeigt | – | der Kalender muss **öffentlich** oder für Bildschirme freigegeben sein |
 | dass der Fernseher Räume oder Dienste zeigt | Administrator | „Rechte aktualisieren" |
+| dass der Fernseher Personen zeigt | Administrator | Gerät in „Infoscreen-People" aufnehmen, Mitgliedsfelder an der Gruppe anlegen; „Rechte aktualisieren" |
 
 Die Startseite des Designers nennt fehlende Rechte selbst.
 

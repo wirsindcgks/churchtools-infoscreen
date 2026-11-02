@@ -63,6 +63,9 @@ const context = reactive<StageContext>({
     get groupHomepages() {
         return parent.groupHomepages;
     },
+    get people() {
+        return parent.people;
+    },
     get rooms() {
         return parent.rooms;
     },

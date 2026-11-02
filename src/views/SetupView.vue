@@ -172,6 +172,8 @@ let appointmentRooms = false;
 let serviceCalendarIds: number[] = [];
 /** A screen shows a video (Plan.md 52). */
 let videoInUse = false;
+/** A slide shows the block "Personen" (Plan.md 112). */
+let peopleInUse = false;
 let catalog: AuthCatalog | null = null;
 /** Names of the wiki areas by id, to name what a device sees beyond its own (Plan.md 94 B). */
 let wikiNames = new Map<number, string>();
@@ -184,6 +186,8 @@ const demo = ref(false);
 const plan = ref<GroupSpec[] | null>(null);
 const planProblem = ref<string | null>(null);
 const createdGroupIds = ref<number[]>([]);
+/** The group "Infoscreen-People" of the block "Personen" (Plan.md 112), from the settings; null for installations from before. */
+const peopleGroupId = ref<number | null>(null);
 /** The group rights of this account (Plan.md 63); `undefined` while unknown or unreadable – then nothing is greyed out. */
 const groupPermissions = ref<GroupPermissions | undefined>(undefined);
 /** The group types of the instance (Plan.md 71); `undefined` while unknown, `null` when they could not be loaded. */
@@ -233,7 +237,7 @@ const foreignGroups = computed(() =>
     ),
 );
 
-const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.resourceView, AUTH.eventView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit];
+const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.resourceView, AUTH.eventView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit, AUTH.groupWithMembersView, AUTH.memberFieldsView];
 
 /** Rights a side must not hold – what the assistant takes back (Plan.md, F). */
 function forbiddenRights(side: Side): RequiredRight[] | null {
@@ -273,6 +277,8 @@ function computePlan(): void {
             catalog,
             moduleKey: EXTENSION_KEY,
             categories: categories as Record<CategoryKey, number> & { status?: number; drafts?: number; changelog?: number },
+            // Before the first run the group is about to be created; later it is the one the settings name – or none (installations from before).
+            peopleGroupId: createdGroupIds.value.length === 0 ? 'new' : (peopleGroupId.value ?? undefined),
             wikiCategoryId,
             roomIds: rooms.map((r) => r.id),
             usedRoomIds,
@@ -295,6 +301,7 @@ async function persistSettings(changes?: Partial<SettingsFields>): Promise<void>
             changes ?? {
                 designerGroupId: selected.designer ?? undefined,
                 deviceGroupId: selected.device ?? undefined,
+                peopleGroupId: peopleGroupId.value ?? undefined,
                 createdGroupIds: createdGroupIds.value.length ? createdGroupIds.value : undefined,
                 createdGroupTypeId: createdGroupIds.value.length ? (createdTypeId.value ?? undefined) : undefined,
                 createdWikiCategoryId: createdWikiCategoryId.value ?? undefined,
@@ -526,7 +533,7 @@ onBeforeUnmount(() => {
 async function runAssistant(): Promise<void> {
     const groupTypeId = chosenTypeId.value;
     if (groupTypeId === null) return;
-    const question = t.setup.assistantRun.question(chosenTypeName.value, GROUP_NAMES.designer, GROUP_NAMES.device);
+    const question = t.setup.assistantRun.question(chosenTypeName.value, GROUP_NAMES.designer, GROUP_NAMES.device, GROUP_NAMES.people);
     if (!repository || !(await confirm({ message: question, confirmLabel: t.setup.groups.create }))) return;
     assistant.running = true;
     assistant.error = null;
@@ -554,9 +561,12 @@ async function runAssistant(): Promise<void> {
         createdTypeId.value = groupTypeId;
         selected.designer = result.groupIds.designer ?? selected.designer;
         selected.device = result.groupIds.device ?? selected.device;
+        peopleGroupId.value = result.groupIds.people ?? peopleGroupId.value;
         // Saved even after a failure: what was created must stay removable.
         await persistSettings();
         groups.value = await loadGroups();
+        // The device's right on the people group names its id now.
+        computePlan();
         await Promise.all([check('designer'), check('device')]);
     } catch (e) {
         assistant.error = explain(e);
@@ -579,6 +589,7 @@ async function updateRights(): Promise<void> {
     const groupIds = {
         designer: createdGroupIds.value.includes(selected.designer ?? -1) ? selected.designer! : undefined,
         device: createdGroupIds.value.includes(selected.device ?? -1) ? selected.device! : undefined,
+        people: createdGroupIds.value.includes(peopleGroupId.value ?? -1) ? peopleGroupId.value! : undefined,
     };
     assistant.running = true;
     assistant.error = null;
@@ -734,6 +745,8 @@ async function confirmRemoveSetup(): Promise<void> {
         createdGroupIds.value = result.remaining;
         selected.designer = result.selected.designer ?? null;
         selected.device = result.selected.device ?? null;
+        if (peopleGroupId.value !== null && result.removed.includes(peopleGroupId.value)) peopleGroupId.value = null;
+        computePlan();
         // Runs before the save below, but cannot block it: it only ever
         // pushes a log line, never throws (Plan.md, F).
         if (result.error === null) {
@@ -809,6 +822,7 @@ async function check(side: Side): Promise<void> {
                         memberships === null && origins === null
                             ? null
                             : [...names].map(([id, name]) => ({
+                                  id,
                                   name,
                                   grants: origins
                                       ? origins.filter((o) => o.groupId === id).flatMap((o) => (o.dataIds ?? [null]).map((dataId) => ({ authId: o.authId, dataId })))
@@ -830,10 +844,18 @@ async function check(side: Side): Promise<void> {
                 serviceCalendarIds,
                 screenCalendarIds: releasedCalendars.value,
                 videoInUse,
+                peopleGroup: peopleGroupId.value === null ? undefined : { id: peopleGroupId.value, name: groups.value.find((g) => g.id === peopleGroupId.value)?.name ?? GROUP_NAMES.people },
+                peopleInUse,
                 wikiCategoryId,
                 moduleRights: moduleRights('device'),
-                // Only with the catalogue: without the plan nobody knows what a device needs (Plan.md 58 E).
-                plannedAuthIds: plan.value?.find((spec) => spec.key === 'device')?.grants.map((g) => g.authId),
+                // Only with the catalogue: without the plan nobody knows what a device needs (Plan.md 58 E). The member fields
+                // (10126) are read within the people group, whose role the device sits in – wanted as well (Plan.md 112).
+                plannedAuthIds: plan.value
+                    ? [
+                          ...(plan.value.find((spec) => spec.key === 'device')?.grants.map((g) => g.authId) ?? []),
+                          ...(plan.value.find((spec) => spec.key === 'people')?.defaultRoleGrants?.map((g) => g.authId) ?? []),
+                      ]
+                    : undefined,
                 plannedGrants: plan.value?.find((spec) => spec.key === 'device')?.grants,
                 dataName,
                 authName: (authId) => catalog?.name(authId),
@@ -884,7 +906,7 @@ onMounted(async () => {
         if (page.value === 'services') void loadServices();
         // The device check names a missing room type: it waits for this read below.
         const roomTypesRead = loadRoomTypes();
-        const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, resources, usedRooms, roomsAtAppointments, serviceCalendars, videos, permissions, types] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, resources, usedRooms, roomsAtAppointments, serviceCalendars, videos, people, permissions, types] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
@@ -897,6 +919,7 @@ onMounted(async () => {
             repository.appointmentRoomsInUse(),
             repository.serviceCalendarIdsInUse(),
             repository.videoInUse(),
+            repository.peopleInUse(),
             loadGroupPermissions(),
             loadGroupTypes().catch(() => null),
         ]);
@@ -926,8 +949,10 @@ onMounted(async () => {
         appointmentRooms = roomsAtAppointments;
         serviceCalendarIds = serviceCalendars;
         videoInUse = videos;
+        peopleInUse = people;
         selected.designer = settings?.designerGroupId ?? null;
         selected.device = settings?.deviceGroupId ?? null;
+        peopleGroupId.value = settings?.peopleGroupId ?? null;
         Object.assign(savedGroups, selected);
         createdGroupIds.value = settings?.createdGroupIds ?? [];
         // Known from the settings read above; `loadServices` reads them again before the list can change anything.
@@ -1149,6 +1174,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         <h2>{{ t.setup.groups.assistant }}</h2>
                         <template v-if="createdGroupIds.length">
                             <p>{{ t.setup.groups.done(groupName('designer'), groupName('device')) }}</p>
+                            <p v-if="peopleGroupId !== null" data-testid="people-group-hint">{{ t.setup.groups.donePeople(groups.find((g) => g.id === peopleGroupId)?.name ?? GROUP_NAMES.people) }}</p>
                             <p class="muted small">{{ t.setup.groups.doneHint }}</p>
                             <div class="actions">
                                 <button

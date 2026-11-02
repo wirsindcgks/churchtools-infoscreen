@@ -11,6 +11,7 @@ import AppointmentListView from './AppointmentListView.vue';
 import ClockView from './ClockView.vue';
 import CountdownView from './CountdownView.vue';
 import GroupsView from './GroupsView.vue';
+import PeopleView from './PeopleView.vue';
 import NextAppointmentView from './NextAppointmentView.vue';
 import PostsView from './PostsView.vue';
 import RoomsView from './RoomsView.vue';
@@ -187,6 +188,7 @@ const imageUrl = computed(() => {
         <CountdownView v-else-if="block.type === 'countdown'" :block="block" />
         <PostsView v-else-if="block.type === 'posts'" :block="block" :slide-seconds="slideSeconds" />
         <GroupsView v-else-if="block.type === 'groups'" :block="block" :slide-seconds="slideSeconds" />
+        <PeopleView v-else-if="block.type === 'people'" :block="block" :slide-seconds="slideSeconds" />
         <RoomsView v-else-if="block.type === 'rooms'" :block="block" :slide-seconds="slideSeconds" />
         <SlideshowView v-else-if="block.type === 'slideshow'" :block="block" :slide-seconds="slideSeconds" />
         <SocialView v-else-if="block.type === 'social'" :block="block" />

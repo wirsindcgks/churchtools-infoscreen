@@ -71,6 +71,13 @@ export const HELP_CATALOG: HelpSection[] = [
         topic: { intro: groups.intro, items: [groups.view, groups.order, groups.perPage(true), groups.seconds(i.secondsPerPage), th.pageProgress('die nächste Seite'), th.pageProgressStyle, th.pageProgressPlacement] },
     },
     { id: 'all-groups-details', title: `${t.blocks.groups} · ${i.details}`, topic: groups.details },
+    { id: 'all-people-roles', title: `${t.blocks.people} · ${i.peopleRoles}`, topic: th.people.roles },
+    { id: 'all-people-fields', title: `${t.blocks.people} · ${i.peopleFields}`, topic: th.people.fields },
+    {
+        id: 'all-people-look',
+        title: `${t.blocks.people} · ${i.appearance}`,
+        topic: { intro: th.people.intro, items: [th.people.sort, th.people.picture, th.people.grid, th.people.seconds, th.pageProgress('die nächste Seite'), th.pageProgressStyle, th.pageProgressPlacement] },
+    },
     { id: 'all-room-list', title: `${t.blocks.rooms} · ${i.rooms}`, topic: th.rooms.list },
     { id: 'all-rooms-look', title: `${t.blocks.rooms} · ${i.appearance}`, topic: { intro: th.rooms.intro, items: [th.rooms.view, th.rooms.period, th.rooms.seconds, th.pageProgress('die nächste Seite'), th.pageProgressStyle, th.pageProgressPlacement] } },
     { id: 'all-social-list', title: `${t.blocks.social} · ${i.socialProfiles}`, topic: th.social.list },

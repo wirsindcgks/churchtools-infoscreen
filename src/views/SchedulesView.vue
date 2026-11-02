@@ -26,7 +26,7 @@ import { usePreview, useTemplatesIn } from '../designer/usePreview';
 import { expandTemplates } from '../model/templates';
 import WeekTimeline, { type TimelineDay } from '../designer/WeekTimeline.vue';
 import { blockCalendarIds, type ScreenDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
-import { groupNeeds, postNeeds, roomNeeds } from '../player/data';
+import { groupNeeds, peopleNeeded, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 import { setScreenCounts } from '../designer/section-counts';
@@ -66,6 +66,10 @@ const { context, calendars, hiddenCalendars } = usePreview(
     computed(() => postNeeds(firstSlides.value)),
     computed(() => groupNeeds(firstSlides.value)),
     computed(() => roomNeeds(firstSlides.value)),
+    undefined,
+    undefined,
+    undefined,
+    computed(() => peopleNeeded(firstSlides.value)),
 );
 useTemplatesIn(context, templates);
 

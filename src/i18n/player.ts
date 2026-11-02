@@ -69,6 +69,13 @@ export const tp = {
         placesLeft: (n: number) => (n === 1 ? 'Noch 1 Platz frei' : `Noch ${n} Plätze frei`),
     },
 
+    people: {
+        noGroup: 'Gruppe „Infoscreen-People“ noch nicht eingerichtet',
+        denied: 'Personen nicht verfügbar – dem Gerät fehlt das Recht auf die Gruppe',
+        none: 'Keine Personen',
+        yes: 'Ja',
+    },
+
     rooms: {
         choose: 'Räume wählen',
         now: 'Jetzt',

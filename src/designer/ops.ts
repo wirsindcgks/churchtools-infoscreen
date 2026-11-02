@@ -129,6 +129,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     countdown: t.blocks.countdown,
     posts: t.blocks.posts,
     groups: t.blocks.groups,
+    people: t.blocks.people,
     slideshow: t.blocks.slideshow,
     rooms: t.blocks.rooms,
     social: t.blocks.social,
@@ -150,6 +151,7 @@ export const BLOCK_ICONS: Record<BlockType, IconName> = {
     countdown: 'timer',
     posts: 'news',
     groups: 'people',
+    people: 'person',
     slideshow: 'slideshow',
     rooms: 'door',
     social: 'share',
@@ -208,6 +210,7 @@ export function createBlock(
         countdown: [1100, 360],
         posts: [1400, 700],
         groups: [1400, 700],
+        people: [1400, 700],
         slideshow: [1200, 675],
         rooms: [1400, 700],
         social: [900, 360],
@@ -286,6 +289,9 @@ export function createBlock(
             return { ...frame, type, fit: 'contain', sound: false };
         case 'slideshow':
             return { ...frame, type, mediaIds: [], fit: 'cover', seconds: 6, transition: 'fade', motion: 'none' };
+        case 'people':
+            // Every role, no member field yet: name and picture, until the inspector adds some (Plan.md 112).
+            return { ...frame, type, roleIds: [], fieldKeys: [], sort: 'last-name', showImage: true, columns: 3, rows: 2, style: textStyle(44) };
         case 'groups':
             // No homepage yet: the inspector offers them; the leaders stay off until switched on (Plan.md 43).
             return { ...frame, type, groupIds: [], sort: 'weekday', layout: 'card', perPage: 1, show: v.parse(GroupFields, {}), style: textStyle(56) };

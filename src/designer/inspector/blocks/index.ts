@@ -8,6 +8,7 @@ import GroupsInspector from './GroupsInspector.vue';
 import ImageInspector from './ImageInspector.vue';
 import LineInspector from './LineInspector.vue';
 import NextAppointmentInspector from './NextAppointmentInspector.vue';
+import PeopleInspector from './PeopleInspector.vue';
 import PostsInspector from './PostsInspector.vue';
 import QrInspector from './QrInspector.vue';
 import RoomsInspector from './RoomsInspector.vue';
@@ -39,6 +40,7 @@ export const BLOCK_INSPECTORS: Record<BlockType, Component> = {
     'church-header': ChurchHeaderInspector,
     posts: PostsInspector,
     groups: GroupsInspector,
+    people: PeopleInspector,
     rooms: RoomsInspector,
     template: TemplateInspector,
 };

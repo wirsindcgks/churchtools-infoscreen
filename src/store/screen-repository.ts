@@ -254,6 +254,8 @@ export interface LoadedScreen extends ScreenBundle {
     roomTypeIds?: number[];
     /** The non-public calendars an administrator released for screens (schema 1.40, Plan.md 85 b); missing = none. */
     screenCalendarIds?: number[];
+    /** The group "Infoscreen-People" the `people` block reads (schema 1.51, Plan.md 112); missing = none set up. */
+    peopleGroupId?: number;
     issues: ReadIssue[];
 }
 
@@ -560,7 +562,7 @@ export class ScreenRepository {
         const settings = await this.loadSettings().catch(() => null);
         const allowedServiceIds = settings?.allowedServiceIds ?? [];
         const roomTypeIds = settings?.roomTypeIds;
-        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, templates, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, issues };
+        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, templates, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, peopleGroupId: settings?.peopleGroupId, issues };
     }
 
     /**
@@ -1233,6 +1235,12 @@ export class ScreenRepository {
     async videoInUse(): Promise<boolean> {
         const slides = await this.readShownSlides();
         return slides.some((s) => s.blocks.some((b) => b.type === 'video' && !!b.mediaId));
+    }
+
+    /** Whether any slide shows the block "Personen" – then a device must see the people group (Plan.md 112). */
+    async peopleInUse(): Promise<boolean> {
+        const slides = await this.readShownSlides();
+        return slides.some((s) => s.blocks.some((b) => b.type === 'people'));
     }
 
     async saveMedia(doc: MediaDoc): Promise<void> {

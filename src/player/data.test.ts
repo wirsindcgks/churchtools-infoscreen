@@ -3,7 +3,8 @@ import { makeScreen, makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
 import type { Post } from '../posts/normalize';
 import * as api from '../ct/api';
-import { appointmentNeeds, churchToolsPlayerData, groupNeeds, mergePosts, postNeeds, readableAppointments } from './data';
+import * as client from '../ct/client';
+import { appointmentNeeds, churchToolsPlayerData, groupNeeds, mergePosts, peopleNeeded, postNeeds, readableAppointments } from './data';
 
 vi.mock('../ct/api', () => ({
     fetchPublicCalendars: vi.fn(),
@@ -16,9 +17,12 @@ vi.mock('../ct/api', () => ({
     fetchChurchLogoUrl: vi.fn(),
     fetchGroupHomepage: vi.fn(),
     fetchGroupHomepageList: vi.fn(),
+    fetchGroupMembers: vi.fn(),
     fetchPosts: vi.fn(),
     fetchTimeZone: vi.fn(),
 }));
+
+vi.mock('../ct/client', async (importOriginal) => ({ ...(await importOriginal<typeof import('../ct/client')>()), currentPerson: vi.fn() }));
 
 const calendar = (id: number) => ({ id, name: `Kalender ${id}` });
 
@@ -330,5 +334,49 @@ describe('appointmentNeeds – tags (Plan.md 82 C)', () => {
         expect(tags(next({ hideTagIds: [3] }))).toBe(true);
         expect(tags(next(), countdown())).toBe(false);
         expect(tags(next(), countdown([3]))).toBe(true);
+    });
+});
+
+describe('people (Plan.md 112)', () => {
+    const peopleBlock: Block = {
+        id: 'p',
+        type: 'people',
+        x: 0,
+        y: 0,
+        width: 1400,
+        height: 700,
+        roleIds: [],
+        fieldKeys: [],
+        sort: 'last-name',
+        showImage: true,
+        columns: 3,
+        rows: 2,
+        style,
+    };
+
+    it('is needed when a slide has the block, and only then', () => {
+        expect(peopleNeeded([makeSlide({ blocks: [peopleBlock] })])).toBe(true);
+        expect(peopleNeeded([makeSlide({ blocks: [postsBlock()] }), makeSlide({ blocks: [] })])).toBe(false);
+    });
+
+    const member = (personId: number, first: string) => ({ personId, groupTypeRoleId: 5, groupMemberStatus: 'active', person: { domainAttributes: { firstName: first, lastName: 'X' } } });
+
+    it('reads the members through the group alone and leaves out the account that asks', async () => {
+        vi.mocked(client.currentPerson).mockResolvedValue({ id: 22 } as Awaited<ReturnType<typeof client.currentPerson>>);
+        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(1, 'Anna')], roles: [], fields: [] });
+        const group = await churchToolsPlayerData.people(40);
+        expect(api.fetchGroupMembers).toHaveBeenCalledWith(40);
+        expect(group.denied).toBe(false);
+        expect(group.people.map((p) => p.name)).toEqual(['Anna X']);
+    });
+
+    it('answers a 403 with a group marked as denied – not as an empty one', async () => {
+        vi.mocked(api.fetchGroupMembers).mockRejectedValue(forbidden());
+        expect(await churchToolsPlayerData.people(40)).toEqual({ groupId: 40, denied: true, people: [], roles: [], fields: [] });
+    });
+
+    it('lets other errors fail, so the controller keeps the last people', async () => {
+        vi.mocked(api.fetchGroupMembers).mockRejectedValue(new Error('Netz'));
+        await expect(churchToolsPlayerData.people(40)).rejects.toThrow('Netz');
     });
 });

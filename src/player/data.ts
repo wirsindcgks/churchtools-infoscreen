@@ -16,13 +16,15 @@ import {
     fetchEvents,
     fetchGroupHomepage,
     fetchGroupHomepageList,
+    fetchGroupMembers,
     fetchPosts,
     fetchResourceMasterdata,
     fetchServiceGroups,
     fetchServices,
     fetchTimeZone,
 } from '../ct/api';
-import { ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
+import { currentPerson, ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
+import { deniedPeople, normalizeMembers, type PeopleGroup } from '../groups/members';
 import { normalizeHomepage, type HomepageGroups } from '../groups/normalize';
 import type { HeartbeatDoc } from '../model/heartbeat';
 import type { ScreenDoc, SlideDoc } from '../model/schema';
@@ -67,6 +69,11 @@ export interface PlayerData {
      * groups leave the TV (Plan.md 43, g).
      */
     groupHomepages(parentGroupIds: number[]): Promise<HomepageGroups[]>;
+    /**
+     * The members of the people group with their member fields (schema 1.51, Plan.md 112). The account that asks is
+     * left out. A `403` comes back as a group marked `denied`, other errors fail.
+     */
+    people(groupId: number): Promise<PeopleGroup>;
     /**
      * The confirmed bookings of these rooms within `[from, to)` (schema 1.16).
      * A room the caller may not read (403), that the stammdaten do not name or
@@ -172,6 +179,17 @@ export const churchToolsPlayerData: PlayerData = {
                 return { parentGroupId, groups: normalizeHomepage(raw, baseUrl) };
             }),
         );
+    },
+    async people(groupId) {
+        try {
+            const raw = await withTimeout(fetchGroupMembers(groupId));
+            // Who asks is the device, or the designer in the preview; either is no card (Plan.md 112).
+            const own = await currentPerson().then((person) => person.id, () => undefined);
+            return normalizeMembers(groupId, raw.members, raw.roles, raw.fields, own);
+        } catch (error) {
+            if (httpStatus(error) !== 403) throw error;
+            return deniedPeople(groupId);
+        }
     },
     async rooms(resourceIds, from, to, timeZone, roomTypeIds) {
         if (!resourceIds.length) return [];
@@ -293,6 +311,11 @@ export function groupNeeds(slides: SlideDoc[]): number[] {
         if (block.type === 'groups' && block.parentGroupId !== undefined) ids.add(block.parentGroupId);
     }
     return [...ids].sort((a, b) => a - b);
+}
+
+/** Whether a screen shows people (Plan.md 112): then the controller reads the people group from the settings. */
+export function peopleNeeded(slides: SlideDoc[]): boolean {
+    return slides.some((slide) => slide.blocks.some((block) => block.type === 'people'));
 }
 
 /**

@@ -10,13 +10,14 @@ import type { Appointment } from '../appointments/normalize';
 import { httpStatus, NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import { playlistStand } from '../model/stand';
+import type { PeopleGroup } from '../groups/members';
 import type { HomepageGroups } from '../groups/normalize';
 import { revivePosts, type Post } from '../posts/normalize';
 import { reviveRooms, type RoomBookings } from '../rooms/normalize';
 import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '../store/screen-repository';
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
-import { appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, postNeeds, roomNeeds, type PlayerData } from './data';
+import { appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, peopleNeeded, postNeeds, roomNeeds, type PlayerData } from './data';
 import { activePlaylistId } from './schedule';
 import { askServiceWorkerHasPage } from './service-worker';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
@@ -28,6 +29,8 @@ export interface PlayerState {
     appointments: Appointment[];
     posts: Post[];
     groupHomepages: HomepageGroups[];
+    /** The people group for `people` blocks; `null` = none set up, `undefined` = no such block or not read yet. */
+    people: PeopleGroup | null | undefined;
     rooms: RoomBookings[];
     timeZone: string;
     churchName: string;
@@ -138,6 +141,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         appointments: [],
         posts: [],
         groupHomepages: [],
+        people: undefined,
         rooms: [],
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         churchName: '',
@@ -310,6 +314,16 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                   return state.groupHomepages;
               })
             : [];
+        // People are decoration too: a failure keeps the last ones. Without a group set up there are none to read.
+        const peopleGroupId = state.screen.peopleGroupId;
+        const people = !peopleNeeded(state.screen.slides)
+            ? undefined
+            : peopleGroupId === undefined
+              ? null
+              : await data.people(peopleGroupId).catch((error: unknown) => {
+                    console.warn('Personen konnten nicht geladen werden:', error);
+                    return state.people;
+                });
         const roomWants = roomNeeds(state.screen.slides);
         const roomWindow = appointmentWindow(now, timeZone, roomWants.days);
         // Rooms are decoration too: a failure keeps the last bookings.
@@ -327,6 +341,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             appointments,
             posts,
             groupHomepages,
+            people,
             rooms,
             clockConfirmed: clock.confirmed,
             phase: 'running',
@@ -338,6 +353,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             appointments,
             posts,
             groupHomepages,
+            people,
             rooms,
             timeZone,
             churchName,
@@ -457,6 +473,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                 appointments: reviveAppointments(cached.appointments),
                 posts: cached.posts ? revivePosts(cached.posts) : [],
                 groupHomepages: cached.groupHomepages ?? [],
+                people: cached.people,
                 rooms: cached.rooms ? reviveRooms(cached.rooms) : [],
                 timeZone: cached.timeZone,
                 churchName: cached.churchName,

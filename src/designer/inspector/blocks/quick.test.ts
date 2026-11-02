@@ -31,6 +31,7 @@ const QUICK: Record<ContentBlockType, string[]> = {
     qr: ['Inhalt', 'Farbe'],
     posts: ['Gruppen wählen', 'Ansicht: Hervorgehoben', 'Farbe'],
     groups: ['Gruppen-Homepage: Homepage wählen', 'Ansicht: Hervorgehoben', 'Farbe'],
+    people: ['Angaben wählen', 'Reihenfolge: Nachname', 'Farbe'],
     rooms: ['Räume wählen', 'Ansicht: Übersicht', 'Zeitraum: 1 Tag', 'Farbe'],
     social: ['Profile: Profil hinzufügen', 'Anordnung: Untereinander', 'Markenfarben', 'Farbe', 'Ausrichtung'],
 };

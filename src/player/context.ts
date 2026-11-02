@@ -1,6 +1,7 @@
 import { inject, provide, type InjectionKey } from 'vue';
 import type { Appointment } from '../appointments/normalize';
 import { DEFAULT_THEME, type MediaDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
+import type { PeopleGroup } from '../groups/members';
 import type { HomepageGroups } from '../groups/normalize';
 import type { Post } from '../posts/normalize';
 import type { RoomBookings } from '../rooms/normalize';
@@ -18,6 +19,8 @@ export interface StageContext {
     posts?: Post[];
     /** Groups of the homepages the `groups` blocks need (schema 1.14); missing counts as none. */
     groupHomepages?: HomepageGroups[];
+    /** The people of the group "Infoscreen-People" for the `people` blocks (schema 1.51); `null` = none set up, missing = not loaded. */
+    people?: PeopleGroup | null;
     /** Bookings of the rooms the `rooms` blocks need (schema 1.16); missing counts as none. */
     rooms?: RoomBookings[];
     media: Map<string, MediaDoc>;

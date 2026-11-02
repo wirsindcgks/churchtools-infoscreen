@@ -13,6 +13,8 @@ export const SHOW_ALL_CAP = 200;
 export const POST_SECONDS = 15;
 /** Seconds per group (card) or per page (list) of a `groups` block, unless set otherwise – time to scan the QR code. */
 export const GROUP_SECONDS = 15;
+/** Seconds per page of a `people` block, unless set otherwise (Plan.md 112). */
+export const PEOPLE_SECONDS = 15;
 
 /**
  * Whether a block shows the bar that tells when the next page comes (schema 1.47, Plan.md 105). A block without the
@@ -20,7 +22,7 @@ export const GROUP_SECONDS = 15;
  */
 export function pageProgressOn(block: Block): boolean {
     const own = 'pageProgress' in block ? block.pageProgress : undefined;
-    return own ?? (block.type === 'appointment-list' || block.type === 'groups' || block.type === 'rooms');
+    return own ?? (block.type === 'appointment-list' || block.type === 'groups' || block.type === 'people' || block.type === 'rooms');
 }
 
 /** Whether a block really draws its progress: it is on, and the presentation does not draw its own on the slide (Plan.md 109). */
@@ -108,6 +110,11 @@ export function slideSeconds(slide: SlideDoc, pages: Readonly<Record<string, num
         if (block.type === 'groups') {
             const count = pages[block.id] ?? 1;
             if (count > 1) seconds = Math.max(seconds, count * (block.pageSeconds ?? GROUP_SECONDS));
+        }
+        // A page holds columns × rows cards (Plan.md 112).
+        if (block.type === 'people') {
+            const count = pages[block.id] ?? 1;
+            if (count > 1) seconds = Math.max(seconds, count * (block.pageSeconds ?? PEOPLE_SECONDS));
         }
         // The overview pages like a list; the door sign is one page.
         if (block.type === 'rooms' && block.layout === 'overview') {
