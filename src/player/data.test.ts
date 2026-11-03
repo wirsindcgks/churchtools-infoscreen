@@ -376,6 +376,12 @@ describe('people (Plan.md 112)', () => {
         expect((await churchToolsPlayerData.people(40, [23])).people.map((p) => p.name)).toEqual(['Anna X']);
     });
 
+    it('keeps the account that asks in the designer preview – there it is a person, not a device', async () => {
+        vi.mocked(client.currentPerson).mockResolvedValue({ id: 1 } as Awaited<ReturnType<typeof client.currentPerson>>);
+        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(1, 'Anna')], roles: [] });
+        expect((await churchToolsPlayerData.people(40, [22], false)).people.map((p) => p.name)).toEqual(['Anna X']);
+    });
+
     it('answers a 403 with a group marked as denied – not as an empty one', async () => {
         vi.mocked(api.fetchGroupMembers).mockRejectedValue(forbidden());
         expect(await churchToolsPlayerData.people(40)).toEqual({ groupId: 40, denied: true, people: [], roles: [], fields: [] });

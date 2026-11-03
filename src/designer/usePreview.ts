@@ -162,7 +162,8 @@ export function usePreview(
             return;
         }
         try {
-            const list = await churchToolsPlayerData.people(peopleGroupId, peopleDeviceIds);
+            // The designer is a person, maybe one of the cards: only the devices are left out.
+            const list = await churchToolsPlayerData.people(peopleGroupId, peopleDeviceIds, false);
             if (mine === peopleRequest) context.people = list;
         } catch (error) {
             problem.value = error instanceof Error ? error.message : String(error);
