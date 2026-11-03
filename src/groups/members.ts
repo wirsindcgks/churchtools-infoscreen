@@ -52,8 +52,9 @@ export interface PeopleRole {
 }
 
 export interface PeopleField {
-    /** What the block stores: the field's name. */
+    /** What the block stores: the field's id as text – it stays when the church renames the field. */
     key: string;
+    /** The name as the church keeps it in ChurchTools now. */
     name: string;
 }
 
@@ -64,7 +65,7 @@ export interface Person {
     name: string;
     imageUrl: string | null;
     roleId: number | null;
-    /** Field name → shown value; empty values are left out. */
+    /** Field id → shown value; empty values are left out. */
     fields: Record<string, string>;
 }
 
@@ -120,8 +121,8 @@ export function normalizeMembers(
         const name = (role?.name ?? '').trim();
         if (id !== null && name && !roles.some((r) => r.id === id)) roles.push({ id, name });
     }
-    /** The fields seen on any member, in the group's own order (`sortKey`). */
-    const seenFields = new Map<string, number>();
+    /** The fields seen on any member by id, with their current name, in the group's own order (`sortKey`). */
+    const seenFields = new Map<string, { name: string; sortKey: number }>();
 
     const people: Person[] = [];
     for (const member of rawMembers as MemberResponse[]) {
@@ -136,16 +137,18 @@ export function normalizeMembers(
         if (!name) continue;
         const fields: Record<string, string> = {};
         for (const field of Array.isArray(member.fields) ? member.fields : []) {
-            const name = (field?.name ?? '').trim();
-            if (!name) continue;
+            const id = field?.id === undefined || field.id === null ? '' : String(field.id);
+            if (!id) continue;
             const text = valueText(field.value);
-            if (text) fields[name] = text;
-            if (!seenFields.has(name)) seenFields.set(name, typeof field.sortKey === 'number' ? field.sortKey : Infinity);
+            if (text) fields[id] = text;
+            // A field the church named differently now is the same field: the id is what counts, the name is only shown.
+            const label = (field.name ?? '').trim() || id;
+            if (!seenFields.has(id)) seenFields.set(id, { name: label, sortKey: typeof field.sortKey === 'number' ? field.sortKey : Infinity });
         }
         people.push({ firstName, lastName, name, imageUrl: person?.imageUrl || null, roleId: idOf(member.groupTypeRoleId), fields });
         if (people.length >= PEOPLE_CAP) break;
     }
-    return { groupId, denied: false, people, roles, fields: [...seenFields].sort((a, b) => a[1] - b[1]).map(([name]) => ({ key: name, name })) };
+    return { groupId, denied: false, people, roles, fields: [...seenFields].sort((a, b) => a[1].sortKey - b[1].sortKey).map(([key, { name }]) => ({ key, name })) };
 }
 
 /**
@@ -164,6 +167,18 @@ export function selectPeople(group: PeopleGroup | undefined, roleIds: readonly n
         return index === -1 ? Infinity : index;
     };
     return wanted.sort(sort === 'first-name' ? byFirst : sort === 'role' ? (a, b) => rank(a) - rank(b) || byLast(a, b) : byLast);
+}
+
+/**
+ * The ids of the fields a block names. A block from before stored the field's name: it is mapped to the id when exactly
+ * one field of the group has that name; otherwise it stays as it is and shows nothing – silently, as before.
+ */
+export function resolveFieldKeys(fieldKeys: readonly string[], fields: readonly PeopleField[]): string[] {
+    return fieldKeys.map((key) => {
+        if (fields.some((f) => f.key === key)) return key;
+        const byName = fields.filter((f) => f.name === key);
+        return byName.length === 1 ? byName[0]!.key : key;
+    });
 }
 
 /** The fields of a person the block shows, in the block's order – only those the person has a value for. */

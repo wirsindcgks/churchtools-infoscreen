@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deniedPeople, normalizeMembers, selectPeople, shownFields, PEOPLE_CAP, type PeopleGroup } from './members';
+import { deniedPeople, normalizeMembers, resolveFieldKeys, selectPeople, shownFields, PEOPLE_CAP, type PeopleGroup } from './members';
 
 const member = (personId: number, first: string, last: string, extra: Record<string, unknown> = {}) => ({
     personId,
@@ -21,7 +21,7 @@ describe('normalizeMembers (Plan.md 112, G70)', () => {
         const group = normalizeMembers(40, [member(1, 'Anna', 'Berg', { fields: [field(2, 'Funktion', 'Pastorin'), field(5, 'Büro', ' 12 ')], comment: 'privat', email: 'a@x.example' })], roles);
         expect(group.denied).toBe(false);
         expect(group.people).toEqual([
-            { firstName: 'Anna', lastName: 'Berg', name: 'Anna Berg', imageUrl: 'https://x.example/images/1', roleId: 5, fields: { Funktion: 'Pastorin', Büro: '12' } },
+            { firstName: 'Anna', lastName: 'Berg', name: 'Anna Berg', imageUrl: 'https://x.example/images/1', roleId: 5, fields: { '2': 'Pastorin', '5': '12' } },
         ]);
         // No id, no guid, no comment, no address anywhere in what leaves the file.
         const text = JSON.stringify(group);
@@ -52,9 +52,9 @@ describe('normalizeMembers (Plan.md 112, G70)', () => {
         expect(group.people).toEqual([expect.objectContaining({ name: 'Pastor Berg', imageUrl: null })]);
     });
 
-    it('reads the fields as the list ChurchTools sends, and leaves out empty values and nameless entries', () => {
-        const group = normalizeMembers(40, [member(1, 'A', 'B', { fields: [field(2, 'Funktion', 'Leitung'), field(5, 'Büro', ''), field(7, 'Raum', ['A', 'B']), { id: 9, value: 'x' }] })]);
-        expect(group.people[0]!.fields).toEqual({ Funktion: 'Leitung', Raum: 'A, B' });
+    it('reads the fields as the list ChurchTools sends, by id, and leaves out empty values and entries without an id', () => {
+        const group = normalizeMembers(40, [member(1, 'A', 'B', { fields: [field(2, 'Funktion', 'Leitung'), field(5, 'Büro', ''), field(7, 'Raum', ['A', 'B']), { name: 'Ohne Id', value: 'x' }] })]);
+        expect(group.people[0]!.fields).toEqual({ '2': 'Leitung', '7': 'A, B' });
         // An object keyed by id is not the measured form: nothing is read from it.
         expect(normalizeMembers(40, [member(1, 'A', 'B', { fields: { '2': 'Pastorin' } as never })]).people[0]!.fields).toEqual({});
     });
@@ -67,7 +67,7 @@ describe('normalizeMembers (Plan.md 112, G70)', () => {
     it('offers the roles and fields there are to choose from – the fields in the order of the group, each once', () => {
         const group = normalizeMembers(40, [member(1, 'A', 'B', { fields: [field(9, 'Raum', 'y', 3), field(5, 'Büro', 'x', 1)] })], [...roles, roles[0]!]);
         expect(group.roles).toEqual([{ id: 5, name: 'Teilnehmer' }, { id: 6, name: 'Leiter' }]);
-        expect(group.fields.map((f) => f.key)).toEqual(['Büro', 'Raum']);
+        expect(group.fields).toEqual([{ key: '5', name: 'Büro' }, { key: '9', name: 'Raum' }]);
     });
 
     it('takes no more people than a card wall can show', () => {
@@ -116,9 +116,33 @@ describe('selectPeople', () => {
 describe('shownFields', () => {
     it('lists the chosen fields in the order of the block, only those with a value', () => {
         const [person] = normalizeMembers(40, [member(1, 'A', 'B', { fields: [field(1, 'Funktion', 'Pastorin'), field(2, 'Büro', '12')] })]).people;
-        expect(shownFields(person!, ['Büro', 'Raum', 'Funktion'])).toEqual([
-            { key: 'Büro', text: '12' },
-            { key: 'Funktion', text: 'Pastorin' },
+        expect(shownFields(person!, ['2', '9', '1'])).toEqual([
+            { key: '2', text: '12' },
+            { key: '1', text: 'Pastorin' },
         ]);
+    });
+});
+
+describe('fields by id (Plan.md 112)', () => {
+    const before = normalizeMembers(40, [member(1, 'Anna', 'Berg', { fields: [field(2, 'funktion', 'Pastorin'), field(5, 'buero', '12')] })]);
+    // The church renames the fields in ChurchTools; the ids stay.
+    const after = normalizeMembers(40, [member(1, 'Anna', 'Berg', { fields: [field(2, 'Funktion', 'Pastorin'), field(5, 'Büro', '12')] })]);
+
+    it('keeps a chosen field across a rename: same id, the current name is shown', () => {
+        expect(before.fields).toEqual([{ key: '2', name: 'funktion' }, { key: '5', name: 'buero' }]);
+        expect(after.fields).toEqual([{ key: '2', name: 'Funktion' }, { key: '5', name: 'Büro' }]);
+        expect(shownFields(after.people[0]!, ['5', '2'])).toEqual([{ key: '5', text: '12' }, { key: '2', text: 'Pastorin' }]);
+    });
+
+    it('maps the names an older block stored to the ids – when exactly one field has the name', () => {
+        expect(resolveFieldKeys(['Büro', 'Funktion'], after.fields)).toEqual(['5', '2']);
+        // Ids stay as they are, also when one looks like a name.
+        expect(resolveFieldKeys(['5', '2'], after.fields)).toEqual(['5', '2']);
+    });
+
+    it('leaves a name as it is when no field or more than one field has it – it then shows nothing', () => {
+        const twice = [{ key: '1', name: 'Raum' }, { key: '2', name: 'Raum' }];
+        expect(resolveFieldKeys(['Raum', 'Telefon'], twice)).toEqual(['Raum', 'Telefon']);
+        expect(shownFields(after.people[0]!, resolveFieldKeys(['Gibt es nicht'], after.fields))).toEqual([]);
     });
 });

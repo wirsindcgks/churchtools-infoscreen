@@ -7,6 +7,7 @@
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
 import { th } from '../../../i18n/help';
+import { resolveFieldKeys } from '../../../groups/members';
 import type { Block } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
 import { PEOPLE_SECONDS } from '../../../player/paging';
@@ -60,23 +61,25 @@ const rolesSummary = computed(() => (props.block.roleIds.length ? t.common.count
 
 // --- member fields: chosen ones in their order, the rest to pick ---
 
+/** The chosen fields by id – a block from before holds names, mapped here; edits write the ids. The list shows the current names. */
+const keys = computed(() => resolveFieldKeys(props.block.fieldKeys, fields.value));
 const chosen = computed<SortItem[]>(() =>
-    props.block.fieldKeys.map((key) => {
-        const known = fields.value.some((f) => f.key === key);
-        return { key, label: known || !loaded.value ? key : `${key} – ${t.inspector.peopleFieldGone}`, dimmed: loaded.value && !known };
+    keys.value.map((key) => {
+        const name = fields.value.find((f) => f.key === key)?.name;
+        return { key, label: name ?? (loaded.value ? `${key} – ${t.inspector.peopleFieldGone}` : key), dimmed: loaded.value && name === undefined };
     }),
 );
-const pickable = computed(() => fields.value.filter((f) => !props.block.fieldKeys.includes(f.key)));
+const pickable = computed(() => fields.value.filter((f) => !keys.value.includes(f.key)));
 function addField(key: string | number): void {
     if (props.block.fieldKeys.length >= FIELDS_MAX) return;
-    setBlock({ fieldKeys: [...props.block.fieldKeys, String(key)] });
+    setBlock({ fieldKeys: [...keys.value, String(key)] });
 }
 function removeField(index: number): void {
-    setBlock({ fieldKeys: props.block.fieldKeys.filter((_, i) => i !== index) });
+    setBlock({ fieldKeys: keys.value.filter((_, i) => i !== index) });
 }
 function moveField(from: number, to: number): void {
     if (to < 0 || to >= props.block.fieldKeys.length) return;
-    setBlock({ fieldKeys: moveItem(props.block.fieldKeys, from, to) });
+    setBlock({ fieldKeys: moveItem(keys.value, from, to) });
 }
 const fieldsFace = computed(() =>
     props.block.fieldKeys.length ? t.quick.listFace(t.inspector.peopleFields, t.common.countOf(props.block.fieldKeys.length, fields.value.length || props.block.fieldKeys.length)) : t.quick.empty.people,

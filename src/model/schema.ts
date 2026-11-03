@@ -393,7 +393,7 @@ export const PeopleBlock = v.object({
     type: v.literal('people'),
     /** Empty: every role of the group; else only the people in these roles (ids of the group type's roles). */
     roleIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50)),
-    /** The member fields shown under the name, in this order – the field's name as ChurchTools holds it. */
+    /** The member fields shown under the name, in this order – the field's id as text (it stays when the church renames the field). A block from before holds the name; the player maps it to the id. */
     fieldKeys: v.pipe(v.array(v.pipe(v.string(), v.maxLength(100))), v.maxLength(8)),
     /** `last-name` – by last name, then first name; `first-name` the other way round; `role` – by role, then last name. */
     sort: v.optional(v.picklist(['last-name', 'first-name', 'role']), 'last-name'),

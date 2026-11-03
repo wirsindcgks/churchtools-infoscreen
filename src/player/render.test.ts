@@ -885,7 +885,7 @@ describe('rendering people (Plan.md 112)', () => {
         width: 1600,
         height: 800,
         roleIds: [],
-        fieldKeys: ['Funktion'],
+        fieldKeys: ['2'],
         sort: 'last-name',
         showImage: true,
         columns: 3,
@@ -899,7 +899,7 @@ describe('rendering people (Plan.md 112)', () => {
         name: `${first} ${last}`,
         imageUrl: null,
         roleId: 5,
-        fields: { Funktion: 'Pastorin', Büro: '12' },
+        fields: { '2': 'Pastorin', '5': '12' },
         ...extra,
     });
     const group = (...people: PeopleGroup['people']): PeopleGroup => ({ groupId: 40, denied: false, people, roles: [{ id: 5, name: 'Teilnehmer' }], fields: [] });
@@ -911,6 +911,12 @@ describe('rendering people (Plan.md 112)', () => {
         const text = wrapper.get('[data-testid="people-cards"]').text();
         expect(text).toContain('Pastorin');
         expect(text).not.toContain('12');
+    });
+
+    it('shows a field a block from before names by its name – mapped to the id of the group', () => {
+        const people: PeopleGroup = { ...group(person('Anna', 'Berg')), fields: [{ key: '2', name: 'Funktion' }, { key: '5', name: 'Büro' }] };
+        const wrapper = render(makeSlide({ blocks: [peopleBlock({ fieldKeys: ['Funktion'] })] }), { people });
+        expect(wrapper.get('[data-testid="people-cards"]').text()).toContain('Pastorin');
     });
 
     it('shows the picture of the card, or the initial; none at all when the picture is switched off', () => {

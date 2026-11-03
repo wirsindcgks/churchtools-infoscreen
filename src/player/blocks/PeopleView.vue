@@ -5,7 +5,7 @@
  * nothing but `Person` fields: name, picture and the member fields the block names.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { selectPeople, shownFields, type Person } from '../../groups/members';
+import { resolveFieldKeys, selectPeople, shownFields, type Person } from '../../groups/members';
 import type { Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
@@ -91,6 +91,9 @@ function pictureBox(): { width: number; height: number } {
     return landscape.value ? { width: Math.min(h, w * 0.4), height: h } : { width: w, height: Math.min(w, h * 0.55) };
 }
 
+/** The fields by id; a block from before holds names, which are mapped to the ids of the group. */
+const fieldKeys = computed(() => resolveFieldKeys(props.block.fieldKeys, context.people?.fields ?? []));
+
 const cards = computed(() =>
     shown.value.map((person, index) => {
         const box = pictureBox();
@@ -101,7 +104,7 @@ const cards = computed(() =>
             picture: props.block.showImage
                 ? { url: person.imageUrl ? imageSource(context, sizedImageUrl(person.imageUrl, box.width, box.height, 'crop')) : null, style: { width: `${box.width}px`, height: `${box.height}px` } }
                 : null,
-            fields: shownFields(person, props.block.fieldKeys),
+            fields: shownFields(person, fieldKeys.value),
         };
     }),
 );
