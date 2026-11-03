@@ -18,6 +18,7 @@ vi.mock('../ct/api', () => ({
     fetchGroupHomepage: vi.fn(),
     fetchGroupHomepageList: vi.fn(),
     fetchGroupMembers: vi.fn(),
+fetchPersons: vi.fn(),
     fetchPosts: vi.fn(),
     fetchTimeZone: vi.fn(),
 }));
@@ -355,23 +356,23 @@ describe('people (Plan.md 112)', () => {
     };
 
     it('is needed when a slide has the block, and only then – the standard group and the ones named, each once', () => {
-        expect(peopleNeeds([makeSlide({ blocks: [peopleBlock] })])).toEqual({ standard: true, groupIds: [] });
+        expect(peopleNeeds([makeSlide({ blocks: [peopleBlock] })])).toEqual({ standard: true, groupIds: [], personFieldKeys: [] });
         expect(peopleAny(peopleNeeds([makeSlide({ blocks: [postsBlock()] }), makeSlide({ blocks: [] })]))).toBe(false);
         const named = [{ ...peopleBlock, id: 'q', sourceGroupId: 51 }, { ...peopleBlock, id: 'r', sourceGroupId: 51 }, { ...peopleBlock, id: 's', sourceGroupId: 7 }];
-        expect(peopleNeeds([makeSlide({ blocks: named })])).toEqual({ standard: false, groupIds: [7, 51] });
+        expect(peopleNeeds([makeSlide({ blocks: named })])).toEqual({ standard: false, groupIds: [7, 51], personFieldKeys: [] });
     });
 
     it('reads only the standard group and the released ones; any other group comes back unreleased without a request', async () => {
         const read = vi.fn(async (groupId: number) => ({ groupId, denied: false, people: [], roles: [], fields: [] }));
-        const groups = await readPeopleGroups({ standard: true, groupIds: [51, 99] }, { peopleGroupId: 40, peopleGroupIds: [51] }, read);
+        const groups = await readPeopleGroups({ standard: true, groupIds: [51, 99], personFieldKeys: [] }, { peopleGroupId: 40, peopleGroupIds: [51] }, read);
         expect(read.mock.calls.map((c) => c[0]).sort()).toEqual([40, 51]);
         expect(groups.find((g) => g.groupId === 40)).toMatchObject({ standard: true, denied: false });
         expect(groups.find((g) => g.groupId === 51)).toMatchObject({ denied: false });
         expect(groups.find((g) => g.groupId === 51)?.standard).toBeUndefined();
         expect(groups.find((g) => g.groupId === 99)).toMatchObject({ unreleased: true, denied: true, people: [] });
         // Without a standard group set up a block without a group finds none; one that names the standard group still reads it.
-        expect(await readPeopleGroups({ standard: true, groupIds: [] }, {}, read)).toEqual([]);
-        const named = await readPeopleGroups({ standard: false, groupIds: [40] }, { peopleGroupId: 40 }, read);
+        expect(await readPeopleGroups({ standard: true, groupIds: [], personFieldKeys: [] }, {}, read)).toEqual([]);
+        const named = await readPeopleGroups({ standard: false, groupIds: [40], personFieldKeys: [] }, { peopleGroupId: 40 }, read);
         expect(named).toMatchObject([{ groupId: 40, standard: true }]);
     });
 
@@ -382,6 +383,7 @@ describe('people (Plan.md 112)', () => {
         vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(1, 'Anna')], roles: [] });
         const group = await churchToolsPlayerData.people(40);
         expect(api.fetchGroupMembers).toHaveBeenCalledWith(40);
+        expect(api.fetchPersons).not.toHaveBeenCalled();
         expect(group.denied).toBe(false);
         expect(group.people.map((p) => p.name)).toEqual(['Anna X']);
     });
@@ -401,6 +403,48 @@ describe('people (Plan.md 112)', () => {
     it('answers a 403 with a group marked as denied – not as an empty one', async () => {
         vi.mocked(api.fetchGroupMembers).mockRejectedValue(forbidden());
         expect(await churchToolsPlayerData.people(40)).toEqual({ groupId: 40, denied: true, people: [], roles: [], fields: [] });
+    });
+
+    it('needs the person fields the blocks chose, in the order of the list and each once (schema 1.54)', () => {
+        const blocks = [{ ...peopleBlock, personFieldKeys: ['city', 'email' as const] }, { ...peopleBlock, id: 'q', personFieldKeys: ['email' as const] }] as Block[];
+        expect(peopleNeeds([makeSlide({ blocks })]).personFieldKeys).toEqual(['email', 'city']);
+    });
+
+    it('reads a chosen person field only if it is released – the rest of a group is read as before', async () => {
+        const read = vi.fn(async (groupId: number) => ({ groupId, denied: false, people: [], roles: [], fields: [] }));
+        const needs = { standard: true, groupIds: [], personFieldKeys: ['email', 'city', 'zip'] };
+        await readPeopleGroups(needs, { peopleGroupId: 40, personFieldKeys: ['city', 'birthday'] }, read);
+        expect(read).toHaveBeenCalledWith(40, ['city']);
+        read.mockClear();
+        await readPeopleGroups(needs, { peopleGroupId: 40 }, read);
+        expect(read).toHaveBeenCalledWith(40, []);
+    });
+
+    it('asks /persons once for the people of the cards and keeps only the released and chosen keys – the year of a birthday never stays', async () => {
+        vi.mocked(client.currentPerson).mockResolvedValue({ id: 22 } as Awaited<ReturnType<typeof client.currentPerson>>);
+        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(1, 'Anna'), member(2, 'Ben')], roles: [] });
+        vi.mocked(api.fetchPersons).mockResolvedValue([
+            { id: 1, email: 'anna@example.org', mobile: '0170 1', birthday: '1980-05-17', street: 'Weg 1', guid: 'x' },
+            { id: 2, email: '', birthday: null },
+        ]);
+        const group = await churchToolsPlayerData.people(40, [], true, ['email', 'birthday']);
+        expect(api.fetchPersons).toHaveBeenCalledTimes(1);
+        expect(api.fetchPersons).toHaveBeenCalledWith([1, 2]);
+        expect(group.personFieldKeys).toEqual(['email', 'birthday']);
+        expect(group.people[0]!.personFields).toEqual({ email: 'anna@example.org', birthday: '17.05.' });
+        expect(group.people[1]!.personFields).toEqual({});
+        expect(JSON.stringify(group)).not.toMatch(/1980|Weg 1|0170|guid/);
+    });
+
+    it('does not read /persons without a chosen released field, and shows empty fields without the right (403)', async () => {
+        vi.mocked(api.fetchPersons).mockClear();
+        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(1, 'Anna')], roles: [] });
+        expect((await churchToolsPlayerData.people(40, [], false, [])).personFieldKeys).toBeUndefined();
+        expect(api.fetchPersons).not.toHaveBeenCalled();
+        vi.mocked(api.fetchPersons).mockRejectedValue(forbidden());
+        const group = await churchToolsPlayerData.people(40, [], false, ['email']);
+        expect(group.denied).toBe(false);
+        expect(group.people[0]!.personFields).toEqual({});
     });
 
     it('lets other errors fail, so the controller keeps the last people', async () => {

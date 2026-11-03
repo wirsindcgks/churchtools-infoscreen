@@ -1,6 +1,6 @@
 import { inject, provide, type InjectionKey } from 'vue';
 import type { Appointment } from '../appointments/normalize';
-import { DEFAULT_THEME, type MediaDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
+import { DEFAULT_THEME, type MediaDoc, type PersonFieldKey, type TemplateDoc, type ThemeDoc } from '../model/schema';
 import type { PeopleGroup } from '../groups/members';
 import type { HomepageGroups } from '../groups/normalize';
 import type { Post } from '../posts/normalize';
@@ -23,6 +23,8 @@ export interface StageContext {
     people?: PeopleGroup[];
     /** Designer only: the groups a `people` block can show, with their names – "Infoscreen-People" and the released ones (schema 1.53). */
     peopleChoices?: { id: number; name: string; standard: boolean }[];
+    /** Designer only: the person fields an administrator released for the block "Personen" (schema 1.54); missing or empty = none. */
+    releasedPersonFields?: PersonFieldKey[];
     /** Bookings of the rooms the `rooms` blocks need (schema 1.16); missing counts as none. */
     rooms?: RoomBookings[];
     media: Map<string, MediaDoc>;

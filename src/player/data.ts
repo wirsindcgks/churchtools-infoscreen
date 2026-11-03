@@ -17,6 +17,7 @@ import {
     fetchGroupHomepage,
     fetchGroupHomepageList,
     fetchGroupMembers,
+    fetchPersons,
     fetchPosts,
     fetchResourceMasterdata,
     fetchServiceGroups,
@@ -24,10 +25,10 @@ import {
     fetchTimeZone,
 } from '../ct/api';
 import { currentPerson, ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
-import { deniedPeople, normalizeMembers, unreleasedPeople, type PeopleGroup } from '../groups/members';
+import { deniedPeople, normalizeMembers, personFieldValues, unreleasedPeople, withPersonFields, type PeopleGroup } from '../groups/members';
 import { normalizeHomepage, type HomepageGroups } from '../groups/normalize';
 import type { HeartbeatDoc } from '../model/heartbeat';
-import type { ScreenDoc, SlideDoc } from '../model/schema';
+import { PERSON_FIELD_KEYS, type ScreenDoc, type SlideDoc } from '../model/schema';
 import { normalizePosts, type Post } from '../posts/normalize';
 import { normalizeBookings, roomsOf, type RoomBookings } from '../rooms/normalize';
 import { getRepository } from '../store/backend';
@@ -73,8 +74,10 @@ export interface PlayerData {
      * The members of the people group with their member fields (schema 1.51, Plan.md 112). The device accounts of the
      * setup (`settings.peopleDeviceIds`) are left out, and with `excludeSelf` the account that asks – the device on
      * the TV; the designer's preview keeps it, there it is a person. A `403` comes back as a group marked `denied`, other errors fail.
+     * `personFieldKeys` (schema 1.54): the released person fields a block chose – only then `/persons` is read, once for the people
+     * of the group; only these keys are kept. Without the right the fields stay empty.
      */
-    people(groupId: number, deviceIds?: readonly number[], excludeSelf?: boolean): Promise<PeopleGroup>;
+    people(groupId: number, deviceIds?: readonly number[], excludeSelf?: boolean, personFieldKeys?: readonly string[]): Promise<PeopleGroup>;
     /**
      * The confirmed bookings of these rooms within `[from, to)` (schema 1.16).
      * A room the caller may not read (403), that the stammdaten do not name or
@@ -181,12 +184,21 @@ export const churchToolsPlayerData: PlayerData = {
             }),
         );
     },
-    async people(groupId, deviceIds = [], excludeSelf = true) {
+    async people(groupId, deviceIds = [], excludeSelf = true, personFieldKeys = []) {
         try {
             const raw = await withTimeout(fetchGroupMembers(groupId));
             // On the TV the one who asks is the device – a device the list does not know yet is no card either (Plan.md 112).
             const own = excludeSelf ? await currentPerson().then((person) => person.id, () => undefined) : undefined;
-            return normalizeMembers(groupId, raw.members, raw.roles, own === undefined ? deviceIds : [own, ...deviceIds]);
+            const group = normalizeMembers(groupId, raw.members, raw.roles, own === undefined ? deviceIds : [own, ...deviceIds], personFieldKeys.length > 0);
+            if (!personFieldKeys.length) return group;
+            // Person fields (schema 1.54): one read for the people of the cards, and only the released and chosen keys are kept.
+            // Without "Personendaten sehen" the answer is a `403` or has nothing in it – the fields stay empty then, no error.
+            const ids = group.people.flatMap((p) => (p.personId == null ? [] : [p.personId]));
+            const persons = await withTimeout(fetchPersons(ids)).catch((error: unknown) => {
+                if (httpStatus(error) !== 403) throw error;
+                return [];
+            });
+            return withPersonFields(group, personFieldValues(persons, personFieldKeys), personFieldKeys);
         } catch (error) {
             if (httpStatus(error) !== 403) throw error;
             return deniedPeople(groupId);
@@ -318,18 +330,22 @@ export function groupNeeds(slides: SlideDoc[]): number[] {
 export interface PeopleNeeds {
     standard: boolean;
     groupIds: number[];
+    /** The person fields the blocks chose, each once (schema 1.54); the settings decide which of them are read. */
+    personFieldKeys: string[];
 }
 
 /** Which people groups a screen shows (Plan.md 112): then the controller reads them – the standard one from the settings. */
 export function peopleNeeds(slides: SlideDoc[]): PeopleNeeds {
     const ids = new Set<number>();
+    const personFieldKeys = new Set<string>();
     let standard = false;
     for (const block of slides.flatMap((s) => s.blocks)) {
         if (block.type !== 'people') continue;
         if (block.sourceGroupId === undefined) standard = true;
         else ids.add(block.sourceGroupId);
+        for (const key of block.personFieldKeys ?? []) personFieldKeys.add(key);
     }
-    return { standard, groupIds: [...ids].sort((a, b) => a - b) };
+    return { standard, groupIds: [...ids].sort((a, b) => a - b), personFieldKeys: PERSON_FIELD_KEYS.filter((key) => personFieldKeys.has(key)) };
 }
 
 /** Whether a screen shows people at all. */
@@ -339,6 +355,8 @@ export const peopleAny = (needs: PeopleNeeds): boolean => needs.standard || need
 export interface PeopleSettings {
     peopleGroupId?: number;
     peopleGroupIds?: readonly number[];
+    /** The person fields an administrator released (schema 1.54); missing or empty = none. */
+    personFieldKeys?: readonly string[];
 }
 
 /**
@@ -349,16 +367,19 @@ export interface PeopleSettings {
 export async function readPeopleGroups(
     needs: PeopleNeeds,
     settings: PeopleSettings,
-    read: (groupId: number) => Promise<PeopleGroup>,
+    read: (groupId: number, personFieldKeys: string[]) => Promise<PeopleGroup>,
 ): Promise<PeopleGroup[]> {
     const standardId = settings.peopleGroupId;
     const released = new Set(settings.peopleGroupIds ?? []);
+    // Only a field that is both chosen by a block and still released is read; the fixed order of the list.
+    const releasedFields = new Set(settings.personFieldKeys ?? []);
+    const personFieldKeys = needs.personFieldKeys.filter((key) => releasedFields.has(key));
     const ids = new Set<number>(needs.groupIds);
     if (needs.standard && standardId !== undefined) ids.add(standardId);
     return Promise.all(
         [...ids].map(async (id) => {
             if (id !== standardId && !released.has(id)) return unreleasedPeople(id);
-            const group = await read(id);
+            const group = await read(id, personFieldKeys);
             return id === standardId ? { ...group, standard: true } : group;
         }),
     );

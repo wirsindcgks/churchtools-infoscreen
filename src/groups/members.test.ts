@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deniedPeople, normalizeMembers, resolveFieldKeys, selectPeople, shownFields, PEOPLE_CAP, type PeopleGroup } from './members';
+import { deniedPeople, normalizeMembers, personFieldValues, resolveFieldKeys, selectPeople, shownFields, shownPersonFields, withPersonFields, PEOPLE_CAP, type PeopleGroup } from './members';
 
 const member = (personId: number, first: string, last: string, extra: Record<string, unknown> = {}) => ({
     personId,
@@ -144,5 +144,35 @@ describe('fields by id (Plan.md 112)', () => {
         const twice = [{ key: '1', name: 'Raum' }, { key: '2', name: 'Raum' }];
         expect(resolveFieldKeys(['Raum', 'Telefon'], twice)).toEqual(['Raum', 'Telefon']);
         expect(shownFields(after.people[0]!, resolveFieldKeys(['Gibt es nicht'], after.fields))).toEqual([]);
+    });
+});
+
+describe('person fields (Plan.md 112, Stück 3, G71)', () => {
+    const persons = [{ id: 1, email: 'anna@example.org', mobile: ' 0170 1 ', zip: 34117, birthday: '1980-05-17', street: 'Weg 1', guid: 'g' }];
+
+    it('keeps exactly the keys asked for, formats the birthday without the year and drops everything else of the answer', () => {
+        const values = personFieldValues(persons, ['email', 'zip', 'birthday', 'street']);
+        expect([...values]).toEqual([[1, { email: 'anna@example.org', zip: '34117', birthday: '17.05.' }]]);
+        expect(JSON.stringify([...values])).not.toMatch(/1980|Weg|0170|guid/);
+        expect(personFieldValues([{ id: 2, birthday: 'garbled' }], ['birthday']).get(2)).toEqual({});
+    });
+
+    it('puts the values on the people by id, removes the id again and leaves a person without values empty', () => {
+        const group = normalizeMembers(40, [member(1, 'Anna', 'Berg'), member(2, 'Ben', 'Adler')], roles, [], true);
+        expect(group.people[0]!.personId).toBe(1);
+        const done = withPersonFields(group, personFieldValues(persons, ['email']), ['email']);
+        expect(done.personFieldKeys).toEqual(['email']);
+        expect(done.people.map((p) => p.personFields)).toEqual([{ email: 'anna@example.org' }, {}]);
+        expect(JSON.stringify(done)).not.toContain('personId');
+        expect(normalizeMembers(40, [member(1, 'Anna', 'Berg')], roles).people[0]).not.toHaveProperty('personId');
+    });
+
+    it('shows a person field only if the group was read for it, in the block\'s order', () => {
+        const anna = { ...normalizeMembers(40, [member(1, 'Anna', 'Berg')], roles).people[0]!, personFields: { email: 'a@x.example', city: 'Kassel' } };
+        const read: PeopleGroup = { groupId: 40, denied: false, people: [anna], roles: [], fields: [], personFieldKeys: ['city', 'email'] };
+        expect(shownPersonFields(anna, read, ['email', 'city', 'zip']).map((f) => f.key)).toEqual(['email', 'city']);
+        expect(shownPersonFields(anna, { ...read, personFieldKeys: ['city'] }, ['email', 'city']).map((f) => f.key)).toEqual(['city']);
+        expect(shownPersonFields(anna, { ...read, personFieldKeys: undefined }, ['email'])).toEqual([]);
+        expect(shownPersonFields(anna, read, undefined)).toEqual([]);
     });
 });

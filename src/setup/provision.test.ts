@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { catalogFrom } from './catalog';
-import { AUTH } from './checks';
+import { AUTH, type Grant } from './checks';
 import {
     devicePasswordRecommendationLogLine,
     GROUP_NAMES,
@@ -9,6 +9,7 @@ import {
     provision,
     applyRefresh,
     applyPeopleRelease,
+    applyPersonFieldRelease,
     planRefresh,
     provisionPeople,
     completePeople,
@@ -633,10 +634,51 @@ describe('the people group (Plan.md 112, G70)', () => {
         expect(missing.add.find((a) => a.dataId === 51)?.label).toBe('Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen: Mitarbeiter');
     });
 
-    it('never plans 125 or 10101 – both open the e-mail address', () => {
+    it('never plans 125 without released person fields, and 10101 never – both open the e-mail address', () => {
         const all = planProvisioning(withPeople).flatMap((g) => [...g.grants, ...(g.defaultRoleGrants ?? [])]).map((g) => g.authId);
         expect(all).not.toContain(125);
         expect(all).not.toContain(10101);
+        expect(planProvisioning({ ...withPeople, personFieldKeys: [] }).flatMap((g) => g.grants).map((g) => g.authId)).not.toContain(125);
+    });
+
+    it('plans 125 at level 1 – and only that – for the device group while person fields are released (Stück 3)', () => {
+        const plan = planProvisioning({ ...withPeople, personFieldKeys: ['email', 'city'] });
+        const grants = plan.flatMap((g) => [...g.grants, ...(g.defaultRoleGrants ?? [])]);
+        expect(plan[1]!.grants.filter((g) => g.authId === AUTH.personDataView)).toEqual([expect.objectContaining({ dataId: [1] })]);
+        expect(grants.filter((g) => g.authId === AUTH.personDataView)).toHaveLength(1);
+        expect(grants.map((g) => g.authId)).not.toContain(10101);
+        // "Rechte aktualisieren" adds it where a role lacks it, and takes nothing back.
+        const missing = planRefresh(plan, { device: [[{ authId: AUTH.groupWithMembersView, dataId: 77 }]] }, { calendarIds: [], roomIds: [] }).find((g) => g.key === 'device')!;
+        expect(missing.add.find((a) => a.authId === AUTH.personDataView)).toMatchObject({ dataId: 1 });
+        const held = planRefresh(plan, { device: [[{ authId: AUTH.personDataView, dataId: 1 }]] }, { calendarIds: [], roomIds: [] }).find((g) => g.key === 'device')!;
+        expect(held.add.find((a) => a.authId === AUTH.personDataView)).toBeUndefined();
+        expect(held.remove).toEqual([]);
+    });
+
+    it('sets 125 at level 1 when person fields are first released, takes it back when the last one goes, and leaves an unchanged choice alone', async () => {
+        const calls: string[] = [];
+        let heldNow: Grant[] = [];
+        const api = {
+            roleIds: async () => [5],
+            grants: async () => heldNow,
+            grant: async (roleId: number, authId: number, dataId?: number[]) => void calls.push(`grant ${roleId} ${authId} ${dataId?.join(',')}`),
+            revoke: async (roleId: number, authId: number, dataId: number[]) => void calls.push(`revoke ${roleId} ${authId} ${dataId.join(',')}`),
+        };
+        await applyPersonFieldRelease(10, [], ['email'], api);
+        expect(calls).toEqual(['grant 5 125 1']);
+        calls.length = 0;
+        heldNow = [held(AUTH.personDataView, 1)];
+        expect(await applyPersonFieldRelease(10, ['email'], ['city'], api)).not.toEqual([]);
+        expect(await applyPersonFieldRelease(10, ['email'], ['email'], api)).toEqual([]);
+        expect(calls).toEqual([]);
+        await applyPersonFieldRelease(10, ['email'], [], api);
+        expect(calls).toEqual(['revoke 5 125 1']);
+        // A role without it needs no revoking; a level given by hand is carried along when 1 is added, never raised.
+        calls.length = 0;
+        heldNow = [held(AUTH.personDataView, 2)];
+        await applyPersonFieldRelease(10, ['email'], [], api);
+        await applyPersonFieldRelease(10, [], ['email'], api);
+        expect(calls).toEqual(['grant 5 125 1,2']);
     });
 
     function fakeApi(members: Record<number, number[]> = {}) {

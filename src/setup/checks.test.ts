@@ -661,6 +661,39 @@ describe('the people group on the device check (Plan.md 112, G70, G71)', () => {
         }
     });
 
+    describe('released person fields (Plan.md 112, Stück 3)', () => {
+        const fields = [{ key: 'email', name: 'E-Mail' }, { key: 'city', name: 'Ort' }];
+        const run = (grants: Grant[], releasedPersonFields = fields) =>
+            checkDeviceGroup({ ...base, members: [device(grants)], releasedPersonFields, plannedAuthIds: [...planned, AUTH.personDataView] });
+        const line = (checks: Check[]) => checks.filter((c) => c.text.includes('Personen'));
+
+        it('takes 125 at level 1 as planned: no warning, an info line with the fields instead', () => {
+            const checks = run([grant(AUTH.personDataView, 1)]);
+            expect(checks.filter((c) => c.level === 'warn')).toEqual([]);
+            expect(line(checks)).toEqual([expect.objectContaining({ level: 'info', category: 'people', text: 'Personenfelder freigeschaltet: E-Mail, Ort.' })]);
+        });
+
+        it('warns of 125 beyond level 1 and of 125 for all data, also while fields are released', () => {
+            for (const data of [[grant(AUTH.personDataView, 1), grant(AUTH.personDataView, 2)], [grant(AUTH.personDataView, -1)], [grant(AUTH.personDataView)]]) {
+                const checks = run(data);
+                expect(checks.some((c) => c.level === 'warn' && c.text.includes('über Stufe 1 hinaus'))).toBe(true);
+                expect(checks.some((c) => c.level === 'info' && c.text.includes('Personenfelder freigeschaltet'))).toBe(false);
+            }
+        });
+
+        it('warns of 125 without a release, and of 10101 always', () => {
+            expect(run([grant(AUTH.personDataView, 1)], []).filter((c) => c.level === 'warn' && c.text.includes('Personendaten sehen'))).toHaveLength(1);
+            const withRelease = run([grant(AUTH.groupMembersViewIntern), grant(AUTH.personDataView, 1)]);
+            expect(withRelease.filter((c) => c.level === 'warn' && c.text.includes('Personendaten sehen'))).toHaveLength(1);
+        });
+
+        it('says that the released fields stay empty where the device lacks 125', () => {
+            const checks = run([]);
+            expect(checks.some((c) => c.level === 'warn' && c.text.includes('bleiben leer'))).toBe(true);
+            expect(checks.some((c) => c.text.includes('Personenfelder freigeschaltet'))).toBe(false);
+        });
+    });
+
     it('says nothing about people where the assistant set up no such group', () => {
         const checks = checkDeviceGroup({ ...base, members: [device([])] });
         expect(people(checks)).toEqual([]);

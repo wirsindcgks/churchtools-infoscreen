@@ -2,10 +2,10 @@
 /**
  * The people of the group "Infoscreen-People" (schema 1.51, Plan.md 112, Stück 1): cards in a grid of `columns` × `rows`,
  * page by page, with the page bar like GroupsView. The privacy rule lives in `src/groups/members.ts` – this view reads
- * nothing but `Person` fields: name, picture and the member fields the block names.
+ * nothing but `Person` fields: name, picture, the member fields the block names and, since 1.54, the released person fields it chose.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { groupOfBlock, resolveFieldKeys, selectPeople, shownFields, type Person } from '../../groups/members';
+import { groupOfBlock, resolveFieldKeys, selectPeople, shownFields, shownPersonFields, type Person } from '../../groups/members';
 import type { Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
@@ -111,7 +111,8 @@ const cards = computed(() =>
             picture: props.block.showImage
                 ? { size, url: person.imageUrl ? imageSource(context, sizedImageUrl(person.imageUrl, size, size, 'crop')) : null, style: { width: `${size}px`, height: `${size}px`, margin: landscape.value ? `0 0 0 ${pad.value}px` : `${pad.value}px 0 0` } }
                 : null,
-            fields: shownFields(person, fieldKeys.value),
+            // Member fields first, then the person fields (schema 1.54) – only those the group was read for, i.e. still released.
+            fields: [...shownFields(person, fieldKeys.value), ...shownPersonFields(person, group.value ?? undefined, props.block.personFieldKeys)],
         };
     }),
 );

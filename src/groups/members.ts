@@ -2,13 +2,16 @@
  * Turns the members of the module's own group "Infoscreen-People" into the cards the `people` block shows
  * (schema 1.51, Plan.md 112; measured in G70 and G71).
  *
- * The source is `GET /groups/{id}/members` and nothing else – never `/persons`. From each member only named fields
- * are taken: first and last name, the picture, the role and the member fields of the group. Everything else
- * ChurchTools sends along (`guid`, the person's id and addresses, `comment`) never leaves this file. Archived and
- * deceased people drop out, so do members that are not active and the account that asks (the device itself).
+ * The source is `GET /groups/{id}/members`. From each member only named fields are taken: first and last name, the
+ * picture, the role and the member fields of the group. Everything else ChurchTools sends along (`guid`, addresses,
+ * `comment`) never leaves this file. Archived and deceased people drop out, so do members that are not active and the
+ * account that asks (the device itself).
+ *
+ * `/persons` is read only with a release (Plan.md 112, Stück 3, G71): when an administrator released person fields and a
+ * block chose some. Then `personFieldValues` keeps exactly those keys of the answer and drops the rest at once.
  */
 import { LOCALE, tp } from '../i18n/player';
-import type { PeopleSort } from '../model/schema';
+import { PERSON_FIELD_KEYS, type PeopleSort } from '../model/schema';
 
 interface PersonResponse {
     title?: string | null;
@@ -67,6 +70,10 @@ export interface Person {
     roleId: number | null;
     /** Field id → shown value; empty values are left out. */
     fields: Record<string, string>;
+    /** Only between `normalizeMembers(…, true)` and `withPersonFields`: the id `GET /persons` is asked for. It never stays on a person. */
+    personId?: number | null;
+    /** Person field key (`email`, `birthday` …) → shown value; only released and chosen keys (schema 1.54), empty values left out. */
+    personFields?: Record<string, string>;
 }
 
 /** The people group as the player keeps it: who is in it, and which roles and fields there are to choose. */
@@ -79,6 +86,8 @@ export interface PeopleGroup {
     fields: PeopleField[];
     /** The module's own group "Infoscreen-People": the one a block without `groupId` shows (schema 1.53). */
     standard?: boolean;
+    /** The person field keys read for this group (released and chosen by a block); the view shows no others (schema 1.54). */
+    personFieldKeys?: string[];
     /** The group is neither "Infoscreen-People" nor released by an administrator: not read at all (Plan.md 112, Stück 2a). */
     unreleased?: boolean;
 }
@@ -129,6 +138,8 @@ export function normalizeMembers(
     rawMembers: unknown[],
     rawRoles: unknown[] = [],
     excludedPersonIds: readonly number[] = [],
+    /** Keep the person's id for the one read of `/persons` (person fields); `withPersonFields` removes it again. */
+    keepIds = false,
 ): PeopleGroup {
     const roles: PeopleRole[] = [];
     for (const role of rawRoles as RoleResponse[]) {
@@ -160,10 +171,48 @@ export function normalizeMembers(
             const label = (field.name ?? '').trim() || id;
             if (!seenFields.has(id)) seenFields.set(id, { name: label, sortKey: typeof field.sortKey === 'number' ? field.sortKey : Infinity });
         }
-        people.push({ firstName, lastName, name, imageUrl: person?.imageUrl || null, roleId: idOf(member.groupTypeRoleId), fields });
+        people.push({ firstName, lastName, name, imageUrl: person?.imageUrl || null, roleId: idOf(member.groupTypeRoleId), fields, ...(keepIds ? { personId } : {}) });
         if (people.length >= PEOPLE_CAP) break;
     }
     return { groupId, denied: false, people, roles, fields: [...seenFields].sort((a, b) => a[1].sortKey - b[1].sortKey).map(([key, { name }]) => ({ key, name })) };
+}
+
+/** An entry of `GET /persons`, as far as this code reads it – only the keys of `PERSON_FIELD_KEYS` are ever taken from it. */
+type PersonRecord = Record<string, unknown> & { id?: number | string | null };
+
+/** `1980-05-17` → `17.05.`: the day and month, never the year (Plan.md 112, Stück 3). Anything else is left out. */
+function birthdayText(value: unknown): string {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(typeof value === 'string' ? value.trim() : '');
+    return match ? `${match[3]}.${match[2]}.` : '';
+}
+
+/**
+ * The chosen person fields of each person from the answer of `GET /persons`: by person id, only the keys in `keys` (the
+ * released ones a block chose) and only those that are in the fixed list. Everything else in the answer is dropped here.
+ */
+export function personFieldValues(rawPersons: unknown[], keys: readonly string[]): Map<number, Record<string, string>> {
+    const wanted = keys.filter((key) => (PERSON_FIELD_KEYS as readonly string[]).includes(key));
+    const result = new Map<number, Record<string, string>>();
+    for (const raw of rawPersons as PersonRecord[]) {
+        const id = idOf(raw?.id);
+        if (id === null) continue;
+        const values: Record<string, string> = {};
+        for (const key of wanted) {
+            const text = key === 'birthday' ? birthdayText(raw[key]) : valueText(raw[key]);
+            if (text) values[key] = text;
+        }
+        result.set(id, values);
+    }
+    return result;
+}
+
+/** The group with the person fields put on its people; `keys` are the ones read. */
+export function withPersonFields(group: PeopleGroup, values: ReadonlyMap<number, Record<string, string>>, keys: readonly string[]): PeopleGroup {
+    return {
+        ...group,
+        personFieldKeys: [...keys],
+        people: group.people.map(({ personId, ...p }) => ({ ...p, personFields: (personId != null && values.get(personId)) || {} })),
+    };
 }
 
 /**
@@ -199,4 +248,13 @@ export function resolveFieldKeys(fieldKeys: readonly string[], fields: readonly 
 /** The fields of a person the block shows, in the block's order – only those the person has a value for. */
 export function shownFields(person: Person, fieldKeys: readonly string[]): { key: string; text: string }[] {
     return fieldKeys.flatMap((key) => (person.fields[key] ? [{ key, text: person.fields[key]! }] : []));
+}
+
+/**
+ * The person fields of a person the block shows: the block's order, but only keys the group was read for – a field an
+ * administrator withdrew since is gone, even where the block still names it.
+ */
+export function shownPersonFields(person: Person, group: PeopleGroup | undefined, fieldKeys: readonly string[] | undefined): { key: string; text: string }[] {
+    const read = group?.personFieldKeys ?? [];
+    return (fieldKeys ?? []).flatMap((key) => (read.includes(key) && person.personFields?.[key] ? [{ key, text: person.personFields[key]! }] : []));
 }

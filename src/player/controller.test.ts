@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotAuthenticatedError, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import { DEMO_BUNDLE } from '../dev/demo';
-import { DEFAULT_THEME, type Block } from '../model/schema';
+import { DEFAULT_THEME, type Block, type PersonFieldKey } from '../model/schema';
 import { makeTemplate } from '../model/testing';
 import type { Group, HomepageGroups } from '../groups/normalize';
 import type { Post } from '../posts/normalize';
@@ -407,7 +407,7 @@ describe('player controller', () => {
     });
 
     /** A `people` block on the first slide; the settings name the group "Infoscreen-People" or not, and the block a group of its own or not (Plan.md 112). */
-    const withPeople = (peopleGroupId?: number, extra: { sourceGroupId?: number; peopleGroupIds?: number[] } = {}): LoadedScreen => {
+    const withPeople = (peopleGroupId?: number, extra: { sourceGroupId?: number; peopleGroupIds?: number[]; personFieldKeys?: PersonFieldKey[]; chosen?: PersonFieldKey[] } = {}): LoadedScreen => {
         const base = loaded();
         const [first, ...rest] = base.slides;
         const block: Block = {
@@ -424,9 +424,10 @@ describe('player controller', () => {
             columns: 3,
             rows: 2,
             ...(extra.sourceGroupId === undefined ? {} : { sourceGroupId: extra.sourceGroupId }),
+            ...(extra.chosen ? { personFieldKeys: extra.chosen } : {}),
             style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' },
         };
-        return { ...base, peopleGroupId, peopleGroupIds: extra.peopleGroupIds, peopleDeviceIds: [22, 23], slides: first ? [{ ...first, blocks: [...first.blocks, block] }, ...rest] : base.slides };
+        return { ...base, peopleGroupId, peopleGroupIds: extra.peopleGroupIds, peopleDeviceIds: [22, 23], personFieldKeys: extra.personFieldKeys, slides: first ? [{ ...first, blocks: [...first.blocks, block] }, ...rest] : base.slides };
     };
 
     it('reads the people group the settings name for the people blocks, and keeps it for offline use (Plan.md 112)', async () => {
@@ -434,7 +435,7 @@ describe('player controller', () => {
         const deps = fakeDeps();
         const player = createPlayer('demo', fakeData({ loadScreen: async () => withPeople(40), people }), deps);
         await player.start();
-        expect(people).toHaveBeenCalledWith(40, [22, 23]);
+        expect(people).toHaveBeenCalledWith(40, [22, 23], true, []);
         expect(player.state.people).toMatchObject([{ groupId: 40, standard: true, denied: false }]);
         expect(deps.saved[0]?.people).toMatchObject([{ groupId: 40 }]);
         player.stop();
@@ -453,6 +454,19 @@ describe('player controller', () => {
         expect(people).not.toHaveBeenCalled();
         expect(notReleased.state.people).toMatchObject([{ groupId: 51, unreleased: true, denied: true, people: [] }]);
         notReleased.stop();
+    });
+
+    it('passes only the person fields that are both chosen by a block and released (schema 1.54)', async () => {
+        const people = vi.fn<PlayerData['people']>(async (groupId) => ({ groupId, denied: false, people: [], roles: [], fields: [] }));
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withPeople(40, { chosen: ['email', 'city'], personFieldKeys: ['city', 'zip'] }), people }), fakeDeps());
+        await player.start();
+        expect(people).toHaveBeenCalledWith(40, [22, 23], true, ['city']);
+        player.stop();
+        people.mockClear();
+        const none = createPlayer('demo', fakeData({ loadScreen: async () => withPeople(40, { chosen: ['email'] }), people }), fakeDeps());
+        await none.start();
+        expect(people).toHaveBeenCalledWith(40, [22, 23], true, []);
+        none.stop();
     });
 
     it('knows no group where none is set up (an empty list), and asks for nobody without a people block (undefined)', async () => {

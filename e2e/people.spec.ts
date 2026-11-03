@@ -24,6 +24,8 @@ test('the people block says the group is not set up, and its inspector keeps its
     await expect(page.getByTestId('section-people-roles')).not.toHaveAttribute('open', '');
 
     await expect(page.getByTestId('section-people-group')).not.toHaveAttribute('open', '');
+    // No person field is released in the demo: the inspector offers none (Stück 3).
+    await expect(page.getByTestId('people-person-fields-add')).toHaveCount(0);
     await openSection(page, 'people-group');
     await expect(page.getByTestId('people-group-hint')).toBeVisible();
     await openSection(page, 'people-roles');

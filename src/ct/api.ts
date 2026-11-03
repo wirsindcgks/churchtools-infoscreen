@@ -147,12 +147,44 @@ export function fetchPosts(groupIds: number[], limit: number): Promise<PostRespo
  * The members of the people group with their member fields (a list of `{ id, name, value, sortKey }`, G71) and the group's
  * roles (Plan.md 112). Only the members are essential: a `403` there is passed on, so the block can say that the right is
  * missing. The roles only name what the members carry – without them the block still shows names and pictures.
- * No call goes to `/persons` (G70).
+ * `/persons` is asked only with a release and only for the fields a block chose – see `fetchPersons` (Plan.md 112, Stück 3).
  */
 export async function fetchGroupMembers(groupId: number): Promise<{ members: unknown[]; roles: unknown[] }> {
     const members = await churchtoolsClient.getAllPages<unknown>(`/groups/${groupId}/members`);
     const roles = await churchtoolsClient.get<unknown[]>(`/groups/${groupId}/roles`).catch(() => []);
     return { members, roles: Array.isArray(roles) ? roles : [] };
+}
+
+/**
+ * The persons with these ids, all pages (Plan.md 112, Stück 3). The answer carries every field of security level 1 the account
+ * may read, not just the ones asked for – the caller keeps the released and chosen ones and lets go of the rest at once
+ * (`personFieldValues`). Called only when an administrator released person fields and a block chose some (G71).
+ */
+export async function fetchPersons(ids: number[]): Promise<unknown[]> {
+    if (!ids.length) return [];
+    return churchtoolsClient.getAllPages<unknown>('/persons', { ids });
+}
+
+/** A person field of the instance, as `GET /fields` names it – for the setup's list of fields to release (Plan.md 112, Stück 3). */
+export interface PersonFieldInfo {
+    key: string;
+    name: string;
+    secLevel: number | null;
+    isActive: boolean;
+}
+
+/** The person fields of the instance with their security level (administrators only; the device never asks). */
+export async function fetchPersonFields(): Promise<PersonFieldInfo[]> {
+    // Measured: `isActive` comes as the text "1", `secLevel` as a number.
+    const list = await churchtoolsClient.get<{ key?: string; nameTranslated?: string; name?: string; secLevel?: number | null; isActive?: unknown }[]>('/fields');
+    return (Array.isArray(list) ? list : [])
+        .filter((f) => typeof f.key === 'string')
+        .map((f) => ({
+            key: f.key!,
+            name: f.nameTranslated || f.name || f.key!,
+            secLevel: typeof f.secLevel === 'number' ? f.secLevel : null,
+            isActive: f.isActive === true || f.isActive === 1 || f.isActive === '1',
+        }));
 }
 
 /**

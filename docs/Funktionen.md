@@ -95,7 +95,9 @@ Ansprechpartner als **Karten** mit Name, Bild und Angaben wie Funktion oder Bür
 sind Mitgliedsfelder der Gruppe. Statt dieser Gruppe kann ein Administrator auch **vorhandene Gruppen freigeben**; der Baustein wählt dann unter „Gruppe"
 die gewünschte (Name, Bild und Rolle; Angaben nur mit dem Recht „Gruppenmitgliedsfelder sehen“, das ein Administrator dem Gerät gibt). Man wählt Rollen, Angaben samt
 Reihenfolge, Sortierung und ob das Bild erscheint; das Bild ist rund wie ein Profilbild.
-E-Mail-Adresse, Telefon und Anschrift zeigt der Baustein nie. Einrichtung und Datenschutz stehen
+E-Mail-Adresse, Telefon, Ort und Geburtstag (Tag und Monat) zeigt der Baustein nur, wenn ein Administrator diese **Personenfelder**
+ausdrücklich freischaltet (nur Sicherheitsstufe 1, mit Datenschutzhinweis und Rückfrage); die Anschrift nie. Der Baustein wählt
+dann unter „Personenfelder" aus den freigeschalteten. Einrichtung und Datenschutz stehen
 [in der Einrichtungsanleitung](Einrichtung.md#personen-auf-den-bildschirmen).
 
 ### Beiträge

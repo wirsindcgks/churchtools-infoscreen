@@ -38,6 +38,12 @@ export const POST_AUTH_IDS: readonly number[] = [10130, 10131];
 
 export const PERSON_DATA_AUTH_IDS: readonly number[] = [AUTH.personDataView, AUTH.groupMembersViewIntern];
 
+/** Whether "Personendaten sehen" (125) is held at security level 1 and at no other (not for all data, not without one); revoked entries do not count. */
+export function personDataAtLevel1Only(grants: Grant[]): boolean {
+    const entries = grants.filter((g) => g.authId === AUTH.personDataView && (g.type ?? 'grant') === 'grant');
+    return entries.length > 0 && entries.every((g) => g.dataId === 1 || !has(grants, AUTH.personDataView, g.dataId ?? undefined)) && has(grants, AUTH.personDataView, 1);
+}
+
 /** `dataId` of a right granted for all data, e.g. all calendars – seen on person rights (G30). */
 export const ALL_DATA = -1;
 
@@ -264,6 +270,8 @@ export interface DeviceGroupInput {
      * (1104). Being a member there is a choice of the administrator – without it only the member fields stay empty, a hint and no warning.
      */
     releasedPeopleGroups?: { id: number; name: string }[];
+    /** The person fields an administrator released for the block "Personen" (Plan.md 112, Stück 3): then 125 at level 1 is planned, no warning. */
+    releasedPersonFields?: { key: string; name: string }[];
     /** The device group is the assistant's own: whether posts are switched off in it. Missing: not its group. */
     devicePostsDisabled?: boolean;
     moduleRights?: ModuleRights;
@@ -546,14 +554,40 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         }
     }
 
-    // Personendaten (125) and group members (10101) give a person's e-mail address at the first level (G70, G71).
+    // Personendaten (125) and group members (10101) give a person's e-mail address at the first level (G70, G71) – a warning, except 125 at
+    // level 1 while an administrator released person fields: that is planned (Plan.md 112, Stück 3).
+    const releasedFields = input.releasedPersonFields ?? [];
+    const planned125 = (grants: Grant[]): boolean => releasedFields.length > 0 && personDataAtLevel1Only(grants);
     for (const member of input.members) {
-        if (PERSON_DATA_AUTH_IDS.some((authId) => has(holdings.get(member)!, authId))) {
+        const held = holdings.get(member)!;
+        const beyond = has(held, AUTH.personDataView) && !planned125(held);
+        if (has(held, AUTH.groupMembersViewIntern) || (beyond && !releasedFields.length)) {
             checks.push({
                 level: 'warn',
                 category: 'rights',
                 text: t.setup.checks.personData(member.label),
                 detail: t.setup.checks.personDataDetail,
+            });
+        } else if (beyond) {
+            checks.push({
+                level: 'warn',
+                category: 'rights',
+                text: t.setup.checks.personDataBeyond(member.label),
+                detail: t.setup.checks.personDataBeyondDetail,
+            });
+        }
+    }
+    if (releasedFields.length) {
+        const blind = input.members.filter((m) => !has(holdings.get(m)!, AUTH.personDataView)).map((m) => m.label);
+        if (blind.length) {
+            checks.push({ level: 'warn', category: 'people', text: t.setup.checks.personFieldsBlind(blind.join(', ')), detail: t.setup.checks.personFieldsBlindDetail });
+        }
+        if (input.members.some((m) => planned125(holdings.get(m)!))) {
+            checks.push({
+                level: 'info',
+                category: 'people',
+                text: t.setup.checks.personFieldsReleased(releasedFields.map((f) => f.name).join(', ')),
+                detail: t.setup.checks.personFieldsReleasedDetail,
             });
         }
     }

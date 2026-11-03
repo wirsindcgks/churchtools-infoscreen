@@ -436,6 +436,7 @@ export const t = {
             posts: 'Gruppen wählen',
             groups: 'Homepage wählen',
             people: 'Angaben wählen',
+            personFields: 'Personenfelder wählen',
             rooms: 'Räume wählen',
             social: 'Profil hinzufügen',
         },
@@ -706,6 +707,21 @@ export const t = {
         removeField: 'Angabe entfernen',
         noFieldsChosen: 'Noch keine Angaben gewählt. Die Karten zeigen nur Name und Bild.',
         noFieldsThere: 'Die Gruppe hat noch keine Mitgliedsfelder, oder sie sind für das Gerät nicht sichtbar.',
+        personFields: 'Personenfelder',
+        personFieldNames: {
+            phoneWork: 'Telefon geschäftlich',
+            phonePrivate: 'Telefon privat',
+            mobile: 'Handy',
+            email: 'E-Mail',
+            zip: 'PLZ',
+            city: 'Ort',
+            birthday: 'Geburtstag (Tag und Monat)',
+        } as Record<string, string>,
+        personFieldGone: 'nicht mehr freigeschaltet',
+        addPersonField: '+ Personenfeld',
+        addPersonFieldLabel: 'Personenfeld hinzufügen',
+        removePersonField: 'Personenfeld entfernen',
+        noPersonFieldsChosen: 'Noch keine Personenfelder gewählt.',
         peopleSortLastName: 'Nachname',
         peopleSortFirstName: 'Vorname',
         peopleSortRole: 'Rolle',
@@ -1659,6 +1675,25 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 `Die Freigabe ist gespeichert. Die Rechte für die Gerätegruppe konnten dabei nicht gesetzt werden (${reason}). Das ist nicht schlimm: „Rechte aktualisieren“ unter „Gruppen und Rechte“ holt es nach. Nicht freigegebene Gruppen liest ein Fernseher ohnehin nicht.`,
             withdraw: (name: string) => `Freigabe von „${name}“ zurücknehmen`,
         },
+        personFields: {
+            title: 'Personenfelder',
+            privacyTitle: 'Datenschutz beachten',
+            privacy:
+                'Hier gibst du frei, welche Angaben aus dem Personenprofil der Baustein „Personen“ zeigen darf. ChurchTools gibt sie dem Gerät aber nur als ganze Sicherheitsstufe 1: Technisch kann das Gerät damit alle Felder dieser Stufe lesen, auch E-Mail, Telefon und Geburtsdatum der Personen in den freigegebenen Gruppen und in „Infoscreen-People“. Das kann auch jeder lesen, der die Adresse eines Fernsehers kennt. Der Baustein zeigt nur die Felder, die du hier ankreuzt.',
+            privacyAsk: 'Stimmt die Freigabe vorher mit der Gemeindeleitung ab – und mit den Personen, deren Angaben erscheinen.',
+            lead: 'Welche Personenfelder Gestalter im Baustein „Personen“ wählen können. Ohne Auswahl bekommt das Gerät kein Recht auf Personendaten. Angeboten werden nur Felder, die in ChurchTools aktiv sind und die Sicherheitsstufe 1 haben; die Auswahl macht der Infoscreen, nicht ChurchTools je Feld.',
+            detail:
+                'Ändert eine Gemeinde in ChurchTools die Sicherheitsstufe eines Feldes, ändert sich, was das Gerät mit der Stufe 1 lesen kann. Das Geburtsdatum zeigt der Baustein nur als Tag und Monat, nie mit dem Jahr. Speichern gibt der Gerätegruppe „Personendaten sehen“ auf Stufe 1, solange etwas freigeschaltet ist; ohne Auswahl nimmt es das Recht wieder zurück.',
+            failed: 'Die Personenfelder konnten nicht geladen werden. Eine bestehende Freischaltung lässt sich trotzdem zurücknehmen.',
+            none: 'Keines der möglichen Felder ist in ChurchTools aktiv und auf Stufe 1.',
+            higher: (level: number | null) => `Sicherheitsstufe ${level ?? '?'} – nicht freischaltbar, nur Stufe 1 wird angeboten`,
+            level1: 'Sicherheitsstufe 1',
+            confirm: (names: string) =>
+                `Wirklich freischalten: ${names}?\n\nDas Gerät bekommt „Personendaten sehen“ auf Sicherheitsstufe 1 und kann damit alle Felder dieser Stufe lesen – auch E-Mail, Telefon und Geburtsdatum. Wer die Adresse eines Fernsehers kennt, kann das ebenfalls. Der Baustein zeigt nur die angekreuzten Felder.`,
+            release: 'Freischalten',
+            rightsFailed: (reason: string) =>
+                `Die Freischaltung ist gespeichert. Das Recht für die Gerätegruppe konnte dabei nicht angepasst werden (${reason}). Das ist nicht schlimm: „Rechte aktualisieren“ unter „Gruppen und Rechte“ holt es nach. Ohne das Recht bleiben die Felder auf dem Fernseher leer.`,
+        },
         wiki: {
             title: 'Mediathek im Wiki',
             intro: 'Wo die Bilder der Mediathek im Wiki stehen.',
@@ -1787,7 +1822,9 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 viewPeopleGroup: 'Gruppe „Infoscreen-People" inkl. ihrer Gruppenmitglieder sehen',
                 viewReleasedGroup: 'Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen',
                 viewMemberFields: 'Gruppenmitgliedsfelder sehen (bis Sicherheitsstufe 1)',
+                viewPersonData: 'Personendaten sehen (Sicherheitsstufe 1, für die freigeschalteten Personenfelder)',
             },
+            personDataRevoked: (group: string) => `„Personendaten sehen“ (Stufe 1) in „${group}“ zurückgenommen.`,
             postsOff: (name: string) => `Beiträge in „${name}" abgeschaltet.`,
             devicesAdded: (n: number, group: string) => `${n} ${n === 1 ? 'Gerät' : 'Geräte'} in „${group}" aufgenommen.`,
             named: (label: string, name: string) => `${label}: ${name}`,
@@ -1902,6 +1939,15 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             personData: (labels: string) => `${labels} darf Personendaten sehen – damit auch E-Mail-Adressen.`,
             personDataDetail:
                 'Die Rechte „Personendaten sehen" und „Gruppenmitglieder sehen" geben schon in der ersten Sicherheitsstufe die E-Mail-Adresse frei, und wer die Adresse eines Fernsehers kennt, liest sie mit. Für den Baustein „Personen" sind sie nicht nötig – wegnehmen.',
+            // Released person fields (Plan.md 112, Stück 3): 125 at level 1 is planned then, anything else is not.
+            personFieldsReleased: (names: string) => `Personenfelder freigeschaltet: ${names}.`,
+            personFieldsReleasedDetail:
+                'Das Gerät darf „Personendaten sehen“ auf Stufe 1. Technisch kann es damit alle Felder der Stufe 1 lesen – auch E-Mail, Telefon und Geburtsdatum –, und mit der Adresse eines Fernsehers kann das auch jeder andere. Der Baustein „Personen“ zeigt nur die freigeschalteten.',
+            personFieldsBlind: (labels: string) => `${labels} darf keine Personendaten sehen – die freigeschalteten Personenfelder bleiben leer.`,
+            personFieldsBlindDetail: 'Es fehlt „Personendaten sehen“ auf Stufe 1. „Rechte aktualisieren“ vergibt es.',
+            personDataBeyond: (labels: string) => `${labels} darf Personendaten über Stufe 1 hinaus sehen.`,
+            personDataBeyondDetail:
+                'Freigeschaltet ist nur die erste Sicherheitsstufe. Höhere Stufen geben weitere Felder frei, etwa die Straße, und wer die Adresse eines Fernsehers kennt, liest sie mit – wegnehmen.',
             scope: (label: string, parts: string, more: number) =>
                 `${label} darf mehr als nötig: ${parts}${more > 0 ? ` und ${more} weitere` : ''}.`,
             scopePart: (right: string, data: string) => `${right} auch für ${data}`,

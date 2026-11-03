@@ -913,6 +913,19 @@ describe('rendering people (Plan.md 112)', () => {
         expect(text).not.toContain('12');
     });
 
+    it('shows the person fields after the member fields, only those the group was read for – a withdrawn one is gone (schema 1.54)', () => {
+        const anna = person('Anna', 'Berg', { personFields: { email: 'anna@example.org', city: 'Kassel' } });
+        const read: PeopleGroup = { ...group(anna), personFieldKeys: ['email', 'city'] };
+        const block = peopleBlock({ personFieldKeys: ['city', 'email'] });
+        const fields = render(makeSlide({ blocks: [block] }), { people: [read] }).findAll('[data-testid="person-field"]').map((f) => f.text());
+        expect(fields).toEqual(['Pastorin', 'Kassel', 'anna@example.org']);
+        // The administrator withdrew the e-mail: the next read no longer holds it, the block still names it.
+        const withdrawn: PeopleGroup = { ...group(person('Anna', 'Berg', { personFields: { city: 'Kassel' } })), personFieldKeys: ['city'] };
+        expect(render(makeSlide({ blocks: [block] }), { people: [withdrawn] }).findAll('[data-testid="person-field"]').map((f) => f.text())).toEqual(['Pastorin', 'Kassel']);
+        // Not read for this group at all (no release): nothing, however the block is set.
+        expect(render(makeSlide({ blocks: [block] }), { people: [group(anna)] }).findAll('[data-testid="person-field"]').map((f) => f.text())).toEqual(['Pastorin']);
+    });
+
     it('shows a field a block from before names by its name – mapped to the id of the group', () => {
         const people: PeopleGroup = { ...group(person('Anna', 'Berg')), fields: [{ key: '2', name: 'Funktion' }, { key: '5', name: 'Büro' }] };
         const wrapper = render(makeSlide({ blocks: [peopleBlock({ fieldKeys: ['Funktion'] })] }), { people: [people] });

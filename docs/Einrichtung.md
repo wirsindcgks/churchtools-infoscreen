@@ -144,7 +144,8 @@ auf einer Freizeit. Er liest **nur** die Gruppe **„Infoscreen-People"**:
   Gruppe; die **Mitgliedsfelder** über „Gruppenmitgliedsfelder sehen“ (Stufe 1) an der Standardrolle der Gruppe. Das
   Recht gilt für **alle Mitglieder dieser Rolle** – was dort an Mitgliedsfeldern mit Stufe 1 steht, ist für den
   Bildschirm bestimmt. Die Prüfung der Gerätegruppe kennt beide Rechte.
-- **E-Mail-Adressen und andere Kontaktdaten zeigt der Baustein nicht.** Gib dem Gerät **nie** „Personendaten sehen“ oder
+- **E-Mail-Adressen und andere Kontaktdaten zeigt der Baustein nur, wenn du sie ausdrücklich freischaltest** (siehe
+  [Personenfelder freischalten](#personenfelder-freischalten)). Gib dem Gerät sonst **nie** „Personendaten sehen“ und **nie**
   „Gruppenmitglieder sehen“: Beide geben schon in der ersten Sicherheitsstufe die E-Mail-Adresse frei, und wer die
   Adresse eines Fernsehers kennt, liest sie mit. Die Prüfung warnt davor.
 - **Beiträge sind in „Infoscreen-Devices“ und „Infoscreen-People“ abgeschaltet.** Der Gruppentyp „Merkmal“ gäbe den
@@ -155,6 +156,30 @@ auf einer Freizeit. Er liest **nur** die Gruppe **„Infoscreen-People"**:
 - **Automatische Gruppen?** Eine Gruppe mit der Aktion „Aus Gruppe entfernen“ wirft von Hand aufgenommene Mitglieder beim
   nächsten Lauf wieder hinaus – auch das Gerät. Nimm „Infoscreen-Devices“ als Oder-Bedingung in den Filter auf, dann
   wird das Gerät von selbst Mitglied.
+
+#### Personenfelder freischalten
+
+Neben den Mitgliedsfeldern der Gruppe kann der Baustein Angaben aus dem **Personenprofil** zeigen: Telefon geschäftlich,
+Telefon privat, Handy, E-Mail, PLZ, Ort und Geburtstag (nur Tag und Monat, nie das Jahr). Das schaltet ein Administrator frei:
+
+1. **Einstellungen → Gruppen für „Personen"**, Abschnitt **„Personenfelder"**: die gewünschten Felder ankreuzen. Zur Wahl
+   stehen nur Felder, die in ChurchTools aktiv sind und die **Sicherheitsstufe 1** haben; ein Feld mit höherer Stufe wird mit
+   Hinweis angezeigt, aber nicht angeboten.
+2. **Speichern** fragt vorher zurück, denn das ist eine Entscheidung zum Datenschutz.
+3. Beim Speichern gibt der Assistent der **Gerätegruppe** „Personendaten sehen“ auf **Sicherheitsstufe 1** – nie höher.
+   Nimmst du alle Felder zurück, nimmt er das Recht wieder weg. Klappt das einmal nicht, bleibt die Freischaltung gespeichert
+   und „Rechte aktualisieren“ holt das Recht nach.
+4. Im Designer wählt der Baustein unter **„Personenfelder"** aus den freigeschalteten; die Reihenfolge der Auswahl ist die
+   Reihenfolge auf der Karte. Nimmst du ein Feld hier zurück, verschwindet es sofort vom Fernseher, auch wenn ein Baustein es noch gewählt hat.
+
+**Datenschutz:** ChurchTools gibt Personendaten einem Gerät nur als **ganze Sicherheitsstufe** frei, nicht je Feld. Die Auswahl
+je Feld macht der Infoscreen, nicht ChurchTools: Technisch kann das Gerät mit „Personendaten sehen“ auf Stufe 1 **alle Felder
+der Stufe 1** lesen – auch E-Mail, Telefon und Geburtsdatum der Personen in den freigegebenen Gruppen und in „Infoscreen-People" –,
+und das kann auch jeder, der die Adresse eines Fernsehers kennt. Der Baustein zeigt nur die angekreuzten Felder.
+Stimme die Freigabe mit der Gemeindeleitung und den betroffenen Personen ab. Beachte außerdem: Eine Gemeinde kann die Stufe
+eines Feldes in ChurchTools ändern (in der Verwaltung der Personenfelder); rutscht ein Feld dadurch auf Stufe 1, liest das Gerät es
+nach der Freischaltung mit. Prüfe die Stufen deshalb nach Änderungen dort. Die Prüfung der Gerätegruppe zeigt als Hinweis „Personenfelder
+freigeschaltet“ und warnt, wenn das Gerät Personendaten über Stufe 1 hinaus sehen darf.
 
 #### Eine vorhandene Gruppe zeigen
 
@@ -323,7 +348,9 @@ Mehr als lesen konnte das Gerät nie.
   **Wer die Adresse eines Fernsehers kennt, kann dieselben Angaben der Gruppe auch selbst abrufen**, nicht nur ansehen:
   Das Konto des Fernsehers darf sie lesen. Trage in Mitgliedsfelder nichts ein, was nicht in den Flur gehört, und stelle
   sie auf Sicherheitsstufe 1 nur, wenn sie öffentlich sein dürfen. Das Gerät erhält **nie** E-Mail-Adresse, Telefon oder
-  Anschrift der Personen.
+  Anschrift der Personen – es sei denn, ein Administrator schaltet unter „Personenfelder“ ausdrücklich Felder der
+  Sicherheitsstufe 1 frei. Dann kann das Gerät, und mit der Adresse eines Fernsehers jeder, **alle Felder der Stufe 1**
+  der Personen in den freigegebenen Gruppen und in „Infoscreen-People“ lesen; der Baustein zeigt nur die freigeschalteten.
 - **Eine eingebettete Webseite ist ein Aufruf bei Dritten:** Ihr Betreiber erfährt die Internetadresse des Geräts.
   Bettet nur ein, was ihr auch auf eurer Website einbetten würdet.
 - **Schriften kommen von eurer eigenen Instanz**, nicht von einem fremden Dienst.

@@ -16,6 +16,8 @@ import type { CategoryKey } from '../store/screen-repository';
 import type { AuthCatalog } from './catalog';
 import { ALL_DATA, AUTH, has, type Grant } from './checks';
 
+/** The one security level of person fields an administrator can release (Plan.md 112, Stück 3); never a higher one. */
+export const PERSON_DATA_LEVEL = 1;
 export const GROUP_NAMES = { designer: 'Infoscreen-Designer', device: 'Infoscreen-Devices', people: 'Infoscreen-People' } as const;
 /** The group type the assistant suggests, looked up by name: ids and names differ per instance, and a church may have removed it (Plan.md 71). */
 export const DEFAULT_GROUP_TYPE_NAME = 'Merkmal';
@@ -126,6 +128,8 @@ export interface PlanInput {
     peopleGroupId?: number | 'new';
     /** The existing groups an administrator released for the block "Personen" (Plan.md 112, Stück 2a), only those the administrator sees: the device group may see them. */
     peopleGroupIds?: number[];
+    /** The person fields released for the block "Personen" (Plan.md 112, Stück 3): any means 125 at level 1 for the device group, never more. */
+    personFieldKeys?: readonly string[];
 }
 
 export class MissingAuthError extends Error {
@@ -235,6 +239,12 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
                 ? { dataLabels: Object.fromEntries(releasedGroups.map((id) => [id, t.setup.provision.grants.viewReleasedGroup])) }
                 : {}),
         });
+    }
+
+    // Person fields (Stück 3, G71): "Personendaten sehen" (125) only as a whole security level – level 1, the only one on offer – and only
+    // while an administrator has released fields. The block shows nothing but the released ones; the device could read all of level 1.
+    if (input.personFieldKeys?.length) {
+        device.push({ authId: AUTH.personDataView, dataId: [PERSON_DATA_LEVEL], label: t.setup.provision.grants.viewPersonData });
     }
 
     const writing = (['create custom data', 'edit custom data', 'delete custom data'] as const).map((auth) => ({
@@ -654,6 +664,35 @@ export async function applyPeopleRelease(
         for (const id of withdrawn) if (held.includes(id)) await api.revoke(roleId, AUTH.groupWithMembersView, [id]);
     }
     return [t.setup.provision.rightsGranted(added.length, roles.length, GROUP_NAMES.device)];
+}
+
+/**
+ * Gives effect to a change of the released person fields in the same step as saving it (Plan.md 112, Stück 3, G71): with fields
+ * released the roles of the device group get "Personendaten sehen" (125) at level 1, without any 125 at level 1 is taken back.
+ * Acts only when the choice changed. A grant replaces the data of its right, so it carries the levels a role holds already
+ * (given by hand; the check warns of those) rather than dropping them silently. Never a level above 1, never 10101.
+ * Returns what it did, in a log line; throws on failure.
+ */
+export async function applyPersonFieldRelease(
+    deviceGroupId: number,
+    previous: readonly string[],
+    next: readonly string[],
+    api: Pick<ProvisionApi, 'roleIds' | 'grants' | 'grant' | 'revoke'>,
+): Promise<string[]> {
+    if (previous.length === next.length && previous.every((key) => next.includes(key))) return [];
+    const roles = await api.roleIds(deviceGroupId);
+    for (const roleId of roles) {
+        const grants = await api.grants(roleId);
+        const held = grants
+            .filter((g) => g.authId === AUTH.personDataView && g.dataId !== null && g.dataId !== ALL_DATA && (g.type ?? 'grant') === 'grant')
+            .map((g) => g.dataId as number);
+        if (next.length) {
+            if (!held.includes(PERSON_DATA_LEVEL)) await api.grant(roleId, AUTH.personDataView, [...new Set([PERSON_DATA_LEVEL, ...held])]);
+        } else if (held.includes(PERSON_DATA_LEVEL)) {
+            await api.revoke(roleId, AUTH.personDataView, [PERSON_DATA_LEVEL]);
+        }
+    }
+    return [next.length ? t.setup.provision.rightsGranted(1, roles.length, GROUP_NAMES.device) : t.setup.provision.personDataRevoked(GROUP_NAMES.device)];
 }
 
 /** A right whose data is known. One that names a group not created yet (`dataGroup` without `dataId`) is not granted by a refresh. */

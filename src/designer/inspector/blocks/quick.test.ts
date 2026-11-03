@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { describe, expect, it } from 'vitest';
 import { defineComponent, h, provide, type Component } from 'vue';
-import type { ContentBlockType } from '../../../model/schema';
+import type { ContentBlockType, PersonFieldKey } from '../../../model/schema';
 import { provideStageContext } from '../../../player/context';
 import { t } from '../../../i18n/designer';
 import { createBlock } from '../../ops';
@@ -36,13 +36,13 @@ const QUICK: Record<ContentBlockType, string[]> = {
     social: ['Profile: Profil hinzufügen', 'Anordnung: Untereinander', 'Markenfarben', 'Farbe', 'Ausrichtung'],
 };
 
-function draw(type: ContentBlockType, mode: 'quick' | 'full' = 'quick') {
+function draw(type: ContentBlockType, mode: 'quick' | 'full' = 'quick', released: PersonFieldKey[] = []) {
     const pinia = createPinia();
     setActivePinia(pinia);
     const block = createBlock(type, { width: 1920, height: 1080 }, [1]);
     const Host = defineComponent({
         setup() {
-            provideStageContext({ now: new Date(), timeZone: 'Europe/Berlin', clockConfirmed: true, churchName: '', appointments: [], media: new Map() });
+            provideStageContext({ now: new Date(), timeZone: 'Europe/Berlin', clockConfirmed: true, churchName: '', appointments: [], media: new Map(), releasedPersonFields: released });
             provide(INSPECTOR_MODE, mode);
             provide(INSPECTOR_CONTEXT, {
                 pickImage: () => undefined,
@@ -60,8 +60,8 @@ function draw(type: ContentBlockType, mode: 'quick' | 'full' = 'quick') {
 }
 
 /** What the short menu shows of each field, in order: the name of a chip, the label of a field that stands there, the button of a medium. */
-function quickItems(type: ContentBlockType): string[] {
-    const found = draw(type).querySelectorAll('[data-testid="quick-chip"], [data-quick-inline], button.quick-chip[data-quick-open]');
+function quickItems(type: ContentBlockType, released: PersonFieldKey[] = []): string[] {
+    const found = draw(type, 'quick', released).querySelectorAll('[data-testid="quick-chip"], [data-quick-inline], button.quick-chip[data-quick-open]');
     return [...found].map((el) => {
         if (el.getAttribute('data-testid') === 'quick-chip') return el.getAttribute('aria-label')!;
         if (el.hasAttribute('data-quick-inline')) return el.querySelector('.field-label')!.textContent!.trim();
@@ -72,6 +72,10 @@ function quickItems(type: ContentBlockType): string[] {
 describe('the short menu of the blocks (Plan.md 79, B2)', () => {
     it.each(Object.keys(QUICK) as ContentBlockType[])('%s draws only the fields the table names', (type) => {
         expect(quickItems(type)).toEqual(QUICK[type]);
+    });
+
+    it('adds the person fields to the people block only where an administrator released some (schema 1.54)', () => {
+        expect(quickItems('people', ['email'])).toEqual(['Gruppe: Infoscreen-People', 'Angaben wählen', 'Personenfelder wählen', 'Reihenfolge: Nachname', 'Farbe']);
     });
 
     it.each(Object.keys(QUICK) as ContentBlockType[])('%s draws nothing but fields (no hint, count or button of its own)', (type) => {

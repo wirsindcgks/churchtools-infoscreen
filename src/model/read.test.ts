@@ -853,4 +853,19 @@ describe('the people block and the group of the settings (schema 1.51, Plan.md 1
         expect(v.parse(Block, { ...block, sourceGroupId: 51 })).toMatchObject({ sourceGroupId: 51 });
         expect(v.safeParse(Block, { ...block, sourceGroupId: 'x' }).success).toBe(false);
     });
+
+    it('reads settings of 1.53 without released person fields as none, and with the fixed keys only (schema 1.54)', () => {
+        const base = { schema: { major: 1, minor: 53 }, kind: 'settings', id: 'settings' };
+        expect(v.parse(SettingsDoc, base).personFieldKeys).toBeUndefined();
+        expect(v.parse(SettingsDoc, { ...base, schema: { major: 1, minor: 54 }, personFieldKeys: ['email', 'birthday'] }).personFieldKeys).toEqual(['email', 'birthday']);
+        expect(v.safeParse(SettingsDoc, { ...base, personFieldKeys: ['street'] }).success).toBe(false);
+        expect(v.safeParse(SettingsDoc, { ...base, personFieldKeys: Array.from({ length: 8 }, () => 'email') }).success).toBe(false);
+    });
+
+    it('reads a people block with person fields only from the fixed list (schema 1.54)', () => {
+        const block = { id: 'p', type: 'people', x: 0, y: 0, width: 100, height: 100, roleIds: [], fieldKeys: [], style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' } };
+        expect(v.parse(Block, block)).not.toHaveProperty('personFieldKeys');
+        expect(v.parse(Block, { ...block, personFieldKeys: ['mobile', 'city'] })).toMatchObject({ personFieldKeys: ['mobile', 'city'] });
+        expect(v.safeParse(Block, { ...block, personFieldKeys: ['street'] }).success).toBe(false);
+    });
 });

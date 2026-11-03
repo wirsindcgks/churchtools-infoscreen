@@ -8,7 +8,7 @@ import Icon, { type IconName } from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import SelectMenu from '../designer/SelectMenu.vue';
-import { fetchCalendars, fetchPublicCalendars, fetchResourceMasterdata, fetchServiceGroups, fetchServices, type Calendar } from '../ct/api';
+import { fetchCalendars, fetchPersonFields, fetchPublicCalendars, fetchResourceMasterdata, fetchServiceGroups, fetchServices, type Calendar, type PersonFieldInfo } from '../ct/api';
 import { serviceChoices, type ServiceInfo } from '../appointments/services';
 import { currentPerson, httpStatus, instanceBaseUrl, personUrl } from '../ct/client';
 import { playerUrl } from '../designer/player-url';
@@ -16,7 +16,7 @@ import { GROUP_RIGHT_NAMES, settingsAbilities, type GroupPermissions, type Setti
 import RefreshRightsDialog from '../designer/RefreshRightsDialog.vue';
 import RemoveSetupDialog, { type DeviceAccountInfo, type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
 import { createCategory, pickCategory, setCategoryInMenu, wikiRestoreLogLine, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
-import type { ScreenDoc } from '../model/schema';
+import { PERSON_FIELD_KEYS, type PersonFieldKey, type ScreenDoc } from '../model/schema';
 import { withDeviceLogin } from '../player/device-login';
 import { resourceTypesOf, roomTypeIdsOf, roomsOf, type ResourceMasterdata, type ResourceTypeInfo, type RoomInfo } from '../rooms/normalize';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
@@ -52,6 +52,7 @@ import {
     applyRefresh,
     readRefresh,
     applyPeopleRelease,
+    applyPersonFieldRelease,
     refreshIsEmpty,
     refreshLogLine,
     type RefreshState,
@@ -314,6 +315,7 @@ function planInput(people?: 'new'): PlanInput {
         serviceCalendarIds: grantableCalendars(serviceCalendarIds),
         screenCalendarIds: releasedCalendars.value,
         peopleGroupIds: releasedPeopleGroups.value,
+        personFieldKeys: releasedPersonFields.value,
     };
 }
 
@@ -449,6 +451,44 @@ function withdrawPeopleGroup(id: number): void {
     draftPeopleGroups.value = draftPeopleGroups.value.filter((g) => g !== id);
 }
 
+/**
+ * The person fields an administrator releases for the block "Personen" (Plan.md 112, Stück 3). `releasedPersonFields` is the release
+ * as stored, `draftPersonFields` the choice on the page until „Speichern". `personFieldInfo` is what the instance says about the
+ * fields (`GET /fields`): offered is a field that is active and of security level 1 – the only level that is given out.
+ */
+const releasedPersonFields = ref<PersonFieldKey[]>([]);
+const draftPersonFields = ref<PersonFieldKey[]>([]);
+const personFieldInfo = ref<PersonFieldInfo[] | null>(null);
+const personFieldsFailed = ref(false);
+let personFieldsRequested = false;
+
+async function loadPersonFields(): Promise<void> {
+    if (personFieldsRequested || !repository) return;
+    personFieldsRequested = true;
+    try {
+        personFieldInfo.value = await fetchPersonFields();
+    } catch {
+        personFieldsFailed.value = true;
+    }
+}
+
+const personFieldName = (key: string): string => personFieldInfo.value?.find((f) => f.key === key)?.name ?? t.inspector.personFieldNames[key] ?? key;
+/** The rows of the list: the fields of the instance that are active, plus any released one the instance no longer offers (so it can be withdrawn). */
+const personFieldRows = computed(() =>
+    PERSON_FIELD_KEYS.flatMap((key) => {
+        const info = personFieldInfo.value?.find((f) => f.key === key);
+        const checked = draftPersonFields.value.includes(key);
+        if (!checked && !info?.isActive) return [];
+        const offered = !!info && info.isActive && info.secLevel === 1;
+        return [{ key, name: personFieldName(key), checked, offered, level: info?.secLevel ?? null }];
+    }),
+);
+function togglePersonField(key: PersonFieldKey, on: boolean): void {
+    const next = on ? [...draftPersonFields.value, key] : draftPersonFields.value.filter((k) => k !== key);
+    draftPersonFields.value = PERSON_FIELD_KEYS.filter((k) => next.includes(k));
+}
+const sameKeys = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && a.every((k) => b.includes(k));
+
 /** The same ids, in any order. */
 const sameIds = (a: number[], b: number[]): boolean => a.length === b.length && a.every((id) => b.includes(id));
 const sortedIds = (ids: Iterable<number>, known: Set<number>): number[] => [...new Set(ids)].filter((id) => known.has(id)).sort((a, b) => a - b);
@@ -474,7 +514,7 @@ function dirtyOf(form: FormPage): boolean {
         case 'calendars':
             return !!internalCalendars.value && !sameIds(draftCalendars.value, releasedCalendars.value);
         case 'people':
-            return settingsLoaded.value && !sameIds(draftPeopleGroups.value, releasedPeopleGroups.value);
+            return settingsLoaded.value && (!sameIds(draftPeopleGroups.value, releasedPeopleGroups.value) || !sameKeys(draftPersonFields.value, releasedPersonFields.value));
     }
 }
 const formDirty = computed(() => (formPage.value ? dirtyOf(formPage.value) : false));
@@ -491,6 +531,7 @@ function discardForm(form: FormPage): void {
         draftCalendars.value = [...releasedCalendars.value];
     } else if (form === 'people') {
         draftPeopleGroups.value = [...releasedPeopleGroups.value];
+        draftPersonFields.value = [...releasedPersonFields.value];
     } else {
         draftRoomTypes.value = [...roomTypeIds.value];
     }
@@ -503,6 +544,11 @@ const rightsSignature = (): string => JSON.stringify({ plan: plan.value, rooms: 
 async function saveForm(): Promise<void> {
     const form = formPage.value;
     if (!form || !repository || formState.value === 'saving') return;
+    // Releasing person fields asks first: the device then reads all of security level 1 (Plan.md 112, Stück 3, G71).
+    if (form === 'people' && draftPersonFields.value.length && !sameKeys(draftPersonFields.value, releasedPersonFields.value)) {
+        const names = draftPersonFields.value.map(personFieldName).join(', ');
+        if (!(await confirm({ message: t.setup.personFields.confirm(names), confirmLabel: t.setup.personFields.release }))) return;
+    }
     formState.value = 'saving';
     error.value = null;
     const before = rightsSignature();
@@ -536,10 +582,14 @@ async function saveForm(): Promise<void> {
         } else if (form === 'people' && settingsLoaded.value) {
             // A group that is gone leaves the release without a word.
             const next = sortedIds(draftPeopleGroups.value, new Set(groups.value.map((g) => g.id)));
-            await persistSettings({ peopleGroupIds: next });
+            const nextFields = PERSON_FIELD_KEYS.filter((key) => draftPersonFields.value.includes(key));
+            await persistSettings({ peopleGroupIds: next, personFieldKeys: nextFields });
             const previous = releasedPeopleGroups.value;
+            const previousFields = releasedPersonFields.value;
             releasedPeopleGroups.value = next;
             draftPeopleGroups.value = [...next];
+            releasedPersonFields.value = nextFields;
+            draftPersonFields.value = [...nextFields];
             // Other groups need other rights: plan and check anew.
             computePlan();
             // The rights follow in the same step; the setting is saved either way, and a device reads no group that is not released.
@@ -549,6 +599,11 @@ async function saveForm(): Promise<void> {
                     await applyPeopleRelease(deviceGroup, previous, next, churchToolsProvisionApi);
                 } catch (e) {
                     rightsNotice = t.setup.peopleGroups.rightsFailed(explain(e));
+                }
+                try {
+                    await applyPersonFieldRelease(deviceGroup, previousFields, nextFields, churchToolsProvisionApi);
+                } catch (e) {
+                    rightsNotice ??= t.setup.personFields.rightsFailed(explain(e));
                 }
             }
             void check('device');
@@ -1057,6 +1112,7 @@ async function check(side: Side): Promise<void> {
                 peopleGroup: peopleGroupId.value === null ? undefined : { id: peopleGroupId.value, name: groups.value.find((g) => g.id === peopleGroupId.value)?.name ?? GROUP_NAMES.people },
                 peopleInUse,
                 releasedPeopleGroups: releasedPeopleGroups.value.map((id) => ({ id, name: groupNameById(id) })),
+                releasedPersonFields: releasedPersonFields.value.map((key) => ({ key, name: personFieldName(key) })),
                 devicePostsDisabled: postsDisabledIn(groupId),
                 wikiCategoryId,
                 moduleRights: moduleRights('device'),
@@ -1116,6 +1172,7 @@ onMounted(async () => {
         repository = handle.repository;
         demo.value = handle.demo;
         if (page.value === 'services') void loadServices();
+        if (page.value === 'people') void loadPersonFields();
         // The device check names a missing room type: it waits for this read below.
         const roomTypesRead = loadRoomTypes();
         const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, resources, usedRooms, roomsAtAppointments, serviceCalendars, videos, people, permissions, types] = await Promise.all([
@@ -1157,6 +1214,8 @@ onMounted(async () => {
         draftCalendars.value = [...releasedCalendars.value];
         releasedPeopleGroups.value = sortedIds(settings?.peopleGroupIds ?? [], new Set(list.map((g) => g.id)));
         draftPeopleGroups.value = [...releasedPeopleGroups.value];
+        releasedPersonFields.value = [...(settings?.personFieldKeys ?? [])];
+        draftPersonFields.value = [...releasedPersonFields.value];
         usedCalendarIds = used;
         rooms = resources ? roomsOf(resources, settings?.roomTypeIds) : [];
         usedRoomIds = usedRooms;
@@ -1285,6 +1344,7 @@ const overviewCards = computed(() => {
 // RouterView keeps this instance: arriving on the page later loads the services then.
 watch(page, (now) => {
     if (now === 'services' && admin.value) void loadServices();
+    if (now === 'people' && admin.value) void loadPersonFields();
 });
 
 /**
@@ -1661,6 +1721,39 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                     </button>
                                 </li>
                             </ul>
+                        </template>
+                    </section>
+
+                    <!-- Plan.md 112, Stück 3: person fields – the device gets level 1 as a whole, the block shows only the ticked ones. -->
+                    <section class="d-card card" data-testid="person-fields">
+                        <div class="privacy-alert" role="note" data-testid="person-fields-warning">
+                            <h2>{{ t.setup.personFields.privacyTitle }}</h2>
+                            <p>{{ t.setup.personFields.privacy }}</p>
+                            <p><strong>{{ t.setup.personFields.privacyAsk }}</strong></p>
+                        </div>
+                        <h2>{{ t.setup.personFields.title }}</h2>
+                        <p class="lead">{{ t.setup.personFields.lead }}</p>
+                        <p class="muted">{{ t.setup.personFields.detail }}</p>
+                        <p v-if="!settingsLoaded" class="empty">{{ t.common.loading }}</p>
+                        <template v-else>
+                            <p v-if="personFieldsFailed" class="error" role="alert" data-testid="person-fields-failed">{{ t.setup.personFields.failed }}</p>
+                            <p v-else-if="!personFieldInfo" class="empty">{{ t.common.loading }}</p>
+                            <p v-else-if="!personFieldRows.length" class="muted" data-testid="person-fields-none">{{ t.setup.personFields.none }}</p>
+                            <div v-if="personFieldRows.length" class="d-choices">
+                                <label v-for="row in personFieldRows" :key="row.key" class="d-choice">
+                                    <input
+                                        type="checkbox"
+                                        :checked="row.checked"
+                                        :disabled="!row.offered && !row.checked"
+                                        :data-testid="`person-field-${row.key}`"
+                                        @change="togglePersonField(row.key, ($event.target as HTMLInputElement).checked)"
+                                    >
+                                    <span class="d-choice-text">
+                                        <span>{{ row.name }}</span>
+                                        <small>{{ row.offered ? t.setup.personFields.level1 : t.setup.personFields.higher(row.level) }}</small>
+                                    </span>
+                                </label>
+                            </div>
                         </template>
                     </section>
                 </template>

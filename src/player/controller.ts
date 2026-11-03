@@ -321,8 +321,8 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             ? undefined
             : await readPeopleGroups(
                   peopleWants,
-                  { peopleGroupId: state.screen.peopleGroupId, peopleGroupIds: state.screen.peopleGroupIds },
-                  (groupId) => data.people(groupId, deviceIds),
+                  { peopleGroupId: state.screen.peopleGroupId, peopleGroupIds: state.screen.peopleGroupIds, personFieldKeys: state.screen.personFieldKeys },
+                  (groupId, personFieldKeys) => data.people(groupId, deviceIds, true, personFieldKeys),
               ).catch((error: unknown) => {
                   console.warn('Personen konnten nicht geladen werden:', error);
                   return state.people;

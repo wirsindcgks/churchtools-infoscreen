@@ -14,7 +14,7 @@ zeigen – und für seine Antworten, die den Zuschnitt bestimmt haben.
 - **Neuer Baustein „Personen“.** Er zeigt die Mitglieder der Gruppe „Infoscreen-People“ als Karten mit Name, Bild und
   Angaben aus den Mitgliedsfeldern der Gruppe – etwa Funktion und Büro. Einstellbar sind die Rollen, die Angaben samt
   Reihenfolge, die Sortierung (Nachname, Vorname, Rolle), Bild an oder aus und die Zahl der Karten je Seite; die
-  Karten blättern mit Fortschritt wie die anderen Listen. E-Mail-Adresse, Telefon und Anschrift zeigt der Baustein nie.
+  Karten blättern mit Fortschritt wie die anderen Listen. E-Mail-Adresse, Telefon und Anschrift zeigt der Baustein nur, wenn ein Administrator Personenfelder ausdrücklich freischaltet (siehe unten); die Anschrift nie.
 - **Der Einrichtungsassistent legt dazu die Gruppe „Infoscreen-People“ an.** Wer dort Mitglied ist, darf auf den
   Bildschirmen erscheinen. Die Geräte sehen genau diese Gruppe und ihre Mitgliedsfelder bis Sicherheitsstufe 1; der
   Assistent nimmt die vorhandenen Gerätekonten in die Gruppe auf, „Rechte aktualisieren“ holt später hinzugekommene
@@ -36,6 +36,15 @@ zeigen – und für seine Antworten, die den Zuschnitt bestimmt haben.
   freigegebenen Gruppe nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder sehen“, das der Administrator dem Gerät gibt
   (siehe [Einrichtung](docs/Einrichtung.md#eine-vorhandene-gruppe-zeigen)); die Prüfung der Gerätegruppe zeigt das als
   Hinweis.
+- **Personenfelder freischalten.** Ein Administrator schaltet unter Einstellungen → „Gruppen für Personen“ im Abschnitt
+  „Personenfelder“ Angaben aus dem Personenprofil frei: Telefon geschäftlich und privat, Handy, E-Mail, PLZ, Ort und
+  Geburtstag (nur Tag und Monat). Angeboten werden nur Felder der Sicherheitsstufe 1; vor dem Speichern fragt die Seite
+  mit einem Datenschutzhinweis zurück, denn ChurchTools gibt Personendaten dem Gerät nur als ganze Stufe frei – die Auswahl
+  je Feld trifft der Infoscreen. Das Speichern gibt der Gerätegruppe „Personendaten sehen“ auf Stufe 1 und nimmt es
+  zurück, sobald kein Feld mehr freigeschaltet ist; „Rechte aktualisieren“ und die Prüfung kennen das. Im Designer wählt der
+  Baustein „Personen“ unter „Personenfelder“ aus den freigeschalteten Feldern; der Fernseher liest sie nur dann und zeigt
+  sie unter den Mitgliedsfeldern. Nimmt ein Administrator ein Feld zurück, verschwindet es sofort vom Fernseher (siehe
+  [Einrichtung](docs/Einrichtung.md#personenfelder-freischalten)).
 
 ### Geändert
 

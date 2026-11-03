@@ -110,8 +110,18 @@ Das Gerät liest die Mitglieder der Gruppe „Infoscreen-People" mit zwei Rechte
 | Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen | Gruppe inkl. ihrer Gruppenmitglieder sehen (`1104`, global, je freigegebener Gruppe) | – | – | **nur die Gruppen, die ein Administrator unter „Gruppen für Personen" freigegeben hat** – Name, Bild, Rolle |
 
 Das zweite Recht ist **gruppenintern** und gilt für alle, die diese Rolle haben; die Sicherheitsstufe 1 begrenzt es auf
-Mitgliedsfelder bis Stufe 1. **Nie** vergeben werden „Personendaten sehen" (`125`) und „Gruppenmitglieder sehen" (`10101`) –
-beide geben schon in der ersten Stufe die E-Mail-Adresse einer Person frei. Die Prüfung der Gerätegruppe warnt davor.
+Mitgliedsfelder bis Stufe 1. **Nie** vergeben werden „Gruppenmitglieder sehen" (`10101`) und „Personendaten sehen" (`125`)
+über Stufe 1 hinaus – beide geben schon in der ersten Stufe die E-Mail-Adresse einer Person frei. Die einzige Ausnahme ist
+„Personendaten sehen" auf **Stufe 1**, solange ein Administrator unter *Einstellungen → Gruppen für „Personen"* **Personenfelder**
+freigeschaltet hat (unten). Die Prüfung der Gerätegruppe warnt vor allem anderen.
+
+**Personenfelder:** ChurchTools gibt Personendaten einem Gerät nur als ganze Sicherheitsstufe frei, über „Personendaten sehen"
+(`125`, global) mit der Stufe als Datenangabe (gemessen, Befunde.md G71). Der Infoscreen bietet nur **Stufe 1** an. Sind Personenfelder
+freigeschaltet, gibt der Assistent beim **Speichern** den Rollen der Gerätegruppe `125` mit der Stufe 1; sind es keine mehr,
+nimmt er es wieder weg. „Rechte aktualisieren" kennt `125` Stufe 1 als geplant, solange Felder freigeschaltet sind. Die Auswahl
+**je Feld** trifft der Infoscreen (Einstellungen, dann der Baustein), nicht ChurchTools: Technisch kann das Gerät **alle Felder der
+Stufe 1** lesen, der Baustein zeigt nur die freigeschalteten. Ändert eine Gemeinde in ChurchTools die Stufe eines Feldes, ändert
+sich damit, was das Gerät liest. Die Prüfung der Gerätegruppe zeigt dazu den Hinweis „Personenfelder freigeschaltet“.
 
 **Freigegebene Gruppen:** Für eine vorhandene Gruppe, die du unter *Einstellungen → Gruppen für „Personen"* freigibst, setzt der
 Assistent `1104` mit dieser Gruppen-id an den Rollen der **Gerätegruppe**. Die freigegebene Gruppe selbst fasst er nie an:
@@ -157,6 +167,7 @@ nur an Kalendern und Räumen, die du selbst siehst (das `1104` für Gruppen nimm
 | Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | Gerät | Kein Baustein zeigt mehr Dienste dieses Kalenders |
 | Ressource sehen | Ressource sehen (`view resource`, 205) | Gerät, Gestalter | Der Raum wird nicht mehr gebraucht |
 | Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen | Gruppe inkl. ihrer Gruppenmitglieder sehen (`1104`) | Gerät | Die Freigabe wird beim Speichern der Seite „Gruppen für Personen" zurückgenommen („Infoscreen-People" und ein von Hand vergebenes `1104` bleiben) |
+| Personendaten sehen (Stufe 1) | Personendaten sehen (`125`, Datenangabe 1) | Gerät | Der Assistent nimmt es beim Speichern zurück, sobald kein Personenfeld mehr freigeschaltet ist; vom Assistenten vergeben wird es nur für Stufe 1 und nur bei freigeschalteten Feldern |
 | Anlegen von Bildschirmen und Einstellungen | `create custom data` | Gestalter, Gerät | immer – das ist Sache der Administratoren |
 | Bearbeiten von Bildschirmen und Einstellungen | `edit custom data` | Gestalter, Gerät | immer |
 | Löschen von Bildschirmen und Einstellungen | `delete custom data` | Gestalter, Gerät | immer |
@@ -176,6 +187,7 @@ Gruppe. Entzogene Rechte wirken bei ChurchTools noch bis zu einer Dreiviertelstu
 | dass der Fernseher Räume oder Dienste zeigt | Administrator | „Rechte aktualisieren" |
 | dass der Fernseher Personen zeigt | Administrator | Gerät in „Infoscreen-People" aufnehmen, Mitgliedsfelder an der Gruppe anlegen; „Rechte aktualisieren" |
 | dass der Fernseher Personen aus einer vorhandenen Gruppe zeigt | Administrator | die Gruppe unter „Gruppen für Personen" freigeben; „Rechte aktualisieren" |
+| dass der Fernseher Telefon, E-Mail, Ort oder Geburtstag einer Person zeigt | Administrator | unter „Gruppen für Personen" die Personenfelder (Stufe 1) freischalten; „Rechte aktualisieren" |
 
 Die Startseite des Designers nennt fehlende Rechte selbst.
 

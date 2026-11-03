@@ -8,7 +8,7 @@ import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
 import { th } from '../../../i18n/help';
 import { groupOfBlock, resolveFieldKeys } from '../../../groups/members';
-import type { Block } from '../../../model/schema';
+import { PERSON_FIELD_KEYS, type Block, type PersonFieldKey } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
 import { PEOPLE_SECONDS } from '../../../player/paging';
 import PageProgressHint from '../PageProgressHint.vue';
@@ -108,6 +108,36 @@ const fieldsFace = computed(() =>
     props.block.fieldKeys.length ? t.quick.listFace(t.inspector.peopleFields, t.common.countOf(props.block.fieldKeys.length, fields.value.length || props.block.fieldKeys.length)) : t.quick.empty.people,
 );
 
+// --- person fields (Stück 3): only what an administrator released; the list follows the release, so a withdrawn one shows as gone ---
+
+const released = computed(() => stage.releasedPersonFields ?? []);
+const personKeys = computed(() => props.block.personFieldKeys ?? []);
+const personName = (key: string): string => t.inspector.personFieldNames[key] ?? key;
+const chosenPerson = computed<SortItem[]>(() =>
+    personKeys.value.map((key) => {
+        const gone = !released.value.includes(key);
+        return { key, label: gone ? `${personName(key)} – ${t.inspector.personFieldGone}` : personName(key), dimmed: gone };
+    }),
+);
+const pickablePerson = computed(() => PERSON_FIELD_KEYS.filter((key) => released.value.includes(key) && !personKeys.value.includes(key)));
+function setPersonFields(next: PersonFieldKey[]): void {
+    setBlock({ personFieldKeys: next.length ? next : undefined });
+}
+function addPersonField(key: string | number): void {
+    if (personKeys.value.length >= PERSON_FIELD_KEYS.length) return;
+    setPersonFields([...personKeys.value, String(key) as PersonFieldKey]);
+}
+function removePersonField(index: number): void {
+    setPersonFields(personKeys.value.filter((_, i) => i !== index));
+}
+function movePersonField(from: number, to: number): void {
+    if (to < 0 || to >= personKeys.value.length) return;
+    setPersonFields(moveItem([...personKeys.value], from, to));
+}
+const personFieldsFace = computed(() =>
+    personKeys.value.length ? t.quick.listFace(t.inspector.personFields, t.common.countOf(personKeys.value.length, released.value.length || personKeys.value.length)) : t.quick.empty.personFields,
+);
+
 const summary = computed(() => [sorts.find((o) => o.value === props.block.sort)?.label, `${props.block.columns} × ${props.block.rows}`].join(' · '));
 const appearanceHelp = computed(() => ({
     intro: th.people.intro,
@@ -166,6 +196,23 @@ const appearanceHelp = computed(() => ({
         <p v-if="!block.fieldKeys.length" class="hint">{{ loaded && !fields.length ? t.inspector.noFieldsThere : t.inspector.noFieldsChosen }}</p>
         <InspectorSection v-else id="people-fields" :title="t.inspector.peopleFields" :summary="t.common.countOf(block.fieldKeys.length, fields.length || block.fieldKeys.length)" :help="th.people.fields">
             <SortList :items="chosen" :remove-label="t.inspector.removeField" testid="people-field" @move="moveField" @remove="removeField" />
+        </InspectorSection>
+    </QuickField>
+
+    <!-- Person fields (schema 1.54): shown only where an administrator released some; same handling as the member fields. -->
+    <QuickField v-if="released.length" quick :label="t.inspector.personFields" :face="personFieldsFace">
+        <SelectMenu
+            :model-value="undefined"
+            :options="pickablePerson.map((key) => ({ value: key, label: personName(key) }))"
+            :placeholder="t.inspector.addPersonField"
+            :disabled="!pickablePerson.length"
+            :aria-label="t.inspector.addPersonFieldLabel"
+            testid="people-person-fields-add"
+            @update:model-value="addPersonField"
+        />
+        <p v-if="!personKeys.length" class="hint">{{ t.inspector.noPersonFieldsChosen }}</p>
+        <InspectorSection v-else id="people-person-fields" :title="t.inspector.personFields" :summary="t.common.countOf(personKeys.length, released.length)" :help="th.people.personFields">
+            <SortList :items="chosenPerson" :remove-label="t.inspector.removePersonField" testid="people-person-field" @move="movePersonField" @remove="removePersonField" />
         </InspectorSection>
     </QuickField>
 

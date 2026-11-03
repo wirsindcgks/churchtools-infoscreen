@@ -1,6 +1,6 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { describe, expect, it, vi } from 'vitest';
-import { fetchAppointments, fetchAppointmentTags, fetchGroupHomepage, fetchGroupHomepageList, fetchPublicCalendars } from './api';
+import { fetchAppointments, fetchAppointmentTags, fetchGroupHomepage, fetchGroupHomepageList, fetchPersonFields, fetchPublicCalendars } from './api';
 
 vi.mock('@churchtools/churchtools-client', () => ({ churchtoolsClient: { get: vi.fn(async () => []) } }));
 
@@ -63,5 +63,21 @@ describe('fetchAppointments asks for rooms and tags (Plan.md 82 C, G59)', () => 
         vi.mocked(churchtoolsClient.get).mockClear();
         await fetchAppointmentTags();
         expect(vi.mocked(churchtoolsClient.get).mock.calls[0]![0]).toBe('/tags/appointment');
+    });
+});
+
+describe('fetchPersonFields (Plan.md 112, Stück 3, G71)', () => {
+    it('reads the name, the security level and the active flag as `GET /fields` sends them – "isActive" as text', async () => {
+        vi.mocked(churchtoolsClient.get).mockResolvedValueOnce([
+            { key: 'email', nameTranslated: 'E-Mail', secLevel: 1, isActive: '1' },
+            { key: 'street', nameTranslated: 'Straße', secLevel: 2, isActive: '1' },
+            { key: 'mobile', name: 'mobile', secLevel: 1, isActive: '0' },
+        ]);
+        expect(await fetchPersonFields()).toEqual([
+            { key: 'email', name: 'E-Mail', secLevel: 1, isActive: true },
+            { key: 'street', name: 'Straße', secLevel: 2, isActive: true },
+            { key: 'mobile', name: 'mobile', secLevel: 1, isActive: false },
+        ]);
+        expect(churchtoolsClient.get).toHaveBeenCalledWith('/fields');
     });
 });

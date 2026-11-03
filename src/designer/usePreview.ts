@@ -8,7 +8,7 @@ import { onBeforeUnmount, reactive, ref, watch, type Ref } from 'vue';
 import { fetchCalendars, fetchGroupNames, fetchPublicCalendars, type Calendar } from '../ct/api';
 import { instanceBaseUrl } from '../ct/client';
 import { getRepository } from '../store/backend';
-import type { MediaDoc, TemplateDoc, ThemeDoc } from '../model/schema';
+import type { MediaDoc, PersonFieldKey, TemplateDoc, ThemeDoc } from '../model/schema';
 import { provideStageContext, type StageContext } from '../player/context';
 import { appointmentWindow, churchToolsPlayerData, mergePosts, peopleAny, readPeopleGroups, type PeopleNeeds } from '../player/data';
 import { tp } from '../i18n/player';
@@ -28,7 +28,7 @@ export function usePreview(
     appointmentRooms: Ref<boolean> = ref(false),
     appointmentServices: Ref<number[]> = ref([]),
     appointmentTags: Ref<boolean> = ref(false),
-    people: Ref<PeopleNeeds> = ref({ standard: false, groupIds: [] }),
+    people: Ref<PeopleNeeds> = ref({ standard: false, groupIds: [], personFieldKeys: [] }),
 ) {
     const context = reactive<StageContext>({
         now: new Date(),
@@ -63,11 +63,13 @@ export function usePreview(
     let peopleDeviceIds: number[] | undefined;
     /** The groups an administrator released for the block "Personen" (schema 1.53). */
     let peopleGroupIds: number[] | undefined;
+    /** The person fields an administrator released (schema 1.54). */
+    let personFieldKeys: PersonFieldKey[] | undefined;
 
     async function loadBasics(): Promise<void> {
         const settings = getRepository()
             .then((handle) => handle.repository.loadSettings())
-            .then((doc) => ({ roomTypeIds: doc?.roomTypeIds, screenCalendarIds: doc?.screenCalendarIds, peopleGroupId: doc?.peopleGroupId, peopleDeviceIds: doc?.peopleDeviceIds, peopleGroupIds: doc?.peopleGroupIds }), () => undefined);
+            .then((doc) => ({ roomTypeIds: doc?.roomTypeIds, screenCalendarIds: doc?.screenCalendarIds, peopleGroupId: doc?.peopleGroupId, peopleDeviceIds: doc?.peopleDeviceIds, peopleGroupIds: doc?.peopleGroupIds, personFieldKeys: doc?.personFieldKeys }), () => undefined);
         try {
             const [timeZone, churchName, own, publicList, churchLogo] = await Promise.all([
                 churchToolsPlayerData.timeZone(),
@@ -95,6 +97,8 @@ export function usePreview(
         peopleGroupId = read?.peopleGroupId;
         peopleDeviceIds = read?.peopleDeviceIds;
         peopleGroupIds = read?.peopleGroupIds;
+        personFieldKeys = read?.personFieldKeys;
+        context.releasedPersonFields = personFieldKeys ?? [];
         void loadPeopleChoices();
     }
 
@@ -177,8 +181,8 @@ export function usePreview(
             // The designer is a person, maybe one of the cards: only the devices are left out.
             const list = await readPeopleGroups(
                 people.value,
-                { peopleGroupId, peopleGroupIds },
-                (groupId) => churchToolsPlayerData.people(groupId, peopleDeviceIds, false),
+                { peopleGroupId, peopleGroupIds, personFieldKeys },
+                (groupId, keys) => churchToolsPlayerData.people(groupId, peopleDeviceIds, false, keys),
             );
             if (mine === peopleRequest) context.people = list;
         } catch (error) {

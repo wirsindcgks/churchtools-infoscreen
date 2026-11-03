@@ -409,6 +409,12 @@ export const th = {
                 'Die Mitgliedsfelder der Gruppe, die unter dem Namen stehen, in der Reihenfolge der Liste; zum Umsortieren einen Eintrag ziehen. ' +
                 'Mitgliedsfelder legt man in ChurchTools an der Gruppe an. Der Fernseher sieht nur Felder bis zu der Sicherheitsstufe, die ihm ein Administrator freigegeben hat.',
         } satisfies HelpTopic,
+        personFields: {
+            intro:
+                'Angaben aus dem Personenprofil – Telefon, E-Mail, PLZ, Ort, Geburtstag –, die unter den Mitgliedsfeldern stehen, in der Reihenfolge der Liste; zum Umsortieren einen Eintrag ziehen. ' +
+                'Zur Wahl stehen nur Felder, die ein Administrator unter Einstellungen → Personen freigeschaltet hat; nimmt er eines zurück, verschwindet es sofort vom Fernseher. ' +
+                'Der Geburtstag erscheint nur als Tag und Monat, nie mit dem Jahr. Die Angaben stehen auf dem Fernseher für alle, die vorbeigehen – wähle nur, was die Personen dort sehen lassen wollen.',
+        } satisfies HelpTopic,
         intro: 'Wie die Karten erscheinen: Reihenfolge, Bild, wie viele auf einer Seite stehen und wie lange jede Seite bleibt.',
         sort: { term: i.order, text: 'Nach Nachname, nach Vorname oder nach Rolle – in der Reihenfolge der Rollen in ChurchTools, darin nach Nachname.' },
         picture: { term: i.showPicture, text: 'Zeigt das Bild, das die Person in ChurchTools hat, rund wie ein Profilbild. Ohne Bild steht der Anfangsbuchstabe im Kreis.' },

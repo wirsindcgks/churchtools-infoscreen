@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 53 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 54 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -384,6 +384,14 @@ export const GroupsBlock = v.object({
 });
 
 /**
+ * The person fields an administrator may release for the block "Personen" (schema 1.54, Plan.md 112, Stück 3): the keys of
+ * `GET /persons`, all of security level 1 on a usual instance (G71). A fixed list – the setup offers a field only if the
+ * instance has it active and at level 1.
+ */
+export const PERSON_FIELD_KEYS = ['phoneWork', 'phonePrivate', 'mobile', 'email', 'zip', 'city', 'birthday'] as const;
+export type PersonFieldKey = (typeof PERSON_FIELD_KEYS)[number];
+
+/**
  * Since 1.51: the people of the module's own group "Infoscreen-People" as cards (Plan.md 112, Stück 1) – name, picture,
  * and the chosen member fields of the group. The group is "Infoscreen-People" (`SettingsDoc.peopleGroupId`) or, since 1.53,
  * one an administrator released (`sourceGroupId`); the privacy rule lives in `src/groups/members.ts`. Older players skip the block.
@@ -397,6 +405,11 @@ export const PeopleBlock = v.object({
     roleIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50)),
     /** The member fields shown under the name, in this order – the field's id as text (it stays when the church renames the field). A block from before holds the name; the player maps it to the id. */
     fieldKeys: v.pipe(v.array(v.pipe(v.string(), v.maxLength(100))), v.maxLength(8)),
+    /**
+     * Since 1.54: person fields shown after the member fields, in this order – a subset of what an administrator released
+     * (`SettingsDoc.personFieldKeys`); the player shows only those that are still released. Missing: none.
+     */
+    personFieldKeys: v.optional(v.pipe(v.array(v.picklist(PERSON_FIELD_KEYS)), v.maxLength(7))),
     /** `last-name` – by last name, then first name; `first-name` the other way round; `role` – by role, then last name. */
     sort: v.optional(v.picklist(['last-name', 'first-name', 'role']), 'last-name'),
     /** The picture on the card; off: name and fields only. */
@@ -951,6 +964,12 @@ export const SettingsDoc = v.object({
      * The setup gives the device group "Gruppe inkl. ihrer Gruppenmitglieder sehen" for each; the player reads no other group. Missing = none.
      */
     peopleGroupIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
+    /**
+     * Since 1.54: the person fields an administrator released for the block "Personen" (Plan.md 112, Stück 3) – a subset of
+     * `PERSON_FIELD_KEYS`. Saving gives the device group "Personendaten sehen" at security level 1 (125, G71) as long as the list is
+     * not empty. Missing or empty = nothing released.
+     */
+    personFieldKeys: v.optional(v.pipe(v.array(v.picklist(PERSON_FIELD_KEYS)), v.maxLength(7))),
     /** Since 1.40: calendars that are not public but released for screens by an administrator (Plan.md 85 b). Missing = none. */
     screenCalendarIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
 });
