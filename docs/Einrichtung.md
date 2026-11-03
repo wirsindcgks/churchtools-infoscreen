@@ -154,7 +154,29 @@ auf einer Freizeit. Er liest **nur** die Gruppe **„Infoscreen-People"**:
   Baustein „Beiträge“ brauchen diese Gruppen nicht.
 - **Automatische Gruppen?** Eine Gruppe mit der Aktion „Aus Gruppe entfernen“ wirft von Hand aufgenommene Mitglieder beim
   nächsten Lauf wieder hinaus – auch das Gerät. Nimm „Infoscreen-Devices“ als Oder-Bedingung in den Filter auf, dann
-  wird das Gerät von selbst Mitglied. Stück 1 des Bausteins arbeitet mit der Gruppe „Infoscreen-People“; eigene Gruppen folgen.
+  wird das Gerät von selbst Mitglied.
+
+#### Eine vorhandene Gruppe zeigen
+
+Statt „Infoscreen-People" kann ein Baustein auch eine **vorhandene Gruppe** zeigen, etwa die Mitarbeitergruppe, die es
+längst gibt. Dafür gibst du sie frei:
+
+1. **Einstellungen → Gruppen für „Personen"**: Gruppe wählen (das Feld lässt sich durchsuchen), **Speichern**.
+2. Beim Speichern gibt der Assistent der **Gerätegruppe** das Recht „Gruppe inkl. ihrer Gruppenmitglieder sehen" für diese
+   Gruppe. Die Gruppe selbst bleibt unberührt – keine Mitgliedschaft, keine Rechte, keine Beitragseinstellung. Nimmst du die
+   Freigabe zurück, fällt das Recht wieder weg. Klappt der Rechte-Teil einmal nicht, bleibt die Freigabe gespeichert und
+   „Rechte aktualisieren" (Einstellungen → Gruppen und Rechte) holt es nach.
+3. Im Designer wählt der Baustein unter **„Gruppe"** die freigegebene Gruppe. Rollen und Angaben gehören zur gewählten
+   Gruppe; beim Wechsel setzt der Designer sie zurück.
+
+Der Fernseher zeigt dann **Name, Bild und Rolle** der Mitglieder. Eine Gruppe, die nicht freigegeben ist, liest er nicht;
+der Baustein sagt „Gruppe ist nicht für Bildschirme freigegeben".
+
+**Mitgliedsfelder** (etwa „Funktion", „Büro") sieht das Gerät nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder
+sehen" (Sicherheitsstufe 1) – als Mitglied der Gruppe oder über eine Obergruppe (ob das Recht dort trägt, ist noch nicht
+gemessen). Nimmst du das Gerät von Hand auf, vergib das Recht an der Rolle des Gerätekontos in dieser Gruppe. Es gilt für
+**alle Mitglieder dieser Rolle** – was dort an Mitgliedsfeldern mit Stufe 1 steht, ist dann für den Bildschirm bestimmt.
+Ohne das bleiben die Felder leer; die Prüfung der Gerätegruppe nennt das als Hinweis, nicht als Warnung.
 - **Bestehende Installation:** Wer schon eingerichtet hat, findet unter **Einstellungen → Gruppen und Rechte** den Knopf
   **„Gruppe „Infoscreen-People“ nachrüsten"**. Eine Vorschau sagt vorher, was geschieht: Er legt nur diese Gruppe an,
   gibt ihr und der Gerätegruppe die beiden Rechte und nimmt die Geräte auf. Bestehende Rollen, Rechte und fremde Gruppen
@@ -282,7 +304,8 @@ Mehr als lesen konnte das Gerät nie.
   sein darf.
 - **Gruppen und Beiträge** zeigt der Designer nur, soweit ChurchTools sie ohnehin öffentlich zeigt. Namen von
   Leitung und Autoren erscheinen nur, wenn ein Gestalter sie einschaltet.
-- **Personen** zeigt der Baustein „Personen“ nur aus der Gruppe „Infoscreen-People“: Name, Bild, Rolle und die gewählten
+- **Personen** zeigt der Baustein „Personen“ nur aus der Gruppe „Infoscreen-People“ und aus Gruppen, die ein Administrator
+  freigegeben hat: Name, Bild, Rolle und die gewählten
   Mitgliedsfelder – wer dort Mitglied ist, erscheint (und wer mit dem Baustein arbeitet, braucht sein Einverständnis).
   **Wer die Adresse eines Fernsehers kennt, kann dieselben Angaben der Gruppe auch selbst abrufen**, nicht nur ansehen:
   Das Konto des Fernsehers darf sie lesen. Trage in Mitgliedsfelder nichts ein, was nicht in den Flur gehört, und stelle

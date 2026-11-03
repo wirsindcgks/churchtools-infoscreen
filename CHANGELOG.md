@@ -28,6 +28,20 @@ zeigen – und für seine Antworten, die den Zuschnitt bestimmt haben.
   „Infoscreen-People“ nachrüsten“ nach einer Vorschau nur diese Gruppe an; bestehende Rollen und Gruppen bleiben
   unberührt (siehe [Einrichtung](docs/Einrichtung.md#personen-auf-den-bildschirmen)). „Rechte aktualisieren“ greift
   jetzt auch, wenn nur ein neues Gerätekonto nachzutragen ist.
+- **Vorhandene Gruppen für „Personen“ freigeben.** Ein Administrator gibt unter Einstellungen → „Gruppen für
+  Personen“ vorhandene Gruppen frei (Auswahlfeld mit Suche). „Rechte aktualisieren“ gibt der Gerätegruppe dafür das Recht
+  „Gruppe inkl. ihrer Gruppenmitglieder sehen“ und nimmt es bei einer zurückgenommenen Freigabe wieder weg; die freigegebene
+  Gruppe selbst bleibt unberührt. Im Designer wählt der Baustein unter „Gruppe“ „Infoscreen-People“ oder eine freigegebene
+  Gruppe; eine nicht freigegebene Gruppe liest der Fernseher nicht und sagt das. Mitgliedsfelder gibt es in einer
+  freigegebenen Gruppe nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder sehen“, das der Administrator dem Gerät gibt
+  (siehe [Einrichtung](docs/Einrichtung.md#eine-vorhandene-gruppe-zeigen)); die Prüfung der Gerätegruppe zeigt das als
+  Hinweis.
+
+### Geändert
+
+- **Runde Bilder, kein Farbbalken im Baustein „Personen“.** Das Bild erscheint als rundes Profilbild (ohne Bild der
+  Anfangsbuchstabe im Kreis); der Farbstreifen an der Karte entfällt, damit sich der Baustein von Beiträgen und Gruppen
+  abhebt.
 
 ## [0.49.2] – 2026-10-28
 

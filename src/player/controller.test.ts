@@ -406,8 +406,8 @@ describe('player controller', () => {
         player.stop();
     });
 
-    /** A `people` block on the first slide; the settings name the group "Infoscreen-People" or not (Plan.md 112). */
-    const withPeople = (peopleGroupId?: number): LoadedScreen => {
+    /** A `people` block on the first slide; the settings name the group "Infoscreen-People" or not, and the block a group of its own or not (Plan.md 112). */
+    const withPeople = (peopleGroupId?: number, extra: { sourceGroupId?: number; peopleGroupIds?: number[] } = {}): LoadedScreen => {
         const base = loaded();
         const [first, ...rest] = base.slides;
         const block: Block = {
@@ -423,9 +423,10 @@ describe('player controller', () => {
             showImage: true,
             columns: 3,
             rows: 2,
+            ...(extra.sourceGroupId === undefined ? {} : { sourceGroupId: extra.sourceGroupId }),
             style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' },
         };
-        return { ...base, peopleGroupId, peopleDeviceIds: [22, 23], slides: first ? [{ ...first, blocks: [...first.blocks, block] }, ...rest] : base.slides };
+        return { ...base, peopleGroupId, peopleGroupIds: extra.peopleGroupIds, peopleDeviceIds: [22, 23], slides: first ? [{ ...first, blocks: [...first.blocks, block] }, ...rest] : base.slides };
     };
 
     it('reads the people group the settings name for the people blocks, and keeps it for offline use (Plan.md 112)', async () => {
@@ -434,16 +435,31 @@ describe('player controller', () => {
         const player = createPlayer('demo', fakeData({ loadScreen: async () => withPeople(40), people }), deps);
         await player.start();
         expect(people).toHaveBeenCalledWith(40, [22, 23]);
-        expect(player.state.people).toMatchObject({ groupId: 40, denied: false });
-        expect(deps.saved[0]?.people).toMatchObject({ groupId: 40 });
+        expect(player.state.people).toMatchObject([{ groupId: 40, standard: true, denied: false }]);
+        expect(deps.saved[0]?.people).toMatchObject([{ groupId: 40 }]);
         player.stop();
     });
 
-    it('knows no group where none is set up (null), and asks for nobody without a people block (undefined)', async () => {
+    it('reads the group a block names when it is released, and reads nothing for one that is not (Plan.md 112, Stück 2a)', async () => {
+        const people = vi.fn<PlayerData['people']>(async (groupId) => ({ groupId, denied: false, people: [], roles: [], fields: [] }));
+        const released = createPlayer('demo', fakeData({ loadScreen: async () => withPeople(40, { sourceGroupId: 51, peopleGroupIds: [51] }), people }), fakeDeps());
+        await released.start();
+        expect(people.mock.calls.map((c) => c[0])).toEqual([51]);
+        expect(released.state.people).toMatchObject([{ groupId: 51, denied: false }]);
+        released.stop();
+        people.mockClear();
+        const notReleased = createPlayer('demo', fakeData({ loadScreen: async () => withPeople(40, { sourceGroupId: 51 }), people }), fakeDeps());
+        await notReleased.start();
+        expect(people).not.toHaveBeenCalled();
+        expect(notReleased.state.people).toMatchObject([{ groupId: 51, unreleased: true, denied: true, people: [] }]);
+        notReleased.stop();
+    });
+
+    it('knows no group where none is set up (an empty list), and asks for nobody without a people block (undefined)', async () => {
         const people = vi.fn<PlayerData['people']>();
         const without = createPlayer('demo', fakeData({ loadScreen: async () => withPeople(), people }), fakeDeps());
         await without.start();
-        expect(without.state.people).toBeNull();
+        expect(without.state.people).toEqual([]);
         without.stop();
         const noBlock = createPlayer('demo', fakeData({ people }), fakeDeps());
         await noBlock.start();
@@ -459,7 +475,7 @@ describe('player controller', () => {
         await player.start();
         await vi.advanceTimersByTimeAsync(15 * 60_000);
         expect(people.mock.calls.length).toBeGreaterThanOrEqual(2);
-        expect(player.state.people).toEqual(first);
+        expect(player.state.people).toEqual([{ ...first, standard: true }]);
         expect(player.state.phase).toBe('running');
         player.stop();
     });

@@ -257,6 +257,11 @@ export interface DeviceGroupInput {
     peopleGroup?: { id: number; name: string };
     /** A block "Personen" is in use: a device that cannot read the group makes the block empty – a failure, not a hint. */
     peopleInUse?: boolean;
+    /**
+     * The existing groups an administrator released for the block "Personen" (Plan.md 112, Stück 2a): the device must see them
+     * (1104). Being a member there is a choice of the administrator – without it only the member fields stay empty, a hint and no warning.
+     */
+    releasedPeopleGroups?: { id: number; name: string }[];
     /** The device group is the assistant's own: whether posts are switched off in it. Missing: not its group. */
     devicePostsDisabled?: boolean;
     moduleRights?: ModuleRights;
@@ -508,6 +513,30 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                 category: 'people',
                 text: t.setup.checks.peopleNotMember(outside.join(', '), name),
                 detail: t.setup.checks.peopleNotMemberDetail,
+            });
+        }
+    }
+
+    // Released groups (Stück 2a): seen through 1104 like the people group; the device is no member unless an administrator put it there by hand.
+    for (const { id, name } of input.releasedPeopleGroups ?? []) {
+        const blind = input.members.filter((m) => !has(m.grants, AUTH.groupWithMembersView, id)).map((m) => m.label);
+        if (blind.length) {
+            checks.push({
+                level: input.peopleInUse === true ? 'fail' : 'warn',
+                category: 'people',
+                text: t.setup.checks.peopleBlind(blind.join(', '), name, input.peopleInUse === true),
+                detail: t.setup.checks.peopleBlindDetail,
+            });
+        } else {
+            checks.push({ level: 'ok', category: 'people', text: t.setup.checks.peopleVisible(name) });
+        }
+        const outside = input.members.filter((m) => m.otherGroups && !m.otherGroups.some((g) => g.id === id)).map((m) => m.label);
+        if (outside.length) {
+            checks.push({
+                level: 'info',
+                category: 'people',
+                text: t.setup.checks.releasedNotMember(outside.join(', '), name),
+                detail: t.setup.checks.releasedNotMemberDetail,
             });
         }
     }

@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils';
 import { defineComponent, h, reactive } from 'vue';
 import { describe, expect, it } from 'vitest';
 import { normalizeAppointments } from '../appointments/normalize';
-import type { PeopleGroup } from '../groups/members';
+import { unreleasedPeople, type PeopleGroup } from '../groups/members';
 import type { Group } from '../groups/normalize';
 import { readSlide } from '../model/read';
 import { makeSlide, textBlock } from '../model/testing';
@@ -902,10 +902,10 @@ describe('rendering people (Plan.md 112)', () => {
         fields: { '2': 'Pastorin', '5': '12' },
         ...extra,
     });
-    const group = (...people: PeopleGroup['people']): PeopleGroup => ({ groupId: 40, denied: false, people, roles: [{ id: 5, name: 'Teilnehmer' }], fields: [] });
+    const group = (...people: PeopleGroup['people']): PeopleGroup => ({ groupId: 40, standard: true, denied: false, people, roles: [{ id: 5, name: 'Teilnehmer' }], fields: [] });
 
     it('shows a card per person with the name and the chosen fields only', () => {
-        const wrapper = render(makeSlide({ blocks: [peopleBlock()] }), { people: group(person('Anna', 'Berg'), person('Ben', 'Adler')) });
+        const wrapper = render(makeSlide({ blocks: [peopleBlock()] }), { people: [group(person('Anna', 'Berg'), person('Ben', 'Adler'))] });
         expect(wrapper.findAll('[data-testid="person-card"]')).toHaveLength(2);
         expect(wrapper.findAll('[data-testid="person-name"]').map((n) => n.text())).toEqual(['Ben Adler', 'Anna Berg']);
         const text = wrapper.get('[data-testid="people-cards"]').text();
@@ -915,23 +915,23 @@ describe('rendering people (Plan.md 112)', () => {
 
     it('shows a field a block from before names by its name – mapped to the id of the group', () => {
         const people: PeopleGroup = { ...group(person('Anna', 'Berg')), fields: [{ key: '2', name: 'Funktion' }, { key: '5', name: 'Büro' }] };
-        const wrapper = render(makeSlide({ blocks: [peopleBlock({ fieldKeys: ['Funktion'] })] }), { people });
+        const wrapper = render(makeSlide({ blocks: [peopleBlock({ fieldKeys: ['Funktion'] })] }), { people: [people] });
         expect(wrapper.get('[data-testid="people-cards"]').text()).toContain('Pastorin');
     });
 
     it('shows the picture of the card, or the initial; none at all when the picture is switched off', () => {
         const withPicture = person('Anna', 'Berg', { imageUrl: 'https://x.example/images/abc' });
-        const on = render(makeSlide({ blocks: [peopleBlock()] }), { people: group(withPicture, person('Ben', 'Adler')) });
+        const on = render(makeSlide({ blocks: [peopleBlock()] }), { people: [group(withPicture, person('Ben', 'Adler'))] });
         expect(on.findAll('[data-testid="person-image"]')).toHaveLength(1);
         expect(on.get('[data-testid="person-card"] .card-initial').text()).toBe('B');
-        const off = render(makeSlide({ blocks: [peopleBlock({ showImage: false })] }), { people: group(withPicture) });
+        const off = render(makeSlide({ blocks: [peopleBlock({ showImage: false })] }), { people: [group(withPicture)] });
         expect(off.find('[data-testid="person-image"]').exists()).toBe(false);
         expect(off.find('.card-initial').exists()).toBe(false);
     });
 
     it('turns pages of columns × rows cards and reports the page count to the rotation', () => {
         const many = Array.from({ length: 5 }, (_, i) => person('P', String(i)));
-        const context = { people: group(...many), pages: {} as Record<string, number> };
+        const context = { people: [group(...many)], pages: {} as Record<string, number> };
         const wrapper = render(makeSlide({ blocks: [peopleBlock({ columns: 2, rows: 1 })] }), context);
         expect(wrapper.findAll('[data-testid="person-card"]')).toHaveLength(2);
         expect(wrapper.find('[data-testid="people-pager"]').exists()).toBe(true);
@@ -939,17 +939,39 @@ describe('rendering people (Plan.md 112)', () => {
     });
 
     it('shows only the chosen roles', () => {
-        const wrapper = render(makeSlide({ blocks: [peopleBlock({ roleIds: [6] })] }), { people: group(person('Anna', 'Berg')) });
+        const wrapper = render(makeSlide({ blocks: [peopleBlock({ roleIds: [6] })] }), { people: [group(person('Anna', 'Berg'))] });
         expect(wrapper.find('[data-testid="person-card"]').exists()).toBe(false);
         expect(wrapper.get('[data-testid="people-empty"]').text()).toBe('Keine Personen');
     });
 
-    it('says what is wrong instead of "no people": group not set up, device not allowed to read it', () => {
-        const none = render(makeSlide({ blocks: [peopleBlock()] }), { people: null });
+    it('says what is wrong instead of "no people": group not set up, not released, device not allowed to read it', () => {
+        const none = render(makeSlide({ blocks: [peopleBlock()] }), { people: [] });
         expect(none.get('[data-testid="people-empty"]').text()).toContain('noch nicht eingerichtet');
-        const denied = render(makeSlide({ blocks: [peopleBlock()] }), { people: { groupId: 40, denied: true, people: [], roles: [], fields: [] } });
+        const denied = render(makeSlide({ blocks: [peopleBlock()] }), { people: [{ groupId: 40, standard: true, denied: true, people: [], roles: [], fields: [] }] });
         expect(denied.get('[data-testid="people-empty"]').text()).toContain('Recht');
+        const unreleased = render(makeSlide({ blocks: [peopleBlock({ sourceGroupId: 51 })] }), { people: [group(person('Anna', 'Berg')), unreleasedPeople(51)] });
+        expect(unreleased.get('[data-testid="people-empty"]').text()).toBe('Gruppe ist nicht für Bildschirme freigegeben');
         // Not loaded yet: calm, no claim at all.
         expect(render(makeSlide({ blocks: [peopleBlock()] })).get('[data-testid="people-empty"]').text()).toBe('');
+    });
+
+    it('shows the people of the group the block names, and the standard group for a block that names none', () => {
+        const other: PeopleGroup = { groupId: 51, denied: false, people: [person('Carla', 'Dorn')], roles: [], fields: [] };
+        const groups = [group(person('Anna', 'Berg')), other];
+        const named = render(makeSlide({ blocks: [peopleBlock({ sourceGroupId: 51 })] }), { people: groups });
+        expect(named.findAll('[data-testid="person-name"]').map((n) => n.text())).toEqual(['Carla Dorn']);
+        const standard = render(makeSlide({ blocks: [peopleBlock()] }), { people: groups });
+        expect(standard.findAll('[data-testid="person-name"]').map((n) => n.text())).toEqual(['Anna Berg']);
+    });
+
+    it('draws the picture as a round profile picture and no accent bar on the card', () => {
+        const wrapper = render(makeSlide({ blocks: [peopleBlock()] }), { people: [group(person('Anna', 'Berg', { imageUrl: 'https://x.example/images/abc' }), person('Ben', 'Adler'))] });
+        expect(wrapper.find('.card-bar').exists()).toBe(false);
+        for (const picture of wrapper.findAll('.card-image')) {
+            const style = picture.attributes('style') ?? '';
+            const [, width, height] = /width: (\d+)px; height: (\d+)px/.exec(style) ?? [];
+            expect(width).toBe(height);
+            expect(Number(width)).toBeGreaterThan(0);
+        }
     });
 });

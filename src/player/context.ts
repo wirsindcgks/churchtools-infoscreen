@@ -19,8 +19,10 @@ export interface StageContext {
     posts?: Post[];
     /** Groups of the homepages the `groups` blocks need (schema 1.14); missing counts as none. */
     groupHomepages?: HomepageGroups[];
-    /** The people of the group "Infoscreen-People" for the `people` blocks (schema 1.51); `null` = none set up, missing = not loaded. */
-    people?: PeopleGroup | null;
+    /** The people groups the `people` blocks read (schema 1.51, 1.53), "Infoscreen-People" flagged `standard`; a group not in the list is not set up; missing = not loaded. */
+    people?: PeopleGroup[];
+    /** Designer only: the groups a `people` block can show, with their names – "Infoscreen-People" and the released ones (schema 1.53). */
+    peopleChoices?: { id: number; name: string; standard: boolean }[];
     /** Bookings of the rooms the `rooms` blocks need (schema 1.16); missing counts as none. */
     rooms?: RoomBookings[];
     media: Map<string, MediaDoc>;

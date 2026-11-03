@@ -258,6 +258,8 @@ export interface LoadedScreen extends ScreenBundle {
     peopleGroupId?: number;
     /** The device accounts to leave out of the people cards (schema 1.52); missing = none. */
     peopleDeviceIds?: number[];
+    /** The groups an administrator released for the block "Personen" (schema 1.53); missing = none. */
+    peopleGroupIds?: number[];
     issues: ReadIssue[];
 }
 
@@ -564,7 +566,7 @@ export class ScreenRepository {
         const settings = await this.loadSettings().catch(() => null);
         const allowedServiceIds = settings?.allowedServiceIds ?? [];
         const roomTypeIds = settings?.roomTypeIds;
-        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, templates, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, peopleGroupId: settings?.peopleGroupId, peopleDeviceIds: settings?.peopleDeviceIds, issues };
+        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, templates, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, peopleGroupId: settings?.peopleGroupId, peopleDeviceIds: settings?.peopleDeviceIds, peopleGroupIds: settings?.peopleGroupIds, issues };
     }
 
     /**

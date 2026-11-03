@@ -107,9 +107,20 @@ Das Gerät liest die Mitglieder der Gruppe „Infoscreen-People" mit zwei Rechte
 | Gruppe „Infoscreen-People" inkl. ihrer Gruppenmitglieder sehen | Gruppe inkl. ihrer Gruppenmitglieder sehen (`1104`, global, für diese Gruppe) | für die Vorschau | für die Vorschau | **nur „Infoscreen-People"** – Name, Bild, Rolle |
 | Gruppenmitgliedsfelder sehen (bis Sicherheitsstufe 1) | Gruppenmitgliedsfelder sehen (`10126`, gruppenintern, Stufe 1) | – | – | an der **Standardrolle von „Infoscreen-People"**, in der die Geräte Mitglied sind |
 
+| Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen | Gruppe inkl. ihrer Gruppenmitglieder sehen (`1104`, global, je freigegebener Gruppe) | – | – | **nur die Gruppen, die ein Administrator unter „Gruppen für Personen" freigegeben hat** – Name, Bild, Rolle |
+
 Das zweite Recht ist **gruppenintern** und gilt für alle, die diese Rolle haben; die Sicherheitsstufe 1 begrenzt es auf
 Mitgliedsfelder bis Stufe 1. **Nie** vergeben werden „Personendaten sehen" (`125`) und „Gruppenmitglieder sehen" (`10101`) –
 beide geben schon in der ersten Stufe die E-Mail-Adresse einer Person frei. Die Prüfung der Gerätegruppe warnt davor.
+
+**Freigegebene Gruppen:** Für eine vorhandene Gruppe, die du unter *Einstellungen → Gruppen für „Personen"* freigibst, setzt der
+Assistent `1104` mit dieser Gruppen-id an den Rollen der **Gerätegruppe**. Die freigegebene Gruppe selbst fasst er nie an:
+keine Mitgliedschaft, kein `10126`, keine Beitragseinstellung. Das geschieht schon beim **Speichern** der Seite; nimmst du
+eine Freigabe zurück, fällt die Gruppen-id wieder aus `1104` heraus – nur die Ids, die vorher freigegeben waren; ein `1104`,
+das du von Hand auf eine andere Gruppe vergeben hast, bleibt stehen. Gelingt der Rechte-Teil einmal nicht, bleibt die
+Freigabe gespeichert, und „Rechte aktualisieren" trägt fehlende Rechte nach. **Mitgliedsfelder** einer freigegebenen Gruppe sieht das Gerät nur mit dem gruppeninternen Recht
+`10126` (Stufe 1) – als Mitglied der Gruppe oder über eine Obergruppe (ob das trägt, ist noch nicht gemessen). Nimmst du das
+Gerätekonto von Hand auf, gibst du der Rolle des Kontos `10126`; das gilt dann für **alle** mit dieser Rolle in der Gruppe. Ohne das erscheinen Name, Bild und Rolle. Die Prüfung der Gerätegruppe zeigt das als Hinweis, nicht als Warnung.
 
 **Beiträge** sind in „Infoscreen-Devices“ und „Infoscreen-People“ abgeschaltet: Der Gruppentyp „Merkmal“ gibt seinen Rollen
 sonst „Beitrag in Gruppe schreiben“ (`10130`, `10131`, gruppenintern). Mit abgeschalteten Beiträgen lehnt ChurchTools das
@@ -137,13 +148,14 @@ andere Recht selbst geben. Ein **Super-Admin** hat alles davon und braucht auch 
 ## Was „Rechte aktualisieren" zurücknimmt
 
 „Rechte aktualisieren" nimmt auch zurück, was kein Bildschirm mehr braucht – **nur an den Gruppen des Assistenten** und
-nur an Kalendern und Räumen, die du selbst siehst. Vorher zeigt eine Vorschau, was wegfällt.
+nur an Kalendern und Räumen, die du selbst siehst (das `1104` für Gruppen nimmt schon das Speichern der Freigabeseite zurück). Vorher zeigt eine Vorschau, was wegfällt.
 
 | Im Assistenten | In der Rechteverwaltung (API) | Gruppe | Wann es wegfällt |
 | --- | --- | --- | --- |
 | Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | Gerät, Gestalter | Der Kalender ist nicht mehr für Bildschirme freigegeben |
 | Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | Gerät | Kein Baustein zeigt mehr Dienste dieses Kalenders |
 | Ressource sehen | Ressource sehen (`view resource`, 205) | Gerät, Gestalter | Der Raum wird nicht mehr gebraucht |
+| Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen | Gruppe inkl. ihrer Gruppenmitglieder sehen (`1104`) | Gerät | Die Freigabe wird beim Speichern der Seite „Gruppen für Personen" zurückgenommen („Infoscreen-People" und ein von Hand vergebenes `1104` bleiben) |
 | Anlegen von Bildschirmen und Einstellungen | `create custom data` | Gestalter, Gerät | immer – das ist Sache der Administratoren |
 | Bearbeiten von Bildschirmen und Einstellungen | `edit custom data` | Gestalter, Gerät | immer |
 | Löschen von Bildschirmen und Einstellungen | `delete custom data` | Gestalter, Gerät | immer |
@@ -162,6 +174,7 @@ Gruppe. Entzogene Rechte wirken bei ChurchTools noch bis zu einer Dreiviertelstu
 | dass der Fernseher Termine zeigt | – | der Kalender muss **öffentlich** oder für Bildschirme freigegeben sein |
 | dass der Fernseher Räume oder Dienste zeigt | Administrator | „Rechte aktualisieren" |
 | dass der Fernseher Personen zeigt | Administrator | Gerät in „Infoscreen-People" aufnehmen, Mitgliedsfelder an der Gruppe anlegen; „Rechte aktualisieren" |
+| dass der Fernseher Personen aus einer vorhandenen Gruppe zeigt | Administrator | die Gruppe unter „Gruppen für Personen" freigeben; „Rechte aktualisieren" |
 
 Die Startseite des Designers nennt fehlende Rechte selbst.
 

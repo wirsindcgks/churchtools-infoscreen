@@ -17,12 +17,15 @@ test('the people block says the group is not set up, and its inspector keeps its
     await expect(block.getByTestId('people-empty')).toContainText('noch nicht eingerichtet');
     await expect(page.getByTestId('people-no-group')).toBeVisible();
 
-    // Roles first, then "Darstellung", then "Schrift" (AGENTS.md, Ordnung im Inspektor); nothing is open at the start.
+    // Group first, then roles, then "Darstellung", then "Schrift" (AGENTS.md, Ordnung im Inspektor); nothing is open at the start.
     const ids = await page.locator('[data-testid^="section-"]:not([data-testid$="-toggle"])').evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
-    const order = ['section-people-roles', 'section-appearance', 'section-font'];
+    const order = ['section-people-group', 'section-people-roles', 'section-appearance', 'section-font'];
     expect(ids.filter((id) => order.includes(id!))).toEqual(order);
     await expect(page.getByTestId('section-people-roles')).not.toHaveAttribute('open', '');
 
+    await expect(page.getByTestId('section-people-group')).not.toHaveAttribute('open', '');
+    await openSection(page, 'people-group');
+    await expect(page.getByTestId('people-group-hint')).toBeVisible();
     await openSection(page, 'people-roles');
     await expect(page.getByTestId('people-roles-all')).toBeDisabled();
 

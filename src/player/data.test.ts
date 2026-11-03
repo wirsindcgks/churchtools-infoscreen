@@ -4,7 +4,7 @@ import type { Block } from '../model/schema';
 import type { Post } from '../posts/normalize';
 import * as api from '../ct/api';
 import * as client from '../ct/client';
-import { appointmentNeeds, churchToolsPlayerData, groupNeeds, mergePosts, peopleNeeded, postNeeds, readableAppointments } from './data';
+import { appointmentNeeds, churchToolsPlayerData, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readableAppointments, readPeopleGroups } from './data';
 
 vi.mock('../ct/api', () => ({
     fetchPublicCalendars: vi.fn(),
@@ -354,9 +354,25 @@ describe('people (Plan.md 112)', () => {
         style,
     };
 
-    it('is needed when a slide has the block, and only then', () => {
-        expect(peopleNeeded([makeSlide({ blocks: [peopleBlock] })])).toBe(true);
-        expect(peopleNeeded([makeSlide({ blocks: [postsBlock()] }), makeSlide({ blocks: [] })])).toBe(false);
+    it('is needed when a slide has the block, and only then – the standard group and the ones named, each once', () => {
+        expect(peopleNeeds([makeSlide({ blocks: [peopleBlock] })])).toEqual({ standard: true, groupIds: [] });
+        expect(peopleAny(peopleNeeds([makeSlide({ blocks: [postsBlock()] }), makeSlide({ blocks: [] })]))).toBe(false);
+        const named = [{ ...peopleBlock, id: 'q', sourceGroupId: 51 }, { ...peopleBlock, id: 'r', sourceGroupId: 51 }, { ...peopleBlock, id: 's', sourceGroupId: 7 }];
+        expect(peopleNeeds([makeSlide({ blocks: named })])).toEqual({ standard: false, groupIds: [7, 51] });
+    });
+
+    it('reads only the standard group and the released ones; any other group comes back unreleased without a request', async () => {
+        const read = vi.fn(async (groupId: number) => ({ groupId, denied: false, people: [], roles: [], fields: [] }));
+        const groups = await readPeopleGroups({ standard: true, groupIds: [51, 99] }, { peopleGroupId: 40, peopleGroupIds: [51] }, read);
+        expect(read.mock.calls.map((c) => c[0]).sort()).toEqual([40, 51]);
+        expect(groups.find((g) => g.groupId === 40)).toMatchObject({ standard: true, denied: false });
+        expect(groups.find((g) => g.groupId === 51)).toMatchObject({ denied: false });
+        expect(groups.find((g) => g.groupId === 51)?.standard).toBeUndefined();
+        expect(groups.find((g) => g.groupId === 99)).toMatchObject({ unreleased: true, denied: true, people: [] });
+        // Without a standard group set up a block without a group finds none; one that names the standard group still reads it.
+        expect(await readPeopleGroups({ standard: true, groupIds: [] }, {}, read)).toEqual([]);
+        const named = await readPeopleGroups({ standard: false, groupIds: [40] }, { peopleGroupId: 40 }, read);
+        expect(named).toMatchObject([{ groupId: 40, standard: true }]);
     });
 
     const member = (personId: number, first: string) => ({ personId, groupTypeRoleId: 5, groupMemberStatus: 'active', person: { domainAttributes: { firstName: first, lastName: 'X' } } });

@@ -17,7 +17,7 @@ import { reviveRooms, type RoomBookings } from '../rooms/normalize';
 import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '../store/screen-repository';
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
-import { appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, peopleNeeded, postNeeds, roomNeeds, type PlayerData } from './data';
+import { appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readPeopleGroups, roomNeeds, type PlayerData } from './data';
 import { activePlaylistId } from './schedule';
 import { askServiceWorkerHasPage } from './service-worker';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
@@ -29,8 +29,8 @@ export interface PlayerState {
     appointments: Appointment[];
     posts: Post[];
     groupHomepages: HomepageGroups[];
-    /** The people group for `people` blocks; `null` = none set up, `undefined` = no such block or not read yet. */
-    people: PeopleGroup | null | undefined;
+    /** The people groups the `people` blocks name (the standard one flagged); `undefined` = no such block or not read yet. A block whose group is missing says "not set up". */
+    people: PeopleGroup[] | undefined;
     rooms: RoomBookings[];
     timeZone: string;
     churchName: string;
@@ -315,15 +315,18 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
               })
             : [];
         // People are decoration too: a failure keeps the last ones. Without a group set up there are none to read.
-        const peopleGroupId = state.screen.peopleGroupId;
-        const people = !peopleNeeded(state.screen.slides)
+        const peopleWants = peopleNeeds(state.screen.slides);
+        const deviceIds = state.screen.peopleDeviceIds ?? [];
+        const people = !peopleAny(peopleWants)
             ? undefined
-            : peopleGroupId === undefined
-              ? null
-              : await data.people(peopleGroupId, state.screen.peopleDeviceIds ?? []).catch((error: unknown) => {
-                    console.warn('Personen konnten nicht geladen werden:', error);
-                    return state.people;
-                });
+            : await readPeopleGroups(
+                  peopleWants,
+                  { peopleGroupId: state.screen.peopleGroupId, peopleGroupIds: state.screen.peopleGroupIds },
+                  (groupId) => data.people(groupId, deviceIds),
+              ).catch((error: unknown) => {
+                  console.warn('Personen konnten nicht geladen werden:', error);
+                  return state.people;
+              });
         const roomWants = roomNeeds(state.screen.slides);
         const roomWindow = appointmentWindow(now, timeZone, roomWants.days);
         // Rooms are decoration too: a failure keeps the last bookings.
@@ -473,7 +476,8 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                 appointments: reviveAppointments(cached.appointments),
                 posts: cached.posts ? revivePosts(cached.posts) : [],
                 groupHomepages: cached.groupHomepages ?? [],
-                people: cached.people,
+                // A state saved before 1.53 holds one group, not a list.
+                people: Array.isArray(cached.people) ? cached.people : undefined,
                 rooms: cached.rooms ? reviveRooms(cached.rooms) : [],
                 timeZone: cached.timeZone,
                 churchName: cached.churchName,

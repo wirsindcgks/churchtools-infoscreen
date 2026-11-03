@@ -22,7 +22,7 @@ import { useHeartbeats } from '../designer/useHeartbeats';
 import { usePreview, useTemplatesIn } from '../designer/usePreview';
 import { expandTemplates } from '../model/templates';
 import { blockCalendarIds, type TemplateDoc, type ThemeDoc } from '../model/schema';
-import { groupNeeds, peopleNeeded, postNeeds, roomNeeds } from '../player/data';
+import { groupNeeds, peopleNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import type { PlaylistOverview, ScreenRepository } from '../store/screen-repository';
 import { t } from '../i18n/designer';
@@ -86,7 +86,7 @@ const { context } = usePreview(
     undefined,
     undefined,
     undefined,
-    computed(() => peopleNeeded(firstSlides.value)),
+    computed(() => peopleNeeds(firstSlides.value)),
 );
 useTemplatesIn(context, templates);
 

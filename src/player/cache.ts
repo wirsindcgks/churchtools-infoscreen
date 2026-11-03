@@ -22,7 +22,7 @@ export interface CachedState {
     /** Missing in states saved before groups came (schema 1.14). Leaders' names only, nothing else of a person. */
     groupHomepages?: HomepageGroups[];
     /** Missing in states saved before people came (schema 1.51). Name, picture, role and the chosen member fields only – see `src/groups/members.ts`. */
-    people?: PeopleGroup | null;
+    people?: PeopleGroup[];
     /** Missing in states saved before rooms came (schema 1.16). Titles of confirmed bookings only – see `src/rooms/normalize.ts`. */
     rooms?: RoomBookings[];
     savedAt: string;

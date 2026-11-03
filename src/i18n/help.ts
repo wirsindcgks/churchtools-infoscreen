@@ -395,8 +395,14 @@ export const th = {
 
     /** The sections of the people block. */
     people: {
+        group: {
+            intro:
+                'Aus welcher Gruppe die Personen kommen: „Infoscreen-People“ oder eine vorhandene Gruppe, die ein Administrator unter Einstellungen → Personen für Bildschirme freigegeben hat. ' +
+                'Wechselst du die Gruppe, werden Rollen und Angaben zurückgesetzt, denn sie gehören zur Gruppe. ' +
+                'Angaben (Mitgliedsfelder) sieht der Fernseher nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder sehen“, das ein Administrator ihm gibt; sonst stehen Name, Bild und Rolle da.',
+        } satisfies HelpTopic,
         roles: {
-            intro: 'Die Rollen der Gruppe „Infoscreen-People“, deren Personen erscheinen. Ohne Auswahl erscheinen alle.',
+            intro: 'Die Rollen der gewählten Gruppe, deren Personen erscheinen. Ohne Auswahl erscheinen alle.',
         } satisfies HelpTopic,
         fields: {
             intro:
@@ -405,7 +411,7 @@ export const th = {
         } satisfies HelpTopic,
         intro: 'Wie die Karten erscheinen: Reihenfolge, Bild, wie viele auf einer Seite stehen und wie lange jede Seite bleibt.',
         sort: { term: i.order, text: 'Nach Nachname, nach Vorname oder nach Rolle – in der Reihenfolge der Rollen in ChurchTools, darin nach Nachname.' },
-        picture: { term: i.showPicture, text: 'Zeigt das Bild, das die Person in ChurchTools hat. Ohne Bild steht der Anfangsbuchstabe.' },
+        picture: { term: i.showPicture, text: 'Zeigt das Bild, das die Person in ChurchTools hat, rund wie ein Profilbild. Ohne Bild steht der Anfangsbuchstabe im Kreis.' },
         grid: { term: i.columns, text: 'Wie viele Karten nebeneinander und untereinander auf einer Seite stehen, je 1 bis 6. Passen nicht alle Personen darauf, blättert der Baustein.' },
         seconds: { term: i.secondsPerPage, text: 'Wie lange jede Seite stehen bleibt, vorgegeben sind 15 Sekunden. Die Folie läuft so lange, bis jede Seite einmal zu sehen war.' },
     },

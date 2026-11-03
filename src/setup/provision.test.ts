@@ -8,6 +8,7 @@ import {
     planProvisioning,
     provision,
     applyRefresh,
+    applyPeopleRelease,
     planRefresh,
     provisionPeople,
     completePeople,
@@ -587,6 +588,49 @@ describe('the people group (Plan.md 112, G70)', () => {
         const device = planProvisioning({ ...input, peopleGroupId: 77 })[1]!;
         expect(device.grants.find((g) => g.authId === AUTH.groupWithMembersView)).toMatchObject({ dataId: [77] });
         expect(planProvisioning(input).map((g) => g.key)).toEqual(['designer', 'device']);
+    });
+
+    it('gives the device group 1104 for each released group in the same entry as the people group, and touches the released group not at all (Stück 2a)', () => {
+        const numeric = planProvisioning({ ...input, peopleGroupId: 77, peopleGroupIds: [51, 52] });
+        const seen = numeric[1]!.grants.filter((g) => g.authId === AUTH.groupWithMembersView);
+        expect(seen).toHaveLength(1);
+        expect(seen[0]).toMatchObject({ dataId: [77, 51, 52] });
+        expect(numeric.map((g) => g.key)).toEqual(['designer', 'device', 'people']);
+        const created = planProvisioning({ ...withPeople, peopleGroupIds: [51] })[1]!.grants.find((g) => g.authId === AUTH.groupWithMembersView)!;
+        expect(created).toMatchObject({ dataGroup: 'people', dataId: [51] });
+        // Without a people group the released ones stand alone; no group of theirs is in the plan.
+        const alone = planProvisioning({ ...input, peopleGroupIds: [51] });
+        expect(alone.map((g) => g.key)).toEqual(['designer', 'device']);
+        expect(alone[1]!.grants.find((g) => g.authId === AUTH.groupWithMembersView)).toMatchObject({ dataId: [51] });
+        expect(planProvisioning({ ...input, peopleGroupId: 77, peopleGroupIds: [51] }).flatMap((g) => g.grants.map((x) => x.authId))).not.toContain(10126);
+    });
+
+    it('sets 1104 when the release is saved: new ones added to what the role holds, withdrawn ones taken back, a hand-given one kept', async () => {
+        const calls: string[] = [];
+        const api = {
+            roleIds: async () => [5],
+            grants: async () => [held(AUTH.groupWithMembersView, 77), held(AUTH.groupWithMembersView, 51), held(AUTH.groupWithMembersView, 99)],
+            grant: async (roleId: number, authId: number, dataId?: number[]) => void calls.push(`grant ${roleId} ${authId} ${dataId?.join(',')}`),
+            revoke: async (roleId: number, authId: number, dataId: number[]) => void calls.push(`revoke ${roleId} ${authId} ${dataId.join(',')}`),
+        };
+        await applyPeopleRelease(10, [51], [60], api);
+        expect(calls).toEqual(['grant 5 1104 77,99,60', 'revoke 5 1104 51']);
+        calls.length = 0;
+        expect(await applyPeopleRelease(10, [51], [51], api)).toEqual([]);
+        expect(calls).toEqual([]);
+    });
+
+    it('takes back 1104 only for the groups released before and not any more – the people group and a 1104 given by hand stay', () => {
+        const plan = planProvisioning({ ...input, peopleGroupId: 77, peopleGroupIds: [51] });
+        const held = [[{ authId: AUTH.groupWithMembersView, dataId: 77 }, { authId: AUTH.groupWithMembersView, dataId: 51 }, { authId: AUTH.groupWithMembersView, dataId: 52 }, { authId: AUTH.groupWithMembersView, dataId: 99 }]];
+        const names = { groups: new Map([[52, 'Alte Gruppe']]) };
+        const change = planRefresh(plan, { device: held }, { calendarIds: [], roomIds: [], groupIds: [52] }, names).find((g) => g.key === 'device')!;
+        expect(change.remove).toEqual([{ authId: AUTH.groupWithMembersView, dataId: 52, label: 'Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen: Alte Gruppe' }]);
+        // Nothing withdrawn: nothing is taken back, whatever else is held.
+        expect(planRefresh(plan, { device: held }, { calendarIds: [], roomIds: [] }, names).find((g) => g.key === 'device')!.remove).toEqual([]);
+        // A missing one is added under the name of the released group.
+        const missing = planRefresh(plan, { device: [[{ authId: AUTH.groupWithMembersView, dataId: 77 }]] }, { calendarIds: [], roomIds: [], groupIds: [] }, { groups: new Map([[51, 'Mitarbeiter']]) }).find((g) => g.key === 'device')!;
+        expect(missing.add.find((a) => a.dataId === 51)?.label).toBe('Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen: Mitarbeiter');
     });
 
     it('never plans 125 or 10101 – both open the e-mail address', () => {

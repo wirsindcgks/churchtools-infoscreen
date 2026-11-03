@@ -155,6 +155,17 @@ export async function fetchGroupMembers(groupId: number): Promise<{ members: unk
     return { members, roles: Array.isArray(roles) ? roles : [] };
 }
 
+/**
+ * The names of these groups, for the inspector's group choice and the setup (Plan.md 112, Stück 2a). A group the account may
+ * not read is missing from the answer – the caller labels it by number.
+ */
+/** `ids` becomes `ids[]`, as the specification names it (axios encodes the array so, like `calendar_ids[]` above). */
+export async function fetchGroupNames(ids: number[]): Promise<Map<number, string>> {
+    if (!ids.length) return new Map();
+    const list = await churchtoolsClient.getAllPages<{ id: number; name: string }>('/groups', { ids });
+    return new Map(list.map((g) => [g.id, g.name]));
+}
+
 export interface PostGroup {
     id: number;
     name: string;

@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 52 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 53 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -385,12 +385,14 @@ export const GroupsBlock = v.object({
 
 /**
  * Since 1.51: the people of the module's own group "Infoscreen-People" as cards (Plan.md 112, Stück 1) – name, picture,
- * and the chosen member fields of the group. The group is fixed (`SettingsDoc.peopleGroupId`); the privacy rule lives
- * in `src/groups/members.ts`. Older players skip the block.
+ * and the chosen member fields of the group. The group is "Infoscreen-People" (`SettingsDoc.peopleGroupId`) or, since 1.53,
+ * one an administrator released (`sourceGroupId`); the privacy rule lives in `src/groups/members.ts`. Older players skip the block.
  */
 export const PeopleBlock = v.object({
     ...BlockFrame,
     type: v.literal('people'),
+    /** Since 1.53: the group whose people show – "Infoscreen-People" or one an administrator released (`SettingsDoc.peopleGroupIds`). Missing: "Infoscreen-People". Not `groupId`: that is the layer group of every block. */
+    sourceGroupId: v.optional(v.pipe(v.number(), v.integer())),
     /** Empty: every role of the group; else only the people in these roles (ids of the group type's roles). */
     roleIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50)),
     /** The member fields shown under the name, in this order – the field's id as text (it stays when the church renames the field). A block from before holds the name; the player maps it to the id. */
@@ -944,6 +946,11 @@ export const SettingsDoc = v.object({
      * them out of the cards – a device may not read the device group (measured), so it cannot tell them itself. Missing = none.
      */
     peopleDeviceIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(200))),
+    /**
+     * Since 1.53: existing groups an administrator released for the block "Personen" (Plan.md 112, Stück 2a), besides "Infoscreen-People".
+     * The setup gives the device group "Gruppe inkl. ihrer Gruppenmitglieder sehen" for each; the player reads no other group. Missing = none.
+     */
+    peopleGroupIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
     /** Since 1.40: calendars that are not public but released for screens by an administrator (Plan.md 85 b). Missing = none. */
     screenCalendarIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
 });

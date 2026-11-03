@@ -77,6 +77,10 @@ export interface PeopleGroup {
     people: Person[];
     roles: PeopleRole[];
     fields: PeopleField[];
+    /** The module's own group "Infoscreen-People": the one a block without `groupId` shows (schema 1.53). */
+    standard?: boolean;
+    /** The group is neither "Infoscreen-People" nor released by an administrator: not read at all (Plan.md 112, Stück 2a). */
+    unreleased?: boolean;
 }
 
 /** More would not be cards a person can read; the same cap as the groups overview. */
@@ -85,6 +89,17 @@ export const PEOPLE_CAP = 120;
 /** A person group that could not be read at all. */
 export function deniedPeople(groupId: number): PeopleGroup {
     return { groupId, denied: true, people: [], roles: [], fields: [] };
+}
+
+/** A group that is not released for screens: nothing of it is read, the block says so. */
+export function unreleasedPeople(groupId: number): PeopleGroup {
+    return { ...deniedPeople(groupId), unreleased: true };
+}
+
+/** The group a `people` block shows among the ones the player holds: `undefined` while they are not read, `null` when its group is missing. */
+export function groupOfBlock(groups: readonly PeopleGroup[] | undefined, groupId: number | undefined): PeopleGroup | null | undefined {
+    if (groups === undefined) return undefined;
+    return groups.find((g) => (groupId === undefined ? g.standard === true : g.groupId === groupId)) ?? null;
 }
 
 function idOf(value: unknown): number | null {

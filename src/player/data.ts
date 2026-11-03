@@ -24,7 +24,7 @@ import {
     fetchTimeZone,
 } from '../ct/api';
 import { currentPerson, ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
-import { deniedPeople, normalizeMembers, type PeopleGroup } from '../groups/members';
+import { deniedPeople, normalizeMembers, unreleasedPeople, type PeopleGroup } from '../groups/members';
 import { normalizeHomepage, type HomepageGroups } from '../groups/normalize';
 import type { HeartbeatDoc } from '../model/heartbeat';
 import type { ScreenDoc, SlideDoc } from '../model/schema';
@@ -314,9 +314,54 @@ export function groupNeeds(slides: SlideDoc[]): number[] {
     return [...ids].sort((a, b) => a - b);
 }
 
-/** Whether a screen shows people (Plan.md 112): then the controller reads the people group from the settings. */
-export function peopleNeeded(slides: SlideDoc[]): boolean {
-    return slides.some((slide) => slide.blocks.some((block) => block.type === 'people'));
+/** The groups the `people` blocks of a screen read: the standard group "Infoscreen-People" and/or other groups by id (schema 1.53). */
+export interface PeopleNeeds {
+    standard: boolean;
+    groupIds: number[];
+}
+
+/** Which people groups a screen shows (Plan.md 112): then the controller reads them – the standard one from the settings. */
+export function peopleNeeds(slides: SlideDoc[]): PeopleNeeds {
+    const ids = new Set<number>();
+    let standard = false;
+    for (const block of slides.flatMap((s) => s.blocks)) {
+        if (block.type !== 'people') continue;
+        if (block.sourceGroupId === undefined) standard = true;
+        else ids.add(block.sourceGroupId);
+    }
+    return { standard, groupIds: [...ids].sort((a, b) => a - b) };
+}
+
+/** Whether a screen shows people at all. */
+export const peopleAny = (needs: PeopleNeeds): boolean => needs.standard || needs.groupIds.length > 0;
+
+/** What the settings say about people groups. */
+export interface PeopleSettings {
+    peopleGroupId?: number;
+    peopleGroupIds?: readonly number[];
+}
+
+/**
+ * Reads the people groups the blocks need (Plan.md 112, Stück 2a). Only "Infoscreen-People" and the groups an administrator
+ * released are read; any other group a block names comes back marked `unreleased` without a single request. A failure of
+ * one read fails the whole, so the caller keeps what it had.
+ */
+export async function readPeopleGroups(
+    needs: PeopleNeeds,
+    settings: PeopleSettings,
+    read: (groupId: number) => Promise<PeopleGroup>,
+): Promise<PeopleGroup[]> {
+    const standardId = settings.peopleGroupId;
+    const released = new Set(settings.peopleGroupIds ?? []);
+    const ids = new Set<number>(needs.groupIds);
+    if (needs.standard && standardId !== undefined) ids.add(standardId);
+    return Promise.all(
+        [...ids].map(async (id) => {
+            if (id !== standardId && !released.has(id)) return unreleasedPeople(id);
+            const group = await read(id);
+            return id === standardId ? { ...group, standard: true } : group;
+        }),
+    );
 }
 
 /**

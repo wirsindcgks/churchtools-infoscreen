@@ -5,7 +5,7 @@
  * nothing but `Person` fields: name, picture and the member fields the block names.
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { resolveFieldKeys, selectPeople, shownFields, type Person } from '../../groups/members';
+import { groupOfBlock, resolveFieldKeys, selectPeople, shownFields, type Person } from '../../groups/members';
 import type { Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
@@ -16,13 +16,16 @@ import { tp } from '../../i18n/player';
 const props = defineProps<{ block: Extract<Block, { type: 'people' }>; slideSeconds?: number }>();
 const context = useStageContext();
 
-const items = computed(() => selectPeople(context.people ?? undefined, props.block.roleIds, props.block.sort));
+/** The block's group: `undefined` while the first read is on its way, `null` where "Infoscreen-People" is not set up. */
+const group = computed(() => groupOfBlock(context.people, props.block.sourceGroupId));
+const items = computed(() => selectPeople(group.value ?? undefined, props.block.roleIds, props.block.sort));
 
-/** As calm as "Keine Gruppen": not set up, not allowed, or simply nobody – and nothing while the first read is still on its way. */
+/** As calm as "Keine Gruppen": not set up, not released, not allowed, or simply nobody – and nothing while the first read is still on its way. */
 const emptyMessage = computed(() => {
-    if (context.people === undefined) return '';
-    if (context.people === null) return tp.people.noGroup;
-    return context.people.denied ? tp.people.denied : tp.people.none;
+    if (group.value === undefined) return '';
+    if (group.value === null) return tp.people.noGroup;
+    if (group.value.unreleased) return tp.people.unreleased;
+    return group.value.denied ? tp.people.denied : tp.people.none;
 });
 
 /** A broken image on a TV looks worse than none – hide it, the card keeps its space. */
@@ -85,24 +88,28 @@ const cell = computed(() => {
 /** A wide cell puts the picture beside the text, a tall one above it. */
 const landscape = computed(() => cell.value.width >= cell.value.height * 1.2);
 
-/** The picture in the cell's shape: a square on the left, or a band on top; the share of the cell it takes is capped. */
-function pictureBox(): { width: number; height: number } {
+/** Air around the round picture, in px (the card's text size scales with the block's font size). */
+const pad = computed(() => props.block.style.fontSize * 0.6);
+
+/** The profile picture: a circle (its diameter), beside the text in a wide cell, above it in a tall one; the share of the cell it takes is capped. */
+function pictureSize(): number {
     const { width: w, height: h } = cell.value;
-    return landscape.value ? { width: Math.min(h, w * 0.4), height: h } : { width: w, height: Math.min(w, h * 0.55) };
+    const size = landscape.value ? Math.min(h - 2 * pad.value, w * 0.4) : Math.min(w - 2 * pad.value, h * 0.55 - pad.value);
+    return Math.max(0, Math.floor(size));
 }
 
 /** The fields by id; a block from before holds names, which are mapped to the ids of the group. */
-const fieldKeys = computed(() => resolveFieldKeys(props.block.fieldKeys, context.people?.fields ?? []));
+const fieldKeys = computed(() => resolveFieldKeys(props.block.fieldKeys, group.value?.fields ?? []));
 
 const cards = computed(() =>
     shown.value.map((person, index) => {
-        const box = pictureBox();
+        const size = pictureSize();
         return {
             key: `${page.value}-${index}`,
             person,
             initial: person.name.charAt(0).toUpperCase(),
             picture: props.block.showImage
-                ? { url: person.imageUrl ? imageSource(context, sizedImageUrl(person.imageUrl, box.width, box.height, 'crop')) : null, style: { width: `${box.width}px`, height: `${box.height}px` } }
+                ? { size, url: person.imageUrl ? imageSource(context, sizedImageUrl(person.imageUrl, size, size, 'crop')) : null, style: { width: `${size}px`, height: `${size}px`, margin: landscape.value ? `0 0 0 ${pad.value}px` : `${pad.value}px 0 0` } }
                 : null,
             fields: shownFields(person, fieldKeys.value),
         };
@@ -118,11 +125,10 @@ const cards = computed(() =>
             :style="{ gap: `${gap}px`, gridTemplateColumns: `repeat(${block.columns}, ${cell.width}px)`, gridAutoRows: `${cell.height}px` }"
         >
             <div v-for="c in cards" :key="c.key" class="card" :class="landscape ? 'card--landscape' : 'card--portrait'" data-testid="person-card">
-                <span class="card-bar" :style="{ background: themeOf(context).accent }" />
                 <div class="card-content">
                     <template v-if="c.picture">
                         <img v-if="c.picture.url" :key="c.picture.url" class="card-image" :src="c.picture.url" :style="c.picture.style" alt="" data-testid="person-image" @error="hideOnError">
-                        <span v-else class="card-image card-initial" :style="{ ...c.picture.style, background: themeOf(context).accent }">{{ c.initial }}</span>
+                        <span v-else class="card-image card-initial" :style="{ ...c.picture.style, background: themeOf(context).accent, fontSize: `${c.picture.size * 0.45}px` }">{{ c.initial }}</span>
                     </template>
                     <div class="card-text">
                         <div class="person-name" data-testid="person-name">{{ c.person.name }}</div>
@@ -156,7 +162,7 @@ const cards = computed(() =>
 .cards {
     display: grid;
 }
-/* Card, after GroupsView's .hero – background and radius, a strip of the accent colour down its side. */
+/* Card, after GroupsView's .hero – background and radius; the picture is a round profile picture inside it, not a band that fills it. */
 .card {
     position: relative;
     display: flex;
@@ -164,13 +170,6 @@ const cards = computed(() =>
     overflow: hidden;
     border-radius: var(--isd-radius, 0.4em);
     background: var(--isd-card, color-mix(in srgb, currentColor 7%, transparent));
-}
-/* Over the edge of the picture, not beside it: the picture then fills the card, and no seam shows between the two once the stage is scaled. */
-.card-bar {
-    position: absolute;
-    inset: 0 auto 0 0;
-    z-index: 1;
-    width: 0.25em;
 }
 .card-content {
     display: flex;
@@ -181,15 +180,17 @@ const cards = computed(() =>
 .card--portrait .card-content {
     flex-direction: column;
 }
+/* Fixed size inside the card (set inline); centred across the card, so a text of any length leaves it in place. */
 .card-image {
     flex: none;
+    align-self: center;
+    border-radius: 50%;
     object-fit: cover;
 }
 .card-initial {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.6em;
     font-weight: 700;
     color: #fff;
 }

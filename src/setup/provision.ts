@@ -47,7 +47,11 @@ const RIGHT_LABELS = {
  * only for those the administrator sees (`planRefresh`). Everything else on these groups stays.
  */
 export const MANAGED_RIGHTS: Record<GroupKey, { authId: number; label: string }[]> = {
-    device: [AUTH.calendarView, AUTH.eventView, AUTH.resourceView].map((authId) => ({ authId, label: RIGHT_LABELS[authId] })),
+    device: [
+        ...[AUTH.calendarView, AUTH.eventView, AUTH.resourceView].map((authId) => ({ authId, label: RIGHT_LABELS[authId] })),
+        // The groups an administrator released for the block "Personen" (Plan.md 112, Stück 2a): taken back when the release ends.
+        { authId: AUTH.groupWithMembersView, label: t.setup.provision.grants.viewReleasedGroup },
+    ],
     designer: [AUTH.calendarView, AUTH.resourceView].map((authId) => ({ authId, label: RIGHT_LABELS[authId] })),
     people: [],
 };
@@ -62,6 +66,11 @@ export interface GrantSpec {
      */
     dataGroup?: GroupKey;
     label: string;
+    /**
+     * Labels of single data ids where they differ from `label` (Plan.md 112, Stück 2a): the groups an administrator released
+     * sit in the same right as "Infoscreen-People", but are named by their own name in the preview of a refresh.
+     */
+    dataLabels?: Record<number, string>;
 }
 
 export interface GroupSpec {
@@ -115,6 +124,8 @@ export interface PlanInput {
      * it exists. Missing: there is none (installations from before) – the plan then leaves it and the device's right on it out.
      */
     peopleGroupId?: number | 'new';
+    /** The existing groups an administrator released for the block "Personen" (Plan.md 112, Stück 2a), only those the administrator sees: the device group may see them. */
+    peopleGroupIds?: number[];
 }
 
 export class MissingAuthError extends Error {
@@ -209,12 +220,20 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
 
     // The block "Personen" (Plan.md 112, G70): 1104 on exactly this group, at the device's own group – the people group stays
     // untouched – and the member fields (10126, level 1) within the people group, at its default role.
+    // The groups an administrator released (Stück 2a) go into the same right – one entry, because a grant replaces the data of its right.
+    // Of the released group itself nothing is touched: no membership, no right inside it.
     const people = input.peopleGroupId;
-    if (people !== undefined) {
+    const releasedGroups = input.peopleGroupIds ?? [];
+    if (people !== undefined || releasedGroups.length) {
         device.push({
             authId: AUTH.groupWithMembersView,
-            ...(people === 'new' ? { dataGroup: 'people' as const } : { dataId: [people] }),
-            label: t.setup.provision.grants.viewPeopleGroup,
+            ...(people === 'new'
+                ? { dataGroup: 'people' as const, ...(releasedGroups.length ? { dataId: releasedGroups } : {}) }
+                : { dataId: [...(people === undefined ? [] : [people]), ...releasedGroups] }),
+            label: people === undefined ? t.setup.provision.grants.viewReleasedGroup : t.setup.provision.grants.viewPeopleGroup,
+            ...(releasedGroups.length
+                ? { dataLabels: Object.fromEntries(releasedGroups.map((id) => [id, t.setup.provision.grants.viewReleasedGroup])) }
+                : {}),
         });
     }
 
@@ -329,7 +348,7 @@ export async function provision(
 function resolvedDataId(grant: GrantSpec, groupIds: Partial<Record<GroupKey, number>>): number[] | undefined | 'unknown' {
     if (!grant.dataGroup) return grant.dataId;
     const id = groupIds[grant.dataGroup];
-    return id === undefined ? 'unknown' : [id];
+    return id === undefined ? 'unknown' : [id, ...(grant.dataId ?? [])];
 }
 
 /**
@@ -373,7 +392,7 @@ export async function completePeople(plan: GroupSpec[], peopleGroupId: number, d
         if (added) result.log.push(t.setup.provision.devicesAdded(added, people.name));
         result.deviceIds = deviceIds;
         const roles = await api.roleIds(deviceGroupId);
-        for (const roleId of roles) for (const g of seen) await api.grant(roleId, g.authId, [peopleGroupId]);
+        for (const roleId of roles) for (const g of seen) await api.grant(roleId, g.authId, [peopleGroupId, ...(g.dataId ?? [])]);
         result.log.push(t.setup.provision.rightsGranted(seen.length, roles.length, GROUP_NAMES.device));
     } catch (e) {
         result.error = e instanceof Error ? e.message : String(e);
@@ -412,7 +431,7 @@ export async function provisionPeople(plan: GroupSpec[], groupTypeId: number, de
     if (result.error || peopleId === undefined) return result;
     try {
         const roles = await api.roleIds(deviceGroupId);
-        for (const roleId of roles) for (const g of seen) await api.grant(roleId, g.authId, [peopleId]);
+        for (const roleId of roles) for (const g of seen) await api.grant(roleId, g.authId, [peopleId, ...(g.dataId ?? [])]);
         result.log.push(t.setup.provision.rightsGranted(seen.length, roles.length, GROUP_NAMES.device));
     } catch (e) {
         result.error = e instanceof Error ? e.message : String(e);
@@ -519,12 +538,15 @@ export interface RefreshGroup {
 export interface KnownData {
     calendarIds: number[];
     roomIds: number[];
+    /** The groups released before and not any more – only for these 1104 is taken back (Stück 2a); a 1104 an administrator gave by hand stays. Missing: none. */
+    groupIds?: number[];
 }
 
 /** Names of calendars and rooms for the labels; an id without a name is labelled by its number. */
 export interface DataNames {
     calendars?: ReadonlyMap<number, string>;
     rooms?: ReadonlyMap<number, string>;
+    groups?: ReadonlyMap<number, string>;
 }
 
 /**
@@ -541,13 +563,15 @@ export function planRefresh(
     heldDefault: Partial<Record<GroupKey, Grant[]>> = {},
 ): RefreshGroup[] {
     const nameOf = (authId: number, dataId: number): string | undefined =>
-        authId === AUTH.resourceView ? names.rooms?.get(dataId) : names.calendars?.get(dataId);
+        authId === AUTH.resourceView ? names.rooms?.get(dataId) : authId === AUTH.groupWithMembersView ? names.groups?.get(dataId) : names.calendars?.get(dataId);
     const named = (authId: number, dataId: number, label: string): string => {
         const name = nameOf(authId, dataId);
         if (name) return t.setup.provision.named(label, name);
+        if (authId === AUTH.groupWithMembersView) return t.setup.provision.groupFallback(label, dataId);
         return authId === AUTH.resourceView ? t.setup.provision.roomFallback(label, dataId) : t.setup.provision.calendarFallback(label, dataId);
     };
-    const knownIds = (authId: number): Set<number> => new Set(authId === AUTH.resourceView ? known.roomIds : known.calendarIds);
+    const knownIds = (authId: number): Set<number> =>
+        new Set(authId === AUTH.resourceView ? known.roomIds : authId === AUTH.groupWithMembersView ? (known.groupIds ?? []) : known.calendarIds);
 
     return plan.map((spec) => {
         const roles = held[spec.key] ?? [];
@@ -566,7 +590,8 @@ export function planRefresh(
                 if (seenAdd.has(pair)) continue;
                 if (roles.length && roles.every((grants) => has(grants, g.authId, dataId ?? undefined))) continue;
                 seenAdd.add(pair);
-                add.push({ authId: g.authId, dataId, label: dataId !== null && g.authId in RIGHT_LABELS ? named(g.authId, dataId, g.label) : g.label });
+                const own = dataId === null ? undefined : g.dataLabels?.[dataId];
+                add.push({ authId: g.authId, dataId, label: dataId !== null && (g.authId in RIGHT_LABELS || own !== undefined) ? named(g.authId, dataId, own ?? g.label) : g.label });
             }
         }
 
@@ -603,9 +628,37 @@ function sameIds(a: readonly number[], b: readonly number[]): boolean {
     return a.length === b.length && a.every((id) => b.includes(id));
 }
 
+/**
+ * Gives effect to a change of the released groups in the same step as saving it (Plan.md 112, Stück 2a): the roles of the
+ * device group get 1104 for the groups newly released and lose it for the ones taken back – only for old minus new. A grant
+ * replaces the data of its right, so it carries what the role holds already (a 1104 given by hand, "Infoscreen-People")
+ * besides the new ids. The released group itself is not touched. Returns what it did, in a log line; throws on failure.
+ */
+export async function applyPeopleRelease(
+    deviceGroupId: number,
+    previous: readonly number[],
+    next: readonly number[],
+    api: Pick<ProvisionApi, 'roleIds' | 'grants' | 'grant' | 'revoke'>,
+): Promise<string[]> {
+    const added = next.filter((id) => !previous.includes(id));
+    const withdrawn = previous.filter((id) => !next.includes(id));
+    if (!added.length && !withdrawn.length) return [];
+    const roles = await api.roleIds(deviceGroupId);
+    for (const roleId of roles) {
+        const grants = await api.grants(roleId);
+        const held = grants
+            .filter((g) => g.authId === AUTH.groupWithMembersView && g.dataId !== null && g.dataId !== ALL_DATA && (g.type ?? 'grant') === 'grant')
+            .map((g) => g.dataId as number);
+        const missing = added.filter((id) => !held.includes(id));
+        if (missing.length) await api.grant(roleId, AUTH.groupWithMembersView, [...new Set([...held.filter((id) => !withdrawn.includes(id)), ...missing])]);
+        for (const id of withdrawn) if (held.includes(id)) await api.revoke(roleId, AUTH.groupWithMembersView, [id]);
+    }
+    return [t.setup.provision.rightsGranted(added.length, roles.length, GROUP_NAMES.device)];
+}
+
 /** A right whose data is known. One that names a group not created yet (`dataGroup` without `dataId`) is not granted by a refresh. */
 function concrete(grant: GrantSpec): boolean {
-    return !grant.dataGroup || grant.dataId !== undefined;
+    return !grant.dataGroup;
 }
 
 /** What `readRefresh` found: the plan of changes, and the roles it was made from – `applyRefresh` writes against exactly these. */

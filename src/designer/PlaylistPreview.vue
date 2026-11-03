@@ -66,6 +66,9 @@ const context = reactive<StageContext>({
     get people() {
         return parent.people;
     },
+    get peopleChoices() {
+        return parent.peopleChoices;
+    },
     get rooms() {
         return parent.rooms;
     },

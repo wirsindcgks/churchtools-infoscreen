@@ -712,6 +712,11 @@ export const t = {
         showPicture: 'Bild zeigen',
         columns: 'Spalten',
         peopleRows: 'Reihen',
+        peopleGroup: 'Gruppe',
+        peopleStandardGroup: 'Infoscreen-People',
+        peopleGroupGone: (id: number) => `Gruppe ${id} – nicht (mehr) freigegeben`,
+        peopleGroupHint: 'Weitere Gruppen gibt ein Administrator unter Einstellungen → Personen für Bildschirme frei.',
+        peopleUnreleased: 'Diese Gruppe ist nicht für Bildschirme freigegeben. Ein Administrator gibt sie unter Einstellungen → Personen frei; bis dahin zeigt der Fernseher den Baustein ohne Personen.',
         peopleNoGroup: 'Die Gruppe „Infoscreen-People“ ist noch nicht eingerichtet. Ein Administrator legt sie unter Einstellungen → Gruppen und Rechte an.',
         peopleDenied: 'Das Gerät darf die Gruppe „Infoscreen-People“ nicht lesen. Ein Administrator gibt ihr mit „Rechte aktualisieren“ die nötigen Rechte.',
         details: 'Angaben',
@@ -1641,6 +1646,19 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             failed: 'Die Kalender konnten nicht geladen werden.',
             notPublic: 'nicht öffentlich',
         },
+        peopleGroups: {
+            title: 'Gruppen für „Personen“',
+            intro: 'Welche vorhandenen Gruppen der Baustein „Personen“ zeigen darf.',
+            lead: 'Der Baustein „Personen“ zeigt immer die Gruppe „Infoscreen-People“. Hier gibst du weitere vorhandene Gruppen frei: Fernseher lesen dann Name, Bild und Rolle ihrer Mitglieder. Wer die Adresse eines Fernsehers kennt, kann dasselbe auch selbst abrufen – gib nur Gruppen frei, deren Mitglieder damit einverstanden sind.',
+            detail:
+                'Die Gruppe selbst bleibt unberührt; der Assistent gibt nur der Gerätegruppe das Recht, sie zu sehen („Rechte aktualisieren“). Mitgliedsfelder sieht der Fernseher nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder sehen“ (Stufe 1), als Mitglied der Gruppe oder über eine Obergruppe; nimmst du das Gerätekonto von Hand auf, gibst du der Rolle das Recht. Nimmst du eine Freigabe zurück, verschwindet die Gruppe sofort vom Fernseher; das Recht wirkt in ChurchTools noch bis zu einer Dreiviertelstunde nach.',
+            add: 'Gruppe freigeben',
+            choose: 'Gruppe wählen',
+            none: 'Keine weitere Gruppe freigegeben.',
+            rightsFailed: (reason: string) =>
+                `Die Freigabe ist gespeichert. Die Rechte für die Gerätegruppe konnten dabei nicht gesetzt werden (${reason}). Das ist nicht schlimm: „Rechte aktualisieren“ unter „Gruppen und Rechte“ holt es nach. Nicht freigegebene Gruppen liest ein Fernseher ohnehin nicht.`,
+            withdraw: (name: string) => `Freigabe von „${name}“ zurücknehmen`,
+        },
         wiki: {
             title: 'Mediathek im Wiki',
             intro: 'Wo die Bilder der Mediathek im Wiki stehen.',
@@ -1744,6 +1762,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             aborted: (reason: string) => `Abgebrochen: ${reason}`,
             roomFallback: (label: string, id: number) => `${label}: Raum ${id}`,
             calendarFallback: (label: string, id: number) => `${label}: Kalender ${id}`,
+            groupFallback: (label: string, id: number) => `${label}: Gruppe ${id}`,
             /** The wording of ChurchTools' own right, as the assistant labels it. */
             rightLabels: {
                 calendarView: 'Einzelnen Kalender sehen',
@@ -1766,6 +1785,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 editAdminData: 'Bearbeiten von Bildschirmen und Einstellungen',
                 deleteAdminData: 'Löschen von Bildschirmen und Einstellungen',
                 viewPeopleGroup: 'Gruppe „Infoscreen-People" inkl. ihrer Gruppenmitglieder sehen',
+                viewReleasedGroup: 'Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen',
                 viewMemberFields: 'Gruppenmitgliedsfelder sehen (bis Sicherheitsstufe 1)',
             },
             postsOff: (name: string) => `Beiträge in „${name}" abgeschaltet.`,
@@ -1874,6 +1894,9 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             peopleBlind: (labels: string, name: string, inUse: boolean) =>
                 `${labels} sieht die Gruppe „${name}" nicht${inUse ? ' – der Baustein „Personen" bleibt leer' : ''}.`,
             peopleBlindDetail: 'Es fehlt „Gruppe inkl. ihrer Gruppenmitglieder sehen" für diese Gruppe. „Rechte aktualisieren" vergibt es.',
+            releasedNotMember: (labels: string, name: string) => `${labels} ist nicht Mitglied in „${name}" – Name, Bild und Rolle erscheinen, Mitgliedsfelder bleiben leer.`,
+            releasedNotMemberDetail:
+                'Das ist bei freigegebenen Gruppen der Normalfall. Mitgliedsfelder sieht ein Gerät nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder sehen" (Stufe 1) – als Mitglied der Gruppe oder über eine Obergruppe. Wer sie braucht, nimmt das Gerätekonto von Hand auf und gibt dessen Rolle das Recht; es gilt dann für alle mit dieser Rolle.',
             peopleNotMember: (labels: string, name: string) => `${labels} ist nicht Mitglied in „${name}" – die Mitgliedsfelder bleiben leer.`,
             peopleNotMemberDetail: 'Mitgliedsfelder sieht ein Gerät nur als Mitglied der Gruppe. Das Gerätekonto dort aufnehmen oder „Rechte aktualisieren" – das nimmt alle Geräte der Gerätegruppe auf.',
             personData: (labels: string) => `${labels} darf Personendaten sehen – damit auch E-Mail-Adressen.`,

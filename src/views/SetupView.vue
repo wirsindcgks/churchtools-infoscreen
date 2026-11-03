@@ -50,6 +50,7 @@ import {
     orphanPeopleGroup,
     applyRefresh,
     readRefresh,
+    applyPeopleRelease,
     refreshIsEmpty,
     refreshLogLine,
     type RefreshState,
@@ -79,7 +80,7 @@ type Side = 'designer' | 'device';
  * whichever page one starts on or moves to.
  */
 const route = useRoute();
-type SetupPage = 'overview' | 'groups' | 'tv' | 'wiki' | 'services' | 'rooms' | 'calendars';
+type SetupPage = 'overview' | 'groups' | 'tv' | 'wiki' | 'services' | 'rooms' | 'calendars' | 'people';
 const page = computed<SetupPage>(() => {
     switch (route.name) {
         case 'setup-groups':
@@ -94,6 +95,8 @@ const page = computed<SetupPage>(() => {
             return 'rooms';
         case 'setup-calendars':
             return 'calendars';
+        case 'setup-people':
+            return 'people';
         default:
             return 'overview';
     }
@@ -133,6 +136,11 @@ const HEADERS: Record<SetupPage, { icon: IconName; title: string; intro: string 
         icon: 'calendar',
         title: t.setup.calendars.title,
         intro: t.setup.calendars.intro,
+    },
+    people: {
+        icon: 'people',
+        title: t.setup.peopleGroups.title,
+        intro: t.setup.peopleGroups.intro,
     },
 };
 const header = computed(() => HEADERS[page.value]);
@@ -304,6 +312,7 @@ function planInput(people?: 'new'): PlanInput {
         appointmentRooms,
         serviceCalendarIds: grantableCalendars(serviceCalendarIds),
         screenCalendarIds: releasedCalendars.value,
+        peopleGroupIds: releasedPeopleGroups.value,
     };
 }
 
@@ -416,6 +425,29 @@ function toggleReleasedCalendar(id: number, on: boolean): void {
     draftCalendars.value = on ? [...draftCalendars.value, id] : draftCalendars.value.filter((a) => a !== id);
 }
 
+/**
+ * The existing groups an administrator releases for the block "Personen" (Plan.md 112, Stück 2a), besides "Infoscreen-People".
+ * `releasedPeopleGroups` is the release as stored – only groups that still exist – and `draftPeopleGroups` the choice on the page
+ * until „Speichern". The groups of the assistant itself are no candidates: the device group and the people group are its own.
+ */
+const releasedPeopleGroups = ref<number[]>([]);
+const draftPeopleGroups = ref<number[]>([]);
+/** Most groups the settings hold – the schema's limit. */
+const RELEASED_GROUPS_MAX = 50;
+/** The groups that can still be released: not the assistant's own, not released yet. */
+const releasableGroups = computed(() =>
+    groups.value.filter((g) => !createdGroupIds.value.includes(g.id) && g.id !== peopleGroupId.value && !draftPeopleGroups.value.includes(g.id)),
+);
+const groupNameById = (id: number): string => groups.value.find((g) => g.id === id)?.name ?? t.setup.groupFallback(id);
+function releasePeopleGroup(value: string | number): void {
+    const id = Number(value);
+    if (!Number.isInteger(id) || draftPeopleGroups.value.includes(id) || draftPeopleGroups.value.length >= RELEASED_GROUPS_MAX) return;
+    draftPeopleGroups.value = [...draftPeopleGroups.value, id];
+}
+function withdrawPeopleGroup(id: number): void {
+    draftPeopleGroups.value = draftPeopleGroups.value.filter((g) => g !== id);
+}
+
 /** The same ids, in any order. */
 const sameIds = (a: number[], b: number[]): boolean => a.length === b.length && a.every((id) => b.includes(id));
 const sortedIds = (ids: Iterable<number>, known: Set<number>): number[] => [...new Set(ids)].filter((id) => known.has(id)).sort((a, b) => a - b);
@@ -425,8 +457,8 @@ const sortedIds = (ids: Iterable<number>, known: Set<number>): number[] => [...n
  * head, „Verwerfen" brings back what is stored. Before, groups waited for a button below, services and rooms
  * saved at every click.
  */
-type FormPage = 'groups' | 'services' | 'rooms' | 'calendars';
-const FORM_PAGES: SetupPage[] = ['groups', 'services', 'rooms', 'calendars'];
+type FormPage = 'groups' | 'services' | 'rooms' | 'calendars' | 'people';
+const FORM_PAGES: SetupPage[] = ['groups', 'services', 'rooms', 'calendars', 'people'];
 const formPage = computed<FormPage | null>(() => (FORM_PAGES.includes(page.value) ? (page.value as FormPage) : null));
 const formState = ref<'idle' | 'saving' | 'saved'>('idle');
 
@@ -440,6 +472,8 @@ function dirtyOf(form: FormPage): boolean {
             return !!masterdata.value && !sameIds(draftRoomTypes.value, roomTypeIds.value);
         case 'calendars':
             return !!internalCalendars.value && !sameIds(draftCalendars.value, releasedCalendars.value);
+        case 'people':
+            return settingsLoaded.value && !sameIds(draftPeopleGroups.value, releasedPeopleGroups.value);
     }
 }
 const formDirty = computed(() => (formPage.value ? dirtyOf(formPage.value) : false));
@@ -454,6 +488,8 @@ function discardForm(form: FormPage): void {
         draftServices.value = [...allowedServices.value];
     } else if (form === 'calendars') {
         draftCalendars.value = [...releasedCalendars.value];
+    } else if (form === 'people') {
+        draftPeopleGroups.value = [...releasedPeopleGroups.value];
     } else {
         draftRoomTypes.value = [...roomTypeIds.value];
     }
@@ -469,6 +505,7 @@ async function saveForm(): Promise<void> {
     formState.value = 'saving';
     error.value = null;
     const before = rightsSignature();
+    let rightsNotice: string | null = null;
     try {
         if (form === 'groups') {
             await persistSettings();
@@ -495,11 +532,35 @@ async function saveForm(): Promise<void> {
             // Other calendars need other rights: plan and check anew.
             computePlan();
             void Promise.all([check('designer'), check('device')]);
+        } else if (form === 'people' && settingsLoaded.value) {
+            // A group that is gone leaves the release without a word.
+            const next = sortedIds(draftPeopleGroups.value, new Set(groups.value.map((g) => g.id)));
+            await persistSettings({ peopleGroupIds: next });
+            const previous = releasedPeopleGroups.value;
+            releasedPeopleGroups.value = next;
+            draftPeopleGroups.value = [...next];
+            // Other groups need other rights: plan and check anew.
+            computePlan();
+            // The rights follow in the same step; the setting is saved either way, and a device reads no group that is not released.
+            const deviceGroup = selected.device;
+            if (assistant.allowed && deviceGroup !== null && createdGroupIds.value.includes(deviceGroup)) {
+                try {
+                    await applyPeopleRelease(deviceGroup, previous, next, churchToolsProvisionApi);
+                } catch (e) {
+                    rightsNotice = t.setup.peopleGroups.rightsFailed(explain(e));
+                }
+            }
+            void check('device');
         }
         formState.value = 'saved';
     } catch (e) {
         formState.value = 'idle';
         error.value = explainSave(e);
+        return;
+    }
+    // The people page has set the rights in the same step; only a failure of that part needs a word.
+    if (form === 'people') {
+        if (rightsNotice) await notice(rightsNotice);
         return;
     }
     if (rightsSignature() !== before) await askForRights();
@@ -721,6 +782,7 @@ async function updateRights(): Promise<void> {
         const names = {
             calendars: new Map(calendars.map((c) => [c.id, c.name] as const)),
             rooms: new Map(rooms.map((r) => [r.id, r.name] as const)),
+            groups: new Map(groups.value.map((g) => [g.id, g.name] as const)),
         };
         const state = await readRefresh(plan.value, groupIds, known, names, churchToolsProvisionApi, peopleDeviceIds.value);
         if (refreshIsEmpty(state.groups)) {
@@ -992,6 +1054,7 @@ async function check(side: Side): Promise<void> {
                 videoInUse,
                 peopleGroup: peopleGroupId.value === null ? undefined : { id: peopleGroupId.value, name: groups.value.find((g) => g.id === peopleGroupId.value)?.name ?? GROUP_NAMES.people },
                 peopleInUse,
+                releasedPeopleGroups: releasedPeopleGroups.value.map((id) => ({ id, name: groupNameById(id) })),
                 devicePostsDisabled: postsDisabledIn(groupId),
                 wikiCategoryId,
                 moduleRights: moduleRights('device'),
@@ -1090,6 +1153,8 @@ onMounted(async () => {
         internalCalendars.value = calendarList.filter((c) => !publicIds.has(c.id));
         releasedCalendars.value = sortedIds(settings?.screenCalendarIds ?? [], new Set(internalCalendars.value.map((c) => c.id)));
         draftCalendars.value = [...releasedCalendars.value];
+        releasedPeopleGroups.value = sortedIds(settings?.peopleGroupIds ?? [], new Set(list.map((g) => g.id)));
+        draftPeopleGroups.value = [...releasedPeopleGroups.value];
         usedCalendarIds = used;
         rooms = resources ? roomsOf(resources, settings?.roomTypeIds) : [];
         usedRoomIds = usedRooms;
@@ -1190,6 +1255,14 @@ const calendarsStatus = computed<CardStatus | null>(() => {
     return n ? { tone: 'warn', text: word.released(n) } : { tone: 'neutral', text: word.noneReleased };
 });
 
+/** How many existing groups are released for the block "Personen"; "Infoscreen-People" needs no release. */
+const peopleGroupsStatus = computed<CardStatus | null>(() => {
+    const word = t.setup.overview.status;
+    if (!settingsLoaded.value) return null;
+    const n = releasedPeopleGroups.value.length;
+    return n ? { tone: 'warn', text: word.released(n) } : { tone: 'neutral', text: word.noneReleased };
+});
+
 /** The cards of the overview, each to a page of its own; the wiki card only where there is an area (as before). */
 const overviewCards = computed(() => {
     const wiki = settingsLoaded.value && wikiCategory.value && !demo.value;
@@ -1203,6 +1276,7 @@ const overviewCards = computed(() => {
     cards.push({ key: 'services', route: 'setup-services', icon: 'person', title: t.setup.services.title, intro: t.setup.services.intro, status: servicesStatus.value });
     cards.push({ key: 'rooms', route: 'setup-rooms', icon: 'door', title: t.setup.rooms.title, intro: t.setup.rooms.intro, status: roomsStatus.value });
     cards.push({ key: 'calendars', route: 'setup-calendars', icon: 'calendar', title: t.setup.calendars.title, intro: t.setup.calendars.intro, status: calendarsStatus.value });
+    cards.push({ key: 'people', route: 'setup-people', icon: 'people', title: t.setup.peopleGroups.title, intro: t.setup.peopleGroups.intro, status: peopleGroupsStatus.value });
     return cards;
 });
 
@@ -1558,6 +1632,37 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                     </section>
                 </template>
 
+                <template v-if="page === 'people'">
+                    <!-- Plan.md 112, Stück 2a: an administrator releases existing groups for the block "Personen". -->
+                    <section class="d-card card" data-testid="people-groups">
+                        <p class="lead">{{ t.setup.peopleGroups.lead }}</p>
+                        <p class="muted">{{ t.setup.peopleGroups.detail }}</p>
+                        <p v-if="!settingsLoaded" class="empty">{{ t.common.loading }}</p>
+                        <template v-else>
+                            <label class="d-field">
+                                {{ t.setup.peopleGroups.add }}
+                                <SelectMenu
+                                    :model-value="undefined"
+                                    :options="releasableGroups.map((g) => ({ value: g.id, label: g.name }))"
+                                    :placeholder="t.setup.peopleGroups.choose"
+                                    :disabled="!releasableGroups.length || draftPeopleGroups.length >= RELEASED_GROUPS_MAX"
+                                    testid="people-group-add"
+                                    @update:model-value="releasePeopleGroup"
+                                />
+                            </label>
+                            <p v-if="!draftPeopleGroups.length" class="muted" data-testid="people-groups-none">{{ t.setup.peopleGroups.none }}</p>
+                            <ul v-else class="released-groups">
+                                <li v-for="id in draftPeopleGroups" :key="id" data-testid="people-group-released">
+                                    <span>{{ groupNameById(id) }}</span>
+                                    <button class="d-btn" type="button" :aria-label="t.setup.peopleGroups.withdraw(groupNameById(id))" data-testid="people-group-withdraw" @click="withdrawPeopleGroup(id)">
+                                        {{ t.common.remove }}
+                                    </button>
+                                </li>
+                            </ul>
+                        </template>
+                    </section>
+                </template>
+
                 <template v-if="page === 'wiki'">
                     <section v-if="wikiCategory && !demo" class="d-card card" data-testid="wiki-menu">
                         <h2>{{ t.setup.wiki.title }}</h2>
@@ -1902,6 +2007,20 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 }
 .error {
     color: var(--d-danger);
+}
+.released-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.released-groups li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
 }
 .privacy-alert {
     padding: 14px 16px;

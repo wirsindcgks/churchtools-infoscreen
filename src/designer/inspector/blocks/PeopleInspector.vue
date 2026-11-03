@@ -1,13 +1,13 @@
 <script setup lang="ts">
 /**
- * The people block (Plan.md 112, Stück 1): the people of the group "Infoscreen-People" as cards. The roles and the member
- * fields (in their order) each have a section named after what they choose; look and page time stand in "Darstellung".
- * The group itself is fixed – the assistant creates it; there is nothing to choose.
+ * The people block (Plan.md 112): the people of a group as cards – "Infoscreen-People" or a group an administrator released
+ * (Stück 2a); the choice stands first. The roles and the member fields (in their order) each have a section named after what
+ * they choose, and follow the chosen group; look and page time stand in "Darstellung".
  */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
 import { th } from '../../../i18n/help';
-import { resolveFieldKeys } from '../../../groups/members';
+import { groupOfBlock, resolveFieldKeys } from '../../../groups/members';
 import type { Block } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
 import { PEOPLE_SECONDS } from '../../../player/paging';
@@ -15,7 +15,8 @@ import PageProgressHint from '../PageProgressHint.vue';
 import PageProgressOptions from '../PageProgressOptions.vue';
 import PageProgressToggle from '../PageProgressToggle.vue';
 import InspectorSection from '../../InspectorSection.vue';
-import SelectMenu from '../../SelectMenu.vue';
+import SelectMenu, { type SelectOption } from '../../SelectMenu.vue';
+import SelectField from '../fields/SelectField.vue';
 import QuickField from '../fields/QuickField.vue';
 import NumberField from '../fields/NumberField.vue';
 import SegmentField from '../fields/SegmentField.vue';
@@ -36,11 +37,33 @@ const { setBlock } = useBlockEdit(() => props.block);
 /** The preview's stage context: roles and fields come from the live members of the group. */
 const stage = useStageContext();
 
-const group = computed(() => stage.people ?? null);
+/** The block's group: `undefined` until the preview has it, `null` where "Infoscreen-People" is not set up. */
+const group = computed(() => groupOfBlock(stage.people, props.block.sourceGroupId));
 const roles = computed(() => group.value?.roles ?? []);
 const fields = computed(() => group.value?.fields ?? []);
 /** Whether the preview has the group yet – until then a chosen field is not "gone", only not loaded. */
-const loaded = computed(() => stage.people !== undefined && stage.people !== null && !stage.people.denied);
+const loaded = computed(() => !!group.value && !group.value.denied);
+
+// --- group: "Infoscreen-People" or a released one; roles and fields belong to the group, so a change clears them ---
+
+const STANDARD = 'standard';
+const standardChoice = computed(() => stage.peopleChoices?.find((c) => c.standard));
+const groupOptions = computed<SelectOption[]>(() => {
+    const options: SelectOption[] = [{ value: STANDARD, label: standardChoice.value?.name ?? t.inspector.peopleStandardGroup }];
+    for (const c of stage.peopleChoices ?? []) if (!c.standard) options.push({ value: c.id, label: c.name });
+    const own = props.block.sourceGroupId;
+    if (own !== undefined && own !== standardChoice.value?.id && !options.some((o) => o.value === own)) {
+        options.push({ value: own, label: t.inspector.peopleGroupGone(own) });
+    }
+    return options;
+});
+const groupValue = computed(() => (props.block.sourceGroupId === undefined || props.block.sourceGroupId === standardChoice.value?.id ? STANDARD : props.block.sourceGroupId));
+function setGroup(value: string | number): void {
+    const next = value === STANDARD ? undefined : Number(value);
+    if (next === (groupValue.value === STANDARD ? undefined : props.block.sourceGroupId)) return;
+    setBlock({ sourceGroupId: next, roleIds: [], fieldKeys: [] });
+}
+const groupSummary = computed(() => groupOptions.value.find((o) => o.value === groupValue.value)?.label ?? t.inspector.peopleStandardGroup);
 
 const sorts = [
     { value: 'last-name', label: t.inspector.peopleSortLastName },
@@ -93,8 +116,20 @@ const appearanceHelp = computed(() => ({
 </script>
 
 <template>
-    <p v-if="mode === 'full' && stage.people === null" class="hint" data-testid="people-no-group">{{ t.inspector.peopleNoGroup }}</p>
-    <p v-else-if="mode === 'full' && stage.people?.denied" class="hint" data-testid="people-denied">{{ t.inspector.peopleDenied }}</p>
+    <InspectorSection id="people-group" :title="t.inspector.peopleGroup" :summary="groupSummary" :help="th.people.group">
+        <SelectField
+            quick
+            :model-value="groupValue"
+            :options="groupOptions"
+            :label="t.inspector.peopleGroup"
+            testid="people-group"
+            @update:model-value="setGroup"
+        />
+        <p v-if="mode === 'full' && groupOptions.length === 1" class="hint" data-testid="people-group-hint">{{ t.inspector.peopleGroupHint }}</p>
+    </InspectorSection>
+    <p v-if="mode === 'full' && group === null" class="hint" data-testid="people-no-group">{{ t.inspector.peopleNoGroup }}</p>
+    <p v-else-if="mode === 'full' && group?.unreleased" class="hint" data-testid="people-unreleased">{{ t.inspector.peopleUnreleased }}</p>
+    <p v-else-if="mode === 'full' && group?.denied" class="hint" data-testid="people-denied">{{ t.inspector.peopleDenied }}</p>
 
     <InspectorSection id="people-roles" :title="t.inspector.peopleRoles" :summary="rolesSummary" :help="th.people.roles">
         <ToggleField

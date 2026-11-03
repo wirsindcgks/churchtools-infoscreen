@@ -16,7 +16,7 @@ import {
     withOwnAddresses,
 } from './read';
 import { DEFAULT_FONT } from '../player/fonts';
-import { isVideo, MediaDoc, PlaylistDoc, SCHEMA_VERSION, SettingsDoc, THEME_ID, type SlideDoc } from './schema';
+import { Block, isVideo, MediaDoc, PlaylistDoc, SCHEMA_VERSION, SettingsDoc, THEME_ID, type SlideDoc } from './schema';
 import { makePlaylist, makeSlide, makeScreen, makeTemplate, templateBlock, textBlock } from './testing';
 
 describe('readSlide – tolerant towards newer data', () => {
@@ -837,5 +837,20 @@ describe('the people block and the group of the settings (schema 1.51, Plan.md 1
         expect(v.parse(SettingsDoc, base).peopleDeviceIds).toBeUndefined();
         expect(v.parse(SettingsDoc, { ...base, schema: { major: 1, minor: 52 }, peopleDeviceIds: [22, 23] }).peopleDeviceIds).toEqual([22, 23]);
         expect(v.safeParse(SettingsDoc, { ...base, peopleDeviceIds: ['x'] }).success).toBe(false);
+    });
+
+    it('reads settings of 1.52 without released groups as none, and with them (schema 1.53)', () => {
+        const base = { schema: { major: 1, minor: 52 }, kind: 'settings', id: 'settings' };
+        expect(v.parse(SettingsDoc, base).peopleGroupIds).toBeUndefined();
+        expect(v.parse(SettingsDoc, { ...base, schema: { major: 1, minor: 53 }, peopleGroupIds: [51, 52] }).peopleGroupIds).toEqual([51, 52]);
+        expect(v.safeParse(SettingsDoc, { ...base, peopleGroupIds: [1.5] }).success).toBe(false);
+        expect(v.safeParse(SettingsDoc, { ...base, peopleGroupIds: Array.from({ length: 51 }, (_, i) => i) }).success).toBe(false);
+    });
+
+    it('reads a people block with and without its own group (schema 1.53)', () => {
+        const block = { id: 'p', type: 'people', x: 0, y: 0, width: 100, height: 100, roleIds: [], fieldKeys: [], style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' } };
+        expect(v.parse(Block, block)).not.toHaveProperty('sourceGroupId');
+        expect(v.parse(Block, { ...block, sourceGroupId: 51 })).toMatchObject({ sourceGroupId: 51 });
+        expect(v.safeParse(Block, { ...block, sourceGroupId: 'x' }).success).toBe(false);
     });
 });

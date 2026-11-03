@@ -5,12 +5,13 @@
  * calendars the screen uses.
  */
 import { onBeforeUnmount, reactive, ref, watch, type Ref } from 'vue';
-import { fetchCalendars, fetchPublicCalendars, type Calendar } from '../ct/api';
+import { fetchCalendars, fetchGroupNames, fetchPublicCalendars, type Calendar } from '../ct/api';
 import { instanceBaseUrl } from '../ct/client';
 import { getRepository } from '../store/backend';
 import type { MediaDoc, TemplateDoc, ThemeDoc } from '../model/schema';
 import { provideStageContext, type StageContext } from '../player/context';
-import { appointmentWindow, churchToolsPlayerData, mergePosts } from '../player/data';
+import { appointmentWindow, churchToolsPlayerData, mergePosts, peopleAny, readPeopleGroups, type PeopleNeeds } from '../player/data';
+import { tp } from '../i18n/player';
 
 /** Gives the templates the slides use to the stage context, which expands them while drawing (schema 1.41). */
 export function useTemplatesIn(context: StageContext, templates: Ref<readonly TemplateDoc[]>): void {
@@ -27,7 +28,7 @@ export function usePreview(
     appointmentRooms: Ref<boolean> = ref(false),
     appointmentServices: Ref<number[]> = ref([]),
     appointmentTags: Ref<boolean> = ref(false),
-    people: Ref<boolean> = ref(false),
+    people: Ref<PeopleNeeds> = ref({ standard: false, groupIds: [] }),
 ) {
     const context = reactive<StageContext>({
         now: new Date(),
@@ -60,11 +61,13 @@ export function usePreview(
     /** The group "Infoscreen-People" from the settings (schema 1.51, Plan.md 112); missing = none set up. */
     let peopleGroupId: number | undefined;
     let peopleDeviceIds: number[] | undefined;
+    /** The groups an administrator released for the block "Personen" (schema 1.53). */
+    let peopleGroupIds: number[] | undefined;
 
     async function loadBasics(): Promise<void> {
         const settings = getRepository()
             .then((handle) => handle.repository.loadSettings())
-            .then((doc) => ({ roomTypeIds: doc?.roomTypeIds, screenCalendarIds: doc?.screenCalendarIds, peopleGroupId: doc?.peopleGroupId, peopleDeviceIds: doc?.peopleDeviceIds }), () => undefined);
+            .then((doc) => ({ roomTypeIds: doc?.roomTypeIds, screenCalendarIds: doc?.screenCalendarIds, peopleGroupId: doc?.peopleGroupId, peopleDeviceIds: doc?.peopleDeviceIds, peopleGroupIds: doc?.peopleGroupIds }), () => undefined);
         try {
             const [timeZone, churchName, own, publicList, churchLogo] = await Promise.all([
                 churchToolsPlayerData.timeZone(),
@@ -91,6 +94,8 @@ export function usePreview(
         screenCalendarIds = read?.screenCalendarIds;
         peopleGroupId = read?.peopleGroupId;
         peopleDeviceIds = read?.peopleDeviceIds;
+        peopleGroupIds = read?.peopleGroupIds;
+        void loadPeopleChoices();
     }
 
     let request = 0;
@@ -150,20 +155,31 @@ export function usePreview(
         }
     }
 
+    /** The groups the inspector offers a `people` block, with their names: "Infoscreen-People" and the released ones. */
+    async function loadPeopleChoices(): Promise<void> {
+        const ids = [...(peopleGroupId === undefined ? [] : [peopleGroupId]), ...(peopleGroupIds ?? [])];
+        if (!ids.length) {
+            context.peopleChoices = [];
+            return;
+        }
+        const names = await fetchGroupNames(ids).catch(() => new Map<number, string>());
+        context.peopleChoices = ids.map((id) => ({ id, name: names.get(id) ?? tp.people.groupFallback(id), standard: id === peopleGroupId }));
+    }
+
     let peopleRequest = 0;
     async function loadPeople(): Promise<void> {
         const mine = ++peopleRequest;
-        if (!people.value) {
+        if (!peopleAny(people.value)) {
             context.people = undefined;
-            return;
-        }
-        if (peopleGroupId === undefined) {
-            context.people = null;
             return;
         }
         try {
             // The designer is a person, maybe one of the cards: only the devices are left out.
-            const list = await churchToolsPlayerData.people(peopleGroupId, peopleDeviceIds, false);
+            const list = await readPeopleGroups(
+                people.value,
+                { peopleGroupId, peopleGroupIds },
+                (groupId) => churchToolsPlayerData.people(groupId, peopleDeviceIds, false),
+            );
             if (mine === peopleRequest) context.people = list;
         } catch (error) {
             problem.value = error instanceof Error ? error.message : String(error);
@@ -193,7 +209,7 @@ export function usePreview(
     watch(() => JSON.stringify(posts.value), () => void loadPosts());
     watch(() => groupHomepages.value.join(), () => void loadGroupHomepages());
     watch(() => JSON.stringify(rooms.value), () => void loadRooms());
-    watch(people, () => void loadPeople());
+    watch(() => JSON.stringify(people.value), () => void loadPeople());
     // Appointments and rooms need the instance time zone.
     void loadBasics().then(() => {
         void loadAppointments();

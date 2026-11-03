@@ -40,6 +40,7 @@ export const router = createRouter({
         { path: '/einstellungen/dienste', name: 'setup-services', component: SetupView },
         { path: '/einstellungen/raeume', name: 'setup-rooms', component: SetupView },
         { path: '/einstellungen/kalender', name: 'setup-calendars', component: SetupView },
+        { path: '/einstellungen/personen', name: 'setup-people', component: SetupView },
         // On a foyer TV an empty page is indistinguishable from a crash (G7).
         { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundView },
     ],

@@ -71,6 +71,7 @@ export const HELP_CATALOG: HelpSection[] = [
         topic: { intro: groups.intro, items: [groups.view, groups.order, groups.perPage(true), groups.seconds(i.secondsPerPage), th.pageProgress('die nächste Seite'), th.pageProgressStyle, th.pageProgressPlacement] },
     },
     { id: 'all-groups-details', title: `${t.blocks.groups} · ${i.details}`, topic: groups.details },
+    { id: 'all-people-group', title: `${t.blocks.people} · ${i.peopleGroup}`, topic: th.people.group },
     { id: 'all-people-roles', title: `${t.blocks.people} · ${i.peopleRoles}`, topic: th.people.roles },
     { id: 'all-people-fields', title: `${t.blocks.people} · ${i.peopleFields}`, topic: th.people.fields },
     {
