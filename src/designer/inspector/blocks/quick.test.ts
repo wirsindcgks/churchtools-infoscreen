@@ -31,7 +31,7 @@ const QUICK: Record<ContentBlockType, string[]> = {
     qr: ['Inhalt', 'Farbe'],
     posts: ['Gruppen wählen', 'Ansicht: Hervorgehoben', 'Farbe'],
     groups: ['Gruppen-Homepage: Homepage wählen', 'Ansicht: Hervorgehoben', 'Farbe'],
-    people: ['Gruppe: Infoscreen-People', 'Angaben wählen', 'Reihenfolge: Nachname', 'Farbe'],
+    people: ['Gruppe: Infoscreen-People', 'Angaben wählen', 'Ansicht: Karten', 'Reihenfolge: Nachname', 'Farbe'],
     rooms: ['Räume wählen', 'Ansicht: Übersicht', 'Zeitraum: 1 Tag', 'Farbe'],
     social: ['Profile: Profil hinzufügen', 'Anordnung: Untereinander', 'Markenfarben', 'Farbe', 'Ausrichtung'],
 };
@@ -75,7 +75,7 @@ describe('the short menu of the blocks (Plan.md 79, B2)', () => {
     });
 
     it('adds the person fields to the people block only where an administrator released some (schema 1.54)', () => {
-        expect(quickItems('people', ['email'])).toEqual(['Gruppe: Infoscreen-People', 'Angaben wählen', 'Personenfelder wählen', 'Reihenfolge: Nachname', 'Farbe']);
+        expect(quickItems('people', ['email'])).toEqual(['Gruppe: Infoscreen-People', 'Angaben wählen', 'Personenfelder wählen', 'Ansicht: Karten', 'Reihenfolge: Nachname', 'Farbe']);
     });
 
     it.each(Object.keys(QUICK) as ContentBlockType[])('%s draws nothing but fields (no hint, count or button of its own)', (type) => {

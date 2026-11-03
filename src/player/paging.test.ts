@@ -239,6 +239,7 @@ describe('paging a people block (Plan.md 112)', () => {
         fieldKeys: [],
         sort: 'last-name',
         showImage: true,
+        layout: 'card',
         columns: 3,
         rows: 2,
         style,

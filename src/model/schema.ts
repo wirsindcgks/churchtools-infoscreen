@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 54 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 55 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -414,7 +414,9 @@ export const PeopleBlock = v.object({
     sort: v.optional(v.picklist(['last-name', 'first-name', 'role']), 'last-name'),
     /** The picture on the card; off: name and fields only. */
     showImage: v.optional(v.boolean(), true),
-    /** Cards side by side, 1–6; a page holds `columns` × `rows`. */
+    /** Since 1.55: `card` – cards in a grid, page by page; `list` – one row a person (small round picture, name, role, fields), page by page. Missing: `card`; older players show cards. */
+    layout: v.optional(v.picklist(['card', 'list']), 'card'),
+    /** Cards side by side, 1–6; a page holds `columns` × `rows` (the `card` layout only). */
     columns: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(6)), 3),
     rows: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(6)), 2),
     /** Seconds per page; default PEOPLE_SECONDS. */

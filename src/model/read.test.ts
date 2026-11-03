@@ -868,4 +868,11 @@ describe('the people block and the group of the settings (schema 1.51, Plan.md 1
         expect(v.parse(Block, { ...block, personFieldKeys: ['mobile', 'city'] })).toMatchObject({ personFieldKeys: ['mobile', 'city'] });
         expect(v.safeParse(Block, { ...block, personFieldKeys: ['street'] }).success).toBe(false);
     });
+
+    it('reads a people block without a layout as cards, and only card or list (schema 1.55)', () => {
+        const block = { id: 'p', type: 'people', x: 0, y: 0, width: 100, height: 100, roleIds: [], fieldKeys: [], style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' } };
+        expect(v.parse(Block, block)).toMatchObject({ layout: 'card' });
+        expect(v.parse(Block, { ...block, layout: 'list' })).toMatchObject({ layout: 'list' });
+        expect(v.safeParse(Block, { ...block, layout: 'rows' }).success).toBe(false);
+    });
 });

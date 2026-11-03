@@ -34,6 +34,14 @@ test('the people block says the group is not set up, and its inspector keeps its
     // Only one section open at a time: "Darstellung" closes the roles.
     await openSection(page, 'appearance');
     await expect(page.getByTestId('section-people-roles')).not.toHaveAttribute('open', '');
+    // Cards by default: the tile "Ansicht" is there, with columns and rows; the list takes them away (schema 1.55).
+    expect(await chosen(page, 'people-layout')).toBe('card');
+    await expect(page.getByTestId('people-rows')).toBeVisible();
+    await choose(page, 'people-layout', 'list');
+    await expect(page.locator('.editor-stage .block--people').getByTestId('people-list')).toBeVisible();
+    await expect(page.getByTestId('people-columns')).toHaveCount(0);
+    await expect(page.getByTestId('people-rows')).toHaveCount(0);
+    await choose(page, 'people-layout', 'card');
     await choose(page, 'people-columns', '2');
     expect(await chosen(page, 'people-columns')).toBe('2');
     await page.getByTestId('people-show-image').click();

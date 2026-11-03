@@ -291,7 +291,7 @@ export function createBlock(
             return { ...frame, type, mediaIds: [], fit: 'cover', seconds: 6, transition: 'fade', motion: 'none' };
         case 'people':
             // Every role, no member field yet: name and picture, until the inspector adds some (Plan.md 112).
-            return { ...frame, type, roleIds: [], fieldKeys: [], sort: 'last-name', showImage: true, columns: 3, rows: 2, style: textStyle(44) };
+            return { ...frame, type, roleIds: [], fieldKeys: [], sort: 'last-name', showImage: true, layout: 'card', columns: 3, rows: 2, style: textStyle(44) };
         case 'groups':
             // No homepage yet: the inspector offers them; the leaders stay off until switched on (Plan.md 43).
             return { ...frame, type, groupIds: [], sort: 'weekday', layout: 'card', perPage: 1, show: v.parse(GroupFields, {}), style: textStyle(56) };

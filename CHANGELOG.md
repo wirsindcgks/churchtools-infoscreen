@@ -45,6 +45,10 @@ zeigen – und für seine Antworten, die den Zuschnitt bestimmt haben.
   Baustein „Personen“ unter „Personenfelder“ aus den freigeschalteten Feldern; der Fernseher liest sie nur dann und zeigt
   sie unter den Mitgliedsfeldern. Nimmt ein Administrator ein Feld zurück, verschwindet es sofort vom Fernseher (siehe
   [Einrichtung](docs/Einrichtung.md#personenfelder-freischalten)).
+- **Listenansicht für „Personen“.** Neben den Karten zeigt der Baustein die Personen als Liste: je Person eine Zeile mit
+  kleinem rundem Bild, Name, Rolle und den gewählten Angaben, seitenweise mit Fortschritt wie bei den Gruppen. Die Ansicht
+  wählt man im Designer als Kachel „Ansicht“; Spalten und Reihen gelten nur für Karten. Danke an Bernhard
+  ([@bwl21](https://github.com/bwl21)) für die Anregung in [#129](https://github.com/wirsindcgks/churchtools-infoscreen/issues/129).
 
 ### Geändert
 

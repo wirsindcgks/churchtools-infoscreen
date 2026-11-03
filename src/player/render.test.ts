@@ -888,6 +888,7 @@ describe('rendering people (Plan.md 112)', () => {
         fieldKeys: ['2'],
         sort: 'last-name',
         showImage: true,
+        layout: 'card',
         columns: 3,
         rows: 2,
         style,
@@ -949,6 +950,23 @@ describe('rendering people (Plan.md 112)', () => {
         expect(wrapper.findAll('[data-testid="person-card"]')).toHaveLength(2);
         expect(wrapper.find('[data-testid="people-pager"]').exists()).toBe(true);
         expect(context.pages).toEqual({ p1: 3 });
+    });
+
+    it('shows one row a person with picture, name, role and fields as a list (schema 1.55)', () => {
+        const many = Array.from({ length: 5 }, (_, i) => person('P', String(i), { fields: { '2': 'Pastorin' } }));
+        const context = { people: [group(...many)], pages: {} as Record<string, number> };
+        const wrapper = render(makeSlide({ blocks: [peopleBlock({ layout: 'list', columns: 2, rows: 1 })] }), context);
+        expect(wrapper.find('[data-testid="person-card"]').exists()).toBe(false);
+        expect(wrapper.findAll('[data-testid="person-row"]')).toHaveLength(5);
+        expect(wrapper.get('[data-testid="person-row"]').text()).toContain('Pastorin');
+        const noImage = render(makeSlide({ blocks: [peopleBlock({ layout: 'list', showImage: false })] }), context);
+        expect(noImage.find('.row-avatar').exists()).toBe(false);
+    });
+
+    it('says the same calm things in the list as on cards', () => {
+        const wrapper = render(makeSlide({ blocks: [peopleBlock({ layout: 'list' })] }), { people: [group()] });
+        expect(wrapper.find('[data-testid="person-row"]').exists()).toBe(false);
+        expect(wrapper.get('[data-testid="people-empty"]').text()).toBe('Keine Personen');
     });
 
     it('shows only the chosen roles', () => {

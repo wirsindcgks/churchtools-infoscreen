@@ -34,6 +34,11 @@ export const GROUPS_TILES: TileOption[] = [
     { value: 'list', label: t.inspector.layoutList, pictogram: 'list-thumbs' },
 ];
 
+export const PEOPLE_TILES: TileOption[] = [
+    { value: 'card', label: t.inspector.peopleLayoutCard, pictogram: 'card-image' },
+    { value: 'list', label: t.inspector.layoutList, pictogram: 'list-thumbs' },
+];
+
 export const ROOMS_TILES: TileOption[] = [
     { value: 'overview', label: t.inspector.roomsOverview, pictogram: 'rooms-overview' },
     { value: 'door', label: t.inspector.roomsDoor, pictogram: 'rooms-door' },

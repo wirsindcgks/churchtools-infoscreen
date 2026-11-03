@@ -421,6 +421,7 @@ describe('player controller', () => {
             fieldKeys: [],
             sort: 'last-name',
             showImage: true,
+            layout: 'card',
             columns: 3,
             rows: 2,
             ...(extra.sourceGroupId === undefined ? {} : { sourceGroupId: extra.sourceGroupId }),

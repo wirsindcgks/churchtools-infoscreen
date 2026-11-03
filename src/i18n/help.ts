@@ -415,10 +415,11 @@ export const th = {
                 'Zur Wahl stehen nur Felder, die ein Administrator unter Einstellungen → Personen freigeschaltet hat; nimmt er eines zurück, verschwindet es sofort vom Fernseher. ' +
                 'Der Geburtstag erscheint nur als Tag und Monat, nie mit dem Jahr. Die Angaben stehen auf dem Fernseher für alle, die vorbeigehen – wähle nur, was die Personen dort sehen lassen wollen.',
         } satisfies HelpTopic,
-        intro: 'Wie die Karten erscheinen: Reihenfolge, Bild, wie viele auf einer Seite stehen und wie lange jede Seite bleibt.',
+        intro: 'Wie die Personen erscheinen: Ansicht, Reihenfolge, Bild, wie viele auf einer Seite stehen und wie lange jede Seite bleibt.',
+        layout: { term: i.view, text: 'Karten zeigen jede Person als Karte mit Bild, in einem Raster aus Spalten und Reihen. Die Liste zeigt eine Zeile je Person: kleines rundes Bild, Name, Rolle und die gewählten Angaben; sie passt, wo viele Personen auf eine Seite sollen. In beiden Ansichten blättert der Baustein, wenn nicht alle Platz haben.' },
         sort: { term: i.order, text: 'Nach Nachname, nach Vorname oder nach Rolle – in der Reihenfolge der Rollen in ChurchTools, darin nach Nachname.' },
         picture: { term: i.showPicture, text: 'Zeigt das Bild, das die Person in ChurchTools hat, rund wie ein Profilbild. Ohne Bild steht der Anfangsbuchstabe im Kreis.' },
-        grid: { term: i.columns, text: 'Wie viele Karten nebeneinander und untereinander auf einer Seite stehen, je 1 bis 6. Passen nicht alle Personen darauf, blättert der Baustein.' },
+        grid: { term: i.columns, text: 'Nur bei Karten: wie viele Karten nebeneinander und untereinander auf einer Seite stehen, je 1 bis 6. Passen nicht alle Personen darauf, blättert der Baustein.' },
         seconds: { term: i.secondsPerPage, text: 'Wie lange jede Seite stehen bleibt, vorgegeben sind 15 Sekunden. Die Folie läuft so lange, bis jede Seite einmal zu sehen war.' },
     },
 

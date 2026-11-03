@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * The people block (Plan.md 112): the people of a group as cards – "Infoscreen-People" or a group an administrator released
+ * The people block (Plan.md 112): the people of a group as cards or, since 1.55, as a list – "Infoscreen-People" or a group an administrator released
  * (Stück 2a); the choice stands first. The roles and the member fields (in their order) each have a section named after what
  * they choose, and follow the chosen group; look and page time stand in "Darstellung".
  */
@@ -22,8 +22,10 @@ import NumberField from '../fields/NumberField.vue';
 import SegmentField from '../fields/SegmentField.vue';
 import SortList, { type SortItem } from '../fields/SortList.vue';
 import ToggleField from '../fields/ToggleField.vue';
+import TileField from '../fields/TileField.vue';
 import FontSection from '../FontSection.vue';
 import { move as moveItem } from '../../ops';
+import { PEOPLE_TILES } from '../layouts';
 import { useBlockEdit } from '../use-block';
 import { useInspectorMode } from '../mode';
 
@@ -138,10 +140,18 @@ const personFieldsFace = computed(() =>
     personKeys.value.length ? t.quick.listFace(t.inspector.personFields, t.common.countOf(personKeys.value.length, released.value.length || personKeys.value.length)) : t.quick.empty.personFields,
 );
 
-const summary = computed(() => [sorts.find((o) => o.value === props.block.sort)?.label, `${props.block.columns} × ${props.block.rows}`].join(' · '));
+const summary = computed(() =>
+    [
+        PEOPLE_TILES.find((o) => o.value === props.block.layout)?.label,
+        sorts.find((o) => o.value === props.block.sort)?.label,
+        props.block.layout === 'card' ? `${props.block.columns} × ${props.block.rows}` : undefined,
+    ]
+        .filter(Boolean)
+        .join(' · '),
+);
 const appearanceHelp = computed(() => ({
     intro: th.people.intro,
-    items: [th.people.sort, th.people.picture, th.people.grid, th.people.seconds, th.pageProgress('die nächste Seite'), th.pageProgressStyle, th.pageProgressPlacement],
+    items: [th.people.layout, th.people.sort, th.people.picture, th.people.grid, th.people.seconds, th.pageProgress('die nächste Seite'), th.pageProgressStyle, th.pageProgressPlacement],
 }));
 </script>
 
@@ -217,6 +227,7 @@ const appearanceHelp = computed(() => ({
     </QuickField>
 
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="appearanceHelp">
+        <TileField quick :model-value="block.layout" :options="PEOPLE_TILES" :label="t.inspector.view" testid="people-layout" @update:model-value="setBlock({ layout: $event })" />
         <SegmentField
             quick
             :model-value="block.sort"
@@ -227,8 +238,8 @@ const appearanceHelp = computed(() => ({
             @update:model-value="setBlock({ sort: $event })"
         />
         <ToggleField :model-value="block.showImage" :label="t.inspector.showPicture" testid="people-show-image" @update:model-value="setBlock({ showImage: $event })" />
-        <SegmentField :model-value="block.columns" :options="columns" :label="t.inspector.columns" testid="people-columns" @update:model-value="setBlock({ columns: Number($event) })" />
-        <SegmentField :model-value="block.rows" :options="columns" :label="t.inspector.peopleRows" testid="people-rows" @update:model-value="setBlock({ rows: Number($event) })" />
+        <SegmentField v-if="block.layout === 'card'" :model-value="block.columns" :options="columns" :label="t.inspector.columns" testid="people-columns" @update:model-value="setBlock({ columns: Number($event) })" />
+        <SegmentField v-if="block.layout === 'card'" :model-value="block.rows" :options="columns" :label="t.inspector.peopleRows" testid="people-rows" @update:model-value="setBlock({ rows: Number($event) })" />
         <NumberField
             :model-value="block.pageSeconds ?? PEOPLE_SECONDS"
             :label="t.inspector.secondsPerPage"

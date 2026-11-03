@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_THEME } from '../../model/schema';
 import { PICTOGRAMS } from './pictograms';
-import { appointmentListTiles, GROUPS_TILES, MOTION_TILES, nextAppointmentTiles, POSTS_TILES, ROOMS_TILES, TRANSITION_TILES } from './layouts';
+import { appointmentListTiles, GROUPS_TILES, MOTION_TILES, nextAppointmentTiles, PEOPLE_TILES, POSTS_TILES, ROOMS_TILES, TRANSITION_TILES } from './layouts';
 import { createBlock } from '../ops';
 
 const nativeTheme = { ...DEFAULT_THEME, appointments: 'native' } as const;
@@ -46,13 +46,14 @@ describe('the picture tiles of the blocks (Plan.md 79, B2)', () => {
     it('names the looks of the other blocks with one word', () => {
         expect(POSTS_TILES.map((o) => o.label)).toEqual(['Hervorgehoben', 'Liste']);
         expect(GROUPS_TILES.map((o) => o.label)).toEqual(['Hervorgehoben', 'Liste']);
+        expect(PEOPLE_TILES.map((o) => [o.value, o.label])).toEqual([['card', 'Karten'], ['list', 'Liste']]);
         expect(ROOMS_TILES.map((o) => [o.value, o.label])).toEqual([['overview', 'Übersicht'], ['door', 'Türschild']]);
         expect(TRANSITION_TILES.map((o) => o.label)).toEqual(['Überblenden', 'Schieben', 'Aufdecken', 'Ohne']);
         expect(MOTION_TILES.map((o) => o.label)).toEqual(['Keine', 'Hineinzoomen', 'Herauszoomen', 'Abwechselnd']);
     });
 
     it('every tile has a picture of its own, drawn', () => {
-        const tiles = [...POSTS_TILES, ...GROUPS_TILES, ...ROOMS_TILES, ...TRANSITION_TILES, ...MOTION_TILES, ...appointmentListTiles(listBlock(), nativeTheme), ...nextAppointmentTiles(nextBlock(), nativeTheme)];
+        const tiles = [...POSTS_TILES, ...GROUPS_TILES, ...PEOPLE_TILES, ...ROOMS_TILES, ...TRANSITION_TILES, ...MOTION_TILES, ...appointmentListTiles(listBlock(), nativeTheme), ...nextAppointmentTiles(nextBlock(), nativeTheme)];
         for (const tile of tiles) expect(PICTOGRAMS[tile.pictogram].length).toBeGreaterThan(0);
         const drawn = Object.values(PICTOGRAMS).map((paths) => paths.map((p) => p.d).join('|'));
         expect(new Set(drawn).size).toBe(drawn.length);

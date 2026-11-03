@@ -728,6 +728,7 @@ export const t = {
         showPicture: 'Bild zeigen',
         columns: 'Spalten',
         peopleRows: 'Reihen',
+        peopleLayoutCard: 'Karten',
         peopleGroup: 'Gruppe',
         peopleStandardGroup: 'Infoscreen-People',
         peopleGroupGone: (id: number) => `Gruppe ${id} – nicht (mehr) freigegeben`,

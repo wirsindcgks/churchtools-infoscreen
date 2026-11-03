@@ -66,7 +66,7 @@ describe('designer operations', () => {
     });
 
     it('creates a people block with every role and no member field: name and picture, until the inspector adds some (Plan.md 112)', () => {
-        expect(createBlock('people', stage)).toMatchObject({ type: 'people', roleIds: [], fieldKeys: [], sort: 'last-name', showImage: true, columns: 3, rows: 2, width: 1400, height: 700 });
+        expect(createBlock('people', stage)).toMatchObject({ type: 'people', roleIds: [], fieldKeys: [], sort: 'last-name', showImage: true, layout: 'card', columns: 3, rows: 2, width: 1400, height: 700 });
         expect(BLOCK_LABELS.people).toBe('Personen');
     });
 
