@@ -1894,9 +1894,9 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             peopleBlind: (labels: string, name: string, inUse: boolean) =>
                 `${labels} sieht die Gruppe „${name}" nicht${inUse ? ' – der Baustein „Personen" bleibt leer' : ''}.`,
             peopleBlindDetail: 'Es fehlt „Gruppe inkl. ihrer Gruppenmitglieder sehen" für diese Gruppe. „Rechte aktualisieren" vergibt es.',
-            releasedNotMember: (labels: string, name: string) => `${labels} ist nicht Mitglied in „${name}" – Name, Bild und Rolle erscheinen, Mitgliedsfelder bleiben leer.`,
+            releasedNotMember: (labels: string, name: string) => `${labels} sieht in „${name}" keine Mitgliedsfelder – Name, Bild und Rolle erscheinen.`,
             releasedNotMemberDetail:
-                'Das ist bei freigegebenen Gruppen der Normalfall. Mitgliedsfelder sieht ein Gerät nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder sehen" (Stufe 1) – als Mitglied der Gruppe oder über eine Obergruppe. Wer sie braucht, nimmt das Gerätekonto in eine Obergruppe auf und gibt dessen Rolle dort das Recht unter „Berechtigung für die Untergruppen“ (mindestens eine Ebene), oder nimmt es in die Gruppe selbst auf; das Recht gilt dann für alle mit dieser Rolle.',
+                'Reicht das, ist nichts zu tun. Mitgliedsfelder sieht ein Gerät nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder sehen" (Stufe 1) – als Mitglied der Gruppe oder über eine Obergruppe. Wer sie braucht, nimmt das Gerätekonto in eine Obergruppe auf und gibt dessen Rolle dort das Recht unter „Berechtigung für die Untergruppen“ (mindestens eine Ebene), oder nimmt es in die Gruppe selbst auf; das Recht gilt dann für alle mit dieser Rolle.',
             peopleNotMember: (labels: string, name: string) => `${labels} ist nicht Mitglied in „${name}" – die Mitgliedsfelder bleiben leer.`,
             peopleNotMemberDetail: 'Mitgliedsfelder sieht ein Gerät nur als Mitglied der Gruppe. Das Gerätekonto dort aufnehmen oder „Rechte aktualisieren" – das nimmt alle Geräte der Gerätegruppe auf.',
             personData: (labels: string) => `${labels} darf Personendaten sehen – damit auch E-Mail-Adressen.`,

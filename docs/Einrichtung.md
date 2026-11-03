@@ -179,7 +179,10 @@ sehen" (Sicherheitsstufe 1). Dafür gibt es zwei Wege:
   automatischen Gruppen. Nimm das Gerätekonto in die Obergruppe auf. Dort unter Berechtigungen → **„Berechtigung für die
   Untergruppen"** die Zahl der Ebenen wählen (mindestens „Eine Ebene von Untergruppen" – bei „Keine Ebenen" wirkt das
   Recht nicht) und für die Rolle des Gerätekontos „Gruppenmitgliedsfelder sehen" auf Stufe 1 setzen. In den Untergruppen
-  muss das Gerät dann nicht Mitglied sein.
+  muss das Gerät dann nicht Mitglied sein. **Achtung:** In der Obergruppe selbst bekommt das Gerät alles, was der
+  Gruppentyp seiner Rolle vorgibt – beim Typ „Dienst" etwa „Gruppenmitglieder sehen", und das zeigt schon in Stufe 1 die
+  E-Mail-Adressen der Mitglieder der Obergruppe. Wähle eine Obergruppe und Rolle ohne dieses Recht; die Prüfung der
+  Gerätegruppe warnt davor.
 - **Als Mitglied der Gruppe selbst.** Nimm das Gerät von Hand auf und vergib das Recht an der Rolle des Gerätekontos in
   dieser Gruppe. Es gilt für **alle Mitglieder dieser Rolle** – was dort an Mitgliedsfeldern mit Stufe 1 steht, ist dann
   für den Bildschirm bestimmt. Ist die Gruppe eine **automatische Gruppe** mit „Aus Gruppe entfernen", nimmt der nächste

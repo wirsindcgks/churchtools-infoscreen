@@ -225,6 +225,8 @@ export interface DeviceMember {
     grants: Grant[];
     /** The person's groups besides the device group; undefined: not asked, null: the groups could not be read. */
     otherGroups?: OtherGroup[] | null;
+    /** The groups in which the account sees member fields, however it got the right (G72); undefined or null: not read. */
+    memberFieldGroupIds?: number[] | null;
 }
 
 export interface CalendarInfo {
@@ -530,7 +532,10 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         } else {
             checks.push({ level: 'ok', category: 'people', text: t.setup.checks.peopleVisible(name) });
         }
-        const outside = input.members.filter((m) => m.otherGroups && !m.otherGroups.some((g) => g.id === id)).map((m) => m.label);
+        // The right itself where it was read – it may come from a parent group (G72) –, else membership as the closest sign.
+        const outside = input.members
+            .filter((m) => (m.memberFieldGroupIds ? !m.memberFieldGroupIds.includes(id) : m.otherGroups && !m.otherGroups.some((g) => g.id === id)))
+            .map((m) => m.label);
         if (outside.length) {
             checks.push({
                 level: 'info',

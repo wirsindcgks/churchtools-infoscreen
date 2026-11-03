@@ -201,6 +201,19 @@ interface OriginPermission {
 }
 
 /**
+ * The groups in which a person sees member fields (10126, G72): by the group the right acts on, not where it comes from –
+ * a role in the group itself, its group type, or a parent group that passes it on. Needs „Berechtigungen verwalten". Errors pass on.
+ */
+export async function loadMemberFieldGroups(personId: number): Promise<number[]> {
+    const internal = await churchtoolsClient.get<{ groups?: { groupId: number; permissions?: { authId: number; effectiveValue: unknown }[] }[] }>(
+        `/permissions/origins/internal/persons/${personId}`,
+    );
+    return (internal.groups ?? [])
+        .filter((g) => (g.permissions ?? []).some((p) => p.authId === 10126 && typeof p.effectiveValue === 'number' && p.effectiveValue > 0))
+        .map((g) => g.groupId);
+}
+
+/**
  * Which rights a person holds through which group, global and group internal (G61, measured 2026-10-17;
  * both reads need „Berechtigungen verwalten"). Only sources of type group role and group type role count,
  * not revoked and with an effective value; a source from a parent group names that group. Errors pass on.

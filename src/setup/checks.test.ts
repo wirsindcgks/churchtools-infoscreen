@@ -636,8 +636,13 @@ describe('the people group on the device check (Plan.md 112, G70, G71)', () => {
         const seen = checkDeviceGroup({ ...base, members: [device([grant(AUTH.groupWithMembersView, 51)], [])], releasedPeopleGroups: released, plannedAuthIds: planned });
         expect(people(seen)).toEqual([
             { level: 'ok', category: 'people', text: 'Die Geräte sehen die Gruppe „Mitarbeiter" mit ihren Mitgliedern.' },
-            expect.objectContaining({ level: 'info', category: 'people', text: expect.stringContaining('nicht Mitglied in „Mitarbeiter"') }),
+            expect.objectContaining({ level: 'info', category: 'people', text: expect.stringContaining('sieht in „Mitarbeiter" keine Mitgliedsfelder') }),
         ]);
+        // The right read itself wins over membership: from a parent group without being a member (G72), or missing although a member.
+        const inherited = checkDeviceGroup({ ...base, members: [{ ...device([grant(AUTH.groupWithMembersView, 51)], []), memberFieldGroupIds: [51] }], releasedPeopleGroups: released, plannedAuthIds: planned });
+        expect(people(inherited).map((c) => c.level)).toEqual(['ok']);
+        const memberWithout = checkDeviceGroup({ ...base, members: [{ ...device([grant(AUTH.groupWithMembersView, 51)], [{ id: 51, name: 'Mitarbeiter', grants: [] }]), memberFieldGroupIds: [] }], releasedPeopleGroups: released, plannedAuthIds: planned });
+        expect(people(memberWithout).map((c) => c.level)).toEqual(['ok', 'info']);
         const blind = checkDeviceGroup({ ...base, members: [device([], null)], releasedPeopleGroups: released, peopleInUse: true, plannedAuthIds: planned });
         expect(people(blind)).toEqual([expect.objectContaining({ level: 'fail', text: expect.stringContaining('sieht die Gruppe „Mitarbeiter" nicht') })]);
         const member = checkDeviceGroup({ ...base, members: [device([grant(AUTH.groupWithMembersView, 51)], [{ id: 51, name: 'Mitarbeiter', grants: [] }])], releasedPeopleGroups: released, plannedAuthIds: planned });
