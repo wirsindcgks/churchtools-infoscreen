@@ -4,7 +4,7 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
-## [0.50.0] – 2026-11-02
+## [0.50.0] – 2026-11-03
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch, Ansprechpartner als Karten auf dem Bildschirm zu
 zeigen – und für seine Antworten, die den Zuschnitt bestimmt haben.
