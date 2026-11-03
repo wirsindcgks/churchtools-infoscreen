@@ -155,14 +155,18 @@ const cards = computed(() =>
 }
 /* Card, after GroupsView's .hero – background and radius, a strip of the accent colour down its side. */
 .card {
+    position: relative;
     display: flex;
     box-sizing: border-box;
     overflow: hidden;
     border-radius: var(--isd-radius, 0.4em);
     background: var(--isd-card, color-mix(in srgb, currentColor 7%, transparent));
 }
+/* Over the edge of the picture, not beside it: the picture then fills the card, and no seam shows between the two once the stage is scaled. */
 .card-bar {
-    flex: none;
+    position: absolute;
+    inset: 0 auto 0 0;
+    z-index: 1;
     width: 0.25em;
 }
 .card-content {
