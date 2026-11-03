@@ -173,9 +173,19 @@ Der Fernseher zeigt dann **Name, Bild und Rolle** der Mitglieder. Eine Gruppe, d
 der Baustein sagt „Gruppe ist nicht für Bildschirme freigegeben".
 
 **Mitgliedsfelder** (etwa „Funktion", „Büro") sieht das Gerät nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder
-sehen" (Sicherheitsstufe 1) – als Mitglied der Gruppe oder über eine Obergruppe (ob das Recht dort trägt, ist noch nicht
-gemessen). Nimmst du das Gerät von Hand auf, vergib das Recht an der Rolle des Gerätekontos in dieser Gruppe. Es gilt für
-**alle Mitglieder dieser Rolle** – was dort an Mitgliedsfeldern mit Stufe 1 steht, ist dann für den Bildschirm bestimmt.
+sehen" (Sicherheitsstufe 1). Dafür gibt es zwei Wege:
+
+- **Über eine Obergruppe** – praktisch, wenn mehrere Gruppen unter einer gemeinsamen Gruppe hängen, und unberührt von
+  automatischen Gruppen. Nimm das Gerätekonto in die Obergruppe auf. Dort unter Berechtigungen → **„Berechtigung für die
+  Untergruppen"** die Zahl der Ebenen wählen (mindestens „Eine Ebene von Untergruppen" – bei „Keine Ebenen" wirkt das
+  Recht nicht) und für die Rolle des Gerätekontos „Gruppenmitgliedsfelder sehen" auf Stufe 1 setzen. In den Untergruppen
+  muss das Gerät dann nicht Mitglied sein.
+- **Als Mitglied der Gruppe selbst.** Nimm das Gerät von Hand auf und vergib das Recht an der Rolle des Gerätekontos in
+  dieser Gruppe. Es gilt für **alle Mitglieder dieser Rolle** – was dort an Mitgliedsfeldern mit Stufe 1 steht, ist dann
+  für den Bildschirm bestimmt. Ist die Gruppe eine **automatische Gruppe** mit „Aus Gruppe entfernen", nimmt der nächste
+  Lauf das Gerät wieder heraus – außer du nimmst „Infoscreen-Devices" als Oder-Bedingung in den Filter auf; dann wird es
+  von selbst Mitglied.
+
 Ohne das bleiben die Felder leer; die Prüfung der Gerätegruppe nennt das als Hinweis, nicht als Warnung.
 - **Bestehende Installation:** Wer schon eingerichtet hat, findet unter **Einstellungen → Gruppen und Rechte** den Knopf
   **„Gruppe „Infoscreen-People“ nachrüsten"**. Eine Vorschau sagt vorher, was geschieht: Er legt nur diese Gruppe an,

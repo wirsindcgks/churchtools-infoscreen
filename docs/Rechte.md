@@ -119,8 +119,9 @@ keine Mitgliedschaft, kein `10126`, keine Beitragseinstellung. Das geschieht sch
 eine Freigabe zurück, fällt die Gruppen-id wieder aus `1104` heraus – nur die Ids, die vorher freigegeben waren; ein `1104`,
 das du von Hand auf eine andere Gruppe vergeben hast, bleibt stehen. Gelingt der Rechte-Teil einmal nicht, bleibt die
 Freigabe gespeichert, und „Rechte aktualisieren" trägt fehlende Rechte nach. **Mitgliedsfelder** einer freigegebenen Gruppe sieht das Gerät nur mit dem gruppeninternen Recht
-`10126` (Stufe 1) – als Mitglied der Gruppe oder über eine Obergruppe (ob das trägt, ist noch nicht gemessen). Nimmst du das
-Gerätekonto von Hand auf, gibst du der Rolle des Kontos `10126`; das gilt dann für **alle** mit dieser Rolle in der Gruppe. Ohne das erscheinen Name, Bild und Rolle. Die Prüfung der Gerätegruppe zeigt das als Hinweis, nicht als Warnung.
+`10126` (Stufe 1) – als Mitglied der Gruppe oder über eine Obergruppe: dort als vererbtes Recht der Rolle des Gerätekontos
+unter „Berechtigung für die Untergruppen", mit mindestens einer Ebene (gemessen, Befunde.md G72). Nimmst du das
+Gerätekonto von Hand in die Gruppe selbst auf, gibst du der Rolle des Kontos `10126`; das gilt dann für **alle** mit dieser Rolle in der Gruppe. Ohne das erscheinen Name, Bild und Rolle. Die Prüfung der Gerätegruppe zeigt das als Hinweis, nicht als Warnung.
 
 **Beiträge** sind in „Infoscreen-Devices“ und „Infoscreen-People“ abgeschaltet: Der Gruppentyp „Merkmal“ gibt seinen Rollen
 sonst „Beitrag in Gruppe schreiben“ (`10130`, `10131`, gruppenintern). Mit abgeschalteten Beiträgen lehnt ChurchTools das
