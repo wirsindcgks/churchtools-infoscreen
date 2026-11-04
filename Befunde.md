@@ -806,6 +806,18 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 
 **Folgen:** Bernhard hat recht – für Mitgliedsfelder muss das Gerät nicht in der gezeigten Gruppe sein. Es reicht eine Rolle in einer Obergruppe mit „Gruppenmitgliedsfelder sehen" unter „Berechtigung für die Untergruppen" und eine Ebenenzahl größer null; 1104 auf die Gruppe braucht es weiterhin. Damit stört auch die Entfernen-Aktion automatischer Gruppen (G71) nicht. **Die Ebenenzahl der Gruppe steht nicht in `GET /groups/{id}`** und lässt sich hier nur in der Oberfläche setzen; `permissionDepth` am Gruppentyp gilt nur für die vom Typ vorgegebenen Rechte. Ein gespeichertes vererbtes Recht wirkt also nicht, solange die Gruppe „Keine Ebenen" zeigt – die Prüfung im Designer kann das nicht sehen, nur am fehlenden Feldwert.
 
+**G73 – Teilweise beantwortet: Sicherheitsstufen sind je Gemeinde frei, ihre IDs tragen keine Bedeutung; der Infoscreen setzt trotzdem die ID 1 voraus. Name und Bild brauchen gar keine Stufe.** *(2026-11-04, Testinstanz 3.138.1, nur lesend: `GET /securitylevels` als Administrator, `GET /permissions/global` und `GET /groups/{id}/members` als Geräte-Konto; dazu der Code; Anlass: Issue #259, Bernhard)* **Academy vorab:** [Was sind Sicherheitslevel?](https://churchtools.academy/de/help/rechteverwaltung/sicherheitslevel/was-sind-sicherheitslevel/) – die Stufen „bauen aufeinander auf wie Treppenstufen“; wer eine höhere sieht, sieht die darunter mit; eigene Stufen lassen sich anlegen, umbenennen, sortieren und löschen. [Welche Sicherheitslevel gibt es?](https://churchtools.academy/de/help/rechteverwaltung/sicherheitslevel/welche-sicherheitslevel-gibt-es-und-wofur-werden-sie-verwendet/) nennt die vier voreingestellten (Namen, Allgemeine Info, Kontakt-Details, Leiter-Details). **Nicht auf den Seiten:** eine Stufe 0, ob „darunter“ nach Sortierung oder nach ID geht, und was ohne „Personendaten sehen“ von einer Person sichtbar ist.
+
+| Messung | Ergebnis |
+| --- | --- |
+| `GET /securitylevels` | vier Stufen, `id` 1–4 = `sortKey` 1–4, „Stufe 1 (Niedrig)“ bis „Stufe 4 (Sehr hoch)“ |
+| Rechte des Geräts (`churchdb`) | kein 125 (`view alldata: []`), `security level view own data: [2]`, `view group: [75, 7]` |
+| `GET /groups/75/members` und `/groups/7/members` als Gerät | `200`, Mitglieder mit Namen – ohne jedes Personendatenrecht |
+
+**Wo der Code die ID 1 voraussetzt:** `PERSON_DATA_LEVEL = 1` (`src/setup/provision.ts`) – der Assistent gibt dem Gerät 125 mit `dataId [1]`; die Standardrolle von „Infoscreen-People“ bekommt 10126 mit `dataId [1]`; `personDataAtLevel1Only` (`src/setup/checks.ts`) nimmt 125 nur auf genau ID 1 hin und warnt bei jeder anderen Stufe als „mehr als geplant“; die Felderfreigabe (`src/views/SetupView.vue`) bietet nur Felder mit `secLevel === 1` an.
+
+**Folgen:** Auf einer Instanz wie der von Bernhard (eigene Stufen von „L100_Profilbild“ bis „L999“, dazu eine Stufe mit ID 0) trifft die ID 1 eine beliebige Stufe; eine bewusst vergebene andere Stufe meldet die Prüfung als Warnung, obwohl sie nach der Academy die niedrigeren einschließt. Da Name und Bild allein über 1104 kommen (wie G70), braucht der Baustein eine Stufe nur für zusätzliche Personenfelder. Richtung: die Stufen nicht mehr selbst vergeben, sondern lesen, welche das Gerät hat, und die Felder anbieten, die darin liegen. **Offen:** Bernhards IDs und was seine Prüfung anzeigt (nur bei ihm zu erfragen); ob „darunter“ nach `sortKey` oder ID geht (nur schreibend mit einer umsortierten Teststufe messbar, vorher mit dem Nutzer besprechen).
+
 ## Der Betriebsbenutzer – wie er eingerichtet wird und wie nicht
 
 
