@@ -4,7 +4,7 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
-## [0.52.0] – unveröffentlicht
+## [0.52.0] – 2026-11-05
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für seine Rückmeldung nach dem Update
 ([#259](https://github.com/wirsindcgks/churchtools-infoscreen/issues/259)).
