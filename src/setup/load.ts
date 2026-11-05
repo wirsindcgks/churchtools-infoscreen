@@ -201,18 +201,21 @@ interface OriginPermission {
 }
 
 /**
- * The groups in which a person sees member fields (10126, G72) and the level they hold there: by the group the right acts on,
- * not where it comes from – a role in the group itself, its group type, or a parent group that passes it on. The level is the
- * highest security level ID held, also one that does not exist (G73). Needs „Berechtigungen verwalten". Errors pass on.
+ * The groups in which a person sees member fields (10126, G72) and the level they hold there, and the groups in which they see
+ * the group's members (10101, G74) with their level: by the group the right acts on, not where it comes from – a role in the group
+ * itself, its group type, or a parent group that passes it on. The level is the highest security level ID held, also one that does
+ * not exist (G73). One read. Needs „Berechtigungen verwalten". Errors pass on.
  */
-export async function loadMemberFieldLevels(personId: number): Promise<{ groupId: number; level: number }[]> {
+export async function loadMemberFieldLevels(personId: number): Promise<{ memberFieldLevels: { groupId: number; level: number }[]; personLevels: { groupId: number; level: number }[] }> {
     const internal = await churchtoolsClient.get<{ groups?: { groupId: number; permissions?: { authId: number; effectiveValue: unknown }[] }[] }>(
         `/permissions/origins/internal/persons/${personId}`,
     );
-    return (internal.groups ?? []).flatMap((g) => {
-        const level = (g.permissions ?? []).find((p) => p.authId === 10126 && typeof p.effectiveValue === 'number' && p.effectiveValue > 0)?.effectiveValue;
-        return typeof level === 'number' ? [{ groupId: g.groupId, level }] : [];
-    });
+    const levelsOf = (authId: number): { groupId: number; level: number }[] =>
+        (internal.groups ?? []).flatMap((g) => {
+            const level = (g.permissions ?? []).find((p) => p.authId === authId && typeof p.effectiveValue === 'number' && p.effectiveValue > 0)?.effectiveValue;
+            return typeof level === 'number' ? [{ groupId: g.groupId, level }] : [];
+        });
+    return { memberFieldLevels: levelsOf(10126), personLevels: levelsOf(10101) };
 }
 
 /**

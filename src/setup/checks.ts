@@ -103,6 +103,40 @@ export function devicesReach(holdings: Grant[][], levelIds: readonly number[] | 
     return reaches.some((r) => r === null) ? null : Math.min(...(reaches as number[]));
 }
 
+/**
+ * How far one device sees person fields in the groups the screens show (G74): in each shown group the higher of „Personendaten sehen“ (125,
+ * global) and „Gruppenmitglieder sehen“ (10101) in that group – a level that does not exist counts for nothing. `min` is what the device
+ * reaches in all shown groups, the smallest (null when one shows none); `max` the largest of them. Without shown groups, or where the
+ * levels per group were not read (`personLevels` null), only 125 counts.
+ */
+export function personFieldReach(
+    grants: Grant[],
+    personLevels: { groupId: number; level: number }[] | null | undefined,
+    shownGroupIds: readonly number[],
+    levelIds: readonly number[] | null,
+): { min: number | null; max: number | null } {
+    const global = personDataReach(grants, levelIds).reach;
+    if (!personLevels || !shownGroupIds.length) return { min: global, max: global };
+    const perGroup = shownGroupIds.map((id) => {
+        const level = personLevels.find((f) => f.groupId === id)?.level;
+        const own = level !== undefined && (levelIds === null || levelIds.includes(level)) ? level : null;
+        return own === null ? global : global === null ? own : Math.max(global, own);
+    });
+    const known = perGroup.filter((r): r is number => r !== null);
+    return { min: known.length < perGroup.length ? null : Math.min(...known), max: known.length ? Math.max(...known) : null };
+}
+
+/** The level all devices reach together in the shown groups (G74): the smallest `min`; null when one reaches none or there is no device. */
+export function devicesPersonReach(
+    devices: { grants: Grant[]; personLevels?: { groupId: number; level: number }[] | null }[],
+    shownGroupIds: readonly number[],
+    levelIds: readonly number[] | null,
+): number | null {
+    if (!devices.length) return null;
+    const reaches = devices.map((d) => personFieldReach(d.grants, d.personLevels, shownGroupIds, levelIds).min);
+    return reaches.some((r) => r === null) ? null : Math.min(...(reaches as number[]));
+}
+
 export function checkStatus(statusId: number | null | undefined): Check {
     switch (statusId) {
         case 1:
@@ -259,6 +293,8 @@ export interface DeviceMember {
     otherGroups?: OtherGroup[] | null;
     /** The groups in which the account sees member fields, however it got the right (G72), with the highest level held there (G73); undefined or null: not read. */
     memberFieldLevels?: { groupId: number; level: number }[] | null;
+    /** The groups in which the account holds „Gruppenmitglieder sehen“ (10101, G74), with the highest level held there; undefined or null: not read. */
+    personLevels?: { groupId: number; level: number }[] | null;
 }
 
 export interface CalendarInfo {
@@ -622,13 +658,27 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
     const known = releasedFields.flatMap((f) => (f.level === null ? [] : [f.level]));
     const need = known.length ? Math.max(...known) : null;
     const blindDevices: string[] = [];
+    const shownGroups = [...(input.peopleGroup ? [input.peopleGroup] : []), ...(input.releasedPeopleGroups ?? [])];
+    const shownIds = shownGroups.map((g) => g.id);
     let seen = false;
     for (const member of input.members) {
         const held = holdings.get(member)!;
         const r = personDataReach(held, levelIds);
-        // A 125 that points to no level alone opens nothing: it gets its own line below, not this one.
-        if (has(held, AUTH.groupMembersViewIntern) || (r.reach !== null && !releasedFields.length)) {
+        const reach = personFieldReach(held, member.personLevels, shownIds, levelIds);
+        // 125 gives person data everywhere, 10101 in a shown group for its members only (G74). Where the levels per group were not read,
+        // every 10101 is a warning; where they were, only one outside the shown groups.
+        if (!member.personLevels ? has(held, AUTH.groupMembersViewIntern) || (r.reach !== null && !releasedFields.length) : reach.max !== null && !releasedFields.length) {
             checks.push({ level: 'warn', category: 'rights', text: t.setup.checks.personData(member.label), detail: t.setup.checks.personDataDetail });
+        }
+        const elsewhere = (member.personLevels ?? []).filter((f) => !shownIds.includes(f.groupId));
+        if (elsewhere.length) {
+            const groupName = (id: number): string => member.otherGroups?.find((g) => g.id === id)?.name ?? t.setup.groupFallback(id);
+            checks.push({
+                level: 'warn',
+                category: 'rights',
+                text: t.setup.checks.personDataGroups(member.label, elsewhere.map((f) => groupName(f.groupId))),
+                detail: t.setup.checks.personDataGroupsDetail,
+            });
         }
         if (r.missing.length) {
             checks.push({
@@ -638,29 +688,37 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                 detail: t.setup.checks.personDataMissingLevelDetail,
             });
         }
+        for (const f of levelIds ? (member.personLevels ?? []).filter((f) => shownIds.includes(f.groupId) && !levelIds.includes(f.level)) : []) {
+            checks.push({
+                level: 'warn',
+                category: 'rights',
+                text: t.setup.checks.groupMembersMissingLevel(member.label, shownGroups.find((g) => g.id === f.groupId)!.name, f.level),
+                detail: t.setup.checks.groupMembersMissingLevelDetail,
+            });
+        }
         if (!releasedFields.length) continue;
-        if (r.reach === null) {
+        if (reach.min === null) {
             blindDevices.push(member.label);
             continue;
         }
-        const outOfReach = releasedFields.filter((f) => f.level !== null && f.level > r.reach!);
+        const outOfReach = releasedFields.filter((f) => f.level !== null && f.level > reach.min!);
         if (outOfReach.length) {
             checks.push({
                 level: 'warn',
                 category: 'people',
-                text: t.setup.checks.personFieldsOutOfReach(member.label, outOfReach.map((f) => f.name).join(', '), levelName(r.reach)),
+                text: t.setup.checks.personFieldsOutOfReach(member.label, outOfReach.map((f) => f.name).join(', '), levelName(reach.min)),
                 detail: t.setup.checks.personFieldsOutOfReachDetail,
             });
         }
-        if (need !== null && r.reach > need) {
+        if (need !== null && reach.max! > need) {
             checks.push({
                 level: 'warn',
                 category: 'rights',
-                text: t.setup.checks.personDataBeyond(member.label, levelName(r.reach), levelName(need)),
+                text: t.setup.checks.personDataBeyond(member.label, levelName(reach.max!), levelName(need)),
                 detail: t.setup.checks.personDataBeyondDetail,
             });
         }
-        if (r.reach >= (need ?? r.reach)) seen = true;
+        if (reach.min >= (need ?? reach.min)) seen = true;
     }
     if (blindDevices.length) {
         checks.push({ level: 'warn', category: 'people', text: t.setup.checks.personFieldsBlind(blindDevices.join(', ')), detail: t.setup.checks.personFieldsBlindDetail });

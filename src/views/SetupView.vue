@@ -20,7 +20,7 @@ import { PERSON_FIELD_KEYS, type PersonFieldKey, type ScreenDoc } from '../model
 import { withDeviceLogin } from '../player/device-login';
 import { resourceTypesOf, roomTypeIdsOf, roomsOf, type ResourceMasterdata, type ResourceTypeInfo, type RoomInfo } from '../rooms/normalize';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
-import { AUTH, checkDesignerGroup, checkDeviceGroup, devicesReach, groupChecks, memberHoldings, type Check, type Grant, type RequiredRight } from '../setup/checks';
+import { AUTH, checkDesignerGroup, checkDeviceGroup, devicesPersonReach, groupChecks, memberHoldings, type Check, type Grant, type RequiredRight } from '../setup/checks';
 import {
     canViewWiki,
     churchToolsProvisionApi,
@@ -488,10 +488,16 @@ function loadPersonFields(): Promise<void> {
  * The security level the devices of the device group reach with „Personendaten sehen“: what each device holds, the smallest of all.
  * Set by the device check; null until a group is chosen and checked. Without device accounts the default role of the group counts.
  */
-const deviceHoldings = ref<Grant[][] | null>(null);
+const deviceHoldings = ref<{ grants: Grant[]; personLevels?: { groupId: number; level: number }[] | null }[] | null>(null);
 /** A level id (number), `null`: the devices see none, `undefined`: not known yet. */
 const deviceReach = computed(() =>
-    deviceHoldings.value === null ? undefined : devicesReach(deviceHoldings.value, securityLevels.value?.map((l) => l.id) ?? null),
+    deviceHoldings.value === null
+        ? undefined
+        : devicesPersonReach(
+              deviceHoldings.value,
+              [...(peopleGroupId.value === null ? [] : [peopleGroupId.value]), ...releasedPeopleGroups.value],
+              securityLevels.value?.map((l) => l.id) ?? null,
+          ),
 );
 const levelName = (id: number): string =>
     id === Number.POSITIVE_INFINITY ? t.setup.checks.levelAll : (securityLevels.value?.find((l) => l.id === id)?.name ?? t.setup.checks.levelFallback(id));
@@ -1110,11 +1116,13 @@ async function check(side: Side): Promise<void> {
                 rights.members.map(async (m) => {
                     const person = await loadPersonGrants(m.personId);
                     // Only the warning depends on these reads: if they fail, the member is checked without it.
-                    const [memberships, origins, memberFieldLevels] = await Promise.all([
+                    const [memberships, origins, levelsRead] = await Promise.all([
                         personGroups(m.personId).catch(() => null),
                         loadRightOrigins(m.personId).catch(() => null),
                         loadMemberFieldLevels(m.personId).catch(() => null),
                     ]);
+                    const memberFieldLevels = levelsRead?.memberFieldLevels ?? null;
+                    const personLevels = levelsRead?.personLevels ?? null;
                     const names = new Map((memberships ?? []).filter((g) => g.id !== groupId).map((g) => [g.id, g.name]));
                     for (const o of origins ?? []) if (o.groupId !== groupId && !names.has(o.groupId)) names.set(o.groupId, t.setup.groupFallback(o.groupId));
                     const otherGroups =
@@ -1128,10 +1136,12 @@ async function check(side: Side): Promise<void> {
                                       ? origins.filter((o) => o.groupId === id).flatMap((o) => (o.dataIds ?? [null]).map((dataId) => ({ authId: o.authId, dataId })))
                                       : null,
                               }));
-                    return { label: person.label, grants: [...m.roleGrants, ...person.grants], otherGroups, memberFieldLevels };
+                    return { label: person.label, grants: [...m.roleGrants, ...person.grants], otherGroups, memberFieldLevels, personLevels };
                 }),
             );
-            deviceHoldings.value = members.length ? members.map(memberHoldings) : [rights.roles.find((r) => r.isDefault)?.grants ?? []];
+            deviceHoldings.value = members.length
+                ? members.map((m) => ({ grants: memberHoldings(m), personLevels: m.personLevels }))
+                : [{ grants: rights.roles.find((r) => r.isDefault)?.grants ?? [] }];
             checks.device = checkDeviceGroup({
                 statusId: rights.group.statusId,
                 members,

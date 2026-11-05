@@ -4,6 +4,19 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.52.0] – unveröffentlicht
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für seine Rückmeldung nach dem Update
+([#259](https://github.com/wirsindcgks/churchtools-infoscreen/issues/259)).
+
+### Geändert
+
+- **„Gruppenmitglieder sehen“ in einer gezeigten Gruppe ist ein Weg zu Personenfeldern.** Hat ein Gerät dieses gruppeninterne
+  Recht in „Infoscreen-People“ oder einer freigegebenen Gruppe, zählt es wie „Personendaten sehen“ – nach Sicherheitsstufe, aber
+  nur für die Mitglieder dieser Gruppe. Der Designer bietet die Personenfelder an, die jedes Gerät in jeder gezeigten Gruppe
+  sieht, und die Prüfung warnt dort nicht mehr. Sie warnt weiter, wenn das Recht in einer Gruppe liegt, die kein Bildschirm
+  zeigt (dann mit dem Gruppennamen), und meldet eine Stufe, die es nicht gibt.
+
 ## [0.51.0] – 2026-11-05
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für seine Rückmeldung zum Baustein „Personen“
@@ -1727,3 +1740,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.2.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.1
 [0.2.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.0
 [0.1.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.1.0
+[0.52.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.52.0

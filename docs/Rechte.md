@@ -112,21 +112,25 @@ Der Baustein zeigt Mitglieder **freigegebener vorhandener Gruppen** (unten) oder
 
 Das zweite Recht ist **gruppenintern** und gilt für alle, die diese Rolle haben; die Sicherheitsstufe begrenzt es auf
 Mitgliedsfelder bis zu dieser Stufe. Die Stufen sind je Gemeinde frei (G73); der Infoscreen vergibt das Recht nicht und nimmt
-es nicht zurück. Die Prüfung der Gerätegruppe weist darauf hin, wenn es fehlt, und warnt, wenn es auf eine Stufe zeigt, die es nicht gibt. „Gruppenmitglieder sehen" (`10101`) wird **nie** vergeben. „Personendaten sehen" (`125`) vergibt der
-Assistent **nicht mehr**: Beide geben schon in der ersten Stufe die E-Mail-Adresse einer Person frei. Nur wenn ein Administrator
-unter *Einstellungen → Gruppen für „Personen"* **Personenfelder** freischalten will, setzt er `125` selbst in ChurchTools (unten).
-Die Prüfung der Gerätegruppe warnt vor allem anderen.
+es nicht zurück. Die Prüfung der Gerätegruppe weist darauf hin, wenn es fehlt, und warnt, wenn es auf eine Stufe zeigt, die es nicht gibt. „Personendaten sehen" (`125`) und „Gruppenmitglieder sehen" (`10101`) vergibt der
+Assistent **nie**: Beide geben schon in der ersten Stufe die E-Mail-Adresse einer Person frei. Nur wenn ein Administrator
+unter *Einstellungen → Gruppen für „Personen"* **Personenfelder** freischalten will, setzt er in ChurchTools entweder `125` (gilt für alle Personen)
+oder `10101` in der gezeigten Gruppe (gilt nur für deren Mitglieder; unten). `10101` in einer Gruppe, die kein Bildschirm zeigt,
+und `125` ohne Freischaltung warnt die Prüfung der Gerätegruppe.
 
 **Personenfelder:** ChurchTools gibt Personendaten einem Gerät nur als ganze Sicherheitsstufe frei, über „Personendaten sehen"
 (`125`, global) mit der Stufe als Datenangabe (gemessen, Befunde.md G71). Die Stufen sind je Gemeinde frei, ihre Nummer ist ihre
 Reihenfolge, und sie bauen aufeinander auf: Wer eine Stufe sieht, sieht alle mit kleinerer Nummer mit (G73). Der **Administrator** gibt
 der Gerätegruppe `125` in ChurchTools auf der niedrigsten Stufe, in der die gewünschten Felder liegen; der Infoscreen vergibt es nicht
-und nimmt es nicht zurück. Der Designer liest die Stufen und die Rechte der Geräte bei jedem Aufruf frisch und bietet nur Felder an,
+und nimmt es nicht zurück. Enger geht es mit dem gruppeninternen „Gruppenmitglieder sehen" (`10101`, G74): Es öffnet Personenfelder nach
+Stufe wie `125`, aber nur für die Mitglieder der Gruppe, in der es gilt. Je gezeigter Gruppe („Infoscreen-People" und freigegebene
+Gruppen) zählt die höhere Stufe aus `125` und `10101` dort; die Reichweite eines Geräts ist die kleinste über alle gezeigten Gruppen, die
+der Geräte die kleinste aller Geräte. Der Designer liest die Stufen und die Rechte der Geräte bei jedem Aufruf frisch und bietet nur Felder an,
 die in dieser Reichweite liegen. Die Auswahl **je Feld** trifft der Infoscreen (Einstellungen, dann der Baustein), nicht ChurchTools:
 Technisch kann das Gerät **alle Felder bis zu seiner Stufe** lesen, der Baustein zeigt nur die freigeschalteten. Ändert eine Gemeinde
 in ChurchTools die Stufe eines Feldes, ändert sich damit, was das Gerät liest. Die Prüfung der Gerätegruppe zeigt den Hinweis
 „Personenfelder freigeschaltet“ und warnt, wenn das Gerät höher sieht als die Felder brauchen, wenn Felder außerhalb seiner Reichweite
-liegen und wenn `125` auf eine Stufe zeigt, die es nicht gibt (ChurchTools nimmt ein solches Recht ohne Fehlermeldung an).
+liegen und wenn `125` oder `10101` auf eine Stufe zeigt, die es nicht gibt (ChurchTools nimmt ein solches Recht ohne Fehlermeldung an). `10101` in einer Gruppe, die kein Bildschirm zeigt, warnt sie mit dem Gruppennamen.
 
 **Freigegebene Gruppen:** Für eine vorhandene Gruppe, die du unter *Einstellungen → Gruppen für „Personen"* freigibst, setzt der
 Assistent `1104` mit dieser Gruppen-id an den Rollen der **Gerätegruppe**. Die freigegebene Gruppe selbst fasst er nie an:

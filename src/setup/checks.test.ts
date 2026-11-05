@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, devicesReach, excessRights, groupChecks, has, personDataReach, scopeExcess, ALL_DATA, type Check, type DeviceMember, type Grant, type OtherGroup, type RoleRights } from './checks';
+import { AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, devicesPersonReach, devicesReach, excessRights, groupChecks, has, personDataReach, personFieldReach, scopeExcess, ALL_DATA, type Check, type DeviceMember, type Grant, type OtherGroup, type RoleRights } from './checks';
 import { PUBLIC_CALENDAR_PATH } from '../ct/api';
 
 const grant = (authId: number, dataId: number | null = null): Grant => ({ authId, dataId, type: 'grant' });
@@ -742,7 +742,7 @@ describe('the people group on the device check (Plan.md 112, G70, G71)', () => {
             expect(run([grant(AUTH.personDataView, 4)], [email], null).some((c) => c.text.includes('brauchen nur „Stufe 1“'))).toBe(true);
         });
 
-        it('warns of 125 without a release, and of 10101 always', () => {
+        it('warns of 125 without a release, and of 10101 where the levels per group were not read', () => {
             expect(run([grant(AUTH.personDataView, 1)], []).filter((c) => c.level === 'warn' && c.text.includes('Personendaten sehen'))).toHaveLength(1);
             const withRelease = run([grant(AUTH.groupMembersViewIntern), grant(AUTH.personDataView, 2)]);
             expect(withRelease.filter((c) => c.level === 'warn' && c.text.includes('Personendaten sehen'))).toHaveLength(1);
@@ -752,6 +752,74 @@ describe('the people group on the device check (Plan.md 112, G70, G71)', () => {
             const checks = run([]);
             expect(checks.some((c) => c.level === 'warn' && c.text.includes('bleiben leer'))).toBe(true);
             expect(info(checks)).toEqual([]);
+        });
+    });
+
+    describe('Gruppenmitglieder sehen (10101) as a way to person fields (G74)', () => {
+        const email = { key: 'email', name: 'E-Mail', level: 1 };
+        const city = { key: 'city', name: 'Ort', level: 2 };
+        const levels = [1, 2, 3, 4].map((id) => ({ id, name: `S${id}` }));
+        const run = (personLevels: { groupId: number; level: number }[] | null, grants: Grant[] = [], releasedPersonFields = [email, city], extra: object = {}) =>
+            checkDeviceGroup({
+                ...base,
+                members: [{ ...device(grants, [{ id: 7, name: 'Obergruppe', grants: [] }]), personLevels }],
+                peopleGroup: { id: 40, name: 'Infoscreen-People' },
+                releasedPeopleGroups: [{ id: 51, name: 'Mitarbeiter' }],
+                releasedPersonFields,
+                securityLevels: levels,
+                plannedAuthIds: planned,
+                ...extra,
+            });
+        const warns = (checks: Check[]) => checks.filter((c) => c.level === 'warn' && (c.category === 'rights' || c.text.includes('bleiben leer') && !c.text.includes('Mitgliedsfelder')));
+
+        it('counts as reach in every shown group and takes the smallest of them', () => {
+            const ids = levels.map((l) => l.id);
+            expect(personFieldReach([], [{ groupId: 40, level: 2 }, { groupId: 51, level: 3 }], [40, 51], ids)).toEqual({ min: 2, max: 3 });
+            expect(personFieldReach([], [{ groupId: 40, level: 2 }], [40, 51], ids)).toEqual({ min: null, max: 2 });
+            // 125 covers the group that has no 10101; the higher of both counts per group.
+            expect(personFieldReach([grant(AUTH.personDataView, 1)], [{ groupId: 40, level: 3 }], [40, 51], ids)).toEqual({ min: 1, max: 3 });
+            // A level that does not exist counts for nothing, and without the levels per group only 125 counts.
+            expect(personFieldReach([], [{ groupId: 40, level: 99 }], [40], ids)).toEqual({ min: null, max: null });
+            expect(personFieldReach([grant(AUTH.personDataView, 2)], null, [40], ids)).toEqual({ min: 2, max: 2 });
+            expect(devicesPersonReach([{ grants: [], personLevels: [{ groupId: 40, level: 3 }] }, { grants: [grant(AUTH.personDataView, 2)] }], [40], ids)).toBe(2);
+        });
+
+        it('is no warning in the shown groups and opens the fields up to the reach', () => {
+            const ok = run([{ groupId: 40, level: 2 }, { groupId: 51, level: 2 }]);
+            expect(warns(ok)).toEqual([]);
+            expect(ok.some((c) => c.level === 'info' && c.text.includes('Personenfelder freigeschaltet'))).toBe(true);
+        });
+
+        it('judges out of reach by the smallest and blind by none, beyond by the largest', () => {
+            const small = run([{ groupId: 40, level: 2 }, { groupId: 51, level: 1 }]);
+            expect(small.some((c) => c.text.includes('nur bis „S1“ – Ort bleiben leer'))).toBe(true);
+            const blind = run([{ groupId: 40, level: 2 }]);
+            expect(blind.some((c) => c.text.includes('darf keine Personendaten sehen'))).toBe(true);
+            const beyond = run([{ groupId: 40, level: 1 }, { groupId: 51, level: 4 }], [], [email]);
+            expect(beyond.some((c) => c.text.includes('bis „S4“, die freigeschalteten Felder brauchen nur „S1“'))).toBe(true);
+        });
+
+        it('warns as with 125 where no fields are released', () => {
+            const checks = run([{ groupId: 40, level: 1 }], [], []);
+            expect(checks.filter((c) => c.level === 'warn' && c.text.includes('darf Personendaten sehen'))).toHaveLength(1);
+        });
+
+        it('warns of a group no screen shows, with its name', () => {
+            const checks = run([{ groupId: 40, level: 1 }, { groupId: 51, level: 1 }, { groupId: 7, level: 1 }, { groupId: 9, level: 1 }]);
+            const warning = checks.filter((c) => c.text.includes('die Gruppenmitglieder sehen'));
+            expect(warning).toHaveLength(1);
+            expect(warning[0]!.text).toContain('„Obergruppe“, „Gruppe 9“');
+            expect(warning[0]!.level).toBe('warn');
+        });
+
+        it('gives a 10101 on a missing level its own line', () => {
+            const checks = run([{ groupId: 40, level: 1 }, { groupId: 51, level: 99 }]);
+            expect(checks.filter((c) => c.level === 'warn').map((c) => c.text)).toContain('Foyer-TV hat „Gruppenmitglieder sehen“ in „Mitarbeiter“ für eine Sicherheitsstufe, die es nicht gibt (ID 99).');
+        });
+
+        it('warns as before where the levels per group were not read', () => {
+            const checks = run(null, [grant(AUTH.groupMembersViewIntern)]);
+            expect(checks.filter((c) => c.level === 'warn' && c.text.includes('darf Personendaten sehen'))).toHaveLength(1);
         });
     });
 

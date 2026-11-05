@@ -155,10 +155,11 @@ auf einer Freizeit. Er zeigt die Mitglieder **vorhandener Gruppen, die ein Admin
   gilt für **alle Mitglieder dieser Rolle** – was dort an Mitgliedsfeldern bis zu dieser Stufe steht, ist für den
   Bildschirm bestimmt. Die Prüfung der Gerätegruppe kennt beide Rechte und weist darauf hin, wenn das zweite fehlt.
 - **E-Mail-Adressen und andere Kontaktdaten zeigt der Baustein nur, wenn du sie ausdrücklich freischaltest** (siehe
-  [Personenfelder freischalten](#personenfelder-freischalten)). Gib dem Gerät sonst **nie** „Personendaten sehen“ und **nie**
+  [Personenfelder freischalten](#personenfelder-freischalten)). Gib dem Gerät sonst weder „Personendaten sehen“ noch
   „Gruppenmitglieder sehen“: Beide geben schon in der ersten Sicherheitsstufe die E-Mail-Adresse frei, und wer die
-  Adresse eines Fernsehers kennt, liest sie mit. Die Prüfung warnt davor. (Ausnahme: „Personendaten sehen“ für freigeschaltete
-  Personenfelder, siehe unten – das gibt ein Administrator in ChurchTools, der Assistent vergibt es nicht.)
+  Adresse eines Fernsehers kennt, liest sie mit. Die Prüfung warnt davor. (Ausnahme: für freigeschaltete Personenfelder gibt ein
+  Administrator in ChurchTools „Personendaten sehen“ – oder „Gruppenmitglieder sehen“ in der gezeigten Gruppe, siehe unten; der Assistent
+  vergibt beides nicht.) „Gruppenmitglieder sehen“ in einer Gruppe, die kein Bildschirm zeigt, bleibt eine Warnung.
 - **Beiträge sind in „Infoscreen-Devices“ und „Infoscreen-People“ abgeschaltet.** Der Gruppentyp „Merkmal“ gäbe den
   Konten dort sonst das Recht, Beiträge zu schreiben, und niemand liest sie dort. Der Assistent schaltet sie bei der
   Einrichtung ab, auch beim Anlegen der eigenen Gruppe; bei einer älteren Einrichtung holt „Rechte aktualisieren“ das nach (die Vorschau
@@ -173,9 +174,12 @@ auf einer Freizeit. Er zeigt die Mitglieder **vorhandener Gruppen, die ein Admin
 Neben den Mitgliedsfeldern der Gruppe kann der Baustein Angaben aus dem **Personenprofil** zeigen: Telefon geschäftlich,
 Telefon privat, Handy, E-Mail, PLZ, Ort und Geburtstag (nur Tag und Monat, nie das Jahr). Das schaltet ein Administrator frei:
 
-1. In ChurchTools gibt ein Administrator der **Gerätegruppe** „Personendaten sehen“ auf der **niedrigsten Sicherheitsstufe**,
-   in der die gewünschten Felder liegen. Die Stufen sind je Gemeinde frei und bauen aufeinander auf: Wer eine Stufe sieht,
-   sieht die darunter mit. Der Infoscreen vergibt dieses Recht nicht selbst.
+1. In ChurchTools gibt ein Administrator der **Gerätegruppe** auf der **niedrigsten Sicherheitsstufe**, in der die gewünschten
+   Felder liegen, entweder „Personendaten sehen“ (gilt für alle Personen) oder – enger – das gruppeninterne „Gruppenmitglieder
+   sehen“ in der gezeigten Gruppe (gilt nur für deren Mitglieder). Die Stufen sind je Gemeinde frei und bauen aufeinander auf: Wer
+   eine Stufe sieht, sieht die darunter mit. Der Infoscreen vergibt diese Rechte nicht selbst. Der Designer bietet ein Feld nur an, wenn
+   jedes Gerät es in jeder gezeigten Gruppe sieht („Infoscreen-People“ und die freigegebenen Gruppen); das kleinste Gerät und die
+   kleinste Gruppe bestimmen die Reichweite.
 2. **Einstellungen → Gruppen für „Personen"**, Abschnitt **„Personenfelder"**: Der Designer zeigt, bis zu welcher
    Sicherheitsstufe die Geräte sehen, und bietet nur Felder an, die in ChurchTools aktiv sind und in dieser Reichweite liegen.
    Ein Feld in einer höheren Stufe wird mit Hinweis angezeigt, aber nicht angeboten. Die Stufen liest der Designer bei jedem
@@ -185,7 +189,7 @@ Telefon privat, Handy, E-Mail, PLZ, Ort und Geburtstag (nur Tag und Monat, nie d
    Reihenfolge auf der Karte. Nimmst du ein Feld hier zurück, verschwindet es sofort vom Fernseher, auch wenn ein Baustein es noch gewählt hat.
 
 **Datenschutz:** ChurchTools gibt Personendaten einem Gerät nur als **ganze Sicherheitsstufe** frei, nicht je Feld. Die Auswahl
-je Feld macht der Infoscreen, nicht ChurchTools: Technisch kann das Gerät mit „Personendaten sehen“ **alle Felder
+je Feld macht der Infoscreen, nicht ChurchTools: Technisch kann das Gerät mit „Personendaten sehen“ oder „Gruppenmitglieder sehen“ **alle Felder
 bis zu seiner Stufe** lesen – auch E-Mail, Telefon und Geburtsdatum der Personen in den freigegebenen Gruppen und in „Infoscreen-People" –,
 und das kann auch jeder, der die Adresse eines Fernsehers kennt. Der Baustein zeigt nur die angekreuzten Felder.
 Stimme die Freigabe mit der Gemeindeleitung und den betroffenen Personen ab. Beachte außerdem: Eine Gemeinde kann die Stufe

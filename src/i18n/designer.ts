@@ -1953,14 +1953,22 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             peopleNotMemberDetail: 'Mitgliedsfelder sieht ein Gerät nur als Mitglied der Gruppe. Das Gerätekonto dort aufnehmen oder „Rechte aktualisieren" – das nimmt alle Geräte der Gerätegruppe auf.',
             personData: (labels: string) => `${labels} darf Personendaten sehen – damit auch E-Mail-Adressen.`,
             personDataDetail:
-                'Die Rechte „Personendaten sehen" und „Gruppenmitglieder sehen" geben schon in der ersten Sicherheitsstufe die E-Mail-Adresse frei, und wer die Adresse eines Fernsehers kennt, liest sie mit. Für den Baustein „Personen" sind sie nicht nötig – wegnehmen.',
+                'Das Recht „Personendaten sehen“ gibt schon in der ersten Sicherheitsstufe die E-Mail-Adresse frei, und wer die Adresse eines Fernsehers kennt, liest sie mit. Dasselbe gilt für „Gruppenmitglieder sehen“ in einer gezeigten Gruppe, dort für deren Mitglieder. Für den Baustein „Personen“ sind sie nur nötig, wenn Personenfelder freigeschaltet sind – sonst wegnehmen.',
+            personDataGroups: (labels: string, groups: string[]) =>
+                `${labels} darf in ${groups.map((g) => `„${g}“`).join(', ')} die Gruppenmitglieder sehen – damit auch E-Mail-Adressen, obwohl kein Bildschirm diese Gruppe zeigt.`,
+            personDataGroupsDetail:
+                'Das gruppeninterne Recht „Gruppenmitglieder sehen“ gibt schon in der ersten Sicherheitsstufe die E-Mail-Adresse der Mitglieder frei, und wer die Adresse eines Fernsehers kennt, liest sie mit. Nur in einer Gruppe, die ein Bildschirm zeigt, ist es ein Weg zu Personenfeldern. Hier in der Rechteverwaltung wegnehmen oder die Gruppe unter „Gruppen für Personen“ freigeben.',
+            groupMembersMissingLevel: (label: string, group: string, id: number) =>
+                `${label} hat „Gruppenmitglieder sehen“ in „${group}“ für eine Sicherheitsstufe, die es nicht gibt (ID ${id}).`,
+            groupMembersMissingLevelDetail:
+                'ChurchTools nimmt ein solches Recht ohne Fehlermeldung an. Es zeigt auf keine Stufe und öffnet keine Personenfelder – in der Rechteverwaltung an der Rolle entfernen und, wenn Personenfelder gezeigt werden sollen, die passende Stufe geben.',
             // Released person fields (Plan.md 112, Stück 3): 125 is set by the administrator; the check reads how far a device sees (G73).
             personFieldsReleased: (names: string) => `Personenfelder freigeschaltet: ${names}.`,
             personFieldsReleasedDetail:
-                'Das Gerät darf „Personendaten sehen“ bis zu der Stufe, die ihm in ChurchTools gegeben ist. Technisch kann es damit alle Felder bis zu dieser Stufe lesen – auch E-Mail, Telefon und Geburtsdatum –, und mit der Adresse eines Fernsehers kann das auch jeder andere. Der Baustein „Personen“ zeigt nur die freigeschalteten.',
+                'Das Gerät darf Personendaten bis zu der Stufe sehen, die ihm in ChurchTools gegeben ist – mit „Personendaten sehen“ oder, in der gezeigten Gruppe, mit „Gruppenmitglieder sehen“ (dann nur für deren Mitglieder). Technisch kann es damit alle Felder bis zu dieser Stufe lesen – auch E-Mail, Telefon und Geburtsdatum –, und mit der Adresse eines Fernsehers kann das auch jeder andere. Der Baustein „Personen“ zeigt nur die freigeschalteten.',
             personFieldsBlind: (labels: string) => `${labels} darf keine Personendaten sehen – die freigeschalteten Personenfelder bleiben leer.`,
             personFieldsBlindDetail:
-                'Es fehlt „Personendaten sehen“. Der Infoscreen vergibt es nicht selbst: in ChurchTools der Gerätegruppe das Recht auf der Sicherheitsstufe der Felder geben.',
+                'Es fehlt „Personendaten sehen“ oder, für die gezeigten Gruppen, „Gruppenmitglieder sehen“ (dieses gilt nur für deren Mitglieder und in jeder gezeigten Gruppe). Der Infoscreen vergibt beides nicht selbst: in ChurchTools der Gerätegruppe das Recht auf der Sicherheitsstufe der Felder geben.',
             personDataMissingLevel: (labels: string, ids: number[]) =>
                 `${labels} hat „Personendaten sehen“ für eine Sicherheitsstufe, die es nicht gibt (ID ${ids.join(', ')}).`,
             personDataMissingLevelDetail:
