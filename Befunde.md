@@ -862,6 +862,22 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 
 **Nachtrag zu G75 (2026-11-05, Testinstanz; **schreibend mit OK des Nutzers:** in 75 die Felder „ISD-select“ (31), „ISD-radioselect“ (34) und „ISD-multiselect“ (37) mit den Optionen Rot, Grün, Blau angelegt, für Person 1 Werte gesetzt, als Administrator und Geräte-Konto gelesen, danach alle drei gelöscht – Felder und Werte der drei Mitglieder stehen wie vorher):** Auswahlfelder kommen in `GET /groups/{id}/members` **als Options-ID**, nicht als Name: `select` und `radioselect` als Text (`"4"`, `"16"`), `multiselect` als Liste (`["19", "25"]`), ohne Wert `null` bzw. `[]`; beim Geräte-Konto genauso. Das gilt auch, wenn der Wert beim Setzen als Name übergeben wurde (`"Blau"` → `"16"`). Die IDs sind instanzweit fortlaufend, nicht je Feld. Die Namen stehen in `GET /groups/{id}/memberfields` unter `field.options` (`[{ id: "1", name: "Rot" }, …]`, IDs als Text), und diese Liste liest das Gerät auch. **Folge:** Heute zeigt der Baustein für ein Auswahlfeld eine Zahl („4“, „19, 25“). Die Options-IDs über die Definitionen in Namen übersetzen; eine unbekannte ID weglassen statt sie zu zeigen. Am Rande: `PATCH /groups/{id}/members/{personId}` antwortet auf eine unbekannte Options-ID mit `400` und setzt dann gar nichts.
 
+**Zweiter Nachtrag zu G75 (2026-11-05, Testinstanz; **schreibend mit OK des Nutzers:** in 75 je ein Feld `checkbox` (40), `date` (43), `datetime` (46), `number` (49) und `api` (52) angelegt, für Person 1 und 19 Werte gesetzt, als Administrator und Geräte-Konto gelesen, danach alle fünf gelöscht – Felder und Werte der drei Mitglieder stehen wie vorher):** Damit sind alle zehn Feldtypen gemessen. Jeder Wert kommt in `GET /groups/{id}/members` als Text, beim Gerät wie beim Administrator:
+
+| Typ | gesetzt | kommt an | ohne Wert | heute im Baustein |
+| --- | --- | --- | --- | --- |
+| `text` | Text | wie eingegeben | `null` | richtig |
+| `textarea` („Kommentarfeld“) | Markdown | wie eingegeben, mit `\n` | `null` | roh, mit Markdown-Zeichen |
+| `select`, `radioselect` | Option | Options-ID (`"4"`) | `null` | Zahl |
+| `multiselect` | Optionen | Liste von Options-IDs | `[]` | Zahlen mit Komma |
+| `checkbox` | `true` / `false` | `"1"` / `"0"` | **`"0"`** – auch bei Mitgliedern, für die nie etwas gesetzt wurde | „1“ bzw. „0“ bei jedem Mitglied |
+| `date` | `2026-11-24` | `"2026-11-24"` | `null` | ISO-Datum |
+| `datetime` | `2026-11-24T18:30:00Z` | `"2026-11-24T18:30:00Z"` (UTC) | `null` | ISO-Zeitpunkt in UTC |
+| `number` | `12.5` | `"12.5"` (Punkt) | `null` | „12.5“ |
+| `api` | Text | wie eingegeben | `null` | richtig |
+
+**Folge:** `valueText` muss den Typ der Definition kennen (`GET /groups/{id}/memberfields`, `fieldTypeCode`). Nur `text` und `api` stimmen heute. Ein Kontrollkästchen lässt sich am Wert nicht von „nicht gesetzt“ unterscheiden: „0“ heißt aus. Plan.md 114, Stück A.
+
 ## Der Betriebsbenutzer – wie er eingerichtet wird und wie nicht
 
 
