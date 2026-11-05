@@ -840,6 +840,18 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 
 **Folgen:** Die Erklärung meldet für 10126 eine einzelne Zahl, **die höchste gehaltene Stufen-ID – auch eine, die es nicht gibt.** Damit erkennt die Prüfung eine fehlende Stufe auch dann, wenn das Recht aus dem Gruppentyp oder einer Obergruppe kommt: Ist der Wert keine vorhandene Stufe, zeigt das Recht ins Leere. Auf Bernhards Instanz (kleinste ID 500) gäbe der Assistent mit `[1]` also ein Recht, das unter allen Stufen liegt. **Nicht gemessen:** was ein Gerät mit einer fehlenden ID *über* allen Stufen (hier 999) tatsächlich sieht.
 
+**G74 – Beantwortet: „Gruppenmitglieder sehen“ (10101) öffnet Personendaten nach Sicherheitsstufe wie „Personendaten sehen“ (125), aber nur für die Mitglieder der einen Gruppe.** *(2026-11-05, Testinstanz 3.138.2-RC2; **schreibend mit OK des Nutzers:** an Person 19 Testwerte in Telefon, PLZ, Ort (Stufe 1), Straße (Stufe 2) und Beruf (Stufe 3); an der Standardrolle „Teilnehmer“ (1536) von „Infoscreen-People“ (75) 10101 erst auf `[1]`, dann auf `[2]`; danach 10101 mit `DELETE [1,2]` entfernt und die Testwerte geleert – Rolle 1536 trägt wieder nur 10126 auf `[1]`, das Gerät sieht wieder Stufe 0; gelesen als Geräte-Konto (22, Mitglied in 75, 1104 auf 75 und 7 über die Gerätegruppe, ohne Modulrecht „Personen“ sehen); Anlass: Bernhards Rückmeldung in #259 nach `v0.51.0`)* **Academy vorab:** Eine eigene Seite zu dem Recht gibt es nicht. [Funktionen und ihre Anforderungen im Überblick](https://churchtools.academy/de/help/rechteverwaltung/berechtigungen/28-funktionen-und-ihre-anforderungen-im-uberblick/) nennt „Gruppenmitglieder sehen (+see persons)“ nur zusammen mit dem globalen „Gruppe inkl. ihrer Gruppenmitglieder sehen“, eine Stufenwahl beschreibt sie nicht. [Unterschied zwischen globalen und gruppeninternen Berechtigungen](https://churchtools.academy/de/help/rechteverwaltung/berechtigungen/unterschied-zwischen-globalen-und-gruppeninternen-berechtigungen/): gruppeninterne Rechte haben „nur innerhalb der betreffenden Gruppe Gültigkeit“. Dass 10101 eine Stufe trägt, zeigt erst die Messung (schon G61: `+see persons` Stufe 2 aus einem Gruppentyp).
+
+| 10101 an Rolle 1536 | `/persons/19` (Mitglied in 75) | `/persons/1` (Mitglied in 75) | `/persons/25` (nur in 7) | `/persons/16` | Rechte-Erklärung für 75 |
+| --- | --- | --- | --- | --- | --- |
+| ohne | `securityLevelForPerson 0`, nur Name | 0 | – | `403` | nur `+see group member fields` 1 |
+| `[1]` | 1: E-Mail, Telefon, PLZ, Ort | 1: E-Mail | – | `403` | dazu `+see persons` 1 |
+| `[2]` | 2: dazu Straße; Beruf (Stufe 3) nicht | 2: E-Mail | 0, keine E-Mail | `403` | `+see persons` 2 |
+
+`GET /persons?ids[]=1&ids[]=19` – der Weg des Players – liefert dieselben Felder. Die Mitgliedsfelder (`/groups/75/members`) bleiben unberührt; sie hängen an 10126.
+
+**Folgen:** Bernhard hat recht. 10101 ist für den Baustein „Personen“ ein gleichwertiger Weg zu Personenfeldern und schränkt enger ein als 125: Es wirkt nur auf Mitglieder der Gruppe, in der das Gerät die Rolle hat (oder die es über eine Obergruppe erbt, G72), nicht auf jede Person, die es über 1104 sieht. Ein Modulrecht „Personen“ sehen braucht es nicht. Die Rechte-Erklärung `GET /permissions/origins/internal/persons/{id}` meldet je Zielgruppe die höchste gehaltene Stufen-ID (`effectiveValue`), wie bei 10126 (G73) – der Infoscreen kann die Reichweite je Gruppe also lesen. Die pauschale Warnung „wegnehmen“ zu 10101 (`src/setup/checks.ts`) ist damit falsch, sobald das Recht in einer gezeigten Gruppe liegt; in einer Gruppe, die kein Bildschirm zeigt, bleibt sie richtig (Nebenbefund G70: „Predigt“). Plan.md, Punkt 113.
+
 ## Der Betriebsbenutzer – wie er eingerichtet wird und wie nicht
 
 
