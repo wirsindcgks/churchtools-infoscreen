@@ -11,8 +11,9 @@ einrichtet, steht in der [Einrichtungsanleitung](Einrichtung.md).
 | **Gestalter** | Mitglieder von **„Infoscreen-Designer"** | Folien, Präsentationen, Zeitpläne und Bilder gestalten – nicht die Bildschirme selbst und nicht die Einstellungen |
 | **Gerät** | Konten der Fernseher in **„Infoscreen-Devices"** | nur lesen; schreiben nur sein Lebenszeichen |
 
-Dazu kommt die Gruppe **„Infoscreen-People"**: Wer dort Mitglied ist, darf im Baustein „Personen" auf den Bildschirmen erscheinen.
-Sie ist keine Rolle mit eigenen Rechten, sondern die Freigabe von Personen ([unten](#personen--für-den-baustein-personen)).
+Auf Wunsch kommt die Gruppe **„Infoscreen-People"** dazu: Wer dort Mitglied ist, darf im Baustein „Personen" auf den Bildschirmen erscheinen.
+Sie ist keine Rolle mit eigenen Rechten, sondern die Freigabe von Personen – wie jede andere freigegebene Gruppe, nur dass die Geräte
+dort automatisch Mitglied werden ([unten](#personen--für-den-baustein-personen)). Der Assistent legt sie nicht von selbst an.
 
 ```mermaid
 flowchart LR
@@ -24,7 +25,7 @@ flowchart LR
     GV --> M2["Modul: lesen,<br>Lebenszeichen schreiben"]
     GV --> W2["Wiki „Infoscreen“:<br>Videos laden"]
     GV --> R2["Räume und Dienste,<br>die Bildschirme zeigen"]
-    AS --> GP["„Infoscreen-People“<br>Personen auf Bildschirmen"]
+    AS -.->|"auf Wunsch"| GP["„Infoscreen-People“<br>Personen auf Bildschirmen"]
     GV --> P2["Gruppe und Mitglieder<br>sehen (nur diese Gruppe)"]
     OB["Öffentlicher Benutzer"] -.->|"öffentliche Kalender"| GV
 ```
@@ -100,7 +101,7 @@ Das Gerät sieht damit nur zugesagte Dienste aus Dienstgruppen, die „Ohne Bere
 
 ### Personen – für den Baustein „Personen"
 
-Das Gerät liest die Mitglieder der Gruppe „Infoscreen-People" mit zwei Rechten und **nur** diese Gruppe. Das erste vergibt der Assistent, das zweite der Administrator in ChurchTools:
+Der Baustein zeigt Mitglieder **freigegebener vorhandener Gruppen** (unten) oder die Mitglieder einer eigenen Gruppe „Infoscreen-People", die sich **auf Wunsch** anlegen lässt (Einstellungen → Gruppen für „Personen"). Für diese eigene Gruppe liest das Gerät mit zwei Rechten und **nur** diese Gruppe. Das erste vergibt der Assistent beim Anlegen, das zweite der Administrator in ChurchTools; die Geräte werden dort automatisch Mitglied, daher gilt das zweite für alle Geräte mit einem Recht an der Standardrolle:
 
 | Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
 | --- | --- | --- | --- | --- |

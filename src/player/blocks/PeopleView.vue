@@ -16,7 +16,7 @@ import { tp } from '../../i18n/player';
 const props = defineProps<{ block: Extract<Block, { type: 'people' }>; slideSeconds?: number }>();
 const context = useStageContext();
 
-/** The block's group: `undefined` while the first read is on its way, `null` where "Infoscreen-People" is not set up. */
+/** The block's group: `undefined` while the first read is on its way, `null` where the block has no group (none chosen, or "Infoscreen-People" does not exist). */
 const group = computed(() => groupOfBlock(context.people, props.block.sourceGroupId));
 const items = computed(() => selectPeople(group.value ?? undefined, props.block.roleIds, props.block.sort));
 

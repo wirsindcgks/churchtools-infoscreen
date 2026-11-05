@@ -233,6 +233,13 @@ function abilityHint(button: SettingsButton): string | null {
 /** The wiki category the assistant created itself – the only one it may ever delete (Plan.md, F). */
 const createdWikiCategoryId = ref<number | null>(null);
 const assistant = reactive({ allowed: false, running: false, log: [] as string[], error: null as string | null });
+/** What the last „Eigene Gruppe" run reported – kept apart, so the page „Gruppen für Personen" does not repeat an assistant run of the other page. */
+const peopleOwn = reactive({ ran: false, log: [] as string[], error: null as string | null });
+function keepPeopleOwn(): void {
+    peopleOwn.ran = true;
+    peopleOwn.log = [...assistant.log];
+    peopleOwn.error = assistant.error;
+}
 
 /**
  * Members of a group, as `check()` already loaded it while checking designers
@@ -299,14 +306,14 @@ function computePlan(): void {
     }
 }
 
-/** What the plan is made from; `people` overrides the group's state – the retrofit plans it as new next to existing groups. */
+/** What the plan is made from; `people` overrides the group's state – creating the own group on request plans it as new next to existing groups. */
 function planInput(people?: 'new'): PlanInput {
     return {
         catalog: catalog!,
         moduleKey: EXTENSION_KEY,
         categories: categories as Record<CategoryKey, number> & { status?: number; drafts?: number; changelog?: number },
-        // Before the first run the group is about to be created; later it is the one the settings name – or none (installations from before).
-        peopleGroupId: people ?? (createdGroupIds.value.length === 0 ? 'new' : (peopleGroupId.value ?? undefined)),
+        // „Infoscreen-People" exists only on request: the one the settings name, or none.
+        peopleGroupId: people ?? (peopleGroupId.value ?? undefined),
         wikiCategoryId,
         roomIds: rooms.map((r) => r.id),
         usedRoomIds,
@@ -735,8 +742,8 @@ async function runAssistant(): Promise<void> {
 }
 
 /**
- * „Gruppe nachrüsten" (Plan.md 112): an installation from before has the other two groups but not „Infoscreen-People".
- * Asks first, with what happens; then creates only that group, gives its default role the member-field right, puts the
+ * „Eigene Gruppe anlegen" (Plan.md 112, #259): „Infoscreen-People" is optional and made only on request, next to the two groups
+ * of the assistant. Asks first, with what happens; then creates only that group, gives its default role the member-field right, puts the
  * devices in and gives the roles of the device group the right on the new group – nothing else is touched.
  */
 async function addPeopleGroup(): Promise<void> {
@@ -748,6 +755,7 @@ async function addPeopleGroup(): Promise<void> {
         spec = planProvisioning(planInput('new'));
     } catch (e) {
         assistant.error = explain(e);
+        keepPeopleOwn();
         return;
     }
     const seen = spec.find((s) => s.key === 'device')!.grants.filter((g) => g.dataGroup === 'people');
@@ -769,6 +777,7 @@ async function addPeopleGroup(): Promise<void> {
         assistant.log.push(t.setup.assistantRun.aborted(assistant.error));
     } finally {
         assistant.running = false;
+        keepPeopleOwn();
     }
 }
 
@@ -804,6 +813,7 @@ async function finishPeopleSetup(): Promise<void> {
         spec = planProvisioning(planInput('new'));
     } catch (e) {
         assistant.error = explain(e);
+        keepPeopleOwn();
         return;
     }
     const name = groups.value.find((g) => g.id === groupId)?.name ?? GROUP_NAMES.people;
@@ -818,6 +828,7 @@ async function finishPeopleSetup(): Promise<void> {
         assistant.error = explain(e);
     } finally {
         assistant.running = false;
+        keepPeopleOwn();
     }
 }
 
@@ -1495,30 +1506,6 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         <template v-if="createdGroupIds.length">
                             <p>{{ t.setup.groups.done(groupName('designer'), groupName('device')) }}</p>
                             <p v-if="peopleGroupId !== null" data-testid="people-group-hint">{{ t.setup.groups.donePeople(groups.find((g) => g.id === peopleGroupId)?.name ?? GROUP_NAMES.people) }}</p>
-                            <template v-if="peopleGroupId === null && orphanPeopleId !== null && !demo">
-                                <p class="muted" data-testid="people-orphan">{{ t.setup.addPeople.finishHint }}</p>
-                                <div class="actions">
-                                    <button class="d-btn" type="button" :disabled="assistant.running || settingsWritable === false" data-testid="finish-people-group" @click="finishPeopleSetup">
-                                        {{ t.setup.addPeople.finishButton }}
-                                    </button>
-                                </div>
-                                <p v-if="settingsWritable === false" class="muted small" data-testid="people-no-settings-right">{{ t.setup.addPeople.noSettingsRight }}</p>
-                            </template>
-                            <template v-else-if="peopleGroupId === null && !demo">
-                                <p class="muted" data-testid="people-missing">{{ t.setup.addPeople.missing }}</p>
-                                <div class="actions">
-                                    <button
-                                        class="d-btn"
-                                        type="button"
-                                        :disabled="!assistant.allowed || settingsWritable === false || !catalog || assistant.running || selected.device === null || !createdGroupIds.includes(selected.device) || foreignGroups.length > 0 || (createdTypeId ?? chosenTypeId) === null || !abilities.create.allowed"
-                                        data-testid="add-people-group"
-                                        @click="addPeopleGroup"
-                                    >
-                                        {{ t.setup.addPeople.button }}
-                                    </button>
-                                </div>
-                                <p v-if="settingsWritable === false" class="muted small" data-testid="people-no-settings-right">{{ t.setup.addPeople.noSettingsRight }}</p>
-                            </template>
                             <p class="muted small">{{ t.setup.groups.doneHint }}</p>
                             <div class="actions">
                                 <button
@@ -1748,6 +1735,39 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                     </button>
                                 </li>
                             </ul>
+                            <template v-if="peopleGroupId === null && !demo">
+                                <h3>{{ t.setup.addPeople.heading }}</h3>
+                                <p v-if="!createdGroupIds.length" class="muted" data-testid="people-own-needs-assistant">{{ t.setup.addPeople.needsAssistant }}</p>
+                                <template v-else-if="orphanPeopleId !== null">
+                                    <p class="muted" data-testid="people-orphan">{{ t.setup.addPeople.finishHint }}</p>
+                                    <div class="actions">
+                                        <button class="d-btn" type="button" :disabled="assistant.running || settingsWritable === false" data-testid="finish-people-group" @click="finishPeopleSetup">
+                                            {{ t.setup.addPeople.finishButton }}
+                                        </button>
+                                    </div>
+                                    <p v-if="settingsWritable === false" class="muted small" data-testid="people-no-settings-right">{{ t.setup.addPeople.noSettingsRight }}</p>
+                                </template>
+                                <template v-else>
+                                    <p class="muted" data-testid="people-missing">{{ t.setup.addPeople.optional }}</p>
+                                    <div class="actions">
+                                        <button
+                                            class="d-btn"
+                                            type="button"
+                                            :disabled="!assistant.allowed || settingsWritable === false || !catalog || assistant.running || selected.device === null || !createdGroupIds.includes(selected.device) || foreignGroups.length > 0 || (createdTypeId ?? chosenTypeId) === null || !abilities.create.allowed"
+                                            data-testid="add-people-group"
+                                            @click="addPeopleGroup"
+                                        >
+                                            {{ t.setup.addPeople.button }}
+                                        </button>
+                                    </div>
+                                    <p v-if="settingsWritable === false" class="muted small" data-testid="people-no-settings-right">{{ t.setup.addPeople.noSettingsRight }}</p>
+                                </template>
+                            </template>
+                            <ul v-if="peopleOwn.log.length" class="log" data-testid="people-own-log">
+                                <li v-for="(line, i) in peopleOwn.log" :key="i">{{ line }}</li>
+                            </ul>
+                            <p v-if="peopleOwn.error" class="error" role="alert" data-testid="people-own-error">{{ peopleOwn.error }}</p>
+                            <p v-if="peopleOwn.ran && !peopleOwn.error && peopleGroupId !== null" data-testid="people-own-done">{{ t.setup.groups.donePeople(groups.find((g) => g.id === peopleGroupId)?.name ?? GROUP_NAMES.people) }}</p>
                         </template>
                     </section>
 

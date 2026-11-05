@@ -99,8 +99,9 @@ Ein Assistent im Designer legt die Gruppen für Gestalter, Geräte und den Baust
    ([Academy: Gruppentypen](https://churchtools.academy/de/help/app/rund-ums-gruppenmodul/37-was-sind-gruppentypen-und-wofur-kann-ich-sie-benutzen/)).
 4. **„Gruppen und Rechte anlegen"** klicken.
 
-Es entstehen drei Gruppen: **„Infoscreen-Designer"** für die Gestalter, **„Infoscreen-Devices"** für die
-Fernseher und **„Infoscreen-People"** für den Baustein „Personen“ ([unten](#personen-auf-den-bildschirmen)). Dazu kommt der Wiki-Bereich **„Infoscreen"**, in dem die Bilder der Mediathek liegen. Was genau welche
+Es entstehen zwei Gruppen: **„Infoscreen-Designer"** für die Gestalter und **„Infoscreen-Devices"** für die
+Fernseher. Eine dritte, **„Infoscreen-People"** für den Baustein „Personen“, legst du nur auf Wunsch an
+([unten](#personen-auf-den-bildschirmen)). Dazu kommt der Wiki-Bereich **„Infoscreen"**, in dem die Bilder der Mediathek liegen. Was genau welche
 Gruppe darf, steht unter „Was genau passiert" auf der Seite und in der [Rechte-Übersicht](Rechte.md).
 
 **Bildschirme anlegen:** auf der Startseite des Designers **„+ Bildschirm erstellen"**, je Fernseher einer. Name und
@@ -128,15 +129,23 @@ Overscan änderst du später über **„…"** an der Kachel.
 ### Personen auf den Bildschirmen
 
 Der Baustein **„Personen“** zeigt Karten mit Name, Bild und ausgewählten Angaben – Ansprechpartner im Foyer, Zimmernummern
-auf einer Freizeit. Er liest **nur** die Gruppe **„Infoscreen-People"**:
+auf einer Freizeit. Er zeigt die Mitglieder **vorhandener Gruppen, die ein Administrator freigegeben hat**
+([siehe unten](#eine-vorhandene-gruppe-zeigen)) – oder einer **eigenen Gruppe „Infoscreen-People"**, die sich auf Wunsch anlegen lässt:
 
+- **Eigene Gruppe auf Wunsch:** Unter **Einstellungen → Gruppen für „Personen"** gibt es **„Eigene Gruppe „Infoscreen-People" anlegen
+  lassen"**. Das ist freiwillig; der Vorteil gegenüber einer freigegebenen Gruppe: Die Geräte werden dort **automatisch Mitglied**,
+  sodass ein „Gruppenmitgliedsfelder sehen", das der Administrator der Standardrolle gibt, für alle Geräte gilt (kein Aufnehmen von
+  Hand). Der Knopf setzt voraus, dass der Assistent die Gruppen des Infoscreens eingerichtet hat. Eine Vorschau sagt vorher, was geschieht: Er legt nur diese
+  Gruppe an, gibt der Gerätegruppe das Recht auf sie, nimmt die Geräte auf und schaltet die Beiträge ab; „Gruppenmitgliedsfelder sehen“
+  setzt der Administrator. Bestehende Rollen, Rechte und fremde Gruppen bleiben unberührt. Wer schon eine Gruppe „Infoscreen-People"
+  hat (ältere Einrichtung), behält sie unverändert.
 - **Wer in der Gruppe ist, darf erscheinen.** Die Mitgliedschaft ist die Freigabe: Nimm nur Personen auf, die damit
   einverstanden sind. Ihre **Rolle** in der Gruppe kann der Baustein auswählen (etwa nur „Leiter").
 - **Angaben** kommen aus **Mitgliedsfeldern der Gruppe**. Lege sie in ChurchTools an der Gruppe an (Gruppe → Einstellungen →
   Mitgliedsfelder, etwa „Funktion“, „Büro“) und trage die Werte je Mitglied ein. Der Fernseher sieht Felder **bis Sicherheitsstufe 1**; Felder mit
   höherer Stufe bleiben für ihn verborgen. Die Stufe ist dein Regler.
-- **Die Geräte müssen Mitglied der Gruppe sein**, sonst bleiben die Mitgliedsfelder leer. Der Assistent nimmt die
-  Konten der Gerätegruppe auf, die schon da sind; ein **neues Gerätekonto** nimmst du ebenfalls in „Infoscreen-People"
+- **In der eigenen Gruppe sind die Geräte Mitglied**, sonst bleiben die Mitgliedsfelder leer. Beim Anlegen werden die
+  Konten der Gerätegruppe aufgenommen, die schon da sind; ein **neues Gerätekonto** nimmst du ebenfalls in „Infoscreen-People"
   auf – oder klickst **„Rechte aktualisieren"**, das holt alle Geräte nach. Die Geräte erscheinen nicht als Karten: Der Assistent
   merkt sich ihre Konten in den Einstellungen und der Fernseher lässt sie weg. Ein **neues Gerätekonto** gehört in
   „Infoscreen-Devices" **und** in „Infoscreen-People"; „Rechte aktualisieren" erledigt beides nach und aktualisiert die Liste.
@@ -152,7 +161,7 @@ auf einer Freizeit. Er liest **nur** die Gruppe **„Infoscreen-People"**:
   Personenfelder, siehe unten – das gibt ein Administrator in ChurchTools, der Assistent vergibt es nicht.)
 - **Beiträge sind in „Infoscreen-Devices“ und „Infoscreen-People“ abgeschaltet.** Der Gruppentyp „Merkmal“ gäbe den
   Konten dort sonst das Recht, Beiträge zu schreiben, und niemand liest sie dort. Der Assistent schaltet sie bei der
-  Einrichtung ab, auch beim Nachrüsten; bei einer älteren Einrichtung holt „Rechte aktualisieren“ das nach (die Vorschau
+  Einrichtung ab, auch beim Anlegen der eigenen Gruppe; bei einer älteren Einrichtung holt „Rechte aktualisieren“ das nach (die Vorschau
   nennt es). Nur Gruppen, die der Assistent angelegt hat, fasst er an – eigene Gruppen nie. Die Lebenszeichen und der
   Baustein „Beiträge“ brauchen diese Gruppen nicht.
 - **Automatische Gruppen?** Eine Gruppe mit der Aktion „Aus Gruppe entfernen“ wirft von Hand aufgenommene Mitglieder beim
@@ -186,7 +195,7 @@ freigeschaltet“ und warnt, wenn das Gerät Personendaten über die Stufe der f
 
 #### Eine vorhandene Gruppe zeigen
 
-Statt „Infoscreen-People" kann ein Baustein auch eine **vorhandene Gruppe** zeigen, etwa die Mitarbeitergruppe, die es
+Ein Baustein kann eine **vorhandene Gruppe** zeigen, etwa die Mitarbeitergruppe, die es
 längst gibt. Dafür gibst du sie frei:
 
 1. **Einstellungen → Gruppen für „Personen"**: Gruppe wählen (das Feld lässt sich durchsuchen), **Speichern**.
@@ -218,10 +227,6 @@ sehen" (auf der Sicherheitsstufe der Felder). Dafür gibt es zwei Wege:
   von selbst Mitglied.
 
 Ohne das bleiben die Felder leer; die Prüfung der Gerätegruppe nennt das als Hinweis, nicht als Warnung.
-- **Bestehende Installation:** Wer schon eingerichtet hat, findet unter **Einstellungen → Gruppen und Rechte** den Knopf
-  **„Gruppe „Infoscreen-People“ nachrüsten"**. Eine Vorschau sagt vorher, was geschieht: Er legt nur diese Gruppe an,
-  gibt der Gerätegruppe das Recht auf sie und nimmt die Geräte auf; „Gruppenmitgliedsfelder sehen“ setzt der Administrator. Bestehende Rollen, Rechte und fremde Gruppen
-  bleiben unberührt.
 
 ## 5. Gestalter aufnehmen
 
@@ -345,15 +350,15 @@ Mehr als lesen konnte das Gerät nie.
   sein darf.
 - **Gruppen und Beiträge** zeigt der Designer nur, soweit ChurchTools sie ohnehin öffentlich zeigt. Namen von
   Leitung und Autoren erscheinen nur, wenn ein Gestalter sie einschaltet.
-- **Personen** zeigt der Baustein „Personen“ nur aus der Gruppe „Infoscreen-People“ und aus Gruppen, die ein Administrator
-  freigegeben hat: Name, Bild, Rolle und die gewählten
+- **Personen** zeigt der Baustein „Personen“ nur aus Gruppen, die ein Administrator freigegeben hat, und aus einer
+  auf Wunsch angelegten Gruppe „Infoscreen-People“: Name, Bild, Rolle und die gewählten
   Mitgliedsfelder – wer dort Mitglied ist, erscheint (und wer mit dem Baustein arbeitet, braucht sein Einverständnis).
   **Wer die Adresse eines Fernsehers kennt, kann dieselben Angaben der Gruppe auch selbst abrufen**, nicht nur ansehen:
   Das Konto des Fernsehers darf sie lesen. Trage in Mitgliedsfelder nichts ein, was nicht in den Flur gehört, und stelle
   sie auf Sicherheitsstufe 1 nur, wenn sie öffentlich sein dürfen. Das Gerät erhält **nie** E-Mail-Adresse, Telefon oder
   Anschrift der Personen – es sei denn, ein Administrator schaltet unter „Personenfelder“ ausdrücklich Felder der
   Sicherheitsstufe frei. Dann kann das Gerät, und mit der Adresse eines Fernsehers jeder, **alle Felder bis zu seiner Stufe**
-  der Personen in den freigegebenen Gruppen und in „Infoscreen-People“ lesen; der Baustein zeigt nur die freigeschalteten.
+  der Personen in den freigegebenen Gruppen und in „Infoscreen-People“ (falls angelegt) lesen; der Baustein zeigt nur die freigeschalteten.
 - **Eine eingebettete Webseite ist ein Aufruf bei Dritten:** Ihr Betreiber erfährt die Internetadresse des Geräts.
   Bettet nur ein, was ihr auch auf eurer Website einbetten würdet.
 - **Schriften kommen von eurer eigenen Instanz**, nicht von einem fremden Dienst.

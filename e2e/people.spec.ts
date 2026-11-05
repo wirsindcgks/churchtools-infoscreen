@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { addBlock, choose, chosen, openSection } from './helpers';
 
-// The people block (Plan.md 112, Stück 1): in the demo there is no group "Infoscreen-People", so the block says so calmly
+// The people block (Plan.md 112, Stück 1): in the demo there is no group at all, so the block says so calmly
 // and the inspector offers its choices; the cards themselves are covered by the unit tests (`render.test.ts`).
 
 test.use({ viewport: { width: 1440, height: 900 } });
@@ -14,8 +14,7 @@ test('the people block says the group is not set up, and its inspector keeps its
 
     await addBlock(page, 'people');
     const block = page.locator('.editor-stage .block--people');
-    await expect(block.getByTestId('people-empty')).toContainText('noch nicht eingerichtet');
-    await expect(page.getByTestId('people-no-group')).toBeVisible();
+    await expect(block.getByTestId('people-empty')).toContainText('Noch keine Gruppe gewählt');
 
     // Group first, then roles, then "Darstellung", then "Schrift" (AGENTS.md, Ordnung im Inspektor); nothing is open at the start.
     const ids = await page.locator('[data-testid^="section-"]:not([data-testid$="-toggle"])').evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
@@ -27,7 +26,8 @@ test('the people block says the group is not set up, and its inspector keeps its
     // No person field is released in the demo: the inspector offers none (Stück 3).
     await expect(page.getByTestId('people-person-fields-add')).toHaveCount(0);
     await openSection(page, 'people-group');
-    await expect(page.getByTestId('people-group-hint')).toBeVisible();
+    // Neither "Infoscreen-People" nor a released group in the demo: the menu says so instead of offering a group that is not there.
+    await expect(page.getByTestId('people-group-none')).toBeVisible();
     await openSection(page, 'people-roles');
     await expect(page.getByTestId('people-roles-all')).toBeDisabled();
 

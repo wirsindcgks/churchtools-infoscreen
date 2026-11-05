@@ -90,9 +90,10 @@ auf Wunsch der Leitung und einem **QR-Code zum Anmelden**. Gezeigt wird nur, was
 
 ### Personen
 
-Ansprechpartner als **Karten** mit Name, Bild und Angaben wie Funktion oder Büro – aus den Mitgliedern der Gruppe
-**„Infoscreen-People"**, die der Einrichtungsassistent anlegt. Wer dort Mitglied ist, darf erscheinen; die Angaben
-sind Mitgliedsfelder der Gruppe. Statt dieser Gruppe kann ein Administrator auch **vorhandene Gruppen freigeben**; der Baustein wählt dann unter „Gruppe"
+Ansprechpartner als **Karten** mit Name, Bild und Angaben wie Funktion oder Büro – aus den Mitgliedern einer Gruppe.
+Ein Administrator **gibt vorhandene Gruppen frei**; auf Wunsch lässt sich auch eine eigene Gruppe **„Infoscreen-People"**
+anlegen, in der die Geräte automatisch Mitglied werden. Wer in der Gruppe ist, darf erscheinen; die Angaben
+sind Mitgliedsfelder der Gruppe. Der Baustein wählt unter „Gruppe"
 die gewünschte (Name, Bild und Rolle; Angaben nur mit dem Recht „Gruppenmitgliedsfelder sehen“, das ein Administrator dem Gerät gibt). Man wählt Rollen, Angaben samt
 Reihenfolge, Sortierung und ob das Bild erscheint; das Bild ist rund wie ein Profilbild. Die **Ansicht** wechselt zwischen Karten
 (im Raster, Spalten und Reihen einstellbar) und einer **Liste** mit einer Zeile je Person – kleines rundes Bild, Name, Rolle und

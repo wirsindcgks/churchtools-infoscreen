@@ -70,7 +70,7 @@ export const tp = {
     },
 
     people: {
-        noGroup: 'Gruppe „Infoscreen-People“ noch nicht eingerichtet',
+        noGroup: 'Noch keine Gruppe gewählt',
         denied: 'Personen nicht verfügbar – dem Gerät fehlt das Recht auf die Gruppe',
         unreleased: 'Gruppe ist nicht für Bildschirme freigegeben',
         groupFallback: (id: number) => `Gruppe ${id}`,

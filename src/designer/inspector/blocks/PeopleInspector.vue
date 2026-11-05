@@ -39,7 +39,7 @@ const { setBlock } = useBlockEdit(() => props.block);
 /** The preview's stage context: roles and fields come from the live members of the group. */
 const stage = useStageContext();
 
-/** The block's group: `undefined` until the preview has it, `null` where "Infoscreen-People" is not set up. */
+/** The block's group: `undefined` until the preview has it, `null` where there is no such group ("Infoscreen-People" only exists on request). */
 const group = computed(() => groupOfBlock(stage.people, props.block.sourceGroupId));
 const roles = computed(() => group.value?.roles ?? []);
 const fields = computed(() => group.value?.fields ?? []);
@@ -51,7 +51,9 @@ const loaded = computed(() => !!group.value && !group.value.denied);
 const STANDARD = 'standard';
 const standardChoice = computed(() => stage.peopleChoices?.find((c) => c.standard));
 const groupOptions = computed<SelectOption[]>(() => {
-    const options: SelectOption[] = [{ value: STANDARD, label: standardChoice.value?.name ?? t.inspector.peopleStandardGroup }];
+    // „Infoscreen-People" is offered only where it exists (or until the choices are known).
+    const options: SelectOption[] = [];
+    if (standardChoice.value || stage.peopleChoices === undefined) options.push({ value: STANDARD, label: standardChoice.value?.name ?? t.inspector.peopleStandardGroup });
     for (const c of stage.peopleChoices ?? []) if (!c.standard) options.push({ value: c.id, label: c.name });
     const own = props.block.sourceGroupId;
     if (own !== undefined && own !== standardChoice.value?.id && !options.some((o) => o.value === own)) {
@@ -59,13 +61,17 @@ const groupOptions = computed<SelectOption[]>(() => {
     }
     return options;
 });
-const groupValue = computed(() => (props.block.sourceGroupId === undefined || props.block.sourceGroupId === standardChoice.value?.id ? STANDARD : props.block.sourceGroupId));
+const groupValue = computed(() => {
+    const own = props.block.sourceGroupId;
+    if (own === undefined) return standardChoice.value || stage.peopleChoices === undefined ? STANDARD : undefined;
+    return own === standardChoice.value?.id ? STANDARD : own;
+});
 function setGroup(value: string | number): void {
     const next = value === STANDARD ? undefined : Number(value);
     if (next === (groupValue.value === STANDARD ? undefined : props.block.sourceGroupId)) return;
     setBlock({ sourceGroupId: next, roleIds: [], fieldKeys: [] });
 }
-const groupSummary = computed(() => groupOptions.value.find((o) => o.value === groupValue.value)?.label ?? t.inspector.peopleStandardGroup);
+const groupSummary = computed(() => groupOptions.value.find((o) => o.value === groupValue.value)?.label ?? t.inspector.peopleChooseGroup);
 
 const sorts = [
     { value: 'last-name', label: t.inspector.peopleSortLastName },
@@ -162,12 +168,14 @@ const appearanceHelp = computed(() => ({
             :model-value="groupValue"
             :options="groupOptions"
             :label="t.inspector.peopleGroup"
+            :placeholder="t.inspector.peopleChooseGroup"
             testid="people-group"
             @update:model-value="setGroup"
         />
-        <p v-if="mode === 'full' && groupOptions.length === 1" class="hint" data-testid="people-group-hint">{{ t.inspector.peopleGroupHint }}</p>
+        <p v-if="mode === 'full' && groupOptions.length === 0" class="hint" data-testid="people-group-none">{{ t.inspector.peopleNoGroupsAtAll }}</p>
+        <p v-else-if="mode === 'full' && groupOptions.length === 1" class="hint" data-testid="people-group-hint">{{ t.inspector.peopleGroupHint }}</p>
     </InspectorSection>
-    <p v-if="mode === 'full' && group === null" class="hint" data-testid="people-no-group">{{ t.inspector.peopleNoGroup }}</p>
+    <p v-if="mode === 'full' && group === null && groupOptions.length > 0" class="hint" data-testid="people-no-group">{{ t.inspector.peopleNoGroup }}</p>
     <p v-else-if="mode === 'full' && group?.unreleased" class="hint" data-testid="people-unreleased">{{ t.inspector.peopleUnreleased }}</p>
     <p v-else-if="mode === 'full' && group?.denied" class="hint" data-testid="people-denied">{{ t.inspector.peopleDenied }}</p>
 

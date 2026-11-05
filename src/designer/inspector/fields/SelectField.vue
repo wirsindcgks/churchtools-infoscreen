@@ -8,7 +8,7 @@ import SelectMenu, { type SelectOption } from '../../SelectMenu.vue';
 import { chipFace, type ChipFace } from './chip-face';
 import FieldRow from './FieldRow.vue';
 
-const props = defineProps<{ modelValue: string | number | undefined; options: readonly SelectOption[]; label: string; testid?: string; inline?: boolean; disabled?: boolean; quick?: boolean; face?: ChipFace }>();
+const props = defineProps<{ modelValue: string | number | undefined; options: readonly SelectOption[]; label: string; testid?: string; inline?: boolean; disabled?: boolean; quick?: boolean; face?: ChipFace; placeholder?: string }>();
 const emit = defineEmits<{ 'update:modelValue': [string | number] }>();
 const labelId = useId();
 /** What the chip of the short menu shows: the chosen option's text. */
@@ -17,6 +17,6 @@ const chosenFace = computed(() => chipFace(props.face, props.modelValue, props.o
 
 <template>
     <FieldRow :label="label" :label-id="labelId" :stacked="!inline" :quick="quick" :face="chosenFace">
-        <SelectMenu :model-value="modelValue" :options="options" :labelledby="labelId" :disabled="disabled" :testid="testid" @update:model-value="emit('update:modelValue', $event)" />
+        <SelectMenu :model-value="modelValue" :options="options" :labelledby="labelId" :disabled="disabled" :placeholder="placeholder" :testid="testid" @update:model-value="emit('update:modelValue', $event)" />
     </FieldRow>
 </template>

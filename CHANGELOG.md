@@ -4,6 +4,28 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [Unveröffentlicht]
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für seine Rückmeldung zum Baustein „Personen“
+([#259](https://github.com/wirsindcgks/churchtools-infoscreen/issues/259)).
+
+### Geändert
+
+- **Die Sicherheitsstufe für Personendaten setzt der Administrator.** Der Infoscreen vergibt „Personendaten sehen“ nicht
+  mehr selbst und setzt keine feste Stufe (ID 1) mehr voraus ([#264](https://github.com/wirsindcgks/churchtools-infoscreen/pull/264)).
+  Der Designer liest die Stufen bei jedem Aufruf frisch und bietet zur Freigabe die Personenfelder an, die die Geräte sehen
+  (die kleinste Reichweite aller Geräte). Die Prüfung warnt bei einer Stufe über Bedarf, bei Feldern außer Reichweite und bei
+  einem Recht auf eine Stufe, die es nicht gibt – ChurchTools nimmt so etwas ohne Fehler an, „auf dem Stand“ täuschte bisher.
+- **„Gruppenmitgliedsfelder sehen“ vergibt der Infoscreen nicht mehr.** Weder der Assistent noch „Rechte aktualisieren“ setzen
+  es; bestehende Vergaben bleiben ([#265](https://github.com/wirsindcgks/churchtools-infoscreen/pull/265)). Die Prüfung
+  erkennt eine fehlende Stufe auch in freigegebenen Gruppen und weist darauf hin, wenn ein Gerät keine Mitgliedsfelder sieht.
+- **Die Gruppe „Infoscreen-People“ gibt es nur noch auf Wunsch.** Der Einrichtungsassistent legt beim ersten Einrichten
+  nur „Infoscreen-Designer“ und „Infoscreen-Devices“ an. Der Baustein „Personen“ zeigt die Gruppen, die ein Administrator
+  unter „Gruppen für Personen“ freigibt; wer die Geräte automatisch als Mitglieder einer eigenen Gruppe haben möchte (ein
+  „Gruppenmitgliedsfelder sehen“ an der Standardrolle gilt dann für alle Geräte), lässt dort „Eigene Gruppe
+  ‚Infoscreen-People‘ anlegen“. Bestehende Einrichtungen behalten ihre Gruppe unverändert. Im Baustein erscheint
+  „Infoscreen-People“ nur noch in der Auswahl, wenn es die Gruppe gibt.
+
 ## [0.50.0] – 2026-11-03
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch, Ansprechpartner als Karten auf dem Bildschirm zu

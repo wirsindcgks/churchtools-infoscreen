@@ -397,7 +397,7 @@ export const th = {
     people: {
         group: {
             intro:
-                'Aus welcher Gruppe die Personen kommen: „Infoscreen-People“ oder eine vorhandene Gruppe, die ein Administrator unter Einstellungen → Personen für Bildschirme freigegeben hat. ' +
+                'Aus welcher Gruppe die Personen kommen: eine vorhandene Gruppe, die ein Administrator unter Einstellungen → „Gruppen für Personen“ freigegeben hat, oder eine dort auf Wunsch angelegte eigene Gruppe „Infoscreen-People“. ' +
                 'Wechselst du die Gruppe, werden Rollen und Angaben zurückgesetzt, denn sie gehören zur Gruppe. ' +
                 'Angaben (Mitgliedsfelder) sieht der Fernseher nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder sehen“, das ein Administrator ihm gibt; sonst stehen Name, Bild und Rolle da.',
         } satisfies HelpTopic,

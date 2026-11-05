@@ -977,7 +977,7 @@ describe('rendering people (Plan.md 112)', () => {
 
     it('says what is wrong instead of "no people": group not set up, not released, device not allowed to read it', () => {
         const none = render(makeSlide({ blocks: [peopleBlock()] }), { people: [] });
-        expect(none.get('[data-testid="people-empty"]').text()).toContain('noch nicht eingerichtet');
+        expect(none.get('[data-testid="people-empty"]').text()).toContain('Noch keine Gruppe gewählt');
         const denied = render(makeSlide({ blocks: [peopleBlock()] }), { people: [{ groupId: 40, standard: true, denied: true, people: [], roles: [], fields: [] }] });
         expect(denied.get('[data-testid="people-empty"]').text()).toContain('Recht');
         const unreleased = render(makeSlide({ blocks: [peopleBlock({ sourceGroupId: 51 })] }), { people: [group(person('Anna', 'Berg')), unreleasedPeople(51)] });

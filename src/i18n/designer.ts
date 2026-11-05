@@ -732,9 +732,11 @@ export const t = {
         peopleGroup: 'Gruppe',
         peopleStandardGroup: 'Infoscreen-People',
         peopleGroupGone: (id: number) => `Gruppe ${id} – nicht (mehr) freigegeben`,
-        peopleGroupHint: 'Weitere Gruppen gibt ein Administrator unter Einstellungen → Personen für Bildschirme frei.',
-        peopleUnreleased: 'Diese Gruppe ist nicht für Bildschirme freigegeben. Ein Administrator gibt sie unter Einstellungen → Personen frei; bis dahin zeigt der Fernseher den Baustein ohne Personen.',
-        peopleNoGroup: 'Die Gruppe „Infoscreen-People“ ist noch nicht eingerichtet. Ein Administrator legt sie unter Einstellungen → Gruppen und Rechte an.',
+        peopleGroupHint: 'Weitere Gruppen gibt ein Administrator unter Einstellungen → „Gruppen für Personen“ frei.',
+        peopleChooseGroup: 'Gruppe wählen',
+        peopleNoGroupsAtAll: 'Es ist noch keine Gruppe freigegeben. Ein Administrator gibt Gruppen unter Einstellungen → „Gruppen für Personen“ frei oder legt dort eine eigene Gruppe „Infoscreen-People“ an.',
+        peopleUnreleased: 'Diese Gruppe ist nicht für Bildschirme freigegeben. Ein Administrator gibt sie unter Einstellungen → „Gruppen für Personen“ frei; bis dahin zeigt der Fernseher den Baustein ohne Personen.',
+        peopleNoGroup: 'Für diesen Baustein ist noch keine Gruppe gewählt.',
         peopleDenied: 'Das Gerät darf die Gruppe „Infoscreen-People“ nicht lesen. Ein Administrator gibt ihr mit „Rechte aktualisieren“ die nötigen Rechte.',
         details: 'Angaben',
         roomsOverview: 'Übersicht',
@@ -1529,7 +1531,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 `In „${people}“ nimmst du auf, wer im Baustein „Personen“ erscheinen darf; die Mitgliedsfelder legst du dort in ChurchTools an. Die Geräte sind schon Mitglied – sie müssen es bleiben, sonst bleiben die Felder leer.`,
             updateRights: 'Rechte aktualisieren',
             removeSetup: 'Automatische Einrichtung rückgängig machen',
-            fresh: 'Legt drei Gruppen vom gewählten Typ an – Gestalter, Geräte und „Infoscreen-People“ für den Baustein „Personen“ – und gibt ihren Rollen die nötigen Rechte. Danach müssen nur noch Personen in die Gruppen aufgenommen werden.',
+            fresh: 'Legt zwei Gruppen vom gewählten Typ an – Gestalter und Geräte – und gibt ihren Rollen die nötigen Rechte. Danach müssen nur noch Personen in die Gruppen aufgenommen werden.',
             foreign: (names: string) =>
                 `Es gibt schon ${names}. Der Assistent übernimmt keine fremden Gruppen – wähle sie unten aus und prüfe ihre Rechte.`,
             whatHappens: 'Was genau passiert',
@@ -1578,20 +1580,24 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             wikiCreated: (name: string) => `Wiki-Bereich „${name}" angelegt.`,
             aborted: (reason: string) => `Abgebrochen: ${reason}`,
         },
-        /** „Gruppe nachrüsten": an installation from before gets „Infoscreen-People" (Plan.md 112). */
+        /** „Eigene Gruppe anlegen": „Infoscreen-People" exists only on request (Plan.md 112, #259). */
         addPeople: {
-            missing: 'Die Gruppe „Infoscreen-People“ für den Baustein „Personen“ fehlt noch. Sie lässt sich nachrüsten, ohne etwas Bestehendes zu ändern.',
-            button: 'Gruppe „Infoscreen-People“ nachrüsten',
-            title: 'Gruppe nachrüsten',
+            heading: 'Eigene Gruppe „Infoscreen-People“',
+            optional:
+                'Das ist freiwillig: Der Baustein „Personen“ zeigt auch die oben freigegebenen Gruppen. Mit einer eigenen Gruppe nur für die Bildschirme werden die Geräte dort automatisch Mitglied. ' +
+                'Gibt ein Administrator der Standardrolle dieser Gruppe in ChurchTools das Recht „Gruppenmitgliedsfelder sehen“, gilt es damit für alle Geräte. Beiträge werden in der Gruppe abgeschaltet.',
+            needsAssistant: 'Die eigene Gruppe legt der Assistent an, sobald die Gruppen des Infoscreens unter „Gruppen und Rechte“ eingerichtet sind.',
+            button: 'Eigene Gruppe „Infoscreen-People“ anlegen lassen',
+            title: 'Eigene Gruppe anlegen',
             createGroup: (name: string, type: string | undefined) => `Die Gruppe „${name}" wird angelegt${type ? ` (Typ „${type}")` : ''}.`,
             grantDevice: (right: string, group: string) => `Die Rollen von „${group}" bekommen: ${right}.`,
             postsOff: (name: string) => `Beiträge in „${name}" werden abgeschaltet – dort braucht sie niemand.`,
             addDevices: 'Die Konten der Gerätegruppe werden in die neue Gruppe aufgenommen, ihre Liste kommt in die Einstellungen.',
             untouched: 'Bestehende Rollen und Rechte sowie fremde Gruppen bleiben unberührt. „Automatische Einrichtung rückgängig machen“ löscht die Gruppe wieder.',
-            confirm: 'Nachrüsten',
+            confirm: 'Anlegen',
             noSettingsRight:
                 'Dafür fehlt dir das Modulrecht „Daten in Kategorie bearbeiten“ auf die Kategorie „Einstellungen“ (Einrichtung, Schritt 2). Ohne es ließe sich nicht speichern, was angelegt wurde.',
-            finishHint: 'Eine Gruppe „Infoscreen-People“ ist schon da, aber nicht eingetragen – ein Nachrüsten wurde offenbar abgebrochen. Du kannst es abschließen.',
+            finishHint: 'Eine Gruppe „Infoscreen-People“ ist schon da, aber nicht eingetragen – das Anlegen wurde offenbar abgebrochen. Du kannst es abschließen.',
             finishButton: 'Einrichtung abschließen',
             finishTitle: 'Einrichtung abschließen',
             finishAdopt: (name: string) => `Die vorhandene Gruppe „${name}" wird übernommen und in den Einstellungen eingetragen.`,
@@ -1665,7 +1671,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         peopleGroups: {
             title: 'Gruppen für „Personen“',
             intro: 'Welche vorhandenen Gruppen der Baustein „Personen“ zeigen darf.',
-            lead: 'Der Baustein „Personen“ zeigt immer die Gruppe „Infoscreen-People“. Hier gibst du weitere vorhandene Gruppen frei: Fernseher lesen dann Name, Bild und Rolle ihrer Mitglieder. Wer die Adresse eines Fernsehers kennt, kann dasselbe auch selbst abrufen – gib nur Gruppen frei, deren Mitglieder damit einverstanden sind.',
+            lead: 'Der Baustein „Personen“ zeigt die Gruppen, die du hier freigibst: Fernseher lesen dann Name, Bild und Rolle ihrer Mitglieder. Wer die Adresse eines Fernsehers kennt, kann dasselbe auch selbst abrufen – gib nur Gruppen frei, deren Mitglieder damit einverstanden sind. Bei Bedarf lässt sich unten auch eine eigene Gruppe „Infoscreen-People“ anlegen.',
             detail:
                 'Die Gruppe selbst bleibt unberührt; der Assistent gibt nur der Gerätegruppe das Recht, sie zu sehen („Rechte aktualisieren“). Mitgliedsfelder sieht der Fernseher nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder sehen“ (Stufe 1), als Mitglied der Gruppe oder über eine Obergruppe; nimmst du das Gerätekonto von Hand auf, gibst du der Rolle das Recht. Nimmst du eine Freigabe zurück, verschwindet die Gruppe sofort vom Fernseher; das Recht wirkt in ChurchTools noch bis zu einer Dreiviertelstunde nach.',
             add: 'Gruppe freigeben',
