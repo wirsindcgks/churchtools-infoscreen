@@ -1144,6 +1144,7 @@ async function check(side: Side): Promise<void> {
                 : [{ grants: rights.roles.find((r) => r.isDefault)?.grants ?? [] }];
             checks.device = checkDeviceGroup({
                 statusId: rights.group.statusId,
+                deviceGroup: { id: groupId, name: groupNameById(groupId) },
                 members,
                 calendars,
                 usedCalendarIds,

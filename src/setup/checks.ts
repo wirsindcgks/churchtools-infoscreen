@@ -304,6 +304,8 @@ export interface CalendarInfo {
 
 export interface DeviceGroupInput {
     statusId: number | null;
+    /** The device group itself, to name it where a warning points at it (G74); missing: named by its id. */
+    deviceGroup?: { id: number; name: string };
     members: DeviceMember[];
     calendars: CalendarInfo[];
     usedCalendarIds: number[];
@@ -672,7 +674,7 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         }
         const elsewhere = (member.personLevels ?? []).filter((f) => !shownIds.includes(f.groupId));
         if (elsewhere.length) {
-            const groupName = (id: number): string => member.otherGroups?.find((g) => g.id === id)?.name ?? t.setup.groupFallback(id);
+            const groupName = (id: number): string => member.otherGroups?.find((g) => g.id === id)?.name ?? (input.deviceGroup?.id === id ? input.deviceGroup.name : t.setup.groupFallback(id));
             checks.push({
                 level: 'warn',
                 category: 'rights',

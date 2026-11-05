@@ -174,9 +174,10 @@ auf einer Freizeit. Er zeigt die Mitglieder **vorhandener Gruppen, die ein Admin
 Neben den Mitgliedsfeldern der Gruppe kann der Baustein Angaben aus dem **Personenprofil** zeigen: Telefon geschäftlich,
 Telefon privat, Handy, E-Mail, PLZ, Ort und Geburtstag (nur Tag und Monat, nie das Jahr). Das schaltet ein Administrator frei:
 
-1. In ChurchTools gibt ein Administrator der **Gerätegruppe** auf der **niedrigsten Sicherheitsstufe**, in der die gewünschten
-   Felder liegen, entweder „Personendaten sehen“ (gilt für alle Personen) oder – enger – das gruppeninterne „Gruppenmitglieder
-   sehen“ in der gezeigten Gruppe (gilt nur für deren Mitglieder). Die Stufen sind je Gemeinde frei und bauen aufeinander auf: Wer
+1. In ChurchTools gibt ein Administrator auf der **niedrigsten Sicherheitsstufe**, in der die gewünschten Felder liegen,
+   entweder der **Gerätegruppe** „Personendaten sehen“ (gilt für alle Personen, die das Gerät sieht) oder – enger – der
+   **Rolle des Gerätekontos in der gezeigten Gruppe** das gruppeninterne „Gruppenmitglieder sehen“ (gilt nur für deren
+   Mitglieder; das Gerät ist dort Mitglied oder erbt das Recht über eine Obergruppe). Die Stufen sind je Gemeinde frei und bauen aufeinander auf: Wer
    eine Stufe sieht, sieht die darunter mit. Der Infoscreen vergibt diese Rechte nicht selbst. Der Designer bietet ein Feld nur an, wenn
    jedes Gerät es in jeder gezeigten Gruppe sieht („Infoscreen-People“ und die freigegebenen Gruppen); das kleinste Gerät und die
    kleinste Gruppe bestimmen die Reichweite.

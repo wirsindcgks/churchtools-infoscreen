@@ -810,6 +810,9 @@ describe('the people group on the device check (Plan.md 112, G70, G71)', () => {
             expect(warning).toHaveLength(1);
             expect(warning[0]!.text).toContain('„Obergruppe“, „Gruppe 9“');
             expect(warning[0]!.level).toBe('warn');
+            // The device group itself is no other group of the account; it is named from the input.
+            const own = run([{ groupId: 40, level: 1 }, { groupId: 51, level: 1 }, { groupId: 9, level: 1 }], [], [email, city], { deviceGroup: { id: 9, name: 'Infoscreen-Devices' } });
+            expect(own.find((c) => c.text.includes('die Gruppenmitglieder sehen'))!.text).toContain('„Infoscreen-Devices“');
         });
 
         it('gives a 10101 on a missing level its own line', () => {
