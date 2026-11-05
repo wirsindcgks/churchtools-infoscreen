@@ -84,11 +84,6 @@ export interface GroupSpec {
      * one data id at a time, as ChurchTools stores them (G34).
      */
     forbidden: GrantSpec[];
-    /**
-     * Rights only the default role of the group gets, not every role (Plan.md 112): "Gruppenmitgliedsfelder sehen" is
-     * granted within a group, and what the default role holds is meant for the screens – the devices sit in that role.
-     */
-    defaultRoleGrants?: GrantSpec[];
     /** The devices of this group become members of the new group, in its default role, so that they read the member fields. */
     membersFrom?: GroupKey;
     /** Posts are switched off in this group (`postsEnabled` false at the group): nobody reads them there, and the type „Merkmal" would give the device the right to write them. */
@@ -219,7 +214,8 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     }
 
     // The block "Personen" (Plan.md 112, G70): 1104 on exactly this group, at the device's own group – the people group stays
-    // untouched – and the member fields (10126, level 1) within the people group, at its default role.
+    // untouched – the devices become members of the people group. The member fields (10126) are not
+    // granted by the assistant: the administrator sets them in ChurchTools, on the level of the fields wanted (G73).
     // The groups an administrator released (Stück 2a) go into the same right – one entry for the right.
     // Of the released group itself nothing is touched: no membership, no right inside it.
     const people = input.peopleGroupId;
@@ -257,8 +253,6 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
             name: GROUP_NAMES.people,
             grants: [],
             forbidden: [],
-            // Within the group the right is for security level 1 (`dataId` [1]), not for a group.
-            defaultRoleGrants: [{ authId: AUTH.memberFieldsView, dataId: [1], label: t.setup.provision.grants.viewMemberFields }],
             membersFrom: 'device',
             postsOff: true,
         });
@@ -324,15 +318,10 @@ export async function provision(
                     if (dataId !== 'unknown') await api.grant(roleId, g.authId, dataId);
                 }
             }
-            if (spec.grants.length || !spec.defaultRoleGrants?.length) {
-                result.log.push(t.setup.provision.rightsGranted(spec.grants.length, roles.length, spec.name));
-            }
-            if (spec.defaultRoleGrants?.length) {
-                result.log.push(t.setup.provision.rightsGranted(spec.defaultRoleGrants.length, 1, spec.name));
-            }
-            if (spec.defaultRoleGrants?.length || spec.membersFrom) {
-                const from = spec.membersFrom ? (result.groupIds[spec.membersFrom] ?? existing[spec.membersFrom]) : undefined;
-                const { added, deviceIds } = await grantDefaultRole(spec, groupId, api, from);
+            if (spec.grants.length) result.log.push(t.setup.provision.rightsGranted(spec.grants.length, roles.length, spec.name));
+            if (spec.membersFrom) {
+                const from = result.groupIds[spec.membersFrom] ?? existing[spec.membersFrom];
+                const { added, deviceIds } = await addDeviceMembers(groupId, api, from);
                 if (added) result.log.push(t.setup.provision.devicesAdded(added, spec.name));
                 if (deviceIds) result.deviceIds = deviceIds;
             }
@@ -352,19 +341,12 @@ function resolvedDataId(grant: GrantSpec, groupIds: Partial<Record<GroupKey, num
 }
 
 /**
- * The part of a group that concerns its default role (Plan.md 112): the rights only that role gets, and the members that
- * come from another group – each is put in once, whoever is in already stays. `from` is the group they come from, if it exists.
- * Returns how many were put in.
+ * The members that come from another group (Plan.md 112), in the default role of the group – each is put in once, whoever
+ * is in already stays. `from` is the group they come from, if it exists. Returns how many were put in.
  */
-async function grantDefaultRole(
-    spec: GroupSpec,
-    groupId: number,
-    api: ProvisionApi,
-    from: number | undefined,
-): Promise<{ added: number; deviceIds?: number[] }> {
+async function addDeviceMembers(groupId: number, api: ProvisionApi, from: number | undefined): Promise<{ added: number; deviceIds?: number[] }> {
     const role = await api.defaultRole(groupId);
     if (!role) return { added: 0 };
-    for (const g of spec.defaultRoleGrants ?? []) await api.grant(role.roleId, g.authId, g.dataId);
     if (from === undefined) return { added: 0 };
     const [there, here] = await Promise.all([api.memberIds(from), api.memberIds(groupId)]);
     const missing = there.filter((personId) => !here.includes(personId));
@@ -373,7 +355,7 @@ async function grantDefaultRole(
 }
 
 /**
- * Finishes an interrupted retrofit (Plan.md 112): the people group exists, but the rights, the devices or the entry in the
+ * Finishes an interrupted retrofit (Plan.md 112): the people group exists, but the devices or the entry in the
  * settings are missing. Grants again what a retrofit grants – a grant is a PUT that creates or updates, so nothing is
  * doubled – and puts in only the devices that are not in yet.
  */
@@ -387,8 +369,7 @@ export async function completePeople(plan: GroupSpec[], peopleGroupId: number, d
             await api.setPostsEnabled(peopleGroupId, false);
             result.log.push(t.setup.provision.postsOff(people.name));
         }
-        const { added, deviceIds } = await grantDefaultRole(people, peopleGroupId, api, deviceGroupId);
-        result.log.push(t.setup.provision.rightsGranted(people.defaultRoleGrants?.length ?? 0, 1, people.name));
+        const { added, deviceIds } = await addDeviceMembers(peopleGroupId, api, deviceGroupId);
         if (added) result.log.push(t.setup.provision.devicesAdded(added, people.name));
         result.deviceIds = deviceIds;
         const roles = await api.roleIds(deviceGroupId);
@@ -418,8 +399,8 @@ export function orphanPeopleGroup(
 }
 
 /**
- * Adds the people group to an installation that has the other two (Plan.md 112): creates this group alone, gives its
- * default role 10126, puts the device accounts in, and gives the roles of the device group 1104 on the new group –
+ * Adds the people group to an installation that has the other two (Plan.md 112): creates this group alone, puts the
+ * device accounts in, and gives the roles of the device group 1104 on the new group –
  * nothing else of either group is touched. `plan` is a plan made with `peopleGroupId: 'new'`.
  */
 export async function provisionPeople(plan: GroupSpec[], groupTypeId: number, deviceGroupId: number, api: ProvisionApi): Promise<ProvisionResult> {
@@ -560,7 +541,6 @@ export function planRefresh(
     held: Partial<Record<GroupKey, Grant[][]>>,
     known: KnownData,
     names: DataNames = {},
-    heldDefault: Partial<Record<GroupKey, Grant[]>> = {},
 ): RefreshGroup[] {
     const nameOf = (authId: number, dataId: number): string | undefined =>
         authId === AUTH.resourceView ? names.rooms?.get(dataId) : authId === AUTH.groupWithMembersView ? names.groups?.get(dataId) : names.calendars?.get(dataId);
@@ -577,13 +557,6 @@ export function planRefresh(
         const roles = held[spec.key] ?? [];
         const add: RefreshItem[] = [];
         const seenAdd = new Set<string>();
-        // The rights of the default role alone (Plan.md 112): missing when that role lacks them.
-        for (const g of spec.defaultRoleGrants ?? []) {
-            for (const dataId of g.dataId ?? [null]) {
-                if (has(heldDefault[spec.key] ?? [], g.authId, dataId ?? undefined)) continue;
-                add.push({ authId: g.authId, dataId, label: g.label });
-            }
-        }
         for (const g of spec.grants.filter(concrete)) {
             for (const dataId of g.dataId ?? [null]) {
                 const pair = `${g.authId}:${dataId}`;
@@ -671,7 +644,7 @@ export interface RefreshState {
     postsOn: GroupKey[];
     /** The device accounts as they are now, for `settings.peopleDeviceIds`; missing where the plan has no people group. */
     deviceIds?: number[];
-    /** The default role of each group that has rights for it alone. */
+    /** The default role of each group that takes members from another group. */
     defaultRoleIds: Partial<Record<GroupKey, { roleId: number; groupTypeRoleId: number }>>;
 }
 
@@ -689,23 +662,19 @@ export async function readRefresh(
 ): Promise<RefreshState> {
     const roles: RefreshState['roles'] = {};
     const defaultRoleIds: RefreshState['defaultRoleIds'] = {};
-    const heldDefault: Partial<Record<GroupKey, Grant[]>> = {};
     for (const spec of plan) {
         const groupId = groupIds[spec.key];
         if (groupId === undefined) continue;
         roles[spec.key] = await Promise.all(
             (await api.roleIds(groupId)).map(async (roleId) => ({ roleId, grants: await api.grants(roleId) })),
         );
-        if (spec.defaultRoleGrants?.length || spec.membersFrom) {
+        if (spec.membersFrom) {
             const role = await api.defaultRole(groupId);
-            if (role) {
-                defaultRoleIds[spec.key] = role;
-                heldDefault[spec.key] = roles[spec.key]!.find((r) => r.roleId === role.roleId)?.grants ?? (await api.grants(role.roleId));
-            }
+            if (role) defaultRoleIds[spec.key] = role;
         }
     }
     const held = Object.fromEntries(Object.entries(roles).map(([key, list]) => [key, list.map((r) => r.grants)]));
-    const groups = planRefresh(plan, held, known, names, heldDefault).filter((g) => roles[g.key] !== undefined);
+    const groups = planRefresh(plan, held, known, names).filter((g) => roles[g.key] !== undefined);
     // Posts are off in the assistant's groups for devices and people (Plan.md 112): groups from before still have them on.
     const postsOn: GroupKey[] = [];
     for (const spec of plan) {
@@ -761,7 +730,6 @@ export async function applyRefresh(plan: GroupSpec[], state: RefreshState, api: 
             }
             const role = state.defaultRoleIds[spec.key];
             if (role) {
-                for (const g of spec.defaultRoleGrants ?? []) await api.grant(role.roleId, g.authId, g.dataId);
                 const from = spec.membersFrom ? state.groupIds[spec.membersFrom] : undefined;
                 const groupId = state.groupIds[spec.key];
                 if (from !== undefined && groupId !== undefined) {

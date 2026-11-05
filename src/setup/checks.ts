@@ -257,8 +257,8 @@ export interface DeviceMember {
     grants: Grant[];
     /** The person's groups besides the device group; undefined: not asked, null: the groups could not be read. */
     otherGroups?: OtherGroup[] | null;
-    /** The groups in which the account sees member fields, however it got the right (G72); undefined or null: not read. */
-    memberFieldGroupIds?: number[] | null;
+    /** The groups in which the account sees member fields, however it got the right (G72), with the highest level held there (G73); undefined or null: not read. */
+    memberFieldLevels?: { groupId: number; level: number }[] | null;
 }
 
 export interface CalendarInfo {
@@ -526,6 +526,22 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         }
     }
 
+    // Member fields (10126) are set by the administrator; a level that does not exist opens nothing (G73).
+    const missingMemberLevel = (groupId: number, name: string): void => {
+        const levelIds = input.securityLevels?.map((l) => l.id);
+        if (!levelIds) return;
+        for (const member of input.members) {
+            const level = member.memberFieldLevels?.find((f) => f.groupId === groupId)?.level;
+            if (level === undefined || levelIds.includes(level)) continue;
+            checks.push({
+                level: 'warn',
+                category: 'rights',
+                text: t.setup.checks.memberFieldsMissingLevel(member.label, name, level),
+                detail: t.setup.checks.memberFieldsMissingLevelDetail,
+            });
+        }
+    };
+
     // The people group (Plan.md 112, G70): seen through 1104 on this group, the member fields only as a member of it.
     if (input.peopleGroup) {
         const { id, name } = input.peopleGroup;
@@ -553,6 +569,19 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                 detail: t.setup.checks.peopleNotMemberDetail,
             });
         }
+        // A member without 10126 sees no member fields; the assistant does not grant it (G73).
+        const noFields = input.members
+            .filter((m) => m.memberFieldLevels && m.otherGroups?.some((g) => g.id === id) && !m.memberFieldLevels.some((f) => f.groupId === id))
+            .map((m) => m.label);
+        if (noFields.length) {
+            checks.push({
+                level: 'info',
+                category: 'people',
+                text: t.setup.checks.peopleNoMemberFields(noFields.join(', '), name),
+                detail: t.setup.checks.peopleNoMemberFieldsDetail,
+            });
+        }
+        missingMemberLevel(id, name);
     }
 
     // Released groups (Stück 2a): seen through 1104 like the people group; the device is no member unless an administrator put it there by hand.
@@ -570,7 +599,7 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         }
         // The right itself where it was read – it may come from a parent group (G72) –, else membership as the closest sign.
         const outside = input.members
-            .filter((m) => (m.memberFieldGroupIds ? !m.memberFieldGroupIds.includes(id) : m.otherGroups && !m.otherGroups.some((g) => g.id === id)))
+            .filter((m) => (m.memberFieldLevels ? !m.memberFieldLevels.some((f) => f.groupId === id) : m.otherGroups && !m.otherGroups.some((g) => g.id === id)))
             .map((m) => m.label);
         if (outside.length) {
             checks.push({
@@ -580,6 +609,7 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                 detail: t.setup.checks.releasedNotMemberDetail,
             });
         }
+        missingMemberLevel(id, name);
     }
 
     // Group members (10101) give a person's e-mail address at the first level (G70, G71); Personendaten (125) is set by the administrator and

@@ -32,7 +32,7 @@ import {
     loadGroups,
     loadPersonGrants,
     loadRightOrigins,
-    loadMemberFieldGroups,
+    loadMemberFieldLevels,
     personGroupIds,
     personGroups,
     type GroupSummary,
@@ -750,11 +750,9 @@ async function addPeopleGroup(): Promise<void> {
         assistant.error = explain(e);
         return;
     }
-    const people = spec.find((s) => s.key === 'people')!;
     const seen = spec.find((s) => s.key === 'device')!.grants.filter((g) => g.dataGroup === 'people');
     const lines = [
         t.setup.addPeople.createGroup(GROUP_NAMES.people, typeName(typeId)),
-        ...(people.defaultRoleGrants ?? []).map((g) => t.setup.addPeople.grantDefault(g.label, GROUP_NAMES.people)),
         ...seen.map((g) => t.setup.addPeople.grantDevice(g.label, groupName('device'))),
         t.setup.addPeople.postsOff(GROUP_NAMES.people),
         t.setup.addPeople.addDevices,
@@ -1101,10 +1099,10 @@ async function check(side: Side): Promise<void> {
                 rights.members.map(async (m) => {
                     const person = await loadPersonGrants(m.personId);
                     // Only the warning depends on these reads: if they fail, the member is checked without it.
-                    const [memberships, origins, memberFieldGroupIds] = await Promise.all([
+                    const [memberships, origins, memberFieldLevels] = await Promise.all([
                         personGroups(m.personId).catch(() => null),
                         loadRightOrigins(m.personId).catch(() => null),
-                        loadMemberFieldGroups(m.personId).catch(() => null),
+                        loadMemberFieldLevels(m.personId).catch(() => null),
                     ]);
                     const names = new Map((memberships ?? []).filter((g) => g.id !== groupId).map((g) => [g.id, g.name]));
                     for (const o of origins ?? []) if (o.groupId !== groupId && !names.has(o.groupId)) names.set(o.groupId, t.setup.groupFallback(o.groupId));
@@ -1119,7 +1117,7 @@ async function check(side: Side): Promise<void> {
                                       ? origins.filter((o) => o.groupId === id).flatMap((o) => (o.dataIds ?? [null]).map((dataId) => ({ authId: o.authId, dataId })))
                                       : null,
                               }));
-                    return { label: person.label, grants: [...m.roleGrants, ...person.grants], otherGroups, memberFieldGroupIds };
+                    return { label: person.label, grants: [...m.roleGrants, ...person.grants], otherGroups, memberFieldLevels };
                 }),
             );
             deviceHoldings.value = members.length ? members.map(memberHoldings) : [rights.roles.find((r) => r.isDefault)?.grants ?? []];
@@ -1145,11 +1143,12 @@ async function check(side: Side): Promise<void> {
                 wikiCategoryId,
                 moduleRights: moduleRights('device'),
                 // Only with the catalogue: without the plan nobody knows what a device needs (Plan.md 58 E). The member fields
-                // (10126) are read within the people group, whose role the device sits in – wanted as well (Plan.md 112).
+                // (10126) are read within the people group, whose role the device sits in, or in a released group – wanted as well, though the administrator
+                // grants them, not the assistant (Plan.md 112, G73).
                 plannedAuthIds: plan.value
                     ? [
                           ...(plan.value.find((spec) => spec.key === 'device')?.grants.map((g) => g.authId) ?? []),
-                          ...(plan.value.find((spec) => spec.key === 'people')?.defaultRoleGrants?.map((g) => g.authId) ?? []),
+                          ...(plan.value.some((spec) => spec.key === 'people') || releasedPeopleGroups.value.length ? [AUTH.memberFieldsView] : []),
                       ]
                     : undefined,
                 plannedGrants: plan.value?.find((spec) => spec.key === 'device')?.grants,

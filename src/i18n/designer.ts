@@ -1584,7 +1584,6 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             button: 'Gruppe „Infoscreen-People“ nachrüsten',
             title: 'Gruppe nachrüsten',
             createGroup: (name: string, type: string | undefined) => `Die Gruppe „${name}" wird angelegt${type ? ` (Typ „${type}")` : ''}.`,
-            grantDefault: (right: string, group: string) => `Die Standardrolle von „${group}" bekommt: ${right}.`,
             grantDevice: (right: string, group: string) => `Die Rollen von „${group}" bekommen: ${right}.`,
             postsOff: (name: string) => `Beiträge in „${name}" werden abgeschaltet – dort braucht sie niemand.`,
             addDevices: 'Die Konten der Gerätegruppe werden in die neue Gruppe aufgenommen, ihre Liste kommt in die Einstellungen.',
@@ -1827,7 +1826,6 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 deleteAdminData: 'Löschen von Bildschirmen und Einstellungen',
                 viewPeopleGroup: 'Gruppe „Infoscreen-People" inkl. ihrer Gruppenmitglieder sehen',
                 viewReleasedGroup: 'Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen',
-                viewMemberFields: 'Gruppenmitgliedsfelder sehen (bis Sicherheitsstufe 1)',
             },
             postsOff: (name: string) => `Beiträge in „${name}" abgeschaltet.`,
             devicesAdded: (n: number, group: string) => `${n} ${n === 1 ? 'Gerät' : 'Geräte'} in „${group}" aufgenommen.`,
@@ -1937,7 +1935,14 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             peopleBlindDetail: 'Es fehlt „Gruppe inkl. ihrer Gruppenmitglieder sehen" für diese Gruppe. „Rechte aktualisieren" vergibt es.',
             releasedNotMember: (labels: string, name: string) => `${labels} sieht in „${name}" keine Mitgliedsfelder – Name, Bild und Rolle erscheinen.`,
             releasedNotMemberDetail:
-                'Reicht das, ist nichts zu tun. Mitgliedsfelder sieht ein Gerät nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder sehen" (Stufe 1) – als Mitglied der Gruppe oder über eine Obergruppe. Wer sie braucht, nimmt das Gerätekonto in eine Obergruppe auf und gibt dessen Rolle dort das Recht unter „Berechtigung für die Untergruppen“ (mindestens eine Ebene), oder nimmt es in die Gruppe selbst auf; das Recht gilt dann für alle mit dieser Rolle.',
+                'Reicht das, ist nichts zu tun. Mitgliedsfelder sieht ein Gerät nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder sehen" auf der Sicherheitsstufe der gewünschten Felder – als Mitglied der Gruppe oder über eine Obergruppe. Wer sie braucht, nimmt das Gerätekonto in eine Obergruppe auf und gibt dessen Rolle dort das Recht unter „Berechtigung für die Untergruppen“ (mindestens eine Ebene), oder nimmt es in die Gruppe selbst auf; das Recht gilt dann für alle mit dieser Rolle.',
+            peopleNoMemberFields: (labels: string, name: string) => `${labels} sieht in „${name}" keine Mitgliedsfelder – Name, Bild und Rolle erscheinen.`,
+            peopleNoMemberFieldsDetail:
+                'Der Infoscreen vergibt „Gruppenmitgliedsfelder sehen" nicht selbst. Reicht Name, Bild und Rolle, ist nichts zu tun. Sonst in ChurchTools der Standardrolle von „Infoscreen-People" das gruppeninterne Recht „Gruppenmitgliedsfelder sehen" auf der Sicherheitsstufe der gewünschten Mitgliedsfelder geben.',
+            memberFieldsMissingLevel: (label: string, group: string, id: number) =>
+                `${label} hat „Gruppenmitgliedsfelder sehen“ in „${group}“ für eine Sicherheitsstufe, die es nicht gibt (ID ${id}).`,
+            memberFieldsMissingLevelDetail:
+                'ChurchTools nimmt ein solches Recht ohne Fehlermeldung an; frühere Versionen des Infoscreens haben es auf ID 1 vergeben. Es zeigt auf keine Stufe – in der Rechteverwaltung an der Rolle entfernen und, wenn Mitgliedsfelder gezeigt werden sollen, die passende Stufe geben.',
             peopleNotMember: (labels: string, name: string) => `${labels} ist nicht Mitglied in „${name}" – die Mitgliedsfelder bleiben leer.`,
             peopleNotMemberDetail: 'Mitgliedsfelder sieht ein Gerät nur als Mitglied der Gruppe. Das Gerätekonto dort aufnehmen oder „Rechte aktualisieren" – das nimmt alle Geräte der Gerätegruppe auf.',
             personData: (labels: string) => `${labels} darf Personendaten sehen – damit auch E-Mail-Adressen.`,

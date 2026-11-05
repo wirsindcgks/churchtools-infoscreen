@@ -100,17 +100,18 @@ Das Gerät sieht damit nur zugesagte Dienste aus Dienstgruppen, die „Ohne Bere
 
 ### Personen – für den Baustein „Personen"
 
-Das Gerät liest die Mitglieder der Gruppe „Infoscreen-People" mit zwei Rechten und **nur** diese Gruppe:
+Das Gerät liest die Mitglieder der Gruppe „Infoscreen-People" mit zwei Rechten und **nur** diese Gruppe. Das erste vergibt der Assistent, das zweite der Administrator in ChurchTools:
 
 | Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
 | --- | --- | --- | --- | --- |
 | Gruppe „Infoscreen-People" inkl. ihrer Gruppenmitglieder sehen | Gruppe inkl. ihrer Gruppenmitglieder sehen (`1104`, global, für diese Gruppe) | für die Vorschau | für die Vorschau | **nur „Infoscreen-People"** – Name, Bild, Rolle |
-| Gruppenmitgliedsfelder sehen (bis Sicherheitsstufe 1) | Gruppenmitgliedsfelder sehen (`10126`, gruppenintern, Stufe 1) | – | – | an der **Standardrolle von „Infoscreen-People"**, in der die Geräte Mitglied sind |
+| – (setzt der Administrator) | Gruppenmitgliedsfelder sehen (`10126`, gruppenintern, auf der Stufe der gewünschten Mitgliedsfelder) | – | – | an der **Standardrolle von „Infoscreen-People"**, in der die Geräte Mitglied sind |
 
 | Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen | Gruppe inkl. ihrer Gruppenmitglieder sehen (`1104`, global, je freigegebener Gruppe) | – | – | **nur die Gruppen, die ein Administrator unter „Gruppen für Personen" freigegeben hat** – Name, Bild, Rolle |
 
-Das zweite Recht ist **gruppenintern** und gilt für alle, die diese Rolle haben; die Sicherheitsstufe 1 begrenzt es auf
-Mitgliedsfelder bis Stufe 1. „Gruppenmitglieder sehen" (`10101`) wird **nie** vergeben. „Personendaten sehen" (`125`) vergibt der
+Das zweite Recht ist **gruppenintern** und gilt für alle, die diese Rolle haben; die Sicherheitsstufe begrenzt es auf
+Mitgliedsfelder bis zu dieser Stufe. Die Stufen sind je Gemeinde frei (G73); der Infoscreen vergibt das Recht nicht und nimmt
+es nicht zurück. Die Prüfung der Gerätegruppe weist darauf hin, wenn es fehlt, und warnt, wenn es auf eine Stufe zeigt, die es nicht gibt. „Gruppenmitglieder sehen" (`10101`) wird **nie** vergeben. „Personendaten sehen" (`125`) vergibt der
 Assistent **nicht mehr**: Beide geben schon in der ersten Stufe die E-Mail-Adresse einer Person frei. Nur wenn ein Administrator
 unter *Einstellungen → Gruppen für „Personen"* **Personenfelder** freischalten will, setzt er `125` selbst in ChurchTools (unten).
 Die Prüfung der Gerätegruppe warnt vor allem anderen.
@@ -132,7 +133,7 @@ keine Mitgliedschaft, kein `10126`, keine Beitragseinstellung. Das geschieht sch
 eine Freigabe zurück, fällt die Gruppen-id wieder aus `1104` heraus – nur die Ids, die vorher freigegeben waren; ein `1104`,
 das du von Hand auf eine andere Gruppe vergeben hast, bleibt stehen. Gelingt der Rechte-Teil einmal nicht, bleibt die
 Freigabe gespeichert, und „Rechte aktualisieren" trägt fehlende Rechte nach. **Mitgliedsfelder** einer freigegebenen Gruppe sieht das Gerät nur mit dem gruppeninternen Recht
-`10126` (Stufe 1) – als Mitglied der Gruppe oder über eine Obergruppe: dort als vererbtes Recht der Rolle des Gerätekontos
+`10126` auf der Stufe der gewünschten Felder – als Mitglied der Gruppe oder über eine Obergruppe: dort als vererbtes Recht der Rolle des Gerätekontos
 unter „Berechtigung für die Untergruppen", mit mindestens einer Ebene (gemessen, Befunde.md G72). Nimmst du das
 Gerätekonto von Hand in die Gruppe selbst auf, gibst du der Rolle des Kontos `10126`; das gilt dann für **alle** mit dieser Rolle in der Gruppe. Ohne das erscheinen Name, Bild und Rolle. Die Prüfung der Gerätegruppe zeigt das als Hinweis, nicht als Warnung.
 

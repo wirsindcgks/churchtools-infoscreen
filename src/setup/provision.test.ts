@@ -578,9 +578,9 @@ describe('the people group (Plan.md 112, G70)', () => {
         const seen = plan[1]!.grants.find((g) => g.authId === AUTH.groupWithMembersView)!;
         expect(seen.dataGroup).toBe('people');
         expect(seen.dataId).toBeUndefined();
-        // Rights within the group (10126, level 1) belong to the default role alone; the designers get nothing for it.
+        // The assistant grants nothing within the group: 10126 is the administrator's (G73).
         expect(plan[2]!.grants).toEqual([]);
-        expect(plan[2]!.defaultRoleGrants).toEqual([expect.objectContaining({ authId: AUTH.memberFieldsView, dataId: [1] })]);
+        expect(plan[2]!.membersFrom).toBe('device');
         expect(plan[0]!.grants.some((g) => g.authId === AUTH.groupWithMembersView)).toBe(false);
     });
 
@@ -634,7 +634,7 @@ describe('the people group (Plan.md 112, G70)', () => {
     });
 
     it('never plans 125 or 10101 – the administrator sets 125 in ChurchTools (G73), and both open the e-mail address', () => {
-        const all = planProvisioning(withPeople).flatMap((g) => [...g.grants, ...(g.defaultRoleGrants ?? [])]).map((g) => g.authId);
+        const all = planProvisioning(withPeople).flatMap((g) => g.grants).map((g) => g.authId);
         expect(all).not.toContain(125);
         expect(all).not.toContain(10101);
     });
@@ -667,8 +667,8 @@ describe('the people group (Plan.md 112, G70)', () => {
         // On both roles of the device group, as an array, with the id of the group just created.
         expect(calls).toContain('grant 320 1104 [30]');
         expect(calls).toContain('grant 321 1104 [30]');
-        // Within the people group, on the default role alone, as an array.
-        expect(calls.filter((c) => c.includes(' 10126 '))).toEqual(['grant 301 10126 [1]']);
+        // The assistant never grants the member fields (G73).
+        expect(calls.filter((c) => c.includes(' 10126'))).toEqual([]);
     });
 
     it('refreshes an existing instance: grants the missing rights and puts the devices into the group', async () => {
@@ -677,11 +677,11 @@ describe('the people group (Plan.md 112, G70)', () => {
         const plan = planProvisioning({ ...input, peopleGroupId: 40 });
         const state = await readRefresh(plan, { device: 12, people: 40 }, { calendarIds: [], roomIds: [] }, {}, api);
         const people = state.groups.find((g) => g.key === 'people')!;
-        expect(people.add.map((i) => `${i.authId}:${i.dataId}`)).toEqual(['10126:1']);
+        expect(people.add).toEqual([]);
         const result = await applyRefresh(plan, state, api);
         expect(result.error).toBeNull();
         expect(calls).toContain('grant 121 1104 [40]');
-        expect(calls).toContain('grant 401 10126 [1]');
+        expect(calls.filter((c) => c.includes(' 10126'))).toEqual([]);
         // Person 5 is in already; only 6 is added, in the default role of the people group.
         expect(calls.filter((c) => c.startsWith('member'))).toEqual(['member 40 6 940']);
         expect(result.log).toContain('1 Gerät in „Infoscreen-People" aufgenommen.');
@@ -719,7 +719,7 @@ describe('the people group: device list, refresh and retrofit (Plan.md 112)', ()
         return { api, calls };
     }
 
-    it('retrofits the group alone: creates it, gives the default role 10126, puts the devices in, gives the device roles 1104', async () => {
+    it('retrofits the group alone: creates it, puts the devices in, gives the device roles 1104', async () => {
         const { api, calls } = fakeApi({ 12: [5, 6] });
         const result = await provisionPeople(planProvisioning(withPeople), 4, 12, api);
         expect(result.error).toBeNull();
@@ -727,7 +727,6 @@ describe('the people group: device list, refresh and retrofit (Plan.md 112)', ()
         expect(result.deviceIds).toEqual([5, 6]);
         expect(calls).toEqual([
             'create Infoscreen-People',
-            'grant 401 10126 [1]',
             'member 40 5 940',
             'member 40 6 940',
             'grant 120 1104 [40]',
@@ -749,7 +748,7 @@ describe('the people group: device list, refresh and retrofit (Plan.md 112)', ()
         const plan = planProvisioning({ ...input, peopleGroupId: 40 });
         const { api } = fakeApi({ 12: [5, 6], 40: [5] });
         // The rights are all there; only person 6 is missing in the group, and the stored list lacks it.
-        api.grants = async () => plan.flatMap((s) => [...s.grants, ...(s.defaultRoleGrants ?? [])]).flatMap((g) => (g.dataId ?? [null]).map((d) => held(g.authId, d)));
+        api.grants = async () => plan.flatMap((s) => s.grants).flatMap((g) => (g.dataId ?? [null]).map((d) => held(g.authId, d)));
         const state = await readRefresh(plan, { device: 12, people: 40 }, { calendarIds: [], roomIds: [] }, {}, api, [5]);
         const people = state.groups.find((g) => g.key === 'people')!;
         expect(people.add).toEqual([]);
@@ -761,7 +760,7 @@ describe('the people group: device list, refresh and retrofit (Plan.md 112)', ()
     it('is empty when the devices are in and the stored list is the same', async () => {
         const plan = planProvisioning({ ...input, peopleGroupId: 40 });
         const { api } = fakeApi({ 12: [5, 6], 40: [6, 5] });
-        api.grants = async () => plan.flatMap((s) => [...s.grants, ...(s.defaultRoleGrants ?? [])]).flatMap((g) => (g.dataId ?? [null]).map((d) => held(g.authId, d)));
+        api.grants = async () => plan.flatMap((s) => s.grants).flatMap((g) => (g.dataId ?? [null]).map((d) => held(g.authId, d)));
         const state = await readRefresh(plan, { device: 12, people: 40 }, { calendarIds: [], roomIds: [] }, {}, api, [5, 6]);
         expect(refreshIsEmpty(state.groups)).toBe(true);
     });
@@ -795,11 +794,9 @@ describe('log lines and finishing a retrofit (Plan.md 112)', () => {
     it('counts what was granted and says it in the right number: "1 Recht an 1 Rolle", "1 Recht an 2 Rollen"', async () => {
         const { api } = fakeApi();
         const result = await provisionPeople(planProvisioning(withPeople), 4, 12, api);
-        expect(result.log).toContain('1 Recht an 1 Rolle von „Infoscreen-People" vergeben.');
         expect(result.log).toContain('1 Recht an 2 Rollen von „Infoscreen-Devices" vergeben.');
         expect(result.log.some((line) => line.startsWith('0 Rechte'))).toBe(false);
         const all = await provision(planProvisioning(withPeople), 4, fakeApi().api);
-        expect(all.log).toContain('1 Recht an 1 Rolle von „Infoscreen-People" vergeben.');
         expect(all.log.some((line) => line.startsWith('0 Rechte'))).toBe(false);
     });
 
@@ -809,7 +806,7 @@ describe('log lines and finishing a retrofit (Plan.md 112)', () => {
         expect(result.error).toBeNull();
         expect(result.groupIds).toEqual({ people: 40 });
         expect(result.deviceIds).toEqual([5, 6]);
-        expect(calls).toEqual(['grant 401 10126 [1]', 'member 40 6 940', 'grant 120 1104 [40]', 'grant 121 1104 [40]']);
+        expect(calls).toEqual(['member 40 6 940', 'grant 120 1104 [40]', 'grant 121 1104 [40]']);
         expect(result.log).toContain('1 Gerät in „Infoscreen-People" aufgenommen.');
     });
 });
@@ -881,7 +878,7 @@ describe('posts off in the groups of the devices and the people (Plan.md 112, G7
         const plan = planProvisioning({ ...input, peopleGroupId: 40 });
         const posts: Record<number, boolean> = { 12: true, 40: false };
         const { api } = fakeApi(posts, { 12: [5], 40: [5] });
-        api.grants = async () => plan.flatMap((s) => [...s.grants, ...(s.defaultRoleGrants ?? [])]).flatMap((g) => (g.dataId ?? [null]).map((d) => held(g.authId, d)));
+        api.grants = async () => plan.flatMap((s) => s.grants).flatMap((g) => (g.dataId ?? [null]).map((d) => held(g.authId, d)));
         const state = await readRefresh(plan, { device: 12, people: 40 }, { calendarIds: [], roomIds: [] }, {}, api, [5]);
         expect(state.groups.find((g) => g.key === 'device')!.extras).toEqual(['Beiträge in „Infoscreen-Devices" werden abgeschaltet']);
         expect(state.groups.find((g) => g.key === 'people')!.extras).toBeUndefined();

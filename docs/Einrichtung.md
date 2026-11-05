@@ -141,9 +141,10 @@ auf einer Freizeit. Er liest **nur** die Gruppe **„Infoscreen-People"**:
   merkt sich ihre Konten in den Einstellungen und der Fernseher lässt sie weg. Ein **neues Gerätekonto** gehört in
   „Infoscreen-Devices" **und** in „Infoscreen-People"; „Rechte aktualisieren" erledigt beides nach und aktualisiert die Liste.
 - **Name, Bild und Rolle** sieht das Gerät über das Recht „Gruppe inkl. ihrer Gruppenmitglieder sehen“ für genau diese
-  Gruppe; die **Mitgliedsfelder** über „Gruppenmitgliedsfelder sehen“ (Stufe 1) an der Standardrolle der Gruppe. Das
-  Recht gilt für **alle Mitglieder dieser Rolle** – was dort an Mitgliedsfeldern mit Stufe 1 steht, ist für den
-  Bildschirm bestimmt. Die Prüfung der Gerätegruppe kennt beide Rechte.
+  Gruppe; die **Mitgliedsfelder** über „Gruppenmitgliedsfelder sehen“ an der Standardrolle der Gruppe. Das zweite Recht
+  gibt der **Administrator** in ChurchTools, der Assistent vergibt es nicht: auf der Sicherheitsstufe der gewünschten Felder. Es
+  gilt für **alle Mitglieder dieser Rolle** – was dort an Mitgliedsfeldern bis zu dieser Stufe steht, ist für den
+  Bildschirm bestimmt. Die Prüfung der Gerätegruppe kennt beide Rechte und weist darauf hin, wenn das zweite fehlt.
 - **E-Mail-Adressen und andere Kontaktdaten zeigt der Baustein nur, wenn du sie ausdrücklich freischaltest** (siehe
   [Personenfelder freischalten](#personenfelder-freischalten)). Gib dem Gerät sonst **nie** „Personendaten sehen“ und **nie**
   „Gruppenmitglieder sehen“: Beide geben schon in der ersten Sicherheitsstufe die E-Mail-Adresse frei, und wer die
@@ -200,18 +201,18 @@ Der Fernseher zeigt dann **Name, Bild und Rolle** der Mitglieder. Eine Gruppe, d
 der Baustein sagt „Gruppe ist nicht für Bildschirme freigegeben".
 
 **Mitgliedsfelder** (etwa „Funktion", „Büro") sieht das Gerät nur mit dem gruppeninternen Recht „Gruppenmitgliedsfelder
-sehen" (Sicherheitsstufe 1). Dafür gibt es zwei Wege:
+sehen" (auf der Sicherheitsstufe der Felder). Dafür gibt es zwei Wege:
 
 - **Über eine Obergruppe** – praktisch, wenn mehrere Gruppen unter einer gemeinsamen Gruppe hängen, und unberührt von
   automatischen Gruppen. Nimm das Gerätekonto in die Obergruppe auf. Dort unter Berechtigungen → **„Berechtigung für die
   Untergruppen"** die Zahl der Ebenen wählen (mindestens „Eine Ebene von Untergruppen" – bei „Keine Ebenen" wirkt das
-  Recht nicht) und für die Rolle des Gerätekontos „Gruppenmitgliedsfelder sehen" auf Stufe 1 setzen. In den Untergruppen
+  Recht nicht) und für die Rolle des Gerätekontos „Gruppenmitgliedsfelder sehen" auf die Stufe der Felder setzen. In den Untergruppen
   muss das Gerät dann nicht Mitglied sein. **Achtung:** In der Obergruppe selbst bekommt das Gerät alles, was der
   Gruppentyp seiner Rolle vorgibt – beim Typ „Dienst" etwa „Gruppenmitglieder sehen", und das zeigt schon in Stufe 1 die
   E-Mail-Adressen der Mitglieder der Obergruppe. Wähle eine Obergruppe und Rolle ohne dieses Recht; die Prüfung der
   Gerätegruppe warnt davor.
 - **Als Mitglied der Gruppe selbst.** Nimm das Gerät von Hand auf und vergib das Recht an der Rolle des Gerätekontos in
-  dieser Gruppe. Es gilt für **alle Mitglieder dieser Rolle** – was dort an Mitgliedsfeldern mit Stufe 1 steht, ist dann
+  dieser Gruppe. Es gilt für **alle Mitglieder dieser Rolle** – was dort an Mitgliedsfeldern bis zu dieser Stufe steht, ist dann
   für den Bildschirm bestimmt. Ist die Gruppe eine **automatische Gruppe** mit „Aus Gruppe entfernen", nimmt der nächste
   Lauf das Gerät wieder heraus – außer du nimmst „Infoscreen-Devices" als Oder-Bedingung in den Filter auf; dann wird es
   von selbst Mitglied.
@@ -219,7 +220,7 @@ sehen" (Sicherheitsstufe 1). Dafür gibt es zwei Wege:
 Ohne das bleiben die Felder leer; die Prüfung der Gerätegruppe nennt das als Hinweis, nicht als Warnung.
 - **Bestehende Installation:** Wer schon eingerichtet hat, findet unter **Einstellungen → Gruppen und Rechte** den Knopf
   **„Gruppe „Infoscreen-People“ nachrüsten"**. Eine Vorschau sagt vorher, was geschieht: Er legt nur diese Gruppe an,
-  gibt ihr und der Gerätegruppe die beiden Rechte und nimmt die Geräte auf. Bestehende Rollen, Rechte und fremde Gruppen
+  gibt der Gerätegruppe das Recht auf sie und nimmt die Geräte auf; „Gruppenmitgliedsfelder sehen“ setzt der Administrator. Bestehende Rollen, Rechte und fremde Gruppen
   bleiben unberührt.
 
 ## 5. Gestalter aufnehmen

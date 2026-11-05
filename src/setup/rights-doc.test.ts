@@ -44,7 +44,7 @@ const plan = [true, false].flatMap((appointmentRooms) => planProvisioning({
 
 describe('docs/Rechte.md', () => {
     it('names every right the assistant grants or takes back, as the assistant labels it', () => {
-        const labels = new Set(plan.flatMap((g) => [...g.grants, ...g.forbidden, ...(g.defaultRoleGrants ?? [])]).flatMap((g) => [g.label, ...Object.values(g.dataLabels ?? {})]));
+        const labels = new Set(plan.flatMap((g) => [...g.grants, ...g.forbidden]).flatMap((g) => [g.label, ...Object.values(g.dataLabels ?? {})]));
         const missing = [...labels].filter((label) => !doc.includes(label));
         expect(missing).toEqual([]);
     });

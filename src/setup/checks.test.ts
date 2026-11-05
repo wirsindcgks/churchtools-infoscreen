@@ -631,6 +631,31 @@ describe('the people group on the device check (Plan.md 112, G70, G71)', () => {
         expect(people(unknown).some((c) => c.text.includes('nicht Mitglied'))).toBe(false);
     });
 
+    it('hints at a member of the people group without 10126, and warns of a level that does not exist (G73)', () => {
+        const member = (memberFieldLevels: { groupId: number; level: number }[] | null | undefined) =>
+            ({ ...device([grant(AUTH.groupWithMembersView, 40)], [{ id: 40, name: PEOPLE.name, grants: [] }]), memberFieldLevels }) as DeviceMember;
+        const run = (m: DeviceMember, securityLevels?: { id: number; name: string }[] | null) =>
+            checkDeviceGroup({ ...base, members: [m], peopleGroup: PEOPLE, plannedAuthIds: planned, securityLevels });
+        const levels = [{ id: 1, name: 'Öffentlich' }, { id: 2, name: 'Intern' }];
+        expect(people(run(member([]))).find((c) => c.level === 'info')?.text).toContain('sieht in „Infoscreen-People" keine Mitgliedsfelder');
+        // Not read: nothing to say. Held on an existing level: neither hint nor warning.
+        expect(people(run(member(null))).some((c) => c.level === 'info')).toBe(false);
+        const fine = run(member([{ groupId: 40, level: 2 }]), levels);
+        expect(people(fine).some((c) => c.level === 'info')).toBe(false);
+        expect(fine.some((c) => c.text.includes('Gruppenmitgliedsfelder sehen'))).toBe(false);
+        const missing = run(member([{ groupId: 40, level: 5 }]), levels).find((c) => c.text.includes('Gruppenmitgliedsfelder sehen'));
+        expect(missing).toMatchObject({ level: 'warn', category: 'rights', text: expect.stringContaining('„Infoscreen-People“ für eine Sicherheitsstufe, die es nicht gibt (ID 5)') });
+        // The levels are not read: the warning stays out.
+        expect(run(member([{ groupId: 40, level: 5 }]), null).some((c) => c.text.includes('Gruppenmitgliedsfelder sehen'))).toBe(false);
+    });
+
+    it('warns of a released group whose member fields point to a level that does not exist', () => {
+        const released = [{ id: 51, name: 'Mitarbeiter' }];
+        const m = { ...device([grant(AUTH.groupWithMembersView, 51)], []), memberFieldLevels: [{ groupId: 51, level: 7 }] };
+        const checks = checkDeviceGroup({ ...base, members: [m], releasedPeopleGroups: released, plannedAuthIds: planned, securityLevels: [{ id: 1, name: 'Öffentlich' }] });
+        expect(checks.find((c) => c.text.includes('Gruppenmitgliedsfelder sehen'))).toMatchObject({ level: 'warn', category: 'rights', text: expect.stringContaining('„Mitarbeiter“') });
+    });
+
     it('checks each released group: seen (1104) is ok, not seen fails while a block uses it, no membership is only a hint (Stück 2a)', () => {
         const released = [{ id: 51, name: 'Mitarbeiter' }];
         const seen = checkDeviceGroup({ ...base, members: [device([grant(AUTH.groupWithMembersView, 51)], [])], releasedPeopleGroups: released, plannedAuthIds: planned });
@@ -639,9 +664,9 @@ describe('the people group on the device check (Plan.md 112, G70, G71)', () => {
             expect.objectContaining({ level: 'info', category: 'people', text: expect.stringContaining('sieht in „Mitarbeiter" keine Mitgliedsfelder') }),
         ]);
         // The right read itself wins over membership: from a parent group without being a member (G72), or missing although a member.
-        const inherited = checkDeviceGroup({ ...base, members: [{ ...device([grant(AUTH.groupWithMembersView, 51)], []), memberFieldGroupIds: [51] }], releasedPeopleGroups: released, plannedAuthIds: planned });
+        const inherited = checkDeviceGroup({ ...base, members: [{ ...device([grant(AUTH.groupWithMembersView, 51)], []), memberFieldLevels: [{ groupId: 51, level: 1 }] }], releasedPeopleGroups: released, plannedAuthIds: planned });
         expect(people(inherited).map((c) => c.level)).toEqual(['ok']);
-        const memberWithout = checkDeviceGroup({ ...base, members: [{ ...device([grant(AUTH.groupWithMembersView, 51)], [{ id: 51, name: 'Mitarbeiter', grants: [] }]), memberFieldGroupIds: [] }], releasedPeopleGroups: released, plannedAuthIds: planned });
+        const memberWithout = checkDeviceGroup({ ...base, members: [{ ...device([grant(AUTH.groupWithMembersView, 51)], [{ id: 51, name: 'Mitarbeiter', grants: [] }]), memberFieldLevels: [] }], releasedPeopleGroups: released, plannedAuthIds: planned });
         expect(people(memberWithout).map((c) => c.level)).toEqual(['ok', 'info']);
         const blind = checkDeviceGroup({ ...base, members: [device([], null)], releasedPeopleGroups: released, peopleInUse: true, plannedAuthIds: planned });
         expect(people(blind)).toEqual([expect.objectContaining({ level: 'fail', text: expect.stringContaining('sieht die Gruppe „Mitarbeiter" nicht') })]);
