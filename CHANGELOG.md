@@ -4,7 +4,7 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
-## [Unveröffentlicht]
+## [0.51.0] – 2026-11-05
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für seine Rückmeldung zum Baustein „Personen“
 ([#259](https://github.com/wirsindcgks/churchtools-infoscreen/issues/259)).
@@ -1631,6 +1631,7 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 - **Anleitungen** zur [Einrichtung](docs/Einrichtung.md), zum [Einstieg je Rolle](docs/Onboarding.md) – mit
   Bildern für neue Gestalter – und eine [Übersicht der Rechte](docs/Rechte.md).
 
+[0.51.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.51.0
 [0.50.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.50.0
 [0.49.2]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.49.2
 [0.49.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.49.1
