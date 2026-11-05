@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, excessRights, groupChecks, has, scopeExcess, ALL_DATA, type Check, type DeviceMember, type Grant, type OtherGroup, type RoleRights } from './checks';
+import { AUTH, checkDesignerGroup, checkDeviceGroup, checkStatus, devicesReach, excessRights, groupChecks, has, personDataReach, scopeExcess, ALL_DATA, type Check, type DeviceMember, type Grant, type OtherGroup, type RoleRights } from './checks';
 import { PUBLIC_CALENDAR_PATH } from '../ct/api';
 
 const grant = (authId: number, dataId: number | null = null): Grant => ({ authId, dataId, type: 'grant' });
@@ -661,36 +661,93 @@ describe('the people group on the device check (Plan.md 112, G70, G71)', () => {
         }
     });
 
-    describe('released person fields (Plan.md 112, Stück 3)', () => {
-        const fields = [{ key: 'email', name: 'E-Mail' }, { key: 'city', name: 'Ort' }];
-        const run = (grants: Grant[], releasedPersonFields = fields) =>
-            checkDeviceGroup({ ...base, members: [device(grants)], releasedPersonFields, plannedAuthIds: [...planned, AUTH.personDataView] });
-        const line = (checks: Check[]) => checks.filter((c) => c.text.includes('Personen'));
+    describe('released person fields (Plan.md 112, Stück 3, G73)', () => {
+        const email = { key: 'email', name: 'E-Mail', level: 1 };
+        const city = { key: 'city', name: 'Ort', level: 2 };
+        const levels = (...ids: number[]) => ids.map((id) => ({ id, name: `S${id}` }));
+        const run = (grants: Grant[], releasedPersonFields = [email, city], securityLevels: { id: number; name: string }[] | null = levels(1, 2, 3, 4)) =>
+            checkDeviceGroup({ ...base, members: [device(grants)], releasedPersonFields, securityLevels, plannedAuthIds: planned });
+        const warnings = (checks: Check[]) => checks.filter((c) => c.level === 'warn');
+        const info = (checks: Check[]) => checks.filter((c) => c.level === 'info' && c.text.includes('Personenfelder freigeschaltet'));
 
-        it('takes 125 at level 1 as planned: no warning, an info line with the fields instead', () => {
-            const checks = run([grant(AUTH.personDataView, 1)]);
-            expect(checks.filter((c) => c.level === 'warn')).toEqual([]);
-            expect(line(checks)).toEqual([expect.objectContaining({ level: 'info', category: 'people', text: 'Personenfelder freigeschaltet: E-Mail, Ort.' })]);
+        it('reaches by the order of the ids: a level held covers the lower ones', () => {
+            const checks = run([grant(AUTH.personDataView, 2)]);
+            expect(warnings(checks)).toEqual([]);
+            expect(info(checks)).toEqual([expect.objectContaining({ category: 'people', text: 'Personenfelder freigeschaltet: E-Mail, Ort.' })]);
         });
 
-        it('warns of 125 beyond level 1 and of 125 for all data, also while fields are released', () => {
-            for (const data of [[grant(AUTH.personDataView, 1), grant(AUTH.personDataView, 2)], [grant(AUTH.personDataView, -1)], [grant(AUTH.personDataView)]]) {
+        it('warns of a field above the reach, and has no info line where the reach falls short of the need', () => {
+            const checks = run([grant(AUTH.personDataView, 1)]);
+            expect(warnings(checks)).toEqual([expect.objectContaining({ category: 'people', text: expect.stringContaining('sieht Personendaten nur bis „S1“ – Ort bleiben leer') })]);
+            expect(info(checks)).toEqual([]);
+        });
+
+        it('warns of a level above the need, also for all data', () => {
+            for (const data of [[grant(AUTH.personDataView, 3)], [grant(AUTH.personDataView, ALL_DATA)], [grant(AUTH.personDataView)]]) {
                 const checks = run(data);
-                expect(checks.some((c) => c.level === 'warn' && c.text.includes('über Stufe 1 hinaus'))).toBe(true);
-                expect(checks.some((c) => c.level === 'info' && c.text.includes('Personenfelder freigeschaltet'))).toBe(false);
+                expect(warnings(checks)).toEqual([expect.objectContaining({ category: 'rights', text: expect.stringContaining('brauchen nur „S2“') })]);
             }
+            expect(warnings(run([grant(AUTH.personDataView)]))[0]!.text).toContain('bis „S4“');
+        });
+
+        it('is quiet and informs where the level fits exactly', () => {
+            const checks = run([grant(AUTH.personDataView, 1)], [email]);
+            expect(warnings(checks)).toEqual([]);
+            expect(info(checks)).toHaveLength(1);
+        });
+
+        it('knows an instance without id 1: a right on level 1 points to no level and reaches nothing', () => {
+            const checks = run([grant(AUTH.personDataView, 1)], [{ ...email, level: 500 }, { ...city, level: 10325 }], levels(500, 10325, 20325));
+            expect(warnings(checks).map((c) => c.text)).toEqual([
+                expect.stringContaining('für eine Sicherheitsstufe, die es nicht gibt (ID 1)'),
+                expect.stringContaining('darf keine Personendaten sehen'),
+            ]);
+            const fine = run([grant(AUTH.personDataView, 10325)], [{ ...email, level: 500 }, { ...city, level: 10325 }], levels(500, 10325, 20325));
+            expect(warnings(fine)).toEqual([]);
+            // Without released fields the right on a missing level gets its own line, not "darf Personendaten sehen".
+            const unreleased = run([grant(AUTH.personDataView, 1)], [], levels(500, 10325, 20325));
+            expect(warnings(unreleased).map((c) => c.text)).toEqual([expect.stringContaining('die es nicht gibt (ID 1)')]);
+        });
+
+        it('reads the reach from the ids where the levels were not read, without a warning of a missing level', () => {
+            const checks = run([grant(AUTH.personDataView, 2)], [email, city], null);
+            expect(warnings(checks)).toEqual([]);
+            expect(info(checks)).toHaveLength(1);
+            expect(warnings(run([grant(AUTH.personDataView, 1)], [email, city], null))).toHaveLength(1);
+            expect(run([grant(AUTH.personDataView, 4)], [email], null).some((c) => c.text.includes('brauchen nur „Stufe 1“'))).toBe(true);
         });
 
         it('warns of 125 without a release, and of 10101 always', () => {
             expect(run([grant(AUTH.personDataView, 1)], []).filter((c) => c.level === 'warn' && c.text.includes('Personendaten sehen'))).toHaveLength(1);
-            const withRelease = run([grant(AUTH.groupMembersViewIntern), grant(AUTH.personDataView, 1)]);
+            const withRelease = run([grant(AUTH.groupMembersViewIntern), grant(AUTH.personDataView, 2)]);
             expect(withRelease.filter((c) => c.level === 'warn' && c.text.includes('Personendaten sehen'))).toHaveLength(1);
         });
 
         it('says that the released fields stay empty where the device lacks 125', () => {
             const checks = run([]);
             expect(checks.some((c) => c.level === 'warn' && c.text.includes('bleiben leer'))).toBe(true);
-            expect(checks.some((c) => c.text.includes('Personenfelder freigeschaltet'))).toBe(false);
+            expect(info(checks)).toEqual([]);
+        });
+    });
+
+    describe('personDataReach and devicesReach (G73)', () => {
+        const held = (...ids: (number | null)[]) => ids.map((id) => grant(AUTH.personDataView, id));
+        it('takes the highest known level held, lists the unknown, and ignores revoked ones', () => {
+            expect(personDataReach(held(1, 3), [1, 2, 3])).toEqual({ reach: 3, missing: [] });
+            expect(personDataReach(held(1, 9), [1, 2, 3])).toEqual({ reach: 1, missing: [9] });
+            expect(personDataReach(held(1), [500])).toEqual({ reach: null, missing: [1] });
+            expect(personDataReach(held(1, 2), null)).toEqual({ reach: 2, missing: [] });
+            expect(personDataReach([...held(1, 2), { authId: AUTH.personDataView, dataId: 2, type: 'revoke' }], [1, 2])).toEqual({ reach: 1, missing: [] });
+            expect(personDataReach([], [1])).toEqual({ reach: null, missing: [] });
+        });
+        it('gives all data the highest level, or infinity where the levels are unknown', () => {
+            expect(personDataReach(held(ALL_DATA), [1, 5, 3]).reach).toBe(5);
+            expect(personDataReach(held(null), null).reach).toBe(Number.POSITIVE_INFINITY);
+        });
+        it('takes the smallest reach of all devices, none where one sees nothing or there is no device', () => {
+            expect(devicesReach([held(3), held(2)], [1, 2, 3])).toBe(2);
+            expect(devicesReach([held(3), []], [1, 2, 3])).toBeNull();
+            expect(devicesReach([], [1, 2, 3])).toBeNull();
         });
     });
 

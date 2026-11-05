@@ -9,7 +9,7 @@
  * of the extension itself exist only once it is installed.
  */
 
-import { PUBLIC_CALENDAR_PATH } from '../ct/api';
+import { PUBLIC_CALENDAR_PATH, type SecurityLevel } from '../ct/api';
 import type { RoomInfo } from '../rooms/normalize';
 import { t } from '../i18n/designer';
 import { WIKI_CATEGORY_NAME } from '../media/wiki';
@@ -37,12 +37,6 @@ export const AUTH = {
 export const POST_AUTH_IDS: readonly number[] = [10130, 10131];
 
 export const PERSON_DATA_AUTH_IDS: readonly number[] = [AUTH.personDataView, AUTH.groupMembersViewIntern];
-
-/** Whether "Personendaten sehen" (125) is held at security level 1 and at no other (not for all data, not without one); revoked entries do not count. */
-export function personDataAtLevel1Only(grants: Grant[]): boolean {
-    const entries = grants.filter((g) => g.authId === AUTH.personDataView && (g.type ?? 'grant') === 'grant');
-    return entries.length > 0 && entries.every((g) => g.dataId === 1 || !has(grants, AUTH.personDataView, g.dataId ?? undefined)) && has(grants, AUTH.personDataView, 1);
-}
 
 /** `dataId` of a right granted for all data, e.g. all calendars – seen on person rights (G30). */
 export const ALL_DATA = -1;
@@ -75,6 +69,38 @@ export function has(grants: Grant[], authId: number, dataId?: number): boolean {
     const granted = grants.some((g) => matches(g) && (g.type ?? 'grant') === 'grant');
     const revoked = grants.some((g) => matches(g) && g.type === 'revoke');
     return granted && !revoked;
+}
+
+/** Everything this account holds in all: its own rights and those of its other groups. Whoever knows the address has them all. */
+export function memberHoldings(member: DeviceMember): Grant[] {
+    return [...member.grants, ...(member.otherGroups ?? []).flatMap((g) => g.grants ?? [])];
+}
+
+/**
+ * How far "Personendaten sehen" (125) reaches, in security levels (G73): the id is the sorting, and whoever sees a level sees every
+ * lower id with it. `reach` is the highest level id held that exists (`levelIds`; null: levels not read, then the highest held),
+ * the highest level for all data, `Infinity` for all data when the levels are not known; null: nothing that counts.
+ * `missing` are held ids that point to no level – ChurchTools accepts such a right without a word.
+ */
+export function personDataReach(grants: Grant[], levelIds: readonly number[] | null): { reach: number | null; missing: number[] } {
+    const entries = grants.filter((g) => g.authId === AUTH.personDataView && (g.type ?? 'grant') === 'grant' && has(grants, AUTH.personDataView, g.dataId ?? undefined));
+    if (entries.some((g) => g.dataId === ALL_DATA || g.dataId === null)) {
+        const all = levelIds === null ? Number.POSITIVE_INFINITY : levelIds.length ? Math.max(...levelIds) : null;
+        return { reach: all, missing: [] };
+    }
+    const held = [...new Set(entries.map((g) => g.dataId as number))];
+    const known = levelIds === null ? held : held.filter((id) => levelIds.includes(id));
+    return {
+        reach: known.length ? Math.max(...known) : null,
+        missing: levelIds === null ? [] : held.filter((id) => !levelIds.includes(id)).sort((a, b) => a - b),
+    };
+}
+
+/** The level all devices reach together: the smallest `reach`; null when one reaches none or there is no device. */
+export function devicesReach(holdings: Grant[][], levelIds: readonly number[] | null): number | null {
+    if (!holdings.length) return null;
+    const reaches = holdings.map((h) => personDataReach(h, levelIds).reach);
+    return reaches.some((r) => r === null) ? null : Math.min(...(reaches as number[]));
 }
 
 export function checkStatus(statusId: number | null | undefined): Check {
@@ -270,8 +296,10 @@ export interface DeviceGroupInput {
      * (1104). Being a member there is a choice of the administrator – without it only the member fields stay empty, a hint and no warning.
      */
     releasedPeopleGroups?: { id: number; name: string }[];
-    /** The person fields an administrator released for the block "Personen" (Plan.md 112, Stück 3): then 125 at level 1 is planned, no warning. */
-    releasedPersonFields?: { key: string; name: string }[];
+    /** The person fields an administrator released for the block "Personen" (Plan.md 112, Stück 3), with their security level (`secLevel`; null: unknown). */
+    releasedPersonFields?: { key: string; name: string; level: number | null }[];
+    /** The security levels of the instance, read at this run (G73); missing or null: not read. */
+    securityLevels?: SecurityLevel[] | null;
     /** The device group is the assistant's own: whether posts are switched off in it. Missing: not its group. */
     devicePostsDisabled?: boolean;
     moduleRights?: ModuleRights;
@@ -377,7 +405,7 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
     }
     checks.push({ level: 'ok', category: 'group', text: t.setup.checks.devices(input.members.length) });
     // What each account holds in all: its own rights and those of its other groups. Whoever knows the address has them all.
-    const holdings = new Map(input.members.map((m) => [m, [...m.grants, ...(m.otherGroups ?? []).flatMap((g) => g.grants ?? [])]]));
+    const holdings = new Map(input.members.map((m) => [m, memberHoldings(m)]));
     for (const m of input.members) {
         if (m.otherGroups === null) {
             checks.push({
@@ -554,42 +582,66 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         }
     }
 
-    // Personendaten (125) and group members (10101) give a person's e-mail address at the first level (G70, G71) – a warning, except 125 at
-    // level 1 while an administrator released person fields: that is planned (Plan.md 112, Stück 3).
+    // Group members (10101) give a person's e-mail address at the first level (G70, G71); Personendaten (125) is set by the administrator and
+    // read against the security levels (G73): the id is the sorting, so what a device reaches is the highest level it holds.
     const releasedFields = input.releasedPersonFields ?? [];
-    const planned125 = (grants: Grant[]): boolean => releasedFields.length > 0 && personDataAtLevel1Only(grants);
+    const levels = input.securityLevels ?? null;
+    const levelIds = levels ? levels.map((l) => l.id) : null;
+    const levelName = (id: number): string =>
+        id === Number.POSITIVE_INFINITY ? t.setup.checks.levelAll : (levels?.find((l) => l.id === id)?.name ?? t.setup.checks.levelFallback(id));
+    const known = releasedFields.flatMap((f) => (f.level === null ? [] : [f.level]));
+    const need = known.length ? Math.max(...known) : null;
+    const blindDevices: string[] = [];
+    let seen = false;
     for (const member of input.members) {
         const held = holdings.get(member)!;
-        const beyond = has(held, AUTH.personDataView) && !planned125(held);
-        if (has(held, AUTH.groupMembersViewIntern) || (beyond && !releasedFields.length)) {
+        const r = personDataReach(held, levelIds);
+        // A 125 that points to no level alone opens nothing: it gets its own line below, not this one.
+        if (has(held, AUTH.groupMembersViewIntern) || (r.reach !== null && !releasedFields.length)) {
+            checks.push({ level: 'warn', category: 'rights', text: t.setup.checks.personData(member.label), detail: t.setup.checks.personDataDetail });
+        }
+        if (r.missing.length) {
             checks.push({
                 level: 'warn',
                 category: 'rights',
-                text: t.setup.checks.personData(member.label),
-                detail: t.setup.checks.personDataDetail,
+                text: t.setup.checks.personDataMissingLevel(member.label, r.missing),
+                detail: t.setup.checks.personDataMissingLevelDetail,
             });
-        } else if (beyond) {
+        }
+        if (!releasedFields.length) continue;
+        if (r.reach === null) {
+            blindDevices.push(member.label);
+            continue;
+        }
+        const outOfReach = releasedFields.filter((f) => f.level !== null && f.level > r.reach!);
+        if (outOfReach.length) {
+            checks.push({
+                level: 'warn',
+                category: 'people',
+                text: t.setup.checks.personFieldsOutOfReach(member.label, outOfReach.map((f) => f.name).join(', '), levelName(r.reach)),
+                detail: t.setup.checks.personFieldsOutOfReachDetail,
+            });
+        }
+        if (need !== null && r.reach > need) {
             checks.push({
                 level: 'warn',
                 category: 'rights',
-                text: t.setup.checks.personDataBeyond(member.label),
+                text: t.setup.checks.personDataBeyond(member.label, levelName(r.reach), levelName(need)),
                 detail: t.setup.checks.personDataBeyondDetail,
             });
         }
+        if (r.reach >= (need ?? r.reach)) seen = true;
     }
-    if (releasedFields.length) {
-        const blind = input.members.filter((m) => !has(holdings.get(m)!, AUTH.personDataView)).map((m) => m.label);
-        if (blind.length) {
-            checks.push({ level: 'warn', category: 'people', text: t.setup.checks.personFieldsBlind(blind.join(', ')), detail: t.setup.checks.personFieldsBlindDetail });
-        }
-        if (input.members.some((m) => planned125(holdings.get(m)!))) {
-            checks.push({
-                level: 'info',
-                category: 'people',
-                text: t.setup.checks.personFieldsReleased(releasedFields.map((f) => f.name).join(', ')),
-                detail: t.setup.checks.personFieldsReleasedDetail,
-            });
-        }
+    if (blindDevices.length) {
+        checks.push({ level: 'warn', category: 'people', text: t.setup.checks.personFieldsBlind(blindDevices.join(', ')), detail: t.setup.checks.personFieldsBlindDetail });
+    }
+    if (seen) {
+        checks.push({
+            level: 'info',
+            category: 'people',
+            text: t.setup.checks.personFieldsReleased(releasedFields.map((f) => f.name).join(', ')),
+            detail: t.setup.checks.personFieldsReleasedDetail,
+        });
     }
 
     // Videos come through the download address, which wants "Wiki-Bereich sehen" (502) and nothing more (G47, Plan.md 52).

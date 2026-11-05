@@ -1,6 +1,6 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { describe, expect, it, vi } from 'vitest';
-import { fetchAppointments, fetchAppointmentTags, fetchGroupHomepage, fetchGroupHomepageList, fetchPersonFields, fetchPublicCalendars } from './api';
+import { fetchAppointments, fetchAppointmentTags, fetchGroupHomepage, fetchGroupHomepageList, fetchPersonFields, fetchPublicCalendars, fetchSecurityLevels } from './api';
 
 vi.mock('@churchtools/churchtools-client', () => ({ churchtoolsClient: { get: vi.fn(async () => []) } }));
 
@@ -79,5 +79,22 @@ describe('fetchPersonFields (Plan.md 112, Stück 3, G71)', () => {
             { key: 'mobile', name: 'mobile', secLevel: 1, isActive: false },
         ]);
         expect(churchtoolsClient.get).toHaveBeenCalledWith('/fields');
+    });
+});
+
+describe('fetchSecurityLevels (G73)', () => {
+    it('reads id and name, ascending by id – the id is the sorting', async () => {
+        vi.mocked(churchtoolsClient.get).mockResolvedValueOnce([
+            { id: 20325, name: 'Leitung', sortKey: 3 },
+            { id: 500, name: 'Offen', sortKey: 1 },
+            { id: 10325 },
+            { name: 'ohne ID' },
+        ]);
+        expect(await fetchSecurityLevels()).toEqual([
+            { id: 500, name: 'Offen' },
+            { id: 10325, name: '10325' },
+            { id: 20325, name: 'Leitung' },
+        ]);
+        expect(churchtoolsClient.get).toHaveBeenCalledWith('/securitylevels');
     });
 });

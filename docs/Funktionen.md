@@ -98,7 +98,7 @@ Reihenfolge, Sortierung und ob das Bild erscheint; das Bild ist rund wie ein Pro
 (im Raster, Spalten und Reihen einstellbar) und einer **Liste** mit einer Zeile je Person – kleines rundes Bild, Name, Rolle und
 die gewählten Angaben –, die wie die anderen Listen seitenweise blättert.
 E-Mail-Adresse, Telefon, Ort und Geburtstag (Tag und Monat) zeigt der Baustein nur, wenn ein Administrator diese **Personenfelder**
-ausdrücklich freischaltet (nur Sicherheitsstufe 1, mit Datenschutzhinweis und Rückfrage); die Anschrift nie. Der Baustein wählt
+ausdrücklich freischaltet (nur in der Sicherheitsstufe, die ein Administrator den Geräten gibt, mit Datenschutzhinweis und Rückfrage); die Anschrift nie. Der Baustein wählt
 dann unter „Personenfelder" aus den freigeschalteten. Einrichtung und Datenschutz stehen
 [in der Einrichtungsanleitung](Einrichtung.md#personen-auf-den-bildschirmen).
 

@@ -8,7 +8,7 @@ import Icon, { type IconName } from '../designer/Icon.vue';
 import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import SelectMenu from '../designer/SelectMenu.vue';
-import { fetchCalendars, fetchPersonFields, fetchPublicCalendars, fetchResourceMasterdata, fetchServiceGroups, fetchServices, type Calendar, type PersonFieldInfo } from '../ct/api';
+import { fetchCalendars, fetchPersonFields, fetchPublicCalendars, fetchResourceMasterdata, fetchSecurityLevels, fetchServiceGroups, fetchServices, type Calendar, type PersonFieldInfo, type SecurityLevel } from '../ct/api';
 import { serviceChoices, type ServiceInfo } from '../appointments/services';
 import { currentPerson, httpStatus, instanceBaseUrl, personUrl } from '../ct/client';
 import { playerUrl } from '../designer/player-url';
@@ -20,7 +20,7 @@ import { PERSON_FIELD_KEYS, type PersonFieldKey, type ScreenDoc } from '../model
 import { withDeviceLogin } from '../player/device-login';
 import { resourceTypesOf, roomTypeIdsOf, roomsOf, type ResourceMasterdata, type ResourceTypeInfo, type RoomInfo } from '../rooms/normalize';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
-import { AUTH, checkDesignerGroup, checkDeviceGroup, groupChecks, type Check, type RequiredRight } from '../setup/checks';
+import { AUTH, checkDesignerGroup, checkDeviceGroup, devicesReach, groupChecks, memberHoldings, type Check, type Grant, type RequiredRight } from '../setup/checks';
 import {
     canViewWiki,
     churchToolsProvisionApi,
@@ -52,7 +52,6 @@ import {
     applyRefresh,
     readRefresh,
     applyPeopleRelease,
-    applyPersonFieldRelease,
     refreshIsEmpty,
     refreshLogLine,
     type RefreshState,
@@ -315,7 +314,6 @@ function planInput(people?: 'new'): PlanInput {
         serviceCalendarIds: grantableCalendars(serviceCalendarIds),
         screenCalendarIds: releasedCalendars.value,
         peopleGroupIds: releasedPeopleGroups.value,
-        personFieldKeys: releasedPersonFields.value,
     };
 }
 
@@ -454,23 +452,42 @@ function withdrawPeopleGroup(id: number): void {
 /**
  * The person fields an administrator releases for the block "Personen" (Plan.md 112, Stück 3). `releasedPersonFields` is the release
  * as stored, `draftPersonFields` the choice on the page until „Speichern". `personFieldInfo` is what the instance says about the
- * fields (`GET /fields`): offered is a field that is active and of security level 1 – the only level that is given out.
+ * fields (`GET /fields`), `securityLevels` its security levels (`GET /securitylevels`), both read once per visit. Offered is a field that is
+ * active and lies in a security level the devices see (G73); the administrator gives that level in ChurchTools, the assistant does not.
  */
 const releasedPersonFields = ref<PersonFieldKey[]>([]);
 const draftPersonFields = ref<PersonFieldKey[]>([]);
 const personFieldInfo = ref<PersonFieldInfo[] | null>(null);
+const securityLevels = ref<SecurityLevel[] | null>(null);
 const personFieldsFailed = ref(false);
-let personFieldsRequested = false;
+let personFieldsLoad: Promise<void> | null = null;
 
-async function loadPersonFields(): Promise<void> {
-    if (personFieldsRequested || !repository) return;
-    personFieldsRequested = true;
-    try {
-        personFieldInfo.value = await fetchPersonFields();
-    } catch {
-        personFieldsFailed.value = true;
-    }
+/** The fields and the levels, read once; both come or none (then `personFieldsFailed`). Resolves also on failure. */
+function loadPersonFields(): Promise<void> {
+    if (!repository) return Promise.resolve();
+    personFieldsLoad ??= (async () => {
+        try {
+            const [info, levels] = await Promise.all([fetchPersonFields(), fetchSecurityLevels()]);
+            personFieldInfo.value = info;
+            securityLevels.value = levels;
+        } catch {
+            personFieldsFailed.value = true;
+        }
+    })();
+    return personFieldsLoad;
 }
+
+/**
+ * The security level the devices of the device group reach with „Personendaten sehen“: what each device holds, the smallest of all.
+ * Set by the device check; null until a group is chosen and checked. Without device accounts the default role of the group counts.
+ */
+const deviceHoldings = ref<Grant[][] | null>(null);
+/** A level id (number), `null`: the devices see none, `undefined`: not known yet. */
+const deviceReach = computed(() =>
+    deviceHoldings.value === null ? undefined : devicesReach(deviceHoldings.value, securityLevels.value?.map((l) => l.id) ?? null),
+);
+const levelName = (id: number): string =>
+    id === Number.POSITIVE_INFINITY ? t.setup.checks.levelAll : (securityLevels.value?.find((l) => l.id === id)?.name ?? t.setup.checks.levelFallback(id));
 
 const personFieldName = (key: string): string => personFieldInfo.value?.find((f) => f.key === key)?.name ?? t.inspector.personFieldNames[key] ?? key;
 /** The rows of the list: the fields of the instance that are active, plus any released one the instance no longer offers (so it can be withdrawn). */
@@ -479,8 +496,18 @@ const personFieldRows = computed(() =>
         const info = personFieldInfo.value?.find((f) => f.key === key);
         const checked = draftPersonFields.value.includes(key);
         if (!checked && !info?.isActive) return [];
-        const offered = !!info && info.isActive && info.secLevel === 1;
-        return [{ key, name: personFieldName(key), checked, offered, level: info?.secLevel ?? null }];
+        const secLevel = info?.secLevel ?? null;
+        const reach = deviceReach.value;
+        const offered =
+            !!info &&
+            info.isActive &&
+            secLevel !== null &&
+            typeof reach === 'number' &&
+            secLevel <= reach &&
+            (securityLevels.value === null || securityLevels.value.some((l) => l.id === secLevel));
+        const name = personFieldName(key);
+        const note = offered ? t.setup.personFields.level(levelName(secLevel!)) : secLevel === null ? t.setup.personFields.levelUnknown : t.setup.personFields.outOfReach(levelName(secLevel));
+        return [{ key, name, checked, offered, note }];
     }),
 );
 function togglePersonField(key: PersonFieldKey, on: boolean): void {
@@ -544,10 +571,12 @@ const rightsSignature = (): string => JSON.stringify({ plan: plan.value, rooms: 
 async function saveForm(): Promise<void> {
     const form = formPage.value;
     if (!form || !repository || formState.value === 'saving') return;
-    // Releasing person fields asks first: the device then reads all of security level 1 (Plan.md 112, Stück 3, G71).
+    // Releasing person fields asks first: the device reads all fields up to its security level (Plan.md 112, Stück 3, G71, G73).
     if (form === 'people' && draftPersonFields.value.length && !sameKeys(draftPersonFields.value, releasedPersonFields.value)) {
         const names = draftPersonFields.value.map(personFieldName).join(', ');
-        if (!(await confirm({ message: t.setup.personFields.confirm(names), confirmLabel: t.setup.personFields.release }))) return;
+        const reach = deviceReach.value;
+        const level = typeof reach === 'number' ? levelName(reach) : '?';
+        if (!(await confirm({ message: t.setup.personFields.confirm(names, level), confirmLabel: t.setup.personFields.release }))) return;
     }
     formState.value = 'saving';
     error.value = null;
@@ -585,7 +614,6 @@ async function saveForm(): Promise<void> {
             const nextFields = PERSON_FIELD_KEYS.filter((key) => draftPersonFields.value.includes(key));
             await persistSettings({ peopleGroupIds: next, personFieldKeys: nextFields });
             const previous = releasedPeopleGroups.value;
-            const previousFields = releasedPersonFields.value;
             releasedPeopleGroups.value = next;
             draftPeopleGroups.value = [...next];
             releasedPersonFields.value = nextFields;
@@ -599,11 +627,6 @@ async function saveForm(): Promise<void> {
                     await applyPeopleRelease(deviceGroup, previous, next, churchToolsProvisionApi);
                 } catch (e) {
                     rightsNotice = t.setup.peopleGroups.rightsFailed(explain(e));
-                }
-                try {
-                    await applyPersonFieldRelease(deviceGroup, previousFields, nextFields, churchToolsProvisionApi);
-                } catch (e) {
-                    rightsNotice ??= t.setup.personFields.rightsFailed(explain(e));
                 }
             }
             void check('device');
@@ -1055,6 +1078,7 @@ function postsDisabledIn(groupId: number): boolean | undefined {
 async function check(side: Side): Promise<void> {
     const groupId = selected[side];
     checks[side] = null;
+    if (side === 'device') deviceHoldings.value = null;
     if (groupId === null) return;
     busy[side] = true;
     try {
@@ -1071,6 +1095,8 @@ async function check(side: Side): Promise<void> {
                 roomIds: rooms.map((r) => r.id),
             });
         } else {
+            // The fields and the levels: without them the check runs as well, only blind to what a device reaches.
+            await loadPersonFields();
             const members = await Promise.all(
                 rights.members.map(async (m) => {
                     const person = await loadPersonGrants(m.personId);
@@ -1096,6 +1122,7 @@ async function check(side: Side): Promise<void> {
                     return { label: person.label, grants: [...m.roleGrants, ...person.grants], otherGroups, memberFieldGroupIds };
                 }),
             );
+            deviceHoldings.value = members.length ? members.map(memberHoldings) : [rights.roles.find((r) => r.isDefault)?.grants ?? []];
             checks.device = checkDeviceGroup({
                 statusId: rights.group.statusId,
                 members,
@@ -1112,7 +1139,8 @@ async function check(side: Side): Promise<void> {
                 peopleGroup: peopleGroupId.value === null ? undefined : { id: peopleGroupId.value, name: groups.value.find((g) => g.id === peopleGroupId.value)?.name ?? GROUP_NAMES.people },
                 peopleInUse,
                 releasedPeopleGroups: releasedPeopleGroups.value.map((id) => ({ id, name: groupNameById(id) })),
-                releasedPersonFields: releasedPersonFields.value.map((key) => ({ key, name: personFieldName(key) })),
+                releasedPersonFields: releasedPersonFields.value.map((key) => ({ key, name: personFieldName(key), level: personFieldInfo.value?.find((f) => f.key === key)?.secLevel ?? null })),
+                securityLevels: securityLevels.value,
                 devicePostsDisabled: postsDisabledIn(groupId),
                 wikiCategoryId,
                 moduleRights: moduleRights('device'),
@@ -1724,7 +1752,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         </template>
                     </section>
 
-                    <!-- Plan.md 112, Stück 3: person fields – the device gets level 1 as a whole, the block shows only the ticked ones. -->
+                    <!-- Plan.md 112, Stück 3: person fields – the device reads up to its security level as a whole, the block shows only the ticked ones. -->
                     <section class="d-card card" data-testid="person-fields">
                         <div class="privacy-alert" role="note" data-testid="person-fields-warning">
                             <h2>{{ t.setup.personFields.privacyTitle }}</h2>
@@ -1736,6 +1764,9 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         <p class="muted">{{ t.setup.personFields.detail }}</p>
                         <p v-if="!settingsLoaded" class="empty">{{ t.common.loading }}</p>
                         <template v-else>
+                            <p v-if="!personFieldsFailed && personFieldInfo" class="muted" data-testid="person-fields-reach">
+                                {{ deviceReach === undefined ? t.setup.personFields.reachUnknown : deviceReach === null ? t.setup.personFields.reachNone : t.setup.personFields.reach(levelName(deviceReach)) }}
+                            </p>
                             <p v-if="personFieldsFailed" class="error" role="alert" data-testid="person-fields-failed">{{ t.setup.personFields.failed }}</p>
                             <p v-else-if="!personFieldInfo" class="empty">{{ t.common.loading }}</p>
                             <p v-else-if="!personFieldRows.length" class="muted" data-testid="person-fields-none">{{ t.setup.personFields.none }}</p>
@@ -1750,7 +1781,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                     >
                                     <span class="d-choice-text">
                                         <span>{{ row.name }}</span>
-                                        <small>{{ row.offered ? t.setup.personFields.level1 : t.setup.personFields.higher(row.level) }}</small>
+                                        <small>{{ row.note }}</small>
                                     </span>
                                 </label>
                             </div>

@@ -147,7 +147,8 @@ auf einer Freizeit. Er liest **nur** die Gruppe **„Infoscreen-People"**:
 - **E-Mail-Adressen und andere Kontaktdaten zeigt der Baustein nur, wenn du sie ausdrücklich freischaltest** (siehe
   [Personenfelder freischalten](#personenfelder-freischalten)). Gib dem Gerät sonst **nie** „Personendaten sehen“ und **nie**
   „Gruppenmitglieder sehen“: Beide geben schon in der ersten Sicherheitsstufe die E-Mail-Adresse frei, und wer die
-  Adresse eines Fernsehers kennt, liest sie mit. Die Prüfung warnt davor.
+  Adresse eines Fernsehers kennt, liest sie mit. Die Prüfung warnt davor. (Ausnahme: „Personendaten sehen“ für freigeschaltete
+  Personenfelder, siehe unten – das gibt ein Administrator in ChurchTools, der Assistent vergibt es nicht.)
 - **Beiträge sind in „Infoscreen-Devices“ und „Infoscreen-People“ abgeschaltet.** Der Gruppentyp „Merkmal“ gäbe den
   Konten dort sonst das Recht, Beiträge zu schreiben, und niemand liest sie dort. Der Assistent schaltet sie bei der
   Einrichtung ab, auch beim Nachrüsten; bei einer älteren Einrichtung holt „Rechte aktualisieren“ das nach (die Vorschau
@@ -162,24 +163,25 @@ auf einer Freizeit. Er liest **nur** die Gruppe **„Infoscreen-People"**:
 Neben den Mitgliedsfeldern der Gruppe kann der Baustein Angaben aus dem **Personenprofil** zeigen: Telefon geschäftlich,
 Telefon privat, Handy, E-Mail, PLZ, Ort und Geburtstag (nur Tag und Monat, nie das Jahr). Das schaltet ein Administrator frei:
 
-1. **Einstellungen → Gruppen für „Personen"**, Abschnitt **„Personenfelder"**: die gewünschten Felder ankreuzen. Zur Wahl
-   stehen nur Felder, die in ChurchTools aktiv sind und die **Sicherheitsstufe 1** haben; ein Feld mit höherer Stufe wird mit
-   Hinweis angezeigt, aber nicht angeboten.
-2. **Speichern** fragt vorher zurück, denn das ist eine Entscheidung zum Datenschutz.
-3. Beim Speichern gibt der Assistent der **Gerätegruppe** „Personendaten sehen“ auf **Sicherheitsstufe 1** – nie höher.
-   Nimmst du alle Felder zurück, nimmt er das Recht wieder weg. Klappt das einmal nicht, bleibt die Freischaltung gespeichert
-   und „Rechte aktualisieren“ holt das Recht nach.
+1. In ChurchTools gibt ein Administrator der **Gerätegruppe** „Personendaten sehen“ auf der **niedrigsten Sicherheitsstufe**,
+   in der die gewünschten Felder liegen. Die Stufen sind je Gemeinde frei und bauen aufeinander auf: Wer eine Stufe sieht,
+   sieht die darunter mit. Der Infoscreen vergibt dieses Recht nicht selbst.
+2. **Einstellungen → Gruppen für „Personen"**, Abschnitt **„Personenfelder"**: Der Designer zeigt, bis zu welcher
+   Sicherheitsstufe die Geräte sehen, und bietet nur Felder an, die in ChurchTools aktiv sind und in dieser Reichweite liegen.
+   Ein Feld in einer höheren Stufe wird mit Hinweis angezeigt, aber nicht angeboten. Die Stufen liest der Designer bei jedem
+   Aufruf frisch aus ChurchTools.
+3. **Speichern** fragt vorher zurück, denn das ist eine Entscheidung zum Datenschutz.
 4. Im Designer wählt der Baustein unter **„Personenfelder"** aus den freigeschalteten; die Reihenfolge der Auswahl ist die
    Reihenfolge auf der Karte. Nimmst du ein Feld hier zurück, verschwindet es sofort vom Fernseher, auch wenn ein Baustein es noch gewählt hat.
 
 **Datenschutz:** ChurchTools gibt Personendaten einem Gerät nur als **ganze Sicherheitsstufe** frei, nicht je Feld. Die Auswahl
-je Feld macht der Infoscreen, nicht ChurchTools: Technisch kann das Gerät mit „Personendaten sehen“ auf Stufe 1 **alle Felder
-der Stufe 1** lesen – auch E-Mail, Telefon und Geburtsdatum der Personen in den freigegebenen Gruppen und in „Infoscreen-People" –,
+je Feld macht der Infoscreen, nicht ChurchTools: Technisch kann das Gerät mit „Personendaten sehen“ **alle Felder
+bis zu seiner Stufe** lesen – auch E-Mail, Telefon und Geburtsdatum der Personen in den freigegebenen Gruppen und in „Infoscreen-People" –,
 und das kann auch jeder, der die Adresse eines Fernsehers kennt. Der Baustein zeigt nur die angekreuzten Felder.
 Stimme die Freigabe mit der Gemeindeleitung und den betroffenen Personen ab. Beachte außerdem: Eine Gemeinde kann die Stufe
-eines Feldes in ChurchTools ändern (in der Verwaltung der Personenfelder); rutscht ein Feld dadurch auf Stufe 1, liest das Gerät es
+eines Feldes in ChurchTools ändern (in der Verwaltung der Personenfelder); rutscht ein Feld dadurch in die Reichweite des Geräts, liest es
 nach der Freischaltung mit. Prüfe die Stufen deshalb nach Änderungen dort. Die Prüfung der Gerätegruppe zeigt als Hinweis „Personenfelder
-freigeschaltet“ und warnt, wenn das Gerät Personendaten über Stufe 1 hinaus sehen darf.
+freigeschaltet“ und warnt, wenn das Gerät Personendaten über die Stufe der freigeschalteten Felder hinaus sehen darf, wenn Felder außerhalb seiner Reichweite liegen und wenn das Recht auf eine Stufe zeigt, die es nicht gibt.
 
 #### Eine vorhandene Gruppe zeigen
 
@@ -349,7 +351,7 @@ Mehr als lesen konnte das Gerät nie.
   Das Konto des Fernsehers darf sie lesen. Trage in Mitgliedsfelder nichts ein, was nicht in den Flur gehört, und stelle
   sie auf Sicherheitsstufe 1 nur, wenn sie öffentlich sein dürfen. Das Gerät erhält **nie** E-Mail-Adresse, Telefon oder
   Anschrift der Personen – es sei denn, ein Administrator schaltet unter „Personenfelder“ ausdrücklich Felder der
-  Sicherheitsstufe 1 frei. Dann kann das Gerät, und mit der Adresse eines Fernsehers jeder, **alle Felder der Stufe 1**
+  Sicherheitsstufe frei. Dann kann das Gerät, und mit der Adresse eines Fernsehers jeder, **alle Felder bis zu seiner Stufe**
   der Personen in den freigegebenen Gruppen und in „Infoscreen-People“ lesen; der Baustein zeigt nur die freigeschalteten.
 - **Eine eingebettete Webseite ist ein Aufruf bei Dritten:** Ihr Betreiber erfährt die Internetadresse des Geräts.
   Bettet nur ein, was ihr auch auf eurer Website einbetten würdet.

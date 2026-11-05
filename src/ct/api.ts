@@ -187,6 +187,21 @@ export async function fetchPersonFields(): Promise<PersonFieldInfo[]> {
         }));
 }
 
+/** A security level of the instance. The id is the sorting (G73): levels build on each other, a lower id is seen with a higher one. */
+export interface SecurityLevel {
+    id: number;
+    name: string;
+}
+
+/** The security levels, ascending by id. Read at every run, never remembered – the id changes when the levels are reordered (G73). */
+export async function fetchSecurityLevels(): Promise<SecurityLevel[]> {
+    const list = await churchtoolsClient.get<{ id?: unknown; name?: unknown }[]>('/securitylevels');
+    return (Array.isArray(list) ? list : [])
+        .filter((l): l is { id: number; name?: unknown } => typeof l.id === 'number')
+        .map((l) => ({ id: l.id, name: typeof l.name === 'string' && l.name ? l.name : String(l.id) }))
+        .sort((a, b) => a.id - b.id);
+}
+
 /**
  * The names of these groups, for the inspector's group choice and the setup (Plan.md 112, Stück 2a). A group the account may
  * not read is missing from the answer – the caller labels it by number.
