@@ -146,13 +146,15 @@ export function fetchPosts(groupIds: number[], limit: number): Promise<PostRespo
 /**
  * The members of the people group with their member fields (a list of `{ id, name, value, sortKey }`, G71) and the group's
  * roles (Plan.md 112). Only the members are essential: a `403` there is passed on, so the block can say that the right is
- * missing. The roles only name what the members carry – without them the block still shows names and pictures.
+ * missing. The roles only name what the members carry – without them the block still shows names and pictures. The same
+ * holds for the field definitions (`/memberfields`, G75): they give the types and the option names; without them a value shows as it comes.
  * `/persons` is asked only with a release and only for the fields a block chose – see `fetchPersons` (Plan.md 112, Stück 3).
  */
-export async function fetchGroupMembers(groupId: number): Promise<{ members: unknown[]; roles: unknown[] }> {
+export async function fetchGroupMembers(groupId: number): Promise<{ members: unknown[]; roles: unknown[]; fieldDefs: unknown[] }> {
     const members = await churchtoolsClient.getAllPages<unknown>(`/groups/${groupId}/members`);
     const roles = await churchtoolsClient.get<unknown[]>(`/groups/${groupId}/roles`).catch(() => []);
-    return { members, roles: Array.isArray(roles) ? roles : [] };
+    const fieldDefs = await churchtoolsClient.get<unknown[]>(`/groups/${groupId}/memberfields`).catch(() => []);
+    return { members, roles: Array.isArray(roles) ? roles : [], fieldDefs: Array.isArray(fieldDefs) ? fieldDefs : [] };
 }
 
 /**

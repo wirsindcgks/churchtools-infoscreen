@@ -1,8 +1,8 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { describe, expect, it, vi } from 'vitest';
-import { fetchAppointments, fetchAppointmentTags, fetchGroupHomepage, fetchGroupHomepageList, fetchPersonFields, fetchPublicCalendars, fetchSecurityLevels } from './api';
+import { fetchAppointments, fetchAppointmentTags, fetchGroupHomepage, fetchGroupHomepageList, fetchGroupMembers, fetchPersonFields, fetchPublicCalendars, fetchSecurityLevels } from './api';
 
-vi.mock('@churchtools/churchtools-client', () => ({ churchtoolsClient: { get: vi.fn(async () => []) } }));
+vi.mock('@churchtools/churchtools-client', () => ({ churchtoolsClient: { get: vi.fn(async () => []), getAllPages: vi.fn(async () => []) } }));
 
 const BASE = 'https://example.church.tools';
 
@@ -96,5 +96,13 @@ describe('fetchSecurityLevels (G73)', () => {
             { id: 20325, name: 'Leitung' },
         ]);
         expect(churchtoolsClient.get).toHaveBeenCalledWith('/securitylevels');
+    });
+});
+
+describe('fetchGroupMembers (G75)', () => {
+    it('reads the field definitions and goes on without them when they cannot be read', async () => {
+        vi.mocked(churchtoolsClient.getAllPages).mockResolvedValue([{ personId: 1 }]);
+        vi.mocked(churchtoolsClient.get).mockImplementation((url: string) => (url.endsWith('/memberfields') ? Promise.reject(new Error('403')) : Promise.resolve([{ groupTypeRoleId: 5 }])));
+        expect(await fetchGroupMembers(40)).toEqual({ members: [{ personId: 1 }], roles: [{ groupTypeRoleId: 5 }], fieldDefs: [] });
     });
 });

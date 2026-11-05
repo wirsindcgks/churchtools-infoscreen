@@ -176,3 +176,68 @@ describe('person fields (Plan.md 112, Stück 3, G71)', () => {
         expect(shownPersonFields(anna, read, undefined)).toEqual([]);
     });
 });
+
+describe('member field types and translated roles (Plan.md 114, G75)', () => {
+    const def = (id: number, fieldTypeCode: string, name = `Feld ${id}`, options: { id: string; name: string }[] = []) => ({ type: 'group', field: { id, name, fieldTypeCode, options } });
+    const colors = [{ id: '4', name: 'Rot' }, { id: '16', name: 'Blau' }, { id: '19', name: 'Grün' }];
+    const defs = [
+        def(1, 'select', 'Farbe', colors),
+        def(2, 'radioselect', 'Radio', colors),
+        def(3, 'multiselect', 'Mehrfach', colors),
+        def(4, 'checkbox', 'Taufe'),
+        def(5, 'date', 'Datum'),
+        def(6, 'number', 'Zahl'),
+        def(7, 'datetime', 'Zeit'),
+        def(8, 'textarea', 'Kommentar'),
+        def(9, 'text', 'Text'),
+    ];
+    const valuesOf = (values: [number, unknown][], fieldDefs: unknown[] = defs) => {
+        const group = normalizeMembers(40, [member(1, 'A', 'B', { fields: values.map(([id, value]) => field(id, `Feld ${id}`, value)) })], roles, [], false, fieldDefs);
+        return { fields: group.people[0]!.fields, group };
+    };
+
+    it('names a role by its translated name and falls back to the name', () => {
+        const group = normalizeMembers(40, [], [{ groupTypeRoleId: 5, name: 'leader', nameTranslated: ' Leiter ' }, { groupTypeRoleId: 6, name: 'participant' }]);
+        expect(group.roles).toEqual([{ id: 5, name: 'Leiter' }, { id: 6, name: 'participant' }]);
+    });
+
+    it('turns option ids into names and leaves out unknown ones', () => {
+        expect(valuesOf([[1, '16'], [2, '4'], [3, ['19', '4']]]).fields).toEqual({ '1': 'Blau', '2': 'Rot', '3': 'Grün, Rot' });
+        expect(valuesOf([[1, '99'], [2, null], [3, ['98', '99']]]).fields).toEqual({});
+        expect(valuesOf([[3, ['99', '16']]]).fields).toEqual({ '3': 'Blau' });
+    });
+
+    it('shows a checked box as the name of the field and an unchecked one not at all', () => {
+        expect(valuesOf([[4, '1']]).fields).toEqual({ '4': 'Taufe' });
+        expect(valuesOf([[4, '0']]).fields).toEqual({});
+        expect(valuesOf([[4, false]]).fields).toEqual({});
+        expect(valuesOf([[4, true]]).fields).toEqual({ '4': 'Taufe' });
+        expect(valuesOf([[4, 1]]).fields).toEqual({ '4': 'Taufe' });
+    });
+
+    it('writes a date and a number the German way', () => {
+        expect(valuesOf([[5, '2026-11-24']]).fields).toEqual({ '5': '24.11.2026' });
+        expect(valuesOf([[5, 'morgen']]).fields).toEqual({});
+        expect(valuesOf([[6, '12.5']]).fields).toEqual({ '6': '12,5' });
+        expect(valuesOf([[6, '12345']]).fields).toEqual({ '6': '12345' });
+        expect(valuesOf([[6, 'viel']]).fields).toEqual({});
+    });
+
+    it('keeps a date and time raw and marks it, and marks a comment field as Markdown', () => {
+        const { fields, group } = valuesOf([[7, '2026-11-24T18:30:00Z'], [8, '**fett**\n\n- eins'], [9, ' Text ']]);
+        expect(fields).toEqual({ '7': '2026-11-24T18:30:00Z', '8': '**fett**\n\n- eins', '9': 'Text' });
+        expect(group.fields.filter((f) => f.format).map((f) => [f.key, f.format])).toEqual([['7', 'datetime'], ['8', 'markdown']]);
+        expect(shownFields(group.people[0]!, ['8', '9', '7'], group.fields)).toEqual([
+            { key: '8', text: '**fett**\n\n- eins', format: 'markdown' },
+            { key: '9', text: 'Text' },
+            { key: '7', text: '2026-11-24T18:30:00Z', format: 'datetime' },
+        ]);
+    });
+
+    it('takes the field name of the value where the definition has none, and behaves as before without definitions', () => {
+        const noName = [{ type: 'group', field: { id: 4, fieldTypeCode: 'checkbox' } }];
+        expect(valuesOf([[4, '1']], noName).fields).toEqual({ '4': 'Feld 4' });
+        expect(valuesOf([[1, '16'], [4, '0'], [3, ['4', '16']]], []).fields).toEqual({ '1': '16', '4': '0', '3': '4, 16' });
+        expect(valuesOf([[1, '16']], [null, { field: null }, 'x']).fields).toEqual({ '1': '16' });
+    });
+});

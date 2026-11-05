@@ -927,6 +927,20 @@ describe('rendering people (Plan.md 112)', () => {
         expect(render(makeSlide({ blocks: [block] }), { people: [group(anna)] }).findAll('[data-testid="person-field"]').map((f) => f.text())).toEqual(['Pastorin']);
     });
 
+    it('shows a comment field formatted on the card and in one line in the list, a date and time in the instance time zone', () => {
+        const people: PeopleGroup = {
+            ...group(person('Anna', 'Berg', { fields: { '2': '**Sprechzeit** Di', '7': '2026-11-24T18:30:00Z' } })),
+            fields: [{ key: '2', name: 'Kommentar', format: 'markdown' }, { key: '7', name: 'Zeit', format: 'datetime' }],
+        };
+        const block = peopleBlock({ fieldKeys: ['2', '7'] });
+        const card = render(makeSlide({ blocks: [block] }), { people: [people] });
+        expect(card.get('[data-testid="people-cards"] strong').text()).toBe('Sprechzeit');
+        expect(card.findAll('[data-testid="person-field"]').map((f) => f.text())).toEqual(['Sprechzeit Di', '24.11.2026, 19:30']);
+        const list = render(makeSlide({ blocks: [peopleBlock({ fieldKeys: ['2', '7'], layout: 'list' })] }), { people: [people] });
+        expect(list.get('[data-testid="person-meta"]').text()).toBe('Teilnehmer · Sprechzeit Di · 24.11.2026, 19:30');
+        expect(list.text()).not.toContain('**');
+    });
+
     it('shows a field a block from before names by its name – mapped to the id of the group', () => {
         const people: PeopleGroup = { ...group(person('Anna', 'Berg')), fields: [{ key: '2', name: 'Funktion' }, { key: '5', name: 'Büro' }] };
         const wrapper = render(makeSlide({ blocks: [peopleBlock({ fieldKeys: ['Funktion'] })] }), { people: [people] });

@@ -85,6 +85,11 @@ export function formatDate(instant: Date, timeZone: string): string {
     );
 }
 
+/** `24.11.2026`: day, month and year in numbers. */
+export function formatNumericDate(instant: Date, timeZone: string): string {
+    return new Intl.DateTimeFormat(LOCALE, { timeZone, day: '2-digit', month: '2-digit', year: 'numeric' }).format(instant);
+}
+
 export function formatShortDate(instant: Date, timeZone: string): string {
     return new Intl.DateTimeFormat(LOCALE, { timeZone, weekday: 'short', day: '2-digit', month: '2-digit' }).format(
         instant,

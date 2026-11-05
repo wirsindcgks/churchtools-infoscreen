@@ -407,7 +407,8 @@ export const th = {
         fields: {
             intro:
                 'Die Mitgliedsfelder der Gruppe, die unter dem Namen stehen, in der Reihenfolge der Liste; zum Umsortieren einen Eintrag ziehen. ' +
-                'Mitgliedsfelder legt man in ChurchTools an der Gruppe an. Der Fernseher sieht nur Felder bis zu der Sicherheitsstufe, die ihm ein Administrator freigegeben hat.',
+                'Mitgliedsfelder legt man in ChurchTools an der Gruppe an. Der Fernseher sieht nur Felder bis zu der Sicherheitsstufe, die ihm ein Administrator freigegeben hat. ' +
+                'Jede Art von Feld erscheint passend: Auswahl mit dem Namen der Option, ein Kontrollkästchen mit dem Namen des Feldes (nur wenn es angehakt ist), Datum und Zahl in deutscher Schreibweise, ein Kommentarfeld formatiert.',
         } satisfies HelpTopic,
         personFields: {
             intro:

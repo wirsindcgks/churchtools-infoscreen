@@ -7,6 +7,9 @@
  * `comment`) never leaves this file. Archived and deceased people drop out, so do members that are not active and the
  * account that asks (the device itself).
  *
+ * The type of a member field is not in the value: `GET /groups/{id}/memberfields` is read as well (G75), but only `id`, `name`,
+ * `fieldTypeCode` and `options` of a definition are kept – they turn option ids into names and decide how a value is shown.
+ *
  * `/persons` is read only with a release (Plan.md 112, Stück 3, G71): when an administrator released person fields and a
  * block chose some. Then `personFieldValues` keeps exactly those keys of the answer and drops the rest at once.
  */
@@ -46,6 +49,24 @@ interface MemberFieldValueResponse {
 export interface RoleResponse {
     groupTypeRoleId?: number | string | null;
     name?: string | null;
+    /** The name in the language of the instance; `name` can be the key (G75: "leader"). */
+    nameTranslated?: string | null;
+}
+
+/** An entry of `GET /groups/{id}/memberfields`, as far as this code reads it (G75). */
+export interface MemberFieldDefResponse {
+    field?: {
+        id?: number | string | null;
+        name?: string | null;
+        fieldTypeCode?: string | null;
+        options?: { id?: number | string | null; name?: string | null }[] | null;
+    } | null;
+}
+
+interface FieldDef {
+    type: string;
+    name: string;
+    options: Map<string, string>;
 }
 
 export interface PeopleRole {
@@ -59,6 +80,8 @@ export interface PeopleField {
     key: string;
     /** The name as the church keeps it in ChurchTools now. */
     name: string;
+    /** How the view shows the values: a comment field as Markdown, a date and time in the instance's time zone (G75). */
+    format?: 'markdown' | 'datetime';
 }
 
 export interface Person {
@@ -129,6 +152,59 @@ function valueText(value: unknown): string {
     return '';
 }
 
+function idText(value: unknown): string {
+    return value === undefined || value === null ? '' : String(value).trim();
+}
+
+/** The fields of the group by id, as far as the definitions tell (G75). */
+function fieldDefs(rawFieldDefs: unknown[]): Map<string, FieldDef> {
+    const defs = new Map<string, FieldDef>();
+    for (const raw of rawFieldDefs as MemberFieldDefResponse[]) {
+        const field = raw?.field;
+        const id = idText(field?.id);
+        if (!id || !field) continue;
+        const options = new Map<string, string>();
+        for (const option of Array.isArray(field.options) ? field.options : []) {
+            const optionId = idText(option?.id);
+            const name = (option?.name ?? '').trim();
+            if (optionId && name) options.set(optionId, name);
+        }
+        defs.set(id, { type: (field.fieldTypeCode ?? '').trim(), name: (field.name ?? '').trim(), options });
+    }
+    return defs;
+}
+
+/** What a member field's value shows, by the type of its definition (G75); without a definition the value as it comes. */
+function memberValueText(value: unknown, def: FieldDef | undefined, label: string): string {
+    switch (def?.type) {
+        case 'select':
+        case 'radioselect':
+            return def.options.get(idText(value)) ?? '';
+        case 'multiselect':
+            return (Array.isArray(value) ? value : [value]).map((id) => def.options.get(idText(id)) ?? '').filter(Boolean).join(', ');
+        case 'checkbox': {
+            // "0" is also what members get for whom nothing was ever set: only a tick shows, and as the field's name.
+            const on = value === true || value === 1 || value === '1' || (typeof value === 'string' && value.trim() === '1');
+            return on ? def.name || label : '';
+        }
+        case 'date': {
+            const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(typeof value === 'string' ? value.trim() : '');
+            return match ? `${match[3]}.${match[2]}.${match[1]}` : '';
+        }
+        case 'number': {
+            const text = valueText(value);
+            const number = text === '' ? NaN : Number(text);
+            return Number.isFinite(number) ? number.toLocaleString(LOCALE, { useGrouping: false, maximumFractionDigits: 20 }) : '';
+        }
+        default:
+            return valueText(value);
+    }
+}
+
+function formatOf(def: FieldDef | undefined): PeopleField['format'] {
+    return def?.type === 'textarea' ? 'markdown' : def?.type === 'datetime' ? 'datetime' : undefined;
+}
+
 /**
  * The people of the group in the order ChurchTools sends them. `excludedPersonIds` are the accounts that sit in
  * the group for the sake of the field rights and are no one to show: the one that asks and the device accounts of the setup.
@@ -140,11 +216,14 @@ export function normalizeMembers(
     excludedPersonIds: readonly number[] = [],
     /** Keep the person's id for the one read of `/persons` (person fields); `withPersonFields` removes it again. */
     keepIds = false,
+    /** The group's member field definitions (`GET /groups/{id}/memberfields`, G75): they give the types and the names of options. */
+    rawFieldDefs: unknown[] = [],
 ): PeopleGroup {
+    const defs = fieldDefs(rawFieldDefs);
     const roles: PeopleRole[] = [];
     for (const role of rawRoles as RoleResponse[]) {
         const id = idOf(role?.groupTypeRoleId);
-        const name = (role?.name ?? '').trim();
+        const name = (role?.nameTranslated ?? '').trim() || (role?.name ?? '').trim();
         if (id !== null && name && !roles.some((r) => r.id === id)) roles.push({ id, name });
     }
     /** The fields seen on any member by id, with their current name, in the group's own order (`sortKey`). */
@@ -165,16 +244,16 @@ export function normalizeMembers(
         for (const field of Array.isArray(member.fields) ? member.fields : []) {
             const id = field?.id === undefined || field.id === null ? '' : String(field.id);
             if (!id) continue;
-            const text = valueText(field.value);
-            if (text) fields[id] = text;
             // A field the church named differently now is the same field: the id is what counts, the name is only shown.
             const label = (field.name ?? '').trim() || id;
+            const text = memberValueText(field.value, defs.get(id), label);
+            if (text) fields[id] = text;
             if (!seenFields.has(id)) seenFields.set(id, { name: label, sortKey: typeof field.sortKey === 'number' ? field.sortKey : Infinity });
         }
         people.push({ firstName, lastName, name, imageUrl: person?.imageUrl || null, roleId: idOf(member.groupTypeRoleId), fields, ...(keepIds ? { personId } : {}) });
         if (people.length >= PEOPLE_CAP) break;
     }
-    return { groupId, denied: false, people, roles, fields: [...seenFields].sort((a, b) => a[1].sortKey - b[1].sortKey).map(([key, { name }]) => ({ key, name })) };
+    return { groupId, denied: false, people, roles, fields: [...seenFields].sort((a, b) => a[1].sortKey - b[1].sortKey).map(([key, { name }]) => ({ key, name, ...(formatOf(defs.get(key)) ? { format: formatOf(defs.get(key)) } : {}) })) };
 }
 
 /** An entry of `GET /persons`, as far as this code reads it – only the keys of `PERSON_FIELD_KEYS` are ever taken from it. */
@@ -246,8 +325,12 @@ export function resolveFieldKeys(fieldKeys: readonly string[], fields: readonly 
 }
 
 /** The fields of a person the block shows, in the block's order – only those the person has a value for. */
-export function shownFields(person: Person, fieldKeys: readonly string[]): { key: string; text: string }[] {
-    return fieldKeys.flatMap((key) => (person.fields[key] ? [{ key, text: person.fields[key]! }] : []));
+export function shownFields(person: Person, fieldKeys: readonly string[], fields: readonly PeopleField[] = []): { key: string; text: string; format?: PeopleField['format'] }[] {
+    return fieldKeys.flatMap((key) => {
+        if (!person.fields[key]) return [];
+        const format = fields.find((f) => f.key === key)?.format;
+        return [{ key, text: person.fields[key]!, ...(format ? { format } : {}) }];
+    });
 }
 
 /**

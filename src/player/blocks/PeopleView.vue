@@ -5,11 +5,13 @@
  * nothing but `Person` fields: name, picture, the member fields the block names and, since 1.54, the released person fields it chose.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { markdownLines, markdownText, type MdInline } from '../../ct/markdown';
 import { groupOfBlock, resolveFieldKeys, selectPeople, shownFields, shownPersonFields, type Person } from '../../groups/members';
 import type { Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
-import { sizedImageUrl, textStyle } from '../format';
+import { formatNumericDate, formatTime, sizedImageUrl, textStyle } from '../format';
 import { PEOPLE_SECONDS, pageInterval, paginateByHeight, pageProgressEdge, pageProgressSegments, pageProgressShown } from '../paging';
+import MdInlines from './MdInlines.vue';
 import PageSegments from './PageSegments.vue';
 import { tp } from '../../i18n/player';
 
@@ -134,8 +136,26 @@ function pictureSize(): number {
 const fieldKeys = computed(() => resolveFieldKeys(props.block.fieldKeys, group.value?.fields ?? []));
 
 /** Member fields first, then the person fields (schema 1.54) – only those the group was read for, i.e. still released. */
-function fieldsOf(person: Person) {
-    return [...shownFields(person, fieldKeys.value), ...shownPersonFields(person, group.value ?? undefined, props.block.personFieldKeys)];
+interface ShownField {
+    key: string;
+    text: string;
+    /** A comment field as lines of Markdown (card); `null` for all others. */
+    lines: MdInline[][] | null;
+}
+function fieldsOf(person: Person): ShownField[] {
+    const own = shownFields(person, fieldKeys.value, group.value?.fields ?? []).flatMap((field): ShownField[] => {
+        if (field.format === 'datetime') {
+            const instant = new Date(field.text);
+            if (Number.isNaN(instant.getTime())) return [];
+            return [{ key: field.key, text: `${formatNumericDate(instant, context.timeZone)}, ${formatTime(instant, context.timeZone)}`, lines: null }];
+        }
+        if (field.format === 'markdown') {
+            const text = markdownText(field.text);
+            return text ? [{ key: field.key, text, lines: markdownLines(field.text) }] : [];
+        }
+        return [{ key: field.key, text: field.text, lines: null }];
+    });
+    return [...own, ...shownPersonFields(person, group.value ?? undefined, props.block.personFieldKeys).map((f) => ({ ...f, lines: null }))];
 }
 
 const cards = computed(() =>
@@ -212,7 +232,12 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
                     </template>
                     <div class="card-text">
                         <div class="person-name" data-testid="person-name">{{ c.person.name }}</div>
-                        <div v-for="field in c.fields" :key="field.key" class="person-field" data-testid="person-field">{{ field.text }}</div>
+                        <template v-for="field in c.fields" :key="field.key">
+                            <div v-if="field.lines" class="person-field-lines">
+                                <div v-for="(line, i) in field.lines" :key="i" class="person-field" data-testid="person-field"><MdInlines :parts="line" /></div>
+                            </div>
+                            <div v-else class="person-field" data-testid="person-field">{{ field.text }}</div>
+                        </template>
                     </div>
                 </div>
             </div>

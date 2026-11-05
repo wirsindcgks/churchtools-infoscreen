@@ -98,6 +98,9 @@ die gewünschte (Name, Bild und Rolle; Angaben nur mit dem Recht „Gruppenmitgl
 Reihenfolge, Sortierung und ob das Bild erscheint; das Bild ist rund wie ein Profilbild. Die **Ansicht** wechselt zwischen Karten
 (im Raster, Spalten und Reihen einstellbar) und einer **Liste** mit einer Zeile je Person – kleines rundes Bild, Name, Rolle und
 die gewählten Angaben –, die wie die anderen Listen seitenweise blättert.
+Jede Art von Mitgliedsfeld erscheint passend: Auswahlfelder mit dem Namen der Option, ein Kontrollkästchen mit dem Namen des
+Feldes (nur, wenn es angehakt ist), Datum und Zahl in deutscher Schreibweise, Datum mit Uhrzeit in der Zeit der Gemeinde, und ein
+Kommentarfeld formatiert (auf der Karte Zeile für Zeile, in der Liste als eine Zeile ohne Formatierungszeichen).
 E-Mail-Adresse, Telefon, Ort und Geburtstag (Tag und Monat) zeigt der Baustein nur, wenn ein Administrator diese **Personenfelder**
 ausdrücklich freischaltet (nur in der Sicherheitsstufe, die ein Administrator den Geräten gibt, mit Datenschutzhinweis und Rückfrage); die Anschrift nie. Der Baustein wählt
 dann unter „Personenfelder" aus den freigeschalteten. Einrichtung und Datenschutz stehen

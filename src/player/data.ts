@@ -189,7 +189,7 @@ export const churchToolsPlayerData: PlayerData = {
             const raw = await withTimeout(fetchGroupMembers(groupId));
             // On the TV the one who asks is the device – a device the list does not know yet is no card either (Plan.md 112).
             const own = excludeSelf ? await currentPerson().then((person) => person.id, () => undefined) : undefined;
-            const group = normalizeMembers(groupId, raw.members, raw.roles, own === undefined ? deviceIds : [own, ...deviceIds], personFieldKeys.length > 0);
+            const group = normalizeMembers(groupId, raw.members, raw.roles, own === undefined ? deviceIds : [own, ...deviceIds], personFieldKeys.length > 0, raw.fieldDefs);
             if (!personFieldKeys.length) return group;
             // Person fields (schema 1.54): one read for the people of the cards, and only the released and chosen keys are kept.
             // Without "Personendaten sehen" the answer is a `403` or has nothing in it – the fields stay empty then, no error.

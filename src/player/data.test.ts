@@ -381,7 +381,7 @@ describe('people (Plan.md 112)', () => {
 
     it('reads the members through the group alone and leaves out the account that asks', async () => {
         vi.mocked(client.currentPerson).mockResolvedValue({ id: 22 } as Awaited<ReturnType<typeof client.currentPerson>>);
-        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(1, 'Anna')], roles: [] });
+        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(1, 'Anna')], roles: [], fieldDefs: [] });
         const group = await churchToolsPlayerData.people(40);
         expect(api.fetchGroupMembers).toHaveBeenCalledWith(40);
         expect(api.fetchPersons).not.toHaveBeenCalled();
@@ -389,15 +389,24 @@ describe('people (Plan.md 112)', () => {
         expect(group.people.map((p) => p.name)).toEqual(['Anna X']);
     });
 
+    it('hands the field definitions on: an option shows by its name', async () => {
+        const withField = { ...member(1, 'Anna'), fields: [{ id: 3, name: 'Farbe', value: '16', sortKey: 1 }] };
+        const fieldDefs = [{ type: 'group', field: { id: 3, name: 'Farbe', fieldTypeCode: 'select', options: [{ id: '16', name: 'Blau' }] } }];
+        vi.mocked(client.currentPerson).mockResolvedValue({ id: 22 } as Awaited<ReturnType<typeof client.currentPerson>>);
+        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [withField], roles: [], fieldDefs });
+        const group = await churchToolsPlayerData.people(40);
+        expect(group.people[0]!.fields).toEqual({ '3': 'Blau' });
+    });
+
     it('leaves out the device accounts the setup names as well', async () => {
         vi.mocked(client.currentPerson).mockResolvedValue({ id: 22 } as Awaited<ReturnType<typeof client.currentPerson>>);
-        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(23, 'Cafe'), member(1, 'Anna')], roles: [] });
+        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(23, 'Cafe'), member(1, 'Anna')], roles: [], fieldDefs: [] });
         expect((await churchToolsPlayerData.people(40, [23])).people.map((p) => p.name)).toEqual(['Anna X']);
     });
 
     it('keeps the account that asks in the designer preview – there it is a person, not a device', async () => {
         vi.mocked(client.currentPerson).mockResolvedValue({ id: 1 } as Awaited<ReturnType<typeof client.currentPerson>>);
-        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(1, 'Anna')], roles: [] });
+        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(1, 'Anna')], roles: [], fieldDefs: [] });
         expect((await churchToolsPlayerData.people(40, [22], false)).people.map((p) => p.name)).toEqual(['Anna X']);
     });
 
@@ -423,7 +432,7 @@ describe('people (Plan.md 112)', () => {
 
     it('asks /persons once for the people of the cards and keeps only the released and chosen keys – the year of a birthday never stays', async () => {
         vi.mocked(client.currentPerson).mockResolvedValue({ id: 22 } as Awaited<ReturnType<typeof client.currentPerson>>);
-        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(1, 'Anna'), member(2, 'Ben')], roles: [] });
+        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(22, 'Foyer'), member(1, 'Anna'), member(2, 'Ben')], roles: [], fieldDefs: [] });
         vi.mocked(api.fetchPersons).mockResolvedValue([
             { id: 1, email: 'anna@example.org', mobile: '0170 1', birthday: '1980-05-17', street: 'Weg 1', guid: 'x' },
             { id: 2, email: '', birthday: null },
@@ -439,7 +448,7 @@ describe('people (Plan.md 112)', () => {
 
     it('does not read /persons without a chosen released field, and shows empty fields without the right (403)', async () => {
         vi.mocked(api.fetchPersons).mockClear();
-        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(1, 'Anna')], roles: [] });
+        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(1, 'Anna')], roles: [], fieldDefs: [] });
         expect((await churchToolsPlayerData.people(40, [], false, [])).personFieldKeys).toBeUndefined();
         expect(api.fetchPersons).not.toHaveBeenCalled();
         vi.mocked(api.fetchPersons).mockRejectedValue(forbidden());
