@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deniedPeople, normalizeMembers, personFieldValues, resolveFieldKeys, selectPeople, shownFields, shownPersonFields, withPersonFields, PEOPLE_CAP, type PeopleGroup } from './members';
+import { deniedPeople, entriesPatch, normalizeMembers, peopleEntries, shownEntries, personFieldValues, resolveFieldKeys, selectPeople, shownFields, shownPersonFields, withPersonFields, PEOPLE_CAP, type PeopleGroup } from './members';
 
 const member = (personId: number, first: string, last: string, extra: Record<string, unknown> = {}) => ({
     personId,
@@ -239,5 +239,47 @@ describe('member field types and translated roles (Plan.md 114, G75)', () => {
         expect(valuesOf([[4, '1']], noName).fields).toEqual({ '4': 'Feld 4' });
         expect(valuesOf([[1, '16'], [4, '0'], [3, ['4', '16']]], []).fields).toEqual({ '1': '16', '4': '0', '3': '4, 16' });
         expect(valuesOf([[1, '16']], [null, { field: null }, 'x']).fields).toEqual({ '1': '16' });
+    });
+});
+
+describe('one list of entries (Plan.md 114 B, schema 1.56)', () => {
+    const fields = [{ key: '11', name: 'Aufgabe' }, { key: '12', name: 'Notiz', format: 'markdown' as const }];
+
+    it('derives the order from before for a block without entries: the role first in the list, none on cards', () => {
+        const block = { fieldKeys: ['Aufgabe', '12'], personFieldKeys: ['email' as const] };
+        expect(peopleEntries({ ...block, layout: 'list' }, fields)).toEqual(['role', 'member:11', 'member:12', 'person:email']);
+        expect(peopleEntries({ ...block, layout: 'card' }, fields)).toEqual(['member:11', 'member:12', 'person:email']);
+        expect(peopleEntries({ fieldKeys: [], layout: 'card' })).toEqual([]);
+    });
+
+    it('takes the entries as they stand where the block has them, in both layouts – also none at all', () => {
+        const entries = [{ key: 'person:city' }, { key: 'role' }, { key: 'member:Aufgabe' }];
+        expect(peopleEntries({ entries, fieldKeys: ['11'], layout: 'card' }, fields)).toEqual(['person:city', 'role', 'member:11']);
+        expect(peopleEntries({ entries: [], fieldKeys: [], layout: 'list' })).toEqual([]);
+    });
+
+    it('writes the member and person fields alongside, in the order of the entries', () => {
+        expect(entriesPatch(['person:city', 'member:12', 'role', 'member:11', 'person:email'])).toEqual({
+            entries: [{ key: 'person:city' }, { key: 'member:12' }, { key: 'role' }, { key: 'member:11' }, { key: 'person:email' }],
+            fieldKeys: ['12', '11'],
+            personFieldKeys: ['city', 'email'],
+        });
+        expect(entriesPatch(['role'])).toEqual({ entries: [{ key: 'role' }], fieldKeys: [], personFieldKeys: undefined });
+    });
+
+    it('shows the entries of a person in their order, only those with a value', () => {
+        const group: PeopleGroup = {
+            ...normalizeMembers(40, [member(1, 'Anna', 'Berg')], roles),
+            fields,
+            personFieldKeys: ['city'],
+        };
+        const anna = { ...group.people[0]!, fields: { 11: 'Technik', 12: '**Ton**' }, personFields: { city: 'Kassel', email: 'a@x.example' } };
+        expect(shownEntries(anna, group, ['person:city', 'member:12', 'role', 'member:11', 'person:email', 'member:99'])).toEqual([
+            { key: 'person:city', text: 'Kassel' },
+            { key: 'member:12', text: '**Ton**', format: 'markdown' },
+            { key: 'role', text: 'Teilnehmer' },
+            { key: 'member:11', text: 'Technik' },
+        ]);
+        expect(shownEntries({ ...anna, roleId: null }, group, ['role'])).toEqual([]);
     });
 });

@@ -875,4 +875,14 @@ describe('the people block and the group of the settings (schema 1.51, Plan.md 1
         expect(v.parse(Block, { ...block, layout: 'list' })).toMatchObject({ layout: 'list' });
         expect(v.safeParse(Block, { ...block, layout: 'rows' }).success).toBe(false);
     });
+
+    it('reads the entries of a people block: role, member and released person fields, at most 16 (schema 1.56)', () => {
+        const block = { id: 'p', type: 'people', x: 0, y: 0, width: 100, height: 100, roleIds: [], fieldKeys: [], style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' } };
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(56);
+        expect(v.parse(Block, block)).not.toHaveProperty('entries');
+        const entries = [{ key: 'person:city' }, { key: 'role' }, { key: 'member:12' }];
+        expect(v.parse(Block, { ...block, entries })).toMatchObject({ entries });
+        for (const key of ['person:street', 'member:', 'name', 'roles']) expect(v.safeParse(Block, { ...block, entries: [{ key }] }).success).toBe(false);
+        expect(v.safeParse(Block, { ...block, entries: Array.from({ length: 17 }, () => ({ key: 'role' })) }).success).toBe(false);
+    });
 });

@@ -14,7 +14,7 @@
  * block chose some. Then `personFieldValues` keeps exactly those keys of the answer and drops the rest at once.
  */
 import { LOCALE, tp } from '../i18n/player';
-import { PERSON_FIELD_KEYS, type PeopleSort } from '../model/schema';
+import { PERSON_FIELD_KEYS, type Block, type PeopleSort, type PersonFieldKey } from '../model/schema';
 
 interface PersonResponse {
     title?: string | null;
@@ -340,4 +340,66 @@ export function shownFields(person: Person, fieldKeys: readonly string[], fields
 export function shownPersonFields(person: Person, group: PeopleGroup | undefined, fieldKeys: readonly string[] | undefined): { key: string; text: string }[] {
     const read = group?.personFieldKeys ?? [];
     return (fieldKeys ?? []).flatMap((key) => (read.includes(key) && person.personFields?.[key] ? [{ key, text: person.personFields[key]! }] : []));
+}
+
+// --- one list "Angaben" (schema 1.56, Plan.md 114 B): role, member fields and person fields in one order ---
+
+type PeopleBlock = Extract<Block, { type: 'people' }>;
+
+/** The role in the group, as an entry. */
+export const ROLE_ENTRY = 'role';
+export const memberEntry = (id: string): string => `member:${id}`;
+export const personEntry = (key: string): string => `person:${key}`;
+
+/**
+ * The entries a block shows under the name, in its order. A block from before 1.56 has none: then the order from before
+ * holds – in the list the role first, on cards none, then the member fields (names mapped to ids), then the person fields.
+ * A member entry is mapped like `fieldKeys`, so a name written by hand still finds its field.
+ */
+export function peopleEntries(block: Pick<PeopleBlock, 'entries' | 'fieldKeys' | 'personFieldKeys' | 'layout'>, fields: readonly PeopleField[] = []): string[] {
+    if (block.entries) {
+        return block.entries.map(({ key }) => (key.startsWith('member:') ? memberEntry(resolveFieldKeys([key.slice(7)], fields)[0]!) : key));
+    }
+    return [
+        ...(block.layout === 'list' ? [ROLE_ENTRY] : []),
+        ...resolveFieldKeys(block.fieldKeys, fields).map(memberEntry),
+        ...(block.personFieldKeys ?? []).map(personEntry),
+    ];
+}
+
+/**
+ * What the designer writes for a list of entries: `entries` and, in the same order, `fieldKeys` and `personFieldKeys` – so
+ * a player before 1.56 and `peopleNeeds` keep reading what they know. An empty list stays `[]`, so the order from before
+ * does not come back.
+ */
+export function entriesPatch(keys: readonly string[]): Pick<PeopleBlock, 'entries' | 'fieldKeys' | 'personFieldKeys'> {
+    const personFieldKeys = keys.flatMap((key) => (key.startsWith('person:') && (PERSON_FIELD_KEYS as readonly string[]).includes(key.slice(7)) ? [key.slice(7) as PersonFieldKey] : []));
+    return {
+        entries: keys.map((key) => ({ key })),
+        fieldKeys: keys.flatMap((key) => (key.startsWith('member:') ? [key.slice(7)] : [])),
+        personFieldKeys: personFieldKeys.length ? personFieldKeys : undefined,
+    };
+}
+
+/** One entry shown for a person: its text, and how a member field is to be shown (`shownFields`). */
+export interface ShownEntry {
+    key: string;
+    text: string;
+    format?: PeopleField['format'];
+}
+
+/**
+ * What a person shows under the name, in the block's order, only entries with a value: the role's name, the member
+ * fields, the person fields the group was read for (`shownPersonFields`).
+ */
+export function shownEntries(person: Person, group: PeopleGroup | undefined, entries: readonly string[]): ShownEntry[] {
+    return entries.flatMap((entry): ShownEntry[] => {
+        if (entry === ROLE_ENTRY) {
+            const name = group?.roles.find((r) => r.id === person.roleId)?.name;
+            return name ? [{ key: entry, text: name }] : [];
+        }
+        if (entry.startsWith('member:')) return shownFields(person, [entry.slice(7)], group?.fields).map((f) => ({ ...f, key: entry }));
+        if (entry.startsWith('person:')) return shownPersonFields(person, group, [entry.slice(7)]).map((f) => ({ ...f, key: entry }));
+        return [];
+    });
 }

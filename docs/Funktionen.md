@@ -94,16 +94,17 @@ Ansprechpartner als **Karten** mit Name, Bild und Angaben wie Funktion oder Bür
 Ein Administrator **gibt vorhandene Gruppen frei**; auf Wunsch lässt sich auch eine eigene Gruppe **„Infoscreen-People"**
 anlegen, in der die Geräte automatisch Mitglied werden. Wer in der Gruppe ist, darf erscheinen; die Angaben
 sind Mitgliedsfelder der Gruppe. Der Baustein wählt unter „Gruppe"
-die gewünschte (Name, Bild und Rolle; Angaben nur mit dem Recht „Gruppenmitgliedsfelder sehen“, das ein Administrator dem Gerät gibt). Man wählt Rollen, Angaben samt
-Reihenfolge, Sortierung und ob das Bild erscheint; das Bild ist rund wie ein Profilbild. Die **Ansicht** wechselt zwischen Karten
-(im Raster, Spalten und Reihen einstellbar) und einer **Liste** mit einer Zeile je Person – kleines rundes Bild, Name, Rolle und
-die gewählten Angaben –, die wie die anderen Listen seitenweise blättert.
+die gewünschte (Name, Bild und Rolle; Mitgliedsfelder nur mit dem Recht „Gruppenmitgliedsfelder sehen“, das ein Administrator dem Gerät gibt). Man wählt Rollen,
+Sortierung und ob das Bild erscheint; das Bild ist rund wie ein Profilbild. Was unter dem Namen steht, wählt man in **einer** Liste
+„Angaben“ samt Reihenfolge: die Rolle in der Gruppe, Mitgliedsfelder und freigeschaltete Personenfelder, beliebig gemischt.
+Die **Ansicht** wechselt zwischen Karten (im Raster, Spalten und Reihen einstellbar) und einer **Liste** mit einer Zeile je
+Person – kleines rundes Bild, Name und die gewählten Angaben –, die wie die anderen Listen seitenweise blättert.
 Jede Art von Mitgliedsfeld erscheint passend: Auswahlfelder mit dem Namen der Option, ein Kontrollkästchen mit dem Namen des
 Feldes (nur, wenn es angehakt ist), Datum und Zahl in deutscher Schreibweise, Datum mit Uhrzeit in der Zeit der Gemeinde, und ein
 Kommentarfeld formatiert (auf der Karte Zeile für Zeile, in der Liste als eine Zeile ohne Formatierungszeichen).
 E-Mail-Adresse, Telefon, Ort und Geburtstag (Tag und Monat) zeigt der Baustein nur, wenn ein Administrator diese **Personenfelder**
-ausdrücklich freischaltet (nur in der Sicherheitsstufe, die ein Administrator den Geräten gibt, mit Datenschutzhinweis und Rückfrage); die Anschrift nie. Der Baustein wählt
-dann unter „Personenfelder" aus den freigeschalteten. Einrichtung und Datenschutz stehen
+ausdrücklich freischaltet (nur in der Sicherheitsstufe, die ein Administrator den Geräten gibt, mit Datenschutzhinweis und Rückfrage); die Anschrift nie. Der Baustein bietet
+sie dann unter „Angaben“ an. Einrichtung und Datenschutz stehen
 [in der Einrichtungsanleitung](Einrichtung.md#personen-auf-den-bildschirmen).
 
 ### Beiträge

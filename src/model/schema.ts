@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 55 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 56 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -391,6 +391,9 @@ export const GroupsBlock = v.object({
 export const PERSON_FIELD_KEYS = ['phoneWork', 'phonePrivate', 'mobile', 'email', 'zip', 'city', 'birthday'] as const;
 export type PersonFieldKey = (typeof PERSON_FIELD_KEYS)[number];
 
+/** An entry of a people block (schema 1.56): `role`, `member:<field id>` or `person:<released person field>`. */
+const PeopleEntryKey = v.pipe(v.string(), v.maxLength(110), v.regex(new RegExp(`^(role|member:.{1,100}|person:(${PERSON_FIELD_KEYS.join('|')}))$`)));
+
 /**
  * Since 1.51: the people of the module's own group "Infoscreen-People" as cards (Plan.md 112, Stück 1) – name, picture,
  * and the chosen member fields of the group. The group is "Infoscreen-People" (`SettingsDoc.peopleGroupId`) or, since 1.53,
@@ -410,6 +413,13 @@ export const PeopleBlock = v.object({
      * (`SettingsDoc.personFieldKeys`); the player shows only those that are still released. Missing: none.
      */
     personFieldKeys: v.optional(v.pipe(v.array(v.picklist(PERSON_FIELD_KEYS)), v.maxLength(7))),
+    /**
+     * Since 1.56 (Plan.md 114 B): everything shown under the name, in this order, in one list – `role` (the role in the group),
+     * `member:<id>` (a member field) or `person:<key>` (a released person field). The designer keeps `fieldKeys` and
+     * `personFieldKeys` the same, in this order, so older players and `peopleNeeds` read what they know. Missing: the order
+     * from before – the role first in the list, none on cards, then the member fields, then the person fields (`peopleEntries`).
+     */
+    entries: v.optional(v.pipe(v.array(v.object({ key: PeopleEntryKey })), v.maxLength(16))),
     /** `last-name` – by last name, then first name; `first-name` the other way round; `role` – by role, then last name. */
     sort: v.optional(v.picklist(['last-name', 'first-name', 'role']), 'last-name'),
     /** The picture on the card; off: name and fields only. */

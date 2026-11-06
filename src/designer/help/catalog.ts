@@ -74,7 +74,6 @@ export const HELP_CATALOG: HelpSection[] = [
     { id: 'all-people-group', title: `${t.blocks.people} · ${i.peopleGroup}`, topic: th.people.group },
     { id: 'all-people-roles', title: `${t.blocks.people} · ${i.peopleRoles}`, topic: th.people.roles },
     { id: 'all-people-fields', title: `${t.blocks.people} · ${i.peopleFields}`, topic: th.people.fields },
-    { id: 'all-people-person-fields', title: `${t.blocks.people} · ${i.personFields}`, topic: th.people.personFields },
     {
         id: 'all-people-look',
         title: `${t.blocks.people} · ${i.appearance}`,

@@ -1,14 +1,14 @@
 <script setup lang="ts">
 /**
  * The people block (Plan.md 112): the people of a group as cards or, since 1.55, as a list – "Infoscreen-People" or a group an administrator released
- * (Stück 2a); the choice stands first. The roles and the member fields (in their order) each have a section named after what
- * they choose, and follow the chosen group; look and page time stand in "Darstellung".
+ * (Stück 2a); the choice stands first. The roles have a section; what stands under the name – the role, member fields and
+ * released person fields – is one list "Angaben" in its order (schema 1.56, Plan.md 114 B); look and page time stand in "Darstellung".
  */
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
 import { th } from '../../../i18n/help';
-import { groupOfBlock, resolveFieldKeys } from '../../../groups/members';
-import { PERSON_FIELD_KEYS, type Block, type PersonFieldKey } from '../../../model/schema';
+import { entriesPatch, groupOfBlock, memberEntry, peopleEntries, personEntry, ROLE_ENTRY } from '../../../groups/members';
+import { PERSON_FIELD_KEYS, type Block } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
 import { PEOPLE_SECONDS } from '../../../player/paging';
 import PageProgressHint from '../PageProgressHint.vue';
@@ -69,7 +69,8 @@ const groupValue = computed(() => {
 function setGroup(value: string | number): void {
     const next = value === STANDARD ? undefined : Number(value);
     if (next === (groupValue.value === STANDARD ? undefined : props.block.sourceGroupId)) return;
-    setBlock({ sourceGroupId: next, roleIds: [], fieldKeys: [] });
+    // The member fields belong to the group; the role and the person fields stay.
+    setBlock({ sourceGroupId: next, roleIds: [], ...entriesPatch(keys.value.filter((key) => !key.startsWith('member:'))) });
 }
 const groupSummary = computed(() => groupOptions.value.find((o) => o.value === groupValue.value)?.label ?? t.inspector.peopleChooseGroup);
 
@@ -90,61 +91,57 @@ function toggleRole(id: number, on: boolean): void {
 }
 const rolesSummary = computed(() => (props.block.roleIds.length ? t.common.countOf(props.block.roleIds.length, roles.value.length) : t.inspector.all));
 
-// --- member fields: chosen ones in their order, the rest to pick ---
+// --- entries (schema 1.56): role, member fields and released person fields in one order; a block from before derives it ---
 
-/** The chosen fields by id – a block from before holds names, mapped here; edits write the ids. The list shows the current names. */
-const keys = computed(() => resolveFieldKeys(props.block.fieldKeys, fields.value));
+/** The entries by key (`role`, `member:<id>`, `person:<key>`) – a block from before holds names, mapped here; edits write the ids. */
+const keys = computed(() => peopleEntries(props.block, fields.value));
+const memberCount = computed(() => keys.value.filter((key) => key.startsWith('member:')).length);
+const released = computed(() => stage.releasedPersonFields ?? []);
+const personName = (key: string): string => t.inspector.personFieldNames[key] ?? key;
+
 const chosen = computed<SortItem[]>(() =>
     keys.value.map((key) => {
-        const name = fields.value.find((f) => f.key === key)?.name;
-        return { key, label: name ?? (loaded.value ? `${key} – ${t.inspector.peopleFieldGone}` : key), dimmed: loaded.value && name === undefined };
+        if (key === ROLE_ENTRY) return { key, label: t.inspector.peopleRoleEntry };
+        if (key.startsWith('person:')) {
+            const name = personName(key.slice(7));
+            const gone = !(released.value as readonly string[]).includes(key.slice(7));
+            return { key, label: gone ? `${name} – ${t.inspector.personFieldGone}` : name, dimmed: gone };
+        }
+        const id = key.slice(7);
+        const name = fields.value.find((f) => f.key === id)?.name;
+        return { key, label: name ?? (loaded.value ? `${id} – ${t.inspector.peopleFieldGone}` : id), dimmed: loaded.value && name === undefined };
     }),
 );
-const pickable = computed(() => fields.value.filter((f) => !keys.value.includes(f.key)));
-function addField(key: string | number): void {
-    if (props.block.fieldKeys.length >= FIELDS_MAX) return;
-    setBlock({ fieldKeys: [...keys.value, String(key)] });
+/** What is left to pick, by group: the role, the member fields (at most `FIELDS_MAX`), the released person fields. */
+const pickable = computed<SelectOption[]>(() => {
+    const g = t.inspector.peopleEntryGroups;
+    const options: SelectOption[] = [];
+    if (!keys.value.includes(ROLE_ENTRY)) options.push({ value: ROLE_ENTRY, label: t.inspector.peopleRoleEntry, group: g.group });
+    if (memberCount.value < FIELDS_MAX) {
+        for (const f of fields.value) if (!keys.value.includes(memberEntry(f.key))) options.push({ value: memberEntry(f.key), label: f.name, group: g.member });
+    }
+    for (const key of PERSON_FIELD_KEYS) {
+        if (released.value.includes(key) && !keys.value.includes(personEntry(key))) options.push({ value: personEntry(key), label: personName(key), group: g.person });
+    }
+    return options;
+});
+/** Everything there is to choose, for "n von m". */
+const available = computed(() => 1 + fields.value.length + released.value.length);
+function setEntries(next: string[]): void {
+    setBlock(entriesPatch(next));
 }
-function removeField(index: number): void {
-    setBlock({ fieldKeys: keys.value.filter((_, i) => i !== index) });
+function addEntry(key: string | number): void {
+    setEntries([...keys.value, String(key)]);
 }
-function moveField(from: number, to: number): void {
-    if (to < 0 || to >= props.block.fieldKeys.length) return;
-    setBlock({ fieldKeys: moveItem(keys.value, from, to) });
+function removeEntry(index: number): void {
+    setEntries(keys.value.filter((_, i) => i !== index));
 }
-const fieldsFace = computed(() =>
-    props.block.fieldKeys.length ? t.quick.listFace(t.inspector.peopleFields, t.common.countOf(props.block.fieldKeys.length, fields.value.length || props.block.fieldKeys.length)) : t.quick.empty.people,
-);
-
-// --- person fields (Stück 3): only what an administrator released; the list follows the release, so a withdrawn one shows as gone ---
-
-const released = computed(() => stage.releasedPersonFields ?? []);
-const personKeys = computed(() => props.block.personFieldKeys ?? []);
-const personName = (key: string): string => t.inspector.personFieldNames[key] ?? key;
-const chosenPerson = computed<SortItem[]>(() =>
-    personKeys.value.map((key) => {
-        const gone = !released.value.includes(key);
-        return { key, label: gone ? `${personName(key)} – ${t.inspector.personFieldGone}` : personName(key), dimmed: gone };
-    }),
-);
-const pickablePerson = computed(() => PERSON_FIELD_KEYS.filter((key) => released.value.includes(key) && !personKeys.value.includes(key)));
-function setPersonFields(next: PersonFieldKey[]): void {
-    setBlock({ personFieldKeys: next.length ? next : undefined });
+function moveEntry(from: number, to: number): void {
+    if (to < 0 || to >= keys.value.length) return;
+    setEntries(moveItem(keys.value, from, to));
 }
-function addPersonField(key: string | number): void {
-    if (personKeys.value.length >= PERSON_FIELD_KEYS.length) return;
-    setPersonFields([...personKeys.value, String(key) as PersonFieldKey]);
-}
-function removePersonField(index: number): void {
-    setPersonFields(personKeys.value.filter((_, i) => i !== index));
-}
-function movePersonField(from: number, to: number): void {
-    if (to < 0 || to >= personKeys.value.length) return;
-    setPersonFields(moveItem([...personKeys.value], from, to));
-}
-const personFieldsFace = computed(() =>
-    personKeys.value.length ? t.quick.listFace(t.inspector.personFields, t.common.countOf(personKeys.value.length, released.value.length || personKeys.value.length)) : t.quick.empty.personFields,
-);
+const entriesSummary = computed(() => t.common.countOf(keys.value.length, Math.max(available.value, keys.value.length)));
+const entriesFace = computed(() => (keys.value.length ? t.quick.listFace(t.inspector.peopleFields, entriesSummary.value) : t.quick.empty.people));
 
 const summary = computed(() =>
     [
@@ -200,37 +197,20 @@ const appearanceHelp = computed(() => ({
         </template>
     </InspectorSection>
 
-    <!-- Choosing and ordering the member fields are one chip "Angaben 2 von 5" in the short menu (Plan.md 79, C5). -->
-    <QuickField quick :label="t.inspector.peopleFields" :face="fieldsFace">
+    <!-- Choosing and ordering what stands under the name is one chip "Angaben 2 von 5" in the short menu (Plan.md 79, C5; 114 B). -->
+    <QuickField quick :label="t.inspector.peopleFields" :face="entriesFace">
         <SelectMenu
             :model-value="undefined"
-            :options="pickable.map((f) => ({ value: f.key, label: f.name }))"
+            :options="pickable"
             :placeholder="t.inspector.addField"
-            :disabled="!pickable.length || block.fieldKeys.length >= FIELDS_MAX"
+            :disabled="!pickable.length"
             :aria-label="t.inspector.addFieldLabel"
             testid="people-fields-add"
-            @update:model-value="addField"
+            @update:model-value="addEntry"
         />
-        <p v-if="!block.fieldKeys.length" class="hint">{{ loaded && !fields.length ? t.inspector.noFieldsThere : t.inspector.noFieldsChosen }}</p>
-        <InspectorSection v-else id="people-fields" :title="t.inspector.peopleFields" :summary="t.common.countOf(block.fieldKeys.length, fields.length || block.fieldKeys.length)" :help="th.people.fields">
-            <SortList :items="chosen" :remove-label="t.inspector.removeField" testid="people-field" @move="moveField" @remove="removeField" />
-        </InspectorSection>
-    </QuickField>
-
-    <!-- Person fields (schema 1.54): shown only where an administrator released some; same handling as the member fields. -->
-    <QuickField v-if="released.length" quick :label="t.inspector.personFields" :face="personFieldsFace">
-        <SelectMenu
-            :model-value="undefined"
-            :options="pickablePerson.map((key) => ({ value: key, label: personName(key) }))"
-            :placeholder="t.inspector.addPersonField"
-            :disabled="!pickablePerson.length"
-            :aria-label="t.inspector.addPersonFieldLabel"
-            testid="people-person-fields-add"
-            @update:model-value="addPersonField"
-        />
-        <p v-if="!personKeys.length" class="hint">{{ t.inspector.noPersonFieldsChosen }}</p>
-        <InspectorSection v-else id="people-person-fields" :title="t.inspector.personFields" :summary="t.common.countOf(personKeys.length, released.length)" :help="th.people.personFields">
-            <SortList :items="chosenPerson" :remove-label="t.inspector.removePersonField" testid="people-person-field" @move="movePersonField" @remove="removePersonField" />
+        <p v-if="!keys.length" class="hint">{{ loaded && !fields.length && !released.length ? t.inspector.noFieldsThere : t.inspector.noFieldsChosen }}</p>
+        <InspectorSection v-else id="people-fields" :title="t.inspector.peopleFields" :summary="entriesSummary" :help="th.people.fields">
+            <SortList :items="chosen" :remove-label="t.inspector.removeField" testid="people-field" @move="moveEntry" @remove="removeEntry" />
         </InspectorSection>
     </QuickField>
 

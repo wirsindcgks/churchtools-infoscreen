@@ -914,6 +914,18 @@ describe('rendering people (Plan.md 112)', () => {
         expect(text).not.toContain('12');
     });
 
+    it('shows the entries in their order, the role on the card too, and the same order in the list (schema 1.56)', () => {
+        const anna = person('Anna', 'Berg', { personFields: { city: 'Kassel' } });
+        const read: PeopleGroup = { ...group(anna), personFieldKeys: ['city'] };
+        const entries = [{ key: 'person:city' }, { key: 'role' }, { key: 'member:2' }];
+        const card = render(makeSlide({ blocks: [peopleBlock({ entries, fieldKeys: ['2'], personFieldKeys: ['city'] })] }), { people: [read] });
+        expect(card.findAll('[data-testid="person-field"]').map((f) => f.text())).toEqual(['Kassel', 'Teilnehmer', 'Pastorin']);
+        const list = render(makeSlide({ blocks: [peopleBlock({ entries, fieldKeys: ['2'], personFieldKeys: ['city'], layout: 'list' })] }), { people: [read] });
+        expect(list.get('[data-testid="person-meta"]').text()).toBe('Kassel · Teilnehmer · Pastorin');
+        const noRole = render(makeSlide({ blocks: [peopleBlock({ entries: [{ key: 'member:2' }], layout: 'list' })] }), { people: [read] });
+        expect(noRole.get('[data-testid="person-meta"]').text()).toBe('Pastorin');
+    });
+
     it('shows the person fields after the member fields, only those the group was read for – a withdrawn one is gone (schema 1.54)', () => {
         const anna = person('Anna', 'Berg', { personFields: { email: 'anna@example.org', city: 'Kassel' } });
         const read: PeopleGroup = { ...group(anna), personFieldKeys: ['email', 'city'] };

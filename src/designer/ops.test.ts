@@ -65,8 +65,8 @@ describe('designer operations', () => {
         expect(BLOCK_LABELS.rooms).toBe('Raumbelegung');
     });
 
-    it('creates a people block with every role and no member field: name and picture, until the inspector adds some (Plan.md 112)', () => {
-        expect(createBlock('people', stage)).toMatchObject({ type: 'people', roleIds: [], fieldKeys: [], sort: 'last-name', showImage: true, layout: 'card', columns: 3, rows: 2, width: 1400, height: 700 });
+    it('creates a people block with every role and only the role under the name, until the inspector adds fields (Plan.md 112, 114 B)', () => {
+        expect(createBlock('people', stage)).toMatchObject({ type: 'people', roleIds: [], fieldKeys: [], entries: [{ key: 'role' }], sort: 'last-name', showImage: true, layout: 'card', columns: 3, rows: 2, width: 1400, height: 700 });
         expect(BLOCK_LABELS.people).toBe('Personen');
     });
 

@@ -2,11 +2,11 @@
 /**
  * The people of the group "Infoscreen-People" (schema 1.51, Plan.md 112, Stück 1): cards in a grid of `columns` × `rows`,
  * or, since 1.55, one row a person (small round picture, name, role, fields), page by page, with the page bar like GroupsView. The privacy rule lives in `src/groups/members.ts` – this view reads
- * nothing but `Person` fields: name, picture, the member fields the block names and, since 1.54, the released person fields it chose.
+ * nothing but `Person` fields: name, picture, the member fields the block names and, since 1.54, the released person fields it chose – since 1.56 with the role in one order (`entries`).
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { markdownLines, markdownText, type MdInline } from '../../ct/markdown';
-import { groupOfBlock, resolveFieldKeys, selectPeople, shownFields, shownPersonFields, type Person } from '../../groups/members';
+import { groupOfBlock, peopleEntries, selectPeople, shownEntries, type Person } from '../../groups/members';
 import type { Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { formatNumericDate, formatTime, sizedImageUrl, textStyle } from '../format';
@@ -21,6 +21,8 @@ const context = useStageContext();
 /** The block's group: `undefined` while the first read is on its way, `null` where the block has no group (none chosen, or "Infoscreen-People" does not exist). */
 const group = computed(() => groupOfBlock(context.people, props.block.sourceGroupId));
 const items = computed(() => selectPeople(group.value ?? undefined, props.block.roleIds, props.block.sort));
+/** What stands under the name, in the block's order (schema 1.56): role, member and person fields; a block from before derives it. */
+const entries = computed(() => peopleEntries(props.block, group.value?.fields ?? []));
 
 /** As calm as "Keine Gruppen": not set up, not released, not allowed, or simply nobody – and nothing while the first read is still on its way. */
 const emptyMessage = computed(() => {
@@ -98,8 +100,7 @@ watch(
         () => props.block.height,
         () => props.block.layout,
         () => props.block.showImage,
-        () => props.block.fieldKeys.join(),
-        () => props.block.personFieldKeys?.join(),
+        () => entries.value.join(),
         () => items.value.map((p) => `${p.name}|${p.roleId}|${Object.values(p.fields).join()}|${Object.values(p.personFields ?? {}).join()}`).join(),
     ],
     () => void nextTick(measure),
@@ -132,10 +133,6 @@ function pictureSize(): number {
     return Math.max(0, Math.floor(size));
 }
 
-/** The fields by id; a block from before holds names, which are mapped to the ids of the group. */
-const fieldKeys = computed(() => resolveFieldKeys(props.block.fieldKeys, group.value?.fields ?? []));
-
-/** Member fields first, then the person fields (schema 1.54) – only those the group was read for, i.e. still released. */
 interface ShownField {
     key: string;
     text: string;
@@ -143,7 +140,7 @@ interface ShownField {
     lines: MdInline[][] | null;
 }
 function fieldsOf(person: Person): ShownField[] {
-    const own = shownFields(person, fieldKeys.value, group.value?.fields ?? []).flatMap((field): ShownField[] => {
+    return shownEntries(person, group.value ?? undefined, entries.value).flatMap((field): ShownField[] => {
         if (field.format === 'datetime') {
             const instant = new Date(field.text);
             if (Number.isNaN(instant.getTime())) return [];
@@ -155,7 +152,6 @@ function fieldsOf(person: Person): ShownField[] {
         }
         return [{ key: field.key, text: field.text, lines: null }];
     });
-    return [...own, ...shownPersonFields(person, group.value ?? undefined, props.block.personFieldKeys).map((f) => ({ ...f, lines: null }))];
 }
 
 const cards = computed(() =>
@@ -173,19 +169,16 @@ const cards = computed(() =>
     }),
 );
 
-// --- list rows: the picture is a small circle of 2.2 em, the line under the name holds the role and the fields ---
+// --- list rows: the picture is a small circle of 2.2 em, the line under the name holds the entries ---
 
 const rowPicture = computed(() => Math.round(props.block.style.fontSize * 2.2));
-function roleName(person: Person): string {
-    return group.value?.roles.find((r) => r.id === person.roleId)?.name ?? '';
-}
 function rowEntry(person: Person, index: number, withImage: boolean) {
     return {
         key: `${page.value}-${index}`,
         person,
         initial: person.name.charAt(0).toUpperCase(),
         url: withImage && person.imageUrl ? imageSource(context, sizedImageUrl(person.imageUrl, rowPicture.value, rowPicture.value, 'crop')) : null,
-        meta: [roleName(person), ...fieldsOf(person).map((f) => f.text)].filter(Boolean).join(' · '),
+        meta: fieldsOf(person).map((f) => f.text).join(' · '),
     };
 }
 const rowsShown = computed(() => (isList.value ? shown.value.map((p, i) => rowEntry(p, i, true)) : []));

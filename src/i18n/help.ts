@@ -406,18 +406,14 @@ export const th = {
         } satisfies HelpTopic,
         fields: {
             intro:
-                'Die Mitgliedsfelder der Gruppe, die unter dem Namen stehen, in der Reihenfolge der Liste; zum Umsortieren einen Eintrag ziehen. ' +
+                'Was unter dem Namen steht, in der Reihenfolge der Liste; zum Umsortieren einen Eintrag ziehen. Zur Wahl stehen die Rolle in der Gruppe, die Mitgliedsfelder der Gruppe (bis zu acht) und die freigeschalteten Personenfelder. ' +
                 'Mitgliedsfelder legt man in ChurchTools an der Gruppe an. Der Fernseher sieht nur Felder bis zu der Sicherheitsstufe, die ihm ein Administrator freigegeben hat. ' +
-                'Jede Art von Feld erscheint passend: Auswahl mit dem Namen der Option, ein Kontrollkästchen mit dem Namen des Feldes (nur wenn es angehakt ist), Datum und Zahl in deutscher Schreibweise, ein Kommentarfeld formatiert.',
-        } satisfies HelpTopic,
-        personFields: {
-            intro:
-                'Angaben aus dem Personenprofil – Telefon, E-Mail, PLZ, Ort, Geburtstag –, die unter den Mitgliedsfeldern stehen, in der Reihenfolge der Liste; zum Umsortieren einen Eintrag ziehen. ' +
-                'Zur Wahl stehen nur Felder, die ein Administrator unter Einstellungen → Personen freigeschaltet hat; nimmt er eines zurück, verschwindet es sofort vom Fernseher. ' +
+                'Jede Art von Feld erscheint passend: Auswahl mit dem Namen der Option, ein Kontrollkästchen mit dem Namen des Feldes (nur wenn es angehakt ist), Datum und Zahl in deutscher Schreibweise, ein Kommentarfeld formatiert. ' +
+                'Personenfelder – Telefon, E-Mail, PLZ, Ort, Geburtstag – stehen nur zur Wahl, wenn ein Administrator sie unter Einstellungen → Personen freigeschaltet hat; nimmt er eines zurück, verschwindet es sofort vom Fernseher. ' +
                 'Der Geburtstag erscheint nur als Tag und Monat, nie mit dem Jahr. Die Angaben stehen auf dem Fernseher für alle, die vorbeigehen – wähle nur, was die Personen dort sehen lassen wollen.',
         } satisfies HelpTopic,
         intro: 'Wie die Personen erscheinen: Ansicht, Reihenfolge, Bild, wie viele auf einer Seite stehen und wie lange jede Seite bleibt.',
-        layout: { term: i.view, text: 'Karten zeigen jede Person als Karte mit Bild, in einem Raster aus Spalten und Reihen. Die Liste zeigt eine Zeile je Person: kleines rundes Bild, Name, Rolle und die gewählten Angaben; sie passt, wo viele Personen auf eine Seite sollen. In beiden Ansichten blättert der Baustein, wenn nicht alle Platz haben.' },
+        layout: { term: i.view, text: 'Karten zeigen jede Person als Karte mit Bild, in einem Raster aus Spalten und Reihen. Die Liste zeigt eine Zeile je Person: kleines rundes Bild, Name und die gewählten Angaben; sie passt, wo viele Personen auf eine Seite sollen. In beiden Ansichten blättert der Baustein, wenn nicht alle Platz haben.' },
         sort: { term: i.order, text: 'Nach Nachname, nach Vorname oder nach Rolle – in der Reihenfolge der Rollen in ChurchTools, darin nach Nachname.' },
         picture: { term: i.showPicture, text: 'Zeigt das Bild, das die Person in ChurchTools hat, rund wie ein Profilbild. Ohne Bild steht der Anfangsbuchstabe im Kreis.' },
         grid: { term: i.columns, text: 'Nur bei Karten: wie viele Karten nebeneinander und untereinander auf einer Seite stehen, je 1 bis 6. Passen nicht alle Personen darauf, blättert der Baustein.' },
