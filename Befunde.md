@@ -920,6 +920,8 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 - **`GET /groups/{id}/members`** ändert sich mit dem Recht nicht: Die Person trägt dort nur Name, Bild und Verwaltungsangaben, die Mitgliedsfelder bleiben, wie sie sind. Personenfelder kommen allein über `GET /persons`.
 - **Leeren:** Ein leerer Adresszusatz (`""`) wird als `null` gespeichert; vorher stand dort `""`.
 
+**Stand danach** *(Nutzer, 2026-11-06)*: Die Rolle 397 behält „Personendaten sehen“ auf Stufe 1 dauerhaft, damit sich Personenfelder im Designer der Testinstanz ausprobieren lassen.
+
 **Folgen:** Nichts zu ändern. Anschrift und Telefon sind gewöhnliche Textfelder; die Anschrift sind vier Angaben (Straße, Zusatz, PLZ, Ort), die der Baustein einzeln zeigt. Wer nur Ort oder Telefon zeigen will, kommt mit Stufe 1 aus; die Straße verlangt Stufe 2. Plan.md, Baustein „Personen“, Reste.
 
 ## Der Betriebsbenutzer – wie er eingerichtet wird und wie nicht
