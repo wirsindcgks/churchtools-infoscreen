@@ -878,6 +878,18 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 
 **Folge:** `valueText` muss den Typ der Definition kennen (`GET /groups/{id}/memberfields`, `fieldTypeCode`). Nur `text` und `api` stimmen heute. Ein Kontrollkästchen lässt sich am Wert nicht von „nicht gesetzt“ unterscheiden: „0“ heißt aus. Plan.md 114, Stück A.
 
+**G76 – Beantwortet: Personenfelder kommen in `GET /persons` unter dem Schlüssel aus `GET /fields`; das Geräte-Konto liest die Definitionen selbst.** *(2026-11-06, Testinstanz, nur lesend: `GET /fields` als Administrator und als Geräte-Konto, `GET /persons?ids[]=1&ids[]=19` als beide; dazu der Code; Anlass: Bernhards Hinweis nach `v0.53.0`, der Spitzname erscheine nicht, obwohl er dieselbe Stufe hat wie andere Felder)* **Academy vorab:** [Was sind Personenfelder?](https://churchtools.academy/de/help/app/einstellungen-personen/0-db-felder/) – eine Gemeinde kann eigene Personenfelder anlegen; [Sicherheitslevel eines Personenfeldes ändern](https://churchtools.academy/en/help/permissions-management/editing-security-levels/how-to-change-the-security-level-of-a-personfield/) – die Stufe jedes Feldes ist in den Stammdaten frei einstellbar.
+
+- **`GET /fields`** liefert 98 Definitionen mit `key`, `nameTranslated`, `fieldCategoryCode`, `fieldTypeCode`, `secLevel`, `isActive`, `hideInFrontend`, `options` u. a. Personenfelder sind die Kategorien `f_address`, `f_church`, `f_category`, `f_dep`, `f_growpath` und `f_datasecurity`; `f_group` sind Gruppenfelder. Ein Schlüssel kann in zwei Kategorien vorkommen (`campusId`, `guid`). Der **Spitzname** ist `nickname`, `text`, Stufe 1 – wie Telefon und E-Mail.
+- **Das Geräte-Konto bekommt `GET /fields` mit `200` und allen 98 Definitionen** (der Code nahm an, nur Administratoren dürften fragen).
+- **`GET /persons`** trägt als Administrator jedes Personenfeld unter genau diesem Schlüssel (`nickname`, `job`, `campusId` …). Typen der Werte: `text` als Text (leer `""`), `date` als `JJJJ-MM-TT` oder `null`, `select` als Zahl (`campusId: 0`, `statusId: 3`), `multiselect` als Liste (`departmentIds: [1]`). Das Geräte-Konto sieht derzeit Stufe 0 und bekommt nur Name, Bild und Verwaltungsfelder.
+- **Auswahlfelder:** Die Options-Namen sind teils Übersetzungsschlüssel (`sex.male`, `status.member`), Optionen des Personenstatus tragen eine eigene `secLevel`.
+- **Der Code** lässt nur die sieben Schlüssel aus `PERSON_FIELD_KEYS` zu – Schema, Freigabe in den Einstellungen, Inspektor und `personFieldValues`. Darum fehlt der Spitzname, obwohl die Stufe passt.
+
+**Nicht gemessen:** ein eigenes Personenfeld einer Gemeinde in `GET /persons` (die Testinstanz hat keins; anzulegen wäre schreibend). Bernhards Spitzname ist ein Standardfeld.
+
+**Folgen:** Die feste Liste fällt weg; angeboten wird, was `GET /fields` als aktives, sichtbares Personenfeld in Reichweite des Geräts nennt, die Freigabe durch den Administrator bleibt. Namen und Typen liest das Gerät selbst. Plan.md 115.
+
 ## Der Betriebsbenutzer – wie er eingerichtet wird und wie nicht
 
 
