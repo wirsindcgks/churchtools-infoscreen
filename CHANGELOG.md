@@ -4,6 +4,27 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.54.0] – 2026-11-06
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch, alle Personenfelder samt eigener Felder zu nutzen
+und den Namen aus Feldern zusammenzusetzen ([#280](https://github.com/wirsindcgks/churchtools-infoscreen/issues/280)).
+
+### Hinzugefügt
+
+- **Name aus Feldern zusammensetzen.** Im Baustein „Personen“ legt das Klappmenü „Name“ fest, wie der Name erscheint – etwa
+  „Timo (Valentin) Mustermann“ oder „Valentin (Timo) Mustermann“. Eine Schnellwahl bietet die gängigen Muster, „Feld einfügen“
+  setzt Vorname, Nachname oder ein freigegebenes Personenfeld ein. Fehlt ein Wert, fallen leere Klammern und überzählige
+  Leerzeichen weg; ohne Muster bleibt der Name wie bisher
+  ([#285](https://github.com/wirsindcgks/churchtools-infoscreen/pull/285)).
+
+### Geändert
+
+- **Alle Personenfelder der Instanz lassen sich freigeben, auch eigene.** Statt einer festen Liste von sieben Feldern bietet
+  die Einrichtung jedes aktive Personenfeld an, das die Geräte nach ihrer Sicherheitsstufe sehen – etwa den Spitznamen oder
+  ein selbst angelegtes Feld –, als Text, Kommentar (formatiert), Datum, Zahl oder Kontrollkästchen. Die ausdrückliche
+  Freigabe durch einen Administrator bleibt Voraussetzung; Auswahlfelder folgen später. Bestehende Freigaben und
+  Präsentationen bleiben unverändert ([#284](https://github.com/wirsindcgks/churchtools-infoscreen/pull/284)).
+
 ## [0.53.0] – 2026-11-06
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch, die Angaben im Baustein „Personen“ einheitlich
@@ -1772,3 +1793,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.1.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.1.0
 [0.52.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.52.0
 [0.53.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.53.0
+[0.54.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.54.0
