@@ -186,7 +186,7 @@ Monat, nie das Jahr). Das schaltet ein Administrator frei:
 2. **Einstellungen → Gruppen für „Personen"**, Abschnitt **„Personenfelder"**: Der Designer zeigt, bis zu welcher
    Sicherheitsstufe die Geräte sehen, und listet die Personenfelder, die ChurchTools nennt; ankreuzen lässt sich ein Feld, das in dieser Reichweite liegt.
    Die Freigabe bleibt auch dann nötig, wenn ein Feld in der Reichweite liegt: Sie ist die zweite Schranke, die der Administrator bewusst setzt.
-   Ein Feld in einer höheren Stufe wird mit Hinweis angezeigt, aber nicht angeboten. Die Stufen liest der Designer bei jedem
+   Ein Feld in einer höheren Stufe ist ausgegraut und trägt den Hinweis, welche Stufe es braucht („Sicherheitsstufe … – sehen die Geräte nicht“). Die Stufen liest der Designer bei jedem
    Aufruf frisch aus ChurchTools.
 3. **Speichern** fragt vorher zurück, denn das ist eine Entscheidung zum Datenschutz.
 4. Im Designer wählt der Baustein unter **„Personenfelder"** aus den freigeschalteten; die Reihenfolge der Auswahl ist die
