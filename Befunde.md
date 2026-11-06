@@ -896,6 +896,34 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 
 **Folgen:** Die feste Liste fällt weg; angeboten wird, was `GET /fields` als aktives, sichtbares Personenfeld in Reichweite des Geräts nennt, die Freigabe durch den Administrator bleibt. Namen und Typen liest das Gerät selbst. Plan.md 115.
 
+**G77 – Beantwortet: ChurchTools kennt vier Markdown-Scopes; sie wirken nur auf die HTML-Ausgabe des Konverters, den auch das Gerät aufrufen darf.** *(2026-11-06, Testinstanz 3.138, nur lesend: die OpenAPI-Beschreibung der Instanz, `POST /markdown/convert` als Administrator und als Geräte-Konto – wandelt nur um, speichert nichts (G62); dazu der Blog zu 3.135; Anlass: Issue #282 von Bernhard)* **Blog vorab:** [ChurchTools v3.135: Formatieren und Erwähnen](https://blog.church.tools/blog/v3-135-formatieren-erwaehnen-neue-wiki-suche-und-gruppen-verbesserungen/) – fett, kursiv, durchgestrichen, Inline-Code, Links, Überschriften, Listen, Tabellen, Zitate, Codeblöcke, Trennlinien und Bilder (Bilder nur im Wiki); die Funktionen passen sich dem Einsatzort an; Erwähnungen von Personen, Gruppen, Wiki-Seiten und Songs erscheinen im Fließtext oder als große Karte; im Text steht nur die Referenz, die Angaben dazu werden nur mit passenden Rechten nachgeladen. Unterschiede je Feld nennt der Artikel nicht.
+
+- **Scopes:** `POST /markdown/check` und `POST /markdown/convert` kennen `document`, `description`, `richline` und `plaintext` (`inputScope`, `outputScopes`), dazu `outputFormats` `html`, `md`, `xml` und die Option `allowHtml` (Standard aus).
+- **Gemessen mit einem Mustertext** (Überschrift, fett, kursiv, durchgestrichen, Code, verschachtelte Liste, nummerierte Liste, Zitat, Tabelle, Bild, Link, Erwähnung im Text und als Karte, HTML): `md` und `xml` sind in allen vier Scopes gleich. `xml` ist der CommonMark-Syntaxbaum samt Tabelle. Unterschiede gibt es nur im `html`:
+  - `document` und `description`: gleich, alles als HTML, auch Tabelle und Bild;
+  - `richline`: nur fett, kursiv, Code und Links; Überschrift, Liste und Zitat bleiben als Markdown-Text stehen, das Bild wird zum Link, die Tabelle fällt weg;
+  - `plaintext`: der Text unverändert.
+- **`~~durchgestrichen~~`** versteht der Konverter in keinem Scope, obwohl der Editor es anbietet.
+- **Erwähnungen** bleiben Links (`ctmd_layout=mention` oder `compact-card`); der Konverter löst sie nicht auf.
+- **HTML im Text** wird maskiert (`&lt;b&gt;`).
+- **Das Geräte-Konto** bekommt dieselbe Antwort (`200`).
+
+**Folgen für Punkt 116:** Die Scopes von ChurchTools bilden zwei Stufen ab, die der Infoscreen schon kennt: `richline` entspricht einer Zeile (Liste, Zusammenfassung), `description` einem Block (Karte, Beitrag). Den Konverter im Player aufzurufen, hieße eine Anfrage je Text und keine Durchstreichung; ein eigener CommonMark-Parser mit Syntaxbaum, gegen den `xml` des Konverters getestet, hält den Player unabhängig. Plan.md 116.
+
+**G78 – Beantwortet: Telefon und Anschrift liest das Gerät mit „Personendaten sehen“ genau nach Stufe; eine höhere Stufe gibt die niedrigere mit.** *(2026-11-06, Testinstanz; **schreibend mit OK des Nutzers:** an Person 19 per `PATCH /persons/19` Straße, Adresszusatz, PLZ, Ort, Telefon privat, Telefon geschäftlich und Handy gesetzt, der Rolle des Geräte-Kontos in „Infoscreen-Devices“ (Rolle 397) per `PUT /permissions/group_role/397` das Recht 125 „Personendaten sehen“ erst auf Stufe 1, dann zusätzlich auf Stufe 2 gegeben, als Geräte-Konto `GET /persons?ids[]=19` und `GET /groups/75/members` gelesen; danach Stufe 1 allein entzogen und erneut gelesen, dann beide mit `DELETE /permissions/group_role/397` entzogen und die Werte geleert – die Rolle trägt wieder ihre 27 Rechte ohne 125; Anlass: Rest zum Baustein „Personen“ und die Frage des Nutzers, warum die Personenfelder ausgegraut sind)*
+
+- **Stufen der Felder** (`GET /fields`, für Administrator und Gerät gleich): PLZ, Ort, Telefon privat, Telefon geschäftlich, Handy und E-Mail Stufe 1; Straße und Adresszusatz Stufe 2. Alle acht sind `text`, aktiv, sichtbar, Kategorie `f_address`.
+- **Ohne das Recht** bekommt das Gerät von `GET /persons` 16 Schlüssel, keinen davon.
+- **Mit Stufe 1:** 36 Schlüssel; die Werte der Stufe 1 so, wie sie eingetragen sind (`"0561 111111"`, `"34117"`, `"Kassel"`), ohne Formatierung durch ChurchTools. Straße und Adresszusatz fehlen als Schlüssel ganz.
+- **Mit Stufe 1 und 2:** 40 Schlüssel, dazu Straße und Adresszusatz.
+- **Nur Stufe 2:** dieselben Werte wie mit 1 und 2 – die Stufen bauen aufeinander auf, wie die Einrichtung es annimmt.
+- **`GET /groups/{id}/members`** ändert sich mit dem Recht nicht: Die Person trägt dort nur Name, Bild und Verwaltungsangaben, die Mitgliedsfelder bleiben, wie sie sind. Personenfelder kommen allein über `GET /persons`.
+- **Leeren:** Ein leerer Adresszusatz (`""`) wird als `null` gespeichert; vorher stand dort `""`.
+
+**Stand danach** *(Nutzer, 2026-11-06)*: Die Rolle 397 behält „Personendaten sehen“ auf Stufe 1 dauerhaft, damit sich Personenfelder im Designer der Testinstanz ausprobieren lassen.
+
+**Folgen:** Nichts zu ändern. Anschrift und Telefon sind gewöhnliche Textfelder; die Anschrift sind vier Angaben (Straße, Zusatz, PLZ, Ort), die der Baustein einzeln zeigt. Wer nur Ort oder Telefon zeigen will, kommt mit Stufe 1 aus; die Straße verlangt Stufe 2. Plan.md, Baustein „Personen“, Reste.
+
 ## Der Betriebsbenutzer – wie er eingerichtet wird und wie nicht
 
 
