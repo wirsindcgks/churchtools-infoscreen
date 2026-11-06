@@ -383,7 +383,7 @@ Mehr als lesen konnte das Gerät nie.
 | Startseite: „Dir fehlen Rechte …" | Person (aktiv) in „Infoscreen-Designer" aufnehmen; die Liste nennt das fehlende Recht |
 | Kein „Einstellungen" im Designer | Einstellungen sind Administratoren vorbehalten |
 | Kein „+ Bildschirm erstellen" | auch Administratoren brauchen die „Daten in Kategorie …"-Rechte aus Schritt 2 |
-| „Gruppen und Rechte anlegen" bleibt grau | einen Gruppentyp wählen |
+| „Gruppen und Rechte anlegen" bleibt grau | einen Gruppentyp wählen; steht darunter, dass das Recht auf die Kategorie „Einstellungen“ fehlt: „Daten in Kategorie bearbeiten“ aus [Schritt 2](#2-dir-selbst-die-modulrechte-geben) – dasselbe gilt für „Rechte aktualisieren“ und „Rückgängig machen“ |
 | „Adresse erzeugen" meldet „Anmeldung fehlgeschlagen" | dem Geräte-Konto fehlt meist der **Benutzername** ([Schritt 6](#6-geräte-benutzer-anlegen)) |
 | Fernseher: „… nicht bei ChurchTools angemeldet" | neue Adresse erzeugen – etwa nach einer Passwortänderung |
 | Player fragt nach Anmeldung oder zeigt keine Termine | im Inkognito-Fenster oder eigenen Browserprofil öffnen |

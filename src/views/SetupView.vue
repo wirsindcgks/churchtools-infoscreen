@@ -667,7 +667,7 @@ async function saveForm(): Promise<void> {
 
 /** After a save that changes what the groups need: a question with the way there, not a line one may miss. */
 async function askForRights(): Promise<void> {
-    const canRefresh = createdGroupIds.value.length > 0 && assistant.allowed && !!plan.value && abilities.value.refresh.allowed;
+    const canRefresh = createdGroupIds.value.length > 0 && assistant.allowed && !!plan.value && abilities.value.refresh.allowed && settingsWritable.value !== false;
     if (!canRefresh) {
         await notice(t.setup.rightsNeeded.byHand);
         return;
@@ -1529,19 +1529,20 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                 <button
                                     class="d-btn d-btn--primary"
                                     type="button"
-                                    :disabled="!assistant.allowed || !plan || assistant.running || !abilities.refresh.allowed"
+                                    :disabled="!assistant.allowed || !plan || assistant.running || !abilities.refresh.allowed || settingsWritable === false"
                                     data-testid="update-rights"
                                     @click="updateRights"
                                 >
                                     {{ t.setup.groups.updateRights }}
                                 </button>
-                                <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running || !abilities.remove.allowed" data-testid="remove-setup" @click="openRemoveSetup">
+                                <button class="d-btn d-btn--danger" type="button" :disabled="assistant.running || !abilities.remove.allowed || settingsWritable === false" data-testid="remove-setup" @click="openRemoveSetup">
                                     {{ t.setup.groups.removeSetup }}
                                 </button>
                             </div>
                             <p v-for="button in (['refresh', 'remove'] as const).filter((b) => abilityHint(b))" :key="button" class="muted small" :data-testid="`ability-hint-${button}`">
                                 {{ abilityHint(button) }}
                             </p>
+                            <p v-if="settingsWritable === false" class="muted small" data-testid="no-settings-right">{{ t.setup.groups.noSettingsRight }}</p>
                         </template>
                         <template v-else>
                             <p>{{ t.setup.groups.fresh }}</p>
@@ -1576,7 +1577,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                     class="d-btn d-btn--primary"
                                     type="button"
                                     data-testid="run-assistant"
-                                    :disabled="!assistant.allowed || !plan || foreignGroups.length > 0 || assistant.running || chosenTypeId === null || !abilities.create.allowed"
+                                    :disabled="!assistant.allowed || !plan || foreignGroups.length > 0 || assistant.running || chosenTypeId === null || !abilities.create.allowed || settingsWritable === false"
                                     @click="runAssistant"
                                 >
                                     {{ t.setup.groups.create }}
@@ -1584,6 +1585,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                 <span v-if="assistant.running" class="muted">{{ t.setup.groups.working }}</span>
                             </div>
                             <p v-if="abilityHint('create')" class="muted small" data-testid="ability-hint-create">{{ abilityHint('create') }}</p>
+                            <p v-if="settingsWritable === false" class="muted small" data-testid="no-settings-right">{{ t.setup.groups.noSettingsRight }}</p>
                         </template>
                         <ul v-if="assistant.log.length" class="log" data-testid="assistant-log">
                             <li v-for="(line, i) in assistant.log" :key="i">{{ line }}</li>
@@ -1763,7 +1765,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                             {{ t.setup.addPeople.finishButton }}
                                         </button>
                                     </div>
-                                    <p v-if="settingsWritable === false" class="muted small" data-testid="people-no-settings-right">{{ t.setup.addPeople.noSettingsRight }}</p>
+                                    <p v-if="settingsWritable === false" class="muted small" data-testid="people-no-settings-right">{{ t.setup.groups.noSettingsRight }}</p>
                                 </template>
                                 <template v-else>
                                     <p class="muted" data-testid="people-missing">{{ t.setup.addPeople.optional }}</p>
@@ -1778,7 +1780,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                             {{ t.setup.addPeople.button }}
                                         </button>
                                     </div>
-                                    <p v-if="settingsWritable === false" class="muted small" data-testid="people-no-settings-right">{{ t.setup.addPeople.noSettingsRight }}</p>
+                                    <p v-if="settingsWritable === false" class="muted small" data-testid="people-no-settings-right">{{ t.setup.groups.noSettingsRight }}</p>
                                 </template>
                             </template>
                             <ul v-if="peopleOwn.log.length" class="log" data-testid="people-own-log">
