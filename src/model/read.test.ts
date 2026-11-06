@@ -903,6 +903,11 @@ describe('the people block and the group of the settings (schema 1.51, Plan.md 1
         expect(v.parse(Block, { ...block, entries: [{ key: 'role', right: true }] })).toMatchObject({ entries: [{ key: 'role', right: true }] });
         for (const right of [false, 'yes']) expect(v.safeParse(Block, { ...block, entries: [{ key: 'role', right }] }).success).toBe(false);
         expect(v.safeParse(Block, { ...block, entries: Array.from({ length: 17 }, () => ({ key: 'role' })) }).success).toBe(false);
+        // Since 1.60 (Plan.md 115 B): the pattern of the name.
+        expect(v.parse(Block, block)).not.toHaveProperty('nameFormat');
+        expect(v.parse(Block, { ...block, nameFormat: '{nickname} ({firstName}) {lastName}' })).toMatchObject({ nameFormat: '{nickname} ({firstName}) {lastName}' });
+        expect(v.safeParse(Block, { ...block, nameFormat: 'x'.repeat(201) }).success).toBe(false);
+        expect(v.safeParse(Block, { ...block, nameFormat: 5 }).success).toBe(false);
         // Since 1.58 (Plan.md 114 D): the picture as a circle or a square; missing is a circle.
         expect(v.parse(Block, { ...block, imageShape: 'square' })).toMatchObject({ imageShape: 'square' });
         expect(v.safeParse(Block, { ...block, imageShape: 'oval' }).success).toBe(false);

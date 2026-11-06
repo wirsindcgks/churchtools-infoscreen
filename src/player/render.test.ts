@@ -980,6 +980,14 @@ describe('rendering people (Plan.md 112)', () => {
         expect(list.text()).not.toContain('**');
     });
 
+    it('shows the name after the pattern on card and in the list, an empty nickname without brackets (schema 1.60, #280)', () => {
+        const read: PeopleGroup = { ...group(person('Valentin', 'Mustermann', { personFields: { nickname: 'Timo' } }), person('Anna', 'Berg')), personFieldKeys: ['nickname'] };
+        const card = render(makeSlide({ blocks: [peopleBlock({ nameFormat: '{nickname} ({firstName}) {lastName}' })] }), { people: [{ ...read, people: [read.people[0]!] }] });
+        expect(card.findAll('[data-testid="person-name"]').map((n) => n.text())).toEqual(['Timo (Valentin) Mustermann']);
+        const list = render(makeSlide({ blocks: [peopleBlock({ nameFormat: '{firstName} ({nickname}) {lastName}', layout: 'list' })] }), { people: [read] });
+        expect(list.findAll('[data-testid="person-name"]').map((n) => n.text())).toEqual(['Anna Berg', 'Valentin (Timo) Mustermann']);
+    });
+
     it('shows a field a block from before names by its name – mapped to the id of the group', () => {
         const people: PeopleGroup = { ...group(person('Anna', 'Berg')), fields: [{ key: '2', name: 'Funktion' }, { key: '5', name: 'Büro' }] };
         const wrapper = render(makeSlide({ blocks: [peopleBlock({ fieldKeys: ['Funktion'] })] }), { people: [people] });

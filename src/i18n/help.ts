@@ -412,6 +412,13 @@ export const th = {
                 'Personenfelder – die Felder aus dem Personenprofil, die das Gerät nach seiner Sicherheitsstufe sieht (etwa Telefon, E-Mail, Ort, Spitzname, Geburtstag) – stehen nur zur Wahl, wenn ein Administrator sie unter Einstellungen → Personen freigeschaltet hat; nimmt er eines zurück, verschwindet es sofort vom Fernseher. ' +
                 'Der Geburtstag erscheint nur als Tag und Monat, nie mit dem Jahr. Die Angaben stehen auf dem Fernseher für alle, die vorbeigehen – wähle nur, was die Personen dort sehen lassen wollen.',
         } satisfies HelpTopic,
+        name: {
+            intro:
+                'Wie der Name auf Karte und Liste zusammengesetzt wird. Im Feld stehen Platzhalter in geschweiften Klammern: {firstName} (Vorname), {lastName} (Nachname) und die Schlüssel freigeschalteter Personenfelder, etwa {nickname}. ' +
+                'Die Schnellwahl setzt ein gängiges Muster; „Feld einfügen“ setzt einen Platzhalter an die Stelle des Cursors. ' +
+                'Ein leeres Feld lässt seinen Platzhalter weg, Klammern ohne Inhalt verschwinden mit – „{nickname} ({firstName}) {lastName}“ wird für jemanden ohne Spitzname zu „Valentin Mustermann“. ' +
+                'Ein Personenfeld erscheint nur, wenn es ein Administrator freigeschaltet hat. Die Reihenfolge der Personen richtet sich weiter nach Vor- und Nachname.',
+        } satisfies HelpTopic,
         intro: 'Wie die Personen erscheinen: Ansicht, Reihenfolge, Bild, wie viele auf einer Seite stehen und wie lange jede Seite bleibt.',
         layout: { term: i.view, text: 'Karten zeigen jede Person als Karte mit Bild, in einem Raster aus Spalten und Reihen. Die Liste zeigt eine Zeile je Person: kleines rundes Bild, Name und die gewählten Angaben; sie passt, wo viele Personen auf eine Seite sollen. In beiden Ansichten blättert der Baustein, wenn nicht alle Platz haben.' },
         sort: { term: i.order, text: 'Nach Nachname, nach Vorname oder nach Rolle – in der Reihenfolge der Rollen in ChurchTools, darin nach Nachname.' },

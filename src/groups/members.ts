@@ -13,6 +13,7 @@
  * `/persons` is read only with a release (Plan.md 112, Stück 3, G71): when an administrator released person fields and a
  * block chose some. Then `personFieldValues` keeps exactly those keys of the answer and drops the rest at once.
  */
+import { markdownText } from '../ct/markdown';
 import { LOCALE, tp } from '../i18n/player';
 import type { Block, PeopleSort } from '../model/schema';
 
@@ -389,6 +390,43 @@ export function shownPersonFields(person: Person, group: PeopleGroup | undefined
         const format = group?.personFieldFormats?.[key];
         return [{ key, text: person.personFields[key]!, ...(format ? { format } : {}) }];
     });
+}
+
+// --- the name from fields (schema 1.60, Plan.md 115 B) ---
+
+/** What the name is when the block has no pattern. */
+export const DEFAULT_NAME_FORMAT = '{firstName} {lastName}';
+const PLACEHOLDER = /\{([A-Za-z0-9_]{1,64})\}/g;
+
+/** The person field keys a pattern names (not `firstName` and `lastName`), each once – they must be read like the entries. */
+export function nameFormatKeys(format: string | undefined): string[] {
+    return [...new Set([...(format ?? '').matchAll(PLACEHOLDER)].map((m) => m[1]!))].filter((key) => key !== 'firstName' && key !== 'lastName');
+}
+
+/**
+ * The name of a person after the block's pattern. `{firstName}` and `{lastName}` come from the member data, a person field only
+ * if the group was read for it (released and chosen – `group.personFieldKeys`); an unknown or empty placeholder is empty. Brackets
+ * left empty go, spaces are gathered and trimmed; nothing left: the name as it is without a pattern.
+ */
+export function composeName(person: Person, group: PeopleGroup | undefined, format: string | undefined): string {
+    if (format === undefined || format === DEFAULT_NAME_FORMAT) return person.name;
+    const read = group?.personFieldKeys ?? [];
+    const value = (key: string): string => {
+        if (key === 'firstName') return person.firstName;
+        if (key === 'lastName') return person.lastName;
+        const text = read.includes(key) ? (person.personFields?.[key] ?? '') : '';
+        return group?.personFieldFormats?.[key] === 'markdown' ? markdownText(text) : text;
+    };
+    // An empty placeholder right before brackets hands its place to them: "{nickname} ({firstName}) {lastName}" without a
+    // nickname is "Valentin Mustermann", not "(Valentin) Mustermann" (#280).
+    const unwrapped = format.replace(/\{([A-Za-z0-9_]{1,64})\}(\s*)[([]([^()[\]]*)[)\]]/g, (whole, key: string, gap: string, inner: string) => (value(key).trim() ? whole : `${gap}${inner}`));
+    let name = unwrapped.replace(PLACEHOLDER, (_, key: string) => value(key));
+    for (let before = ''; before !== name; ) {
+        before = name;
+        name = name.replace(/\(\s*\)|\[\s*\]/g, '');
+    }
+    name = name.replace(/\s+/g, ' ').trim();
+    return name || person.name;
 }
 
 // --- one list "Angaben" (schema 1.56, Plan.md 114 B): role, member fields and person fields in one order ---

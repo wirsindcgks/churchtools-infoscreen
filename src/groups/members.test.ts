@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deniedPeople, entriesPatch, normalizeMembers, peopleEntries, rightEntries, shownEntries, personFieldValues, personFieldFormats, resolveFieldKeys, selectPeople, shownFields, shownPersonFields, withPersonFields, PEOPLE_CAP, type PeopleGroup } from './members';
+import { composeName, nameFormatKeys, deniedPeople, entriesPatch, normalizeMembers, peopleEntries, rightEntries, shownEntries, personFieldValues, personFieldFormats, resolveFieldKeys, selectPeople, shownFields, shownPersonFields, withPersonFields, PEOPLE_CAP, type PeopleGroup, type Person } from './members';
 
 const member = (personId: number, first: string, last: string, extra: Record<string, unknown> = {}) => ({
     personId,
@@ -144,6 +144,49 @@ describe('fields by id (Plan.md 112)', () => {
         const twice = [{ key: '1', name: 'Raum' }, { key: '2', name: 'Raum' }];
         expect(resolveFieldKeys(['Raum', 'Telefon'], twice)).toEqual(['Raum', 'Telefon']);
         expect(shownFields(after.people[0]!, resolveFieldKeys(['Gibt es nicht'], after.fields))).toEqual([]);
+    });
+});
+
+describe('the name from fields (Plan.md 115 B, #280)', () => {
+    const read = (nickname: string, formats: Record<string, 'markdown'> = {}): { person: Person; group: PeopleGroup } => {
+        const base = normalizeMembers(40, [member(1, 'Valentin', 'Mustermann')], roles, [], true);
+        const done = withPersonFields(base, new Map<number, Record<string, string>>([[1, nickname ? { nickname } : {}]]), ['nickname'], formats);
+        return { person: done.people[0]!, group: done };
+    };
+
+    it('puts the nickname before or behind the first name', () => {
+        const { person, group } = read('Timo');
+        expect(composeName(person, group, '{nickname} ({firstName}) {lastName}')).toBe('Timo (Valentin) Mustermann');
+        expect(composeName(person, group, '{firstName} ({nickname}) {lastName}')).toBe('Valentin (Timo) Mustermann');
+    });
+
+    it('leaves out an empty field with its empty brackets and gathers the spaces', () => {
+        const { person, group } = read('');
+        expect(composeName(person, group, '{firstName} ({nickname}) {lastName}')).toBe('Valentin Mustermann');
+        expect(composeName(person, group, '{firstName} ( {nickname} ) [] {lastName}')).toBe('Valentin Mustermann');
+        // An empty field right before brackets: they lose their marks, not their content (#280).
+        expect(composeName(person, group, '{nickname} ({firstName}) {lastName}')).toBe('Valentin Mustermann');
+        expect(composeName(person, group, '{nickname} [{firstName}] {lastName}')).toBe('Valentin Mustermann');
+    });
+
+    it('treats an unknown placeholder and a field not read for the group as empty', () => {
+        const { person, group } = read('Timo');
+        expect(composeName(person, group, '{firstName} {nope} {lastName}')).toBe('Valentin Mustermann');
+        expect(composeName(person, { ...group, personFieldKeys: [] }, '{nickname} {lastName}')).toBe('Mustermann');
+        expect(composeName(person, undefined, '{nickname} {lastName}')).toBe('Mustermann');
+    });
+
+    it('falls back to the name as it is when nothing is left, or without a pattern', () => {
+        const { person, group } = read('');
+        expect(composeName(person, group, '({nickname})')).toBe('Valentin Mustermann');
+        expect(composeName(person, group, undefined)).toBe('Valentin Mustermann');
+    });
+
+    it('shows a comment field as plain text and names the person fields of a pattern', () => {
+        const { person, group } = read('**Timo**', { nickname: 'markdown' });
+        expect(composeName(person, group, '{nickname}')).toBe('Timo');
+        expect(nameFormatKeys('{nickname} ({firstName}) {lastName} {nickname} {job}')).toEqual(['nickname', 'job']);
+        expect(nameFormatKeys(undefined)).toEqual([]);
     });
 });
 

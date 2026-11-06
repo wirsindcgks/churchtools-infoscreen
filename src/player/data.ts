@@ -26,7 +26,7 @@ import {
     fetchTimeZone,
 } from '../ct/api';
 import { currentPerson, ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
-import { deniedPeople, normalizeMembers, personFieldFormats, personFieldValues, unreleasedPeople, withPersonFields, type PeopleGroup } from '../groups/members';
+import { deniedPeople, nameFormatKeys, normalizeMembers, personFieldFormats, personFieldValues, unreleasedPeople, withPersonFields, type PeopleGroup } from '../groups/members';
 import { normalizeHomepage, type HomepageGroups } from '../groups/normalize';
 import type { HeartbeatDoc } from '../model/heartbeat';
 import type { ScreenDoc, SlideDoc } from '../model/schema';
@@ -349,6 +349,7 @@ export function peopleNeeds(slides: SlideDoc[]): PeopleNeeds {
         if (block.sourceGroupId === undefined) standard = true;
         else ids.add(block.sourceGroupId);
         for (const key of block.personFieldKeys ?? []) personFieldKeys.add(key);
+        for (const key of nameFormatKeys(block.nameFormat)) personFieldKeys.add(key);
     }
     return { standard, groupIds: [...ids].sort((a, b) => a - b), personFieldKeys: [...personFieldKeys] };
 }

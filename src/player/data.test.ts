@@ -419,6 +419,8 @@ describe('people (Plan.md 112)', () => {
     it('needs the person fields the blocks chose, in the order they first appear and each once (schema 1.54, 1.59)', () => {
         const blocks = [{ ...peopleBlock, personFieldKeys: ['city', 'email' as const] }, { ...peopleBlock, id: 'q', personFieldKeys: ['email' as const] }] as Block[];
         expect(peopleNeeds([makeSlide({ blocks })]).personFieldKeys).toEqual(['city', 'email']);
+        const named = [{ ...peopleBlock, nameFormat: '{nickname} ({firstName}) {job}' }] as Block[];
+        expect(peopleNeeds([makeSlide({ blocks: named })]).personFieldKeys).toEqual(['nickname', 'job']);
         const free = [{ ...peopleBlock, personFieldKeys: ['nickname'] }] as Block[];
         expect(peopleNeeds([makeSlide({ blocks: free })]).personFieldKeys).toEqual(['nickname']);
     });

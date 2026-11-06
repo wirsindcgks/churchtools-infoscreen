@@ -4,10 +4,10 @@
  * (Stück 2a); the choice stands first. The roles have a section; what stands under the name – the role, member fields and
  * released person fields – is one list "Angaben" in its order (schema 1.56, Plan.md 114 B); look and page time stand in "Darstellung".
  */
-import { computed } from 'vue';
+import { computed, nextTick } from 'vue';
 import { t } from '../../../i18n/designer';
 import { th } from '../../../i18n/help';
-import { entriesPatch, groupOfBlock, memberEntry, peopleEntries, personEntry, rightEntries, ROLE_ENTRY } from '../../../groups/members';
+import { DEFAULT_NAME_FORMAT, entriesPatch, groupOfBlock, memberEntry, peopleEntries, personEntry, rightEntries, ROLE_ENTRY } from '../../../groups/members';
 import type { Block } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
 import { PEOPLE_SECONDS } from '../../../player/paging';
@@ -20,6 +20,7 @@ import SelectField from '../fields/SelectField.vue';
 import QuickField from '../fields/QuickField.vue';
 import NumberField from '../fields/NumberField.vue';
 import SegmentField from '../fields/SegmentField.vue';
+import TextField from '../fields/TextField.vue';
 import SortList, { type SortItem } from '../fields/SortList.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import TileField from '../fields/TileField.vue';
@@ -153,6 +154,47 @@ function moveEntry(from: number, to: number): void {
     if (to < 0 || to >= keys.value.length) return;
     setEntries(moveItem(keys.value, from, to));
 }
+// --- the name from fields (schema 1.60, Plan.md 115 B): a pattern with placeholders, a quick choice, "insert field" ---
+
+const NAME_INPUT_ID = 'people-name-format';
+const nameFormat = computed(() => props.block.nameFormat ?? DEFAULT_NAME_FORMAT);
+const nameLabel = (key: string): string => (key === 'firstName' ? t.inspector.peopleNameFirst : key === 'lastName' ? t.inspector.peopleNameLast : personName(key));
+/** The pattern as words: the placeholders replaced by the field names. */
+const nameSummary = computed(() => nameFormat.value.replace(/\{([A-Za-z0-9_]{1,64})\}/g, (_, key: string) => nameLabel(key)));
+const namePresets = computed<SelectOption[]>(() => {
+    const nick = personName('nickname');
+    return [
+        { value: DEFAULT_NAME_FORMAT, label: `${nameLabel('firstName')} ${nameLabel('lastName')}` },
+        ...(released.value.includes('nickname')
+            ? [
+                  { value: '{nickname} ({firstName}) {lastName}', label: `${nick} (${nameLabel('firstName')}) ${nameLabel('lastName')}` },
+                  { value: '{firstName} ({nickname}) {lastName}', label: `${nameLabel('firstName')} (${nick}) ${nameLabel('lastName')}` },
+              ]
+            : []),
+    ];
+});
+const namePresetValue = computed(() => namePresets.value.find((o) => o.value === nameFormat.value)?.value);
+const nameInsertOptions = computed<SelectOption[]>(() => [
+    { value: 'firstName', label: nameLabel('firstName') },
+    { value: 'lastName', label: nameLabel('lastName') },
+    ...released.value.map((key) => ({ value: key, label: personName(key) })),
+]);
+function setNameFormat(value: string): void {
+    setBlock({ nameFormat: value === DEFAULT_NAME_FORMAT ? undefined : value });
+}
+/** Puts `{key}` where the cursor stands (replacing a selection), or at the end where the field was never focused. */
+function insertPlaceholder(key: string | number): void {
+    const input = document.getElementById(NAME_INPUT_ID) as HTMLInputElement | null;
+    const text = nameFormat.value;
+    const start = Math.min(input?.selectionStart ?? text.length, text.length);
+    const end = Math.min(input?.selectionEnd ?? start, text.length);
+    const insert = `{${key}}`;
+    setNameFormat(`${text.slice(0, start)}${insert}${text.slice(end)}`.slice(0, 200));
+    void nextTick(() => {
+        input?.focus();
+        input?.setSelectionRange(start + insert.length, start + insert.length);
+    });
+}
 const entriesSummary = computed(() => t.common.countOf(keys.value.length, Math.max(available.value, keys.value.length)));
 const entriesFace = computed(() => (keys.value.length ? t.quick.listFace(t.inspector.peopleFields, entriesSummary.value) : t.quick.empty.people));
 
@@ -240,6 +282,26 @@ const appearanceHelp = computed(() => ({
             </SortList>
         </InspectorSection>
     </QuickField>
+
+    <InspectorSection id="people-name" :title="t.inspector.peopleName" :summary="nameSummary" :help="th.people.name">
+        <SelectField
+            :model-value="namePresetValue"
+            :options="namePresets"
+            :label="t.inspector.peopleNameQuick"
+            :placeholder="t.inspector.peopleNameQuick"
+            testid="people-name-preset"
+            @update:model-value="setNameFormat(String($event))"
+        />
+        <TextField :model-value="nameFormat" :label="t.inspector.peopleNameFormat" :maxlength="200" :input-id="NAME_INPUT_ID" stacked testid="people-name-format" @update:model-value="setNameFormat" />
+        <SelectField
+            :model-value="undefined"
+            :options="nameInsertOptions"
+            :label="t.inspector.peopleNameInsertLabel"
+            :placeholder="t.inspector.peopleNameInsert"
+            testid="people-name-insert"
+            @update:model-value="insertPlaceholder"
+        />
+    </InspectorSection>
 
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="appearanceHelp">
         <TileField quick :model-value="block.layout" :options="PEOPLE_TILES" :label="t.inspector.view" testid="people-layout" @update:model-value="setBlock({ layout: $event })" />

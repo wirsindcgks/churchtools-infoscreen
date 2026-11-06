@@ -18,7 +18,7 @@ test('the people block says the group is not set up, and its inspector keeps its
 
     // Group first, then roles, then the one list "Angaben", then "Darstellung", then "Schrift" (AGENTS.md, Ordnung im Inspektor); nothing is open at the start.
     const ids = await page.locator('[data-testid^="section-"]:not([data-testid$="-toggle"])').evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
-    const order = ['section-people-group', 'section-people-roles', 'section-people-fields', 'section-appearance', 'section-font'];
+    const order = ['section-people-group', 'section-people-roles', 'section-people-fields', 'section-people-name', 'section-appearance', 'section-font'];
     expect(ids.filter((id) => order.includes(id!))).toEqual(order);
     await expect(page.getByTestId('section-people-roles')).not.toHaveAttribute('open', '');
 
@@ -35,6 +35,16 @@ test('the people block says the group is not set up, and its inspector keeps its
     await expect(page.getByTestId('people-field-pin')).toHaveAttribute('aria-pressed', 'true');
     await page.getByTestId('people-field-pin').click();
     await expect(page.getByTestId('people-field-pin')).toHaveAttribute('aria-pressed', 'false');
+    // The name from fields (schema 1.60, Plan.md 115 B): the pattern starts as today; "Feld einfügen" puts a placeholder in.
+    await expect(page.getByTestId('section-people-name')).not.toHaveAttribute('open', '');
+    await openSection(page, 'people-name');
+    await expect(page.getByTestId('people-name-format')).toHaveValue('{firstName} {lastName}');
+    await pickOption(page, 'people-name-insert', 'Nachname');
+    await expect(page.getByTestId('people-name-format')).toHaveValue('{firstName} {lastName}{lastName}');
+    await page.getByTestId('people-name-format').fill('{lastName}, {firstName}');
+    // Folded, the summary names the pattern in words.
+    await page.getByTestId('section-people-name-toggle').click();
+    await expect(page.getByTestId('section-people-name-toggle')).toContainText('Nachname, Vorname');
     await openSection(page, 'people-group');
     // Neither "Infoscreen-People" nor a released group in the demo: the menu says so instead of offering a group that is not there.
     await expect(page.getByTestId('people-group-none')).toBeVisible();

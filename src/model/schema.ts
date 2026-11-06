@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 59 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 60 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -441,6 +441,11 @@ export const PeopleBlock = v.object({
     showImage: v.optional(v.boolean(), true),
     /** Since 1.58 (Plan.md 114 D): the picture as a circle or as a square with the corners of the card. Missing: circle. */
     imageShape: v.optional(v.picklist(['circle', 'square'])),
+    /**
+     * Since 1.60 (Plan.md 115 B): how the name is put together – text with the placeholders `{firstName}`, `{lastName}` and
+     * `{<key>}` of a released person field (`composeName`). Missing: "{firstName} {lastName}". Sorting stays with first and last name.
+     */
+    nameFormat: v.optional(v.pipe(v.string(), v.maxLength(200))),
     /** Since 1.55: `card` – cards in a grid, page by page; `list` – one row a person (small round picture, name, role, fields), page by page. Missing: `card`; older players show cards. */
     layout: v.optional(v.picklist(['card', 'list']), 'card'),
     /** Cards side by side, 1–6; a page holds `columns` × `rows` (the `card` layout only). */

@@ -7,7 +7,7 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { markdownLines, markdownText, type MdInline } from '../../ct/markdown';
-import { groupOfBlock, peopleEntries, rightEntries, selectPeople, shownEntries, type Person } from '../../groups/members';
+import { composeName, groupOfBlock, peopleEntries, rightEntries, selectPeople, shownEntries, type Person } from '../../groups/members';
 import type { Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { formatNumericDate, formatTime, sizedImageUrl, textStyle } from '../format';
@@ -104,6 +104,7 @@ watch(
         () => props.block.height,
         () => props.block.layout,
         () => props.block.showImage,
+        () => props.block.nameFormat,
         () => allEntries.value.join(),
         () => right.value.join(),
         () => items.value.map((p) => `${p.name}|${p.roleId}|${Object.values(p.fields).join()}|${Object.values(p.personFields ?? {}).join()}`).join(),
@@ -144,6 +145,8 @@ interface ShownField {
     /** A comment field as lines of Markdown (card); `null` for all others. */
     lines: MdInline[][] | null;
 }
+/** The name after the block's pattern (schema 1.60). */
+const nameOf = (person: Person): string => composeName(person, group.value ?? undefined, props.block.nameFormat);
 function fieldsOf(person: Person, keys: readonly string[] = entries.value): ShownField[] {
     return shownEntries(person, group.value ?? undefined, keys).flatMap((field): ShownField[] => {
         if (field.format === 'datetime') {
@@ -165,7 +168,8 @@ const cards = computed(() =>
         return {
             key: `${page.value}-${index}`,
             person,
-            initial: person.name.charAt(0).toUpperCase(),
+            name: nameOf(person),
+            initial: nameOf(person).charAt(0).toUpperCase(),
             picture: props.block.showImage
                 ? { size, url: person.imageUrl ? imageSource(context, sizedImageUrl(person.imageUrl, size, size, 'crop')) : null, style: { width: `${size}px`, height: `${size}px`, margin: landscape.value ? `0 0 0 ${pad.value}px` : `${pad.value}px 0 0` } }
                 : null,
@@ -182,7 +186,8 @@ function rowEntry(person: Person, index: number, withImage: boolean) {
     return {
         key: `${page.value}-${index}`,
         person,
-        initial: person.name.charAt(0).toUpperCase(),
+        name: nameOf(person),
+        initial: nameOf(person).charAt(0).toUpperCase(),
         url: withImage && person.imageUrl ? imageSource(context, sizedImageUrl(person.imageUrl, rowPicture.value, rowPicture.value, 'crop')) : null,
         meta: fieldsOf(person).map((f) => f.text).join(' · '),
         aside: fieldsOf(person, right.value).map((f) => f.text).join(' · '),
@@ -201,7 +206,7 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
                 <li v-for="r in rowsMeasured" :key="r.key" class="row">
                     <span v-if="block.showImage" class="row-avatar" />
                     <span class="body">
-                        <span class="title">{{ r.person.name }}</span>
+                        <span class="title">{{ r.name }}</span>
                         <span v-if="r.meta" class="summary">{{ r.meta }}</span>
                         <span v-if="r.aside" class="aside">{{ r.aside }}</span>
                     </span>
@@ -214,7 +219,7 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
                         <span v-else class="row-avatar row-initial" :style="{ background: themeOf(context).accent }"><span>{{ r.initial }}</span></span>
                     </template>
                     <span class="body">
-                        <span class="title" data-testid="person-name">{{ r.person.name }}</span>
+                        <span class="title" data-testid="person-name">{{ r.name }}</span>
                         <span v-if="r.meta" class="summary" data-testid="person-meta">{{ r.meta }}</span>
                         <span v-if="r.aside" class="aside" data-testid="person-aside">{{ r.aside }}</span>
                     </span>
@@ -235,7 +240,7 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
                     </template>
                     <div class="card-text">
                         <div class="card-main">
-                            <div class="person-name" data-testid="person-name">{{ c.person.name }}</div>
+                            <div class="person-name" data-testid="person-name">{{ c.name }}</div>
                             <template v-for="field in c.fields" :key="field.key">
                                 <div v-if="field.lines" class="person-field-lines">
                                     <div v-for="(line, i) in field.lines" :key="i" class="person-field" data-testid="person-field"><MdInlines :parts="line" /></div>
