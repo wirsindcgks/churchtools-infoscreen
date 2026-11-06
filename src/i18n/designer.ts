@@ -1538,6 +1538,9 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             donePeople: (people: string) =>
                 `In „${people}“ nimmst du auf, wer im Baustein „Personen“ erscheinen darf; die Mitgliedsfelder legst du dort in ChurchTools an. Die Geräte sind schon Mitglied – sie müssen es bleiben, sonst bleiben die Felder leer.`,
             updateRights: 'Rechte aktualisieren',
+            /** Under every button of the assistant that ends by saving the settings (Plan.md 112). */
+            noSettingsRight:
+                'Dafür fehlt dir das Modulrecht „Daten in Kategorie bearbeiten“ auf die Kategorie „Einstellungen“ (Einrichtung, Schritt 2). Ohne es ließe sich nicht speichern, was der Assistent anlegt oder ändert.',
             removeSetup: 'Automatische Einrichtung rückgängig machen',
             fresh: 'Legt zwei Gruppen vom gewählten Typ an – Gestalter und Geräte – und gibt ihren Rollen die nötigen Rechte. Danach müssen nur noch Personen in die Gruppen aufgenommen werden.',
             foreign: (names: string) =>
@@ -1603,8 +1606,6 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             addDevices: 'Die Konten der Gerätegruppe werden in die neue Gruppe aufgenommen, ihre Liste kommt in die Einstellungen.',
             untouched: 'Bestehende Rollen und Rechte sowie fremde Gruppen bleiben unberührt. „Automatische Einrichtung rückgängig machen“ löscht die Gruppe wieder.',
             confirm: 'Anlegen',
-            noSettingsRight:
-                'Dafür fehlt dir das Modulrecht „Daten in Kategorie bearbeiten“ auf die Kategorie „Einstellungen“ (Einrichtung, Schritt 2). Ohne es ließe sich nicht speichern, was angelegt wurde.',
             finishHint: 'Eine Gruppe „Infoscreen-People“ ist schon da, aber nicht eingetragen – das Anlegen wurde offenbar abgebrochen. Du kannst es abschließen.',
             finishButton: 'Einrichtung abschließen',
             finishTitle: 'Einrichtung abschließen',
