@@ -30,6 +30,11 @@ test('the people block says the group is not set up, and its inspector keeps its
     await expect(page.getByTestId('people-field-row')).toHaveCount(0);
     await pickOption(page, 'people-fields-add', 'Rolle in der Gruppe');
     await expect(page.getByTestId('people-field-name')).toHaveText(['Rolle in der Gruppe']);
+    // The pin shows an entry at the right edge (schema 1.57, Plan.md 114 C) and can be taken back.
+    await page.getByTestId('people-field-pin').click();
+    await expect(page.getByTestId('people-field-pin')).toHaveAttribute('aria-pressed', 'true');
+    await page.getByTestId('people-field-pin').click();
+    await expect(page.getByTestId('people-field-pin')).toHaveAttribute('aria-pressed', 'false');
     await openSection(page, 'people-group');
     // Neither "Infoscreen-People" nor a released group in the demo: the menu says so instead of offering a group that is not there.
     await expect(page.getByTestId('people-group-none')).toBeVisible();

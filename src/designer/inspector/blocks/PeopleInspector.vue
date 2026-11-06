@@ -7,7 +7,7 @@
 import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
 import { th } from '../../../i18n/help';
-import { entriesPatch, groupOfBlock, memberEntry, peopleEntries, personEntry, ROLE_ENTRY } from '../../../groups/members';
+import { entriesPatch, groupOfBlock, memberEntry, peopleEntries, personEntry, rightEntries, ROLE_ENTRY } from '../../../groups/members';
 import { PERSON_FIELD_KEYS, type Block } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
 import { PEOPLE_SECONDS } from '../../../player/paging';
@@ -24,6 +24,8 @@ import SortList, { type SortItem } from '../fields/SortList.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import TileField from '../fields/TileField.vue';
 import FontSection from '../FontSection.vue';
+import Icon from '../../Icon.vue';
+import { vTip } from '../../tip';
 import { move as moveItem } from '../../ops';
 import { PEOPLE_TILES } from '../layouts';
 import { useBlockEdit } from '../use-block';
@@ -70,7 +72,8 @@ function setGroup(value: string | number): void {
     const next = value === STANDARD ? undefined : Number(value);
     if (next === (groupValue.value === STANDARD ? undefined : props.block.sourceGroupId)) return;
     // The member fields belong to the group; the role and the person fields stay.
-    setBlock({ sourceGroupId: next, roleIds: [], ...entriesPatch(keys.value.filter((key) => !key.startsWith('member:'))) });
+    const kept = keys.value.filter((key) => !key.startsWith('member:'));
+    setBlock({ sourceGroupId: next, roleIds: [], ...entriesPatch(kept, right.value.filter((key) => kept.includes(key))) });
 }
 const groupSummary = computed(() => groupOptions.value.find((o) => o.value === groupValue.value)?.label ?? t.inspector.peopleChooseGroup);
 
@@ -95,6 +98,8 @@ const rolesSummary = computed(() => (props.block.roleIds.length ? t.common.count
 
 /** The entries by key (`role`, `member:<id>`, `person:<key>`) – a block from before holds names, mapped here; edits write the ids. */
 const keys = computed(() => peopleEntries(props.block, fields.value));
+/** The entries pinned to the right (schema 1.57). */
+const right = computed(() => rightEntries(props.block, fields.value));
 const memberCount = computed(() => keys.value.filter((key) => key.startsWith('member:')).length);
 const released = computed(() => stage.releasedPersonFields ?? []);
 const personName = (key: string): string => t.inspector.personFieldNames[key] ?? key;
@@ -127,8 +132,11 @@ const pickable = computed<SelectOption[]>(() => {
 });
 /** Everything there is to choose, for "n von m". */
 const available = computed(() => 1 + fields.value.length + released.value.length);
-function setEntries(next: string[]): void {
-    setBlock(entriesPatch(next));
+function setEntries(next: string[], pinned: readonly string[] = right.value): void {
+    setBlock(entriesPatch(next, pinned.filter((key) => next.includes(key))));
+}
+function togglePin(key: string): void {
+    setEntries(keys.value, right.value.includes(key) ? right.value.filter((k) => k !== key) : [...right.value, key]);
 }
 function addEntry(key: string | number): void {
     setEntries([...keys.value, String(key)]);
@@ -210,7 +218,21 @@ const appearanceHelp = computed(() => ({
         />
         <p v-if="!keys.length" class="hint">{{ loaded && !fields.length && !released.length ? t.inspector.noFieldsThere : t.inspector.noFieldsChosen }}</p>
         <InspectorSection v-else id="people-fields" :title="t.inspector.peopleFields" :summary="entriesSummary" :help="th.people.fields">
-            <SortList :items="chosen" :remove-label="t.inspector.removeField" testid="people-field" @move="moveEntry" @remove="removeEntry" />
+            <SortList :items="chosen" :remove-label="t.inspector.removeField" testid="people-field" @move="moveEntry" @remove="removeEntry">
+                <template #actions="{ item }">
+                    <button
+                        v-tip="t.inspector.pinRight"
+                        class="sort-action"
+                        type="button"
+                        :aria-label="t.inspector.pinRight"
+                        :aria-pressed="right.includes(String(item.key))"
+                        data-testid="people-field-pin"
+                        @click="togglePin(String(item.key))"
+                    >
+                        <Icon name="pin" :size="14" />
+                    </button>
+                </template>
+            </SortList>
         </InspectorSection>
     </QuickField>
 

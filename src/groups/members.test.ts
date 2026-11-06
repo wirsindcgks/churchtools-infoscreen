@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deniedPeople, entriesPatch, normalizeMembers, peopleEntries, shownEntries, personFieldValues, resolveFieldKeys, selectPeople, shownFields, shownPersonFields, withPersonFields, PEOPLE_CAP, type PeopleGroup } from './members';
+import { deniedPeople, entriesPatch, normalizeMembers, peopleEntries, rightEntries, shownEntries, personFieldValues, resolveFieldKeys, selectPeople, shownFields, shownPersonFields, withPersonFields, PEOPLE_CAP, type PeopleGroup } from './members';
 
 const member = (personId: number, first: string, last: string, extra: Record<string, unknown> = {}) => ({
     personId,
@@ -265,6 +265,13 @@ describe('one list of entries (Plan.md 114 B, schema 1.56)', () => {
             personFieldKeys: ['city', 'email'],
         });
         expect(entriesPatch(['role'])).toEqual({ entries: [{ key: 'role' }], fieldKeys: [], personFieldKeys: undefined });
+    });
+
+    it('writes the pin only as true, and reads the pinned keys in the form peopleEntries gives (schema 1.57)', () => {
+        expect(entriesPatch(['role', 'member:11', 'person:city'], ['member:11', 'person:email']).entries).toEqual([{ key: 'role' }, { key: 'member:11', right: true }, { key: 'person:city' }]);
+        expect(rightEntries({ fieldKeys: ['11'], layout: 'list' })).toEqual([]);
+        const entries = [{ key: 'person:city', right: true as const }, { key: 'role' }, { key: 'member:Aufgabe', right: true as const }];
+        expect(rightEntries({ entries, fieldKeys: [], layout: 'card' }, fields)).toEqual(['person:city', 'member:11']);
     });
 
     it('shows the entries of a person in their order, only those with a value', () => {

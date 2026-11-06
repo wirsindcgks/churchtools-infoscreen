@@ -883,6 +883,8 @@ describe('the people block and the group of the settings (schema 1.51, Plan.md 1
         const entries = [{ key: 'person:city' }, { key: 'role' }, { key: 'member:12' }];
         expect(v.parse(Block, { ...block, entries })).toMatchObject({ entries });
         for (const key of ['person:street', 'member:', 'name', 'roles']) expect(v.safeParse(Block, { ...block, entries: [{ key }] }).success).toBe(false);
+        expect(v.parse(Block, { ...block, entries: [{ key: 'role', right: true }] })).toMatchObject({ entries: [{ key: 'role', right: true }] });
+        for (const right of [false, 'yes']) expect(v.safeParse(Block, { ...block, entries: [{ key: 'role', right }] }).success).toBe(false);
         expect(v.safeParse(Block, { ...block, entries: Array.from({ length: 17 }, () => ({ key: 'role' })) }).success).toBe(false);
     });
 });

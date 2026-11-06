@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 56 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 57 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -418,8 +418,20 @@ export const PeopleBlock = v.object({
      * `member:<id>` (a member field) or `person:<key>` (a released person field). The designer keeps `fieldKeys` and
      * `personFieldKeys` the same, in this order, so older players and `peopleNeeds` read what they know. Missing: the order
      * from before – the role first in the list, none on cards, then the member fields, then the person fields (`peopleEntries`).
+     * Since 1.57 an entry can be pinned to the right (`right`).
      */
-    entries: v.optional(v.pipe(v.array(v.object({ key: PeopleEntryKey })), v.maxLength(16))),
+    entries: v.optional(
+        v.pipe(
+            v.array(
+                v.object({
+                    key: PeopleEntryKey,
+                    /** Since 1.57 (Plan.md 114 C): shown at the right edge (list) or bottom right (card). Missing: under the name. */
+                    right: v.optional(v.literal(true)),
+                }),
+            ),
+            v.maxLength(16),
+        ),
+    ),
     /** `last-name` – by last name, then first name; `first-name` the other way round; `role` – by role, then last name. */
     sort: v.optional(v.picklist(['last-name', 'first-name', 'role']), 'last-name'),
     /** The picture on the card; off: name and fields only. */

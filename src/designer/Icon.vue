@@ -32,6 +32,8 @@ const PATHS = {
     id: ['M9.5 4L7.5 20', 'M16.5 4l-2 16', 'M4.5 9h15.5', 'M4 15h15.5'],
     // Linked slides (Plan.md 49): two chain links.
     link: ['M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1', 'M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1'],
+    // Pin an entry to the right (Plan.md 114 C): a push pin.
+    pin: ['M9 4h6', 'M10 4v6l-3 4h10l-3-4V4', 'M12 14v6'],
     trash: ['M4 7h16', 'M10 11v6', 'M14 11v6', 'M6 7l1 13h10l1-13', 'M9 7V4h6v3'],
     play: ['M8 5l11 7-11 7z'],
     pause: ['M8 5v14', 'M16 5v14'],

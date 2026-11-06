@@ -2,11 +2,11 @@
 /**
  * The people of the group "Infoscreen-People" (schema 1.51, Plan.md 112, Stück 1): cards in a grid of `columns` × `rows`,
  * or, since 1.55, one row a person (small round picture, name, role, fields), page by page, with the page bar like GroupsView. The privacy rule lives in `src/groups/members.ts` – this view reads
- * nothing but `Person` fields: name, picture, the member fields the block names and, since 1.54, the released person fields it chose – since 1.56 with the role in one order (`entries`).
+ * nothing but `Person` fields (since 1.57 entries can be pinned at the right): name, picture, the member fields the block names and, since 1.54, the released person fields it chose – since 1.56 with the role in one order (`entries`).
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { markdownLines, markdownText, type MdInline } from '../../ct/markdown';
-import { groupOfBlock, peopleEntries, selectPeople, shownEntries, type Person } from '../../groups/members';
+import { groupOfBlock, peopleEntries, rightEntries, selectPeople, shownEntries, type Person } from '../../groups/members';
 import type { Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { formatNumericDate, formatTime, sizedImageUrl, textStyle } from '../format';
@@ -22,7 +22,10 @@ const context = useStageContext();
 const group = computed(() => groupOfBlock(context.people, props.block.sourceGroupId));
 const items = computed(() => selectPeople(group.value ?? undefined, props.block.roleIds, props.block.sort));
 /** What stands under the name, in the block's order (schema 1.56): role, member and person fields; a block from before derives it. */
-const entries = computed(() => peopleEntries(props.block, group.value?.fields ?? []));
+const allEntries = computed(() => peopleEntries(props.block, group.value?.fields ?? []));
+/** The entries pinned to the right (schema 1.57): at the row's edge in the list, bottom right on a card. */
+const right = computed(() => rightEntries(props.block, group.value?.fields ?? []));
+const entries = computed(() => allEntries.value.filter((key) => !right.value.includes(key)));
 
 /** As calm as "Keine Gruppen": not set up, not released, not allowed, or simply nobody – and nothing while the first read is still on its way. */
 const emptyMessage = computed(() => {
@@ -100,7 +103,8 @@ watch(
         () => props.block.height,
         () => props.block.layout,
         () => props.block.showImage,
-        () => entries.value.join(),
+        () => allEntries.value.join(),
+        () => right.value.join(),
         () => items.value.map((p) => `${p.name}|${p.roleId}|${Object.values(p.fields).join()}|${Object.values(p.personFields ?? {}).join()}`).join(),
     ],
     () => void nextTick(measure),
@@ -139,8 +143,8 @@ interface ShownField {
     /** A comment field as lines of Markdown (card); `null` for all others. */
     lines: MdInline[][] | null;
 }
-function fieldsOf(person: Person): ShownField[] {
-    return shownEntries(person, group.value ?? undefined, entries.value).flatMap((field): ShownField[] => {
+function fieldsOf(person: Person, keys: readonly string[] = entries.value): ShownField[] {
+    return shownEntries(person, group.value ?? undefined, keys).flatMap((field): ShownField[] => {
         if (field.format === 'datetime') {
             const instant = new Date(field.text);
             if (Number.isNaN(instant.getTime())) return [];
@@ -165,6 +169,7 @@ const cards = computed(() =>
                 ? { size, url: person.imageUrl ? imageSource(context, sizedImageUrl(person.imageUrl, size, size, 'crop')) : null, style: { width: `${size}px`, height: `${size}px`, margin: landscape.value ? `0 0 0 ${pad.value}px` : `${pad.value}px 0 0` } }
                 : null,
             fields: fieldsOf(person),
+            aside: fieldsOf(person, right.value),
         };
     }),
 );
@@ -179,6 +184,7 @@ function rowEntry(person: Person, index: number, withImage: boolean) {
         initial: person.name.charAt(0).toUpperCase(),
         url: withImage && person.imageUrl ? imageSource(context, sizedImageUrl(person.imageUrl, rowPicture.value, rowPicture.value, 'crop')) : null,
         meta: fieldsOf(person).map((f) => f.text).join(' · '),
+        aside: fieldsOf(person, right.value).map((f) => f.text).join(' · '),
     };
 }
 const rowsShown = computed(() => (isList.value ? shown.value.map((p, i) => rowEntry(p, i, true)) : []));
@@ -196,6 +202,7 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
                     <span class="body">
                         <span class="title">{{ r.person.name }}</span>
                         <span v-if="r.meta" class="summary">{{ r.meta }}</span>
+                        <span v-if="r.aside" class="aside">{{ r.aside }}</span>
                     </span>
                 </li>
             </ul>
@@ -208,6 +215,7 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
                     <span class="body">
                         <span class="title" data-testid="person-name">{{ r.person.name }}</span>
                         <span v-if="r.meta" class="summary" data-testid="person-meta">{{ r.meta }}</span>
+                        <span v-if="r.aside" class="aside" data-testid="person-aside">{{ r.aside }}</span>
                     </span>
                 </li>
             </ul>
@@ -224,13 +232,18 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
                         <span v-else class="card-image card-initial" :style="{ ...c.picture.style, background: themeOf(context).accent, fontSize: `${c.picture.size * 0.45}px` }">{{ c.initial }}</span>
                     </template>
                     <div class="card-text">
-                        <div class="person-name" data-testid="person-name">{{ c.person.name }}</div>
-                        <template v-for="field in c.fields" :key="field.key">
-                            <div v-if="field.lines" class="person-field-lines">
-                                <div v-for="(line, i) in field.lines" :key="i" class="person-field" data-testid="person-field"><MdInlines :parts="line" /></div>
-                            </div>
-                            <div v-else class="person-field" data-testid="person-field">{{ field.text }}</div>
-                        </template>
+                        <div class="card-main">
+                            <div class="person-name" data-testid="person-name">{{ c.person.name }}</div>
+                            <template v-for="field in c.fields" :key="field.key">
+                                <div v-if="field.lines" class="person-field-lines">
+                                    <div v-for="(line, i) in field.lines" :key="i" class="person-field" data-testid="person-field"><MdInlines :parts="line" /></div>
+                                </div>
+                                <div v-else class="person-field" data-testid="person-field">{{ field.text }}</div>
+                            </template>
+                        </div>
+                        <div v-if="c.aside.length" class="card-aside" data-testid="person-aside">
+                            <div v-for="field in c.aside" :key="field.key" class="person-field">{{ field.text }}</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -294,11 +307,22 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
     color: #fff;
 }
 .card-text {
+    display: flex;
     flex: 1;
+    flex-direction: column;
     min-width: 0;
     min-height: 0;
     overflow: hidden;
     padding: 0.6em 0.8em;
+}
+.card-main {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+.card-aside {
+    flex: none;
+    text-align: right;
 }
 .person-name {
     display: -webkit-box;
@@ -330,6 +354,28 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
 }
 .row:not(:has(.row-avatar)) {
     grid-template-columns: minmax(0, 1fr);
+}
+/* Pinned entries (schema 1.57): on the line under the name, at the row's right edge – a second column of the text. */
+.body:has(.aside) {
+    grid-template-columns: minmax(0, 1fr) fit-content(40%);
+    column-gap: 1em;
+}
+.body:has(.aside) .title {
+    grid-column: 1 / -1;
+}
+.body:has(.aside) .summary {
+    grid-column: 1;
+}
+.aside {
+    grid-row: 2;
+    grid-column: 2;
+    justify-self: end;
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.62em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0.8;
 }
 .row-avatar {
     flex: none;

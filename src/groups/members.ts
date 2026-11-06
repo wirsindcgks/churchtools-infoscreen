@@ -367,15 +367,22 @@ export function peopleEntries(block: Pick<PeopleBlock, 'entries' | 'fieldKeys' |
     ];
 }
 
+/** The keys of the entries pinned to the right (schema 1.57), in the form `peopleEntries` gives; a block without `entries` has none. */
+export function rightEntries(block: Pick<PeopleBlock, 'entries' | 'fieldKeys' | 'personFieldKeys' | 'layout'>, fields: readonly PeopleField[] = []): string[] {
+    if (!block.entries) return [];
+    const keys = peopleEntries(block, fields);
+    return keys.filter((_, i) => block.entries![i]!.right);
+}
+
 /**
  * What the designer writes for a list of entries: `entries` and, in the same order, `fieldKeys` and `personFieldKeys` – so
  * a player before 1.56 and `peopleNeeds` keep reading what they know. An empty list stays `[]`, so the order from before
  * does not come back.
  */
-export function entriesPatch(keys: readonly string[]): Pick<PeopleBlock, 'entries' | 'fieldKeys' | 'personFieldKeys'> {
+export function entriesPatch(keys: readonly string[], right: readonly string[] = []): Pick<PeopleBlock, 'entries' | 'fieldKeys' | 'personFieldKeys'> {
     const personFieldKeys = keys.flatMap((key) => (key.startsWith('person:') && (PERSON_FIELD_KEYS as readonly string[]).includes(key.slice(7)) ? [key.slice(7) as PersonFieldKey] : []));
     return {
-        entries: keys.map((key) => ({ key })),
+        entries: keys.map((key) => (right.includes(key) ? { key, right: true as const } : { key })),
         fieldKeys: keys.flatMap((key) => (key.startsWith('member:') ? [key.slice(7)] : [])),
         personFieldKeys: personFieldKeys.length ? personFieldKeys : undefined,
     };

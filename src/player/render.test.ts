@@ -926,6 +926,23 @@ describe('rendering people (Plan.md 112)', () => {
         expect(noRole.get('[data-testid="person-meta"]').text()).toBe('Pastorin');
     });
 
+    it('shows pinned entries at the right: beside the row in the list, below the card text (schema 1.57)', () => {
+        const anna = person('Anna', 'Berg', { personFields: { city: 'Kassel' } });
+        const read: PeopleGroup = { ...group(anna), personFieldKeys: ['city'] };
+        const entries = [{ key: 'person:city', right: true as const }, { key: 'role' }, { key: 'member:2', right: true as const }];
+        const patch = { entries, fieldKeys: ['2'], personFieldKeys: ['city' as const] };
+        const list = render(makeSlide({ blocks: [peopleBlock({ ...patch, layout: 'list' })] }), { people: [read] });
+        expect(list.get('[data-testid="person-aside"]').text()).toBe('Kassel · Pastorin');
+        expect(list.get('[data-testid="person-meta"]').text()).toBe('Teilnehmer');
+        const card = render(makeSlide({ blocks: [peopleBlock(patch)] }), { people: [read] });
+        expect(card.get('[data-testid="person-aside"]').findAll('.person-field').map((f) => f.text())).toEqual(['Kassel', 'Pastorin']);
+        expect(card.findAll('[data-testid="person-field"]').map((f) => f.text())).toEqual(['Teilnehmer']);
+        for (const layout of ['list', 'card'] as const) {
+            const plain = render(makeSlide({ blocks: [peopleBlock({ entries: [{ key: 'member:2' }], fieldKeys: ['2'], layout })] }), { people: [read] });
+            expect(plain.find('[data-testid="person-aside"]').exists()).toBe(false);
+        }
+    });
+
     it('shows the person fields after the member fields, only those the group was read for – a withdrawn one is gone (schema 1.54)', () => {
         const anna = person('Anna', 'Berg', { personFields: { email: 'anna@example.org', city: 'Kassel' } });
         const read: PeopleGroup = { ...group(anna), personFieldKeys: ['email', 'city'] };

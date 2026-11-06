@@ -3,7 +3,8 @@
  * A list to reorder (Plan.md 79, B2, D7): per row the handle ⋮⋮, an optional thumbnail, the label and a small × to remove. The
  * rows are dragged by the handle or moved with the arrow keys on it (`useSortable`); `testid` names the parts
  * (`<testid>-list`, `-row`, `-handle`, `-name`, `-remove`; `rowTestid` renames the row). The `row` slot adds fields of
- * the item under its line, such as the way-finder of a room; the `lead` slot puts a mark before the label.
+ * the item under its line, such as the way-finder of a room; the `lead` slot puts a mark before the label; the `actions` slot adds buttons before the ×
+ * (class `sort-action`, pressed with `aria-pressed="true"`).
  */
 import { ref } from 'vue';
 import { t } from '../../../i18n/designer';
@@ -24,7 +25,7 @@ export interface SortItem {
 
 const props = defineProps<{ items: SortItem[]; removeLabel: string; testid: string; rowTestid?: string; quick?: boolean }>();
 const emit = defineEmits<{ move: [from: number, to: number]; remove: [index: number] }>();
-defineSlots<{ row?(props: { item: SortItem; index: number }): unknown; lead?(props: { item: SortItem; index: number }): unknown }>();
+defineSlots<{ row?(props: { item: SortItem; index: number }): unknown; lead?(props: { item: SortItem; index: number }): unknown; actions?(props: { item: SortItem; index: number }): unknown }>();
 const visible = useFieldVisible(() => props.quick);
 
 const list = ref<HTMLElement | null>(null);
@@ -42,6 +43,7 @@ useSortable({ container: list, onMove: (from, to) => emit('move', from, to) });
                 <img v-if="item.thumb" :src="item.thumb" alt="">
                 <span v-else-if="item.thumb === null" class="sort-missing" />
                 <span v-tip="item.label" class="sort-label" :class="{ 'sort-label--dimmed': item.dimmed }" :data-testid="`${testid}-name`">{{ item.label }}</span>
+                <slot name="actions" :item="item" :index="index" />
                 <button
                     v-tip="removeLabel"
                     class="sort-remove"
@@ -81,7 +83,8 @@ useSortable({ container: list, onMove: (from, to) => emit('move', from, to) });
 }
 /* The handle: quiet until pointed at; a finger finds it as wide as a button. */
 .sort-handle,
-.sort-remove {
+.sort-remove,
+:slotted(.sort-action) {
     display: grid;
     flex: none;
     place-items: center;
@@ -101,9 +104,14 @@ useSortable({ container: list, onMove: (from, to) => emit('move', from, to) });
     -webkit-touch-callout: none;
 }
 .sort-handle:hover,
-.sort-remove:hover:not(:disabled) {
+.sort-remove:hover:not(:disabled),
+:slotted(.sort-action:hover) {
     background: var(--d-panel);
     color: var(--d-text);
+}
+:slotted(.sort-action[aria-pressed='true']) {
+    background: var(--d-accent-pale);
+    color: var(--d-accent-strong);
 }
 .sort-remove:disabled {
     opacity: 0.4;
@@ -111,7 +119,8 @@ useSortable({ container: list, onMove: (from, to) => emit('move', from, to) });
 }
 @media (pointer: coarse) {
     .sort-handle,
-    .sort-remove {
+    .sort-remove,
+    :slotted(.sort-action) {
         width: 36px;
         height: 44px;
     }

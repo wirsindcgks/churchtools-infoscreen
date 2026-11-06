@@ -406,7 +406,7 @@ export const th = {
         } satisfies HelpTopic,
         fields: {
             intro:
-                'Was unter dem Namen steht, in der Reihenfolge der Liste; zum Umsortieren einen Eintrag ziehen. Zur Wahl stehen die Rolle in der Gruppe, die Mitgliedsfelder der Gruppe (bis zu acht) und die freigeschalteten Personenfelder. ' +
+                'Was unter dem Namen steht, in der Reihenfolge der Liste; zum Umsortieren einen Eintrag ziehen. Die Stecknadel heftet eine Angabe rechts an – in der Liste steht sie am rechten Rand, auf Karten unten rechts (etwa eine Zimmernummer). Zur Wahl stehen die Rolle in der Gruppe, die Mitgliedsfelder der Gruppe (bis zu acht) und die freigeschalteten Personenfelder. ' +
                 'Mitgliedsfelder legt man in ChurchTools an der Gruppe an. Der Fernseher sieht nur Felder bis zu der Sicherheitsstufe, die ihm ein Administrator freigegeben hat. ' +
                 'Jede Art von Feld erscheint passend: Auswahl mit dem Namen der Option, ein Kontrollkästchen mit dem Namen des Feldes (nur wenn es angehakt ist), Datum und Zahl in deutscher Schreibweise, ein Kommentarfeld formatiert. ' +
                 'Personenfelder – Telefon, E-Mail, PLZ, Ort, Geburtstag – stehen nur zur Wahl, wenn ein Administrator sie unter Einstellungen → Personen freigeschaltet hat; nimmt er eines zurück, verschwindet es sofort vom Fernseher. ' +

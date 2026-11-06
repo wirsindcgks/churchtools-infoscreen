@@ -704,6 +704,7 @@ export const t = {
         addField: '+ Angabe',
         addFieldLabel: 'Angabe hinzufügen',
         removeField: 'Angabe entfernen',
+        pinRight: 'Rechts zeigen',
         noFieldsChosen: 'Noch keine Angaben gewählt. Es erscheinen nur Name und Bild.',
         noFieldsThere: 'Die Gruppe hat noch keine Mitgliedsfelder, oder sie sind für das Gerät nicht sichtbar. Die Rolle lässt sich trotzdem zeigen.',
         peopleRoleEntry: 'Rolle in der Gruppe',
