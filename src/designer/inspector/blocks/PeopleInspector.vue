@@ -82,6 +82,10 @@ const sorts = [
     { value: 'first-name', label: t.inspector.peopleSortFirstName },
     { value: 'role', label: t.inspector.peopleSortRole },
 ];
+const shapes = [
+    { value: 'circle', label: t.inspector.imageShapeCircle },
+    { value: 'square', label: t.inspector.imageShapeSquare },
+];
 const columns = [1, 2, 3, 4, 5, 6].map((n) => ({ value: n, label: String(n) }));
 
 // --- roles: none chosen = every role ---
@@ -162,7 +166,7 @@ const summary = computed(() =>
 );
 const appearanceHelp = computed(() => ({
     intro: th.people.intro,
-    items: [th.people.layout, th.people.sort, th.people.picture, th.people.grid, th.people.seconds, th.pageProgress('die nächste Seite'), th.pageProgressStyle, th.pageProgressPlacement],
+    items: [th.people.layout, th.people.sort, th.people.picture, th.people.imageShape, th.people.grid, th.people.seconds, th.pageProgress('die nächste Seite'), th.pageProgressStyle, th.pageProgressPlacement],
 }));
 </script>
 
@@ -248,6 +252,14 @@ const appearanceHelp = computed(() => ({
             @update:model-value="setBlock({ sort: $event })"
         />
         <ToggleField :model-value="block.showImage" :label="t.inspector.showPicture" testid="people-show-image" @update:model-value="setBlock({ showImage: $event })" />
+        <SegmentField
+            v-if="block.showImage"
+            :model-value="block.imageShape ?? 'circle'"
+            :options="shapes"
+            :label="t.inspector.imageShape"
+            testid="people-image-shape"
+            @update:model-value="setBlock({ imageShape: $event === 'square' ? 'square' : undefined })"
+        />
         <SegmentField v-if="block.layout === 'card'" :model-value="block.columns" :options="columns" :label="t.inspector.columns" testid="people-columns" @update:model-value="setBlock({ columns: Number($event) })" />
         <SegmentField v-if="block.layout === 'card'" :model-value="block.rows" :options="columns" :label="t.inspector.peopleRows" testid="people-rows" @update:model-value="setBlock({ rows: Number($event) })" />
         <NumberField

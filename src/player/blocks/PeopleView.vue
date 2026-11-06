@@ -1,6 +1,7 @@
 <script setup lang="ts">
 /**
  * The people of the group "Infoscreen-People" (schema 1.51, Plan.md 112, Stück 1): cards in a grid of `columns` × `rows`,
+ * the picture round or, since 1.58, square,
  * or, since 1.55, one row a person (small round picture, name, role, fields), page by page, with the page bar like GroupsView. The privacy rule lives in `src/groups/members.ts` – this view reads
  * nothing but `Person` fields (since 1.57 entries can be pinned at the right): name, picture, the member fields the block names and, since 1.54, the released person fields it chose – since 1.56 with the role in one order (`entries`).
  */
@@ -193,7 +194,7 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
 </script>
 
 <template>
-    <div class="people" :style="textStyle(block.style)" :data-testid="isList ? 'people-list' : 'people-cards'">
+    <div class="people" :class="{ 'people--square': block.imageShape === 'square' }" :style="textStyle(block.style)" :data-testid="isList ? 'people-list' : 'people-cards'">
         <!-- List: rows like GroupsView's, page by page; the rows are measured in a hidden copy. -->
         <template v-if="isList">
             <ul ref="measureList" class="rows measure" aria-hidden="true">
@@ -229,7 +230,8 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
                 <div class="card-content">
                     <template v-if="c.picture">
                         <img v-if="c.picture.url" :key="c.picture.url" class="card-image" :src="c.picture.url" :style="c.picture.style" alt="" data-testid="person-image" @error="hideOnError">
-                        <span v-else class="card-image card-initial" :style="{ ...c.picture.style, background: themeOf(context).accent, fontSize: `${c.picture.size * 0.45}px` }">{{ c.initial }}</span>
+                        <!-- The big letter sits on an inner element, so the square's corners stay in the block's font size. -->
+                        <span v-else class="card-image card-initial" :style="{ ...c.picture.style, background: themeOf(context).accent }"><span :style="{ fontSize: `${c.picture.size * 0.45}px` }">{{ c.initial }}</span></span>
                     </template>
                     <div class="card-text">
                         <div class="card-main">
@@ -298,6 +300,11 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
     align-self: center;
     border-radius: 50%;
     object-fit: cover;
+}
+/* Since 1.58 (Plan.md 114 D): a square with the corners of the card, in card and list. */
+.people--square .card-image,
+.people--square .row-avatar {
+    border-radius: var(--isd-radius, 0.4em);
 }
 .card-initial {
     display: flex;

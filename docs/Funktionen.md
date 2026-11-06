@@ -95,10 +95,10 @@ Ein Administrator **gibt vorhandene Gruppen frei**; auf Wunsch lässt sich auch 
 anlegen, in der die Geräte automatisch Mitglied werden. Wer in der Gruppe ist, darf erscheinen; die Angaben
 sind Mitgliedsfelder der Gruppe. Der Baustein wählt unter „Gruppe"
 die gewünschte (Name, Bild und Rolle; Mitgliedsfelder nur mit dem Recht „Gruppenmitgliedsfelder sehen“, das ein Administrator dem Gerät gibt). Man wählt Rollen,
-Sortierung und ob das Bild erscheint; das Bild ist rund wie ein Profilbild. Was unter dem Namen steht, wählt man in **einer** Liste
+Sortierung und ob das Bild erscheint; die **Bildform** ist ein Kreis wie ein Profilbild oder ein Quadrat mit den Ecken der Karte. Was unter dem Namen steht, wählt man in **einer** Liste
 „Angaben“ samt Reihenfolge: die Rolle in der Gruppe, Mitgliedsfelder und freigeschaltete Personenfelder, beliebig gemischt. Die **Stecknadel** an einer Angabe heftet sie rechts an: in der Liste steht sie am rechten Rand der Zeile, auf der Karte unten rechts (etwa eine Zimmernummer).
 Die **Ansicht** wechselt zwischen Karten (im Raster, Spalten und Reihen einstellbar) und einer **Liste** mit einer Zeile je
-Person – kleines rundes Bild, Name und die gewählten Angaben –, die wie die anderen Listen seitenweise blättert.
+Person – kleines Bild, Name und die gewählten Angaben –, die wie die anderen Listen seitenweise blättert.
 Jede Art von Mitgliedsfeld erscheint passend: Auswahlfelder mit dem Namen der Option, ein Kontrollkästchen mit dem Namen des
 Feldes (nur, wenn es angehakt ist), Datum und Zahl in deutscher Schreibweise, Datum mit Uhrzeit in der Zeit der Gemeinde, und ein
 Kommentarfeld formatiert (auf der Karte Zeile für Zeile, in der Liste als eine Zeile ohne Formatierungszeichen).

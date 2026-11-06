@@ -986,6 +986,21 @@ describe('rendering people (Plan.md 112)', () => {
         expect(off.find('.card-initial').exists()).toBe(false);
     });
 
+    it('shows the picture as a circle or, since 1.58, as a square – on cards and in the list, the initial too', () => {
+        const people = { people: [group(person('Anna', 'Berg', { imageUrl: 'https://x.example/images/abc' }), person('Ben', 'Adler'))] };
+        for (const layout of ['card', 'list'] as const) {
+            const round = render(makeSlide({ blocks: [peopleBlock({ layout })] }), people);
+            expect(round.find('.people--square').exists()).toBe(false);
+            const square = render(makeSlide({ blocks: [peopleBlock({ layout, imageShape: 'square' })] }), people);
+            expect(square.find('.people--square').exists()).toBe(true);
+            expect(square.findAll('[data-testid="person-image"]')).toHaveLength(1);
+        }
+        // The big letter's size sits inside, so the square's corners keep the block's font size.
+        const card = render(makeSlide({ blocks: [peopleBlock({ imageShape: 'square' })] }), people);
+        expect(card.get('.card-initial').attributes('style') ?? '').not.toContain('font-size');
+        expect(card.get('.card-initial > span').attributes('style')).toContain('font-size');
+    });
+
     it('turns pages of columns × rows cards and reports the page count to the rotation', () => {
         const many = Array.from({ length: 5 }, (_, i) => person('P', String(i)));
         const context = { people: [group(...many)], pages: {} as Record<string, number> };

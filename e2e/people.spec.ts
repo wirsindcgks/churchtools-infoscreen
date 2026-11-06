@@ -54,6 +54,12 @@ test('the people block says the group is not set up, and its inspector keeps its
     await choose(page, 'people-layout', 'card');
     await choose(page, 'people-columns', '2');
     expect(await chosen(page, 'people-columns')).toBe('2');
+    // The shape of the picture (schema 1.58, Plan.md 114 D): a circle by default, only while the picture shows.
+    expect(await chosen(page, 'people-image-shape')).toBe('circle');
+    await choose(page, 'people-image-shape', 'square');
+    expect(await chosen(page, 'people-image-shape')).toBe('square');
+    await expect(page.locator('.editor-stage .block--people .people--square')).toHaveCount(1);
     await page.getByTestId('people-show-image').click();
     await expect(page.getByTestId('people-show-image')).not.toBeChecked();
+    await expect(page.getByTestId('people-image-shape')).toHaveCount(0);
 });
