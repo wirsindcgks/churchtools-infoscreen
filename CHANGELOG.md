@@ -4,6 +4,22 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.54.1] – 2026-11-06
+
+### Behoben
+
+- **Der Assistent fängt nichts an, was er nicht abschließen kann.** Fehlt das Modulrecht „Daten in Kategorie bearbeiten“
+  auf die Kategorie „Einstellungen“, sind „Gruppen und Rechte anlegen“, „Rechte aktualisieren“ und „Automatische
+  Einrichtung rückgängig machen“ grau, und darunter steht, was fehlt. Bisher legten oder löschten sie Gruppen und Rechte
+  und scheiterten erst beim Speichern der Einstellungen
+  ([#290](https://github.com/wirsindcgks/churchtools-infoscreen/pull/290)).
+
+### Geändert
+
+- **Anleitung:** Ein Personenfeld außerhalb der Reichweite der Geräte ist in der Einrichtung ausgegraut und nennt die
+  nötige Sicherheitsstufe; die Anleitung sagt das jetzt so
+  ([#288](https://github.com/wirsindcgks/churchtools-infoscreen/pull/288)).
+
 ## [0.54.0] – 2026-11-06
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch, alle Personenfelder samt eigener Felder zu nutzen
@@ -1793,4 +1809,5 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.1.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.1.0
 [0.52.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.52.0
 [0.53.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.53.0
+[0.54.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.54.1
 [0.54.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.54.0
