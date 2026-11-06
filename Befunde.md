@@ -886,7 +886,13 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 - **Auswahlfelder:** Die Options-Namen sind teils Übersetzungsschlüssel (`sex.male`, `status.member`), Optionen des Personenstatus tragen eine eigene `secLevel`.
 - **Der Code** lässt nur die sieben Schlüssel aus `PERSON_FIELD_KEYS` zu – Schema, Freigabe in den Einstellungen, Inspektor und `personFieldValues`. Darum fehlt der Spitzname, obwohl die Stufe passt.
 
-**Nicht gemessen:** ein eigenes Personenfeld einer Gemeinde in `GET /persons` (die Testinstanz hat keins; anzulegen wäre schreibend). Bernhards Spitzname ist ein Standardfeld.
+**Nachtrag zu G76 (2026-11-06, Testinstanz; **schreibend mit OK des Nutzers:** per `POST /dbfields` in `f_church` mit Stufe 1 die Personenfelder „ISD-Zimmer“ (165, `text`), „ISD-Notiz“ (168, `textarea`), „ISD-Datum“ (171, `date`) und „1. Ärztin & Notfall“ (174, `text`) angelegt, an Person 19 per `PATCH /persons/19` Werte gesetzt, als Administrator und Geräte-Konto gelesen, danach alle vier mit `DELETE /dbfields/{id}` gelöscht – `GET /fields` zählt wieder 98, an Person 19 ist nichts übrig; Anlass: Bernhards Issue #280):**
+
+- **Schlüssel** bildet ChurchTools aus dem Namen: klein, Sonderzeichen zu `_`, Umlaute fallen weg, eine Ziffer am Anfang bleibt („ISD-Zimmer“ → `isd_zimmer`, „1. Ärztin & Notfall“ → `1_rztin_notfall`).
+- **`GET /fields`** führt eigene Felder wie Standardfelder (`fieldCategoryCode` `f_church`, `fieldTypeCode`, `secLevel`, `isActive` „1“, `hideInFrontend` `false`), für Administrator und Geräte-Konto gleich.
+- **`GET /persons`** trägt den Wert unter dem Schlüssel: Text wie eingegeben, Kommentarfeld als Text mit `\n` und Markdown, Datum `JJJJ-MM-TT`, ohne Wert `null`. Das Geräte-Konto (derzeit Stufe 0) bekommt die Schlüssel gar nicht – wie bei den Standardfeldern.
+
+**Folge:** Eigene Felder brauchen keine Sonderbehandlung; die Schlüsselregel im Schema muss eine Ziffer am Anfang erlauben (`^[A-Za-z0-9_]{1,64}$`).
 
 **Folgen:** Die feste Liste fällt weg; angeboten wird, was `GET /fields` als aktives, sichtbares Personenfeld in Reichweite des Geräts nennt, die Freigabe durch den Administrator bleibt. Namen und Typen liest das Gerät selbst. Plan.md 115.
 
