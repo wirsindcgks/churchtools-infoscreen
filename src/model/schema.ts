@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 58 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 59 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -384,15 +384,17 @@ export const GroupsBlock = v.object({
 });
 
 /**
- * The person fields an administrator may release for the block "Personen" (schema 1.54, Plan.md 112, Stück 3): the keys of
- * `GET /persons`, all of security level 1 on a usual instance (G71). A fixed list – the setup offers a field only if the
- * instance has it active and at level 1.
+ * The person fields an administrator could release before 1.59 (schema 1.54, Plan.md 112, Stück 3): the keys of `GET /persons`,
+ * all of security level 1 on a usual instance (G71). Since 1.59 (Plan.md 115) any person field the instance names is possible;
+ * the list stays only for the mirror in `SettingsDoc.personFieldKeys`, which older players read.
  */
-export const PERSON_FIELD_KEYS = ['phoneWork', 'phonePrivate', 'mobile', 'email', 'zip', 'city', 'birthday'] as const;
-export type PersonFieldKey = (typeof PERSON_FIELD_KEYS)[number];
+export const LEGACY_PERSON_FIELD_KEYS = ['phoneWork', 'phonePrivate', 'mobile', 'email', 'zip', 'city', 'birthday'] as const;
 
-/** An entry of a people block (schema 1.56): `role`, `member:<field id>` or `person:<released person field>`. */
-const PeopleEntryKey = v.pipe(v.string(), v.maxLength(110), v.regex(new RegExp(`^(role|member:.{1,100}|person:(${PERSON_FIELD_KEYS.join('|')}))$`)));
+/** The key of a person field as `GET /fields` and `GET /persons` name it (schema 1.59): `nickname`, `email`, a church's own field (its key comes from the name and may start with a digit: `1_rztin_notfall`) … */
+const PersonFieldKey = v.pipe(v.string(), v.regex(/^[A-Za-z0-9_]{1,64}$/));
+
+/** An entry of a people block (schema 1.56): `role`, `member:<field id>` or `person:<person field key>`. */
+const PeopleEntryKey = v.pipe(v.string(), v.maxLength(110), v.regex(/^(role|member:.{1,100}|person:[A-Za-z0-9_]{1,64})$/));
 
 /**
  * Since 1.51: the people of the module's own group "Infoscreen-People" as cards (Plan.md 112, Stück 1) – name, picture,
@@ -410,9 +412,10 @@ export const PeopleBlock = v.object({
     fieldKeys: v.pipe(v.array(v.pipe(v.string(), v.maxLength(100))), v.maxLength(8)),
     /**
      * Since 1.54: person fields shown after the member fields, in this order – a subset of what an administrator released
-     * (`SettingsDoc.personFieldKeys`); the player shows only those that are still released. Missing: none.
+     * (`SettingsDoc.personFields`); the player shows only those that are still released. Missing: none. Until 1.58 only the
+     * keys of `LEGACY_PERSON_FIELD_KEYS`; since 1.59 any key, so an older player skips a block that has one (like every new schema value).
      */
-    personFieldKeys: v.optional(v.pipe(v.array(v.picklist(PERSON_FIELD_KEYS)), v.maxLength(7))),
+    personFieldKeys: v.optional(v.pipe(v.array(PersonFieldKey), v.maxLength(16))),
     /**
      * Since 1.56 (Plan.md 114 B): everything shown under the name, in this order, in one list – `role` (the role in the group),
      * `member:<id>` (a member field) or `person:<key>` (a released person field). The designer keeps `fieldKeys` and
@@ -991,11 +994,15 @@ export const SettingsDoc = v.object({
      */
     peopleGroupIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
     /**
-     * Since 1.54: the person fields an administrator released for the block "Personen" (Plan.md 112, Stück 3) – a subset of
-     * `PERSON_FIELD_KEYS`. Saving gives the device group "Personendaten sehen" at security level 1 (125, G71) as long as the list is
-     * not empty. Missing or empty = nothing released.
+     * Since 1.59 (Plan.md 115): the person fields an administrator released for the block "Personen" – any key `GET /fields` names for
+     * a person. Saving gives the device group "Personendaten sehen" at security level 1 (125, G71) as long as the list is not empty.
+     * Read as `personFields ?? personFieldKeys`. Missing or empty = nothing released.
      */
-    personFieldKeys: v.optional(v.pipe(v.array(v.picklist(PERSON_FIELD_KEYS)), v.maxLength(7))),
+    personFields: v.optional(v.pipe(v.array(PersonFieldKey), v.maxLength(40))),
+    /**
+     * Since 1.54: the released person fields, only those of `LEGACY_PERSON_FIELD_KEYS` – the mirror of `personFields` for older players.
+     */
+    personFieldKeys: v.optional(v.pipe(v.array(v.picklist(LEGACY_PERSON_FIELD_KEYS)), v.maxLength(7))),
     /** Since 1.40: calendars that are not public but released for screens by an administrator (Plan.md 85 b). Missing = none. */
     screenCalendarIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
 });

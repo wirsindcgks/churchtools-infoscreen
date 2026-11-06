@@ -18,7 +18,8 @@ vi.mock('../ct/api', () => ({
     fetchGroupHomepage: vi.fn(),
     fetchGroupHomepageList: vi.fn(),
     fetchGroupMembers: vi.fn(),
-fetchPersons: vi.fn(),
+    fetchPersons: vi.fn(),
+    fetchPersonFields: vi.fn(async () => []),
     fetchPosts: vi.fn(),
     fetchTimeZone: vi.fn(),
 }));
@@ -415,9 +416,11 @@ describe('people (Plan.md 112)', () => {
         expect(await churchToolsPlayerData.people(40)).toEqual({ groupId: 40, denied: true, people: [], roles: [], fields: [] });
     });
 
-    it('needs the person fields the blocks chose, in the order of the list and each once (schema 1.54)', () => {
+    it('needs the person fields the blocks chose, in the order they first appear and each once (schema 1.54, 1.59)', () => {
         const blocks = [{ ...peopleBlock, personFieldKeys: ['city', 'email' as const] }, { ...peopleBlock, id: 'q', personFieldKeys: ['email' as const] }] as Block[];
-        expect(peopleNeeds([makeSlide({ blocks })]).personFieldKeys).toEqual(['email', 'city']);
+        expect(peopleNeeds([makeSlide({ blocks })]).personFieldKeys).toEqual(['city', 'email']);
+        const free = [{ ...peopleBlock, personFieldKeys: ['nickname'] }] as Block[];
+        expect(peopleNeeds([makeSlide({ blocks: free })]).personFieldKeys).toEqual(['nickname']);
     });
 
     it('reads a chosen person field only if it is released – the rest of a group is read as before', async () => {
@@ -444,6 +447,16 @@ describe('people (Plan.md 112)', () => {
         expect(group.people[0]!.personFields).toEqual({ email: 'anna@example.org', birthday: '17.05.' });
         expect(group.people[1]!.personFields).toEqual({});
         expect(JSON.stringify(group)).not.toMatch(/1980|Weg 1|0170|guid/);
+    });
+
+    it('reads a free field like the nickname with the types of /fields (Plan.md 115) – and goes on without the definitions', async () => {
+        vi.mocked(client.currentPerson).mockResolvedValue({ id: 22 } as Awaited<ReturnType<typeof client.currentPerson>>);
+        vi.mocked(api.fetchGroupMembers).mockResolvedValue({ members: [member(1, 'Anna')], roles: [], fieldDefs: [] });
+        vi.mocked(api.fetchPersons).mockResolvedValue([{ id: 1, nickname: 'Anni', entry: '2010-03-05' }]);
+        vi.mocked(api.fetchPersonFields).mockResolvedValue([{ key: 'entry', name: 'Eintritt', type: 'date', category: 'f_church', hidden: false, isActive: true, secLevel: 1 }]);
+        expect((await churchToolsPlayerData.people(40, [], true, ['nickname', 'entry'])).people[0]!.personFields).toEqual({ nickname: 'Anni', entry: '05.03.2010' });
+        vi.mocked(api.fetchPersonFields).mockRejectedValue(new Error('offline'));
+        expect((await churchToolsPlayerData.people(40, [], true, ['nickname', 'entry'])).people[0]!.personFields).toEqual({ nickname: 'Anni', entry: '2010-03-05' });
     });
 
     it('does not read /persons without a chosen released field, and shows empty fields without the right (403)', async () => {

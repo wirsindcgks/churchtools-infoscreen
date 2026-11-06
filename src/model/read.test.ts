@@ -862,11 +862,28 @@ describe('the people block and the group of the settings (schema 1.51, Plan.md 1
         expect(v.safeParse(SettingsDoc, { ...base, personFieldKeys: Array.from({ length: 8 }, () => 'email') }).success).toBe(false);
     });
 
-    it('reads a people block with person fields only from the fixed list (schema 1.54)', () => {
+    it('reads released person fields of any key, the old keys mirrored (schema 1.59)', () => {
+        const base = { schema: { major: 1, minor: 59 }, kind: 'settings', id: 'settings' };
+        expect(v.parse(SettingsDoc, { ...base, personFields: ['nickname', 'email'], personFieldKeys: ['email'] })).toMatchObject({ personFields: ['nickname', 'email'], personFieldKeys: ['email'] });
+        expect(v.parse(SettingsDoc, base).personFields).toBeUndefined();
+        expect(v.safeParse(SettingsDoc, { ...base, personFields: ['bad key'] }).success).toBe(false);
+        expect(v.parse(SettingsDoc, { ...base, personFields: ['1_rztin_notfall', 'isd_zimmer'] }).personFields).toEqual(['1_rztin_notfall', 'isd_zimmer']);
+        expect(v.safeParse(SettingsDoc, { ...base, personFields: ['a-b'] }).success).toBe(false);
+        expect(v.safeParse(SettingsDoc, { ...base, personFields: Array.from({ length: 41 }, (_, i) => `f${i}`) }).success).toBe(false);
+        // The mirror keeps the old list: older players read nothing else.
+        expect(v.safeParse(SettingsDoc, { ...base, personFieldKeys: ['nickname'] }).success).toBe(false);
+    });
+
+    it('reads a people block with person fields of any key (schema 1.59), but not an invalid one', () => {
         const block = { id: 'p', type: 'people', x: 0, y: 0, width: 100, height: 100, roleIds: [], fieldKeys: [], style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' } };
         expect(v.parse(Block, block)).not.toHaveProperty('personFieldKeys');
         expect(v.parse(Block, { ...block, personFieldKeys: ['mobile', 'city'] })).toMatchObject({ personFieldKeys: ['mobile', 'city'] });
-        expect(v.safeParse(Block, { ...block, personFieldKeys: ['street'] }).success).toBe(false);
+        expect(v.parse(Block, { ...block, personFieldKeys: ['nickname'] })).toMatchObject({ personFieldKeys: ['nickname'] });
+        expect(v.safeParse(Block, { ...block, personFieldKeys: ['bad key'] }).success).toBe(false);
+        expect(v.safeParse(Block, { ...block, personFieldKeys: Array.from({ length: 17 }, (_, i) => `f${i}`) }).success).toBe(false);
+        const entries = [{ key: 'person:nickname' }, { key: 'person:1_rztin_notfall' }];
+        expect(v.parse(Block, { ...block, entries })).toMatchObject({ entries });
+        expect(v.safeParse(Block, { ...block, entries: [{ key: 'person:bad key' }] }).success).toBe(false);
     });
 
     it('reads a people block without a layout as cards, and only card or list (schema 1.55)', () => {
@@ -882,7 +899,7 @@ describe('the people block and the group of the settings (schema 1.51, Plan.md 1
         expect(v.parse(Block, block)).not.toHaveProperty('entries');
         const entries = [{ key: 'person:city' }, { key: 'role' }, { key: 'member:12' }];
         expect(v.parse(Block, { ...block, entries })).toMatchObject({ entries });
-        for (const key of ['person:street', 'member:', 'name', 'roles']) expect(v.safeParse(Block, { ...block, entries: [{ key }] }).success).toBe(false);
+        for (const key of ['person:a-b', 'member:', 'name', 'roles']) expect(v.safeParse(Block, { ...block, entries: [{ key }] }).success).toBe(false);
         expect(v.parse(Block, { ...block, entries: [{ key: 'role', right: true }] })).toMatchObject({ entries: [{ key: 'role', right: true }] });
         for (const right of [false, 'yes']) expect(v.safeParse(Block, { ...block, entries: [{ key: 'role', right }] }).success).toBe(false);
         expect(v.safeParse(Block, { ...block, entries: Array.from({ length: 17 }, () => ({ key: 'role' })) }).success).toBe(false);

@@ -970,6 +970,16 @@ describe('rendering people (Plan.md 112)', () => {
         expect(list.text()).not.toContain('**');
     });
 
+    it('shows a comment field of the person formatted on the card and in one line in the list (Plan.md 115)', () => {
+        const people: PeopleGroup = { ...group(person('Anna', 'Berg', { personFields: { note: '**Sprechzeit** Di' } })), personFieldKeys: ['note'], personFieldFormats: { note: 'markdown' } };
+        const entries = [{ key: 'person:note' }];
+        const card = render(makeSlide({ blocks: [peopleBlock({ entries, personFieldKeys: ['note'] })] }), { people: [people] });
+        expect(card.get('[data-testid="people-cards"] strong').text()).toBe('Sprechzeit');
+        const list = render(makeSlide({ blocks: [peopleBlock({ entries, personFieldKeys: ['note'], layout: 'list' })] }), { people: [people] });
+        expect(list.get('[data-testid="person-meta"]').text()).toContain('Sprechzeit Di');
+        expect(list.text()).not.toContain('**');
+    });
+
     it('shows a field a block from before names by its name – mapped to the id of the group', () => {
         const people: PeopleGroup = { ...group(person('Anna', 'Berg')), fields: [{ key: '2', name: 'Funktion' }, { key: '5', name: 'Büro' }] };
         const wrapper = render(makeSlide({ blocks: [peopleBlock({ fieldKeys: ['Funktion'] })] }), { people: [people] });

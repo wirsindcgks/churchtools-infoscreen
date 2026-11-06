@@ -17,6 +17,7 @@ import {
     fetchGroupHomepage,
     fetchGroupHomepageList,
     fetchGroupMembers,
+    fetchPersonFields,
     fetchPersons,
     fetchPosts,
     fetchResourceMasterdata,
@@ -25,10 +26,10 @@ import {
     fetchTimeZone,
 } from '../ct/api';
 import { currentPerson, ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
-import { deniedPeople, normalizeMembers, personFieldValues, unreleasedPeople, withPersonFields, type PeopleGroup } from '../groups/members';
+import { deniedPeople, normalizeMembers, personFieldFormats, personFieldValues, unreleasedPeople, withPersonFields, type PeopleGroup } from '../groups/members';
 import { normalizeHomepage, type HomepageGroups } from '../groups/normalize';
 import type { HeartbeatDoc } from '../model/heartbeat';
-import { PERSON_FIELD_KEYS, type ScreenDoc, type SlideDoc } from '../model/schema';
+import type { ScreenDoc, SlideDoc } from '../model/schema';
 import { normalizePosts, type Post } from '../posts/normalize';
 import { normalizeBookings, roomsOf, type RoomBookings } from '../rooms/normalize';
 import { getRepository } from '../store/backend';
@@ -194,11 +195,15 @@ export const churchToolsPlayerData: PlayerData = {
             // Person fields (schema 1.54): one read for the people of the cards, and only the released and chosen keys are kept.
             // Without "Personendaten sehen" the answer is a `403` or has nothing in it – the fields stay empty then, no error.
             const ids = group.people.flatMap((p) => (p.personId == null ? [] : [p.personId]));
-            const persons = await withTimeout(fetchPersons(ids)).catch((error: unknown) => {
-                if (httpStatus(error) !== 403) throw error;
-                return [];
-            });
-            return withPersonFields(group, personFieldValues(persons, personFieldKeys), personFieldKeys);
+            // The definitions (`GET /fields`) give the types; the device may read them (G76). Without them text and birthday only.
+            const [persons, defs] = await Promise.all([
+                withTimeout(fetchPersons(ids)).catch((error: unknown) => {
+                    if (httpStatus(error) !== 403) throw error;
+                    return [];
+                }),
+                withTimeout(fetchPersonFields()).catch(() => []),
+            ]);
+            return withPersonFields(group, personFieldValues(persons, personFieldKeys, defs), personFieldKeys, personFieldFormats(personFieldKeys, defs));
         } catch (error) {
             if (httpStatus(error) !== 403) throw error;
             return deniedPeople(groupId);
@@ -345,7 +350,7 @@ export function peopleNeeds(slides: SlideDoc[]): PeopleNeeds {
         else ids.add(block.sourceGroupId);
         for (const key of block.personFieldKeys ?? []) personFieldKeys.add(key);
     }
-    return { standard, groupIds: [...ids].sort((a, b) => a - b), personFieldKeys: PERSON_FIELD_KEYS.filter((key) => personFieldKeys.has(key)) };
+    return { standard, groupIds: [...ids].sort((a, b) => a - b), personFieldKeys: [...personFieldKeys] };
 }
 
 /** Whether a screen shows people at all. */
@@ -355,7 +360,7 @@ export const peopleAny = (needs: PeopleNeeds): boolean => needs.standard || need
 export interface PeopleSettings {
     peopleGroupId?: number;
     peopleGroupIds?: readonly number[];
-    /** The person fields an administrator released (schema 1.54); missing or empty = none. */
+    /** The person fields an administrator released (`personFields ?? personFieldKeys`, schema 1.59); missing or empty = none. */
     personFieldKeys?: readonly string[];
 }
 
@@ -371,7 +376,7 @@ export async function readPeopleGroups(
 ): Promise<PeopleGroup[]> {
     const standardId = settings.peopleGroupId;
     const released = new Set(settings.peopleGroupIds ?? []);
-    // Only a field that is both chosen by a block and still released is read; the fixed order of the list.
+    // Only a field that is both chosen by a block and still released is read.
     const releasedFields = new Set(settings.personFieldKeys ?? []);
     const personFieldKeys = needs.personFieldKeys.filter((key) => releasedFields.has(key));
     const ids = new Set<number>(needs.groupIds);

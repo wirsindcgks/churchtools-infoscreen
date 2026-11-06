@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NotAuthenticatedError, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import { DEMO_BUNDLE } from '../dev/demo';
-import { DEFAULT_THEME, type Block, type PersonFieldKey } from '../model/schema';
+import { DEFAULT_THEME, type Block } from '../model/schema';
 import { makeTemplate } from '../model/testing';
 import type { Group, HomepageGroups } from '../groups/normalize';
 import type { Post } from '../posts/normalize';
@@ -407,7 +407,7 @@ describe('player controller', () => {
     });
 
     /** A `people` block on the first slide; the settings name the group "Infoscreen-People" or not, and the block a group of its own or not (Plan.md 112). */
-    const withPeople = (peopleGroupId?: number, extra: { sourceGroupId?: number; peopleGroupIds?: number[]; personFieldKeys?: PersonFieldKey[]; chosen?: PersonFieldKey[] } = {}): LoadedScreen => {
+    const withPeople = (peopleGroupId?: number, extra: { sourceGroupId?: number; peopleGroupIds?: number[]; personFieldKeys?: string[]; chosen?: string[] } = {}): LoadedScreen => {
         const base = loaded();
         const [first, ...rest] = base.slides;
         const block: Block = {

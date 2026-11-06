@@ -167,18 +167,26 @@ export async function fetchPersons(ids: number[]): Promise<unknown[]> {
     return churchtoolsClient.getAllPages<unknown>('/persons', { ids });
 }
 
-/** A person field of the instance, as `GET /fields` names it – for the setup's list of fields to release (Plan.md 112, Stück 3). */
+/** A person field of the instance, as `GET /fields` names it – for the setup's list, the designer's names and the player's values (Plan.md 115). */
 export interface PersonFieldInfo {
     key: string;
     name: string;
     secLevel: number | null;
     isActive: boolean;
+    /** `fieldTypeCode`: `text`, `date`, `number`, `checkbox`, `select` … */
+    type: string;
+    /** `fieldCategoryCode`: `f_address`, `f_church`, `f_group` … */
+    category: string;
+    /** `hideInFrontend`: the field is not shown in ChurchTools. */
+    hidden: boolean;
 }
 
-/** The person fields of the instance with their security level (administrators only; the device never asks). */
+/** The field definitions of the instance with their security level; the device gets them with `200` as well (G76). */
 export async function fetchPersonFields(): Promise<PersonFieldInfo[]> {
     // Measured: `isActive` comes as the text "1", `secLevel` as a number.
-    const list = await churchtoolsClient.get<{ key?: string; nameTranslated?: string; name?: string; secLevel?: number | null; isActive?: unknown }[]>('/fields');
+    const list = await churchtoolsClient.get<
+        { key?: string; nameTranslated?: string; name?: string; secLevel?: number | null; isActive?: unknown; fieldTypeCode?: unknown; fieldCategoryCode?: unknown; hideInFrontend?: unknown }[]
+    >('/fields');
     return (Array.isArray(list) ? list : [])
         .filter((f) => typeof f.key === 'string')
         .map((f) => ({
@@ -186,6 +194,9 @@ export async function fetchPersonFields(): Promise<PersonFieldInfo[]> {
             name: f.nameTranslated || f.name || f.key!,
             secLevel: typeof f.secLevel === 'number' ? f.secLevel : null,
             isActive: f.isActive === true || f.isActive === 1 || f.isActive === '1',
+            type: typeof f.fieldTypeCode === 'string' ? f.fieldTypeCode : '',
+            category: typeof f.fieldCategoryCode === 'string' ? f.fieldCategoryCode : '',
+            hidden: f.hideInFrontend === true || f.hideInFrontend === 1 || f.hideInFrontend === '1',
         }));
 }
 

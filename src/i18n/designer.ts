@@ -1688,11 +1688,11 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             privacy:
                 'Hier gibst du frei, welche Angaben aus dem Personenprofil der Baustein „Personen“ zeigen darf. ChurchTools gibt sie dem Gerät aber nur als ganze Sicherheitsstufe: Technisch kann das Gerät alle Felder bis zu seiner Stufe lesen, auch E-Mail, Telefon und Geburtsdatum der Personen in den freigegebenen Gruppen und in „Infoscreen-People“. Das kann auch jeder lesen, der die Adresse eines Fernsehers kennt. Der Baustein zeigt nur die Felder, die du hier ankreuzt.',
             privacyAsk: 'Stimmt die Freigabe vorher mit der Gemeindeleitung ab – und mit den Personen, deren Angaben erscheinen.',
-            lead: 'Welche Personenfelder Gestalter im Baustein „Personen“ wählen können. Angeboten werden Felder, die in ChurchTools aktiv sind und in einer Sicherheitsstufe liegen, die die Geräte sehen. Die Stufe gibt ein Administrator in ChurchTools: „Personendaten sehen“ an der Gerätegruppe oder „Gruppenmitglieder sehen“ an der Rolle des Gerätekontos in jeder gezeigten Gruppe; der Infoscreen vergibt sie nicht selbst.',
+            lead: 'Welche Personenfelder Gestalter im Baustein „Personen“ wählen können. Angeboten werden die Personenfelder, die in ChurchTools aktiv und sichtbar sind; ankreuzen lässt sich ein Feld, wenn es in einer Sicherheitsstufe liegt, die die Geräte sehen. Die Stufe gibt ein Administrator in ChurchTools: „Personendaten sehen“ an der Gerätegruppe oder „Gruppenmitglieder sehen“ an der Rolle des Gerätekontos in jeder gezeigten Gruppe; der Infoscreen vergibt sie nicht selbst.',
             detail:
                 'Die Stufen bauen aufeinander auf: Wer eine Stufe sieht, sieht die darunter mit. Ändert eine Gemeinde in ChurchTools die Sicherheitsstufe eines Feldes, ändert sich, was das Gerät lesen kann. Das Geburtsdatum zeigt der Baustein nur als Tag und Monat, nie mit dem Jahr.',
             failed: 'Die Personenfelder konnten nicht geladen werden. Eine bestehende Freischaltung lässt sich trotzdem zurücknehmen.',
-            none: 'Keines der möglichen Felder ist in ChurchTools aktiv.',
+            none: 'ChurchTools nennt keine Personenfelder, die der Baustein zeigen kann.',
             level: (name: string) => `Sicherheitsstufe „${name}“`,
             outOfReach: (name: string) => `Sicherheitsstufe „${name}“ – sehen die Geräte nicht`,
             levelUnknown: 'Sicherheitsstufe unbekannt',

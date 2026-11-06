@@ -172,7 +172,9 @@ auf einer Freizeit. Er zeigt die Mitglieder **vorhandener Gruppen, die ein Admin
 #### Personenfelder freischalten
 
 Neben den Mitgliedsfeldern der Gruppe kann der Baustein Angaben aus dem **Personenprofil** zeigen: Telefon geschäftlich,
-Telefon privat, Handy, E-Mail, PLZ, Ort und Geburtstag (nur Tag und Monat, nie das Jahr). Das schaltet ein Administrator frei:
+Telefon privat, Handy, E-Mail, PLZ, Ort, Spitzname, eigene Felder der Gemeinde und mehr – jedes aktive, sichtbare Personenfeld
+vom Typ Text, Kommentar, Datum, Zahl oder Kontrollkästchen, das ChurchTools nennt (Auswahlfelder noch nicht; vom Geburtstag zeigt der Baustein nur Tag und
+Monat, nie das Jahr). Das schaltet ein Administrator frei:
 
 1. In ChurchTools gibt ein Administrator auf der **niedrigsten Sicherheitsstufe**, in der die gewünschten Felder liegen,
    entweder der **Gerätegruppe** „Personendaten sehen“ (gilt für alle Personen, die das Gerät sieht) oder – enger – der
@@ -182,7 +184,8 @@ Telefon privat, Handy, E-Mail, PLZ, Ort und Geburtstag (nur Tag und Monat, nie d
    jedes Gerät es in jeder gezeigten Gruppe sieht („Infoscreen-People“ und die freigegebenen Gruppen); das kleinste Gerät und die
    kleinste Gruppe bestimmen die Reichweite.
 2. **Einstellungen → Gruppen für „Personen"**, Abschnitt **„Personenfelder"**: Der Designer zeigt, bis zu welcher
-   Sicherheitsstufe die Geräte sehen, und bietet nur Felder an, die in ChurchTools aktiv sind und in dieser Reichweite liegen.
+   Sicherheitsstufe die Geräte sehen, und listet die Personenfelder, die ChurchTools nennt; ankreuzen lässt sich ein Feld, das in dieser Reichweite liegt.
+   Die Freigabe bleibt auch dann nötig, wenn ein Feld in der Reichweite liegt: Sie ist die zweite Schranke, die der Administrator bewusst setzt.
    Ein Feld in einer höheren Stufe wird mit Hinweis angezeigt, aber nicht angeboten. Die Stufen liest der Designer bei jedem
    Aufruf frisch aus ChurchTools.
 3. **Speichern** fragt vorher zurück, denn das ist eine Entscheidung zum Datenschutz.
@@ -362,7 +365,7 @@ Mehr als lesen konnte das Gerät nie.
   Das Konto des Fernsehers darf sie lesen. Trage in Mitgliedsfelder nichts ein, was nicht in den Flur gehört, und stelle
   sie auf Sicherheitsstufe 1 nur, wenn sie öffentlich sein dürfen. Das Gerät erhält **nie** E-Mail-Adresse, Telefon oder
   Anschrift der Personen – es sei denn, ein Administrator schaltet unter „Personenfelder“ ausdrücklich Felder der
-  Sicherheitsstufe frei. Dann kann das Gerät, und mit der Adresse eines Fernsehers jeder, **alle Felder bis zu seiner Stufe**
+  Sicherheitsstufe frei (die Liste nennt alle Personenfelder, die ChurchTools als Text, Kommentar, Datum, Zahl oder Kontrollkästchen führt). Dann kann das Gerät, und mit der Adresse eines Fernsehers jeder, **alle Felder bis zu seiner Stufe**
   der Personen in den freigegebenen Gruppen und in „Infoscreen-People“ (falls angelegt) lesen; der Baustein zeigt nur die freigeschalteten.
 - **Eine eingebettete Webseite ist ein Aufruf bei Dritten:** Ihr Betreiber erfährt die Internetadresse des Geräts.
   Bettet nur ein, was ihr auch auf eurer Website einbetten würdet.

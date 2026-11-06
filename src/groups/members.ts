@@ -14,7 +14,7 @@
  * block chose some. Then `personFieldValues` keeps exactly those keys of the answer and drops the rest at once.
  */
 import { LOCALE, tp } from '../i18n/player';
-import { PERSON_FIELD_KEYS, type Block, type PeopleSort, type PersonFieldKey } from '../model/schema';
+import type { Block, PeopleSort } from '../model/schema';
 
 interface PersonResponse {
     title?: string | null;
@@ -111,6 +111,8 @@ export interface PeopleGroup {
     standard?: boolean;
     /** The person field keys read for this group (released and chosen by a block); the view shows no others (schema 1.54). */
     personFieldKeys?: string[];
+    /** Person field key → how the view shows it, where not plain: a comment field (`textarea`) as Markdown (Plan.md 115). */
+    personFieldFormats?: Record<string, 'markdown'>;
     /** The group is neither "Infoscreen-People" nor released by an administrator: not read at all (Plan.md 112, Stück 2a). */
     unreleased?: boolean;
 }
@@ -174,6 +176,24 @@ function fieldDefs(rawFieldDefs: unknown[]): Map<string, FieldDef> {
     return defs;
 }
 
+/** A tick shows as the field's name; "0" is also what members get for whom nothing was ever set, so only "1"/`true` counts. */
+function checkboxText(value: unknown, name: string): string {
+    const on = value === true || value === 1 || value === '1' || (typeof value === 'string' && value.trim() === '1');
+    return on ? name : '';
+}
+
+/** `1980-05-17` → `17.05.1980`. */
+function dateText(value: unknown): string {
+    const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(typeof value === 'string' ? value.trim() : '');
+    return match ? `${match[3]}.${match[2]}.${match[1]}` : '';
+}
+
+function numberText(value: unknown): string {
+    const text = valueText(value);
+    const number = text === '' ? NaN : Number(text);
+    return Number.isFinite(number) ? number.toLocaleString(LOCALE, { useGrouping: false, maximumFractionDigits: 20 }) : '';
+}
+
 /** What a member field's value shows, by the type of its definition (G75); without a definition the value as it comes. */
 function memberValueText(value: unknown, def: FieldDef | undefined, label: string): string {
     switch (def?.type) {
@@ -182,20 +202,12 @@ function memberValueText(value: unknown, def: FieldDef | undefined, label: strin
             return def.options.get(idText(value)) ?? '';
         case 'multiselect':
             return (Array.isArray(value) ? value : [value]).map((id) => def.options.get(idText(id)) ?? '').filter(Boolean).join(', ');
-        case 'checkbox': {
-            // "0" is also what members get for whom nothing was ever set: only a tick shows, and as the field's name.
-            const on = value === true || value === 1 || value === '1' || (typeof value === 'string' && value.trim() === '1');
-            return on ? def.name || label : '';
-        }
-        case 'date': {
-            const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(typeof value === 'string' ? value.trim() : '');
-            return match ? `${match[3]}.${match[2]}.${match[1]}` : '';
-        }
-        case 'number': {
-            const text = valueText(value);
-            const number = text === '' ? NaN : Number(text);
-            return Number.isFinite(number) ? number.toLocaleString(LOCALE, { useGrouping: false, maximumFractionDigits: 20 }) : '';
-        }
+        case 'checkbox':
+            return checkboxText(value, def.name || label);
+        case 'date':
+            return dateText(value);
+        case 'number':
+            return numberText(value);
         default:
             return valueText(value);
     }
@@ -256,8 +268,15 @@ export function normalizeMembers(
     return { groupId, denied: false, people, roles, fields: [...seenFields].sort((a, b) => a[1].sortKey - b[1].sortKey).map(([key, { name }]) => ({ key, name, ...(formatOf(defs.get(key)) ? { format: formatOf(defs.get(key)) } : {}) })) };
 }
 
-/** An entry of `GET /persons`, as far as this code reads it – only the keys of `PERSON_FIELD_KEYS` are ever taken from it. */
+/** An entry of `GET /persons`, as far as this code reads it – only the keys a block chose are ever taken from it. */
 type PersonRecord = Record<string, unknown> & { id?: number | string | null };
+
+/** What `personFieldValues` needs of a field definition (`GET /fields`): the key, the name and the type. */
+export interface PersonFieldDef {
+    key: string;
+    name: string;
+    type: string;
+}
 
 /** `1980-05-17` → `17.05.`: the day and month, never the year (Plan.md 112, Stück 3). Anything else is left out. */
 function birthdayText(value: unknown): string {
@@ -265,19 +284,39 @@ function birthdayText(value: unknown): string {
     return match ? `${match[3]}.${match[2]}.` : '';
 }
 
+/** What a person field shows, by the type of its definition (Plan.md 115); without one (or of another type) the value as text. */
+function personValueText(key: string, value: unknown, def: PersonFieldDef | undefined): string {
+    if (key === 'birthday') return birthdayText(value);
+    switch (def?.type) {
+        case 'date':
+            return dateText(value);
+        case 'number':
+            return numberText(value);
+        case 'checkbox':
+            return checkboxText(value, def.name || key);
+        case 'select':
+        case 'multiselect':
+        case 'radioselect':
+            // Options come with their own names and levels (G76) – not offered yet, so nothing shows even where a block names one.
+            return '';
+        default:
+            return valueText(value);
+    }
+}
+
 /**
  * The chosen person fields of each person from the answer of `GET /persons`: by person id, only the keys in `keys` (the
- * released ones a block chose) and only those that are in the fixed list. Everything else in the answer is dropped here.
+ * released ones a block chose). Everything else in the answer is dropped here. `defs` (`GET /fields`) give the types; without
+ * them only text values and `birthday` come through.
  */
-export function personFieldValues(rawPersons: unknown[], keys: readonly string[]): Map<number, Record<string, string>> {
-    const wanted = keys.filter((key) => (PERSON_FIELD_KEYS as readonly string[]).includes(key));
+export function personFieldValues(rawPersons: unknown[], keys: readonly string[], defs: readonly PersonFieldDef[] = []): Map<number, Record<string, string>> {
     const result = new Map<number, Record<string, string>>();
     for (const raw of rawPersons as PersonRecord[]) {
         const id = idOf(raw?.id);
         if (id === null) continue;
         const values: Record<string, string> = {};
-        for (const key of wanted) {
-            const text = key === 'birthday' ? birthdayText(raw[key]) : valueText(raw[key]);
+        for (const key of keys) {
+            const text = personValueText(key, raw[key], defs.find((d) => d.key === key));
             if (text) values[key] = text;
         }
         result.set(id, values);
@@ -285,11 +324,17 @@ export function personFieldValues(rawPersons: unknown[], keys: readonly string[]
     return result;
 }
 
-/** The group with the person fields put on its people; `keys` are the ones read. */
-export function withPersonFields(group: PeopleGroup, values: ReadonlyMap<number, Record<string, string>>, keys: readonly string[]): PeopleGroup {
+/** The keys among `keys` that are comment fields by their definition: their text shows as Markdown. Without definitions none. */
+export function personFieldFormats(keys: readonly string[], defs: readonly PersonFieldDef[] = []): Record<string, 'markdown'> {
+    return Object.fromEntries(keys.filter((key) => defs.some((d) => d.key === key && d.type === 'textarea')).map((key) => [key, 'markdown' as const]));
+}
+
+/** The group with the person fields put on its people; `keys` are the ones read, `formats` come from `personFieldFormats`. */
+export function withPersonFields(group: PeopleGroup, values: ReadonlyMap<number, Record<string, string>>, keys: readonly string[], formats: Record<string, 'markdown'> = {}): PeopleGroup {
     return {
         ...group,
         personFieldKeys: [...keys],
+        ...(Object.keys(formats).length ? { personFieldFormats: formats } : {}),
         people: group.people.map(({ personId, ...p }) => ({ ...p, personFields: (personId != null && values.get(personId)) || {} })),
     };
 }
@@ -337,9 +382,13 @@ export function shownFields(person: Person, fieldKeys: readonly string[], fields
  * The person fields of a person the block shows: the block's order, but only keys the group was read for – a field an
  * administrator withdrew since is gone, even where the block still names it.
  */
-export function shownPersonFields(person: Person, group: PeopleGroup | undefined, fieldKeys: readonly string[] | undefined): { key: string; text: string }[] {
+export function shownPersonFields(person: Person, group: PeopleGroup | undefined, fieldKeys: readonly string[] | undefined): { key: string; text: string; format?: 'markdown' }[] {
     const read = group?.personFieldKeys ?? [];
-    return (fieldKeys ?? []).flatMap((key) => (read.includes(key) && person.personFields?.[key] ? [{ key, text: person.personFields[key]! }] : []));
+    return (fieldKeys ?? []).flatMap((key) => {
+        if (!read.includes(key) || !person.personFields?.[key]) return [];
+        const format = group?.personFieldFormats?.[key];
+        return [{ key, text: person.personFields[key]!, ...(format ? { format } : {}) }];
+    });
 }
 
 // --- one list "Angaben" (schema 1.56, Plan.md 114 B): role, member fields and person fields in one order ---
@@ -380,7 +429,7 @@ export function rightEntries(block: Pick<PeopleBlock, 'entries' | 'fieldKeys' | 
  * does not come back.
  */
 export function entriesPatch(keys: readonly string[], right: readonly string[] = []): Pick<PeopleBlock, 'entries' | 'fieldKeys' | 'personFieldKeys'> {
-    const personFieldKeys = keys.flatMap((key) => (key.startsWith('person:') && (PERSON_FIELD_KEYS as readonly string[]).includes(key.slice(7)) ? [key.slice(7) as PersonFieldKey] : []));
+    const personFieldKeys = keys.flatMap((key) => (key.startsWith('person:') ? [key.slice(7)] : []));
     return {
         entries: keys.map((key) => (right.includes(key) ? { key, right: true as const } : { key })),
         fieldKeys: keys.flatMap((key) => (key.startsWith('member:') ? [key.slice(7)] : [])),

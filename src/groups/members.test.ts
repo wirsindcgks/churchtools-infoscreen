@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { deniedPeople, entriesPatch, normalizeMembers, peopleEntries, rightEntries, shownEntries, personFieldValues, resolveFieldKeys, selectPeople, shownFields, shownPersonFields, withPersonFields, PEOPLE_CAP, type PeopleGroup } from './members';
+import { deniedPeople, entriesPatch, normalizeMembers, peopleEntries, rightEntries, shownEntries, personFieldValues, personFieldFormats, resolveFieldKeys, selectPeople, shownFields, shownPersonFields, withPersonFields, PEOPLE_CAP, type PeopleGroup } from './members';
 
 const member = (personId: number, first: string, last: string, extra: Record<string, unknown> = {}) => ({
     personId,
@@ -151,10 +151,44 @@ describe('person fields (Plan.md 112, Stück 3, G71)', () => {
     const persons = [{ id: 1, email: 'anna@example.org', mobile: ' 0170 1 ', zip: 34117, birthday: '1980-05-17', street: 'Weg 1', guid: 'g' }];
 
     it('keeps exactly the keys asked for, formats the birthday without the year and drops everything else of the answer', () => {
-        const values = personFieldValues(persons, ['email', 'zip', 'birthday', 'street']);
+        const values = personFieldValues(persons, ['email', 'zip', 'birthday', 'job']);
         expect([...values]).toEqual([[1, { email: 'anna@example.org', zip: '34117', birthday: '17.05.' }]]);
         expect(JSON.stringify([...values])).not.toMatch(/1980|Weg|0170|guid/);
         expect(personFieldValues([{ id: 2, birthday: 'garbled' }], ['birthday']).get(2)).toEqual({});
+    });
+
+    it('formats a field of any key by its type (Plan.md 115) – the birthday stays without the year', () => {
+        const defs = [
+            { key: 'nickname', name: 'Spitzname', type: 'text' },
+            { key: 'entry', name: 'Eintritt', type: 'date' },
+            { key: 'children', name: 'Kinder', type: 'number' },
+            { key: 'helper', name: 'Helfer', type: 'checkbox' },
+            { key: 'birthday', name: 'Geburtstag', type: 'date' },
+            { key: 'status', name: 'Status', type: 'select' },
+        ];
+        const raw = [{ id: 1, nickname: ' Anni ', entry: '2010-03-05', children: 2.5, helper: '1', birthday: '1980-05-17', status: 3 }, { id: 2, nickname: '', entry: null, children: null, helper: false }];
+        const keys = ['nickname', 'entry', 'children', 'helper', 'birthday', 'status'];
+        const values = personFieldValues(raw, keys, defs);
+        expect(values.get(1)).toEqual({ nickname: 'Anni', entry: '05.03.2010', children: '2,5', helper: 'Helfer', birthday: '17.05.' });
+        expect(values.get(2)).toEqual({});
+    });
+
+    it('marks a comment field (textarea) of the person as Markdown – and nothing without definitions', () => {
+        const defs = [{ key: 'note', name: 'Notiz', type: 'textarea' }, { key: 'nickname', name: 'Spitzname', type: 'text' }];
+        const keys = ['note', 'nickname'];
+        expect(personFieldFormats(keys, defs)).toEqual({ note: 'markdown' });
+        expect(personFieldFormats(keys)).toEqual({});
+        const base = normalizeMembers(40, [member(1, 'Anna', 'Berg')], roles, [], true);
+        const values = personFieldValues([{ id: 1, note: '**Ton**', nickname: 'Anni' }], keys, defs);
+        const done = withPersonFields(base, values, keys, personFieldFormats(keys, defs));
+        expect(shownPersonFields(done.people[0]!, done, keys)).toEqual([{ key: 'note', text: '**Ton**', format: 'markdown' }, { key: 'nickname', text: 'Anni' }]);
+        const plain = withPersonFields(base, values, keys);
+        expect(shownPersonFields(plain.people[0]!, plain, keys)[0]).toEqual({ key: 'note', text: '**Ton**' });
+    });
+
+    it('without definitions only text values and the birthday come through', () => {
+        const values = personFieldValues([{ id: 1, nickname: 'Anni', entry: '2010-03-05', helper: '1', birthday: '1980-05-17' }], ['nickname', 'entry', 'helper', 'birthday']);
+        expect(values.get(1)).toEqual({ nickname: 'Anni', entry: '2010-03-05', helper: '1', birthday: '17.05.' });
     });
 
     it('puts the values on the people by id, removes the id again and leaves a person without values empty', () => {

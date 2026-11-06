@@ -5,10 +5,10 @@
  * calendars the screen uses.
  */
 import { onBeforeUnmount, reactive, ref, watch, type Ref } from 'vue';
-import { fetchCalendars, fetchGroupNames, fetchPublicCalendars, type Calendar } from '../ct/api';
+import { fetchCalendars, fetchGroupNames, fetchPersonFields, fetchPublicCalendars, type Calendar } from '../ct/api';
 import { instanceBaseUrl } from '../ct/client';
 import { getRepository } from '../store/backend';
-import type { MediaDoc, PersonFieldKey, TemplateDoc, ThemeDoc } from '../model/schema';
+import type { MediaDoc, TemplateDoc, ThemeDoc } from '../model/schema';
 import { provideStageContext, type StageContext } from '../player/context';
 import { appointmentWindow, churchToolsPlayerData, mergePosts, peopleAny, readPeopleGroups, type PeopleNeeds } from '../player/data';
 import { tp } from '../i18n/player';
@@ -64,12 +64,12 @@ export function usePreview(
     /** The groups an administrator released for the block "Personen" (schema 1.53). */
     let peopleGroupIds: number[] | undefined;
     /** The person fields an administrator released (schema 1.54). */
-    let personFieldKeys: PersonFieldKey[] | undefined;
+    let personFieldKeys: string[] | undefined;
 
     async function loadBasics(): Promise<void> {
         const settings = getRepository()
             .then((handle) => handle.repository.loadSettings())
-            .then((doc) => ({ roomTypeIds: doc?.roomTypeIds, screenCalendarIds: doc?.screenCalendarIds, peopleGroupId: doc?.peopleGroupId, peopleDeviceIds: doc?.peopleDeviceIds, peopleGroupIds: doc?.peopleGroupIds, personFieldKeys: doc?.personFieldKeys }), () => undefined);
+            .then((doc) => ({ roomTypeIds: doc?.roomTypeIds, screenCalendarIds: doc?.screenCalendarIds, peopleGroupId: doc?.peopleGroupId, peopleDeviceIds: doc?.peopleDeviceIds, peopleGroupIds: doc?.peopleGroupIds, personFieldKeys: doc?.personFields ?? doc?.personFieldKeys }), () => undefined);
         try {
             const [timeZone, churchName, own, publicList, churchLogo] = await Promise.all([
                 churchToolsPlayerData.timeZone(),
@@ -99,6 +99,11 @@ export function usePreview(
         peopleGroupIds = read?.peopleGroupIds;
         personFieldKeys = read?.personFieldKeys;
         context.releasedPersonFields = personFieldKeys ?? [];
+        // The names of the person fields; without them the inspector falls back to its own list and the key (Plan.md 115).
+        void fetchPersonFields().then(
+            (defs) => (context.personFieldNames = Object.fromEntries(defs.map((f) => [f.key, f.name]))),
+            () => undefined,
+        );
         void loadPeopleChoices();
     }
 

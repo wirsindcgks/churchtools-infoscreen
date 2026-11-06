@@ -16,7 +16,8 @@ import { GROUP_RIGHT_NAMES, settingsAbilities, type GroupPermissions, type Setti
 import RefreshRightsDialog from '../designer/RefreshRightsDialog.vue';
 import RemoveSetupDialog, { type DeviceAccountInfo, type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
 import { createCategory, pickCategory, setCategoryInMenu, wikiRestoreLogLine, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
-import { PERSON_FIELD_KEYS, type PersonFieldKey, type ScreenDoc } from '../model/schema';
+import { LEGACY_PERSON_FIELD_KEYS, type ScreenDoc } from '../model/schema';
+import { offeredPersonFields } from '../groups/person-fields';
 import { withDeviceLogin } from '../player/device-login';
 import { resourceTypesOf, roomTypeIdsOf, roomsOf, type ResourceMasterdata, type ResourceTypeInfo, type RoomInfo } from '../rooms/normalize';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
@@ -459,11 +460,12 @@ function withdrawPeopleGroup(id: number): void {
 /**
  * The person fields an administrator releases for the block "Personen" (Plan.md 112, Stück 3). `releasedPersonFields` is the release
  * as stored, `draftPersonFields` the choice on the page until „Speichern". `personFieldInfo` is what the instance says about the
- * fields (`GET /fields`), `securityLevels` its security levels (`GET /securitylevels`), both read once per visit. Offered is a field that is
- * active and lies in a security level the devices see (G73); the administrator gives that level in ChurchTools, the assistant does not.
+ * fields (`GET /fields`), `securityLevels` its security levels (`GET /securitylevels`), both read once per visit. Listed is every field
+ * `offeredPersonFields` names (Plan.md 115); it can be ticked if it lies in a security level the devices see (G73) – the administrator
+ * gives that level in ChurchTools, the assistant does not.
  */
-const releasedPersonFields = ref<PersonFieldKey[]>([]);
-const draftPersonFields = ref<PersonFieldKey[]>([]);
+const releasedPersonFields = ref<string[]>([]);
+const draftPersonFields = ref<string[]>([]);
 const personFieldInfo = ref<PersonFieldInfo[] | null>(null);
 const securityLevels = ref<SecurityLevel[] | null>(null);
 const personFieldsFailed = ref(false);
@@ -502,13 +504,16 @@ const deviceReach = computed(() =>
 const levelName = (id: number): string =>
     id === Number.POSITIVE_INFINITY ? t.setup.checks.levelAll : (securityLevels.value?.find((l) => l.id === id)?.name ?? t.setup.checks.levelFallback(id));
 
+/** Most person fields a release holds – the schema's limit (`SettingsDoc.personFields`); further boxes stay off. */
+const PERSON_FIELDS_MAX = 40;
 const personFieldName = (key: string): string => personFieldInfo.value?.find((f) => f.key === key)?.name ?? t.inspector.personFieldNames[key] ?? key;
-/** The rows of the list: the fields of the instance that are active, plus any released one the instance no longer offers (so it can be withdrawn). */
-const personFieldRows = computed(() =>
-    PERSON_FIELD_KEYS.flatMap((key) => {
-        const info = personFieldInfo.value?.find((f) => f.key === key);
+/** The rows of the list: the fields the instance offers, plus any released one it no longer offers (so it can be withdrawn). */
+const personFieldRows = computed(() => {
+    const defs = personFieldInfo.value ?? [];
+    const keys = [...offeredPersonFields(defs).map((f) => f.key), ...draftPersonFields.value.filter((key) => !offeredPersonFields(defs).some((f) => f.key === key))];
+    return keys.map((key) => {
+        const info = defs.find((f) => f.key === key);
         const checked = draftPersonFields.value.includes(key);
-        if (!checked && !info?.isActive) return [];
         const secLevel = info?.secLevel ?? null;
         const reach = deviceReach.value;
         const offered =
@@ -520,12 +525,13 @@ const personFieldRows = computed(() =>
             (securityLevels.value === null || securityLevels.value.some((l) => l.id === secLevel));
         const name = personFieldName(key);
         const note = offered ? t.setup.personFields.level(levelName(secLevel!)) : secLevel === null ? t.setup.personFields.levelUnknown : t.setup.personFields.outOfReach(levelName(secLevel));
-        return [{ key, name, checked, offered, note }];
-    }),
-);
-function togglePersonField(key: PersonFieldKey, on: boolean): void {
-    const next = on ? [...draftPersonFields.value, key] : draftPersonFields.value.filter((k) => k !== key);
-    draftPersonFields.value = PERSON_FIELD_KEYS.filter((k) => next.includes(k));
+        return { key, name, checked, offered, note };
+    });
+});
+/** The draft in the order of the list. */
+const orderedDraftFields = (): string[] => personFieldRows.value.filter((row) => row.checked).map((row) => row.key);
+function togglePersonField(key: string, on: boolean): void {
+    draftPersonFields.value = on ? [...draftPersonFields.value, key] : draftPersonFields.value.filter((k) => k !== key);
 }
 const sameKeys = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && a.every((k) => b.includes(k));
 
@@ -624,8 +630,9 @@ async function saveForm(): Promise<void> {
         } else if (form === 'people' && settingsLoaded.value) {
             // A group that is gone leaves the release without a word.
             const next = sortedIds(draftPeopleGroups.value, new Set(groups.value.map((g) => g.id)));
-            const nextFields = PERSON_FIELD_KEYS.filter((key) => draftPersonFields.value.includes(key));
-            await persistSettings({ peopleGroupIds: next, personFieldKeys: nextFields });
+            const nextFields = orderedDraftFields();
+            // `personFieldKeys` mirrors the old keys for players before 1.59.
+            await persistSettings({ peopleGroupIds: next, personFields: nextFields, personFieldKeys: nextFields.filter((key): key is (typeof LEGACY_PERSON_FIELD_KEYS)[number] => (LEGACY_PERSON_FIELD_KEYS as readonly string[]).includes(key)) });
             const previous = releasedPeopleGroups.value;
             releasedPeopleGroups.value = next;
             draftPeopleGroups.value = [...next];
@@ -1263,7 +1270,7 @@ onMounted(async () => {
         draftCalendars.value = [...releasedCalendars.value];
         releasedPeopleGroups.value = sortedIds(settings?.peopleGroupIds ?? [], new Set(list.map((g) => g.id)));
         draftPeopleGroups.value = [...releasedPeopleGroups.value];
-        releasedPersonFields.value = [...(settings?.personFieldKeys ?? [])];
+        releasedPersonFields.value = [...(settings?.personFields ?? settings?.personFieldKeys ?? [])];
         draftPersonFields.value = [...releasedPersonFields.value];
         usedCalendarIds = used;
         rooms = resources ? roomsOf(resources, settings?.roomTypeIds) : [];
@@ -1805,7 +1812,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                     <input
                                         type="checkbox"
                                         :checked="row.checked"
-                                        :disabled="!row.offered && !row.checked"
+                                        :disabled="!row.checked && (!row.offered || draftPersonFields.length >= PERSON_FIELDS_MAX)"
                                         :data-testid="`person-field-${row.key}`"
                                         @change="togglePersonField(row.key, ($event.target as HTMLInputElement).checked)"
                                     >

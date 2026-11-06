@@ -69,14 +69,14 @@ describe('fetchAppointments asks for rooms and tags (Plan.md 82 C, G59)', () => 
 describe('fetchPersonFields (Plan.md 112, Stück 3, G71)', () => {
     it('reads the name, the security level and the active flag as `GET /fields` sends them – "isActive" as text', async () => {
         vi.mocked(churchtoolsClient.get).mockResolvedValueOnce([
-            { key: 'email', nameTranslated: 'E-Mail', secLevel: 1, isActive: '1' },
-            { key: 'street', nameTranslated: 'Straße', secLevel: 2, isActive: '1' },
+            { key: 'email', nameTranslated: 'E-Mail', secLevel: 1, isActive: '1', fieldTypeCode: 'text', fieldCategoryCode: 'f_address', hideInFrontend: false },
+            { key: 'street', nameTranslated: 'Straße', secLevel: 2, isActive: '1', hideInFrontend: true },
             { key: 'mobile', name: 'mobile', secLevel: 1, isActive: '0' },
         ]);
         expect(await fetchPersonFields()).toEqual([
-            { key: 'email', name: 'E-Mail', secLevel: 1, isActive: true },
-            { key: 'street', name: 'Straße', secLevel: 2, isActive: true },
-            { key: 'mobile', name: 'mobile', secLevel: 1, isActive: false },
+            { key: 'email', name: 'E-Mail', secLevel: 1, isActive: true, type: 'text', category: 'f_address', hidden: false },
+            { key: 'street', name: 'Straße', secLevel: 2, isActive: true, type: '', category: '', hidden: true },
+            { key: 'mobile', name: 'mobile', secLevel: 1, isActive: false, type: '', category: '', hidden: false },
         ]);
         expect(churchtoolsClient.get).toHaveBeenCalledWith('/fields');
     });

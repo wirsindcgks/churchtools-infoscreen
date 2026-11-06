@@ -409,7 +409,7 @@ export const th = {
                 'Was unter dem Namen steht, in der Reihenfolge der Liste; zum Umsortieren einen Eintrag ziehen. Die Stecknadel heftet eine Angabe rechts an – in der Liste steht sie am rechten Rand, auf Karten unten rechts (etwa eine Zimmernummer). Zur Wahl stehen die Rolle in der Gruppe, die Mitgliedsfelder der Gruppe (bis zu acht) und die freigeschalteten Personenfelder. ' +
                 'Mitgliedsfelder legt man in ChurchTools an der Gruppe an. Der Fernseher sieht nur Felder bis zu der Sicherheitsstufe, die ihm ein Administrator freigegeben hat. ' +
                 'Jede Art von Feld erscheint passend: Auswahl mit dem Namen der Option, ein Kontrollkästchen mit dem Namen des Feldes (nur wenn es angehakt ist), Datum und Zahl in deutscher Schreibweise, ein Kommentarfeld formatiert. ' +
-                'Personenfelder – Telefon, E-Mail, PLZ, Ort, Geburtstag – stehen nur zur Wahl, wenn ein Administrator sie unter Einstellungen → Personen freigeschaltet hat; nimmt er eines zurück, verschwindet es sofort vom Fernseher. ' +
+                'Personenfelder – die Felder aus dem Personenprofil, die das Gerät nach seiner Sicherheitsstufe sieht (etwa Telefon, E-Mail, Ort, Spitzname, Geburtstag) – stehen nur zur Wahl, wenn ein Administrator sie unter Einstellungen → Personen freigeschaltet hat; nimmt er eines zurück, verschwindet es sofort vom Fernseher. ' +
                 'Der Geburtstag erscheint nur als Tag und Monat, nie mit dem Jahr. Die Angaben stehen auf dem Fernseher für alle, die vorbeigehen – wähle nur, was die Personen dort sehen lassen wollen.',
         } satisfies HelpTopic,
         intro: 'Wie die Personen erscheinen: Ansicht, Reihenfolge, Bild, wie viele auf einer Seite stehen und wie lange jede Seite bleibt.',

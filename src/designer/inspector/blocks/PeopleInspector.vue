@@ -8,7 +8,7 @@ import { computed } from 'vue';
 import { t } from '../../../i18n/designer';
 import { th } from '../../../i18n/help';
 import { entriesPatch, groupOfBlock, memberEntry, peopleEntries, personEntry, rightEntries, ROLE_ENTRY } from '../../../groups/members';
-import { PERSON_FIELD_KEYS, type Block } from '../../../model/schema';
+import type { Block } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
 import { PEOPLE_SECONDS } from '../../../player/paging';
 import PageProgressHint from '../PageProgressHint.vue';
@@ -106,7 +106,8 @@ const keys = computed(() => peopleEntries(props.block, fields.value));
 const right = computed(() => rightEntries(props.block, fields.value));
 const memberCount = computed(() => keys.value.filter((key) => key.startsWith('member:')).length);
 const released = computed(() => stage.releasedPersonFields ?? []);
-const personName = (key: string): string => t.inspector.personFieldNames[key] ?? key;
+// The birthday keeps its own name: it says that only day and month show.
+const personName = (key: string): string => (key === 'birthday' ? undefined : stage.personFieldNames?.[key]) ?? t.inspector.personFieldNames[key] ?? key;
 
 const chosen = computed<SortItem[]>(() =>
     keys.value.map((key) => {
@@ -129,8 +130,8 @@ const pickable = computed<SelectOption[]>(() => {
     if (memberCount.value < FIELDS_MAX) {
         for (const f of fields.value) if (!keys.value.includes(memberEntry(f.key))) options.push({ value: memberEntry(f.key), label: f.name, group: g.member });
     }
-    for (const key of PERSON_FIELD_KEYS) {
-        if (released.value.includes(key) && !keys.value.includes(personEntry(key))) options.push({ value: personEntry(key), label: personName(key), group: g.person });
+    for (const key of released.value) {
+        if (!keys.value.includes(personEntry(key))) options.push({ value: personEntry(key), label: personName(key), group: g.person });
     }
     return options;
 });

@@ -102,8 +102,8 @@ Person – kleines Bild, Name und die gewählten Angaben –, die wie die andere
 Jede Art von Mitgliedsfeld erscheint passend: Auswahlfelder mit dem Namen der Option, ein Kontrollkästchen mit dem Namen des
 Feldes (nur, wenn es angehakt ist), Datum und Zahl in deutscher Schreibweise, Datum mit Uhrzeit in der Zeit der Gemeinde, und ein
 Kommentarfeld formatiert (auf der Karte Zeile für Zeile, in der Liste als eine Zeile ohne Formatierungszeichen).
-E-Mail-Adresse, Telefon, Ort und Geburtstag (Tag und Monat) zeigt der Baustein nur, wenn ein Administrator diese **Personenfelder**
-ausdrücklich freischaltet (nur in der Sicherheitsstufe, die ein Administrator den Geräten gibt, mit Datenschutzhinweis und Rückfrage); die Anschrift nie. Der Baustein bietet
+Felder aus dem Personenprofil – etwa E-Mail-Adresse, Telefon, Ort, Spitzname, eigene Felder der Gemeinde oder der Geburtstag (Tag und Monat) – zeigt der Baustein nur, wenn ein Administrator diese **Personenfelder**
+ausdrücklich freischaltet (nur in der Sicherheitsstufe, die ein Administrator den Geräten gibt, mit Datenschutzhinweis und Rückfrage). Der Baustein bietet
 sie dann unter „Angaben“ an. Einrichtung und Datenschutz stehen
 [in der Einrichtungsanleitung](Einrichtung.md#personen-auf-den-bildschirmen).
 
