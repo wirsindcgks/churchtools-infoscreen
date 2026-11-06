@@ -4,6 +4,36 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.53.0] – 2026-11-06
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch, die Angaben im Baustein „Personen“ einheitlich
+auszuwählen, und für seine Entwürfe dazu ([#258](https://github.com/wirsindcgks/churchtools-infoscreen/issues/258)).
+
+### Hinzugefügt
+
+- **Angaben rechts anheften.** Die Stecknadel an einer Angabe heftet sie rechts an: In der Liste steht sie rechtsbündig auf
+  Höhe der Zeile unter dem Namen, auf der Karte unten rechts – so findet man etwa eine Zimmernummer immer an derselben Stelle
+  ([#278](https://github.com/wirsindcgks/churchtools-infoscreen/pull/278)).
+- **Bildform Kreis oder Quadrat.** Unter „Bild zeigen“ wählt man, ob das Bild rund wie ein Profilbild erscheint oder als
+  Quadrat mit denselben Ecken wie die Karte – in Karten und Liste
+  ([#279](https://github.com/wirsindcgks/churchtools-infoscreen/pull/279)).
+
+### Geändert
+
+- **Eine Auswahl „Angaben“ für alles unter dem Namen.** Rolle in der Gruppe, Mitgliedsfelder und freigeschaltete
+  Personenfelder stehen in einer Liste und lassen sich beliebig mischen und sortieren. Die Rolle erscheint jetzt auch auf
+  Karten, wenn man sie wählt. Bestehende Bausteine sehen unverändert aus
+  ([#277](https://github.com/wirsindcgks/churchtools-infoscreen/pull/277)).
+- **Jede Art von Mitgliedsfeld erscheint passend.** Auswahlfelder zeigen den Namen der Option statt einer Nummer, ein
+  angehaktes Kontrollkästchen den Namen des Feldes, Datum, Zeitpunkt und Zahl stehen in deutscher Schreibweise, ein
+  Kommentarfeld formatiert auf der Karte und in einer Zeile in der Liste
+  ([#276](https://github.com/wirsindcgks/churchtools-infoscreen/pull/276)).
+
+### Behoben
+
+- **Die Rolle erscheint übersetzt** – etwa „Leiter“ statt „leader“
+  ([#276](https://github.com/wirsindcgks/churchtools-infoscreen/pull/276)).
+
 ## [0.52.0] – 2026-11-05
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für seine Rückmeldung nach dem Update
@@ -1741,3 +1771,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.2.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.2.0
 [0.1.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.1.0
 [0.52.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.52.0
+[0.53.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.53.0
