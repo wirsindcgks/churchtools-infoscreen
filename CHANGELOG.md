@@ -4,6 +4,22 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [Unreleased]
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Hinweis, dass Markdown mit einem richtigen Parser gelesen
+werden sollte ([#282](https://github.com/wirsindcgks/churchtools-infoscreen/issues/282)).
+
+### Geändert
+
+- **Markdown wird mit einem CommonMark-Parser gelesen.** Hervorhebungen, verschachtelte Listen und Zeilenumbrüche
+  erscheinen auf dem Bildschirm so wie in ChurchTools. Ein anderes Listenzeichen beginnt dabei eine neue Liste.
+
+### Hinzugefügt
+
+- **Tabellen im Baustein „Beiträge“.** Tabellen aus dem Beitragstext erscheinen mit Kopfzeile und Ausrichtung der
+  Spalten und teilen sich die Breite. In Listen und Zusammenfassungen stehen die Zellen einer Zeile hintereinander,
+  getrennt durch „·“.
+
 ## [0.54.1] – 2026-11-06
 
 ### Behoben

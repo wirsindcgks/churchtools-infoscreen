@@ -64,15 +64,16 @@ describe('markdownBlocks', () => {
         ]);
     });
 
-    it('reads bullet lists with -, * and +', () => {
+    it('reads bullet lists with -, * and +; another marker starts a new list', () => {
         expect(markdownBlocks('- a\n- b\n\n* c\n+ **d**')).toEqual([
             { kind: 'list', ordered: false, start: 1, items: [[{ text: 'a' }], [{ text: 'b' }]] },
-            { kind: 'list', ordered: false, start: 1, items: [[{ text: 'c' }], [{ text: 'd', strong: true }]] },
+            { kind: 'list', ordered: false, start: 1, items: [[{ text: 'c' }]] },
+            { kind: 'list', ordered: false, start: 1, items: [[{ text: 'd', strong: true }]] },
         ]);
     });
 
     it('reads numbered lists with their start number', () => {
-        expect(markdownBlocks('3. drei\n4) vier')).toEqual([
+        expect(markdownBlocks('3. drei\n4. vier')).toEqual([
             { kind: 'list', ordered: true, start: 3, items: [[{ text: 'drei' }], [{ text: 'vier' }]] },
         ]);
     });
@@ -105,9 +106,43 @@ describe('markdownBlocks', () => {
         ]);
     });
 
-    it('drops tables and images', () => {
-        const blocks = markdownBlocks('Vorher\n\n| a | b |\n|---|---|\n| 1 | 2 |\n\nNachher ![Bild](https://x/y.png) Ende');
+    it('drops images', () => {
+        const blocks = markdownBlocks('Vorher\n\nNachher ![Bild](https://x/y.png) Ende');
         expect(blocks.map((b) => texts((b as { inlines: { text: string }[] }).inlines))).toEqual(['Vorher', 'Nachher  Ende']);
+    });
+
+    it('reads a table with alignment and formatting in the cells', () => {
+        const blocks = markdownBlocks('Vorher\n\n| Name | **Zahl** | Rest |\n|:--|--:|:-:|\n| a | *1* | [x](https://x) |\n| b | 2 | |');
+        expect(blocks[1]).toEqual({
+            kind: 'table',
+            align: ['left', 'right', 'center'],
+            head: [[{ text: 'Name' }], [{ text: 'Zahl', strong: true }], [{ text: 'Rest' }]],
+            rows: [
+                [[{ text: 'a' }], [{ text: '1', em: true }], [{ text: 'x' }]],
+                [[{ text: 'b' }], [{ text: '2' }], []],
+            ],
+        });
+    });
+
+    it('keeps nested lists in document order as one flat list', () => {
+        const [list] = markdownBlocks('1. a\n   - b\n   - c\n2. d');
+        expect(list).toEqual({
+            kind: 'list',
+            ordered: true,
+            start: 1,
+            items: [[{ text: 'a' }], [{ text: 'b' }], [{ text: 'c' }], [{ text: 'd' }]],
+        });
+    });
+
+    it('reads strikethrough and a hard line break', () => {
+        expect(markdownBlocks('~~weg~~ da  \nnächste Zeile')).toEqual([
+            { kind: 'paragraph', inlines: [{ text: 'weg', del: true }, { text: ' da\nnächste Zeile' }] },
+        ]);
+    });
+
+    it('combines formats around links', () => {
+        const [block] = markdownBlocks('**[Max](https://x/persons/5?ctmd_layout=mention)**');
+        expect(block).toEqual({ kind: 'paragraph', inlines: [{ text: 'Max', strong: true }] });
     });
 
     it('never produces markup: tags fall away, script elements with their content', () => {
@@ -124,6 +159,10 @@ describe('markdownBlocks', () => {
 });
 
 describe('markdownText', () => {
+    it('joins table cells with " · " and rows with a space', () => {
+        expect(markdownText('| a | b |\n|---|---|\n| 1 | |\n| 2 | 3 |')).toBe('a · b 1 2 · 3');
+    });
+
     it('puts everything on one line without markers', () => {
         expect(markdownText('# Titel\n\nBitte **Akkuschrauber** mitbringen, siehe [hier](https://x.church.tools).\n- a\n- b')).toBe(
             'Titel Bitte Akkuschrauber mitbringen, siehe hier. a, b',
@@ -144,5 +183,11 @@ describe('markdownLines', () => {
         const lines = markdownLines('# Titel\n\nEins\nZwei\n\n- a\n- b\n\n2. x\n3. y\n\n> Zitat');
         expect(lines.map(texts)).toEqual(['Titel', 'Eins', 'Zwei', '• a', '• b', '2. x', '3. y', 'Zitat']);
         expect(lines[0]).toEqual([{ text: 'Titel', strong: true }]);
+    });
+
+    it('makes a line of every table row, the head bold', () => {
+        const lines = markdownLines('| a | b |\n|---|---|\n| 1 | 2 |');
+        expect(lines.map(texts)).toEqual(['a · b', '1 · 2']);
+        expect(lines[0]?.filter((p) => p.text !== ' · ').every((p) => p.strong)).toBe(true);
     });
 });

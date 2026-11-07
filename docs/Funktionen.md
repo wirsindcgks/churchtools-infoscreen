@@ -115,7 +115,7 @@ sie dann unter „Angaben“ an. Einrichtung und Datenschutz stehen
 ### Beiträge
 
 Die neuesten Beiträge öffentlicher Gruppen, mit Bild und Text so formatiert wie in ChurchTools. Welche Angaben
-erscheinen, wählt man je Baustein.
+erscheinen, wählt man je Baustein. Tabellen im Text erscheinen als Tabelle; ihre Spalten teilen sich die Breite.
 
 ![Editor mit dem Baustein „Beiträge": ein Beitrag mit Bild links und Text rechts](bilder/beitraege.png)
 
