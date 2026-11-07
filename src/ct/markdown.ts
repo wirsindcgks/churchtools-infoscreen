@@ -1,9 +1,17 @@
 /**
- * Markdown from ChurchTools as data, never as HTML (Plan.md, Punkt 97, Befunde.md G62): the editor
- * stores GitHub Markdown in posts, group descriptions and appointment descriptions. Only what a
- * screen can show is read – bold, italic, strikethrough, code, headings, lists, quotes. A link or a
- * mention `[Title](address?ctmd_layout=…)` keeps its title; images, tables and HTML fall away.
+ * Markdown from ChurchTools as data, never as HTML (Plan.md, Punkt 97 und 116, Befunde.md G62, G77): the
+ * editor stores GitHub Markdown in posts, group descriptions and appointment descriptions. It is read
+ * with micromark (CommonMark plus GFM tables and strikethrough) into a syntax tree; only what a screen
+ * can show is kept – bold, italic, strikethrough, code, headings, lists, quotes, tables. A link or a
+ * mention `[Title](address?ctmd_layout=…)` keeps its title; images and HTML fall away.
  */
+
+import type { List, PhrasingContent, RootContent, Table } from 'mdast';
+import { fromMarkdown } from 'mdast-util-from-markdown';
+import { gfmStrikethroughFromMarkdown } from 'mdast-util-gfm-strikethrough';
+import { gfmTableFromMarkdown } from 'mdast-util-gfm-table';
+import { gfmStrikethrough } from 'micromark-extension-gfm-strikethrough';
+import { gfmTable } from 'micromark-extension-gfm-table';
 
 export type MdInline = { text: string; strong?: true; em?: true; del?: true; code?: true };
 
@@ -11,132 +19,142 @@ export type MdBlock =
     | { kind: 'paragraph'; inlines: MdInline[] }
     | { kind: 'heading'; inlines: MdInline[] }
     | { kind: 'list'; ordered: boolean; start: number; items: MdInline[][] }
-    | { kind: 'quote'; inlines: MdInline[] };
+    | { kind: 'quote'; inlines: MdInline[] }
+    | { kind: 'table'; align: ('left' | 'center' | 'right' | null)[]; head: MdInline[][]; rows: MdInline[][][] };
 
-const FENCE = /^\s*(```|~~~)/;
-const HEADING = /^ {0,3}#{1,6}\s+(.*?)(?:\s+#+)?\s*$/;
-const LIST_ITEM = /^\s*(?:([-*+])|(\d{1,9})[.)])\s+(.*)$/;
-const QUOTE = /^\s*>\s?(.*)$/;
-const RULE = /^ {0,3}([-*_])(?:\s*\1){2,}\s*$/;
-const TABLE_SEPARATOR = /^\s*\|?\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?\s*$/;
+type Format = Pick<MdInline, 'strong' | 'em' | 'del'>;
 
-/** Splits text into blocks at blank lines, headings, list items and quotes. */
+/** Splits text into blocks, read from the syntax tree; nested lists stay flat. */
 export function markdownBlocks(text: string): MdBlock[] {
-    const source = text
-        .replace(/\r\n?/g, '\n')
-        .replace(/<!--[\s\S]*?-->/g, '')
-        .replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, '');
-    const lines = source.split('\n');
+    const source = text.replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, '');
+    const tree = fromMarkdown(source, {
+        extensions: [gfmTable(), gfmStrikethrough()],
+        mdastExtensions: [gfmTableFromMarkdown(), gfmStrikethroughFromMarkdown()],
+    });
     const blocks: MdBlock[] = [];
-    let paragraph: string[] = [];
-    let quote: string[] = [];
-    let list: Extract<MdBlock, { kind: 'list' }> | null = null;
-
-    const flushParagraph = () => {
-        if (paragraph.length) add({ kind: 'paragraph', inlines: inlines(paragraph.map((l) => l.trim()).join('\n')) });
-        paragraph = [];
-    };
-    const flushQuote = () => {
-        if (quote.length) add({ kind: 'quote', inlines: inlines(quote.map((l) => l.trim()).join('\n')) });
-        quote = [];
-    };
-    const flushAll = () => {
-        flushParagraph();
-        flushQuote();
-        list = null;
-    };
-    const add = (block: MdBlock) => {
-        const empty =
-            block.kind === 'list' ? block.items.length === 0 : block.inlines.length === 0;
-        if (!empty) blocks.push(block);
-    };
-
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i] ?? '';
-        if (line.trim() === '') {
-            flushAll();
-            continue;
-        }
-        if (FENCE.test(line)) {
-            flushAll();
-            const code: string[] = [];
-            for (i++; i < lines.length && !FENCE.test(lines[i] ?? ''); i++) code.push(lines[i] ?? '');
-            const joined = code.join('\n').trim();
-            if (joined) add({ kind: 'paragraph', inlines: [{ text: joined }] });
-            continue;
-        }
-        if (line.includes('|') && TABLE_SEPARATOR.test(lines[i + 1] ?? '') && (lines[i + 1] ?? '').includes('-')) {
-            flushAll();
-            for (i += 2; i < lines.length && (lines[i] ?? '').trim() !== '' && (lines[i] ?? '').includes('|'); i++);
-            i--;
-            continue;
-        }
-        if (RULE.test(line)) {
-            flushAll();
-            continue;
-        }
-        const heading = HEADING.exec(line);
-        if (heading) {
-            flushAll();
-            add({ kind: 'heading', inlines: inlines(heading[1] ?? '') });
-            continue;
-        }
-        const quoted = QUOTE.exec(line);
-        if (quoted) {
-            flushParagraph();
-            list = null;
-            quote.push(quoted[1] ?? '');
-            continue;
-        }
-        const item = LIST_ITEM.exec(line);
-        if (item) {
-            flushParagraph();
-            flushQuote();
-            const ordered = item[2] !== undefined;
-            // A nested item or one of the other kind of list is just one more item – lists stay flat.
-            if (!list) {
-                list = { kind: 'list', ordered, start: ordered ? Number(item[2]) : 1, items: [] };
-                blocks.push(list);
-            }
-            const content = inlines(item[3] ?? '');
-            if (content.length) list.items.push(content);
-            continue;
-        }
-        if (list && /^\s/.test(line)) {
-            // Continuation of the last item.
-            const last = list.items.pop();
-            list.items.push(mergeInlines([...(last ?? []), { text: ' ' }, ...inlines(line.trim())]));
-            continue;
-        }
-        if (!paragraph.length && /^(?: {4}|\t)/.test(line)) {
-            // Indented code: plain text.
-            flushAll();
-            add({ kind: 'paragraph', inlines: [{ text: line.trim() }] });
-            continue;
-        }
-        flushQuote();
-        list = null;
-        paragraph.push(line);
+    for (const node of tree.children) {
+        const block = toBlock(node);
+        if (block && !isEmpty(block)) blocks.push(block);
     }
-    flushAll();
-    return blocks.filter((block) => block.kind !== 'list' || block.items.length > 0);
+    return blocks;
+}
+
+function isEmpty(block: MdBlock): boolean {
+    if (block.kind === 'list') return block.items.length === 0;
+    if (block.kind === 'table') return [...block.head, ...block.rows.flat()].every((cell) => cell.length === 0);
+    return block.inlines.length === 0;
+}
+
+function toBlock(node: RootContent): MdBlock | null {
+    switch (node.type) {
+        case 'paragraph':
+            return { kind: 'paragraph', inlines: phrasing(node.children) };
+        case 'heading':
+            return { kind: 'heading', inlines: phrasing(node.children) };
+        case 'code':
+            return { kind: 'paragraph', inlines: plain(node.value) };
+        case 'list': {
+            const items: MdInline[][] = [];
+            listItems(node, items);
+            return { kind: 'list', ordered: !!node.ordered, start: node.ordered ? (node.start ?? 1) : 1, items };
+        }
+        case 'blockquote': {
+            const lines = quoteLines(node.children);
+            const inlines: MdInline[] = [];
+            lines.forEach((line, i) => inlines.push(...(i > 0 ? [{ text: '\n' }] : []), ...line));
+            return { kind: 'quote', inlines: mergeInlines(inlines) };
+        }
+        case 'table':
+            return tableBlock(node);
+        default:
+            // thematicBreak, html, definition, footnotes …
+            return null;
+    }
+}
+
+function plain(value: string): MdInline[] {
+    const trimmed = value.trim();
+    return trimmed ? [{ text: trimmed }] : [];
+}
+
+/** The items of a list in document order; a nested list's items follow the item they belong to. */
+function listItems(list: List, out: MdInline[][]): void {
+    for (const item of list.children) {
+        let own: MdInline[] = [];
+        const nested: List[] = [];
+        for (const child of item.children) {
+            if (child.type === 'list') {
+                nested.push(child);
+                continue;
+            }
+            for (const line of quoteLines([child])) own = mergeInlines([...own, ...(own.length ? [{ text: ' ' }] : []), ...line]);
+        }
+        if (own.length) out.push(own);
+        for (const sub of nested) listItems(sub, out);
+    }
+}
+
+/** A block level node as lines of inlines: a paragraph is one, a list item one each, a table row one each. */
+function quoteLines(nodes: RootContent[]): MdInline[][] {
+    const lines: MdInline[][] = [];
+    for (const node of nodes) {
+        if (node.type === 'list') {
+            const items: MdInline[][] = [];
+            listItems(node, items);
+            lines.push(...items);
+        } else if (node.type === 'blockquote') {
+            lines.push(...quoteLines(node.children));
+        } else if (node.type === 'table') {
+            const block = tableBlock(node);
+            if (block.kind === 'table') lines.push(...tableLines(block).map((l) => l.map((part) => ({ ...part }))));
+        } else {
+            const block = toBlock(node);
+            if (block && 'inlines' in block && block.inlines.length) lines.push(block.inlines);
+        }
+    }
+    return lines;
+}
+
+function tableBlock(node: Table): MdBlock {
+    const [head, ...rows] = node.children.map((row) => row.children.map((cell) => phrasing(cell.children)));
+    return {
+        kind: 'table',
+        align: node.align?.map((a) => a ?? null) ?? [],
+        head: head ?? [],
+        rows,
+    };
+}
+
+/** A table as lines for text and cards: a line per row, cells joined by " · ", the head bold. */
+function tableLines(table: Extract<MdBlock, { kind: 'table' }>): MdInline[][] {
+    const rowLine = (cells: MdInline[][], strong: boolean): MdInline[] => {
+        const parts: MdInline[] = [];
+        cells
+            .filter((cell) => cell.length > 0)
+            .forEach((cell, i) => parts.push(...(i > 0 ? [{ text: ' · ' }] : []), ...cell.map((part) => (strong ? { ...part, strong: true as const } : part))));
+        return parts;
+    };
+    return [rowLine(table.head, true), ...table.rows.map((row) => rowLine(row, false))].filter((line) => line.length > 0);
 }
 
 /**
- * All of it on one line, without markers; blocks are separated by a space, list items by ", ".
- * `firstBlockOnly` stops after the first block – the summary of a post in the list.
+ * All of it on one line, without markers; blocks are separated by a space, list items by ", ", table
+ * cells by " · " and table rows by a space. `firstBlockOnly` stops after the first block – the summary
+ * of a post in the list.
  */
 export function markdownText(text: string, firstBlockOnly = false): string {
     const blocks = markdownBlocks(text);
-    const parts = (firstBlockOnly ? blocks.slice(0, 1) : blocks).map((block) =>
-        block.kind === 'list' ? block.items.map(flat).join(', ') : flat(block.inlines),
-    );
+    const parts = (firstBlockOnly ? blocks.slice(0, 1) : blocks).map((block) => {
+        if (block.kind === 'list') return block.items.map(flat).join(', ');
+        if (block.kind === 'table') return tableLines(block).map(flat).join(' ');
+        return flat(block.inlines);
+    });
     return parts.join(' ').replace(/\s+/g, ' ').trim();
 }
 
 /**
  * The same as lines for a card that measures its room: a heading is a bold line, a list item a line
- * with "• " or "1. ", a quote and a paragraph one line per line break.
+ * with "• " or "1. ", a quote and a paragraph one line per line break, a table row one line.
  */
 export function markdownLines(text: string): MdInline[][] {
     const lines: MdInline[][] = [];
@@ -147,6 +165,8 @@ export function markdownLines(text: string): MdInline[][] {
             block.items.forEach((item, i) =>
                 lines.push([{ text: block.ordered ? `${block.start + i}. ` : '• ' }, ...item]),
             );
+        } else if (block.kind === 'table') {
+            lines.push(...tableLines(block));
         } else {
             lines.push(...splitLines(block.inlines));
         }
@@ -172,32 +192,9 @@ function flat(parts: MdInline[]): string {
 
 // ---- Inline text ------------------------------------------------------------------------------
 
-/** Backslash escapes travel through the parser as private-use characters. */
-const ESCAPABLE = /\\([!-/:-@[-`{-~])/g;
-const ESCAPE_BASE = 0xe000;
-
-const EMPHASIS: { re: RegExp; fmt: Pick<MdInline, 'strong' | 'em' | 'del'> }[] = [
-    { re: /\*\*\*(?=\S)([\s\S]+?)(?<=\S)\*\*\*/g, fmt: { strong: true, em: true } },
-    { re: /(?<!\w)___(?=\S)([\s\S]+?)(?<=\S)___(?!\w)/g, fmt: { strong: true, em: true } },
-    { re: /\*\*(?=\S)([\s\S]+?)(?<=\S)\*\*/g, fmt: { strong: true } },
-    { re: /(?<!\w)__(?=\S)([\s\S]+?)(?<=\S)__(?!\w)/g, fmt: { strong: true } },
-    { re: /~~(?=\S)([\s\S]+?)(?<=\S)~~/g, fmt: { del: true } },
-    { re: /\*(?=[^\s*])([\s\S]*?)(?<=\S)\*/g, fmt: { em: true } },
-    { re: /(?<!\w)_(?=[^\s_])([\s\S]*?)(?<=\S)_(?!\w)/g, fmt: { em: true } },
-];
-
-function inlines(raw: string): MdInline[] {
-    const escaped = raw.replace(ESCAPABLE, (_, char: string) => String.fromCharCode(ESCAPE_BASE + char.charCodeAt(0)));
-    const result: MdInline[] = [];
-    const code = /`([^`]+)`/g;
-    let last = 0;
-    for (let m = code.exec(escaped); m; m = code.exec(escaped)) {
-        result.push(...emphasis(clean(escaped.slice(last, m.index)), {}));
-        result.push({ text: m[1] ?? '', code: true });
-        last = m.index + m[0].length;
-    }
-    result.push(...emphasis(clean(escaped.slice(last)), {}));
-    const merged = mergeInlines(result.map((part) => ({ ...part, text: unescape(part.text) })));
+/** Inline nodes as formatted pieces; images and HTML give nothing, links only their words. */
+function phrasing(nodes: PhrasingContent[]): MdInline[] {
+    const merged = mergeInlines(walk(nodes, {}));
     const first = merged[0];
     const end = merged[merged.length - 1];
     if (first && !first.code) first.text = first.text.trimStart();
@@ -205,34 +202,38 @@ function inlines(raw: string): MdInline[] {
     return merged.filter((part) => part.text !== '');
 }
 
-/** Images, links, autolinks and HTML tags: only the visible words stay. */
-function clean(text: string): string {
-    return text
-        .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-        .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-        .replace(/<(https?:\/\/[^>\s]+)>/g, '$1')
-        .replace(/<\/?[a-zA-Z][^>]*>/g, '');
-}
-
-function emphasis(text: string, fmt: Pick<MdInline, 'strong' | 'em' | 'del'>): MdInline[] {
-    let best: { index: number; length: number; inner: string; fmt: Pick<MdInline, 'strong' | 'em' | 'del'> } | null = null;
-    for (const rule of EMPHASIS) {
-        rule.re.lastIndex = 0;
-        const m = rule.re.exec(text);
-        if (m && (!best || m.index < best.index)) {
-            best = { index: m.index, length: m[0].length, inner: m[1] ?? '', fmt: rule.fmt };
+function walk(nodes: PhrasingContent[], fmt: Format): MdInline[] {
+    const result: MdInline[] = [];
+    for (const node of nodes) {
+        switch (node.type) {
+            case 'text':
+                result.push({ ...fmt, text: node.value });
+                break;
+            case 'inlineCode':
+                result.push({ ...fmt, text: node.value, code: true });
+                break;
+            case 'break':
+                result.push({ ...fmt, text: '\n' });
+                break;
+            case 'strong':
+                result.push(...walk(node.children, { ...fmt, strong: true }));
+                break;
+            case 'emphasis':
+                result.push(...walk(node.children, { ...fmt, em: true }));
+                break;
+            case 'delete':
+                result.push(...walk(node.children, { ...fmt, del: true }));
+                break;
+            case 'link':
+            case 'linkReference':
+                result.push(...walk(node.children, fmt));
+                break;
+            default:
+                // image, imageReference, html, footnoteReference
+                break;
         }
     }
-    if (!best) return text ? [{ ...fmt, text }] : [];
-    return [
-        ...(best.index > 0 ? [{ ...fmt, text: text.slice(0, best.index) }] : []),
-        ...emphasis(best.inner, { ...fmt, ...best.fmt }),
-        ...emphasis(text.slice(best.index + best.length), fmt),
-    ];
-}
-
-function unescape(text: string): string {
-    return text.replace(/[-]/g, (c) => String.fromCharCode(c.charCodeAt(0) - ESCAPE_BASE));
+    return result;
 }
 
 function mergeInlines(parts: MdInline[]): MdInline[] {
