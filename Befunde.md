@@ -938,7 +938,8 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 - **Vorab lesbar:** `GET /permissions/locked` braucht nur „Berechtigungen verwalten“ und liefert `{"permissions":[{"authId":403,"dataId":-1}],"isCurrentUserAuthorizedPerson":false}` – `dataId` ist eine Auswahl, `-1` für alle, `null` bei Rechten ohne Daten. Vor der Sperre war die Liste leer. Dasselbe Kennzeichen steht in `GET /config` (`isCurrentUserAuthorizedPerson`). Ändern (`PUT /permissions/locked`) dürfen nur Weisungsbefugte.
 - **`PUT` einer neuen Auswahl** (Kalender 4): `403`, `{"message":"Forbidden to update locked permission[403].","translatedMessage":"Du darfst das Objekt \"locked permission[403]\" nicht aktualisieren.","messageKey":"error.forbidden.update","args":{"model":"locked permission","id":403}}`.
 - **`DELETE` einer bestehenden Auswahl** (Kalender 5): `403`, gleich aufgebaut mit `error.forbidden.delete` und *„nicht löschen“*. Die Rolle trägt danach unverändert nur Kalender 5.
-- **Offen:** ob eine Sperre auf eine einzelne Auswahl (etwa nur Kalender 5) auch andere Auswahlen desselben Rechts blockiert; gesperrt war hier `-1`. Wie sich ältere Instanzen ohne den Pfad verhalten, ist nicht gemessen.
+- **Eine Sperre auf eine einzelne Auswahl gilt nur für diese** *(zweite Messung, Sperre vom Nutzer auf Kalender 5 „Bandproben“ geändert, `GET /permissions/locked` → `[{"authId":403,"dataId":5}]`)*: `PUT` von Kalender 4 → `204`, die Rolle trägt danach 4 und 5; `DELETE` von Kalender 5 → `403` wie oben. Die Testvergabe von Kalender 4 danach mit `DELETE` zurückgenommen (`204`), die Rolle trägt wieder nur Kalender 5.
+- **Offen:** Wie sich ältere Instanzen ohne den Pfad verhalten, ist nicht gemessen.
 
 **Folgen:** Der Assistent kann vor dem ersten Schreiben feststellen, welches seiner Rechte gesperrt ist, und braucht dafür kein zusätzliches Recht. Bricht trotzdem ein Aufruf ab, nennt `args.id` das Recht. Bauplan in Plan.md, Punkt 110.
 
