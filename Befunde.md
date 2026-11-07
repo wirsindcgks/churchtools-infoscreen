@@ -924,6 +924,15 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 
 **Folgen:** Nichts zu ändern. Anschrift und Telefon sind gewöhnliche Textfelder; die Anschrift sind vier Angaben (Straße, Zusatz, PLZ, Ort), die der Baustein einzeln zeigt. Wer nur Ort oder Telefon zeigen will, kommt mit Stufe 1 aus; die Straße verlangt Stufe 2. Plan.md, Baustein „Personen“, Reste.
 
+**G79 – Teilweise beantwortet: `GET /groups/{id}/roles` liefert zuerst die Leiterrollen, dann die übrigen nach `sortKey` – nicht nach ID.** *(2026-11-07, Testinstanz; nur lesend: `GET /api/groups`, `/api/groups/{11,75}/roles`, `/api/groups/{11,75}/members`, `/api/group/roles`; Anlass: Issue #292 von Bernhard, Sortierung nach Rolle im Baustein „Personen“)*
+
+- **Gruppe 11 „Gemeindeleitung“** (Gruppentyp 2): Leiter (`sortKey` 1, Leiter), Co-Leiter (2, Leiter), Mitarbeiter (0), Coach (3), Organisator (4). Die gruppeneigenen IDs (72, 73, 71, 74, 75) und die `groupTypeRoleId` (16, 17, 15, 18, 19) laufen nicht aufsteigend.
+- **Gruppe 75 „Infoscreen-People“** (Gruppentyp 4): Leiter (1, Leiter, ID 1539) vor Teilnehmer (0, Standardrolle, ID 1536).
+- **`GET /group/roles`** (alle Gruppentyp-Rollen) kommt nach `sortKey` sortiert; ab Werk hat die Standardrolle (Teilnehmer, Mitarbeiter) den `sortKey` 0, der Leiter 1.
+- **Offen:** ob die Reihenfolge allein aus Leiter-Kennzeichen und `sortKey` folgt oder eine Instanz mit umsortierten Rollen anders liefert; ChurchTools dokumentiert sie nicht (Academy ohne Regel, im Forum die Vermutung, `sortKey` wirke nur auf das Klappmenü). Bernhards Rollen erfragt in #292.
+
+**Folgen:** `selectPeople` übernimmt die gelieferte Reihenfolge; strikt nach `sortKey` kämen Teilnehmer vor die Leiter. Erst ändern, wenn Bernhards Rollen zeigen, woher die ID-Reihenfolge kommt. Plan.md, Baustein „Personen“, Reste.
+
 ## Der Betriebsbenutzer – wie er eingerichtet wird und wie nicht
 
 
