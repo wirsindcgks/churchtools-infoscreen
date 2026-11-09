@@ -396,3 +396,26 @@ Mehr als lesen konnte das Gerät nie.
 | Baustein „Gruppen": eine Gruppe fehlt | an der Gruppe die öffentliche Seite einschalten; sie muss Untergruppe der Obergruppe sein |
 | Baustein „Gruppen": keine Leitung | an der Homepage „Leiter anzeigen" einschalten; sonst weniger Gruppen je Seite |
 | Mediathek: „Wiki-Bereich … nicht zu finden" | Schritt 4 ausführen; sonst deine Rechte am Wiki-Bereich prüfen |
+| Meldung „… Rechte gesperrt …" beim Einrichten oder Aktualisieren | siehe [Gesperrte Rechte](#gesperrte-rechte) |
+
+### Gesperrte Rechte
+
+Manche Gemeinden schützen einzelne Rechte bewusst: Weisungsbefugte können sie in ChurchTools sperren. Ein gesperrtes Recht
+darf dann nur noch eine weisungsbefugte Person mit „Berechtigungen verwalten“ vergeben oder zurücknehmen – auch der
+Assistent kann das nicht umgehen. Trifft das ein Recht, das der Assistent vergeben oder zurücknehmen müsste, sagt er es dir
+und nennt die Rechte. In dem Fall hat er **nichts verändert**.
+
+**Wer kann helfen?** Eine weisungsbefugte Person, die auch „Berechtigungen verwalten“ hat. Sie hat zwei Wege:
+
+- das Recht selbst an die Rolle der Infoscreen-Gruppe vergeben, oder
+- die Sperre in der Rechteverwaltung unter „Gesperrte Berechtigungen“ aufheben.
+
+Danach den Assistenten noch einmal starten. Weisungsbefugte trägt ein Super-Admin unter System-Einstellungen →
+Datenschutz/Sicherheit → Weisungsbefugnis ein.
+
+Gut zu wissen:
+
+- Eine Sperre auf einen einzelnen Kalender gilt nur für diesen. Die übrigen Kalender kann der Assistent weiter vergeben.
+- „Rechte aktualisieren“ lässt gesperrte Rechte, die eine Rolle schon hat, unangetastet und läuft damit weiter. Es hält nur an,
+  wenn es ein gesperrtes Recht neu vergeben oder zurücknehmen müsste.
+- Weisungsbefugte selbst sind von der Sperre nicht betroffen.

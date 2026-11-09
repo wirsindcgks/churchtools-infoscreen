@@ -21,6 +21,7 @@ import { offeredPersonFields } from '../groups/person-fields';
 import { withDeviceLogin } from '../player/device-login';
 import { resourceTypesOf, roomTypeIdsOf, roomsOf, type ResourceMasterdata, type ResourceTypeInfo, type RoomInfo } from '../rooms/normalize';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
+import { bindingLocks, LockedPermissionError, readLocks, withLockNames } from '../setup/locks';
 import { AUTH, checkDesignerGroup, checkDeviceGroup, devicesPersonReach, groupChecks, memberHoldings, type Check, type Grant, type RequiredRight } from '../setup/checks';
 import {
     canViewWiki,
@@ -46,6 +47,7 @@ import {
     GROUP_NAMES,
     defaultGroupTypeId,
     planProvisioning,
+    plannedLocked,
     provision,
     provisionPeople,
     completePeople,
@@ -61,6 +63,7 @@ import {
     type GroupSpec,
     type GroupTypeChoice,
     type PlanInput,
+    type ProvisionApi,
 } from '../setup/provision';
 import { isAdministrator } from '../designer/administrator';
 import { maySaveSettings, type ModulePermissions } from '../designer/rights';
@@ -644,7 +647,7 @@ async function saveForm(): Promise<void> {
             const deviceGroup = selected.device;
             if (assistant.allowed && deviceGroup !== null && createdGroupIds.value.includes(deviceGroup)) {
                 try {
-                    await applyPeopleRelease(deviceGroup, previous, next, churchToolsProvisionApi);
+                    await applyPeopleRelease(deviceGroup, previous, next, lockAwareApi());
                 } catch (e) {
                     rightsNotice = t.setup.peopleGroups.rightsFailed(explain(e));
                 }
@@ -723,6 +726,15 @@ async function runAssistant(): Promise<void> {
             canViewWiki: await canViewWiki(),
         });
         if (!creation.create && creation.problem) throw new Error(creation.problem);
+        // Before the wiki area too: a lock stops the assistant with nothing created (Plan.md 110). The id of an area still
+        // to be created is unknown – like a new group, only a lock on all areas can meet its rights.
+        const lockState = await readLocks();
+        computePlan();
+        if (plan.value) {
+            const draft = creation.create ? planProvisioning({ ...planInput(), wikiCategoryId: Number.NaN }) : plan.value;
+            const blocked = plannedLocked(draft, bindingLocks(lockState));
+            if (blocked.length) throw new Error(t.setup.locks.collective(blocked.map((b) => t.setup.locks.item(b.label, b.group))));
+        }
         if (creation.create) {
             wikiCategory.value = await createCategory();
             wikiCategoryId = wikiCategory.value.id;
@@ -731,7 +743,7 @@ async function runAssistant(): Promise<void> {
         }
         computePlan();
         if (!plan.value) throw new Error(planProblem.value ?? t.setup.plan.none);
-        const result = await provision(plan.value, groupTypeId, churchToolsProvisionApi);
+        const result = await provision(plan.value, groupTypeId, lockAwareApi(), {}, lockState);
         assistant.log.push(...result.log);
         assistant.error = result.error;
         createdGroupIds.value = [...createdGroupIds.value, ...Object.values(result.groupIds)];
@@ -784,7 +796,7 @@ async function addPeopleGroup(): Promise<void> {
     assistant.error = null;
     assistant.log = [];
     try {
-        await finishPeopleResult(await provisionPeople(spec, typeId, deviceId, churchToolsProvisionApi));
+        await finishPeopleResult(await provisionPeople(spec, typeId, deviceId, lockAwareApi()));
     } catch (e) {
         assistant.error = explain(e);
         assistant.log.push(t.setup.assistantRun.aborted(assistant.error));
@@ -836,7 +848,7 @@ async function finishPeopleSetup(): Promise<void> {
     assistant.error = null;
     assistant.log = [];
     try {
-        await finishPeopleResult(await completePeople(spec, groupId, deviceId, churchToolsProvisionApi));
+        await finishPeopleResult(await completePeople(spec, groupId, deviceId, lockAwareApi()));
     } catch (e) {
         assistant.error = explain(e);
     } finally {
@@ -885,7 +897,12 @@ async function updateRights(): Promise<void> {
             rooms: new Map(rooms.map((r) => [r.id, r.name] as const)),
             groups: new Map(groups.value.map((g) => [g.id, g.name] as const)),
         };
-        const state = await readRefresh(plan.value, groupIds, known, names, churchToolsProvisionApi, peopleDeviceIds.value);
+        const state = await readRefresh(plan.value, groupIds, known, names, lockAwareApi(), peopleDeviceIds.value, await readLocks());
+        if (state.blocked.length) {
+            assistant.error = t.setup.locks.collective(state.blocked.map((b) => t.setup.locks.item(b.label, b.group)));
+            assistant.log = [t.setup.assistantRun.aborted(assistant.error)];
+            return;
+        }
         if (refreshIsEmpty(state.groups)) {
             assistant.log = state.groups.map(refreshLogLine);
             return;
@@ -907,7 +924,7 @@ async function confirmRefresh(): Promise<void> {
     assistant.running = true;
     assistant.error = null;
     try {
-        const result = await applyRefresh(plan.value, open.state, churchToolsProvisionApi);
+        const result = await applyRefresh(plan.value, open.state, lockAwareApi());
         assistant.log = result.log;
         assistant.error = result.error;
         if (result.deviceIds && peopleGroupId.value !== null) {
@@ -1068,7 +1085,13 @@ function explainSave(e: unknown): string {
     return status === 401 || status === 403 ? t.setup.settingsNotSaved401 : explain(e);
 }
 
+/** The api of the assistant, with a refusal of a locked right named by the right (Plan.md 110). */
+function lockAwareApi(): ProvisionApi {
+    return withLockNames(churchToolsProvisionApi, (id) => catalog?.name(id));
+}
+
 function explain(e: unknown): string {
+    if (e instanceof LockedPermissionError) return e.message;
     if (httpStatus(e) === 403) {
         return t.setup.rightsOfOthers;
     }

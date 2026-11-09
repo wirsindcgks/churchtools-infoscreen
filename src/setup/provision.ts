@@ -15,6 +15,7 @@ import { t } from '../i18n/designer';
 import type { CategoryKey } from '../store/screen-repository';
 import type { AuthCatalog } from './catalog';
 import { ALL_DATA, AUTH, has, type Grant } from './checks';
+import { bindingLocks, grantLocked, isLocked, type LockState, type PermissionLock } from './locks';
 
 export const GROUP_NAMES = { designer: 'Infoscreen-Designer', device: 'Infoscreen-Devices', people: 'Infoscreen-People' } as const;
 /** The group type the assistant suggests, looked up by name: ids and names differ per instance, and a church may have removed it (Plan.md 71). */
@@ -297,8 +298,16 @@ export async function provision(
     groupTypeId: number,
     api: ProvisionApi,
     existing: Partial<Record<GroupKey, number>> = {},
+    lockState: LockState | null = null,
 ): Promise<ProvisionResult> {
     const result: ProvisionResult = { groupIds: {}, log: [], error: null };
+    // Every grant is new here: one that meets a lock would be refused halfway, so nothing is created (Plan.md 110, G80).
+    const blocked = plannedLocked(plan, bindingLocks(lockState));
+    if (blocked.length) {
+        result.error = t.setup.locks.collective(blocked.map((b) => t.setup.locks.item(b.label, b.group)));
+        result.log.push(t.setup.provision.aborted(result.error));
+        return result;
+    }
     // A group whose id another group's right needs (the people group, Plan.md 112) is created first.
     const needed = (spec: GroupSpec): boolean => plan.some((other) => other.grants.some((g) => g.dataGroup === spec.key));
     const order = [...plan.filter(needed), ...plan.filter((spec) => !needed(spec))];
@@ -331,6 +340,21 @@ export async function provision(
         result.log.push(t.setup.provision.aborted(result.error));
     }
     return result;
+}
+
+/**
+ * The planned grants that meet a lock, once per right and group. A right for a group not created yet (`dataGroup`) is new,
+ * so only a lock on all its selections can meet it.
+ */
+export function plannedLocked(plan: GroupSpec[], locks: readonly PermissionLock[]): { group: string; label: string }[] {
+    const found: { group: string; label: string }[] = [];
+    for (const spec of plan) {
+        for (const g of spec.grants) {
+            const hit = g.dataGroup ? grantLocked(locks, g.authId, [...(g.dataId ?? []), Number.NaN]) : grantLocked(locks, g.authId, g.dataId);
+            if (hit && !found.some((f) => f.group === spec.name && f.label === g.label)) found.push({ group: spec.name, label: g.label });
+        }
+    }
+    return found;
 }
 
 /** The data of a right: its own, or the id of the group it names; `unknown` while that group does not exist yet. */
@@ -646,6 +670,10 @@ export interface RefreshState {
     deviceIds?: number[];
     /** The default role of each group that takes members from another group. */
     defaultRoleIds: Partial<Record<GroupKey, { roleId: number; groupTypeRoleId: number }>>;
+    /** The locks that bind this person (Plan.md 110); `applyRefresh` leaves grants the role holds already out of the PUT for a locked right. */
+    locks: PermissionLock[];
+    /** Changes that meet a lock: when there are any, the page writes nothing and says so. */
+    blocked: { group: string; label: string }[];
 }
 
 /**
@@ -659,6 +687,7 @@ export async function readRefresh(
     names: DataNames,
     api: ProvisionApi,
     storedDeviceIds: readonly number[] = [],
+    lockState: LockState | null = null,
 ): Promise<RefreshState> {
     const roles: RefreshState['roles'] = {};
     const defaultRoleIds: RefreshState['defaultRoleIds'] = {};
@@ -699,7 +728,11 @@ export async function readRefresh(
         if (!sameIds(there, storedDeviceIds)) extras.push(t.setup.refresh.deviceListStale);
         if (extras.length) change.extras = extras;
     }
-    return { groups, roles, groupIds: { ...groupIds }, defaultRoleIds, deviceIds, postsOn };
+    const locks = bindingLocks(lockState);
+    const blocked = groups.flatMap((g) =>
+        [...g.add, ...g.remove].filter((item) => isLocked(locks, item.authId, item.dataId)).map((item) => ({ group: g.name, label: item.label })),
+    );
+    return { groups, roles, groupIds: { ...groupIds }, defaultRoleIds, deviceIds, postsOn, locks, blocked };
 }
 
 /**
@@ -715,7 +748,17 @@ export async function applyRefresh(plan: GroupSpec[], state: RefreshState, api: 
             const change = state.groups.find((g) => g.key === spec.key);
             if (!roles || !change) continue;
             for (const { roleId, grants } of roles) {
-                for (const g of spec.grants.filter(concrete)) await api.grant(roleId, g.authId, g.dataId);
+                for (const g of spec.grants.filter(concrete)) {
+                    // A locked right is refused even when the role holds it already (G80): send only what is missing, or nothing.
+                    if (state.locks.some((l) => l.authId === g.authId)) {
+                        const missing = (g.dataId ?? [null]).filter(
+                            (d) => !grants.some((h) => h.authId === g.authId && h.dataId === d && (h.type ?? 'grant') === 'grant'),
+                        );
+                        if (missing.length) await api.grant(roleId, g.authId, g.dataId && missing.filter((d): d is number => d !== null));
+                        continue;
+                    }
+                    await api.grant(roleId, g.authId, g.dataId);
+                }
                 for (const item of change.remove) {
                     if (item.dataId === null) continue;
                     if (!grants.some((g) => g.authId === item.authId && g.dataId === item.dataId && (g.type ?? 'grant') === 'grant')) continue;

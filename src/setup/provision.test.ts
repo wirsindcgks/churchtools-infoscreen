@@ -248,6 +248,43 @@ describe('provision', () => {
     });
 });
 
+describe('provision with locked rights (Plan.md 110)', () => {
+    function countingApi() {
+        const calls: string[] = [];
+        const api = {
+            createGroup: async (name: string) => {
+                calls.push(`create ${name}`);
+                return 30;
+            },
+            roleIds: async () => [300],
+            grant: async () => {
+                calls.push('grant');
+            },
+            ...peopleStubs(calls),
+        } as unknown as ProvisionApi;
+        return { api, calls };
+    }
+
+    it('writes nothing and names the right when a planned grant is locked', async () => {
+        const { api, calls } = countingApi();
+        const result = await provision(planProvisioning(input), 4, api, {}, { locks: [{ authId: 205, dataId: 2 }], authorized: false });
+        expect(calls).toEqual([]);
+        expect(result.groupIds).toEqual({});
+        expect(result.error).toContain('gesperrt');
+        expect(result.error).toContain('nichts verändert');
+        expect(result.log.at(-1)).toContain('Abgebrochen');
+    });
+
+    it('works as before for someone entitled to give instructions, and where locks are unknown', async () => {
+        for (const state of [{ locks: [{ authId: 205, dataId: 2 }], authorized: true }, null]) {
+            const { api, calls } = countingApi();
+            const result = await provision(planProvisioning(input), 4, api, {}, state);
+            expect(result.error).toBeNull();
+            expect(calls.some((c) => c.startsWith('create'))).toBe(true);
+        }
+    });
+});
+
 const held = (authId: number, dataId: number | null, type?: string) => ({ authId, dataId, ...(type ? { type } : {}) });
 const pairs = (items: RefreshItem[]) => items.map((i) => `${i.authId}:${i.dataId}`);
 
@@ -409,6 +446,56 @@ describe('readRefresh and applyRefresh', () => {
         const state = await readRefresh(plan, { device: 28 }, known, {}, api);
         expect(refreshIsEmpty(state.groups)).toBe(true);
         expect((await applyRefresh(plan, state, api)).log).toEqual(['Rechte von „Infoscreen-Devices" sind auf dem Stand.']);
+    });
+
+    describe('with locked rights (Plan.md 110)', () => {
+        const plan = planProvisioning(input);
+        /** Roles that hold the whole plan of the devices, except the right named in `without`. */
+        function holding(without: number) {
+            const calls: string[] = [];
+            const api: ProvisionApi = {
+                createGroup: async () => 1,
+                roleIds: async () => [280],
+                grant: async (_roleId, authId, dataId) => {
+                    calls.push(`grant ${authId}:${dataId?.join(',') ?? ''}`);
+                },
+                grants: async () => plan[1]!.grants.filter((g) => g.authId !== without).flatMap((g) => (g.dataId ?? [null]).map((d) => held(g.authId, d))),
+                revoke: async () => {},
+                ...peopleStubs(calls),
+            };
+            return { api, calls };
+        }
+
+        it('reports a missing locked grant as blocked', async () => {
+            const { api, calls } = holding(205);
+            const state = await readRefresh(plan, { device: 28 }, known, {}, api, [], { locks: [{ authId: 205, dataId: 2 }], authorized: false });
+            expect(state.blocked.map((b) => b.group)).toEqual(['Infoscreen-Devices']);
+            expect(calls).toEqual([]);
+        });
+
+        it('finds nothing blocked for someone entitled to give instructions', async () => {
+            const { api } = holding(205);
+            const state = await readRefresh(plan, { device: 28 }, known, {}, api, [], { locks: [{ authId: 205, dataId: 2 }], authorized: true });
+            expect(state.blocked).toEqual([]);
+        });
+
+        it('leaves out the PUT for a locked right the role holds already, and sends the rest as before', async () => {
+            const { api, calls } = holding(205);
+            const state = await readRefresh(plan, { device: 28 }, known, {}, api, [], { locks: [{ authId: 2010, dataId: null }], authorized: false });
+            expect(state.blocked).toEqual([]);
+            await applyRefresh(plan, state, api);
+            expect(calls.filter((c) => c.startsWith('grant 2010'))).toEqual([]);
+            expect(calls).toContain('grant 205:2');
+            expect(calls.some((c) => c.startsWith('grant 2011'))).toBe(true);
+        });
+
+        it('sends only the missing selection of a locked right', async () => {
+            const { api, calls } = holding(205);
+            const state = await readRefresh(plan, { device: 28 }, known, {}, api, [], { locks: [{ authId: 205, dataId: 9 }], authorized: false });
+            expect(state.blocked).toEqual([]);
+            await applyRefresh(plan, state, api);
+            expect(calls.filter((c) => c.startsWith('grant 205'))).toEqual(['grant 205:2']);
+        });
     });
 
     it('stops at the first failure and says so', async () => {
