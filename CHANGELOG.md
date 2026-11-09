@@ -4,6 +4,28 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.56.0] – 2026-11-09
+
+### Hinzugefügt
+
+- **Der Assistent erkennt gesperrte Rechte.** Seit ChurchTools 3.138 können Weisungsbefugte einzelne Rechte sperren;
+  vergeben oder entziehen kann sie dann nur noch eine weisungsbefugte Person. Bevor der Assistent etwas anlegt, liest
+  er die Sperren. Trifft eine davon ein Recht, das er vergeben oder zurücknehmen müsste, legt er nichts an und nennt
+  die betroffenen Rechte mit ihrer Gruppe und den Weg, wie eine weisungsbefugte Person weiterhilft. Weist ChurchTools
+  beim Schreiben trotzdem ein Recht ab, nennt die Meldung es beim Namen statt eines allgemeinen Fehlers
+  ([#299](https://github.com/wirsindcgks/churchtools-infoscreen/pull/299)).
+
+### Behoben
+
+- **„Rechte aktualisieren“ läuft auch mit gesperrten Rechten durch.** Ein gesperrtes Recht, das die Gruppe schon hat,
+  bleibt unangetastet. Bisher vergab der Assistent es erneut, und ChurchTools wies das ab
+  ([#299](https://github.com/wirsindcgks/churchtools-infoscreen/pull/299)).
+
+### Geändert
+
+- **Anleitung:** neuer Abschnitt „Gesperrte Rechte“ in der Einrichtung – was die Meldung bedeutet und wer sie auflösen
+  kann.
+
 ## [0.55.0] – 2026-11-07
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Hinweis, dass Markdown mit einem richtigen Parser gelesen
@@ -1828,3 +1850,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.54.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.54.1
 [0.54.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.54.0
 [0.55.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.55.0
+[0.56.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.56.0
