@@ -1641,6 +1641,19 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             now: 'Jetzt aktualisieren',
             later: 'Später',
         },
+        /** Gesperrte Rechte (Plan.md 110, G80): eine bewusste Entscheidung der Gemeinde, nie ein Fehler der Anwender. */
+        locks: {
+            item: (label: string, group: string) => `${label} (${group})`,
+            collective: (items: string[]) =>
+                `In eurem ChurchTools sind Rechte gesperrt, die der Assistent vergeben oder zurücknehmen müsste: ${items.join('; ')}. ` +
+                'Gesperrte Rechte kann nur eine weisungsbefugte Person mit „Berechtigungen verwalten“ ändern. ' +
+                'Sie kann diese Rechte selbst vergeben oder die Sperre aufheben (Rechteverwaltung → „Gesperrte Berechtigungen“); danach den Assistenten noch einmal starten. ' +
+                'Der Assistent hat nichts verändert.',
+            single: (name: string) =>
+                `Das Recht „${name}“ ist in eurem ChurchTools gesperrt. ` +
+                'Ändern kann es nur eine weisungsbefugte Person mit „Berechtigungen verwalten“ – sie kann es selbst vergeben oder die Sperre aufheben (Rechteverwaltung → „Gesperrte Berechtigungen“).',
+            fallbackName: (authId: number) => `Recht ${authId}`,
+        },
         rightsOfOthers: 'Rechte anderer lesen darf nur, wer in ChurchTools Berechtigungen verwalten darf. Diese Seite ist für Administratoren.',
         services: {
             title: SERVICES_TITLE,
