@@ -104,7 +104,13 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
             <span class="next-title" data-testid="agenda-next">{{ display.next }}</span>
             <template v-if="!narrow">
                 <CalendarBadge v-if="display.nextService" :name="display.nextService" :color="null" data-testid="agenda-next-service" />
-                <div v-if="block.showResponsible && nextPeople" class="next-people" data-testid="agenda-next-responsible">{{ nextPeople }}</div>
+                <!-- The people as in "Jetzt": a person with the person sign (user, 2026-11-10). -->
+                <div v-if="block.showResponsible && nextPeople" class="hero-meta next-people" data-testid="agenda-next-responsible">
+                    <span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg>
+                        <span>{{ nextPeople }}</span>
+                    </span>
+                </div>
                 <div v-if="nextMinutes > 0" class="next-duration" data-testid="agenda-next-duration">{{ tp.agenda.shortMinutes(nextMinutes) }}</div>
             </template>
         </div>
@@ -356,7 +362,9 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
 }
-.next-people,
+.next-people {
+    font-size: 0.8em;
+}
 .next-duration {
     font-size: 0.8em;
     opacity: 0.8;
