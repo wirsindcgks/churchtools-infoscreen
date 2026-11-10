@@ -99,6 +99,16 @@ Nur Räume, nicht Gegenstände und Fahrzeuge.
 
 Das Gerät sieht damit nur zugesagte Dienste aus Dienstgruppen, die „Ohne Berechtigung einsehbar" sind.
 
+### Events und Ablaufpläne – für den Baustein „Ablauf"
+
+| Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
+| --- | --- | --- | --- | --- |
+| Events sehen (für den Baustein „Ablauf") | Events (`view`, 301), ohne Daten | – | – | **ja, sobald ein Baustein „Ablauf" einen Kalender hat** |
+| Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | – | – | **jeden öffentlichen oder freigegebenen Kalender eines Bausteins „Ablauf"** |
+| Ablaufpläne für einzelne Kalender sehen | Ablaufpläne für einzelne Kalender sehen (`view agenda`, 331) | – | – | **jeden öffentlichen oder freigegebenen Kalender eines Bausteins „Ablauf"** |
+
+Steuerrechte für den Ablauf (Programmpunkte weiterschalten, bearbeiten) vergibt der Assistent nie.
+
 ### Personen – für den Baustein „Personen"
 
 Der Baustein zeigt Mitglieder **freigegebener vorhandener Gruppen** (unten) oder die Mitglieder einer eigenen Gruppe „Infoscreen-People", die sich **auf Wunsch** anlegen lässt (Einstellungen → Gruppen für „Personen"). Für diese eigene Gruppe liest das Gerät mit zwei Rechten und **nur** diese Gruppe. Das erste vergibt der Assistent beim Anlegen, das zweite der Administrator in ChurchTools; die Geräte werden dort automatisch Mitglied, daher gilt das zweite für alle Geräte mit einem Recht an der Standardrolle:
@@ -173,7 +183,9 @@ nur an Kalendern und Räumen, die du selbst siehst (das `1104` für Gruppen nimm
 | Im Assistenten | In der Rechteverwaltung (API) | Gruppe | Wann es wegfällt |
 | --- | --- | --- | --- |
 | Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | Gerät, Gestalter | Der Kalender ist nicht mehr für Bildschirme freigegeben |
-| Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | Gerät | Kein Baustein zeigt mehr Dienste dieses Kalenders |
+| Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | Gerät | Kein Baustein zeigt mehr Dienste oder Ablauf dieses Kalenders |
+| Ablaufpläne für einzelne Kalender sehen | Ablaufpläne für einzelne Kalender sehen (`view agenda`, 331) | Gerät | Kein Baustein „Ablauf" zeigt diesen Kalender mehr |
+| Events sehen (für den Baustein „Ablauf") | Events (`view`, 301), ohne Daten | Gerät | Kein Baustein „Ablauf" hat mehr einen Kalender |
 | Ressource sehen | Ressource sehen (`view resource`, 205) | Gerät, Gestalter | Der Raum wird nicht mehr gebraucht |
 | Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen | Gruppe inkl. ihrer Gruppenmitglieder sehen (`1104`) | Gerät | Die Freigabe wird beim Speichern der Seite „Gruppen für Personen" zurückgenommen („Infoscreen-People" und ein von Hand vergebenes `1104` bleiben) |
 | Anlegen von Bildschirmen und Einstellungen | `create custom data` | Gestalter, Gerät | immer – das ist Sache der Administratoren |
@@ -192,7 +204,7 @@ Gruppe. Entzogene Rechte wirken bei ChurchTools noch bis zu einer Dreiviertelstu
 | Bilder und Videos hochladen | Gestalter | Mitglied in „Infoscreen-Designer" werden |
 | einen Bildschirm anlegen, umbenennen, löschen | Administrator | Modulrechte für **Screens** ([Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)) |
 | dass der Fernseher Termine zeigt | – | der Kalender muss **öffentlich** oder für Bildschirme freigegeben sein |
-| dass der Fernseher Räume oder Dienste zeigt | Administrator | „Rechte aktualisieren" |
+| dass der Fernseher Räume, Dienste oder den Ablauf zeigt | Administrator | „Rechte aktualisieren" |
 | dass der Fernseher Personen zeigt | Administrator | Gerät in „Infoscreen-People" aufnehmen, Mitgliedsfelder an der Gruppe anlegen; „Rechte aktualisieren" |
 | dass der Fernseher Personen aus einer vorhandenen Gruppe zeigt | Administrator | die Gruppe unter „Gruppen für Personen" freigeben; „Rechte aktualisieren" |
 | dass der Fernseher Telefon, E-Mail, Ort oder Geburtstag einer Person zeigt | Administrator | in ChurchTools der Gerätegruppe „Personendaten sehen" auf der Stufe der Felder geben, dann unter „Gruppen für Personen" die Personenfelder freischalten |

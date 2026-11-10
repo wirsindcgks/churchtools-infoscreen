@@ -188,6 +188,8 @@ let usedRoomIds: number[] = [];
 let appointmentRooms = false;
 /** The calendars of the blocks that show services (Plan.md 51). */
 let serviceCalendarIds: number[] = [];
+/** The calendars of the blocks "Ablauf" (Plan.md 118). */
+let agendaCalendarIds: number[] = [];
 /** A screen shows a video (Plan.md 52). */
 let videoInUse = false;
 /** A slide shows the block "Personen" (Plan.md 112). */
@@ -268,7 +270,7 @@ const foreignGroups = computed(() =>
     ),
 );
 
-const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.resourceView, AUTH.eventView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit, AUTH.groupWithMembersView, AUTH.memberFieldsView];
+const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.resourceView, AUTH.eventsView, AUTH.eventView, AUTH.agendaView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit, AUTH.groupWithMembersView, AUTH.memberFieldsView];
 
 /** Rights a side must not hold – what the assistant takes back (Plan.md, F). */
 function forbiddenRights(side: Side): RequiredRight[] | null {
@@ -323,6 +325,7 @@ function planInput(people?: 'new'): PlanInput {
         usedRoomIds,
         appointmentRooms,
         serviceCalendarIds: grantableCalendars(serviceCalendarIds),
+        agendaCalendarIds: grantableCalendars(agendaCalendarIds),
         screenCalendarIds: releasedCalendars.value,
         peopleGroupIds: releasedPeopleGroups.value,
     };
@@ -1184,6 +1187,7 @@ async function check(side: Side): Promise<void> {
                 usedRoomIds,
                 appointmentRooms,
                 serviceCalendarIds,
+                agendaCalendarIds,
                 screenCalendarIds: releasedCalendars.value,
                 videoInUse,
                 peopleGroup: peopleGroupId.value === null ? undefined : { id: peopleGroupId.value, name: groups.value.find((g) => g.id === peopleGroupId.value)?.name ?? GROUP_NAMES.people },
@@ -1254,7 +1258,7 @@ onMounted(async () => {
         if (page.value === 'people') void loadPersonFields();
         // The device check names a missing room type: it waits for this read below.
         const roomTypesRead = loadRoomTypes();
-        const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, resources, usedRooms, roomsAtAppointments, serviceCalendars, videos, people, permissions, types] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, resources, usedRooms, roomsAtAppointments, serviceCalendars, agendaCalendars, videos, people, permissions, types] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
@@ -1266,6 +1270,7 @@ onMounted(async () => {
             repository.roomIdsInUse(),
             repository.appointmentRoomsInUse(),
             repository.serviceCalendarIdsInUse(),
+            repository.agendaCalendarIdsInUse(),
             repository.videoInUse(),
             repository.peopleInUse(),
             loadGroupPermissions(),
@@ -1300,6 +1305,7 @@ onMounted(async () => {
         usedRoomIds = usedRooms;
         appointmentRooms = roomsAtAppointments;
         serviceCalendarIds = serviceCalendars;
+        agendaCalendarIds = agendaCalendars;
         videoInUse = videos;
         peopleInUse = people;
         selected.designer = settings?.designerGroupId ?? null;

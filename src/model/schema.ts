@@ -620,9 +620,9 @@ export const TemplateBlock = v.object({
 
 export const Block = v.variant('type', [...ContentBlock.options, TemplateBlock]);
 
-/** The calendars whose appointments a block shows or counts down to. */
+/** The calendars whose appointments a block shows or counts down to – or, for the agenda block, whose live agenda it reads. */
 export function blockCalendarIds(block: Block): number[] {
-    return block.type === 'appointment-list' || block.type === 'next-appointment' || block.type === 'countdown'
+    return block.type === 'appointment-list' || block.type === 'next-appointment' || block.type === 'countdown' || block.type === 'agenda'
         ? block.calendarIds
         : [];
 }

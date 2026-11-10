@@ -1221,6 +1221,16 @@ export class ScreenRepository {
         return [...ids].sort((a, b) => a - b);
     }
 
+    /** The calendars of every `agenda` block – what a device must see the live agenda of (Plan.md 118, G81). */
+    async agendaCalendarIdsInUse(): Promise<number[]> {
+        const slides = await this.readShownSlides();
+        const ids = new Set<number>();
+        for (const block of slides.flatMap((s) => s.blocks)) {
+            if (block.type === 'agenda') blockCalendarIds(block).forEach((id) => ids.add(id));
+        }
+        return [...ids].sort((a, b) => a - b);
+    }
+
     /** Every room a screen's `rooms` blocks show – what a device must be able to see (G45). */
     async roomIdsInUse(): Promise<number[]> {
         const slides = await this.readShownSlides();

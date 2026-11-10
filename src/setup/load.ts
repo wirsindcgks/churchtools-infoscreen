@@ -288,6 +288,6 @@ export const churchToolsProvisionApi: ProvisionApi = {
     },
     async revoke(roleId, authId, dataId) {
         // Spec: DELETE removes the raw assignment named by authId and dataId (Build 32882). Measured with G34's follow-up.
-        await churchtoolsClient.deleteApi(`/permissions/group_role/${roleId}`, { authId, dataId });
+        await churchtoolsClient.deleteApi(`/permissions/group_role/${roleId}`, dataId === undefined ? { authId } : { authId, dataId });
     },
 };

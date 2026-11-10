@@ -1843,6 +1843,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             rightLabels: {
                 calendarView: 'Einzelnen Kalender sehen',
                 eventView: 'Events von einzelnen Kalendern sehen',
+                agendaView: 'Ablaufpläne für einzelne Kalender sehen',
                 resourceView: 'Ressource sehen',
             },
             grants: {
@@ -1861,6 +1862,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 editAdminData: 'Bearbeiten von Bildschirmen und Einstellungen',
                 deleteAdminData: 'Löschen von Bildschirmen und Einstellungen',
                 viewPeopleGroup: 'Gruppe „Infoscreen-People" inkl. ihrer Gruppenmitglieder sehen',
+                viewEvents: 'Events sehen (für den Baustein „Ablauf")',
                 viewReleasedGroup: 'Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen',
             },
             postsOff: (name: string) => `Beiträge in „${name}" abgeschaltet.`,
@@ -1949,6 +1951,10 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             servicesBlindDetail:
                 '„Rechte aktualisieren" gibt der Gerätegruppe das Recht „Events von einzelnen Kalendern sehen" für diese Kalender.',
             servicesVisible: 'Dienste an Terminen sind sichtbar.',
+            agendaBlind: (labels: string) => `Ablauf: ${labels} kann die Live-Agenda nicht lesen.`,
+            agendaBlindDetail:
+                'Der Baustein „Ablauf" braucht drei Rechte: „Events" sehen (301), „Events von einzelnen Kalendern sehen" (306) und „Ablaufpläne für einzelne Kalender sehen" (331), die beiden letzten für jeden Kalender. „Rechte aktualisieren" gibt sie der Gerätegruppe – nur für öffentliche oder freigegebene Kalender.',
+            agendaVisible: 'Die Live-Agenda ist für den Baustein „Ablauf" lesbar.',
             deviceLacksModule: (label: string, lacking: string) => `${label}: am Modul fehlt ${lacking}.`,
             deviceMayRead: (label: string) => `${label} darf die Bildschirme lesen.`,
             videoSubject: (labels: string, n: number) => `${labels} ${n === 1 ? 'darf' : 'dürfen'} den Wiki-Bereich „Infoscreen" nicht sehen`,
@@ -2026,6 +2032,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 calendars: 'Kalender',
                 rooms: 'Räume',
                 services: 'Dienste',
+                agenda: 'Ablauf',
                 module: 'Infoscreen Designer',
                 media: 'Mediathek und Videos',
                 rights: 'Weitere Rechte',
