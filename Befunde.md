@@ -961,9 +961,18 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
   Mit Token im Header **und** `agenda_id` kam die Position schon ohne 331 – nicht verlassen, der Player fragt mit Cookie. **Fehler kommen also teils als `403`, teils als `200` mit `status:"fail"`.** Ein Recht zum Steuern braucht der Leser nicht. Den Ablaufplan selbst (`GET /events/{id}/agenda`) las das Gerät schon mit 306.
 - **Nicht abgeschlossen ist kein Hindernis:** Die Schnittstelle liefert die Position auch für einen offenen Ablaufplan; nur die Oberfläche verlangt den Abschluss.
 - **Im Ablaufplan** trägt ein Lied-Punkt `title: ""`; der Name steht unter `song.title` (dazu Arrangement, Tonart, BPM).
-- **Offen:** ob Überschriften (`type: "header"`) beim Zählen übersprungen werden, wie es die Bridge annimmt – der Testtermin hat keine; ebenso Punkte mit `isBeforeEvent`. Ob sich die Position nach dem Gottesdienst zurücksetzt. Und wie lange der alte Endpunkt bleibt (G69).
+- **Offen:** ob sich die Position nach dem Gottesdienst zurücksetzt, und wie lange der alte Endpunkt bleibt (G69).
 
-**Folgen:** Ein Baustein kann aktuellen und nächsten Programmpunkt zeigen, ohne etwas zu steuern und ohne Software am Fernseher; die Uhrzeit ist dafür nicht nötig. Die Einrichtung braucht für das Gerät 301 und 331 je Kalender mit Ablaufplänen. Countdown und Verspätung rechnet er aus `switchdate`, `addseconds` und `currentTime`, nicht mit der Uhr des Fernsehers. Bauplan in Plan.md, Punkt 118.
+**Nachtrag vom selben Tag – keine neue Schnittstelle, und so rechnet die Live-Ansicht von ChurchTools.** *(nur lesend: die ganze Spezifikation der Instanz, Pfade, Beschreibungen und Schemas; dazu die Skripte der Live-Ansicht von der Testinstanz, `system/churchservice/cs_liveview.js` und `models/cs_liveagenda.js`)* In der Spezifikation kommt die Live-Agenda nur als Dienst-Schalter `allowControlLiveAgenda` vor (`/services`, `/event/masterdata`). **Die Live-Ansicht von ChurchTools selbst** holt Termin und Ablaufplan über die neue Schnittstelle (`/events/{id}`, `/events/{id}/agenda`), die Position aber über `loadAgendaLivePosition` und `saveAgendaLivePosition` der alten – sie **fragt alle 2,5 Sekunden nach**, ohne Push. Fällt der alte Endpunkt, muss ChurchTools die eigene Ansicht mit umbauen. Ihre Regeln:
+
+- **Liste:** Index 0 ist der Platzhalter „– Noch nicht gestartet –“, danach alle Punkte aus `/events/{id}/agenda` in gelieferter Reihenfolge, **Überschriften (`type: "header"`) ausgelassen, Punkte vor dem Termin (`isBeforeEvent`) mitgezählt**. `pos_id` ist der Index in dieser Liste – wie die Bridge annimmt.
+- **Lieder ohne Dauer** gehören zum aktuellen Punkt: „Vor“ überspringt Lied-Punkte mit Dauer 0, und „Dann“ zeigt den ersten Punkt danach (passt zur Academy).
+- **Verspätung:** geplanter Beginn des aktuellen Punktes = Beginn des Termins minus Dauer der Punkte vor dem Termin plus Dauer aller Punkte davor; verglichen mit `switchdate`. Auf Index 0 keine Verspätung.
+- **Countdown:** Dauer des Punktes + `addseconds` + (`switchdate` − jetzt), „jetzt“ über die Abweichung zu `currentTime` aus der ersten Antwort auf Serverzeit gebracht.
+- **`addseconds`** sind die Knöpfe +1 und −1 Minute; Weiterschalten setzt sie auf 0 und `switchdate` auf jetzt. `saveAgendaLivePosition` kennt dazu `start_preparation_timer` (Zugabe vor dem ersten Punkt).
+- **Steuern** darf, wer im Termin in einem Dienst mit `allow_control_liveagenda` eingeteilt ist.
+
+**Folgen:** Ein Baustein kann aktuellen und nächsten Programmpunkt zeigen, ohne etwas zu steuern und ohne Software am Fernseher; die Uhrzeit ist dafür nicht nötig. Die Einrichtung braucht für das Gerät 301 und 331 je Kalender mit Ablaufplänen. Er übernimmt die Regeln der Live-Ansicht (Liste, Lieder ohne Dauer, Verspätung, Countdown), dann zeigt er dasselbe wie sie; gerechnet wird mit `switchdate`, `addseconds` und `currentTime`, nicht mit der Uhr des Fernsehers. Bauplan in Plan.md, Punkt 118.
 
 ## Der Betriebsbenutzer – wie er eingerichtet wird und wie nicht
 
