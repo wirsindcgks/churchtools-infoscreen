@@ -153,9 +153,13 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
 /* The frame lies inside the card, over its padding; it follows the time left. */
 .signal-frame {
     position: absolute;
-    inset: 0;
+    /*
+     * Over the card's outline as well (3px, see `.hero`): one surface, no seam between outline and frame – two of them left
+     * a dark hairline on the TV where the stage is scaled (user, 2026-11-10).
+     */
+    inset: -3px;
     border-radius: inherit;
-    box-shadow: inset 0 0 0 0.25em var(--signal, transparent);
+    box-shadow: inset 0 0 0 calc(0.25em + 3px) var(--signal, transparent);
     pointer-events: none;
     transition: box-shadow 0.4s;
 }
