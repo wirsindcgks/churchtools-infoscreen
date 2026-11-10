@@ -284,6 +284,21 @@ export const AgendaBlock = v.object({
     calendarIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.minLength(1)),
     showCountdown: v.optional(v.boolean(), true),
     showDelay: v.optional(v.boolean(), true),
+    /** Missing = the layout of the live view of ChurchTools; `card` = own cards (still 1.61, not yet released). */
+    layout: v.optional(v.picklist(['churchtools', 'card'])),
+    /** Only `card`: what the tile at the head shows – the planned time, the position "3 of 5", or no tile. Missing = `time`. */
+    tile: v.optional(v.picklist(['time', 'position', 'none'])),
+    /** Both layouts: "Dann", the next item. */
+    showNext: v.optional(v.boolean(), true),
+    /** Only `card`: the note of the item and the people in charge. */
+    showNote: v.optional(v.boolean(), false),
+    showResponsible: v.optional(v.boolean(), false),
+    /** Only `card`: the time left as digits "3:12" (missing) or as the ring. */
+    countdownStyle: v.optional(v.picklist(['digits', 'ring'])),
+    /** Only `card`: the frame around "Jetzt" that turns green, yellow, red with the time left. */
+    showSignal: v.optional(v.boolean(), true),
+    /** Only `card`: minutes before the end from which the frame is yellow. Missing = 1. */
+    warnMinutes: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(15))),
     style: TextStyle,
 });
 

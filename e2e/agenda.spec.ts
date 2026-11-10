@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addBlock, openSection } from './helpers';
+import { addBlock, choose, openSection } from './helpers';
 
 // The block "Ablauf" (Plan.md 118, Stück 1): in the designer it reads the live agenda with the designer's rights and falls back
 // to an example where there is none – the example is the test of G81: "Begrüßung" running, "Predigt" next.
@@ -35,4 +35,41 @@ test('the agenda block shows the current and the next point, and its inspector k
     await expect(block.getByTestId('agenda-delay')).toHaveCount(0);
     await expect(block.getByTestId('agenda-now')).toHaveText('Begrüßung');
     await page.screenshot({ path: 'test-results/editor-agenda.png' });
+});
+
+test('the own look of the agenda block shows cards, with tile, service, people and "Dann" to choose', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await page.getByTestId('add-slide').click();
+
+    await addBlock(page, 'agenda');
+    const block = page.locator('.editor-stage .block--agenda');
+    await openSection(page, 'appearance');
+    const inspector = page.getByTestId('block-inspector');
+    await expect(inspector.getByTestId('agenda-tile-kind')).toHaveCount(0);
+    await choose(inspector, 'agenda-layout', 'card');
+
+    await expect(block.getByTestId('agenda-card')).toBeVisible();
+    await expect(block.getByTestId('agenda-now')).toHaveText('Begrüßung');
+    await expect(block.getByTestId('agenda-service')).toHaveText('Leitung');
+    await expect(block.getByTestId('agenda-tile')).toBeVisible();
+    await expect(block.getByTestId('agenda-countdown')).toBeVisible();
+    await expect(block.getByTestId('agenda-signal')).toHaveAttribute('data-state', 'ok');
+
+    await choose(inspector, 'agenda-countdown-style', 'ring');
+    await expect(block.getByTestId('agenda-ring')).toBeVisible();
+
+    await choose(inspector, 'agenda-tile-kind', 'position');
+    await expect(block.getByTestId('agenda-tile')).toContainText('von');
+
+    await expect(block.getByTestId('agenda-responsible')).toHaveCount(0);
+    await inspector.getByTestId('agenda-show-responsible').check();
+    await expect(block.getByTestId('agenda-responsible')).toContainText('Anna Beispiel');
+    await inspector.getByTestId('agenda-show-note').check();
+    await block.screenshot({ path: 'test-results/editor-agenda-card.png' });
+
+    await expect(block.getByTestId('agenda-next-card')).toBeVisible();
+    await inspector.getByTestId('agenda-show-next').uncheck();
+    await expect(block.getByTestId('agenda-next-card')).toHaveCount(0);
 });

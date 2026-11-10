@@ -1087,7 +1087,7 @@ describe('rendering people (Plan.md 112)', () => {
 describe('the agenda block (schema 1.61, Plan.md 118)', () => {
     const NOW = new Date('2026-10-04T08:00:00Z');
     const agenda = (extra: Record<string, unknown> = {}) =>
-        ({ id: 'a', type: 'agenda', x: 0, y: 0, width: 1500, height: 500, calendarIds: [2], showCountdown: true, showDelay: true, style, ...extra }) as Block;
+        ({ id: 'a', type: 'agenda', x: 0, y: 0, width: 1500, height: 500, calendarIds: [2], showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSignal: true, style, ...extra }) as Block;
     const draw = (block: Block, overrides: Partial<StageContext> = {}) => render(makeSlide({ blocks: [block] }), { now: NOW, ...overrides });
 
     it('shows nothing without agenda data', () => {
@@ -1123,5 +1123,105 @@ describe('the agenda block (schema 1.61, Plan.md 118)', () => {
         expect(wrapper.get('[data-testid="agenda-now-label"]').text()).toBe('Gleich');
         expect(wrapper.get('[data-testid="agenda-now"]').text()).toBe('Countdown');
         expect(wrapper.find('[data-testid="agenda-circle"]').exists()).toBe(false);
+    });
+
+    describe('in its own look (Stück 3)', () => {
+        const card = (extra: Record<string, unknown> = {}) => agenda({ layout: 'card', showNext: true, ...extra });
+        const feed = () => sampleAgenda(NOW.getTime(), [2]);
+
+        it('draws the card with the planned time on the tile, the service badge, the title and "Dann"', () => {
+            const wrapper = draw(card(), { agenda: feed() });
+            expect(wrapper.find('[data-testid="agenda"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="agenda-card"]').exists()).toBe(true);
+            expect(wrapper.get('[data-testid="agenda-now-label"]').text()).toBe('Jetzt');
+            expect(wrapper.get('[data-testid="agenda-now"]').text()).toBe('Begrüßung');
+            expect(wrapper.get('[data-testid="agenda-service"]').text()).toBe('Leitung');
+            // Planned five minutes before the switch two minutes ago, three minutes before 08:00 UTC; shown in the stage's zone.
+            expect(wrapper.get('[data-testid="agenda-tile"]').text()).toMatch(/^\d\d:\d\dUhr$/);
+            expect(wrapper.get('[data-testid="agenda-next"]').text()).toBe('Predigt');
+            expect(wrapper.get('[data-testid="agenda-next-time"]').text()).toMatch(/^\d\d:\d\d$/);
+            expect(wrapper.get('[data-testid="agenda-countdown"]').text()).toBe('3:00');
+            expect(wrapper.find('[data-testid="agenda-ring"]').exists()).toBe(false);
+            expect(wrapper.get('[data-testid="agenda-delay"]').text()).toBe('−3 Min.');
+            expect(wrapper.get('[data-testid="agenda-delay"]').classes()).toContain('delay--late');
+        });
+
+        it('shows the time left as the ring when the block says so', () => {
+            const wrapper = draw(card({ countdownStyle: 'ring' }), { agenda: feed() });
+            expect(wrapper.get('[data-testid="agenda-countdown"]').text()).toBe('3Minuten');
+            expect(wrapper.get('[data-testid="agenda-ring"]').attributes('stroke-dasharray')).toBe('60 100');
+            expect(draw(card({ showCountdown: false }), { agenda: feed() }).find('[data-testid="agenda-countdown"]').exists()).toBe(false);
+        });
+
+        it('frames "Jetzt" green, yellow and red with the time left, and not before the start or when switched off', () => {
+            const state = (extra: Record<string, unknown>, later = 0) => draw(card(extra), { agenda: feed(), now: new Date(NOW.getTime() + later) }).find('[data-testid="agenda-signal"]').attributes('data-state');
+            expect(state({})).toBe('ok');
+            // 3 minutes left at the start: 2 minutes later one minute is left – yellow from one minute.
+            expect(state({}, 120_000)).toBe('warn');
+            expect(state({ warnMinutes: 5 })).toBe('warn');
+            expect(state({}, 240_000)).toBe('over');
+            expect(draw(card({ showSignal: false }), { agenda: feed() }).find('[data-testid="agenda-signal"]').exists()).toBe(false);
+            const f = feed();
+            const event = { ...f.events[0]!, startMs: NOW.getTime() + 600_000, endMs: NOW.getTime() + 3_600_000 };
+            expect(draw(card(), { agenda: { events: [event], positions: {} } }).find('[data-testid="agenda-signal"]').exists()).toBe(false);
+        });
+
+        it('turns the digits red once the time is over', () => {
+            const wrapper = draw(card(), { agenda: feed(), now: new Date(NOW.getTime() + 240_000) });
+            expect(wrapper.get('[data-testid="agenda-countdown"]').text()).toBe('−1:00');
+            expect(wrapper.get('[data-testid="agenda-countdown"]').classes()).toContain('digits--over');
+        });
+
+        it('describes "Dann" as a card with service, people and length, or as a bar in a narrow block', () => {
+            const wrapper = draw(card({ showResponsible: true }), { agenda: feed() });
+            expect(wrapper.get('[data-testid="agenda-next-service"]').text()).toBe('Predigt');
+            expect(wrapper.get('[data-testid="agenda-next-responsible"]').text()).toBe('Max Beispiel');
+            expect(wrapper.get('[data-testid="agenda-next-duration"]').text()).toBe('30 Min.');
+            expect(draw(card(), { agenda: feed() }).find('[data-testid="agenda-next-responsible"]').exists()).toBe(false);
+            const narrow = draw(card({ width: 600, height: 500 }), { agenda: feed() });
+            expect(narrow.get('[data-testid="agenda-next"]').text()).toBe('Predigt');
+            expect(narrow.find('[data-testid="agenda-next-service"]').exists()).toBe(false);
+            expect(narrow.get('[data-testid="agenda-card"]').classes()).toContain('agenda-card--narrow');
+        });
+
+        it('shows the position "3 von 5" on the tile, or no tile', () => {
+            const position = draw(card({ tile: 'position' }), { agenda: feed() });
+            expect(position.get('[data-testid="agenda-tile"]').text()).toBe('3von 5');
+            expect(position.find('[data-testid="agenda-next-time"]').exists()).toBe(false);
+            const none = draw(card({ tile: 'none' }), { agenda: feed() });
+            expect(none.find('[data-testid="agenda-tile"]').exists()).toBe(false);
+        });
+
+        it('names a song "Lied" when it has no service', () => {
+            const f = feed();
+            const wrapper = draw(card(), { agenda: { ...f, positions: Object.fromEntries(Object.entries(f.positions).map(([id, p]) => [id, { ...p!, index: 2 }])) } });
+            expect(wrapper.get('[data-testid="agenda-now"]').text()).toBe('Halleluja');
+            expect(wrapper.get('[data-testid="agenda-service"]').text()).toBe('Lied');
+        });
+
+        it('shows the note and the people only when switched on', () => {
+            expect(draw(card(), { agenda: feed() }).find('[data-testid="agenda-note"]').exists()).toBe(false);
+            expect(draw(card(), { agenda: feed() }).find('[data-testid="agenda-responsible"]').exists()).toBe(false);
+            const wrapper = draw(card({ showNote: true, showResponsible: true }), { agenda: feed() });
+            expect(wrapper.get('[data-testid="agenda-note"]').text()).toBe('Gemeindefest am Sonntag ankündigen');
+            expect(wrapper.get('[data-testid="agenda-responsible"]').text()).toBe('Anna Beispiel');
+        });
+
+        it('announces the first point as "Gleich" without pills before the start', () => {
+            const f = feed();
+            const event = { ...f.events[0]!, startMs: NOW.getTime() + 600_000, endMs: NOW.getTime() + 3_600_000 };
+            const wrapper = draw(card(), { agenda: { events: [event], positions: {} } });
+            expect(wrapper.get('[data-testid="agenda-now-label"]').text()).toBe('Gleich');
+            expect(wrapper.get('[data-testid="agenda-now"]').text()).toBe('Countdown');
+            expect(wrapper.find('[data-testid="agenda-countdown"]').exists()).toBe(false);
+            expect(wrapper.find('[data-testid="agenda-delay"]').exists()).toBe(false);
+        });
+
+        it('leaves "Dann" out in both looks when the block says so', () => {
+            expect(draw(card({ showNext: false }), { agenda: feed() }).find('[data-testid="agenda-next-card"]').exists()).toBe(false);
+            const classic = draw(agenda({ showNext: false }), { agenda: feed() });
+            expect(classic.find('[data-testid="agenda-next"]').exists()).toBe(false);
+            expect(classic.get('[data-testid="agenda-now"]').text()).toBe('Begrüßung');
+        });
     });
 });

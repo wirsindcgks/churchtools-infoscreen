@@ -153,6 +153,30 @@ describe('readSlide – tolerant towards newer data', () => {
         expect(read({ calendarIds: [] }).issues).not.toHaveLength(0);
     });
 
+    it('reads the layout of the agenda block: churchtools by default, the card with tile, note and people optional', () => {
+        const old = makeSlide({ blocks: [textBlock('a')] });
+        const style = (old.blocks[0] as { style: object }).style;
+        const read = (extra: Record<string, unknown> = {}) =>
+            readSlide({ ...old, blocks: [{ id: 'a', type: 'agenda', x: 0, y: 0, width: 900, height: 360, calendarIds: [2], style, ...extra }] });
+        const plain = read();
+        expect(plain.issues).toHaveLength(0);
+        expect(plain.doc.blocks[0]).toMatchObject({ showNext: true, showNote: false, showResponsible: false });
+        expect(plain.doc.blocks[0]).not.toHaveProperty('layout');
+        expect(read({ layout: 'card', tile: 'position', showNext: false, showNote: true, showResponsible: true }).doc.blocks[0]).toMatchObject({
+            layout: 'card', tile: 'position', showNext: false, showNote: true, showResponsible: true,
+        });
+        expect(read({ layout: 'grid' }).issues).not.toHaveLength(0);
+        expect(read({ tile: 'date' }).issues).not.toHaveLength(0);
+        expect(read({ showNote: 'yes' }).issues).not.toHaveLength(0);
+        expect(plain.doc.blocks[0]).toMatchObject({ showSignal: true });
+        expect(plain.doc.blocks[0]).not.toHaveProperty('countdownStyle');
+        expect(read({ countdownStyle: 'ring', showSignal: false, warnMinutes: 5 }).doc.blocks[0]).toMatchObject({ countdownStyle: 'ring', showSignal: false, warnMinutes: 5 });
+        expect(read({ countdownStyle: 'bar' }).issues).not.toHaveLength(0);
+        expect(read({ warnMinutes: 0 }).issues).not.toHaveLength(0);
+        expect(read({ warnMinutes: 16 }).issues).not.toHaveLength(0);
+        expect(read({ warnMinutes: 1.5 }).issues).not.toHaveLength(0);
+    });
+
     it('reads the social block (schema 1.33): layout and colours optional, at most 12 links, old slides stay valid', () => {
         expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(33);
         const old = makeSlide({ blocks: [textBlock('a')] });

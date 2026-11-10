@@ -13,6 +13,12 @@ export interface AgendaItemResponse {
     isBeforeEvent?: boolean | null;
     /** A song carries its name here; its `title` is empty (G81). */
     song?: { title?: string | null } | null;
+    note?: string | null;
+    /** `text` holds the services in square brackets and free text; `persons` the people by service, `person: null` = unfilled (G81). */
+    responsible?: {
+        text?: string | null;
+        persons?: { service?: string | null; person?: { title?: string | null } | null }[] | null;
+    } | null;
 }
 
 /** A point of the live list. Index 0 of the list is the placeholder "not started": no title, no duration. */
@@ -22,6 +28,12 @@ export interface LiveItem {
     duration: number;
     song: boolean;
     beforeEvent: boolean;
+    /** Optional: the offline copy of the device may hold older events without them. */
+    note?: string;
+    /** The first service of "Verantwortlich", without brackets. */
+    service?: string;
+    /** The ready line: "Predigt: Max Mustermann · Freitext". */
+    responsible?: string;
 }
 
 /** An event of today with its agenda, ready for the live view. Times in milliseconds, so that it survives the offline copy. */
@@ -75,6 +87,21 @@ export interface AgendaDisplay {
     delaySeconds: number | null;
     /** Seconds the current point is given – its duration and the added time; what the circle empties from. `null` where there is none. */
     lengthSeconds: number | null;
+    /** When the shown point was planned to begin. */
+    plannedStartMs: number;
+    /** Position of the shown point among those that count (songs without a duration do not), and how many there are. */
+    number: number;
+    count: number;
+    note: string | null;
+    service: string | null;
+    responsible: string | null;
+    song: boolean;
+    /** When the next point was planned to begin; `null` where there is none. */
+    nextPlannedStartMs: number | null;
+    /** The service, the people and the length (seconds) of the next point, as for the shown one. */
+    nextService: string | null;
+    nextResponsible: string | null;
+    nextDurationSeconds: number | null;
 }
 
 export interface AgendaPick {
@@ -91,6 +118,28 @@ export const POLL_AFTER_MS = 60 * 60_000;
 
 const PLACEHOLDER: LiveItem = { title: '', duration: 0, song: false, beforeEvent: false };
 
+const BRACKETED = /\[([^\]]*)\]/g;
+
+/** The name of a service: its brackets off. */
+function serviceName(raw: string | null | undefined): string {
+    return (raw ?? '').replace(/[[\]]/g, '').trim();
+}
+
+/** "Predigt: Max Mustermann, Erika Muster · free text" from the answer; empty where nobody is named and there is no free text. */
+function responsibleLine(responsible: NonNullable<AgendaItemResponse['responsible']>): string {
+    const groups = new Map<string, string[]>();
+    for (const entry of responsible.persons ?? []) {
+        const name = (entry.person?.title ?? '').trim();
+        if (!name) continue;
+        const service = serviceName(entry.service);
+        groups.set(service, [...(groups.get(service) ?? []), name]);
+    }
+    const parts = [...groups].map(([service, names]) => (service ? `${service}: ${names.join(', ')}` : names.join(', ')));
+    const free = (responsible.text ?? '').replace(BRACKETED, ' ').replace(/\s+/g, ' ').replace(/^[\s,]+|[\s,]+$/g, '');
+    if (free) parts.push(free);
+    return parts.join(' · ');
+}
+
 /** The list of the live view: the placeholder, then the points in the delivered order without headers. */
 export function liveItems(items: readonly AgendaItemResponse[]): LiveItem[] {
     const points = items
@@ -98,11 +147,17 @@ export function liveItems(items: readonly AgendaItemResponse[]): LiveItem[] {
         .map((item): LiveItem => {
             const song = item.type === 'song';
             const own = (item.title ?? '').trim();
+            const note = (item.note ?? '').trim();
+            const service = serviceName(/\[([^\]]*)\]/.exec(item.responsible?.text ?? '')?.[1]);
+            const responsible = item.responsible ? responsibleLine(item.responsible) : '';
             return {
                 title: own || (song ? (item.song?.title ?? '').trim() : ''),
                 duration: Math.max(0, Number(item.duration) || 0),
                 song,
                 beforeEvent: item.isBeforeEvent === true,
+                ...(note ? { note } : {}),
+                ...(service ? { service } : {}),
+                ...(responsible ? { responsible } : {}),
             };
         });
     return [PLACEHOLDER, ...points];
@@ -202,23 +257,57 @@ export function pollableEvents(events: readonly AgendaEvent[], deviceNowMs: numb
     return events.filter((e) => deviceNowMs >= e.startMs - POLL_BEFORE_MS && deviceNowMs <= e.endMs + POLL_AFTER_MS);
 }
 
+/** The time left as the clock of a stage monitor: "3:12", "0:05", "−0:40", "75:00". */
+export function clockText(seconds: number): string {
+    const abs = Math.abs(Math.round(seconds));
+    return `${seconds < 0 ? '−' : ''}${Math.floor(abs / 60)}:${String(abs % 60).padStart(2, '0')}`;
+}
+
+/** The colour of the signal frame: over once the time is spent, `warn` from `warnMinutes` before the end; `null` without a countdown. */
+export function signalState(countdownSeconds: number | null, warnMinutes: number): 'ok' | 'warn' | 'over' | null {
+    if (countdownSeconds === null) return null;
+    if (countdownSeconds < 0) return 'over';
+    return countdownSeconds <= warnMinutes * 60 ? 'warn' : 'ok';
+}
+
 /** What the view shows for a pick at this device time; `null` where there is nothing to say. */
 export function agendaDisplay(pick: AgendaPick | null, deviceNowMs: number): AgendaDisplay | null {
     if (!pick) return null;
     const { event, position, phase } = pick;
     const last = event.items.length - 1;
     if (last < 1) return null;
-    if (phase === 'upcoming' || !position || position.index === 0) {
-        return { kind: 'soon', title: event.items[1]!.title, next: null, countdownSeconds: null, delaySeconds: null, lengthSeconds: null };
+    const soon = phase === 'upcoming' || !position || position.index === 0;
+    const index = soon ? 1 : Math.min(position.index, last);
+    const next = soon ? null : nextIndex(event.items, index);
+    const item = event.items[index]!;
+    let count = 0;
+    let number = 0;
+    for (let i = 1; i <= last; i++) {
+        if (skipped(event.items[i]!)) continue;
+        count++;
+        if (i <= index) number++;
     }
-    const index = Math.min(position.index, last);
-    const next = nextIndex(event.items, index);
+    const shown = {
+        title: item.title,
+        plannedStartMs: plannedStartMs(event, index),
+        number: Math.max(1, number),
+        count,
+        note: item.note ?? null,
+        service: item.service ?? null,
+        responsible: item.responsible ?? null,
+        song: item.song,
+        nextPlannedStartMs: next === null ? null : plannedStartMs(event, next),
+        nextService: next === null ? null : (event.items[next]!.service ?? null),
+        nextResponsible: next === null ? null : (event.items[next]!.responsible ?? null),
+        nextDurationSeconds: next === null ? null : event.items[next]!.duration,
+    };
+    if (soon || !position) return { kind: 'soon', next: null, countdownSeconds: null, delaySeconds: null, lengthSeconds: null, ...shown };
     return {
         kind: 'now',
-        title: event.items[index]!.title,
         next: next === null ? null : event.items[next]!.title,
         countdownSeconds: countdownSeconds(event, { ...position, index }, serverNow(deviceNowMs, position)),
         delaySeconds: delaySeconds(event, { ...position, index }),
-        lengthSeconds: event.items[index]!.duration + position.addSeconds,
+        lengthSeconds: item.duration + position.addSeconds,
+        ...shown,
     };
 }

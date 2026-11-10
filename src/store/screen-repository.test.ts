@@ -640,7 +640,7 @@ describe('ScreenRepository', () => {
         const style = { fontFamily: 'sans', fontSize: 44, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
         const frame = { x: 0, y: 0, width: 1400, height: 700, style };
         const blocks = [
-            { id: 'a', type: 'agenda' as const, ...frame, calendarIds: [7, 3], showCountdown: true, showDelay: true },
+            { id: 'a', type: 'agenda' as const, ...frame, calendarIds: [7, 3], showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSignal: true },
             { id: 'l', type: 'appointment-list' as const, ...frame, calendarIds: [5], horizonDays: 14, limit: 5, layout: 'cards' as const },
         ];
         await repo.saveScreen(bundle({ slides: [makeSlide({ id: 'slide-1', blocks }), makeSlide({ id: 'slide-2' })] }), { ...save, expectedRevision: null });

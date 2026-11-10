@@ -26,7 +26,7 @@ const QUICK: Record<ContentBlockType, string[]> = {
     'appointment-list': ['Kalender 1 von 1', 'Ansicht: Wie im Design', 'Zeitraum: 14 Tage', 'Farbe'],
     'next-appointment': ['Kalender 1 von 1', 'Ansicht: Wie im Design', 'Terminbild zeigen', 'Farbe'],
     countdown: ['Kalender 1 von 1', 'Titel des Termins zeigen', 'Farbe'],
-    agenda: ['Kalender 1 von 1', 'Countdown', 'Verspätung', 'Farbe'],
+    agenda: ['Kalender 1 von 1', 'Ansicht: Nativ', 'Countdown', 'Verspätung', 'Farbe'],
     'church-header': ['Gemeindenamen zeigen', 'Logo zeigen', 'Farbe'],
     web: ['Adresse oder Einbettungscode: Adresse', 'Größe der Seite: Größe 100 %'],
     qr: ['Inhalt', 'Farbe'],

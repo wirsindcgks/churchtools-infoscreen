@@ -17,6 +17,12 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   „Rechte aktualisieren" vergeben dem Gerät dafür „Events" sehen (301) sowie „Events von einzelnen Kalendern sehen"
   (306) und „Ablaufpläne für einzelne Kalender sehen" (331) für die Kalender der Ablauf-Bausteine; die Einstellungsseite
   prüft sie unter „Ablauf". Schema 1.61.
+- **Baustein „Ablauf“: Ansicht „Kacheln“** (Plan.md 118, Stück 3). Neben „Nativ“, dem Aufbau der Live-Ansicht von
+  ChurchTools, zeigt der Baustein den laufenden Punkt als Karte, gedacht als Vorschau für die Mitwirkenden auf der Bühne
+  (Confidence Monitor): „Jetzt“ als große Karte mit Kachel (geplante Uhrzeit oder Position wie „3 von 5“), Dienst oder
+  „Lied“ als Abzeichen, Verspätung als Pille und der Restzeit als große Ziffern „3:12“ oder als Ring, dazu ein
+  Signalrahmen (grün, einstellbar gelb, überzogen rot); „Dann“ steht als Karte mit Uhrzeit, Titel, Dienst und Dauer
+  daneben. Notiz und Verantwortliche lassen sich einschalten, „Dann“ in beiden Ansichten ausblenden. Schema bleibt 1.61.
 
 ## [0.56.0] – 2026-11-09
 

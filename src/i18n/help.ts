@@ -280,8 +280,29 @@ export const th = {
     /** "Darstellung" of the agenda block (Plan.md 118). */
     agenda: {
         intro:
-            'Der Baustein zeigt wie die Live-Ansicht von ChurchTools oben „Jetzt“ mit dem laufenden Punkt, darunter „Dann“ mit dem nächsten. ' +
+            'Der Baustein zeigt den laufenden Punkt des Ablaufplans und den nächsten. ' +
             'Er liest nur mit: Weitergeschaltet wird in ChurchTools oder von außen, etwa aus der Präsentationssoftware. Vor dem Beginn nennt er den ersten Punkt als „Gleich“.',
+        view: {
+            term: i.view,
+            text:
+                '„Nativ“ zeigt wie ChurchTools „Jetzt“ oben, „Dann“ darunter und rechts den Countdown im Kreis. ' +
+                '„Kacheln“ ist für die Bühne gedacht: „Jetzt“ als große Karte mit Restzeit und Signalrahmen, „Dann“ als schmale Karte daneben.',
+        },
+        tile: {
+            term: i.agendaTile,
+            text: 'Die Kachel vor dem Titel nennt die geplante Uhrzeit des Punktes oder seine Stelle im Ablauf, etwa „3 von 5“. Lieder ohne Dauer zählen nicht mit.',
+        },
+        countdownStyle: {
+            term: i.agendaCountdownStyle,
+            text: 'Ziffern zeigen Minuten und Sekunden, aus der Entfernung am besten lesbar. Der Ring leert sich wie in ChurchTools.',
+        },
+        signal: {
+            term: i.showSignal,
+            text: 'Ein Rahmen um „Jetzt“: grün, ab „Gelb ab“ gelb, überzogen rot – zu sehen aus dem Augenwinkel.',
+        },
+        next: { term: i.showNext, text: 'Zeigt unter dem laufenden Punkt, was danach kommt.' },
+        note: { term: i.showNote, text: 'Die Notiz des Punktes aus dem Ablaufplan – Hinweise fürs Team auf der Bühne. Sie steht für alle sichtbar auf dem Bildschirm.' },
+        responsible: { term: i.showResponsible, text: 'Zeigt Dienst und Namen der Eingeteilten, unbesetzte Dienste fallen weg.' },
         countdown: {
             term: i.showCountdown,
             text: 'Die Zeit, die dem laufenden Punkt noch bleibt, im Kreis rechts – in Minuten, in der letzten Minute in Sekunden. Ist sie um, steht sie mit Minus davor.',

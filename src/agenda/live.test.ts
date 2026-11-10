@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
     agendaDisplay,
+    clockText,
+    signalState,
     countdownSeconds,
     delaySeconds,
     endReached,
@@ -106,12 +108,78 @@ describe('Jetzt and Dann (G81)', () => {
     });
 
     it('announces the first point before the start', () => {
-        expect(agendaDisplay({ event: e, position: undefined, phase: 'upcoming' }, START)).toEqual({ kind: 'soon', title: 'Countdown', next: null, countdownSeconds: null, delaySeconds: null, lengthSeconds: null });
+        expect(agendaDisplay({ event: e, position: undefined, phase: 'upcoming' }, START)).toMatchObject({ kind: 'soon', title: 'Countdown', next: null, countdownSeconds: null, delaySeconds: null, lengthSeconds: null });
         expect(agendaDisplay({ event: e, position: at({ pos_id: null }, START), phase: 'live' }, START)).toMatchObject({ kind: 'soon' });
     });
 
     it('shows nothing for no pick', () => {
         expect(agendaDisplay(null, START)).toBeNull();
+    });
+});
+
+describe('note, services and people of a point', () => {
+    const parsed = (item: AgendaItemResponse) => liveItems([{ title: 'Punkt', duration: 60, ...item }])[1]!;
+
+    it('takes the note trimmed and leaves an empty one out', () => {
+        expect(parsed({ note: '  Gemeindefest  ' }).note).toBe('Gemeindefest');
+        expect(parsed({ note: '   ' })).not.toHaveProperty('note');
+    });
+
+    it('reads the first service from the brackets and the people by service (G81)', () => {
+        const item = parsed({ responsible: { text: '[Predigt]', persons: [{ service: '[Predigt]', person: { title: 'Max Mustermann' } }] } });
+        expect(item.service).toBe('Predigt');
+        expect(item.responsible).toBe('Predigt: Max Mustermann');
+    });
+
+    it('groups two people of the same service and drops the unfilled ones', () => {
+        const item = parsed({
+            responsible: {
+                text: '[Predigt], [Technik]',
+                persons: [
+                    { service: '[Predigt]', person: { title: 'Max Mustermann' } },
+                    { service: '[Technik]', person: null },
+                    { service: '[Predigt]', person: { title: 'Erika Muster' } },
+                ],
+            },
+        });
+        expect(item.service).toBe('Predigt');
+        expect(item.responsible).toBe('Predigt: Max Mustermann, Erika Muster');
+    });
+
+    it('keeps the free text outside the brackets as a part of its own', () => {
+        const item = parsed({ responsible: { text: '[Leitung],  Gäste  vom Chor,', persons: [{ service: '[Leitung]', person: { title: 'Anna' } }, { person: { title: 'Ben' } }] } });
+        expect(item.responsible).toBe('Leitung: Anna · Ben · Gäste vom Chor');
+        expect(parsed({ responsible: { text: 'Gäste', persons: [] } })).toMatchObject({ responsible: 'Gäste' });
+        expect(parsed({ responsible: { text: '[Technik]', persons: [{ service: '[Technik]', person: null }] } })).not.toHaveProperty('responsible');
+    });
+
+    it('has none of it without "Verantwortlich"', () => {
+        const item = parsed({});
+        expect(item).not.toHaveProperty('service');
+        expect(item).not.toHaveProperty('responsible');
+    });
+});
+
+describe('position and planned start of the shown point', () => {
+    it('counts the points without the songs that have no duration', () => {
+        const e = event([
+            { title: 'Predigt', duration: 600 },
+            { type: 'song', title: '', duration: 0, song: { title: 'Zugabe' } },
+            { title: 'Segen', duration: 300 },
+        ]);
+        const at3 = agendaDisplay({ event: e, position: at({ pos_id: '3' }, START), phase: 'live' }, START);
+        expect(at3).toMatchObject({ title: 'Segen', number: 2, count: 2, song: false });
+        // Standing on the skipped song itself counts as the point before.
+        expect(agendaDisplay({ event: e, position: at({ pos_id: '2' }, START), phase: 'live' }, START)).toMatchObject({ number: 1, count: 2, song: true });
+    });
+
+    it('plans the shown point and the next; before the start the first point', () => {
+        const e = event(G81);
+        const now = agendaDisplay({ event: e, position: at({ pos_id: '3' }, START), phase: 'live' }, START)!;
+        expect(now.plannedStartMs).toBe(plannedStartMs(e, 3));
+        expect(now.nextPlannedStartMs).toBe(plannedStartMs(e, 4));
+        const soon = agendaDisplay({ event: e, position: undefined, phase: 'upcoming' }, START)!;
+        expect(soon).toMatchObject({ plannedStartMs: START, number: 1, count: 5, nextPlannedStartMs: null });
     });
 });
 
@@ -214,5 +282,34 @@ describe('pollableEvents', () => {
         expect(pollableEvents([e], START - POLL_BEFORE_MS)).toEqual([e]);
         expect(pollableEvents([e], e.endMs + POLL_AFTER_MS)).toEqual([e]);
         expect(pollableEvents([e], e.endMs + POLL_AFTER_MS + 1)).toEqual([]);
+    });
+});
+
+describe('the clock and the signal of the card', () => {
+    it('writes the time left as minutes and seconds, with a real minus once it is over', () => {
+        expect(clockText(192)).toBe('3:12');
+        expect(clockText(5)).toBe('0:05');
+        expect(clockText(-40)).toBe('−0:40');
+        expect(clockText(4500)).toBe('75:00');
+        expect(clockText(0)).toBe('0:00');
+    });
+
+    it('is green, yellow from the warning minutes, red once over, and none without a countdown', () => {
+        expect(signalState(null, 1)).toBeNull();
+        expect(signalState(61, 1)).toBe('ok');
+        expect(signalState(60, 1)).toBe('warn');
+        expect(signalState(0, 1)).toBe('warn');
+        expect(signalState(-1, 1)).toBe('over');
+        expect(signalState(299, 5)).toBe('warn');
+    });
+
+    it('describes the next point for the card of "Dann"', () => {
+        const e = event([
+            { title: 'Begrüßung', duration: 300 },
+            { title: 'Predigt', duration: 1800, responsible: { text: '[Predigt]', persons: [{ service: '[Predigt]', person: { title: 'Max' } }] } },
+        ]);
+        const display = agendaDisplay({ event: e, position: at({ pos_id: '1' }, START), phase: 'live' }, START);
+        expect(display).toMatchObject({ next: 'Predigt', nextService: 'Predigt', nextResponsible: 'Predigt: Max', nextDurationSeconds: 1800 });
+        expect(agendaDisplay({ event: e, position: at({ pos_id: '2' }, START), phase: 'live' }, START)).toMatchObject({ nextService: null, nextResponsible: null, nextDurationSeconds: null });
     });
 });

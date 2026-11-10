@@ -424,6 +424,10 @@ describe('player controller', () => {
             calendarIds: [2],
             showCountdown: true,
             showDelay: true,
+            showNext: true,
+            showNote: false,
+            showResponsible: false,
+            showSignal: true,
             style: { fontFamily: 'sans', fontSize: 96, fontWeight: 700, color: '#fff', align: 'left' },
         };
         return { ...base, slides: first ? [{ ...first, blocks: [...first.blocks, block] }, ...rest] : base.slides };

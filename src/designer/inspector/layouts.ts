@@ -24,6 +24,12 @@ export function nextAppointmentTiles(block: Extract<Block, { type: 'next-appoint
     ];
 }
 
+/** The looks of the block "Ablauf" (Plan.md 118). */
+export const AGENDA_TILES: TileOption[] = [
+    { value: 'churchtools', label: t.inspector.agendaLayoutChurchtools, pictogram: 'agenda-churchtools' },
+    { value: 'card', label: t.inspector.agendaLayoutCard, pictogram: 'agenda-card' },
+];
+
 export const POSTS_TILES: TileOption[] = [
     { value: 'card', label: t.inspector.postsLayoutCard, pictogram: 'card-image' },
     { value: 'list', label: t.inspector.layoutList, pictogram: 'list-thumbs' },
