@@ -89,16 +89,20 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
                         <AgendaRing v-else :circle="circle" :left="left" :diameter="diameter" testid="agenda-countdown" class="card-ring card-ring--side" warn scaled />
                     </template>
                 </div>
-                <div v-if="showResponsible" class="hero-meta">
-                    <span data-testid="agenda-responsible">
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg>
-                        <span>{{ people }}</span>
-                    </span>
-                </div>
-                <!-- Note and duration carry a sign like the people (user, 2026-11-10). -->
-                <div v-if="showNote" class="hero-note-row">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8.5l3.5 3.5v13.5H6z" /><path d="M14.5 3.5V7H18M9 11.5h6M9 15.5h6" /></svg>
-                    <p class="hero-note" data-testid="agenda-note">{{ display.note }}</p>
+                <!-- People and note at the bottom edge, the head at the top (user, 2026-11-10). -->
+                <div v-if="showResponsible || showNote" class="card-foot">
+                    <div v-if="showResponsible" class="hero-meta">
+                        <span data-testid="agenda-responsible">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg>
+                            <span>{{ people }}</span>
+                        </span>
+                    </div>
+                    <!-- Note and duration carry a sign like the people (user, 2026-11-10). -->
+                    <div v-if="showNote" class="hero-note-row">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8.5l3.5 3.5v13.5H6z" /><path d="M14.5 3.5V7H18M9 11.5h6M9 15.5h6" /></svg>
+                        <!-- A div, not a p: the host stylesheet sizes paragraphs (G43). -->
+                        <div class="hero-note" data-testid="agenda-note">{{ display.note }}</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -112,17 +116,19 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
             <span class="next-title" data-testid="agenda-next">{{ display.next }}</span>
             <template v-if="!narrow">
                 <!-- The people as in "Jetzt": a person with the person sign (user, 2026-11-10). -->
-                <div v-if="block.showResponsible && nextPeople" class="hero-meta next-people" data-testid="agenda-next-responsible">
-                    <span>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg>
-                        <span>{{ nextPeople }}</span>
-                    </span>
-                </div>
-                <div v-if="nextMinutes > 0" class="hero-meta next-duration">
-                    <span>
-                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
-                        <span data-testid="agenda-next-duration">{{ tp.agenda.shortMinutes(nextMinutes) }}</span>
-                    </span>
+                <div v-if="(block.showResponsible && nextPeople) || nextMinutes > 0" class="card-foot">
+                    <div v-if="block.showResponsible && nextPeople" class="hero-meta next-people" data-testid="agenda-next-responsible">
+                        <span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg>
+                            <span>{{ nextPeople }}</span>
+                        </span>
+                    </div>
+                    <div v-if="nextMinutes > 0" class="hero-meta next-duration">
+                        <span>
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
+                            <span data-testid="agenda-next-duration">{{ tp.agenda.shortMinutes(nextMinutes) }}</span>
+                        </span>
+                    </div>
                 </div>
             </template>
         </div>
@@ -209,8 +215,8 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
     display: flex;
     flex: 1;
     flex-direction: column;
-    /* The parts spread over the card; with too little room the end gives way (note first). */
-    justify-content: space-between;
+    /* The head at the top, the foot at the bottom; with too little room the end gives way (note first). */
+    justify-content: flex-start;
     gap: 0.4em;
     min-width: 0;
     min-height: 0;
@@ -333,6 +339,14 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
     stroke-linejoin: round;
 }
 /* Three lines at most; the note gives way first when the block is small. */
+/* The lines at the bottom edge of a card: people, note, duration. */
+.card-foot {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4em;
+    margin-top: auto;
+    min-height: 0;
+}
 .hero-note-row {
     display: flex;
     align-items: flex-start;
