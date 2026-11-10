@@ -168,8 +168,18 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
 .signal--over {
     --signal: #e5484d;
 }
+/* With the signal frame on, the grey outline takes its colour and becomes part of the frame (user, 2026-11-10). */
+.signal--ok,
+.signal--warn,
+.signal--over {
+    border-color: var(--signal);
+    transition: border-color 0.4s;
+}
 @media (prefers-reduced-motion: reduce) {
-    .signal-frame {
+    .signal-frame,
+    .signal--ok,
+    .signal--warn,
+    .signal--over {
         transition: none;
     }
 }
