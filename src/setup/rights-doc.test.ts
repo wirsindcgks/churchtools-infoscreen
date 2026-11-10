@@ -38,6 +38,7 @@ const plan = [true, false].flatMap((appointmentRooms) => planProvisioning({
     usedRoomIds: [1],
     appointmentRooms,
     serviceCalendarIds: [1],
+    agendaCalendarIds: [1],
     peopleGroupId: 'new',
     peopleGroupIds: [60],
 }));

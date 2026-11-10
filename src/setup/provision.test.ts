@@ -144,6 +144,22 @@ describe('planProvisioning', () => {
         expect(d!.grants.some((g) => g.authId === AUTH.eventView)).toBe(false);
     });
 
+    it('gives the device the live agenda of the calendars of the blocks "Ablauf": 301 without data, 306 united with the services, 331 (Plan.md 118, G81)', () => {
+        const [d, v] = planProvisioning({ ...input, serviceCalendarIds: [5, 2], agendaCalendarIds: [5, 3] });
+        expect(v!.grants.filter((g) => g.authId === AUTH.eventView)).toEqual([
+            { authId: 306, dataId: [2, 3, 5], label: 'Events von einzelnen Kalendern sehen' },
+        ]);
+        expect(v!.grants.find((g) => g.authId === AUTH.eventsView)).toEqual({ authId: 301, label: 'Events sehen (für den Baustein „Ablauf")' });
+        expect(v!.grants.find((g) => g.authId === AUTH.agendaView)).toEqual({
+            authId: 331,
+            dataId: [5, 3],
+            label: 'Ablaufpläne für einzelne Kalender sehen',
+        });
+        expect(d!.grants.some((g) => [301, 306, 331].includes(g.authId))).toBe(false);
+        const [, none] = planProvisioning({ ...input, serviceCalendarIds: [5] });
+        expect(none!.grants.some((g) => g.authId === AUTH.eventsView || g.authId === AUTH.agendaView)).toBe(false);
+    });
+
     it('gives nobody "Ressourcen sehen" (201) – the right per room is enough (G45)', () => {
         const ids = [...designer!.grants, ...device!.grants].map((g) => g.authId);
         expect(ids).not.toContain(201);
@@ -304,6 +320,17 @@ describe('planRefresh (Plan.md 62)', () => {
         expect(result.add.some((i) => i.authId === AUTH.calendarView)).toBe(false);
     });
 
+    it('takes back 331 of a calendar no block "Ablauf" has any more, and 301 once there is none (G81)', () => {
+        const without = device([[held(301, null), held(331, 1), held(331, 9)]]);
+        expect(pairs(without.remove)).toEqual(['301:null', '331:1']);
+        const planWith = planProvisioning({ ...input, agendaCalendarIds: [1] });
+        const withAgenda = planRefresh(planWith, { device: [[held(301, null), held(331, 1), held(331, 2)]] }, known).find((g) => g.key === 'device')!;
+        expect(pairs(withAgenda.remove)).toEqual(['331:2']);
+        expect(pairs(withAgenda.add)).not.toContain('301:null');
+        // A 301 that was revoked, or is not the plain right, is not touched.
+        expect(pairs(device([[held(301, null, 'revoke')]]).remove)).toEqual([]);
+    });
+
     it('names what falls away with the right and the name of the calendar or room', () => {
         const names = { calendars: new Map([[3, 'Jugend']]), rooms: new Map([[4, 'Saal']]) };
         const result = planRefresh(plan, { device: [[held(403, 3), held(205, 4), held(306, 9)]] }, { calendarIds: [3], roomIds: [4] }, names);
@@ -407,7 +434,7 @@ describe('readRefresh and applyRefresh', () => {
             },
             grants: async (roleId) => (roleId === 280 ? [held(403, 3), held(403, 4)] : [held(403, 4)]),
             revoke: async (roleId, authId, dataId) => {
-                calls.push(`revoke ${roleId}:${authId}:${dataId.join(',')}`);
+                calls.push(`revoke ${roleId}:${authId}:${dataId?.join(',') ?? ''}`);
             },
             ...peopleStubs(calls),
         };
@@ -431,6 +458,16 @@ describe('readRefresh and applyRefresh', () => {
         expect(calls.filter((c) => c.startsWith('revoke'))).toEqual(['revoke 280:403:3', 'revoke 280:403:4', 'revoke 281:403:4']);
         expect(calls.every((c) => c.includes(' 28'))).toBe(true);
         expect(result.log).toEqual(['„Infoscreen-Devices": 13 Rechte vergeben, 2 zurückgenommen.']);
+    });
+
+    it('takes back 301 without data when no block "Ablauf" needs it any more (G81)', async () => {
+        const { api, calls } = fakeApi();
+        const plan = planProvisioning(input);
+        const base = api.grants;
+        api.grants = async (roleId) => [...(await base(roleId)), held(301, null)];
+        const state = await readRefresh(plan, { device: 28 }, known, {}, api);
+        await applyRefresh(plan, state, api);
+        expect(calls.filter((c) => c.includes(':301:'))).toEqual(['revoke 280:301:', 'revoke 281:301:']);
     });
 
     it('says a group is up to date when nothing differs', async () => {

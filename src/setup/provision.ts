@@ -40,6 +40,7 @@ export type GroupKey = keyof typeof GROUP_NAMES;
 const RIGHT_LABELS = {
     [AUTH.calendarView]: t.setup.provision.rightLabels.calendarView,
     [AUTH.eventView]: t.setup.provision.rightLabels.eventView,
+    [AUTH.agendaView]: t.setup.provision.rightLabels.agendaView,
     [AUTH.resourceView]: t.setup.provision.rightLabels.resourceView,
 } as const;
 
@@ -47,9 +48,11 @@ const RIGHT_LABELS = {
  * What "Rechte aktualisieren" takes back besides the writing rights, by group: rights per calendar or room, but
  * only for those the administrator sees (`planRefresh`). Everything else on these groups stays.
  */
-export const MANAGED_RIGHTS: Record<GroupKey, { authId: number; label: string }[]> = {
+export const MANAGED_RIGHTS: Record<GroupKey, { authId: number; label: string; global?: boolean }[]> = {
     device: [
-        ...[AUTH.calendarView, AUTH.eventView, AUTH.resourceView].map((authId) => ({ authId, label: RIGHT_LABELS[authId] })),
+        ...[AUTH.calendarView, AUTH.eventView, AUTH.agendaView, AUTH.resourceView].map((authId) => ({ authId, label: RIGHT_LABELS[authId] })),
+        // "Events" sehen has no data (G81): taken back as a whole once no block "Ablauf" needs it (`planRefresh`).
+        { authId: AUTH.eventsView, label: t.setup.provision.grants.viewEvents, global: true },
         // The groups an administrator released for the block "Personen" (Plan.md 112, Stück 2a): taken back when the release ends.
         { authId: AUTH.groupWithMembersView, label: t.setup.provision.grants.viewReleasedGroup },
     ],
@@ -113,6 +116,11 @@ export interface PlanInput {
     appointmentRooms: boolean;
     /** The calendars of the blocks that show services (Plan.md 51): the device sees their events. */
     serviceCalendarIds: number[];
+    /**
+     * The calendars of the blocks "Ablauf" (Plan.md 118, G81), only those the administrator sees and the device may read: the
+     * device reads their live agenda with 301, 306 and 331. Missing: none.
+     */
+    agendaCalendarIds?: number[];
     /** The non-public calendars released for screens (Plan.md 85 b), only those the administrator sees: device and designers may read them. */
     screenCalendarIds?: number[];
     /**
@@ -210,8 +218,15 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
         device.push({ authId: AUTH.resourceView, dataId: deviceRooms, label: RIGHT_LABELS[AUTH.resourceView] });
     }
 
-    if (input.serviceCalendarIds.length) {
-        device.push({ authId: AUTH.eventView, dataId: input.serviceCalendarIds, label: RIGHT_LABELS[AUTH.eventView] });
+    // The live agenda of the block "Ablauf" takes 301 (no data), 306 and 331 per calendar (G81); 306 is one entry with the services'.
+    const agendaCalendars = input.agendaCalendarIds ?? [];
+    const eventCalendars = [...new Set([...input.serviceCalendarIds, ...agendaCalendars])].sort((a, b) => a - b);
+    if (eventCalendars.length) {
+        device.push({ authId: AUTH.eventView, dataId: eventCalendars, label: RIGHT_LABELS[AUTH.eventView] });
+    }
+    if (agendaCalendars.length) {
+        device.push({ authId: AUTH.eventsView, label: t.setup.provision.grants.viewEvents });
+        device.push({ authId: AUTH.agendaView, dataId: agendaCalendars, label: RIGHT_LABELS[AUTH.agendaView] });
     }
 
     // The block "Personen" (Plan.md 112, G70): 1104 on exactly this group, at the device's own group – the people group stays
@@ -268,7 +283,8 @@ export interface ProvisionApi {
     grant(roleId: number, authId: number, dataId?: number[]): Promise<void>;
     /** What a role holds now – read before anything is taken back. */
     grants(roleId: number): Promise<Grant[]>;
-    revoke(roleId: number, authId: number, dataId: number[]): Promise<void>;
+    /** Without `dataId` a right without data is taken back ("Events" sehen, G81). */
+    revoke(roleId: number, authId: number, dataId?: number[]): Promise<void>;
     /** The role new members get, with the id of the group type role a member carries (Plan.md 112); null where there is none. */
     defaultRole(groupId: number): Promise<{ roleId: number; groupTypeRoleId: number } | null>;
     /** The people in a group, as person ids. */
@@ -603,6 +619,13 @@ export function planRefresh(
         const planned = (authId: number, dataId: number): boolean =>
             spec.grants.some((g) => g.authId === authId && (g.dataId ?? []).includes(dataId));
         for (const grants of roles) {
+            // A right without data, held although no plan needs it (G81): taken back as a whole.
+            for (const managed of MANAGED_RIGHTS[spec.key].filter((m) => m.global)) {
+                if (spec.grants.some((p) => p.authId === managed.authId)) continue;
+                if (grants.some((g) => g.authId === managed.authId && g.dataId === null && (g.type ?? 'grant') === 'grant')) {
+                    takeBack({ authId: managed.authId, dataId: null, label: managed.label });
+                }
+            }
             for (const g of grants) {
                 if ((g.type ?? 'grant') !== 'grant' || g.dataId === null || g.dataId === ALL_DATA) continue;
                 const managed = MANAGED_RIGHTS[spec.key].find((m) => m.authId === g.authId);
@@ -760,7 +783,13 @@ export async function applyRefresh(plan: GroupSpec[], state: RefreshState, api: 
                     await api.grant(roleId, g.authId, g.dataId);
                 }
                 for (const item of change.remove) {
-                    if (item.dataId === null) continue;
+                    if (item.dataId === null) {
+                        // Only the rights without data of `MANAGED_RIGHTS` are planned this way (`planRefresh`).
+                        if (MANAGED_RIGHTS[spec.key].some((m) => m.global && m.authId === item.authId) && grants.some((g) => g.authId === item.authId && g.dataId === null && (g.type ?? 'grant') === 'grant')) {
+                            await api.revoke(roleId, item.authId);
+                        }
+                        continue;
+                    }
                     if (!grants.some((g) => g.authId === item.authId && g.dataId === item.dataId && (g.type ?? 'grant') === 'grant')) continue;
                     await api.revoke(roleId, item.authId, [item.dataId]);
                 }

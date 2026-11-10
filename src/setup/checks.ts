@@ -18,7 +18,9 @@ import { WIKI_CATEGORY_NAME } from '../media/wiki';
 export const AUTH = {
     calendarView: 403, // churchcal: "Einzelnen Kalender sehen"
     resourceView: 205, // churchresource: "Ressource sehen"
+    eventsView: 301, // churchservice: "Events" sehen – global, without data (the live agenda, G81)
     eventView: 306, // churchservice: "Events von einzelnen Kalendern sehen"
+    agendaView: 331, // churchservice: "Ablaufpläne für einzelne Kalender sehen" (`view agenda`)
     wikiView: 501, // churchwiki: "Wiki" sehen
     wikiCategoryView: 502, // churchwiki: "Einzelne Wiki-Kategorien sehen"
     wikiCategoryEdit: 503, // churchwiki: "Einzelne Wiki-Kategorien bearbeiten"
@@ -53,7 +55,7 @@ export interface Grant {
 export type Level = 'ok' | 'warn' | 'fail' | 'info';
 
 /** What a check is about; the setup page folds its checks by it. A check without one counts as `group`. */
-export type CheckCategory = 'group' | 'calendars' | 'rooms' | 'services' | 'people' | 'module' | 'media' | 'rights';
+export type CheckCategory = 'group' | 'calendars' | 'rooms' | 'services' | 'agenda' | 'people' | 'module' | 'media' | 'rights';
 
 export interface Check {
     level: Level;
@@ -322,6 +324,8 @@ export interface DeviceGroupInput {
     appointmentRooms?: boolean;
     /** The calendars of the blocks that show services (Plan.md 51): the device must see their events. */
     serviceCalendarIds?: number[];
+    /** The calendars of the blocks "Ablauf" (Plan.md 118): the device reads their live agenda. */
+    agendaCalendarIds?: number[];
     /** A screen shows a video (Plan.md 52): the device must see the wiki category, else the video does not run. */
     videoInUse?: boolean;
     wikiCategoryId: number | null;
@@ -373,7 +377,7 @@ export function excessRights(grants: Grant[], plannedAuthIds: readonly number[])
 }
 
 /** Rights whose scope the check leaves alone: the calendars, rooms and events a device sees are set elsewhere. */
-const SCOPE_FREE = new Set<number>([AUTH.calendarView, AUTH.resourceView, AUTH.eventView]);
+const SCOPE_FREE = new Set<number>([AUTH.calendarView, AUTH.resourceView, AUTH.eventView, AUTH.agendaView]);
 
 /**
  * The data a device account holds beyond its plan, per right: for each planned right with data – except
@@ -548,6 +552,28 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                       detail: t.setup.checks.servicesBlindDetail,
                   }
                 : { level: 'ok', category: 'services', text: t.setup.checks.servicesVisible },
+        );
+    }
+
+    // The live agenda needs three rights (G81); public and released calendars get them, the others are named above.
+    const agendaCalendarIds = (input.agendaCalendarIds ?? []).filter((id) => publicIds.has(id) || releasedIds.has(id));
+    if (agendaCalendarIds.length) {
+        const blind = input.members
+            .filter(
+                (m) =>
+                    !has(m.grants, AUTH.eventsView) ||
+                    !agendaCalendarIds.every((id) => has(m.grants, AUTH.eventView, id) && has(m.grants, AUTH.agendaView, id)),
+            )
+            .map((m) => m.label);
+        checks.push(
+            blind.length
+                ? {
+                      level: 'fail',
+                      category: 'agenda',
+                      text: t.setup.checks.agendaBlind(blind.join(', ')),
+                      detail: t.setup.checks.agendaBlindDetail,
+                  }
+                : { level: 'ok', category: 'agenda', text: t.setup.checks.agendaVisible },
         );
     }
 
@@ -802,7 +828,7 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
 }
 
 const CATEGORIES: { category: CheckCategory; title: string }[] = (
-    ['group', 'calendars', 'rooms', 'services', 'people', 'module', 'media', 'rights'] as const
+    ['group', 'calendars', 'rooms', 'services', 'agenda', 'people', 'module', 'media', 'rights'] as const
 ).map((category) => ({ category, title: t.setup.checks.categories[category] }));
 
 const SEVERITY: Record<Level, number> = { ok: 0, info: 1, warn: 2, fail: 3 };

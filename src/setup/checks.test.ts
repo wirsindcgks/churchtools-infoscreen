@@ -319,6 +319,28 @@ describe('checkDeviceGroup', () => {
         expect(check([], [])).toEqual([]);
     });
 
+    it('checks that a device reads the live agenda of the calendars of the blocks "Ablauf" (Plan.md 118, G81)', () => {
+        const check = (grants: Grant[], agendaCalendarIds = [2], screenCalendarIds: number[] = []) =>
+            checkDeviceGroup({
+                statusId: 1,
+                members: [{ label: 'Gerät A', grants }],
+                calendars,
+                usedCalendarIds: [], publicCalendarIds: [2],
+                screenCalendarIds,
+                agendaCalendarIds,
+                wikiCategoryId: WIKI,
+            }).filter((c) => c.category === 'agenda');
+        const all = [grant(AUTH.eventsView), grant(AUTH.eventView, 2), grant(AUTH.agendaView, 2)];
+        expect(check(all)).toEqual([{ level: 'ok', category: 'agenda', text: 'Die Live-Agenda ist für den Baustein „Ablauf" lesbar.' }]);
+        const [fail] = check([grant(AUTH.eventsView), grant(AUTH.eventView, 2)]);
+        expect(fail).toMatchObject({ level: 'fail', text: 'Ablauf: Gerät A kann die Live-Agenda nicht lesen.' });
+        expect(fail?.detail).toContain('331');
+        expect(check(all.slice(1))[0]?.level).toBe('fail');
+        // An internal calendar nobody released gets no rights – the calendar check names it.
+        expect(check([], [1])).toEqual([]);
+        expect(check([], [1], [1])[0]?.level).toBe('fail');
+    });
+
     describe('other groups of a device account', () => {
         const check = (otherGroups?: OtherGroup[] | null, plannedAuthIds?: number[]) =>
             checkDeviceGroup({

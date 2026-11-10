@@ -13,8 +13,10 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   rechts den Countdown im Kreis und darunter die Gesamtzeit mit der Verspätung (rot, wenn zu spät). Den Termin wählt er
   selbst unter den heutigen der gewählten Kalender; vor dem Beginn nennt er den ersten Punkt als „Gleich“. Die Position
   liest der Player alle fünf Sekunden, aber nur rund um einen Termin (eine halbe Stunde davor bis eine Stunde danach).
-  Im Designer zeigt die Vorschau die echten Daten oder, wo es keine gibt, ein Beispiel. Die Rechte für das Gerät
-  vergibt die Einrichtung noch nicht (folgt). Schema 1.61.
+  Im Designer zeigt die Vorschau die echten Daten oder, wo es keine gibt, ein Beispiel. Die Einrichtung und
+  „Rechte aktualisieren" vergeben dem Gerät dafür „Events" sehen (301) sowie „Events von einzelnen Kalendern sehen"
+  (306) und „Ablaufpläne für einzelne Kalender sehen" (331) für die Kalender der Ablauf-Bausteine; die Einstellungsseite
+  prüft sie unter „Ablauf". Schema 1.61.
 
 ## [0.56.0] – 2026-11-09
 
