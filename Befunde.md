@@ -944,6 +944,27 @@ Wirkung, muss es neu vergeben werden (`PUT /permissions/person/16` mit `{authId:
 
 **Folgen:** Der Assistent kann vor dem ersten Schreiben feststellen, welches seiner Rechte gesperrt ist, und braucht dafür kein zusätzliches Recht. Bricht trotzdem ein Aufruf ab, nennt `args.id` das Recht. Bauplan in Plan.md, Punkt 110.
 
+**G81 – Beantwortet: Die Live-Agenda hält ihre Position auf dem Server, ein Fernseher kann sie mit zwei Leserechten mitlesen – nur über die alte Schnittstelle.** *(2026-11-10, Testinstanz 3.138; lesend als Entwicklungskonto und als Geräte-Konto (Person 22); schreibend mit OK des Nutzers: an Rolle 397 der Gerätegruppe 40 `PUT` von 301, `PUT` von 331 für Kalender 2, `DELETE` und erneutes `PUT` von 301, dazu einmal `saveAgendaLivePosition` für Termin 1 mit `pos_id=3`; den Ablaufplan von Termin 1 hat der Nutzer abgeschlossen; Anlass: Plan.md, Punkt 118)* **Academy vorab** ([Live-Agenda](https://churchtools.academy/de/help/churchtools-module/events-durchfuehren/0-live-agenda/), als „Inhalt veraltet“ markiert): Weitergeschaltet wird von Hand mit Vor- und Zurück-Pfeil unter dem Countdown, *„wenn sie tatsächlich beendet sind“*; nach der Uhrzeit rückt nichts vor, ChurchTools rechnet nur die Verspätung aus. *„Wird die Live-Agenda auf mehreren Geräten gleichzeitig angesehen, wird das Voranschreiten auf allen Geräten synchronisiert.“* Steuern darf, wer in einem Dienst mit „Erlaubt, die Live-Agenda zu steuern“ eingeteilt ist; ansehen lässt sie sich, sobald der Ablaufplan abgeschlossen ist. Eine Schnittstelle nennt die Academy nicht. **Von außen gesteuert** wird sie schon heute: eine Bridge, die MIDI-Noten aus ProPresenter in Vor, Zurück oder einen Sprung zu Position oder Titel übersetzt ([josuabarron/ChurchTools-ProPresenter-Bridge](https://github.com/josuabarron/ChurchTools-ProPresenter-Bridge), PolyForm Noncommercial), und ein Modul für Bitfocus Companion mit Vor, Zurück und Zeit ± ([alexhor/companion-module-churchtools](https://github.com/alexhor/companion-module-churchtools), MIT, ruht seit 2025-04). Beide nutzen dieselben zwei Aufrufe.
+
+- **Nur die alte Schnittstelle:** `POST /index.php?q=churchservice/ajax` mit `func=loadAgendaLivePosition&event_id=…` (lesen) und `func=saveAgendaLivePosition&event_id=…&pos_id=…&addseconds=…` (setzen). Die Spezifikation der Instanz (549 Pfade) hat keinen Pfad dafür; „live agenda“ kommt dort nur in der Beschreibung des Dienst-Schalters vor. Verlangt wird ein **CSRF-Token** (`GET /api/csrftoken`); ohne ihn `401` „CSRF-Token is invalid“. Ein Session-Cookie allein trägt – so fragt der Player im Browser. `agenda_id` ist nicht nötig.
+- **Antwort:** `{"pos_id":"3","switchdate":"2026-11-10T11:44:58Z","addseconds":"0","category_id":"2","currentTime":1794311099398}`. Die Werte kommen als Zeichenketten, nur `currentTime` (Serverzeit, ms) als Zahl. **`pos_id` ist die laufende Nummer ab 1:** `pos_id=3` zeigt in der Live-Ansicht den dritten Punkt (ID 4, `position` 2) als „Jetzt“ und den vierten als „Dann“ – weder die ID noch `position` des Punktes. Vor dem ersten Umschalten sind alle drei Felder `null`, die Ansicht zeigt „Noch nicht gestartet“. `category_id` ist der Kalender des Termins. 100 bis 220 ms je Abfrage.
+- **Die Verspätung** ist `switchdate` minus geplanter Beginn des aktuellen Punktes: Die Ansicht zeigte „Gesamtzeit −63514 Minuten“ in Rot, nachgerechnet 27.09., 11:10 (geplant) bis 10.11., 12:44 (umgeschaltet). Der Countdown läuft ab `switchdate` über die Dauer des Punktes; nach einem Neuladen zählt die Zahl richtig weiter, nur die Animation des Kreises beginnt neu (Nutzer).
+- **Rechte zum Lesen** (Geräte-Konto, Weg mit Session-Cookie):
+
+  | Rechte an der Rolle des Geräts | Ergebnis |
+  |---|---|
+  | nur 306 „Events von einzelnen Kalendern sehen“ | `403` „No access allowed!“ |
+  | + 301 „Events“ sehen | `200` mit `status:"fail"`: *„Die Berechtigung ‚Ablaufpläne für einzelne Kalender sehen (view agenda) – Events‘ ist notwendig.“* |
+  | + 301 + 331 „Ablaufpläne für einzelne Kalender sehen“ (Kalender 2) | `success` |
+  | + 331, ohne 301 | `403` |
+
+  Mit Token im Header **und** `agenda_id` kam die Position schon ohne 331 – nicht verlassen, der Player fragt mit Cookie. **Fehler kommen also teils als `403`, teils als `200` mit `status:"fail"`.** Ein Recht zum Steuern braucht der Leser nicht. Den Ablaufplan selbst (`GET /events/{id}/agenda`) las das Gerät schon mit 306.
+- **Nicht abgeschlossen ist kein Hindernis:** Die Schnittstelle liefert die Position auch für einen offenen Ablaufplan; nur die Oberfläche verlangt den Abschluss.
+- **Im Ablaufplan** trägt ein Lied-Punkt `title: ""`; der Name steht unter `song.title` (dazu Arrangement, Tonart, BPM).
+- **Offen:** ob Überschriften (`type: "header"`) beim Zählen übersprungen werden, wie es die Bridge annimmt – der Testtermin hat keine; ebenso Punkte mit `isBeforeEvent`. Ob sich die Position nach dem Gottesdienst zurücksetzt. Und wie lange der alte Endpunkt bleibt (G69).
+
+**Folgen:** Ein Baustein kann aktuellen und nächsten Programmpunkt zeigen, ohne etwas zu steuern und ohne Software am Fernseher; die Uhrzeit ist dafür nicht nötig. Die Einrichtung braucht für das Gerät 301 und 331 je Kalender mit Ablaufplänen. Countdown und Verspätung rechnet er aus `switchdate`, `addseconds` und `currentTime`, nicht mit der Uhr des Fernsehers. Bauplan in Plan.md, Punkt 118.
+
 ## Der Betriebsbenutzer – wie er eingerichtet wird und wie nicht
 
 
