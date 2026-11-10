@@ -4,6 +4,13 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [Unveröffentlicht]
+
+### Hinzugefügt
+
+- **Baustein „Ablauf“: „Dunkle Kacheln“** (Plan.md 118). Ein Schalter unter „Darstellung“ macht die Kacheln schwarz
+  mit weißer Schrift, wie auf einem Bühnenmonitor üblich – auch wenn das Design sonst helle Karten vorsieht. Schema 1.62.
+
 ## [0.57.0] – 2026-11-10
 
 ### Hinzugefügt

@@ -44,13 +44,14 @@ const look = computed(() =>
         card.value && props.block.showNote && t.inspector.showNote,
         card.value && props.block.showResponsible && t.inspector.showResponsible,
         card.value && props.block.showSignal && t.inspector.showSignal,
+        card.value && props.block.dark && t.inspector.agendaDark,
     ]
         .filter(Boolean)
         .join(' · '),
 );
 const help = computed(() => ({
     intro: th.agenda.intro,
-    items: [th.agenda.view, ...(card.value ? [th.agenda.tile] : []), th.agenda.next, ...(card.value ? [th.agenda.countdownStyle] : []), th.agenda.countdown, th.agenda.delay, ...(card.value ? [th.agenda.note, th.agenda.responsible, th.agenda.signal] : [])],
+    items: [th.agenda.view, ...(card.value ? [th.agenda.tile] : []), th.agenda.next, ...(card.value ? [th.agenda.countdownStyle] : []), th.agenda.countdown, th.agenda.delay, ...(card.value ? [th.agenda.note, th.agenda.responsible, th.agenda.signal, th.agenda.dark] : [])],
 }));
 </script>
 
@@ -67,6 +68,7 @@ const help = computed(() => ({
         <ToggleField v-if="card" :model-value="block.showResponsible" :label="t.inspector.showResponsible" testid="agenda-show-responsible" @update:model-value="setBlock({ showResponsible: $event })" />
         <ToggleField v-if="card" :model-value="block.showSignal" :label="t.inspector.showSignal" testid="agenda-show-signal" @update:model-value="setBlock({ showSignal: $event })" />
         <NumberField v-if="card && block.showSignal" :model-value="block.warnMinutes ?? 1" :label="t.inspector.agendaWarnMinutes" unit="Minuten" :min="1" :max="15" testid="agenda-warn-minutes" @update:model-value="setBlock({ warnMinutes: $event <= 1 ? undefined : $event })" />
+        <ToggleField v-if="card" :model-value="block.dark ?? false" :label="t.inspector.agendaDark" testid="agenda-dark" @update:model-value="setBlock({ dark: $event || undefined })" />
     </InspectorSection>
     <FontSection :block="block" effects="shadow" />
 </template>

@@ -54,11 +54,13 @@ const people = computed(() => withoutService(props.display.responsible, props.di
 const nextPeople = computed(() => withoutService(props.display.nextResponsible, props.display.nextService));
 /** The countdown stands on the level of the title, at the right (user, 2026-11-10). */
 const diameter = computed(() => Math.min(props.block.height * 0.42, props.block.width * 0.2));
+/** Dark tiles: black cards and white text over the design and "Schrift" (schema 1.62). */
+const cardStyle = computed(() => ({ ...textStyle(props.block.style), ...(props.block.dark ? { color: '#fff', '--isd-card': '#000' } : {}) }));
 const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.round(props.display.nextDurationSeconds / 60) : 0));
 </script>
 
 <template>
-    <div class="agenda-card" :class="{ 'agenda-card--narrow': narrow }" :style="textStyle(block.style)" data-testid="agenda-card">
+    <div class="agenda-card" :class="{ 'agenda-card--narrow': narrow, 'agenda-card--dark': block.dark }" :style="cardStyle" data-testid="agenda-card">
         <div class="hero hero--main" :class="signal ? `signal--${signal}` : ''">
             <span v-if="signal" class="signal-frame" :data-state="signal" data-testid="agenda-signal" />
             <div class="hero-text">

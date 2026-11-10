@@ -1184,6 +1184,13 @@ describe('the agenda block (schema 1.61, Plan.md 118)', () => {
             expect(narrow.get('[data-testid="agenda-card"]').classes()).toContain('agenda-card--narrow');
         });
 
+        it('draws dark tiles – black cards, white text – over the design when the block says so (schema 1.62)', () => {
+            const style = draw(card({ dark: true }), { agenda: feed() }).get('[data-testid="agenda-card"]').attributes('style') ?? '';
+            expect(style).toContain('color: rgb(255, 255, 255)');
+            expect(style).toContain('--isd-card: #000');
+            expect(draw(card(), { agenda: feed() }).get('[data-testid="agenda-card"]').attributes('style') ?? '').not.toContain('--isd-card');
+        });
+
         it('shows the position "3 von 5" on the tile, or no tile', () => {
             const position = draw(card({ tile: 'position' }), { agenda: feed() });
             expect(position.get('[data-testid="agenda-tile"]').text()).toBe('3von 5');

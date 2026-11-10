@@ -626,6 +626,7 @@ export const t = {
         agendaCountdownRing: 'Ring',
         showSignal: 'Signalrahmen',
         agendaWarnMinutes: 'Gelb ab',
+        agendaDark: 'Dunkle Kacheln',
         agendaTile: 'Kachel',
         agendaTileTime: 'Uhrzeit',
         agendaTilePosition: 'Position',
