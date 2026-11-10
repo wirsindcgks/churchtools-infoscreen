@@ -30,6 +30,7 @@ import {
     type ReadResult,
 } from '../model/read';
 import { playlistStand } from '../model/stand';
+import { agendaRuleCalendars } from '../player/schedule';
 import { expandTemplates, templateIdsOf } from '../model/templates';
 import {
     blockCalendarIds,
@@ -1221,10 +1222,11 @@ export class ScreenRepository {
         return [...ids].sort((a, b) => a - b);
     }
 
-    /** The calendars of every `agenda` block – what a device must see the live agenda of (Plan.md 118, G81). */
+    /** The calendars of every `agenda` block and of every rule that ends with the agenda – what a device must see the live agenda of (Plan.md 118, G81). */
     async agendaCalendarIdsInUse(): Promise<number[]> {
-        const slides = await this.readShownSlides();
+        const [{ screens }, slides] = await Promise.all([this.readRunningScreens(), this.readShownSlides()]);
         const ids = new Set<number>();
+        for (const screen of screens) agendaRuleCalendars(screen.doc).forEach((id) => ids.add(id));
         for (const block of slides.flatMap((s) => s.blocks)) {
             if (block.type === 'agenda') blockCalendarIds(block).forEach((id) => ids.add(id));
         }

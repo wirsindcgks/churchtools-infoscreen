@@ -574,6 +574,22 @@ describe('ScreenRepository', () => {
             await repo.saveSchedule(screen.id, { defaultPlaylistId: makePlaylist().id, rules }, { expectedRevision: null, updatedBy: 'Gestalterin' });
             expect(await repo.calendarIdsInUse()).toContain(9);
         });
+
+        it('counts a calendar for the agenda rights that only a rule "Ende des Ablaufs" uses', async () => {
+            const { screen } = await created();
+            const rule = (calendarId: number, anchor: 'end' | 'agendaEnd') => ({
+                kind: 'appointment' as const,
+                playlistId: makePlaylist().id,
+                calendarIds: [calendarId],
+                minutesBefore: 30,
+                minutesAfter: 30,
+                from: { anchor: 'start' as const, minutes: -30 },
+                to: { anchor, minutes: 30 },
+            });
+            const rules = [rule(8, 'end'), rule(9, 'agendaEnd')];
+            await repo.saveSchedule(screen.id, { defaultPlaylistId: makePlaylist().id, rules }, { expectedRevision: null, updatedBy: 'Gestalterin' });
+            expect(await repo.agendaCalendarIdsInUse()).toEqual([9]);
+        });
     });
 
     it('collects the rooms every rooms block shows, once and sorted (schema 1.16, for the device rights)', async () => {

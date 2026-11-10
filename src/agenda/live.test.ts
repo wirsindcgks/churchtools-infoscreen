@@ -233,6 +233,12 @@ describe('the end', () => {
         expect(endReached(closing, undefined, closing.endMs + POLL_AFTER_MS)).toBe(true);
     });
 
+    it('falls back to the given time after the planned end', () => {
+        const buffer = 30 * 60_000;
+        expect(endReached(closing, undefined, closing.endMs + buffer - 1, buffer)).toBe(false);
+        expect(endReached(closing, undefined, closing.endMs + buffer, buffer)).toBe(true);
+    });
+
     it('is not reached with no position and time left', () => {
         expect(endReached(closing, undefined, START)).toBe(false);
         expect(endReached(closing, at({ pos_id: null }, START), START)).toBe(false);
@@ -282,6 +288,8 @@ describe('pollableEvents', () => {
         expect(pollableEvents([e], START - POLL_BEFORE_MS)).toEqual([e]);
         expect(pollableEvents([e], e.endMs + POLL_AFTER_MS)).toEqual([e]);
         expect(pollableEvents([e], e.endMs + POLL_AFTER_MS + 1)).toEqual([]);
+        expect(pollableEvents([e], e.endMs + 2 * POLL_AFTER_MS, 2 * POLL_AFTER_MS)).toEqual([e]);
+        expect(pollableEvents([e], e.endMs + 2 * POLL_AFTER_MS + 1, 2 * POLL_AFTER_MS)).toEqual([]);
     });
 });
 

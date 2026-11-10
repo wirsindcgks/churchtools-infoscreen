@@ -6,7 +6,7 @@
  * content rather than nothing.
  */
 import { reactive } from 'vue';
-import { pollableEvents, type AgendaFeed, type LivePositions } from '../agenda/live';
+import { POLL_AFTER_MS, pollableEvents, type AgendaFeed, type LivePositions } from '../agenda/live';
 import type { Appointment } from '../appointments/normalize';
 import { httpStatus, NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
@@ -18,7 +18,7 @@ import { reviveRooms, type RoomBookings } from '../rooms/normalize';
 import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '../store/screen-repository';
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
-import { agendaNeeds, appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readPeopleGroups, roomNeeds, type PlayerData } from './data';
+import { agendaNeeds, agendaRuleBufferMs, agendaRuleCalendars, appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readPeopleGroups, roomNeeds, type PlayerData } from './data';
 import { activePlaylistId } from './schedule';
 import { askServiceWorkerHasPage } from './service-worker';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
@@ -332,7 +332,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                   return state.people;
               });
         // The agendas are decoration too: a failure keeps the last ones. The positions are not asked here but by `agendaCycle`.
-        const agendaCalendars = agendaNeeds(state.screen.slides);
+        const agendaCalendars = [...new Set([...agendaNeeds(state.screen.slides), ...agendaRuleCalendars(state.screen.screen)])].sort((a, b) => a - b);
         const agendaWindow = appointmentWindow(now, timeZone, 1);
         const agendaEvents = !agendaCalendars.length
             ? undefined
@@ -424,6 +424,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                     timeZone: state.timeZone,
                     clockConfirmed: state.clockConfirmed,
                     appointments: state.appointments,
+                    agenda: state.agenda ?? { events: [], positions: {} },
                 });
                 const playlist = loaded.playlists.find((p) => p.id === playlistId);
                 const contentAt = playlist ? playlistStand(playlist, loaded.slides) : null;
@@ -490,18 +491,29 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             const feed = state.agenda;
             if (loaded && feed && !blocked && feed.events.length) {
                 const now = deps.now();
-                const playlistId = activePlaylistId(loaded.screen, { now, timeZone: state.timeZone, clockConfirmed: state.clockConfirmed, appointments: state.appointments });
+                const playlistId = activePlaylistId(loaded.screen, {
+                    now,
+                    timeZone: state.timeZone,
+                    clockConfirmed: state.clockConfirmed,
+                    appointments: state.appointments,
+                    agenda: feed,
+                });
                 const playlist = loaded.playlists.find((p) => p.id === playlistId);
                 const shown = new Set(playlist?.slideIds ?? []);
-                const calendars = new Set(agendaNeeds(loaded.slides.filter((s) => shown.has(s.id) && s.enabled)));
+                const calendars = new Set([...agendaNeeds(loaded.slides.filter((s) => shown.has(s.id) && s.enabled)), ...agendaRuleCalendars(loaded.screen)]);
                 const due = pollableEvents(
                     feed.events.filter((e) => calendars.has(e.calendarId)),
                     now.getTime() + clockSkewMs,
+                    Math.max(POLL_AFTER_MS, agendaRuleBufferMs(loaded.screen)),
                 );
                 if (due.length) {
                     const read = await Promise.all(due.map(async (e) => [e.eventId, await data.agendaPosition(e.eventId)] as const));
                     const positions: LivePositions = { ...(state.agenda?.positions ?? {}) };
-                    for (const [eventId, position] of read) positions[eventId] = position;
+                    for (const [eventId, position] of read) {
+                        // A reset (set, then unset) is not taken over: the "Gleich" would be back and a rule would open again.
+                        const old = positions[eventId];
+                        positions[eventId] = old?.set && position && !position.set ? old : position;
+                    }
                     if (state.agenda) state.agenda = { events: state.agenda.events, positions };
                 }
             }

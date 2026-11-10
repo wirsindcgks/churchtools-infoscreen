@@ -23,6 +23,14 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   „Lied“ als Abzeichen, Verspätung als Pille und der Restzeit als große Ziffern „3:12“ oder als Ring, dazu ein
   Signalrahmen (grün, einstellbar gelb, überzogen rot); „Dann“ steht als Karte mit Uhrzeit, Titel, Dienst und Dauer
   daneben. Notiz und Verantwortliche lassen sich einschalten, „Dann“ in beiden Ansichten ausblenden. Schema bleibt 1.61.
+- **Zeitplan: Regel bis „Ende des Ablaufs“** (Plan.md 118, Stück 4). Eine Termin-Regel kann statt „Beginn“ oder „Ende“
+  des Termins enden, sobald im Ablaufplan der letzte Punkt mit Dauer abgelaufen ist – spätestens eine einstellbare Zeit
+  nach dem Ende des Termins (Vorlage „Bis Ablaufende“: 30 Minuten vor Beginn bis Ende des Ablaufs, Puffer 30). So
+  wechselt der Bildschirm nach dem Gottesdienst zur Standard-Präsentation, auch wenn er später oder früher zu Ende ist.
+  Der Player lädt die Ablaufpläne und fragt die Position dafür auch ohne Baustein „Ablauf“ ab; ein Zurücksetzen der
+  Position nach dem Gottesdienst fängt er ab. Der Designer rechnet in der Vorschau mit dem Ende des Termins. Die
+  Rechte für Ablaufpläne vergeben Einrichtung und „Rechte aktualisieren“ auch für die Kalender solcher Regeln.
+  Schema bleibt 1.61.
 
 ## [0.56.0] – 2026-11-09
 

@@ -942,6 +942,18 @@ test('greeting before the service: a window from 30 min before to 10 min after t
     await choose(to, 'point-direction', 'after');
     await to.getByTestId('point-minutes').fill('10');
 
+    // "Bis Ablaufende": the end is the end of the agenda, with a buffer instead of a direction (Plan.md 118).
+    await expect(dialog.getByTestId('agenda-end-hint')).toHaveCount(0);
+    await rule.getByTestId('rule-preset-agenda').click();
+    await expect(to.getByTestId('point-anchor')).toHaveAttribute('data-value', 'agendaEnd');
+    await expect(to.getByTestId('point-direction')).toHaveCount(0);
+    await expect(to.getByTestId('point-minutes')).toHaveValue('30');
+    await expect(dialog.getByTestId('agenda-end-hint')).toBeVisible();
+    await rule.getByTestId('rule-preset-before').click();
+    await choose(to, 'point-direction', 'after');
+    await to.getByTestId('point-minutes').fill('10');
+    await expect(dialog.getByTestId('agenda-end-hint')).toHaveCount(0);
+
     await dialog.getByTestId('schedule-save').click();
     await expect(dialog).toBeHidden();
     await page.getByTestId('sidebar-schedules').click();

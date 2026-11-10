@@ -2,12 +2,13 @@ import { describe, expect, it } from 'vitest';
 import type { Appointment } from '../appointments/normalize';
 import { zonedTimeToInstant } from '../appointments/zoned';
 import { makePlaylist, makeScreen } from '../model/testing';
-import type { AppointmentPoint } from '../model/schema';
+import type { AppointmentEndPoint, AppointmentPoint } from '../model/schema';
 import {
     createAppointmentRule,
     createTimeRule,
     dayTimeline,
     PALETTE,
+    pointLabel,
     playlistColors,
     ruleSummary,
     scheduleProblems,
@@ -214,6 +215,29 @@ describe('rules in words', () => {
             minutesBefore: 0,
             minutesAfter: 20,
         });
+    });
+
+    it('takes the buffer of "Ende des Ablaufs" as the old-style end, and names it', () => {
+        expect(windowPatch({ anchor: 'start', minutes: -30 }, { anchor: 'agendaEnd', minutes: 30 })).toMatchObject({
+            to: { anchor: 'agendaEnd', minutes: 30 },
+            minutesBefore: 30,
+            minutesAfter: 30,
+        });
+        expect(pointLabel({ anchor: 'agendaEnd', minutes: 30 })).toBe('Ende des Ablaufs (spätestens 30 Min. nach Ende)');
+        expect(pointLabel({ anchor: 'agendaEnd', minutes: 0 })).toBe('Ende des Ablaufs (spätestens Ende)');
+    });
+
+    it('accepts "Ende des Ablaufs" after the beginning, refuses it before an end-relative one', () => {
+        const playlists = [makePlaylist({ id: 'standard' }), makePlaylist({ id: 'gd' })];
+        const rule = (from: AppointmentPoint, to: AppointmentEndPoint) => ({ ...createAppointmentRule('gd', [3]), ...windowPatch(from, to) });
+        const screen = makeScreen({
+            defaultPlaylistId: 'standard',
+            schedule: [
+                rule({ anchor: 'start', minutes: -30 }, { anchor: 'agendaEnd', minutes: 30 }),
+                rule({ anchor: 'end', minutes: 5 }, { anchor: 'agendaEnd', minutes: 0 }),
+            ],
+        });
+        expect(scheduleProblems(screen, playlists)).toEqual(['Regel 2: „bis" muss nach „von" liegen.']);
     });
 
     it('refuses a window that can never open', () => {

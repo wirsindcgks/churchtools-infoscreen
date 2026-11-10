@@ -4,7 +4,7 @@
  * "[30] Min. [vor] [Beginn]" (Plan.md, Nächste Schritte 22).
  */
 import { t } from '../i18n/designer';
-import type { AppointmentPoint } from '../model/schema';
+import type { AppointmentEndPoint } from '../model/schema';
 import SelectMenu from './SelectMenu.vue';
 
 const DIRECTIONS = [
@@ -15,14 +15,16 @@ const ANCHORS = [
     { value: 'start', label: t.common.point.start },
     { value: 'end', label: t.common.point.end },
 ];
+const END_ANCHORS = [...ANCHORS, { value: 'agendaEnd', label: t.common.point.agendaEnd }];
 
-const props = defineProps<{ point: AppointmentPoint; label: string; testid: string }>();
-const emit = defineEmits<{ change: [point: AppointmentPoint] }>();
+/** `agenda`: the end of a window, which may also be the end of the live agenda (Plan.md 118). */
+const props = defineProps<{ point: AppointmentEndPoint; label: string; testid: string; agenda?: boolean }>();
+const emit = defineEmits<{ change: [point: AppointmentEndPoint] }>();
 
 function setMinutes(value: string): void {
     const n = Math.round(Number(value));
     if (value === '' || !Number.isFinite(n) || n < 0 || n > 24 * 60) return;
-    emit('change', { ...props.point, minutes: props.point.minutes < 0 ? -n : n });
+    emit('change', { ...props.point, minutes: props.point.minutes < 0 && props.point.anchor !== 'agendaEnd' ? -n : n });
 }
 
 function setDirection(value: string): void {
@@ -31,12 +33,38 @@ function setDirection(value: string): void {
 }
 
 function setAnchor(value: string): void {
+    if (value === 'agendaEnd' && props.agenda) {
+        emit('change', { anchor: 'agendaEnd', minutes: Math.abs(props.point.minutes) || 30 });
+        return;
+    }
     emit('change', { ...props.point, anchor: value === 'end' ? 'end' : 'start' });
 }
 </script>
 
 <template>
-    <span class="point" role="group" :aria-label="label" :data-testid="testid">
+    <span v-if="point.anchor === 'agendaEnd'" class="point" role="group" :aria-label="label" :data-testid="testid">
+        <SelectMenu
+            class="point-menu"
+            :model-value="point.anchor"
+            :options="END_ANCHORS"
+            :aria-label="t.common.point.anchorLabel"
+            testid="point-anchor"
+            @update:model-value="setAnchor(String($event))"
+        />
+        {{ t.common.point.latest }}
+        <input
+            class="minutes"
+            type="number"
+            min="0"
+            max="1440"
+            :value="Math.abs(point.minutes)"
+            :aria-label="t.common.point.minutes"
+            data-testid="point-minutes"
+            @input="setMinutes(($event.target as HTMLInputElement).value)"
+        >
+        {{ t.common.point.afterEnd }}
+    </span>
+    <span v-else class="point" role="group" :aria-label="label" :data-testid="testid">
         <input
             class="minutes"
             type="number"
@@ -59,7 +87,7 @@ function setAnchor(value: string): void {
         <SelectMenu
             class="point-menu"
             :model-value="point.anchor"
-            :options="ANCHORS"
+            :options="agenda ? END_ANCHORS : ANCHORS"
             :aria-label="t.common.point.anchorLabel"
             testid="point-anchor"
             @update:model-value="setAnchor(String($event))"
