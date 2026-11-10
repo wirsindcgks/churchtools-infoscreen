@@ -264,7 +264,7 @@ export function createBlock(
                 style: textStyle(120, { fontWeight: 700, align: 'center' }),
             };
         case 'agenda':
-            return { ...frame, type, calendarIds: calendars, showCountdown: true, showDelay: true, style: textStyle(96, { fontWeight: 700 }) };
+            return { ...frame, type, calendarIds: calendars, showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSignal: true, style: textStyle(96, { fontWeight: 700 }) };
         case 'posts':
             return {
                 ...frame,

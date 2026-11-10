@@ -92,8 +92,18 @@ Punkt als „Gleich“. Der Baustein liest nur; weitergeschaltet wird wie bisher
 der Präsentationssoftware. Zeitnah nachgefragt wird nur rund um einen Termin: ab einer halben Stunde vor dem Beginn bis
 eine Stunde nach dem Ende.
 
-*Die Rechte, die das Gerät dafür braucht, vergibt künftig die Einrichtung – das folgt noch.* Bis dahin braucht es
-„Events“ sehen und „Ablaufpläne für einzelne Kalender sehen“ für den Kalender.
+Der Baustein hat **zwei Ansichten**: „Nativ“ (wie oben beschrieben) und „Kacheln“, gedacht als **Vorschau für die
+Mitwirkenden auf der Bühne** (Confidence Monitor), nicht für die Gemeinde. „Jetzt“ ist eine große Karte mit **Kachel**
+(geplante Uhrzeit des Punktes, seine Stelle im Ablauf wie „3 von 5“ oder keine), dem Dienst oder „Lied“ als Abzeichen,
+der Verspätung als Pille und der **Restzeit** als große Ziffern „3:12“ (rot, wenn die Zeit um ist) oder als Ring. Um die
+Karte läuft der **Signalrahmen**: grün, ab einer einstellbaren Zahl Minuten vor Schluss („Gelb ab“) gelb, überzogen rot –
+aus dem Augenwinkel zu sehen. Rechts daneben steht „Dann“ mit Uhrzeit, Titel, Dienst und Dauer (in einem schmalen
+Baustein als Leiste darunter). Zusätzlich lassen sich die **Notiz** des Punktes aus dem Ablaufplan (Hinweise fürs Team –
+sie steht für alle sichtbar auf dem Bildschirm) und die **Verantwortlichen** (Dienst und Namen der Eingeteilten;
+unbesetzte Dienste fallen weg) einschalten. „Dann“ lässt sich in beiden Ansichten ausblenden.
+
+Die Rechte, die das Gerät dafür braucht, vergeben die Einrichtung und „Rechte aktualisieren“ für die Kalender der
+Ablauf-Bausteine; welche es sind, steht in [`Rechte.md`](Rechte.md).
 
 ### Gruppen
 

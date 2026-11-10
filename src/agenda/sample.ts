@@ -15,8 +15,13 @@ function sampleEvent(nowMs: number, calendarId: number): AgendaEvent {
     const items = liveItems([
         { title: 'Countdown', duration: 300 },
         { type: 'song', title: '', duration: 300, song: { title: 'Halleluja' } },
-        { title: 'Begrüßung', duration: 300 },
-        { title: 'Predigt', duration: 1800 },
+        {
+            title: 'Begrüßung',
+            duration: 300,
+            note: 'Gemeindefest am Sonntag ankündigen',
+            responsible: { text: '[Leitung]', persons: [{ service: '[Leitung]', person: { title: 'Anna Beispiel' } }] },
+        },
+        { title: 'Predigt', duration: 1800, responsible: { text: '[Predigt]', persons: [{ service: '[Predigt]', person: { title: 'Max Beispiel' } }] } },
         { title: 'Segen', duration: 300 },
     ]);
     // "Begrüßung" was planned to begin five minutes ago and began two minutes ago.
