@@ -1102,6 +1102,8 @@ describe('the agenda block (schema 1.61, Plan.md 118)', () => {
         expect(wrapper.get('[data-testid="agenda-next"]').text()).toBe('Predigt');
         // Switched two minutes ago, five minutes long: three minutes left; planned three minutes earlier.
         expect(wrapper.get('[data-testid="agenda-circle"]').text()).toBe('3Minuten');
+        // Three of five minutes left: the ring is three fifths full.
+        expect(wrapper.get('[data-testid="agenda-ring"]').attributes('stroke-dasharray')).toBe('60 100');
         expect(wrapper.get('[data-testid="agenda-delay"]').text()).toBe('−3 Min.');
         expect(wrapper.get('[data-testid="agenda-delay"]').classes()).toContain('delay--late');
     });

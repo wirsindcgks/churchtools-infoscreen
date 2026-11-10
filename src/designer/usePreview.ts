@@ -204,20 +204,27 @@ export function usePreview(
      * has a position to show; otherwise an example, so the block never stands empty while designing. It is read once, not followed.
      */
     let agendaRequest = 0;
+    /** The example is shown: the ticker renews it, so its point stays in the middle instead of running into overtime. */
+    let agendaSample = false;
     async function loadAgenda(): Promise<void> {
         const ids = agenda.value;
         const mine = ++agendaRequest;
+        agendaSample = false;
         if (!ids.length) {
             context.agenda = undefined;
             return;
         }
         context.agenda = sampleAgenda(Date.now(), ids);
+        agendaSample = true;
         try {
             const window = appointmentWindow(new Date(), context.timeZone, 1);
             const events = await churchToolsPlayerData.agendaEvents(ids, window.from, window.to, context.timeZone);
             const positions: LivePositions = {};
             await Promise.all(events.map(async (e) => (positions[e.eventId] = await churchToolsPlayerData.agendaPosition(e.eventId))));
-            if (mine === agendaRequest && pickEvent(events, positions, Date.now())) context.agenda = { events, positions };
+            if (mine === agendaRequest && pickEvent(events, positions, Date.now())) {
+                context.agenda = { events, positions };
+                agendaSample = false;
+            }
         } catch {
             // No right, no event, no connection: the example stays.
         }
@@ -258,7 +265,10 @@ export function usePreview(
     void loadPosts();
     void loadGroupHomepages();
 
-    const ticker = setInterval(() => (context.now = new Date()), 30_000);
+    const ticker = setInterval(() => {
+        context.now = new Date();
+        if (agendaSample && agenda.value.length) context.agenda = sampleAgenda(Date.now(), agenda.value);
+    }, 30_000);
     onBeforeUnmount(() => clearInterval(ticker));
 
     return { context, calendars, hiddenCalendars, releasedCalendarIds, problem };

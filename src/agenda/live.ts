@@ -73,6 +73,8 @@ export interface AgendaDisplay {
     countdownSeconds: number | null;
     /** Seconds the current point began later than planned; negative = early. `null` where there is none. */
     delaySeconds: number | null;
+    /** Seconds the current point is given – its duration and the added time; what the circle empties from. `null` where there is none. */
+    lengthSeconds: number | null;
 }
 
 export interface AgendaPick {
@@ -207,7 +209,7 @@ export function agendaDisplay(pick: AgendaPick | null, deviceNowMs: number): Age
     const last = event.items.length - 1;
     if (last < 1) return null;
     if (phase === 'upcoming' || !position || position.index === 0) {
-        return { kind: 'soon', title: event.items[1]!.title, next: null, countdownSeconds: null, delaySeconds: null };
+        return { kind: 'soon', title: event.items[1]!.title, next: null, countdownSeconds: null, delaySeconds: null, lengthSeconds: null };
     }
     const index = Math.min(position.index, last);
     const next = nextIndex(event.items, index);
@@ -217,5 +219,6 @@ export function agendaDisplay(pick: AgendaPick | null, deviceNowMs: number): Age
         next: next === null ? null : event.items[next]!.title,
         countdownSeconds: countdownSeconds(event, { ...position, index }, serverNow(deviceNowMs, position)),
         delaySeconds: delaySeconds(event, { ...position, index }),
+        lengthSeconds: event.items[index]!.duration + position.addSeconds,
     };
 }

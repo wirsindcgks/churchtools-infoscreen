@@ -52,6 +52,14 @@ const lateMinutes = computed(() => {
     return seconds === null || seconds === undefined ? null : Math.round(seconds / 60);
 });
 
+/** How much of the current point is left, 0 … 1 – the ring empties like the one of ChurchTools. */
+const left = computed(() => {
+    const seconds = display.value?.countdownSeconds;
+    const length = display.value?.lengthSeconds;
+    if (seconds === null || seconds === undefined || !length || length <= 0) return 0;
+    return Math.min(1, Math.max(0, seconds / length));
+});
+
 const showCircle = computed(() => props.block.showCountdown && circle.value !== null);
 const showDelay = computed(() => props.block.showDelay && lateMinutes.value !== null);
 const diameter = computed(() => Math.min(props.block.height * 0.62, props.block.width * 0.34));
@@ -73,9 +81,22 @@ const diameter = computed(() => Math.min(props.block.height * 0.62, props.block.
             <div
                 v-if="showCircle && circle"
                 class="circle"
-                :style="{ width: `${diameter}px`, height: `${diameter}px`, borderColor: themeOf(context).accent }"
+                :style="{ width: `${diameter}px`, height: `${diameter}px` }"
                 data-testid="agenda-circle"
             >
+                <svg class="agenda-ring" viewBox="0 0 100 100" aria-hidden="true">
+                    <circle class="agenda-ring-track" cx="50" cy="50" r="45" />
+                    <circle
+                        class="agenda-ring-left"
+                        cx="50"
+                        cy="50"
+                        r="45"
+                        pathLength="100"
+                        :stroke="themeOf(context).accent"
+                        :stroke-dasharray="`${left * 100} 100`"
+                        data-testid="agenda-ring"
+                    />
+                </svg>
                 <span class="count">{{ circle.value }}</span>
                 <span class="unit">{{ circle.unit }}</span>
             </div>
@@ -138,9 +159,23 @@ const diameter = computed(() => Math.min(props.block.height * 0.62, props.block.
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    position: relative;
     box-sizing: border-box;
-    border: 0.12em solid;
-    border-radius: 50%;
+}
+.agenda-ring {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+}
+.agenda-ring circle {
+    fill: none;
+    stroke-width: 9;
+}
+.agenda-ring-track {
+    stroke: currentColor;
+    opacity: 0.2;
 }
 .count {
     font-size: 1.3em;

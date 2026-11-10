@@ -106,7 +106,7 @@ describe('Jetzt and Dann (G81)', () => {
     });
 
     it('announces the first point before the start', () => {
-        expect(agendaDisplay({ event: e, position: undefined, phase: 'upcoming' }, START)).toEqual({ kind: 'soon', title: 'Countdown', next: null, countdownSeconds: null, delaySeconds: null });
+        expect(agendaDisplay({ event: e, position: undefined, phase: 'upcoming' }, START)).toEqual({ kind: 'soon', title: 'Countdown', next: null, countdownSeconds: null, delaySeconds: null, lengthSeconds: null });
         expect(agendaDisplay({ event: e, position: at({ pos_id: null }, START), phase: 'live' }, START)).toMatchObject({ kind: 'soon' });
     });
 
