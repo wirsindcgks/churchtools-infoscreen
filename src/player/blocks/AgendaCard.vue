@@ -134,6 +134,11 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
     padding: 0.8em;
     border-radius: var(--isd-radius, 0.4em);
     background: var(--isd-card, color-mix(in srgb, currentColor 7%, transparent));
+    /*
+     * A fine outline in the text colour: the cards stay apart from the slide on any background, also where the design
+     * gives them no surface or one as dark as the slide (seen on a black slide, 2026-11-10). Stage pixels, the same on both cards.
+     */
+    border: 3px solid color-mix(in srgb, currentColor 22%, transparent);
 }
 .agenda-card > .hero:first-child {
     flex: 3;
@@ -192,13 +197,12 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
 .card-ring {
     align-self: flex-start;
 }
-/* "Dann": a darker card beside "Jetzt", a column; in a narrow block one line across the width. */
+/* "Dann": a smaller card beside "Jetzt", a column; in a narrow block one line across the width. */
 .next-card {
     flex: 1;
     align-items: flex-start;
     gap: 0.4em;
     font-size: 0.55em;
-    background: color-mix(in srgb, var(--isd-card, color-mix(in srgb, currentColor 7%, transparent)) 80%, black);
 }
 .agenda-card--narrow .next-card {
     flex: none;
