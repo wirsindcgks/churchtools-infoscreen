@@ -69,6 +69,18 @@ export const tp = {
         placesLeft: (n: number) => (n === 1 ? 'Noch 1 Platz frei' : `Noch ${n} Plätze frei`),
     },
 
+    /** The block "Ablauf" in the layout of the live view of ChurchTools (Plan.md 118). */
+    agenda: {
+        now: 'Jetzt',
+        next: 'Dann',
+        soon: 'Gleich',
+        total: 'Gesamtzeit',
+        minutes: (count: number) => (count === 1 ? 'Minute' : 'Minuten'),
+        seconds: (count: number) => (count === 1 ? 'Sekunde' : 'Sekunden'),
+        /** Late minutes in, as the live view counts the total time: "−3 Min." late, "+3 Min." early, "0 Min." on time. */
+        delay: (lateMinutes: number) => (lateMinutes === 0 ? '0 Min.' : `${lateMinutes > 0 ? '−' : '+'}${Math.abs(lateMinutes)} Min.`),
+    },
+
     people: {
         noGroup: 'Noch keine Gruppe gewählt',
         denied: 'Personen nicht verfügbar – dem Gerät fehlt das Recht auf die Gruppe',

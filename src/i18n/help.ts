@@ -277,6 +277,23 @@ export const th = {
         },
     },
 
+    /** "Darstellung" of the agenda block (Plan.md 118). */
+    agenda: {
+        intro:
+            'Der Baustein zeigt wie die Live-Ansicht von ChurchTools oben „Jetzt“ mit dem laufenden Punkt, darunter „Dann“ mit dem nächsten. ' +
+            'Er liest nur mit: Weitergeschaltet wird in ChurchTools oder von außen, etwa aus der Präsentationssoftware. Vor dem Beginn nennt er den ersten Punkt als „Gleich“.',
+        countdown: {
+            term: i.showCountdown,
+            text: 'Die Zeit, die dem laufenden Punkt noch bleibt, im Kreis rechts – in Minuten, in der letzten Minute in Sekunden. Ist sie um, steht sie mit Minus davor.',
+        },
+        delay: {
+            term: i.showDelay,
+            text:
+                'Unter dem Kreis steht die „Gesamtzeit“: wie weit der Gottesdienst gegenüber dem Ablaufplan liegt. Wie in ChurchTools steht ein Minus davor, ' +
+                'wenn er später dran ist (in Rot), ein Plus, wenn er voraus ist.',
+        },
+    },
+
     /** "Darstellung" of the shape. */
     shape: {
         intro: 'Eine Fläche als Hintergrund für Text, als farbiger Balken oder als Kreis.',

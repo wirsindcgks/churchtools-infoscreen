@@ -17,6 +17,8 @@ export const INTERVALS = {
     quickCheckMs: 20_000,
     /** ChurchTools data. */
     dataMs: 10 * 60_000,
+    /** The position of the live agenda while a service is on (Plan.md 118); ChurchTools' own live view asks every 2.5 seconds (G81). */
+    agendaMs: 5_000,
     /** The sign of life of a TV with a device login (Plan.md 59); the designer calls a screen online for 15 minutes after it. */
     aliveMs: 5 * 60_000,
     /** Pause after a `403` on the sign of life: the right is not granted yet, so asking every five minutes helps nobody. */

@@ -3,20 +3,25 @@
  * replaced in tests. Every request has a time limit.
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
+import { liveItems, parsePosition, type AgendaEvent, type LivePosition } from '../agenda/live';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { needsAppointmentTags } from '../appointments/tags';
 import { allowedServiceIds, appointmentServicesInUse } from '../appointments/services';
 import { startOfZonedDay } from '../appointments/zoned';
 import {
+    fetchAgenda,
     fetchAppointments,
     fetchPublicCalendars,
     fetchBookings,
     fetchChurchLogoUrl,
+    fetchEventList,
     fetchEvents,
     fetchGroupHomepage,
     fetchGroupHomepageList,
     fetchGroupMembers,
+    fetchLivePosition,
+    LiveAgendaDeniedError,
     fetchPersonFields,
     fetchPersons,
     fetchPosts,
@@ -79,6 +84,13 @@ export interface PlayerData {
      * of the group; only these keys are kept. Without the right the fields stay empty.
      */
     people(groupId: number, deviceIds?: readonly number[], excludeSelf?: boolean, personFieldKeys?: readonly string[]): Promise<PeopleGroup>;
+    /**
+     * The events of the calendars within `[from, to)` that have an agenda, with the agenda as the live view lists it (schema 1.61,
+     * Plan.md 118). An event without an agenda (`404`) or one the account may not read (`403`) is left out; other errors fail.
+     */
+    agendaEvents(calendarIds: number[], from: Date, to: Date, timeZone: string): Promise<AgendaEvent[]>;
+    /** The live position of an event; `null` without the right (`403`, or `status: "fail"`) – the block then stays empty. Other errors fail. */
+    agendaPosition(eventId: number): Promise<LivePosition | null>;
     /**
      * The confirmed bookings of these rooms within `[from, to)` (schema 1.16).
      * A room the caller may not read (403), that the stammdaten do not name or
@@ -207,6 +219,37 @@ export const churchToolsPlayerData: PlayerData = {
         } catch (error) {
             if (httpStatus(error) !== 403) throw error;
             return deniedPeople(groupId);
+        }
+    },
+    async agendaEvents(calendarIds, from, to, timeZone) {
+        const wanted = new Set(calendarIds);
+        const events = (await withTimeout(fetchEventList(from, to, timeZone))).filter(
+            (e) => typeof e.id === 'number' && e.isCanceled !== true && wanted.has(Number(e.calendar?.domainIdentifier)),
+        );
+        const parts = await Promise.all(
+            events.map(async (e): Promise<AgendaEvent | null> => {
+                const startMs = Date.parse(e.startDate ?? '');
+                const endMs = Date.parse(e.endDate ?? '');
+                if (Number.isNaN(startMs) || Number.isNaN(endMs)) return null;
+                try {
+                    const agenda = await withTimeout(fetchAgenda(e.id!));
+                    return { eventId: e.id!, calendarId: Number(e.calendar?.domainIdentifier), startMs, endMs, items: liveItems(agenda.items ?? []) };
+                } catch (error) {
+                    const status = httpStatus(error);
+                    if (status !== 404 && status !== 403) throw error;
+                    return null;
+                }
+            }),
+        );
+        return parts.filter((p): p is AgendaEvent => p !== null);
+    },
+    async agendaPosition(eventId) {
+        try {
+            return parsePosition(await withTimeout(fetchLivePosition(eventId)), Date.now());
+        } catch (error) {
+            if (!(error instanceof LiveAgendaDeniedError)) throw error;
+            console.warn(`Live-Agenda von Termin ${eventId}: keine Berechtigung – der Baustein bleibt leer.`);
+            return null;
         }
     },
     async rooms(resourceIds, from, to, timeZone, roomTypeIds) {
@@ -389,6 +432,13 @@ export async function readPeopleGroups(
             return id === standardId ? { ...group, standard: true } : group;
         }),
     );
+}
+
+/** The calendars the `agenda` blocks of these slides read, each once and sorted (schema 1.61, Plan.md 118). */
+export function agendaNeeds(slides: SlideDoc[]): number[] {
+    const ids = new Set<number>();
+    for (const block of slides.flatMap((s) => s.blocks)) if (block.type === 'agenda') block.calendarIds.forEach((id) => ids.add(id));
+    return [...ids].sort((a, b) => a - b);
 }
 
 /**

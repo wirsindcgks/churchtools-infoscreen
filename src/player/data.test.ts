@@ -4,9 +4,13 @@ import type { Block } from '../model/schema';
 import type { Post } from '../posts/normalize';
 import * as api from '../ct/api';
 import * as client from '../ct/client';
-import { appointmentNeeds, churchToolsPlayerData, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readableAppointments, readPeopleGroups } from './data';
+import { agendaNeeds, appointmentNeeds, churchToolsPlayerData, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readableAppointments, readPeopleGroups } from './data';
 
 vi.mock('../ct/api', () => ({
+    fetchAgenda: vi.fn(),
+    fetchEventList: vi.fn(),
+    fetchLivePosition: vi.fn(),
+    LiveAgendaDeniedError: class LiveAgendaDeniedError extends Error {},
     fetchPublicCalendars: vi.fn(),
     fetchAppointments: vi.fn(),
     fetchEvents: vi.fn(),
@@ -475,5 +479,46 @@ describe('people (Plan.md 112)', () => {
     it('lets other errors fail, so the controller keeps the last people', async () => {
         vi.mocked(api.fetchGroupMembers).mockRejectedValue(new Error('Netz'));
         await expect(churchToolsPlayerData.people(40)).rejects.toThrow('Netz');
+    });
+});
+
+describe('the live agenda (schema 1.61, Plan.md 118)', () => {
+    const agendaBlock = (calendarIds: number[]): Block => ({ id: 'a', type: 'agenda', x: 0, y: 0, width: 1400, height: 700, calendarIds, showCountdown: true, showDelay: true, style });
+
+    it('reads the calendars of the agenda blocks, each once and sorted – and nothing without such a block', () => {
+        expect(agendaNeeds([makeSlide({ blocks: [agendaBlock([3, 2]), agendaBlock([2])] })])).toEqual([2, 3]);
+        expect(agendaNeeds([makeSlide({ blocks: [postsBlock()] })])).toEqual([]);
+    });
+
+    it('lists the events of the chosen calendars with their agenda in the order of the live view; one without an agenda or right drops out', async () => {
+        vi.mocked(api.fetchEventList).mockResolvedValue([
+            { id: 1, startDate: '2026-11-10T10:00:00Z', endDate: '2026-11-10T11:00:00Z', calendar: { domainIdentifier: '2' } },
+            { id: 2, startDate: '2026-11-10T12:00:00Z', endDate: '2026-11-10T13:00:00Z', calendar: { domainIdentifier: '2' } },
+            { id: 3, startDate: '2026-11-10T14:00:00Z', endDate: '2026-11-10T15:00:00Z', calendar: { domainIdentifier: '2' } },
+            { id: 4, startDate: '2026-11-10T14:00:00Z', endDate: '2026-11-10T15:00:00Z', calendar: { domainIdentifier: '9' } },
+            { id: 5, startDate: '2026-11-10T16:00:00Z', endDate: '2026-11-10T17:00:00Z', isCanceled: true, calendar: { domainIdentifier: '2' } },
+        ]);
+        vi.mocked(api.fetchAgenda).mockImplementation(async (id) => {
+            if (id === 2) throw Object.assign(new Error('404'), { response: { status: 404 } });
+            if (id === 3) throw forbidden();
+            return { items: [{ type: 'header', title: 'Eingang' }, { title: 'Begrüßung', duration: 300 }] };
+        });
+        const events = await churchToolsPlayerData.agendaEvents([2], new Date('2026-11-10T00:00:00Z'), new Date('2026-11-11T00:00:00Z'), 'UTC');
+        expect(events).toEqual([
+            { eventId: 1, calendarId: 2, startMs: Date.parse('2026-11-10T10:00:00Z'), endMs: Date.parse('2026-11-10T11:00:00Z'), items: [expect.objectContaining({ title: '' }), expect.objectContaining({ title: 'Begrüßung', duration: 300 })] },
+        ]);
+        expect(api.fetchAgenda).not.toHaveBeenCalledWith(4);
+        expect(api.fetchAgenda).not.toHaveBeenCalledWith(5);
+    });
+
+    it('reads the position with the offset to the server clock; without the right it is null, other errors fail', async () => {
+        vi.mocked(api.fetchLivePosition).mockResolvedValueOnce({ pos_id: '3', switchdate: '2026-11-10T10:00:00Z', addseconds: '0', currentTime: Date.now() - 2000 });
+        const position = await churchToolsPlayerData.agendaPosition(1);
+        expect(position).toMatchObject({ index: 3, set: true });
+        expect(position!.offsetMs).toBeGreaterThanOrEqual(2000);
+        vi.mocked(api.fetchLivePosition).mockRejectedValueOnce(new api.LiveAgendaDeniedError('nein'));
+        expect(await churchToolsPlayerData.agendaPosition(1)).toBeNull();
+        vi.mocked(api.fetchLivePosition).mockRejectedValueOnce(new Error('Netz'));
+        await expect(churchToolsPlayerData.agendaPosition(1)).rejects.toThrow('Netz');
     });
 });

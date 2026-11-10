@@ -5,6 +5,8 @@
  * calendars the screen uses.
  */
 import { onBeforeUnmount, reactive, ref, watch, type Ref } from 'vue';
+import { pickEvent, type LivePositions } from '../agenda/live';
+import { sampleAgenda } from '../agenda/sample';
 import { fetchCalendars, fetchGroupNames, fetchPersonFields, fetchPublicCalendars, type Calendar } from '../ct/api';
 import { instanceBaseUrl } from '../ct/client';
 import { getRepository } from '../store/backend';
@@ -29,6 +31,7 @@ export function usePreview(
     appointmentServices: Ref<number[]> = ref([]),
     appointmentTags: Ref<boolean> = ref(false),
     people: Ref<PeopleNeeds> = ref({ standard: false, groupIds: [], personFieldKeys: [] }),
+    agenda: Ref<number[]> = ref([]),
 ) {
     const context = reactive<StageContext>({
         now: new Date(),
@@ -40,6 +43,7 @@ export function usePreview(
         posts: [],
         groupHomepages: [],
         people: undefined,
+        agenda: undefined,
         rooms: [],
         media: new Map(),
         // Paged lists report their pages (the inspector names them) but hold page 1 while designing.
@@ -195,6 +199,30 @@ export function usePreview(
         }
     }
 
+    /**
+     * The live agenda for the block "Ablauf" (Plan.md 118): the real one, read with the designer's rights, where an event of today
+     * has a position to show; otherwise an example, so the block never stands empty while designing. It is read once, not followed.
+     */
+    let agendaRequest = 0;
+    async function loadAgenda(): Promise<void> {
+        const ids = agenda.value;
+        const mine = ++agendaRequest;
+        if (!ids.length) {
+            context.agenda = undefined;
+            return;
+        }
+        context.agenda = sampleAgenda(Date.now(), ids);
+        try {
+            const window = appointmentWindow(new Date(), context.timeZone, 1);
+            const events = await churchToolsPlayerData.agendaEvents(ids, window.from, window.to, context.timeZone);
+            const positions: LivePositions = {};
+            await Promise.all(events.map(async (e) => (positions[e.eventId] = await churchToolsPlayerData.agendaPosition(e.eventId))));
+            if (mine === agendaRequest && pickEvent(events, positions, Date.now())) context.agenda = { events, positions };
+        } catch {
+            // No right, no event, no connection: the example stays.
+        }
+    }
+
     let roomsRequest = 0;
     async function loadRooms(): Promise<void> {
         const { resourceIds, days } = rooms.value;
@@ -219,11 +247,13 @@ export function usePreview(
     watch(() => groupHomepages.value.join(), () => void loadGroupHomepages());
     watch(() => JSON.stringify(rooms.value), () => void loadRooms());
     watch(() => JSON.stringify(people.value), () => void loadPeople());
+    watch(() => agenda.value.join(), () => void loadAgenda());
     // Appointments and rooms need the instance time zone.
     void loadBasics().then(() => {
         void loadAppointments();
         void loadRooms();
         void loadPeople();
+        void loadAgenda();
     });
     void loadPosts();
     void loadGroupHomepages();

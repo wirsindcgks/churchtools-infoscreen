@@ -65,6 +65,11 @@ describe('designer operations', () => {
         expect(BLOCK_LABELS.rooms).toBe('Raumbelegung');
     });
 
+    it('creates an agenda block with countdown and delay on, reading the chosen calendars (Plan.md 118)', () => {
+        expect(createBlock('agenda', stage, [2, 3])).toMatchObject({ type: 'agenda', calendarIds: [2, 3], showCountdown: true, showDelay: true, width: 1500, height: 500 });
+        expect(BLOCK_LABELS.agenda).toBe('Ablauf');
+    });
+
     it('creates a people block with every role and only the role under the name, until the inspector adds fields (Plan.md 112, 114 B)', () => {
         expect(createBlock('people', stage)).toMatchObject({ type: 'people', roleIds: [], fieldKeys: [], entries: [{ key: 'role' }], sort: 'last-name', showImage: true, layout: 'card', columns: 3, rows: 2, width: 1400, height: 700 });
         expect(BLOCK_LABELS.people).toBe('Personen');
@@ -83,6 +88,7 @@ describe('designer operations', () => {
             'next-appointment',
             'church-header',
             'countdown',
+            'agenda',
             'posts',
             'groups',
             'people',
@@ -227,6 +233,7 @@ describe('a click on a locked block (Plan.md 25)', () => {
 describe('the palette (Plan.md 47)', () => {
     it('lists every block type in German alphabetical order', () => {
         expect(PALETTE.map(([, label]) => label)).toEqual([
+            'Ablauf',
             'Beiträge',
             'Bild',
             'Countdown',

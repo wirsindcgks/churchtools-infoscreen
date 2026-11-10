@@ -59,12 +59,12 @@ sich die Aufteilung ändert.
 
 ## Die Bausteine
 
-Achtzehn Bausteine stehen unter „+ Baustein" zur Wahl, jeder mit einem Satz, was er zeigt:
+Neunzehn Bausteine stehen unter „+ Baustein" zur Wahl, jeder mit einem Satz, was er zeigt:
 
 | Gruppe | Bausteine |
 | --- | --- |
 | Gestalten | Text, Bild, Fläche, Linie, QR-Code, Uhr, Countdown |
-| Termine aus ChurchTools | Terminliste, Nächster Termin |
+| Termine aus ChurchTools | Terminliste, Nächster Termin, Ablauf |
 | Mehr aus ChurchTools | Gruppen, Personen, Beiträge, Raumbelegung, Gemeindekopf mit Logo |
 | Medien und mehr | Galerie, Video, Webseite, Social Media |
 
@@ -80,6 +80,20 @@ Foyer – mit dem Raum, in den man gehen muss. Auf Wunsch stehen am Termin die g
 Tags, etwa „Intern", lassen sich ausblenden.
 
 ![Terminliste mit Besucherübersicht, rechts Raum oder Ort](bilder/terminliste-besucher.png)
+
+### Ablauf
+
+Der Baustein **Ablauf** zeigt während des Gottesdienstes den **aktuellen und den nächsten Programmpunkt** aus der
+Live-Agenda von ChurchTools – im Aufbau der Live-Ansicht: oben „Jetzt“ mit dem laufenden Punkt, darunter „Dann“ mit
+dem nächsten, rechts der **Countdown** im Kreis und darunter die **Gesamtzeit** mit der Verspätung (in Rot, wenn der
+Gottesdienst später dran ist als geplant). Welcher Termin gezeigt wird, entscheidet der Baustein selbst: der heutige
+Termin der gewählten Kalender, dessen Ablaufplan gerade läuft, sonst der nächste – vor dem Beginn steht dort der erste
+Punkt als „Gleich“. Der Baustein liest nur; weitergeschaltet wird wie bisher in ChurchTools oder von außen, etwa aus
+der Präsentationssoftware. Zeitnah nachgefragt wird nur rund um einen Termin: ab einer halben Stunde vor dem Beginn bis
+eine Stunde nach dem Ende.
+
+*Die Rechte, die das Gerät dafür braucht, vergibt künftig die Einrichtung – das folgt noch.* Bis dahin braucht es
+„Events“ sehen und „Ablaufpläne für einzelne Kalender sehen“ für den Kalender.
 
 ### Gruppen
 

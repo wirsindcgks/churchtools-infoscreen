@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 60 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 61 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -270,6 +270,20 @@ export const CountdownBlock = v.object({
     runningText: v.optional(v.pipe(v.string(), v.maxLength(200)), 'Läuft gerade'),
     /** Since 1.37: ids of appointment tags; appointments with one of them are not counted down to (Plan.md 82 C). Missing or empty = none hidden. */
     hideTagIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(20))),
+    style: TextStyle,
+});
+
+/**
+ * Since 1.61 (Plan.md 118): the running order of the service from the live agenda of ChurchTools – the current and the next
+ * item, with the countdown and the delay. The event is not chosen: the player takes the one of today that is running.
+ * Older players skip it.
+ */
+export const AgendaBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('agenda'),
+    calendarIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.minLength(1)),
+    showCountdown: v.optional(v.boolean(), true),
+    showDelay: v.optional(v.boolean(), true),
     style: TextStyle,
 });
 
@@ -583,6 +597,7 @@ export const ContentBlock = v.variant('type', [
     WebBlock,
     QrBlock,
     CountdownBlock,
+    AgendaBlock,
     PostsBlock,
     GroupsBlock,
     PeopleBlock,

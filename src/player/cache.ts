@@ -3,6 +3,7 @@
  * during a network outage still shows something (Plan.md, Player). Failures
  * here are never fatal: without storage the player just has no fallback.
  */
+import type { AgendaEvent } from '../agenda/live';
 import type { Appointment } from '../appointments/normalize';
 import type { PeopleGroup } from '../groups/members';
 import type { HomepageGroups } from '../groups/normalize';
@@ -25,6 +26,8 @@ export interface CachedState {
     people?: PeopleGroup[];
     /** Missing in states saved before rooms came (schema 1.16). Titles of confirmed bookings only – see `src/rooms/normalize.ts`. */
     rooms?: RoomBookings[];
+    /** Missing in states saved before the agenda came (schema 1.61). The agendas of today; the live position is never kept – it is old after seconds. */
+    agendaEvents?: AgendaEvent[];
     savedAt: string;
 }
 

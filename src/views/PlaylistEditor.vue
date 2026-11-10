@@ -38,7 +38,7 @@ import { roomTypeIdsOf, roomsOf, type RoomInfo } from '../rooms/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { needsAppointmentTags } from '../appointments/tags';
 import { allowedServiceIds, appointmentServicesInUse, serviceChoices, type ServiceInfo } from '../appointments/services';
-import { groupNeeds, peopleNeeds, postNeeds, roomNeeds } from '../player/data';
+import { agendaNeeds, groupNeeds, peopleNeeds, postNeeds, roomNeeds } from '../player/data';
 import { getRepository } from '../store/backend';
 import { useOffsetTop } from '../designer/useOffsetTop';
 import { usePhone } from '../designer/usePhone';
@@ -106,6 +106,7 @@ const { context, calendars, hiddenCalendars, releasedCalendarIds, problem } = us
     computed(() => allowedServiceIds(appointmentServicesInUse(shownSlides.value.flatMap((s) => s.blocks)), allowedServices.value)),
     computed(() => needsAppointmentTags(shownSlides.value.flatMap((s) => s.blocks))),
     computed(() => peopleNeeds(shownSlides.value)),
+    computed(() => agendaNeeds(shownSlides.value)),
 );
 useTemplatesIn(context, computed(() => editor.templates));
 

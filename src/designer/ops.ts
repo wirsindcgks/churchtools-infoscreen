@@ -127,6 +127,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     web: t.blocks.web,
     qr: t.blocks.qr,
     countdown: t.blocks.countdown,
+    agenda: t.blocks.agenda,
     posts: t.blocks.posts,
     groups: t.blocks.groups,
     people: t.blocks.people,
@@ -149,6 +150,7 @@ export const BLOCK_ICONS: Record<BlockType, IconName> = {
     web: 'web',
     qr: 'qr',
     countdown: 'timer',
+    agenda: 'list',
     posts: 'news',
     groups: 'people',
     people: 'person',
@@ -208,6 +210,7 @@ export function createBlock(
         web: [1100, 800],
         qr: [360, 360],
         countdown: [1100, 360],
+        agenda: [1500, 500],
         posts: [1400, 700],
         groups: [1400, 700],
         people: [1400, 700],
@@ -260,6 +263,8 @@ export function createBlock(
                 runningText: t.blocks.defaultRunningText,
                 style: textStyle(120, { fontWeight: 700, align: 'center' }),
             };
+        case 'agenda':
+            return { ...frame, type, calendarIds: calendars, showCountdown: true, showDelay: true, style: textStyle(96, { fontWeight: 700 }) };
         case 'posts':
             return {
                 ...frame,

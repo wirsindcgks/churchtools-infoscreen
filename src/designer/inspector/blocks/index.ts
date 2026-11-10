@@ -1,5 +1,6 @@
 import type { Component } from 'vue';
 import type { BlockType } from '../../../model/schema';
+import AgendaInspector from './AgendaInspector.vue';
 import AppointmentListInspector from './AppointmentListInspector.vue';
 import ChurchHeaderInspector from './ChurchHeaderInspector.vue';
 import ClockInspector from './ClockInspector.vue';
@@ -37,6 +38,7 @@ export const BLOCK_INSPECTORS: Record<BlockType, Component> = {
     'appointment-list': AppointmentListInspector,
     'next-appointment': NextAppointmentInspector,
     countdown: CountdownInspector,
+    agenda: AgendaInspector,
     'church-header': ChurchHeaderInspector,
     posts: PostsInspector,
     groups: GroupsInspector,

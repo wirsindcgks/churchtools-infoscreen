@@ -1,4 +1,5 @@
 import { inject, provide, type InjectionKey } from 'vue';
+import type { AgendaFeed } from '../agenda/live';
 import type { Appointment } from '../appointments/normalize';
 import { DEFAULT_THEME, type MediaDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
 import type { PeopleGroup } from '../groups/members';
@@ -27,6 +28,8 @@ export interface StageContext {
     releasedPersonFields?: string[];
     /** Designer only: the names of the person fields (`GET /fields`), by key – the inspector's labels (Plan.md 115). */
     personFieldNames?: Record<string, string>;
+    /** The events of today with their agenda and the last positions, for the `agenda` blocks (schema 1.61, Plan.md 118); missing = no such block or not loaded. */
+    agenda?: AgendaFeed;
     /** Bookings of the rooms the `rooms` blocks need (schema 1.16); missing counts as none. */
     rooms?: RoomBookings[];
     media: Map<string, MediaDoc>;

@@ -316,6 +316,7 @@ export const t = {
                 web: 'Eine Webseite oder ein eingebetteter Inhalt',
                 qr: 'Ein QR-Code, etwa zu einer Anmeldung',
                 countdown: 'Zählt bis zum nächsten Termin herunter',
+                agenda: 'Was jetzt dran ist und was danach kommt, aus dem Ablaufplan',
                 posts: 'Beiträge aus einer Gruppe in ChurchTools',
                 groups: 'Gruppen einer Gruppen-Homepage, etwa Hauskreise',
                 people: 'Personen der Gruppe „Infoscreen-People“ als Karten, etwa Ansprechpartner',
@@ -407,7 +408,7 @@ export const t = {
         /** The name of a chip for a screen reader: the field and what it holds now. */
         chip: (label: string, face: string) => `${label}: ${face}`,
         /** The short words of a switch in the menu, where the full label is too long. */
-        short: { name: 'Gemeindename', logo: 'Logo', title: 'Titel', image: 'Terminbild' },
+        short: { name: 'Gemeindename', logo: 'Logo', title: 'Titel', image: 'Terminbild', countdown: 'Countdown', delay: 'Verspätung' },
         unlock: 'Entsperren',
         /** The right button of the phone bar's upper row: lets go of the block. */
         deselect: 'Auswahl aufheben',
@@ -609,6 +610,12 @@ export const t = {
         countInfo:
             'Zählt bis zum Beginn des nächsten Termins dieser Kalender; ganztägige Termine zählen nicht mit. ' +
             'Passt gut auf eine Präsentation, die ein Zeitplan „30 Minuten vor Beginn“ einschaltet.',
+        /** The block "Ablauf" (Plan.md 118): the paragraph under the calendars, and its two switches. */
+        agendaInfo:
+            'Der Baustein wählt den Termin selbst: den heutigen dieser Kalender, dessen Ablaufplan gerade läuft, sonst den nächsten. ' +
+            'Weitergeschaltet wird in ChurchTools.',
+        showCountdown: 'Countdown',
+        showDelay: 'Verspätung',
         appearance: 'Darstellung',
         view: 'Ansicht',
         layoutDesign: 'Wie im Design',
@@ -917,6 +924,7 @@ export const t = {
         web: 'Webseite',
         qr: 'QR-Code',
         countdown: 'Countdown',
+        agenda: 'Ablauf',
         posts: 'Beiträge',
         groups: 'Gruppen',
         people: 'Personen',

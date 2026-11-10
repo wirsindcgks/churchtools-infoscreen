@@ -4,6 +4,18 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.57.0]
+
+### Hinzugefügt
+
+- **Baustein „Ablauf“: aktueller und nächster Programmpunkt aus der Live-Agenda** (Plan.md 118, Stück 1). Der Baustein
+  zeigt wie die Live-Ansicht von ChurchTools oben „Jetzt“ mit dem laufenden Punkt, unten „Dann“ mit dem nächsten,
+  rechts den Countdown im Kreis und darunter die Gesamtzeit mit der Verspätung (rot, wenn zu spät). Den Termin wählt er
+  selbst unter den heutigen der gewählten Kalender; vor dem Beginn nennt er den ersten Punkt als „Gleich“. Die Position
+  liest der Player alle fünf Sekunden, aber nur rund um einen Termin (eine halbe Stunde davor bis eine Stunde danach).
+  Im Designer zeigt die Vorschau die echten Daten oder, wo es keine gibt, ein Beispiel. Die Rechte für das Gerät
+  vergibt die Einrichtung noch nicht (folgt). Schema 1.61.
+
 ## [0.56.0] – 2026-11-09
 
 ### Hinzugefügt

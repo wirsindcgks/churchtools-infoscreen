@@ -7,6 +7,7 @@ import { textStyle, toHex, verticalAlignOf, verticalStyle } from '../format';
 import { blockImageUrl, headerLogoUrl } from '../images';
 import { qrShape } from '../qr';
 import { webFrame } from '../web';
+import AgendaView from './AgendaView.vue';
 import AppointmentListView from './AppointmentListView.vue';
 import ClockView from './ClockView.vue';
 import CountdownView from './CountdownView.vue';
@@ -186,6 +187,7 @@ const imageUrl = computed(() => {
         <AppointmentListView v-else-if="block.type === 'appointment-list'" :block="block" :slide-seconds="slideSeconds" />
         <NextAppointmentView v-else-if="block.type === 'next-appointment'" :block="block" />
         <CountdownView v-else-if="block.type === 'countdown'" :block="block" />
+        <AgendaView v-else-if="block.type === 'agenda'" :block="block" />
         <PostsView v-else-if="block.type === 'posts'" :block="block" :slide-seconds="slideSeconds" />
         <GroupsView v-else-if="block.type === 'groups'" :block="block" :slide-seconds="slideSeconds" />
         <PeopleView v-else-if="block.type === 'people'" :block="block" :slide-seconds="slideSeconds" />

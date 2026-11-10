@@ -33,6 +33,7 @@ export function blockSummary(block: Block, lookup: SummaryLookup): string {
         case 'appointment-list':
         case 'next-appointment':
         case 'countdown':
+        case 'agenda':
             return shorten((block.calendarIds[0] !== undefined && lookup.calendarName(block.calendarIds[0])) || '');
         case 'rooms':
             return shorten((block.rooms[0] && lookup.roomName(block.rooms[0].resourceId)) || '');
