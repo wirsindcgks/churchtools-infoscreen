@@ -300,6 +300,10 @@ export const th = {
             term: i.showSignal,
             text: 'Ein Rahmen um „Jetzt“: grün, ab „Gelb ab“ gelb, überzogen rot – zu sehen aus dem Augenwinkel.',
         },
+        dark: {
+            term: i.agendaDark,
+            text: 'Schwarze Kacheln mit weißer Schrift für den Bühnenmonitor. Gilt unabhängig von den Karten im Design und der Farbe unter „Schrift“.',
+        },
         next: { term: i.showNext, text: 'Zeigt unter dem laufenden Punkt, was danach kommt.' },
         note: { term: i.showNote, text: 'Die Notiz des Punktes aus dem Ablaufplan – Hinweise fürs Team auf der Bühne. Sie steht für alle sichtbar auf dem Bildschirm.' },
         responsible: { term: i.showResponsible, text: 'Zeigt Dienst und Namen der Eingeteilten, unbesetzte Dienste fallen weg.' },

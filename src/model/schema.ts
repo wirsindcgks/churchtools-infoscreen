@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 61 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 62 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -299,6 +299,11 @@ export const AgendaBlock = v.object({
     showSignal: v.optional(v.boolean(), true),
     /** Only `card`: minutes before the end from which the frame is yellow. Missing = 1. */
     warnMinutes: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(15))),
+    /**
+     * Since 1.62, only `card`: black cards with white text, whatever the design says about cards and the block about the text
+     * colour – the confidence monitor on the stage (user, 2026-11-10). Missing = the design. Older players draw the design.
+     */
+    dark: v.optional(v.boolean()),
     style: TextStyle,
 });
 
