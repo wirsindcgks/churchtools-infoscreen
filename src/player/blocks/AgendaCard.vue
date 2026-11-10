@@ -95,7 +95,11 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
                         <span>{{ people }}</span>
                     </span>
                 </div>
-                <p v-if="showNote" class="hero-note" data-testid="agenda-note">{{ display.note }}</p>
+                <!-- Note and duration carry a sign like the people (user, 2026-11-10). -->
+                <div v-if="showNote" class="hero-note-row">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8.5l3.5 3.5v13.5H6z" /><path d="M14.5 3.5V7H18M9 11.5h6M9 15.5h6" /></svg>
+                    <p class="hero-note" data-testid="agenda-note">{{ display.note }}</p>
+                </div>
             </div>
         </div>
         <div v-if="showNext" class="hero next-card" data-testid="agenda-next-card">
@@ -111,7 +115,12 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
                         <span>{{ nextPeople }}</span>
                     </span>
                 </div>
-                <div v-if="nextMinutes > 0" class="next-duration" data-testid="agenda-next-duration">{{ tp.agenda.shortMinutes(nextMinutes) }}</div>
+                <div v-if="nextMinutes > 0" class="hero-meta next-duration">
+                    <span>
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></svg>
+                        <span data-testid="agenda-next-duration">{{ tp.agenda.shortMinutes(nextMinutes) }}</span>
+                    </span>
+                </div>
             </template>
         </div>
     </div>
@@ -321,12 +330,33 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
     stroke-linejoin: round;
 }
 /* Three lines at most; the note gives way first when the block is small. */
-.hero-note {
-    display: -webkit-box;
-    margin: 0;
+.hero-note-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.45em;
     min-height: 0;
     overflow: hidden;
     font-size: 0.7em;
+}
+.hero-note-row svg {
+    flex: none;
+    width: 1em;
+    height: 1em;
+    /* On the first line of the note, which is set at 1.45. */
+    margin-top: 0.22em;
+    opacity: 0.85;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.hero-note {
+    display: -webkit-box;
+    margin: 0;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
     line-height: 1.45;
     opacity: 0.85;
     -webkit-box-orient: vertical;
