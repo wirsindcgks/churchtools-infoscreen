@@ -6,6 +6,7 @@
  * content rather than nothing.
  */
 import { reactive } from 'vue';
+import { pollableEvents, type AgendaFeed, type LivePositions } from '../agenda/live';
 import type { Appointment } from '../appointments/normalize';
 import { httpStatus, NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
@@ -17,7 +18,7 @@ import { reviveRooms, type RoomBookings } from '../rooms/normalize';
 import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '../store/screen-repository';
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
-import { appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readPeopleGroups, roomNeeds, type PlayerData } from './data';
+import { agendaNeeds, appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readPeopleGroups, roomNeeds, type PlayerData } from './data';
 import { activePlaylistId } from './schedule';
 import { askServiceWorkerHasPage } from './service-worker';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
@@ -31,6 +32,8 @@ export interface PlayerState {
     groupHomepages: HomepageGroups[];
     /** The people groups the `people` blocks name (the standard one flagged); `undefined` = no such block or not read yet. A block whose group is missing says "not set up". */
     people: PeopleGroup[] | undefined;
+    /** The agendas of today for `agenda` blocks and the last positions; `undefined` = no such block or not read yet. */
+    agenda: AgendaFeed | undefined;
     rooms: RoomBookings[];
     timeZone: string;
     churchName: string;
@@ -142,6 +145,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         posts: [],
         groupHomepages: [],
         people: undefined,
+        agenda: undefined,
         rooms: [],
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         churchName: '',
@@ -327,6 +331,16 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                   console.warn('Personen konnten nicht geladen werden:', error);
                   return state.people;
               });
+        // The agendas are decoration too: a failure keeps the last ones. The positions are not asked here but by `agendaCycle`.
+        const agendaCalendars = agendaNeeds(state.screen.slides);
+        const agendaWindow = appointmentWindow(now, timeZone, 1);
+        const agendaEvents = !agendaCalendars.length
+            ? undefined
+            : await data.agendaEvents(agendaCalendars, agendaWindow.from, agendaWindow.to, timeZone).catch((error: unknown) => {
+                  console.warn('Ablaufpläne konnten nicht geladen werden:', error);
+                  return state.agenda?.events;
+              });
+        const agenda: AgendaFeed | undefined = agendaEvents ? { events: agendaEvents, positions: state.agenda?.positions ?? {} } : undefined;
         const roomWants = roomNeeds(state.screen.slides);
         const roomWindow = appointmentWindow(now, timeZone, roomWants.days);
         // Rooms are decoration too: a failure keeps the last bookings.
@@ -345,6 +359,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             posts,
             groupHomepages,
             people,
+            agenda,
             rooms,
             clockConfirmed: clock.confirmed,
             phase: 'running',
@@ -357,6 +372,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             posts,
             groupHomepages,
             people,
+            ...(agendaEvents ? { agendaEvents } : {}),
             rooms,
             timeZone,
             churchName,
@@ -462,6 +478,39 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         }
     }
 
+    /**
+     * The position of the live agenda (Plan.md 118): only while an `agenda` block is in the running presentation and an event of its
+     * calendars is within half an hour before its start and an hour after its end – otherwise not a single request. A failure keeps the
+     * last position and touches nothing else.
+     */
+    async function agendaCycle(): Promise<void> {
+        let wait = withJitter(INTERVALS.agendaMs);
+        try {
+            const loaded = state.screen;
+            const feed = state.agenda;
+            if (loaded && feed && !blocked && feed.events.length) {
+                const now = deps.now();
+                const playlistId = activePlaylistId(loaded.screen, { now, timeZone: state.timeZone, clockConfirmed: state.clockConfirmed, appointments: state.appointments });
+                const playlist = loaded.playlists.find((p) => p.id === playlistId);
+                const shown = new Set(playlist?.slideIds ?? []);
+                const calendars = new Set(agendaNeeds(loaded.slides.filter((s) => shown.has(s.id) && s.enabled)));
+                const due = pollableEvents(
+                    feed.events.filter((e) => calendars.has(e.calendarId)),
+                    now.getTime() + clockSkewMs,
+                );
+                if (due.length) {
+                    const read = await Promise.all(due.map(async (e) => [e.eventId, await data.agendaPosition(e.eventId)] as const));
+                    const positions: LivePositions = { ...(state.agenda?.positions ?? {}) };
+                    for (const [eventId, position] of read) positions[eventId] = position;
+                    if (state.agenda) state.agenda = { events: state.agenda.events, positions };
+                }
+            }
+        } catch (error) {
+            wait = Math.max(wait, retryAfterMs(error) ?? 0);
+        }
+        later(wait, agendaCycle);
+    }
+
     /** The nightly fresh start – only into a page that loads (docs/Ausfall.md); else another try in an hour. */
     async function nightlyReload(): Promise<void> {
         if (await deps.canReload()) deps.reload();
@@ -478,6 +527,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                 groupHomepages: cached.groupHomepages ?? [],
                 // A state saved before 1.53 holds one group, not a list.
                 people: Array.isArray(cached.people) ? cached.people : undefined,
+                agenda: cached.agendaEvents ? { events: cached.agendaEvents, positions: {} } : undefined,
                 rooms: cached.rooms ? reviveRooms(cached.rooms) : [],
                 timeZone: cached.timeZone,
                 churchName: cached.churchName,
@@ -488,6 +538,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         }
         later(msUntilNightlyReload(deps.now()), () => void nightlyReload());
         later(withJitter(INTERVALS.quickCheckMs), quickCycle);
+        later(withJitter(INTERVALS.agendaMs), agendaCycle);
         await configCycle();
         // Cached content or a failed first load: fetch data now, not in ten minutes.
         if (state.staleSince !== null || state.phase !== 'running') await dataCycle();

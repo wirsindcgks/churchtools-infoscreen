@@ -10,6 +10,8 @@ import type { RoomBookings } from '../rooms/normalize';
 import { ScreenNotFoundError, type LoadedScreen } from '../store/screen-repository';
 import type { CachedState } from './cache';
 import { contentChanged, createCanReload, createPlayer, type PlayerDeps } from './controller';
+import type { AgendaEvent, LivePosition } from '../agenda/live';
+import { liveItems } from '../agenda/live';
 import type { PlayerData } from './data';
 import { askServiceWorkerHasPage } from './service-worker';
 import { INTERVALS } from './timing';
@@ -152,6 +154,8 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
         posts: vi.fn(async () => []),
         groupHomepages: vi.fn(async () => []),
         people: vi.fn(async (groupId: number) => ({ groupId, denied: false, people: [], roles: [], fields: [] })),
+        agendaEvents: vi.fn(async () => []),
+        agendaPosition: vi.fn(async () => null),
         rooms: vi.fn(async () => []),
         reportAlive: vi.fn(async () => {}),
         ...overrides,
@@ -404,6 +408,88 @@ describe('player controller', () => {
         expect(player.state.rooms).toEqual(sampleRooms);
         expect(deps.saved[0]?.rooms).toEqual(sampleRooms);
         player.stop();
+    });
+
+    /** An `agenda` block on the first slide, reading calendar 2 (schema 1.61, Plan.md 118). */
+    const withAgenda = (): LoadedScreen => {
+        const base = loaded();
+        const [first, ...rest] = base.slides;
+        const block: Block = {
+            id: 'ablauf',
+            type: 'agenda',
+            x: 0,
+            y: 0,
+            width: 1500,
+            height: 500,
+            calendarIds: [2],
+            showCountdown: true,
+            showDelay: true,
+            style: { fontFamily: 'sans', fontSize: 96, fontWeight: 700, color: '#fff', align: 'left' },
+        };
+        return { ...base, slides: first ? [{ ...first, blocks: [...first.blocks, block] }, ...rest] : base.slides };
+    };
+    const agendaEvent = (startOffsetMs: number, eventId = 1): AgendaEvent => ({
+        eventId,
+        calendarId: 2,
+        startMs: NOW.getTime() + startOffsetMs,
+        endMs: NOW.getTime() + startOffsetMs + 3600_000,
+        items: liveItems([{ title: 'Begrüßung', duration: 300 }, { title: 'Predigt', duration: 1800 }]),
+    });
+    const samplePosition: LivePosition = { index: 1, set: true, switchMs: NOW.getTime(), addSeconds: 0, offsetMs: 0 };
+
+    it('reads the events of today with their agenda only for an agenda block, and keeps them – but never the position – for offline use (Plan.md 118)', async () => {
+        const agendaEvents = vi.fn<PlayerData['agendaEvents']>(async () => [agendaEvent(600_000)]);
+        const without = createPlayer('demo', fakeData({ agendaEvents }), fakeDeps());
+        await without.start();
+        expect(agendaEvents).not.toHaveBeenCalled();
+        expect(without.state.agenda).toBeUndefined();
+        without.stop();
+
+        const deps = fakeDeps();
+        const agendaPosition = vi.fn<PlayerData['agendaPosition']>(async () => samplePosition);
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents, agendaPosition }), deps);
+        await player.start();
+        expect(agendaEvents).toHaveBeenCalledWith([2], expect.any(Date), expect.any(Date), 'Europe/Berlin');
+        expect(player.state.agenda?.events).toHaveLength(1);
+        expect(deps.saved[0]?.agendaEvents).toHaveLength(1);
+        // The position arrives with the fast loop and is not part of what is saved.
+        await vi.advanceTimersByTimeAsync(INTERVALS.agendaMs * 1.5);
+        expect(player.state.agenda?.positions[1]).toEqual(samplePosition);
+        expect(JSON.stringify(deps.saved)).not.toContain('switchMs');
+        player.stop();
+    });
+
+    it('asks for the position every few seconds, but only within half an hour before to an hour after an event (Plan.md 118)', async () => {
+        const agendaPosition = vi.fn<PlayerData['agendaPosition']>(async () => samplePosition);
+        const near = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [agendaEvent(20 * 60_000)], agendaPosition }), fakeDeps());
+        await near.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.agendaMs * 3);
+        expect(agendaPosition.mock.calls.length).toBeGreaterThanOrEqual(2);
+        expect(agendaPosition).toHaveBeenCalledWith(1);
+        near.stop();
+
+        agendaPosition.mockClear();
+        const far = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [agendaEvent(3 * 3600_000), agendaEvent(-3 * 3600_000, 2)], agendaPosition }), fakeDeps());
+        await far.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.agendaMs * 3);
+        expect(agendaPosition).not.toHaveBeenCalled();
+        far.stop();
+    });
+
+    it('keeps the last position when a reading fails, and notes a missing right as null (Plan.md 118)', async () => {
+        const agendaPosition = vi.fn<PlayerData['agendaPosition']>().mockResolvedValueOnce(samplePosition).mockRejectedValue(new Error('Netz'));
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [agendaEvent(0)], agendaPosition }), fakeDeps());
+        await player.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.agendaMs * 3);
+        expect(agendaPosition.mock.calls.length).toBeGreaterThanOrEqual(2);
+        expect(player.state.agenda?.positions[1]).toEqual(samplePosition);
+        player.stop();
+
+        const denied = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [agendaEvent(0)], agendaPosition: async () => null }), fakeDeps());
+        await denied.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.agendaMs * 1.5);
+        expect(denied.state.agenda?.positions[1]).toBeNull();
+        denied.stop();
     });
 
     /** A `people` block on the first slide; the settings name the group "Infoscreen-People" or not, and the block a group of its own or not (Plan.md 112). */

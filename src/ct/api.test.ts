@@ -1,8 +1,8 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { describe, expect, it, vi } from 'vitest';
-import { fetchAppointments, fetchAppointmentTags, fetchGroupHomepage, fetchGroupHomepageList, fetchGroupMembers, fetchPersonFields, fetchPublicCalendars, fetchSecurityLevels } from './api';
+import { fetchAppointments, fetchAppointmentTags, fetchGroupHomepage, fetchGroupHomepageList, fetchGroupMembers, fetchLivePosition, fetchPersonFields, fetchPublicCalendars, fetchSecurityLevels, LiveAgendaDeniedError } from './api';
 
-vi.mock('@churchtools/churchtools-client', () => ({ churchtoolsClient: { get: vi.fn(async () => []), getAllPages: vi.fn(async () => []) } }));
+vi.mock('@churchtools/churchtools-client', () => ({ churchtoolsClient: { get: vi.fn(async () => []), getAllPages: vi.fn(async () => []), oldApi: vi.fn(async () => ({})) } }));
 
 const BASE = 'https://example.church.tools';
 
@@ -104,5 +104,38 @@ describe('fetchGroupMembers (G75)', () => {
         vi.mocked(churchtoolsClient.getAllPages).mockResolvedValue([{ personId: 1 }]);
         vi.mocked(churchtoolsClient.get).mockImplementation((url: string) => (url.endsWith('/memberfields') ? Promise.reject(new Error('403')) : Promise.resolve([{ groupTypeRoleId: 5 }])));
         expect(await fetchGroupMembers(40)).toEqual({ members: [{ personId: 1 }], roles: [{ groupTypeRoleId: 5 }], fieldDefs: [] });
+    });
+});
+
+describe('fetchLivePosition (Plan.md 118, G81)', () => {
+    const oldApi = vi.mocked(churchtoolsClient.oldApi);
+
+    it('asks the old interface for the position of the event', async () => {
+        oldApi.mockResolvedValueOnce({ pos_id: '3' });
+        expect(await fetchLivePosition(1)).toEqual({ pos_id: '3' });
+        expect(oldApi).toHaveBeenLastCalledWith('churchservice/ajax', 'loadAgendaLivePosition', { event_id: 1 });
+    });
+
+    it('drops the stored token after a 401 and asks once more', async () => {
+        const client = churchtoolsClient as unknown as { csrfToken?: string };
+        client.csrfToken = 'stale';
+        oldApi.mockRejectedValueOnce({ response: { status: 401 } }).mockResolvedValueOnce({ pos_id: '2' });
+        expect(await fetchLivePosition(1)).toEqual({ pos_id: '2' });
+        expect(client.csrfToken).toBeUndefined();
+    });
+
+    it('does not try a third time after a second 401', async () => {
+        oldApi.mockClear();
+        oldApi.mockRejectedValue({ response: { status: 401 } });
+        await expect(fetchLivePosition(1)).rejects.toMatchObject({ response: { status: 401 } });
+        expect(oldApi).toHaveBeenCalledTimes(2);
+        oldApi.mockReset();
+    });
+
+    it('names a missing right: a 403, or a 200 with status "fail"', async () => {
+        oldApi.mockRejectedValueOnce({ response: { status: 403 } });
+        await expect(fetchLivePosition(1)).rejects.toBeInstanceOf(LiveAgendaDeniedError);
+        oldApi.mockRejectedValueOnce({ response: { status: 200, data: { status: 'fail', message: 'Die Berechtigung fehlt.' } } });
+        await expect(fetchLivePosition(1)).rejects.toThrow('Die Berechtigung fehlt.');
     });
 });

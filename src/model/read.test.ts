@@ -141,6 +141,18 @@ describe('readSlide – tolerant towards newer data', () => {
         expect(read({ hideTagIds: [1.5] }).issues).not.toHaveLength(0);
     });
 
+    it('reads the agenda block (schema 1.61, Plan.md 118): countdown and delay on by default, at least one calendar', () => {
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(61);
+        const old = makeSlide({ blocks: [textBlock('a')] });
+        const style = (old.blocks[0] as { style: object }).style;
+        const block = (extra: Record<string, unknown> = {}) => ({ id: 'a', type: 'agenda', x: 0, y: 0, width: 900, height: 360, calendarIds: [2], style, ...extra });
+        const read = (extra: Record<string, unknown> = {}) => readSlide({ ...old, blocks: [block(extra)] });
+        expect(read().issues).toHaveLength(0);
+        expect(read().doc.blocks[0]).toMatchObject({ type: 'agenda', calendarIds: [2], showCountdown: true, showDelay: true });
+        expect(read({ showCountdown: false, showDelay: false }).doc.blocks[0]).toMatchObject({ showCountdown: false, showDelay: false });
+        expect(read({ calendarIds: [] }).issues).not.toHaveLength(0);
+    });
+
     it('reads the social block (schema 1.33): layout and colours optional, at most 12 links, old slides stay valid', () => {
         expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(33);
         const old = makeSlide({ blocks: [textBlock('a')] });

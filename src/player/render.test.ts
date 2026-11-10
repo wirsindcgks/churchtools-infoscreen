@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { defineComponent, h, reactive } from 'vue';
 import { describe, expect, it } from 'vitest';
+import { sampleAgenda } from '../agenda/sample';
 import { normalizeAppointments } from '../appointments/normalize';
 import { unreleasedPeople, type PeopleGroup } from '../groups/members';
 import type { Group } from '../groups/normalize';
@@ -1080,5 +1081,47 @@ describe('rendering people (Plan.md 112)', () => {
             expect(width).toBe(height);
             expect(Number(width)).toBeGreaterThan(0);
         }
+    });
+});
+
+describe('the agenda block (schema 1.61, Plan.md 118)', () => {
+    const NOW = new Date('2026-10-04T08:00:00Z');
+    const agenda = (extra: Record<string, unknown> = {}) =>
+        ({ id: 'a', type: 'agenda', x: 0, y: 0, width: 1500, height: 500, calendarIds: [2], showCountdown: true, showDelay: true, style, ...extra }) as Block;
+    const draw = (block: Block, overrides: Partial<StageContext> = {}) => render(makeSlide({ blocks: [block] }), { now: NOW, ...overrides });
+
+    it('shows nothing without agenda data', () => {
+        expect(draw(agenda()).find('[data-testid="agenda"]').exists()).toBe(false);
+    });
+
+    it('shows the current and the next point, the countdown in the circle and the delay in red', () => {
+        const wrapper = draw(agenda(), { agenda: sampleAgenda(NOW.getTime(), [2]) });
+        expect(wrapper.get('[data-testid="agenda-now-label"]').text()).toBe('Jetzt');
+        expect(wrapper.get('[data-testid="agenda-now"]').text()).toBe('Begrüßung');
+        expect(wrapper.get('[data-testid="agenda-next-label"]').text()).toBe('Dann');
+        expect(wrapper.get('[data-testid="agenda-next"]').text()).toBe('Predigt');
+        // Switched two minutes ago, five minutes long: three minutes left; planned three minutes earlier.
+        expect(wrapper.get('[data-testid="agenda-circle"]').text()).toBe('3Minuten');
+        // Three of five minutes left: the ring is three fifths full.
+        expect(wrapper.get('[data-testid="agenda-ring"]').attributes('stroke-dasharray')).toBe('60 100');
+        expect(wrapper.get('[data-testid="agenda-delay"]').text()).toBe('−3 Min.');
+        expect(wrapper.get('[data-testid="agenda-delay"]').classes()).toContain('delay--late');
+    });
+
+    it('leaves out the countdown and the delay as the block says, and takes only the events of its calendars', () => {
+        const feed = sampleAgenda(NOW.getTime(), [2]);
+        const wrapper = draw(agenda({ showCountdown: false, showDelay: false }), { agenda: feed });
+        expect(wrapper.find('[data-testid="agenda-circle"]').exists()).toBe(false);
+        expect(wrapper.find('[data-testid="agenda-delay"]').exists()).toBe(false);
+        expect(draw(agenda({ calendarIds: [5] }), { agenda: feed }).find('[data-testid="agenda"]').exists()).toBe(false);
+    });
+
+    it('announces the first point as "Gleich" before the start', () => {
+        const feed = sampleAgenda(NOW.getTime(), [2]);
+        const event = { ...feed.events[0]!, startMs: NOW.getTime() + 600_000, endMs: NOW.getTime() + 3_600_000 };
+        const wrapper = draw(agenda(), { agenda: { events: [event], positions: {} } });
+        expect(wrapper.get('[data-testid="agenda-now-label"]').text()).toBe('Gleich');
+        expect(wrapper.get('[data-testid="agenda-now"]').text()).toBe('Countdown');
+        expect(wrapper.find('[data-testid="agenda-circle"]').exists()).toBe(false);
     });
 });

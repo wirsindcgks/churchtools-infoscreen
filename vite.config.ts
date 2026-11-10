@@ -49,6 +49,8 @@ export default defineConfig(({ mode }) => {
                       '/logo': devProxy(env.CT_BASE_URL, undefined),
                       // The download address of a video (Plan.md 52); a regex, since it is the start page with a query – only that query, never the app itself.
                       '^/\\?q=public/filedownload': devProxy(env.CT_BASE_URL, env.CT_LOGIN_TOKEN),
+                      // The live position of the block "Ablauf" (Plan.md 118, G81): the old interface, a POST on the start page – only that query.
+                      '^/\\?q=churchservice/ajax': devProxy(env.CT_BASE_URL, env.CT_LOGIN_TOKEN),
                   }
                 : undefined,
         },

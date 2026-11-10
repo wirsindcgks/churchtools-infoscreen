@@ -1,7 +1,9 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
+import type { AgendaItemResponse, LivePositionResponse } from '../agenda/live';
 import type { AppointmentResponse } from '../appointments/normalize';
 import type { EventResponse, ServiceGroupResponse, ServiceResponse } from '../appointments/services';
 import { zonedDateKey } from '../appointments/zoned';
+import { httpStatus } from './client';
 import { isValidHomepageHash, normalizeHomepageList, type HomepageEntry } from '../groups/normalize';
 import type { PostResponse } from '../posts/normalize';
 import { BOOKING_CONFIRMED, type ResourceMasterdata } from '../rooms/normalize';
@@ -65,6 +67,61 @@ export function fetchEvents(from: Date, to: Date, timeZone: string): Promise<Eve
         from: zonedDateKey(from, timeZone),
         to: zonedDateKey(to, timeZone),
         include: 'eventServices',
+    });
+}
+
+/** One event of `GET /events` as the live agenda reads it (Plan.md 118): its time and the calendar it belongs to. */
+export interface AgendaEventResponse {
+    id?: number | null;
+    startDate?: string | null;
+    endDate?: string | null;
+    isCanceled?: boolean | null;
+    /** The calendar as a link object; its `domainIdentifier` is the calendar id as a string. */
+    calendar?: { domainIdentifier?: string | null } | null;
+}
+
+/** The events between two local dates, without their services (Plan.md 118); `to` counts up to its midnight (G68). */
+export function fetchEventList(from: Date, to: Date, timeZone: string): Promise<AgendaEventResponse[]> {
+    return churchtoolsClient.get<AgendaEventResponse[]>('/events', { from: zonedDateKey(from, timeZone), to: zonedDateKey(to, timeZone) });
+}
+
+/** The agenda of an event (Plan.md 118). A `404` means the event has none; the points come in the delivered order. */
+export async function fetchAgenda(eventId: number): Promise<{ calendarId?: number | null; items?: AgendaItemResponse[] | null }> {
+    return churchtoolsClient.get(`/events/${eventId}/agenda`);
+}
+
+/** The live position cannot be read for lack of a right: `403`, or `200` with `status: "fail"` (G81). */
+export class LiveAgendaDeniedError extends Error {}
+
+function readLivePosition(eventId: number): Promise<LivePositionResponse> {
+    return churchtoolsClient.oldApi('churchservice/ajax', 'loadAgendaLivePosition', { event_id: eventId }) as Promise<LivePositionResponse>;
+}
+
+/** The old interface answers a missing right as `403` or as `200` with `status: "fail"` – the client rejects the latter with the response (G81). */
+function liveAgendaError(error: unknown): unknown {
+    const status = httpStatus(error);
+    const answer = (error as { response?: { data?: { status?: unknown; message?: unknown } } } | null)?.response?.data;
+    if (status === 403 || (status === 200 && answer?.status === 'fail')) {
+        return new LiveAgendaDeniedError(typeof answer?.message === 'string' ? answer.message : 'Keine Berechtigung für die Live-Agenda.');
+    }
+    return error;
+}
+
+/**
+ * The position of the live agenda, over the old interface (G81, the only one there is): the client brings the CSRF token
+ * itself. After a `401` the stored token may be stale – it is dropped once and the call repeated. A missing right comes as
+ * `LiveAgendaDeniedError`.
+ */
+export async function fetchLivePosition(eventId: number): Promise<LivePositionResponse> {
+    try {
+        return await readLivePosition(eventId);
+    } catch (error) {
+        if (httpStatus(error) !== 401) throw liveAgendaError(error);
+    }
+    // The client keeps the token in a private field; without a token it fetches a new one with the next call.
+    (churchtoolsClient as unknown as { csrfToken?: string }).csrfToken = undefined;
+    return readLivePosition(eventId).catch((error: unknown) => {
+        throw liveAgendaError(error);
     });
 }
 

@@ -25,7 +25,7 @@ import ScreenCard from '../designer/ScreenCard.vue';
 import ScheduleDialog from '../designer/ScheduleDialog.vue';
 import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
 import { blockCalendarIds, type ScreenDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
-import { groupNeeds, peopleNeeds, postNeeds, roomNeeds } from '../player/data';
+import { agendaNeeds, groupNeeds, peopleNeeds, postNeeds, roomNeeds } from '../player/data';
 import { ruleCalendarIds, runningNow } from '../designer/running';
 import { screenCounts, setScreenCounts } from '../designer/section-counts';
 import { usePreview, useTemplatesIn } from '../designer/usePreview';
@@ -120,6 +120,7 @@ const { context } = usePreview(
     undefined,
     undefined,
     computed(() => peopleNeeds(firstSlides.value)),
+    computed(() => agendaNeeds(firstSlides.value)),
 );
 useTemplatesIn(context, templates);
 

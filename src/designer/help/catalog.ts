@@ -49,6 +49,7 @@ export const HELP_CATALOG: HelpSection[] = [
     },
     { id: 'all-clock-look', title: `${t.blocks.clock} · ${i.appearance}`, topic: { items: [th.clock.view] } },
     { id: 'all-countdown-look', title: `${t.blocks.countdown} · ${i.appearance}`, topic: { intro: th.countdown.intro, items: [th.countdown.showTitle, th.countdown.running] } },
+    { id: 'all-agenda-look', title: `${t.blocks.agenda} · ${i.appearance}`, topic: { intro: th.agenda.intro, items: [th.agenda.countdown, th.agenda.delay] } },
     { id: 'all-shape-look', title: `${t.blocks.shape} · ${i.appearance}`, topic: { intro: shape.intro, items: [shape.form, shape.kind, shape.corners, shape.border, shape.borderColor] } },
     { id: 'all-line-look', title: `${t.blocks.line} · ${i.appearance}`, topic: th.line },
     { id: 'all-background', title: `${t.help.slide} · ${i.background}`, topic: th.background },
