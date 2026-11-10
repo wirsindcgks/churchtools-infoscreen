@@ -103,11 +103,14 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
             </div>
         </div>
         <div v-if="showNext" class="hero next-card" data-testid="agenda-next-card">
-            <div class="label" data-testid="agenda-next-label">{{ tp.agenda.next }}</div>
+            <!-- The service beside "Dann", as in "Jetzt" (user, 2026-11-10); a narrow block keeps one plain line. -->
+            <div class="hero-line">
+                <span class="label" data-testid="agenda-next-label">{{ tp.agenda.next }}</span>
+                <CalendarBadge v-if="!narrow && display.nextService" :name="display.nextService" :color="null" data-testid="agenda-next-service" />
+            </div>
             <span v-if="tileKind === 'time' && display.nextPlannedStartMs !== null" class="next-time" data-testid="agenda-next-time">{{ time(display.nextPlannedStartMs) }}</span>
             <span class="next-title" data-testid="agenda-next">{{ display.next }}</span>
             <template v-if="!narrow">
-                <CalendarBadge v-if="display.nextService" :name="display.nextService" :color="null" data-testid="agenda-next-service" />
                 <!-- The people as in "Jetzt": a person with the person sign (user, 2026-11-10). -->
                 <div v-if="block.showResponsible && nextPeople" class="hero-meta next-people" data-testid="agenda-next-responsible">
                     <span>
