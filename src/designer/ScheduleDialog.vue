@@ -10,7 +10,7 @@ import { computed, onMounted, ref } from 'vue';
 import { t } from '../i18n/designer';
 import { useRouter } from 'vue-router';
 import { zonedDateKey, zonedParts, zonedTimeToInstant } from '../appointments/zoned';
-import { sameStage, type AppointmentPoint, type ScheduleRule, type ScreenDoc } from '../model/schema';
+import { sameStage, type AppointmentEndPoint, type AppointmentPoint, type ScheduleRule, type ScreenDoc } from '../model/schema';
 import { matchingRuleIndex, ruleWindow } from '../player/schedule';
 import { ConflictError, type ConflictInfo, type ScreenRepository, type StagedPlaylist } from '../store/screen-repository';
 import { cloneJson } from './ops';
@@ -222,11 +222,16 @@ function setTime(index: number, key: 'from' | 'to', value: string): void {
 }
 
 /** A new window: `from` and `to`, and the nearest old-style window for players older than schema 1.5. */
-function setWindow(index: number, from: AppointmentPoint, to: AppointmentPoint): void {
+function setWindow(index: number, from: AppointmentPoint, to: AppointmentEndPoint): void {
     setRule(index, windowPatch(from, to));
 }
 
-function isPreset(rule: AppointmentRule, preset: { from: AppointmentPoint; to: AppointmentPoint }): boolean {
+/** The beginning has no "Ende des Ablaufs": the field never offers it, this keeps the types honest. */
+function setFrom(index: number, rule: AppointmentRule, point: AppointmentEndPoint): void {
+    if (point.anchor !== 'agendaEnd') setWindow(index, { anchor: point.anchor, minutes: point.minutes }, ruleWindow(rule).to);
+}
+
+function isPreset(rule: AppointmentRule, preset: { from: AppointmentPoint; to: AppointmentEndPoint }): boolean {
     const { from, to } = ruleWindow(rule);
     return JSON.stringify([from, to]) === JSON.stringify([preset.from, preset.to]);
 }
@@ -289,6 +294,7 @@ const decision = computed(() => {
 });
 
 const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'appointment'));
+const hasAgendaEnd = computed(() => rules.value.some((r) => r.kind === 'appointment' && ruleWindow(r).to.anchor === 'agendaEnd'));
 </script>
 
 <template>
@@ -438,13 +444,14 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                                         :point="ruleWindow(rule).from"
                                         :label="t.schedules.dialog.windowFrom"
                                         testid="rule-window-from"
-                                        @change="setWindow(index, $event, ruleWindow(rule).to)"
+                                        @change="setFrom(index, rule, $event)"
                                     />
                                     {{ t.schedules.dialog.to }}
                                     <AppointmentPointField
                                         :point="ruleWindow(rule).to"
                                         :label="t.schedules.dialog.windowTo"
                                         testid="rule-window-to"
+                                        agenda
                                         @change="setWindow(index, ruleWindow(rule).from, $event)"
                                     />
                                 </div>
@@ -544,6 +551,9 @@ const hasAppointmentRules = computed(() => rules.value.some((r) => r.kind === 'a
                     </p>
                     <p v-if="hasAppointmentRules" class="muted small">
                         {{ t.schedules.dialog.appointmentRulesHint(PREVIEW_DAYS) }}
+                    </p>
+                    <p v-if="hasAgendaEnd" class="muted small" data-testid="agenda-end-hint">
+                        {{ t.schedules.dialog.agendaEndHint }}
                     </p>
                 </section>
 

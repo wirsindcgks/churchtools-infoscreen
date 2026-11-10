@@ -4,7 +4,8 @@
  */
 import type { Appointment } from '../appointments/normalize';
 import { zonedParts } from '../appointments/zoned';
-import type { AppointmentPoint, ScreenDoc } from '../model/schema';
+import { endReached, serverNow, type AgendaFeed } from '../agenda/live';
+import type { AppointmentEndPoint, AppointmentPoint, ScreenDoc } from '../model/schema';
 
 export interface ScheduleContext {
     now: Date;
@@ -12,6 +13,11 @@ export interface ScheduleContext {
     /** Until the device clock is confirmed against the server, only the default runs. */
     clockConfirmed: boolean;
     appointments: Appointment[];
+    /**
+     * The agendas and positions read by the player (Plan.md 118). Without it – the designer's preview – a rule "Ende des Ablaufs"
+     * ends with the appointment.
+     */
+    agenda?: AgendaFeed;
 }
 
 export function activePlaylistId(screen: ScreenDoc, context: ScheduleContext): string {
@@ -44,26 +50,53 @@ function matchesTimeRule(rule: TimeRule, { now, timeZone }: ScheduleContext): bo
  * Where an appointment rule's window begins and ends. Rules from before
  * schema 1.5 run from `minutesBefore` the start to `minutesAfter` the end.
  */
-export function ruleWindow(rule: AppointmentRule): { from: AppointmentPoint; to: AppointmentPoint } {
+export function ruleWindow(rule: AppointmentRule): { from: AppointmentPoint; to: AppointmentEndPoint } {
     return {
         from: rule.from ?? { anchor: 'start', minutes: -rule.minutesBefore },
         to: rule.to ?? { anchor: 'end', minutes: rule.minutesAfter },
     };
 }
 
-function instant(point: AppointmentPoint, appointment: { start: Date; end: Date }): number {
+function instant(point: AppointmentEndPoint, appointment: { start: Date; end: Date }): number {
     return (point.anchor === 'start' ? appointment.start : appointment.end).getTime() + point.minutes * 60_000;
 }
 
-function matchesAppointmentRule(rule: AppointmentRule, { now, appointments }: ScheduleContext): boolean {
+/** Whether the end of a rule's window has not come yet for this appointment. */
+function beforeEnd(to: AppointmentEndPoint, appointment: Appointment, { now, agenda }: ScheduleContext): boolean {
+    const nowMs = now.getTime();
+    if (to.anchor !== 'agendaEnd') return nowMs < instant(to, appointment);
+    const bufferMs = Math.max(0, to.minutes) * 60_000;
+    if (!agenda) return nowMs < appointment.end.getTime();
+    const event = agenda.events.find((e) => e.calendarId === appointment.calendarId && e.startMs === appointment.start.getTime());
+    if (!event) return nowMs < appointment.end.getTime() + bufferMs;
+    const position = agenda.positions[event.eventId] ?? undefined;
+    return !endReached(event, position, serverNow(nowMs, position), bufferMs);
+}
+
+function matchesAppointmentRule(rule: AppointmentRule, context: ScheduleContext): boolean {
     const calendars = new Set(rule.calendarIds);
     const { from, to } = ruleWindow(rule);
-    return appointments.some(
-        (a) => calendars.has(a.calendarId) && now.getTime() >= instant(from, a) && now.getTime() < instant(to, a),
+    return context.appointments.some(
+        (a) => calendars.has(a.calendarId) && context.now.getTime() >= instant(from, a) && beforeEnd(to, a, context),
     );
 }
 
 function toMinutes(hhmm: string): number {
     const [h, m] = hhmm.split(':').map(Number) as [number, number];
     return h * 60 + m;
+}
+
+/** The agenda-ended rules of a screen: the appointment rules whose end is the end of the live agenda. */
+function agendaRules(screen: ScreenDoc) {
+    return screen.schedule.flatMap((rule) => (rule.kind === 'appointment' && rule.to?.anchor === 'agendaEnd' ? [{ rule, to: rule.to }] : []));
+}
+
+/** The calendars of the rules that end with the live agenda, each once and sorted (Plan.md 118). */
+export function agendaRuleCalendars(screen: ScreenDoc): number[] {
+    return [...new Set(agendaRules(screen).flatMap(({ rule }) => rule.calendarIds))].sort((a, b) => a - b);
+}
+
+/** The largest buffer (ms) of those rules; 0 without any. */
+export function agendaRuleBufferMs(screen: ScreenDoc): number {
+    return Math.max(0, ...agendaRules(screen).map(({ to }) => Math.max(0, to.minutes) * 60_000));
 }

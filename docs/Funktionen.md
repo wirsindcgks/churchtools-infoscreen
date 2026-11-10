@@ -103,7 +103,8 @@ sie steht für alle sichtbar auf dem Bildschirm) und die **Verantwortlichen** (D
 unbesetzte Dienste fallen weg) einschalten. „Dann“ lässt sich in beiden Ansichten ausblenden.
 
 Die Rechte, die das Gerät dafür braucht, vergeben die Einrichtung und „Rechte aktualisieren“ für die Kalender der
-Ablauf-Bausteine; welche es sind, steht in [`Rechte.md`](Rechte.md).
+Ablauf-Bausteine und für die Kalender von Zeitplan-Regeln mit „Ende des Ablaufs“ (siehe [Zeitpläne](#zeitpläne));
+welche es sind, steht in [`Rechte.md`](Rechte.md).
 
 ### Gruppen
 
@@ -200,6 +201,12 @@ verknüpfte, die sich gemeinsam ändern. Auf Wunsch zeigt ein Fortschrittsbalken
 
 Welche Präsentation ein Bildschirm wann zeigt: nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten
 vor Beginn"). Eine **Zeitleiste über sieben Tage** zeigt, was wann läuft.
+
+Eine Regel rund um Termine kann statt mit „Beginn“ oder „Ende“ mit dem **Ende des Ablaufs** enden (Vorlage „Bis
+Ablaufende“): Der Bildschirm wechselt nach dem Gottesdienst, sobald im Ablaufplan der letzte Punkt mit Dauer abgelaufen
+ist – spätestens nach der eingestellten Zeit (Puffer) nach dem Ende des Termins. Danach läuft die nächste Regel oder die
+Standard-Präsentation; „schwarz“ ist eine Präsentation mit einer schwarzen Folie. Die Vorschau im Dialog rechnet mit
+dem Ende des Termins.
 
 ![Zeitpläne: je Bildschirm eine Kachel mit Vorschau, Zeitleiste über sieben Tage und den Regeln](bilder/zeitplaene.png)
 

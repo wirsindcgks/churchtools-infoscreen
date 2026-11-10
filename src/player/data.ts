@@ -441,6 +441,8 @@ export function agendaNeeds(slides: SlideDoc[]): number[] {
     return [...ids].sort((a, b) => a - b);
 }
 
+export { agendaRuleBufferMs, agendaRuleCalendars } from './schedule';
+
 /**
  * The rooms a screen's `rooms` blocks show, each once and sorted, and the
  * days ahead they need (1 = today, 2 = today and tomorrow, … up to 14). Blocks without

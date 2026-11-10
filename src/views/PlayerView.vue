@@ -144,6 +144,7 @@ const playlist = computed(() => {
         timeZone: context.timeZone,
         clockConfirmed: context.clockConfirmed,
         appointments: context.appointments,
+        agenda: context.agenda ?? { events: [], positions: {} },
     });
     return (
         loaded.playlists.find((p) => p.id === playlistId) ??

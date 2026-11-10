@@ -808,6 +808,15 @@ export const AppointmentPoint = v.object({
     minutes: v.pipe(v.number(), v.integer(), v.minValue(-24 * 60), v.maxValue(24 * 60)),
 });
 
+/**
+ * The end of an appointment rule's window: like `AppointmentPoint`, plus the end of the live agenda. Since 1.61 (Plan.md 118):
+ * `agendaEnd` – the end of the live agenda, at the latest the end plus `minutes`.
+ */
+export const AppointmentEndPoint = v.object({
+    anchor: v.picklist(['start', 'end', 'agendaEnd']),
+    minutes: v.pipe(v.number(), v.integer(), v.minValue(-24 * 60), v.maxValue(24 * 60)),
+});
+
 /** A schedule rule (Plan.md, Playlists und Zeitpläne; edited in the schedule dialog). */
 export const ScheduleRule = v.variant('kind', [
     v.object({
@@ -820,7 +829,7 @@ export const ScheduleRule = v.variant('kind', [
         minutesAfter: v.pipe(v.number(), v.integer(), v.minValue(0)),
         /** Since 1.5: where the window begins and ends – e.g. 30 min before start to 10 min after start. */
         from: v.optional(AppointmentPoint),
-        to: v.optional(AppointmentPoint),
+        to: v.optional(AppointmentEndPoint),
     }),
     v.object({
         kind: v.literal('time'),
@@ -1064,6 +1073,7 @@ export type ScreenDoc = v.InferOutput<typeof ScreenDoc>;
 export type ScheduleDoc = v.InferOutput<typeof ScheduleDoc>;
 export type ScheduleRule = v.InferOutput<typeof ScheduleRule>;
 export type AppointmentPoint = v.InferOutput<typeof AppointmentPoint>;
+export type AppointmentEndPoint = v.InferOutput<typeof AppointmentEndPoint>;
 export type MediaDoc = v.InferOutput<typeof MediaDoc>;
 export type SettingsDoc = v.InferOutput<typeof SettingsDoc>;
 export type ThemeDoc = v.InferOutput<typeof ThemeDoc>;

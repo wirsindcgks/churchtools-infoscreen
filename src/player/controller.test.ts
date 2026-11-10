@@ -496,6 +496,51 @@ describe('player controller', () => {
         denied.stop();
     });
 
+    /** No `agenda` block, but a rule that ends with the agenda of calendar 2 (Plan.md 118, Stück 4). */
+    const withAgendaRule = (): LoadedScreen => {
+        const base = loaded();
+        const rule = {
+            kind: 'appointment' as const,
+            playlistId: base.screen.defaultPlaylistId,
+            calendarIds: [2],
+            minutesBefore: 30,
+            minutesAfter: 30,
+            from: { anchor: 'start' as const, minutes: -30 },
+            to: { anchor: 'agendaEnd' as const, minutes: 30 },
+        };
+        return { ...base, screen: { ...base.screen, schedule: [rule] } };
+    };
+
+    it('loads and reads the agenda for a rule that ends with it, without an agenda block (Plan.md 118)', async () => {
+        const agendaEvents = vi.fn<PlayerData['agendaEvents']>(async () => [agendaEvent(0)]);
+        const agendaPosition = vi.fn<PlayerData['agendaPosition']>(async () => samplePosition);
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withAgendaRule(), agendaEvents, agendaPosition }), fakeDeps());
+        await player.start();
+        expect(agendaEvents).toHaveBeenCalledWith([2], expect.any(Date), expect.any(Date), 'Europe/Berlin');
+        await vi.advanceTimersByTimeAsync(INTERVALS.agendaMs * 1.5);
+        expect(agendaPosition).toHaveBeenCalledWith(1);
+        expect(player.state.agenda?.positions[1]).toEqual(samplePosition);
+        player.stop();
+    });
+
+    it('keeps a set position when the next reading is unset – a reset – but takes a missing right over (Plan.md 118)', async () => {
+        const unset: LivePosition = { index: 0, set: false, switchMs: null, addSeconds: 0, offsetMs: 0 };
+        const agendaPosition = vi.fn<PlayerData['agendaPosition']>().mockResolvedValueOnce(samplePosition).mockResolvedValue(unset);
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withAgendaRule(), agendaEvents: async () => [agendaEvent(0)], agendaPosition }), fakeDeps());
+        await player.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.agendaMs * 3);
+        expect(agendaPosition.mock.calls.length).toBeGreaterThanOrEqual(2);
+        expect(player.state.agenda?.positions[1]).toEqual(samplePosition);
+        player.stop();
+
+        const lost = vi.fn<PlayerData['agendaPosition']>().mockResolvedValueOnce(samplePosition).mockResolvedValue(null);
+        const denied = createPlayer('demo', fakeData({ loadScreen: async () => withAgendaRule(), agendaEvents: async () => [agendaEvent(0)], agendaPosition: lost }), fakeDeps());
+        await denied.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.agendaMs * 3);
+        expect(denied.state.agenda?.positions[1]).toBeNull();
+        denied.stop();
+    });
+
     /** A `people` block on the first slide; the settings name the group "Infoscreen-People" or not, and the block a group of its own or not (Plan.md 112). */
     const withPeople = (peopleGroupId?: number, extra: { sourceGroupId?: number; peopleGroupIds?: number[]; personFieldKeys?: string[]; chosen?: string[] } = {}): LoadedScreen => {
         const base = loaded();

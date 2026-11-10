@@ -217,10 +217,10 @@ export function countdownSeconds(event: AgendaEvent, position: LivePosition, ser
 /**
  * Whether the event is over: its last point with a duration has run out – the position stands on it and its countdown
  * is spent, or stands behind it. What follows with 0:00 is the closing part and still belongs to the event. Without that,
- * an hour after the planned end.
+ * an hour (or `afterMs`) after the planned end.
  */
-export function endReached(event: AgendaEvent, position: LivePosition | undefined, serverNowMs: number): boolean {
-    if (serverNowMs >= event.endMs + POLL_AFTER_MS) return true;
+export function endReached(event: AgendaEvent, position: LivePosition | undefined, serverNowMs: number, afterMs = POLL_AFTER_MS): boolean {
+    if (serverNowMs >= event.endMs + afterMs) return true;
     if (!position?.set) return false;
     let last = -1;
     event.items.forEach((item, i) => {
@@ -253,8 +253,8 @@ export function pickEvent(events: readonly AgendaEvent[], positions: Readonly<Li
 }
 
 /** The events whose position is worth asking for now: from half an hour before the start until an hour after the end. */
-export function pollableEvents(events: readonly AgendaEvent[], deviceNowMs: number): AgendaEvent[] {
-    return events.filter((e) => deviceNowMs >= e.startMs - POLL_BEFORE_MS && deviceNowMs <= e.endMs + POLL_AFTER_MS);
+export function pollableEvents(events: readonly AgendaEvent[], deviceNowMs: number, afterMs = POLL_AFTER_MS): AgendaEvent[] {
+    return events.filter((e) => deviceNowMs >= e.startMs - POLL_BEFORE_MS && deviceNowMs <= e.endMs + afterMs);
 }
 
 /** The time left as the clock of a stage monitor: "3:12", "0:05", "−0:40", "75:00". */

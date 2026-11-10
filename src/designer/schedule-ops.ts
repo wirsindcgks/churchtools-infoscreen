@@ -7,7 +7,7 @@
 import type { Appointment } from '../appointments/normalize';
 import { zonedParts, zonedTimeToInstant } from '../appointments/zoned';
 import { t } from '../i18n/designer';
-import { sameStage, type AppointmentPoint, type PlaylistDoc, type ScheduleRule, type ScreenDoc } from '../model/schema';
+import { sameStage, type AppointmentEndPoint, type AppointmentPoint, type PlaylistDoc, type ScheduleRule, type ScreenDoc } from '../model/schema';
 import { matchingRuleIndex, ruleWindow } from '../player/schedule';
 
 export type TimeRule = Extract<ScheduleRule, { kind: 'time' }>;
@@ -24,13 +24,15 @@ export function createTimeRule(playlistId: string): TimeRule {
     return { kind: 'time', playlistId, weekdays: [7], from: '09:00', to: '12:00' };
 }
 
+const AROUND = () => WINDOW_PRESETS.find((p) => p.key === 'around')!;
+
 export function createAppointmentRule(playlistId: string, calendarIds: number[]): AppointmentRule {
     return {
         kind: 'appointment',
         playlistId,
         calendarIds: [...calendarIds],
         // Around the appointment, as rules were before 1.5; the presets offer the others.
-        ...windowPatch(WINDOW_PRESETS[3].from, WINDOW_PRESETS[3].to),
+        ...windowPatch(AROUND().from, AROUND().to),
     };
 }
 
@@ -40,7 +42,8 @@ export const WINDOW_PRESETS = [
     { key: 'during', label: t.schedules.presets.during, from: { anchor: 'start', minutes: 0 }, to: { anchor: 'end', minutes: 0 } },
     { key: 'after', label: t.schedules.presets.after, from: { anchor: 'end', minutes: 0 }, to: { anchor: 'end', minutes: 30 } },
     { key: 'around', label: t.schedules.presets.around, from: { anchor: 'start', minutes: -30 }, to: { anchor: 'end', minutes: 15 } },
-] as const satisfies readonly { key: string; label: string; from: AppointmentPoint; to: AppointmentPoint }[];
+    { key: 'agenda', label: t.schedules.presets.agenda, from: { anchor: 'start', minutes: -30 }, to: { anchor: 'agendaEnd', minutes: 30 } },
+] as const satisfies readonly { key: string; label: string; from: AppointmentPoint; to: AppointmentEndPoint }[];
 
 /**
  * The fields of an appointment rule for a window: `from` and `to` (schema
@@ -49,25 +52,31 @@ export const WINDOW_PRESETS = [
  */
 export function windowPatch(
     from: AppointmentPoint,
-    to: AppointmentPoint,
+    to: AppointmentEndPoint,
 ): Pick<AppointmentRule, 'from' | 'to' | 'minutesBefore' | 'minutesAfter'> {
     return {
         from: { ...from },
         to: { ...to },
         minutesBefore: from.anchor === 'start' ? Math.max(0, -from.minutes) : 0,
-        minutesAfter: to.anchor === 'end' ? Math.max(0, to.minutes) : 0,
+        minutesAfter: to.anchor === 'start' ? 0 : Math.max(0, to.minutes),
     };
 }
 
 /** "30 Min. vor Beginn", "Ende", "75 Min. nach Beginn". */
-export function pointLabel(point: AppointmentPoint): string {
+export function pointLabel(point: AppointmentEndPoint): string {
+    if (point.anchor === 'agendaEnd') {
+        return point.minutes > 0 ? t.schedules.agendaEndOffset(point.minutes) : t.schedules.agendaEndNoBuffer;
+    }
     const anchor = point.anchor === 'start' ? t.common.point.start : t.common.point.end;
     if (point.minutes === 0) return anchor;
     return t.schedules.pointOffset(Math.abs(point.minutes), point.minutes < 0, anchor);
 }
 
 /** Whether a window can never open: its end lies before its beginning for any appointment. */
-function windowEmpty(from: AppointmentPoint, to: AppointmentPoint): boolean {
+function windowEmpty(from: AppointmentPoint, endPoint: AppointmentEndPoint): boolean {
+    // The end of the agenda is at the end of the appointment at the earliest, less the buffer it may be shorter by – never before it.
+    const to: AppointmentPoint =
+        endPoint.anchor === 'agendaEnd' ? { anchor: 'end', minutes: Math.max(0, endPoint.minutes) } : { anchor: endPoint.anchor, minutes: endPoint.minutes };
     if (from.anchor === to.anchor) return to.minutes <= from.minutes;
     // From an end-relative point to a start-relative one: open only for appointments shorter than the gap.
     return from.anchor === 'end' && to.anchor === 'start';

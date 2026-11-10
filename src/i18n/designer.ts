@@ -106,6 +106,9 @@ export const t = {
             anchorLabel: 'Beginn oder Ende des Termins',
             start: 'Beginn',
             end: 'Ende',
+            agendaEnd: 'Ende des Ablaufs',
+            latest: 'spätestens',
+            afterEnd: 'Min. nach Ende',
         },
         calendars: {
             title: 'Kalender',
@@ -1103,7 +1106,9 @@ export const t = {
         ] as readonly (readonly [string, string])[],
         noDays: 'keine Tage',
         daily: 'täglich',
-        presets: { before: 'Vor Beginn', during: 'Während', after: 'Nach dem Ende', around: 'Rundherum' },
+        presets: { before: 'Vor Beginn', during: 'Während', after: 'Nach dem Ende', around: 'Rundherum', agenda: 'Bis Ablaufende' },
+        agendaEndOffset: (minutes: number) => `Ende des Ablaufs (spätestens ${minutes} Min. nach Ende)`,
+        agendaEndNoBuffer: 'Ende des Ablaufs (spätestens Ende)',
         pointOffset: (minutes: number, before: boolean, anchor: string) => `${minutes} Min. ${before ? 'vor' : 'nach'} ${anchor}`,
         appointmentSummary: (from: string, to: string, calendars: string) => `${from} bis ${to} von Terminen in ${calendars}`,
         problems: {
@@ -1162,6 +1167,8 @@ export const t = {
             decisionRule: (n: number) => `– Regel ${n}`,
             appointmentRulesHint: (days: number) =>
                 `Termin-Regeln rechnen mit den Terminen der nächsten ${days} Tage. Der Fernseher wechselt erst, wenn seine Uhr bestätigt ist.`,
+            agendaEndHint:
+                '„Ende des Ablaufs“: Der Bildschirm wechselt, sobald im Ablaufplan der letzte Punkt mit Dauer abgelaufen ist – spätestens zur angegebenen Zeit nach Ende des Termins. Die Vorschau rechnet mit dem Ende des Termins. Das Gerät braucht dafür die Rechte für Ablaufpläne: in der Einrichtung „Rechte aktualisieren“.',
             conflict: (by: string | null | undefined, name: string) => `${by ?? 'Jemand'} hat den Zeitplan von „${name}" inzwischen gespeichert.`,
             reload: 'Neu laden',
             keepMine: 'Meine Fassung speichern',
