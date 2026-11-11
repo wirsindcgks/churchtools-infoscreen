@@ -1062,6 +1062,10 @@ export const SettingsDoc = v.object({
      * The setup gives the device group "Gruppe inkl. ihrer Gruppenmitglieder sehen" for each; the player reads no other group. Missing = none.
      */
     peopleGroupIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
+    /** Since 1.63 (Plan.md 121 E): the group "Infoscreen-Musiker" the assistant created – its members steer the song sheet from the phone. Missing: none. */
+    musicianGroupId: v.optional(v.pipe(v.number(), v.integer())),
+    /** Since 1.63: the groups (the bands) whose members the automatic membership puts into the musicians' group. Missing = none. */
+    musicianSourceGroupIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
     /**
      * Since 1.59 (Plan.md 115): the person fields an administrator released for the block "Personen" – any key `GET /fields` names for
      * a person. Saving gives the device group "Personendaten sehen" at security level 1 (125, G71) as long as the list is not empty.
