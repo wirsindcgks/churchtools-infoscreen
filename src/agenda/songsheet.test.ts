@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ControlDoc } from './control';
 import type { AgendaEvent, AgendaPick, LiveItem, LivePosition } from './live';
 import { liveItems } from './live';
-import { lineSegments, pickSheetFile, readChordPro, readSng, readSongSheet, readTxt, sheetKind, sheetOf, sheetPage, songFileStatus, songsheetPick, transposeSheet, type SongSheet } from './songsheet';
+import { lineSegments, pickSheetFile, readChordPro, readSng, readSongSheet, readTxt, sheetKind, sheetOf, sheetPage, songFileStatus, songsLeft, songsheetPick, transposeSheet, type SongSheet } from './songsheet';
 
 // Own texts in the build of the files of SongSelect (G82): sections as `{comment: …}`, bar lines in brackets; `.sng` with byte order mark and `#` head;
 // `.txt` with title and authors above and the block with the CCLI numbers below.
@@ -203,6 +203,17 @@ describe('songsheetPick – which song the block shows', () => {
         phase: index === null ? 'upcoming' : 'live',
     });
     const items = [talk('Begrüßung'), song('Erstes', 240), talk('Predigt'), song('Zweites', 0)];
+
+    it('shows nothing, not even for a tip, once no song is left from the running point on (user, 2026-11-11)', () => {
+        const tail = [song('Erstes', 240), talk('Predigt'), talk('Segen')];
+        const tip: ControlDoc = { eventId: 7, itemIndex: 1, section: 0, at: '1970-01-01T00:00:00.500Z' };
+        expect(songsheetPick(pick(tail, 1))).not.toBeNull();
+        expect(songsheetPick(pick(tail, 2))).toBeNull();
+        expect(songsheetPick(pick(tail, 2), tip)).toBeNull();
+        expect(songsLeft(pick(tail, 1))).toBe(true);
+        expect(songsLeft(pick(tail, 3))).toBe(false);
+        expect(songsLeft(pick(tail, null))).toBe(true);
+    });
 
     it('shows no song behind the last point – ChurchTools\' "– Ende –"', () => {
         expect(songsheetPick({ ...pick(items, items.length + 1), phase: 'ended' })).toBeNull();

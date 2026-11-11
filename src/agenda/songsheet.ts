@@ -369,6 +369,8 @@ export function songsheetPick(pick: AgendaPick | null, control?: ControlDoc): So
     if (last < 1) return null;
     // ChurchTools' "– Ende –" stands behind the last point: no song is left to show – and no tip brings one back (user, 2026-11-11).
     if (phase !== 'upcoming' && position && position.index > last) return null;
+    // Neither once no song is left from the running point on: the steering is over for this event (user, 2026-11-11).
+    if (!songsLeft(pick)) return null;
     const chosen = control && controlItem(pick, control);
     if (chosen) {
         const sheet = sheetOf(chosen);
@@ -394,6 +396,12 @@ export function songsheetPick(pick: AgendaPick | null, control?: ControlDoc): So
         lengthSeconds: running && position ? item.duration + position.addSeconds : null,
         id: `${event.eventId}:${shown}`,
     };
+}
+
+/** Whether a song is still to come: from the running point on (it included), or anywhere before the start. */
+export function songsLeft({ event, position, phase }: AgendaPick): boolean {
+    const from = phase !== 'upcoming' && position && position.index > 0 ? position.index : 1;
+    return event.items.slice(from).some((item) => item.song);
 }
 
 /** The song a choice of the musicians points at, if it still holds: the point is a song of this arrangement and the agenda did not switch since. */

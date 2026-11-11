@@ -317,7 +317,7 @@ export const th = {
         },
         clock: {
             term: i.agendaClock,
-            text: 'Steht kein Ablauf an, zeigt der Baustein den nächsten Termin mit Ablaufplan; auf Wunsch groß die Uhrzeit darüber. Aus, wenn über dem Bildschirm schon eine Uhr hängt.',
+            text: 'Steht kein Ablauf an, zeigt der Baustein auf Wunsch groß die Uhrzeit. Darunter steht immer der nächste Termin mit Ablaufplan; aus lassen, wenn über dem Bildschirm schon eine Uhr hängt.',
         },
         delay: {
             term: i.showDelay,
@@ -340,6 +340,10 @@ export const th = {
             text:
                 'Zeigt die Akkorde über den Silben, wenn die Datei welche enthält. Weicht die Tonart des Arrangements von der der Datei ab (gleiches Geschlecht, Dur oder Moll), werden die Akkorde in die Tonart des Arrangements übertragen. ' +
                 'Ein Liedteil wird nie geteilt; passt er nicht auf den Bildschirm, wird die Schrift kleiner.',
+        },
+        lead: {
+            term: i.songsheetLead,
+            text: 'Das nächste Lied erscheint erst, wenn der laufende Punkt nur noch so viele Minuten hat. Während einer langen Predigt bleibt das Liedblatt so leer; ist der Schalter aus, steht das Lied sofort da.',
         },
         pageByTime: {
             term: i.pageByTime,

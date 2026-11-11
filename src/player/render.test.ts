@@ -1294,6 +1294,14 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
         expect(over.find('[data-testid="songsheet"]').exists()).toBe(false);
     });
 
+    it('lets the next song wait while the running point has more than the set minutes left (user, 2026-11-11)', () => {
+        // In the example "Begrüßung" has three minutes left.
+        const waiting = draw(songsheet({ nextLeadMinutes: 1 }), { agenda: feed() });
+        expect(waiting.find('[data-testid="songsheet"]').exists()).toBe(false);
+        expect(waiting.find('[data-testid="songsheet-empty"]').exists()).toBe(false);
+        expect(draw(songsheet({ nextLeadMinutes: 5 }), { agenda: feed() }).get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
+    });
+
     it('shows part 1 of the next song under "Als Nächstes" without a choice, with chords, a faint start of part 2 and the footer', () => {
         const wrapper = draw(songsheet(), { agenda: feed() });
         expect(wrapper.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');

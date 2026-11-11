@@ -269,7 +269,7 @@ export function createBlock(
         case 'agenda':
             return { ...frame, type, calendarIds: calendars, showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSong: true, showSignal: true, showClock: false, style: textStyle(96, { fontWeight: 700 }) };
         case 'songsheet':
-            return { ...frame, type, calendarIds: calendars, showChords: true, pageByTime: false, style: textStyle(44) };
+            return { ...frame, type, calendarIds: calendars, showChords: true, pageByTime: false, nextLeadMinutes: 3, style: textStyle(44) };
         case 'posts':
             return {
                 ...frame,

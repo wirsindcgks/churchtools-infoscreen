@@ -12,6 +12,7 @@ import CalendarField from '../../CalendarField.vue';
 import InspectorSection from '../../InspectorSection.vue';
 import { loadSongOverview, type SongOverview, type SongRow } from '../../song-overview';
 import { useCalendarChoice } from '../calendar-choice';
+import NumberField from '../fields/NumberField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import FontSection from '../FontSection.vue';
 import { INSPECTOR_MODE } from '../mode';
@@ -24,7 +25,13 @@ const stage = useStageContext();
 /** The list is a section of its own, not a field: the short menu has none (and does not load it). */
 const full = computed(() => unref(inject(INSPECTOR_MODE, 'full')) === 'full');
 const look = computed(() =>
-    [props.block.showChords ? t.inspector.showChords : t.inspector.songsheetNoChords, props.block.pageByTime ? t.inspector.pageByTime : ''].filter(Boolean).join(' · '),
+    [
+        props.block.showChords ? t.inspector.showChords : t.inspector.songsheetNoChords,
+        props.block.nextLeadMinutes ? t.inspector.songsheetLeadSummary(props.block.nextLeadMinutes) : '',
+        props.block.pageByTime ? t.inspector.pageByTime : '',
+    ]
+        .filter(Boolean)
+        .join(' · '),
 );
 
 const overview = ref<SongOverview | null>(null);
@@ -78,7 +85,7 @@ const days = computed(() => {
     return groups;
 });
 
-const help = { intro: th.songsheet.intro, items: [th.songsheet.chords, th.songsheet.pageByTime] };
+const help = { intro: th.songsheet.intro, items: [th.songsheet.chords, th.songsheet.lead, th.songsheet.pageByTime] };
 const songsHelp = { intro: th.songsheet.intro, items: [th.songsheet.songs] };
 </script>
 
@@ -86,6 +93,8 @@ const songsHelp = { intro: th.songsheet.intro, items: [th.songsheet.songs] };
     <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" :released="released" :extra-intro="t.inspector.songsheetInfo" @toggle="toggleCalendar" />
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="look" :help="help">
         <ToggleField :model-value="block.showChords" :label="t.inspector.showChords" testid="songsheet-show-chords" @update:model-value="setBlock({ showChords: $event })" />
+        <ToggleField :model-value="block.nextLeadMinutes !== undefined" :label="t.inspector.songsheetLead" testid="songsheet-lead" @update:model-value="setBlock({ nextLeadMinutes: $event ? 3 : undefined })" />
+        <NumberField v-if="block.nextLeadMinutes !== undefined" :model-value="block.nextLeadMinutes" :label="t.inspector.songsheetLeadMinutes" unit="Minuten" :min="1" :max="30" testid="songsheet-lead-minutes" @update:model-value="setBlock({ nextLeadMinutes: $event })" />
         <ToggleField :model-value="block.pageByTime" :label="t.inspector.pageByTime" testid="songsheet-page-by-time" @update:model-value="setBlock({ pageByTime: $event })" />
     </InspectorSection>
     <InspectorSection v-if="full" id="songs" :title="t.inspector.songs" :summary="summary" :help="songsHelp">

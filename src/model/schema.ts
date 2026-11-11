@@ -330,6 +330,11 @@ export const SongsheetBlock = v.object({
     showChords: v.optional(v.boolean(), true),
     /** Missing = off: without a choice of the musicians the block shows part 1. On: columns, pages turn by the length of the song. */
     pageByTime: v.optional(v.boolean(), false),
+    /**
+     * Since 1.63: "Als Nächstes" only once the running point has this many minutes left (user, 2026-11-11: not through a whole
+     * sermon). Missing = always; new blocks start with 3.
+     */
+    nextLeadMinutes: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(30))),
     style: TextStyle,
 });
 

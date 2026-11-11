@@ -6,7 +6,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import { stepPart, type ControlDoc, type PartRef } from '../agenda/control';
 import { agendaDisplay, clockText, pickEvent, type AgendaEvent, type AgendaPick, type LivePosition } from '../agenda/live';
-import { sheetOf, songsheetPick } from '../agenda/songsheet';
+import { sheetOf, songsLeft, songsheetPick } from '../agenda/songsheet';
 import { fetchCalendars, fetchTimeZone } from '../ct/api';
 import { currentPerson, displayName } from '../ct/client';
 import { t } from '../i18n/designer';
@@ -96,8 +96,11 @@ const screenLine = computed(() => {
     return s.upcoming ? t.control.screenNext(s.item.title, part) : t.control.screen(s.item.title, part);
 });
 
-/** No tap once the event is over: after "– Ende –" a stray tap brought a song back to the TV (user, 2026-11-11). */
-const stepping = computed(() => !!event.value && !(plan.value?.over ?? false));
+/**
+ * No tap once the event is over or no song is left: after "– Ende –" a stray tap brought a song back to the TV (user, 2026-11-11). The
+ * screen ignores such taps as well (`songsheetPick`).
+ */
+const stepping = computed(() => !!event.value && !!pick.value && !(plan.value?.over ?? false) && songsLeft(pick.value));
 const previous = computed(() => (stepping.value ? stepPart(event.value!, activePart.value, -1) : null));
 const following = computed(() => (stepping.value ? stepPart(event.value!, activePart.value, 1) : null));
 
@@ -212,7 +215,8 @@ onBeforeUnmount(() => {
                     </div>
                 </template>
             </div>
-            <p class="screen">{{ screenLine }}</p>
+            <p v-if="plan && !plan.over && !stepping" class="screen" data-testid="control-locked">{{ t.control.noSongsLeft }}</p>
+            <p v-else class="screen">{{ screenLine }}</p>
             <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
             <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
             <ul class="songs">
