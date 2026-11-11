@@ -470,7 +470,7 @@ Hier stehen nur Punkte, die noch nicht veröffentlicht sind, mit vollem Text. Di
         - **F – ProPresenter:** erst nach Messung an einer laufenden Installation; Hilfsprogramm schreibt dasselbe Dokument wie E.
     - **Ohne ProPresenter testbar:** A bis E vollständig (ChordPro mit eigenen Testdateien in Unit-Tests, Rechte gegen die Testinstanz); dazu ob ein Fernseher überhaupt eine HTTP-Adresse im lokalen Netz lesen darf – mit einem kleinen HTTP-Dienst auf einem Rechner im Netz statt ProPresenter.
     - **Offen beim Nutzer:** ProPresenter gibt es nur auf dem PC vor Ort (Nutzer, 2026-11-11) – F wartet auf einen Termin dort; E geht vor. Darf die Produktivinstanz lesend nach Dateien an Arrangements durchsucht werden (zählen, welche Endungen)? Lizenz: Liedtexte zeigen fällt unter die CCLI-Lizenz der Gemeinde – ein Satz in der Hilfe.
-    - **Für die Testinstanz** braucht B eine dauerhafte ChordPro-Datei an „Halleluja“ (schreibend, vorher besprechen) und 313 an Rolle 397 der Gerätegruppe 40 (macht später die Einrichtung).
+    - **Testinstanz (2026-11-11, mit OK des Nutzers):** ChordPro-Datei `halleluja.cho` (Datei 1089, eigener Testtext) an Arrangement 1 von „Halleluja“; Ablaufplan 3 an Termin 19 (15.11., Kalender 2): Begrüßung 5 min, Halleluja 5 min, Predigt 30 min, Segen 2 min. Das Gerät liest den Ablauf (`200`), die Lieder ohne 313 als leere Liste – 313 an Rolle 397 soll „Rechte aktualisieren“ aus dem neuen ZIP schreiben.
 
 ### Verzeichnis der erledigten Punkte
 
