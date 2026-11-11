@@ -154,9 +154,21 @@ const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center
         <div v-if="sheet?.footer" class="foot" data-testid="songsheet-footer">{{ sheet.footer }}</div>
         <PageProgress v-if="paged" :key="page" :seconds="turnSeconds" :held="held" :offset="pageOffset" :size="8" :inset="16" :number="page + 1" :total="pages" :color="themeOf(context).text" />
     </div>
+    <div v-else-if="context.agenda" class="empty" :style="textStyle(block.style)" data-testid="songsheet-empty">{{ pick ? tp.songsheet.noSong : tp.agenda.none }}</div>
 </template>
 
 <style scoped>
+/* Like the block "Ablauf": a quiet line once the agenda is read and there is no song to show. */
+.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 0.5em;
+    opacity: 0.5;
+    text-align: center;
+}
 .songsheet {
     position: relative;
     display: flex;

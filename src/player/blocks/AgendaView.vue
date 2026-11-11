@@ -3,7 +3,7 @@
  * The running order of the service in the layout of the live view of ChurchTools (schema 1.61, Plan.md 118): "JETZT" and the
  * current point above, "DANN" and the next below, the countdown in a circle at the right with the total time and the delay
  * under it. What is current comes from the position on the server (`src/agenda/live.ts`); this view counts the seconds itself,
- * like the countdown block. Without an event or a reading it shows nothing. With `layout: 'card'` the cards of `AgendaCard.vue` take over.
+ * like the countdown block. Before the agenda is read it shows nothing; read, but no event today, a short line. With `layout: 'card'` the cards of `AgendaCard.vue` take over.
  */
 import { computed } from 'vue';
 import type { Block } from '../../model/schema';
@@ -14,7 +14,7 @@ import AgendaRing from './AgendaRing.vue';
 import { useAgenda } from './use-agenda';
 
 const props = defineProps<{ block: Extract<Block, { type: 'agenda' }> }>();
-const { display, circle, lateMinutes, left } = useAgenda(() => props.block);
+const { context, display, circle, lateMinutes, left } = useAgenda(() => props.block);
 
 const showCircle = computed(() => props.block.showCountdown && circle.value !== null);
 const showDelay = computed(() => props.block.showDelay && lateMinutes.value !== null);
@@ -42,9 +42,21 @@ const diameter = computed(() => Math.min(props.block.height * 0.62, props.block.
             </div>
         </div>
     </div>
+    <div v-else-if="context.agenda" class="empty" :style="textStyle(block.style)" data-testid="agenda-empty">{{ tp.agenda.none }}</div>
 </template>
 
 <style scoped>
+/* Quiet on purpose: it says the screen works, not that something is wrong. */
+.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    font-size: 0.5em;
+    opacity: 0.5;
+    text-align: center;
+}
 .agenda {
     display: flex;
     align-items: stretch;

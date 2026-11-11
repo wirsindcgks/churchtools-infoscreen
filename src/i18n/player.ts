@@ -75,6 +75,8 @@ export const tp = {
         next: 'Dann',
         soon: 'Gleich',
         total: 'Gesamtzeit',
+        /** Read, but no event of the chosen calendars has an agenda today: a short line instead of a dark block (user, 2026-11-11). */
+        none: 'Heute kein Ablaufplan',
         /** The badge of a song without a service, the unit under the planned time on the tile, and "3 of 5" under the position. */
         song: 'Lied',
         clock: 'Uhr',
@@ -90,6 +92,8 @@ export const tp = {
     songsheet: {
         next: 'Als Nächstes',
         none: 'Kein Liedtext hinterlegt',
+        /** Today's agenda has no song (left). */
+        noSong: 'Kein Lied mehr im Ablauf',
     },
 
     people: {
