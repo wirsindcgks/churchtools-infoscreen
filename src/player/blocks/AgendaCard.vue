@@ -433,6 +433,8 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
     -webkit-line-clamp: 3;
 }
 .song-key {
+    /* The page around the player colours `strong` itself (a dark grey on the TV, user 2026-11-11): the key keeps the colour of its line. */
+    color: inherit;
     font-weight: 800;
 }
 .next-people {
