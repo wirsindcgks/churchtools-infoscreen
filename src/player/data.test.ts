@@ -483,7 +483,7 @@ describe('people (Plan.md 112)', () => {
 });
 
 describe('the live agenda (schema 1.61, Plan.md 118)', () => {
-    const agendaBlock = (calendarIds: number[]): Block => ({ id: 'a', type: 'agenda', x: 0, y: 0, width: 1400, height: 700, calendarIds, showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSignal: true, style });
+    const agendaBlock = (calendarIds: number[]): Block => ({ id: 'a', type: 'agenda', x: 0, y: 0, width: 1400, height: 700, calendarIds, showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSong: true, showSignal: true, style });
 
     it('reads the calendars of the agenda blocks, each once and sorted – and nothing without such a block', () => {
         expect(agendaNeeds([makeSlide({ blocks: [agendaBlock([3, 2]), agendaBlock([2])] })])).toEqual([2, 3]);

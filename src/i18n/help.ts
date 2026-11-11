@@ -307,6 +307,10 @@ export const th = {
         next: { term: i.showNext, text: 'Zeigt unter dem laufenden Punkt, was danach kommt.' },
         note: { term: i.showNote, text: 'Die Notiz des Punktes aus dem Ablaufplan – Hinweise fürs Team auf der Bühne. Sie steht für alle sichtbar auf dem Bildschirm.' },
         responsible: { term: i.showResponsible, text: 'Zeigt Dienst und Namen der Eingeteilten, unbesetzte Dienste fallen weg.' },
+        song: {
+            term: i.showSong,
+            text: 'Bei Liedern Tonart und Tempo aus dem Arrangement, in „Jetzt“ und „Dann“. Das Arrangement steht dabei, wenn es nicht das Standard-Arrangement ist.',
+        },
         countdown: {
             term: i.showCountdown,
             text: 'Die Zeit, die dem laufenden Punkt noch bleibt, im Kreis rechts – in Minuten, in der letzten Minute in Sekunden. Ist sie um, steht sie mit Minus davor.',

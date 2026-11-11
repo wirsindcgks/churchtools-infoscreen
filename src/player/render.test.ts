@@ -1087,7 +1087,7 @@ describe('rendering people (Plan.md 112)', () => {
 describe('the agenda block (schema 1.61, Plan.md 118)', () => {
     const NOW = new Date('2026-10-04T08:00:00Z');
     const agenda = (extra: Record<string, unknown> = {}) =>
-        ({ id: 'a', type: 'agenda', x: 0, y: 0, width: 1500, height: 500, calendarIds: [2], showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSignal: true, style, ...extra }) as Block;
+        ({ id: 'a', type: 'agenda', x: 0, y: 0, width: 1500, height: 500, calendarIds: [2], showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSong: true, showSignal: true, style, ...extra }) as Block;
     const draw = (block: Block, overrides: Partial<StageContext> = {}) => render(makeSlide({ blocks: [block] }), { now: NOW, ...overrides });
 
     it('shows nothing without agenda data', () => {
@@ -1204,6 +1204,20 @@ describe('the agenda block (schema 1.61, Plan.md 118)', () => {
             const wrapper = draw(card(), { agenda: { ...f, positions: Object.fromEntries(Object.entries(f.positions).map(([id, p]) => [id, { ...p!, index: 2 }])) } });
             expect(wrapper.get('[data-testid="agenda-now"]').text()).toBe('Halleluja');
             expect(wrapper.get('[data-testid="agenda-service"]').text()).toBe('Lied');
+        });
+
+        it('shows key and tempo of a song in "Jetzt" and "Dann" unless switched off (schema 1.63, Plan.md 121 A)', () => {
+            const f = feed();
+            const at = (index: number) => ({ ...f, positions: Object.fromEntries(Object.entries(f.positions).map(([id, p]) => [id, { ...p!, index }])) });
+            const now = draw(card(), { agenda: at(2) });
+            expect(now.get('[data-testid="agenda-song"]').text()).toBe('C · 120 BPM');
+            expect(now.find('[data-testid="agenda-next-song"]').exists()).toBe(false);
+            const before = draw(card(), { agenda: at(1) });
+            expect(before.find('[data-testid="agenda-song"]').exists()).toBe(false);
+            expect(before.get('[data-testid="agenda-next-song"]').text()).toBe('C · 120 BPM');
+            const off = draw(card({ showSong: false }), { agenda: at(2) });
+            expect(off.find('[data-testid="agenda-song"]').exists()).toBe(false);
+            expect(draw(card({ showSong: false }), { agenda: at(1) }).find('[data-testid="agenda-next-song"]').exists()).toBe(false);
         });
 
         it('shows the note and the people only when switched on', () => {

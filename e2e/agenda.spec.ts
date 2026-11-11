@@ -67,6 +67,7 @@ test('the own look of the agenda block shows cards, with tile, service, people a
     await inspector.getByTestId('agenda-show-responsible').check();
     await expect(block.getByTestId('agenda-responsible')).toContainText('Anna Beispiel');
     await inspector.getByTestId('agenda-show-note').check();
+    await expect(inspector.getByTestId('agenda-show-song')).toBeChecked();
     await block.screenshot({ path: 'test-results/editor-agenda-card.png' });
 
     await expect(block.getByTestId('agenda-next-card')).toBeVisible();

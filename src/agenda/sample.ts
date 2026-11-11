@@ -14,7 +14,7 @@ export function sampleAgenda(nowMs: number, calendarIds: readonly number[]): Age
 function sampleEvent(nowMs: number, calendarId: number): AgendaEvent {
     const items = liveItems([
         { title: 'Countdown', duration: 300 },
-        { type: 'song', title: '', duration: 300, song: { title: 'Halleluja' } },
+        { type: 'song', title: '', duration: 300, song: { title: 'Halleluja', key: 'C', bpm: 120, arrangement: 'Standard', isDefault: true } },
         {
             title: 'Begrüßung',
             duration: 300,

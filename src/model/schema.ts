@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 62 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 63 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -304,6 +304,11 @@ export const AgendaBlock = v.object({
      * colour – the confidence monitor on the stage (user, 2026-11-10). Missing = the design. Older players draw the design.
      */
     dark: v.optional(v.boolean()),
+    /**
+     * Since 1.63, only `card`: key, tempo and arrangement of a song, in "Jetzt" and "Dann" (Plan.md 121 A). Missing = shown.
+     * Older players leave them out.
+     */
+    showSong: v.optional(v.boolean(), true),
     style: TextStyle,
 });
 

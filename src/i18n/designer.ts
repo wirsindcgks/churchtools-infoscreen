@@ -627,6 +627,7 @@ export const t = {
         showSignal: 'Signalrahmen',
         agendaWarnMinutes: 'Gelb ab',
         agendaDark: 'Dunkle Kacheln',
+        showSong: 'Liedangaben',
         agendaTile: 'Kachel',
         agendaTileTime: 'Uhrzeit',
         agendaTilePosition: 'Position',

@@ -65,6 +65,16 @@ describe('liveItems', () => {
         expect(items.slice(1).map((i) => i.title)).toEqual(['Halleluja', 'Eigener Titel']);
     });
 
+    it('keeps key, tempo and an arrangement that is not the default one of a song (Plan.md 121 A)', () => {
+        const items = liveItems([
+            { type: 'song', title: '', duration: 200, song: { title: 'A', key: ' Dm ', bpm: 80, arrangement: 'Standard', isDefault: true } },
+            { type: 'song', title: '', duration: 200, song: { title: 'B', key: null, bpm: null, arrangement: 'Akustisch', isDefault: false } },
+            { type: 'song', title: '', duration: 200, song: { title: 'C', key: '', bpm: 0, arrangement: 'Standard', isDefault: true } },
+            { title: 'Predigt', duration: 200, song: { title: 'D', key: 'C' } },
+        ]);
+        expect(items.slice(1).map((i) => i.songDetails)).toEqual([{ key: 'Dm', bpm: 80 }, { arrangement: 'Akustisch' }, undefined, undefined]);
+    });
+
     it('counts points before the event along', () => {
         const items = liveItems([
             { title: 'Einlass', duration: 600, isBeforeEvent: true },

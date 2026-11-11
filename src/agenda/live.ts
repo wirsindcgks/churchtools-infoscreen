@@ -11,8 +11,8 @@ export interface AgendaItemResponse {
     /** Seconds. */
     duration?: number | null;
     isBeforeEvent?: boolean | null;
-    /** A song carries its name here; its `title` is empty (G81). */
-    song?: { title?: string | null } | null;
+    /** A song carries its name here; its `title` is empty (G81). Key and tempo are free or `null`; the arrangement is named (G82). */
+    song?: { title?: string | null; key?: string | null; bpm?: number | null; arrangement?: string | null; isDefault?: boolean | null } | null;
     note?: string | null;
     /** `text` holds the services in square brackets and free text; `persons` the people by service, `person: null` = unfilled (G81). */
     responsible?: {
@@ -34,6 +34,15 @@ export interface LiveItem {
     service?: string;
     /** The ready line: "Predigt: Max Mustermann · Freitext". */
     responsible?: string;
+    /** Only a song, where ChurchTools names any of it (Plan.md 121 A). */
+    songDetails?: SongDetails;
+}
+
+/** Key, tempo and the arrangement of a song; the arrangement only where it is not the default one. */
+export interface SongDetails {
+    key?: string;
+    bpm?: number;
+    arrangement?: string;
 }
 
 /** An event of today with its agenda, ready for the live view. Times in milliseconds, so that it survives the offline copy. */
@@ -96,12 +105,14 @@ export interface AgendaDisplay {
     service: string | null;
     responsible: string | null;
     song: boolean;
+    songDetails: SongDetails | null;
     /** When the next point was planned to begin; `null` where there is none. */
     nextPlannedStartMs: number | null;
     /** The service, the people and the length (seconds) of the next point, as for the shown one. */
     nextService: string | null;
     nextResponsible: string | null;
     nextDurationSeconds: number | null;
+    nextSongDetails: SongDetails | null;
 }
 
 export interface AgendaPick {
@@ -140,6 +151,16 @@ function responsibleLine(responsible: NonNullable<AgendaItemResponse['responsibl
     return parts.join(' · ');
 }
 
+/** Key, tempo and a named arrangement of a song point; `undefined` where there is none of them. */
+function songDetails(song: AgendaItemResponse['song']): SongDetails | undefined {
+    if (!song) return undefined;
+    const key = (song.key ?? '').trim();
+    const bpm = Number(song.bpm);
+    const arrangement = song.isDefault === true ? '' : (song.arrangement ?? '').trim();
+    const details: SongDetails = { ...(key ? { key } : {}), ...(bpm > 0 ? { bpm: Math.round(bpm) } : {}), ...(arrangement ? { arrangement } : {}) };
+    return Object.keys(details).length ? details : undefined;
+}
+
 /** The list of the live view: the placeholder, then the points in the delivered order without headers. */
 export function liveItems(items: readonly AgendaItemResponse[]): LiveItem[] {
     const points = items
@@ -150,6 +171,7 @@ export function liveItems(items: readonly AgendaItemResponse[]): LiveItem[] {
             const note = (item.note ?? '').trim();
             const service = serviceName(/\[([^\]]*)\]/.exec(item.responsible?.text ?? '')?.[1]);
             const responsible = item.responsible ? responsibleLine(item.responsible) : '';
+            const details = song ? songDetails(item.song) : undefined;
             return {
                 title: own || (song ? (item.song?.title ?? '').trim() : ''),
                 duration: Math.max(0, Number(item.duration) || 0),
@@ -158,6 +180,7 @@ export function liveItems(items: readonly AgendaItemResponse[]): LiveItem[] {
                 ...(note ? { note } : {}),
                 ...(service ? { service } : {}),
                 ...(responsible ? { responsible } : {}),
+                ...(details ? { songDetails: details } : {}),
             };
         });
     return [PLACEHOLDER, ...points];
@@ -296,10 +319,12 @@ export function agendaDisplay(pick: AgendaPick | null, deviceNowMs: number): Age
         service: item.service ?? null,
         responsible: item.responsible ?? null,
         song: item.song,
+        songDetails: item.songDetails ?? null,
         nextPlannedStartMs: next === null ? null : plannedStartMs(event, next),
         nextService: next === null ? null : (event.items[next]!.service ?? null),
         nextResponsible: next === null ? null : (event.items[next]!.responsible ?? null),
         nextDurationSeconds: next === null ? null : event.items[next]!.duration,
+        nextSongDetails: next === null ? null : (event.items[next]!.songDetails ?? null),
     };
     if (soon || !position) return { kind: 'soon', next: null, countdownSeconds: null, delaySeconds: null, lengthSeconds: null, ...shown };
     return {
