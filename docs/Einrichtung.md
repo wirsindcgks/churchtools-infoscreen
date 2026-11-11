@@ -245,6 +245,9 @@ Ohne das bleiben die Felder leer; die Prüfung der Gerätegruppe nennt das als H
 Zeigt ein Bildschirm den Baustein „Liedblatt", können die Musiker den gezeigten Liedteil auf dem Handy wählen (Strophe, Refrain …); der
 Tipp gilt für alle Bildschirme des Termins. Dafür gibt es die Gruppe **„Infoscreen-Musiker"**, die du nur auf Wunsch anlegst.
 
+Ohne Tipp zeigt das Liedblatt den ersten Teil des Liedes. Der Schalter **„Nach Zeit blättern"** im Baustein ist für Gemeinden ohne
+Handysteuerung: Dann steht der ganze Text in Spalten, und das Liedblatt blättert nach der Dauer des Liedes.
+
 **Zwei Arten von Gruppen, zwei Aufgaben.** Die Rechte hat allein „Infoscreen-Musiker" – sie legt der Assistent an, du musst sie nicht
 selbst anlegen. Deine **Bandgruppen** (etwa „Lobpreisteam") bleiben, wie sie sind, und bekommen keine Rechte: Sie liefern nur die
 Mitglieder. Wer in einer gewählten Bandgruppe ist, wird über die **automatische Mitgliedschaft** von ChurchTools Teilnehmer von

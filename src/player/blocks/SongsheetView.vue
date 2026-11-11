@@ -5,8 +5,9 @@
  * tempo, the foot keeps copyright and CCLI numbers (the licence of the church). What does not fit stands in columns, then in pages:
  * they are counted after the render (the width the columns take against the width of the block) and turn after the length of the
  * running song – by the time that passed since it began, or, without a duration, on a beat of its own. The agenda comes from `use-agenda.ts`, the choice of the song and the chords from `src/agenda/songsheet.ts`.
- * Where the musicians chose a part (Plan.md 121 E, `context.agenda.controls`) the block shows only that part, as big as the font size says
- * and smaller (down to half) only where it does not fit, no columns and no pages; below it, faint, the heading and first line of the next part.
+ * The block shows one part (Plan.md 121 E): the one the musicians chose (`context.agenda.controls`), without a choice part 1 – also under
+ * "Als Nächstes" – as big as the font size says and smaller (down to half) only where it does not fit, no columns and no pages; below it,
+ * faint, the heading and first line of the next part. Only with `pageByTime` and without a choice the whole text stands in columns.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { UNTIMED_PAGE_SECONDS, lineSegments, sheetOf, sheetPage, songsheetPick } from '../../agenda/songsheet';
@@ -27,8 +28,8 @@ const songId = computed(() => selected.value?.id ?? '');
 const upcoming = computed(() => selected.value?.upcoming ?? false);
 const lengthSeconds = computed(() => selected.value?.lengthSeconds ?? null);
 const sheet = computed(() => (item.value ? sheetOf(item.value) : null));
-/** The part the musicians chose; `undefined` = the block runs by the agenda as ever. */
-const section = computed(() => selected.value?.section);
+/** The part the musicians chose, else part 1 of the song shown; `undefined` only with "Nach Zeit blättern" (columns, pages by time). */
+const section = computed(() => selected.value?.section ?? (item.value && !props.block.pageByTime ? 0 : undefined));
 const showChords = computed(() => props.block.showChords);
 
 /** Title · key · tempo; the key of the sheet is the one after transposing, else the one of the arrangement. */

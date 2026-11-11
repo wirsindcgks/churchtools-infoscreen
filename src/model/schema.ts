@@ -323,6 +323,8 @@ export const SongsheetBlock = v.object({
     calendarIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.minLength(1)),
     /** Missing = shown. Off: the text only. */
     showChords: v.optional(v.boolean(), true),
+    /** Missing = off: without a choice of the musicians the block shows part 1. On: columns, pages turn by the length of the song. */
+    pageByTime: v.optional(v.boolean(), false),
     style: TextStyle,
 });
 

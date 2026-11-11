@@ -116,8 +116,9 @@ noch nicht begonnen), steht das nächste Lied da, überschrieben mit „Als Näc
 Datei am Arrangement des Liedes in ChurchTools: eine **ChordPro-Datei** (`.chordpro`, `.cho`, `.chopro`, `.crd`) mit
 Akkorden, sonst den Liedtext aus einer `.sng`- oder `.txt`-Datei, dann ohne Akkorde. Weicht die Tonart des Arrangements von
 der der Datei ab (beide Dur oder beide Moll), werden die Akkorde **transponiert**. Der Kopf nennt Titel, Tonart und Tempo; wo
-keine Datei liegt, steht „Kein Liedtext hinterlegt“. Passt der Text nicht auf den Baustein, steht er in **Spalten**, dann
-blättert der Baustein nach der Dauer des Punktes weiter. Der Schalter „Akkorde“ blendet die Akkorde aus.
+keine Datei liegt, steht „Kein Liedtext hinterlegt“. Der Baustein zeigt **Teil 1** des Liedes, bis Musiker auf dem Handy weiterschalten; passt ein Teil nicht, wird die Schrift
+kleiner. Der Schalter „Nach Zeit blättern“ ist für Gemeinden ohne Handysteuerung: Dann steht der ganze Text in **Spalten**
+und der Baustein blättert nach der Dauer des Liedes. Der Schalter „Akkorde“ blendet die Akkorde aus.
 
 Liedtexte auf dem Bildschirm zu zeigen fällt unter die **CCLI-Lizenz** der Gemeinde: Copyright und Lizenznummer stehen
 deshalb unten auf dem Baustein und sollten nicht verdeckt werden. Das Gerät braucht dafür in ChurchTools das Recht

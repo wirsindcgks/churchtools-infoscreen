@@ -330,12 +330,18 @@ export const th = {
             'Den Text liest er aus einer Datei am Arrangement des Liedes in ChurchTools: eine ChordPro-Datei (.chordpro, .cho, .chopro, .crd) mit Akkorden, sonst den Liedtext aus einer .sng- oder .txt-Datei, dann ohne Akkorde. ' +
             'Liedtexte auf dem Bildschirm zu zeigen fällt unter die CCLI-Lizenz eurer Gemeinde. Copyright und Lizenznummer bleiben deshalb unten stehen – bitte nicht verdecken. ' +
             'Das Gerät braucht das Recht „Einzelne Song-Kategorien sehen“; ohne es steht nur der Kopf mit den Liedangaben da. ' +
-            'Musiker wählen den Liedteil auf dem Handy unter der Seite „Steuerung“ der Erweiterung (Adresse …/steuerung); ohne Tipp blättert das Liedblatt nach Zeit.',
+            'Musiker wählen den Liedteil auf dem Handy unter der Seite „Steuerung“ der Erweiterung (Adresse …/steuerung); ohne Tipp zeigt das Liedblatt Teil 1 des Liedes.',
         chords: {
             term: i.showChords,
             text:
                 'Zeigt die Akkorde über den Silben, wenn die Datei welche enthält. Weicht die Tonart des Arrangements von der der Datei ab (gleiches Geschlecht, Dur oder Moll), werden die Akkorde in die Tonart des Arrangements übertragen. ' +
-                'Passt der Text nicht auf einen Bildschirm, steht er erst in Spalten, dann blättert der Baustein nach der Dauer des Punktes weiter.',
+                'Ein Liedteil wird nie geteilt; passt er nicht auf den Bildschirm, wird die Schrift kleiner.',
+        },
+        pageByTime: {
+            term: i.pageByTime,
+            text:
+                'Ohne Handysteuerung zeigt das Liedblatt den ganzen Text in Spalten und blättert nach der Dauer des Liedes. ' +
+                'Ist der Schalter aus, steht Teil 1, bis ein Musiker auf dem Handy weiterschaltet.',
         },
         songs: {
             term: i.songs,

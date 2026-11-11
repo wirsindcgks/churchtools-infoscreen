@@ -23,7 +23,9 @@ const { calendars, hidden, released, toggleCalendar } = useCalendarChoice(() => 
 const stage = useStageContext();
 /** The list is a section of its own, not a field: the short menu has none (and does not load it). */
 const full = computed(() => unref(inject(INSPECTOR_MODE, 'full')) === 'full');
-const look = computed(() => (props.block.showChords ? t.inspector.showChords : t.inspector.songsheetNoChords));
+const look = computed(() =>
+    [props.block.showChords ? t.inspector.showChords : t.inspector.songsheetNoChords, props.block.pageByTime ? t.inspector.pageByTime : ''].filter(Boolean).join(' · '),
+);
 
 const overview = ref<SongOverview | null>(null);
 const failed = ref(false);
@@ -76,7 +78,7 @@ const days = computed(() => {
     return groups;
 });
 
-const help = { intro: th.songsheet.intro, items: [th.songsheet.chords] };
+const help = { intro: th.songsheet.intro, items: [th.songsheet.chords, th.songsheet.pageByTime] };
 const songsHelp = { intro: th.songsheet.intro, items: [th.songsheet.songs] };
 </script>
 
@@ -84,6 +86,7 @@ const songsHelp = { intro: th.songsheet.intro, items: [th.songsheet.songs] };
     <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" :released="released" :extra-intro="t.inspector.songsheetInfo" @toggle="toggleCalendar" />
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="look" :help="help">
         <ToggleField :model-value="block.showChords" :label="t.inspector.showChords" testid="songsheet-show-chords" @update:model-value="setBlock({ showChords: $event })" />
+        <ToggleField :model-value="block.pageByTime" :label="t.inspector.pageByTime" testid="songsheet-page-by-time" @update:model-value="setBlock({ pageByTime: $event })" />
     </InspectorSection>
     <InspectorSection v-if="full" id="songs" :title="t.inspector.songs" :summary="summary" :help="songsHelp">
         <p v-if="loading" class="hint">{{ t.inspector.songsLoading }}</p>
