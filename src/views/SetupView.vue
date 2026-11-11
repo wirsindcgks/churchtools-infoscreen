@@ -230,6 +230,16 @@ const musicianGroupId = ref<number | null>(null);
 /** The band groups whose members the automatic membership puts into it, as stored, and the choice on the page until „Speichern". */
 const musicianSourceGroupIds = ref<number[]>([]);
 const draftMusicianSources = ref<number[]>([]);
+/** Who is in "Infoscreen-Musiker" now – the page names them, so that it is plain which group holds the rights; null until read. */
+const musicianMembers = ref<string[] | null>(null);
+async function loadMusicianMembers(): Promise<void> {
+    const groupId = musicianGroupId.value;
+    if (groupId === null || page.value !== 'musicians') return;
+    musicianMembers.value = await groupMemberNames(groupId)
+        .then((members) => members.map((m) => m.name).sort((a, b) => a.localeCompare(b, 'de')))
+        .catch(() => null);
+}
+watch([page, musicianGroupId], () => void loadMusicianMembers(), { immediate: true });
 /** Whether this person may "Personen verwalten" – the automatic membership needs it; `undefined` while unknown. */
 const personsAllowed = ref<boolean | undefined>(undefined);
 /** What the last run on the page „Musiker" reported. */
@@ -957,6 +967,7 @@ async function saveMusicianSources(): Promise<void> {
     musicianSourceGroupIds.value = next;
     draftMusicianSources.value = [...next];
     musicianRun.ran = true;
+    await loadMusicianMembers();
 }
 
 /**
@@ -2038,6 +2049,10 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                         <template v-else>
                             <p v-if="musicianGroupId !== null" data-testid="musician-group">
                                 <strong>{{ t.setup.musicians.groupName }}:</strong> {{ groupNameById(musicianGroupId) }}
+                                <span class="muted"> – {{ t.setup.musicians.holdsRights }}</span>
+                            </p>
+                            <p v-if="musicianGroupId !== null && musicianMembers" class="muted small" data-testid="musician-members">
+                                {{ musicianMembers.length ? t.setup.musicians.members(musicianMembers) : t.setup.musicians.noMembers }}
                             </p>
                             <p v-if="personsAllowed === false" class="muted" data-testid="musician-by-hand">{{ t.setup.musicians.byHand }}</p>
                             <template v-else>
