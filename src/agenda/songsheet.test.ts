@@ -204,6 +204,10 @@ describe('songsheetPick – which song the block shows', () => {
     });
     const items = [talk('Begrüßung'), song('Erstes', 240), talk('Predigt'), song('Zweites', 0)];
 
+    it('shows no song behind the last point – ChurchTools\' "– Ende –"', () => {
+        expect(songsheetPick({ ...pick(items, items.length + 1), phase: 'ended' })).toBeNull();
+    });
+
     it('shows the running song with its length', () => {
         const shown = songsheetPick(pick(items, 2));
         expect(shown).toMatchObject({ upcoming: false, lengthSeconds: 270, id: '7:2' });

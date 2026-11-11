@@ -318,6 +318,9 @@ export function agendaDisplay(pick: AgendaPick | null, deviceNowMs: number): Age
     const { event, position, phase } = pick;
     const last = event.items.length - 1;
     if (last < 1) return null;
+    // Behind the last point is ChurchTools' "– Ende –" (G81, measured 2026-11-11: `pos_id` 5 with four points): the event is over, the
+    // block shows its empty view – holding the last point with a spent clock confused the stage (user, 2026-11-11).
+    if (phase !== 'upcoming' && position && position.index > last) return null;
     const soon = phase === 'upcoming' || !position || position.index === 0;
     const index = soon ? 1 : Math.min(position.index, last);
     const next = soon ? null : nextIndex(event.items, index);

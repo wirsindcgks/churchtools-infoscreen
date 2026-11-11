@@ -377,6 +377,8 @@ export function songsheetPick(pick: AgendaPick | null, control?: ControlDoc): So
     }
     const last = event.items.length - 1;
     if (last < 1) return null;
+    // ChurchTools' "– Ende –" stands behind the last point: no song is left to show.
+    if (phase !== 'upcoming' && position && position.index > last) return null;
     const started = phase !== 'upcoming' && !!position && position.index > 0;
     const index = started ? Math.min(position!.index, last) : 0;
     let shown = started && event.items[index]!.song ? index : -1;
