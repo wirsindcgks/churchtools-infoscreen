@@ -516,13 +516,15 @@ describe('player controller', () => {
         plain.stop();
     });
 
-    it('asks for the next agenda only for calendars without one today, and survives a failure (Plan.md 123)', async () => {
+    it('asks for the next agenda from tomorrow on, also where today has one, and survives a failure (Plan.md 123)', async () => {
         const next = [{ calendarId: 2, startMs: NOW.getTime() + 3 * 86_400_000, title: 'Gottesdienst' }];
         const upcomingAgendas = vi.fn<PlayerData['upcomingAgendas']>(async () => next);
+        // Today's event may be over long before the next reading of the data (first test, 2026-11-11): the next one is asked all the same.
         const busy = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [agendaEvent(0)], upcomingAgendas }), fakeDeps());
         await busy.start();
-        expect(upcomingAgendas).not.toHaveBeenCalled();
+        expect(upcomingAgendas).toHaveBeenCalledTimes(1);
         busy.stop();
+        upcomingAgendas.mockClear();
 
         const idle = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [], upcomingAgendas }), fakeDeps());
         await idle.start();
