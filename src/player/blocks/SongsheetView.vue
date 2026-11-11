@@ -60,24 +60,47 @@ const preview = computed(() => {
 });
 const shown = computed(() => (part.value ? [part.value] : sections.value));
 const showText = computed(() => (part.value ? true : !!sheet.value && hasLines.value));
-/** The factor the chosen part is made smaller by where it does not fit. */
+/** The factor the text is made smaller by where a part does not fit – in both looks: a part is never split (Plan.md 121 E). */
 const scale = ref(1);
 let fitRun = 0;
 const MIN_SCALE = 0.5;
 
-/** Measured after the render like the pages: back to full size, then smaller by the overflow until it fits or half is reached. */
+/** The height a part takes unbroken: its heading and lines with their margins – also where the columns broke it (multicol fragments). */
+function naturalHeight(section: Element): number {
+    let height = 0;
+    for (const child of Array.from(section.children)) {
+        const el = child as HTMLElement;
+        const style = getComputedStyle(el);
+        height += el.offsetHeight + (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0);
+    }
+    return height;
+}
+
+/** How far the text overflows: the tallest part against the height of the block, a chosen part also against its width; null unmeasurable. */
+function overflow(): number | null {
+    const view = viewport.value;
+    const cols = columns.value;
+    if (!view || !cols || view.clientHeight <= 0 || view.clientWidth <= 0) return null;
+    const tallest = Math.max(0, ...Array.from(cols.children, naturalHeight));
+    const high = tallest / view.clientHeight;
+    return part.value ? Math.max(high, view.scrollWidth / view.clientWidth) : high;
+}
+
+/**
+ * Measured after the render: back to full size, then smaller in steps until the tallest part fits or half is reached, then the pages
+ * counted. The same rule for a chosen part and for the columns, so that a part looks the same in both (user, 2026-11-11).
+ */
 async function fit(): Promise<void> {
     const run = ++fitRun;
     scale.value = 1;
     await nextTick();
-    for (let i = 0; i < 3 && run === fitRun; i++) {
-        const view = viewport.value;
-        if (!view || view.clientHeight <= 0 || view.clientWidth <= 0) return;
-        const over = Math.max(view.scrollHeight / view.clientHeight, view.scrollWidth / view.clientWidth);
-        if (!(over > 1) || scale.value <= MIN_SCALE) return;
-        scale.value = Math.max(MIN_SCALE, (scale.value / over) * 0.98);
+    for (let i = 0; i < 12 && run === fitRun; i++) {
+        const over = overflow();
+        if (over === null || !(over > 1.005) || scale.value <= MIN_SCALE) break;
+        scale.value = Math.max(MIN_SCALE, scale.value * Math.min(0.95, 1 / over));
         await nextTick();
     }
+    if (run === fitRun) countPages();
 }
 
 // --- pages ---
@@ -91,11 +114,15 @@ const columnWidth = computed(() => props.block.style.fontSize * 14);
 const paged = computed(() => pages.value > 1);
 const held = computed(() => context.paging === false || turnSeconds.value === 0);
 
-/** Pages the columns take: the width they overflow with, against the width of the block. */
+/** Fits the text, then counts the pages. */
 function measure(): void {
+    void fit();
+}
+
+/** Pages the columns take: the width they overflow with, against the width of the block; a chosen part has one. */
+function countPages(): void {
     if (part.value) {
         pages.value = 1;
-        void fit();
         return;
     }
     const view = viewport.value;
@@ -154,17 +181,28 @@ watch(
     ],
     () => void nextTick(measure),
 );
+let resize: ResizeObserver | undefined;
+watch(viewport, (view, old) => {
+    if (old) resize?.unobserve(old);
+    if (!view || typeof ResizeObserver === 'undefined') return;
+    resize ??= new ResizeObserver(() => measure());
+    resize.observe(view);
+});
 onMounted(() => {
     measure();
     turnRound();
     void document.fonts?.ready.then(measure);
 });
-onBeforeUnmount(() => clearInterval(timer));
+onBeforeUnmount(() => {
+    clearInterval(timer);
+    resize?.disconnect();
+});
 
 const columnsStyle = computed(() =>
     part.value
         ? { fontSize: `${scale.value}em` }
         : {
+              fontSize: scale.value < 1 ? `${scale.value}em` : undefined,
               columnWidth: `${columnWidth.value}px`,
               columnGap: `${gap.value}px`,
               transform: page.value ? `translateX(${-page.value * (pageWidth.value + gap.value)}px)` : undefined,
