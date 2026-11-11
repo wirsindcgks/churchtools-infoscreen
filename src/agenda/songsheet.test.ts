@@ -95,11 +95,11 @@ describe('readChordPro (Plan.md 121 B)', () => {
         expect(read.sections[2]!.lines[0]!.text).toBe('Drei');
     });
 
-    it('splits a part over six lines into pieces of equal size (Plan.md 121 G)', () => {
+    it('splits a part over four lines into pieces of equal size (Plan.md 121 G)', () => {
         const lines = (n: number) => Array.from({ length: n }, (_, i) => `[C]Zeile ${i + 1}`).join('\n');
-        const read = readChordPro(`{comment: Refrain}\n${lines(8)}\n\n{comment: Strophe 1}\n${lines(6)}\n\n${lines(13)}`);
+        const read = readChordPro(`{comment: Refrain}\n${lines(8)}\n\n{comment: Strophe 1}\n${lines(4)}\n\n${lines(10)}`);
         expect(read.sections.map((s) => s.label)).toEqual(['Refrain (1/2)', 'Refrain (2/2)', 'Strophe 1', '', '', '']);
-        expect(read.sections.map((s) => s.lines.length)).toEqual([4, 4, 6, 5, 4, 4]);
+        expect(read.sections.map((s) => s.lines.length)).toEqual([4, 4, 4, 4, 3, 3]);
         expect(read.sections[1]!.lines[0]!.text).toBe('Zeile 5');
     });
 });
