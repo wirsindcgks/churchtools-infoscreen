@@ -20,7 +20,9 @@ import { LEGACY_PERSON_FIELD_KEYS, type ScreenDoc } from '../model/schema';
 import { offeredPersonFields } from '../groups/person-fields';
 import { withDeviceLogin } from '../player/device-login';
 import { resourceTypesOf, roomTypeIdsOf, roomsOf, type ResourceMasterdata, type ResourceTypeInfo, type RoomInfo } from '../rooms/normalize';
+import { grantableCalendars as grantable } from '../setup/calendars';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
+import { setRightsPending } from '../setup/pending';
 import { bindingLocks, LockedPermissionError, readLocks, withLockNames } from '../setup/locks';
 import { AUTH, checkDesignerGroup, checkDeviceGroup, devicesPersonReach, groupChecks, memberHoldings, type Check, type Grant, type RequiredRight } from '../setup/checks';
 import {
@@ -285,10 +287,8 @@ function moduleRights(side: Side): RequiredRight[] | null {
     return spec ? spec.grants.filter((g) => !NOT_MODULE.includes(g.authId)) : null;
 }
 
-/** Only public and released calendars get a right for their events; the rest is named by the check (Plan.md 73, 85 b). */
 function grantableCalendars(ids: number[]): number[] {
-    const showable = new Set([...publicCalendarIds, ...releasedCalendars.value]);
-    return ids.filter((id) => showable.has(id));
+    return grantable(ids, publicCalendarIds, releasedCalendars.value);
 }
 
 function computePlan(): void {
@@ -910,9 +910,11 @@ async function updateRights(): Promise<void> {
             return;
         }
         if (refreshIsEmpty(state.groups)) {
+            setRightsPending(false);
             assistant.log = state.groups.map(refreshLogLine);
             return;
         }
+        setRightsPending(true);
         refreshDialog.value = { state };
     } catch (e) {
         assistant.error = explain(e);
@@ -933,6 +935,7 @@ async function confirmRefresh(): Promise<void> {
         const result = await applyRefresh(plan.value, open.state, lockAwareApi());
         assistant.log = result.log;
         assistant.error = result.error;
+        if (!result.error) setRightsPending(false);
         if (result.deviceIds && peopleGroupId.value !== null) {
             peopleDeviceIds.value = result.deviceIds;
             await persistSettings().catch((e: unknown) => assistant.log.push(t.setup.assistantRun.aborted(explain(e))));

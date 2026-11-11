@@ -15,6 +15,7 @@ import { t } from '../i18n/designer';
 import { administrator, isAdministrator } from './administrator';
 import { ensureSectionCounts, sectionCounts, type Section } from './section-counts';
 import { unseenRelease } from '../about/seen';
+import { checkRightsPending, rightsPending } from '../setup/pending';
 import Icon, { type IconName } from './Icon.vue';
 import { vTip } from './tip';
 
@@ -22,6 +23,7 @@ const route = useRoute();
 onMounted(() => {
     void ensureSectionCounts();
     void isAdministrator();
+    void checkRightsPending();
 });
 const admin = computed(() => administrator.value === true);
 
@@ -109,6 +111,7 @@ watch(
             <span class="nav-icon"><Icon :name="currentPage.icon" :size="16" /></span>
             <span class="page-menu-label">{{ currentPage.label }}</span>
             <span v-if="unseenRelease" class="new" aria-hidden="true" data-testid="page-menu-new" />
+            <span v-else-if="admin && rightsPending" class="new" role="img" :aria-label="t.sidebar.rightsPending" data-testid="page-menu-pending" />
             <Icon name="chevron-down" :size="16" :class="['page-menu-chevron', { open: menuOpen }]" />
         </button>
         <div id="module-pages" :class="{ open: menuOpen }">
@@ -155,6 +158,14 @@ watch(
                     >
                         <span class="nav-icon"><Icon :name="SETUP.icon" :size="16" /></span>
                         {{ SETUP.label }}
+                        <span
+                            v-if="rightsPending"
+                            v-tip="t.sidebar.rightsPending"
+                            class="new"
+                            role="img"
+                            :aria-label="t.sidebar.rightsPending"
+                            data-testid="sidebar-setup-pending"
+                        />
                     </RouterLink>
                 </li>
             </ul>

@@ -1569,6 +1569,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         pages: 'Seiten',
         new: 'Neu',
         newTitle: 'Neue Version – noch nicht angesehen',
+        rightsPending: 'Rechte aktualisieren nötig',
     },
 
     /** The settings: groups and rights, addresses of the TVs, the media library in the wiki, the services. */
