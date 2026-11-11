@@ -139,9 +139,29 @@ function footerLine(copyright: string | undefined, song: string | undefined, lic
     return parts.length ? parts.join(' · ') : undefined;
 }
 
+/** The most lines a step of the stage monitor holds; a longer part is split (admin colleague, user 2026-11-11: 32–44 pt). */
+export const MAX_SECTION_LINES = 6;
+
+/**
+ * A part longer than {@link MAX_SECTION_LINES} becomes pieces of equal size, "Refrain (1/2)", "Refrain (2/2)" – while reading the
+ * file, so that the phone and every screen count the same steps; the screen does not know its size on the phone (Plan.md 121 G).
+ */
+function split(section: SheetSection): SheetSection[] {
+    const count = Math.ceil(section.lines.length / MAX_SECTION_LINES);
+    if (count < 2) return [section];
+    // 13 lines are 5 + 4 + 4: the first pieces take the rest.
+    const size = Math.floor(section.lines.length / count);
+    const rest = section.lines.length % count;
+    const start = (i: number) => i * size + Math.min(i, rest);
+    return Array.from({ length: count }, (_, i) => ({
+        label: section.label ? `${section.label} (${i + 1}/${count})` : '',
+        lines: section.lines.slice(start(i), start(i + 1)),
+    }));
+}
+
 /**
  * "Misc 1" with "(Bridge)" as its first line is a bridge: the heading is taken from the brackets and the line is dropped.
- * Sections without a line are left out.
+ * Sections without a line are left out, long ones are split.
  */
 function finish(sections: SheetSection[]): SheetSection[] {
     return sections
@@ -150,7 +170,8 @@ function finish(sections: SheetSection[]): SheetSection[] {
             const hint = /^misc/i.test(section.label) && first && !first.chords.length ? /^\((.+)\)$/.exec(first.text.trim())?.[1] : undefined;
             return hint ? { label: translateHeading(hint), lines: section.lines.slice(1) } : section;
         })
-        .filter((section) => section.lines.length > 0);
+        .filter((section) => section.lines.length > 0)
+        .flatMap(split);
 }
 
 /**
