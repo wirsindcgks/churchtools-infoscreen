@@ -1562,6 +1562,8 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         noSongsLeft: 'Kein Lied mehr im Ablauf – die Steuerung ruht.',
         part: (n: number) => `Teil ${n}`,
         noSheet: 'Kein Liedtext hinterlegt',
+        upNext: 'Nächstes Lied',
+        allSongs: (n: number) => `Alle übrigen Lieder des Ablaufs (${n})`,
         back: 'Zurück',
         next: 'Weiter',
         notSaved: 'Nicht gespeichert – bitte noch einmal tippen',
