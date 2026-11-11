@@ -469,7 +469,7 @@ Hier stehen nur Punkte, die noch nicht veröffentlicht sind, mit vollem Text. Di
         - **E – Steuerung durch die Musiker:** Handy-Seite (vor/zurück, Sprung zu Refrain, Transponieren?) schreibt die Stelle in ein Dokument des Moduls; der Player liest es im Takt der Live-Position (5 s, Grenze G16). **Zuerst Academy und Messung:** Darf ein Mitglied einer Gruppe ohne Designerrechte genau ein Dokument einer Modul-Kategorie schreiben, ohne die übrigen? Wie verzögert kommt es an?
         - **F – ProPresenter:** erst nach Messung an einer laufenden Installation; Hilfsprogramm schreibt dasselbe Dokument wie E.
     - **Ohne ProPresenter testbar:** A bis E vollständig (ChordPro mit eigenen Testdateien in Unit-Tests, Rechte gegen die Testinstanz); dazu ob ein Fernseher überhaupt eine HTTP-Adresse im lokalen Netz lesen darf – mit einem kleinen HTTP-Dienst auf einem Rechner im Netz statt ProPresenter.
-    - **Offen beim Nutzer:** Gibt es eine ProPresenter-Installation zum Messen? Darf die Produktivinstanz lesend nach Dateien an Arrangements durchsucht werden (zählen, welche Endungen)? Lizenz: Liedtexte zeigen fällt unter die CCLI-Lizenz der Gemeinde – ein Satz in der Hilfe.
+    - **Offen beim Nutzer:** ProPresenter gibt es nur auf dem PC vor Ort (Nutzer, 2026-11-11) – F wartet auf einen Termin dort; E geht vor. Darf die Produktivinstanz lesend nach Dateien an Arrangements durchsucht werden (zählen, welche Endungen)? Lizenz: Liedtexte zeigen fällt unter die CCLI-Lizenz der Gemeinde – ein Satz in der Hilfe.
     - **Für die Testinstanz** braucht B eine dauerhafte ChordPro-Datei an „Halleluja“ (schreibend, vorher besprechen) und 313 an Rolle 397 der Gerätegruppe 40 (macht später die Einrichtung).
 
 ### Verzeichnis der erledigten Punkte
