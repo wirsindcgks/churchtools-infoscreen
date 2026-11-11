@@ -238,11 +238,12 @@ const chordColor = computed(() => themeOf(context).accent);
 }
 .foot {
     flex: none;
-    margin-top: 0.4em;
+    margin-top: 0.6em;
     overflow: hidden;
-    font-size: 0.4em;
+    /* Small on purpose: the licence must be there, not read from the stage (user, 2026-11-11). */
+    font-size: 0.22em;
     text-overflow: ellipsis;
     white-space: nowrap;
-    opacity: 0.7;
+    opacity: 0.55;
 }
 </style>
