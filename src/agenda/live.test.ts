@@ -117,6 +117,10 @@ describe('Jetzt and Dann (G81)', () => {
         expect(agendaDisplay({ event: e, position: at({ pos_id: '5' }, START), phase: 'live' }, START)).toMatchObject({ title: 'Segen', next: null });
     });
 
+    it('shows nothing behind the last point – ChurchTools\' "– Ende –" (measured 2026-11-11)', () => {
+        expect(agendaDisplay({ event: e, position: at({ pos_id: '6' }, START), phase: 'ended' }, START)).toBeNull();
+    });
+
     it('announces the first point before the start', () => {
         expect(agendaDisplay({ event: e, position: undefined, phase: 'upcoming' }, START)).toMatchObject({ kind: 'soon', title: 'Countdown', next: null, countdownSeconds: null, delaySeconds: null, lengthSeconds: null });
         expect(agendaDisplay({ event: e, position: at({ pos_id: null }, START), phase: 'live' }, START)).toMatchObject({ kind: 'soon' });
@@ -271,11 +275,16 @@ describe('pickEvent', () => {
         expect(pickEvent([morning, noon], positions, START + 3600_000)).toMatchObject({ event: { eventId: 2 }, phase: 'upcoming' });
     });
 
-    it('keeps the closing part of an over event while no other is due', () => {
-        const positions = { 1: at({ pos_id: '6' }, START + 3600_000) };
-        const pick = pickEvent([morning], positions, START + 3600_000);
+    it('keeps the closing part of an over event while no other is due, but not ChurchTools\' "– Ende –"', () => {
+        // On the last point with its time spent: the closing part stays.
+        const closing = { 1: at({ pos_id: '5', agoSeconds: 3600 }, START + 3600_000) };
+        const pick = pickEvent([morning], closing, START + 3600_000);
         expect(pick).toMatchObject({ event: { eventId: 1 }, phase: 'ended' });
         expect(agendaDisplay(pick, START + 3600_000)).toMatchObject({ kind: 'now', title: 'Segen' });
+        // Behind it ("– Ende –", measured 2026-11-11): the event is over, the block shows its empty view (user, 2026-11-11).
+        const end = pickEvent([morning], { 1: at({ pos_id: '6' }, START + 3600_000) }, START + 3600_000);
+        expect(end).toMatchObject({ event: { eventId: 1 }, phase: 'ended' });
+        expect(agendaDisplay(end, START + 3600_000)).toBeNull();
     });
 
     it('leaves out an event whose position the account may not read', () => {
