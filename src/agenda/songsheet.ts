@@ -365,6 +365,10 @@ export interface SongsheetPick {
 export function songsheetPick(pick: AgendaPick | null, control?: ControlDoc): SongsheetPick | null {
     if (!pick) return null;
     const { event, position, phase } = pick;
+    const last = event.items.length - 1;
+    if (last < 1) return null;
+    // ChurchTools' "– Ende –" stands behind the last point: no song is left to show – and no tip brings one back (user, 2026-11-11).
+    if (phase !== 'upcoming' && position && position.index > last) return null;
     const chosen = control && controlItem(pick, control);
     if (chosen) {
         const sheet = sheetOf(chosen);
@@ -376,10 +380,6 @@ export function songsheetPick(pick: AgendaPick | null, control?: ControlDoc): So
             section: sheet ? Math.max(0, Math.min(control.section, sheet.sections.length - 1)) : control.section,
         };
     }
-    const last = event.items.length - 1;
-    if (last < 1) return null;
-    // ChurchTools' "– Ende –" stands behind the last point: no song is left to show.
-    if (phase !== 'upcoming' && position && position.index > last) return null;
     const started = phase !== 'upcoming' && !!position && position.index > 0;
     const index = started ? Math.min(position!.index, last) : 0;
     let shown = started && event.items[index]!.song ? index : -1;
