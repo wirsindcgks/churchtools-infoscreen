@@ -340,8 +340,9 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                   console.warn('Ablaufpläne konnten nicht geladen werden:', error);
                   return state.agenda?.events;
               });
-        // The next agenda of the calendars that have none today (Plan.md 123): decoration too, a failure keeps the last ones.
-        const idle = agendaEvents ? agendaCalendars.filter((id) => !agendaEvents.some((e) => e.calendarId === id)) : [];
+        // The next agenda from tomorrow on (Plan.md 123), for every calendar: one of today may be over long before the next reading of the
+        // data, and the block is empty then. At most six agendas are read, once per reading of the data. Decoration too: a failure keeps the last ones.
+        const idle = agendaEvents ? agendaCalendars : [];
         const upcoming = idle.length
             ? await data.upcomingAgendas(idle, agendaWindow.to, appointmentWindow(now, timeZone, 15).to, timeZone).catch((error: unknown) => {
                   console.warn('Kommende Ablaufpläne konnten nicht geladen werden:', error);
