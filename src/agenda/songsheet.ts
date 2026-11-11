@@ -54,6 +54,15 @@ export function pickSheetFile<T extends { name?: string | null }>(files: readonl
     return null;
 }
 
+/** What the files of an arrangement give the block: chords, only the lyrics, a PDF the block cannot read, or nothing (Plan.md 121). */
+export type SongFileStatus = 'chords' | 'lyrics' | 'pdf' | 'none';
+
+export function songFileStatus(files: readonly { name?: string | null }[]): SongFileStatus {
+    const pick = pickSheetFile(files);
+    if (pick) return pick.kind === 'chordpro' ? 'chords' : 'lyrics';
+    return files.some((f) => /\.pdf$/i.test((f.name ?? '').trim())) ? 'pdf' : 'none';
+}
+
 /** The text of a file without byte order mark and with `\n` as the only line break. */
 function lines(text: string): string[] {
     return text.replace(/^﻿/, '').replace(/\r\n?/g, '\n').split('\n');

@@ -336,6 +336,13 @@ export const th = {
                 'Zeigt die Akkorde über den Silben, wenn die Datei welche enthält. Weicht die Tonart des Arrangements von der der Datei ab (gleiches Geschlecht, Dur oder Moll), werden die Akkorde in die Tonart des Arrangements übertragen. ' +
                 'Passt der Text nicht auf einen Bildschirm, steht er erst in Spalten, dann blättert der Baustein nach der Dauer des Punktes weiter.',
         },
+        songs: {
+            term: i.songs,
+            text:
+                'Listet die Lieder der Ablaufpläne der nächsten vier Wochen und sagt, ob am Arrangement eine ChordPro-Datei mit Akkorden liegt. ' +
+                '„Nur Text“ heißt: nur eine .sng- oder .txt-Datei – das Liedblatt zeigt dann den Text ohne Akkorde. „Nur PDF“ und „Keine Datei“: das Liedblatt bleibt bei den Liedangaben. ' +
+                'Eine ChordPro-Datei bekommt ihr zum Beispiel aus SongSelect und legt sie in ChurchTools am Arrangement ab.',
+        },
     },
 
     /** "Darstellung" of the shape. */

@@ -51,6 +51,7 @@ export const HELP_CATALOG: HelpSection[] = [
     { id: 'all-countdown-look', title: `${t.blocks.countdown} · ${i.appearance}`, topic: { intro: th.countdown.intro, items: [th.countdown.showTitle, th.countdown.running] } },
     { id: 'all-agenda-look', title: `${t.blocks.agenda} · ${i.appearance}`, topic: { intro: th.agenda.intro, items: [th.agenda.countdown, th.agenda.delay] } },
     { id: 'all-songsheet-look', title: `${t.blocks.songsheet} · ${i.appearance}`, topic: { intro: th.songsheet.intro, items: [th.songsheet.chords] } },
+    { id: 'all-songsheet-songs', title: `${t.blocks.songsheet} · ${i.songs}`, topic: { intro: th.songsheet.intro, items: [th.songsheet.songs] } },
     { id: 'all-shape-look', title: `${t.blocks.shape} · ${i.appearance}`, topic: { intro: shape.intro, items: [shape.form, shape.kind, shape.corners, shape.border, shape.borderColor] } },
     { id: 'all-line-look', title: `${t.blocks.line} · ${i.appearance}`, topic: th.line },
     { id: 'all-background', title: `${t.help.slide} · ${i.background}`, topic: th.background },

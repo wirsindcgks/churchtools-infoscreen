@@ -635,6 +635,16 @@ export const t = {
         songsheetInfo:
             'Der Baustein folgt dem Ablaufplan wie „Ablauf“: Er zeigt den Text des Liedes, das gerade dran ist, sonst des nächsten Liedes. ' +
             'Weitergeschaltet wird in ChurchTools.',
+        songs: 'Lieder',
+        songsLoading: 'Lieder werden gelesen …',
+        songsDenied: 'Die Lieder der Ablaufpläne kannst du nicht sehen – dafür braucht es in ChurchTools die Rechte für Ablaufpläne und „Einzelne Song-Kategorien sehen“.',
+        songsFailed: 'Die Lieder ließen sich nicht lesen.',
+        songsNone: 'In den nächsten vier Wochen steht kein Lied in einem Ablaufplan.',
+        songsSummaryNone: 'Keine Lieder',
+        songsSummaryUnreadable: 'Nicht lesbar',
+        songsSummaryAll: 'Alle mit Akkorden',
+        songsSummaryMissing: (n: number, m: number) => `${n} von ${m} ohne Akkorde`,
+        songStatus: { chords: 'Akkorde', lyrics: 'Nur Text', pdf: 'Nur PDF', none: 'Keine Datei' },
         agendaTile: 'Kachel',
         agendaTileTime: 'Uhrzeit',
         agendaTilePosition: 'Position',

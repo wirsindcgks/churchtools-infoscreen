@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { AgendaEvent, AgendaPick, LiveItem, LivePosition } from './live';
 import { liveItems } from './live';
-import { lineSegments, pickSheetFile, readChordPro, readSng, readSongSheet, readTxt, sheetKind, sheetOf, sheetPage, songsheetPick, transposeSheet, type SongSheet } from './songsheet';
+import { lineSegments, pickSheetFile, readChordPro, readSng, readSongSheet, readTxt, sheetKind, sheetOf, sheetPage, songFileStatus, songsheetPick, transposeSheet, type SongSheet } from './songsheet';
 
 // Own texts in the build of the files of SongSelect (G82): sections as `{comment: …}`, bar lines in brackets; `.sng` with byte order mark and `#` head;
 // `.txt` with title and authors above and the block with the CCLI numbers below.
@@ -251,5 +251,16 @@ describe('sheetPage – the page of a running song from its time', () => {
 
     it('has no page without a length', () => {
         expect(sheetPage(10, 0, 3)).toBeNull();
+    });
+});
+
+describe('songFileStatus (Plan.md 121)', () => {
+    it('tells chords, lyrics only, PDF only and nothing', () => {
+        expect(songFileStatus([{ name: 'a.pdf' }, { name: 'a.chordpro' }])).toBe('chords');
+        expect(songFileStatus([{ name: 'a.pdf' }, { name: 'A.SNG' }])).toBe('lyrics');
+        expect(songFileStatus([{ name: 'a.txt' }])).toBe('lyrics');
+        expect(songFileStatus([{ name: 'Noten.PDF' }])).toBe('pdf');
+        expect(songFileStatus([{ name: 'a.mp3' }, { name: null }])).toBe('none');
+        expect(songFileStatus([])).toBe('none');
     });
 });
