@@ -24,7 +24,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 10. **Eine ganze Präsentation in einer anderen** (Punkt 120) – Wunsch von [DJSudermann](https://github.com/DJSudermann) aus dem ChurchTools-Forum, 2026-11-10; noch nicht eingeordnet, erst Konzept.
 11. **Hinweis am Menüpunkt „Einstellungen“** (Punkt 122) – ein Punkt an „Einstellungen“, wenn „Rechte aktualisieren“ etwas zu tun hätte; gebaut 2026-11-11, unveröffentlicht, mit dem Liedblatt-Release.
 12. **Infos des Admin-Kollegen** – vom Nutzer am 2026-11-11 als Artefakt geteilt (Link im Gesprächsverlauf beim Nutzer erfragen), **nach Abschluss der Steuerung (Punkt 121, E) lesen** (Nutzer).
-13. **Leerbild von „Ablauf“ und „Liedblatt“** (Punkt 123) – Uhr und nächster Ablauf statt „Heute kein Ablaufplan“; Bauplan 2026-11-11, im Bau.
+13. **Leerbild von „Ablauf“ und „Liedblatt“** (Punkt 123) – Uhr und nächster Ablauf statt „Heute kein Ablaufplan“; gebaut 2026-11-11, unveröffentlicht, nicht im Browser gesehen.
 
 **Kleine Reste, kein Auftrag, bis jemand sie wählt** *(durchgesehen mit dem Nutzer am 2026-10-10: später; „Rechte aktualisieren“ echt ausprobiert, ohne Auffälligkeiten)*:
 

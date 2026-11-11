@@ -1094,9 +1094,18 @@ describe('the agenda block (schema 1.61, Plan.md 118)', () => {
         expect(draw(agenda()).find('[data-testid="agenda"]').exists()).toBe(false);
     });
 
-    it('says "Heute kein Ablaufplan" once the agenda is read and no event has one today (user, 2026-11-11)', () => {
+    it('shows the clock and the next agenda once the agenda is read and no event has one today; without one a sentence (Plan.md 123)', () => {
         expect(draw(agenda()).find('[data-testid="agenda-empty"]').exists()).toBe(false);
-        expect(draw(agenda(), { agenda: { events: [], positions: {} } }).get('[data-testid="agenda-empty"]').text()).toBe('Heute kein Ablaufplan');
+        const none = draw(agenda(), { agenda: { events: [], positions: {} }, timeZone: 'UTC' });
+        expect(none.get('[data-testid="agenda-empty-clock"]').text()).toBe('08:00');
+        expect(none.get('[data-testid="agenda-empty-next"]').text()).toBe('In den nächsten zwei Wochen kein Ablaufplan');
+        const upcoming = [
+            { calendarId: 9, startMs: Date.parse('2026-10-05T08:00:00Z'), title: 'Fremd' },
+            { calendarId: 2, startMs: Date.parse('2026-10-11T08:00:00Z'), title: 'Gottesdienst' },
+            { calendarId: 2, startMs: Date.parse('2026-10-18T08:00:00Z'), title: 'Später' },
+        ];
+        const next = draw(agenda(), { agenda: { events: [], positions: {}, upcoming }, timeZone: 'UTC' });
+        expect(next.get('[data-testid="agenda-empty-next"]').text()).toBe('Nächster AblaufSo, 11.10. · 08:00Gottesdienst');
         expect(draw(agenda(), { agenda: sampleAgenda(NOW.getTime(), [2]) }).find('[data-testid="agenda-empty"]').exists()).toBe(false);
     });
 
@@ -1271,9 +1280,11 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
         expect(draw(songsheet()).find('[data-testid="songsheet"]').exists()).toBe(false);
     });
 
-    it('says so in a short line once the agenda is read and there is no song to show (user, 2026-11-11)', () => {
+    it('draws a faint note without text where there is no event today, and a short line where the agenda has no song left (Plan.md 123)', () => {
         expect(draw(songsheet()).find('[data-testid="songsheet-empty"]').exists()).toBe(false);
-        expect(draw(songsheet(), { agenda: { events: [], positions: {} } }).get('[data-testid="songsheet-empty"]').text()).toBe('Heute kein Ablaufplan');
+        const note = draw(songsheet(), { agenda: { events: [], positions: {} } }).get('[data-testid="songsheet-empty"]');
+        expect(note.find('svg').exists()).toBe(true);
+        expect(note.text()).toBe('');
         const last = feed().events[0]!.items.length - 1;
         expect(draw(songsheet(), { agenda: feed(last) }).get('[data-testid="songsheet-empty"]').text()).toBe('Kein Lied mehr im Ablauf');
     });

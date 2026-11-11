@@ -76,6 +76,8 @@ export interface AgendaEventResponse {
     startDate?: string | null;
     endDate?: string | null;
     isCanceled?: boolean | null;
+    /** The name of the event (G-measured 2026-11-11). */
+    name?: string | null;
     /** The calendar as a link object; its `domainIdentifier` is the calendar id as a string. */
     calendar?: { domainIdentifier?: string | null } | null;
 }

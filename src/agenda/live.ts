@@ -84,12 +84,21 @@ export interface LivePosition {
 /** The last readings of the positions by event id; `null` = the account may not read this one (no right, G81). */
 export type LivePositions = Record<number, LivePosition | null>;
 
+/** The next event with an agenda of a calendar that has none today (Plan.md 123); shown by the empty block "Ablauf". */
+export interface UpcomingAgenda {
+    calendarId: number;
+    startMs: number;
+    title: string;
+}
+
 /** The agenda data the blocks read: the events of today with agenda, and the positions read lately. */
 export interface AgendaFeed {
     events: AgendaEvent[];
     positions: LivePositions;
     /** The choice of the musicians per event (Plan.md 121 E); never in the offline copy: it is old after a few seconds. */
     controls?: Record<number, ControlDoc>;
+    /** The next agenda per calendar without one today (Plan.md 123); never in the offline copy. */
+    upcoming?: UpcomingAgenda[];
 }
 
 /** What the live view of ChurchTools shows: the current point, the next, the countdown and the delay. */

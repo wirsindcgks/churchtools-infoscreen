@@ -115,6 +115,12 @@ export function formatDayLabel(instant: Date, timeZone: string): string {
     return `${formatWeekday(instant, timeZone)} ${date}`;
 }
 
+/** "So, 15.11. · 10:00" – weekday, date and time of an instant (the next agenda, Plan.md 123). */
+export function formatWhen(instant: Date, timeZone: string): string {
+    const date = new Intl.DateTimeFormat(LOCALE, { timeZone, day: '2-digit', month: '2-digit' }).format(instant);
+    return `${formatWeekday(instant, timeZone)}, ${date} · ${formatTime(instant, timeZone)}`;
+}
+
 /** "10:00–11:30 Uhr", "10:00 Uhr" or "ganztägig". */
 export function timeRange(a: { allDay: boolean; startTime: string | null; endTime: string | null; multiDay: boolean }): string {
     if (a.allDay || !a.startTime) return tp.time.allDay;

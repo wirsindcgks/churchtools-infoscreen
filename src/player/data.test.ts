@@ -586,6 +586,35 @@ describe('the live agenda (schema 1.61, Plan.md 118)', () => {
         });
     });
 
+    it('names per calendar the first event with an agenda: not cancelled, by start, 404/403 skipped, at most six reads, other errors fail (Plan.md 123)', async () => {
+        const at = (id: number, hour: number, calendar: number, extra: object = {}) => ({ id, name: `Termin ${id}`, startDate: `2026-11-15T${String(hour).padStart(2, '0')}:00:00Z`, endDate: `2026-11-15T${String(hour + 1).padStart(2, '0')}:00:00Z`, calendar: { domainIdentifier: String(calendar) }, ...extra });
+        vi.mocked(api.fetchEventList).mockResolvedValue([at(3, 12, 2), at(1, 8, 2, { isCanceled: true }), at(2, 9, 2), at(4, 10, 5), at(5, 11, 5), at(6, 7, 9, { name: null })]);
+        vi.mocked(api.fetchAgenda).mockClear();
+        vi.mocked(api.fetchAgenda).mockImplementation(async (id) => {
+            if (id === 2) throw Object.assign(new Error('404'), { response: { status: 404 } });
+            if (id === 4) throw forbidden();
+            return { items: [] };
+        });
+        const day = [new Date('2026-11-12T00:00:00Z'), new Date('2026-11-26T00:00:00Z')] as const;
+        const found = await churchToolsPlayerData.upcomingAgendas([2, 5, 9], ...day, 'UTC');
+        expect(found).toEqual([
+            { calendarId: 9, startMs: Date.parse('2026-11-15T07:00:00Z'), title: '' },
+            { calendarId: 5, startMs: Date.parse('2026-11-15T11:00:00Z'), title: 'Termin 5' },
+            { calendarId: 2, startMs: Date.parse('2026-11-15T12:00:00Z'), title: 'Termin 3' },
+        ]);
+        expect(api.fetchAgenda).not.toHaveBeenCalledWith(1);
+
+        // Never more than six reads, however many events there are.
+        vi.mocked(api.fetchEventList).mockResolvedValue(Array.from({ length: 20 }, (_, i) => at(100 + i, 8, 2)));
+        vi.mocked(api.fetchAgenda).mockClear();
+        vi.mocked(api.fetchAgenda).mockRejectedValue(Object.assign(new Error('404'), { response: { status: 404 } }));
+        expect(await churchToolsPlayerData.upcomingAgendas([2], ...day, 'UTC')).toEqual([]);
+        expect(api.fetchAgenda).toHaveBeenCalledTimes(6);
+
+        vi.mocked(api.fetchAgenda).mockRejectedValue(new Error('Netz'));
+        await expect(churchToolsPlayerData.upcomingAgendas([2], ...day, 'UTC')).rejects.toThrow('Netz');
+    });
+
     it('reads the position with the offset to the server clock; without the right it is null, other errors fail', async () => {
         vi.mocked(api.fetchLivePosition).mockResolvedValueOnce({ pos_id: '3', switchdate: '2026-11-10T10:00:00Z', addseconds: '0', currentTime: Date.now() - 2000 });
         const position = await churchToolsPlayerData.agendaPosition(1);

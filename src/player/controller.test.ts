@@ -155,6 +155,7 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
         groupHomepages: vi.fn(async () => []),
         people: vi.fn(async (groupId: number) => ({ groupId, denied: false, people: [], roles: [], fields: [] })),
         agendaEvents: vi.fn(async () => []),
+        upcomingAgendas: vi.fn(async () => []),
         agendaPosition: vi.fn(async () => null),
         controls: vi.fn(async () => ({})),
         rooms: vi.fn(async () => []),
@@ -513,6 +514,29 @@ describe('player controller', () => {
         expect(controls).not.toHaveBeenCalled();
         far.stop();
         plain.stop();
+    });
+
+    it('asks for the next agenda only for calendars without one today, and survives a failure (Plan.md 123)', async () => {
+        const next = [{ calendarId: 2, startMs: NOW.getTime() + 3 * 86_400_000, title: 'Gottesdienst' }];
+        const upcomingAgendas = vi.fn<PlayerData['upcomingAgendas']>(async () => next);
+        const busy = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [agendaEvent(0)], upcomingAgendas }), fakeDeps());
+        await busy.start();
+        expect(upcomingAgendas).not.toHaveBeenCalled();
+        busy.stop();
+
+        const idle = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [], upcomingAgendas }), fakeDeps());
+        await idle.start();
+        expect(upcomingAgendas).toHaveBeenCalledWith([2], expect.any(Date), expect.any(Date), 'Europe/Berlin');
+        const [, from, to] = upcomingAgendas.mock.calls[0]!;
+        expect(to.getTime() - from.getTime()).toBeGreaterThanOrEqual(13 * 86_400_000);
+        expect(idle.state.agenda?.upcoming).toEqual(next);
+        idle.stop();
+
+        const broken = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [], upcomingAgendas: async () => Promise.reject(new Error('Netz')) }), fakeDeps());
+        await broken.start();
+        expect(broken.state.phase).toBe('running');
+        expect(broken.state.agenda?.upcoming).toEqual([]);
+        broken.stop();
     });
 
     it('keeps the last position when a reading fails, and notes a missing right as null (Plan.md 118)', async () => {

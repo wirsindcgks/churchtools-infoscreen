@@ -4,7 +4,7 @@
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import type { ControlDoc } from '../agenda/control';
-import { liveItems, parsePosition, type AgendaEvent, type LiveItem, type LivePosition } from '../agenda/live';
+import { liveItems, parsePosition, type AgendaEvent, type UpcomingAgenda, type LiveItem, type LivePosition } from '../agenda/live';
 import { pickSheetFile, readSongSheet, type SheetKind, type SongSheet } from '../agenda/songsheet';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
@@ -95,6 +95,11 @@ export interface PlayerData {
      * where the account may not read them (right 313, G82) the points stay without.
      */
     agendaEvents(calendarIds: number[], from: Date, to: Date, timeZone: string, options?: { sheets?: boolean }): Promise<AgendaEvent[]>;
+    /**
+     * Per calendar the first event within `[from, to)` that has an agenda (Plan.md 123): not cancelled, by start; a `404`/`403` of the
+     * agenda means none and the next event is tried; other errors fail. At most `MAX_UPCOMING_READS` agendas are read in all.
+     */
+    upcomingAgendas(calendarIds: number[], from: Date, to: Date, timeZone: string): Promise<UpcomingAgenda[]>;
     /** The live position of an event; `null` without the right (`403`, or `status: "fail"`) – the block then stays empty. Other errors fail. */
     agendaPosition(eventId: number): Promise<LivePosition | null>;
     /** The latest choice of the musicians per event (Plan.md 121 E); `{}` where the category is missing or not readable (`403`). Other errors fail. */
@@ -258,6 +263,31 @@ export const churchToolsPlayerData: PlayerData = {
             }),
         );
         return parts.filter((p): p is AgendaEvent => p !== null);
+    },
+    async upcomingAgendas(calendarIds, from, to, timeZone) {
+        const wanted = new Set(calendarIds);
+        const events = (await withTimeout(fetchEventList(from, to, timeZone)))
+            .flatMap((e) => {
+                const startMs = Date.parse(e.startDate ?? '');
+                const calendarId = Number(e.calendar?.domainIdentifier);
+                return typeof e.id === 'number' && e.isCanceled !== true && !Number.isNaN(startMs) && wanted.has(calendarId) ? [{ id: e.id, calendarId, startMs, title: e.name ?? '' }] : [];
+            })
+            .sort((a, b) => a.startMs - b.startMs);
+        const found = new Map<number, UpcomingAgenda>();
+        let reads = 0;
+        for (const e of events) {
+            if (found.has(e.calendarId)) continue;
+            if (reads >= MAX_UPCOMING_READS) break;
+            reads++;
+            try {
+                await withTimeout(fetchAgenda(e.id));
+                found.set(e.calendarId, { calendarId: e.calendarId, startMs: e.startMs, title: e.title });
+            } catch (error) {
+                const status = httpStatus(error);
+                if (status !== 404 && status !== 403) throw error;
+            }
+        }
+        return [...found.values()];
     },
     async agendaPosition(eventId) {
         try {
@@ -453,6 +483,9 @@ export async function readPeopleGroups(
         }),
     );
 }
+
+/** At most this many agendas are read to find the next ones (Plan.md 123). */
+const MAX_UPCOMING_READS = 6;
 
 /** At most this many files are read in one load (Plan.md 121 B): a service has a dozen songs, a wrong setup must not read hundreds. */
 const MAX_SHEET_FILES = 40;
