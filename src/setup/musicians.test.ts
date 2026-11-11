@@ -89,9 +89,9 @@ describe('musicianRuleset', () => {
                                 { dterm: [{ title: 'Mitgliedschaft in einer Gruppe' }, { and: [{ and: [{ oneof: [{ var: 'ctgroup.id' }, ['9']] }] }, { 'true and': [] }] }] },
                             ],
                         },
+                        primaryEntityAlias: 'person',
+                        responseFields: ['person.id', 'person.firstName', 'person.lastName'],
                     },
-                    primaryEntityAlias: 'person',
-                    responseFields: ['person.id', 'person.firstName', 'person.lastName'],
                 },
                 process: {
                     queryResultOnly: { none: { handleMembership: { groupMemberStatus: 'active', groupTypeRoleId: 29 } } },
@@ -101,6 +101,9 @@ describe('musicianRuleset', () => {
             },
         ];
         expect(musicianRuleset(84, [9], 29)).toEqual(expected);
+        // ChurchTools wants both in `query.params` ("Required property missing: primaryEntityAlias", first test 2026-11-11).
+        const params = (musicianRuleset(84, [9], 29)[0] as { query: { params: Record<string, unknown> } }).query.params;
+        expect(Object.keys(params)).toEqual(expect.arrayContaining(['primaryEntityAlias', 'responseFields', 'filter']));
     });
 
     it('lists every band group as text', () => {
