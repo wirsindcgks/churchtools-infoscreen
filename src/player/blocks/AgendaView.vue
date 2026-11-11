@@ -7,18 +7,26 @@
  */
 import { computed } from 'vue';
 import type { Block } from '../../model/schema';
-import { textStyle } from '../format';
+import { themeOf } from '../context';
+import { formatTime, formatWhen, textStyle } from '../format';
 import { tp } from '../../i18n/player';
 import AgendaCard from './AgendaCard.vue';
 import AgendaRing from './AgendaRing.vue';
 import { useAgenda } from './use-agenda';
 
 const props = defineProps<{ block: Extract<Block, { type: 'agenda' }> }>();
-const { context, display, circle, lateMinutes, left } = useAgenda(() => props.block);
+const { context, nowMs, display, circle, lateMinutes, left } = useAgenda(() => props.block);
 
 const showCircle = computed(() => props.block.showCountdown && circle.value !== null);
 const showDelay = computed(() => props.block.showDelay && lateMinutes.value !== null);
 const diameter = computed(() => Math.min(props.block.height * 0.62, props.block.width * 0.34));
+
+/** The first agenda to come in the calendars of the block; the clock of the empty block runs with the stage's time. */
+const next = computed(() => {
+    const entries = (context.agenda?.upcoming ?? []).filter((u) => props.block.calendarIds.includes(u.calendarId));
+    return entries.reduce<(typeof entries)[number] | null>((first, u) => (first === null || u.startMs < first.startMs ? u : first), null);
+});
+const clock = computed(() => formatTime(new Date(nowMs.value), context.timeZone));
 </script>
 
 <template>
@@ -42,20 +50,53 @@ const diameter = computed(() => Math.min(props.block.height * 0.62, props.block.
             </div>
         </div>
     </div>
-    <div v-else-if="context.agenda" class="empty" :style="textStyle(block.style)" data-testid="agenda-empty">{{ tp.agenda.none }}</div>
+    <div v-else-if="context.agenda" class="empty" :style="textStyle(block.style)" data-testid="agenda-empty">
+        <div class="clock" :style="{ color: themeOf(context).accent }" data-testid="agenda-empty-clock">{{ clock }}</div>
+        <div v-if="next" class="upcoming" data-testid="agenda-empty-next">
+            <div class="label">{{ tp.agenda.nextAgenda }}</div>
+            <div class="when">{{ formatWhen(new Date(next.startMs), context.timeZone) }}</div>
+            <div v-if="next.title" class="name">{{ next.title }}</div>
+        </div>
+        <div v-else class="soon" data-testid="agenda-empty-next">{{ tp.agenda.noneSoon }}</div>
+    </div>
 </template>
 
 <style scoped>
-/* Quiet on purpose: it says the screen works, not that something is wrong. */
+/* Quiet on purpose: it says the screen works, not that something is wrong. The clock runs, the next agenda is named under it (Plan.md 123). */
 .empty {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 100%;
     height: 100%;
-    font-size: 0.5em;
-    opacity: 0.5;
+    line-height: 1.15;
     text-align: center;
+}
+.clock {
+    font-size: 2.2em;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+.upcoming {
+    margin-top: 0.5em;
+}
+.upcoming .label {
+    font-size: 0.4em;
+}
+.when {
+    margin-top: 0.2em;
+    font-size: 0.9em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.name {
+    font-size: 0.8em;
+}
+.soon {
+    margin-top: 0.5em;
+    font-size: 0.4em;
+    opacity: 0.7;
 }
 .agenda {
     display: flex;

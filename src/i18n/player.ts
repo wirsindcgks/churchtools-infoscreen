@@ -75,8 +75,9 @@ export const tp = {
         next: 'Dann',
         soon: 'Gleich',
         total: 'Gesamtzeit',
-        /** Read, but no event of the chosen calendars has an agenda today: a short line instead of a dark block (user, 2026-11-11). */
-        none: 'Heute kein Ablaufplan',
+        /** The label over the next agenda in the empty block (Plan.md 123), and the sentence where there is none within two weeks. */
+        nextAgenda: 'Nächster Ablauf',
+        noneSoon: 'In den nächsten zwei Wochen kein Ablaufplan',
         /** The badge of a song without a service, the unit under the planned time on the tile, and "3 of 5" under the position. */
         song: 'Lied',
         clock: 'Uhr',
