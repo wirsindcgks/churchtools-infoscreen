@@ -94,7 +94,6 @@ export const tp = {
         next: 'Als Nächstes',
         none: 'Kein Liedtext hinterlegt',
         /** Today's agenda has no song (left). */
-        noSong: 'Kein Lied mehr im Ablauf',
     },
 
     people: {

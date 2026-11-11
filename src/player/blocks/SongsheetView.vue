@@ -204,10 +204,10 @@ const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center
         <div v-if="sheet?.footer" class="foot" data-testid="songsheet-footer">{{ sheet.footer }}</div>
         <PageProgress v-if="paged" :key="page" :seconds="turnSeconds" :held="held" :offset="pageOffset" :size="8" :inset="16" :number="page + 1" :total="pages" :color="themeOf(context).text" />
     </div>
-    <div v-else-if="context.agenda" class="empty" :class="{ 'empty--note': !pick }" :style="textStyle(block.style)" data-testid="songsheet-empty">
-        <template v-if="pick">{{ tp.songsheet.noSong }}</template>
-        <!-- No event today: only a large, faint note, the hint stands once, in "Ablauf" (Plan.md 123). -->
-        <svg v-else class="note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <!-- No event today: only a large, faint note, the hint stands once, in "Ablauf" (Plan.md 123). An event without a song left shows
+         nothing at all – the stage needs no word for it (user, 2026-11-11). -->
+    <div v-else-if="context.agenda && !pick" class="empty empty--note" :style="textStyle(block.style)" data-testid="songsheet-empty">
+        <svg class="note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M9 18V5l12-2v13" />
             <circle cx="6" cy="18" r="3" />
             <circle cx="18" cy="16" r="3" />

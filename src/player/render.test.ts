@@ -1280,13 +1280,15 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
         expect(draw(songsheet()).find('[data-testid="songsheet"]').exists()).toBe(false);
     });
 
-    it('draws a faint note without text where there is no event today, and a short line where the agenda has no song left (Plan.md 123)', () => {
+    it('draws a faint note without text where there is no event today, and nothing where the agenda has no song left (Plan.md 123)', () => {
         expect(draw(songsheet()).find('[data-testid="songsheet-empty"]').exists()).toBe(false);
         const note = draw(songsheet(), { agenda: { events: [], positions: {} } }).get('[data-testid="songsheet-empty"]');
         expect(note.find('svg').exists()).toBe(true);
         expect(note.text()).toBe('');
         const last = feed().events[0]!.items.length - 1;
-        expect(draw(songsheet(), { agenda: feed(last) }).get('[data-testid="songsheet-empty"]').text()).toBe('Kein Lied mehr im Ablauf');
+        const over = draw(songsheet(), { agenda: feed(last) });
+        expect(over.find('[data-testid="songsheet-empty"]').exists()).toBe(false);
+        expect(over.find('[data-testid="songsheet"]').exists()).toBe(false);
     });
 
     it('shows the next song under "Als Nächstes" while another point runs, with chords, sections and the footer', () => {
