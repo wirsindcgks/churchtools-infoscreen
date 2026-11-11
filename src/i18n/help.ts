@@ -329,7 +329,8 @@ export const th = {
             'Der Baustein zeigt den Text des Liedes, das im Ablaufplan gerade dran ist, mit Akkorden über der Silbe. Ist der Punkt kein Lied, steht das nächste Lied da, überschrieben mit „Als Nächstes“; vor dem Beginn das erste. ' +
             'Den Text liest er aus einer Datei am Arrangement des Liedes in ChurchTools: eine ChordPro-Datei (.chordpro, .cho, .chopro, .crd) mit Akkorden, sonst den Liedtext aus einer .sng- oder .txt-Datei, dann ohne Akkorde. ' +
             'Liedtexte auf dem Bildschirm zu zeigen fällt unter die CCLI-Lizenz eurer Gemeinde. Copyright und Lizenznummer bleiben deshalb unten stehen – bitte nicht verdecken. ' +
-            'Das Gerät braucht das Recht „Einzelne Song-Kategorien sehen“; ohne es steht nur der Kopf mit den Liedangaben da.',
+            'Das Gerät braucht das Recht „Einzelne Song-Kategorien sehen“; ohne es steht nur der Kopf mit den Liedangaben da. ' +
+            'Musiker wählen den Liedteil auf dem Handy unter der Seite „Steuerung“ der Erweiterung (Adresse …/steuerung); ohne Tipp blättert das Liedblatt nach Zeit.',
         chords: {
             term: i.showChords,
             text:

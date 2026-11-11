@@ -16,7 +16,7 @@
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { appointmentServiceIds } from '../appointments/services';
 import { httpStatus } from '../ct/client';
-import { CONTROL_CATEGORY, controlsByEvent, type ControlDoc } from '../agenda/control';
+import { CONTROL_CATEGORY, controlsByEvent, planControlWrite, type ControlDoc } from '../agenda/control';
 import { heartbeatTime, readHeartbeat, type HeartbeatDoc } from '../model/heartbeat';
 import {
     readMedia,
@@ -444,6 +444,26 @@ export class ScreenRepository {
         } catch (error) {
             if (httpStatus(error) === 403) return {};
             throw error;
+        }
+    }
+
+    /**
+     * Writes the choice of a musician (Plan.md 121 E): changes the value of the event or creates it, then cleans up (old choices
+     * of other events, doubles). Throws where the category is missing; a failed cleanup is only logged.
+     */
+    async writeControl(doc: ControlDoc): Promise<void> {
+        const categoryId = await this.controlCategoryId();
+        if (categoryId === null) throw new Error(tr.controlUnavailable);
+        const plan = planControlWrite(await this.kv.listValues(categoryId), doc, Date.now());
+        const text = JSON.stringify(doc);
+        if (plan.updateId !== null) await this.kv.updateValue(categoryId, plan.updateId, text);
+        else await this.kv.createValue(categoryId, text);
+        for (const id of plan.removeIds) {
+            try {
+                await this.kv.deleteValue(categoryId, id);
+            } catch (error) {
+                console.warn('Eine alte Wahl der Steuerung konnte nicht entfernt werden:', error);
+            }
         }
     }
 
