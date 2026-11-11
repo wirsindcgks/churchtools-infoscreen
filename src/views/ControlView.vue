@@ -5,7 +5,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue';
 import { stepPart, type ControlDoc, type PartRef } from '../agenda/control';
-import { pickEvent, type AgendaEvent, type AgendaPick, type LivePosition } from '../agenda/live';
+import { agendaDisplay, clockText, pickEvent, type AgendaEvent, type AgendaPick, type LivePosition } from '../agenda/live';
 import { sheetOf, songsheetPick } from '../agenda/songsheet';
 import { fetchCalendars, fetchTimeZone } from '../ct/api';
 import { currentPerson, displayName } from '../ct/client';
@@ -62,6 +62,27 @@ const songs = computed(() =>
         return [{ index, title: item.title, key: sheet?.key ?? item.songDetails?.key, parts: sheet?.sections ?? [] }];
     }),
 );
+
+/** A second of its own, so that the clock of the plan runs between the readings. */
+const tick = ref(Date.now());
+const ticker = setInterval(() => (tick.value = Date.now()), 1000);
+onBeforeUnmount(() => clearInterval(ticker));
+
+/** Where the plan stands (user, 2026-11-11): the point that runs with its time left and the next one – as the block "Ablauf" sees it. */
+const plan = computed(() => {
+    const p = pick.value;
+    if (!p) return null;
+    const display = agendaDisplay(p, tick.value);
+    if (!display) return { over: true as const };
+    return {
+        over: false as const,
+        soon: display.kind === 'soon',
+        title: display.title,
+        clock: display.countdownSeconds === null ? null : clockText(display.countdownSeconds),
+        late: (display.countdownSeconds ?? 0) < 0,
+        next: display.next,
+    };
+});
 
 const screenLine = computed(() => {
     const s = shown.value;
@@ -177,6 +198,20 @@ onBeforeUnmount(() => {
             <select v-if="events.length > 1" v-model="eventId" class="event" :aria-label="t.control.eventLabel">
                 <option v-for="e in events" :key="e.eventId" :value="e.eventId">{{ eventLabel(e) }}</option>
             </select>
+            <div v-if="plan" class="plan" data-testid="control-plan">
+                <template v-if="plan.over">{{ t.control.planOver }}</template>
+                <template v-else>
+                    <div class="plan-now">
+                        <span class="plan-label">{{ plan.soon ? t.control.planSoon : t.control.planNow }}</span>
+                        <span class="plan-title">{{ plan.title }}</span>
+                        <span v-if="plan.clock" class="plan-clock" :class="{ late: plan.late }">{{ plan.clock }}</span>
+                    </div>
+                    <div v-if="plan.next" class="plan-next">
+                        <span class="plan-label">{{ t.control.planNext }}</span>
+                        <span>{{ plan.next }}</span>
+                    </div>
+                </template>
+            </div>
             <p class="screen">{{ screenLine }}</p>
             <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
             <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
@@ -238,6 +273,45 @@ p {
     padding: 10px 12px;
     border-radius: 8px;
     background: #4a2020;
+}
+/* Where the plan stands: the running point big with its time, the next one below. */
+.plan {
+    margin-bottom: 8px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: #1d2027;
+}
+.plan-now,
+.plan-next {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+.plan-next {
+    margin-top: 4px;
+    opacity: 0.75;
+}
+.plan-label {
+    flex: none;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+.plan-title {
+    flex: 1;
+    min-width: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+.plan-clock {
+    flex: none;
+    font-size: 1.25rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.plan-clock.late {
+    color: #f87171;
 }
 .screen {
     padding: 10px 12px;
