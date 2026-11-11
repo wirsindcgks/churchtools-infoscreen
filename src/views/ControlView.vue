@@ -45,8 +45,10 @@ const shown = computed(() => (pick.value ? songsheetPick(pick.value, control.val
 const shownIndex = computed(() => (shown.value && event.value ? event.value.items.indexOf(shown.value.item) : -1));
 const activePart = computed<PartRef | null>(() => {
     const s = shown.value;
-    if (!s || s.section === undefined || shownIndex.value < 0) return null;
-    return { itemIndex: shownIndex.value, section: s.section };
+    if (!s || shownIndex.value < 0) return null;
+    // Without a choice the screen shows part 1 (screens with "Nach Zeit blättern" are the exception, the page does not know the blocks).
+    const section = s.section ?? ((sheetOf(s.item)?.sections.length ?? 0) > 0 ? 0 : undefined);
+    return section === undefined ? null : { itemIndex: shownIndex.value, section };
 });
 const openIndex = computed(() => opened.value ?? shownIndex.value);
 watch(shownIndex, () => (opened.value = null));
@@ -87,19 +89,15 @@ const plan = computed(() => {
 const screenLine = computed(() => {
     const s = shown.value;
     if (!s) return t.control.screenNone;
-    if (s.upcoming) return t.control.screenNext(s.item.title);
     const sections = sheetOf(s.item)?.sections ?? [];
-    const part = s.section === undefined ? null : sections[s.section] ? sections[s.section]!.label || t.control.part(s.section + 1) : null;
-    return t.control.screen(s.item.title, part);
+    const at = activePart.value?.section;
+    const part = at === undefined ? null : sections[at] ? sections[at]!.label || t.control.part(at + 1) : null;
+    // "Als Nächstes" shows its first part on the screen too: the line names it the same way.
+    return s.upcoming ? t.control.screenNext(s.item.title, part) : t.control.screen(s.item.title, part);
 });
 
 const previous = computed(() => (event.value ? stepPart(event.value, activePart.value, -1) : null));
-/** Without a chosen part "Weiter" starts at the first part of the song the screen shows, not at the first song of the agenda. */
-const following = computed(() => {
-    if (!event.value) return null;
-    if (!activePart.value && shown.value && (sheetOf(shown.value.item)?.sections.length ?? 0) > 0) return { itemIndex: shownIndex.value, section: 0 };
-    return stepPart(event.value, activePart.value, 1);
-});
+const following = computed(() => (event.value ? stepPart(event.value, activePart.value, 1) : null));
 
 function preselected(list: AgendaEvent[]): AgendaEvent {
     const now = Date.now();

@@ -1291,8 +1291,19 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
         expect(over.find('[data-testid="songsheet"]').exists()).toBe(false);
     });
 
-    it('shows the next song under "Als Nächstes" while another point runs, with chords, sections and the footer', () => {
+    it('shows part 1 of the next song under "Als Nächstes" without a choice, with chords, a faint start of part 2 and the footer', () => {
         const wrapper = draw(songsheet(), { agenda: feed() });
+        expect(wrapper.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
+        expect(wrapper.findAll('[data-testid="songsheet-part"]')).toHaveLength(1);
+        expect(wrapper.get('[data-testid="songsheet-part"]').text()).toContain('Strophe 1');
+        expect(wrapper.get('[data-testid="songsheet-text"]').text()).not.toContain('Refrain');
+        expect(wrapper.get('[data-testid="songsheet-preview"]').text()).toContain('Refrain');
+        expect(wrapper.findAll('[data-testid="songsheet-chord"]').length).toBeGreaterThan(3);
+        expect(wrapper.get('[data-testid="songsheet-footer"]').text()).toContain('CCLI-Lizenznummer');
+    });
+
+    it('shows the whole text in columns under "Als Nächstes" with "Nach Zeit blättern", with chords, sections and the footer', () => {
+        const wrapper = draw(songsheet({ pageByTime: true }), { agenda: feed() });
         expect(wrapper.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
         expect(wrapper.get('[data-testid="songsheet-title"]').text()).toBe('Segenslied');
         expect(wrapper.get('[data-testid="songsheet-meta"]').text()).toBe('C · 96 BPM');
@@ -1304,6 +1315,7 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
 
     it('shows the running song without "Als Nächstes"', () => {
         const wrapper = draw(songsheet(), { agenda: feed(4) });
+        expect(wrapper.get('[data-testid="songsheet-part"]').text()).toContain('Strophe 1');
         expect(wrapper.get('[data-testid="songsheet-title"]').text()).toBe('Segenslied');
         expect(wrapper.find('[data-testid="songsheet-next"]').exists()).toBe(false);
     });
@@ -1353,13 +1365,16 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
             expect(wrapper.find('[data-testid="songsheet-preview"]').exists()).toBe(false);
         });
 
-        it('stays as it was without a choice, or with one that no longer holds', () => {
+        it('shows part 1 without a choice, or with one that no longer holds, and the columns with "Nach Zeit blättern"', () => {
             for (const agenda of [feed(), chosen(1, { itemIndex: 5 })]) {
                 const wrapper = draw(songsheet(), { agenda });
-                expect(wrapper.find('[data-testid="songsheet-part"]').exists()).toBe(false);
-                expect(wrapper.find('[data-testid="songsheet-preview"]').exists()).toBe(false);
-                expect(wrapper.findAll('[data-testid="songsheet-label"]')).toHaveLength(3);
+                expect(wrapper.get('[data-testid="songsheet-part"]').text()).toContain('Strophe 1');
                 expect(wrapper.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
+                const columns = draw(songsheet({ pageByTime: true }), { agenda });
+                expect(columns.find('[data-testid="songsheet-part"]').exists()).toBe(false);
+                expect(columns.find('[data-testid="songsheet-preview"]').exists()).toBe(false);
+                expect(columns.findAll('[data-testid="songsheet-label"]')).toHaveLength(3);
+                expect(columns.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
             }
         });
     });

@@ -515,7 +515,7 @@ describe('the live agenda (schema 1.61, Plan.md 118)', () => {
 
     describe('the text of the songs for the block "Liedblatt" (Plan.md 121 B)', () => {
         const day = [new Date('2026-11-10T00:00:00Z'), new Date('2026-11-11T00:00:00Z')] as const;
-        const songBlock = (): Block => ({ id: 's', type: 'songsheet', x: 0, y: 0, width: 1400, height: 700, calendarIds: [2], showChords: true, style });
+        const songBlock = (): Block => ({ id: 's', type: 'songsheet', x: 0, y: 0, width: 1400, height: 700, calendarIds: [2], showChords: true, pageByTime: false, style });
         const withSong = (arrangementId: number) => {
             vi.mocked(api.fetchEventList).mockResolvedValue([{ id: 1, startDate: '2026-11-10T10:00:00Z', endDate: '2026-11-10T11:00:00Z', calendar: { domainIdentifier: '2' } }]);
             vi.mocked(api.fetchAgenda).mockResolvedValue({ items: [{ type: 'song', duration: 200, song: { title: 'Lied', arrangementId, key: 'C' } }] });

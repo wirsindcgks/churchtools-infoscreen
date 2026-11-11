@@ -631,6 +631,7 @@ export const t = {
         showSong: 'Liedangaben',
         showChords: 'Akkorde',
         songsheetNoChords: 'Ohne Akkorde',
+        pageByTime: 'Nach Zeit blättern',
         /** The block "Liedblatt" (Plan.md 121 B): the paragraph under the calendars. */
         songsheetInfo:
             'Der Baustein folgt dem Ablaufplan wie „Ablauf“: Er zeigt den Text des Liedes, das gerade dran ist, sonst des nächsten Liedes. ' +
@@ -1548,7 +1549,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         eventLabel: 'Termin',
         eventOption: (time: string) => `Termin um ${time} Uhr`,
         screen: (song: string, part: string | null) => `Bildschirm: ${song}${part ? ` – ${part}` : ''}`,
-        screenNext: (song: string) => `Als Nächstes: ${song}`,
+        screenNext: (song: string, part: string | null) => `Als Nächstes: ${song}${part ? ` – ${part}` : ''}`,
         screenNone: 'Bildschirm: kein Lied',
         planNow: 'Jetzt',
         planSoon: 'Gleich',
