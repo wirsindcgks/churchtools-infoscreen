@@ -215,7 +215,8 @@ onBeforeUnmount(() => {
 .control {
     box-sizing: border-box;
     min-height: 100vh;
-    padding: 16px 16px 96px;
+    /* Room for the big buttons at the bottom, which stand fixed over the list. */
+    padding: 16px 16px calc(136px + env(safe-area-inset-bottom));
     background: #101114;
     color: #f2f2f2;
     font-size: 1.1rem;
@@ -312,8 +313,14 @@ button:disabled {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    padding: 12px 16px;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
     background: #101114;
     border-top: 1px solid #3a3f4a;
+}
+/* Back and next are what a hand on stage reaches for blind: tall and in big letters (user, 2026-11-11). */
+.steps button {
+    min-height: 96px;
+    font-size: 1.5rem;
+    font-weight: 600;
 }
 </style>
