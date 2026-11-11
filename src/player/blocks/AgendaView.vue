@@ -63,13 +63,20 @@ const clock = computed(() => formatTime(new Date(nowMs.value), context.timeZone)
 
 <style scoped>
 /* Quiet on purpose: it says the screen works, not that something is wrong. The clock runs, the next agenda is named under it (Plan.md 123). */
+/*
+ * The empty view sizes itself by the block, not only by its font: the font of a card block is set for "Jetzt", and the clock with the
+ * next agenda would run out of a flat block (test, 2026-11-11). `cqh` is the height of the block; where a browser lacks it, the first
+ * declaration stands.
+ */
 .empty {
+    container-type: size;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 100%;
     height: 100%;
+    overflow: hidden;
     line-height: 1.15;
     text-align: center;
 }
@@ -77,6 +84,15 @@ const clock = computed(() => formatTime(new Date(nowMs.value), context.timeZone)
     font-size: 2.2em;
     font-weight: 700;
     font-variant-numeric: tabular-nums;
+}
+/* Centred under the clock whatever the alignment of the block says. */
+.upcoming,
+.soon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 100%;
+    text-align: center;
 }
 .upcoming {
     margin-top: 0.5em;
@@ -91,12 +107,38 @@ const clock = computed(() => formatTime(new Date(nowMs.value), context.timeZone)
     font-variant-numeric: tabular-nums;
 }
 .name {
+    max-width: 100%;
+    overflow: hidden;
     font-size: 0.8em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 .soon {
     margin-top: 0.5em;
     font-size: 0.4em;
     opacity: 0.7;
+}
+@supports (font-size: 1cqh) {
+    .clock {
+        font-size: min(2.2em, 34cqh);
+    }
+    .upcoming,
+    .soon {
+        margin-top: min(0.5em, 5cqh);
+    }
+    .upcoming .label {
+        font-size: min(0.4em, 6cqh);
+    }
+    .when {
+        margin-top: min(0.2em, 2cqh);
+        font-size: min(0.9em, 14cqh);
+    }
+    .name {
+        font-size: min(0.8em, 11cqh);
+    }
+    .soon {
+        font-size: min(0.4em, 7cqh);
+    }
 }
 .agenda {
     display: flex;
