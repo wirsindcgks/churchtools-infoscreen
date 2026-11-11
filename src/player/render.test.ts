@@ -1094,6 +1094,12 @@ describe('the agenda block (schema 1.61, Plan.md 118)', () => {
         expect(draw(agenda()).find('[data-testid="agenda"]').exists()).toBe(false);
     });
 
+    it('says "Heute kein Ablaufplan" once the agenda is read and no event has one today (user, 2026-11-11)', () => {
+        expect(draw(agenda()).find('[data-testid="agenda-empty"]').exists()).toBe(false);
+        expect(draw(agenda(), { agenda: { events: [], positions: {} } }).get('[data-testid="agenda-empty"]').text()).toBe('Heute kein Ablaufplan');
+        expect(draw(agenda(), { agenda: sampleAgenda(NOW.getTime(), [2]) }).find('[data-testid="agenda-empty"]').exists()).toBe(false);
+    });
+
     it('shows the current and the next point, the countdown in the circle and the delay in red', () => {
         const wrapper = draw(agenda(), { agenda: sampleAgenda(NOW.getTime(), [2]) });
         expect(wrapper.get('[data-testid="agenda-now-label"]').text()).toBe('Jetzt');
@@ -1263,6 +1269,13 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
 
     it('shows nothing without agenda data', () => {
         expect(draw(songsheet()).find('[data-testid="songsheet"]').exists()).toBe(false);
+    });
+
+    it('says so in a short line once the agenda is read and there is no song to show (user, 2026-11-11)', () => {
+        expect(draw(songsheet()).find('[data-testid="songsheet-empty"]').exists()).toBe(false);
+        expect(draw(songsheet(), { agenda: { events: [], positions: {} } }).get('[data-testid="songsheet-empty"]').text()).toBe('Heute kein Ablaufplan');
+        const last = feed().events[0]!.items.length - 1;
+        expect(draw(songsheet(), { agenda: feed(last) }).get('[data-testid="songsheet-empty"]').text()).toBe('Kein Lied mehr im Ablauf');
     });
 
     it('shows the next song under "Als Nächstes" while another point runs, with chords, sections and the footer', () => {
