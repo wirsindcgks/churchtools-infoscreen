@@ -77,9 +77,9 @@ export function musicianRuleset(groupId: number, sourceGroupIds: number[], group
                             },
                         ],
                     },
+                    primaryEntityAlias: 'person',
+                    responseFields: ['person.id', 'person.firstName', 'person.lastName'],
                 },
-                primaryEntityAlias: 'person',
-                responseFields: ['person.id', 'person.firstName', 'person.lastName'],
             },
             process: {
                 queryResultOnly: { none: { handleMembership: { groupMemberStatus: 'active', groupTypeRoleId } } },
