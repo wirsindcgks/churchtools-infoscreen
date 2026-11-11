@@ -1313,4 +1313,41 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
         expect(draw(songsheet(), { agenda: feed(6) }).find('[data-testid="songsheet"]').exists()).toBe(false);
         expect(draw(songsheet({ calendarIds: [5] }), { agenda: feed() }).find('[data-testid="songsheet"]').exists()).toBe(false);
     });
+
+    describe('with a part chosen by the musicians (Plan.md 121 E)', () => {
+        /** The song is index 5 of the example; the choice is newer than the last switch of the live agenda. */
+        const chosen = (section: number, extra: Record<string, unknown> = {}) => {
+            const agenda = feed();
+            const event = agenda.events[0]!;
+            const control = { eventId: event.eventId, itemIndex: 5, arrangementId: event.items[5]!.arrangementId, section, at: NOW.toISOString(), ...extra };
+            return { ...agenda, controls: { [event.eventId]: control } };
+        };
+
+        it('shows only the chosen part, with a faint start of the next, and no "Als Nächstes"', () => {
+            const wrapper = draw(songsheet(), { agenda: chosen(1) });
+            expect(wrapper.find('[data-testid="songsheet-next"]').exists()).toBe(false);
+            expect(wrapper.get('[data-testid="songsheet-title"]').text()).toBe('Segenslied');
+            expect(wrapper.findAll('[data-testid="songsheet-part"]')).toHaveLength(1);
+            expect(wrapper.get('[data-testid="songsheet-part"]').text()).toContain('Refrain');
+            expect(wrapper.get('[data-testid="songsheet-text"]').text()).not.toContain('Strophe 1');
+            expect(wrapper.get('[data-testid="songsheet-preview"]').text()).toContain('Strophe 2');
+            expect(wrapper.get('[data-testid="songsheet-preview"]').find('[data-testid="songsheet-chord"]').exists()).toBe(false);
+        });
+
+        it('has no preview after the last part', () => {
+            const wrapper = draw(songsheet(), { agenda: chosen(2) });
+            expect(wrapper.get('[data-testid="songsheet-part"]').text()).toContain('Strophe 2');
+            expect(wrapper.find('[data-testid="songsheet-preview"]').exists()).toBe(false);
+        });
+
+        it('stays as it was without a choice, or with one that no longer holds', () => {
+            for (const agenda of [feed(), chosen(1, { itemIndex: 4 })]) {
+                const wrapper = draw(songsheet(), { agenda });
+                expect(wrapper.find('[data-testid="songsheet-part"]').exists()).toBe(false);
+                expect(wrapper.find('[data-testid="songsheet-preview"]').exists()).toBe(false);
+                expect(wrapper.findAll('[data-testid="songsheet-label"]')).toHaveLength(3);
+                expect(wrapper.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
+            }
+        });
+    });
 });

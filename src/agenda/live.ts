@@ -3,6 +3,7 @@
  * placeholder "not started" in front, the position as an index into it, the countdown and the delay from `switchdate`,
  * `addseconds` and the server time. Pure functions – what is fetched lives in `src/ct/api.ts` and `src/player/data.ts`.
  */
+import type { ControlDoc } from './control';
 import type { SongSheet } from './songsheet';
 
 /** One point of `GET /events/{id}/agenda`, as far as this code reads it. */
@@ -87,6 +88,8 @@ export type LivePositions = Record<number, LivePosition | null>;
 export interface AgendaFeed {
     events: AgendaEvent[];
     positions: LivePositions;
+    /** The choice of the musicians per event (Plan.md 121 E); never in the offline copy: it is old after a few seconds. */
+    controls?: Record<number, ControlDoc>;
 }
 
 /** What the live view of ChurchTools shows: the current point, the next, the countdown and the delay. */

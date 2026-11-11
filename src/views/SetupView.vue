@@ -1330,6 +1330,7 @@ onMounted(async () => {
             // Without these the assistant only explains; the page itself still works.
             // An administrator's visit creates the category of the signs of life, if it is missing (Plan.md 59).
             const statusId = (admin.value ? repository.ensureStatusCategory() : repository.statusCategoryId()).catch(() => null);
+            if (admin.value) void repository.ensureControlCategory();
             const draftsId = (admin.value ? repository.drafts.ensureCategory() : repository.drafts.categoryId()).catch(() => null);
             const changelogId = (admin.value ? repository.changelog.ensureCategory() : repository.changelog.categoryId()).catch(() => null);
             let visible: Partial<Record<CategoryKey, number>>;

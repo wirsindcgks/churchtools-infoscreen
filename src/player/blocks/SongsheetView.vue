@@ -5,6 +5,8 @@
  * tempo, the foot keeps copyright and CCLI numbers (the licence of the church). What does not fit stands in columns, then in pages:
  * they are counted after the render (the width the columns take against the width of the block) and turn after the length of the
  * running song – by the time that passed since it began, or, without a duration, on a beat of its own. The agenda comes from `use-agenda.ts`, the choice of the song and the chords from `src/agenda/songsheet.ts`.
+ * Where the musicians chose a part (Plan.md 121 E, `context.agenda.controls`) the block shows only that part, as big as the font size says
+ * and smaller (down to half) only where it does not fit, no columns and no pages; below it, faint, the heading and first line of the next part.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { UNTIMED_PAGE_SECONDS, lineSegments, sheetOf, sheetPage, songsheetPick } from '../../agenda/songsheet';
@@ -19,12 +21,14 @@ const props = defineProps<{ block: Extract<Block, { type: 'songsheet' }>; slideS
 const { context, pick, display } = useAgenda(() => props.block);
 
 // Every part is a computed of its own: the pick is made new each second, these keep their value (and so the render) while nothing changes.
-const selected = computed(() => songsheetPick(pick.value));
+const selected = computed(() => songsheetPick(pick.value, pick.value ? context.agenda?.controls?.[pick.value.event.eventId] : undefined));
 const item = computed(() => selected.value?.item ?? null);
 const songId = computed(() => selected.value?.id ?? '');
 const upcoming = computed(() => selected.value?.upcoming ?? false);
 const lengthSeconds = computed(() => selected.value?.lengthSeconds ?? null);
 const sheet = computed(() => (item.value ? sheetOf(item.value) : null));
+/** The part the musicians chose; `undefined` = the block runs by the agenda as ever. */
+const section = computed(() => selected.value?.section);
 const showChords = computed(() => props.block.showChords);
 
 /** Title · key · tempo; the key of the sheet is the one after transposing, else the one of the arrangement. */
@@ -33,16 +37,48 @@ const meta = computed(() => {
     return [sheet.value?.key ?? details?.key, details?.bpm ? tp.agenda.bpm(details.bpm) : ''].filter(Boolean).join(' · ');
 });
 
-/** The lines to draw: without chords the lines that carry nothing else are left out (instrumental parts). */
-const sections = computed(() =>
-    (sheet.value?.sections ?? []).map((section) => ({
-        label: section.label,
-        lines: section.lines
+/** The sections to draw, empty ones kept (their place is the index of a chosen part): without chords the lines that carry nothing else are left out (instrumental parts). */
+const allSections = computed(() =>
+    (sheet.value?.sections ?? []).map((part) => ({
+        label: part.label,
+        lines: part.lines
             .filter((line) => showChords.value || line.text.trim() !== '')
             .map((line) => ({ plain: !showChords.value || !line.chords.length, text: line.text, segments: lineSegments(line) })),
-    })).filter((section) => section.lines.length > 0),
+    })),
 );
+const sections = computed(() => allSections.value.filter((part) => part.lines.length > 0));
 const hasLines = computed(() => sections.value.length > 0);
+
+// --- a chosen part ---
+
+/** The chosen part; a part that would be empty without chords shows its heading only. */
+const part = computed(() => (section.value === undefined ? null : (allSections.value[section.value] ?? null)));
+/** Heading and first line of the part after it, without chords; nothing after the last. */
+const preview = computed(() => {
+    const next = part.value && section.value !== undefined ? allSections.value[section.value + 1] : undefined;
+    return next ? { label: next.label, text: next.lines.find((line) => line.text.trim() !== '')?.text ?? '' } : null;
+});
+const shown = computed(() => (part.value ? [part.value] : sections.value));
+const showText = computed(() => (part.value ? true : !!sheet.value && hasLines.value));
+/** The factor the chosen part is made smaller by where it does not fit. */
+const scale = ref(1);
+let fitRun = 0;
+const MIN_SCALE = 0.5;
+
+/** Measured after the render like the pages: back to full size, then smaller by the overflow until it fits or half is reached. */
+async function fit(): Promise<void> {
+    const run = ++fitRun;
+    scale.value = 1;
+    await nextTick();
+    for (let i = 0; i < 3 && run === fitRun; i++) {
+        const view = viewport.value;
+        if (!view || view.clientHeight <= 0 || view.clientWidth <= 0) return;
+        const over = Math.max(view.scrollHeight / view.clientHeight, view.scrollWidth / view.clientWidth);
+        if (!(over > 1) || scale.value <= MIN_SCALE) return;
+        scale.value = Math.max(MIN_SCALE, (scale.value / over) * 0.98);
+        await nextTick();
+    }
+}
 
 // --- pages ---
 
@@ -57,6 +93,11 @@ const held = computed(() => context.paging === false || turnSeconds.value === 0)
 
 /** Pages the columns take: the width they overflow with, against the width of the block. */
 function measure(): void {
+    if (part.value) {
+        pages.value = 1;
+        void fit();
+        return;
+    }
     const view = viewport.value;
     const cols = columns.value;
     if (!view || !cols || view.clientWidth <= 0) return;
@@ -101,6 +142,7 @@ watch(
     [
         songId,
         sheet,
+        section,
         showChords,
         () => props.block.style.fontFamily,
         () => props.block.style.fontSize,
@@ -119,11 +161,15 @@ onMounted(() => {
 });
 onBeforeUnmount(() => clearInterval(timer));
 
-const columnsStyle = computed(() => ({
-    columnWidth: `${columnWidth.value}px`,
-    columnGap: `${gap.value}px`,
-    transform: page.value ? `translateX(${-page.value * (pageWidth.value + gap.value)}px)` : undefined,
-}));
+const columnsStyle = computed(() =>
+    part.value
+        ? { fontSize: `${scale.value}em` }
+        : {
+              columnWidth: `${columnWidth.value}px`,
+              columnGap: `${gap.value}px`,
+              transform: page.value ? `translateX(${-page.value * (pageWidth.value + gap.value)}px)` : undefined,
+          },
+);
 const chordColor = computed(() => themeOf(context).accent);
 /** The head follows the alignment of the text: a centred song gets a centred head. */
 const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center: 'center', right: 'flex-end' }[props.block.style.align] }));
@@ -136,11 +182,11 @@ const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center
             <span class="title" data-testid="songsheet-title">{{ item.title }}</span>
             <span v-if="meta" class="meta" data-testid="songsheet-meta">{{ meta }}</span>
         </div>
-        <div v-if="sheet && hasLines" ref="viewport" class="viewport">
-            <div ref="columns" class="columns" :style="columnsStyle" data-testid="songsheet-text">
-                <section v-for="(section, s) in sections" :key="s" class="section">
-                    <div v-if="section.label" class="label" data-testid="songsheet-label">{{ section.label }}</div>
-                    <div v-for="(line, l) in section.lines" :key="l" class="line">
+        <div v-if="showText" ref="viewport" class="viewport">
+            <div ref="columns" class="columns" :class="{ 'columns--part': part }" :style="columnsStyle" data-testid="songsheet-text">
+                <section v-for="(entry, s) in shown" :key="s" class="section" :data-testid="part ? 'songsheet-part' : undefined">
+                    <div v-if="entry.label" class="label" data-testid="songsheet-label">{{ entry.label }}</div>
+                    <div v-for="(line, l) in entry.lines" :key="l" class="line">
                         <template v-if="line.plain">{{ line.text }}</template>
                         <span v-for="(segment, g) in line.segments" v-else :key="g" class="segment">
                             <span class="chord" :style="{ color: chordColor }" data-testid="songsheet-chord">{{ segment.chord ?? ' ' }}</span>
@@ -151,6 +197,10 @@ const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center
             </div>
         </div>
         <div v-else class="none" data-testid="songsheet-none">{{ tp.songsheet.none }}</div>
+        <div v-if="preview" class="preview" data-testid="songsheet-preview">
+            <div v-if="preview.label" class="label">{{ preview.label }}</div>
+            <div class="line">{{ preview.text }}</div>
+        </div>
         <div v-if="sheet?.footer" class="foot" data-testid="songsheet-footer">{{ sheet.footer }}</div>
         <PageProgress v-if="paged" :key="page" :seconds="turnSeconds" :held="held" :offset="pageOffset" :size="8" :inset="16" :number="page + 1" :total="pages" :color="themeOf(context).text" />
     </div>
@@ -215,6 +265,16 @@ const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center
 .columns {
     height: 100%;
     column-fill: auto;
+}
+.columns--part {
+    height: auto;
+}
+/* The start of the next part of a chosen song: faint, so that it is seen to be next, not to be sung yet. */
+.preview {
+    flex: none;
+    margin-top: 0.4em;
+    font-size: 0.6em;
+    opacity: 0.5;
 }
 .section {
     break-inside: avoid;

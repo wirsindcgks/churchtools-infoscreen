@@ -156,6 +156,7 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
         people: vi.fn(async (groupId: number) => ({ groupId, denied: false, people: [], roles: [], fields: [] })),
         agendaEvents: vi.fn(async () => []),
         agendaPosition: vi.fn(async () => null),
+        controls: vi.fn(async () => ({})),
         rooms: vi.fn(async () => []),
         reportAlive: vi.fn(async () => {}),
         ...overrides,
@@ -479,6 +480,39 @@ describe('player controller', () => {
         await vi.advanceTimersByTimeAsync(INTERVALS.agendaMs * 3);
         expect(agendaPosition).not.toHaveBeenCalled();
         far.stop();
+    });
+
+    /** The agenda example turned into a `songsheet` block of calendar 2 instead of the `agenda` one. */
+    const withSongsheet = (): LoadedScreen => {
+        const base = withAgenda();
+        return {
+            ...base,
+            slides: base.slides.map((slide) => ({
+                ...slide,
+                blocks: slide.blocks.map((b) => (b.type === 'agenda' ? ({ ...b, type: 'songsheet', showChords: true } as unknown as Block) : b)),
+            })),
+        };
+    };
+
+    it('asks for the choice of the musicians only with a songsheet in the presentation and an event in the window (Plan.md 121 E)', async () => {
+        const controls = vi.fn<PlayerData['controls']>(async () => ({ 1: { eventId: 1, itemIndex: 1, section: 2, at: NOW.toISOString() } }));
+        const near = createPlayer('demo', fakeData({ loadScreen: async () => withSongsheet(), agendaEvents: async () => [agendaEvent(20 * 60_000)], controls }), fakeDeps());
+        await near.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        expect(controls.mock.calls.length).toBeGreaterThanOrEqual(2);
+        expect(near.state.agenda?.controls?.[1]?.section).toBe(2);
+        near.stop();
+
+        controls.mockClear();
+        const far = createPlayer('demo', fakeData({ loadScreen: async () => withSongsheet(), agendaEvents: async () => [agendaEvent(3 * 3600_000)], controls }), fakeDeps());
+        await far.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        const plain = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [agendaEvent(20 * 60_000)], controls }), fakeDeps());
+        await plain.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        expect(controls).not.toHaveBeenCalled();
+        far.stop();
+        plain.stop();
     });
 
     it('keeps the last position when a reading fails, and notes a missing right as null (Plan.md 118)', async () => {
@@ -864,7 +898,8 @@ describe('player controller', () => {
             await vi.advanceTimersByTimeAsync(INTERVALS.nightlyRetryMs);
             expect(deps.reload).toHaveBeenCalledTimes(1);
             player.stop();
-        });
+        // A day of one-second cycles (the choice of the musicians) takes a while to simulate.
+        }, 30_000);
     });
 
     it('names an unknown slug', async () => {

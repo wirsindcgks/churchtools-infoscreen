@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { ControlDoc } from './control';
 import type { AgendaEvent, AgendaPick, LiveItem, LivePosition } from './live';
 import { liveItems } from './live';
 import { lineSegments, pickSheetFile, readChordPro, readSng, readSongSheet, readTxt, sheetKind, sheetOf, sheetPage, songFileStatus, songsheetPick, transposeSheet, type SongSheet } from './songsheet';
@@ -224,6 +225,36 @@ describe('songsheetPick – which song the block shows', () => {
         expect(songsheetPick(pick(items, 4))!.item.title).toBe('Zweites');
         expect(songsheetPick(pick([talk('Segen')], 1))).toBeNull();
         expect(songsheetPick(null)).toBeNull();
+    });
+
+    describe('with a choice of the musicians (Plan.md 121 E)', () => {
+        const sheet: SongSheet = { sections: [{ label: 'A', lines: [] }, { label: 'B', lines: [] }] };
+        const withArrangement = (item: LiveItem, arrangementId: number): LiveItem => ({ ...item, arrangementId });
+        const list = [talk('Begrüßung'), withArrangement(song('Erstes', 240, sheet), 4), talk('Predigt'), song('Zweites', 0)];
+        const control = (extra: Partial<ControlDoc> = {}): ControlDoc => ({ eventId: 7, itemIndex: 2, arrangementId: 4, section: 1, at: '1970-01-01T00:00:10Z', ...extra });
+
+        it('shows the chosen song and part, whatever the agenda runs', () => {
+            const shown = songsheetPick(pick(list, 1), control());
+            expect(shown).toMatchObject({ upcoming: false, lengthSeconds: null, id: '7:2', section: 1 });
+            expect(shown!.item.title).toBe('Erstes');
+        });
+
+        it('clamps the part to the sheet, and takes it as it is without one', () => {
+            expect(songsheetPick(pick(list, 1), control({ section: 9 }))!.section).toBe(1);
+            expect(songsheetPick(pick(list, 1), control({ itemIndex: 4, arrangementId: undefined, section: 9 }))!.section).toBe(9);
+        });
+
+        it('is void once the live agenda switched after the choice', () => {
+            const late: AgendaPick = { ...pick(list, 3), position: { index: 3, set: true, switchMs: 20_000, addSeconds: 0, offsetMs: 0 } };
+            expect(songsheetPick(late, control())!.section).toBeUndefined();
+            expect(songsheetPick(late, control({ at: '1970-01-01T00:00:30Z' }))!.section).toBe(1);
+        });
+
+        it('is void for a wrong index, a point that is no song, another arrangement or another event', () => {
+            for (const wrong of [{ itemIndex: 9 }, { itemIndex: 0 }, { itemIndex: 3 }, { arrangementId: 5 }, { eventId: 8 }]) {
+                expect(songsheetPick(pick(list, 1), control(wrong))!.section).toBeUndefined();
+            }
+        });
     });
 
     it('gives the sheet in the key of the arrangement', () => {

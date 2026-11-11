@@ -340,7 +340,9 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                   console.warn('Ablaufpläne konnten nicht geladen werden:', error);
                   return state.agenda?.events;
               });
-        const agenda: AgendaFeed | undefined = agendaEvents ? { events: agendaEvents, positions: state.agenda?.positions ?? {} } : undefined;
+        const agenda: AgendaFeed | undefined = agendaEvents
+            ? { events: agendaEvents, positions: state.agenda?.positions ?? {}, ...(state.agenda?.controls ? { controls: state.agenda.controls } : {}) }
+            : undefined;
         const roomWants = roomNeeds(state.screen.slides);
         const roomWindow = appointmentWindow(now, timeZone, roomWants.days);
         // Rooms are decoration too: a failure keeps the last bookings.
@@ -514,13 +516,54 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                         const old = positions[eventId];
                         positions[eventId] = old?.set && position && !position.set ? old : position;
                     }
-                    if (state.agenda) state.agenda = { events: state.agenda.events, positions };
+                    if (state.agenda) state.agenda = { ...state.agenda, positions };
                 }
             }
         } catch (error) {
             wait = Math.max(wait, retryAfterMs(error) ?? 0);
         }
         later(wait, agendaCycle);
+    }
+
+    /**
+     * The choice of the musicians (Plan.md 121 E): only while a `songsheet` block is in the running presentation and an event of its
+     * calendars is in the window of {@link pollableEvents} – otherwise not a single request. A failure keeps the last choices.
+     */
+    async function controlCycle(): Promise<void> {
+        let wait = withJitter(INTERVALS.controlMs);
+        try {
+            const loaded = state.screen;
+            const feed = state.agenda;
+            if (loaded && feed && !blocked && feed.events.length) {
+                const now = deps.now();
+                const playlistId = activePlaylistId(loaded.screen, {
+                    now,
+                    timeZone: state.timeZone,
+                    clockConfirmed: state.clockConfirmed,
+                    appointments: state.appointments,
+                    agenda: feed,
+                });
+                const playlist = loaded.playlists.find((p) => p.id === playlistId);
+                const shown = new Set(playlist?.slideIds ?? []);
+                const calendars = new Set<number>();
+                for (const slide of loaded.slides) {
+                    if (!shown.has(slide.id) || !slide.enabled) continue;
+                    for (const block of slide.blocks) if (block.type === 'songsheet') block.calendarIds.forEach((id) => calendars.add(id));
+                }
+                const due = pollableEvents(
+                    feed.events.filter((e) => calendars.has(e.calendarId)),
+                    now.getTime() + clockSkewMs,
+                    Math.max(POLL_AFTER_MS, agendaRuleBufferMs(loaded.screen)),
+                );
+                if (due.length) {
+                    const controls = await data.controls();
+                    if (state.agenda) state.agenda = { ...state.agenda, controls };
+                }
+            }
+        } catch (error) {
+            wait = Math.max(wait, retryAfterMs(error) ?? 0);
+        }
+        later(wait, controlCycle);
     }
 
     /** The nightly fresh start – only into a page that loads (docs/Ausfall.md); else another try in an hour. */
@@ -551,6 +594,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         later(msUntilNightlyReload(deps.now()), () => void nightlyReload());
         later(withJitter(INTERVALS.quickCheckMs), quickCycle);
         later(withJitter(INTERVALS.agendaMs), agendaCycle);
+        later(withJitter(INTERVALS.controlMs), controlCycle);
         await configCycle();
         // Cached content or a failed first load: fetch data now, not in ten minutes.
         if (state.staleSince !== null || state.phase !== 'running') await dataCycle();
