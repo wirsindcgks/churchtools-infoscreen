@@ -1094,10 +1094,13 @@ describe('the agenda block (schema 1.61, Plan.md 118)', () => {
         expect(draw(agenda()).find('[data-testid="agenda"]').exists()).toBe(false);
     });
 
-    it('shows the clock and the next agenda once the agenda is read and no event has one today; without one a sentence (Plan.md 123)', () => {
+    it('shows the next agenda once the agenda is read and no event has one today, the clock only on request; without one a sentence (Plan.md 123)', () => {
         expect(draw(agenda()).find('[data-testid="agenda-empty"]').exists()).toBe(false);
         const none = draw(agenda(), { agenda: { events: [], positions: {} }, timeZone: 'UTC' });
-        expect(none.get('[data-testid="agenda-empty-clock"]').text()).toBe('08:00');
+        // A clock often hangs above the stage TV (user, 2026-11-11): off unless switched on.
+        expect(none.find('[data-testid="agenda-empty-clock"]').exists()).toBe(false);
+        const clock = draw(agenda({ showClock: true }), { agenda: { events: [], positions: {} }, timeZone: 'UTC' });
+        expect(clock.get('[data-testid="agenda-empty-clock"]').text()).toBe('08:00');
         expect(none.get('[data-testid="agenda-empty-next"]').text()).toBe('In den nächsten zwei Wochen kein Ablaufplan');
         const upcoming = [
             { calendarId: 9, startMs: Date.parse('2026-10-05T08:00:00Z'), title: 'Fremd' },
