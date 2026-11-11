@@ -22,7 +22,18 @@ const props = defineProps<{ block: Extract<Block, { type: 'songsheet' }>; slideS
 const { context, pick, display } = useAgenda(() => props.block);
 
 // Every part is a computed of its own: the pick is made new each second, these keep their value (and so the render) while nothing changes.
-const selected = computed(() => songsheetPick(pick.value, pick.value ? context.agenda?.controls?.[pick.value.event.eventId] : undefined));
+const chosen = computed(() => songsheetPick(pick.value, pick.value ? context.agenda?.controls?.[pick.value.event.eventId] : undefined));
+/**
+ * The next song waits while the running point has more than `nextLeadMinutes` left (user, 2026-11-11: not through a whole sermon).
+ * Only for "Als Nächstes" during a running point with a countdown – a tip, a running song and the time before the start show at once.
+ */
+const selected = computed(() => {
+    const pickNow = chosen.value;
+    const lead = props.block.nextLeadMinutes;
+    const left = display.value?.countdownSeconds;
+    const waiting = !!pickNow?.upcoming && lead !== undefined && display.value?.kind === 'now' && left !== null && left !== undefined && left > lead * 60;
+    return waiting ? null : pickNow;
+});
 const item = computed(() => selected.value?.item ?? null);
 const songId = computed(() => selected.value?.id ?? '');
 const upcoming = computed(() => selected.value?.upcoming ?? false);

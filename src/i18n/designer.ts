@@ -633,6 +633,9 @@ export const t = {
         showChords: 'Akkorde',
         songsheetNoChords: 'Ohne Akkorde',
         pageByTime: 'Nach Zeit blättern',
+        songsheetLead: '„Als Nächstes“ erst vor Ende',
+        songsheetLeadMinutes: 'Minuten vor Ende',
+        songsheetLeadSummary: (n: number) => `Nächstes ${n} Min. vor Ende`,
         /** The block "Liedblatt" (Plan.md 121 B): the paragraph under the calendars. */
         songsheetInfo:
             'Der Baustein folgt dem Ablaufplan wie „Ablauf“: Er zeigt den Text des Liedes, das gerade dran ist, sonst des nächsten Liedes. ' +
@@ -1556,6 +1559,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         planSoon: 'Gleich',
         planNext: 'Dann',
         planOver: 'Der Ablauf ist zu Ende.',
+        noSongsLeft: 'Kein Lied mehr im Ablauf – die Steuerung ruht.',
         part: (n: number) => `Teil ${n}`,
         noSheet: 'Kein Liedtext hinterlegt',
         back: 'Zurück',
