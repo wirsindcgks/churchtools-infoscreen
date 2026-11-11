@@ -59,12 +59,12 @@ sich die Aufteilung ändert.
 
 ## Die Bausteine
 
-Neunzehn Bausteine stehen unter „+ Baustein" zur Wahl, jeder mit einem Satz, was er zeigt:
+Zwanzig Bausteine stehen unter „+ Baustein" zur Wahl, jeder mit einem Satz, was er zeigt:
 
 | Gruppe | Bausteine |
 | --- | --- |
 | Gestalten | Text, Bild, Fläche, Linie, QR-Code, Uhr, Countdown |
-| Termine aus ChurchTools | Terminliste, Nächster Termin, Ablauf |
+| Termine aus ChurchTools | Terminliste, Nächster Termin, Ablauf, Liedblatt |
 | Mehr aus ChurchTools | Gruppen, Personen, Beiträge, Raumbelegung, Gemeindekopf mit Logo |
 | Medien und mehr | Galerie, Video, Webseite, Social Media |
 
@@ -107,6 +107,21 @@ eingeschaltet. „Dann“ lässt sich in beiden Ansichten ausblenden.
 Die Rechte, die das Gerät dafür braucht, vergeben die Einrichtung und „Rechte aktualisieren“ für die Kalender der
 Ablauf-Bausteine und für die Kalender von Zeitplan-Regeln mit „Ende des Ablaufs“ (siehe [Zeitpläne](#zeitpläne));
 welche es sind, steht in [`Rechte.md`](Rechte.md).
+
+### Liedblatt
+
+Der Baustein **Liedblatt** liest denselben Ablauf wie „Ablauf“ und zeigt den **Text des Liedes, das gerade dran ist** –
+mit den **Akkorden über der Silbe**, wenn die Datei sie enthält. Ist der laufende Punkt kein Lied (oder der Gottesdienst
+noch nicht begonnen), steht das nächste Lied da, überschrieben mit „Als Nächstes“. Den Text liest der Baustein aus einer
+Datei am Arrangement des Liedes in ChurchTools: eine **ChordPro-Datei** (`.chordpro`, `.cho`, `.chopro`, `.crd`) mit
+Akkorden, sonst den Liedtext aus einer `.sng`- oder `.txt`-Datei, dann ohne Akkorde. Weicht die Tonart des Arrangements von
+der der Datei ab (beide Dur oder beide Moll), werden die Akkorde **transponiert**. Der Kopf nennt Titel, Tonart und Tempo; wo
+keine Datei liegt, steht „Kein Liedtext hinterlegt“. Passt der Text nicht auf den Baustein, steht er in **Spalten**, dann
+blättert der Baustein nach der Dauer des Punktes weiter. Der Schalter „Akkorde“ blendet die Akkorde aus.
+
+Liedtexte auf dem Bildschirm zu zeigen fällt unter die **CCLI-Lizenz** der Gemeinde: Copyright und Lizenznummer stehen
+deshalb unten auf dem Baustein und sollten nicht verdeckt werden. Das Gerät braucht dafür in ChurchTools das Recht
+„Einzelne Song-Kategorien sehen“ für die Kategorien der Lieder; ohne es zeigt der Baustein nur den Kopf.
 
 ### Gruppen
 

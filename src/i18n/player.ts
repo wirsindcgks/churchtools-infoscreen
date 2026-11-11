@@ -87,6 +87,11 @@ export const tp = {
         delay: (lateMinutes: number) => (lateMinutes === 0 ? '0 Min.' : `${lateMinutes > 0 ? '−' : '+'}${Math.abs(lateMinutes)} Min.`),
     },
 
+    songsheet: {
+        next: 'Als Nächstes',
+        none: 'Kein Liedtext hinterlegt',
+    },
+
     people: {
         noGroup: 'Noch keine Gruppe gewählt',
         denied: 'Personen nicht verfügbar – dem Gerät fehlt das Recht auf die Gruppe',

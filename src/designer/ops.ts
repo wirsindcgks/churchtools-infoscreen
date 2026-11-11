@@ -128,6 +128,7 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
     qr: t.blocks.qr,
     countdown: t.blocks.countdown,
     agenda: t.blocks.agenda,
+    songsheet: t.blocks.songsheet,
     posts: t.blocks.posts,
     groups: t.blocks.groups,
     people: t.blocks.people,
@@ -151,6 +152,7 @@ export const BLOCK_ICONS: Record<BlockType, IconName> = {
     qr: 'qr',
     countdown: 'timer',
     agenda: 'list',
+    songsheet: 'text',
     posts: 'news',
     groups: 'people',
     people: 'person',
@@ -211,6 +213,7 @@ export function createBlock(
         qr: [360, 360],
         countdown: [1100, 360],
         agenda: [1500, 500],
+        songsheet: [1500, 900],
         posts: [1400, 700],
         groups: [1400, 700],
         people: [1400, 700],
@@ -265,6 +268,8 @@ export function createBlock(
             };
         case 'agenda':
             return { ...frame, type, calendarIds: calendars, showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSong: true, showSignal: true, style: textStyle(96, { fontWeight: 700 }) };
+        case 'songsheet':
+            return { ...frame, type, calendarIds: calendars, showChords: true, style: textStyle(44) };
         case 'posts':
             return {
                 ...frame,

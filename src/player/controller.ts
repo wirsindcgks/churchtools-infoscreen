@@ -18,7 +18,7 @@ import { reviveRooms, type RoomBookings } from '../rooms/normalize';
 import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '../store/screen-repository';
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
-import { agendaNeeds, agendaRuleBufferMs, agendaRuleCalendars, appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readPeopleGroups, roomNeeds, type PlayerData } from './data';
+import { agendaNeeds, agendaRuleBufferMs, agendaRuleCalendars, appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readPeopleGroups, roomNeeds, sheetsNeeded, type PlayerData } from './data';
 import { activePlaylistId } from './schedule';
 import { askServiceWorkerHasPage } from './service-worker';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
@@ -336,7 +336,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         const agendaWindow = appointmentWindow(now, timeZone, 1);
         const agendaEvents = !agendaCalendars.length
             ? undefined
-            : await data.agendaEvents(agendaCalendars, agendaWindow.from, agendaWindow.to, timeZone).catch((error: unknown) => {
+            : await data.agendaEvents(agendaCalendars, agendaWindow.from, agendaWindow.to, timeZone, { sheets: sheetsNeeded(state.screen.slides) }).catch((error: unknown) => {
                   console.warn('Ablaufpläne konnten nicht geladen werden:', error);
                   return state.agenda?.events;
               });

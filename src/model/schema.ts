@@ -313,6 +313,20 @@ export const AgendaBlock = v.object({
 });
 
 /**
+ * Since 1.63 (Plan.md 121 B): the text of the song that is running in the agenda – lyrics with chords above the syllable,
+ * from the ChordPro file (or, without it, the lyrics of the `.sng`/`.txt` file) of its arrangement. Reads the same agenda
+ * as `agenda`. Older players skip it.
+ */
+export const SongsheetBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('songsheet'),
+    calendarIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.minLength(1)),
+    /** Missing = shown. Off: the text only. */
+    showChords: v.optional(v.boolean(), true),
+    style: TextStyle,
+});
+
+/**
  * Since 1.11: posts of ChurchTools groups – title, text, image, published and
  * expiry date (Plan.md, Nächste Schritte 33). `groupIds` starts empty until
  * chosen; the player then shows nothing. Posts older than `maxAgeDays`,
@@ -623,6 +637,7 @@ export const ContentBlock = v.variant('type', [
     QrBlock,
     CountdownBlock,
     AgendaBlock,
+    SongsheetBlock,
     PostsBlock,
     GroupsBlock,
     PeopleBlock,
@@ -645,9 +660,9 @@ export const TemplateBlock = v.object({
 
 export const Block = v.variant('type', [...ContentBlock.options, TemplateBlock]);
 
-/** The calendars whose appointments a block shows or counts down to – or, for the agenda block, whose live agenda it reads. */
+/** The calendars whose appointments a block shows or counts down to – or, for the agenda blocks, whose live agenda they read. */
 export function blockCalendarIds(block: Block): number[] {
-    return block.type === 'appointment-list' || block.type === 'next-appointment' || block.type === 'countdown' || block.type === 'agenda'
+    return block.type === 'appointment-list' || block.type === 'next-appointment' || block.type === 'countdown' || block.type === 'agenda' || block.type === 'songsheet'
         ? block.calendarIds
         : [];
 }

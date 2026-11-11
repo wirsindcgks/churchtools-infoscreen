@@ -74,3 +74,29 @@ test('the own look of the agenda block shows cards, with tile, service, people a
     await inspector.getByTestId('agenda-show-next').uncheck();
     await expect(block.getByTestId('agenda-next-card')).toHaveCount(0);
 });
+
+test('the block "Liedblatt" shows the next song of the example with chords, and the chords can be switched off (Plan.md 121 B)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await page.getByTestId('add-slide').click();
+
+    await addBlock(page, 'songsheet');
+    const block = page.locator('.editor-stage .block--songsheet');
+    await expect(block.getByTestId('songsheet-next')).toHaveText('Als Nächstes');
+    await expect(block.getByTestId('songsheet-title')).toHaveText('Segenslied');
+    await expect(block.getByTestId('songsheet-text')).toContainText('Gott segne');
+    await expect(block.getByTestId('songsheet-chord').first()).toBeVisible();
+    await expect(block.getByTestId('songsheet-footer')).toContainText('CCLI');
+
+    // Calendars, then "Darstellung", then "Schrift"; nothing is open at the start.
+    const ids = await page.locator('[data-testid^="section-"]:not([data-testid$="-toggle"]):not([data-testid$="-help"])').evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
+    const order = ['section-calendars', 'section-appearance', 'section-font'];
+    expect(ids.filter((id) => order.includes(id!))).toEqual(order);
+
+    await openSection(page, 'appearance');
+    await page.getByTestId('block-inspector').getByTestId('songsheet-show-chords').uncheck();
+    await expect(block.getByTestId('songsheet-chord')).toHaveCount(0);
+    await expect(block.getByTestId('songsheet-text')).toContainText('Gott segne dich auf allen Wegen');
+    await block.screenshot({ path: 'test-results/editor-songsheet.png' });
+});

@@ -14,6 +14,7 @@ import PostsInspector from './PostsInspector.vue';
 import QrInspector from './QrInspector.vue';
 import RoomsInspector from './RoomsInspector.vue';
 import ShapeInspector from './ShapeInspector.vue';
+import SongsheetInspector from './SongsheetInspector.vue';
 import SlideshowInspector from './SlideshowInspector.vue';
 import SocialInspector from './SocialInspector.vue';
 import TemplateInspector from './TemplateInspector.vue';
@@ -39,6 +40,7 @@ export const BLOCK_INSPECTORS: Record<BlockType, Component> = {
     'next-appointment': NextAppointmentInspector,
     countdown: CountdownInspector,
     agenda: AgendaInspector,
+    songsheet: SongsheetInspector,
     'church-header': ChurchHeaderInspector,
     posts: PostsInspector,
     groups: GroupsInspector,

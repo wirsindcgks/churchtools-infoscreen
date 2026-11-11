@@ -3,6 +3,7 @@
  * placeholder "not started" in front, the position as an index into it, the countdown and the delay from `switchdate`,
  * `addseconds` and the server time. Pure functions – what is fetched lives in `src/ct/api.ts` and `src/player/data.ts`.
  */
+import type { SongSheet } from './songsheet';
 
 /** One point of `GET /events/{id}/agenda`, as far as this code reads it. */
 export interface AgendaItemResponse {
@@ -12,7 +13,7 @@ export interface AgendaItemResponse {
     duration?: number | null;
     isBeforeEvent?: boolean | null;
     /** A song carries its name here; its `title` is empty (G81). Key and tempo are free or `null`; the arrangement is named (G82). */
-    song?: { title?: string | null; key?: string | null; bpm?: number | null; arrangement?: string | null; isDefault?: boolean | null } | null;
+    song?: { title?: string | null; arrangementId?: number | null; key?: string | null; bpm?: number | null; arrangement?: string | null; isDefault?: boolean | null } | null;
     note?: string | null;
     /** `text` holds the services in square brackets and free text; `persons` the people by service, `person: null` = unfilled (G81). */
     responsible?: {
@@ -36,6 +37,10 @@ export interface LiveItem {
     responsible?: string;
     /** Only a song, where ChurchTools names any of it (Plan.md 121 A). */
     songDetails?: SongDetails;
+    /** Only a song: the arrangement the point plays, to find its file (Plan.md 121 B). */
+    arrangementId?: number;
+    /** Only a song with a text file at its arrangement and a device that may read it; travels with the offline copy. */
+    sheet?: SongSheet;
 }
 
 /** Key, tempo and the arrangement of a song; the arrangement only where it is not the default one. */
@@ -172,6 +177,7 @@ export function liveItems(items: readonly AgendaItemResponse[]): LiveItem[] {
             const service = serviceName(/\[([^\]]*)\]/.exec(item.responsible?.text ?? '')?.[1]);
             const responsible = item.responsible ? responsibleLine(item.responsible) : '';
             const details = song ? songDetails(item.song) : undefined;
+            const arrangementId = song && Number.isInteger(item.song?.arrangementId) ? item.song!.arrangementId! : undefined;
             return {
                 title: own || (song ? (item.song?.title ?? '').trim() : ''),
                 duration: Math.max(0, Number(item.duration) || 0),
@@ -181,6 +187,7 @@ export function liveItems(items: readonly AgendaItemResponse[]): LiveItem[] {
                 ...(service ? { service } : {}),
                 ...(responsible ? { responsible } : {}),
                 ...(details ? { songDetails: details } : {}),
+                ...(arrangementId !== undefined ? { arrangementId } : {}),
             };
         });
     return [PLACEHOLDER, ...points];

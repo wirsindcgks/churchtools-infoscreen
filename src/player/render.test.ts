@@ -1246,3 +1246,58 @@ describe('the agenda block (schema 1.61, Plan.md 118)', () => {
         });
     });
 });
+
+describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
+    const NOW = new Date('2026-10-04T08:00:00Z');
+    const songsheet = (extra: Record<string, unknown> = {}) =>
+        ({ id: 's', type: 'songsheet', x: 0, y: 0, width: 1500, height: 900, calendarIds: [2], showChords: true, style, ...extra }) as Block;
+    const draw = (block: Block, overrides: Partial<StageContext> = {}) => render(makeSlide({ blocks: [block] }), { now: NOW, ...overrides });
+    /** The example, with the position moved to a point of the example (index into the live list: 5 = the song after "Predigt"). */
+    const feed = (index?: number, sheet = true) => {
+        const base = sampleAgenda(NOW.getTime(), [2]);
+        const event = base.events[0]!;
+        const items = event.items.map((item) => (sheet || !item.sheet ? item : { ...item, sheet: undefined }));
+        const positions = index === undefined ? base.positions : { [event.eventId]: { ...base.positions[event.eventId]!, index } };
+        return { events: [{ ...event, items }], positions };
+    };
+
+    it('shows nothing without agenda data', () => {
+        expect(draw(songsheet()).find('[data-testid="songsheet"]').exists()).toBe(false);
+    });
+
+    it('shows the next song under "Als Nächstes" while another point runs, with chords, sections and the footer', () => {
+        const wrapper = draw(songsheet(), { agenda: feed() });
+        expect(wrapper.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
+        expect(wrapper.get('[data-testid="songsheet-title"]').text()).toBe('Segenslied');
+        expect(wrapper.get('[data-testid="songsheet-meta"]').text()).toBe('C · 96 BPM');
+        expect(wrapper.findAll('[data-testid="songsheet-label"]').map((l) => l.text())).toEqual(['Strophe 1', 'Refrain', 'Strophe 2']);
+        expect(wrapper.findAll('[data-testid="songsheet-chord"]').length).toBeGreaterThan(10);
+        expect(wrapper.get('[data-testid="songsheet-text"]').text()).toContain('Gott segne');
+        expect(wrapper.get('[data-testid="songsheet-footer"]').text()).toContain('CCLI-Lizenznummer');
+    });
+
+    it('shows the running song without "Als Nächstes"', () => {
+        const wrapper = draw(songsheet(), { agenda: feed(5) });
+        expect(wrapper.get('[data-testid="songsheet-title"]').text()).toBe('Segenslied');
+        expect(wrapper.find('[data-testid="songsheet-next"]').exists()).toBe(false);
+    });
+
+    it('draws the text only, without the lines of bars and chords, when the chords are off', () => {
+        const wrapper = draw(songsheet({ showChords: false }), { agenda: feed() });
+        expect(wrapper.find('[data-testid="songsheet-chord"]').exists()).toBe(false);
+        expect(wrapper.get('[data-testid="songsheet-text"]').text()).toContain('Gott segne dich auf allen Wegen');
+        expect(wrapper.get('[data-testid="songsheet-text"]').text()).not.toContain('|');
+    });
+
+    it('keeps the head and says so where the song has no text', () => {
+        const wrapper = draw(songsheet(), { agenda: feed(undefined, false) });
+        expect(wrapper.get('[data-testid="songsheet-title"]').text()).toBe('Segenslied');
+        expect(wrapper.get('[data-testid="songsheet-none"]').text()).toBe('Kein Liedtext hinterlegt');
+        expect(wrapper.find('[data-testid="songsheet-text"]').exists()).toBe(false);
+    });
+
+    it('stays empty when no song is left, and takes only the events of its calendars', () => {
+        expect(draw(songsheet(), { agenda: feed(6) }).find('[data-testid="songsheet"]').exists()).toBe(false);
+        expect(draw(songsheet({ calendarIds: [5] }), { agenda: feed() }).find('[data-testid="songsheet"]').exists()).toBe(false);
+    });
+});
