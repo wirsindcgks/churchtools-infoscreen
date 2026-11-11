@@ -84,7 +84,8 @@ function overflow(): number | null {
     if (!view || !cols || view.clientHeight <= 0 || view.clientWidth <= 0) return null;
     const tallest = Math.max(0, ...Array.from(cols.children, naturalHeight));
     const high = tallest / view.clientHeight;
-    return part.value ? Math.max(high, view.scrollWidth / view.clientWidth) : high;
+    // A chosen part also by what the block itself overflows with – a second measure, should the parts be counted short.
+    return part.value ? Math.max(high, view.scrollHeight / view.clientHeight, view.scrollWidth / view.clientWidth) : high;
 }
 
 /**
