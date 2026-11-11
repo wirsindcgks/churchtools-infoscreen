@@ -240,6 +240,24 @@ sehen" (auf der Sicherheitsstufe der Felder). Dafür gibt es zwei Wege:
 
 Ohne das bleiben die Felder leer; die Prüfung der Gerätegruppe nennt das als Hinweis, nicht als Warnung.
 
+### Musiker steuern das Liedblatt
+
+Zeigt ein Bildschirm den Baustein „Liedblatt", können die Musiker den gezeigten Liedteil auf dem Handy wählen (Strophe, Refrain …); der
+Tipp gilt für alle Bildschirme des Termins. Dafür gibt es die Gruppe **„Infoscreen-Musiker"**, die du nur auf Wunsch anlegst:
+
+1. **Einstellungen → Musiker** (die Karte erscheint, sobald ein Liedblatt gezeigt wird).
+2. **Bandgruppen** wählen – die Gruppen, aus denen die Musiker kommen, etwa „Lobpreisteam".
+3. **„Musikergruppe anlegen"**: Der Assistent zeigt vorher, was er schreibt, legt die Gruppe mit ihren Rechten an (sie darf nur die Kategorie
+   „Steuerung" beschreiben, siehe [Rechte](Rechte.md#musiker--für-die-handysteuerung)) und richtet die **automatische Mitgliedschaft** ein: Wer in einer
+   Bandgruppe ist, wird Teilnehmer der Musikergruppe. Dazu braucht dein Konto in ChurchTools „Personen verwalten"; sonst richtest du die
+   „Automatische Mitgliedschaft" an der Gruppe selbst ein (Gruppe → „Automatische Mitgliedschaft", Filter „Mitgliedschaft in einer Gruppe").
+4. Danach zeigt die Seite die **Adresse der Handyseite** zum Kopieren (`…/ccm/infoscreen-designer/steuerung`). Die Musiker öffnen sie auf dem
+   Handy, angemeldet in ChurchTools.
+
+Die Bandgruppen lassen sich auf derselben Seite ändern („Speichern" schreibt die Regel neu und gleicht ab). **Von Hand aufgenommene Mitglieder
+entfernt der nächste Abgleich** – Mitglieder kommen nur über die Bandgruppen. „Rechte aktualisieren" pflegt die Gruppe mit, „Automatische
+Einrichtung rückgängig machen" löscht sie mit.
+
 ## 5. Gestalter aufnehmen
 
 Wer gestalten soll, wird **Mitglied der Gruppe „Infoscreen-Designer"** – die Rolle ist egal. Vergib die

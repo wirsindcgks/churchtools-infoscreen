@@ -341,6 +341,27 @@ describe('checkDeviceGroup', () => {
         expect(check([], [1], [1])[0]?.level).toBe('fail');
     });
 
+    it('warns when a device does not see the steering of the musicians (Plan.md 121 E3)', () => {
+        const controlRights = [{ authId: 2015, dataId: [36], label: 'Steuerung der Musiker sehen' }];
+        const check = (grants: Grant[], extra: { songsheetInUse?: boolean; controlRights?: typeof controlRights } = {}) =>
+            checkDeviceGroup({
+                statusId: 1,
+                members: [{ label: 'Gerät A', grants }],
+                calendars,
+                usedCalendarIds: [], publicCalendarIds: [2],
+                songsheetInUse: true,
+                controlRights,
+                wikiCategoryId: WIKI,
+                ...extra,
+            }).filter((c) => c.text.startsWith('Die Steuerung'));
+        const [warn] = check([]);
+        expect(warn).toMatchObject({ level: 'warn', category: 'agenda', text: 'Die Steuerung der Musiker kommt nicht an – Gerät A fehlt „Steuerung sehen".' });
+        expect(check([grant(2015, 36)])).toEqual([]);
+        // Without a song sheet, or without the category, nothing is said.
+        expect(check([], { songsheetInUse: false })).toEqual([]);
+        expect(check([], { controlRights: undefined })).toEqual([]);
+    });
+
     it('checks that a device sees the song categories for the block "Liedblatt" (Plan.md 121, G82)', () => {
         const check = (grants: Grant[], songsheetInUse = true) =>
             checkDeviceGroup({

@@ -40,6 +40,7 @@ function repository() {
         songsheetInUse: vi.fn().mockResolvedValue(false),
         visibleCategories: vi.fn().mockResolvedValue(visible),
         statusCategoryId: vi.fn().mockResolvedValue(2),
+        controlCategoryId: vi.fn().mockResolvedValue(36),
         drafts: { categoryId: vi.fn().mockResolvedValue(3) },
         changelog: { categoryId: vi.fn().mockResolvedValue(4) },
     };
@@ -67,6 +68,16 @@ describe('checkRightsPending (Plan.md 122)', () => {
         mocks.refresh.mockResolvedValue({ groups: [], blocked: [] });
         await checkRightsPending();
         expect(rightsPending.value).toBe(false);
+    });
+
+    it('plans the steering category and the musicians group from the settings', async () => {
+        mocks.repo.mockResolvedValue({
+            repository: { ...repository(), loadSettings: vi.fn().mockResolvedValue({ createdGroupIds: [84], musicianGroupId: 84 }) },
+            demo: false,
+        });
+        await checkRightsPending();
+        expect(mocks.plan).toHaveBeenCalledWith(expect.objectContaining({ controlCategoryId: 36, musicianGroupId: 84 }));
+        expect(mocks.refresh.mock.calls[0]![1]).toMatchObject({ musician: 84 });
     });
 
     it('is false when a right is locked', async () => {

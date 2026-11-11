@@ -42,6 +42,8 @@ const plan = [true, false].flatMap((appointmentRooms) => planProvisioning({
     songsheet: true,
     peopleGroupId: 'new',
     peopleGroupIds: [60],
+    controlCategoryId: 36,
+    musicianGroupId: 'new',
 }));
 
 describe('docs/Rechte.md', () => {

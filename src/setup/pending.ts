@@ -54,7 +54,7 @@ async function compute(): Promise<boolean> {
     if (handle.demo) return false;
     const repository = handle.repository;
     // Like SetupView.vue (arrival): the same reads, the categories only looked up.
-    const [groups, settings, wikiCategories, calendars, publicCalendars, resources, usedRooms, roomsAtAppointments, serviceCalendarIds, agendaCalendarIds, songsheet, visible, statusId, draftsId, changelogId, catalog] =
+    const [groups, settings, wikiCategories, calendars, publicCalendars, resources, usedRooms, roomsAtAppointments, serviceCalendarIds, agendaCalendarIds, songsheet, visible, statusId, controlId, draftsId, changelogId, catalog] =
         await Promise.all([
             loadGroups(),
             repository.loadSettings(),
@@ -69,6 +69,7 @@ async function compute(): Promise<boolean> {
             repository.songsheetInUse(),
             repository.visibleCategories(),
             repository.statusCategoryId().catch(() => null),
+            repository.controlCategoryId().catch(() => null),
             repository.drafts.categoryId().catch(() => null),
             repository.changelog.categoryId().catch(() => null),
             loadAuthCatalog().catch(() => null),
@@ -92,11 +93,14 @@ async function compute(): Promise<boolean> {
     const rooms = resources ? roomsOf(resources, settings?.roomTypeIds) : [];
     const created = settings?.createdGroupIds ?? [];
     const peopleGroupId = settings?.peopleGroupId ?? null;
+    const musicianGroupId = settings?.musicianGroupId ?? null;
     const plan = planProvisioning({
         catalog,
         moduleKey: EXTENSION_KEY,
         categories: categories as Record<CategoryKey, number> & { status?: number; drafts?: number; changelog?: number },
         peopleGroupId: peopleGroupId ?? undefined,
+        controlCategoryId: controlId ?? undefined,
+        musicianGroupId: musicianGroupId ?? undefined,
         wikiCategoryId: pickCategory(wikiCategories, settings)?.id ?? null,
         roomIds: rooms.map((r) => r.id),
         usedRoomIds: usedRooms,
@@ -115,6 +119,7 @@ async function compute(): Promise<boolean> {
             designer: created.includes(designer) ? designer : undefined,
             device: created.includes(device) ? device : undefined,
             people: created.includes(peopleGroupId ?? -1) ? peopleGroupId! : undefined,
+            musician: created.includes(musicianGroupId ?? -1) ? musicianGroupId! : undefined,
         },
         { calendarIds: calendars.map((c) => c.id), roomIds: rooms.map((r) => r.id) },
         {

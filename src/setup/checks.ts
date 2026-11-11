@@ -330,6 +330,11 @@ export interface DeviceGroupInput {
     agendaCalendarIds?: number[];
     /** A slide shows the block "Liedblatt" (Plan.md 121): the device must see the song categories, else the sheets stay empty. */
     songsheetInUse?: boolean;
+    /**
+     * The rights on the category `steuerung` a device needs to see the steering of the musicians (Plan.md 121 E3); given only where
+     * that category exists. Missing: not checked.
+     */
+    controlRights?: RequiredRight[];
     /** A screen shows a video (Plan.md 52): the device must see the wiki category, else the video does not run. */
     videoInUse?: boolean;
     wikiCategoryId: number | null;
@@ -593,6 +598,14 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
         }
         if (!blind.length && !partly.length) {
             checks.push({ level: 'ok', category: 'agenda', text: t.setup.checks.songsVisible });
+        }
+    }
+
+    // The steering of the musicians is read from the category `steuerung`; the plan gives the device "Daten sehen" on it.
+    if (input.songsheetInUse && input.controlRights?.length) {
+        const blind = input.members.filter((m) => lacking(m.grants, input.controlRights!).length).map((m) => m.label);
+        if (blind.length) {
+            checks.push({ level: 'warn', category: 'agenda', text: t.setup.checks.controlBlind(blind.join(', ')), detail: t.setup.checks.controlBlindDetail });
         }
     }
 
