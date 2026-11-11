@@ -1780,13 +1780,16 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             lead:
                 'Musiker wählen auf dem Handy, welchen Teil eines Liedes die Bildschirme zeigen. Dafür gibt es die Gruppe „Infoscreen-Musiker“; ihre Mitglieder kommen automatisch aus den Bandgruppen, die du hier wählst.',
             sources: 'Bandgruppen',
-            add: 'Bandgruppe hinzufügen',
+            add: 'Mitglieder übernehmen aus',
             choose: 'Gruppe wählen',
             none: 'Noch keine Bandgruppe gewählt.',
             withdraw: (name: string) => `Bandgruppe „${name}“ entfernen`,
             button: 'Musikergruppe anlegen',
             needsAssistant: 'Die Musikergruppe legt der Assistent an, sobald die Gruppen des Infoscreens unter „Gruppen und Rechte“ eingerichtet sind.',
             groupName: 'Musikergruppe',
+            holdsRights: 'sie hat die Rechte, die Gruppen darunter liefern nur die Mitglieder.',
+            members: (names: string[]) => `Jetzt darin: ${names.join(', ')}.`,
+            noMembers: 'Jetzt ist niemand darin.',
             replaceHint: 'Von Hand aufgenommene Mitglieder entfernt der nächste Abgleich: In der Gruppe bleibt, wer in einer der Bandgruppen ist.',
             byHand:
                 'Dir fehlt in ChurchTools das Recht „Personen verwalten“. Die Gruppe und ihre Rechte legt der Assistent trotzdem an; die automatische Mitgliedschaft richtest du dann in ChurchTools selbst ein: Gruppe öffnen, „Automatische Mitgliedschaft“, Filter „Mitgliedschaft in einer Gruppe“ mit den Bandgruppen.',
