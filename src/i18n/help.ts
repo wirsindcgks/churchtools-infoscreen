@@ -339,7 +339,7 @@ export const th = {
         songs: {
             term: i.songs,
             text:
-                'Listet die Lieder der Ablaufpläne der nächsten vier Wochen und sagt, ob am Arrangement eine ChordPro-Datei mit Akkorden liegt. ' +
+                'Zeigt, welche Lieder der nächsten vier Wochen Akkorde haben. Akkorde heißt: am Arrangement liegt eine ChordPro-Datei. ' +
                 '„Nur Text“ heißt: nur eine .sng- oder .txt-Datei – das Liedblatt zeigt dann den Text ohne Akkorde. „Nur PDF“ und „Keine Datei“: das Liedblatt bleibt bei den Liedangaben. ' +
                 'Eine ChordPro-Datei bekommt ihr zum Beispiel aus SongSelect und legt sie in ChurchTools am Arrangement ab.',
         },

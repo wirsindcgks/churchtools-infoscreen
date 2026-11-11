@@ -3,6 +3,7 @@
  * replaced in tests. Every request has a time limit.
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
+import type { ControlDoc } from '../agenda/control';
 import { liveItems, parsePosition, type AgendaEvent, type LiveItem, type LivePosition } from '../agenda/live';
 import { pickSheetFile, readSongSheet, type SheetKind, type SongSheet } from '../agenda/songsheet';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
@@ -96,6 +97,8 @@ export interface PlayerData {
     agendaEvents(calendarIds: number[], from: Date, to: Date, timeZone: string, options?: { sheets?: boolean }): Promise<AgendaEvent[]>;
     /** The live position of an event; `null` without the right (`403`, or `status: "fail"`) – the block then stays empty. Other errors fail. */
     agendaPosition(eventId: number): Promise<LivePosition | null>;
+    /** The latest choice of the musicians per event (Plan.md 121 E); `{}` where the category is missing or not readable (`403`). Other errors fail. */
+    controls(): Promise<Record<number, ControlDoc>>;
     /**
      * The confirmed bookings of these rooms within `[from, to)` (schema 1.16).
      * A room the caller may not read (403), that the stammdaten do not name or
@@ -264,6 +267,10 @@ export const churchToolsPlayerData: PlayerData = {
             console.warn(`Live-Agenda von Termin ${eventId}: keine Berechtigung – der Baustein bleibt leer.`);
             return null;
         }
+    },
+    async controls() {
+        const { repository } = await withTimeout(getRepository());
+        return withTimeout(repository.readControls());
     },
     async rooms(resourceIds, from, to, timeZone, roomTypeIds) {
         if (!resourceIds.length) return [];

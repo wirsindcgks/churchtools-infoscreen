@@ -3,6 +3,7 @@
  * from `.sng` and `.txt` – that make one `SongSheet` of it, the transposing of the chords, and what the block shows at a given
  * moment of the agenda. Pure functions – what is fetched lives in `src/player/data.ts`.
  */
+import type { ControlDoc } from './control';
 import type { AgendaPick, LiveItem } from './live';
 
 /** A chord (or a bar line "|", "‖:", ":‖") that stands above the character `at` of the text of its line. */
@@ -351,15 +352,29 @@ export interface SongsheetPick {
     lengthSeconds: number | null;
     /** Tells one song of one event from another, so that the pages start over with a new one. */
     id: string;
+    /** Chosen by the musicians (Plan.md 121 E): the index of the part to show big, clamped to the sheet where it is known. */
+    section?: number;
 }
 
 /**
  * The running point if it is a song; else the next song of the agenda (also one without a duration); before the start the first.
+ * A valid choice of the musicians (`control`, Plan.md 121 E) beats all that: that song, with the chosen part.
  * `null` where no song is left.
  */
-export function songsheetPick(pick: AgendaPick | null): SongsheetPick | null {
+export function songsheetPick(pick: AgendaPick | null, control?: ControlDoc): SongsheetPick | null {
     if (!pick) return null;
     const { event, position, phase } = pick;
+    const chosen = control && controlItem(pick, control);
+    if (chosen) {
+        const sheet = sheetOf(chosen);
+        return {
+            item: chosen,
+            upcoming: false,
+            lengthSeconds: null,
+            id: `${event.eventId}:${control.itemIndex}`,
+            section: sheet ? Math.max(0, Math.min(control.section, sheet.sections.length - 1)) : control.section,
+        };
+    }
     const last = event.items.length - 1;
     if (last < 1) return null;
     const started = phase !== 'upcoming' && !!position && position.index > 0;
@@ -375,6 +390,16 @@ export function songsheetPick(pick: AgendaPick | null): SongsheetPick | null {
         lengthSeconds: running && position ? item.duration + position.addSeconds : null,
         id: `${event.eventId}:${shown}`,
     };
+}
+
+/** The song a choice of the musicians points at, if it still holds: the point is a song of this arrangement and the agenda did not switch since. */
+function controlItem({ event, position }: AgendaPick, control: ControlDoc): LiveItem | null {
+    if (control.eventId !== event.eventId || control.itemIndex < 1) return null;
+    const item = event.items[control.itemIndex];
+    if (!item?.song) return null;
+    if (control.arrangementId !== undefined && control.arrangementId !== item.arrangementId) return null;
+    if (position?.switchMs != null && !(Date.parse(control.at) > position.switchMs)) return null;
+    return item;
 }
 
 /** The text of a song point with its chords in the key of the arrangement; `null` where the point has none. */

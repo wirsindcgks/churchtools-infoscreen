@@ -16,6 +16,7 @@
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { appointmentServiceIds } from '../appointments/services';
 import { httpStatus } from '../ct/client';
+import { CONTROL_CATEGORY, controlsByEvent, type ControlDoc } from '../agenda/control';
 import { heartbeatTime, readHeartbeat, type HeartbeatDoc } from '../model/heartbeat';
 import {
     readMedia,
@@ -312,6 +313,7 @@ export class ScreenRepository {
     private categoryIds: Promise<Record<CategoryKey, number>> | null = null;
     /** The `status` category, once found; a missing one is looked for again – it may appear later. */
     private statusId: number | null = null;
+    private controlId: number | null = null;
     /** Value ids of the signs of life by slug, to spare the read. */
     private readonly heartbeatValueIds = new Map<string, number>();
     /** The drafts of playlists and slides (Plan.md 79, Paket E). */
@@ -409,6 +411,39 @@ export class ScreenRepository {
         } catch (error) {
             console.warn('Die Kategorie „Status" konnte nicht angelegt werden:', error);
             return null;
+        }
+    }
+
+    /** The id of the `steuerung` category (Plan.md 121 E), or null while this person cannot see one. Creates nothing. */
+    async controlCategoryId(): Promise<number | null> {
+        if (this.controlId !== null) return this.controlId;
+        const found = (await this.kv.listCategories()).find((c) => c.shorty === CONTROL_CATEGORY.shorty);
+        this.controlId = found?.id ?? null;
+        return this.controlId;
+    }
+
+    /** Like {@link controlCategoryId}, but creates the category when it is missing. Meant for an administrator; failing gives null. */
+    async ensureControlCategory(): Promise<number | null> {
+        try {
+            const existing = await this.controlCategoryId();
+            if (existing !== null) return existing;
+            this.controlId = (await this.kv.createCategory({ ...CONTROL_CATEGORY })).id;
+            return this.controlId;
+        } catch (error) {
+            console.warn('Die Kategorie „Steuerung" konnte nicht angelegt werden:', error);
+            return null;
+        }
+    }
+
+    /** The latest choice of the musicians per event; `{}` where the category is missing or this person may not read it (`403`). */
+    async readControls(): Promise<Record<number, ControlDoc>> {
+        try {
+            const categoryId = await this.controlCategoryId();
+            if (categoryId === null) return {};
+            return controlsByEvent(await this.kv.listValues(categoryId));
+        } catch (error) {
+            if (httpStatus(error) === 403) return {};
+            throw error;
         }
     }
 
