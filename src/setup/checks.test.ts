@@ -341,6 +341,33 @@ describe('checkDeviceGroup', () => {
         expect(check([], [1], [1])[0]?.level).toBe('fail');
     });
 
+    it('checks that a device sees the song categories for the block "Liedblatt" (Plan.md 121, G82)', () => {
+        const check = (grants: Grant[], songsheetInUse = true) =>
+            checkDeviceGroup({
+                statusId: 1,
+                members: [{ label: 'Gerät A', grants }],
+                calendars,
+                usedCalendarIds: [], publicCalendarIds: [2],
+                songsheetInUse,
+                wikiCategoryId: WIKI,
+            }).filter((c) => c.text.startsWith('Liedblatt') || c.text.startsWith('Die Liedblätter'));
+        expect(check([grant(AUTH.songCategoryView, ALL_DATA)])).toEqual([
+            { level: 'ok', category: 'agenda', text: 'Die Liedblätter sind für den Baustein „Liedblatt" lesbar.' },
+        ]);
+        const [warn] = check([]);
+        expect(warn).toMatchObject({ level: 'warn', category: 'agenda', text: 'Liedblatt: Gerät A fehlt „Einzelne Song-Kategorien sehen" – die Liedblätter bleiben leer.' });
+        expect(warn?.detail).toContain('313');
+        expect(check([grant(AUTH.songCategoryView, 0)])).toMatchObject([{ level: 'info', text: 'Liedblatt: Gerät A sieht nur einzelne Song-Kategorien.' }]);
+        // Revoked counts as not held; without a block "Liedblatt" nothing is said.
+        expect(check([grant(AUTH.songCategoryView, 0), { authId: AUTH.songCategoryView, dataId: 0, type: 'revoke' }])[0]?.level).toBe('warn');
+        expect(check([], false)).toEqual([]);
+    });
+
+    it('counts 313 neither as an excess right nor its categories as excess scope (Plan.md 121)', () => {
+        expect(excessRights([grant(AUTH.songCategoryView, 0)], [])).toEqual([]);
+        expect(scopeExcess([grant(AUTH.songCategoryView, 0)], [{ authId: AUTH.songCategoryView, dataId: [ALL_DATA], label: 'x' }])).toEqual([]);
+    });
+
     describe('other groups of a device account', () => {
         const check = (otherGroups?: OtherGroup[] | null, plannedAuthIds?: number[]) =>
             checkDeviceGroup({

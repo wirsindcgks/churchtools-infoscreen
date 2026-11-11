@@ -32,6 +32,8 @@ export const AUTH = {
     // Both give the e-mail address of a person already at level 1 (G70, G71): a device must never hold them.
     personDataView: 125, // churchdb: "Personendaten sehen"
     groupMembersViewIntern: 10101, // churchgroup, group internal: "Gruppenmitglieder sehen"
+    // The block "Liedblatt" (Plan.md 121, G82): the songs of the agenda and their files, per song category; the assistant grants all (`-1`).
+    songCategoryView: 313, // churchservice: "Einzelne Song-Kategorien sehen" (`view songcategory`)
 } as const;
 
 /** The two rights that open a person's e-mail address to whoever holds them – the device group is checked for them. */
@@ -326,6 +328,8 @@ export interface DeviceGroupInput {
     serviceCalendarIds?: number[];
     /** The calendars of the blocks "Ablauf" (Plan.md 118): the device reads their live agenda. */
     agendaCalendarIds?: number[];
+    /** A slide shows the block "Liedblatt" (Plan.md 121): the device must see the song categories, else the sheets stay empty. */
+    songsheetInUse?: boolean;
     /** A screen shows a video (Plan.md 52): the device must see the wiki category, else the video does not run. */
     videoInUse?: boolean;
     wikiCategoryId: number | null;
@@ -371,13 +375,13 @@ const EXCESS_NAMED = 6;
  */
 export function excessRights(grants: Grant[], plannedAuthIds: readonly number[]): number[] {
     // The rights that open the e-mail address have a line of their own, with the reason (Plan.md 112).
-    const planned = new Set<number>([...plannedAuthIds, ...PERSON_DATA_AUTH_IDS, AUTH.wikiView, AUTH.wikiCategoryEdit, AUTH.ownDataView, AUTH.calendarView]);
+    const planned = new Set<number>([...plannedAuthIds, ...PERSON_DATA_AUTH_IDS, AUTH.wikiView, AUTH.wikiCategoryEdit, AUTH.ownDataView, AUTH.calendarView, AUTH.songCategoryView]);
     const held = [...new Set(grants.map((g) => g.authId))].filter((authId) => has(grants, authId));
     return held.filter((authId) => !planned.has(authId)).sort((a, b) => a - b);
 }
 
 /** Rights whose scope the check leaves alone: the calendars, rooms and events a device sees are set elsewhere. */
-const SCOPE_FREE = new Set<number>([AUTH.calendarView, AUTH.resourceView, AUTH.eventView, AUTH.agendaView]);
+const SCOPE_FREE = new Set<number>([AUTH.calendarView, AUTH.resourceView, AUTH.eventView, AUTH.agendaView, AUTH.songCategoryView]);
 
 /**
  * The data a device account holds beyond its plan, per right: for each planned right with data – except
@@ -575,6 +579,21 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                   }
                 : { level: 'ok', category: 'agenda', text: t.setup.checks.agendaVisible },
         );
+    }
+
+    // The block "Liedblatt" reads songs and their files with 313 per song category (G82); the assistant grants all of them.
+    if (input.songsheetInUse) {
+        const blind = input.members.filter((m) => !m.grants.some((g) => g.authId === AUTH.songCategoryView && has(m.grants, AUTH.songCategoryView, g.dataId ?? undefined)));
+        const partly = input.members.filter((m) => !blind.includes(m) && !has(m.grants, AUTH.songCategoryView, ALL_DATA));
+        if (blind.length) {
+            checks.push({ level: 'warn', category: 'agenda', text: t.setup.checks.songsBlind(blind.map((m) => m.label).join(', ')), detail: t.setup.checks.songsBlindDetail });
+        }
+        if (partly.length) {
+            checks.push({ level: 'info', category: 'agenda', text: t.setup.checks.songsPartly(partly.map((m) => m.label).join(', ')), detail: t.setup.checks.songsPartlyDetail });
+        }
+        if (!blind.length && !partly.length) {
+            checks.push({ level: 'ok', category: 'agenda', text: t.setup.checks.songsVisible });
+        }
     }
 
     if (!input.moduleRights) {

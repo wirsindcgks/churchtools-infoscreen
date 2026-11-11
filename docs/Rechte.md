@@ -109,6 +109,19 @@ Das Gerät sieht damit nur zugesagte Dienste aus Dienstgruppen, die „Ohne Bere
 
 Steuerrechte für den Ablauf (Programmpunkte weiterschalten, bearbeiten) vergibt der Assistent nie.
 
+Der Baustein „Liedblatt" liest denselben Ablauf; seine Kalender zählen hier wie die eines Bausteins „Ablauf".
+
+### Lieder – für den Baustein „Liedblatt"
+
+| Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
+| --- | --- | --- | --- | --- |
+| Alle Song-Kategorien sehen (für den Baustein „Liedblatt") | Einzelne Song-Kategorien sehen (`view songcategory`, 313), alle Kategorien | – | – | **ja, sobald eine Folie einen Baustein „Liedblatt" zeigt** |
+
+Damit liest das Gerät die Lieder des Ablaufs mit ihren Arrangements und Dateien (ChordPro, `.sng`, `.txt`). Fehlt das
+Recht, bleiben die Liedblätter leer, und die Einstellungsseite warnt. Gilt es nur für einzelne Kategorien, zeigt der
+Baustein Lieder anderer Kategorien ohne Liedtext – die Einstellungsseite nennt das als Hinweis. Liedtexte auf einem
+Bildschirm zu zeigen, fällt unter die CCLI-Lizenz der Gemeinde.
+
 ### Personen – für den Baustein „Personen"
 
 Der Baustein zeigt Mitglieder **freigegebener vorhandener Gruppen** (unten) oder die Mitglieder einer eigenen Gruppe „Infoscreen-People", die sich **auf Wunsch** anlegen lässt (Einstellungen → Gruppen für „Personen"). Für diese eigene Gruppe liest das Gerät mit zwei Rechten und **nur** diese Gruppe. Das erste vergibt der Assistent beim Anlegen, das zweite der Administrator in ChurchTools; die Geräte werden dort automatisch Mitglied, daher gilt das zweite für alle Geräte mit einem Recht an der Standardrolle:
@@ -191,6 +204,9 @@ nur an Kalendern und Räumen, die du selbst siehst (das `1104` für Gruppen nimm
 | Anlegen von Bildschirmen und Einstellungen | `create custom data` | Gestalter, Gerät | immer – das ist Sache der Administratoren |
 | Bearbeiten von Bildschirmen und Einstellungen | `edit custom data` | Gestalter, Gerät | immer |
 | Löschen von Bildschirmen und Einstellungen | `delete custom data` | Gestalter, Gerät | immer |
+
+„Alle Song-Kategorien sehen" (313) nimmt „Rechte aktualisieren" **nie** zurück, auch wenn kein Baustein „Liedblatt" mehr
+gezeigt wird: Ein Recht für alle Kategorien lässt sich nicht von einem von Hand vergebenen unterscheiden.
 
 **Deshalb an den Gruppen des Assistenten nichts von Hand ergänzen** – wer mehr vergeben will, nimmt eine eigene
 Gruppe. Entzogene Rechte wirken bei ChurchTools noch bis zu einer Dreiviertelstunde nach.
