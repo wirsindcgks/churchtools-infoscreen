@@ -357,7 +357,8 @@ export interface SongsheetPick {
 }
 
 /**
- * The running point if it is a song; else the next song of the agenda (also one without a duration); before the start the first.
+ * The running point if it is a song; else the point right after it if that is a song (also one without a duration); before the start
+ * the first point if it is a song.
  * A valid choice of the musicians (`control`, Plan.md 121 E) beats all that: that song, with the chosen part.
  * `null` where no song is left.
  */
@@ -382,7 +383,8 @@ export function songsheetPick(pick: AgendaPick | null, control?: ControlDoc): So
     const started = phase !== 'upcoming' && !!position && position.index > 0;
     const index = started ? Math.min(position!.index, last) : 0;
     let shown = started && event.items[index]!.song ? index : -1;
-    for (let i = index + 1; shown < 0 && i <= last; i++) if (event.items[i]!.song) shown = i;
+    // Only the point right after the running one – before the start the first point (user, 2026-11-11: a song further on confused).
+    if (shown < 0 && index + 1 <= last && event.items[index + 1]!.song) shown = index + 1;
     if (shown < 0) return null;
     const item = event.items[shown]!;
     const running = started && shown === index;

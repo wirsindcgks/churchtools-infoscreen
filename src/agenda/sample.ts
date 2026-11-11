@@ -41,9 +41,10 @@ function sampleEvent(nowMs: number, calendarId: number): AgendaEvent {
             note: 'Gemeindefest am Sonntag ankündigen',
             responsible: { text: '[Leitung]', persons: [{ service: '[Leitung]', person: { title: 'Anna Beispiel' } }] },
         },
-        { title: 'Predigt', duration: 1800, responsible: { text: '[Predigt]', persons: [{ service: '[Predigt]', person: { title: 'Max Beispiel' } }] } },
-        // A song without a duration counts neither in "3 of 5" nor as "Dann"; the block "Liedblatt" shows it as "Als Nächstes".
+        // A song without a duration counts neither in "3 of 5" nor as "Dann"; the block "Liedblatt" shows it as "Als Nächstes" – right after the running point, since
+        // only the point right after it counts there (user, 2026-11-11).
         { type: 'song', title: '', duration: 0, song: { title: 'Segenslied', arrangementId: SAMPLE_ARRANGEMENT, key: 'C', bpm: 96, arrangement: 'Standard', isDefault: true } },
+        { title: 'Predigt', duration: 1800, responsible: { text: '[Predigt]', persons: [{ service: '[Predigt]', person: { title: 'Max Beispiel' } }] } },
         { title: 'Segen', duration: 300 },
     ]).map((item) => (item.arrangementId === SAMPLE_ARRANGEMENT ? { ...item, sheet: readChordPro(SAMPLE_CHORDPRO) } : item));
     // "Begrüßung" was planned to begin five minutes ago and began two minutes ago.
