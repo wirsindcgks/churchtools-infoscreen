@@ -1539,6 +1539,25 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         },
     },
 
+    /** The phone page of the musicians (Plan.md 121 E2). */
+    control: {
+        title: 'Steuerung',
+        unavailable: 'Die Steuerung ist nicht eingerichtet, oder dir fehlt das Recht dafür. Ein Administrator kann es dir geben.',
+        loading: 'Wird geladen …',
+        noEvents: 'Heute steht kein Ablauf mit Liedern an.',
+        eventLabel: 'Termin',
+        eventOption: (time: string) => `Termin um ${time} Uhr`,
+        screen: (song: string, part: string | null) => `Bildschirm: ${song}${part ? ` – ${part}` : ''}`,
+        screenNext: (song: string) => `Als Nächstes: ${song}`,
+        screenNone: 'Bildschirm: kein Lied',
+        part: (n: number) => `Teil ${n}`,
+        noSheet: 'Kein Liedtext hinterlegt',
+        back: 'Zurück',
+        next: 'Weiter',
+        notSaved: 'Nicht gespeichert – bitte noch einmal tippen',
+        failed: (message: string | null) => `ChurchTools ist gerade nicht erreichbar${message ? ` (${message})` : ''}.`,
+    },
+
     /** The page for an address the module does not know. */
     notFound: {
         text: 'Diese Seite gibt es im Infoscreen Designer nicht.',

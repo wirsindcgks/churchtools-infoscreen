@@ -1,3 +1,6 @@
+import type { AgendaEvent } from './live';
+import { sheetOf } from './songsheet';
+
 /**
  * The choice of the musicians (Plan.md 121 E): which part of which song a stage monitor shows big. One value per event in the
  * category `steuerung`, written from the phone page and read by the player. Not a schema document – no version, and the reader
@@ -67,4 +70,48 @@ export function controlsByEvent(values: readonly { value: string }[]): Record<nu
         if (!before || Date.parse(doc.at) > Date.parse(before.at)) latest[doc.eventId] = doc;
     }
     return latest;
+}
+
+/** A choice older than this, for another event, is cleaned up with the next write. */
+const STALE_MS = 2 * 24 * 60 * 60 * 1000;
+
+/**
+ * What a write of `doc` does to the stored values: the value of the same event is changed (of several, the latest; the rest go),
+ * none means create. Readable choices of other events older than two days go, too. What is unreadable stays.
+ */
+export function planControlWrite(values: readonly { id: number; value: string }[], doc: ControlDoc, nowMs: number): { updateId: number | null; removeIds: number[] } {
+    const same: { id: number; at: number }[] = [];
+    const removeIds: number[] = [];
+    for (const { id, value } of values) {
+        const read = readControl(value);
+        if (!read) continue;
+        const at = Date.parse(read.at);
+        if (read.eventId === doc.eventId) same.push({ id, at });
+        else if (at < nowMs - STALE_MS) removeIds.push(id);
+    }
+    same.sort((a, b) => b.at - a.at);
+    return { updateId: same[0]?.id ?? null, removeIds: [...removeIds, ...same.slice(1).map((v) => v.id)] };
+}
+
+/** A part of a song in the agenda: the point (index into `event.items`) and the section of its sheet. */
+export interface PartRef {
+    itemIndex: number;
+    section: number;
+}
+
+/**
+ * The parts of the songs with a sheet, in the order of the agenda; the neighbour of `current` in `direction`, over the border of
+ * a song to the next or previous song. `null` at the end. Without `current`, forward gives the first part, back gives `null`.
+ */
+export function stepPart(event: AgendaEvent, current: PartRef | null, direction: 1 | -1): PartRef | null {
+    const parts: PartRef[] = [];
+    event.items.forEach((item, itemIndex) => {
+        if (!item.song) return;
+        const count = sheetOf(item)?.sections.length ?? 0;
+        for (let section = 0; section < count; section++) parts.push({ itemIndex, section });
+    });
+    if (!current) return direction === 1 ? (parts[0] ?? null) : null;
+    const at = parts.findIndex((p) => p.itemIndex === current.itemIndex && p.section === current.section);
+    if (at < 0) return null;
+    return parts[at + direction] ?? null;
 }

@@ -11,6 +11,7 @@ import MediaView from './views/MediaView.vue';
 import DesignView from './views/DesignView.vue';
 import HistoryView from './views/HistoryView.vue';
 import AboutView from './views/AboutView.vue';
+import ControlView from './views/ControlView.vue';
 
 // No lazy routes: a kiosk tab open for weeks would request a chunk that a
 // later extension update has deleted (Plan.md, Risiko 7).
@@ -32,6 +33,8 @@ export const router = createRouter({
         // Who changed what, the last 30 days; the editor links here with ?playlist=<id> (Plan.md 100).
         { path: '/verlauf', name: 'history', component: HistoryView },
         { path: '/ueber', name: 'about', component: AboutView },
+        // The phone page of the musicians: they choose the part of the song a stage monitor shows (Plan.md 121 E2).
+        { path: '/steuerung', name: 'control', component: ControlView },
         // An overview of cards (Plan.md 36); each card leads to a page of its own.
         { path: '/einstellungen', name: 'setup', component: SetupView },
         { path: '/einstellungen/gruppen', name: 'setup-groups', component: SetupView },

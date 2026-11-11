@@ -151,6 +151,11 @@ onMounted(async () => {
         ]);
         admin.value = isAdmin;
         demo.value = handle.demo;
+        // Musicians see no category but the choice of the song part: their page is the phone page (Plan.md 121 E2).
+        if (!handle.demo && !Object.keys(await handle.repository.visibleCategories()).length && (await handle.repository.controlCategoryId()) !== null) {
+            await router.replace({ name: 'control' });
+            return;
+        }
         // A failed check must not lock anyone out; it only means no hint.
         const rights = await checkDesignerRights(handle.repository, handle.demo).catch((e: unknown) => {
             console.warn('Rechteprüfung nicht möglich:', e);
