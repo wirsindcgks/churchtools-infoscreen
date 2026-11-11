@@ -79,6 +79,7 @@ export const tp = {
         song: 'Lied',
         clock: 'Uhr',
         shortMinutes: (count: number) => `${count} Min.`,
+        bpm: (count: number) => `${count} BPM`,
         of: (count: number) => `von ${count}`,
         minutes: (count: number) => (count === 1 ? 'Minute' : 'Minuten'),
         seconds: (count: number) => (count === 1 ? 'Sekunde' : 'Sekunden'),

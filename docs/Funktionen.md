@@ -100,7 +100,9 @@ Karte läuft der **Signalrahmen**: grün, ab einer einstellbaren Zahl Minuten vo
 aus dem Augenwinkel zu sehen. Rechts daneben steht „Dann“ mit Uhrzeit, Titel, Dienst und Dauer (in einem schmalen
 Baustein als Leiste darunter). Zusätzlich lassen sich die **Notiz** des Punktes aus dem Ablaufplan (Hinweise fürs Team –
 sie steht für alle sichtbar auf dem Bildschirm) und die **Verantwortlichen** (Dienst und Namen der Eingeteilten;
-unbesetzte Dienste fallen weg) einschalten. „Dann“ lässt sich in beiden Ansichten ausblenden.
+unbesetzte Dienste fallen weg) einschalten. Bei Liedern stehen die **Liedangaben** in „Jetzt“ und „Dann“: Tonart und
+Tempo aus dem Arrangement, dazu das Arrangement, wenn es nicht das Standard-Arrangement ist; sie sind von Anfang an
+eingeschaltet. „Dann“ lässt sich in beiden Ansichten ausblenden.
 
 Die Rechte, die das Gerät dafür braucht, vergeben die Einrichtung und „Rechte aktualisieren“ für die Kalender der
 Ablauf-Bausteine und für die Kalender von Zeitplan-Regeln mit „Ende des Ablaufs“ (siehe [Zeitpläne](#zeitpläne));

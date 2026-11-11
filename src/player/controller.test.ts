@@ -427,6 +427,7 @@ describe('player controller', () => {
             showNext: true,
             showNote: false,
             showResponsible: false,
+            showSong: true,
             showSignal: true,
             style: { fontFamily: 'sans', fontSize: 96, fontWeight: 700, color: '#fff', align: 'left' },
         };
