@@ -125,11 +125,13 @@ const columnsStyle = computed(() => ({
     transform: page.value ? `translateX(${-page.value * (pageWidth.value + gap.value)}px)` : undefined,
 }));
 const chordColor = computed(() => themeOf(context).accent);
+/** The head follows the alignment of the text: a centred song gets a centred head. */
+const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center: 'center', right: 'flex-end' }[props.block.style.align] }));
 </script>
 
 <template>
     <div v-if="item" class="songsheet" :class="{ 'songsheet--paged': paged }" :style="textStyle(block.style)" data-testid="songsheet">
-        <div class="head">
+        <div class="head" :style="headStyle">
             <span v-if="upcoming" class="next" data-testid="songsheet-next">{{ tp.songsheet.next }}</span>
             <span class="title" data-testid="songsheet-title">{{ item.title }}</span>
             <span v-if="meta" class="meta" data-testid="songsheet-meta">{{ meta }}</span>
@@ -161,11 +163,14 @@ const chordColor = computed(() => themeOf(context).accent);
     flex-direction: column;
     width: 100%;
     height: 100%;
+    /* A margin of its own, like the cards of "Ablauf": the text never touches the edge of the block (user, 2026-11-11). */
+    box-sizing: border-box;
+    padding: 0.4em 0.5em;
     line-height: 1.25;
 }
 /* The room for the bar of the pages, kept free only where there are pages. */
 .songsheet--paged {
-    padding-bottom: 32px;
+    padding-bottom: max(0.4em, 32px);
 }
 .head {
     display: flex;
