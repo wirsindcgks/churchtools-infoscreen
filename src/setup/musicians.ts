@@ -4,6 +4,7 @@
  * verwalten") that takes in everybody who is in one of the band groups and takes out whoever is not (any more).
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
+import { serverMessage } from '../ct/client';
 import { t } from '../i18n/designer';
 import { provision, type GroupSpec, type ProvisionApi, type ProvisionResult } from './provision';
 
@@ -125,7 +126,7 @@ export async function provisionMusicians(
         await api.refreshDynamic(groupId);
         result.log.push(t.setup.musicians.refreshed);
     } catch (e) {
-        result.error = e instanceof Error ? e.message : String(e);
+        result.error = serverMessage(e) ?? (e instanceof Error ? e.message : String(e));
         result.log.push(t.setup.provision.aborted(result.error));
     }
     return result;

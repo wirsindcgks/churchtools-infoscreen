@@ -152,7 +152,7 @@ export const BLOCK_ICONS: Record<BlockType, IconName> = {
     qr: 'qr',
     countdown: 'timer',
     agenda: 'list',
-    songsheet: 'text',
+    songsheet: 'music',
     posts: 'news',
     groups: 'people',
     people: 'person',

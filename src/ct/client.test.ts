@@ -121,3 +121,12 @@ describe('ensureSignedIn', () => {
         expect(api.logins).toBe(0);
     });
 });
+
+describe('serverMessage', () => {
+    it('names what ChurchTools says, field by field, and nothing where it says nothing', async () => {
+        const { serverMessage } = await import('./client');
+        const refused = { response: { status: 400, data: { translatedMessage: 'Die eingegebenen Daten waren nicht korrekt.', errors: [{ fieldId: 'moduleId', message: 'Bitte eine ganze Zahl eingeben.' }] } } };
+        expect(serverMessage(refused)).toBe('Die eingegebenen Daten waren nicht korrekt. – moduleId: Bitte eine ganze Zahl eingeben.');
+        expect(serverMessage(new Error('Request failed with status code 400'))).toBeNull();
+    });
+});
