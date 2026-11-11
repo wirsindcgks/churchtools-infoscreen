@@ -12,6 +12,7 @@ import { currentPerson, displayName } from '../ct/client';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 import { appointmentWindow, churchToolsPlayerData } from '../player/data';
+import ControlSong from './ControlSong.vue';
 import { getRepository } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
 
@@ -50,8 +51,8 @@ const activePart = computed<PartRef | null>(() => {
     const section = s.section ?? ((sheetOf(s.item)?.sections.length ?? 0) > 0 ? 0 : undefined);
     return section === undefined ? null : { itemIndex: shownIndex.value, section };
 });
-const openIndex = computed(() => opened.value ?? shownIndex.value);
 watch(shownIndex, () => (opened.value = null));
+const toggle = (index: number) => (opened.value = opened.value === index ? null : index);
 
 const hasSong = (e: AgendaEvent) => e.items.some((item, i) => i > 0 && item.song);
 const time = (ms: number) => new Intl.DateTimeFormat(LOCALE, { hour: '2-digit', minute: '2-digit', timeZone: timeZone.value }).format(ms);
@@ -64,6 +65,20 @@ const songs = computed(() =>
         return [{ index, title: item.title, key: sheet?.key ?? item.songDetails?.key, parts: sheet?.sections ?? [] }];
     }),
 );
+
+/**
+ * A long service got crowded (user, 2026-11-11): the song on the screen stands apart with its parts, the next one small below it,
+ * all others folded away – the played ones pale, but still to be tapped.
+ */
+const reached = computed(() => {
+    if (shownIndex.value >= 0) return shownIndex.value;
+    const p = pick.value;
+    return p && p.phase !== 'upcoming' && p.position && p.position.index > 0 ? p.position.index : 1;
+});
+const current = computed(() => songs.value.find((s) => s.index === shownIndex.value) ?? null);
+const upNext = computed(() => songs.value.find((s) => (current.value ? s.index > current.value.index : s.index >= reached.value)) ?? null);
+const others = computed(() => songs.value.filter((s) => s !== current.value && s !== upNext.value));
+const played = (index: number) => index < reached.value;
 
 /** A second of its own, so that the clock of the plan runs between the readings. */
 const tick = ref(Date.now());
@@ -219,30 +234,51 @@ onBeforeUnmount(() => {
             <p v-else class="screen">{{ screenLine }}</p>
             <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
             <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
-            <ul class="songs">
-                <li v-for="song in songs" :key="song.index" :class="{ shown: song.index === shownIndex }">
-                    <button type="button" class="song" :aria-expanded="song.index === openIndex" @click="opened = song.index">
-                        <span>{{ song.title }}</span>
-                        <span v-if="song.key" class="key">{{ song.key }}</span>
-                    </button>
-                    <template v-if="song.index === openIndex">
-                        <p v-if="!song.parts.length" class="note">{{ t.control.noSheet }}</p>
-                        <div v-else class="parts">
-                            <button
-                                v-for="(part, n) in song.parts"
-                                :key="n"
-                                type="button"
-                                class="part"
-                                :class="{ active: activePart?.itemIndex === song.index && activePart.section === n }"
-                                :disabled="!stepping"
-                                @click="choose({ itemIndex: song.index, section: n })"
-                            >
-                                {{ part.label || t.control.part(n + 1) }}
-                            </button>
-                        </div>
-                    </template>
-                </li>
+            <ul v-if="current" class="songs" data-testid="control-current">
+                <ControlSong
+                    :title="current.title"
+                    :song-key="current.key"
+                    :parts="current.parts"
+                    :open="true"
+                    :active="activePart?.itemIndex === current.index ? activePart.section : null"
+                    shown
+                    :disabled="!stepping"
+                    @choose="(n) => choose({ itemIndex: current!.index, section: n })"
+                />
             </ul>
+            <template v-if="upNext">
+                <p class="label">{{ t.control.upNext }}</p>
+                <ul class="songs" data-testid="control-next">
+                    <ControlSong
+                        :title="upNext.title"
+                        :song-key="upNext.key"
+                        :parts="upNext.parts"
+                        :open="opened === upNext.index"
+                        :active="null"
+                        :disabled="!stepping"
+                        @toggle="toggle(upNext.index)"
+                        @choose="(n) => choose({ itemIndex: upNext!.index, section: n })"
+                    />
+                </ul>
+            </template>
+            <details v-if="others.length" class="all" data-testid="control-all">
+                <summary>{{ t.control.allSongs(others.length) }}</summary>
+                <ul class="songs">
+                    <ControlSong
+                        v-for="song in others"
+                        :key="song.index"
+                        :title="song.title"
+                        :song-key="song.key"
+                        :parts="song.parts"
+                        :open="opened === song.index"
+                        :active="null"
+                        :played="played(song.index)"
+                        :disabled="!stepping"
+                        @toggle="toggle(song.index)"
+                        @choose="(n) => choose({ itemIndex: song.index, section: n })"
+                    />
+                </ul>
+            </details>
             <nav class="steps">
                 <button type="button" :disabled="!previous" @click="previous && choose(previous)">{{ t.control.back }}</button>
                 <button type="button" :disabled="!following" @click="following && choose(following)">{{ t.control.next }}</button>
@@ -340,9 +376,28 @@ p {
     display: grid;
     gap: 8px;
 }
-.songs li {
-    display: grid;
-    gap: 8px;
+.label {
+    margin-top: 4px;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.7;
+}
+/* The rest of a long service, folded away. */
+.all {
+    margin-top: 8px;
+    border-top: 1px solid #3a3f4a;
+    padding-top: 12px;
+}
+.all summary {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: #b8bcc4;
+}
+.all > .songs {
+    margin-top: 8px;
 }
 button {
     min-height: 56px;
@@ -355,34 +410,6 @@ button {
 }
 button:disabled {
     opacity: 0.4;
-}
-.song {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
-    padding: 0 14px;
-    text-align: left;
-}
-.shown > .song {
-    border-color: #6ea8ff;
-}
-.key {
-    color: #b8bcc4;
-    font-variant-numeric: tabular-nums;
-}
-.parts {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-.part {
-    padding: 8px;
-}
-.part.active {
-    background: #2f6fed;
-    border-color: #6ea8ff;
-    font-weight: 600;
 }
 .steps {
     position: fixed;
