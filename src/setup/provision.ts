@@ -121,6 +121,11 @@ export interface PlanInput {
      * device reads their live agenda with 301, 306 and 331. Missing: none.
      */
     agendaCalendarIds?: number[];
+    /**
+     * A slide shows the block "Liedblatt" (Plan.md 121, G82): the device sees all song categories (313, `[-1]`). "Rechte
+     * aktualisieren" never takes it back – "all" may as well have been given by hand. Missing: none.
+     */
+    songsheet?: boolean;
     /** The non-public calendars released for screens (Plan.md 85 b), only those the administrator sees: device and designers may read them. */
     screenCalendarIds?: number[];
     /**
@@ -227,6 +232,10 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     if (agendaCalendars.length) {
         device.push({ authId: AUTH.eventsView, label: t.setup.provision.grants.viewEvents });
         device.push({ authId: AUTH.agendaView, dataId: agendaCalendars, label: RIGHT_LABELS[AUTH.agendaView] });
+    }
+    // The block "Liedblatt" reads the songs of the agenda and their files (G82): 313 for all song categories, "all" being `[-1]` (G68).
+    if (input.songsheet) {
+        device.push({ authId: AUTH.songCategoryView, dataId: [ALL_DATA], label: t.setup.provision.grants.viewSongCategories });
     }
 
     // The block "Personen" (Plan.md 112, G70): 1104 on exactly this group, at the device's own group – the people group stays

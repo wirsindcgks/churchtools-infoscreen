@@ -120,6 +120,10 @@ Overscan änderst du später über **„…"** an der Kachel.
   wenn du interne Kalender oder Raumtypen änderst und nach einem Update. Eine Vorschau zeigt vorher, was dazukommt
   und was wegfällt – der Knopf nimmt auch Rechte zurück, die kein Bildschirm mehr braucht. Entzogene Rechte wirken in
   ChurchTools noch bis zu einer Dreiviertelstunde nach ([Einzelheiten](Rechte.md#was-rechte-aktualisieren-zurücknimmt)).
+- **Liedblätter:** Zeigt eine Folie den Baustein „Liedblatt", braucht das Gerät das Recht, die Lieder zu sehen –
+  „Rechte aktualisieren" gibt der Gerätegruppe „Einzelne Song-Kategorien sehen" für **alle** Song-Kategorien. Sonst
+  bleiben die Liedblätter leer, und die Seite warnt. Liedtexte zu zeigen, fällt unter die CCLI-Lizenz der Gemeinde
+  ([Einzelheiten](Rechte.md#lieder--für-den-baustein-liedblatt)).
 - **Gruppen und Wiki-Bereich darfst du umbenennen**; der Designer erkennt sie weiter.
 - **Eigene Gruppen statt der automatischen?** Weiter unten auf derselben Seite lassen sich vorhandene Gruppen wählen.
   Die Seite prüft dann, was ihnen fehlt, ändert aber selbst nichts.

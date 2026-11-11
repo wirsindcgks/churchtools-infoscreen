@@ -1894,6 +1894,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 deleteAdminData: 'Löschen von Bildschirmen und Einstellungen',
                 viewPeopleGroup: 'Gruppe „Infoscreen-People" inkl. ihrer Gruppenmitglieder sehen',
                 viewEvents: 'Events sehen (für den Baustein „Ablauf")',
+                viewSongCategories: 'Alle Song-Kategorien sehen (für den Baustein „Liedblatt")',
                 viewReleasedGroup: 'Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen',
             },
             postsOff: (name: string) => `Beiträge in „${name}" abgeschaltet.`,
@@ -1986,6 +1987,13 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             agendaBlindDetail:
                 'Der Baustein „Ablauf" braucht drei Rechte: „Events" sehen (301), „Events von einzelnen Kalendern sehen" (306) und „Ablaufpläne für einzelne Kalender sehen" (331), die beiden letzten für jeden Kalender. „Rechte aktualisieren" gibt sie der Gerätegruppe – nur für öffentliche oder freigegebene Kalender.',
             agendaVisible: 'Die Live-Agenda ist für den Baustein „Ablauf" lesbar.',
+            songsBlind: (labels: string) => `Liedblatt: ${labels} fehlt „Einzelne Song-Kategorien sehen" – die Liedblätter bleiben leer.`,
+            songsBlindDetail:
+                'Der Baustein „Liedblatt" liest die Lieder des Ablaufs und ihre Dateien; dafür braucht das Gerät „Einzelne Song-Kategorien sehen" (313). „Rechte aktualisieren" gibt es der Gerätegruppe für alle Song-Kategorien.',
+            songsPartly: (labels: string) => `Liedblatt: ${labels} sieht nur einzelne Song-Kategorien.`,
+            songsPartlyDetail:
+                'Lieder aus anderen Kategorien zeigt der Baustein „Liedblatt" ohne Liedtext. „Rechte aktualisieren" gibt der Gerätegruppe „Einzelne Song-Kategorien sehen" (313) für alle Kategorien.',
+            songsVisible: 'Die Liedblätter sind für den Baustein „Liedblatt" lesbar.',
             deviceLacksModule: (label: string, lacking: string) => `${label}: am Modul fehlt ${lacking}.`,
             deviceMayRead: (label: string) => `${label} darf die Bildschirme lesen.`,
             videoSubject: (labels: string, n: number) => `${labels} ${n === 1 ? 'darf' : 'dürfen'} den Wiki-Bereich „Infoscreen" nicht sehen`,

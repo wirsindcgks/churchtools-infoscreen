@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { catalogFrom } from './catalog';
-import { AUTH } from './checks';
+import { ALL_DATA, AUTH, type Grant } from './checks';
 import {
     devicePasswordRecommendationLogLine,
     GROUP_NAMES,
@@ -158,6 +158,18 @@ describe('planProvisioning', () => {
         expect(d!.grants.some((g) => [301, 306, 331].includes(g.authId))).toBe(false);
         const [, none] = planProvisioning({ ...input, serviceCalendarIds: [5] });
         expect(none!.grants.some((g) => g.authId === AUTH.eventsView || g.authId === AUTH.agendaView)).toBe(false);
+    });
+
+    it('gives the device all song categories (313, [-1]) only when a block "Liedblatt" is shown (Plan.md 121, G82)', () => {
+        const [d, v] = planProvisioning({ ...input, songsheet: true });
+        expect(v!.grants.find((g) => g.authId === AUTH.songCategoryView)).toEqual({
+            authId: 313,
+            dataId: [ALL_DATA],
+            label: 'Alle Song-Kategorien sehen (für den Baustein „Liedblatt")',
+        });
+        expect(d!.grants.some((g) => g.authId === AUTH.songCategoryView)).toBe(false);
+        const [, none] = planProvisioning(input);
+        expect(none!.grants.some((g) => g.authId === AUTH.songCategoryView)).toBe(false);
     });
 
     it('gives nobody "Ressourcen sehen" (201) – the right per room is enough (G45)', () => {
@@ -329,6 +341,14 @@ describe('planRefresh (Plan.md 62)', () => {
         expect(pairs(withAgenda.add)).not.toContain('301:null');
         // A 301 that was revoked, or is not the plain right, is not touched.
         expect(pairs(device([[held(301, null, 'revoke')]]).remove)).toEqual([]);
+    });
+
+    it('adds 313 for all song categories where a role lacks "all", and never takes it back (Plan.md 121)', () => {
+        const planWith = planProvisioning({ ...input, songsheet: true });
+        const refresh = (grants: Grant[]) => planRefresh(planWith, { device: [grants] }, known).find((g) => g.key === 'device')!;
+        expect(pairs(refresh([held(313, 0)]).add)).toContain('313:-1');
+        expect(pairs(refresh([held(313, -1)]).add)).not.toContain('313:-1');
+        expect(pairs(device([[held(313, -1), held(313, 0)]]).remove)).toEqual([]);
     });
 
     it('names what falls away with the right and the name of the calendar or room', () => {

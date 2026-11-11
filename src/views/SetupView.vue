@@ -194,6 +194,8 @@ let agendaCalendarIds: number[] = [];
 let videoInUse = false;
 /** A slide shows the block "Personen" (Plan.md 112). */
 let peopleInUse = false;
+/** A slide shows the block "Liedblatt" (Plan.md 121). */
+let songsheetInUse = false;
 let catalog: AuthCatalog | null = null;
 /** Names of the wiki areas by id, to name what a device sees beyond its own (Plan.md 94 B). */
 let wikiNames = new Map<number, string>();
@@ -270,7 +272,7 @@ const foreignGroups = computed(() =>
     ),
 );
 
-const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.resourceView, AUTH.eventsView, AUTH.eventView, AUTH.agendaView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit, AUTH.groupWithMembersView, AUTH.memberFieldsView];
+const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.resourceView, AUTH.eventsView, AUTH.eventView, AUTH.agendaView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit, AUTH.groupWithMembersView, AUTH.memberFieldsView, AUTH.songCategoryView];
 
 /** Rights a side must not hold – what the assistant takes back (Plan.md, F). */
 function forbiddenRights(side: Side): RequiredRight[] | null {
@@ -326,6 +328,7 @@ function planInput(people?: 'new'): PlanInput {
         appointmentRooms,
         serviceCalendarIds: grantableCalendars(serviceCalendarIds),
         agendaCalendarIds: grantableCalendars(agendaCalendarIds),
+        songsheet: songsheetInUse,
         screenCalendarIds: releasedCalendars.value,
         peopleGroupIds: releasedPeopleGroups.value,
     };
@@ -1188,6 +1191,7 @@ async function check(side: Side): Promise<void> {
                 appointmentRooms,
                 serviceCalendarIds,
                 agendaCalendarIds,
+                songsheetInUse,
                 screenCalendarIds: releasedCalendars.value,
                 videoInUse,
                 peopleGroup: peopleGroupId.value === null ? undefined : { id: peopleGroupId.value, name: groups.value.find((g) => g.id === peopleGroupId.value)?.name ?? GROUP_NAMES.people },
@@ -1258,7 +1262,7 @@ onMounted(async () => {
         if (page.value === 'people') void loadPersonFields();
         // The device check names a missing room type: it waits for this read below.
         const roomTypesRead = loadRoomTypes();
-        const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, resources, usedRooms, roomsAtAppointments, serviceCalendars, agendaCalendars, videos, people, permissions, types] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, resources, usedRooms, roomsAtAppointments, serviceCalendars, agendaCalendars, videos, people, songsheets, permissions, types] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
@@ -1273,6 +1277,7 @@ onMounted(async () => {
             repository.agendaCalendarIdsInUse(),
             repository.videoInUse(),
             repository.peopleInUse(),
+            repository.songsheetInUse(),
             loadGroupPermissions(),
             loadGroupTypes().catch(() => null),
         ]);
@@ -1308,6 +1313,7 @@ onMounted(async () => {
         agendaCalendarIds = agendaCalendars;
         videoInUse = videos;
         peopleInUse = people;
+        songsheetInUse = songsheets;
         selected.designer = settings?.designerGroupId ?? null;
         selected.device = settings?.deviceGroupId ?? null;
         peopleGroupId.value = settings?.peopleGroupId ?? null;

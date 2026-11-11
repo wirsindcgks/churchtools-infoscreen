@@ -1261,6 +1261,12 @@ export class ScreenRepository {
         return slides.some((s) => s.blocks.some((b) => b.type === 'people'));
     }
 
+    /** Whether any slide shows the block "Liedblatt" – then a device must see the song categories (Plan.md 121). */
+    async songsheetInUse(): Promise<boolean> {
+        const slides = await this.readShownSlides();
+        return slides.some((s) => s.blocks.some((b) => b.type === 'songsheet'));
+    }
+
     async saveMedia(doc: MediaDoc): Promise<void> {
         const ids = await this.ensureCategories();
         const text = serialize(doc);
