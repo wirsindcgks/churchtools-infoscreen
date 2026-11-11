@@ -220,9 +220,16 @@ describe('songsheetPick – which song the block shows', () => {
         expect(shown!.item.title).toBe('Zweites');
     });
 
-    it('shows the first song before the start', () => {
-        expect(songsheetPick(pick(items, null))!.item.title).toBe('Erstes');
-        expect(songsheetPick(pick(items, 0))!.item.title).toBe('Erstes');
+    it('shows a song only when it runs or is the very next point – before the start the first point (user, 2026-11-11)', () => {
+        // "Begrüßung" comes first: no song yet, also not "Erstes" behind it.
+        expect(songsheetPick(pick(items, null))).toBeNull();
+        expect(songsheetPick(pick(items, 0))).toBeNull();
+        // A song as first point is shown before the start.
+        expect(songsheetPick(pick(items.slice(1), null))!.item.title).toBe('Erstes');
+        // While "Begrüßung" runs, "Erstes" is next.
+        expect(songsheetPick(pick(items, 1))).toMatchObject({ upcoming: true });
+        // While "Erstes" runs nothing of "Zweites" two points on.
+        expect(songsheetPick(pick([talk('Begrüßung'), talk('Lesung'), song('Erstes', 240)], 1))).toBeNull();
     });
 
     it('shows nothing when no song is left or there is none', () => {

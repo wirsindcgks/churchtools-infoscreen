@@ -1303,7 +1303,7 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
     });
 
     it('shows the running song without "Als Nächstes"', () => {
-        const wrapper = draw(songsheet(), { agenda: feed(5) });
+        const wrapper = draw(songsheet(), { agenda: feed(4) });
         expect(wrapper.get('[data-testid="songsheet-title"]').text()).toBe('Segenslied');
         expect(wrapper.find('[data-testid="songsheet-next"]').exists()).toBe(false);
     });
@@ -1332,7 +1332,7 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
         const chosen = (section: number, extra: Record<string, unknown> = {}) => {
             const agenda = feed();
             const event = agenda.events[0]!;
-            const control = { eventId: event.eventId, itemIndex: 5, arrangementId: event.items[5]!.arrangementId, section, at: NOW.toISOString(), ...extra };
+            const control = { eventId: event.eventId, itemIndex: 4, arrangementId: event.items[4]!.arrangementId, section, at: NOW.toISOString(), ...extra };
             return { ...agenda, controls: { [event.eventId]: control } };
         };
 
@@ -1354,7 +1354,7 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
         });
 
         it('stays as it was without a choice, or with one that no longer holds', () => {
-            for (const agenda of [feed(), chosen(1, { itemIndex: 4 })]) {
+            for (const agenda of [feed(), chosen(1, { itemIndex: 5 })]) {
                 const wrapper = draw(songsheet(), { agenda });
                 expect(wrapper.find('[data-testid="songsheet-part"]').exists()).toBe(false);
                 expect(wrapper.find('[data-testid="songsheet-preview"]').exists()).toBe(false);
