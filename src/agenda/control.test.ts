@@ -73,6 +73,15 @@ describe('stepPart', () => {
         expect(stepPart(event, { itemIndex: 1, section: 1 }, 1)).toEqual({ itemIndex: 4, section: 0 });
         expect(stepPart(event, { itemIndex: 4, section: 0 }, -1)).toEqual({ itemIndex: 1, section: 1 });
     });
+    it('counts no part outside the flow, and leaves one to the next song or back to the last step', () => {
+        const flowed = (extras: boolean[]): LiveItem => ({ ...item(true, 0), sheet: { sections: extras.map((extra) => ({ label: '', lines: [], ...(extra ? { extra } : {}) })) } });
+        const list: AgendaEvent = { ...event, items: [item(false, 0), flowed([false, false, true, true]), flowed([false])] };
+        expect(stepPart(list, { itemIndex: 1, section: 1 }, 1)).toEqual({ itemIndex: 2, section: 0 });
+        expect(stepPart(list, { itemIndex: 2, section: 0 }, -1)).toEqual({ itemIndex: 1, section: 1 });
+        expect(stepPart(list, { itemIndex: 1, section: 3 }, 1)).toEqual({ itemIndex: 2, section: 0 });
+        expect(stepPart(list, { itemIndex: 1, section: 2 }, -1)).toEqual({ itemIndex: 1, section: 1 });
+        expect(stepPart(list, { itemIndex: 2, section: 0 }, 1)).toBeNull();
+    });
     it('gives null at the edges', () => {
         expect(stepPart(event, { itemIndex: 4, section: 0 }, 1)).toBeNull();
         expect(stepPart(event, { itemIndex: 1, section: 0 }, -1)).toBeNull();

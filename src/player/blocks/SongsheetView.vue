@@ -53,6 +53,7 @@ const meta = computed(() => {
 const allSections = computed(() =>
     (sheet.value?.sections ?? []).map((part) => ({
         label: part.label,
+        extra: part.extra,
         lines: part.lines
             .filter((line) => showChords.value || line.text.trim() !== '')
             .map((line) => ({ plain: !showChords.value || !line.chords.length, text: line.text, segments: lineSegments(line) })),
@@ -68,7 +69,8 @@ const part = computed(() => (section.value === undefined ? null : (allSections.v
 /** Heading and first line of the part after it, without chords; nothing after the last. */
 const preview = computed(() => {
     const next = part.value && section.value !== undefined ? allSections.value[section.value + 1] : undefined;
-    return next ? { label: next.label, text: next.lines.find((line) => line.text.trim() !== '')?.text ?? '' } : null;
+    // A part outside the flow is no "next" (Plan.md 121 H).
+    return next && !next.extra ? { label: next.label, text: next.lines.find((line) => line.text.trim() !== '')?.text ?? '' } : null;
 });
 const shown = computed(() => (part.value ? [part.value] : sections.value));
 const showText = computed(() => (part.value ? true : !!sheet.value && hasLines.value));

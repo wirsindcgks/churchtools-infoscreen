@@ -119,7 +119,11 @@ der der Datei ab (beide Dur oder beide Moll), werden die Akkorde **transponiert*
 keine Datei liegt, steht „Kein Liedtext hinterlegt“. Der Baustein zeigt **Teil 1** des Liedes, bis Musiker auf dem Handy weiterschalten; ein Teil mit mehr als vier Zeilen
 wird in gleich große Stücke geteilt („Refrain (1/2)“, „Refrain (2/2)“), damit die Schrift groß bleibt. Die Schrift ist für das
 ganze Lied gleich groß: so groß, dass sein größter Teil gerade passt – höchstens doppelt so groß wie unter „Schrift“ eingestellt,
-kleiner nur, wenn es nicht anders passt. Der Schalter „Nach Zeit blättern“ ist für Gemeinden ohne Handysteuerung: Dann steht der ganze Text in **Spalten**
+kleiner nur, wenn es nicht anders passt. Den **Liedablauf** liest der Baustein als Kürzel wie „V1, C, V2, C, B, B, C“ (Strophe, Refrain,
+Bridge, „Pre“, „Intro“, „Tag“, „Schluss“ …): aus der **Bemerkung am Lied-Punkt** im Ablaufplan, sonst aus der **Beschreibung des
+Arrangements**. Dann führt „Weiter“ in dieser Reihenfolge durch das Lied, Wiederholungen eingeschlossen; derselbe Teil zweimal
+hintereinander ist ein Schritt („Bridge 2×“). Teile, die im Ablauf nicht vorkommen, stehen auf dem Handy darunter unter „Nicht im
+Ablauf“ – zum spontanen Hinspringen. Der Schalter „Nach Zeit blättern“ ist für Gemeinden ohne Handysteuerung: Dann steht der ganze Text in **Spalten**
 und der Baustein blättert nach der Dauer des Liedes. Der Schalter „Akkorde“ blendet die Akkorde aus.
 
 Liedtexte auf dem Bildschirm zu zeigen fällt unter die **CCLI-Lizenz** der Gemeinde: Copyright und Lizenznummer stehen

@@ -95,7 +95,7 @@ export async function fetchAgenda(eventId: number): Promise<{ calendarId?: numbe
 /** A song of `GET /events/{id}/agenda/songs` as the block "Liedblatt" reads it: its arrangements with their files (Plan.md 121 B, G82). */
 export interface AgendaSongResponse {
     id?: number | null;
-    arrangements?: { id?: number | null; files?: { name?: string | null; fileUrl?: string | null }[] | null }[] | null;
+    arrangements?: { id?: number | null; description?: string | null; files?: { name?: string | null; fileUrl?: string | null }[] | null }[] | null;
 }
 
 /** All songs of the agenda with all arrangements and files, in one call. Without right 313 the list is empty or the answer a `403` (G82). */

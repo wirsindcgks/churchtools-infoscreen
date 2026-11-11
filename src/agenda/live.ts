@@ -40,6 +40,8 @@ export interface LiveItem {
     songDetails?: SongDetails;
     /** Only a song: the arrangement the point plays, to find its file (Plan.md 121 B). */
     arrangementId?: number;
+    /** Only a song: the description of its arrangement, where the flow may stand (Plan.md 121 H); travels with the offline copy. */
+    arrangementDescription?: string;
     /** Only a song with a text file at its arrangement and a device that may read it; travels with the offline copy. */
     sheet?: SongSheet;
 }
