@@ -102,15 +102,25 @@ export interface PartRef {
 /**
  * The parts of the songs with a sheet, in the order of the agenda; the neighbour of `current` in `direction`, over the border of
  * a song to the next or previous song. `null` at the end. Without `current`, forward gives the first part, back gives `null`.
+ * Parts outside the flow of the song (`extra`, Plan.md 121 H) are no steps: from one of them forward leads to the next song, back to
+ * the last step of the same song.
  */
 export function stepPart(event: AgendaEvent, current: PartRef | null, direction: 1 | -1): PartRef | null {
     const parts: PartRef[] = [];
+    let extra = false;
     event.items.forEach((item, itemIndex) => {
         if (!item.song) return;
-        const count = sheetOf(item)?.sections.length ?? 0;
-        for (let section = 0; section < count; section++) parts.push({ itemIndex, section });
+        const sections = sheetOf(item)?.sections ?? [];
+        sections.forEach((section, index) => {
+            if (!section.extra) parts.push({ itemIndex, section: index });
+            else if (current?.itemIndex === itemIndex && current.section === index) extra = true;
+        });
     });
     if (!current) return direction === 1 ? (parts[0] ?? null) : null;
+    if (extra) {
+        if (direction === 1) return parts.find((p) => p.itemIndex > current.itemIndex) ?? null;
+        return parts.filter((p) => p.itemIndex === current.itemIndex).at(-1) ?? null;
+    }
     const at = parts.findIndex((p) => p.itemIndex === current.itemIndex && p.section === current.section);
     if (at < 0) return null;
     return parts[at + direction] ?? null;

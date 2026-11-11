@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ControlDoc } from './control';
 import type { AgendaEvent, AgendaPick, LiveItem, LivePosition } from './live';
 import { liveItems } from './live';
-import { lineSegments, pickSheetFile, readChordPro, readSng, readSongSheet, readTxt, sheetKind, sheetOf, sheetPage, songFileStatus, songsLeft, songsheetPick, transposeSheet, type SongSheet } from './songsheet';
+import { applyFlow, lineSegments, pickSheetFile, readChordPro, readFlow, readSng, readSongSheet, readTxt, sheetKind, sheetOf, sheetPage, songFileStatus, songsLeft, songsheetPick, transposeSheet, type SheetSection, type SongSheet } from './songsheet';
 
 // Own texts in the build of the files of SongSelect (G82): sections as `{comment: …}`, bar lines in brackets; `.sng` with byte order mark and `#` head;
 // `.txt` with title and authors above and the block with the CCLI numbers below.
@@ -337,5 +337,69 @@ describe('songFileStatus (Plan.md 121)', () => {
         expect(songFileStatus([{ name: 'Noten.PDF' }])).toBe('pdf');
         expect(songFileStatus([{ name: 'a.mp3' }, { name: null }])).toBe('none');
         expect(songFileStatus([])).toBe('none');
+    });
+});
+
+describe('readFlow (Plan.md 121 H)', () => {
+    const v = (n: string) => ({ heading: 'Strophe', number: n });
+    const C = { heading: 'Refrain' };
+    const B = { heading: 'Bridge' };
+    it('reads the spellings of the congregation', () => {
+        expect(readFlow('V1, C, V2, C')).toEqual([v('1'), C, v('2'), C]);
+        expect(readFlow('V1, C, V2, C, B, B, C')).toEqual([v('1'), C, v('2'), C, B, B, C]);
+        expect(readFlow('V1, PRE, C, V2, C')).toEqual([v('1'), { heading: 'Pre-Chorus' }, C, v('2'), C]);
+        expect(readFlow('C,V1, C, V2, C')).toEqual([C, v('1'), C, v('2'), C]);
+        expect(readFlow('Tag, C, B, Tag')).toEqual([{ heading: 'Tag' }, C, B, { heading: 'Tag' }]);
+        expect(readFlow('V1, V2, C, V3, C, V4, C, Schluss')).toEqual([v('1'), v('2'), C, v('3'), C, v('4'), C, { heading: 'Schluss' }]);
+    });
+    it('finds the flow in the middle of other text', () => {
+        expect(readFlow('Bitte langsam. Ablauf: v1 - c - v2 - c, dann Ende')).toEqual([v('1'), C, v('2'), C]);
+        expect(readFlow('Pre-Chorus / Chorus')).toEqual([{ heading: 'Pre-Chorus' }, C]);
+    });
+    it('gives null where no flow stands', () => {
+        expect(readFlow('Wir singen es langsam, bitte')).toBeNull();
+        expect(readFlow('C')).toBeNull();
+        expect(readFlow('')).toBeNull();
+        expect(readFlow(undefined)).toBeNull();
+    });
+});
+
+describe('applyFlow (Plan.md 121 H)', () => {
+    const part = (label: string): SheetSection => ({ label, lines: [{ chords: [], text: label }] });
+    const sheet: SongSheet = { key: 'G', footer: 'f', sections: ['Strophe 1', 'Strophe 2', 'Refrain', 'Bridge (1/2)', 'Bridge (2/2)', 'Schluss'].map(part) };
+    const labels = (s: SongSheet) => s.sections.map((p) => p.label + (p.extra ? '*' : ''));
+    const flow = (text: string) => readFlow(text)!;
+    it('orders the parts and appends what the flow leaves out', () => {
+        expect(labels(applyFlow(sheet, flow('V1, C, V2, C')))).toEqual(['Strophe 1', 'Refrain', 'Strophe 2', 'Refrain', 'Bridge (1/2)*', 'Bridge (2/2)*', 'Schluss*']);
+        expect(applyFlow(sheet, flow('V1, C')).footer).toBe('f');
+    });
+    it('makes equal steps in a row one with "2×"', () => {
+        expect(labels(applyFlow(sheet, flow('V1, C, C, V2')))).toEqual(['Strophe 1', 'Refrain 2×', 'Strophe 2', 'Bridge (1/2)*', 'Bridge (2/2)*', 'Schluss*']);
+    });
+    it('takes all pieces of a split part along', () => {
+        expect(labels(applyFlow(sheet, flow('V1, B, B, C')))).toEqual(['Strophe 1', 'Bridge (1/2) 2×', 'Bridge (2/2) 2×', 'Refrain', 'Strophe 2*', 'Schluss*']);
+    });
+    it('drops steps that find no part and keeps the sheet where none does', () => {
+        expect(labels(applyFlow(sheet, flow('V1, V5, C')))).toEqual(['Strophe 1', 'Refrain', 'Strophe 2*', 'Bridge (1/2)*', 'Bridge (2/2)*', 'Schluss*']);
+        expect(applyFlow(sheet, flow('Intro, Tag'))).toBe(sheet);
+    });
+    it('lets a part without number take any number', () => {
+        expect(labels(applyFlow(sheet, flow('C2, V1')))).toEqual(['Refrain', 'Strophe 1', 'Strophe 2*', 'Bridge (1/2)*', 'Bridge (2/2)*', 'Schluss*']);
+    });
+});
+
+describe('sheetOf with a flow (Plan.md 121 H)', () => {
+    const sheet: SongSheet = { sections: ['Strophe 1', 'Refrain', 'Strophe 2'].map((label) => ({ label, lines: [] })) };
+    const item = (extra: Partial<LiveItem>): LiveItem => ({ ...liveItems([{ type: 'song', duration: 0, song: { title: 'Lied' } }])[1]!, sheet, ...extra });
+    it('takes the note before the description', () => {
+        const got = sheetOf(item({ note: 'V2, C', arrangementDescription: 'V1, C, V2' }))!;
+        expect(got.sections.map((s) => s.label)).toEqual(['Strophe 2', 'Refrain', 'Strophe 1']);
+    });
+    it('takes the description where the note names no flow, and the file order without both', () => {
+        expect(sheetOf(item({ note: 'leise', arrangementDescription: 'C, V1' }))!.sections.map((s) => s.label)).toEqual(['Refrain', 'Strophe 1', 'Strophe 2']);
+        expect(sheetOf(item({}))).toBe(sheet);
+    });
+    it('takes the description where no step of the note finds a part', () => {
+        expect(sheetOf(item({ note: 'B, Tag, B', arrangementDescription: 'C, V1' }))!.sections.map((s) => s.label)).toEqual(['Refrain', 'Strophe 1', 'Strophe 2']);
     });
 });

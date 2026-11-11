@@ -21,6 +21,8 @@ export interface SheetSection {
     /** "Strophe 1", "Refrain"; empty where the file names none. */
     label: string;
     lines: SheetLine[];
+    /** Not in the flow of the song (Plan.md 121 H): appended behind it, reached by choice only, never by "Weiter". */
+    extra?: boolean;
 }
 
 export interface SongSheet {
@@ -294,6 +296,101 @@ export function readSongSheet(text: string, kind: SheetKind): SongSheet {
     return kind === 'chordpro' ? readChordPro(text) : kind === 'sng' ? readSng(text) : readTxt(text);
 }
 
+// --- flow ---
+
+/** A step of the flow of a song as the congregation writes it ("V1, C, V2, C"): the German heading and the number, if one is given. */
+export interface FlowStep {
+    heading: string;
+    number?: string;
+}
+
+const FLOW_KINDS: [RegExp, string][] = [
+    [/^(v|s|verse|strophe)$/i, 'Strophe'],
+    [/^(pre-?\s?chorus|pre|pc)$/i, 'Pre-Chorus'],
+    [/^(chorus|refrain|ref|c)$/i, 'Refrain'],
+    [/^(bridge|br|b)$/i, 'Bridge'],
+    [/^intro$/i, 'Intro'],
+    [/^(interlude|zwischenspiel)$/i, 'Zwischenspiel'],
+    [/^(ending|outro|schluss)$/i, 'Schluss'],
+    [/^tag$/i, 'Tag'],
+    [/^instrumental$/i, 'Instrumental'],
+];
+// Longer names first: "Pre-Chorus" must not end at "Pre". A letter or digit on either side is no abbreviation ("bitte" is no "B").
+const FLOW_TOKEN = String.raw`(?<![\p{L}\d])(?:verse|strophe|pre-?\s?chorus|pre|pc|chorus|refrain|ref|bridge|br|intro|interlude|zwischenspiel|ending|outro|schluss|instrumental|tag|v|s|c|b)\s?(?:\d+[a-z]?)?(?![\p{L}\d])`;
+const FLOW_SEPARATOR = String.raw`\s*[,\-/>|–→]\s*`;
+
+/**
+ * The flow a text names – the longest run of at least two abbreviations apart by `,` `-` `/` `>` `|` ("V1, C, V2, C, B, B, C"), in the
+ * middle of other text too; `null` where there is none (Plan.md 121 H, G82). A verse needs its number: a bare "S" or "V" is no flow.
+ */
+export function readFlow(text: string | null | undefined): FlowStep[] | null {
+    if (!text) return null;
+    const run = new RegExp(`${FLOW_TOKEN}(?:${FLOW_SEPARATOR}${FLOW_TOKEN})+`, 'giu');
+    const token = new RegExp(FLOW_TOKEN, 'giu');
+    let best: FlowStep[] | null = null;
+    for (const match of text.matchAll(run)) {
+        const steps: FlowStep[] = [];
+        for (const found of match[0].matchAll(token)) {
+            const word = /^([^\d]*?)\s?(\d+[a-z]?)?$/i.exec(found[0].trim());
+            if (!word) continue;
+            const name = word[1]!.trim();
+            const heading = FLOW_KINDS.find(([pattern]) => pattern.test(name))?.[1];
+            if (!heading) continue;
+            // "V" and "S" alone are too short to trust.
+            if (heading === 'Strophe' && !word[2] && name.length === 1) continue;
+            steps.push(word[2] ? { heading, number: word[2] } : { heading });
+        }
+        if (steps.length >= 2 && (!best || steps.length > best.length)) best = steps;
+    }
+    return best;
+}
+
+/** A part of the file: the pieces a long part was split into (Plan.md 121 G) stay together. */
+interface FlowPart {
+    heading: string;
+    number?: string;
+    sections: SheetSection[];
+}
+
+function flowParts(sheet: SongSheet): FlowPart[] {
+    const parts: FlowPart[] = [];
+    for (let i = 0; i < sheet.sections.length; ) {
+        const section = sheet.sections[i]!;
+        const piece = /^(.*) \((\d+)\/(\d+)\)$/.exec(section.label);
+        const count = piece && piece[2] === '1' ? Number(piece[3]) : 1;
+        const base = (piece && piece[2] === '1' ? piece[1]! : section.label).trim();
+        const name = /^(.*?)(?:\s(\d+[a-z]?))?$/.exec(base)!;
+        parts.push({ heading: name[1]!, ...(name[2] ? { number: name[2] } : {}), sections: sheet.sections.slice(i, i + count) });
+        i += count;
+    }
+    return parts;
+}
+
+/**
+ * The parts of the sheet in the order of the flow; a step finds its part by heading and number ("Refrain" in the file takes any number,
+ * a step without number the first of its kind). Equal steps in a row are one, "2×" behind the heading; a step that finds no part falls
+ * away. What the flow does not name is appended with `extra`. The sheet as it is where no step finds a part (Plan.md 121 H).
+ */
+export function applyFlow(sheet: SongSheet, flow: readonly FlowStep[]): SongSheet {
+    const parts = flowParts(sheet);
+    const steps: { part: FlowPart; times: number }[] = [];
+    for (const step of flow) {
+        const kind = parts.filter((p) => p.heading === step.heading);
+        const part = step.number ? (kind.find((p) => p.number === step.number) ?? kind.find((p) => p.number === undefined)) : kind[0];
+        if (!part) continue;
+        const last = steps.at(-1);
+        if (last?.part === part) last.times++;
+        else steps.push({ part, times: 1 });
+    }
+    if (!steps.length) return sheet;
+    const used = new Set(steps.map((s) => s.part));
+    const sections = [
+        ...steps.flatMap(({ part, times }) => part.sections.map((section) => ({ ...section, ...(times > 1 ? { label: `${section.label} ${times}×` } : {}) }))),
+        ...parts.filter((p) => !used.has(p)).flatMap((p) => p.sections.map((section) => ({ ...section, extra: true }))),
+    ];
+    return { ...sheet, sections };
+}
+
 // --- segments ---
 
 /** A piece of a line: the text from a chord to the next, with that chord above it; the first has none where text stands before the first chord. */
@@ -442,7 +539,15 @@ function controlItem({ event, position }: AgendaPick, control: ControlDoc): Live
 
 /** The text of a song point with its chords in the key of the arrangement; `null` where the point has none. */
 export function sheetOf(item: LiveItem): SongSheet | null {
-    return item.sheet ? transposeSheet(item.sheet, item.songDetails?.key) : null;
+    if (!item.sheet) return null;
+    const sheet = transposeSheet(item.sheet, item.songDetails?.key);
+    // The note at the point beats the description of the arrangement (Plan.md 121 H) – unless none of its steps finds a part.
+    for (const text of [item.note, item.arrangementDescription]) {
+        const flow = readFlow(text);
+        const applied = flow ? applyFlow(sheet, flow) : sheet;
+        if (applied !== sheet) return applied;
+    }
+    return sheet;
 }
 
 /** The least time a page of a running song stays. */

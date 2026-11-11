@@ -536,9 +536,16 @@ async function withSheets(eventId: number, items: LiveItem[], budget: { left: nu
             sheets.set(arrangementId, await loadSheet(file.fileUrl!, kind).catch(() => null));
         }),
     );
+    // The flow may stand in the description of the arrangement (Plan.md 121 H).
+    const descriptions = new Map<number, string>();
+    for (const arrangement of songs.flatMap((song) => song.arrangements ?? [])) {
+        const description = (arrangement.description ?? '').trim();
+        if (typeof arrangement.id === 'number' && description) descriptions.set(arrangement.id, description);
+    }
     return items.map((item) => {
         const sheet = item.arrangementId === undefined ? null : sheets.get(item.arrangementId);
-        return sheet ? { ...item, sheet } : item;
+        const description = item.arrangementId === undefined ? undefined : descriptions.get(item.arrangementId);
+        return sheet ? { ...item, sheet, ...(description ? { arrangementDescription: description } : {}) } : item;
     });
 }
 
