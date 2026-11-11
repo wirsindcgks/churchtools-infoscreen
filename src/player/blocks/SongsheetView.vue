@@ -6,8 +6,8 @@
  * they are counted after the render (the width the columns take against the width of the block) and turn after the length of the
  * running song – by the time that passed since it began, or, without a duration, on a beat of its own. The agenda comes from `use-agenda.ts`, the choice of the song and the chords from `src/agenda/songsheet.ts`.
  * The block shows one part (Plan.md 121 E): the one the musicians chose (`context.agenda.controls`), without a choice part 1 – also under
- * "Als Nächstes" – as big as the font size says and smaller (down to 30 %) only where it does not fit, no columns and no pages; below it,
- * faint, the heading and first line of the next part. Only with `pageByTime` and without a choice the whole text stands in columns.
+ * "Als Nächstes" – one size for the whole song: as large as its largest part fits, up to twice the font size, down to 30 % (user,
+ * 2026-11-11: the text filled too little of the block); no columns and no pages; below it, faint, the heading and first line of the next part. Only with `pageByTime` and without a choice the whole text stands in columns.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { UNTIMED_PAGE_SECONDS, lineSegments, sheetOf, sheetPage, songsheetPick } from '../../agenda/songsheet';
@@ -72,11 +72,13 @@ const preview = computed(() => {
 });
 const shown = computed(() => (part.value ? [part.value] : sections.value));
 const showText = computed(() => (part.value ? true : !!sheet.value && hasLines.value));
-/** The factor the text is made smaller by where a part does not fit – in both looks: a part is never split (Plan.md 121 E). */
+/** The factor on the font size: smaller where the text does not fit; a chosen part also larger, up to {@link MAX_SCALE}. */
 const scale = ref(1);
 let fitRun = 0;
 /** Down to this share of the set size: a flat block with a large font needs it for four lines with chords (test, 2026-11-11: half was short). */
 const MIN_SCALE = 0.3;
+/** Up to twice the set size: a part of four lines left most of a stage monitor empty (user, 2026-11-11). */
+const MAX_SCALE = 2;
 
 /** The height a part takes unbroken: its heading and lines with their margins – also where the columns broke it (multicol fragments). */
 function naturalHeight(section: Element): number {
@@ -89,30 +91,51 @@ function naturalHeight(section: Element): number {
     return height;
 }
 
-/** How far the text overflows: the tallest part against the height of the block, a chosen part also against its width; null unmeasurable. */
+/**
+ * How far the text overflows: the tallest part against the height of the block; with a chosen part every part of the song (drawn unseen
+ * in `measure`), also against the width; null unmeasurable.
+ */
 function overflow(): number | null {
     const view = viewport.value;
-    const cols = columns.value;
+    const cols = part.value ? sizer.value : columns.value;
     if (!view || !cols || view.clientHeight <= 0 || view.clientWidth <= 0) return null;
     const tallest = Math.max(0, ...Array.from(cols.children, naturalHeight));
     const high = tallest / view.clientHeight;
     // A chosen part also by what the block itself overflows with – a second measure, should the parts be counted short.
-    return part.value ? Math.max(high, view.scrollHeight / view.clientHeight, view.scrollWidth / view.clientWidth) : high;
+    return part.value ? Math.max(high, view.scrollHeight / view.clientHeight, view.scrollWidth / view.clientWidth, cols.scrollWidth / view.clientWidth) : high;
 }
 
 /**
- * Measured after the render: back to full size, then smaller in steps until the tallest part fits or half is reached, then the pages
- * counted. The same rule for a chosen part and for the columns, so that a part looks the same in both (user, 2026-11-11).
+ * Measured after the render. A chosen part: the largest size between {@link MIN_SCALE} and {@link MAX_SCALE} at which every part of
+ * the song fits, so that the text does not jump from part to part. The columns: back to full size, then smaller in steps until the
+ * tallest part fits; then the pages counted.
  */
 async function fit(): Promise<void> {
     const run = ++fitRun;
     scale.value = 1;
     await nextTick();
-    for (let i = 0; i < 12 && run === fitRun; i++) {
-        const over = overflow();
-        if (over === null || !(over > 1.005) || scale.value <= MIN_SCALE) break;
-        scale.value = Math.max(MIN_SCALE, scale.value * Math.min(0.95, 1 / over));
-        await nextTick();
+    if (part.value) {
+        if (overflow() !== null) {
+            let low = MIN_SCALE;
+            let high = MAX_SCALE;
+            for (let i = 0; i < 10 && run === fitRun; i++) {
+                const mid = (low + high) / 2;
+                scale.value = mid;
+                await nextTick();
+                const over = overflow();
+                if (over === null) break;
+                if (over <= 1.005) low = mid;
+                else high = mid;
+            }
+            if (run === fitRun) scale.value = low;
+        }
+    } else {
+        for (let i = 0; i < 12 && run === fitRun; i++) {
+            const over = overflow();
+            if (over === null || !(over > 1.005) || scale.value <= MIN_SCALE) break;
+            scale.value = Math.max(MIN_SCALE, scale.value * Math.min(0.95, 1 / over));
+            await nextTick();
+        }
     }
     if (run === fitRun) countPages();
 }
@@ -121,6 +144,8 @@ async function fit(): Promise<void> {
 
 const viewport = ref<HTMLElement | null>(null);
 const columns = ref<HTMLElement | null>(null);
+/** All parts of a song with a chosen part, unseen, to find the one size for the whole song. */
+const sizer = ref<HTMLElement | null>(null);
 const pages = ref(1);
 const pageWidth = ref(0);
 const gap = computed(() => props.block.style.fontSize);
@@ -183,7 +208,7 @@ watch(
     [
         songId,
         sheet,
-        section,
+        () => section.value === undefined,
         showChords,
         () => props.block.style.fontFamily,
         () => props.block.style.fontSize,
@@ -247,11 +272,28 @@ const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center
                     </div>
                 </section>
             </div>
+            <div v-if="part" ref="sizer" class="sizer" :style="columnsStyle" aria-hidden="true">
+                <section v-for="(entry, s) in allSections" :key="s" class="section">
+                    <div v-if="entry.label" class="label">{{ entry.label }}</div>
+                    <div v-for="(line, l) in entry.lines" :key="l" class="line">
+                        <template v-if="line.plain">{{ line.text }}</template>
+                        <span v-for="(segment, g) in line.segments" v-else :key="g" class="segment">
+                            <span class="chord">{{ segment.chord ?? ' ' }}</span>
+                            <span class="syllable">{{ segment.text }}</span>
+                        </span>
+                    </div>
+                </section>
+            </div>
         </div>
         <div v-else class="none" data-testid="songsheet-none">{{ tp.songsheet.none }}</div>
         <div v-if="preview" class="preview" :style="{ fontSize: `${0.6 * scale}em` }" data-testid="songsheet-preview">
             <div v-if="preview.label" class="label">{{ preview.label }}</div>
             <div class="line">{{ preview.text }}</div>
+        </div>
+        <!-- The last part keeps the room of a preview: the block measures the same for every part, the size does not change. -->
+        <div v-else-if="part" class="preview preview--room" :style="{ fontSize: `${0.6 * scale}em` }" aria-hidden="true">
+            <div class="label">&nbsp;</div>
+            <div class="line">&nbsp;</div>
         </div>
         <div v-if="sheet?.footer" class="foot" data-testid="songsheet-footer">{{ sheet.footer }}</div>
         <PageProgress v-if="paged" :key="page" :seconds="turnSeconds" :held="held" :offset="pageOffset" :size="8" :inset="16" :number="page + 1" :total="pages" :color="themeOf(context).text" />
@@ -325,9 +367,26 @@ const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center
     opacity: 0.8;
 }
 .viewport {
+    position: relative;
     flex: 1;
     min-height: 0;
     overflow: hidden;
+}
+/* Every part of the song, unseen, laid over the block: what it measures sets the one size of the song. */
+.sizer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+/* On top of each other, not one below the other: only the tallest part may count, not all of them together. */
+.sizer > .section {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
 }
 .columns {
     height: 100%;
@@ -342,6 +401,9 @@ const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center
     flex: none;
     margin-top: 0.4em;
     opacity: 0.5;
+}
+.preview--room {
+    visibility: hidden;
 }
 .section {
     break-inside: avoid;

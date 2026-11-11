@@ -139,8 +139,8 @@ function footerLine(copyright: string | undefined, song: string | undefined, lic
     return parts.length ? parts.join(' · ') : undefined;
 }
 
-/** The most lines a step of the stage monitor holds; a longer part is split (admin colleague, user 2026-11-11: 32–44 pt). */
-export const MAX_SECTION_LINES = 6;
+/** The most lines a step of the stage monitor holds; a longer part is split (admin colleague: 32–44 pt; user 2026-11-11: four lines). */
+export const MAX_SECTION_LINES = 4;
 
 /**
  * A part longer than {@link MAX_SECTION_LINES} becomes pieces of equal size, "Refrain (1/2)", "Refrain (2/2)" – while reading the
@@ -149,7 +149,7 @@ export const MAX_SECTION_LINES = 6;
 function split(section: SheetSection): SheetSection[] {
     const count = Math.ceil(section.lines.length / MAX_SECTION_LINES);
     if (count < 2) return [section];
-    // 13 lines are 5 + 4 + 4: the first pieces take the rest.
+    // 10 lines are 4 + 3 + 3: the first pieces take the rest.
     const size = Math.floor(section.lines.length / count);
     const rest = section.lines.length % count;
     const start = (i: number) => i * size + Math.min(i, rest);
