@@ -35,6 +35,8 @@ const PATHS = {
     // Pin an entry to the right (Plan.md 114 C): a push pin.
     pin: ['M9 4h6', 'M10 4v6l-3 4h10l-3-4V4', 'M12 14v6'],
     trash: ['M4 7h16', 'M10 11v6', 'M14 11v6', 'M6 7l1 13h10l1-13', 'M9 7V4h6v3'],
+    // Two eighth notes on one beam: the song sheet and the musicians (Plan.md 121).
+    music: ['M9 18V5l12-2v13', circle(6, 18, 3), circle(18, 16, 3)],
     play: ['M8 5l11 7-11 7z'],
     pause: ['M8 5v14', 'M16 5v14'],
     forward: ['M9 5l7 7-7 7'],

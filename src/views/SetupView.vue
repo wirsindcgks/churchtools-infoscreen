@@ -10,7 +10,7 @@ import PageHeader from '../designer/PageHeader.vue';
 import SelectMenu from '../designer/SelectMenu.vue';
 import { fetchCalendars, fetchPersonFields, fetchPublicCalendars, fetchResourceMasterdata, fetchSecurityLevels, fetchServiceGroups, fetchServices, type Calendar, type PersonFieldInfo, type SecurityLevel } from '../ct/api';
 import { serviceChoices, type ServiceInfo } from '../appointments/services';
-import { currentPerson, httpStatus, instanceBaseUrl, personUrl } from '../ct/client';
+import { currentPerson, httpStatus, instanceBaseUrl, personUrl, serverMessage } from '../ct/client';
 import { controlUrl, playerUrl } from '../designer/player-url';
 import { CONTROL_CATEGORY } from '../agenda/control';
 import { GROUP_RIGHT_NAMES, settingsAbilities, type GroupPermissions, type SettingsButton } from '../setup/abilities';
@@ -156,7 +156,7 @@ const HEADERS: Record<SetupPage, { icon: IconName; title: string; intro: string 
         intro: t.setup.peopleGroups.intro,
     },
     musicians: {
-        icon: 'text',
+        icon: 'music',
         title: t.setup.musicians.title,
         intro: t.setup.musicians.intro,
     },
@@ -1238,7 +1238,7 @@ function explain(e: unknown): string {
     if (httpStatus(e) === 403) {
         return t.setup.rightsOfOthers;
     }
-    return e instanceof Error ? e.message : String(e);
+    return serverMessage(e) ?? (e instanceof Error ? e.message : String(e));
 }
 
 /** The name of the data a right is for, to name what a device holds beyond its plan (Plan.md 94 B). */
@@ -1584,7 +1584,7 @@ const overviewCards = computed(() => {
     cards.push({ key: 'people', route: 'setup-people', icon: 'people', title: t.setup.peopleGroups.title, intro: t.setup.peopleGroups.intro, status: peopleGroupsStatus.value });
     // The musicians steer the song sheet: the card is there where a sheet is shown or the group exists already (Plan.md 121 E3).
     if (settingsLoaded.value && !demo.value && (songsheetInUse || musicianGroupId.value !== null)) {
-        cards.push({ key: 'musicians', route: 'setup-musicians', icon: 'text', title: t.setup.musicians.title, intro: t.setup.musicians.intro, status: musiciansStatus.value });
+        cards.push({ key: 'musicians', route: 'setup-musicians', icon: 'music', title: t.setup.musicians.title, intro: t.setup.musicians.intro, status: musiciansStatus.value });
     }
     return cards;
 });
@@ -2078,12 +2078,14 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                 </div>
                                 <p v-if="settingsWritable === false" class="muted small" data-testid="musician-no-settings-right">{{ t.setup.groups.noSettingsRight }}</p>
                             </template>
-                            <div v-else class="tv-result" data-testid="musician-address">
+                            <div v-else class="control-address" data-testid="musician-address">
                                 <strong>{{ t.setup.musicians.address }}</strong>
-                                <code class="url">{{ controlUrl() }}</code>
-                                <button class="d-btn" type="button" data-testid="musician-copy" @click="copyControlAddress">
-                                    {{ musicianCopied ? t.setup.musicians.copied : t.setup.musicians.copy }}
-                                </button>
+                                <div class="control-address-row">
+                                    <code class="url">{{ controlUrl() }}</code>
+                                    <button class="d-btn" type="button" data-testid="musician-copy" @click="copyControlAddress">
+                                        {{ musicianCopied ? t.setup.musicians.copied : t.setup.musicians.copy }}
+                                    </button>
+                                </div>
                                 <p class="muted small">{{ t.setup.musicians.addressNote }}</p>
                             </div>
                             <ul v-if="musicianRun.log.length" class="log" data-testid="musician-log">
@@ -2498,5 +2500,21 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 }
 .tv-result .d-banner {
     grid-column: 1 / -1;
+}
+/* The address of the phone page (Plan.md 121 E3): heading, then address and copy in one row, the note below. */
+.control-address {
+    display: flex;
+    flex-direction: column;
+    gap: var(--d-space-1);
+    margin-top: var(--d-space-3);
+}
+.control-address-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--d-space-2);
+}
+.control-address-row .url {
+    overflow-wrap: anywhere;
 }
 </style>
