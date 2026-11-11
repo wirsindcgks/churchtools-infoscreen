@@ -96,7 +96,7 @@ const screenLine = computed(() => {
     return s.upcoming ? t.control.screenNext(s.item.title, part) : t.control.screen(s.item.title, part);
 });
 
-/** Back and next only while the event is not over: after "– Ende –" a stray tap brought a song back (test, 2026-11-11). The parts stay tappable, for an encore. */
+/** No tap once the event is over: after "– Ende –" a stray tap brought a song back to the TV (user, 2026-11-11). */
 const stepping = computed(() => !!event.value && !(plan.value?.over ?? false));
 const previous = computed(() => (stepping.value ? stepPart(event.value!, activePart.value, -1) : null));
 const following = computed(() => (stepping.value ? stepPart(event.value!, activePart.value, 1) : null));
@@ -230,6 +230,7 @@ onBeforeUnmount(() => {
                                 type="button"
                                 class="part"
                                 :class="{ active: activePart?.itemIndex === song.index && activePart.section === n }"
+                                :disabled="!stepping"
                                 @click="choose({ itemIndex: song.index, section: n })"
                             >
                                 {{ part.label || t.control.part(n + 1) }}

@@ -206,6 +206,9 @@ describe('songsheetPick – which song the block shows', () => {
 
     it('shows no song behind the last point – ChurchTools\' "– Ende –"', () => {
         expect(songsheetPick({ ...pick(items, items.length + 1), phase: 'ended' })).toBeNull();
+        // Not even with a fresh tip: a stray tap after the end must not bring a song back (user, 2026-11-11).
+        const tip: ControlDoc = { eventId: 7, itemIndex: 2, section: 0, at: '1970-01-01T00:00:00.500Z' };
+        expect(songsheetPick({ ...pick(items, items.length + 1), phase: 'ended' }, tip)).toBeNull();
     });
 
     it('shows the running song with its length', () => {
