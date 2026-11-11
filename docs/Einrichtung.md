@@ -243,20 +243,47 @@ Ohne das bleiben die Felder leer; die Prüfung der Gerätegruppe nennt das als H
 ### Musiker steuern das Liedblatt
 
 Zeigt ein Bildschirm den Baustein „Liedblatt", können die Musiker den gezeigten Liedteil auf dem Handy wählen (Strophe, Refrain …); der
-Tipp gilt für alle Bildschirme des Termins. Dafür gibt es die Gruppe **„Infoscreen-Musiker"**, die du nur auf Wunsch anlegst:
+Tipp gilt für alle Bildschirme des Termins. Dafür gibt es die Gruppe **„Infoscreen-Musiker"**, die du nur auf Wunsch anlegst.
+
+**Zwei Arten von Gruppen, zwei Aufgaben.** Die Rechte hat allein „Infoscreen-Musiker" – sie legt der Assistent an, du musst sie nicht
+selbst anlegen. Deine **Bandgruppen** (etwa „Lobpreisteam") bleiben, wie sie sind, und bekommen keine Rechte: Sie liefern nur die
+Mitglieder. Wer in einer gewählten Bandgruppe ist, wird über die **automatische Mitgliedschaft** von ChurchTools Teilnehmer von
+„Infoscreen-Musiker".
+
+```mermaid
+flowchart LR
+    A["Lobpreisteam"] -->|Mitglieder| M["Infoscreen-Musiker"]
+    B["Band"] -->|Mitglieder| M
+    M -->|Rechte| S["Handyseite „Steuerung“"]
+```
+
+So richtest du es ein:
 
 1. **Einstellungen → Musiker** (die Karte erscheint, sobald ein Liedblatt gezeigt wird).
-2. **Bandgruppen** wählen – die Gruppen, aus denen die Musiker kommen, etwa „Lobpreisteam".
-3. **„Musikergruppe anlegen"**: Der Assistent zeigt vorher, was er schreibt, legt die Gruppe mit ihren Rechten an (sie darf nur die Kategorie
-   „Steuerung" beschreiben, siehe [Rechte](Rechte.md#musiker--für-die-handysteuerung)) und richtet die **automatische Mitgliedschaft** ein: Wer in einer
-   Bandgruppe ist, wird Teilnehmer der Musikergruppe. Dazu braucht dein Konto in ChurchTools „Personen verwalten"; sonst richtest du die
-   „Automatische Mitgliedschaft" an der Gruppe selbst ein (Gruppe → „Automatische Mitgliedschaft", Filter „Mitgliedschaft in einer Gruppe").
-4. Danach zeigt die Seite die **Adresse der Handyseite** zum Kopieren (`…/ccm/infoscreen-designer/steuerung`). Die Musiker öffnen sie auf dem
-   Handy, angemeldet in ChurchTools.
+2. Unter **„Mitglieder übernehmen aus"** die Bandgruppen wählen.
+3. **„Musikergruppe anlegen"**: Der Assistent zeigt vorher, was er schreibt, legt „Infoscreen-Musiker" mit ihren Rechten an (siehe
+   [Rechte](Rechte.md#musiker--für-die-handysteuerung)), schreibt die Regel der automatischen Mitgliedschaft, schaltet sie auf
+   „Automatische Ausführung aktiv" und gleicht einmal ab. Danach nennt die Seite, wer jetzt in der Gruppe ist.
+4. **„Rechte aktualisieren"** (Einstellungen → Gruppen und Rechte), damit die Fernseher die Steuerung lesen und die Lieder sehen. Steht an
+   „Einstellungen" ein Punkt, ist das noch zu tun.
+5. Die Seite zeigt die **Adresse der Handyseite** zum Kopieren (`…/ccm/infoscreen-designer/steuerung`). Die Musiker öffnen sie auf dem
+   Handy, angemeldet in ChurchTools – oder tippen im Menü auf „Infoscreen Designer" und landen direkt dort.
 
-Die Bandgruppen lassen sich auf derselben Seite ändern („Speichern" schreibt die Regel neu und gleicht ab). **Von Hand aufgenommene Mitglieder
-entfernt der nächste Abgleich** – Mitglieder kommen nur über die Bandgruppen. „Rechte aktualisieren" pflegt die Gruppe mit, „Automatische
-Einrichtung rückgängig machen" löscht sie mit.
+In ChurchTools siehst du das Ergebnis an der Gruppe „Infoscreen-Musiker" unter **Einstellungen → Automatische Mitgliedschaft**: Filter
+„Mitgliedschaft in einer Gruppe" mit deinen Bandgruppen, dazu „Person ist nicht archiviert" und „Person ist nicht verstorben".
+
+**Gut zu wissen:**
+
+- **Was die Musiker sehen dürfen:** Ablauf und Live-Agenda der Kalender, die „Ablauf" und „Liedblatt" zeigen, und **alle
+  Song-Kategorien** mit ihren Dateien – so viel, wie die Fernseher sehen. Schreiben dürfen sie nur den gewählten Liedteil.
+- **Mitglieder kommen nur über die Bandgruppen.** Wer von Hand in „Infoscreen-Musiker" aufgenommen wird, fliegt beim nächsten Abgleich
+  wieder heraus. Gastmusiker nimmst du deshalb in eine Bandgruppe auf.
+- **Neue Bandmitglieder** übernimmt ChurchTools mit seinen geplanten Aufgaben, nicht sofort. Sofort geht es mit „Speichern" auf der Seite
+  „Musiker" oder „Einmalig ausführen" an der Gruppe.
+- **Bandgruppen ändern:** auf der Seite „Musiker" wählen oder entfernen und „Speichern" – das schreibt die Regel neu und gleicht ab.
+- **Ohne „Personen verwalten"** in ChurchTools legt der Assistent nur die Gruppe und ihre Rechte an. Die automatische Mitgliedschaft
+  richtest du dann selbst ein, wie oben beschrieben (Gruppe → Einstellungen → Automatische Mitgliedschaft).
+- „Rechte aktualisieren" pflegt die Gruppe mit, „Automatische Einrichtung rückgängig machen" löscht sie mit.
 
 ## 5. Gestalter aufnehmen
 
