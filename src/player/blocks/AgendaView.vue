@@ -51,7 +51,7 @@ const clock = computed(() => formatTime(new Date(nowMs.value), context.timeZone)
         </div>
     </div>
     <div v-else-if="context.agenda" class="empty" :style="textStyle(block.style)" data-testid="agenda-empty">
-        <div class="clock" :style="{ color: themeOf(context).accent }" data-testid="agenda-empty-clock">{{ clock }}</div>
+        <div v-if="block.showClock" class="clock" :style="{ color: themeOf(context).accent }" data-testid="agenda-empty-clock">{{ clock }}</div>
         <div v-if="next" class="upcoming" data-testid="agenda-empty-next">
             <div class="label">{{ tp.agenda.nextAgenda }}</div>
             <div class="when">{{ formatWhen(new Date(next.startMs), context.timeZone) }}</div>

@@ -309,6 +309,11 @@ export const AgendaBlock = v.object({
      * Older players leave them out.
      */
     showSong: v.optional(v.boolean(), true),
+    /**
+     * Since 1.63, both layouts: the clock in the view without an event (Plan.md 123), above the next agenda. Missing = off – a clock
+     * often hangs above the stage TV anyway (user, 2026-11-11).
+     */
+    showClock: v.optional(v.boolean(), false),
     style: TextStyle,
 });
 

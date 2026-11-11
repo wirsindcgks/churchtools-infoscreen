@@ -620,6 +620,7 @@ export const t = {
             'Weitergeschaltet wird in ChurchTools.',
         showCountdown: 'Countdown',
         showDelay: 'Verspätung',
+        agendaClock: 'Uhr ohne Ablauf',
         agendaLayoutChurchtools: 'Nativ',
         agendaLayoutCard: 'Kacheln',
         agendaCountdownStyle: 'Restzeit',

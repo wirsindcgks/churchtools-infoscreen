@@ -431,6 +431,7 @@ describe('player controller', () => {
             showResponsible: false,
             showSong: true,
             showSignal: true,
+            showClock: false,
             style: { fontFamily: 'sans', fontSize: 96, fontWeight: 700, color: '#fff', align: 'left' },
         };
         return { ...base, slides: first ? [{ ...first, blocks: [...first.blocks, block] }, ...rest] : base.slides };

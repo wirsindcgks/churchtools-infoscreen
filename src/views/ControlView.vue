@@ -96,8 +96,10 @@ const screenLine = computed(() => {
     return s.upcoming ? t.control.screenNext(s.item.title, part) : t.control.screen(s.item.title, part);
 });
 
-const previous = computed(() => (event.value ? stepPart(event.value, activePart.value, -1) : null));
-const following = computed(() => (event.value ? stepPart(event.value, activePart.value, 1) : null));
+/** Back and next only while the event is not over: after "– Ende –" a stray tap brought a song back (test, 2026-11-11). The parts stay tappable, for an encore. */
+const stepping = computed(() => !!event.value && !(plan.value?.over ?? false));
+const previous = computed(() => (stepping.value ? stepPart(event.value!, activePart.value, -1) : null));
+const following = computed(() => (stepping.value ? stepPart(event.value!, activePart.value, 1) : null));
 
 function preselected(list: AgendaEvent[]): AgendaEvent {
     const now = Date.now();

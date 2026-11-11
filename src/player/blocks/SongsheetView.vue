@@ -6,7 +6,7 @@
  * they are counted after the render (the width the columns take against the width of the block) and turn after the length of the
  * running song – by the time that passed since it began, or, without a duration, on a beat of its own. The agenda comes from `use-agenda.ts`, the choice of the song and the chords from `src/agenda/songsheet.ts`.
  * The block shows one part (Plan.md 121 E): the one the musicians chose (`context.agenda.controls`), without a choice part 1 – also under
- * "Als Nächstes" – as big as the font size says and smaller (down to half) only where it does not fit, no columns and no pages; below it,
+ * "Als Nächstes" – as big as the font size says and smaller (down to 30 %) only where it does not fit, no columns and no pages; below it,
  * faint, the heading and first line of the next part. Only with `pageByTime` and without a choice the whole text stands in columns.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
@@ -64,7 +64,8 @@ const showText = computed(() => (part.value ? true : !!sheet.value && hasLines.v
 /** The factor the text is made smaller by where a part does not fit – in both looks: a part is never split (Plan.md 121 E). */
 const scale = ref(1);
 let fitRun = 0;
-const MIN_SCALE = 0.5;
+/** Down to this share of the set size: a flat block with a large font needs it for four lines with chords (test, 2026-11-11: half was short). */
+const MIN_SCALE = 0.3;
 
 /** The height a part takes unbroken: its heading and lines with their margins – also where the columns broke it (multicol fragments). */
 function naturalHeight(section: Element): number {
@@ -237,7 +238,7 @@ const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center
             </div>
         </div>
         <div v-else class="none" data-testid="songsheet-none">{{ tp.songsheet.none }}</div>
-        <div v-if="preview" class="preview" data-testid="songsheet-preview">
+        <div v-if="preview" class="preview" :style="{ fontSize: `${0.6 * scale}em` }" data-testid="songsheet-preview">
             <div v-if="preview.label" class="label">{{ preview.label }}</div>
             <div class="line">{{ preview.text }}</div>
         </div>
@@ -325,10 +326,10 @@ const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center
     height: auto;
 }
 /* The start of the next part of a chosen song: faint, so that it is seen to be next, not to be sung yet. */
+/* Its size follows the text it previews (0.6 of it, set inline): unscaled it stood larger than a shrunk part and took its room. */
 .preview {
     flex: none;
     margin-top: 0.4em;
-    font-size: 0.6em;
     opacity: 0.5;
 }
 .section {

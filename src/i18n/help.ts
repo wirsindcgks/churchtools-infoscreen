@@ -315,6 +315,10 @@ export const th = {
             term: i.showCountdown,
             text: 'Die Zeit, die dem laufenden Punkt noch bleibt, im Kreis rechts – in Minuten, in der letzten Minute in Sekunden. Ist sie um, steht sie mit Minus davor.',
         },
+        clock: {
+            term: i.agendaClock,
+            text: 'Steht kein Ablauf an, zeigt der Baustein den nächsten Termin mit Ablaufplan; auf Wunsch groß die Uhrzeit darüber. Aus, wenn über dem Bildschirm schon eine Uhr hängt.',
+        },
         delay: {
             term: i.showDelay,
             text:
@@ -326,7 +330,7 @@ export const th = {
     /** The block "Liedblatt" (Plan.md 121 B). */
     songsheet: {
         intro:
-            'Der Baustein zeigt den Text des Liedes, das im Ablaufplan gerade dran ist, mit Akkorden über der Silbe. Ist der Punkt kein Lied, steht das nächste Lied da, überschrieben mit „Als Nächstes“; vor dem Beginn das erste. ' +
+            'Der Baustein zeigt den Text des Liedes, das im Ablaufplan gerade dran ist, mit Akkorden über der Silbe. Ist der Punkt kein Lied, aber der nächste, steht dieses Lied da, überschrieben mit „Als Nächstes“; vor dem Beginn zählt der erste Punkt. ' +
             'Den Text liest er aus einer Datei am Arrangement des Liedes in ChurchTools: eine ChordPro-Datei (.chordpro, .cho, .chopro, .crd) mit Akkorden, sonst den Liedtext aus einer .sng- oder .txt-Datei, dann ohne Akkorde. ' +
             'Liedtexte auf dem Bildschirm zu zeigen fällt unter die CCLI-Lizenz eurer Gemeinde. Copyright und Lizenznummer bleiben deshalb unten stehen – bitte nicht verdecken. ' +
             'Das Gerät braucht das Recht „Einzelne Song-Kategorien sehen“; ohne es steht nur der Kopf mit den Liedangaben da. ' +
