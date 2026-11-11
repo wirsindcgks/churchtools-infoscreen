@@ -402,7 +402,9 @@ function controlItem({ event, position }: AgendaPick, control: ControlDoc): Live
     const item = event.items[control.itemIndex];
     if (!item?.song) return null;
     if (control.arrangementId !== undefined && control.arrangementId !== item.arrangementId) return null;
-    if (position?.switchMs != null && !(Date.parse(control.at) > position.switchMs)) return null;
+    // Not before the position is read: right after a reload nothing could outdate an old tip, and it flashed up (test, 2026-11-11).
+    if (!position) return null;
+    if (position.switchMs != null && !(Date.parse(control.at) > position.switchMs)) return null;
     // A tip from outside the window of the event is old: after a reset of the live agenda there is no switch to outdate it (test, 2026-11-11).
     const at = Date.parse(control.at);
     if (!(at >= event.startMs - POLL_BEFORE_MS && at <= event.endMs + POLL_AFTER_MS)) return null;
