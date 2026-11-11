@@ -4,7 +4,7 @@
  * moment of the agenda. Pure functions – what is fetched lives in `src/player/data.ts`.
  */
 import type { ControlDoc } from './control';
-import type { AgendaPick, LiveItem } from './live';
+import { POLL_AFTER_MS, POLL_BEFORE_MS, type AgendaPick, type LiveItem } from './live';
 
 /** A chord (or a bar line "|", "‖:", ":‖") that stands above the character `at` of the text of its line. */
 export interface SheetChord {
@@ -403,6 +403,9 @@ function controlItem({ event, position }: AgendaPick, control: ControlDoc): Live
     if (!item?.song) return null;
     if (control.arrangementId !== undefined && control.arrangementId !== item.arrangementId) return null;
     if (position?.switchMs != null && !(Date.parse(control.at) > position.switchMs)) return null;
+    // A tip from outside the window of the event is old: after a reset of the live agenda there is no switch to outdate it (test, 2026-11-11).
+    const at = Date.parse(control.at);
+    if (!(at >= event.startMs - POLL_BEFORE_MS && at <= event.endMs + POLL_AFTER_MS)) return null;
     return item;
 }
 

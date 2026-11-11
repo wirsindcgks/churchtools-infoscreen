@@ -261,6 +261,13 @@ describe('songsheetPick – which song the block shows', () => {
             expect(songsheetPick(late, control({ at: '1970-01-01T00:00:30Z' }))!.section).toBe(1);
         });
 
+        it('is void when given outside the window of the event – after a reset of the live agenda nothing else outdates it', () => {
+            // The event runs from 0 to 1 ms: a tip three hours later, or an hour before, no longer counts.
+            const reset: AgendaPick = { ...pick(list, 1), position: undefined, phase: 'upcoming' };
+            expect(songsheetPick(reset, control({ at: '1970-01-01T03:00:00Z' }))?.section).toBeUndefined();
+            expect(songsheetPick(reset, control({ at: '1969-12-31T23:00:00Z' }))?.section).toBeUndefined();
+        });
+
         it('is void for a wrong index, a point that is no song, another arrangement or another event', () => {
             for (const wrong of [{ itemIndex: 9 }, { itemIndex: 0 }, { itemIndex: 3 }, { arrangementId: 5 }, { eventId: 8 }]) {
                 expect(songsheetPick(pick(list, 1), control(wrong))!.section).toBeUndefined();
