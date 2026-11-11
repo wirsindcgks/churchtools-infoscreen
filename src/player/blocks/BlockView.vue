@@ -8,6 +8,7 @@ import { blockImageUrl, headerLogoUrl } from '../images';
 import { qrShape } from '../qr';
 import { webFrame } from '../web';
 import AgendaView from './AgendaView.vue';
+import SongsheetView from './SongsheetView.vue';
 import AppointmentListView from './AppointmentListView.vue';
 import ClockView from './ClockView.vue';
 import CountdownView from './CountdownView.vue';
@@ -188,6 +189,7 @@ const imageUrl = computed(() => {
         <NextAppointmentView v-else-if="block.type === 'next-appointment'" :block="block" />
         <CountdownView v-else-if="block.type === 'countdown'" :block="block" />
         <AgendaView v-else-if="block.type === 'agenda'" :block="block" />
+        <SongsheetView v-else-if="block.type === 'songsheet'" :block="block" :slide-seconds="slideSeconds" />
         <PostsView v-else-if="block.type === 'posts'" :block="block" :slide-seconds="slideSeconds" />
         <GroupsView v-else-if="block.type === 'groups'" :block="block" :slide-seconds="slideSeconds" />
         <PeopleView v-else-if="block.type === 'people'" :block="block" :slide-seconds="slideSeconds" />

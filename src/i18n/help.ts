@@ -323,6 +323,21 @@ export const th = {
         },
     },
 
+    /** The block "Liedblatt" (Plan.md 121 B). */
+    songsheet: {
+        intro:
+            'Der Baustein zeigt den Text des Liedes, das im Ablaufplan gerade dran ist, mit Akkorden über der Silbe. Ist der Punkt kein Lied, steht das nächste Lied da, überschrieben mit „Als Nächstes“; vor dem Beginn das erste. ' +
+            'Den Text liest er aus einer Datei am Arrangement des Liedes in ChurchTools: eine ChordPro-Datei (.chordpro, .cho, .chopro, .crd) mit Akkorden, sonst den Liedtext aus einer .sng- oder .txt-Datei, dann ohne Akkorde. ' +
+            'Liedtexte auf dem Bildschirm zu zeigen fällt unter die CCLI-Lizenz eurer Gemeinde. Copyright und Lizenznummer bleiben deshalb unten stehen – bitte nicht verdecken. ' +
+            'Das Gerät braucht das Recht „Einzelne Song-Kategorien sehen“; ohne es steht nur der Kopf mit den Liedangaben da.',
+        chords: {
+            term: i.showChords,
+            text:
+                'Zeigt die Akkorde über den Silben, wenn die Datei welche enthält. Weicht die Tonart des Arrangements von der der Datei ab (gleiches Geschlecht, Dur oder Moll), werden die Akkorde in die Tonart des Arrangements übertragen. ' +
+                'Passt der Text nicht auf einen Bildschirm, steht er erst in Spalten, dann blättert der Baustein nach der Dauer des Punktes weiter.',
+        },
+    },
+
     /** "Darstellung" of the shape. */
     shape: {
         intro: 'Eine Fläche als Hintergrund für Text, als farbiger Balken oder als Kreis.',

@@ -4,10 +4,12 @@ import type { Block } from '../model/schema';
 import type { Post } from '../posts/normalize';
 import * as api from '../ct/api';
 import * as client from '../ct/client';
-import { agendaNeeds, appointmentNeeds, churchToolsPlayerData, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readableAppointments, readPeopleGroups } from './data';
+import { agendaNeeds, appointmentNeeds, churchToolsPlayerData, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readableAppointments, readPeopleGroups, sheetsNeeded } from './data';
 
 vi.mock('../ct/api', () => ({
     fetchAgenda: vi.fn(),
+    fetchAgendaSongs: vi.fn(),
+    fetchSheetText: vi.fn(),
     fetchEventList: vi.fn(),
     fetchLivePosition: vi.fn(),
     LiveAgendaDeniedError: class LiveAgendaDeniedError extends Error {},
@@ -509,6 +511,79 @@ describe('the live agenda (schema 1.61, Plan.md 118)', () => {
         ]);
         expect(api.fetchAgenda).not.toHaveBeenCalledWith(4);
         expect(api.fetchAgenda).not.toHaveBeenCalledWith(5);
+    });
+
+    describe('the text of the songs for the block "Liedblatt" (Plan.md 121 B)', () => {
+        const day = [new Date('2026-11-10T00:00:00Z'), new Date('2026-11-11T00:00:00Z')] as const;
+        const songBlock = (): Block => ({ id: 's', type: 'songsheet', x: 0, y: 0, width: 1400, height: 700, calendarIds: [2], showChords: true, style });
+        const withSong = (arrangementId: number) => {
+            vi.mocked(api.fetchEventList).mockResolvedValue([{ id: 1, startDate: '2026-11-10T10:00:00Z', endDate: '2026-11-10T11:00:00Z', calendar: { domainIdentifier: '2' } }]);
+            vi.mocked(api.fetchAgenda).mockResolvedValue({ items: [{ type: 'song', duration: 200, song: { title: 'Lied', arrangementId, key: 'C' } }] });
+        };
+        const file = (name: string, url: string) => ({ name, fileUrl: `https://gemeinde.example/?q=public/filedownload&id=1&filename=${url}` });
+        const songs = (arrangementId: number, files: { name: string; fileUrl: string }[]) => [{ id: 9, arrangements: [{ id: arrangementId, files }] }];
+        const ofFirstPoint = async () => (await churchToolsPlayerData.agendaEvents([2], ...day, 'UTC', { sheets: true }))[0]!.items[1]!;
+
+        it('asks for the blocks on the slides', () => {
+            expect(sheetsNeeded([makeSlide({ blocks: [songBlock()] })])).toBe(true);
+            expect(sheetsNeeded([makeSlide({ blocks: [agendaBlock([2])] })])).toBe(false);
+            expect(agendaNeeds([makeSlide({ blocks: [songBlock()] })])).toEqual([2]);
+        });
+
+        it('reads the file by its kind – ChordPro before .sng before .txt – and hangs the sheet at the point of its arrangement', async () => {
+            withSong(21);
+            vi.mocked(api.fetchAgendaSongs).mockResolvedValue(songs(21, [file('a.txt', 'one'), file('a.sng', 'two'), file('a.pdf', 'pdf'), file('a.CHO', 'three')]));
+            vi.mocked(api.fetchSheetText).mockResolvedValue('{key: D}\n{comment: Verse 1}\n[D]Erfunden');
+            const item = await ofFirstPoint();
+            expect(api.fetchSheetText).toHaveBeenCalledTimes(1);
+            expect(vi.mocked(api.fetchSheetText).mock.calls[0]![0]).toContain('filename=three');
+            expect(item.arrangementId).toBe(21);
+            expect(item.sheet?.key).toBe('D');
+            expect(item.sheet?.sections[0]).toMatchObject({ label: 'Strophe 1' });
+        });
+
+        it('falls back to the lyrics of .sng, then .txt, and remembers a file by its address', async () => {
+            withSong(22);
+            vi.mocked(api.fetchSheetText).mockClear();
+            vi.mocked(api.fetchAgendaSongs).mockResolvedValue(songs(22, [file('a.txt', 'one'), file('a.sng', 'two')]));
+            vi.mocked(api.fetchSheetText).mockResolvedValue('\uFEFF#Title=Lied\n---\nVerse 1\nErfundene Zeile\n');
+            expect((await ofFirstPoint()).sheet?.sections[0]?.lines[0]?.text).toBe('Erfundene Zeile');
+            expect(vi.mocked(api.fetchSheetText).mock.calls[0]![0]).toContain('filename=two');
+            await ofFirstPoint();
+            expect(api.fetchSheetText).toHaveBeenCalledTimes(1);
+        });
+
+        it('leaves the points without a sheet where the device may not read the songs: 403, an empty list, no file', async () => {
+            withSong(23);
+            const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+            vi.mocked(api.fetchSheetText).mockClear();
+            vi.mocked(api.fetchAgendaSongs).mockRejectedValueOnce(forbidden());
+            expect((await ofFirstPoint()).sheet).toBeUndefined();
+            vi.mocked(api.fetchAgendaSongs).mockResolvedValueOnce([]);
+            expect((await ofFirstPoint()).sheet).toBeUndefined();
+            vi.mocked(api.fetchAgendaSongs).mockResolvedValueOnce(songs(23, [file('a.pdf', 'pdf')]));
+            expect((await ofFirstPoint()).sheet).toBeUndefined();
+            expect(api.fetchSheetText).not.toHaveBeenCalled();
+            expect(warn).toHaveBeenCalledTimes(1);
+            warn.mockRestore();
+        });
+
+        it('lets another failure of the list fail the load, but not one of a file', async () => {
+            withSong(24);
+            vi.mocked(api.fetchAgendaSongs).mockRejectedValueOnce(new Error('Netz'));
+            await expect(ofFirstPoint()).rejects.toThrow('Netz');
+            vi.mocked(api.fetchAgendaSongs).mockResolvedValue(songs(24, [file('a.txt', 'broken')]));
+            vi.mocked(api.fetchSheetText).mockRejectedValueOnce(new Error('weg'));
+            expect((await ofFirstPoint()).sheet).toBeUndefined();
+        });
+
+        it('reads nothing without the option', async () => {
+            withSong(25);
+            vi.mocked(api.fetchAgendaSongs).mockClear();
+            const events = await churchToolsPlayerData.agendaEvents([2], ...day, 'UTC');
+            expect(events[0]!.items[1]!.sheet).toBeUndefined();
+            expect(api.fetchAgendaSongs).not.toHaveBeenCalled();
+        });
     });
 
     it('reads the position with the offset to the server clock; without the right it is null, other errors fail', async () => {

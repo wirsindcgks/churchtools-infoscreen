@@ -1,5 +1,5 @@
 /**
- * What both looks of the agenda block calculate (Plan.md 118): the stage's time carried on by a local second, what the live
+ * What both looks of the agenda block calculate (Plan.md 118; the block "Liedblatt" reads the same agenda, Plan.md 121 B): the stage's time carried on by a local second, what the live
  * agenda shows at that time, the countdown as number and unit, and the delay in minutes.
  */
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
@@ -8,7 +8,7 @@ import type { Block } from '../../model/schema';
 import { useStageContext } from '../context';
 import { tp } from '../../i18n/player';
 
-export function useAgenda(block: () => Extract<Block, { type: 'agenda' }>) {
+export function useAgenda(block: () => Extract<Block, { type: 'agenda' | 'songsheet' }>) {
     const context = useStageContext();
 
     /** The stage's time, carried on by a local second: `context.now` plus what passed since it was set. */
@@ -22,12 +22,14 @@ export function useAgenda(block: () => Extract<Block, { type: 'agenda' }>) {
     onBeforeUnmount(() => clearInterval(timer));
     const nowMs = computed(() => context.now.getTime() + (tick.value - since.value));
 
-    const display = computed(() => {
+    /** The event the block follows among those of its calendars. */
+    const pick = computed(() => {
         const feed = context.agenda;
         if (!feed) return null;
         const events = feed.events.filter((e) => block().calendarIds.includes(e.calendarId));
-        return agendaDisplay(pickEvent(events, feed.positions, nowMs.value), nowMs.value);
+        return pickEvent(events, feed.positions, nowMs.value);
     });
+    const display = computed(() => agendaDisplay(pick.value, nowMs.value));
 
     /** The number of the countdown and its unit: whole minutes from a minute up, seconds below; a spent countdown keeps its minus. */
     const circle = computed(() => {
@@ -56,5 +58,5 @@ export function useAgenda(block: () => Extract<Block, { type: 'agenda' }>) {
         return Math.min(1, Math.max(0, seconds / length));
     });
 
-    return { context, nowMs, display, circle, lateMinutes, left };
+    return { context, nowMs, pick, display, circle, lateMinutes, left };
 }

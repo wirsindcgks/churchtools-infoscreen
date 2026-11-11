@@ -320,6 +320,7 @@ export const t = {
                 qr: 'Ein QR-Code, etwa zu einer Anmeldung',
                 countdown: 'Zählt bis zum nächsten Termin herunter',
                 agenda: 'Was jetzt dran ist und was danach kommt, aus dem Ablaufplan',
+                songsheet: 'Liedtext mit Akkorden des Liedes, das im Ablauf dran ist',
                 posts: 'Beiträge aus einer Gruppe in ChurchTools',
                 groups: 'Gruppen einer Gruppen-Homepage, etwa Hauskreise',
                 people: 'Personen der Gruppe „Infoscreen-People“ als Karten, etwa Ansprechpartner',
@@ -628,6 +629,12 @@ export const t = {
         agendaWarnMinutes: 'Gelb ab',
         agendaDark: 'Dunkle Kacheln',
         showSong: 'Liedangaben',
+        showChords: 'Akkorde',
+        songsheetNoChords: 'Ohne Akkorde',
+        /** The block "Liedblatt" (Plan.md 121 B): the paragraph under the calendars. */
+        songsheetInfo:
+            'Der Baustein folgt dem Ablaufplan wie „Ablauf“: Er zeigt den Text des Liedes, das gerade dran ist, sonst des nächsten Liedes. ' +
+            'Weitergeschaltet wird in ChurchTools.',
         agendaTile: 'Kachel',
         agendaTileTime: 'Uhrzeit',
         agendaTilePosition: 'Position',
@@ -944,6 +951,7 @@ export const t = {
         qr: 'QR-Code',
         countdown: 'Countdown',
         agenda: 'Ablauf',
+        songsheet: 'Liedblatt',
         posts: 'Beiträge',
         groups: 'Gruppen',
         people: 'Personen',

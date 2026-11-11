@@ -3,6 +3,26 @@
  * test in G81, the third running, three minutes late. Shown by the preview so that the block never stands empty while designing.
  */
 import { liveItems, parsePosition, type AgendaEvent, type AgendaFeed } from './live';
+import { readChordPro } from './songsheet';
+
+/** Own text for the block "Liedblatt" (Plan.md 121 B), in the build of a SongSelect file: sections as comments, bar lines in brackets. */
+const SAMPLE_CHORDPRO = `{title: Segenslied}
+{key: C}
+{comment: Verse 1}
+[C]Gott segne [G]dich auf [Am]allen [F]Wegen
+[C]Er geht vor [G]dir und [F]bleibt bei [C]dir
+
+{comment: Chorus}
+[F]Halle[C]luja, [G]Halle[Am]luja
+[F]Wir [G]singen [C]heut für [C]dich
+[|] [C] [G] [|] [F] [C] [:||]
+
+{comment: Verse 2}
+[C]Er trägt uns [G]durch die [Am]Zeit und [F]weiter
+[C]Sein Frieden [G]bleibt bei [F]dir und [C]mir
+{copyright: Beispieltext}
+{ccli_license: 000000}`;
+const SAMPLE_ARRANGEMENT = -1;
 
 /** The example, one event for each calendar the blocks read – the view takes only the events of its calendars. */
 export function sampleAgenda(nowMs: number, calendarIds: readonly number[]): AgendaFeed {
@@ -22,8 +42,10 @@ function sampleEvent(nowMs: number, calendarId: number): AgendaEvent {
             responsible: { text: '[Leitung]', persons: [{ service: '[Leitung]', person: { title: 'Anna Beispiel' } }] },
         },
         { title: 'Predigt', duration: 1800, responsible: { text: '[Predigt]', persons: [{ service: '[Predigt]', person: { title: 'Max Beispiel' } }] } },
+        // A song without a duration counts neither in "3 of 5" nor as "Dann"; the block "Liedblatt" shows it as "Als Nächstes".
+        { type: 'song', title: '', duration: 0, song: { title: 'Segenslied', arrangementId: SAMPLE_ARRANGEMENT, key: 'C', bpm: 96, arrangement: 'Standard', isDefault: true } },
         { title: 'Segen', duration: 300 },
-    ]);
+    ]).map((item) => (item.arrangementId === SAMPLE_ARRANGEMENT ? { ...item, sheet: readChordPro(SAMPLE_CHORDPRO) } : item));
     // "Begrüßung" was planned to begin five minutes ago and began two minutes ago.
     const startMs = nowMs - 15 * 60_000;
     return { eventId: -calendarId, calendarId, startMs, endMs: startMs + 50 * 60_000, items };

@@ -454,7 +454,7 @@ describe('player controller', () => {
         const agendaPosition = vi.fn<PlayerData['agendaPosition']>(async () => samplePosition);
         const player = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents, agendaPosition }), deps);
         await player.start();
-        expect(agendaEvents).toHaveBeenCalledWith([2], expect.any(Date), expect.any(Date), 'Europe/Berlin');
+        expect(agendaEvents).toHaveBeenCalledWith([2], expect.any(Date), expect.any(Date), 'Europe/Berlin', { sheets: false });
         expect(player.state.agenda?.events).toHaveLength(1);
         expect(deps.saved[0]?.agendaEvents).toHaveLength(1);
         // The position arrives with the fast loop and is not part of what is saved.
@@ -517,7 +517,7 @@ describe('player controller', () => {
         const agendaPosition = vi.fn<PlayerData['agendaPosition']>(async () => samplePosition);
         const player = createPlayer('demo', fakeData({ loadScreen: async () => withAgendaRule(), agendaEvents, agendaPosition }), fakeDeps());
         await player.start();
-        expect(agendaEvents).toHaveBeenCalledWith([2], expect.any(Date), expect.any(Date), 'Europe/Berlin');
+        expect(agendaEvents).toHaveBeenCalledWith([2], expect.any(Date), expect.any(Date), 'Europe/Berlin', { sheets: false });
         await vi.advanceTimersByTimeAsync(INTERVALS.agendaMs * 1.5);
         expect(agendaPosition).toHaveBeenCalledWith(1);
         expect(player.state.agenda?.positions[1]).toEqual(samplePosition);
