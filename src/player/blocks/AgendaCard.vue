@@ -52,6 +52,8 @@ const digits = computed(() => (props.block.countdownStyle ?? 'digits') === 'digi
 const signal = computed(() => (props.block.showSignal && now.value ? signalState(props.display.countdownSeconds, props.block.warnMinutes ?? 1) : null));
 /** A block narrower than 1.3 times its height puts "Dann" below as a bar. */
 const narrow = computed(() => props.block.width < props.block.height * 1.3);
+/** Narrower than high (a quarter beside the song sheet): tile and title on top, the countdown large in the middle (user, 2026-11-13). */
+const tall = computed(() => props.block.width < props.block.height);
 /** The people without the service the badge already names: "Leitung: Anna Beispiel" under "LEITUNG" becomes "Anna Beispiel". */
 function withoutService(line: string | null, service: string | null): string | null {
     if (!line || !service) return line;
@@ -61,14 +63,14 @@ function withoutService(line: string | null, service: string | null): string | n
 const people = computed(() => withoutService(props.display.responsible, props.display.service));
 const nextPeople = computed(() => withoutService(props.display.nextResponsible, props.display.nextService));
 /** The countdown stands on the level of the title, at the right (user, 2026-11-10). */
-const diameter = computed(() => Math.min(props.block.height * 0.42, props.block.width * 0.2));
+const diameter = computed(() => (tall.value ? Math.min(props.block.height * 0.36, props.block.width * 0.7) : Math.min(props.block.height * 0.42, props.block.width * 0.2)));
 /** Dark tiles: black cards and white text over the design and "Schrift" (schema 1.62). */
 const cardStyle = computed(() => ({ ...textStyle(props.block.style), ...(props.block.dark ? { color: '#fff', '--isd-card': '#000' } : {}) }));
 const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.round(props.display.nextDurationSeconds / 60) : 0));
 </script>
 
 <template>
-    <div class="agenda-card" :class="{ 'agenda-card--narrow': narrow, 'agenda-card--dark': block.dark }" :style="cardStyle" data-testid="agenda-card">
+    <div class="agenda-card" :class="{ 'agenda-card--narrow': narrow, 'agenda-card--tall': tall, 'agenda-card--dark': block.dark }" :style="cardStyle" data-testid="agenda-card">
         <div class="hero hero--main" :class="signal ? `signal--${signal}` : ''">
             <span v-if="signal" class="signal-frame" :data-state="signal" data-testid="agenda-signal" />
             <div class="hero-text">
@@ -455,6 +457,44 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
     font-weight: 600;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+/* One column: the head grows, the countdown stands centred in it; title and digits are sized by the width. */
+.agenda-card--tall {
+    container-type: inline-size;
+}
+.agenda-card--tall .hero-head {
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 0;
+}
+.agenda-card--tall .tile {
+    align-self: flex-start;
+}
+.agenda-card--tall .hero-line {
+    flex-wrap: wrap;
+}
+.agenda-card--tall .hero-title {
+    font-size: min(1.5em, 15cqw);
+    -webkit-line-clamp: 3;
+}
+.agenda-card--tall .digits--side,
+.agenda-card--tall .card-ring--side {
+    margin: auto;
+}
+.agenda-card--tall .digits {
+    font-size: min(2.4em, 26cqw);
+}
+/* "Dann": label and time in one line, the title whole below it. */
+.agenda-card--tall .next-card {
+    flex-wrap: wrap;
+    row-gap: 0.2em;
+}
+.agenda-card--tall .next-title {
+    flex-basis: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    hyphens: auto;
 }
 .digits--side,
 .card-ring--side {

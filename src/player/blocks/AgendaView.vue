@@ -19,7 +19,9 @@ const { context, nowMs, display, circle, lateMinutes, left } = useAgenda(() => p
 
 const showCircle = computed(() => props.block.showCountdown && circle.value !== null);
 const showDelay = computed(() => props.block.showDelay && lateMinutes.value !== null);
-const diameter = computed(() => Math.min(props.block.height * 0.62, props.block.width * 0.34));
+/** A block narrower than high stacks its parts: the point, the countdown in the middle, "Dann" at the bottom (user, 2026-11-13). */
+const tall = computed(() => props.block.width < props.block.height);
+const diameter = computed(() => (tall.value ? Math.min(props.block.height * 0.4, props.block.width * 0.75) : Math.min(props.block.height * 0.62, props.block.width * 0.34)));
 
 /** The first agenda to come in the calendars of the block; the clock of the empty block runs with the stage's time. */
 const next = computed(() => {
@@ -31,7 +33,7 @@ const clock = computed(() => formatTime(new Date(nowMs.value), context.timeZone)
 
 <template>
     <AgendaCard v-if="display && block.layout === 'card'" :block="block" :display="display" :circle="circle" :late-minutes="lateMinutes" :left="left" />
-    <div v-else-if="display" class="agenda" :style="textStyle(block.style)" data-testid="agenda">
+    <div v-else-if="display" class="agenda" :class="{ 'agenda--tall': tall }" :style="textStyle(block.style)" data-testid="agenda">
         <div class="points">
             <div class="point">
                 <div class="label" data-testid="agenda-now-label">{{ display.kind === 'soon' ? tp.agenda.soon : tp.agenda.now }}</div>
@@ -176,6 +178,33 @@ const clock = computed(() => formatTime(new Date(nowMs.value), context.timeZone)
     opacity: 0.85;
     -webkit-line-clamp: 2;
     line-clamp: 2;
+}
+/*
+ * Narrower than high (a quarter beside the song sheet): one column – the current point, the countdown in the middle, "Dann" at
+ * the bottom. The title is sized by the width, so a long word is split rather than cut.
+ */
+.agenda--tall {
+    container-type: inline-size;
+    flex-direction: column;
+    align-items: stretch;
+}
+.agenda--tall .points {
+    display: contents;
+}
+.agenda--tall .side {
+    flex: 1;
+    order: 1;
+}
+.agenda--tall .point--next {
+    order: 2;
+}
+.agenda--tall .title {
+    font-size: min(1em, 16cqw);
+    overflow-wrap: anywhere;
+    hyphens: auto;
+}
+.agenda--tall .title--next {
+    font-size: min(0.6em, 11cqw);
 }
 .side {
     display: flex;
