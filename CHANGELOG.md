@@ -4,6 +4,13 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [Unveröffentlicht]
+
+### Behoben
+
+- **Handyseite „Steuerung“ ohne weißen Rand.** Die dunkle Seite füllt jetzt den ganzen Bildschirm des Handys; vorher
+  blieb rundherum ein schmaler weißer Streifen.
+
 ## [0.59.0] – 2026-11-13
 
 Danke an Lukas ([@lub90](https://github.com/lub90)) für sein Papier „Klicksteuerung & Confidence-Monitor“: Von ihm stammen die

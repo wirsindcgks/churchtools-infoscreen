@@ -272,6 +272,8 @@ So richtest du es ein:
 5. Die Seite zeigt die **Adresse der Handyseite** zum Kopieren (`…/ccm/infoscreen-designer/steuerung`). Die Musiker öffnen sie auf dem
    Handy, angemeldet in ChurchTools – oder tippen im Menü auf „Infoscreen Designer" und landen direkt dort.
 
+   <img src="bilder/steuerung.png" alt="Handyseite „Steuerung“: oben „Jetzt“ und „Dann“, darunter das laufende Lied mit den Teil-Knöpfen, der Teil „Refrain“ ist angetippt" width="320">
+
 In ChurchTools siehst du das Ergebnis an der Gruppe „Infoscreen-Musiker" unter **Einstellungen → Automatische Mitgliedschaft**: Filter
 „Mitgliedschaft in einer Gruppe" mit deinen Bandgruppen, dazu „Person ist nicht archiviert" und „Person ist nicht verstorben".
 

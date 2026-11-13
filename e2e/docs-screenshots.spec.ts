@@ -626,6 +626,33 @@ test('pictures for the documentation', async ({ page, baseURL }) => {
     await page.getByTestId('quick-template-edit').click();
     await expect(page.getByTestId('template-edit-bar')).toBeVisible();
     await shoot(page, 'vorlage');
+
+    // The song sheet beside the agenda (Plan.md 121), last and on a screen of its own: the pictures above stay as they are.
+    // No events are answered, so the editor shows the example of the agenda – the song "Segenslied" with its chords.
+    await page.route('**/api/events**', (route) => route.fulfill({ json: { data: [] } }));
+    await page.goto('./');
+    await page.getByTestId('new-screen').click();
+    await page.getByTestId('new-name').fill('Bühne');
+    await page.getByTestId('create').click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(1);
+    await addBlock(page, 'agenda');
+    await frame(page, { x: 60, y: 60, width: 1800, height: 330 });
+    await openSection(page, 'appearance');
+    await choose(inspector, 'agenda-layout', 'card');
+    await openSection(page, 'font');
+    await page.getByTestId('font-size').fill('46');
+    await page.getByTestId('font-size').blur();
+    await page.keyboard.press('Escape');
+    await addBlock(page, 'songsheet');
+    await frame(page, { x: 60, y: 430, width: 1800, height: 590 });
+    await openSection(page, 'font');
+    await page.getByTestId('font-size').fill('36');
+    await page.getByTestId('font-size').blur();
+    await expect(page.locator('.editor-stage').getByTestId('songsheet-chord').first()).toBeVisible();
+    await expect(page.locator('.editor-stage').getByTestId('agenda-card')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape');
+    await shoot(page, 'liedblatt');
 });
 
 test.describe('on a phone', () => {
@@ -642,5 +669,56 @@ test.describe('on a phone', () => {
         // The block's row over the slide row (Plan.md 79, C2); the big sheet opens only with "Alle Einstellungen".
         await expect(page.getByTestId('phone-block-row')).toBeVisible();
         await shoot(page, 'handy');
+    });
+
+    // The phone page of the musicians (Plan.md 121 E2): a made-up service with two songs, the running point a song, one part tapped.
+    test('the control page of the musicians', async ({ page, baseURL }) => {
+        origin = new URL(baseURL!).origin;
+        await fakeChurch(page);
+        const at = (minutes: number) => new Date(DOC_NOW.getTime() + minutes * 60_000).toISOString();
+        const song = (title: string, arrangementId: number) => ({
+            type: 'song',
+            title: '',
+            duration: 300,
+            song: { title, arrangementId, key: 'C', bpm: 96, arrangement: 'Standard', isDefault: true },
+        });
+        const items = [
+            { type: 'normal', title: 'Begrüßung', duration: 300 },
+            song('Segenslied', 501),
+            { type: 'normal', title: 'Predigt', duration: 1800 },
+            song('Halleluja', 502),
+            { type: 'normal', title: 'Segen', duration: 300 },
+        ];
+        const chordPro = (title: string) => `{title: ${title}}
+{key: C}
+{comment: Strophe 1}
+[C]Gott segne [G]dich auf [Am]allen [F]Wegen
+{comment: Refrain}
+[F]Halle[C]luja, [G]Halle[Am]luja
+{comment: Strophe 2}
+[C]Er trägt uns [G]durch die [Am]Zeit und [F]weiter
+{comment: Bridge}
+[F]Wir [G]singen [C]heut für [C]dich`;
+        await page.route('**/api/events**', (route) => {
+            const path = new URL(route.request().url()).pathname;
+            if (path.endsWith('/agenda/songs')) {
+                const file = (id: number) => ({ name: 'lied.chordpro', fileUrl: `${origin}/files/lied-${id}.chordpro` });
+                return route.fulfill({ json: { data: [{ id: 1, arrangements: [{ id: 501, files: [file(501)] }] }, { id: 2, arrangements: [{ id: 502, files: [file(502)] }] }] } });
+            }
+            if (path.endsWith('/agenda')) return route.fulfill({ json: { data: { calendarId: 1, items } } });
+            return route.fulfill({ json: { data: [{ id: 7, name: 'Gottesdienst', startDate: at(-12), endDate: at(60), calendar: { domainIdentifier: '1' } }] } });
+        });
+        await page.route('**/files/lied-*.chordpro', (route) => route.fulfill({ contentType: 'text/plain', body: chordPro('Lied') }));
+        await page.route('**/csrftoken', (route) => route.fulfill({ json: { data: 'token' } }));
+        // The old interface answers the live position: the second point (the song) began two minutes ago.
+        await page.route(/\?q=churchservice/, (route) =>
+            route.fulfill({ json: { status: 'success', data: { pos_id: '2', switchdate: at(-2), addseconds: '0', currentTime: DOC_NOW.getTime() } } }),
+        );
+        await page.goto('steuerung');
+        await expect(page.getByTestId('control-plan')).toContainText('Segenslied');
+        const current = page.getByTestId('control-current');
+        await current.getByRole('button', { name: 'Refrain' }).click();
+        await expect(current.locator('.part.active')).toHaveText('Refrain');
+        await shoot(page, 'steuerung');
     });
 });
