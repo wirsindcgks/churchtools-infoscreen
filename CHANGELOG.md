@@ -4,7 +4,7 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
-## [Unveröffentlicht]
+## [0.60.0] – 2026-11-13
 
 ### Hinzugefügt
 
@@ -36,8 +36,8 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   es zulässt.
 
 - **Handyseite „Steuerung“ unter der Kopfleiste von ChurchTools.** Seit 0.59.1 lag die Kopfleiste über der obersten Zeile
-  der Seite und verdeckte den Umschalter „Designer | Bühne“, am PC wie am Handy. Die Seite steht jetzt wie der Designer unter der Leiste,
-  auch als App auf dem Startbildschirm. Am Handy, am iPad und am PC behält der Umschalter auf
+  der Seite und verdeckte den Umschalter „Designer | Bühne“, am PC wie am Handy. Die Seite steht jetzt wie der Designer
+  unter der Leiste, auch als App auf dem Startbildschirm. Am Handy, am iPad und am PC behält der Umschalter auf
   beiden Seiten dieselbe Größe und denselben Platz, nur die Farben wechseln. Der Wechsel auf die Bühne
   wirkt nicht mehr wie ein Neuladen: Der Umschalter steht sofort da, und ab dem zweiten Wechsel erscheint die Seite gleich
   mit dem letzten Stand.
@@ -1971,3 +1971,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.58.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.58.0
 [0.59.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.59.0
 [0.59.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.59.1
+[0.60.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.60.0
