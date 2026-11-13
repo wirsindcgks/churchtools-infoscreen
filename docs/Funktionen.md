@@ -126,7 +126,7 @@ Bridge, „Pre“, „Intro“, „Tag“, „Schluss“ …): aus der **Bemerku
 Arrangements**. Dann führt „Weiter“ in dieser Reihenfolge durch das Lied, Wiederholungen eingeschlossen; derselbe Teil zweimal
 hintereinander ist ein Schritt („Bridge 2×“). Teile, die im Ablauf nicht vorkommen, stehen auf dem Handy darunter unter „Nicht im
 Ablauf“ – zum spontanen Hinspringen. Der Schalter „Nach Zeit blättern“ ist für Gemeinden ohne Handysteuerung: Dann steht der ganze Text in **Spalten**
-und der Baustein blättert nach der Dauer des Liedes. Der Schalter „Akkorde“ blendet die Akkorde aus.
+und der Baustein blättert nach der Dauer des Liedes. Der Schalter „Akkorde“ blendet die Akkorde aus. Die **Quelle** „Probe“ statt „Ablauf“ zeigt das Lied, das die Musiker auf der Handyseite frei wählen, ohne Termin – für eine eigene Probenpräsentation (siehe [Einrichtung](Einrichtung.md#proben)); vor der ersten Wahl steht ein QR-Code zur Steuerung da.
 
 ![Editor mit dem Baustein „Ablauf“ als Kacheln über dem Baustein „Liedblatt“: der Liedtext „Segenslied“ mit den Akkorden über den Silben](bilder/liedblatt.png)
 

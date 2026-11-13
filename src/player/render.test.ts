@@ -1324,6 +1324,18 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
         expect(real.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
     });
 
+    it('with the source "Probe" shows the QR code only once the choice was read and none stands; a choice shows its song (user, 2026-11-13)', () => {
+        const rehearsal = songsheet({ source: 'rehearsal' });
+        const unread = draw(rehearsal, { agenda: { events: [], positions: {} } });
+        expect(unread.find('[data-testid="songsheet-rehearsal-empty"]').exists()).toBe(false);
+        expect(unread.find('[data-testid="songsheet-empty"]').exists()).toBe(false);
+        expect(draw(rehearsal, { rehearsal: null }).find('[data-testid="songsheet-rehearsal-empty"]').exists()).toBe(true);
+        const doc = { kind: 'rehearsal' as const, songId: 1, arrangementId: 2, section: 1, at: new Date().toISOString() };
+        const chosen = draw(rehearsal, { rehearsal: { doc, item: sampleSong() } });
+        expect(chosen.find('[data-testid="songsheet-rehearsal-empty"]').exists()).toBe(false);
+        expect(chosen.get('[data-testid="songsheet-part"]').text()).toContain('Refrain');
+    });
+
     it('shows part 1 of the next song under "Als Nächstes" without a choice, with chords, a faint start of part 2 and the footer', () => {
         const wrapper = draw(songsheet(), { agenda: feed() });
         expect(wrapper.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');

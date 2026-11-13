@@ -291,6 +291,23 @@ In ChurchTools siehst du das Ergebnis an der Gruppe „Infoscreen-Musiker" unter
   richtest du dann selbst ein, wie oben beschrieben (Gruppe → Einstellungen → Automatische Mitgliedschaft).
 - „Rechte aktualisieren" pflegt die Gruppe mit, „Automatische Einrichtung rückgängig machen" löscht sie mit.
 
+#### Proben
+
+Unter der Woche suchen die Musiker ihr Lied selbst aus, ganz ohne Termin im Ablaufplan. Dafür legst du eine **zweite Präsentation**
+an, etwa „Probe", mit einem Baustein **Liedblatt** und stellst dort die **Quelle** auf **„Probe"** (statt „Ablauf"). Kalender und
+Liederliste entfallen, denn das Liedblatt folgt keinem Ablauf mehr.
+
+Der **Zeitplan** schaltet zwischen den Präsentationen um: Die Gottesdienst-Präsentation bleibt die Standardpräsentation, die Probe
+kommt per Regel dazu – zum Beispiel eine **Terminregel** auf einen eigenen Kalender „Bandproben" (dann reicht es, die Proben dort
+einzutragen) oder eine **Zeitregel** wie „donnerstags 19 bis 22 Uhr".
+
+Auf der Handyseite wählen die Musiker oben **„Probe"**, suchen das Lied, das Arrangement und tippen die Teile. Bevor jemand ein Lied
+gewählt hat, zeigt der Bildschirm **„Kein Lied gewählt"** mit einem **QR-Code**: Scannen öffnet die Handyseite. Die Wahl gilt für alle
+Probenbildschirme; Handy und Bildschirm zeigen dasselbe Lied. **„Lied beenden"** unter den Teilen nimmt es von allen
+Bildschirmen, dann steht dort wieder der QR-Code. Von selbst endet die Wahl nach zwölf Stunden, damit zur nächsten Probe nicht das
+Lied von letzter Woche dasteht.
+Die Rechte sind dieselben wie im Gottesdienst.
+
 ## 5. Gestalter aufnehmen
 
 Wer gestalten soll, wird **Mitglied der Gruppe „Infoscreen-Designer"** – die Rolle ist egal. Vergib die

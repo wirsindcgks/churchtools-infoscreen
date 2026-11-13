@@ -7,9 +7,11 @@
  */
 import { reactive } from 'vue';
 import { POLL_AFTER_MS, pollableEvents, type AgendaFeed, type LivePositions } from '../agenda/live';
+import { isRehearsalSheet, REHEARSAL_MAX_AGE_MS, type RehearsalState } from '../agenda/songsheet';
 import type { Appointment } from '../appointments/normalize';
 import { httpStatus, NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
+import type { SlideDoc } from '../model/schema';
 import { playlistStand } from '../model/stand';
 import type { PeopleGroup } from '../groups/members';
 import type { HomepageGroups } from '../groups/normalize';
@@ -34,6 +36,11 @@ export interface PlayerState {
     people: PeopleGroup[] | undefined;
     /** The agendas of today for `agenda` blocks and the last positions; `undefined` = no such block or not read yet. */
     agenda: AgendaFeed | undefined;
+    /**
+     * The song the musicians chose for the rehearsal (Plan.md 121, "Proben"); `null` = read, no choice, "Lied beenden" or a choice older than 12 hours;
+     * `undefined` = not read yet – the block then shows nothing rather than the QR code for a moment (user, 2026-11-13).
+     */
+    rehearsal?: RehearsalState | null;
     rooms: RoomBookings[];
     timeZone: string;
     churchName: string;
@@ -539,6 +546,52 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         later(wait, agendaCycle);
     }
 
+    /** The enabled slides of the presentation that runs now. */
+    function shownSlides(loaded: LoadedScreen, now: Date): SlideDoc[] {
+        const playlistId = activePlaylistId(loaded.screen, {
+            now,
+            timeZone: state.timeZone,
+            clockConfirmed: state.clockConfirmed,
+            appointments: state.appointments,
+            agenda: state.agenda ?? { events: [], positions: {} },
+        });
+        const playlist = loaded.playlists.find((p) => p.id === playlistId);
+        const shown = new Set(playlist?.slideIds ?? []);
+        return loaded.slides.filter((s) => shown.has(s.id) && s.enabled);
+    }
+
+    /**
+     * The rehearsal choice of the musicians (Plan.md 121, "Proben"): only while a `songsheet` block with the source "Probe" is in the running
+     * presentation – and then with no event needed, a rehearsal has none in the agenda. Otherwise not a single request. The song is
+     * loaded again only when the musicians chose another; a choice older than {@link REHEARSAL_MAX_AGE_MS} counts as none. A failure keeps the last state.
+     */
+    async function rehearsalCycle(): Promise<void> {
+        let wait = withJitter(INTERVALS.controlMs);
+        try {
+            const loaded = state.screen;
+            if (loaded && !blocked && shownSlides(loaded, deps.now()).some((slide) => slide.blocks.some((b) => b.type === 'songsheet' && isRehearsalSheet(b)))) {
+                const doc = await data.rehearsal();
+                const before = state.rehearsal;
+                if (!doc || doc.ended || deps.now().getTime() + clockSkewMs - Date.parse(doc.at) > REHEARSAL_MAX_AGE_MS) {
+                    state.rehearsal = null;
+                } else if (
+                    before &&
+                    before.doc.songId === doc.songId &&
+                    before.doc.arrangementId === doc.arrangementId &&
+                    // A song without a file is tried again with the next tap – a file uploaded meanwhile shows without a change of song.
+                    (!!before.item?.sheet || before.doc.at === doc.at)
+                ) {
+                    state.rehearsal = { doc, item: before.item };
+                } else {
+                    state.rehearsal = { doc, item: await data.rehearsalItem(doc) };
+                }
+            }
+        } catch (error) {
+            wait = Math.max(wait, retryAfterMs(error) ?? 0);
+        }
+        later(wait, rehearsalCycle);
+    }
+
     /**
      * The choice of the musicians (Plan.md 121 E): only while a `songsheet` block is in the running presentation and an event of its
      * calendars is in the window of {@link pollableEvents} – otherwise not a single request. A failure keeps the last choices.
@@ -550,19 +603,9 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             const feed = state.agenda;
             if (loaded && feed && !blocked && feed.events.length) {
                 const now = deps.now();
-                const playlistId = activePlaylistId(loaded.screen, {
-                    now,
-                    timeZone: state.timeZone,
-                    clockConfirmed: state.clockConfirmed,
-                    appointments: state.appointments,
-                    agenda: feed,
-                });
-                const playlist = loaded.playlists.find((p) => p.id === playlistId);
-                const shown = new Set(playlist?.slideIds ?? []);
                 const calendars = new Set<number>();
-                for (const slide of loaded.slides) {
-                    if (!shown.has(slide.id) || !slide.enabled) continue;
-                    for (const block of slide.blocks) if (block.type === 'songsheet') block.calendarIds.forEach((id) => calendars.add(id));
+                for (const slide of shownSlides(loaded, now)) {
+                    for (const block of slide.blocks) if (block.type === 'songsheet' && !isRehearsalSheet(block)) block.calendarIds.forEach((id) => calendars.add(id));
                 }
                 const due = pollableEvents(
                     feed.events.filter((e) => calendars.has(e.calendarId)),
@@ -609,6 +652,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         later(withJitter(INTERVALS.quickCheckMs), quickCycle);
         later(withJitter(INTERVALS.agendaMs), agendaCycle);
         later(withJitter(INTERVALS.controlMs), controlCycle);
+        later(withJitter(INTERVALS.controlMs), rehearsalCycle);
         await configCycle();
         // Cached content or a failed first load: fetch data now, not in ten minutes.
         if (state.staleSince !== null || state.phase !== 'running') await dataCycle();

@@ -158,6 +158,8 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
         upcomingAgendas: vi.fn(async () => []),
         agendaPosition: vi.fn(async () => null),
         controls: vi.fn(async () => ({})),
+        rehearsal: vi.fn(async () => null),
+        rehearsalItem: vi.fn(async () => null),
         rooms: vi.fn(async () => []),
         reportAlive: vi.fn(async () => {}),
         ...overrides,
@@ -515,6 +517,73 @@ describe('player controller', () => {
         expect(controls).not.toHaveBeenCalled();
         far.stop();
         plain.stop();
+    });
+
+    /** The songsheet of `withSongsheet` with the source "Probe". */
+    const withRehearsal = (): LoadedScreen => {
+        const base = withSongsheet();
+        return { ...base, slides: base.slides.map((slide) => ({ ...slide, blocks: slide.blocks.map((b) => (b.type === 'songsheet' ? { ...b, source: 'rehearsal' as const } : b)) })) };
+    };
+    const rehearsalDoc = (songId = 7, at: Date = NOW) => ({ kind: 'rehearsal' as const, songId, arrangementId: 70 + songId, section: 1, at: at.toISOString() });
+    const rehearsalLiveItem = { title: 'Lied', duration: 0, song: true, beforeEvent: false };
+
+    it('reads the rehearsal choice only for a songsheet with the source "Probe", without any event (Plan.md 121, "Proben")', async () => {
+        const rehearsal = vi.fn<PlayerData['rehearsal']>(async () => rehearsalDoc());
+        const rehearsalItem = vi.fn<PlayerData['rehearsalItem']>(async () => rehearsalLiveItem);
+        const withEvent = createPlayer('demo', fakeData({ loadScreen: async () => withSongsheet(), agendaEvents: async () => [agendaEvent(20 * 60_000)], rehearsal, rehearsalItem }), fakeDeps());
+        await withEvent.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        const plain = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), rehearsal, rehearsalItem }), fakeDeps());
+        await plain.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        expect(rehearsal).not.toHaveBeenCalled();
+        withEvent.stop();
+        plain.stop();
+
+        const agendaEvents = vi.fn<PlayerData['agendaEvents']>(async () => []);
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withRehearsal(), agendaEvents, rehearsal, rehearsalItem }), fakeDeps());
+        await player.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        expect(agendaEvents).not.toHaveBeenCalled();
+        expect(rehearsal.mock.calls.length).toBeGreaterThanOrEqual(2);
+        expect(player.state.rehearsal?.doc.songId).toBe(7);
+        expect(player.state.rehearsal?.item?.title).toBe('Lied');
+        player.stop();
+    });
+
+    it('loads the song of the rehearsal only when the musicians choose another, and counts an old choice as none (Plan.md 121, "Proben")', async () => {
+        let doc: ReturnType<typeof rehearsalDoc> | null = rehearsalDoc(7);
+        const rehearsalItem = vi.fn<PlayerData['rehearsalItem']>(async () => rehearsalLiveItem);
+        const player = createPlayer('demo', fakeData({ loadScreen: async () => withRehearsal(), rehearsal: async () => doc, rehearsalItem }), fakeDeps());
+        await player.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        expect(rehearsalItem).toHaveBeenCalledTimes(1);
+
+        // Another part of the same song: the doc is new, the song stays.
+        doc = { ...rehearsalDoc(7), section: 3 };
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        expect(rehearsalItem).toHaveBeenCalledTimes(1);
+        expect(player.state.rehearsal?.doc.section).toBe(3);
+
+        doc = rehearsalDoc(8);
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        expect(rehearsalItem).toHaveBeenCalledTimes(2);
+
+        // "Lied beenden": no song any more, nothing loaded.
+        doc = { kind: 'rehearsal', songId: 0, arrangementId: 0, section: 0, at: NOW.toISOString(), ended: true } as unknown as ReturnType<typeof rehearsalDoc>;
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        expect(player.state.rehearsal).toBeNull();
+        expect(rehearsalItem).toHaveBeenCalledTimes(2);
+
+        doc = rehearsalDoc(8);
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        expect(player.state.rehearsal?.doc.songId).toBe(8);
+
+        doc = rehearsalDoc(9, new Date(NOW.getTime() - 13 * 3600_000));
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        expect(player.state.rehearsal).toBeNull();
+        expect(rehearsalItem).toHaveBeenCalledTimes(3);
+        player.stop();
     });
 
     it('asks for the next agenda from tomorrow on, also where today has one, and survives a failure (Plan.md 123)', async () => {

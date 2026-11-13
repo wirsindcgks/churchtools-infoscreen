@@ -4,12 +4,14 @@ import type { Block } from '../model/schema';
 import type { Post } from '../posts/normalize';
 import * as api from '../ct/api';
 import * as client from '../ct/client';
-import { agendaNeeds, appointmentNeeds, churchToolsPlayerData, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readableAppointments, readPeopleGroups, sheetsNeeded } from './data';
+import { sheetOf } from '../agenda/songsheet';
+import { agendaNeeds, appointmentNeeds, churchToolsPlayerData, loadArrangementSheet, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readableAppointments, readPeopleGroups, sheetsNeeded } from './data';
 
 vi.mock('../ct/api', () => ({
     fetchAgenda: vi.fn(),
     fetchAgendaSongs: vi.fn(),
     fetchSheetText: vi.fn(),
+    fetchSong: vi.fn(),
     fetchEventList: vi.fn(),
     fetchLivePosition: vi.fn(),
     LiveAgendaDeniedError: class LiveAgendaDeniedError extends Error {},
@@ -528,6 +530,56 @@ describe('the live agenda (schema 1.61, Plan.md 118)', () => {
             expect(sheetsNeeded([makeSlide({ blocks: [songBlock()] })])).toBe(true);
             expect(sheetsNeeded([makeSlide({ blocks: [agendaBlock([2])] })])).toBe(false);
             expect(agendaNeeds([makeSlide({ blocks: [songBlock()] })])).toEqual([2]);
+        });
+
+        it('leaves a songsheet with the source "Probe" out of what the agenda needs (Plan.md 121, "Proben")', () => {
+            const rehearsal = { ...songBlock(), source: 'rehearsal' } as Block;
+            expect(sheetsNeeded([makeSlide({ blocks: [rehearsal] })])).toBe(false);
+            expect(agendaNeeds([makeSlide({ blocks: [rehearsal] })])).toEqual([]);
+            expect(agendaNeeds([makeSlide({ blocks: [rehearsal, songBlock()] })])).toEqual([2]);
+        });
+
+        describe('the song of the rehearsal', () => {
+            const doc = (arrangementId: number) => ({ kind: 'rehearsal' as const, songId: 5, arrangementId, section: 0, at: '2026-11-10T10:00:00Z' });
+            const arrangement = (id: number, extra: object = {}) => ({ id, name: 'Akustisch', key: 'A', isDefault: false, description: 'C, V1', files: [file('a.cho', `cho${id}`)], ...extra });
+            const chordPro = '{key: G}\n{comment: Verse 1}\n[G]Eins\n\n{comment: Chorus}\n[C]Zwei';
+
+            it('is the raw file, and the block draws the same parts as the phone page', async () => {
+                const mine = arrangement(31);
+                vi.mocked(api.fetchSong).mockResolvedValue({ id: 5, name: 'Lied', arrangements: [mine] });
+                vi.mocked(api.fetchSheetText).mockResolvedValue(chordPro);
+                const item = (await churchToolsPlayerData.rehearsalItem(doc(31)))!;
+                expect(item).toMatchObject({ title: 'Lied', song: true, duration: 0, arrangementId: 31, songDetails: { key: 'A', arrangement: 'Akustisch' } });
+                // Raw: the key of the file, not the one of the arrangement – `sheetOf` transposes and applies the flow.
+                expect(item.sheet?.key).toBe('G');
+                const onScreen = sheetOf(item)!;
+                const onPhone = (await loadArrangementSheet(mine))!;
+                expect(onScreen.sections.map((x) => x.label)).toEqual(onPhone.sections.map((x) => x.label));
+                expect(onScreen.sections.map((x) => x.label)).toEqual(['Refrain', 'Strophe 1']);
+                expect(onScreen.key).toBe('A');
+            });
+
+            it('has no sheet without a file, names no default arrangement, and is null where the song is not readable', async () => {
+                vi.mocked(api.fetchSong).mockResolvedValue({ id: 5, name: 'Lied', arrangements: [arrangement(32, { files: [], isDefault: true })] });
+                const item = (await churchToolsPlayerData.rehearsalItem(doc(32)))!;
+                expect(item.sheet).toBeUndefined();
+                expect(item.songDetails).toEqual({ key: 'A' });
+                vi.mocked(api.fetchSong).mockRejectedValueOnce(forbidden());
+                expect(await churchToolsPlayerData.rehearsalItem(doc(33))).toBeNull();
+                vi.mocked(api.fetchSong).mockRejectedValueOnce(Object.assign(new Error('404'), { response: { status: 404 } }));
+                expect(await churchToolsPlayerData.rehearsalItem(doc(33))).toBeNull();
+                vi.mocked(api.fetchSong).mockRejectedValueOnce(new Error('Netz'));
+                await expect(churchToolsPlayerData.rehearsalItem(doc(33))).rejects.toThrow('Netz');
+            });
+
+            it('remembers a complete point per song and arrangement', async () => {
+                vi.mocked(api.fetchSong).mockClear();
+                vi.mocked(api.fetchSong).mockResolvedValue({ id: 5, name: 'Lied', arrangements: [arrangement(34)] });
+                vi.mocked(api.fetchSheetText).mockResolvedValue(chordPro);
+                await churchToolsPlayerData.rehearsalItem(doc(34));
+                await churchToolsPlayerData.rehearsalItem(doc(34));
+                expect(api.fetchSong).toHaveBeenCalledTimes(1);
+            });
         });
 
         it('reads the file by its kind – ChordPro before .sng before .txt – and hangs the sheet at the point of its arrangement', async () => {

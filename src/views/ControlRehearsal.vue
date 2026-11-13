@@ -6,7 +6,7 @@
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, useTemplateRef, watch } from 'vue';
 import { stepSection, type RehearsalDoc } from '../agenda/control';
-import type { SongSheet } from '../agenda/songsheet';
+import { REHEARSAL_MAX_AGE_MS, type SongSheet } from '../agenda/songsheet';
 import { fetchSong, searchSongs, type SongArrangementResponse, type SongResponse } from '../ct/api';
 import { t } from '../i18n/designer';
 import { loadArrangementSheet } from '../player/data';
@@ -144,9 +144,41 @@ async function choose(n: number): Promise<void> {
     }
 }
 
+/** Back to the search, without a song: what "Lied beenden" leaves on this page. */
+function clearSong(): void {
+    ++loadRun;
+    song.value = null;
+    arrangementId.value = null;
+    sheet.value = null;
+    sheetLoading.value = false;
+    section.value = null;
+    closeSearch();
+}
+
+/** "Lied beenden" (user, 2026-11-13): the screens show the QR code again, every phone page the search. */
+async function endSong(): Promise<void> {
+    clearSong();
+    const doc: RehearsalDoc = { kind: 'rehearsal', songId: 0, arrangementId: 0, section: 0, at: new Date().toISOString(), ended: true };
+    if (props.author) doc.by = props.author;
+    appliedAt = Date.parse(doc.at);
+    notSaved.value = false;
+    try {
+        await props.repository.writeRehearsal(doc);
+    } catch (error) {
+        console.warn('Die Wahl konnte nicht gespeichert werden:', error);
+        notSaved.value = true;
+    }
+}
+
 /** Takes over what another musician chose later than this page knows. */
 async function adopt(doc: RehearsalDoc): Promise<void> {
     appliedAt = Date.parse(doc.at);
+    if (doc.ended) {
+        // Whoever is typing a search keeps it.
+        if (!query.value.trim()) clearSong();
+        else song.value = null;
+        return;
+    }
     if (song.value?.id !== doc.songId) {
         // Whoever is typing a search keeps it open; the song of the other musician shows once it is closed.
         if (!song.value && query.value.trim()) searchOpen.value = true;
@@ -157,7 +189,8 @@ async function adopt(doc: RehearsalDoc): Promise<void> {
 
 async function refresh(): Promise<void> {
     const doc = await props.repository.readRehearsal();
-    if (doc && Date.parse(doc.at) > appliedAt) await adopt(doc);
+    // A choice older than the screens keep it is none here either: the page shows what the screens show (user, 2026-11-13).
+    if (doc && Date.parse(doc.at) > appliedAt && Date.now() - Date.parse(doc.at) <= REHEARSAL_MAX_AGE_MS) await adopt(doc);
 }
 
 function schedule(): void {
@@ -244,6 +277,9 @@ onBeforeUnmount(() => {
             <p v-else class="note" data-testid="rehearsal-nosheet">
                 {{ t.control.noRehearsalSheet }}
             </p>
+            <button v-if="!sheetLoading" type="button" class="end" data-testid="rehearsal-end" @click="endSong">
+                {{ t.control.endSong }}
+            </button>
         </template>
         <p v-else-if="!song && !results.length && !searching && !searched" class="note">
             {{ t.control.rehearsalNone }}
@@ -266,6 +302,18 @@ p {
     padding: 10px 12px;
     border-radius: 8px;
     background: #4a2020;
+}
+/* A rare step, so quiet: text only, under the parts. */
+.end {
+    justify-self: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 0;
+    background: none;
+    color: #b8bcc4;
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
 }
 /* One frame for both states – the title with the magnifier, the search with the cross – so the icon keeps its place. */
 .field {

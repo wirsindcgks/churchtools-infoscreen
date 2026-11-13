@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 64 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 65 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -335,6 +335,12 @@ export const SongsheetBlock = v.object({
      * sermon). Missing = always; new blocks start with 3.
      */
     nextLeadMinutes: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(30))),
+    /**
+     * Since 1.65 (Plan.md 121, "Proben"): where the song comes from. Missing = `agenda`, the song of the running point; `rehearsal` = the
+     * song the musicians chose on the phone page, independent of any event. Older players show the agenda. No default: only
+     * `rehearsal` is written. `calendarIds` stays and is kept while the source is changed.
+     */
+    source: v.optional(v.picklist(['agenda', 'rehearsal'])),
     style: TextStyle,
 });
 

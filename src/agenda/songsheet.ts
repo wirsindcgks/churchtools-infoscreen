@@ -3,7 +3,8 @@
  * from `.sng` and `.txt` – that make one `SongSheet` of it, the transposing of the chords, and what the block shows at a given
  * moment of the agenda. Pure functions – what is fetched lives in `src/player/data.ts`.
  */
-import type { ControlDoc } from './control';
+import type { Block } from '../model/schema';
+import type { ControlDoc, RehearsalDoc } from './control';
 import { POLL_AFTER_MS, POLL_BEFORE_MS, type AgendaPick, type LiveItem } from './live';
 
 /** A chord (or a bar line "|", "‖:", ":‖") that stands above the character `at` of the text of its line. */
@@ -513,6 +514,41 @@ export function songsheetPick(pick: AgendaPick | null, control?: ControlDoc): So
         upcoming: !running,
         lengthSeconds: running && position ? item.duration + position.addSeconds : null,
         id: `${event.eventId}:${shown}`,
+    };
+}
+
+/** The song the musicians chose for the rehearsal with the point the block draws it from; `item` is `null` where the song cannot be loaded. */
+export interface RehearsalState {
+    doc: RehearsalDoc;
+    item: LiveItem | null;
+}
+
+/**
+ * A choice of the rehearsal older than this counts as none: otherwise the next rehearsal would open with the song of last week. A
+ * rehearsal does not last longer than an evening, and the musicians choose anew at every one.
+ */
+export const REHEARSAL_MAX_AGE_MS = 12 * 60 * 60 * 1000;
+
+/** Whether the block takes its song from the rehearsal choice of the musicians (Plan.md 121, "Proben"); a block without `source` follows the agenda. */
+export function isRehearsalSheet(block: Pick<Extract<Block, { type: 'songsheet' }>, 'source'>): boolean {
+    return block.source === 'rehearsal';
+}
+
+/**
+ * The song of the rehearsal, with the part the musicians chose, the same way {@link songsheetPick} hands it to the block; `null` without
+ * a choice, without a song to draw, or once the choice is older than {@link REHEARSAL_MAX_AGE_MS}. No agenda is read here.
+ */
+export function rehearsalPick(rehearsal: RehearsalState | null | undefined, nowMs: number): SongsheetPick | null {
+    if (!rehearsal?.item || rehearsal.doc.ended) return null;
+    const { doc, item } = rehearsal;
+    if (!(nowMs - Date.parse(doc.at) <= REHEARSAL_MAX_AGE_MS)) return null;
+    const sheet = sheetOf(item);
+    return {
+        item,
+        upcoming: false,
+        lengthSeconds: null,
+        id: `rehearsal:${doc.songId}:${doc.arrangementId}`,
+        section: sheet ? Math.max(0, Math.min(doc.section, sheet.sections.length - 1)) : doc.section,
     };
 }
 

@@ -140,6 +140,11 @@ export interface RehearsalDoc {
     at: string;
     /** Name of the musician. */
     by?: string;
+    /**
+     * "Lied beenden" (user, 2026-11-13): no song any more – the screens show the QR code, the phone pages the search. Song, arrangement
+     * and part are then 0.
+     */
+    ended?: true;
 }
 
 /** Reads one value tolerantly: `null` for anything that is no rehearsal choice (a choice per event included); never throws. */
@@ -155,6 +160,12 @@ export function readRehearsal(raw: unknown): RehearsalDoc | null {
     if (typeof value !== 'object' || value === null) return null;
     const r = value as Record<string, unknown>;
     if (r.kind !== 'rehearsal') return null;
+    if (r.ended === true) {
+        if (typeof r.at !== 'string' || Number.isNaN(Date.parse(r.at))) return null;
+        const end: RehearsalDoc = { kind: 'rehearsal', songId: 0, arrangementId: 0, section: 0, at: r.at, ended: true };
+        if (typeof r.by === 'string' && r.by) end.by = r.by;
+        return end;
+    }
     const songId = whole(r.songId, 1);
     const arrangementId = whole(r.arrangementId, 0);
     const section = whole(r.section, 0);

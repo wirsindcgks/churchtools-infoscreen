@@ -94,6 +94,11 @@ export const tp = {
         next: 'Als Nächstes',
         /** The designer's example where there is no text to show (Plan.md 121). */
         example: 'Beispiel',
+        /** The designer's example of a block with the source "Probe". */
+        exampleRehearsal: 'Beispiel · Probe',
+        /** Source "Probe" before the musicians chose a song: the code leads to the phone page. */
+        noRehearsal: 'Kein Lied gewählt',
+        scanRehearsal: 'Code scannen und Lied auswählen',
         none: 'Kein Liedtext hinterlegt',
         /** Today's agenda has no song (left). */
     },

@@ -909,6 +909,13 @@ describe('the people block and the group of the settings (schema 1.51, Plan.md 1
         expect(v.safeParse(Block, { ...block, pageByTime: 'x' }).success).toBe(false);
     });
 
+    it('reads a songsheet block with and without a source, without a default (schema 1.65)', () => {
+        const block = { id: 's', type: 'songsheet', x: 0, y: 0, width: 100, height: 100, calendarIds: [2], style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' } };
+        expect(v.parse(Block, block)).not.toHaveProperty('source');
+        expect(v.parse(Block, { ...block, source: 'rehearsal' })).toMatchObject({ source: 'rehearsal', calendarIds: [2] });
+        expect(v.safeParse(Block, { ...block, source: 'x' }).success).toBe(false);
+    });
+
     it('reads a people block with and without its own group (schema 1.53)', () => {
         const block = { id: 'p', type: 'people', x: 0, y: 0, width: 100, height: 100, roleIds: [], fieldKeys: [], style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' } };
         expect(v.parse(Block, block)).not.toHaveProperty('sourceGroupId');

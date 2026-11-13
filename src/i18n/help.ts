@@ -335,6 +335,12 @@ export const th = {
             'Liedtexte auf dem Bildschirm zu zeigen fällt unter die CCLI-Lizenz eurer Gemeinde. Copyright und Lizenznummer bleiben deshalb unten stehen – bitte nicht verdecken. ' +
             'Das Gerät braucht das Recht „Einzelne Song-Kategorien sehen“; ohne es steht nur der Kopf mit den Liedangaben da. ' +
             'Musiker wählen den Liedteil auf dem Handy unter der Seite „Steuerung“ der Erweiterung (Adresse …/steuerung); ohne Tipp zeigt das Liedblatt Teil 1 des Liedes.',
+        source: {
+            term: i.songsheetSource,
+            text:
+                '„Ablauf“ zeigt das Lied, das im Ablaufplan gerade dran ist. „Probe“ zeigt das Lied, das die Musiker auf der Handyseite „Steuerung“ unter „Probe“ wählen – unabhängig von jedem Termin. ' +
+                'Für Proben legst du eine zweite Präsentation mit einem Liedblatt der Quelle „Probe“ an und lässt den Zeitplan zwischen ihr und der Gottesdienst-Präsentation umschalten. Vor der ersten Wahl zeigt der Bildschirm einen QR-Code zur Steuerung.',
+        },
         chords: {
             term: i.showChords,
             text:

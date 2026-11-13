@@ -30,6 +30,12 @@ export const AGENDA_TILES: TileOption[] = [
     { value: 'card', label: t.inspector.agendaLayoutCard, pictogram: 'agenda-card' },
 ];
 
+/** Where the block "Liedblatt" takes its song from (schema 1.65, Plan.md 121). */
+export const SONGSHEET_SOURCE_TILES: TileOption[] = [
+    { value: 'agenda', label: t.inspector.songsheetSourceAgenda, pictogram: 'agenda-churchtools' },
+    { value: 'rehearsal', label: t.inspector.songsheetSourceRehearsal, pictogram: 'songsheet-note' },
+];
+
 export const POSTS_TILES: TileOption[] = [
     { value: 'card', label: t.inspector.postsLayoutCard, pictogram: 'card-image' },
     { value: 'list', label: t.inspector.layoutList, pictogram: 'list-thumbs' },

@@ -10,25 +10,33 @@
  * 2026-11-11: the text filled too little of the block); no columns and no pages; below it, faint, the heading and first line of the next part. Only with `pageByTime` and without a choice the whole text stands in columns.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { UNTIMED_PAGE_SECONDS, lineSegments, sheetOf, sheetPage, songsheetPick } from '../../agenda/songsheet';
+import { UNTIMED_PAGE_SECONDS, isRehearsalSheet, lineSegments, rehearsalPick, sheetOf, sheetPage, songsheetPick } from '../../agenda/songsheet';
 import type { Block } from '../../model/schema';
 import { themeOf } from '../context';
 import { textStyle } from '../format';
 import { tp } from '../../i18n/player';
+import QrCode from '../../designer/QrCode.vue';
+import { controlUrl } from '../../designer/player-url';
 import PageProgress from './PageProgress.vue';
 import { useAgenda } from './use-agenda';
 
 const props = defineProps<{ block: Extract<Block, { type: 'songsheet' }>; slideSeconds?: number }>();
-const { context, pick, display } = useAgenda(() => props.block);
+const { context, nowMs, pick, display } = useAgenda(() => props.block);
+/** The source "Probe" (Plan.md 121, "Proben"): the song the musicians chose on the phone page; no agenda, no waiting, one part, never by time. */
+const rehearsal = computed(() => isRehearsalSheet(props.block));
+const byTime = computed(() => props.block.pageByTime && !rehearsal.value);
 
 // Every part is a computed of its own: the pick is made new each second, these keep their value (and so the render) while nothing changes.
-const chosen = computed(() => songsheetPick(pick.value, pick.value ? context.agenda?.controls?.[pick.value.event.eventId] : undefined));
+const chosen = computed(() =>
+    rehearsal.value ? rehearsalPick(context.rehearsal, nowMs.value) : songsheetPick(pick.value, pick.value ? context.agenda?.controls?.[pick.value.event.eventId] : undefined),
+);
 /**
  * The next song waits while the running point has more than `nextLeadMinutes` left (user, 2026-11-11: not through a whole sermon).
  * Only for "Als Nächstes" during a running point with a countdown – a tip, a running song and the time before the start show at once.
  */
 const selected = computed(() => {
     const pickNow = chosen.value;
+    if (rehearsal.value) return pickNow;
     const lead = props.block.nextLeadMinutes;
     const left = display.value?.countdownSeconds;
     const waiting = !!pickNow?.upcoming && lead !== undefined && display.value?.kind === 'now' && left !== null && left !== undefined && left > lead * 60;
@@ -49,7 +57,7 @@ const upcoming = computed(() => !example.value && (selected.value?.upcoming ?? f
 const lengthSeconds = computed(() => (example.value ? null : (selected.value?.lengthSeconds ?? null)));
 const sheet = computed(() => (item.value ? sheetOf(item.value) : null));
 /** The part the musicians chose, else part 1 of the song shown; `undefined` only with "Nach Zeit blättern" (columns, pages by time). */
-const section = computed(() => (example.value ? undefined : selected.value?.section) ?? (item.value && !props.block.pageByTime ? 0 : undefined));
+const section = computed(() => (example.value ? undefined : selected.value?.section) ?? (item.value && !byTime.value ? 0 : undefined));
 const showChords = computed(() => props.block.showChords);
 
 /** Title · key · tempo; the key of the sheet is the one after transposing, else the one of the arrangement. */
@@ -279,7 +287,7 @@ const headStyle = computed(() => ({
 <template>
     <div v-if="item" ref="root" class="songsheet" :class="{ 'songsheet--paged': paged }" :style="textStyle(block.style)" data-testid="songsheet">
         <div class="head" :style="headStyle">
-            <span v-if="example" class="next" data-testid="songsheet-example">{{ tp.songsheet.example }}</span>
+            <span v-if="example" class="next" data-testid="songsheet-example">{{ rehearsal ? tp.songsheet.exampleRehearsal : tp.songsheet.example }}</span>
             <span v-else-if="upcoming" class="next" data-testid="songsheet-next">{{ tp.songsheet.next }}</span>
             <span class="title" data-testid="songsheet-title">{{ item.title }}</span>
             <span v-if="meta" class="meta" data-testid="songsheet-meta">{{ meta }}</span>
@@ -323,9 +331,16 @@ const headStyle = computed(() => ({
         <div v-if="sheet?.footer" class="foot" :style="{ fontSize: `${0.22 * Math.min(1, scale)}em` }" data-testid="songsheet-footer">{{ sheet.footer }}</div>
         <PageProgress v-if="paged" :key="page" :seconds="turnSeconds" :held="held" :offset="pageOffset" :size="8" :inset="16" :number="page + 1" :total="pages" :color="themeOf(context).text" />
     </div>
+    <!-- Source "Probe" before the first choice: the way to the phone page stands where the song will be – only once the choice was read,
+         so that the code does not flash up while the player starts (user, 2026-11-13). -->
+    <div v-else-if="rehearsal && context.rehearsal !== undefined" class="rehearsal-empty" :style="textStyle(block.style)" data-testid="songsheet-rehearsal-empty">
+        <div class="rehearsal-title">{{ tp.songsheet.noRehearsal }}</div>
+        <QrCode class="rehearsal-qr" :value="controlUrl()" :size="200" :label="tp.songsheet.scanRehearsal" />
+        <div class="rehearsal-hint">{{ tp.songsheet.scanRehearsal }}</div>
+    </div>
     <!-- No event today: only a large, faint note, the hint stands once, in "Ablauf" (Plan.md 123). An event without a song left shows
          nothing at all – the stage needs no word for it (user, 2026-11-11). -->
-    <div v-else-if="context.agenda && !pick" class="empty empty--note" :style="textStyle(block.style)" data-testid="songsheet-empty">
+    <div v-else-if="!rehearsal && context.agenda && !pick" class="empty empty--note" :style="textStyle(block.style)" data-testid="songsheet-empty">
         <svg class="note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M9 18V5l12-2v13" />
             <circle cx="6" cy="18" r="3" />
@@ -335,6 +350,33 @@ const headStyle = computed(() => ({
 </template>
 
 <style scoped>
+/* The size of the code follows the block: 40 % of the smaller side. */
+.rehearsal-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4em;
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    padding: 0.3em;
+    text-align: center;
+    container-type: size;
+}
+.rehearsal-title {
+    font-size: 0.9em;
+    font-weight: 700;
+}
+.rehearsal-qr {
+    flex: none;
+    width: min(40cqh, 40cqw);
+    height: min(40cqh, 40cqw);
+}
+.rehearsal-hint {
+    font-size: 0.5em;
+    opacity: 0.8;
+}
 /* Like the block "Ablauf": a quiet line once the agenda is read and there is no song to show. */
 .empty {
     display: flex;
