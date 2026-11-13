@@ -317,6 +317,12 @@ onBeforeUnmount(() => {
     align-content: start;
     gap: 12px;
 }
+/* On a phone the designer keeps 20 px to the edge, this page 16: the switch stands at the same place on both sides. */
+@media (max-width: 47.99rem) {
+    .control > .mode-switch {
+        margin-inline: 4px;
+    }
+}
 h1 {
     margin: 0;
     font-size: 1.3rem;

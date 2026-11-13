@@ -39,6 +39,20 @@ test.describe('switch between designer and stage on a phone', () => {
         const panel = (await page.locator('#module-pages').boundingBox())!;
         expect(panel.y).toBeGreaterThanOrEqual(menu.y + menu.height);
     });
+
+    test('keeps its size on the stage page – only the colours change (user, 2026-11-13)', async ({ page }) => {
+        const box = async () => {
+            const b = (await page.getByTestId('mode-switch').boundingBox())!;
+            return { x: Math.round(b.x), width: Math.round(b.width), height: Math.round(b.height) };
+        };
+        await page.goto('./');
+        await expect(page.getByTestId('mode-switch')).toBeVisible();
+        const designer = await box();
+        await page.getByTestId('mode-switch').getByTestId('mode-stage').click();
+        await expect(page).toHaveURL(/\/steuerung$/);
+        await expect(page.getByTestId('mode-switch').getByTestId('mode-stage')).toHaveAttribute('aria-current', 'page');
+        expect(await box()).toEqual(designer);
+    });
 });
 
 // The bar of ChurchTools lies over the stage page, which covers the window; it hid the switch (user, 2026-11-13, PC and phone). The dev
