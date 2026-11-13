@@ -126,6 +126,8 @@ hintereinander ist ein Schritt („Bridge 2×“). Teile, die im Ablauf nicht vo
 Ablauf“ – zum spontanen Hinspringen. Der Schalter „Nach Zeit blättern“ ist für Gemeinden ohne Handysteuerung: Dann steht der ganze Text in **Spalten**
 und der Baustein blättert nach der Dauer des Liedes. Der Schalter „Akkorde“ blendet die Akkorde aus.
 
+![Editor mit dem Baustein „Ablauf“ als Kacheln über dem Baustein „Liedblatt“: der Liedtext „Segenslied“ mit den Akkorden über den Silben](bilder/liedblatt.png)
+
 Liedtexte auf dem Bildschirm zu zeigen fällt unter die **CCLI-Lizenz** der Gemeinde: Copyright und Lizenznummer stehen
 deshalb unten auf dem Baustein und sollten nicht verdeckt werden. Das Gerät braucht dafür in ChurchTools das Recht
 „Einzelne Song-Kategorien sehen“ für die Kategorien der Lieder; ohne es zeigt der Baustein nur den Kopf.

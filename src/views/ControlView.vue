@@ -290,7 +290,11 @@ onBeforeUnmount(() => {
 <style scoped>
 .control {
     box-sizing: border-box;
-    min-height: 100vh;
+    /* The whole viewport, like the player: the page's own margin left a white frame around the dark page. */
+    position: fixed;
+    inset: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     /* Room for the big buttons at the bottom, which stand fixed over the list. */
     padding: 16px 16px calc(136px + env(safe-area-inset-bottom));
     background: #101114;
