@@ -6,7 +6,7 @@
  */
 import { onBeforeUnmount, reactive, ref, watch, type Ref } from 'vue';
 import { pickEvent, type LivePositions } from '../agenda/live';
-import { sampleAgenda } from '../agenda/sample';
+import { sampleAgenda, sampleSong } from '../agenda/sample';
 import { fetchCalendars, fetchGroupNames, fetchPersonFields, fetchPublicCalendars, type Calendar } from '../ct/api';
 import { instanceBaseUrl } from '../ct/client';
 import { getRepository } from '../store/backend';
@@ -50,6 +50,7 @@ export function usePreview(
         // Paged lists report their pages (the inspector names them) but hold page 1 while designing.
         pages: {},
         paging: false,
+        songExample: sampleSong(),
     });
     provideStageContext(context);
 

@@ -83,7 +83,8 @@ test('the block "Liedblatt" shows the next song of the example with chords, and 
 
     await addBlock(page, 'songsheet');
     const block = page.locator('.editor-stage .block--songsheet');
-    await expect(block.getByTestId('songsheet-next')).toHaveText('Als Nächstes');
+    // "Als Nächstes" from the example agenda, or – while it waits, or a real agenda has no song now – the designer's example (user, 2026-11-13).
+    await expect(block.locator('.head .next')).toHaveText(/^(Als Nächstes|Beispiel)$/);
     await expect(block.getByTestId('songsheet-title')).toHaveText('Segenslied');
     await expect(block.getByTestId('songsheet-text')).toContainText('Gott segne');
     await expect(block.getByTestId('songsheet-chord').first()).toBeVisible();

@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { defineComponent, h, reactive } from 'vue';
 import { describe, expect, it } from 'vitest';
-import { sampleAgenda } from '../agenda/sample';
+import { sampleAgenda, sampleSong } from '../agenda/sample';
 import { normalizeAppointments } from '../appointments/normalize';
 import { unreleasedPeople, type PeopleGroup } from '../groups/members';
 import type { Group } from '../groups/normalize';
@@ -1300,6 +1300,28 @@ describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
         expect(waiting.find('[data-testid="songsheet"]').exists()).toBe(false);
         expect(waiting.find('[data-testid="songsheet-empty"]').exists()).toBe(false);
         expect(draw(songsheet({ nextLeadMinutes: 5 }), { agenda: feed() }).get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
+    });
+
+    it('in the designer shows the example song, marked "Beispiel", where it would show nothing; a real song with text wins (user, 2026-11-13)', () => {
+        const songExample = sampleSong();
+        const last = feed().events[0]!.items.length - 1;
+        const empty: [Block, Partial<StageContext>][] = [
+            [songsheet(), {}],
+            [songsheet(), { agenda: { events: [], positions: {} } }],
+            [songsheet(), { agenda: feed(last) }],
+            [songsheet({ nextLeadMinutes: 1 }), { agenda: feed() }],
+            [songsheet(), { agenda: feed(undefined, false) }],
+        ];
+        for (const [block, context] of empty) {
+            const wrapper = draw(block, { ...context, songExample });
+            expect(wrapper.get('[data-testid="songsheet-example"]').text()).toBe('Beispiel');
+            expect(wrapper.find('[data-testid="songsheet-next"]').exists()).toBe(false);
+            expect(wrapper.get('[data-testid="songsheet-title"]').text()).toBe('Segenslied');
+            expect(wrapper.get('[data-testid="songsheet-text"]').text()).toContain('Gott segne');
+        }
+        const real = draw(songsheet(), { agenda: feed(), songExample });
+        expect(real.find('[data-testid="songsheet-example"]').exists()).toBe(false);
+        expect(real.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
     });
 
     it('shows part 1 of the next song under "Als Nächstes" without a choice, with chords, a faint start of part 2 and the footer', () => {

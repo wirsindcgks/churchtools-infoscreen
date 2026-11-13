@@ -2,7 +2,7 @@
  * An example service for the designer where ChurchTools gives no live agenda – no right, no event today: the points of the
  * test in G81, the third running, three minutes late. Shown by the preview so that the block never stands empty while designing.
  */
-import { liveItems, parsePosition, type AgendaEvent, type AgendaFeed } from './live';
+import { liveItems, parsePosition, type AgendaEvent, type AgendaFeed, type LiveItem } from './live';
 import { readChordPro } from './songsheet';
 
 /** Own text for the block "Liedblatt" (Plan.md 121 B), in the build of a SongSelect file: sections as comments, bar lines in brackets. */
@@ -50,4 +50,12 @@ function sampleEvent(nowMs: number, calendarId: number): AgendaEvent {
     // "Begrüßung" was planned to begin five minutes ago and began two minutes ago.
     const startMs = nowMs - 15 * 60_000;
     return { eventId: -calendarId, calendarId, startMs, endMs: startMs + 50 * 60_000, items };
+}
+
+/**
+ * The song of the example on its own, with its text: the designer shows it in a "Liedblatt" that has nothing to show – no song in
+ * the real agenda right now, no file, or "Als Nächstes" still waiting – so that the size of the font can be judged (user, 2026-11-13).
+ */
+export function sampleSong(): LiveItem {
+    return sampleEvent(0, 0).items.find((item) => item.arrangementId === SAMPLE_ARRANGEMENT)!;
 }

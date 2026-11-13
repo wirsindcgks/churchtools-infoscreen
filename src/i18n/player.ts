@@ -92,6 +92,8 @@ export const tp = {
 
     songsheet: {
         next: 'Als Nächstes',
+        /** The designer's example where there is no text to show (Plan.md 121). */
+        example: 'Beispiel',
         none: 'Kein Liedtext hinterlegt',
         /** Today's agenda has no song (left). */
     },
