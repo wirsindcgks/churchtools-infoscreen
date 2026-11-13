@@ -1585,6 +1585,13 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         rightsPending: 'Rechte aktualisieren nötig',
     },
 
+    /** The switch between the designer and the stage page, for people in the designers' and the musicians' group. */
+    modeSwitch: {
+        label: 'Bereich wechseln',
+        designer: 'Designer',
+        stage: 'Bühne',
+    },
+
     /** The settings: groups and rights, addresses of the TVs, the media library in the wiki, the services. */
     setup: {
         adminsOnly: {

@@ -28,6 +28,7 @@ import { blockCalendarIds, type ScreenDoc, type TemplateDoc, type ThemeDoc } fro
 import { agendaNeeds, groupNeeds, peopleNeeds, postNeeds, roomNeeds, sheetsNeeded } from '../player/data';
 import { ruleCalendarIds, runningNow } from '../designer/running';
 import { screenCounts, setScreenCounts } from '../designer/section-counts';
+import { stageAccess } from '../designer/stage-access';
 import { usePreview, useTemplatesIn } from '../designer/usePreview';
 import { expandTemplates } from '../model/templates';
 import { getRepository, resetDemoStore } from '../store/backend';
@@ -165,7 +166,11 @@ onMounted(async () => {
         // Demo mode has no module rights: there the ChurchTools admin right stands in, so the roles can be tried out.
         screensAdmin.value = rights.configureScreens ?? isAdmin;
         // An administrator's visit creates the categories of the signs of life and of the drafts; nobody else may (Plan.md 59, 79).
-        if (isAdmin) await Promise.all([handle.repository.ensureStatusCategory(), handle.repository.ensureControlCategory(), handle.repository.drafts.ensureCategory()]).catch(() => null);
+        if (isAdmin) {
+            const [, control] = await Promise.all([handle.repository.ensureStatusCategory(), handle.repository.ensureControlCategory(), handle.repository.drafts.ensureCategory()]).catch(() => []);
+            // A category created just now: the sidebar asked before and shows the switch "Designer | Bühne" only from here on.
+            if (control != null) stageAccess.value = true;
+        }
         repository.value = handle.repository;
         try {
             await refresh();
