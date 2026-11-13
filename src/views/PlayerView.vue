@@ -113,6 +113,7 @@ watch(
             state.groupHomepages,
             state.people,
             state.agenda,
+            state.rehearsal,
             state.rooms,
             state.screen,
         ] as const),
@@ -127,6 +128,7 @@ watch(
         context.groupHomepages = state.groupHomepages;
         context.people = state.people;
         context.agenda = state.agenda;
+        context.rehearsal = state.rehearsal;
         context.rooms = state.rooms;
         context.media = new Map((state.screen?.media ?? []).map((m) => [m.id, m]));
         context.theme = state.screen?.theme ?? null;

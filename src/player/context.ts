@@ -1,5 +1,6 @@
 import { inject, provide, type InjectionKey } from 'vue';
 import type { AgendaFeed, LiveItem } from '../agenda/live';
+import type { RehearsalState } from '../agenda/songsheet';
 import type { Appointment } from '../appointments/normalize';
 import { DEFAULT_THEME, type MediaDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
 import type { PeopleGroup } from '../groups/members';
@@ -30,6 +31,8 @@ export interface StageContext {
     personFieldNames?: Record<string, string>;
     /** The events of today with their agenda and the last positions, for the `agenda` blocks (schema 1.61, Plan.md 118); missing = no such block or not loaded. */
     agenda?: AgendaFeed;
+    /** The song the musicians chose for the rehearsal, for the `songsheet` blocks with the source "Probe" (Plan.md 121, "Proben"); `null` = read, none chosen; missing = not read yet (the designer, too). */
+    rehearsal?: RehearsalState | null;
     /** Bookings of the rooms the `rooms` blocks need (schema 1.16); missing counts as none. */
     rooms?: RoomBookings[];
     media: Map<string, MediaDoc>;

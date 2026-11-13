@@ -1,20 +1,25 @@
 <script setup lang="ts">
 /**
- * The block "Liedblatt" (Plan.md 121 B): the calendars whose agenda it follows, like "Ablauf", then "Darstellung" with the chords,
- * "Lieder" – which songs of the next four weeks have a file with chords – and "Schrift".
+ * The block "Liedblatt" (Plan.md 121 B): the source of the song ("Ablauf" or "Probe", schema 1.65), with "Ablauf" the calendars whose agenda
+ * it follows, like "Ablauf", then "Darstellung" with the chords, "Lieder" – which songs of the next four weeks have a file with chords –
+ * and "Schrift". With "Probe" the musicians choose the song on the phone page: calendars, "Lieder" and the switches that belong to the agenda are hidden.
  */
 import { computed, inject, ref, unref, watch } from 'vue';
 import { t } from '../../../i18n/designer';
 import { th } from '../../../i18n/help';
+import { isRehearsalSheet } from '../../../agenda/songsheet';
 import type { Block } from '../../../model/schema';
 import { useStageContext } from '../../../player/context';
 import CalendarField from '../../CalendarField.vue';
+import { useGeneralHelp } from '../../help/register';
 import InspectorSection from '../../InspectorSection.vue';
 import { loadSongOverview, type SongOverview, type SongRow } from '../../song-overview';
 import { useCalendarChoice } from '../calendar-choice';
 import NumberField from '../fields/NumberField.vue';
+import TileField from '../fields/TileField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import FontSection from '../FontSection.vue';
+import { SONGSHEET_SOURCE_TILES } from '../layouts';
 import { INSPECTOR_MODE } from '../mode';
 import { useBlockEdit } from '../use-block';
 
@@ -24,11 +29,13 @@ const { calendars, hidden, released, toggleCalendar } = useCalendarChoice(() => 
 const stage = useStageContext();
 /** The list is a section of its own, not a field: the short menu has none (and does not load it). */
 const full = computed(() => unref(inject(INSPECTOR_MODE, 'full')) === 'full');
+/** The source "Probe": no calendar, no list of songs, nothing that belongs to the agenda. */
+const rehearsal = computed(() => isRehearsalSheet(props.block));
 const look = computed(() =>
     [
         props.block.showChords ? t.inspector.showChords : t.inspector.songsheetNoChords,
-        props.block.nextLeadMinutes ? t.inspector.songsheetLeadSummary(props.block.nextLeadMinutes) : '',
-        props.block.pageByTime ? t.inspector.pageByTime : '',
+        !rehearsal.value && props.block.nextLeadMinutes ? t.inspector.songsheetLeadSummary(props.block.nextLeadMinutes) : '',
+        !rehearsal.value && props.block.pageByTime ? t.inspector.pageByTime : '',
     ]
         .filter(Boolean)
         .join(' · '),
@@ -39,13 +46,13 @@ const failed = ref(false);
 const loading = ref(false);
 let run = 0;
 watch(
-    () => [...props.block.calendarIds].sort((a, b) => a - b).join(','),
+    () => `${rehearsal.value}:${[...props.block.calendarIds].sort((a, b) => a - b).join(',')}`,
     () => {
         const mine = ++run;
         overview.value = null;
         failed.value = false;
         loading.value = false;
-        if (!full.value || !props.block.calendarIds.length) return;
+        if (!full.value || rehearsal.value || !props.block.calendarIds.length) return;
         loading.value = true;
         loadSongOverview(props.block.calendarIds, new Date(), stage.timeZone)
             .then((result) => {
@@ -85,19 +92,22 @@ const days = computed(() => {
     return groups;
 });
 
+useGeneralHelp(() => [th.songsheet.source]);
 const help = { intro: th.songsheet.intro, items: [th.songsheet.chords, th.songsheet.lead, th.songsheet.pageByTime] };
 const songsHelp = { intro: th.songsheet.intro, items: [th.songsheet.songs] };
 </script>
 
 <template>
-    <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" :released="released" :extra-intro="t.inspector.songsheetInfo" @toggle="toggleCalendar" />
+    <TileField quick :model-value="block.source ?? 'agenda'" :options="SONGSHEET_SOURCE_TILES" :label="t.inspector.songsheetSource" testid="songsheet-source" @update:model-value="setBlock({ source: $event === 'rehearsal' ? 'rehearsal' : undefined })" />
+    <p v-if="rehearsal && full" class="hint" data-testid="songsheet-rehearsal-info">{{ t.inspector.songsheetRehearsalInfo }}</p>
+    <CalendarField v-if="!rehearsal" quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" :released="released" :extra-intro="t.inspector.songsheetInfo" @toggle="toggleCalendar" />
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="look" :help="help">
         <ToggleField :model-value="block.showChords" :label="t.inspector.showChords" testid="songsheet-show-chords" @update:model-value="setBlock({ showChords: $event })" />
-        <ToggleField :model-value="block.nextLeadMinutes !== undefined" :label="t.inspector.songsheetLead" testid="songsheet-lead" @update:model-value="setBlock({ nextLeadMinutes: $event ? 3 : undefined })" />
-        <NumberField v-if="block.nextLeadMinutes !== undefined" :model-value="block.nextLeadMinutes" :label="t.inspector.songsheetLeadMinutes" unit="Minuten" :min="1" :max="30" testid="songsheet-lead-minutes" @update:model-value="setBlock({ nextLeadMinutes: $event })" />
-        <ToggleField :model-value="block.pageByTime" :label="t.inspector.pageByTime" testid="songsheet-page-by-time" @update:model-value="setBlock({ pageByTime: $event })" />
+        <ToggleField v-if="!rehearsal" :model-value="block.nextLeadMinutes !== undefined" :label="t.inspector.songsheetLead" testid="songsheet-lead" @update:model-value="setBlock({ nextLeadMinutes: $event ? 3 : undefined })" />
+        <NumberField v-if="!rehearsal && block.nextLeadMinutes !== undefined" :model-value="block.nextLeadMinutes" :label="t.inspector.songsheetLeadMinutes" unit="Minuten" :min="1" :max="30" testid="songsheet-lead-minutes" @update:model-value="setBlock({ nextLeadMinutes: $event })" />
+        <ToggleField v-if="!rehearsal" :model-value="block.pageByTime" :label="t.inspector.pageByTime" testid="songsheet-page-by-time" @update:model-value="setBlock({ pageByTime: $event })" />
     </InspectorSection>
-    <InspectorSection v-if="full" id="songs" :title="t.inspector.songs" :summary="summary" :help="songsHelp">
+    <InspectorSection v-if="full && !rehearsal" id="songs" :title="t.inspector.songs" :summary="summary" :help="songsHelp">
         <p v-if="loading" class="hint">{{ t.inspector.songsLoading }}</p>
         <p v-else-if="failed" class="hint">{{ t.inspector.songsFailed }}</p>
         <p v-else-if="overview?.state === 'denied'" class="hint" data-testid="songsheet-songs-denied">{{ t.inspector.songsDenied }}</p>

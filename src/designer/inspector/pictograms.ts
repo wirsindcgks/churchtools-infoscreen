@@ -49,6 +49,8 @@ export const PICTOGRAMS = {
     // The agenda: two lines of text and the countdown ring, or a card with a tile and a smaller card below.
     'agenda-churchtools': [{ d: bar(6, 8, 18) }, { d: bar(6, 13, 12) }, { d: bar(6, 21, 14) }, { d: bar(6, 26, 9) }, { d: circle(36, 16, 8) }],
     'agenda-card': [{ d: box(5, 3, 38, 16) }, { d: box(8, 6, 7, 7, 1), fill: true }, { d: bar(19, 8, 20) }, { d: bar(19, 14, 13) }, { d: box(5, 22, 26, 7) }, { d: bar(9, 25.5, 16) }],
+    // The source "Probe" of the songsheet: a pair of notes.
+    'songsheet-note': [{ d: circle(19, 23, 4), fill: true }, { d: circle(31, 21, 4), fill: true }, { d: 'M23 23V8l12-2v15' }],
     // Posts and groups: a highlighted card with the image above, or a list with a thumbnail per row.
     'card-image': [{ d: box(10, 3, 28, 26) }, { d: box(13, 6, 22, 11), fill: true }, { d: bar(13, 22, 18) }, { d: bar(13, 26, 12) }],
     'list-thumbs': [

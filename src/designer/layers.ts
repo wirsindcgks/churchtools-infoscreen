@@ -2,6 +2,7 @@
  * The list of layers in "Anordnen" (Plan.md 79, B3): top layer first, each with a short content line so one block can
  * be told from the next of its kind. Pure, so the order and the lines are tested without a component.
  */
+import { t } from '../i18n/designer';
 import type { Block } from '../model/schema';
 import { socialName } from '../player/social';
 
@@ -34,7 +35,9 @@ export function blockSummary(block: Block, lookup: SummaryLookup): string {
         case 'next-appointment':
         case 'countdown':
         case 'agenda':
+            return shorten((block.calendarIds[0] !== undefined && lookup.calendarName(block.calendarIds[0])) || '');
         case 'songsheet':
+            if (block.source === 'rehearsal') return t.inspector.songsheetSourceRehearsal;
             return shorten((block.calendarIds[0] !== undefined && lookup.calendarName(block.calendarIds[0])) || '');
         case 'rooms':
             return shorten((block.rooms[0] && lookup.roomName(block.rooms[0].resourceId)) || '');

@@ -101,6 +101,11 @@ describe('rehearsal choice (Plan.md 121, "Proben")', () => {
         expect(readRehearsal({ ...rehearsal, songId: 0 })).toBeNull();
         expect(readRehearsal({ ...rehearsal, at: 'gestern' })).toBeNull();
         expect(readRehearsal({ ...rehearsal, kind: undefined })).toBeNull();
+        // "Lied beenden" (user, 2026-11-13): read as such, and it counts as the latest choice.
+        const ended = { kind: 'rehearsal', ended: true, at: '2026-11-13T20:00:00.000Z', by: 'Anna' };
+        expect(readRehearsal(text(ended))).toEqual({ kind: 'rehearsal', songId: 0, arrangementId: 0, section: 0, ended: true, at: ended.at, by: 'Anna' });
+        expect(readRehearsal({ ...ended, at: 'gestern' })).toBeNull();
+        expect(latestRehearsal([{ value: text({ ...rehearsal, at: '2026-11-13T19:00:00.000Z' }) }, { value: text(ended) }])?.ended).toBe(true);
     });
     it('is not fooled by a choice per event, and the other way round', () => {
         expect(readRehearsal(doc)).toBeNull();

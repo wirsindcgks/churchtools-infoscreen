@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ControlDoc } from './control';
 import type { AgendaEvent, AgendaPick, LiveItem, LivePosition } from './live';
 import { liveItems } from './live';
-import { applyFlow, arrangementSheet, lineSegments, pickSheetFile, readChordPro, readFlow, readSng, readSongSheet, readTxt, sheetKind, sheetOf, sheetPage, songFileStatus, songsLeft, songsheetPick, transposeSheet, type SheetSection, type SongSheet } from './songsheet';
+import { applyFlow, arrangementSheet, lineSegments, pickSheetFile, readChordPro, readFlow, readSng, readSongSheet, readTxt, sheetKind, sheetOf, sheetPage, songFileStatus, songsLeft, songsheetPick, rehearsalPick, isRehearsalSheet, REHEARSAL_MAX_AGE_MS, transposeSheet, type SheetSection, type SongSheet } from './songsheet';
 
 // Own texts in the build of the files of SongSelect (G82): sections as `{comment: …}`, bar lines in brackets; `.sng` with byte order mark and `#` head;
 // `.txt` with title and authors above and the block with the CCLI numbers below.
@@ -414,5 +414,40 @@ describe('arrangementSheet (Plan.md 121, "Proben")', () => {
     });
     it('gives the sheet as it is without key and flow', () => {
         expect(arrangementSheet(sheet, undefined, [undefined, null])).toBe(sheet);
+    });
+});
+
+describe('rehearsalPick – the song of the source "Probe" (Plan.md 121, "Proben")', () => {
+    const NOW = Date.parse('2026-11-13T19:00:00Z');
+    const sheet: SongSheet = { sections: ['Strophe 1', 'Refrain'].map((label) => ({ label, lines: [{ chords: [], text: 'x' }] })) };
+    const item: LiveItem = { title: 'Lied', duration: 0, song: true, beforeEvent: false, sheet };
+    const doc = (extra: object = {}) => ({ kind: 'rehearsal' as const, songId: 7, arrangementId: 70, section: 1, at: new Date(NOW - 60_000).toISOString(), ...extra });
+
+    it('shows the chosen part of the song, never "next", never timed', () => {
+        expect(rehearsalPick({ doc: doc(), item }, NOW)).toMatchObject({ item, upcoming: false, lengthSeconds: null, id: 'rehearsal:7:70', section: 1 });
+        expect(rehearsalPick({ doc: doc({ section: 9 }), item }, NOW)!.section).toBe(1);
+    });
+
+    it('shows nothing without a choice or a song, and nothing from a choice older than twelve hours', () => {
+        expect(rehearsalPick(undefined, NOW)).toBeNull();
+        expect(rehearsalPick({ doc: doc(), item: null }, NOW)).toBeNull();
+        expect(rehearsalPick({ doc: doc({ at: new Date(NOW - REHEARSAL_MAX_AGE_MS - 1).toISOString() }), item }, NOW)).toBeNull();
+        expect(rehearsalPick({ doc: doc({ at: new Date(NOW - REHEARSAL_MAX_AGE_MS + 1000).toISOString() }), item }, NOW)).not.toBeNull();
+    });
+
+    it('is apart from the agenda in both directions, and a block without a source reads as the agenda', () => {
+        const song = liveItems([{ type: 'song', duration: 240, song: { title: 'Erstes', key: 'A' } }])[1]!;
+        const agenda: AgendaPick = { event: { eventId: 7, calendarId: 1, startMs: 0, endMs: 1, items: [liveItems([])[0]!, song] }, position: { index: 1, set: true, switchMs: 0, addSeconds: 0, offsetMs: 0 }, phase: 'live' };
+        const before = songsheetPick(agenda);
+        // A rehearsal choice does not change what the agenda shows …
+        rehearsalPick({ doc: doc(), item }, NOW);
+        expect(songsheetPick(agenda)).toEqual(before);
+        // … and a tip of an event does not change the rehearsal.
+        const tip: ControlDoc = { eventId: 7, itemIndex: 1, section: 3, at: '1970-01-01T00:00:00.500Z' };
+        songsheetPick(agenda, tip);
+        expect(rehearsalPick({ doc: doc(), item }, NOW)).toMatchObject({ section: 1, id: 'rehearsal:7:70' });
+        expect(isRehearsalSheet({})).toBe(false);
+        expect(isRehearsalSheet({ source: 'agenda' })).toBe(false);
+        expect(isRehearsalSheet({ source: 'rehearsal' })).toBe(true);
     });
 });

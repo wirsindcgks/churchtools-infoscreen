@@ -3,9 +3,9 @@
  * replaced in tests. Every request has a time limit.
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
-import type { ControlDoc } from '../agenda/control';
+import type { ControlDoc, RehearsalDoc } from '../agenda/control';
 import { liveItems, parsePosition, type AgendaEvent, type UpcomingAgenda, type LiveItem, type LivePosition } from '../agenda/live';
-import { arrangementSheet, pickSheetFile, readSongSheet, type SheetKind, type SongSheet } from '../agenda/songsheet';
+import { arrangementSheet, isRehearsalSheet, pickSheetFile, readSongSheet, type SheetKind, type SongSheet } from '../agenda/songsheet';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { needsAppointmentTags } from '../appointments/tags';
@@ -15,6 +15,7 @@ import {
     fetchAgenda,
     fetchAgendaSongs,
     fetchSheetText,
+    fetchSong,
     fetchAppointments,
     fetchPublicCalendars,
     fetchBookings,
@@ -105,6 +106,14 @@ export interface PlayerData {
     agendaPosition(eventId: number): Promise<LivePosition | null>;
     /** The latest choice of the musicians per event (Plan.md 121 E); `{}` where the category is missing or not readable (`403`). Other errors fail. */
     controls(): Promise<Record<number, ControlDoc>>;
+    /** The latest rehearsal choice of the musicians (Plan.md 121, "Proben"); `null` where there is none or it is not readable (`403`). Other errors fail. */
+    rehearsal(): Promise<RehearsalDoc | null>;
+    /**
+     * The song of a rehearsal choice as a point the block "Liedblatt" draws: its arrangement with the raw file (`sheetOf` transposes and
+     * applies the flow, as the phone page does, so the parts are the same on both). `null` where the song is gone or not readable (`403`/`404`);
+     * without a file the point has no `sheet`. Remembered per song and arrangement. Other errors fail.
+     */
+    rehearsalItem(doc: RehearsalDoc): Promise<LiveItem | null>;
     /**
      * The confirmed bookings of these rooms within `[from, to)` (schema 1.16).
      * A room the caller may not read (403), that the stammdaten do not name or
@@ -303,6 +312,44 @@ export const churchToolsPlayerData: PlayerData = {
         const { repository } = await withTimeout(getRepository());
         return withTimeout(repository.readControls());
     },
+    async rehearsal() {
+        const { repository } = await withTimeout(getRepository());
+        return withTimeout(repository.readRehearsal());
+    },
+    async rehearsalItem(doc) {
+        const memoKey = `${doc.songId}:${doc.arrangementId}`;
+        const known = rehearsalMemo.get(memoKey);
+        if (known) return known;
+        let song: Awaited<ReturnType<typeof fetchSong>>;
+        try {
+            song = await withTimeout(fetchSong(doc.songId));
+        } catch (error) {
+            const status = httpStatus(error);
+            if (status !== 404 && status !== 403) throw error;
+            return null;
+        }
+        const arrangement = (song.arrangements ?? []).find((a) => a.id === doc.arrangementId);
+        if (!arrangement) return null;
+        const picked = pickSheetFile((arrangement.files ?? []).filter((f) => !!f.fileUrl));
+        const sheet = picked ? await loadSheet(picked.file.fileUrl!, picked.kind).catch(() => null) : null;
+        const key = (arrangement.key ?? '').trim();
+        const name = arrangement.isDefault === true ? '' : (arrangement.name ?? '').trim();
+        const description = (arrangement.description ?? '').trim();
+        const details = { ...(key ? { key } : {}), ...(name ? { arrangement: name } : {}) };
+        const item: LiveItem = {
+            title: (song.name ?? '').trim(),
+            duration: 0,
+            song: true,
+            beforeEvent: false,
+            ...(Object.keys(details).length ? { songDetails: details } : {}),
+            arrangementId: doc.arrangementId,
+            ...(description ? { arrangementDescription: description } : {}),
+            ...(sheet ? { sheet } : {}),
+        };
+        // Only a complete point is remembered: without its file the next change reads it again.
+        if (sheet) rehearsalMemo.set(memoKey, Promise.resolve(item));
+        return item;
+    },
     async rooms(resourceIds, from, to, timeZone, roomTypeIds) {
         if (!resourceIds.length) return [];
         const known = new Map(roomsOf(await withTimeout(fetchResourceMasterdata()), roomTypeIds).map((r) => [r.id, r.name]));
@@ -493,6 +540,8 @@ const MAX_SHEET_FILES = 40;
 /** By address: the file of a song does not change under its address (it carries a hash), and a reload of the agenda must not fetch all again. */
 const sheetMemo = new Map<string, Promise<SongSheet | null>>();
 const warnedEvents = new Set<number>();
+/** The points of the rehearsal by song and arrangement: the controller asks again only when the musicians choose another. */
+const rehearsalMemo = new Map<string, Promise<LiveItem | null>>();
 
 export function loadSheet(fileUrl: string, kind: SheetKind): Promise<SongSheet | null> {
     let sheet = sheetMemo.get(fileUrl);
@@ -561,15 +610,17 @@ async function withSheets(eventId: number, items: LiveItem[], budget: { left: nu
     });
 }
 
-/** Whether a `songsheet` block is among these slides – the player then reads the text files of the songs. */
+/** Whether a `songsheet` block of the source "Ablauf" is among these slides – the player then reads the text files of the songs. */
 export function sheetsNeeded(slides: SlideDoc[]): boolean {
-    return slides.some((slide) => slide.blocks.some((block) => block.type === 'songsheet'));
+    return slides.some((slide) => slide.blocks.some((block) => block.type === 'songsheet' && !isRehearsalSheet(block)));
 }
 
-/** The calendars the `agenda` and `songsheet` blocks of these slides read, each once and sorted (schema 1.61, Plan.md 118). */
+/** The calendars the `agenda` and `songsheet` blocks (source "Ablauf") of these slides read, each once and sorted (schema 1.61, Plan.md 118). */
 export function agendaNeeds(slides: SlideDoc[]): number[] {
     const ids = new Set<number>();
-    for (const block of slides.flatMap((s) => s.blocks)) if (block.type === 'agenda' || block.type === 'songsheet') block.calendarIds.forEach((id) => ids.add(id));
+    for (const block of slides.flatMap((s) => s.blocks)) {
+        if (block.type === 'agenda' || (block.type === 'songsheet' && !isRehearsalSheet(block))) block.calendarIds.forEach((id) => ids.add(id));
+    }
     return [...ids].sort((a, b) => a - b);
 }
 

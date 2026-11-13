@@ -10,8 +10,12 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 
 - **Proben auf der Handyseite „Steuerung“** (Plan.md 121). Oben wählt man jetzt zwischen „Gottesdienst“ (nach Ablauf, wie
   bisher) und „Probe“ (freie Liedwahl): Musiker suchen ein Lied aus der Song-Datenbank, wählen das Arrangement und tippen die
-  Teile wie im Gottesdienst – unabhängig von einem Termin. Zwei Handys sehen dieselbe Wahl. Auf dem Fernseher erscheint das
-  erst mit dem nächsten Schritt, dem Liedblatt mit Quelle „Probe“.
+  Teile wie im Gottesdienst – unabhängig von einem Termin. Zwei Handys sehen dieselbe Wahl.
+- **Liedblatt mit Quelle „Probe“** (Plan.md 121, Schema 1.65). Das Liedblatt zeigt auf Wunsch statt des Liedes aus dem Ablauf das
+  Lied, das die Musiker auf der Handyseite unter „Probe“ gewählt haben – mit Akkorden und dem gewählten Teil, ganz ohne Termin.
+  Für Proben legt man eine zweite Präsentation mit dem Liedblatt der Quelle „Probe“ an; der Zeitplan schaltet zwischen ihr und
+  dem Gottesdienst um. Solange noch kein Lied gewählt ist, zeigt der Bildschirm einen QR-Code, der die Handyseite öffnet. Die
+  Wahl gilt zwölf Stunden; mit „Lied beenden“ auf der Handyseite ist das Lied sofort weg. Fernseher mit älterem Stand zeigen ein solches Liedblatt wie bisher als Ablauf.
 - **„Mit dem Handy steuern“ per QR-Code.** Am Rechner und Tablet öffnet der Menüpunkt „Steuerung“ ein Fenster mit QR-Code und
   Adresse der Handyseite; mit der Handykamera scannen, und die Steuerung ist offen. Derselbe Code steht auf der Karte „Musiker“
   in den Einstellungen.

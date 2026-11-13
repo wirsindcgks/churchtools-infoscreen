@@ -115,6 +115,36 @@ test('the block "Liedblatt" shows the next song of the example with chords, and 
     }
 });
 
+test('the block "Liedblatt" switches its source to "Probe": no calendar, the example marked, "Probe" in the list (Plan.md 121, "Proben")', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await page.getByTestId('add-slide').click();
+
+    await addBlock(page, 'songsheet');
+    const block = page.locator('.editor-stage .block--songsheet');
+    const inspector = page.getByTestId('block-inspector');
+    await expect(inspector.getByTestId('section-calendars')).toBeVisible();
+
+    await choose(inspector, 'songsheet-source', 'rehearsal');
+    await expect(inspector.getByTestId('section-calendars')).toHaveCount(0);
+    await expect(inspector.getByTestId('songsheet-rehearsal-info')).toBeVisible();
+    await expect(block.getByTestId('songsheet-example')).toHaveText('Beispiel · Probe');
+    await expect(block.getByTestId('songsheet-title')).toHaveText('Segenslied');
+    await openSection(page, 'appearance');
+    await expect(inspector.getByTestId('songsheet-lead')).toHaveCount(0);
+    await expect(inspector.getByTestId('songsheet-page-by-time')).toHaveCount(0);
+
+    // Nothing chosen: the list of the slide names the source instead of a calendar.
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('slide-blocks').locator('.layer-sub').first()).toHaveText('Probe');
+    await page.getByTestId('frame-songsheet').click();
+
+    await choose(inspector, 'songsheet-source', 'agenda');
+    await expect(inspector.getByTestId('section-calendars')).toBeVisible();
+    await expect(block.locator('.head .next')).toHaveText(/^(Als Nächstes|Beispiel)$/);
+});
+
 test('in the narrow quarter beside the song sheet the agenda stacks its parts and keeps the titles whole (user, 2026-11-13)', async ({ page }) => {
     await page.goto('playlists');
     await page.getByTestId('playlist-card').first().getByTestId('open-playlist').click();

@@ -640,6 +640,10 @@ export const t = {
         songsheetInfo:
             'Der Baustein folgt dem Ablaufplan wie „Ablauf“: Er zeigt den Text des Liedes, das gerade dran ist, sonst des nächsten Liedes. ' +
             'Weitergeschaltet wird in ChurchTools.',
+        songsheetSource: 'Quelle',
+        songsheetSourceAgenda: 'Ablauf',
+        songsheetSourceRehearsal: 'Probe',
+        songsheetRehearsalInfo: 'Die Musiker wählen das Lied auf der Handyseite „Steuerung“ unter „Probe“.',
         songs: 'Lieder',
         songsLoading: 'Lieder werden gelesen …',
         songsDenied: 'Die Lieder der Ablaufpläne kannst du nicht sehen – dafür braucht es in ChurchTools die Rechte für Ablaufpläne und „Einzelne Song-Kategorien sehen“.',
@@ -1587,6 +1591,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         rehearsalNone: 'Noch kein Lied gewählt.',
         rehearsalLoading: 'Lied wird geladen …',
         otherSong: 'Anderes Lied',
+        endSong: 'Lied beenden',
         closeSearch: 'Suche schließen',
     },
 
