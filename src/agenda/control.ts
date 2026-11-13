@@ -1,5 +1,5 @@
 import type { AgendaEvent } from './live';
-import { sheetOf } from './songsheet';
+import { sheetOf, type SongSheet } from './songsheet';
 
 /**
  * The choice of the musicians (Plan.md 121 E): which part of which song a stage monitor shows big. One value per event in the
@@ -124,4 +124,84 @@ export function stepPart(event: AgendaEvent, current: PartRef | null, direction:
     const at = parts.findIndex((p) => p.itemIndex === current.itemIndex && p.section === current.section);
     if (at < 0) return null;
     return parts[at + direction] ?? null;
+}
+
+/**
+ * The song the musicians chose for the rehearsal (Plan.md 121, "Proben"): one value for all rehearsal screens, independent of any
+ * event. Tells itself apart from the choices per event by `kind` and the missing `eventId`; each side leaves the values of the other.
+ */
+export interface RehearsalDoc {
+    kind: 'rehearsal';
+    songId: number;
+    arrangementId: number;
+    /** Index into `sheet.sections` of the transposed sheet. */
+    section: number;
+    /** ISO time of the choice. */
+    at: string;
+    /** Name of the musician. */
+    by?: string;
+}
+
+/** Reads one value tolerantly: `null` for anything that is no rehearsal choice (a choice per event included); never throws. */
+export function readRehearsal(raw: unknown): RehearsalDoc | null {
+    let value = raw;
+    if (typeof value === 'string') {
+        try {
+            value = JSON.parse(value);
+        } catch {
+            return null;
+        }
+    }
+    if (typeof value !== 'object' || value === null) return null;
+    const r = value as Record<string, unknown>;
+    if (r.kind !== 'rehearsal') return null;
+    const songId = whole(r.songId, 1);
+    const arrangementId = whole(r.arrangementId, 0);
+    const section = whole(r.section, 0);
+    if (songId === null || arrangementId === null || section === null) return null;
+    if (typeof r.at !== 'string' || Number.isNaN(Date.parse(r.at))) return null;
+    const doc: RehearsalDoc = { kind: 'rehearsal', songId, arrangementId, section, at: r.at };
+    if (typeof r.by === 'string' && r.by) doc.by = r.by;
+    return doc;
+}
+
+/** The rehearsal choice with the latest `at`; `null` where there is none. */
+export function latestRehearsal(values: readonly { value: string }[]): RehearsalDoc | null {
+    let latest: RehearsalDoc | null = null;
+    for (const { value } of values) {
+        const doc = readRehearsal(value);
+        if (doc && (!latest || Date.parse(doc.at) > Date.parse(latest.at))) latest = doc;
+    }
+    return latest;
+}
+
+/** What a write of a rehearsal choice does: the latest rehearsal value is changed (none means create), further ones go. Nothing else is touched. */
+export function planRehearsalWrite(values: readonly { id: number; value: string }[], nowMs: number): { updateId: number | null; removeIds: number[] } {
+    void nowMs;
+    const found: { id: number; at: number }[] = [];
+    for (const { id, value } of values) {
+        const read = readRehearsal(value);
+        if (read) found.push({ id, at: Date.parse(read.at) });
+    }
+    found.sort((a, b) => b.at - a.at);
+    return {
+        updateId: found[0]?.id ?? null,
+        removeIds: found.slice(1).map((v) => v.id),
+    };
+}
+
+/**
+ * The neighbour of `section` in `direction` within one song; `null` at its borders. Parts outside the flow (`extra`) are no steps: from
+ * one of them forward leads to the next step after it, back to the last step before it (like `stepPart`).
+ */
+export function stepSection(sheet: SongSheet | null, section: number | null, direction: 1 | -1): number | null {
+    const sections = sheet?.sections ?? [];
+    const steps = sections.flatMap((s, n) => (s.extra ? [] : [n]));
+    if (section === null) return direction === 1 ? (steps[0] ?? null) : null;
+    if (sections[section]?.extra) {
+        return direction === 1 ? (steps.find((n) => n > section) ?? null) : (steps.filter((n) => n < section).at(-1) ?? null);
+    }
+    const at = steps.indexOf(section);
+    if (at < 0) return null;
+    return steps[at + direction] ?? null;
 }

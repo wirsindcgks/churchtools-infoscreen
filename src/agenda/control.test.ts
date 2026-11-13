@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { controlsByEvent, planControlWrite, readControl, stepPart } from './control';
+import { controlsByEvent, latestRehearsal, planControlWrite, planRehearsalWrite, readControl, readRehearsal, stepPart, stepSection } from './control';
 import type { AgendaEvent, LiveItem } from './live';
 import type { SongSheet } from './songsheet';
 
@@ -85,5 +85,69 @@ describe('stepPart', () => {
     it('gives null at the edges', () => {
         expect(stepPart(event, { itemIndex: 4, section: 0 }, 1)).toBeNull();
         expect(stepPart(event, { itemIndex: 1, section: 0 }, -1)).toBeNull();
+    });
+});
+
+describe('rehearsal choice (Plan.md 121, "Proben")', () => {
+    const rehearsal = { kind: 'rehearsal', songId: 7, arrangementId: 3, section: 1, at: '2026-11-11T10:00:00Z', by: 'Max' };
+    const text = (d: object) => JSON.stringify(d);
+    const now = Date.parse('2026-11-20T12:00:00Z');
+
+    it('reads a JSON string and an object, tolerantly', () => {
+        expect(readRehearsal(text(rehearsal))).toEqual(rehearsal);
+        expect(readRehearsal(rehearsal)).toEqual(rehearsal);
+        expect(readRehearsal('no json')).toBeNull();
+        expect(readRehearsal(null)).toBeNull();
+        expect(readRehearsal({ ...rehearsal, songId: 0 })).toBeNull();
+        expect(readRehearsal({ ...rehearsal, at: 'gestern' })).toBeNull();
+        expect(readRehearsal({ ...rehearsal, kind: undefined })).toBeNull();
+    });
+    it('is not fooled by a choice per event, and the other way round', () => {
+        expect(readRehearsal(doc)).toBeNull();
+        expect(readControl(rehearsal)).toBeNull();
+        expect(controlsByEvent([{ value: text(rehearsal) }])).toEqual({});
+    });
+    it('finds the latest', () => {
+        const newer = { ...rehearsal, section: 2, at: '2026-11-11T10:05:00Z' };
+        expect(latestRehearsal([{ value: text(newer) }, { value: text(rehearsal) }, { value: text(doc) }])).toEqual(newer);
+        expect(latestRehearsal([{ value: text(doc) }])).toBeNull();
+    });
+    it('plans a write: creates, changes the latest, drops doubles and leaves the choices per event', () => {
+        expect(planRehearsalWrite([{ id: 1, value: text(doc) }], now)).toEqual({ updateId: null, removeIds: [] });
+        const values = [
+            { id: 1, value: text(rehearsal) },
+            { id: 2, value: text({ ...rehearsal, at: '2026-11-11T10:05:00Z' }) },
+            { id: 3, value: text(doc) },
+            { id: 4, value: 'x' },
+        ];
+        expect(planRehearsalWrite(values, now)).toEqual({ updateId: 2, removeIds: [1] });
+    });
+    it('is left standing by the write of a choice per event, even when old', () => {
+        const old = { ...rehearsal, at: '2020-01-01T10:00:00Z' };
+        expect(planControlWrite([{ id: 1, value: text(old) }], doc, now)).toEqual({ updateId: null, removeIds: [] });
+    });
+});
+
+describe('stepSection', () => {
+    const sheet = (extras: boolean[]): SongSheet => ({ sections: extras.map((extra) => ({ label: '', lines: [], ...(extra ? { extra } : {}) })) });
+    it('starts at the first step and has no back from nowhere', () => {
+        expect(stepSection(sheet([false, false]), null, 1)).toBe(0);
+        expect(stepSection(sheet([false, false]), null, -1)).toBeNull();
+        expect(stepSection(null, null, 1)).toBeNull();
+    });
+    it('steps inside the song and ends at its borders', () => {
+        const s = sheet([false, false, false]);
+        expect(stepSection(s, 0, 1)).toBe(1);
+        expect(stepSection(s, 1, -1)).toBe(0);
+        expect(stepSection(s, 2, 1)).toBeNull();
+        expect(stepSection(s, 0, -1)).toBeNull();
+    });
+    it('counts no part outside the flow, and leaves one to the next step or back to the last one', () => {
+        const s = sheet([false, true, false, true]);
+        expect(stepSection(s, 0, 1)).toBe(2);
+        expect(stepSection(s, 1, 1)).toBe(2);
+        expect(stepSection(s, 1, -1)).toBe(0);
+        expect(stepSection(s, 3, 1)).toBeNull();
+        expect(stepSection(s, 3, -1)).toBe(2);
     });
 });

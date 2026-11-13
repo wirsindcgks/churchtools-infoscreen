@@ -12,6 +12,7 @@ import { fetchCalendars, fetchPersonFields, fetchPublicCalendars, fetchResourceM
 import { serviceChoices, type ServiceInfo } from '../appointments/services';
 import { currentPerson, httpStatus, instanceBaseUrl, personUrl, serverMessage } from '../ct/client';
 import { controlUrl, playerUrl } from '../designer/player-url';
+import QrCode from '../designer/QrCode.vue';
 import { CONTROL_CATEGORY } from '../agenda/control';
 import { GROUP_RIGHT_NAMES, settingsAbilities, type GroupPermissions, type SettingsButton } from '../setup/abilities';
 import RefreshRightsDialog from '../designer/RefreshRightsDialog.vue';
@@ -2101,6 +2102,7 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                         {{ musicianCopied ? t.setup.musicians.copied : t.setup.musicians.copy }}
                                     </button>
                                 </div>
+                                <QrCode :value="controlUrl()" :size="140" :label="t.controlQr.codeLabel" class="control-qr" />
                                 <p class="muted small">{{ t.setup.musicians.addressNote }}</p>
                             </div>
                             <ul v-if="musicianRun.log.length" class="log" data-testid="musician-log">

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ControlDoc } from './control';
 import type { AgendaEvent, AgendaPick, LiveItem, LivePosition } from './live';
 import { liveItems } from './live';
-import { applyFlow, lineSegments, pickSheetFile, readChordPro, readFlow, readSng, readSongSheet, readTxt, sheetKind, sheetOf, sheetPage, songFileStatus, songsLeft, songsheetPick, transposeSheet, type SheetSection, type SongSheet } from './songsheet';
+import { applyFlow, arrangementSheet, lineSegments, pickSheetFile, readChordPro, readFlow, readSng, readSongSheet, readTxt, sheetKind, sheetOf, sheetPage, songFileStatus, songsLeft, songsheetPick, transposeSheet, type SheetSection, type SongSheet } from './songsheet';
 
 // Own texts in the build of the files of SongSelect (G82): sections as `{comment: …}`, bar lines in brackets; `.sng` with byte order mark and `#` head;
 // `.txt` with title and authors above and the block with the CCLI numbers below.
@@ -401,5 +401,18 @@ describe('sheetOf with a flow (Plan.md 121 H)', () => {
     });
     it('takes the description where no step of the note finds a part', () => {
         expect(sheetOf(item({ note: 'B, Tag, B', arrangementDescription: 'C, V1' }))!.sections.map((s) => s.label)).toEqual(['Refrain', 'Strophe 1', 'Strophe 2']);
+    });
+});
+
+describe('arrangementSheet (Plan.md 121, "Proben")', () => {
+    const sheet: SongSheet = { key: 'G', sections: ['Strophe 1', 'Refrain', 'Strophe 2'].map((label) => ({ label, lines: [{ chords: [{ at: 0, chord: 'G' }], text: 'x' }] })) };
+    it('transposes to the key and takes the first text with a flow', () => {
+        const got = arrangementSheet(sheet, 'A', ['leise', 'C, V1'])!;
+        expect(got.key).toBe('A');
+        expect(got.sections.map((s) => s.label)).toEqual(['Refrain', 'Strophe 1', 'Strophe 2']);
+        expect(got.sections[0]!.lines[0]!.chords[0]!.chord).toBe('A');
+    });
+    it('gives the sheet as it is without key and flow', () => {
+        expect(arrangementSheet(sheet, undefined, [undefined, null])).toBe(sheet);
     });
 });

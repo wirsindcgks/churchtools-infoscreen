@@ -271,7 +271,7 @@ So richtest du es ein:
    „Einstellungen" ein Punkt, ist das noch zu tun.
 5. Die Seite zeigt die **Adresse der Handyseite** zum Kopieren (`…/ccm/infoscreen-designer/steuerung`). Die Musiker öffnen sie auf dem
    Handy, angemeldet in ChurchTools – oder tippen im Menü auf „Infoscreen Designer" und landen direkt dort. Wer auch in der
-   Designer-Gruppe ist, landet im Designer und wechselt oben mit dem Umschalter **„Designer | Bühne"** zur Handyseite und zurück.
+   Designer-Gruppe ist, landet im Designer und wechselt mit dem Menüpunkt **„Steuerung"** unten in der Seitenleiste zur Handyseite und dort mit **„Designer"** zurück. Auf der Handyseite wählst du oben den Bereich **„Gottesdienst"** (nach Ablauf) oder **„Probe"** (freie Liedwahl).
 
    <img src="bilder/steuerung.png" alt="Handyseite „Steuerung“: oben „Jetzt“ und „Dann“, darunter das laufende Lied mit den Teil-Knöpfen, der Teil „Refrain“ ist angetippt" width="320">
 

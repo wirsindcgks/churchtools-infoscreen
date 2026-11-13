@@ -17,9 +17,10 @@ import { ensureSectionCounts, sectionCounts, type Section } from './section-coun
 import { unseenRelease } from '../about/seen';
 import { checkRightsPending, rightsPending } from '../setup/pending';
 import Icon, { type IconName } from './Icon.vue';
-import ModeSwitch from './ModeSwitch.vue';
 import { ensureStageAccess, stageAccess } from './stage-access';
 import { vTip } from './tip';
+import ControlQrDialog from './ControlQrDialog.vue';
+import { controlMemory } from '../views/control-memory';
 
 const route = useRoute();
 onMounted(() => {
@@ -93,6 +94,16 @@ onBeforeUnmount(() => {
     document.removeEventListener('pointerdown', closeOnOutside);
     document.removeEventListener('keydown', closeOnEscape);
 });
+/** From a tablet up (the sidebar is a card there) the entry shows the QR code of the phone page; on the phone it leads there. */
+const qrOpen = ref(false);
+function openStage(event: Event): void {
+    if (window.matchMedia('(max-width: 48rem)').matches) {
+        controlMemory.designerToo = true;
+        return;
+    }
+    event.preventDefault();
+    qrOpen.value = true;
+}
 // A new page closes the panel by itself – also on the back button.
 watch(
     () => route.fullPath,
@@ -102,8 +113,6 @@ watch(
 
 <template>
     <nav ref="nav" class="module-sidebar" :aria-label="t.common.moduleName">
-        <!-- Only for those who may steer the song sheet (Plan.md 121); pure designers do not see the category `steuerung`. -->
-        <ModeSwitch v-if="stageAccess" class="sidebar-mode" />
         <button
             ref="menuButton"
             type="button"
@@ -174,7 +183,23 @@ watch(
                     </RouterLink>
                 </li>
             </ul>
+            <!-- Only for those who may steer the song sheet (Plan.md 121); pure designers do not see the category `steuerung`. -->
+            <ul v-if="stageAccess" class="library">
+                <li>
+                    <RouterLink :to="{ name: 'control' }" data-testid="mode-stage" @click.capture="openStage">
+                        <span class="nav-icon"><Icon name="music" :size="16" /></span>
+                        {{ t.modeSwitch.stage }}
+                    </RouterLink>
+                </li>
+            </ul>
         </div>
+        <Teleport to="body">
+            <!-- The dialog styles of the designer apply below its root class only (theme.css): outside it the dialog lay unstyled at the
+                 end of the page (user, PC and iPad, 2026-11-13). -->
+            <div v-if="qrOpen" class="infoscreen-designer">
+                <ControlQrDialog @close="qrOpen = false" />
+            </div>
+        </Teleport>
     </nav>
 </template>
 
@@ -193,10 +218,6 @@ watch(
 }
 .page-menu {
     display: none;
-}
-.sidebar-mode {
-    flex: none;
-    margin-bottom: var(--d-space-3);
 }
 ul.library {
     margin-top: var(--d-space-2);
@@ -292,12 +313,6 @@ a.active .nav-icon {
         background: none;
         box-shadow: none;
     }
-    /* The sidebar loses its card here: the switch gets its own, like the menu button below it. */
-    .module-sidebar .sidebar-mode {
-        margin-bottom: var(--d-space-2);
-        background: var(--d-surface);
-        box-shadow: var(--d-shadow-card);
-    }
     .page-menu {
         box-sizing: border-box;
         display: flex;
@@ -336,7 +351,7 @@ a.active .nav-icon {
     #module-pages.open {
         display: block;
         position: absolute;
-        /* Below the button, which is the nav's lower end – also when the switch "Designer | Bühne" stands above it. */
+        /* Below the button, which is the nav's lower end. */
         top: calc(100% + var(--d-space-2));
         left: 0;
         right: 0;
