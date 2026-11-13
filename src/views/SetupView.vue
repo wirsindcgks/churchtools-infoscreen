@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { EXTENSION_KEY } from '../config';
 import { t } from '../i18n/designer';
 import Icon, { type IconName } from '../designer/Icon.vue';
@@ -1583,7 +1583,7 @@ const musiciansStatus = computed<CardStatus | null>(() => {
 /** The cards of the overview, each to a page of its own; the wiki card only where there is an area (as before). */
 const overviewCards = computed(() => {
     const wiki = settingsLoaded.value && wikiCategory.value && !demo.value;
-    const cards: { key: string; route: string; icon: IconName; title: string; intro: string; status: CardStatus | null }[] = [
+    const cards: { key: string; route: string; icon: IconName; title: string; intro: string; status: CardStatus | null; dim?: boolean }[] = [
         { key: 'groups', route: 'setup-groups', icon: 'people', title: t.setup.groups.title, intro: t.setup.groups.intro, status: groupsStatus.value },
         { key: 'tv', route: 'setup-tv', icon: 'link', title: t.setup.tv.title, intro: t.setup.tv.intro, status: null },
     ];
@@ -1594,9 +1594,19 @@ const overviewCards = computed(() => {
     cards.push({ key: 'rooms', route: 'setup-rooms', icon: 'door', title: t.setup.rooms.title, intro: t.setup.rooms.intro, status: roomsStatus.value });
     cards.push({ key: 'calendars', route: 'setup-calendars', icon: 'calendar', title: t.setup.calendars.title, intro: t.setup.calendars.intro, status: calendarsStatus.value });
     cards.push({ key: 'people', route: 'setup-people', icon: 'people', title: t.setup.peopleGroups.title, intro: t.setup.peopleGroups.intro, status: peopleGroupsStatus.value });
-    // The musicians steer the song sheet: the card is there where a sheet is shown or the group exists already (Plan.md 121 E3).
-    if (settingsLoaded.value && !demo.value && (songsheetInUse || musicianGroupId.value !== null)) {
-        cards.push({ key: 'musicians', route: 'setup-musicians', icon: 'music', title: t.setup.musicians.title, intro: t.setup.musicians.intro, status: musiciansStatus.value });
+    // The musicians steer the song sheet: the card opens where a sheet is shown or the group exists already (Plan.md 121 E3);
+    // before that it stands dimmed with its reason, so the function is not mistaken for missing.
+    if (settingsLoaded.value && !demo.value) {
+        const open = songsheetInUse || musicianGroupId.value !== null;
+        cards.push({
+            key: 'musicians',
+            route: 'setup-musicians',
+            icon: 'music',
+            title: t.setup.musicians.title,
+            intro: open ? t.setup.musicians.intro : t.setup.musicians.waiting,
+            status: open ? musiciansStatus.value : null,
+            dim: !open,
+        });
     }
     return cards;
 });
@@ -1705,11 +1715,14 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                 <p v-if="error" class="error" role="alert">{{ error }}</p>
 
                 <div v-if="page === 'overview'" class="cards">
-                    <RouterLink
+                    <component
+                        :is="card.dim ? 'div' : RouterLink"
                         v-for="card in overviewCards"
                         :key="card.key"
                         class="d-card settings-card"
-                        :to="{ name: card.route }"
+                        :class="{ 'settings-card--dim': card.dim }"
+                        :to="card.dim ? undefined : { name: card.route }"
+                        :aria-disabled="card.dim || undefined"
                         :data-testid="`settings-card-${card.key}`"
                     >
                         <span class="settings-card-icon"><Icon :name="card.icon" :size="20" /></span>
@@ -1726,8 +1739,8 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                             <Icon v-if="card.status.tone === 'ok'" name="check" :size="12" />
                             {{ card.status.text }}
                         </span>
-                        <Icon name="forward" class="settings-card-forward" />
-                    </RouterLink>
+                        <Icon v-if="!card.dim" name="forward" class="settings-card-forward" />
+                    </component>
                 </div>
 
                 <template v-if="page === 'groups'">
@@ -2245,6 +2258,13 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 }
 .settings-card:hover {
     box-shadow: var(--d-shadow-card-hover);
+}
+/* A card whose function waits for something else (Plan.md 121): visible, but neither link nor hover. */
+.settings-card--dim {
+    opacity: 0.55;
+}
+.settings-card--dim:hover {
+    box-shadow: none;
 }
 .settings-card-icon {
     display: grid;
