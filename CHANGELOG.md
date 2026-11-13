@@ -6,7 +6,7 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 
 ## [0.59.0] – 2026-11-13
 
-Danke an [@lub90](https://github.com/lub90) für sein Papier „Klicksteuerung & Confidence-Monitor“: Von ihm stammen die
+Danke an Lukas ([@lub90](https://github.com/lub90)) für sein Papier „Klicksteuerung & Confidence-Monitor“: Von ihm stammen die
 Ideen, lange Liedteile aufzuteilen statt die Schrift zu verkleinern, und den Liedablauf mit Wiederholungen zu folgen.
 
 ### Hinzugefügt
