@@ -4,7 +4,7 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
-## [Unveröffentlicht]
+## [0.59.0] – 2026-11-13
 
 Danke an [@lub90](https://github.com/lub90) für sein Papier „Klicksteuerung & Confidence-Monitor“: Von ihm stammen die
 Ideen, lange Liedteile aufzuteilen statt die Schrift zu verkleinern, und den Liedablauf mit Wiederholungen zu folgen.
@@ -1924,3 +1924,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.56.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.56.0
 [0.57.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.57.0
 [0.58.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.58.0
+[0.59.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.59.0
