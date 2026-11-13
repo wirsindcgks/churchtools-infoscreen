@@ -14,14 +14,30 @@ import { LOCALE } from '../i18n/player';
 import { appointmentWindow, churchToolsPlayerData } from '../player/data';
 import ControlSong from './ControlSong.vue';
 import ModeSwitch from '../designer/ModeSwitch.vue';
-import { useCoveredTop } from './useCoveredTop';
+import { useOffsetTop } from '../designer/useOffsetTop';
 import { getRepository } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
 
 const POLL_MS = 2500;
-/** The page covers the window; it starts below the bar of ChurchTools, which lies on top of it. */
+/**
+ * The page stands in the flow of the host page like the designer: below the bar of ChurchTools and at the same place, with the same
+ * margins – fixed over the window, the bar hid its first line and the switch moved from side to side (user, 2026-11-13). The margins
+ * of the host page take the dark colour while the page is open, so no white frame shows (v0.59.1); they are given back on leaving.
+ */
 const page = ref<HTMLElement | null>(null);
-const coveredTop = useCoveredTop(page);
+const top = useOffsetTop(page);
+const STAGE_BACKGROUND = '#101114';
+let painted: { el: HTMLElement; background: string }[] = [];
+onMounted(() => {
+    for (let el = page.value?.parentElement ?? null; el; el = el.parentElement) {
+        painted.push({ el, background: el.style.background });
+        el.style.background = STAGE_BACKGROUND;
+    }
+});
+onBeforeUnmount(() => {
+    for (const { el, background } of painted) el.style.background = background;
+    painted = [];
+});
 
 const loading = ref(true);
 const unavailable = ref(false);
@@ -218,7 +234,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <main ref="page" class="infoscreen-designer control" :style="{ top: `${coveredTop}px` }">
+    <main ref="page" class="infoscreen-designer control" :style="{ '--page-top': `${top}px` }">
         <ModeSwitch v-if="designerToo" dark />
         <h1>{{ t.control.title }}</h1>
         <p v-if="loading" class="note">{{ t.control.loading }}</p>
@@ -303,13 +319,11 @@ onBeforeUnmount(() => {
 <style scoped>
 .control {
     box-sizing: border-box;
-    /* The whole viewport, like the player: the page's own margin left a white frame around the dark page. */
-    position: fixed;
-    inset: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    /* Room for the big buttons at the bottom, which stand fixed over the list. */
-    padding: 16px 16px calc(136px + env(safe-area-inset-bottom));
+    /* Down to the window's visible lower edge, below the bar of ChurchTools – like the designer's frame (ModulePage). */
+    min-height: calc(100vh - var(--page-top, 0px));
+    min-height: calc(100dvh - var(--page-top, 0px));
+    /* The margins of the designer's frame, so that the switch stands at the same place; room for the big buttons fixed at the bottom. */
+    padding: var(--d-space-4) var(--d-space-4) calc(136px + env(safe-area-inset-bottom));
     background: #101114;
     color: #f2f2f2;
     font-size: 1.1rem;
@@ -317,10 +331,16 @@ onBeforeUnmount(() => {
     align-content: start;
     gap: 12px;
 }
-/* On a phone the designer keeps 20 px to the edge, this page 16: the switch stands at the same place on both sides. */
-@media (max-width: 47.99rem) {
+/* On a PC as wide as in the designer's sidebar (236 px less its padding), not across the whole window. */
+@media (min-width: 48.0625rem) {
     .control > .mode-switch {
-        margin-inline: 4px;
+        width: calc(236px - 2 * var(--d-space-3));
+    }
+}
+@media (max-width: 48rem) {
+    .control {
+        padding-inline: var(--d-space-3);
+        padding-top: var(--d-space-3);
     }
 }
 h1 {

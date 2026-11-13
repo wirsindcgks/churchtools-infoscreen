@@ -55,8 +55,9 @@ test.describe('switch between designer and stage on a phone', () => {
     });
 });
 
-// The bar of ChurchTools lies over the stage page, which covers the window; it hid the switch (user, 2026-11-13, PC and phone). The dev
-// server has no bar: one of 56 px is laid on top, after the page has mounted, as ChurchTools does (Befunde G55).
+// The bar of ChurchTools hid the switch while the stage page lay fixed over the window (user, 2026-11-13, PC and phone); now the page
+// stands in the flow like the designer. The dev server has no bar: a sticky one of 56 px comes first in the body, after the page has
+// mounted, as ChurchTools does (Befunde G55).
 for (const [name, viewport] of [['desktop', { width: 1280, height: 900 }], ['phone', { width: 390, height: 844 }]] as const) {
     test.describe(`the stage page below the bar of ChurchTools on a ${name}`, () => {
         test.use({ viewport });
@@ -67,12 +68,16 @@ for (const [name, viewport] of [['desktop', { width: 1280, height: 900 }], ['pho
             await expect(stageSwitch).toBeVisible();
             await page.evaluate(() => {
                 const bar = document.createElement('div');
-                bar.style.cssText = 'position:fixed;top:0;left:0;right:0;height:56px;z-index:1000;background:#1e3a8a';
-                document.body.appendChild(bar);
+                bar.style.cssText = 'position:sticky;top:0;height:56px;z-index:1000;background:#1e3a8a';
+                document.body.prepend(bar);
             });
             await expect.poll(async () => (await stageSwitch.boundingBox())!.y).toBeGreaterThanOrEqual(56);
+            // No white frame: the margins of the host page are dark while the page is open, and light again after it.
+            const body = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+            expect(await body()).toBe('rgb(16, 17, 20)');
             await stageSwitch.getByTestId('mode-designer').click();
             await expect(page.getByTestId('screens-heading')).toBeVisible();
+            expect(await body()).not.toBe('rgb(16, 17, 20)');
         });
     });
 }
