@@ -100,11 +100,11 @@ test('the block "Liedblatt" shows the next song of the example with chords, and 
     await expect(block.getByTestId('songsheet-chord')).toHaveCount(0);
     await expect(block.getByTestId('songsheet-text')).toContainText('Gott segne dich auf allen Wegen');
     await block.screenshot({ path: 'test-results/editor-songsheet.png' });
-    // A large font is for the text, not for the head: the title never stands larger than the lines of the song (user, 2026-11-13).
+    // A large font is for the text, not for the head: the title stands at half the size of the lines of the song (user, 2026-11-13).
     await openSection(page, 'font');
     await page.getByTestId('font-size').locator('input').or(page.getByTestId('font-size')).fill('150');
     const size = (locator: Locator) => locator.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
-    await expect.poll(async () => (await size(block.getByTestId('songsheet-title'))) <= (await size(block.locator('.columns .line').first())) + 0.5).toBe(true);
+    await expect.poll(async () => (await size(block.getByTestId('songsheet-title'))) <= (await size(block.locator('.columns .line').first())) * 0.5 + 0.5).toBe(true);
     await block.screenshot({ path: 'test-results/editor-songsheet-large.png' });
 });
 

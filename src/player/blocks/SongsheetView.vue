@@ -260,12 +260,14 @@ const columnsStyle = computed(() =>
 );
 const chordColor = computed(() => themeOf(context).accent);
 /**
- * The head follows the alignment of the text: a centred song gets a centred head. It shrinks with the text, never grows past it: at the
- * full set size a large font (150 px) gave the title a third of the block and left the text small (user, 2026-11-13).
+ * The head follows the alignment of the text: a centred song gets a centred head. "Schrift" is for the text, the head only names the
+ * song (user, 2026-11-13: "es geht um den Text, nicht das Drumherum"): half the size of the text, shrinking with it, never growing –
+ * at the full set size a large font (150 px) gave the title a third of the block and left the text small.
  */
+const HEAD_SHARE = 0.5;
 const headStyle = computed(() => ({
     justifyContent: { left: 'flex-start', center: 'center', right: 'flex-end' }[props.block.style.align],
-    fontSize: `${Math.min(1, scale.value)}em`,
+    fontSize: `${HEAD_SHARE * Math.min(1, scale.value)}em`,
 }));
 </script>
 
@@ -368,7 +370,7 @@ const headStyle = computed(() => ({
     flex-wrap: wrap;
     align-items: baseline;
     gap: 0.1em 0.6em;
-    margin-bottom: 0.5em;
+    margin-bottom: 0.4em;
     font-weight: 700;
 }
 .next {
