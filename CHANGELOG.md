@@ -31,7 +31,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 
 - **„Liedblatt“: Eine große Schrift wirkt auf den Liedtext.** Bei einer großen Schriftgröße (etwa 150 px) wuchsen Titel,
   Tonart und Rand mit, und für den Liedtext blieb wenig Platz – er wurde kleiner statt größer. Jetzt geht der Platz an den
-  Liedtext: Die Kopfzeile steht halb so groß wie er und schrumpft mit ihm, der Rand wächst nicht mehr mit.
+  Liedtext: Die Kopfzeile steht halb so groß wie er und schrumpft mit ihm, Rand und Lizenzzeile wachsen nicht mehr mit.
+  Ab einer bestimmten Größe sprang der Text außerdem plötzlich auf ein Drittel; er bleibt jetzt so groß, wie der Baustein
+  es zulässt.
 
 ## [0.59.1] – 2026-11-13
 
