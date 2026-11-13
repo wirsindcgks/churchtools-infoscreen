@@ -8,6 +8,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { t } from '../i18n/designer';
 import Icon from './Icon.vue';
+import { controlMemory } from '../views/control-memory';
 
 defineProps<{ dark?: boolean }>();
 
@@ -26,7 +27,7 @@ const onStage = computed(() => route.name === 'control');
         <span v-if="onStage" class="on" aria-current="page" data-testid="mode-stage">
             <Icon name="music" :size="16" />{{ t.modeSwitch.stage }}
         </span>
-        <RouterLink v-else :to="{ name: 'control' }" data-testid="mode-stage">
+        <RouterLink v-else :to="{ name: 'control' }" data-testid="mode-stage" @click="controlMemory.designerToo = true">
             <Icon name="music" :size="16" />{{ t.modeSwitch.stage }}
         </RouterLink>
     </nav>

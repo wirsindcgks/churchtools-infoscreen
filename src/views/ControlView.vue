@@ -13,6 +13,7 @@ import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 import { appointmentWindow, churchToolsPlayerData } from '../player/data';
 import ControlSong from './ControlSong.vue';
+import { controlMemory } from './control-memory';
 import ModeSwitch from '../designer/ModeSwitch.vue';
 import { useOffsetTop } from '../designer/useOffsetTop';
 import { getRepository } from '../store/backend';
@@ -186,6 +187,7 @@ async function choose(part: PartRef): Promise<void> {
     }
 }
 
+watch(eventId, (id) => (controlMemory.eventId = id));
 watch(eventId, async () => {
     local.value = null;
     stored.value = undefined;
@@ -199,12 +201,19 @@ watch(eventId, async () => {
 });
 
 /** Also in the designers' group (or an administrator): the switch "Designer | Bühne" leads back. The same test as the start page's. */
-const designerToo = ref(false);
+const designerToo = ref(controlMemory.designerToo);
 
 onMounted(async () => {
+    // The last visit's state at once; the reading below replaces it.
+    if (controlMemory.events) {
+        events.value = controlMemory.events;
+        timeZone.value = controlMemory.timeZone ?? timeZone.value;
+        eventId.value = controlMemory.eventId;
+        loading.value = false;
+    }
     void getRepository()
         .then((handle) => handle.repository.visibleCategories())
-        .then((categories) => (designerToo.value = Object.keys(categories).length > 0))
+        .then((categories) => (designerToo.value = controlMemory.designerToo = Object.keys(categories).length > 0))
         .catch(() => null);
     try {
         const [person, handle, zone] = await Promise.all([currentPerson(), getRepository(), fetchTimeZone()]);
@@ -217,8 +226,15 @@ onMounted(async () => {
         }
         const calendarIds = (await fetchCalendars()).map((c) => c.id);
         const { from, to } = appointmentWindow(new Date(), zone, 1);
-        events.value = (await churchToolsPlayerData.agendaEvents(calendarIds, from, to, zone, { sheets: true })).filter(hasSong).sort((a, b) => a.startMs - b.startMs);
-        if (events.value.length) eventId.value = preselected(events.value).eventId;
+        const read = (await churchToolsPlayerData.agendaEvents(calendarIds, from, to, zone, { sheets: true })).filter(hasSong).sort((a, b) => a.startMs - b.startMs);
+        if (gone) return;
+        events.value = read;
+        // An event chosen on the last visit stays chosen while it is still there.
+        const kept = read.some((e) => e.eventId === eventId.value) ? eventId.value : null;
+        eventId.value = kept ?? (read.length ? preselected(read).eventId : null);
+        Object.assign(controlMemory, { events: read, timeZone: zone });
+        // The event did not change, so its watcher does not read: read here – the repository was not there for the remembered one.
+        if (kept !== null) await refresh();
         schedule();
     } catch (e) {
         failure.value = t.control.failed(e instanceof Error ? e.message : null);

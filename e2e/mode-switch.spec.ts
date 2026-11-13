@@ -94,3 +94,26 @@ for (const [name, viewport] of [
         });
     });
 }
+
+// The switch looked like a reload of the whole page on the way to the stage (user, 2026-11-13): the switch came only after the rights
+// were read, and every visit showed "Wird geladen …". Now the switch stands at once, and a second visit shows what the first one read.
+test.describe('the way to the stage page', () => {
+    test.use({ viewport: { width: 820, height: 1180 } });
+
+    test('shows the switch at once and, the second time, no loading line', async ({ page }) => {
+        await page.goto('./');
+        const loadingLine = page.locator('.control .note', { hasText: 'Wird geladen' });
+        const toStage = async () => {
+            await page.getByTestId('mode-switch').getByTestId('mode-stage').click();
+            // In the first frame of the stage page, not after the rights are read.
+            expect(await page.evaluate(() => document.querySelector('.control [data-testid="mode-switch"]') !== null)).toBe(true);
+        };
+        await toStage();
+        await expect(loadingLine).toHaveCount(0);
+        await page.getByTestId('mode-switch').getByTestId('mode-designer').click();
+        await expect(page.getByTestId('screens-heading')).toBeVisible();
+
+        await toStage();
+        expect(await page.evaluate(() => document.querySelector('.control')?.textContent?.includes('Wird geladen') ?? true)).toBe(false);
+    });
+});

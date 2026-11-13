@@ -38,7 +38,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
 - **Handyseite „Steuerung“ unter der Kopfleiste von ChurchTools.** Seit 0.59.1 lag die Kopfleiste über der obersten Zeile
   der Seite und verdeckte den Umschalter „Designer | Bühne“, am PC wie am Handy. Die Seite steht jetzt wie der Designer unter der Leiste,
   auch als App auf dem Startbildschirm. Am Handy, am iPad und am PC behält der Umschalter auf
-  beiden Seiten dieselbe Größe und denselben Platz, nur die Farben wechseln.
+  beiden Seiten dieselbe Größe und denselben Platz, nur die Farben wechseln. Der Wechsel auf die Bühne
+  wirkt nicht mehr wie ein Neuladen: Der Umschalter steht sofort da, und ab dem zweiten Wechsel erscheint die Seite gleich
+  mit dem letzten Stand.
 
 ## [0.59.1] – 2026-11-13
 
