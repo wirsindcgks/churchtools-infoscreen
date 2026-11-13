@@ -8,6 +8,7 @@ import { computed } from 'vue';
 import { useRoute } from 'vue-router';
 import { t } from '../i18n/designer';
 import Icon from './Icon.vue';
+import { controlMemory } from '../views/control-memory';
 
 defineProps<{ dark?: boolean }>();
 
@@ -26,7 +27,7 @@ const onStage = computed(() => route.name === 'control');
         <span v-if="onStage" class="on" aria-current="page" data-testid="mode-stage">
             <Icon name="music" :size="16" />{{ t.modeSwitch.stage }}
         </span>
-        <RouterLink v-else :to="{ name: 'control' }" data-testid="mode-stage">
+        <RouterLink v-else :to="{ name: 'control' }" data-testid="mode-stage" @click="controlMemory.designerToo = true">
             <Icon name="music" :size="16" />{{ t.modeSwitch.stage }}
         </RouterLink>
     </nav>
@@ -40,6 +41,9 @@ const onStage = computed(() => route.name === 'control');
     padding: 3px;
     border-radius: var(--d-radius-lg, 10px);
     background: var(--d-workspace);
+    /* Set, not inherited: the stage page has a larger font, and the switch grew a little on the way there (user, 2026-11-13). */
+    font-size: 14px;
+    line-height: 1.45;
 }
 .mode-switch > * {
     display: flex;
@@ -60,14 +64,11 @@ const onStage = computed(() => route.name === 'control');
     background: var(--d-accent);
     color: var(--d-accent-text);
 }
-/* The stage page is dark and keeps its own colours (ControlView): white for the side one is on. */
+/* The stage page is dark and keeps its own colours (ControlView): white for the side one is on. Only colours – the same size on both sides. */
 .mode-switch.dark {
-    border-radius: 10px;
     background: #1d2027;
 }
 .mode-switch.dark > * {
-    min-height: 44px;
-    border-radius: 8px;
     color: #b8bcc4;
 }
 .mode-switch.dark a:hover {

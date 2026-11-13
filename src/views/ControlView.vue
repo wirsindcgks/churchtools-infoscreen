@@ -13,11 +13,32 @@ import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 import { appointmentWindow, churchToolsPlayerData } from '../player/data';
 import ControlSong from './ControlSong.vue';
+import { controlMemory } from './control-memory';
 import ModeSwitch from '../designer/ModeSwitch.vue';
+import { useOffsetTop } from '../designer/useOffsetTop';
 import { getRepository } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
 
 const POLL_MS = 2500;
+/**
+ * The page stands in the flow of the host page like the designer: below the bar of ChurchTools and at the same place, with the same
+ * margins – fixed over the window, the bar hid its first line and the switch moved from side to side (user, 2026-11-13). The margins
+ * of the host page take the dark colour while the page is open, so no white frame shows (v0.59.1); they are given back on leaving.
+ */
+const page = ref<HTMLElement | null>(null);
+const top = useOffsetTop(page);
+const STAGE_BACKGROUND = '#101114';
+let painted: { el: HTMLElement; background: string }[] = [];
+onMounted(() => {
+    for (let el = page.value?.parentElement ?? null; el; el = el.parentElement) {
+        painted.push({ el, background: el.style.background });
+        el.style.background = STAGE_BACKGROUND;
+    }
+});
+onBeforeUnmount(() => {
+    for (const { el, background } of painted) el.style.background = background;
+    painted = [];
+});
 
 const loading = ref(true);
 const unavailable = ref(false);
@@ -166,6 +187,7 @@ async function choose(part: PartRef): Promise<void> {
     }
 }
 
+watch(eventId, (id) => (controlMemory.eventId = id));
 watch(eventId, async () => {
     local.value = null;
     stored.value = undefined;
@@ -179,12 +201,19 @@ watch(eventId, async () => {
 });
 
 /** Also in the designers' group (or an administrator): the switch "Designer | Bühne" leads back. The same test as the start page's. */
-const designerToo = ref(false);
+const designerToo = ref(controlMemory.designerToo);
 
 onMounted(async () => {
+    // The last visit's state at once; the reading below replaces it.
+    if (controlMemory.events) {
+        events.value = controlMemory.events;
+        timeZone.value = controlMemory.timeZone ?? timeZone.value;
+        eventId.value = controlMemory.eventId;
+        loading.value = false;
+    }
     void getRepository()
         .then((handle) => handle.repository.visibleCategories())
-        .then((categories) => (designerToo.value = Object.keys(categories).length > 0))
+        .then((categories) => (designerToo.value = controlMemory.designerToo = Object.keys(categories).length > 0))
         .catch(() => null);
     try {
         const [person, handle, zone] = await Promise.all([currentPerson(), getRepository(), fetchTimeZone()]);
@@ -197,8 +226,15 @@ onMounted(async () => {
         }
         const calendarIds = (await fetchCalendars()).map((c) => c.id);
         const { from, to } = appointmentWindow(new Date(), zone, 1);
-        events.value = (await churchToolsPlayerData.agendaEvents(calendarIds, from, to, zone, { sheets: true })).filter(hasSong).sort((a, b) => a.startMs - b.startMs);
-        if (events.value.length) eventId.value = preselected(events.value).eventId;
+        const read = (await churchToolsPlayerData.agendaEvents(calendarIds, from, to, zone, { sheets: true })).filter(hasSong).sort((a, b) => a.startMs - b.startMs);
+        if (gone) return;
+        events.value = read;
+        // An event chosen on the last visit stays chosen while it is still there.
+        const kept = read.some((e) => e.eventId === eventId.value) ? eventId.value : null;
+        eventId.value = kept ?? (read.length ? preselected(read).eventId : null);
+        Object.assign(controlMemory, { events: read, timeZone: zone });
+        // The event did not change, so its watcher does not read: read here – the repository was not there for the remembered one.
+        if (kept !== null) await refresh();
         schedule();
     } catch (e) {
         failure.value = t.control.failed(e instanceof Error ? e.message : null);
@@ -214,7 +250,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <main class="infoscreen-designer control">
+    <main ref="page" class="infoscreen-designer control" :style="{ '--page-top': `${top}px` }">
         <ModeSwitch v-if="designerToo" dark />
         <h1>{{ t.control.title }}</h1>
         <p v-if="loading" class="note">{{ t.control.loading }}</p>
@@ -299,19 +335,34 @@ onBeforeUnmount(() => {
 <style scoped>
 .control {
     box-sizing: border-box;
-    /* The whole viewport, like the player: the page's own margin left a white frame around the dark page. */
-    position: fixed;
-    inset: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    /* Room for the big buttons at the bottom, which stand fixed over the list. */
-    padding: 16px 16px calc(136px + env(safe-area-inset-bottom));
+    /* Down to the window's visible lower edge, below the bar of ChurchTools – like the designer's frame (ModulePage). */
+    min-height: calc(100vh - var(--page-top, 0px));
+    min-height: calc(100dvh - var(--page-top, 0px));
+    /* The margins of the designer's frame, so that the switch stands at the same place; room for the big buttons fixed at the bottom. */
+    padding: var(--d-space-4) var(--d-space-4) calc(136px + env(safe-area-inset-bottom));
     background: #101114;
     color: #f2f2f2;
     font-size: 1.1rem;
     display: grid;
     align-content: start;
     gap: 12px;
+}
+/*
+ * From a tablet up the designer has its sidebar: a card of 236 px with its own padding. The switch stands where it stands in that card –
+ * as wide and as far in – so that it does not move on the way to the stage (user, 2026-11-13, iPad).
+ */
+@media (min-width: 48.0625rem) {
+    .control > .mode-switch {
+        box-sizing: border-box;
+        width: calc(236px - 2 * var(--d-space-3));
+        margin: var(--d-space-3) 0 0 var(--d-space-3);
+    }
+}
+@media (max-width: 48rem) {
+    .control {
+        padding-inline: var(--d-space-3);
+        padding-top: var(--d-space-3);
+    }
 }
 h1 {
     margin: 0;

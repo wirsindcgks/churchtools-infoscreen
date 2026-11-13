@@ -27,6 +27,21 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   stehen in beiden Darstellungen „Jetzt“ oben, die Restzeit groß in der Mitte und „Dann“ unten. Vorher wurden die Titel
   abgeschnitten, und bei „Kacheln“ lag die Restzeit über dem Titel.
 
+### Behoben
+
+- **„Liedblatt“: Eine große Schrift wirkt auf den Liedtext.** Bei einer großen Schriftgröße (etwa 150 px) wuchsen Titel,
+  Tonart und Rand mit, und für den Liedtext blieb wenig Platz – er wurde kleiner statt größer. Jetzt geht der Platz an den
+  Liedtext: Die Kopfzeile steht halb so groß wie er und schrumpft mit ihm, Rand und Lizenzzeile wachsen nicht mehr mit.
+  Ab einer bestimmten Größe sprang der Text außerdem plötzlich auf ein Drittel; er bleibt jetzt so groß, wie der Baustein
+  es zulässt.
+
+- **Handyseite „Steuerung“ unter der Kopfleiste von ChurchTools.** Seit 0.59.1 lag die Kopfleiste über der obersten Zeile
+  der Seite und verdeckte den Umschalter „Designer | Bühne“, am PC wie am Handy. Die Seite steht jetzt wie der Designer unter der Leiste,
+  auch als App auf dem Startbildschirm. Am Handy, am iPad und am PC behält der Umschalter auf
+  beiden Seiten dieselbe Größe und denselben Platz, nur die Farben wechseln. Der Wechsel auf die Bühne
+  wirkt nicht mehr wie ein Neuladen: Der Umschalter steht sofort da, und ab dem zweiten Wechsel erscheint die Seite gleich
+  mit dem letzten Stand.
+
 ## [0.59.1] – 2026-11-13
 
 ### Behoben

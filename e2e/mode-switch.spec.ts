@@ -39,4 +39,81 @@ test.describe('switch between designer and stage on a phone', () => {
         const panel = (await page.locator('#module-pages').boundingBox())!;
         expect(panel.y).toBeGreaterThanOrEqual(menu.y + menu.height);
     });
+
+});
+
+// The bar of ChurchTools hid the switch while the stage page lay fixed over the window (user, 2026-11-13, PC and phone); now the page
+// stands in the flow like the designer. The dev server has no bar: a sticky one of 56 px comes first in the body, after the page has
+// mounted, as ChurchTools does (Befunde G55).
+for (const [name, viewport] of [['desktop', { width: 1280, height: 900 }], ['phone', { width: 390, height: 844 }]] as const) {
+    test.describe(`the stage page below the bar of ChurchTools on a ${name}`, () => {
+        test.use({ viewport });
+
+        test('starts below the bar, the switch can be clicked', async ({ page }) => {
+            await page.goto('steuerung');
+            const stageSwitch = page.getByTestId('mode-switch');
+            await expect(stageSwitch).toBeVisible();
+            await page.evaluate(() => {
+                const bar = document.createElement('div');
+                bar.style.cssText = 'position:sticky;top:0;height:56px;z-index:1000;background:#1e3a8a';
+                document.body.prepend(bar);
+            });
+            await expect.poll(async () => (await stageSwitch.boundingBox())!.y).toBeGreaterThanOrEqual(56);
+            // No white frame: the margins of the host page are dark while the page is open, and light again after it.
+            const body = () => page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+            expect(await body()).toBe('rgb(16, 17, 20)');
+            await stageSwitch.getByTestId('mode-designer').click();
+            await expect(page.getByTestId('screens-heading')).toBeVisible();
+            expect(await body()).not.toBe('rgb(16, 17, 20)');
+        });
+    });
+}
+
+// The switch keeps place and size on the way to the stage – only the colours change (user, 2026-11-13: on the phone, then on the iPad).
+for (const [name, viewport] of [
+    ['phone', { width: 390, height: 844 }],
+    ['iPad upright', { width: 820, height: 1180 }],
+    ['iPad across', { width: 1180, height: 820 }],
+    ['desktop', { width: 1440, height: 900 }],
+] as const) {
+    test.describe(`the switch on a ${name}`, () => {
+        test.use({ viewport });
+
+        test('stands at the same place and in the same size on the stage page', async ({ page }) => {
+            const box = async () => {
+                const b = (await page.getByTestId('mode-switch').boundingBox())!;
+                return { x: Math.round(b.x), y: Math.round(b.y), width: Math.round(b.width), height: Math.round(b.height) };
+            };
+            await page.goto('./');
+            await expect(page.getByTestId('mode-switch')).toBeVisible();
+            const designer = await box();
+            await page.getByTestId('mode-switch').getByTestId('mode-stage').click();
+            await expect(page).toHaveURL(/\/steuerung$/);
+            await expect(page.getByTestId('mode-switch').getByTestId('mode-stage')).toHaveAttribute('aria-current', 'page');
+            expect(await box()).toEqual(designer);
+        });
+    });
+}
+
+// The switch looked like a reload of the whole page on the way to the stage (user, 2026-11-13): the switch came only after the rights
+// were read, and every visit showed "Wird geladen …". Now the switch stands at once, and a second visit shows what the first one read.
+test.describe('the way to the stage page', () => {
+    test.use({ viewport: { width: 820, height: 1180 } });
+
+    test('shows the switch at once and, the second time, no loading line', async ({ page }) => {
+        await page.goto('./');
+        const loadingLine = page.locator('.control .note', { hasText: 'Wird geladen' });
+        const toStage = async () => {
+            await page.getByTestId('mode-switch').getByTestId('mode-stage').click();
+            // In the first frame of the stage page, not after the rights are read.
+            expect(await page.evaluate(() => document.querySelector('.control [data-testid="mode-switch"]') !== null)).toBe(true);
+        };
+        await toStage();
+        await expect(loadingLine).toHaveCount(0);
+        await page.getByTestId('mode-switch').getByTestId('mode-designer').click();
+        await expect(page.getByTestId('screens-heading')).toBeVisible();
+
+        await toStage();
+        expect(await page.evaluate(() => document.querySelector('.control')?.textContent?.includes('Wird geladen') ?? true)).toBe(false);
+    });
 });
