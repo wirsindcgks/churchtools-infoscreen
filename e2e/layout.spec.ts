@@ -35,6 +35,18 @@ test('halves with a header draw three dashed areas and name the division', async
     await expect(page.getByTestId('section-layout')).toContainText('Zwei Spalten, mit Kopfzeile');
 });
 
+test('one quarter and three quarters: a narrow column for "Ablauf" beside the song sheet (schema 1.64)', async ({ page }) => {
+    await emptySlide(page);
+    await tile(page, 'narrow-wide:quarter').check({ force: true });
+    await expect(page.getByTestId('layout-region')).toHaveCount(2);
+    await page.getByTestId('section-layout-toggle').click();
+    await expect(page.getByTestId('section-layout')).toContainText('Schmal und breit');
+    await add(page, 'a').click();
+    await page.getByTestId('sheet-add-shape').click();
+    // 40 px margin and gap; the quarter of 1800 px on the 20 px grid.
+    expect(await frameStyle(page)).toBe('40px 40px 460px 1000px');
+});
+
 test('the "+" of an empty area fills it with the chosen block', async ({ page }) => {
     await emptySlide(page);
     await tile(page, 'halves').check({ force: true });

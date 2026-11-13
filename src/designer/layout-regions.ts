@@ -87,8 +87,10 @@ export function layoutRegions(layout: SlideLayout | undefined, stage: { width: n
     if (split === 'none') {
         regions.push({ id: 'main', ...room });
     } else {
-        const first = split === 'wide-narrow' ? 2 / 3 : 1 / 3;
-        const share = (length: number) => (split === 'halves' ? Math.round(length / 2) : toStep(length * first));
+        // The narrow part is a third, or with `share: 'quarter'` a quarter (schema 1.64); the wide one takes the rest, so that both
+        // orders give the same two sizes.
+        const narrow = (length: number) => toStep(length * (layout?.share === 'quarter' ? 1 / 4 : 1 / 3));
+        const share = (length: number) => (split === 'halves' ? Math.round(length / 2) : split === 'wide-narrow' ? length - narrow(length) : narrow(length));
         if (stage.width >= stage.height) {
             const a = share(room.width - margin);
             regions.push({ id: 'a', x: room.x, y: room.y, width: a, height: room.height });

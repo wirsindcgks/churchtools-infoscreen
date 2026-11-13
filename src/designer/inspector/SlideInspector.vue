@@ -26,7 +26,7 @@ import SegmentField from './fields/SegmentField.vue';
 import TextField from './fields/TextField.vue';
 import TileField from './fields/TileField.vue';
 import ToggleField from './fields/ToggleField.vue';
-import { splitTiles } from './layouts';
+import { readSplit, splitTiles, splitValue } from './layouts';
 import { vTip } from '../tip';
 
 const editor = useEditorStore();
@@ -99,6 +99,7 @@ const portrait = computed(() => editor.stage.height > editor.stage.width);
 const splitOptions = computed(() => splitTiles(portrait.value));
 const layout = computed(() => ({
     split: slide.value?.layout?.split ?? 'none',
+    share: slide.value?.layout?.share,
     header: slide.value?.layout?.header ?? false,
     footer: slide.value?.layout?.footer ?? false,
     gap: slide.value?.layout?.gap ?? 'normal',
@@ -228,11 +229,11 @@ const backgroundColors = computed(() => {
         </InspectorSection>
         <InspectorSection id="layout" :title="t.inspector.layout" :summary="layoutSummary" :help="layoutHelp">
             <TileField
-                :model-value="layout.split"
+                :model-value="splitValue(layout)"
                 :options="splitOptions"
                 :label="t.inspector.layout"
                 testid="layout-split"
-                @update:model-value="setLayout({ split: $event as SlideLayout['split'] })"
+                @update:model-value="setLayout(readSplit($event as string))"
             />
             <ToggleField :model-value="layout.header" :label="t.inspector.layoutHeader" testid="layout-header" @update:model-value="setLayout({ header: $event })" />
             <ToggleField :model-value="layout.footer" :label="t.inspector.layoutFooter" testid="layout-footer" @update:model-value="setLayout({ footer: $event })" />
