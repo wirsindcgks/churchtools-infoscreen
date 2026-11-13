@@ -13,6 +13,12 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   Bisher landete man nur im Designer und kam an die Steuerung bloß über ihre Adresse. Reine Designer und reine Musiker sehen
   den Umschalter nicht.
 
+### Geändert
+
+- **„Liedblatt“ zeigt im Designer immer einen Beispieltext.** Läuft im echten Ablauf gerade kein Lied, fehlt die Datei oder
+  wartet „Als Nächstes“ noch, steht im Designer das Beispiellied mit dem Hinweis „Beispiel“ – so lässt sich die Schrift
+  beurteilen. Auf dem Fernseher ändert sich nichts.
+
 ## [0.59.1] – 2026-11-13
 
 ### Behoben

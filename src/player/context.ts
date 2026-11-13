@@ -1,5 +1,5 @@
 import { inject, provide, type InjectionKey } from 'vue';
-import type { AgendaFeed } from '../agenda/live';
+import type { AgendaFeed, LiveItem } from '../agenda/live';
 import type { Appointment } from '../appointments/normalize';
 import { DEFAULT_THEME, type MediaDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
 import type { PeopleGroup } from '../groups/members';
@@ -37,6 +37,11 @@ export interface StageContext {
     images?: Map<string, string>;
     /** Page counts of paged appointment lists, by block id – the rotation keeps a slide until all have run (Plan.md, 23); a video reports its length in seconds. */
     pages?: Record<string, number>;
+    /**
+     * The designer only: the song a "Liedblatt" shows, marked "Beispiel", when it has no text of a real song to show (Plan.md 121) –
+     * so that its font can be judged. The player leaves it out: a stage shows nothing rather than an example.
+     */
+    songExample?: LiveItem;
     /** Whether paged lists turn their pages; the designer preview holds page 1. */
     paging?: boolean;
     /** The presentation shows its own progress on this slide, so the blocks show none (Plan.md 109); missing = they do. */

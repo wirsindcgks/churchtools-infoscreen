@@ -34,13 +34,22 @@ const selected = computed(() => {
     const waiting = !!pickNow?.upcoming && lead !== undefined && display.value?.kind === 'now' && left !== null && left !== undefined && left > lead * 60;
     return waiting ? null : pickNow;
 });
-const item = computed(() => selected.value?.item ?? null);
-const songId = computed(() => selected.value?.id ?? '');
-const upcoming = computed(() => selected.value?.upcoming ?? false);
-const lengthSeconds = computed(() => selected.value?.lengthSeconds ?? null);
+/**
+ * In the designer a sheet with nothing to show takes the example song (`songExample`, user 2026-11-13: without text the font cannot be
+ * judged) – no song right now, no file, or "Als Nächstes" waiting. A real song with text always wins; the player has no example.
+ */
+const example = computed(() => {
+    const real = selected.value?.item;
+    const realText = !!real && (sheetOf(real)?.sections.length ?? 0) > 0;
+    return realText ? null : (context.songExample ?? null);
+});
+const item = computed(() => example.value ?? selected.value?.item ?? null);
+const songId = computed(() => (example.value ? 'example' : (selected.value?.id ?? '')));
+const upcoming = computed(() => !example.value && (selected.value?.upcoming ?? false));
+const lengthSeconds = computed(() => (example.value ? null : (selected.value?.lengthSeconds ?? null)));
 const sheet = computed(() => (item.value ? sheetOf(item.value) : null));
 /** The part the musicians chose, else part 1 of the song shown; `undefined` only with "Nach Zeit blättern" (columns, pages by time). */
-const section = computed(() => selected.value?.section ?? (item.value && !props.block.pageByTime ? 0 : undefined));
+const section = computed(() => (example.value ? undefined : selected.value?.section) ?? (item.value && !props.block.pageByTime ? 0 : undefined));
 const showChords = computed(() => props.block.showChords);
 
 /** Title · key · tempo; the key of the sheet is the one after transposing, else the one of the arrangement. */
@@ -257,7 +266,8 @@ const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center
 <template>
     <div v-if="item" class="songsheet" :class="{ 'songsheet--paged': paged }" :style="textStyle(block.style)" data-testid="songsheet">
         <div class="head" :style="headStyle">
-            <span v-if="upcoming" class="next" data-testid="songsheet-next">{{ tp.songsheet.next }}</span>
+            <span v-if="example" class="next" data-testid="songsheet-example">{{ tp.songsheet.example }}</span>
+            <span v-else-if="upcoming" class="next" data-testid="songsheet-next">{{ tp.songsheet.next }}</span>
             <span class="title" data-testid="songsheet-title">{{ item.title }}</span>
             <span v-if="meta" class="meta" data-testid="songsheet-meta">{{ meta }}</span>
         </div>
