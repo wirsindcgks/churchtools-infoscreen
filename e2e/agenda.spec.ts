@@ -106,6 +106,13 @@ test('the block "Liedblatt" shows the next song of the example with chords, and 
     const size = (locator: Locator) => locator.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
     await expect.poll(async () => (await size(block.getByTestId('songsheet-title'))) <= (await size(block.locator('.columns .line').first())) * 0.5 + 0.5).toBe(true);
     await block.screenshot({ path: 'test-results/editor-songsheet-large.png' });
+    // A still larger font leaves the text where the block holds it: no jump to the floor of the search (user, 2026-11-13: 180 to 190 px).
+    const text = () => size(block.locator('.columns .line').first());
+    const at150 = await text();
+    for (const px of ['230', '300']) {
+        await page.getByTestId('font-size').locator('input').or(page.getByTestId('font-size')).fill(px);
+        await expect.poll(async () => Math.abs((await text()) - at150)).toBeLessThan(3);
+    }
 });
 
 test('in the narrow quarter beside the song sheet the agenda stacks its parts and keeps the titles whole (user, 2026-11-13)', async ({ page }) => {

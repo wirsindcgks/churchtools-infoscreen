@@ -109,7 +109,11 @@ function naturalHeight(section: Element): number {
 function overflow(): number | null {
     const view = viewport.value;
     const cols = part.value ? sizer.value : columns.value;
-    if (!view || !cols || view.clientHeight <= 0 || view.clientWidth <= 0) return null;
+    if (!view || !cols) return null;
+    // Head, preview and foot took the whole block at this size: too large, not unmeasurable – else the search stopped at its floor and
+    // the text jumped small from one font size to the next (user, 2026-11-13: 180 to 190 px). A block without size (hidden) stays unmeasurable.
+    if ((view.clientHeight <= 0 || view.clientWidth <= 0) && (root.value?.clientHeight ?? 0) > 0) return Infinity;
+    if (view.clientHeight <= 0 || view.clientWidth <= 0) return null;
     const tallest = Math.max(0, ...Array.from(cols.children, naturalHeight));
     const high = tallest / view.clientHeight;
     // A chosen part also by what the block itself overflows with – a second measure, should the parts be counted short.
@@ -144,7 +148,7 @@ async function fit(): Promise<void> {
         for (let i = 0; i < 12 && run === fitRun; i++) {
             const over = overflow();
             if (over === null || !(over > 1.005) || scale.value <= MIN_SCALE) break;
-            scale.value = Math.max(MIN_SCALE, scale.value * Math.min(0.95, 1 / over));
+            scale.value = Math.max(MIN_SCALE, scale.value * (over === Infinity ? 0.8 : Math.min(0.95, 1 / over)));
             await nextTick();
         }
     }
@@ -153,6 +157,7 @@ async function fit(): Promise<void> {
 
 // --- pages ---
 
+const root = ref<HTMLElement | null>(null);
 const viewport = ref<HTMLElement | null>(null);
 const columns = ref<HTMLElement | null>(null);
 /** All parts of a song with a chosen part, unseen, to find the one size for the whole song. */
@@ -272,7 +277,7 @@ const headStyle = computed(() => ({
 </script>
 
 <template>
-    <div v-if="item" class="songsheet" :class="{ 'songsheet--paged': paged }" :style="textStyle(block.style)" data-testid="songsheet">
+    <div v-if="item" ref="root" class="songsheet" :class="{ 'songsheet--paged': paged }" :style="textStyle(block.style)" data-testid="songsheet">
         <div class="head" :style="headStyle">
             <span v-if="example" class="next" data-testid="songsheet-example">{{ tp.songsheet.example }}</span>
             <span v-else-if="upcoming" class="next" data-testid="songsheet-next">{{ tp.songsheet.next }}</span>
@@ -315,7 +320,7 @@ const headStyle = computed(() => ({
             <div class="label">&nbsp;</div>
             <div class="line">&nbsp;</div>
         </div>
-        <div v-if="sheet?.footer" class="foot" data-testid="songsheet-footer">{{ sheet.footer }}</div>
+        <div v-if="sheet?.footer" class="foot" :style="{ fontSize: `${0.22 * Math.min(1, scale)}em` }" data-testid="songsheet-footer">{{ sheet.footer }}</div>
         <PageProgress v-if="paged" :key="page" :seconds="turnSeconds" :held="held" :offset="pageOffset" :size="8" :inset="16" :number="page + 1" :total="pages" :color="themeOf(context).text" />
     </div>
     <!-- No event today: only a large, faint note, the hint stands once, in "Ablauf" (Plan.md 123). An event without a song left shows
@@ -467,8 +472,7 @@ const headStyle = computed(() => ({
     flex: none;
     margin-top: 0.6em;
     overflow: hidden;
-    /* Small on purpose: the licence must be there, not read from the stage (user, 2026-11-11). */
-    font-size: 0.22em;
+    /* Small on purpose: the licence must be there, not read from the stage (user, 2026-11-11). 0.22 of the text, set inline. */
     text-overflow: ellipsis;
     white-space: nowrap;
     opacity: 0.55;
