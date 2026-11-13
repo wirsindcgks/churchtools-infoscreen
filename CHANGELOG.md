@@ -4,6 +4,42 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [Unveröffentlicht]
+
+Danke an [@lub90](https://github.com/lub90) für sein Papier „Klicksteuerung & Confidence-Monitor“: Von ihm stammen die
+Ideen, lange Liedteile aufzuteilen statt die Schrift zu verkleinern, und den Liedablauf mit Wiederholungen zu folgen.
+
+### Hinzugefügt
+
+- **Baustein „Liedblatt“** (Plan.md 121). Liedtext mit Akkorden für den Bühnenmonitor, aus demselben Ablauf wie der
+  Baustein „Ablauf“. Gelesen werden die Dateien am Arrangement: ChordPro mit Akkorden, sonst der Liedtext aus `.sng`
+  oder `.txt`. Die Akkorde stehen über der Silbe und werden auf die Tonart des Arrangements transponiert; der Schalter
+  „Akkorde“ blendet sie aus. Copyright und CCLI-Nummer stehen klein darunter. Das Klappmenü „Lieder“ im Inspektor zeigt
+  für die Lieder der nächsten vier Wochen, ob es Akkorde, nur Text, nur ein PDF oder keine Datei gibt. Schema 1.63.
+- **Handyseite „Steuerung“ für die Musiker** (Plan.md 121). Die Musiker tippen am Handy auf den Liedteil, den sie gerade
+  spielen; alle Bildschirme des Termins zeigen ihn groß, darunter blass den Anfang des nächsten. „Zurück“ und „Weiter“
+  sind groß, „Weiter“ läuft über das Liedende ins nächste Lied. Oben steht „Jetzt“ und „Dann“ mit der Restzeit; das
+  Lied auf dem Bildschirm steht abgesetzt, die übrigen sind eingeklappt. Die Live-Agenda bleibt bei der Technik: Der
+  jüngste Tipp gilt, bis sie danach weiterschaltet.
+- **Gruppe „Infoscreen-Musiker“** (Plan.md 121). Die neue Karte „Musiker“ in den Einstellungen legt sie an und füllt sie
+  per automatischer Mitgliedschaft aus den gewählten Bandgruppen; dort steht auch die Adresse der Handyseite. Musiker
+  dürfen nur den gewählten Liedteil schreiben, gestalten können sie nichts. Einrichtung und „Rechte aktualisieren“
+  geben dem Gerät „Alle Song-Kategorien sehen“ (313) und das Lesen der Steuerung, die Rechteprüfung prüft beides.
+- **Lange Liedteile werden geteilt** (Plan.md 121 G). Ein Teil mit mehr als vier Zeilen wird in gleich große Stücke
+  geteilt, „Refrain (1/2)“, „Refrain (2/2)“. Die Schrift ist je Lied gleich groß: so groß, dass der größte Teil gerade
+  passt, bis zum Doppelten der eingestellten Größe.
+- **Liedablauf mit Wiederholungen** (Plan.md 121 H). Ein Ablauf wie „V1, C, V2, C, B, B, C“ aus der Bemerkung am
+  Lied-Punkt, sonst aus der Beschreibung des Arrangements, bestimmt die Reihenfolge der Teile; „B, B“ wird ein Schritt
+  „Bridge 2×“. Teile, die im Ablauf fehlen, stehen auf dem Handy unter „Nicht im Ablauf“.
+- **Baustein „Ablauf“: Liedangaben** (Plan.md 121 A). Bei einem Lied zeigen „Jetzt“ und „Dann“ Tonart, BPM und ein
+  abweichendes Arrangement; Schalter „Liedangaben“ unter „Darstellung“.
+- **Leerbild von „Ablauf“ und „Liedblatt“** (Plan.md 123). Ohne Termin nennt „Ablauf“ den nächsten Ablauf der kommenden
+  zwei Wochen, auf Wunsch mit Uhr („Uhr ohne Ablauf“); „Liedblatt“ zeigt nur ein blasses Notenzeichen. „Als Nächstes“
+  erscheint erst kurz vor dem Ende des laufenden Punktes (einstellbar). „Nach Zeit blättern“ ist für Gemeinden ohne
+  Handysteuerung.
+- **Hinweis an „Einstellungen“** (Plan.md 122). Ein Punkt am Menüpunkt zeigt Administratoren, wenn „Rechte
+  aktualisieren“ etwas zu tun hätte.
+
 ## [0.58.0] – 2026-11-10
 
 ### Hinzugefügt
