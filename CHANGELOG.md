@@ -35,6 +35,9 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   Ab einer bestimmten Größe sprang der Text außerdem plötzlich auf ein Drittel; er bleibt jetzt so groß, wie der Baustein
   es zulässt.
 
+- **Handyseite „Steuerung“ unter der Kopfleiste von ChurchTools.** Seit 0.59.1 lag die Kopfleiste über der obersten Zeile
+  der Seite und verdeckte den Umschalter „Designer | Bühne“, am PC wie am Handy. Die Seite beginnt jetzt darunter.
+
 ## [0.59.1] – 2026-11-13
 
 ### Behoben

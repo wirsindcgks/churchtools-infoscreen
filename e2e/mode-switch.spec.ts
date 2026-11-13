@@ -40,3 +40,25 @@ test.describe('switch between designer and stage on a phone', () => {
         expect(panel.y).toBeGreaterThanOrEqual(menu.y + menu.height);
     });
 });
+
+// The bar of ChurchTools lies over the stage page, which covers the window; it hid the switch (user, 2026-11-13, PC and phone). The dev
+// server has no bar: one of 56 px is laid on top, after the page has mounted, as ChurchTools does (Befunde G55).
+for (const [name, viewport] of [['desktop', { width: 1280, height: 900 }], ['phone', { width: 390, height: 844 }]] as const) {
+    test.describe(`the stage page below the bar of ChurchTools on a ${name}`, () => {
+        test.use({ viewport });
+
+        test('starts below the bar, the switch can be clicked', async ({ page }) => {
+            await page.goto('steuerung');
+            const stageSwitch = page.getByTestId('mode-switch');
+            await expect(stageSwitch).toBeVisible();
+            await page.evaluate(() => {
+                const bar = document.createElement('div');
+                bar.style.cssText = 'position:fixed;top:0;left:0;right:0;height:56px;z-index:1000;background:#1e3a8a';
+                document.body.appendChild(bar);
+            });
+            await expect.poll(async () => (await stageSwitch.boundingBox())!.y).toBeGreaterThanOrEqual(56);
+            await stageSwitch.getByTestId('mode-designer').click();
+            await expect(page.getByTestId('screens-heading')).toBeVisible();
+        });
+    });
+}

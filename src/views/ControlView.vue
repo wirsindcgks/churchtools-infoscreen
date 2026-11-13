@@ -14,10 +14,14 @@ import { LOCALE } from '../i18n/player';
 import { appointmentWindow, churchToolsPlayerData } from '../player/data';
 import ControlSong from './ControlSong.vue';
 import ModeSwitch from '../designer/ModeSwitch.vue';
+import { useCoveredTop } from './useCoveredTop';
 import { getRepository } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
 
 const POLL_MS = 2500;
+/** The page covers the window; it starts below the bar of ChurchTools, which lies on top of it. */
+const page = ref<HTMLElement | null>(null);
+const coveredTop = useCoveredTop(page);
 
 const loading = ref(true);
 const unavailable = ref(false);
@@ -214,7 +218,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-    <main class="infoscreen-designer control">
+    <main ref="page" class="infoscreen-designer control" :style="{ top: `${coveredTop}px` }">
         <ModeSwitch v-if="designerToo" dark />
         <h1>{{ t.control.title }}</h1>
         <p v-if="loading" class="note">{{ t.control.loading }}</p>
