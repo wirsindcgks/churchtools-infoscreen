@@ -270,7 +270,8 @@ So richtest du es ein:
 4. **„Rechte aktualisieren"** (Einstellungen → Gruppen und Rechte), damit die Fernseher die Steuerung lesen und die Lieder sehen. Steht an
    „Einstellungen" ein Punkt, ist das noch zu tun.
 5. Die Seite zeigt die **Adresse der Handyseite** zum Kopieren (`…/ccm/infoscreen-designer/steuerung`). Die Musiker öffnen sie auf dem
-   Handy, angemeldet in ChurchTools – oder tippen im Menü auf „Infoscreen Designer" und landen direkt dort.
+   Handy, angemeldet in ChurchTools – oder tippen im Menü auf „Infoscreen Designer" und landen direkt dort. Wer auch in der
+   Designer-Gruppe ist, landet im Designer und wechselt oben mit dem Umschalter **„Designer | Bühne"** zur Handyseite und zurück.
 
    <img src="bilder/steuerung.png" alt="Handyseite „Steuerung“: oben „Jetzt“ und „Dann“, darunter das laufende Lied mit den Teil-Knöpfen, der Teil „Refrain“ ist angetippt" width="320">
 

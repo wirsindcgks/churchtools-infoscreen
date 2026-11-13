@@ -4,6 +4,15 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [Unveröffentlicht]
+
+### Hinzugefügt
+
+- **Umschalter „Designer | Bühne“** (Plan.md 121). Wer in der Designer- und in der Musiker-Gruppe ist, wechselt oben in der
+  Seitenleiste – am Handy über dem Menü – mit einem Tipp zur Handyseite „Steuerung“ und dort mit demselben Umschalter zurück.
+  Bisher landete man nur im Designer und kam an die Steuerung bloß über ihre Adresse. Reine Designer und reine Musiker sehen
+  den Umschalter nicht.
+
 ## [0.59.1] – 2026-11-13
 
 ### Behoben

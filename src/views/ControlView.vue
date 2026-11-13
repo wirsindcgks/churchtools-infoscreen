@@ -13,6 +13,7 @@ import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 import { appointmentWindow, churchToolsPlayerData } from '../player/data';
 import ControlSong from './ControlSong.vue';
+import ModeSwitch from '../designer/ModeSwitch.vue';
 import { getRepository } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
 
@@ -177,7 +178,14 @@ watch(eventId, async () => {
     }
 });
 
+/** Also in the designers' group (or an administrator): the switch "Designer | Bühne" leads back. The same test as the start page's. */
+const designerToo = ref(false);
+
 onMounted(async () => {
+    void getRepository()
+        .then((handle) => handle.repository.visibleCategories())
+        .then((categories) => (designerToo.value = Object.keys(categories).length > 0))
+        .catch(() => null);
     try {
         const [person, handle, zone] = await Promise.all([currentPerson(), getRepository(), fetchTimeZone()]);
         repository = handle.repository;
@@ -207,6 +215,7 @@ onBeforeUnmount(() => {
 
 <template>
     <main class="infoscreen-designer control">
+        <ModeSwitch v-if="designerToo" dark />
         <h1>{{ t.control.title }}</h1>
         <p v-if="loading" class="note">{{ t.control.loading }}</p>
         <p v-else-if="unavailable" class="note">{{ t.control.unavailable }}</p>

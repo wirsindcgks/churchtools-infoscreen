@@ -17,6 +17,8 @@ import { ensureSectionCounts, sectionCounts, type Section } from './section-coun
 import { unseenRelease } from '../about/seen';
 import { checkRightsPending, rightsPending } from '../setup/pending';
 import Icon, { type IconName } from './Icon.vue';
+import ModeSwitch from './ModeSwitch.vue';
+import { ensureStageAccess, stageAccess } from './stage-access';
 import { vTip } from './tip';
 
 const route = useRoute();
@@ -24,6 +26,7 @@ onMounted(() => {
     void ensureSectionCounts();
     void isAdministrator();
     void checkRightsPending();
+    void ensureStageAccess();
 });
 const admin = computed(() => administrator.value === true);
 
@@ -99,6 +102,8 @@ watch(
 
 <template>
     <nav ref="nav" class="module-sidebar" :aria-label="t.common.moduleName">
+        <!-- Only for those who may steer the song sheet (Plan.md 121); pure designers do not see the category `steuerung`. -->
+        <ModeSwitch v-if="stageAccess" class="sidebar-mode" />
         <button
             ref="menuButton"
             type="button"
@@ -188,6 +193,10 @@ watch(
 }
 .page-menu {
     display: none;
+}
+.sidebar-mode {
+    flex: none;
+    margin-bottom: var(--d-space-3);
 }
 ul.library {
     margin-top: var(--d-space-2);
@@ -283,6 +292,12 @@ a.active .nav-icon {
         background: none;
         box-shadow: none;
     }
+    /* The sidebar loses its card here: the switch gets its own, like the menu button below it. */
+    .module-sidebar .sidebar-mode {
+        margin-bottom: var(--d-space-2);
+        background: var(--d-surface);
+        box-shadow: var(--d-shadow-card);
+    }
     .page-menu {
         box-sizing: border-box;
         display: flex;
@@ -321,7 +336,8 @@ a.active .nav-icon {
     #module-pages.open {
         display: block;
         position: absolute;
-        top: calc(44px + var(--d-space-2));
+        /* Below the button, which is the nav's lower end – also when the switch "Designer | Bühne" stands above it. */
+        top: calc(100% + var(--d-space-2));
         left: 0;
         right: 0;
         z-index: 1000;
