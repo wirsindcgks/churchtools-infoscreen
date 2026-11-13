@@ -262,7 +262,7 @@ flowchart LR
 
 So richtest du es ein:
 
-1. **Einstellungen → Musiker** (die Karte erscheint, sobald ein Liedblatt gezeigt wird).
+1. **Einstellungen → Musiker** (die Karte lässt sich öffnen, sobald eine Folie ein Liedblatt enthält; vorher steht sie blass da).
 2. Unter **„Mitglieder übernehmen aus"** die Bandgruppen wählen.
 3. **„Musikergruppe anlegen"**: Der Assistent zeigt vorher, was er schreibt, legt „Infoscreen-Musiker" mit ihren Rechten an (siehe
    [Rechte](Rechte.md#musiker--für-die-handysteuerung)), schreibt die Regel der automatischen Mitgliedschaft, schaltet sie auf

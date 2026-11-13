@@ -4,6 +4,14 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [Unveröffentlicht]
+
+### Geändert
+
+- **Karte „Musiker“ immer sichtbar.** In den Einstellungen fehlte die Karte „Musiker“, solange keine Folie ein Liedblatt
+  enthielt – es sah aus, als gäbe es die Handysteuerung nicht. Jetzt steht die Karte immer da, bis zum ersten Liedblatt blass
+  und mit dem Satz, wann sie sich einrichten lässt.
+
 ## [0.61.0] – 2026-11-13
 
 ### Hinzugefügt

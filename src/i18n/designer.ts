@@ -1830,6 +1830,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         musicians: {
             title: 'Musiker',
             intro: 'Musiker steuern das Liedblatt vom Handy; die Gruppe füllt sich aus den Bandgruppen.',
+            waiting: 'Musiker steuern das Liedblatt vom Handy. Einrichten lässt es sich, sobald eine Folie den Baustein „Liedblatt“ enthält.',
             lead:
                 'Musiker wählen auf dem Handy, welchen Teil eines Liedes die Bildschirme zeigen. Dafür gibt es die Gruppe „Infoscreen-Musiker“; ihre Mitglieder kommen automatisch aus den Bandgruppen, die du hier wählst.',
             sources: 'Bandgruppen',
