@@ -4,6 +4,25 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [Unveröffentlicht]
+
+### Hinzugefügt
+
+- **Proben auf der Handyseite „Steuerung“** (Plan.md 121). Oben wählt man jetzt zwischen „Gottesdienst“ (nach Ablauf, wie
+  bisher) und „Probe“ (freie Liedwahl): Musiker suchen ein Lied aus der Song-Datenbank, wählen das Arrangement und tippen die
+  Teile wie im Gottesdienst – unabhängig von einem Termin. Zwei Handys sehen dieselbe Wahl. Auf dem Fernseher erscheint das
+  erst mit dem nächsten Schritt, dem Liedblatt mit Quelle „Probe“.
+- **„Mit dem Handy steuern“ per QR-Code.** Am Rechner und Tablet öffnet der Menüpunkt „Steuerung“ ein Fenster mit QR-Code und
+  Adresse der Handyseite; mit der Handykamera scannen, und die Steuerung ist offen. Derselbe Code steht auf der Karte „Musiker“
+  in den Einstellungen.
+- **Der Bildschirm des Handys bleibt an**, solange die Steuerung offen ist – soweit der Browser es erlaubt.
+
+### Geändert
+
+- **Weg zwischen Designer und Steuerung.** Der Umschalter „Designer | Bühne“ entfällt: Im Designer führt der Menüpunkt
+  „Steuerung“ unten in der Seitenleiste zur Handyseite (am Handy direkt, sonst über den QR-Code), auf der Handyseite führt ein
+  Stift oben rechts zurück in den Designer. Das Wort „Bühne“ heißt jetzt durchgehend „Steuerung“.
+
 ## [0.60.0] – 2026-11-13
 
 ### Hinzugefügt

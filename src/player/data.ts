@@ -5,7 +5,7 @@
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import type { ControlDoc } from '../agenda/control';
 import { liveItems, parsePosition, type AgendaEvent, type UpcomingAgenda, type LiveItem, type LivePosition } from '../agenda/live';
-import { pickSheetFile, readSongSheet, type SheetKind, type SongSheet } from '../agenda/songsheet';
+import { arrangementSheet, pickSheetFile, readSongSheet, type SheetKind, type SongSheet } from '../agenda/songsheet';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { needsAppointmentTags } from '../appointments/tags';
@@ -33,6 +33,7 @@ import {
     fetchServiceGroups,
     fetchServices,
     fetchTimeZone,
+    type SongArrangementResponse,
 } from '../ct/api';
 import { currentPerson, ensureSignedIn, httpStatus, instanceBaseUrl, type TokenLogin } from '../ct/client';
 import { deniedPeople, nameFormatKeys, normalizeMembers, personFieldFormats, personFieldValues, unreleasedPeople, withPersonFields, type PeopleGroup } from '../groups/members';
@@ -493,7 +494,7 @@ const MAX_SHEET_FILES = 40;
 const sheetMemo = new Map<string, Promise<SongSheet | null>>();
 const warnedEvents = new Set<number>();
 
-function loadSheet(fileUrl: string, kind: SheetKind): Promise<SongSheet | null> {
+export function loadSheet(fileUrl: string, kind: SheetKind): Promise<SongSheet | null> {
     let sheet = sheetMemo.get(fileUrl);
     if (!sheet) {
         sheet = withTimeout(fetchSheetText(fileUrl)).then((text) => {
@@ -505,6 +506,17 @@ function loadSheet(fileUrl: string, kind: SheetKind): Promise<SongSheet | null> 
         sheet.catch(() => sheetMemo.delete(fileUrl));
     }
     return sheet;
+}
+
+/**
+ * The sheet of one arrangement as the rehearsal shows it (Plan.md 121, "Proben"): the file read like the player does, in the key of the
+ * arrangement, with the flow from its description. `null` without a readable file or where reading fails.
+ */
+export async function loadArrangementSheet(arrangement: SongArrangementResponse): Promise<SongSheet | null> {
+    const picked = pickSheetFile((arrangement.files ?? []).filter((f) => !!f.fileUrl));
+    if (!picked) return null;
+    const raw = await loadSheet(picked.file.fileUrl!, picked.kind).catch(() => null);
+    return raw ? arrangementSheet(raw, arrangement.key, [arrangement.description]) : null;
 }
 
 /**

@@ -1573,6 +1573,21 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         next: 'Weiter',
         notSaved: 'Nicht gespeichert – bitte noch einmal tippen',
         failed: (message: string | null) => `ChurchTools ist gerade nicht erreichbar${message ? ` (${message})` : ''}.`,
+        area: 'Bereich',
+        areaChoose: 'Bereich wählen',
+        areaServiceHint: 'nach Ablauf',
+        areaRehearsalHint: 'freie Liedwahl',
+        service: 'Gottesdienst',
+        rehearsal: 'Probe',
+        search: 'Lied suchen',
+        searching: 'Wird gesucht …',
+        noSong: 'Kein Lied gefunden.',
+        arrangement: 'Arrangement',
+        noRehearsalSheet: 'Zu diesem Arrangement gibt es keinen Liedtext (ChordPro, .sng oder .txt).',
+        rehearsalNone: 'Noch kein Lied gewählt.',
+        rehearsalLoading: 'Lied wird geladen …',
+        otherSong: 'Anderes Lied',
+        closeSearch: 'Suche schließen',
     },
 
     /** The page for an address the module does not know. */
@@ -1589,11 +1604,20 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
         rightsPending: 'Rechte aktualisieren nötig',
     },
 
-    /** The switch between the designer and the stage page, for people in the designers' and the musicians' group. */
+    /** The dialog of the entry "Steuerung" from a tablet up: the QR code of the phone page. */
+    controlQr: {
+        title: 'Mit dem Handy steuern',
+        codeLabel: 'QR-Code der Handyseite',
+        hint: 'Code mit der Handykamera scannen und auf dem Handy ein Lied wählen.',
+        copy: 'Adresse kopieren',
+        copied: 'Kopiert',
+        openHere: 'Hier am Rechner öffnen',
+    },
+
+    /** The ways between the designer (entry "Steuerung") and the phone page (button "Designer"), for people in the designers' and the musicians' group. */
     modeSwitch: {
-        label: 'Bereich wechseln',
-        designer: 'Designer',
-        stage: 'Bühne',
+        designer: 'Im Designer bearbeiten',
+        stage: 'Steuerung',
     },
 
     /** The settings: groups and rights, addresses of the TVs, the media library in the wiki, the services. */

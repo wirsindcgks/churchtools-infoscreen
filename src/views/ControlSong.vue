@@ -14,6 +14,8 @@ const props = defineProps<{
     shown?: boolean;
     played?: boolean;
     disabled: boolean;
+    /** Only the parts: the rehearsal page sets the title as its own heading (Plan.md 121, "Proben"). */
+    bare?: boolean;
 }>();
 const emit = defineEmits<{ toggle: []; choose: [section: number] }>();
 
@@ -25,7 +27,7 @@ const outside = computed(() => buttons.value.filter(({ part }) => part.extra));
 
 <template>
     <li class="control-song" :class="{ shown, played }">
-        <button type="button" class="song" :aria-expanded="open" @click="emit('toggle')">
+        <button v-if="!bare" type="button" class="song" :aria-expanded="open" @click="emit('toggle')">
             <span>{{ title }}</span>
             <span v-if="songKey" class="key">{{ songKey }}</span>
         </button>

@@ -103,6 +103,33 @@ export async function fetchAgendaSongs(eventId: number): Promise<AgendaSongRespo
     return churchtoolsClient.get(`/events/${eventId}/agenda/songs`);
 }
 
+/** A song of `GET /songs` for the search of the rehearsal (Plan.md 121, "Proben"): its arrangements with key, description and files. */
+export interface SongResponse {
+    id?: number | null;
+    name?: string | null;
+    arrangements?: SongArrangementResponse[] | null;
+}
+
+export interface SongArrangementResponse {
+    id?: number | null;
+    name?: string | null;
+    key?: string | null;
+    keyOfArrangement?: string | null;
+    description?: string | null;
+    isDefault?: boolean | null;
+    files?: { name?: string | null; fileUrl?: string | null }[] | null;
+}
+
+/** The songs whose title or author contains `query`, with their arrangements; needs right 313 for the files (G82). */
+export async function searchSongs(query: string): Promise<SongResponse[]> {
+    return churchtoolsClient.get<SongResponse[]>('/songs', { query, 'include[]': 'arrangements', limit: 20 });
+}
+
+/** One song with its arrangements and their files. */
+export async function fetchSong(id: number): Promise<SongResponse> {
+    return churchtoolsClient.get<SongResponse>(`/songs/${id}`, { 'include[]': 'arrangements' });
+}
+
 /** The address of a file on the own origin: the answer carries the address of the instance, the module runs on it (and behind the proxy in development). */
 export function ownFileUrl(fileUrl: string): string {
     const parsed = new URL(fileUrl, `${window.location.origin}/`);

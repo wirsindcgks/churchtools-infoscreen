@@ -168,7 +168,7 @@ onMounted(async () => {
         // An administrator's visit creates the categories of the signs of life and of the drafts; nobody else may (Plan.md 59, 79).
         if (isAdmin) {
             const [, control] = await Promise.all([handle.repository.ensureStatusCategory(), handle.repository.ensureControlCategory(), handle.repository.drafts.ensureCategory()]).catch(() => []);
-            // A category created just now: the sidebar asked before and shows the switch "Designer | Bühne" only from here on.
+            // A category created just now: the sidebar asked before and shows the entry "Steuerung" only from here on.
             if (control != null) stageAccess.value = true;
         }
         repository.value = handle.repository;

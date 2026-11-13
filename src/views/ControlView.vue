@@ -12,14 +12,18 @@ import { currentPerson, displayName } from '../ct/client';
 import { t } from '../i18n/designer';
 import { LOCALE } from '../i18n/player';
 import { appointmentWindow, churchToolsPlayerData } from '../player/data';
+import ControlRehearsal from './ControlRehearsal.vue';
 import ControlSong from './ControlSong.vue';
 import { controlMemory } from './control-memory';
-import ModeSwitch from '../designer/ModeSwitch.vue';
+import { useWakeLock } from './useWakeLock';
+import Icon from '../designer/Icon.vue';
 import { useOffsetTop } from '../designer/useOffsetTop';
 import { getRepository } from '../store/backend';
 import type { ScreenRepository } from '../store/screen-repository';
 
 const POLL_MS = 2500;
+// On stage the phone must not lock while the page is open (user, 2026-11-13).
+useWakeLock();
 /**
  * The page stands in the flow of the host page like the designer: below the bar of ChurchTools and at the same place, with the same
  * margins – fixed over the window, the bar hid its first line and the switch moved from side to side (user, 2026-11-13). The margins
@@ -53,6 +57,34 @@ const opened = ref<number | null>(null);
 const notSaved = ref(false);
 const timeZone = ref('Europe/Berlin');
 let repository: ScreenRepository | null = null;
+/** The same repository for the area "Probe", which is built when the page knows it. */
+const rehearsalRepository = shallowRef<ScreenRepository | null>(null);
+const area = ref(controlMemory.area);
+watch(area, (value) => (controlMemory.area = value));
+
+/** The list under the button in the head: "Gottesdienst" and "Probe". A tap beside it and Escape close it. */
+const areaOpen = ref(false);
+const areaBox = ref<HTMLElement | null>(null);
+const areaEntries = computed(() => [
+    { value: 'service' as const, text: t.control.service, hint: t.control.areaServiceHint },
+    { value: 'rehearsal' as const, text: t.control.rehearsal, hint: t.control.areaRehearsalHint },
+]);
+function chooseArea(value: 'service' | 'rehearsal'): void {
+    area.value = value;
+    areaOpen.value = false;
+}
+function closeAreaOnOutside(event: Event): void {
+    if (areaOpen.value && !areaBox.value?.contains(event.target as Node)) areaOpen.value = false;
+}
+function closeAreaOnEscape(event: KeyboardEvent): void {
+    if (event.key === 'Escape') areaOpen.value = false;
+}
+document.addEventListener('pointerdown', closeAreaOnOutside);
+document.addEventListener('keydown', closeAreaOnEscape);
+onBeforeUnmount(() => {
+    document.removeEventListener('pointerdown', closeAreaOnOutside);
+    document.removeEventListener('keydown', closeAreaOnEscape);
+});
 let author = '';
 let timer: ReturnType<typeof setTimeout> | undefined;
 let gone = false;
@@ -200,7 +232,7 @@ watch(eventId, async () => {
     }
 });
 
-/** Also in the designers' group (or an administrator): the switch "Designer | Bühne" leads back. The same test as the start page's. */
+/** Also in the designers' group (or an administrator): the button "Designer" in the head leads back. The same test as the start page's. */
 const designerToo = ref(controlMemory.designerToo);
 
 onMounted(async () => {
@@ -218,6 +250,7 @@ onMounted(async () => {
     try {
         const [person, handle, zone] = await Promise.all([currentPerson(), getRepository(), fetchTimeZone()]);
         repository = handle.repository;
+        rehearsalRepository.value = handle.repository;
         author = displayName(person);
         timeZone.value = zone;
         if ((await repository.controlCategoryId()) === null) {
@@ -251,83 +284,114 @@ onBeforeUnmount(() => {
 
 <template>
     <main ref="page" class="infoscreen-designer control" :style="{ '--page-top': `${top}px` }">
-        <ModeSwitch v-if="designerToo" dark />
-        <h1>{{ t.control.title }}</h1>
+        <header class="head" data-testid="control-head">
+            <h1>{{ t.control.title }}</h1>
+            <div ref="areaBox" class="area-box">
+                <button
+                    type="button"
+                    class="area-button"
+                    aria-haspopup="true"
+                    :aria-expanded="areaOpen"
+                    :aria-label="t.control.areaChoose"
+                    data-testid="control-area"
+                    @click="areaOpen = !areaOpen"
+                >
+                    <span class="area-prefix">{{ t.control.title }} ·</span>
+                    <strong>{{ area === 'service' ? t.control.service : t.control.rehearsal }}</strong>
+                    <Icon name="chevron-down" :size="18" />
+                </button>
+                <ul v-if="areaOpen" class="area-list" role="group" :aria-label="t.control.areaChoose">
+                    <li v-for="entry in areaEntries" :key="entry.value">
+                        <button type="button" :class="{ chosen: area === entry.value }" :aria-pressed="area === entry.value" :data-testid="`control-area-${entry.value}`" @click="chooseArea(entry.value)">
+                            {{ entry.text }}<small>{{ entry.hint }}</small>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+            <RouterLink v-if="designerToo" :to="{ name: 'designer' }" class="to-designer" :aria-label="t.modeSwitch.designer" :title="t.modeSwitch.designer" data-testid="mode-designer">
+                <Icon name="pencil" :size="20" />
+            </RouterLink>
+        </header>
         <p v-if="loading" class="note">{{ t.control.loading }}</p>
         <p v-else-if="unavailable" class="note">{{ t.control.unavailable }}</p>
-        <p v-else-if="failure && !event" class="note" role="alert">{{ failure }}</p>
-        <p v-else-if="!events.length" class="note">{{ t.control.noEvents }}</p>
         <template v-else>
-            <select v-if="events.length > 1" v-model="eventId" class="event" :aria-label="t.control.eventLabel">
-                <option v-for="e in events" :key="e.eventId" :value="e.eventId">{{ eventLabel(e) }}</option>
-            </select>
-            <div v-if="plan" class="plan" data-testid="control-plan">
-                <template v-if="plan.over">{{ t.control.planOver }}</template>
+            <ControlRehearsal v-if="area === 'rehearsal' && rehearsalRepository" :repository="rehearsalRepository" :author="author" />
+            <template v-else-if="area === 'service'">
+                <p v-if="failure && !event" class="note" role="alert">{{ failure }}</p>
+                <p v-else-if="!events.length" class="note">{{ t.control.noEvents }}</p>
                 <template v-else>
-                    <div class="plan-now">
-                        <span class="plan-label">{{ plan.soon ? t.control.planSoon : t.control.planNow }}</span>
-                        <span class="plan-title">{{ plan.title }}</span>
-                        <span v-if="plan.clock" class="plan-clock" :class="{ late: plan.late }">{{ plan.clock }}</span>
+                    <select v-if="events.length > 1" v-model="eventId" class="event" :aria-label="t.control.eventLabel">
+                        <option v-for="e in events" :key="e.eventId" :value="e.eventId">{{ eventLabel(e) }}</option>
+                    </select>
+                    <div v-if="plan" class="plan" data-testid="control-plan">
+                        <template v-if="plan.over">{{ t.control.planOver }}</template>
+                        <template v-else>
+                            <div class="plan-now">
+                                <span class="plan-label">{{ plan.soon ? t.control.planSoon : t.control.planNow }}</span>
+                                <span class="plan-title">{{ plan.title }}</span>
+                                <span v-if="plan.clock" class="plan-clock" :class="{ late: plan.late }">{{ plan.clock }}</span>
+                            </div>
+                            <div v-if="plan.next" class="plan-next">
+                                <span class="plan-label">{{ t.control.planNext }}</span>
+                                <span>{{ plan.next }}</span>
+                            </div>
+                        </template>
                     </div>
-                    <div v-if="plan.next" class="plan-next">
-                        <span class="plan-label">{{ t.control.planNext }}</span>
-                        <span>{{ plan.next }}</span>
-                    </div>
+                    <p v-if="plan && !plan.over && !stepping" class="screen" data-testid="control-locked">{{ t.control.noSongsLeft }}</p>
+                    <p v-else class="screen">{{ screenLine }}</p>
+                    <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
+                    <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
+                    <ul v-if="current" class="songs" data-testid="control-current">
+                        <ControlSong
+                            :title="current.title"
+                            :song-key="current.key"
+                            :parts="current.parts"
+                            :open="true"
+                            :active="activePart?.itemIndex === current.index ? activePart.section : null"
+                            shown
+                            :disabled="!stepping"
+                            @choose="(n) => choose({ itemIndex: current!.index, section: n })"
+                        />
+                    </ul>
+                    <template v-if="upNext">
+                        <p class="label">{{ t.control.upNext }}</p>
+                        <ul class="songs" data-testid="control-next">
+                            <ControlSong
+                                :title="upNext.title"
+                                :song-key="upNext.key"
+                                :parts="upNext.parts"
+                                :open="opened === upNext.index"
+                                :active="null"
+                                :disabled="!stepping"
+                                @toggle="toggle(upNext.index)"
+                                @choose="(n) => choose({ itemIndex: upNext!.index, section: n })"
+                            />
+                        </ul>
+                    </template>
+                    <details v-if="others.length" class="all" data-testid="control-all">
+                        <summary>{{ t.control.allSongs(others.length) }}</summary>
+                        <ul class="songs">
+                            <ControlSong
+                                v-for="song in others"
+                                :key="song.index"
+                                :title="song.title"
+                                :song-key="song.key"
+                                :parts="song.parts"
+                                :open="opened === song.index"
+                                :active="null"
+                                :played="played(song.index)"
+                                :disabled="!stepping"
+                                @toggle="toggle(song.index)"
+                                @choose="(n) => choose({ itemIndex: song.index, section: n })"
+                            />
+                        </ul>
+                    </details>
+                    <nav class="steps">
+                        <button type="button" :disabled="!previous" @click="previous && choose(previous)">{{ t.control.back }}</button>
+                        <button type="button" :disabled="!following" @click="following && choose(following)">{{ t.control.next }}</button>
+                    </nav>
                 </template>
-            </div>
-            <p v-if="plan && !plan.over && !stepping" class="screen" data-testid="control-locked">{{ t.control.noSongsLeft }}</p>
-            <p v-else class="screen">{{ screenLine }}</p>
-            <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
-            <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
-            <ul v-if="current" class="songs" data-testid="control-current">
-                <ControlSong
-                    :title="current.title"
-                    :song-key="current.key"
-                    :parts="current.parts"
-                    :open="true"
-                    :active="activePart?.itemIndex === current.index ? activePart.section : null"
-                    shown
-                    :disabled="!stepping"
-                    @choose="(n) => choose({ itemIndex: current!.index, section: n })"
-                />
-            </ul>
-            <template v-if="upNext">
-                <p class="label">{{ t.control.upNext }}</p>
-                <ul class="songs" data-testid="control-next">
-                    <ControlSong
-                        :title="upNext.title"
-                        :song-key="upNext.key"
-                        :parts="upNext.parts"
-                        :open="opened === upNext.index"
-                        :active="null"
-                        :disabled="!stepping"
-                        @toggle="toggle(upNext.index)"
-                        @choose="(n) => choose({ itemIndex: upNext!.index, section: n })"
-                    />
-                </ul>
             </template>
-            <details v-if="others.length" class="all" data-testid="control-all">
-                <summary>{{ t.control.allSongs(others.length) }}</summary>
-                <ul class="songs">
-                    <ControlSong
-                        v-for="song in others"
-                        :key="song.index"
-                        :title="song.title"
-                        :song-key="song.key"
-                        :parts="song.parts"
-                        :open="opened === song.index"
-                        :active="null"
-                        :played="played(song.index)"
-                        :disabled="!stepping"
-                        @toggle="toggle(song.index)"
-                        @choose="(n) => choose({ itemIndex: song.index, section: n })"
-                    />
-                </ul>
-            </details>
-            <nav class="steps">
-                <button type="button" :disabled="!previous" @click="previous && choose(previous)">{{ t.control.back }}</button>
-                <button type="button" :disabled="!following" @click="following && choose(following)">{{ t.control.next }}</button>
-            </nav>
         </template>
     </main>
 </template>
@@ -347,26 +411,107 @@ onBeforeUnmount(() => {
     align-content: start;
     gap: 12px;
 }
-/*
- * From a tablet up the designer has its sidebar: a card of 236 px with its own padding. The switch stands where it stands in that card –
- * as wide and as far in – so that it does not move on the way to the stage (user, 2026-11-13, iPad).
- */
-@media (min-width: 48.0625rem) {
-    .control > .mode-switch {
-        box-sizing: border-box;
-        width: calc(236px - 2 * var(--d-space-3));
-        margin: var(--d-space-3) 0 0 var(--d-space-3);
-    }
-}
 @media (max-width: 48rem) {
     .control {
         padding-inline: var(--d-space-3);
         padding-top: var(--d-space-3);
     }
 }
+/* The title stays for screen readers; the button in the head says it for the eyes. */
 h1 {
-    margin: 0;
-    font-size: 1.3rem;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    min-width: 0;
+}
+.area-box {
+    position: relative;
+    min-width: 0;
+}
+/* Looks like a choice (user, 2026-11-13: on the phone the dropdown was not to be recognised – no colour of its own, the dark blue of
+   ChurchTools' buttons came through): framed like the tiles, light text, the arrow at the end. */
+.head .area-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 10px 0 14px;
+    border: 1px solid #3a3f4a;
+    border-radius: 10px;
+    background: #1d2027;
+    color: #f1f2f4;
+    font-size: 1.05rem;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.head .area-button[aria-expanded='true'] {
+    border-color: #6b7180;
+}
+.head .area-button strong {
+    color: #f1f2f4;
+}
+.area-prefix {
+    color: #b8bcc4;
+}
+.area-list {
+    position: absolute;
+    z-index: 5;
+    top: 100%;
+    left: 0;
+    margin: 4px 0 0;
+    padding: 4px;
+    min-width: 230px;
+    list-style: none;
+    border: 1px solid #3a3f4a;
+    border-radius: 10px;
+    background: #1d2027;
+}
+.area-list button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    min-height: 48px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: #f1f2f4;
+    font: inherit;
+    line-height: 1.3;
+    text-align: left;
+    cursor: pointer;
+}
+.area-list button.chosen {
+    background: #2a2e37;
+    font-weight: 600;
+}
+.area-list small {
+    color: #b8bcc4;
+    font-size: 0.8rem;
+    font-weight: 400;
+}
+/* A light, neutral ring (user, 2026-11-13) – blue is kept for the running part alone. */
+.to-designer {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    box-sizing: border-box;
+    border: 2px solid #c9ccd3;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    color: #f1f2f4;
 }
 p {
     margin: 0;

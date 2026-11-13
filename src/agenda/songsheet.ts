@@ -537,17 +537,25 @@ function controlItem({ event, position }: AgendaPick, control: ControlDoc): Live
     return item;
 }
 
-/** The text of a song point with its chords in the key of the arrangement; `null` where the point has none. */
-export function sheetOf(item: LiveItem): SongSheet | null {
-    if (!item.sheet) return null;
-    const sheet = transposeSheet(item.sheet, item.songDetails?.key);
-    // The note at the point beats the description of the arrangement (Plan.md 121 H) – unless none of its steps finds a part.
-    for (const text of [item.note, item.arrangementDescription]) {
+/**
+ * The sheet of an arrangement in its key, with the flow of the first of `texts` in which the steps find a part (Plan.md 121 H);
+ * without such a text the sheet as it is.
+ */
+export function arrangementSheet(raw: SongSheet, key: string | undefined | null, texts: readonly (string | null | undefined)[]): SongSheet {
+    const sheet = transposeSheet(raw, key);
+    for (const text of texts) {
         const flow = readFlow(text);
         const applied = flow ? applyFlow(sheet, flow) : sheet;
         if (applied !== sheet) return applied;
     }
     return sheet;
+}
+
+/** The text of a song point with its chords in the key of the arrangement; `null` where the point has none. */
+export function sheetOf(item: LiveItem): SongSheet | null {
+    if (!item.sheet) return null;
+    // The note at the point beats the description of the arrangement (Plan.md 121 H) – unless none of its steps finds a part.
+    return arrangementSheet(item.sheet, item.songDetails?.key, [item.note, item.arrangementDescription]);
 }
 
 /** The least time a page of a running song stays. */
