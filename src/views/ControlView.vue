@@ -331,10 +331,15 @@ onBeforeUnmount(() => {
     align-content: start;
     gap: 12px;
 }
-/* On a PC as wide as in the designer's sidebar (236 px less its padding), not across the whole window. */
+/*
+ * From a tablet up the designer has its sidebar: a card of 236 px with its own padding. The switch stands where it stands in that card –
+ * as wide and as far in – so that it does not move on the way to the stage (user, 2026-11-13, iPad).
+ */
 @media (min-width: 48.0625rem) {
     .control > .mode-switch {
+        box-sizing: border-box;
         width: calc(236px - 2 * var(--d-space-3));
+        margin: var(--d-space-3) 0 0 var(--d-space-3);
     }
 }
 @media (max-width: 48rem) {

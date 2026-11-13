@@ -40,19 +40,6 @@ test.describe('switch between designer and stage on a phone', () => {
         expect(panel.y).toBeGreaterThanOrEqual(menu.y + menu.height);
     });
 
-    test('keeps its size on the stage page – only the colours change (user, 2026-11-13)', async ({ page }) => {
-        const box = async () => {
-            const b = (await page.getByTestId('mode-switch').boundingBox())!;
-            return { x: Math.round(b.x), width: Math.round(b.width), height: Math.round(b.height) };
-        };
-        await page.goto('./');
-        await expect(page.getByTestId('mode-switch')).toBeVisible();
-        const designer = await box();
-        await page.getByTestId('mode-switch').getByTestId('mode-stage').click();
-        await expect(page).toHaveURL(/\/steuerung$/);
-        await expect(page.getByTestId('mode-switch').getByTestId('mode-stage')).toHaveAttribute('aria-current', 'page');
-        expect(await box()).toEqual(designer);
-    });
 });
 
 // The bar of ChurchTools hid the switch while the stage page lay fixed over the window (user, 2026-11-13, PC and phone); now the page
@@ -78,6 +65,32 @@ for (const [name, viewport] of [['desktop', { width: 1280, height: 900 }], ['pho
             await stageSwitch.getByTestId('mode-designer').click();
             await expect(page.getByTestId('screens-heading')).toBeVisible();
             expect(await body()).not.toBe('rgb(16, 17, 20)');
+        });
+    });
+}
+
+// The switch keeps place and size on the way to the stage – only the colours change (user, 2026-11-13: on the phone, then on the iPad).
+for (const [name, viewport] of [
+    ['phone', { width: 390, height: 844 }],
+    ['iPad upright', { width: 820, height: 1180 }],
+    ['iPad across', { width: 1180, height: 820 }],
+    ['desktop', { width: 1440, height: 900 }],
+] as const) {
+    test.describe(`the switch on a ${name}`, () => {
+        test.use({ viewport });
+
+        test('stands at the same place and in the same size on the stage page', async ({ page }) => {
+            const box = async () => {
+                const b = (await page.getByTestId('mode-switch').boundingBox())!;
+                return { x: Math.round(b.x), y: Math.round(b.y), width: Math.round(b.width), height: Math.round(b.height) };
+            };
+            await page.goto('./');
+            await expect(page.getByTestId('mode-switch')).toBeVisible();
+            const designer = await box();
+            await page.getByTestId('mode-switch').getByTestId('mode-stage').click();
+            await expect(page).toHaveURL(/\/steuerung$/);
+            await expect(page.getByTestId('mode-switch').getByTestId('mode-stage')).toHaveAttribute('aria-current', 'page');
+            expect(await box()).toEqual(designer);
         });
     });
 }
