@@ -77,10 +77,15 @@ export const PICTOGRAMS = {
     'split-halves': [{ d: box(5, 3, 18, 26) }, { d: box(25, 3, 18, 26) }],
     'split-wide-narrow': [{ d: box(5, 3, 24, 26) }, { d: box(31, 3, 12, 26) }],
     'split-narrow-wide': [{ d: box(5, 3, 12, 26) }, { d: box(19, 3, 24, 26) }],
+    // Three quarters and one quarter (schema 1.64).
+    'split-wide-narrow-quarter': [{ d: box(5, 3, 27, 26) }, { d: box(34, 3, 9, 26) }],
+    'split-narrow-wide-quarter': [{ d: box(5, 3, 9, 26) }, { d: box(16, 3, 27, 26) }],
     // The same for a portrait slide, which divides into rows.
     'split-halves-rows': [{ d: box(5, 3, 38, 12) }, { d: box(5, 17, 38, 12) }],
     'split-wide-narrow-rows': [{ d: box(5, 3, 38, 16) }, { d: box(5, 21, 38, 8) }],
     'split-narrow-wide-rows': [{ d: box(5, 3, 38, 8) }, { d: box(5, 13, 38, 16) }],
+    'split-wide-narrow-quarter-rows': [{ d: box(5, 3, 38, 19) }, { d: box(5, 24, 38, 5) }],
+    'split-narrow-wide-quarter-rows': [{ d: box(5, 3, 38, 5) }, { d: box(5, 10, 38, 19) }],
 } as const satisfies Record<string, readonly PictogramPath[]>;
 
 export type PictogramName = keyof typeof PICTOGRAMS;

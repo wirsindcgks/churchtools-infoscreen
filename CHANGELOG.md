@@ -13,6 +13,10 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   Bisher landete man nur im Designer und kam an die Steuerung bloß über ihre Adresse. Reine Designer und reine Musiker sehen
   den Umschalter nicht.
 
+- **Aufteilung „Drei Viertel“.** Neben „Zwei Drittel“ teilt sich eine Folie jetzt auch in drei Viertel und ein Viertel, links
+  oder rechts, hochkant oben oder unten – etwa eine schmale Spalte für „Ablauf“ neben einem großen „Liedblatt“. Schema 1.64.
+  Fernseher mit älterem Stand zeigen solche Folien weiter; ein älterer Designer zeigt die Aufteilung als „Zwei Drittel“.
+
 ### Geändert
 
 - **„Liedblatt“ zeigt im Designer immer einen Beispieltext.** Läuft im echten Ablauf gerade kein Lied, fehlt die Datei oder

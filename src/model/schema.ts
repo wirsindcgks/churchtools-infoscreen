@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 63 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 64 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -729,6 +729,12 @@ const DocumentBase = {
 export const SlideLayout = v.object({
     /** Landscape divides into columns, portrait into rows. */
     split: v.optional(v.picklist(['none', 'halves', 'wide-narrow', 'narrow-wide']), 'none'),
+    /**
+     * Since 1.64 (Plan.md 87 B, user 2026-11-13): `quarter` makes `wide-narrow` and `narrow-wide` three quarters and one quarter
+     * instead of two thirds and one third. A field of its own, not a new `split`: a player of 1.63 reads `split` strictly and would
+     * lose the slide over a new value; it drops this field. Missing or unknown = thirds.
+     */
+    share: v.fallback(v.optional(v.picklist(['quarter'])), undefined),
     header: v.optional(v.boolean(), false),
     footer: v.optional(v.boolean(), false),
     /** Since 1.44 (Plan.md 92): margin and gap between the areas, in steps. Missing = `normal`. */

@@ -1,5 +1,5 @@
 import { t } from '../../i18n/designer';
-import type { Block, ThemeDoc } from '../../model/schema';
+import type { Block, SlideLayout, ThemeDoc } from '../../model/schema';
 import { listLayout, nextLayout } from '../../player/theme';
 import type { TileOption } from './fields/TileField.vue';
 
@@ -64,7 +64,10 @@ export const MOTION_TILES: TileOption[] = [
     { value: 'alternate', label: t.inspector.motions.alternate, pictogram: 'motion-alternate' },
 ];
 
-/** The tiles for the division of a slide (Plan.md 87 B): a portrait slide divides into rows, a landscape one into columns. */
+/**
+ * The tiles for the division of a slide (Plan.md 87 B): a portrait slide divides into rows, a landscape one into columns. The
+ * quarters (schema 1.64) are `split` plus `share: 'quarter'`; a tile carries both as `split:quarter` (`splitValue`, `readSplit`).
+ */
 export function splitTiles(portrait: boolean): TileOption[] {
     return portrait
         ? [
@@ -72,11 +75,26 @@ export function splitTiles(portrait: boolean): TileOption[] {
               { value: 'halves', label: t.inspector.layoutHalves, pictogram: 'split-halves-rows' },
               { value: 'wide-narrow', label: t.inspector.layoutWideNarrowRows, pictogram: 'split-wide-narrow-rows' },
               { value: 'narrow-wide', label: t.inspector.layoutNarrowWideRows, pictogram: 'split-narrow-wide-rows' },
+              { value: 'wide-narrow:quarter', label: t.inspector.layoutWideNarrowQuarterRows, pictogram: 'split-wide-narrow-quarter-rows' },
+              { value: 'narrow-wide:quarter', label: t.inspector.layoutNarrowWideQuarterRows, pictogram: 'split-narrow-wide-quarter-rows' },
           ]
         : [
               { value: 'none', label: t.inspector.layoutNone, pictogram: 'split-none' },
               { value: 'halves', label: t.inspector.layoutHalves, pictogram: 'split-halves' },
               { value: 'wide-narrow', label: t.inspector.layoutWideNarrowColumns, pictogram: 'split-wide-narrow' },
               { value: 'narrow-wide', label: t.inspector.layoutNarrowWideColumns, pictogram: 'split-narrow-wide' },
+              { value: 'wide-narrow:quarter', label: t.inspector.layoutWideNarrowQuarterColumns, pictogram: 'split-wide-narrow-quarter' },
+              { value: 'narrow-wide:quarter', label: t.inspector.layoutNarrowWideQuarterColumns, pictogram: 'split-narrow-wide-quarter' },
           ];
+}
+
+/** The tile of a division: `split`, with `:quarter` for three quarters and one quarter. */
+export function splitValue(layout: Pick<SlideLayout, 'split' | 'share'>): string {
+    return layout.share === 'quarter' && (layout.split === 'wide-narrow' || layout.split === 'narrow-wide') ? `${layout.split}:quarter` : layout.split;
+}
+
+/** The division a tile stands for. */
+export function readSplit(value: string): Pick<SlideLayout, 'split' | 'share'> {
+    const [split, share] = value.split(':') as [SlideLayout['split'], string | undefined];
+    return { split, share: share === 'quarter' ? 'quarter' : undefined };
 }

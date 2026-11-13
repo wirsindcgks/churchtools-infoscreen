@@ -731,6 +731,15 @@ describe('the division of a slide (schema 1.42, Plan.md 87 B)', () => {
         const split = makeSlide({ layout: { split: 'wide-narrow', header: true, footer: false } });
         expect(readSlide(JSON.parse(serialize(split)))).toEqual({ doc: split, issues: [] });
     });
+
+    it('keeps the quarters in a field of their own and reads an unknown share as thirds (schema 1.64)', () => {
+        const quarter = makeSlide({ layout: { split: 'narrow-wide', share: 'quarter', header: false, footer: false } });
+        expect(readSlide(JSON.parse(serialize(quarter)))).toEqual({ doc: quarter, issues: [] });
+        const unknown = { ...makeSlide(), layout: { split: 'narrow-wide', share: 'fifth', header: false, footer: false } };
+        const read = readSlide(unknown);
+        expect(read.doc.layout?.split).toBe('narrow-wide');
+        expect(read.doc.layout?.share).toBeUndefined();
+    });
 });
 
 describe('templates (schema 1.41, Plan.md 87)', () => {

@@ -40,6 +40,17 @@ describe('layoutRegions', () => {
         expect([c.width, d.x, d.width]).toEqual([600, 680, 1200]);
     });
 
+    it('makes three quarters and one quarter with `share: quarter`, the same two sizes in both orders (schema 1.64)', () => {
+        const [a, b] = layoutRegions({ split: 'wide-narrow', share: 'quarter', header: false, footer: false }, landscape) as Two;
+        expect([a.width, b.x, b.width]).toEqual([1340, 1420, 460]);
+        const [c, d] = layoutRegions({ split: 'narrow-wide', share: 'quarter', header: false, footer: false }, landscape) as Two;
+        expect([c.width, d.x, d.width]).toEqual([460, 540, 1340]);
+        const [w, n] = layoutRegions({ split: 'wide-narrow', share: 'quarter', header: false, footer: false }, portrait) as Two;
+        expect(w.height).toBeGreaterThan(2.5 * n.height);
+        // Halves know no quarters.
+        expect(layoutRegions({ split: 'halves', share: 'quarter', header: false, footer: false }, landscape)).toEqual(layoutRegions({ split: 'halves', header: false, footer: false }, landscape));
+    });
+
     it('divides portrait into rows', () => {
         const [a, b] = layoutRegions({ split: 'halves', header: false, footer: false }, portrait) as Two;
         expect(a).toEqual({ id: 'a', x: 40, y: 40, width: 1000, height: 900 });
@@ -82,8 +93,8 @@ describe('layoutRegions', () => {
     it('puts every edge on the 20 px grid, halves stay equal (Plan.md 104)', () => {
         for (const stage of [landscape, portrait]) {
             for (const gap of ['none', 'tight', 'normal', 'wide'] as const) {
-                for (const split of ['none', 'halves', 'wide-narrow', 'narrow-wide'] as const) {
-                    const regions = layoutRegions({ split, header: true, footer: true, gap }, stage);
+                for (const [split, share] of [['none'], ['halves'], ['wide-narrow'], ['narrow-wide'], ['wide-narrow', 'quarter'], ['narrow-wide', 'quarter']] as const) {
+                    const regions = layoutRegions({ split, share, header: true, footer: true, gap }, stage);
                     const edges = regions.flatMap((r) => [r.x, r.y, r.x + r.width, r.y + r.height]);
                     // equal halves may leave the middle on the 10 px grid
                     expect(edges.every((e) => e % (split === 'halves' ? 10 : 20) === 0)).toBe(true);
