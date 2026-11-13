@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 62 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 63 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -304,6 +304,37 @@ export const AgendaBlock = v.object({
      * colour – the confidence monitor on the stage (user, 2026-11-10). Missing = the design. Older players draw the design.
      */
     dark: v.optional(v.boolean()),
+    /**
+     * Since 1.63, only `card`: key, tempo and arrangement of a song, in "Jetzt" and "Dann" (Plan.md 121 A). Missing = shown.
+     * Older players leave them out.
+     */
+    showSong: v.optional(v.boolean(), true),
+    /**
+     * Since 1.63, both layouts: the clock in the view without an event (Plan.md 123), above the next agenda. Missing = off – a clock
+     * often hangs above the stage TV anyway (user, 2026-11-11).
+     */
+    showClock: v.optional(v.boolean(), false),
+    style: TextStyle,
+});
+
+/**
+ * Since 1.63 (Plan.md 121 B): the text of the song that is running in the agenda – lyrics with chords above the syllable,
+ * from the ChordPro file (or, without it, the lyrics of the `.sng`/`.txt` file) of its arrangement. Reads the same agenda
+ * as `agenda`. Older players skip it.
+ */
+export const SongsheetBlock = v.object({
+    ...BlockFrame,
+    type: v.literal('songsheet'),
+    calendarIds: v.pipe(v.array(v.pipe(v.number(), v.integer())), v.minLength(1)),
+    /** Missing = shown. Off: the text only. */
+    showChords: v.optional(v.boolean(), true),
+    /** Missing = off: without a choice of the musicians the block shows part 1. On: columns, pages turn by the length of the song. */
+    pageByTime: v.optional(v.boolean(), false),
+    /**
+     * Since 1.63: "Als Nächstes" only once the running point has this many minutes left (user, 2026-11-11: not through a whole
+     * sermon). Missing = always; new blocks start with 3.
+     */
+    nextLeadMinutes: v.optional(v.pipe(v.number(), v.integer(), v.minValue(1), v.maxValue(30))),
     style: TextStyle,
 });
 
@@ -618,6 +649,7 @@ export const ContentBlock = v.variant('type', [
     QrBlock,
     CountdownBlock,
     AgendaBlock,
+    SongsheetBlock,
     PostsBlock,
     GroupsBlock,
     PeopleBlock,
@@ -640,9 +672,9 @@ export const TemplateBlock = v.object({
 
 export const Block = v.variant('type', [...ContentBlock.options, TemplateBlock]);
 
-/** The calendars whose appointments a block shows or counts down to – or, for the agenda block, whose live agenda it reads. */
+/** The calendars whose appointments a block shows or counts down to – or, for the agenda blocks, whose live agenda they read. */
 export function blockCalendarIds(block: Block): number[] {
-    return block.type === 'appointment-list' || block.type === 'next-appointment' || block.type === 'countdown' || block.type === 'agenda'
+    return block.type === 'appointment-list' || block.type === 'next-appointment' || block.type === 'countdown' || block.type === 'agenda' || block.type === 'songsheet'
         ? block.calendarIds
         : [];
 }
@@ -1042,6 +1074,10 @@ export const SettingsDoc = v.object({
      * The setup gives the device group "Gruppe inkl. ihrer Gruppenmitglieder sehen" for each; the player reads no other group. Missing = none.
      */
     peopleGroupIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
+    /** Since 1.63 (Plan.md 121 E): the group "Infoscreen-Musiker" the assistant created – its members steer the song sheet from the phone. Missing: none. */
+    musicianGroupId: v.optional(v.pipe(v.number(), v.integer())),
+    /** Since 1.63: the groups (the bands) whose members the automatic membership puts into the musicians' group. Missing = none. */
+    musicianSourceGroupIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
     /**
      * Since 1.59 (Plan.md 115): the person fields an administrator released for the block "Personen" – any key `GET /fields` names for
      * a person. Saving gives the device group "Personendaten sehen" at security level 1 (125, G71) as long as the list is not empty.

@@ -16,3 +16,8 @@ export async function copyPlayerUrl(slug: string): Promise<boolean> {
         return false;
     }
 }
+
+/** The address of the phone page of the musicians (Plan.md 121 E2), where the designer lives. */
+export function controlUrl(): string {
+    return new URL('steuerung', window.location.origin + import.meta.env.BASE_URL).toString();
+}

@@ -17,7 +17,7 @@ import type { AuthCatalog } from './catalog';
 import { ALL_DATA, AUTH, has, type Grant } from './checks';
 import { bindingLocks, grantLocked, isLocked, type LockState, type PermissionLock } from './locks';
 
-export const GROUP_NAMES = { designer: 'Infoscreen-Designer', device: 'Infoscreen-Devices', people: 'Infoscreen-People' } as const;
+export const GROUP_NAMES = { designer: 'Infoscreen-Designer', device: 'Infoscreen-Devices', people: 'Infoscreen-People', musician: 'Infoscreen-Musiker' } as const;
 /** The group type the assistant suggests, looked up by name: ids and names differ per instance, and a church may have removed it (Plan.md 71). */
 export const DEFAULT_GROUP_TYPE_NAME = 'Merkmal';
 
@@ -58,6 +58,8 @@ export const MANAGED_RIGHTS: Record<GroupKey, { authId: number; label: string; g
     ],
     designer: [AUTH.calendarView, AUTH.resourceView].map((authId) => ({ authId, label: RIGHT_LABELS[authId] })),
     people: [],
+    // 306 and 331 per calendar, as the device's: taken back where an "Ablauf" no longer needs the calendar (Plan.md 121 E3).
+    musician: [AUTH.eventView, AUTH.agendaView].map((authId) => ({ authId, label: RIGHT_LABELS[authId] })),
 };
 
 export interface GrantSpec {
@@ -121,6 +123,11 @@ export interface PlanInput {
      * device reads their live agenda with 301, 306 and 331. Missing: none.
      */
     agendaCalendarIds?: number[];
+    /**
+     * A slide shows the block "Liedblatt" (Plan.md 121, G82): the device sees all song categories (313, `[-1]`). "Rechte
+     * aktualisieren" never takes it back – "all" may as well have been given by hand. Missing: none.
+     */
+    songsheet?: boolean;
     /** The non-public calendars released for screens (Plan.md 85 b), only those the administrator sees: device and designers may read them. */
     screenCalendarIds?: number[];
     /**
@@ -130,6 +137,13 @@ export interface PlanInput {
     peopleGroupId?: number | 'new';
     /** The existing groups an administrator released for the block "Personen" (Plan.md 112, Stück 2a), only those the administrator sees: the device group may see them. */
     peopleGroupIds?: number[];
+    /**
+     * The id of the category `steuerung` (Plan.md 121 E): the song sheet reads the steering of the musicians from it. Like `status` it
+     * exists only once an administrator opened the start page; missing: the device gets no right on it and there is no musicians' group.
+     */
+    controlCategoryId?: number;
+    /** The musicians' group (Plan.md 121 E3): `'new'` while the assistant is about to create it, its id once it exists. Missing: there is none. */
+    musicianGroupId?: number | 'new';
 }
 
 export class MissingAuthError extends Error {
@@ -228,6 +242,19 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
         device.push({ authId: AUTH.eventsView, label: t.setup.provision.grants.viewEvents });
         device.push({ authId: AUTH.agendaView, dataId: agendaCalendars, label: RIGHT_LABELS[AUTH.agendaView] });
     }
+    // The block "Liedblatt" reads the songs of the agenda and their files (G82): 313 for all song categories, "all" being `[-1]` (G68).
+    if (input.songsheet) {
+        device.push({ authId: AUTH.songCategoryView, dataId: [ALL_DATA], label: t.setup.provision.grants.viewSongCategories });
+    }
+
+    // The musicians steer the song sheet through the category `steuerung`; the device reads it (G83: 2011 and 2015).
+    const control = input.controlCategoryId;
+    if (input.songsheet && control !== undefined) {
+        device.push(
+            { authId: moduleRight('view custom category'), dataId: [control], label: t.setup.provision.grants.viewControl },
+            { authId: moduleRight('view custom data'), dataId: [control], label: t.setup.provision.grants.viewControl },
+        );
+    }
 
     // The block "Personen" (Plan.md 112, G70): 1104 on exactly this group, at the device's own group – the people group stays
     // untouched – the devices become members of the people group. The member fields (10126) are not
@@ -272,6 +299,28 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
             membersFrom: 'device',
             postsOff: true,
         });
+    }
+    // The musicians' group (Plan.md 121 E3, G83): sees the module and reads agenda and songs like a device, but writes in exactly one
+    // category – `steuerung`. No right on the other categories (additive, G34), the writing ones on the admin categories are forbidden.
+    if (input.musicianGroupId !== undefined && control !== undefined) {
+        const steering = [control];
+        const musician: GrantSpec[] = [
+            { authId: moduleRight('view'), label: t.setup.provision.grants.viewModule },
+            { authId: moduleRight('view custom category'), dataId: steering, label: t.setup.provision.grants.viewControl },
+            { authId: moduleRight('view custom data'), dataId: steering, label: t.setup.provision.grants.viewControl },
+            { authId: moduleRight('create custom data'), dataId: steering, label: t.setup.provision.grants.createControl },
+            { authId: moduleRight('edit custom data'), dataId: steering, label: t.setup.provision.grants.editControl },
+            { authId: moduleRight('delete custom data'), dataId: steering, label: t.setup.provision.grants.deleteControl },
+            { authId: AUTH.eventsView, label: t.setup.provision.grants.viewEvents },
+            { authId: AUTH.songCategoryView, dataId: [ALL_DATA], label: t.setup.provision.grants.viewSongCategories },
+        ];
+        if (agendaCalendars.length) {
+            musician.push(
+                { authId: AUTH.eventView, dataId: agendaCalendars, label: RIGHT_LABELS[AUTH.eventView] },
+                { authId: AUTH.agendaView, dataId: agendaCalendars, label: RIGHT_LABELS[AUTH.agendaView] },
+            );
+        }
+        specs.push({ key: 'musician', name: GROUP_NAMES.musician, grants: musician, forbidden: writing, postsOff: true });
     }
     return specs;
 }

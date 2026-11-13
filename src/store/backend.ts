@@ -40,6 +40,8 @@ async function create(): Promise<RepositoryHandle> {
         const repository = withActor(new ScreenRepository(kv));
         if (!restored) await seedDemo(repository);
         await repository.drafts.ensureCategory();
+        // The phone page of the musicians (Plan.md 121 E2): in the demo its choices stay in the browser, not on the instance.
+        await repository.ensureControlCategory();
         // After the seed has settled: the demo's own data is no change anybody made (Plan.md 100).
         await repository.changelogSettled();
         await repository.changelog.ensureCategory();

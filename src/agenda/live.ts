@@ -3,6 +3,8 @@
  * placeholder "not started" in front, the position as an index into it, the countdown and the delay from `switchdate`,
  * `addseconds` and the server time. Pure functions – what is fetched lives in `src/ct/api.ts` and `src/player/data.ts`.
  */
+import type { ControlDoc } from './control';
+import type { SongSheet } from './songsheet';
 
 /** One point of `GET /events/{id}/agenda`, as far as this code reads it. */
 export interface AgendaItemResponse {
@@ -11,8 +13,8 @@ export interface AgendaItemResponse {
     /** Seconds. */
     duration?: number | null;
     isBeforeEvent?: boolean | null;
-    /** A song carries its name here; its `title` is empty (G81). */
-    song?: { title?: string | null } | null;
+    /** A song carries its name here; its `title` is empty (G81). Key and tempo are free or `null`; the arrangement is named (G82). */
+    song?: { title?: string | null; arrangementId?: number | null; key?: string | null; bpm?: number | null; arrangement?: string | null; isDefault?: boolean | null } | null;
     note?: string | null;
     /** `text` holds the services in square brackets and free text; `persons` the people by service, `person: null` = unfilled (G81). */
     responsible?: {
@@ -34,6 +36,21 @@ export interface LiveItem {
     service?: string;
     /** The ready line: "Predigt: Max Mustermann · Freitext". */
     responsible?: string;
+    /** Only a song, where ChurchTools names any of it (Plan.md 121 A). */
+    songDetails?: SongDetails;
+    /** Only a song: the arrangement the point plays, to find its file (Plan.md 121 B). */
+    arrangementId?: number;
+    /** Only a song: the description of its arrangement, where the flow may stand (Plan.md 121 H); travels with the offline copy. */
+    arrangementDescription?: string;
+    /** Only a song with a text file at its arrangement and a device that may read it; travels with the offline copy. */
+    sheet?: SongSheet;
+}
+
+/** Key, tempo and the arrangement of a song; the arrangement only where it is not the default one. */
+export interface SongDetails {
+    key?: string;
+    bpm?: number;
+    arrangement?: string;
 }
 
 /** An event of today with its agenda, ready for the live view. Times in milliseconds, so that it survives the offline copy. */
@@ -69,10 +86,21 @@ export interface LivePosition {
 /** The last readings of the positions by event id; `null` = the account may not read this one (no right, G81). */
 export type LivePositions = Record<number, LivePosition | null>;
 
+/** The next event with an agenda of a calendar that has none today (Plan.md 123); shown by the empty block "Ablauf". */
+export interface UpcomingAgenda {
+    calendarId: number;
+    startMs: number;
+    title: string;
+}
+
 /** The agenda data the blocks read: the events of today with agenda, and the positions read lately. */
 export interface AgendaFeed {
     events: AgendaEvent[];
     positions: LivePositions;
+    /** The choice of the musicians per event (Plan.md 121 E); never in the offline copy: it is old after a few seconds. */
+    controls?: Record<number, ControlDoc>;
+    /** The next agenda per calendar without one today (Plan.md 123); never in the offline copy. */
+    upcoming?: UpcomingAgenda[];
 }
 
 /** What the live view of ChurchTools shows: the current point, the next, the countdown and the delay. */
@@ -96,12 +124,14 @@ export interface AgendaDisplay {
     service: string | null;
     responsible: string | null;
     song: boolean;
+    songDetails: SongDetails | null;
     /** When the next point was planned to begin; `null` where there is none. */
     nextPlannedStartMs: number | null;
     /** The service, the people and the length (seconds) of the next point, as for the shown one. */
     nextService: string | null;
     nextResponsible: string | null;
     nextDurationSeconds: number | null;
+    nextSongDetails: SongDetails | null;
 }
 
 export interface AgendaPick {
@@ -140,6 +170,16 @@ function responsibleLine(responsible: NonNullable<AgendaItemResponse['responsibl
     return parts.join(' · ');
 }
 
+/** Key, tempo and a named arrangement of a song point; `undefined` where there is none of them. */
+function songDetails(song: AgendaItemResponse['song']): SongDetails | undefined {
+    if (!song) return undefined;
+    const key = (song.key ?? '').trim();
+    const bpm = Number(song.bpm);
+    const arrangement = song.isDefault === true ? '' : (song.arrangement ?? '').trim();
+    const details: SongDetails = { ...(key ? { key } : {}), ...(bpm > 0 ? { bpm: Math.round(bpm) } : {}), ...(arrangement ? { arrangement } : {}) };
+    return Object.keys(details).length ? details : undefined;
+}
+
 /** The list of the live view: the placeholder, then the points in the delivered order without headers. */
 export function liveItems(items: readonly AgendaItemResponse[]): LiveItem[] {
     const points = items
@@ -150,6 +190,8 @@ export function liveItems(items: readonly AgendaItemResponse[]): LiveItem[] {
             const note = (item.note ?? '').trim();
             const service = serviceName(/\[([^\]]*)\]/.exec(item.responsible?.text ?? '')?.[1]);
             const responsible = item.responsible ? responsibleLine(item.responsible) : '';
+            const details = song ? songDetails(item.song) : undefined;
+            const arrangementId = song && Number.isInteger(item.song?.arrangementId) ? item.song!.arrangementId! : undefined;
             return {
                 title: own || (song ? (item.song?.title ?? '').trim() : ''),
                 duration: Math.max(0, Number(item.duration) || 0),
@@ -158,6 +200,8 @@ export function liveItems(items: readonly AgendaItemResponse[]): LiveItem[] {
                 ...(note ? { note } : {}),
                 ...(service ? { service } : {}),
                 ...(responsible ? { responsible } : {}),
+                ...(details ? { songDetails: details } : {}),
+                ...(arrangementId !== undefined ? { arrangementId } : {}),
             };
         });
     return [PLACEHOLDER, ...points];
@@ -276,6 +320,9 @@ export function agendaDisplay(pick: AgendaPick | null, deviceNowMs: number): Age
     const { event, position, phase } = pick;
     const last = event.items.length - 1;
     if (last < 1) return null;
+    // Behind the last point is ChurchTools' "– Ende –" (G81, measured 2026-11-11: `pos_id` 5 with four points): the event is over, the
+    // block shows its empty view – holding the last point with a spent clock confused the stage (user, 2026-11-11).
+    if (phase !== 'upcoming' && position && position.index > last) return null;
     const soon = phase === 'upcoming' || !position || position.index === 0;
     const index = soon ? 1 : Math.min(position.index, last);
     const next = soon ? null : nextIndex(event.items, index);
@@ -296,10 +343,12 @@ export function agendaDisplay(pick: AgendaPick | null, deviceNowMs: number): Age
         service: item.service ?? null,
         responsible: item.responsible ?? null,
         song: item.song,
+        songDetails: item.songDetails ?? null,
         nextPlannedStartMs: next === null ? null : plannedStartMs(event, next),
         nextService: next === null ? null : (event.items[next]!.service ?? null),
         nextResponsible: next === null ? null : (event.items[next]!.responsible ?? null),
         nextDurationSeconds: next === null ? null : event.items[next]!.duration,
+        nextSongDetails: next === null ? null : (event.items[next]!.songDetails ?? null),
     };
     if (soon || !position) return { kind: 'soon', next: null, countdownSeconds: null, delaySeconds: null, lengthSeconds: null, ...shown };
     return {

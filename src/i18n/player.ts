@@ -75,15 +75,25 @@ export const tp = {
         next: 'Dann',
         soon: 'Gleich',
         total: 'Gesamtzeit',
+        /** The label over the next agenda in the empty block (Plan.md 123), and the sentence where there is none within two weeks. */
+        nextAgenda: 'Nächster Ablauf',
+        noneSoon: 'In den nächsten zwei Wochen kein Ablaufplan',
         /** The badge of a song without a service, the unit under the planned time on the tile, and "3 of 5" under the position. */
         song: 'Lied',
         clock: 'Uhr',
         shortMinutes: (count: number) => `${count} Min.`,
+        bpm: (count: number) => `${count} BPM`,
         of: (count: number) => `von ${count}`,
         minutes: (count: number) => (count === 1 ? 'Minute' : 'Minuten'),
         seconds: (count: number) => (count === 1 ? 'Sekunde' : 'Sekunden'),
         /** Late minutes in, as the live view counts the total time: "−3 Min." late, "+3 Min." early, "0 Min." on time. */
         delay: (lateMinutes: number) => (lateMinutes === 0 ? '0 Min.' : `${lateMinutes > 0 ? '−' : '+'}${Math.abs(lateMinutes)} Min.`),
+    },
+
+    songsheet: {
+        next: 'Als Nächstes',
+        none: 'Kein Liedtext hinterlegt',
+        /** Today's agenda has no song (left). */
     },
 
     people: {

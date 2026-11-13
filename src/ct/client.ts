@@ -80,6 +80,28 @@ export function httpStatus(error: unknown): number | null {
     return typeof status === 'number' ? status : null;
 }
 
+/**
+ * What ChurchTools says about a refused request: `translatedMessage` (or `message`) and the messages of `errors` (validation, field by
+ * field), joined; `null` where the answer carries none. A bare "Request failed with status code 400" tells an administrator nothing.
+ */
+export function serverMessage(error: unknown): string | null {
+    const data = (error as { response?: { data?: unknown } } | null)?.response?.data;
+    if (!data || typeof data !== 'object') return null;
+    const d = data as { translatedMessage?: unknown; message?: unknown; errors?: unknown };
+    const head = typeof d.translatedMessage === 'string' && d.translatedMessage ? d.translatedMessage : typeof d.message === 'string' ? d.message : '';
+    const details = Array.isArray(d.errors)
+        ? d.errors
+              .map((x) => {
+                  const e = x as { fieldId?: unknown; message?: unknown };
+                  const text = typeof e?.message === 'string' ? e.message : '';
+                  return text && typeof e.fieldId === 'string' && e.fieldId ? `${e.fieldId}: ${text}` : text;
+              })
+              .filter(Boolean)
+        : [];
+    const text = [head, ...details].filter(Boolean).join(' – ');
+    return text || null;
+}
+
 /** ChurchTools recommends waiting 60 seconds after a `429` (G16); the test instance sent no `Retry-After`. */
 const RATE_LIMIT_WAIT_MS = 60_000;
 

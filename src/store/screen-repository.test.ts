@@ -656,7 +656,7 @@ describe('ScreenRepository', () => {
         const style = { fontFamily: 'sans', fontSize: 44, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
         const frame = { x: 0, y: 0, width: 1400, height: 700, style };
         const blocks = [
-            { id: 'a', type: 'agenda' as const, ...frame, calendarIds: [7, 3], showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSignal: true },
+            { id: 'a', type: 'agenda' as const, ...frame, calendarIds: [7, 3], showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSong: true, showSignal: true, showClock: false },
             { id: 'l', type: 'appointment-list' as const, ...frame, calendarIds: [5], horizonDays: 14, limit: 5, layout: 'cards' as const },
         ];
         await repo.saveScreen(bundle({ slides: [makeSlide({ id: 'slide-1', blocks }), makeSlide({ id: 'slide-2' })] }), { ...save, expectedRevision: null });
@@ -849,7 +849,7 @@ describe('ScreenRepository', () => {
         it('saves new, updates against the revision and reports a conflict with the stored name', async () => {
             const first = await repo.saveTemplate(head, { expectedRevision: null, updatedBy: 'Anna' });
             expect(first).toMatchObject({ kind: 'template', revision: 1, updatedBy: 'Anna', name: 'Seitenkopf' });
-            expect(first.schema).toEqual({ major: 1, minor: 62 });
+            expect(first.schema).toEqual({ major: 1, minor: 63 });
             const second = await repo.saveTemplate({ ...head, name: 'Kopf' }, { expectedRevision: 1, updatedBy: 'Ben' });
             expect(second.revision).toBe(2);
             const error = await repo.saveTemplate({ ...head, name: 'Dritter' }, { expectedRevision: 1, updatedBy: 'Cleo' }).catch((e: unknown) => e);

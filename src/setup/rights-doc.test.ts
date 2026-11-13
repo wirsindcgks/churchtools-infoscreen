@@ -39,8 +39,11 @@ const plan = [true, false].flatMap((appointmentRooms) => planProvisioning({
     appointmentRooms,
     serviceCalendarIds: [1],
     agendaCalendarIds: [1],
+    songsheet: true,
     peopleGroupId: 'new',
     peopleGroupIds: [60],
+    controlCategoryId: 36,
+    musicianGroupId: 'new',
 }));
 
 describe('docs/Rechte.md', () => {
@@ -60,7 +63,7 @@ describe('docs/Rechte.md', () => {
 
     it('names every permission key of the module and the core rights by number', () => {
         expect(MODULE_AUTHS.filter((auth) => !doc.includes(`\`${auth}\``))).toEqual([]);
-        for (const id of [AUTH.calendarView, AUTH.resourceView, AUTH.eventView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit, AUTH.groupWithMembersView, AUTH.memberFieldsView, AUTH.personDataView, AUTH.groupMembersViewIntern]) {
+        for (const id of [AUTH.calendarView, AUTH.resourceView, AUTH.eventView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit, AUTH.groupWithMembersView, AUTH.memberFieldsView, AUTH.songCategoryView, AUTH.personDataView, AUTH.groupMembersViewIntern]) {
             expect(doc).toContain(String(id));
         }
     });

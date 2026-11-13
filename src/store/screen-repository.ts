@@ -16,6 +16,7 @@
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { appointmentServiceIds } from '../appointments/services';
 import { httpStatus } from '../ct/client';
+import { CONTROL_CATEGORY, controlsByEvent, planControlWrite, type ControlDoc } from '../agenda/control';
 import { heartbeatTime, readHeartbeat, type HeartbeatDoc } from '../model/heartbeat';
 import {
     readMedia,
@@ -312,6 +313,7 @@ export class ScreenRepository {
     private categoryIds: Promise<Record<CategoryKey, number>> | null = null;
     /** The `status` category, once found; a missing one is looked for again – it may appear later. */
     private statusId: number | null = null;
+    private controlId: number | null = null;
     /** Value ids of the signs of life by slug, to spare the read. */
     private readonly heartbeatValueIds = new Map<string, number>();
     /** The drafts of playlists and slides (Plan.md 79, Paket E). */
@@ -409,6 +411,59 @@ export class ScreenRepository {
         } catch (error) {
             console.warn('Die Kategorie „Status" konnte nicht angelegt werden:', error);
             return null;
+        }
+    }
+
+    /** The id of the `steuerung` category (Plan.md 121 E), or null while this person cannot see one. Creates nothing. */
+    async controlCategoryId(): Promise<number | null> {
+        if (this.controlId !== null) return this.controlId;
+        const found = (await this.kv.listCategories()).find((c) => c.shorty === CONTROL_CATEGORY.shorty);
+        this.controlId = found?.id ?? null;
+        return this.controlId;
+    }
+
+    /** Like {@link controlCategoryId}, but creates the category when it is missing. Meant for an administrator; failing gives null. */
+    async ensureControlCategory(): Promise<number | null> {
+        try {
+            const existing = await this.controlCategoryId();
+            if (existing !== null) return existing;
+            this.controlId = (await this.kv.createCategory({ ...CONTROL_CATEGORY })).id;
+            return this.controlId;
+        } catch (error) {
+            console.warn('Die Kategorie „Steuerung" konnte nicht angelegt werden:', error);
+            return null;
+        }
+    }
+
+    /** The latest choice of the musicians per event; `{}` where the category is missing or this person may not read it (`403`). */
+    async readControls(): Promise<Record<number, ControlDoc>> {
+        try {
+            const categoryId = await this.controlCategoryId();
+            if (categoryId === null) return {};
+            return controlsByEvent(await this.kv.listValues(categoryId));
+        } catch (error) {
+            if (httpStatus(error) === 403) return {};
+            throw error;
+        }
+    }
+
+    /**
+     * Writes the choice of a musician (Plan.md 121 E): changes the value of the event or creates it, then cleans up (old choices
+     * of other events, doubles). Throws where the category is missing; a failed cleanup is only logged.
+     */
+    async writeControl(doc: ControlDoc): Promise<void> {
+        const categoryId = await this.controlCategoryId();
+        if (categoryId === null) throw new Error(tr.controlUnavailable);
+        const plan = planControlWrite(await this.kv.listValues(categoryId), doc, Date.now());
+        const text = JSON.stringify(doc);
+        if (plan.updateId !== null) await this.kv.updateValue(categoryId, plan.updateId, text);
+        else await this.kv.createValue(categoryId, text);
+        for (const id of plan.removeIds) {
+            try {
+                await this.kv.deleteValue(categoryId, id);
+            } catch (error) {
+                console.warn('Eine alte Wahl der Steuerung konnte nicht entfernt werden:', error);
+            }
         }
     }
 
@@ -1222,13 +1277,13 @@ export class ScreenRepository {
         return [...ids].sort((a, b) => a - b);
     }
 
-    /** The calendars of every `agenda` block and of every rule that ends with the agenda – what a device must see the live agenda of (Plan.md 118, G81). */
+    /** The calendars of every `agenda` and `songsheet` block and of every rule that ends with the agenda – what a device must see the live agenda of (Plan.md 118, G81). */
     async agendaCalendarIdsInUse(): Promise<number[]> {
         const [{ screens }, slides] = await Promise.all([this.readRunningScreens(), this.readShownSlides()]);
         const ids = new Set<number>();
         for (const screen of screens) agendaRuleCalendars(screen.doc).forEach((id) => ids.add(id));
         for (const block of slides.flatMap((s) => s.blocks)) {
-            if (block.type === 'agenda') blockCalendarIds(block).forEach((id) => ids.add(id));
+            if (block.type === 'agenda' || block.type === 'songsheet') blockCalendarIds(block).forEach((id) => ids.add(id));
         }
         return [...ids].sort((a, b) => a - b);
     }
@@ -1259,6 +1314,12 @@ export class ScreenRepository {
     async peopleInUse(): Promise<boolean> {
         const slides = await this.readShownSlides();
         return slides.some((s) => s.blocks.some((b) => b.type === 'people'));
+    }
+
+    /** Whether any slide shows the block "Liedblatt" – then a device must see the song categories (Plan.md 121). */
+    async songsheetInUse(): Promise<boolean> {
+        const slides = await this.readShownSlides();
+        return slides.some((s) => s.blocks.some((b) => b.type === 'songsheet'));
     }
 
     async saveMedia(doc: MediaDoc): Promise<void> {

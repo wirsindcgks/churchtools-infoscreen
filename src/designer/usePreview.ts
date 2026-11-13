@@ -32,6 +32,7 @@ export function usePreview(
     appointmentTags: Ref<boolean> = ref(false),
     people: Ref<PeopleNeeds> = ref({ standard: false, groupIds: [], personFieldKeys: [] }),
     agenda: Ref<number[]> = ref([]),
+    agendaSheets: Ref<boolean> = ref(false),
 ) {
     const context = reactive<StageContext>({
         now: new Date(),
@@ -218,7 +219,7 @@ export function usePreview(
         agendaSample = true;
         try {
             const window = appointmentWindow(new Date(), context.timeZone, 1);
-            const events = await churchToolsPlayerData.agendaEvents(ids, window.from, window.to, context.timeZone);
+            const events = await churchToolsPlayerData.agendaEvents(ids, window.from, window.to, context.timeZone, { sheets: agendaSheets.value });
             const positions: LivePositions = {};
             await Promise.all(events.map(async (e) => (positions[e.eventId] = await churchToolsPlayerData.agendaPosition(e.eventId))));
             if (mine === agendaRequest && pickEvent(events, positions, Date.now())) {
@@ -254,7 +255,7 @@ export function usePreview(
     watch(() => groupHomepages.value.join(), () => void loadGroupHomepages());
     watch(() => JSON.stringify(rooms.value), () => void loadRooms());
     watch(() => JSON.stringify(people.value), () => void loadPeople());
-    watch(() => agenda.value.join(), () => void loadAgenda());
+    watch(() => `${agenda.value.join()}|${agendaSheets.value}`, () => void loadAgenda());
     // Appointments and rooms need the instance time zone.
     void loadBasics().then(() => {
         void loadAppointments();

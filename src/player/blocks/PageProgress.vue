@@ -9,8 +9,8 @@
 import PageSegments from './PageSegments.vue';
 
 /** `color` tints the pale track and the number; without it the block's text colour does – a gallery has none of its own.
- * `number` counts from 1 and shows beside the bar from two pages on. */
-defineProps<{ seconds: number; size: number; inset: number; color?: string; edge?: boolean; number?: number; total?: number; segments?: boolean; held?: boolean }>();
+ * `offset` = seconds of the page that are over already (the bar starts that far in). `number` counts from 1 and shows beside the bar from two pages on. */
+defineProps<{ seconds: number; size: number; inset: number; color?: string; edge?: boolean; number?: number; total?: number; segments?: boolean; held?: boolean; offset?: number }>();
 </script>
 
 <template>
@@ -23,7 +23,7 @@ defineProps<{ seconds: number; size: number; inset: number; color?: string; edge
     >
         <PageSegments v-if="segments" :count="total ?? 1" :current="(number ?? 1) - 1" :seconds="held ? 0 : seconds" :held="held" :edge="edge" fill-testid="page-progress-bar" />
         <span v-else class="track" :style="{ height: `${size}px` }">
-            <span v-if="!held" class="progress" data-testid="page-progress-bar" :style="{ animationDuration: `${seconds}s` }" />
+            <span v-if="!held" class="progress" data-testid="page-progress-bar" :style="{ animationDuration: `${seconds}s`, ...(offset ? { animationDelay: `-${offset}s` } : {}) }" />
             <span v-else class="progress progress--held" />
         </span>
         <span v-if="!segments && !edge && number && total && total > 1" class="page-number" data-testid="page-progress-number">{{ number }}/{{ total }}</span>

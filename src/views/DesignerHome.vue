@@ -25,7 +25,7 @@ import ScreenCard from '../designer/ScreenCard.vue';
 import ScheduleDialog from '../designer/ScheduleDialog.vue';
 import ScreenSettingsDialog from '../designer/ScreenSettingsDialog.vue';
 import { blockCalendarIds, type ScreenDoc, type TemplateDoc, type ThemeDoc } from '../model/schema';
-import { agendaNeeds, groupNeeds, peopleNeeds, postNeeds, roomNeeds } from '../player/data';
+import { agendaNeeds, groupNeeds, peopleNeeds, postNeeds, roomNeeds, sheetsNeeded } from '../player/data';
 import { ruleCalendarIds, runningNow } from '../designer/running';
 import { screenCounts, setScreenCounts } from '../designer/section-counts';
 import { usePreview, useTemplatesIn } from '../designer/usePreview';
@@ -121,6 +121,7 @@ const { context } = usePreview(
     undefined,
     computed(() => peopleNeeds(firstSlides.value)),
     computed(() => agendaNeeds(firstSlides.value)),
+    computed(() => sheetsNeeded(firstSlides.value)),
 );
 useTemplatesIn(context, templates);
 
@@ -150,6 +151,11 @@ onMounted(async () => {
         ]);
         admin.value = isAdmin;
         demo.value = handle.demo;
+        // Musicians see no category but the choice of the song part: their page is the phone page (Plan.md 121 E2).
+        if (!handle.demo && !Object.keys(await handle.repository.visibleCategories()).length && (await handle.repository.controlCategoryId()) !== null) {
+            await router.replace({ name: 'control' });
+            return;
+        }
         // A failed check must not lock anyone out; it only means no hint.
         const rights = await checkDesignerRights(handle.repository, handle.demo).catch((e: unknown) => {
             console.warn('Rechteprüfung nicht möglich:', e);
@@ -159,7 +165,7 @@ onMounted(async () => {
         // Demo mode has no module rights: there the ChurchTools admin right stands in, so the roles can be tried out.
         screensAdmin.value = rights.configureScreens ?? isAdmin;
         // An administrator's visit creates the categories of the signs of life and of the drafts; nobody else may (Plan.md 59, 79).
-        if (isAdmin) await Promise.all([handle.repository.ensureStatusCategory(), handle.repository.drafts.ensureCategory()]).catch(() => null);
+        if (isAdmin) await Promise.all([handle.repository.ensureStatusCategory(), handle.repository.ensureControlCategory(), handle.repository.drafts.ensureCategory()]).catch(() => null);
         repository.value = handle.repository;
         try {
             await refresh();

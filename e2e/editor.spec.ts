@@ -1765,7 +1765,7 @@ test('the blocks stand in German alphabetical order in the "+ Baustein" sheet; t
     const types = await sheet.locator('[data-testid^="sheet-add-"]').evaluateAll((buttons) =>
         buttons.map((b) => b.getAttribute('data-testid')!.replace('sheet-add-', '')),
     );
-    // Ablauf, Beiträge, Bild, Countdown, Fläche, Galerie, Gemeindekopf, Gruppen, Linie, Nächster Termin, Personen, QR-Code, Raumbelegung, Social Media, Terminliste, Text, Uhr, Video, Webseite
+    // Ablauf, Beiträge, Bild, Countdown, Fläche, Galerie, Gemeindekopf, Gruppen, Liedblatt, Linie, Nächster Termin, Personen, QR-Code, Raumbelegung, Social Media, Terminliste, Text, Uhr, Video, Webseite
     expect(types).toEqual([
         'agenda',
         'posts',
@@ -1775,6 +1775,7 @@ test('the blocks stand in German alphabetical order in the "+ Baustein" sheet; t
         'slideshow',
         'church-header',
         'groups',
+        'songsheet',
         'line',
         'next-appointment',
         'people',

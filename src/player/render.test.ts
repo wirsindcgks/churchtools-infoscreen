@@ -1087,11 +1087,29 @@ describe('rendering people (Plan.md 112)', () => {
 describe('the agenda block (schema 1.61, Plan.md 118)', () => {
     const NOW = new Date('2026-10-04T08:00:00Z');
     const agenda = (extra: Record<string, unknown> = {}) =>
-        ({ id: 'a', type: 'agenda', x: 0, y: 0, width: 1500, height: 500, calendarIds: [2], showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSignal: true, style, ...extra }) as Block;
+        ({ id: 'a', type: 'agenda', x: 0, y: 0, width: 1500, height: 500, calendarIds: [2], showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSong: true, showSignal: true, style, ...extra }) as Block;
     const draw = (block: Block, overrides: Partial<StageContext> = {}) => render(makeSlide({ blocks: [block] }), { now: NOW, ...overrides });
 
     it('shows nothing without agenda data', () => {
         expect(draw(agenda()).find('[data-testid="agenda"]').exists()).toBe(false);
+    });
+
+    it('shows the next agenda once the agenda is read and no event has one today, the clock only on request; without one a sentence (Plan.md 123)', () => {
+        expect(draw(agenda()).find('[data-testid="agenda-empty"]').exists()).toBe(false);
+        const none = draw(agenda(), { agenda: { events: [], positions: {} }, timeZone: 'UTC' });
+        // A clock often hangs above the stage TV (user, 2026-11-11): off unless switched on.
+        expect(none.find('[data-testid="agenda-empty-clock"]').exists()).toBe(false);
+        const clock = draw(agenda({ showClock: true }), { agenda: { events: [], positions: {} }, timeZone: 'UTC' });
+        expect(clock.get('[data-testid="agenda-empty-clock"]').text()).toBe('08:00');
+        expect(none.get('[data-testid="agenda-empty-next"]').text()).toBe('In den nächsten zwei Wochen kein Ablaufplan');
+        const upcoming = [
+            { calendarId: 9, startMs: Date.parse('2026-10-05T08:00:00Z'), title: 'Fremd' },
+            { calendarId: 2, startMs: Date.parse('2026-10-11T08:00:00Z'), title: 'Gottesdienst' },
+            { calendarId: 2, startMs: Date.parse('2026-10-18T08:00:00Z'), title: 'Später' },
+        ];
+        const next = draw(agenda(), { agenda: { events: [], positions: {}, upcoming }, timeZone: 'UTC' });
+        expect(next.get('[data-testid="agenda-empty-next"]').text()).toBe('Nächster AblaufSo, 11.10. · 08:00Gottesdienst');
+        expect(draw(agenda(), { agenda: sampleAgenda(NOW.getTime(), [2]) }).find('[data-testid="agenda-empty"]').exists()).toBe(false);
     });
 
     it('shows the current and the next point, the countdown in the circle and the delay in red', () => {
@@ -1206,6 +1224,20 @@ describe('the agenda block (schema 1.61, Plan.md 118)', () => {
             expect(wrapper.get('[data-testid="agenda-service"]').text()).toBe('Lied');
         });
 
+        it('shows key and tempo of a song in "Jetzt" and "Dann" unless switched off (schema 1.63, Plan.md 121 A)', () => {
+            const f = feed();
+            const at = (index: number) => ({ ...f, positions: Object.fromEntries(Object.entries(f.positions).map(([id, p]) => [id, { ...p!, index }])) });
+            const now = draw(card(), { agenda: at(2) });
+            expect(now.get('[data-testid="agenda-song"]').text()).toBe('C · 120 BPM');
+            expect(now.find('[data-testid="agenda-next-song"]').exists()).toBe(false);
+            const before = draw(card(), { agenda: at(1) });
+            expect(before.find('[data-testid="agenda-song"]').exists()).toBe(false);
+            expect(before.get('[data-testid="agenda-next-song"]').text()).toBe('C · 120 BPM');
+            const off = draw(card({ showSong: false }), { agenda: at(2) });
+            expect(off.find('[data-testid="agenda-song"]').exists()).toBe(false);
+            expect(draw(card({ showSong: false }), { agenda: at(1) }).find('[data-testid="agenda-next-song"]').exists()).toBe(false);
+        });
+
         it('shows the note and the people only when switched on', () => {
             expect(draw(card(), { agenda: feed() }).find('[data-testid="agenda-note"]').exists()).toBe(false);
             expect(draw(card(), { agenda: feed() }).find('[data-testid="agenda-responsible"]').exists()).toBe(false);
@@ -1229,6 +1261,132 @@ describe('the agenda block (schema 1.61, Plan.md 118)', () => {
             const classic = draw(agenda({ showNext: false }), { agenda: feed() });
             expect(classic.find('[data-testid="agenda-next"]').exists()).toBe(false);
             expect(classic.get('[data-testid="agenda-now"]').text()).toBe('Begrüßung');
+        });
+    });
+});
+
+describe('the block "Liedblatt" (schema 1.63, Plan.md 121 B)', () => {
+    const NOW = new Date('2026-10-04T08:00:00Z');
+    const songsheet = (extra: Record<string, unknown> = {}) =>
+        ({ id: 's', type: 'songsheet', x: 0, y: 0, width: 1500, height: 900, calendarIds: [2], showChords: true, style, ...extra }) as Block;
+    const draw = (block: Block, overrides: Partial<StageContext> = {}) => render(makeSlide({ blocks: [block] }), { now: NOW, ...overrides });
+    /** The example, with the position moved to a point of the example (index into the live list: 5 = the song after "Predigt"). */
+    const feed = (index?: number, sheet = true) => {
+        const base = sampleAgenda(NOW.getTime(), [2]);
+        const event = base.events[0]!;
+        const items = event.items.map((item) => (sheet || !item.sheet ? item : { ...item, sheet: undefined }));
+        const positions = index === undefined ? base.positions : { [event.eventId]: { ...base.positions[event.eventId]!, index } };
+        return { events: [{ ...event, items }], positions };
+    };
+
+    it('shows nothing without agenda data', () => {
+        expect(draw(songsheet()).find('[data-testid="songsheet"]').exists()).toBe(false);
+    });
+
+    it('draws a faint note without text where there is no event today, and nothing where the agenda has no song left (Plan.md 123)', () => {
+        expect(draw(songsheet()).find('[data-testid="songsheet-empty"]').exists()).toBe(false);
+        const note = draw(songsheet(), { agenda: { events: [], positions: {} } }).get('[data-testid="songsheet-empty"]');
+        expect(note.find('svg').exists()).toBe(true);
+        expect(note.text()).toBe('');
+        const last = feed().events[0]!.items.length - 1;
+        const over = draw(songsheet(), { agenda: feed(last) });
+        expect(over.find('[data-testid="songsheet-empty"]').exists()).toBe(false);
+        expect(over.find('[data-testid="songsheet"]').exists()).toBe(false);
+    });
+
+    it('lets the next song wait while the running point has more than the set minutes left (user, 2026-11-11)', () => {
+        // In the example "Begrüßung" has three minutes left.
+        const waiting = draw(songsheet({ nextLeadMinutes: 1 }), { agenda: feed() });
+        expect(waiting.find('[data-testid="songsheet"]').exists()).toBe(false);
+        expect(waiting.find('[data-testid="songsheet-empty"]').exists()).toBe(false);
+        expect(draw(songsheet({ nextLeadMinutes: 5 }), { agenda: feed() }).get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
+    });
+
+    it('shows part 1 of the next song under "Als Nächstes" without a choice, with chords, a faint start of part 2 and the footer', () => {
+        const wrapper = draw(songsheet(), { agenda: feed() });
+        expect(wrapper.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
+        expect(wrapper.findAll('[data-testid="songsheet-part"]')).toHaveLength(1);
+        expect(wrapper.get('[data-testid="songsheet-part"]').text()).toContain('Strophe 1');
+        expect(wrapper.get('[data-testid="songsheet-text"]').text()).not.toContain('Refrain');
+        expect(wrapper.get('[data-testid="songsheet-preview"]').text()).toContain('Refrain');
+        expect(wrapper.findAll('[data-testid="songsheet-chord"]').length).toBeGreaterThan(3);
+        expect(wrapper.get('[data-testid="songsheet-footer"]').text()).toContain('CCLI-Lizenznummer');
+    });
+
+    it('shows the whole text in columns under "Als Nächstes" with "Nach Zeit blättern", with chords, sections and the footer', () => {
+        const wrapper = draw(songsheet({ pageByTime: true }), { agenda: feed() });
+        expect(wrapper.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
+        expect(wrapper.get('[data-testid="songsheet-title"]').text()).toBe('Segenslied');
+        expect(wrapper.get('[data-testid="songsheet-meta"]').text()).toBe('C · 96 BPM');
+        expect(wrapper.findAll('[data-testid="songsheet-label"]').map((l) => l.text())).toEqual(['Strophe 1', 'Refrain', 'Strophe 2']);
+        expect(wrapper.findAll('[data-testid="songsheet-chord"]').length).toBeGreaterThan(10);
+        expect(wrapper.get('[data-testid="songsheet-text"]').text()).toContain('Gott segne');
+        expect(wrapper.get('[data-testid="songsheet-footer"]').text()).toContain('CCLI-Lizenznummer');
+    });
+
+    it('shows the running song without "Als Nächstes"', () => {
+        const wrapper = draw(songsheet(), { agenda: feed(4) });
+        expect(wrapper.get('[data-testid="songsheet-part"]').text()).toContain('Strophe 1');
+        expect(wrapper.get('[data-testid="songsheet-title"]').text()).toBe('Segenslied');
+        expect(wrapper.find('[data-testid="songsheet-next"]').exists()).toBe(false);
+    });
+
+    it('draws the text only, without the lines of bars and chords, when the chords are off', () => {
+        const wrapper = draw(songsheet({ showChords: false }), { agenda: feed() });
+        expect(wrapper.find('[data-testid="songsheet-chord"]').exists()).toBe(false);
+        expect(wrapper.get('[data-testid="songsheet-text"]').text()).toContain('Gott segne dich auf allen Wegen');
+        expect(wrapper.get('[data-testid="songsheet-text"]').text()).not.toContain('|');
+    });
+
+    it('keeps the head and says so where the song has no text', () => {
+        const wrapper = draw(songsheet(), { agenda: feed(undefined, false) });
+        expect(wrapper.get('[data-testid="songsheet-title"]').text()).toBe('Segenslied');
+        expect(wrapper.get('[data-testid="songsheet-none"]').text()).toBe('Kein Liedtext hinterlegt');
+        expect(wrapper.find('[data-testid="songsheet-text"]').exists()).toBe(false);
+    });
+
+    it('stays empty when no song is left, and takes only the events of its calendars', () => {
+        expect(draw(songsheet(), { agenda: feed(6) }).find('[data-testid="songsheet"]').exists()).toBe(false);
+        expect(draw(songsheet({ calendarIds: [5] }), { agenda: feed() }).find('[data-testid="songsheet"]').exists()).toBe(false);
+    });
+
+    describe('with a part chosen by the musicians (Plan.md 121 E)', () => {
+        /** The song is index 5 of the example; the choice is newer than the last switch of the live agenda. */
+        const chosen = (section: number, extra: Record<string, unknown> = {}) => {
+            const agenda = feed();
+            const event = agenda.events[0]!;
+            const control = { eventId: event.eventId, itemIndex: 4, arrangementId: event.items[4]!.arrangementId, section, at: NOW.toISOString(), ...extra };
+            return { ...agenda, controls: { [event.eventId]: control } };
+        };
+
+        it('shows only the chosen part, with a faint start of the next, and no "Als Nächstes"', () => {
+            const wrapper = draw(songsheet(), { agenda: chosen(1) });
+            expect(wrapper.find('[data-testid="songsheet-next"]').exists()).toBe(false);
+            expect(wrapper.get('[data-testid="songsheet-title"]').text()).toBe('Segenslied');
+            expect(wrapper.findAll('[data-testid="songsheet-part"]')).toHaveLength(1);
+            expect(wrapper.get('[data-testid="songsheet-part"]').text()).toContain('Refrain');
+            expect(wrapper.get('[data-testid="songsheet-text"]').text()).not.toContain('Strophe 1');
+            expect(wrapper.get('[data-testid="songsheet-preview"]').text()).toContain('Strophe 2');
+            expect(wrapper.get('[data-testid="songsheet-preview"]').find('[data-testid="songsheet-chord"]').exists()).toBe(false);
+        });
+
+        it('has no preview after the last part', () => {
+            const wrapper = draw(songsheet(), { agenda: chosen(2) });
+            expect(wrapper.get('[data-testid="songsheet-part"]').text()).toContain('Strophe 2');
+            expect(wrapper.find('[data-testid="songsheet-preview"]').exists()).toBe(false);
+        });
+
+        it('shows part 1 without a choice, or with one that no longer holds, and the columns with "Nach Zeit blättern"', () => {
+            for (const agenda of [feed(), chosen(1, { itemIndex: 5 })]) {
+                const wrapper = draw(songsheet(), { agenda });
+                expect(wrapper.get('[data-testid="songsheet-part"]').text()).toContain('Strophe 1');
+                expect(wrapper.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
+                const columns = draw(songsheet({ pageByTime: true }), { agenda });
+                expect(columns.find('[data-testid="songsheet-part"]').exists()).toBe(false);
+                expect(columns.find('[data-testid="songsheet-preview"]').exists()).toBe(false);
+                expect(columns.findAll('[data-testid="songsheet-label"]')).toHaveLength(3);
+                expect(columns.get('[data-testid="songsheet-next"]').text()).toBe('Als Nächstes');
+            }
         });
     });
 });

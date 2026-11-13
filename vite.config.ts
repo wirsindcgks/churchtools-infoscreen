@@ -234,7 +234,10 @@ function devProxy(target: string, loginToken: string | undefined): ProxyOptions 
                 if (req.headers['x-infoscreen-anonymous'] === '1') proxyReq.removeHeader('authorization');
             });
             proxy.on('proxyRes', (res) => {
-                delete res.headers['set-cookie'];
+                // The old routes (`?q=…`) answer a login token with a session cookie and a redirect to themselves (G82): without the
+                // cookie that loops. Kept for localhost – no domain, not secure – so file downloads and the live position work here too.
+                const cookies = res.headers['set-cookie'];
+                if (cookies) res.headers['set-cookie'] = cookies.map((c) => c.replace(/;\s*domain=[^;]*/gi, '').replace(/;\s*secure/gi, '').replace(/;\s*samesite=none/gi, ''));
                 // Keep redirects on the proxy: the instance itself would refuse the browser (no CORS).
                 const location = res.headers.location;
                 if (location?.startsWith(target)) res.headers.location = location.slice(target.replace(/\/+$/, '').length);

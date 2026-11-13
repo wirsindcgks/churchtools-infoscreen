@@ -76,6 +76,8 @@ export interface AgendaEventResponse {
     startDate?: string | null;
     endDate?: string | null;
     isCanceled?: boolean | null;
+    /** The name of the event (G-measured 2026-11-11). */
+    name?: string | null;
     /** The calendar as a link object; its `domainIdentifier` is the calendar id as a string. */
     calendar?: { domainIdentifier?: string | null } | null;
 }
@@ -88,6 +90,30 @@ export function fetchEventList(from: Date, to: Date, timeZone: string): Promise<
 /** The agenda of an event (Plan.md 118). A `404` means the event has none; the points come in the delivered order. */
 export async function fetchAgenda(eventId: number): Promise<{ calendarId?: number | null; items?: AgendaItemResponse[] | null }> {
     return churchtoolsClient.get(`/events/${eventId}/agenda`);
+}
+
+/** A song of `GET /events/{id}/agenda/songs` as the block "Liedblatt" reads it: its arrangements with their files (Plan.md 121 B, G82). */
+export interface AgendaSongResponse {
+    id?: number | null;
+    arrangements?: { id?: number | null; description?: string | null; files?: { name?: string | null; fileUrl?: string | null }[] | null }[] | null;
+}
+
+/** All songs of the agenda with all arrangements and files, in one call. Without right 313 the list is empty or the answer a `403` (G82). */
+export async function fetchAgendaSongs(eventId: number): Promise<AgendaSongResponse[]> {
+    return churchtoolsClient.get(`/events/${eventId}/agenda/songs`);
+}
+
+/** The address of a file on the own origin: the answer carries the address of the instance, the module runs on it (and behind the proxy in development). */
+export function ownFileUrl(fileUrl: string): string {
+    const parsed = new URL(fileUrl, `${window.location.origin}/`);
+    return `${window.location.origin}${parsed.pathname}${parsed.search}`;
+}
+
+/** The text of a file of an arrangement, over the session of the page (`302` with the cookie, then `200`, G82); the byte order mark is dropped. */
+export async function fetchSheetText(fileUrl: string): Promise<string> {
+    const response = await fetch(ownFileUrl(fileUrl), { credentials: 'include' });
+    if (!response.ok) throw Object.assign(new Error(`HTTP ${response.status}`), { response: { status: response.status } });
+    return new TextDecoder('utf-8').decode(await response.arrayBuffer());
 }
 
 /** The live position cannot be read for lack of a right: `403`, or `200` with `status: "fail"` (G81). */

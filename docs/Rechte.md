@@ -15,6 +15,9 @@ Auf Wunsch kommt die Gruppe **„Infoscreen-People"** dazu: Wer dort Mitglied is
 Sie ist keine Rolle mit eigenen Rechten, sondern die Freigabe von Personen – wie jede andere freigegebene Gruppe, nur dass die Geräte
 dort automatisch Mitglied werden ([unten](#personen--für-den-baustein-personen)). Der Assistent legt sie nicht von selbst an.
 
+Ebenso auf Wunsch die Gruppe **„Infoscreen-Musiker"**: Ihre Mitglieder steuern das Liedblatt vom Handy und dürfen dafür genau eine Kategorie
+beschreiben ([unten](#musiker--für-die-handysteuerung)).
+
 ```mermaid
 flowchart LR
     AS["Einrichtungs-<br>assistent"] --> GD["„Infoscreen-Designer“<br>Gestalter"]
@@ -41,7 +44,7 @@ zeigt.
 ## Rechte je Rolle
 
 **Kategorien** sind die Ablagen des Moduls: **Screens**, **Playlists**, **Slides**, **Medien**, **Einstellungen**,
-**Entwürfe** und **Status** (Lebenszeichen der Fernseher).
+**Entwürfe**, **Status** (Lebenszeichen der Fernseher) und **Steuerung** (der Liedteil, den Musiker vom Handy wählen).
 
 ### Modul „Infoscreen Designer"
 
@@ -57,6 +60,9 @@ zeigt.
 | – | `edit custom category`, `delete custom category` | – | – | – |
 
 ¹ Nur damit der Designer beim ersten Öffnen seine Kategorien anlegen kann.
+
+Die Kategorie **Steuerung** steht nicht in der Tabelle: Das Gerät bekommt dort „Kategorien sehen" und „Daten in Kategorie sehen", sobald ein
+Baustein „Liedblatt" gezeigt wird; schreiben dürfen nur die Musiker ([unten](#musiker--für-die-handysteuerung)).
 
 Weil das Gerät die Entwürfe nicht sieht, kann ein Fernseher **nie einen Entwurf zeigen**. Wer die Adresse eines
 Fernsehers kennt, kann höchstens dessen Lebenszeichen ändern.
@@ -108,6 +114,42 @@ Das Gerät sieht damit nur zugesagte Dienste aus Dienstgruppen, die „Ohne Bere
 | Ablaufpläne für einzelne Kalender sehen | Ablaufpläne für einzelne Kalender sehen (`view agenda`, 331) | – | – | **jeden öffentlichen oder freigegebenen Kalender eines Bausteins „Ablauf" oder einer Zeitplan-Regel „Ende des Ablaufs"** |
 
 Steuerrechte für den Ablauf (Programmpunkte weiterschalten, bearbeiten) vergibt der Assistent nie.
+
+Der Baustein „Liedblatt" liest denselben Ablauf; seine Kalender zählen hier wie die eines Bausteins „Ablauf".
+
+### Lieder – für den Baustein „Liedblatt"
+
+| Im Assistenten | In der Rechteverwaltung | Administrator | Gestalter | Gerät |
+| --- | --- | --- | --- | --- |
+| Alle Song-Kategorien sehen (für den Baustein „Liedblatt") | Einzelne Song-Kategorien sehen (`view songcategory`, 313), alle Kategorien | – | – | **ja, sobald eine Folie einen Baustein „Liedblatt" zeigt** |
+
+Damit liest das Gerät die Lieder des Ablaufs mit ihren Arrangements und Dateien (ChordPro, `.sng`, `.txt`). Fehlt das
+Recht, bleiben die Liedblätter leer, und die Einstellungsseite warnt. Gilt es nur für einzelne Kategorien, zeigt der
+Baustein Lieder anderer Kategorien ohne Liedtext – die Einstellungsseite nennt das als Hinweis. Liedtexte auf einem
+Bildschirm zu zeigen, fällt unter die CCLI-Lizenz der Gemeinde.
+
+### Musiker – für die Handysteuerung
+
+Die Gruppe **„Infoscreen-Musiker"** legt der Assistent auf der Einstellungsseite „Musiker" an, sobald ein Liedblatt gezeigt wird. Ihre Rollen
+sehen das Modul und lesen Ablauf und Lieder wie das Gerät, schreiben aber nur in die Kategorie **Steuerung**; auf Screens, Playlists, Slides,
+Medien und Einstellungen haben sie kein Recht. Die Beiträge der Gruppe sind abgeschaltet.
+
+| Im Assistenten | In der Rechteverwaltung | Musiker |
+| --- | --- | --- |
+| „Infoscreen Designer" sehen | `view` | ✓ |
+| Steuerung der Musiker sehen (Kategorie „Steuerung") | `view custom category`, `view custom data` | nur Steuerung |
+| Steuerung der Musiker anlegen (Kategorie „Steuerung") | `create custom data` | nur Steuerung |
+| Steuerung der Musiker ändern (Kategorie „Steuerung") | `edit custom data` | nur Steuerung |
+| Steuerung der Musiker löschen (Kategorie „Steuerung") | `delete custom data` | nur Steuerung |
+| Events sehen (für den Baustein „Ablauf") | Events (`view`, 301), ohne Daten | ✓ |
+| Events von einzelnen Kalendern sehen | `view events`, 306 | die Kalender der Bausteine „Ablauf" und „Liedblatt" |
+| Ablaufpläne für einzelne Kalender sehen | `view agenda`, 331 | dieselben Kalender |
+| Alle Song-Kategorien sehen (für den Baustein „Liedblatt") | `view songcategory`, 313, alle Kategorien | ✓ |
+
+Die Mitglieder kommen aus den **Bandgruppen**, die du auf der Einstellungsseite wählst: Der Assistent richtet dafür die „Automatische
+Mitgliedschaft" der Gruppe ein (dazu braucht er „Personen verwalten"). Wer in einer Bandgruppe ist, wird Teilnehmer; **von Hand aufgenommene
+Mitglieder entfernt der nächste Abgleich.** Ohne „Personen verwalten" legt der Assistent die Gruppe und ihre Rechte an und lässt die Mitgliedschaft
+dir: in ChurchTools unter Gruppe → „Automatische Mitgliedschaft".
 
 ### Personen – für den Baustein „Personen"
 
@@ -183,14 +225,17 @@ nur an Kalendern und Räumen, die du selbst siehst (das `1104` für Gruppen nimm
 | Im Assistenten | In der Rechteverwaltung (API) | Gruppe | Wann es wegfällt |
 | --- | --- | --- | --- |
 | Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | Gerät, Gestalter | Der Kalender ist nicht mehr für Bildschirme freigegeben |
-| Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | Gerät | Kein Baustein zeigt mehr Dienste oder Ablauf dieses Kalenders |
-| Ablaufpläne für einzelne Kalender sehen | Ablaufpläne für einzelne Kalender sehen (`view agenda`, 331) | Gerät | Kein Baustein „Ablauf" und keine Zeitplan-Regel „Ende des Ablaufs" nutzt diesen Kalender mehr |
+| Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | Gerät, Musiker | Kein Baustein zeigt mehr Dienste oder Ablauf dieses Kalenders |
+| Ablaufpläne für einzelne Kalender sehen | Ablaufpläne für einzelne Kalender sehen (`view agenda`, 331) | Gerät, Musiker | Kein Baustein „Ablauf" und keine Zeitplan-Regel „Ende des Ablaufs" nutzt diesen Kalender mehr |
 | Events sehen (für den Baustein „Ablauf") | Events (`view`, 301), ohne Daten | Gerät | Kein Baustein „Ablauf" und keine Zeitplan-Regel „Ende des Ablaufs" hat mehr einen Kalender |
 | Ressource sehen | Ressource sehen (`view resource`, 205) | Gerät, Gestalter | Der Raum wird nicht mehr gebraucht |
 | Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen | Gruppe inkl. ihrer Gruppenmitglieder sehen (`1104`) | Gerät | Die Freigabe wird beim Speichern der Seite „Gruppen für Personen" zurückgenommen („Infoscreen-People" und ein von Hand vergebenes `1104` bleiben) |
-| Anlegen von Bildschirmen und Einstellungen | `create custom data` | Gestalter, Gerät | immer – das ist Sache der Administratoren |
-| Bearbeiten von Bildschirmen und Einstellungen | `edit custom data` | Gestalter, Gerät | immer |
-| Löschen von Bildschirmen und Einstellungen | `delete custom data` | Gestalter, Gerät | immer |
+| Anlegen von Bildschirmen und Einstellungen | `create custom data` | Gestalter, Gerät, Musiker | immer – das ist Sache der Administratoren |
+| Bearbeiten von Bildschirmen und Einstellungen | `edit custom data` | Gestalter, Gerät, Musiker | immer |
+| Löschen von Bildschirmen und Einstellungen | `delete custom data` | Gestalter, Gerät, Musiker | immer |
+
+„Alle Song-Kategorien sehen" (313) nimmt „Rechte aktualisieren" **nie** zurück, auch wenn kein Baustein „Liedblatt" mehr
+gezeigt wird: Ein Recht für alle Kategorien lässt sich nicht von einem von Hand vergebenen unterscheiden.
 
 **Deshalb an den Gruppen des Assistenten nichts von Hand ergänzen** – wer mehr vergeben will, nimmt eine eigene
 Gruppe. Entzogene Rechte wirken bei ChurchTools noch bis zu einer Dreiviertelstunde nach.
@@ -205,6 +250,7 @@ Gruppe. Entzogene Rechte wirken bei ChurchTools noch bis zu einer Dreiviertelstu
 | einen Bildschirm anlegen, umbenennen, löschen | Administrator | Modulrechte für **Screens** ([Schritt 2](Einrichtung.md#2-dir-selbst-die-modulrechte-geben)) |
 | dass der Fernseher Termine zeigt | – | der Kalender muss **öffentlich** oder für Bildschirme freigegeben sein |
 | dass der Fernseher Räume, Dienste oder den Ablauf zeigt | Administrator | „Rechte aktualisieren" |
+| dass Musiker das Liedblatt vom Handy steuern | Administrator | Gruppe „Infoscreen-Musiker" auf der Einstellungsseite „Musiker" anlegen, Bandgruppen wählen; „Rechte aktualisieren" |
 | dass der Fernseher Personen zeigt | Administrator | Gerät in „Infoscreen-People" aufnehmen, Mitgliedsfelder an der Gruppe anlegen; „Rechte aktualisieren" |
 | dass der Fernseher Personen aus einer vorhandenen Gruppe zeigt | Administrator | die Gruppe unter „Gruppen für Personen" freigeben; „Rechte aktualisieren" |
 | dass der Fernseher Telefon, E-Mail, Ort oder Geburtstag einer Person zeigt | Administrator | in ChurchTools der Gerätegruppe „Personendaten sehen" auf der Stufe der Felder geben, dann unter „Gruppen für Personen" die Personenfelder freischalten |

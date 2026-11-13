@@ -155,7 +155,9 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
         groupHomepages: vi.fn(async () => []),
         people: vi.fn(async (groupId: number) => ({ groupId, denied: false, people: [], roles: [], fields: [] })),
         agendaEvents: vi.fn(async () => []),
+        upcomingAgendas: vi.fn(async () => []),
         agendaPosition: vi.fn(async () => null),
+        controls: vi.fn(async () => ({})),
         rooms: vi.fn(async () => []),
         reportAlive: vi.fn(async () => {}),
         ...overrides,
@@ -427,7 +429,9 @@ describe('player controller', () => {
             showNext: true,
             showNote: false,
             showResponsible: false,
+            showSong: true,
             showSignal: true,
+            showClock: false,
             style: { fontFamily: 'sans', fontSize: 96, fontWeight: 700, color: '#fff', align: 'left' },
         };
         return { ...base, slides: first ? [{ ...first, blocks: [...first.blocks, block] }, ...rest] : base.slides };
@@ -453,7 +457,7 @@ describe('player controller', () => {
         const agendaPosition = vi.fn<PlayerData['agendaPosition']>(async () => samplePosition);
         const player = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents, agendaPosition }), deps);
         await player.start();
-        expect(agendaEvents).toHaveBeenCalledWith([2], expect.any(Date), expect.any(Date), 'Europe/Berlin');
+        expect(agendaEvents).toHaveBeenCalledWith([2], expect.any(Date), expect.any(Date), 'Europe/Berlin', { sheets: false });
         expect(player.state.agenda?.events).toHaveLength(1);
         expect(deps.saved[0]?.agendaEvents).toHaveLength(1);
         // The position arrives with the fast loop and is not part of what is saved.
@@ -478,6 +482,64 @@ describe('player controller', () => {
         await vi.advanceTimersByTimeAsync(INTERVALS.agendaMs * 3);
         expect(agendaPosition).not.toHaveBeenCalled();
         far.stop();
+    });
+
+    /** The agenda example turned into a `songsheet` block of calendar 2 instead of the `agenda` one. */
+    const withSongsheet = (): LoadedScreen => {
+        const base = withAgenda();
+        return {
+            ...base,
+            slides: base.slides.map((slide) => ({
+                ...slide,
+                blocks: slide.blocks.map((b) => (b.type === 'agenda' ? ({ ...b, type: 'songsheet', showChords: true } as unknown as Block) : b)),
+            })),
+        };
+    };
+
+    it('asks for the choice of the musicians only with a songsheet in the presentation and an event in the window (Plan.md 121 E)', async () => {
+        const controls = vi.fn<PlayerData['controls']>(async () => ({ 1: { eventId: 1, itemIndex: 1, section: 2, at: NOW.toISOString() } }));
+        const near = createPlayer('demo', fakeData({ loadScreen: async () => withSongsheet(), agendaEvents: async () => [agendaEvent(20 * 60_000)], controls }), fakeDeps());
+        await near.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        expect(controls.mock.calls.length).toBeGreaterThanOrEqual(2);
+        expect(near.state.agenda?.controls?.[1]?.section).toBe(2);
+        near.stop();
+
+        controls.mockClear();
+        const far = createPlayer('demo', fakeData({ loadScreen: async () => withSongsheet(), agendaEvents: async () => [agendaEvent(3 * 3600_000)], controls }), fakeDeps());
+        await far.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        const plain = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [agendaEvent(20 * 60_000)], controls }), fakeDeps());
+        await plain.start();
+        await vi.advanceTimersByTimeAsync(INTERVALS.controlMs * 3);
+        expect(controls).not.toHaveBeenCalled();
+        far.stop();
+        plain.stop();
+    });
+
+    it('asks for the next agenda from tomorrow on, also where today has one, and survives a failure (Plan.md 123)', async () => {
+        const next = [{ calendarId: 2, startMs: NOW.getTime() + 3 * 86_400_000, title: 'Gottesdienst' }];
+        const upcomingAgendas = vi.fn<PlayerData['upcomingAgendas']>(async () => next);
+        // Today's event may be over long before the next reading of the data (first test, 2026-11-11): the next one is asked all the same.
+        const busy = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [agendaEvent(0)], upcomingAgendas }), fakeDeps());
+        await busy.start();
+        expect(upcomingAgendas).toHaveBeenCalledTimes(1);
+        busy.stop();
+        upcomingAgendas.mockClear();
+
+        const idle = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [], upcomingAgendas }), fakeDeps());
+        await idle.start();
+        expect(upcomingAgendas).toHaveBeenCalledWith([2], expect.any(Date), expect.any(Date), 'Europe/Berlin');
+        const [, from, to] = upcomingAgendas.mock.calls[0]!;
+        expect(to.getTime() - from.getTime()).toBeGreaterThanOrEqual(13 * 86_400_000);
+        expect(idle.state.agenda?.upcoming).toEqual(next);
+        idle.stop();
+
+        const broken = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [], upcomingAgendas: async () => Promise.reject(new Error('Netz')) }), fakeDeps());
+        await broken.start();
+        expect(broken.state.phase).toBe('running');
+        expect(broken.state.agenda?.upcoming).toEqual([]);
+        broken.stop();
     });
 
     it('keeps the last position when a reading fails, and notes a missing right as null (Plan.md 118)', async () => {
@@ -516,7 +578,7 @@ describe('player controller', () => {
         const agendaPosition = vi.fn<PlayerData['agendaPosition']>(async () => samplePosition);
         const player = createPlayer('demo', fakeData({ loadScreen: async () => withAgendaRule(), agendaEvents, agendaPosition }), fakeDeps());
         await player.start();
-        expect(agendaEvents).toHaveBeenCalledWith([2], expect.any(Date), expect.any(Date), 'Europe/Berlin');
+        expect(agendaEvents).toHaveBeenCalledWith([2], expect.any(Date), expect.any(Date), 'Europe/Berlin', { sheets: false });
         await vi.advanceTimersByTimeAsync(INTERVALS.agendaMs * 1.5);
         expect(agendaPosition).toHaveBeenCalledWith(1);
         expect(player.state.agenda?.positions[1]).toEqual(samplePosition);
@@ -863,7 +925,8 @@ describe('player controller', () => {
             await vi.advanceTimersByTimeAsync(INTERVALS.nightlyRetryMs);
             expect(deps.reload).toHaveBeenCalledTimes(1);
             player.stop();
-        });
+        // A day of one-second cycles (the choice of the musicians) takes a while to simulate.
+        }, 30_000);
     });
 
     it('names an unknown slug', async () => {

@@ -7,7 +7,7 @@
  * it. The numbers come from `use-agenda.ts` via `AgendaView.vue`.
  */
 import { computed } from 'vue';
-import { clockText, signalState, type AgendaDisplay } from '../../agenda/live';
+import { clockText, signalState, type AgendaDisplay, type SongDetails } from '../../agenda/live';
 import type { Block } from '../../model/schema';
 import { themeOf, useStageContext } from '../context';
 import { formatTime, textStyle, tint } from '../format';
@@ -37,6 +37,14 @@ const showDelay = computed(() => now.value && props.block.showDelay && props.lat
 const showNote = computed(() => props.block.showNote && !!props.display.note);
 const showResponsible = computed(() => props.block.showResponsible && !!props.display.responsible);
 const showNext = computed(() => props.block.showNext && props.display.next !== null);
+/** Key first, then tempo and a named arrangement (Plan.md 121 A); `null` where the block leaves them out or there is none. */
+function songParts(details: SongDetails | null): { key: string | null; rest: string } | null {
+    if (!props.block.showSong || !details) return null;
+    const rest = [details.bpm ? tp.agenda.bpm(details.bpm) : '', details.arrangement ?? ''].filter(Boolean).join(' · ');
+    return { key: details.key ?? null, rest: details.key && rest ? ` · ${rest}` : rest };
+}
+const song = computed(() => songParts(props.display.songDetails));
+const nextSong = computed(() => songParts(props.display.nextSongDetails));
 /** The ring is the large part of the card: it is read from the stage. */
 
 const digits = computed(() => (props.block.countdownStyle ?? 'digits') === 'digits');
@@ -92,7 +100,14 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
                     </template>
                 </div>
                 <!-- People and note at the bottom edge, the head at the top (user, 2026-11-10). -->
-                <div v-if="showResponsible || showNote" class="card-foot">
+                <div v-if="song || showResponsible || showNote" class="card-foot">
+                    <!-- Key, tempo and arrangement of a song, with a note sign (Plan.md 121 A). -->
+                    <div v-if="song" class="hero-meta">
+                        <span data-testid="agenda-song">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></svg>
+                            <span><strong v-if="song.key" class="song-key">{{ song.key }}</strong>{{ song.rest }}</span>
+                        </span>
+                    </div>
                     <div v-if="showResponsible" class="hero-meta">
                         <span data-testid="agenda-responsible">
                             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg>
@@ -118,7 +133,13 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
             <span class="next-title" data-testid="agenda-next">{{ display.next }}</span>
             <template v-if="!narrow">
                 <!-- The people as in "Jetzt": a person with the person sign (user, 2026-11-10). -->
-                <div v-if="(block.showResponsible && nextPeople) || nextMinutes > 0" class="card-foot">
+                <div v-if="nextSong || (block.showResponsible && nextPeople) || nextMinutes > 0" class="card-foot">
+                    <div v-if="nextSong" class="hero-meta next-people">
+                        <span data-testid="agenda-next-song">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13" /><circle cx="6" cy="18" r="3" /><circle cx="17" cy="16" r="3" /></svg>
+                            <span><strong v-if="nextSong.key" class="song-key">{{ nextSong.key }}</strong>{{ nextSong.rest }}</span>
+                        </span>
+                    </div>
                     <div v-if="block.showResponsible && nextPeople" class="hero-meta next-people" data-testid="agenda-next-responsible">
                         <span>
                             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg>
@@ -410,6 +431,11 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
     overflow-wrap: anywhere;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+}
+.song-key {
+    /* The page around the player colours `strong` itself (a dark grey on the TV, user 2026-11-11): the key keeps the colour of its line. */
+    color: inherit;
+    font-weight: 800;
 }
 .next-people {
     font-size: 0.8em;

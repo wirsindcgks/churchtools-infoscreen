@@ -17,8 +17,14 @@ export const INTERVALS = {
     quickCheckMs: 20_000,
     /** ChurchTools data. */
     dataMs: 10 * 60_000,
-    /** The position of the live agenda while a service is on (Plan.md 118); ChurchTools' own live view asks every 2.5 seconds (G81). */
-    agendaMs: 5_000,
+    /**
+     * The position of the live agenda while a service is on (Plan.md 118): as often as ChurchTools' own live view (G81) – 5 s felt slow
+     * on the stage (user, 2026-11-11). About 24 requests a minute per device, only from half an hour before to an hour after the
+     * service; the limit is 600 a minute per IP address (G16).
+     */
+    agendaMs: 2_500,
+    /** The choice of the musicians (Plan.md 121 E): once a second, only while a `songsheet` is shown and an event is near (G16: 600 a minute per IP address). */
+    controlMs: 1_000,
     /** The sign of life of a TV with a device login (Plan.md 59); the designer calls a screen online for 15 minutes after it. */
     aliveMs: 5 * 60_000,
     /** Pause after a `403` on the sign of life: the right is not granted yet, so asking every five minutes helps nobody. */

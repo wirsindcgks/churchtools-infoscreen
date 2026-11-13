@@ -883,6 +883,23 @@ describe('the people block and the group of the settings (schema 1.51, Plan.md 1
         expect(v.safeParse(SettingsDoc, { ...base, peopleGroupIds: Array.from({ length: 51 }, (_, i) => i) }).success).toBe(false);
     });
 
+    it('reads settings with and without the musicians group and its band groups (schema 1.63)', () => {
+        const base = { schema: { major: 1, minor: 62 }, kind: 'settings', id: 'settings' };
+        expect(v.parse(SettingsDoc, base).musicianGroupId).toBeUndefined();
+        expect(v.parse(SettingsDoc, base).musicianSourceGroupIds).toBeUndefined();
+        const parsed = v.parse(SettingsDoc, { ...base, schema: { major: 1, minor: 63 }, musicianGroupId: 84, musicianSourceGroupIds: [9, 10] });
+        expect(parsed).toMatchObject({ musicianGroupId: 84, musicianSourceGroupIds: [9, 10] });
+        expect(v.safeParse(SettingsDoc, { ...base, musicianGroupId: 'x' }).success).toBe(false);
+        expect(v.safeParse(SettingsDoc, { ...base, musicianSourceGroupIds: Array.from({ length: 51 }, (_, i) => i) }).success).toBe(false);
+    });
+
+    it('reads a songsheet block with and without "Nach Zeit blättern" (schema 1.63)', () => {
+        const block = { id: 's', type: 'songsheet', x: 0, y: 0, width: 100, height: 100, calendarIds: [2], style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' } };
+        expect(v.parse(Block, block)).toMatchObject({ showChords: true, pageByTime: false });
+        expect(v.parse(Block, { ...block, pageByTime: true })).toMatchObject({ pageByTime: true });
+        expect(v.safeParse(Block, { ...block, pageByTime: 'x' }).success).toBe(false);
+    });
+
     it('reads a people block with and without its own group (schema 1.53)', () => {
         const block = { id: 'p', type: 'people', x: 0, y: 0, width: 100, height: 100, roleIds: [], fieldKeys: [], style: { fontFamily: 'sans', fontSize: 44, fontWeight: 400, color: '#fff', align: 'left' } };
         expect(v.parse(Block, block)).not.toHaveProperty('sourceGroupId');

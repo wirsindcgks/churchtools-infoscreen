@@ -3,22 +3,30 @@
  * The running order of the service in the layout of the live view of ChurchTools (schema 1.61, Plan.md 118): "JETZT" and the
  * current point above, "DANN" and the next below, the countdown in a circle at the right with the total time and the delay
  * under it. What is current comes from the position on the server (`src/agenda/live.ts`); this view counts the seconds itself,
- * like the countdown block. Without an event or a reading it shows nothing. With `layout: 'card'` the cards of `AgendaCard.vue` take over.
+ * like the countdown block. Before the agenda is read it shows nothing; read, but no event today, a short line. With `layout: 'card'` the cards of `AgendaCard.vue` take over.
  */
 import { computed } from 'vue';
 import type { Block } from '../../model/schema';
-import { textStyle } from '../format';
+import { themeOf } from '../context';
+import { formatTime, formatWhen, textStyle } from '../format';
 import { tp } from '../../i18n/player';
 import AgendaCard from './AgendaCard.vue';
 import AgendaRing from './AgendaRing.vue';
 import { useAgenda } from './use-agenda';
 
 const props = defineProps<{ block: Extract<Block, { type: 'agenda' }> }>();
-const { display, circle, lateMinutes, left } = useAgenda(() => props.block);
+const { context, nowMs, display, circle, lateMinutes, left } = useAgenda(() => props.block);
 
 const showCircle = computed(() => props.block.showCountdown && circle.value !== null);
 const showDelay = computed(() => props.block.showDelay && lateMinutes.value !== null);
 const diameter = computed(() => Math.min(props.block.height * 0.62, props.block.width * 0.34));
+
+/** The first agenda to come in the calendars of the block; the clock of the empty block runs with the stage's time. */
+const next = computed(() => {
+    const entries = (context.agenda?.upcoming ?? []).filter((u) => props.block.calendarIds.includes(u.calendarId));
+    return entries.reduce<(typeof entries)[number] | null>((first, u) => (first === null || u.startMs < first.startMs ? u : first), null);
+});
+const clock = computed(() => formatTime(new Date(nowMs.value), context.timeZone));
 </script>
 
 <template>
@@ -42,9 +50,96 @@ const diameter = computed(() => Math.min(props.block.height * 0.62, props.block.
             </div>
         </div>
     </div>
+    <div v-else-if="context.agenda" class="empty" :style="textStyle(block.style)" data-testid="agenda-empty">
+        <div v-if="block.showClock" class="clock" :style="{ color: themeOf(context).accent }" data-testid="agenda-empty-clock">{{ clock }}</div>
+        <div v-if="next" class="upcoming" data-testid="agenda-empty-next">
+            <div class="label">{{ tp.agenda.nextAgenda }}</div>
+            <div class="when">{{ formatWhen(new Date(next.startMs), context.timeZone) }}</div>
+            <div v-if="next.title" class="name">{{ next.title }}</div>
+        </div>
+        <div v-else class="soon" data-testid="agenda-empty-next">{{ tp.agenda.noneSoon }}</div>
+    </div>
 </template>
 
 <style scoped>
+/* Quiet on purpose: it says the screen works, not that something is wrong. The clock runs, the next agenda is named under it (Plan.md 123). */
+/*
+ * The empty view sizes itself by the block, not only by its font: the font of a card block is set for "Jetzt", and the clock with the
+ * next agenda would run out of a flat block (test, 2026-11-11). `cqh` is the height of the block; where a browser lacks it, the first
+ * declaration stands.
+ */
+.empty {
+    container-type: size;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    line-height: 1.15;
+    text-align: center;
+}
+.clock {
+    font-size: 2.2em;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+/* Centred under the clock whatever the alignment of the block says. */
+.upcoming,
+.soon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 100%;
+    text-align: center;
+}
+.upcoming {
+    margin-top: 0.5em;
+}
+.upcoming .label {
+    font-size: 0.4em;
+}
+.when {
+    margin-top: 0.2em;
+    font-size: 0.9em;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+.name {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 0.8em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.soon {
+    margin-top: 0.5em;
+    font-size: 0.4em;
+    opacity: 0.7;
+}
+@supports (font-size: 1cqh) {
+    .clock {
+        font-size: min(2.2em, 34cqh);
+    }
+    .upcoming,
+    .soon {
+        margin-top: min(0.5em, 5cqh);
+    }
+    .upcoming .label {
+        font-size: min(0.4em, 6cqh);
+    }
+    .when {
+        margin-top: min(0.2em, 2cqh);
+        font-size: min(0.9em, 14cqh);
+    }
+    .name {
+        font-size: min(0.8em, 11cqh);
+    }
+    .soon {
+        font-size: min(0.4em, 7cqh);
+    }
+}
 .agenda {
     display: flex;
     align-items: stretch;

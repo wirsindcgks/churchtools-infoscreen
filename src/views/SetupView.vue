@@ -10,8 +10,9 @@ import PageHeader from '../designer/PageHeader.vue';
 import SelectMenu from '../designer/SelectMenu.vue';
 import { fetchCalendars, fetchPersonFields, fetchPublicCalendars, fetchResourceMasterdata, fetchSecurityLevels, fetchServiceGroups, fetchServices, type Calendar, type PersonFieldInfo, type SecurityLevel } from '../ct/api';
 import { serviceChoices, type ServiceInfo } from '../appointments/services';
-import { currentPerson, httpStatus, instanceBaseUrl, personUrl } from '../ct/client';
-import { playerUrl } from '../designer/player-url';
+import { currentPerson, httpStatus, instanceBaseUrl, personUrl, serverMessage } from '../ct/client';
+import { controlUrl, playerUrl } from '../designer/player-url';
+import { CONTROL_CATEGORY } from '../agenda/control';
 import { GROUP_RIGHT_NAMES, settingsAbilities, type GroupPermissions, type SettingsButton } from '../setup/abilities';
 import RefreshRightsDialog from '../designer/RefreshRightsDialog.vue';
 import RemoveSetupDialog, { type DeviceAccountInfo, type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
@@ -20,10 +21,13 @@ import { LEGACY_PERSON_FIELD_KEYS, type ScreenDoc } from '../model/schema';
 import { offeredPersonFields } from '../groups/person-fields';
 import { withDeviceLogin } from '../player/device-login';
 import { resourceTypesOf, roomTypeIdsOf, roomsOf, type ResourceMasterdata, type ResourceTypeInfo, type RoomInfo } from '../rooms/normalize';
+import { grantableCalendars as grantable } from '../setup/calendars';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
+import { setRightsPending } from '../setup/pending';
 import { bindingLocks, LockedPermissionError, readLocks, withLockNames } from '../setup/locks';
 import { AUTH, checkDesignerGroup, checkDeviceGroup, devicesPersonReach, groupChecks, memberHoldings, type Check, type Grant, type RequiredRight } from '../setup/checks';
 import {
+    canManagePermissions,
     canViewWiki,
     churchToolsProvisionApi,
     deleteGroup,
@@ -40,6 +44,7 @@ import {
     type GroupSummary,
 } from '../setup/load';
 import { settingsToSave, type SettingsFields } from '../setup/settings-doc';
+import { churchToolsMusicianApi, provisionMusicians, updateMusicianSources } from '../setup/musicians';
 import { wikiCategoryCreation } from '../setup/wiki-creation';
 import { createDeviceLogin } from '../setup/device-token';
 import {
@@ -60,6 +65,7 @@ import {
     type RefreshState,
     REMOVE_SETUP_NEXT_STEPS_LOG_LINE,
     removeCreatedGroups,
+    type GrantSpec,
     type GroupSpec,
     type GroupTypeChoice,
     type PlanInput,
@@ -85,7 +91,7 @@ type Side = 'designer' | 'device';
  * whichever page one starts on or moves to.
  */
 const route = useRoute();
-type SetupPage = 'overview' | 'groups' | 'tv' | 'wiki' | 'services' | 'rooms' | 'calendars' | 'people';
+type SetupPage = 'overview' | 'groups' | 'tv' | 'wiki' | 'services' | 'rooms' | 'calendars' | 'people' | 'musicians';
 const page = computed<SetupPage>(() => {
     switch (route.name) {
         case 'setup-groups':
@@ -102,6 +108,8 @@ const page = computed<SetupPage>(() => {
             return 'calendars';
         case 'setup-people':
             return 'people';
+        case 'setup-musicians':
+            return 'musicians';
         default:
             return 'overview';
     }
@@ -146,6 +154,11 @@ const HEADERS: Record<SetupPage, { icon: IconName; title: string; intro: string 
         icon: 'people',
         title: t.setup.peopleGroups.title,
         intro: t.setup.peopleGroups.intro,
+    },
+    musicians: {
+        icon: 'music',
+        title: t.setup.musicians.title,
+        intro: t.setup.musicians.intro,
     },
 };
 const header = computed(() => HEADERS[page.value]);
@@ -194,6 +207,10 @@ let agendaCalendarIds: number[] = [];
 let videoInUse = false;
 /** A slide shows the block "Personen" (Plan.md 112). */
 let peopleInUse = false;
+/** A slide shows the block "Liedblatt" (Plan.md 121). */
+let songsheetInUse = false;
+/** The id of the category `steuerung` (Plan.md 121 E); null while there is none or this person cannot see it. */
+let controlCategoryId: number | null = null;
 let catalog: AuthCatalog | null = null;
 /** Names of the wiki areas by id, to name what a device sees beyond its own (Plan.md 94 B). */
 let wikiNames = new Map<number, string>();
@@ -208,6 +225,25 @@ const planProblem = ref<string | null>(null);
 const createdGroupIds = ref<number[]>([]);
 /** The group "Infoscreen-People" of the block "Personen" (Plan.md 112), from the settings; null for installations from before. */
 const peopleGroupId = ref<number | null>(null);
+/** The group "Infoscreen-Musiker" (Plan.md 121 E3), from the settings; null while there is none. */
+const musicianGroupId = ref<number | null>(null);
+/** The band groups whose members the automatic membership puts into it, as stored, and the choice on the page until „Speichern". */
+const musicianSourceGroupIds = ref<number[]>([]);
+const draftMusicianSources = ref<number[]>([]);
+/** Who is in "Infoscreen-Musiker" now – the page names them, so that it is plain which group holds the rights; null until read. */
+const musicianMembers = ref<string[] | null>(null);
+async function loadMusicianMembers(): Promise<void> {
+    const groupId = musicianGroupId.value;
+    if (groupId === null || page.value !== 'musicians') return;
+    musicianMembers.value = await groupMemberNames(groupId)
+        .then((members) => members.map((m) => m.name).sort((a, b) => a.localeCompare(b, 'de')))
+        .catch(() => null);
+}
+watch([page, musicianGroupId], () => void loadMusicianMembers(), { immediate: true });
+/** Whether this person may "Personen verwalten" – the automatic membership needs it; `undefined` while unknown. */
+const personsAllowed = ref<boolean | undefined>(undefined);
+/** What the last run on the page „Musiker" reported. */
+const musicianRun = reactive({ ran: false, log: [] as string[], error: null as string | null });
 /** The person ids of the device accounts in that group, from the settings: the player leaves them out of the cards (schema 1.52). */
 const peopleDeviceIds = ref<number[]>([]);
 /** Whether this person may save the settings (module right on the category); `undefined` while unknown – then nothing is blocked. */
@@ -270,7 +306,7 @@ const foreignGroups = computed(() =>
     ),
 );
 
-const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.resourceView, AUTH.eventsView, AUTH.eventView, AUTH.agendaView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit, AUTH.groupWithMembersView, AUTH.memberFieldsView];
+const NOT_MODULE: number[] = [AUTH.calendarView, AUTH.resourceView, AUTH.eventsView, AUTH.eventView, AUTH.agendaView, AUTH.wikiView, AUTH.wikiCategoryView, AUTH.wikiCategoryEdit, AUTH.groupWithMembersView, AUTH.memberFieldsView, AUTH.songCategoryView];
 
 /** Rights a side must not hold – what the assistant takes back (Plan.md, F). */
 function forbiddenRights(side: Side): RequiredRight[] | null {
@@ -280,13 +316,13 @@ function forbiddenRights(side: Side): RequiredRight[] | null {
 /** The module rights a side needs – exactly what the assistant grants, so both agree. */
 function moduleRights(side: Side): RequiredRight[] | null {
     const spec = plan.value?.find((g) => g.key === side);
-    return spec ? spec.grants.filter((g) => !NOT_MODULE.includes(g.authId)) : null;
+    // The rights on the category `steuerung` are named in their own check (`controlRights`).
+    const isControl = (g: GrantSpec): boolean => controlCategoryId !== null && g.dataId?.length === 1 && g.dataId[0] === controlCategoryId;
+    return spec ? spec.grants.filter((g) => !NOT_MODULE.includes(g.authId) && !isControl(g)) : null;
 }
 
-/** Only public and released calendars get a right for their events; the rest is named by the check (Plan.md 73, 85 b). */
 function grantableCalendars(ids: number[]): number[] {
-    const showable = new Set([...publicCalendarIds, ...releasedCalendars.value]);
-    return ids.filter((id) => showable.has(id));
+    return grantable(ids, publicCalendarIds, releasedCalendars.value);
 }
 
 function computePlan(): void {
@@ -313,7 +349,7 @@ function computePlan(): void {
 }
 
 /** What the plan is made from; `people` overrides the group's state – creating the own group on request plans it as new next to existing groups. */
-function planInput(people?: 'new'): PlanInput {
+function planInput(people?: 'new', musician?: 'new'): PlanInput {
     return {
         catalog: catalog!,
         moduleKey: EXTENSION_KEY,
@@ -326,8 +362,11 @@ function planInput(people?: 'new'): PlanInput {
         appointmentRooms,
         serviceCalendarIds: grantableCalendars(serviceCalendarIds),
         agendaCalendarIds: grantableCalendars(agendaCalendarIds),
+        songsheet: songsheetInUse,
         screenCalendarIds: releasedCalendars.value,
         peopleGroupIds: releasedPeopleGroups.value,
+        controlCategoryId: controlCategoryId ?? undefined,
+        musicianGroupId: musician ?? (musicianGroupId.value ?? undefined),
     };
 }
 
@@ -343,6 +382,8 @@ async function persistSettings(changes?: Partial<SettingsFields>): Promise<void>
                 deviceGroupId: selected.device ?? undefined,
                 peopleGroupId: peopleGroupId.value ?? undefined,
                 peopleDeviceIds: peopleGroupId.value === null ? undefined : peopleDeviceIds.value,
+                musicianGroupId: musicianGroupId.value ?? undefined,
+                musicianSourceGroupIds: musicianGroupId.value !== null && musicianSourceGroupIds.value.length ? musicianSourceGroupIds.value : undefined,
                 createdGroupIds: createdGroupIds.value.length ? createdGroupIds.value : undefined,
                 createdGroupTypeId: createdGroupIds.value.length ? (createdTypeId.value ?? undefined) : undefined,
                 createdWikiCategoryId: createdWikiCategoryId.value ?? undefined,
@@ -550,8 +591,8 @@ const sortedIds = (ids: Iterable<number>, known: Set<number>): number[] => [...n
  * head, „Verwerfen" brings back what is stored. Before, groups waited for a button below, services and rooms
  * saved at every click.
  */
-type FormPage = 'groups' | 'services' | 'rooms' | 'calendars' | 'people';
-const FORM_PAGES: SetupPage[] = ['groups', 'services', 'rooms', 'calendars', 'people'];
+type FormPage = 'groups' | 'services' | 'rooms' | 'calendars' | 'people' | 'musicians';
+const FORM_PAGES: SetupPage[] = ['groups', 'services', 'rooms', 'calendars', 'people', 'musicians'];
 const formPage = computed<FormPage | null>(() => (FORM_PAGES.includes(page.value) ? (page.value as FormPage) : null));
 const formState = ref<'idle' | 'saving' | 'saved'>('idle');
 
@@ -567,6 +608,9 @@ function dirtyOf(form: FormPage): boolean {
             return !!internalCalendars.value && !sameIds(draftCalendars.value, releasedCalendars.value);
         case 'people':
             return settingsLoaded.value && (!sameIds(draftPeopleGroups.value, releasedPeopleGroups.value) || !sameKeys(draftPersonFields.value, releasedPersonFields.value));
+        case 'musicians':
+            // Before the group exists the choice waits for „Musikergruppe anlegen“, not for „Speichern“.
+            return musicianGroupId.value !== null && !sameIds(draftMusicianSources.value, musicianSourceGroupIds.value);
     }
 }
 const formDirty = computed(() => (formPage.value ? dirtyOf(formPage.value) : false));
@@ -584,6 +628,8 @@ function discardForm(form: FormPage): void {
     } else if (form === 'people') {
         draftPeopleGroups.value = [...releasedPeopleGroups.value];
         draftPersonFields.value = [...releasedPersonFields.value];
+    } else if (form === 'musicians') {
+        draftMusicianSources.value = [...musicianSourceGroupIds.value];
     } else {
         draftRoomTypes.value = [...roomTypeIds.value];
     }
@@ -633,6 +679,8 @@ async function saveForm(): Promise<void> {
             // Other calendars need other rights: plan and check anew.
             computePlan();
             void Promise.all([check('designer'), check('device')]);
+        } else if (form === 'musicians' && musicianGroupId.value !== null) {
+            await saveMusicianSources();
         } else if (form === 'people' && settingsLoaded.value) {
             // A group that is gone leaves the release without a word.
             const next = sortedIds(draftPeopleGroups.value, new Set(groups.value.map((g) => g.id)));
@@ -664,6 +712,7 @@ async function saveForm(): Promise<void> {
         return;
     }
     // The people page has set the rights in the same step; only a failure of that part needs a word.
+    if (form === 'musicians') return;
     if (form === 'people') {
         if (rightsNotice) await notice(rightsNotice);
         return;
@@ -828,6 +877,99 @@ async function finishPeopleResult(result: Awaited<ReturnType<typeof provisionPeo
     await Promise.all([check('designer'), check('device')]);
 }
 
+/** The band groups that can still be chosen: not the assistant's own (the musicians' group least of all), not chosen yet. */
+const bandChoices = computed(() =>
+    groups.value.filter((g) => !createdGroupIds.value.includes(g.id) && g.id !== musicianGroupId.value && !draftMusicianSources.value.includes(g.id)),
+);
+function addBandGroup(value: string | number): void {
+    const id = Number(value);
+    if (!Number.isInteger(id) || draftMusicianSources.value.includes(id) || draftMusicianSources.value.length >= RELEASED_GROUPS_MAX) return;
+    draftMusicianSources.value = [...draftMusicianSources.value, id];
+}
+function removeBandGroup(id: number): void {
+    draftMusicianSources.value = draftMusicianSources.value.filter((g) => g !== id);
+}
+/** The api of the assistant with the calls for the automatic membership. */
+function musicianApi(): ProvisionApi & typeof churchToolsMusicianApi {
+    return { ...lockAwareApi(), ...churchToolsMusicianApi };
+}
+
+/**
+ * „Musikergruppe anlegen" (Plan.md 121 E3): asks first, with what happens; then creates only that group, gives it its rights and – with
+ * "Personen verwalten" and band groups chosen – the rule of the automatic membership. A failure after the group exists is recorded all the same.
+ */
+async function addMusicianGroup(): Promise<void> {
+    const typeId = createdTypeId.value ?? chosenTypeId.value;
+    if (!repository || !catalog || typeId === null) return;
+    let spec: GroupSpec[];
+    try {
+        spec = planProvisioning(planInput(undefined, 'new'));
+    } catch (e) {
+        musicianRun.ran = true;
+        musicianRun.error = explain(e);
+        musicianRun.log = [];
+        return;
+    }
+    const sources = personsAllowed.value ? sortedIds(draftMusicianSources.value, new Set(groups.value.map((g) => g.id))) : [];
+    const lines = [
+        t.setup.musicians.createGroup(GROUP_NAMES.musician, typeName(typeId)),
+        t.setup.musicians.grantRights,
+        t.setup.musicians.postsOff(GROUP_NAMES.musician),
+        sources.length ? t.setup.musicians.rule(sources.map(groupNameById).join(', ')) : personsAllowed.value ? t.setup.musicians.noSources : t.setup.musicians.ruleByHand,
+    ];
+    const message = `${lines.join('\n')}\n\n${t.setup.musicians.untouched}`;
+    if (!(await confirm({ title: t.setup.musicians.createTitle, message, confirmLabel: t.setup.musicians.confirm }))) return;
+    assistant.running = true;
+    musicianRun.ran = false;
+    musicianRun.error = null;
+    musicianRun.log = [];
+    try {
+        const result = await provisionMusicians(spec, typeId, sources, personsAllowed.value === true, musicianApi());
+        musicianRun.log = result.log;
+        musicianRun.error = result.error;
+        createdGroupIds.value = [...new Set([...createdGroupIds.value, ...Object.values(result.groupIds)])];
+        if (result.groupIds.musician !== undefined) {
+            musicianGroupId.value = result.groupIds.musician;
+            createdTypeId.value = typeId;
+            musicianSourceGroupIds.value = personsAllowed.value && !result.error ? sources : [];
+            draftMusicianSources.value = [...musicianSourceGroupIds.value];
+        }
+        try {
+            // Saved even after a failure: what was created must stay removable.
+            await persistSettings();
+        } catch (e) {
+            musicianRun.error = explainSave(e);
+        }
+        groups.value = await loadGroups();
+        computePlan();
+        void check('device');
+    } catch (e) {
+        musicianRun.error = explain(e);
+        musicianRun.log.push(t.setup.assistantRun.aborted(musicianRun.error));
+    } finally {
+        assistant.running = false;
+        musicianRun.ran = true;
+    }
+}
+
+/** „Speichern" on the page „Musiker": writes the rule anew and runs it, then keeps the band groups in the settings. Throws on failure. */
+async function saveMusicianSources(): Promise<void> {
+    const groupId = musicianGroupId.value;
+    if (groupId === null) return;
+    const next = sortedIds(draftMusicianSources.value, new Set(groups.value.map((g) => g.id)));
+    musicianRun.ran = false;
+    musicianRun.error = null;
+    musicianRun.log = [];
+    if (personsAllowed.value) {
+        musicianRun.log = await updateMusicianSources(groupId, next, musicianApi());
+    }
+    await persistSettings({ musicianSourceGroupIds: next.length ? next : undefined });
+    musicianSourceGroupIds.value = next;
+    draftMusicianSources.value = [...next];
+    musicianRun.ran = true;
+    await loadMusicianMembers();
+}
+
 /**
  * „Einrichtung abschließen": a retrofit that stopped after the group and its rights were made (the settings could not be
  * saved) left a group the page takes for a foreign one. Asks, then adopts it and adds what is missing.
@@ -890,6 +1032,7 @@ async function updateRights(): Promise<void> {
         designer: createdGroupIds.value.includes(selected.designer ?? -1) ? selected.designer! : undefined,
         device: createdGroupIds.value.includes(selected.device ?? -1) ? selected.device! : undefined,
         people: createdGroupIds.value.includes(peopleGroupId.value ?? -1) ? peopleGroupId.value! : undefined,
+        musician: createdGroupIds.value.includes(musicianGroupId.value ?? -1) ? musicianGroupId.value! : undefined,
     };
     assistant.running = true;
     assistant.error = null;
@@ -907,9 +1050,11 @@ async function updateRights(): Promise<void> {
             return;
         }
         if (refreshIsEmpty(state.groups)) {
+            setRightsPending(false);
             assistant.log = state.groups.map(refreshLogLine);
             return;
         }
+        setRightsPending(true);
         refreshDialog.value = { state };
     } catch (e) {
         assistant.error = explain(e);
@@ -930,6 +1075,7 @@ async function confirmRefresh(): Promise<void> {
         const result = await applyRefresh(plan.value, open.state, lockAwareApi());
         assistant.log = result.log;
         assistant.error = result.error;
+        if (!result.error) setRightsPending(false);
         if (result.deviceIds && peopleGroupId.value !== null) {
             peopleDeviceIds.value = result.deviceIds;
             await persistSettings().catch((e: unknown) => assistant.log.push(t.setup.assistantRun.aborted(explain(e))));
@@ -1058,6 +1204,11 @@ async function confirmRemoveSetup(): Promise<void> {
         selected.designer = result.selected.designer ?? null;
         selected.device = result.selected.device ?? null;
         if (peopleGroupId.value !== null && result.removed.includes(peopleGroupId.value)) peopleGroupId.value = null;
+        if (musicianGroupId.value !== null && result.removed.includes(musicianGroupId.value)) {
+            musicianGroupId.value = null;
+            musicianSourceGroupIds.value = [];
+            draftMusicianSources.value = [];
+        }
         computePlan();
         // Runs before the save below, but cannot block it: it only ever
         // pushes a log line, never throws (Plan.md, F).
@@ -1098,7 +1249,7 @@ function explain(e: unknown): string {
     if (httpStatus(e) === 403) {
         return t.setup.rightsOfOthers;
     }
-    return e instanceof Error ? e.message : String(e);
+    return serverMessage(e) ?? (e instanceof Error ? e.message : String(e));
 }
 
 /** The name of the data a right is for, to name what a device holds beyond its plan (Plan.md 94 B). */
@@ -1109,6 +1260,7 @@ function dataName(authId: number, dataId: number): string | undefined {
     if (dataId === categories.status) return STATUS_CATEGORY.name;
     if (dataId === categories.drafts) return DRAFTS_CATEGORY.name;
     if (dataId === categories.changelog) return CHANGELOG_CATEGORY.name;
+    if (dataId === controlCategoryId) return CONTROL_CATEGORY.name;
     const key = (Object.keys(CATEGORIES) as CategoryKey[]).find((k) => categories[k] === dataId);
     return key && CATEGORIES[key].name;
 }
@@ -1118,7 +1270,7 @@ function dataName(authId: number, dataId: number): string | undefined {
  * `undefined` for any other group – its posts rights count – and where the list did not say.
  */
 function postsDisabledIn(groupId: number): boolean | undefined {
-    if (!createdGroupIds.value.includes(groupId) || (groupId !== peopleGroupId.value && groupId !== selected.device)) return undefined;
+    if (!createdGroupIds.value.includes(groupId) || (groupId !== peopleGroupId.value && groupId !== musicianGroupId.value && groupId !== selected.device)) return undefined;
     const enabled = groups.value.find((g) => g.id === groupId)?.postsEnabled;
     return typeof enabled === 'boolean' ? !enabled : undefined;
 }
@@ -1188,6 +1340,8 @@ async function check(side: Side): Promise<void> {
                 appointmentRooms,
                 serviceCalendarIds,
                 agendaCalendarIds,
+                songsheetInUse,
+                controlRights: controlCategoryId === null ? undefined : (plan.value?.find((spec) => spec.key === 'device')?.grants.filter((g) => g.dataId?.length === 1 && g.dataId[0] === controlCategoryId) ?? []),
                 screenCalendarIds: releasedCalendars.value,
                 videoInUse,
                 peopleGroup: peopleGroupId.value === null ? undefined : { id: peopleGroupId.value, name: groups.value.find((g) => g.id === peopleGroupId.value)?.name ?? GROUP_NAMES.people },
@@ -1258,7 +1412,7 @@ onMounted(async () => {
         if (page.value === 'people') void loadPersonFields();
         // The device check names a missing room type: it waits for this read below.
         const roomTypesRead = loadRoomTypes();
-        const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, resources, usedRooms, roomsAtAppointments, serviceCalendars, agendaCalendars, videos, people, permissions, types] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, resources, usedRooms, roomsAtAppointments, serviceCalendars, agendaCalendars, videos, people, songsheets, permissions, types] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
@@ -1273,6 +1427,7 @@ onMounted(async () => {
             repository.agendaCalendarIdsInUse(),
             repository.videoInUse(),
             repository.peopleInUse(),
+            repository.songsheetInUse(),
             loadGroupPermissions(),
             loadGroupTypes().catch(() => null),
         ]);
@@ -1308,9 +1463,13 @@ onMounted(async () => {
         agendaCalendarIds = agendaCalendars;
         videoInUse = videos;
         peopleInUse = people;
+        songsheetInUse = songsheets;
         selected.designer = settings?.designerGroupId ?? null;
         selected.device = settings?.deviceGroupId ?? null;
         peopleGroupId.value = settings?.peopleGroupId ?? null;
+        musicianGroupId.value = settings?.musicianGroupId ?? null;
+        musicianSourceGroupIds.value = sortedIds(settings?.musicianSourceGroupIds ?? [], new Set(list.map((g) => g.id)));
+        draftMusicianSources.value = [...musicianSourceGroupIds.value];
         peopleDeviceIds.value = settings?.peopleDeviceIds ?? [];
         Object.assign(savedGroups, selected);
         createdGroupIds.value = settings?.createdGroupIds ?? [];
@@ -1324,6 +1483,7 @@ onMounted(async () => {
             // Without these the assistant only explains; the page itself still works.
             // An administrator's visit creates the category of the signs of life, if it is missing (Plan.md 59).
             const statusId = (admin.value ? repository.ensureStatusCategory() : repository.statusCategoryId()).catch(() => null);
+            const controlId = (admin.value ? repository.ensureControlCategory() : repository.controlCategoryId()).catch(() => null);
             const draftsId = (admin.value ? repository.drafts.ensureCategory() : repository.drafts.categoryId()).catch(() => null);
             const changelogId = (admin.value ? repository.changelog.ensureCategory() : repository.changelog.categoryId()).catch(() => null);
             let visible: Partial<Record<CategoryKey, number>>;
@@ -1331,6 +1491,7 @@ onMounted(async () => {
             const status = await statusId;
             const drafts = await draftsId;
             const changelog = await changelogId;
+            controlCategoryId = await controlId;
             categories = {
                 ...visible,
                 ...(status === null ? {} : { status }),
@@ -1343,6 +1504,7 @@ onMounted(async () => {
         await roomTypesRead;
         await Promise.all([check('designer'), check('device')]);
         if (!demo.value) {
+            personsAllowed.value = await canManagePermissions().catch(() => undefined);
             await findOrphanPeople();
             await churchtoolsClient
                 .get<Record<string, unknown>>('/permissions/global')
@@ -1409,6 +1571,14 @@ const peopleGroupsStatus = computed<CardStatus | null>(() => {
     return n ? { tone: 'warn', text: word.released(n) } : { tone: 'neutral', text: word.noneReleased };
 });
 
+/** How many band groups feed the musicians' group; "Nicht eingerichtet" without the group. */
+const musiciansStatus = computed<CardStatus | null>(() => {
+    const word = t.setup.overview.status;
+    if (!settingsLoaded.value) return null;
+    if (musicianGroupId.value === null) return { tone: 'neutral', text: word.notSet };
+    return { tone: 'ok', text: word.bands(musicianSourceGroupIds.value.length) };
+});
+
 /** The cards of the overview, each to a page of its own; the wiki card only where there is an area (as before). */
 const overviewCards = computed(() => {
     const wiki = settingsLoaded.value && wikiCategory.value && !demo.value;
@@ -1423,6 +1593,10 @@ const overviewCards = computed(() => {
     cards.push({ key: 'rooms', route: 'setup-rooms', icon: 'door', title: t.setup.rooms.title, intro: t.setup.rooms.intro, status: roomsStatus.value });
     cards.push({ key: 'calendars', route: 'setup-calendars', icon: 'calendar', title: t.setup.calendars.title, intro: t.setup.calendars.intro, status: calendarsStatus.value });
     cards.push({ key: 'people', route: 'setup-people', icon: 'people', title: t.setup.peopleGroups.title, intro: t.setup.peopleGroups.intro, status: peopleGroupsStatus.value });
+    // The musicians steer the song sheet: the card is there where a sheet is shown or the group exists already (Plan.md 121 E3).
+    if (settingsLoaded.value && !demo.value && (songsheetInUse || musicianGroupId.value !== null)) {
+        cards.push({ key: 'musicians', route: 'setup-musicians', icon: 'music', title: t.setup.musicians.title, intro: t.setup.musicians.intro, status: musiciansStatus.value });
+    }
     return cards;
 });
 
@@ -1462,6 +1636,16 @@ async function createTvAddress(): Promise<void> {
     } finally {
         device.password = '';
         device.busy = false;
+    }
+}
+
+const musicianCopied = ref(false);
+async function copyControlAddress(): Promise<void> {
+    try {
+        await navigator.clipboard.writeText(controlUrl());
+        musicianCopied.value = true;
+    } catch {
+        // Without clipboard access the address stays visible for copying by hand.
     }
 }
 
@@ -1853,6 +2037,76 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                     </span>
                                 </label>
                             </div>
+                        </template>
+                    </section>
+                </template>
+
+                <template v-if="page === 'musicians'">
+                    <section class="d-card card" data-testid="musicians">
+                        <p class="lead">{{ t.setup.musicians.lead }}</p>
+                        <p v-if="!settingsLoaded" class="empty">{{ t.common.loading }}</p>
+                        <p v-else-if="demo" class="muted">{{ t.setup.plan.demo }}</p>
+                        <template v-else>
+                            <p v-if="musicianGroupId !== null" data-testid="musician-group">
+                                <strong>{{ t.setup.musicians.groupName }}:</strong> {{ groupNameById(musicianGroupId) }}
+                                <span class="muted"> – {{ t.setup.musicians.holdsRights }}</span>
+                            </p>
+                            <p v-if="musicianGroupId !== null && musicianMembers" class="muted small" data-testid="musician-members">
+                                {{ musicianMembers.length ? t.setup.musicians.members(musicianMembers) : t.setup.musicians.noMembers }}
+                            </p>
+                            <p v-if="personsAllowed === false" class="muted" data-testid="musician-by-hand">{{ t.setup.musicians.byHand }}</p>
+                            <template v-else>
+                                <label class="d-field">
+                                    {{ t.setup.musicians.add }}
+                                    <SelectMenu
+                                        :model-value="undefined"
+                                        :options="bandChoices.map((g) => ({ value: g.id, label: g.name }))"
+                                        :placeholder="t.setup.musicians.choose"
+                                        :disabled="!bandChoices.length || draftMusicianSources.length >= RELEASED_GROUPS_MAX"
+                                        testid="musician-source-add"
+                                        @update:model-value="addBandGroup"
+                                    />
+                                </label>
+                                <p v-if="!draftMusicianSources.length" class="muted" data-testid="musician-sources-none">{{ t.setup.musicians.none }}</p>
+                                <ul v-else class="released-groups">
+                                    <li v-for="id in draftMusicianSources" :key="id" data-testid="musician-source">
+                                        <span>{{ groupNameById(id) }}</span>
+                                        <button class="d-btn" type="button" :aria-label="t.setup.musicians.withdraw(groupNameById(id))" data-testid="musician-source-remove" @click="removeBandGroup(id)">
+                                            {{ t.common.remove }}
+                                        </button>
+                                    </li>
+                                </ul>
+                                <p v-if="musicianGroupId !== null" class="muted small" data-testid="musician-replace-hint">{{ t.setup.musicians.replaceHint }}</p>
+                            </template>
+                            <template v-if="musicianGroupId === null">
+                                <p v-if="!createdGroupIds.length" class="muted" data-testid="musician-needs-assistant">{{ t.setup.musicians.needsAssistant }}</p>
+                                <div v-else class="actions">
+                                    <button
+                                        class="d-btn d-btn--primary"
+                                        type="button"
+                                        :disabled="!assistant.allowed || settingsWritable === false || !catalog || controlCategoryId === null || assistant.running || foreignGroups.length > 0 || (createdTypeId ?? chosenTypeId) === null || !abilities.create.allowed"
+                                        data-testid="add-musician-group"
+                                        @click="addMusicianGroup"
+                                    >
+                                        {{ t.setup.musicians.button }}
+                                    </button>
+                                </div>
+                                <p v-if="settingsWritable === false" class="muted small" data-testid="musician-no-settings-right">{{ t.setup.groups.noSettingsRight }}</p>
+                            </template>
+                            <div v-else class="control-address" data-testid="musician-address">
+                                <strong>{{ t.setup.musicians.address }}</strong>
+                                <div class="control-address-row">
+                                    <code class="url">{{ controlUrl() }}</code>
+                                    <button class="d-btn" type="button" data-testid="musician-copy" @click="copyControlAddress">
+                                        {{ musicianCopied ? t.setup.musicians.copied : t.setup.musicians.copy }}
+                                    </button>
+                                </div>
+                                <p class="muted small">{{ t.setup.musicians.addressNote }}</p>
+                            </div>
+                            <ul v-if="musicianRun.log.length" class="log" data-testid="musician-log">
+                                <li v-for="(line, i) in musicianRun.log" :key="i">{{ line }}</li>
+                            </ul>
+                            <p v-if="musicianRun.error" class="error" role="alert" data-testid="musician-error">{{ musicianRun.error }}</p>
                         </template>
                     </section>
                 </template>
@@ -2261,5 +2515,21 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
 }
 .tv-result .d-banner {
     grid-column: 1 / -1;
+}
+/* The address of the phone page (Plan.md 121 E3): heading, then address and copy in one row, the note below. */
+.control-address {
+    display: flex;
+    flex-direction: column;
+    gap: var(--d-space-1);
+    margin-top: var(--d-space-3);
+}
+.control-address-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--d-space-2);
+}
+.control-address-row .url {
+    overflow-wrap: anywhere;
 }
 </style>

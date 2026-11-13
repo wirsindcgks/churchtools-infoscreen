@@ -59,12 +59,12 @@ sich die Aufteilung ändert.
 
 ## Die Bausteine
 
-Neunzehn Bausteine stehen unter „+ Baustein" zur Wahl, jeder mit einem Satz, was er zeigt:
+Zwanzig Bausteine stehen unter „+ Baustein" zur Wahl, jeder mit einem Satz, was er zeigt:
 
 | Gruppe | Bausteine |
 | --- | --- |
 | Gestalten | Text, Bild, Fläche, Linie, QR-Code, Uhr, Countdown |
-| Termine aus ChurchTools | Terminliste, Nächster Termin, Ablauf |
+| Termine aus ChurchTools | Terminliste, Nächster Termin, Ablauf, Liedblatt |
 | Mehr aus ChurchTools | Gruppen, Personen, Beiträge, Raumbelegung, Gemeindekopf mit Logo |
 | Medien und mehr | Galerie, Video, Webseite, Social Media |
 
@@ -100,11 +100,35 @@ Karte läuft der **Signalrahmen**: grün, ab einer einstellbaren Zahl Minuten vo
 aus dem Augenwinkel zu sehen. Rechts daneben steht „Dann“ mit Uhrzeit, Titel, Dienst und Dauer (in einem schmalen
 Baustein als Leiste darunter). Zusätzlich lassen sich die **Notiz** des Punktes aus dem Ablaufplan (Hinweise fürs Team –
 sie steht für alle sichtbar auf dem Bildschirm) und die **Verantwortlichen** (Dienst und Namen der Eingeteilten;
-unbesetzte Dienste fallen weg) einschalten. „Dann“ lässt sich in beiden Ansichten ausblenden.
+unbesetzte Dienste fallen weg) einschalten. Bei Liedern stehen die **Liedangaben** in „Jetzt“ und „Dann“: Tonart und
+Tempo aus dem Arrangement, dazu das Arrangement, wenn es nicht das Standard-Arrangement ist; sie sind von Anfang an
+eingeschaltet. „Dann“ lässt sich in beiden Ansichten ausblenden.
 
 Die Rechte, die das Gerät dafür braucht, vergeben die Einrichtung und „Rechte aktualisieren“ für die Kalender der
 Ablauf-Bausteine und für die Kalender von Zeitplan-Regeln mit „Ende des Ablaufs“ (siehe [Zeitpläne](#zeitpläne));
 welche es sind, steht in [`Rechte.md`](Rechte.md).
+
+### Liedblatt
+
+Der Baustein **Liedblatt** liest denselben Ablauf wie „Ablauf“ und zeigt den **Text des Liedes, das gerade dran ist** –
+mit den **Akkorden über der Silbe**, wenn die Datei sie enthält. Ist der laufende Punkt kein Lied (oder der Gottesdienst
+noch nicht begonnen), steht das nächste Lied da, überschrieben mit „Als Nächstes“. Den Text liest der Baustein aus einer
+Datei am Arrangement des Liedes in ChurchTools: eine **ChordPro-Datei** (`.chordpro`, `.cho`, `.chopro`, `.crd`) mit
+Akkorden, sonst den Liedtext aus einer `.sng`- oder `.txt`-Datei, dann ohne Akkorde. Weicht die Tonart des Arrangements von
+der der Datei ab (beide Dur oder beide Moll), werden die Akkorde **transponiert**. Der Kopf nennt Titel, Tonart und Tempo; wo
+keine Datei liegt, steht „Kein Liedtext hinterlegt“. Der Baustein zeigt **Teil 1** des Liedes, bis Musiker auf dem Handy weiterschalten; ein Teil mit mehr als vier Zeilen
+wird in gleich große Stücke geteilt („Refrain (1/2)“, „Refrain (2/2)“), damit die Schrift groß bleibt. Die Schrift ist für das
+ganze Lied gleich groß: so groß, dass sein größter Teil gerade passt – höchstens doppelt so groß wie unter „Schrift“ eingestellt,
+kleiner nur, wenn es nicht anders passt. Den **Liedablauf** liest der Baustein als Kürzel wie „V1, C, V2, C, B, B, C“ (Strophe, Refrain,
+Bridge, „Pre“, „Intro“, „Tag“, „Schluss“ …): aus der **Bemerkung am Lied-Punkt** im Ablaufplan, sonst aus der **Beschreibung des
+Arrangements**. Dann führt „Weiter“ in dieser Reihenfolge durch das Lied, Wiederholungen eingeschlossen; derselbe Teil zweimal
+hintereinander ist ein Schritt („Bridge 2×“). Teile, die im Ablauf nicht vorkommen, stehen auf dem Handy darunter unter „Nicht im
+Ablauf“ – zum spontanen Hinspringen. Der Schalter „Nach Zeit blättern“ ist für Gemeinden ohne Handysteuerung: Dann steht der ganze Text in **Spalten**
+und der Baustein blättert nach der Dauer des Liedes. Der Schalter „Akkorde“ blendet die Akkorde aus.
+
+Liedtexte auf dem Bildschirm zu zeigen fällt unter die **CCLI-Lizenz** der Gemeinde: Copyright und Lizenznummer stehen
+deshalb unten auf dem Baustein und sollten nicht verdeckt werden. Das Gerät braucht dafür in ChurchTools das Recht
+„Einzelne Song-Kategorien sehen“ für die Kategorien der Lieder; ohne es zeigt der Baustein nur den Kopf.
 
 ### Gruppen
 

@@ -307,15 +307,56 @@ export const th = {
         next: { term: i.showNext, text: 'Zeigt unter dem laufenden Punkt, was danach kommt.' },
         note: { term: i.showNote, text: 'Die Notiz des Punktes aus dem Ablaufplan – Hinweise fürs Team auf der Bühne. Sie steht für alle sichtbar auf dem Bildschirm.' },
         responsible: { term: i.showResponsible, text: 'Zeigt Dienst und Namen der Eingeteilten, unbesetzte Dienste fallen weg.' },
+        song: {
+            term: i.showSong,
+            text: 'Bei Liedern Tonart und Tempo aus dem Arrangement, in „Jetzt“ und „Dann“. Das Arrangement steht dabei, wenn es nicht das Standard-Arrangement ist.',
+        },
         countdown: {
             term: i.showCountdown,
             text: 'Die Zeit, die dem laufenden Punkt noch bleibt, im Kreis rechts – in Minuten, in der letzten Minute in Sekunden. Ist sie um, steht sie mit Minus davor.',
+        },
+        clock: {
+            term: i.agendaClock,
+            text: 'Steht kein Ablauf an, zeigt der Baustein auf Wunsch groß die Uhrzeit. Darunter steht immer der nächste Termin mit Ablaufplan; aus lassen, wenn über dem Bildschirm schon eine Uhr hängt.',
         },
         delay: {
             term: i.showDelay,
             text:
                 'Unter dem Kreis steht die „Gesamtzeit“: wie weit der Gottesdienst gegenüber dem Ablaufplan liegt. Wie in ChurchTools steht ein Minus davor, ' +
                 'wenn er später dran ist (in Rot), ein Plus, wenn er voraus ist.',
+        },
+    },
+
+    /** The block "Liedblatt" (Plan.md 121 B). */
+    songsheet: {
+        intro:
+            'Der Baustein zeigt den Text des Liedes, das im Ablaufplan gerade dran ist, mit Akkorden über der Silbe. Ist der Punkt kein Lied, aber der nächste, steht dieses Lied da, überschrieben mit „Als Nächstes“; vor dem Beginn zählt der erste Punkt. ' +
+            'Den Text liest er aus einer Datei am Arrangement des Liedes in ChurchTools: eine ChordPro-Datei (.chordpro, .cho, .chopro, .crd) mit Akkorden, sonst den Liedtext aus einer .sng- oder .txt-Datei, dann ohne Akkorde. ' +
+            'Liedtexte auf dem Bildschirm zu zeigen fällt unter die CCLI-Lizenz eurer Gemeinde. Copyright und Lizenznummer bleiben deshalb unten stehen – bitte nicht verdecken. ' +
+            'Das Gerät braucht das Recht „Einzelne Song-Kategorien sehen“; ohne es steht nur der Kopf mit den Liedangaben da. ' +
+            'Musiker wählen den Liedteil auf dem Handy unter der Seite „Steuerung“ der Erweiterung (Adresse …/steuerung); ohne Tipp zeigt das Liedblatt Teil 1 des Liedes.',
+        chords: {
+            term: i.showChords,
+            text:
+                'Zeigt die Akkorde über den Silben, wenn die Datei welche enthält. Weicht die Tonart des Arrangements von der der Datei ab (gleiches Geschlecht, Dur oder Moll), werden die Akkorde in die Tonart des Arrangements übertragen. ' +
+                'Ein Liedteil wird nie geteilt; passt er nicht auf den Bildschirm, wird die Schrift kleiner.',
+        },
+        lead: {
+            term: i.songsheetLead,
+            text: 'Das nächste Lied erscheint erst, wenn der laufende Punkt nur noch so viele Minuten hat. Während einer langen Predigt bleibt das Liedblatt so leer; ist der Schalter aus, steht das Lied sofort da.',
+        },
+        pageByTime: {
+            term: i.pageByTime,
+            text:
+                'Ohne Handysteuerung zeigt das Liedblatt den ganzen Text in Spalten und blättert nach der Dauer des Liedes. ' +
+                'Ist der Schalter aus, steht Teil 1, bis ein Musiker auf dem Handy weiterschaltet.',
+        },
+        songs: {
+            term: i.songs,
+            text:
+                'Zeigt, welche Lieder der nächsten vier Wochen Akkorde haben. Akkorde heißt: am Arrangement liegt eine ChordPro-Datei. ' +
+                '„Nur Text“ heißt: nur eine .sng- oder .txt-Datei – das Liedblatt zeigt dann den Text ohne Akkorde. „Nur PDF“ und „Keine Datei“: das Liedblatt bleibt bei den Liedangaben. ' +
+                'Eine ChordPro-Datei bekommt ihr zum Beispiel aus SongSelect und legt sie in ChurchTools am Arrangement ab.',
         },
     },
 

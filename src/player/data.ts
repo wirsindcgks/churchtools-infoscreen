@@ -3,7 +3,9 @@
  * replaced in tests. Every request has a time limit.
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
-import { liveItems, parsePosition, type AgendaEvent, type LivePosition } from '../agenda/live';
+import type { ControlDoc } from '../agenda/control';
+import { liveItems, parsePosition, type AgendaEvent, type UpcomingAgenda, type LiveItem, type LivePosition } from '../agenda/live';
+import { pickSheetFile, readSongSheet, type SheetKind, type SongSheet } from '../agenda/songsheet';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { needsAppointmentTags } from '../appointments/tags';
@@ -11,6 +13,8 @@ import { allowedServiceIds, appointmentServicesInUse } from '../appointments/ser
 import { startOfZonedDay } from '../appointments/zoned';
 import {
     fetchAgenda,
+    fetchAgendaSongs,
+    fetchSheetText,
     fetchAppointments,
     fetchPublicCalendars,
     fetchBookings,
@@ -87,10 +91,19 @@ export interface PlayerData {
     /**
      * The events of the calendars within `[from, to)` that have an agenda, with the agenda as the live view lists it (schema 1.61,
      * Plan.md 118). An event without an agenda (`404`) or one the account may not read (`403`) is left out; other errors fail.
+     * With `sheets` (a `songsheet` block is shown) the text files of the songs are read and hang at their points (Plan.md 121 B);
+     * where the account may not read them (right 313, G82) the points stay without.
      */
-    agendaEvents(calendarIds: number[], from: Date, to: Date, timeZone: string): Promise<AgendaEvent[]>;
+    agendaEvents(calendarIds: number[], from: Date, to: Date, timeZone: string, options?: { sheets?: boolean }): Promise<AgendaEvent[]>;
+    /**
+     * Per calendar the first event within `[from, to)` that has an agenda (Plan.md 123): not cancelled, by start; a `404`/`403` of the
+     * agenda means none and the next event is tried; other errors fail. At most `MAX_UPCOMING_READS` agendas are read in all.
+     */
+    upcomingAgendas(calendarIds: number[], from: Date, to: Date, timeZone: string): Promise<UpcomingAgenda[]>;
     /** The live position of an event; `null` without the right (`403`, or `status: "fail"`) – the block then stays empty. Other errors fail. */
     agendaPosition(eventId: number): Promise<LivePosition | null>;
+    /** The latest choice of the musicians per event (Plan.md 121 E); `{}` where the category is missing or not readable (`403`). Other errors fail. */
+    controls(): Promise<Record<number, ControlDoc>>;
     /**
      * The confirmed bookings of these rooms within `[from, to)` (schema 1.16).
      * A room the caller may not read (403), that the stammdaten do not name or
@@ -221,7 +234,8 @@ export const churchToolsPlayerData: PlayerData = {
             return deniedPeople(groupId);
         }
     },
-    async agendaEvents(calendarIds, from, to, timeZone) {
+    async agendaEvents(calendarIds, from, to, timeZone, options) {
+        const budget = { left: MAX_SHEET_FILES };
         const wanted = new Set(calendarIds);
         const events = (await withTimeout(fetchEventList(from, to, timeZone))).filter(
             (e) => typeof e.id === 'number' && e.isCanceled !== true && wanted.has(Number(e.calendar?.domainIdentifier)),
@@ -233,7 +247,14 @@ export const churchToolsPlayerData: PlayerData = {
                 if (Number.isNaN(startMs) || Number.isNaN(endMs)) return null;
                 try {
                     const agenda = await withTimeout(fetchAgenda(e.id!));
-                    return { eventId: e.id!, calendarId: Number(e.calendar?.domainIdentifier), startMs, endMs, items: liveItems(agenda.items ?? []) };
+                    const items = liveItems(agenda.items ?? []);
+                    return {
+                        eventId: e.id!,
+                        calendarId: Number(e.calendar?.domainIdentifier),
+                        startMs,
+                        endMs,
+                        items: options?.sheets ? await withSheets(e.id!, items, budget) : items,
+                    };
                 } catch (error) {
                     const status = httpStatus(error);
                     if (status !== 404 && status !== 403) throw error;
@@ -243,6 +264,31 @@ export const churchToolsPlayerData: PlayerData = {
         );
         return parts.filter((p): p is AgendaEvent => p !== null);
     },
+    async upcomingAgendas(calendarIds, from, to, timeZone) {
+        const wanted = new Set(calendarIds);
+        const events = (await withTimeout(fetchEventList(from, to, timeZone)))
+            .flatMap((e) => {
+                const startMs = Date.parse(e.startDate ?? '');
+                const calendarId = Number(e.calendar?.domainIdentifier);
+                return typeof e.id === 'number' && e.isCanceled !== true && !Number.isNaN(startMs) && wanted.has(calendarId) ? [{ id: e.id, calendarId, startMs, title: e.name ?? '' }] : [];
+            })
+            .sort((a, b) => a.startMs - b.startMs);
+        const found = new Map<number, UpcomingAgenda>();
+        let reads = 0;
+        for (const e of events) {
+            if (found.has(e.calendarId)) continue;
+            if (reads >= MAX_UPCOMING_READS) break;
+            reads++;
+            try {
+                await withTimeout(fetchAgenda(e.id));
+                found.set(e.calendarId, { calendarId: e.calendarId, startMs: e.startMs, title: e.title });
+            } catch (error) {
+                const status = httpStatus(error);
+                if (status !== 404 && status !== 403) throw error;
+            }
+        }
+        return [...found.values()];
+    },
     async agendaPosition(eventId) {
         try {
             return parsePosition(await withTimeout(fetchLivePosition(eventId)), Date.now());
@@ -251,6 +297,10 @@ export const churchToolsPlayerData: PlayerData = {
             console.warn(`Live-Agenda von Termin ${eventId}: keine Berechtigung – der Baustein bleibt leer.`);
             return null;
         }
+    },
+    async controls() {
+        const { repository } = await withTimeout(getRepository());
+        return withTimeout(repository.readControls());
     },
     async rooms(resourceIds, from, to, timeZone, roomTypeIds) {
         if (!resourceIds.length) return [];
@@ -434,10 +484,80 @@ export async function readPeopleGroups(
     );
 }
 
-/** The calendars the `agenda` blocks of these slides read, each once and sorted (schema 1.61, Plan.md 118). */
+/** At most this many agendas are read to find the next ones (Plan.md 123). */
+const MAX_UPCOMING_READS = 6;
+
+/** At most this many files are read in one load (Plan.md 121 B): a service has a dozen songs, a wrong setup must not read hundreds. */
+const MAX_SHEET_FILES = 40;
+/** By address: the file of a song does not change under its address (it carries a hash), and a reload of the agenda must not fetch all again. */
+const sheetMemo = new Map<string, Promise<SongSheet | null>>();
+const warnedEvents = new Set<number>();
+
+function loadSheet(fileUrl: string, kind: SheetKind): Promise<SongSheet | null> {
+    let sheet = sheetMemo.get(fileUrl);
+    if (!sheet) {
+        sheet = withTimeout(fetchSheetText(fileUrl)).then((text) => {
+            const read = readSongSheet(text, kind);
+            return read.sections.length ? read : null;
+        });
+        sheetMemo.set(fileUrl, sheet);
+        // A failure is not remembered: the next load tries again.
+        sheet.catch(() => sheetMemo.delete(fileUrl));
+    }
+    return sheet;
+}
+
+/**
+ * The points of the songs with the text of their arrangement (Plan.md 121 B). One call lists all songs with their files; without
+ * the right 313 it answers `403` or an empty list (G82) – then the points stay as they are, a warning once for the event.
+ */
+async function withSheets(eventId: number, items: LiveItem[], budget: { left: number }): Promise<LiveItem[]> {
+    if (!items.some((item) => item.arrangementId !== undefined)) return items;
+    let songs: Awaited<ReturnType<typeof fetchAgendaSongs>> = [];
+    try {
+        songs = (await withTimeout(fetchAgendaSongs(eventId))) ?? [];
+    } catch (error) {
+        if (httpStatus(error) !== 403) throw error;
+    }
+    const files = new Map<number, { file: { fileUrl?: string | null }; kind: SheetKind }>();
+    for (const arrangement of songs.flatMap((song) => song.arrangements ?? [])) {
+        const picked = pickSheetFile((arrangement.files ?? []).filter((f) => !!f.fileUrl));
+        if (typeof arrangement.id === 'number' && picked) files.set(arrangement.id, picked);
+    }
+    if (!files.size && !warnedEvents.has(eventId)) {
+        warnedEvents.add(eventId);
+        console.warn(`Liedblatt von Termin ${eventId}: keine Dateien lesbar – es fehlt Datei oder Recht „Einzelne Song-Kategorien sehen“.`);
+    }
+    const sheets = new Map<number, SongSheet | null>();
+    await Promise.all(
+        [...files].map(async ([arrangementId, { file, kind }]) => {
+            if (budget.left <= 0) return;
+            budget.left--;
+            sheets.set(arrangementId, await loadSheet(file.fileUrl!, kind).catch(() => null));
+        }),
+    );
+    // The flow may stand in the description of the arrangement (Plan.md 121 H).
+    const descriptions = new Map<number, string>();
+    for (const arrangement of songs.flatMap((song) => song.arrangements ?? [])) {
+        const description = (arrangement.description ?? '').trim();
+        if (typeof arrangement.id === 'number' && description) descriptions.set(arrangement.id, description);
+    }
+    return items.map((item) => {
+        const sheet = item.arrangementId === undefined ? null : sheets.get(item.arrangementId);
+        const description = item.arrangementId === undefined ? undefined : descriptions.get(item.arrangementId);
+        return sheet ? { ...item, sheet, ...(description ? { arrangementDescription: description } : {}) } : item;
+    });
+}
+
+/** Whether a `songsheet` block is among these slides – the player then reads the text files of the songs. */
+export function sheetsNeeded(slides: SlideDoc[]): boolean {
+    return slides.some((slide) => slide.blocks.some((block) => block.type === 'songsheet'));
+}
+
+/** The calendars the `agenda` and `songsheet` blocks of these slides read, each once and sorted (schema 1.61, Plan.md 118). */
 export function agendaNeeds(slides: SlideDoc[]): number[] {
     const ids = new Set<number>();
-    for (const block of slides.flatMap((s) => s.blocks)) if (block.type === 'agenda') block.calendarIds.forEach((id) => ids.add(id));
+    for (const block of slides.flatMap((s) => s.blocks)) if (block.type === 'agenda' || block.type === 'songsheet') block.calendarIds.forEach((id) => ids.add(id));
     return [...ids].sort((a, b) => a - b);
 }
 
