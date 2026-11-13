@@ -27,6 +27,12 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   stehen in beiden Darstellungen „Jetzt“ oben, die Restzeit groß in der Mitte und „Dann“ unten. Vorher wurden die Titel
   abgeschnitten, und bei „Kacheln“ lag die Restzeit über dem Titel.
 
+### Behoben
+
+- **„Liedblatt“: Eine große Schrift wirkt auf den Liedtext.** Bei einer großen Schriftgröße (etwa 150 px) wuchsen Titel,
+  Tonart und Rand mit, und für den Liedtext blieb wenig Platz – er wurde kleiner statt größer. Jetzt ist die Kopfzeile nie
+  größer als der Liedtext und schrumpft mit ihm, der Rand wächst nicht mehr mit.
+
 ## [0.59.1] – 2026-11-13
 
 ### Behoben

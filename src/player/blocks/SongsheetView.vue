@@ -259,8 +259,14 @@ const columnsStyle = computed(() =>
           },
 );
 const chordColor = computed(() => themeOf(context).accent);
-/** The head follows the alignment of the text: a centred song gets a centred head. */
-const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center: 'center', right: 'flex-end' }[props.block.style.align] }));
+/**
+ * The head follows the alignment of the text: a centred song gets a centred head. It shrinks with the text, never grows past it: at the
+ * full set size a large font (150 px) gave the title a third of the block and left the text small (user, 2026-11-13).
+ */
+const headStyle = computed(() => ({
+    justifyContent: { left: 'flex-start', center: 'center', right: 'flex-end' }[props.block.style.align],
+    fontSize: `${Math.min(1, scale.value)}em`,
+}));
 </script>
 
 <template>
@@ -348,7 +354,8 @@ const headStyle = computed(() => ({ justifyContent: { left: 'flex-start', center
     height: 100%;
     /* A margin of its own, like the cards of "Ablauf": the text never touches the edge of the block (user, 2026-11-11). */
     box-sizing: border-box;
-    padding: 0.4em 0.5em;
+    /* At most 32 and 40 stage pixels: with a large font the margin took the room of the text. */
+    padding: min(0.4em, 32px) min(0.5em, 40px);
     line-height: 1.25;
 }
 /* The room for the bar of the pages, kept free only where there are pages. */
