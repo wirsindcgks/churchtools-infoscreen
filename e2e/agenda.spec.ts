@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { addBlock, choose, openSection } from './helpers';
+import { addBlock, choose, expectSlides, openSection } from './helpers';
 
 // The block "Ablauf" (Plan.md 118, Stück 1): in the designer it reads the live agenda with the designer's rights and falls back
 // to an example where there is none – the example is the test of G81: "Begrüßung" running, "Predigt" next.
@@ -100,4 +100,42 @@ test('the block "Liedblatt" shows the next song of the example with chords, and 
     await expect(block.getByTestId('songsheet-chord')).toHaveCount(0);
     await expect(block.getByTestId('songsheet-text')).toContainText('Gott segne dich auf allen Wegen');
     await block.screenshot({ path: 'test-results/editor-songsheet.png' });
+});
+
+test('in the narrow quarter beside the song sheet the agenda stacks its parts and keeps the titles whole (user, 2026-11-13)', async ({ page }) => {
+    await page.goto('playlists');
+    await page.getByTestId('playlist-card').first().getByTestId('open-playlist').click();
+    await expectSlides(page);
+    await page.getByTestId('add-slide').click();
+    await openSection(page, 'layout');
+    await page.getByTestId('layout-split').locator('input[value="narrow-wide:quarter"]').check({ force: true });
+    const add = (id: string) => page.locator(`[data-testid="layout-region"][data-region="${id}"]`).getByTestId('layout-region-add');
+    await add('b').click();
+    await page.getByTestId('sheet-add-songsheet').click();
+    await page.getByTestId('grid').click({ position: { x: 5, y: 5 } });
+    await openSection(page, 'layout');
+    await add('a').click();
+    await page.getByTestId('sheet-add-agenda').click();
+
+    const stage = page.locator('.editor-stage');
+    const block = stage.locator('.block--agenda');
+    /** No title runs out of its box: a cut word ("Be…") is wider than the room it has. */
+    const whole = (testid: string) => block.getByTestId(testid).evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
+
+    await expect(block.locator('.agenda--tall')).toBeVisible();
+    await expect(block.getByTestId('agenda-circle')).toBeVisible();
+    expect(await whole('agenda-now')).toBe(true);
+    expect(await whole('agenda-next')).toBe(true);
+    await stage.screenshot({ path: 'test-results/editor-agenda-quarter.png' });
+
+    await openSection(page, 'appearance');
+    await choose(page.getByTestId('block-inspector'), 'agenda-layout', 'card');
+    await expect(block.locator('.agenda-card--tall')).toBeVisible();
+    expect(await whole('agenda-now')).toBe(true);
+    expect(await whole('agenda-next')).toBe(true);
+    // The countdown stands below the title, not beside it.
+    const title = await block.getByTestId('agenda-now').boundingBox();
+    const countdown = await block.getByTestId('agenda-countdown').boundingBox();
+    expect(countdown!.y).toBeGreaterThan(title!.y + title!.height);
+    await stage.screenshot({ path: 'test-results/editor-agenda-quarter-card.png' });
 });

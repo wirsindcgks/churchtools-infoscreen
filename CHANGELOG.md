@@ -23,6 +23,10 @@ Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Vers
   wartet „Als Nächstes“ noch, steht im Designer das Beispiellied mit dem Hinweis „Beispiel“ – so lässt sich die Schrift
   beurteilen. Auf dem Fernseher ändert sich nichts.
 
+- **„Ablauf“ in einer schmalen, hohen Spalte.** Ist der Baustein schmaler als hoch – etwa im Viertel neben dem Liedblatt –,
+  stehen in beiden Darstellungen „Jetzt“ oben, die Restzeit groß in der Mitte und „Dann“ unten. Vorher wurden die Titel
+  abgeschnitten, und bei „Kacheln“ lag die Restzeit über dem Titel.
+
 ## [0.59.1] – 2026-11-13
 
 ### Behoben

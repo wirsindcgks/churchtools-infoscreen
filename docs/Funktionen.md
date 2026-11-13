@@ -98,7 +98,9 @@ Mitwirkenden auf der Bühne** (Confidence Monitor), nicht für die Gemeinde. „
 der Verspätung als Pille und der **Restzeit** als große Ziffern „3:12“ (rot, wenn die Zeit um ist) oder als Ring. Um die
 Karte läuft der **Signalrahmen**: grün, ab einer einstellbaren Zahl Minuten vor Schluss („Gelb ab“) gelb, überzogen rot –
 aus dem Augenwinkel zu sehen. Rechts daneben steht „Dann“ mit Uhrzeit, Titel, Dienst und Dauer (in einem schmalen
-Baustein als Leiste darunter). Zusätzlich lassen sich die **Notiz** des Punktes aus dem Ablaufplan (Hinweise fürs Team –
+Baustein als Leiste darunter). Ist der Baustein **schmaler als hoch** – etwa im Viertel der Aufteilung „Drei Viertel“
+neben dem Liedblatt –, stehen in beiden Darstellungen alle Teile untereinander: oben „Jetzt“ mit dem Titel, in der Mitte
+groß die Restzeit, unten „Dann“; die Titel richten sich nach der Breite und werden getrennt statt abgeschnitten. Zusätzlich lassen sich die **Notiz** des Punktes aus dem Ablaufplan (Hinweise fürs Team –
 sie steht für alle sichtbar auf dem Bildschirm) und die **Verantwortlichen** (Dienst und Namen der Eingeteilten;
 unbesetzte Dienste fallen weg) einschalten. Bei Liedern stehen die **Liedangaben** in „Jetzt“ und „Dann“: Tonart und
 Tempo aus dem Arrangement, dazu das Arrangement, wenn es nicht das Standard-Arrangement ist; sie sind von Anfang an
