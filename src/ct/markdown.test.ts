@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { markdownBlocks, markdownLines, markdownText } from './markdown';
+import { markdownBlocks, markdownText } from './markdown';
 
 const texts = (parts: { text: string }[]) => parts.map((p) => p.text).join('');
 
@@ -175,19 +175,5 @@ describe('markdownText', () => {
 
     it('is empty for empty text', () => {
         expect(markdownText('')).toBe('');
-    });
-});
-
-describe('markdownLines', () => {
-    it('makes a bold line of a heading, a line per item and per line break', () => {
-        const lines = markdownLines('# Titel\n\nEins\nZwei\n\n- a\n- b\n\n2. x\n3. y\n\n> Zitat');
-        expect(lines.map(texts)).toEqual(['Titel', 'Eins', 'Zwei', '• a', '• b', '2. x', '3. y', 'Zitat']);
-        expect(lines[0]).toEqual([{ text: 'Titel', strong: true }]);
-    });
-
-    it('makes a line of every table row, the head bold', () => {
-        const lines = markdownLines('| a | b |\n|---|---|\n| 1 | 2 |');
-        expect(lines.map(texts)).toEqual(['a · b', '1 · 2']);
-        expect(lines[0]?.filter((p) => p.text !== ' · ').every((p) => p.strong)).toBe(true);
     });
 });

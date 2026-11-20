@@ -7,14 +7,14 @@
  * `src/groups/normalize.ts` – this view reads nothing but `Group` fields.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { markdownText } from '../../ct/markdown';
 import { homepageGroups, placesText, selectGroups, whenText, type Group } from '../../groups/normalize';
 import { IMAGE_RATIOS, type Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
-import { markdownLines } from '../../ct/markdown';
-import MdInlines from './MdInlines.vue';
 import { GROUP_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, paginateByHeight } from '../paging';
 import { qrShape } from '../qr';
+import MdBlocks from './MdBlocks.vue';
 import CalendarBadge from './CalendarBadge.vue';
 import PageSegments from './PageSegments.vue';
 import { LOCALE, tp } from '../../i18n/player';
@@ -212,8 +212,7 @@ const cards = computed(() =>
                         image: props.block.show.leaderImages && leader.imageUrl ? leaderImage(leader.imageUrl) : null,
                     }))
                   : [],
-              // Markdown as in posts, but every block becomes lines, so three lines stay three.
-              note: props.block.show.note ? markdownLines(group.note) : [],
+              note: props.block.show.note && markdownText(group.note) ? group.note : '',
           })),
 );
 
@@ -400,11 +399,8 @@ onMounted(() => {
                             </svg>
                             <span>{{ fact.text }}</span>
                         </div>
-                        <div v-if="c.note.length" class="group-note" data-testid="group-note">
-                            <template v-for="(line, i) in c.note" :key="i">
-                                <template v-if="i > 0">{{ '\n' }}</template>
-                                <MdInlines :parts="line" />
-                            </template>
+                        <div v-if="c.note" class="group-note" data-testid="group-note">
+                            <MdBlocks :text="c.note" />
                         </div>
                         <!-- Bottom left, flush with the code: "Leitung:" on one line, the names below. -->
                         <!-- How far it reaches to the right is measured against the drawn code (fitCards). -->

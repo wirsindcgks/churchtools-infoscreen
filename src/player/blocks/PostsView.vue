@@ -14,12 +14,12 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { Block } from '../../model/schema';
 import { postImageArea, postPictures, relativeAge } from '../../posts/display';
 import { selectPosts } from '../../posts/normalize';
-import { markdownBlocks, markdownText } from '../../ct/markdown';
+import { markdownText } from '../../ct/markdown';
 import { themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
 import { paginateByHeight, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, POST_SECONDS } from '../paging';
 import CalendarBadge from './CalendarBadge.vue';
-import MdInlines from './MdInlines.vue';
+import MdBlocks from './MdBlocks.vue';
 import PageProgress from './PageProgress.vue';
 import DateTile from './DateTile.vue';
 import { tp } from '../../i18n/player';
@@ -213,32 +213,7 @@ onMounted(() => {
                 </div>
                 <div v-if="block.showTitle" class="hero-title">{{ current.title }}</div>
                 <div v-if="block.showText" class="hero-body">
-                    <template v-for="(mdBlock, i) in markdownBlocks(current.content)" :key="i">
-                        <ul v-if="mdBlock.kind === 'list' && !mdBlock.ordered" class="md-list">
-                            <li v-for="(item, j) in mdBlock.items" :key="j"><MdInlines :parts="item" /></li>
-                        </ul>
-                        <ol v-else-if="mdBlock.kind === 'list'" class="md-list" :start="mdBlock.start">
-                            <li v-for="(item, j) in mdBlock.items" :key="j"><MdInlines :parts="item" /></li>
-                        </ol>
-                        <table v-else-if="mdBlock.kind === 'table'" class="md-table">
-                            <thead>
-                                <tr>
-                                    <th v-for="(cell, j) in mdBlock.head" :key="j" :style="{ textAlign: mdBlock.align[j] ?? undefined }"><MdInlines :parts="cell" /></th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="(row, k) in mdBlock.rows" :key="k">
-                                    <td v-for="(cell, j) in row" :key="j" :style="{ textAlign: mdBlock.align[j] ?? undefined }"><MdInlines :parts="cell" /></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                        <blockquote v-else-if="mdBlock.kind === 'quote'" class="paragraph md-quote">
-                            <MdInlines :parts="mdBlock.inlines" />
-                        </blockquote>
-                        <div v-else :class="['paragraph', { 'md-heading': mdBlock.kind === 'heading' }]">
-                            <MdInlines :parts="mdBlock.inlines" />
-                        </div>
-                    </template>
+                    <MdBlocks :text="current.content" />
                 </div>
             </div>
         </template>
@@ -355,47 +330,6 @@ onMounted(() => {
 .hero-text--plain .hero-body {
     font-size: 0.85em;
 }
-.paragraph {
-    margin: 0 0 0.8em;
-    white-space: pre-line;
-}
-.paragraph:last-child {
-    margin-bottom: 0;
-}
-.md-heading {
-    font-size: 1.15em;
-    font-weight: 700;
-}
-.md-list {
-    margin: 0 0 0.8em;
-    padding-left: 1.4em;
-    white-space: pre-line;
-}
-.md-quote {
-    margin-left: 0;
-    padding-left: 0.8em;
-    border-left: 0.2em solid color-mix(in srgb, currentColor 40%, transparent);
-    opacity: 0.85;
-}
-/* A table shares the width of the card and wraps its text; no scrolling on a screen. */
-.md-table {
-    width: 100%;
-    margin: 0 0 0.8em;
-    table-layout: fixed;
-    border-collapse: collapse;
-}
-.md-table th,
-.md-table td {
-    padding: 0.25em 0.5em;
-    border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
-    overflow-wrap: anywhere;
-    text-align: left;
-    vertical-align: top;
-}
-.md-table th {
-    font-weight: 700;
-}
-
 /* List, after AppointmentRow's .card rows. */
 .posts-list {
     position: relative;
