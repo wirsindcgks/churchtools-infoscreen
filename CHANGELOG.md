@@ -4,6 +4,20 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.63.0] – 2026-11-20
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Blick auf seinen Steckbrief und die beiden Hinweise dazu
+([#282](https://github.com/wirsindcgks/churchtools-infoscreen/issues/282)).
+
+### Geändert
+
+- **Verschachtelte Listen in Markdown eingerückt** (Plan.md 131). Unterpunkte stehen jetzt eingerückt unter ihrem Punkt,
+  statt flach dahinter, und werden für sich nummeriert; die Zeichen wechseln je Ebene (●, ○, ■). Das gilt in „Beiträge“,
+  „Personen“ und der Notiz von „Gruppen“.
+- **Angeheftete Angaben auf der Karte neben dem Namen** (Plan.md 131). Im Baustein „Personen“, Darstellung „Karten“, stehen
+  angeheftete Angaben (etwa Rolle und Zimmer) jetzt rechts oben in der Zeile des Namens, mit „ · “ verbunden wie in der
+  Liste. Bisher standen sie unten rechts und gingen bei einem langen Text in der Ausblendung unter.
+
 ## [0.62.1] – 2026-11-20
 
 ### Behoben
@@ -2022,3 +2036,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.61.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.61.0
 [0.62.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.62.0
 [0.62.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.62.1
+[0.63.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.63.0
