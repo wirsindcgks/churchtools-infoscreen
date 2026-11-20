@@ -152,40 +152,6 @@ export function markdownText(text: string, firstBlockOnly = false): string {
     return parts.join(' ').replace(/\s+/g, ' ').trim();
 }
 
-/**
- * The same as lines for a card that measures its room: a heading is a bold line, a list item a line
- * with "• " or "1. ", a quote and a paragraph one line per line break, a table row one line.
- */
-export function markdownLines(text: string): MdInline[][] {
-    const lines: MdInline[][] = [];
-    for (const block of markdownBlocks(text)) {
-        if (block.kind === 'heading') {
-            lines.push(block.inlines.map((inline) => ({ ...inline, strong: true as const })));
-        } else if (block.kind === 'list') {
-            block.items.forEach((item, i) =>
-                lines.push([{ text: block.ordered ? `${block.start + i}. ` : '• ' }, ...item]),
-            );
-        } else if (block.kind === 'table') {
-            lines.push(...tableLines(block));
-        } else {
-            lines.push(...splitLines(block.inlines));
-        }
-    }
-    return lines;
-}
-
-function splitLines(parts: MdInline[]): MdInline[][] {
-    const lines: MdInline[][] = [[]];
-    for (const part of parts) {
-        const pieces = part.text.split('\n');
-        pieces.forEach((piece, i) => {
-            if (i > 0) lines.push([]);
-            if (piece !== '') lines[lines.length - 1]?.push({ ...part, text: piece });
-        });
-    }
-    return lines.filter((line) => line.length > 0);
-}
-
 function flat(parts: MdInline[]): string {
     return parts.map((part) => part.text).join('');
 }

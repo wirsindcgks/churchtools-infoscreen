@@ -6,13 +6,13 @@
  * nothing but `Person` fields (since 1.57 entries can be pinned at the right): name, picture, the member fields the block names and, since 1.54, the released person fields it chose – since 1.56 with the role in one order (`entries`).
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { markdownLines, markdownText, type MdInline } from '../../ct/markdown';
+import { markdownText } from '../../ct/markdown';
 import { composeName, groupOfBlock, peopleEntries, rightEntries, selectPeople, shownEntries, type Person } from '../../groups/members';
 import type { Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { formatNumericDate, formatTime, sizedImageUrl, textStyle } from '../format';
 import { PEOPLE_SECONDS, pageInterval, paginateByHeight, pageProgressEdge, pageProgressSegments, pageProgressShown } from '../paging';
-import MdInlines from './MdInlines.vue';
+import MdBlocks from './MdBlocks.vue';
 import PageSegments from './PageSegments.vue';
 import { tp } from '../../i18n/player';
 
@@ -114,7 +114,11 @@ watch(
 onMounted(() => {
     measure();
     turnPages();
-    void document.fonts?.ready.then(measure);
+    void nextTick(fitCards);
+    void document.fonts?.ready.then(() => {
+        measure();
+        fitCards();
+    });
 });
 onBeforeUnmount(() => clearInterval(timer));
 
@@ -142,8 +146,8 @@ function pictureSize(): number {
 interface ShownField {
     key: string;
     text: string;
-    /** A comment field as lines of Markdown (card); `null` for all others. */
-    lines: MdInline[][] | null;
+    /** A comment field's Markdown source, set as blocks on the card; `null` for all others. */
+    markdown: string | null;
 }
 /** The name after the block's pattern (schema 1.60). */
 const nameOf = (person: Person): string => composeName(person, group.value ?? undefined, props.block.nameFormat);
@@ -152,13 +156,13 @@ function fieldsOf(person: Person, keys: readonly string[] = entries.value): Show
         if (field.format === 'datetime') {
             const instant = new Date(field.text);
             if (Number.isNaN(instant.getTime())) return [];
-            return [{ key: field.key, text: `${formatNumericDate(instant, context.timeZone)}, ${formatTime(instant, context.timeZone)}`, lines: null }];
+            return [{ key: field.key, text: `${formatNumericDate(instant, context.timeZone)}, ${formatTime(instant, context.timeZone)}`, markdown: null }];
         }
         if (field.format === 'markdown') {
             const text = markdownText(field.text);
-            return text ? [{ key: field.key, text, lines: markdownLines(field.text) }] : [];
+            return text ? [{ key: field.key, text, markdown: field.text }] : [];
         }
-        return [{ key: field.key, text: field.text, lines: null }];
+        return [{ key: field.key, text: field.text, markdown: null }];
     });
 }
 
@@ -179,6 +183,15 @@ const cards = computed(() =>
     }),
 );
 
+/** A card whose text outgrows its room fades out at the bottom (like GroupsView's note); no scrolling, no paging. */
+const cardsRoot = ref<HTMLElement | null>(null);
+function fitCards(): void {
+    cardsRoot.value?.querySelectorAll<HTMLElement>('.card-main').forEach((main) => {
+        main.classList.toggle('card-main--cut', main.scrollHeight > main.clientHeight + 1);
+    });
+}
+watch(cards, () => void nextTick(fitCards));
+watch(() => [props.block.style.fontFamily, props.block.style.fontSize, props.block.width, props.block.height, props.block.columns, props.block.rows], () => void nextTick(fitCards));
 // --- list rows: the picture is a small circle of 2.2 em, the line under the name holds the entries ---
 
 const rowPicture = computed(() => Math.round(props.block.style.fontSize * 2.2));
@@ -228,6 +241,7 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
         </template>
         <div
             v-else-if="cards.length"
+            ref="cardsRoot"
             class="cards"
             :style="{ gap: `${gap}px`, gridTemplateColumns: `repeat(${block.columns}, ${cell.width}px)`, gridAutoRows: `${cell.height}px` }"
         >
@@ -242,9 +256,7 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
                         <div class="card-main">
                             <div class="person-name" data-testid="person-name">{{ c.name }}</div>
                             <template v-for="field in c.fields" :key="field.key">
-                                <div v-if="field.lines" class="person-field-lines">
-                                    <div v-for="(line, i) in field.lines" :key="i" class="person-field" data-testid="person-field"><MdInlines :parts="line" /></div>
-                                </div>
+                                <div v-if="field.markdown !== null" class="person-field person-field--md" data-testid="person-field"><MdBlocks :text="field.markdown" /></div>
                                 <div v-else class="person-field" data-testid="person-field">{{ field.text }}</div>
                             </template>
                         </div>
@@ -332,6 +344,11 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
     min-height: 0;
     overflow: hidden;
 }
+/* Text that does not fit fades out at the bottom (fitCards), as GroupsView's note does. */
+.card-main--cut {
+    -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 2.8em), transparent 100%);
+    mask-image: linear-gradient(to bottom, black calc(100% - 2.8em), transparent 100%);
+}
 .card-aside {
     flex: none;
     text-align: right;
@@ -354,6 +371,11 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
     text-overflow: ellipsis;
     white-space: nowrap;
     opacity: 0.85;
+}
+.person-field--md {
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 /* List row, after GroupsView's .row. */
 .row {

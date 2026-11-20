@@ -971,6 +971,16 @@ describe('rendering people (Plan.md 112)', () => {
         expect(list.text()).not.toContain('**');
     });
 
+    it('sets a comment field as blocks on the card: list, quote and table instead of one line each (Plan.md 130)', () => {
+        const note = '1. eins\n2. zwei\n\n> Zitat\n\n| a | b |\n| --- | --- |\n| 1 | 2 |';
+        const people: PeopleGroup = { ...group(person('Anna', 'Berg', { fields: { '2': note } })), fields: [{ key: '2', name: 'Steckbrief', format: 'markdown' }] };
+        const card = render(makeSlide({ blocks: [peopleBlock()] }), { people: [people] });
+        const field = card.get('[data-testid="person-field"]');
+        expect(field.findAll('ol li')).toHaveLength(2);
+        expect(field.find('blockquote').text()).toBe('Zitat');
+        expect(field.findAll('table td').map((td) => td.text())).toEqual(['1', '2']);
+    });
+
     it('shows a comment field of the person formatted on the card and in one line in the list (Plan.md 115)', () => {
         const people: PeopleGroup = { ...group(person('Anna', 'Berg', { personFields: { note: '**Sprechzeit** Di' } })), personFieldKeys: ['note'], personFieldFormats: { note: 'markdown' } };
         const entries = [{ key: 'person:note' }];
