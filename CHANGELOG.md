@@ -4,10 +4,19 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
-## [Unveröffentlicht]
+## [0.62.0] – 2026-11-20
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Steckbrief mit Listen und Tabelle, an dem sichtbar wurde, dass
+„Personen“ Markdown nur zeilenweise zeigte ([#282](https://github.com/wirsindcgks/churchtools-infoscreen/issues/282)), und für den
+Hinweis auf die Reihenfolge der Rollen ([#292](https://github.com/wirsindcgks/churchtools-infoscreen/issues/292)).
 
 ### Geändert
 
+- **Markdown in „Personen“ und „Gruppen“ wie in „Beiträge“** (Plan.md 130). Mitgliedsfelder in den Personenkarten und die
+  Notiz einer Gruppe zeigen jetzt echte Listen, Zitate und Tabellen; lange Zeilen brechen um, statt mit „…“ zu enden. Was nicht
+  in die Karte passt, wird unten weich ausgeblendet. In der Darstellung „Liste“ bleibt ein Feld eine Zeile.
+- **Sortierung nach Rolle im Baustein „Personen“:** zuerst die Leiterrollen, dann die übrigen in der Reihenfolge, die
+  ChurchTools den Rollen gibt – unabhängig davon, in welcher Reihenfolge eine Instanz sie liefert.
 - **Karte „Musiker“ immer sichtbar.** In den Einstellungen fehlte die Karte „Musiker“, solange keine Folie ein Liedblatt
   enthielt – es sah aus, als gäbe es die Handysteuerung nicht. Jetzt steht die Karte immer da, bis zum ersten Liedblatt blass
   und mit dem Satz, wann sie sich einrichten lässt.
@@ -2004,3 +2013,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.59.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.59.1
 [0.60.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.60.0
 [0.61.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.61.0
+[0.62.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.62.0
