@@ -52,6 +52,10 @@ export interface RoleResponse {
     name?: string | null;
     /** The name in the language of the instance; `name` can be the key (G75: "leader"). */
     nameTranslated?: string | null;
+    /** Leader roles come first (G79). */
+    isLeader?: boolean | null;
+    /** The order the group type gives its roles (G79). */
+    sortKey?: number | null;
 }
 
 /** An entry of `GET /groups/{id}/memberfields`, as far as this code reads it (G75). */
@@ -233,12 +237,18 @@ export function normalizeMembers(
     rawFieldDefs: unknown[] = [],
 ): PeopleGroup {
     const defs = fieldDefs(rawFieldDefs);
-    const roles: PeopleRole[] = [];
+    const ranked: { role: PeopleRole; leader: boolean; sortKey: number }[] = [];
     for (const role of rawRoles as RoleResponse[]) {
         const id = idOf(role?.groupTypeRoleId);
         const name = (role?.nameTranslated ?? '').trim() || (role?.name ?? '').trim();
-        if (id !== null && name && !roles.some((r) => r.id === id)) roles.push({ id, name });
+        if (id !== null && name && !ranked.some((r) => r.role.id === id)) {
+            const sortKey = typeof role?.sortKey === 'number' ? role.sortKey : Number.MAX_SAFE_INTEGER;
+            ranked.push({ role: { id, name }, leader: role?.isLeader === true, sortKey });
+        }
     }
+    // Leaders first, then by `sortKey` – as ChurchTools lists them (G79, #292), whatever order an instance answers in.
+    // `sort` is stable: roles without a `sortKey` keep the order of the answer.
+    const roles = ranked.sort((a, b) => Number(b.leader) - Number(a.leader) || a.sortKey - b.sortKey).map((r) => r.role);
     /** The fields seen on any member by id, with their current name, in the group's own order (`sortKey`). */
     const seenFields = new Map<string, { name: string; sortKey: number }>();
 
