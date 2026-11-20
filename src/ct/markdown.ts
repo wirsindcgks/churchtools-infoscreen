@@ -15,16 +15,21 @@ import { gfmTable } from 'micromark-extension-gfm-table';
 
 export type MdInline = { text: string; strong?: true; em?: true; del?: true; code?: true };
 
+/** A list item: its own text and, indented under it, the lists nested in it (Plan.md, Punkt 131). */
+export type MdListItem = { inlines: MdInline[]; lists?: MdList[] };
+
+export type MdList = { kind: 'list'; ordered: boolean; start: number; items: MdListItem[] };
+
 export type MdBlock =
     | { kind: 'paragraph'; inlines: MdInline[] }
     | { kind: 'heading'; inlines: MdInline[] }
-    | { kind: 'list'; ordered: boolean; start: number; items: MdInline[][] }
+    | MdList
     | { kind: 'quote'; inlines: MdInline[] }
     | { kind: 'table'; align: ('left' | 'center' | 'right' | null)[]; head: MdInline[][]; rows: MdInline[][][] };
 
 type Format = Pick<MdInline, 'strong' | 'em' | 'del'>;
 
-/** Splits text into blocks, read from the syntax tree; nested lists stay flat. */
+/** Splits text into blocks, read from the syntax tree; a nested list stays under its item. */
 export function markdownBlocks(text: string): MdBlock[] {
     const source = text.replace(/<(script|style)\b[\s\S]*?<\/\1\s*>/gi, '');
     const tree = fromMarkdown(source, {
@@ -53,11 +58,8 @@ function toBlock(node: RootContent): MdBlock | null {
             return { kind: 'heading', inlines: phrasing(node.children) };
         case 'code':
             return { kind: 'paragraph', inlines: plain(node.value) };
-        case 'list': {
-            const items: MdInline[][] = [];
-            listItems(node, items);
-            return { kind: 'list', ordered: !!node.ordered, start: node.ordered ? (node.start ?? 1) : 1, items };
-        }
+        case 'list':
+            return listBlock(node);
         case 'blockquote': {
             const lines = quoteLines(node.children);
             const inlines: MdInline[] = [];
@@ -77,21 +79,28 @@ function plain(value: string): MdInline[] {
     return trimmed ? [{ text: trimmed }] : [];
 }
 
-/** The items of a list in document order; a nested list's items follow the item they belong to. */
-function listItems(list: List, out: MdInline[][]): void {
+/** A list with its items; a list nested in an item stays with that item, numbered on its own. */
+function listBlock(list: List): MdList {
+    const items: MdListItem[] = [];
     for (const item of list.children) {
         let own: MdInline[] = [];
-        const nested: List[] = [];
+        const lists: MdList[] = [];
         for (const child of item.children) {
             if (child.type === 'list') {
-                nested.push(child);
+                const sub = listBlock(child);
+                if (sub.items.length) lists.push(sub);
                 continue;
             }
             for (const line of quoteLines([child])) own = mergeInlines([...own, ...(own.length ? [{ text: ' ' }] : []), ...line]);
         }
-        if (own.length) out.push(own);
-        for (const sub of nested) listItems(sub, out);
+        if (own.length || lists.length) items.push(lists.length ? { inlines: own, lists } : { inlines: own });
     }
+    return { kind: 'list', ordered: !!list.ordered, start: list.ordered ? (list.start ?? 1) : 1, items };
+}
+
+/** The items of a list as lines in document order, a nested item after the one it belongs to – for one-line text and quotes. */
+function listLines(list: MdList): MdInline[][] {
+    return list.items.flatMap((item) => [...(item.inlines.length ? [item.inlines] : []), ...(item.lists ?? []).flatMap(listLines)]);
 }
 
 /** A block level node as lines of inlines: a paragraph is one, a list item one each, a table row one each. */
@@ -99,9 +108,7 @@ function quoteLines(nodes: RootContent[]): MdInline[][] {
     const lines: MdInline[][] = [];
     for (const node of nodes) {
         if (node.type === 'list') {
-            const items: MdInline[][] = [];
-            listItems(node, items);
-            lines.push(...items);
+            lines.push(...listLines(listBlock(node)));
         } else if (node.type === 'blockquote') {
             lines.push(...quoteLines(node.children));
         } else if (node.type === 'table') {
@@ -145,7 +152,7 @@ function tableLines(table: Extract<MdBlock, { kind: 'table' }>): MdInline[][] {
 export function markdownText(text: string, firstBlockOnly = false): string {
     const blocks = markdownBlocks(text);
     const parts = (firstBlockOnly ? blocks.slice(0, 1) : blocks).map((block) => {
-        if (block.kind === 'list') return block.items.map(flat).join(', ');
+        if (block.kind === 'list') return listLines(block).map(flat).join(', ');
         if (block.kind === 'table') return tableLines(block).map(flat).join(' ');
         return flat(block.inlines);
     });

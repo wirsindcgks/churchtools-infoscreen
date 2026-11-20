@@ -3,6 +3,7 @@
 import { computed } from 'vue';
 import { markdownBlocks } from '../../ct/markdown';
 import MdInlines from './MdInlines.vue';
+import MdList from './MdList.vue';
 
 const props = defineProps<{ text: string }>();
 const blocks = computed(() => markdownBlocks(props.text));
@@ -11,12 +12,7 @@ const blocks = computed(() => markdownBlocks(props.text));
 <template>
     <div class="md-blocks">
         <template v-for="(mdBlock, i) in blocks" :key="i">
-            <ul v-if="mdBlock.kind === 'list' && !mdBlock.ordered" class="md-list">
-                <li v-for="(item, j) in mdBlock.items" :key="j"><MdInlines :parts="item" /></li>
-            </ul>
-            <ol v-else-if="mdBlock.kind === 'list'" class="md-list" :start="mdBlock.start">
-                <li v-for="(item, j) in mdBlock.items" :key="j"><MdInlines :parts="item" /></li>
-            </ol>
+            <MdList v-if="mdBlock.kind === 'list'" :list="mdBlock" />
             <table v-else-if="mdBlock.kind === 'table'" class="md-table">
                 <thead>
                     <tr>
@@ -50,18 +46,6 @@ const blocks = computed(() => markdownBlocks(props.text));
 .md-heading {
     font-size: 1.15em;
     font-weight: 700;
-}
-.md-list {
-    margin: 0 0 0.8em;
-    padding-left: 1.4em;
-    white-space: pre-line;
-}
-/* Set the markers outright: the ChurchTools page around the player resets lists to `list-style: none` (Plan.md 130). */
-ul.md-list {
-    list-style: disc outside;
-}
-ol.md-list {
-    list-style: decimal outside;
 }
 .md-quote {
     margin-left: 0;

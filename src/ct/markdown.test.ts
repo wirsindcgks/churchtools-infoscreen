@@ -66,22 +66,40 @@ describe('markdownBlocks', () => {
 
     it('reads bullet lists with -, * and +; another marker starts a new list', () => {
         expect(markdownBlocks('- a\n- b\n\n* c\n+ **d**')).toEqual([
-            { kind: 'list', ordered: false, start: 1, items: [[{ text: 'a' }], [{ text: 'b' }]] },
-            { kind: 'list', ordered: false, start: 1, items: [[{ text: 'c' }]] },
-            { kind: 'list', ordered: false, start: 1, items: [[{ text: 'd', strong: true }]] },
+            { kind: 'list', ordered: false, start: 1, items: [{ inlines: [{ text: 'a' }] }, { inlines: [{ text: 'b' }] }] },
+            { kind: 'list', ordered: false, start: 1, items: [{ inlines: [{ text: 'c' }] }] },
+            { kind: 'list', ordered: false, start: 1, items: [{ inlines: [{ text: 'd', strong: true }] }] },
         ]);
     });
 
     it('reads numbered lists with their start number', () => {
         expect(markdownBlocks('3. drei\n4. vier')).toEqual([
-            { kind: 'list', ordered: true, start: 3, items: [[{ text: 'drei' }], [{ text: 'vier' }]] },
+            { kind: 'list', ordered: true, start: 3, items: [{ inlines: [{ text: 'drei' }] }, { inlines: [{ text: 'vier' }] }] },
         ]);
     });
 
-    it('flattens nested lists', () => {
-        const [list] = markdownBlocks('- a\n  - b\n- c');
-        expect(list).toMatchObject({ kind: 'list' });
-        expect((list as { items: unknown[] }).items).toHaveLength(3);
+    it('keeps a nested list under its item', () => {
+        expect(markdownBlocks('- a\n  - b\n    - b1\n- c')).toEqual([
+            {
+                kind: 'list',
+                ordered: false,
+                start: 1,
+                items: [
+                    {
+                        inlines: [{ text: 'a' }],
+                        lists: [
+                            {
+                                kind: 'list',
+                                ordered: false,
+                                start: 1,
+                                items: [{ inlines: [{ text: 'b' }], lists: [{ kind: 'list', ordered: false, start: 1, items: [{ inlines: [{ text: 'b1' }] }] }] }],
+                            },
+                        ],
+                    },
+                    { inlines: [{ text: 'c' }] },
+                ],
+            },
+        ]);
     });
 
     it('reads quotes', () => {
@@ -124,13 +142,19 @@ describe('markdownBlocks', () => {
         });
     });
 
-    it('keeps nested lists in document order as one flat list', () => {
+    it('numbers an ordered list on, around a nested bullet list', () => {
         const [list] = markdownBlocks('1. a\n   - b\n   - c\n2. d');
         expect(list).toEqual({
             kind: 'list',
             ordered: true,
             start: 1,
-            items: [[{ text: 'a' }], [{ text: 'b' }], [{ text: 'c' }], [{ text: 'd' }]],
+            items: [
+                {
+                    inlines: [{ text: 'a' }],
+                    lists: [{ kind: 'list', ordered: false, start: 1, items: [{ inlines: [{ text: 'b' }] }, { inlines: [{ text: 'c' }] }] }],
+                },
+                { inlines: [{ text: 'd' }] },
+            ],
         });
     });
 
@@ -159,6 +183,10 @@ describe('markdownBlocks', () => {
 });
 
 describe('markdownText', () => {
+    it('puts nested list items in document order', () => {
+        expect(markdownText('1. a\n   - b\n   - c\n2. d')).toBe('a, b, c, d');
+    });
+
     it('joins table cells with " · " and rows with a space', () => {
         expect(markdownText('| a | b |\n|---|---|\n| 1 | |\n| 2 | 3 |')).toBe('a · b 1 2 · 3');
     });
