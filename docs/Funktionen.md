@@ -149,7 +149,7 @@ anlegen, in der die Geräte automatisch Mitglied werden. Wer in der Gruppe ist, 
 sind Mitgliedsfelder der Gruppe. Der Baustein wählt unter „Gruppe"
 die gewünschte (Name, Bild und Rolle; Mitgliedsfelder nur mit dem Recht „Gruppenmitgliedsfelder sehen“, das ein Administrator dem Gerät gibt). Man wählt Rollen,
 Sortierung und ob das Bild erscheint; die **Bildform** ist ein Kreis wie ein Profilbild oder ein Quadrat mit den Ecken der Karte. Was unter dem Namen steht, wählt man in **einer** Liste
-„Angaben“ samt Reihenfolge: die Rolle in der Gruppe, Mitgliedsfelder und freigeschaltete Personenfelder, beliebig gemischt. Die **Stecknadel** an einer Angabe heftet sie rechts an: in der Liste steht sie am rechten Rand der Zeile, auf der Karte unten rechts (etwa eine Zimmernummer).
+„Angaben“ samt Reihenfolge: die Rolle in der Gruppe, Mitgliedsfelder und freigeschaltete Personenfelder, beliebig gemischt. Die **Stecknadel** an einer Angabe heftet sie rechts an: in der Liste steht sie am rechten Rand der Zeile, auf der Karte rechts oben in der Zeile des Namens (etwa eine Zimmernummer).
 Unter **„Name“** lässt sich der Name aus Feldern zusammensetzen: ein Muster mit Platzhaltern wie `{firstName}`, `{lastName}` und
 dem Schlüssel eines freigeschalteten Personenfelds (etwa `{nickname}`), zum Beispiel „Spitzname (Vorname) Nachname“. Eine
 Schnellwahl bietet die gängigen Muster, „Feld einfügen“ setzt einen Platzhalter an die Stelle des Cursors. Ein leeres Feld fällt samt

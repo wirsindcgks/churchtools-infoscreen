@@ -24,7 +24,7 @@ const group = computed(() => groupOfBlock(context.people, props.block.sourceGrou
 const items = computed(() => selectPeople(group.value ?? undefined, props.block.roleIds, props.block.sort));
 /** What stands under the name, in the block's order (schema 1.56): role, member and person fields; a block from before derives it. */
 const allEntries = computed(() => peopleEntries(props.block, group.value?.fields ?? []));
-/** The entries pinned to the right (schema 1.57): at the row's edge in the list, bottom right on a card. */
+/** The entries pinned to the right (schema 1.57): at the row's edge in the list; on a card in the name's line, top right (Plan.md 131 B). */
 const right = computed(() => rightEntries(props.block, group.value?.fields ?? []));
 const entries = computed(() => allEntries.value.filter((key) => !right.value.includes(key)));
 
@@ -178,7 +178,7 @@ const cards = computed(() =>
                 ? { size, url: person.imageUrl ? imageSource(context, sizedImageUrl(person.imageUrl, size, size, 'crop')) : null, style: { width: `${size}px`, height: `${size}px`, margin: landscape.value ? `0 0 0 ${pad.value}px` : `${pad.value}px 0 0` } }
                 : null,
             fields: fieldsOf(person),
-            aside: fieldsOf(person, right.value),
+            aside: fieldsOf(person, right.value).map((f) => f.text).join(' · '),
         };
     }),
 );
@@ -253,15 +253,16 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
                         <span v-else class="card-image card-initial" :style="{ ...c.picture.style, background: themeOf(context).accent }"><span :style="{ fontSize: `${c.picture.size * 0.45}px` }">{{ c.initial }}</span></span>
                     </template>
                     <div class="card-text">
-                        <div class="card-main">
+                        <!-- Pinned entries share the name's line, top right, joined as in the list (Plan.md 131 B): below a long text they faded out. -->
+                        <div class="card-head">
                             <div class="person-name" data-testid="person-name">{{ c.name }}</div>
+                            <div v-if="c.aside" class="card-aside" data-testid="person-aside">{{ c.aside }}</div>
+                        </div>
+                        <div class="card-main">
                             <template v-for="field in c.fields" :key="field.key">
                                 <div v-if="field.markdown !== null" class="person-field person-field--md" data-testid="person-field"><MdBlocks :text="field.markdown" /></div>
                                 <div v-else class="person-field" data-testid="person-field">{{ field.text }}</div>
                             </template>
-                        </div>
-                        <div v-if="c.aside.length" class="card-aside" data-testid="person-aside">
-                            <div v-for="field in c.aside" :key="field.key" class="person-field">{{ field.text }}</div>
                         </div>
                     </div>
                 </div>
@@ -349,9 +350,28 @@ const rowsMeasured = computed(() => (isList.value ? items.value.map((p, i) => ro
     -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 2.8em), transparent 100%);
     mask-image: linear-gradient(to bottom, black calc(100% - 2.8em), transparent 100%);
 }
+.card-head {
+    display: flex;
+    flex: none;
+    align-items: baseline;
+    gap: 0.6em;
+    margin-bottom: 0.25em;
+}
+.card-head .person-name {
+    flex: 1;
+    min-width: 0;
+    margin-bottom: 0;
+}
 .card-aside {
     flex: none;
+    max-width: 50%;
+    overflow: hidden;
+    font-size: 0.7em;
+    line-height: 1.35;
     text-align: right;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    opacity: 0.85;
 }
 .person-name {
     display: -webkit-box;

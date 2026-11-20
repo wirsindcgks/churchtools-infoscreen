@@ -499,7 +499,7 @@ export const PeopleBlock = v.object({
             v.array(
                 v.object({
                     key: PeopleEntryKey,
-                    /** Since 1.57 (Plan.md 114 C): shown at the right edge (list) or bottom right (card). Missing: under the name. */
+                    /** Since 1.57 (Plan.md 114 C): shown at the right edge (list) or, since Plan.md 131 B, in the name's line top right (card). Missing: under the name. */
                     right: v.optional(v.literal(true)),
                 }),
             ),
