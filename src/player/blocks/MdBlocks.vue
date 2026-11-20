@@ -56,6 +56,13 @@ const blocks = computed(() => markdownBlocks(props.text));
     padding-left: 1.4em;
     white-space: pre-line;
 }
+/* Set the markers outright: the ChurchTools page around the player resets lists to `list-style: none` (Plan.md 130). */
+ul.md-list {
+    list-style: disc outside;
+}
+ol.md-list {
+    list-style: decimal outside;
+}
 .md-quote {
     margin-left: 0;
     padding-left: 0.8em;
