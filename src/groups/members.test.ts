@@ -278,6 +278,17 @@ describe('member field types and translated roles (Plan.md 114, G75)', () => {
         expect(group.roles).toEqual([{ id: 5, name: 'Leiter' }, { id: 6, name: 'participant' }]);
     });
 
+    it('orders the roles leaders first, then by sortKey, whatever order the answer has (#292)', () => {
+        const group = normalizeMembers(40, [], [
+            { groupTypeRoleId: 15, name: 'Mitarbeiter', sortKey: 0, isLeader: false },
+            { groupTypeRoleId: 16, name: 'Leiter', sortKey: 1, isLeader: true },
+            { groupTypeRoleId: 19, name: 'Organisator', sortKey: 4, isLeader: false },
+            { groupTypeRoleId: 18, name: 'Coach', sortKey: 3, isLeader: false },
+            { groupTypeRoleId: 17, name: 'Co-Leiter', sortKey: 2, isLeader: true },
+        ]);
+        expect(group.roles.map((r) => r.name)).toEqual(['Leiter', 'Co-Leiter', 'Mitarbeiter', 'Coach', 'Organisator']);
+    });
+
     it('turns option ids into names and leaves out unknown ones', () => {
         expect(valuesOf([[1, '16'], [2, '4'], [3, ['19', '4']]]).fields).toEqual({ '1': 'Blau', '2': 'Rot', '3': 'Grün, Rot' });
         expect(valuesOf([[1, '99'], [2, null], [3, ['98', '99']]]).fields).toEqual({});
