@@ -4,6 +4,13 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.62.1] – 2026-11-20
+
+### Behoben
+
+- **Listen in Markdown mit Nummern und Punkten.** In „Personen“, „Beiträge“ und der Notiz von „Gruppen“ fehlten auf dem
+  Bildschirm die Zeichen vor Listenpunkten – Listen waren nur eingerückt. Jetzt stehen „1.“, „2.“ bzw. Punkte davor.
+
 ## [0.62.0] – 2026-11-20
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Steckbrief mit Listen und Tabelle, an dem sichtbar wurde, dass
@@ -2014,3 +2021,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.60.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.60.0
 [0.61.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.61.0
 [0.62.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.62.0
+[0.62.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.62.1
