@@ -160,9 +160,33 @@ test('kiosk: the halves of the stage page back and forward, and only on an inter
 
     await page.goto('./player?screen=demo');
     await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+    // Arrows "always" (the default): there before anyone taps (Plan.md 127 C).
+    await expect(page.getByTestId('kiosk-arrow-back')).toBeVisible();
+    await expect(page.getByTestId('kiosk-arrow-forward')).toBeVisible();
+    await page.screenshot({ path: 'test-results/player-kiosk.png' });
     await page.getByTestId('kiosk-forward').click();
     await expect(page.getByText('Nächster Termin')).toBeVisible();
     await expect(page.getByText('Herzlich willkommen!')).toHaveCount(0);
     await page.getByTestId('kiosk-back').click();
     await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+});
+
+test('kiosk: arrows set to "after the first tap" appear with it (Plan.md 127 C)', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('screen-menu').first().click();
+    await page.getByTestId('screen-settings-open').click();
+    await page.getByTestId('section-screen-interaction-toggle').click();
+    await page.getByTestId('settings-interactive').check();
+    await page.getByTestId('settings-arrows').selectOption('after-tap');
+    await page.getByTestId('settings-save').click();
+    await expect(page.getByTestId('screen-settings')).toHaveCount(0);
+
+    await page.goto('./player?screen=demo');
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+    await expect(page.getByTestId('kiosk-arrow-forward')).toHaveCount(0);
+    await expect(page.getByTestId('player')).toHaveCSS('cursor', 'none');
+    await page.getByTestId('kiosk-forward').click();
+    await expect(page.getByTestId('kiosk-arrow-forward')).toBeVisible();
+    await expect(page.getByTestId('kiosk-arrow-back')).toBeVisible();
+    await expect(page.getByTestId('player')).toHaveCSS('cursor', 'auto');
 });

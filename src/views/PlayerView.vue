@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, watch, watchEffect } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue';
 import { useRoute } from 'vue-router';
 import { enableTokenLogin } from '../ct/client';
 import { INTERACTION_WAIT_SECONDS, type MediaDoc, type SlideDoc } from '../model/schema';
@@ -199,6 +199,23 @@ const fit = computed(() => fitStage(viewport, stage.value, state?.screen?.screen
 /** Paging by touch or mouse (Plan.md 127): a setting of the screen, off unless an administrator switched it on. */
 const interactive = computed(() => state?.screen?.screen.interactive ?? false);
 const waitSeconds = computed(() => state?.screen?.screen.interactionWaitSeconds ?? INTERACTION_WAIT_SECONDS);
+/**
+ * Someone is at the screen (Plan.md 127 C): from a tap or a movement of the mouse until the wait has passed without input.
+ * Meanwhile the cursor shows, and arrows set to "after the first tap" too; arrows set to "always" stay.
+ */
+const engaged = ref(false);
+let engagedTimer: ReturnType<typeof setTimeout> | undefined;
+function engage(): void {
+    if (!interactive.value) return;
+    engaged.value = true;
+    clearTimeout(engagedTimer);
+    engagedTimer = setTimeout(() => (engaged.value = false), waitSeconds.value * 1000);
+}
+const arrowsShown = computed(() => interactive.value && (state?.screen?.screen.interactionArrows !== 'after-tap' || engaged.value));
+function pageBy(by: number): void {
+    engage();
+    step(by, waitSeconds.value);
+}
 function onResize(): void {
     viewport.width = window.innerWidth;
     viewport.height = window.innerHeight;
@@ -216,6 +233,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
     window.removeEventListener('resize', onResize);
     clearInterval(ticker);
+    clearTimeout(engagedTimer);
     player?.stop();
     unsubscribe();
 });
@@ -223,7 +241,7 @@ onBeforeUnmount(() => {
 
 <template>
     <!-- Covers the ChurchTools chrome without touching it (G6). -->
-    <div class="player" data-testid="player">
+    <div class="player" :class="{ 'player--engaged': engaged }" data-testid="player" @pointermove="engage">
         <p v-if="!slug" class="message" role="alert">{{ tp.noScreen }}</p>
         <!--
             Loading – also while a screen with rules waits a moment for the clock check,
@@ -289,8 +307,20 @@ onBeforeUnmount(() => {
                     :segments="playlist?.progressStyle === 'segments'"
                 />
                 <template v-if="interactive">
-                    <div class="kiosk-zone kiosk-back" data-testid="kiosk-back" @click="step(-1, waitSeconds)" />
-                    <div class="kiosk-zone kiosk-forward" data-testid="kiosk-forward" @click="step(1, waitSeconds)" />
+                    <div class="kiosk-zone kiosk-back" data-testid="kiosk-back" @click="pageBy(-1)">
+                        <Transition name="fade">
+                            <span v-if="arrowsShown" class="kiosk-arrow" data-testid="kiosk-arrow-back" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></svg>
+                            </span>
+                        </Transition>
+                    </div>
+                    <div class="kiosk-zone kiosk-forward" data-testid="kiosk-forward" @click="pageBy(1)">
+                        <Transition name="fade">
+                            <span v-if="arrowsShown" class="kiosk-arrow" data-testid="kiosk-arrow-forward" aria-hidden="true">
+                                <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" /></svg>
+                            </span>
+                        </Transition>
+                    </div>
                 </template>
             </StageView>
             <!-- Old content with a discreet marker beats a black screen. -->
@@ -317,6 +347,39 @@ onBeforeUnmount(() => {
 }
 .kiosk-forward {
     right: 0;
+}
+/* Small and see-through at the edge, in stage pixels (the stage scales them): they say paging works, not cover the slide. */
+.kiosk-arrow {
+    position: absolute;
+    top: 50%;
+    width: 88px;
+    height: 88px;
+    margin-top: -44px;
+    border-radius: 50%;
+    background: rgb(0 0 0 / 28%);
+    opacity: 0.75;
+    pointer-events: none;
+}
+.kiosk-back .kiosk-arrow {
+    left: 24px;
+}
+.kiosk-forward .kiosk-arrow {
+    right: 24px;
+}
+.kiosk-arrow svg {
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    fill: none;
+    stroke: #fff;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+/* The cursor stays hidden on a TV; at an interactive screen it shows while someone is there. */
+.player.player--engaged {
+    cursor: auto;
 }
 .player {
     position: fixed;
