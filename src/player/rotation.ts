@@ -16,6 +16,9 @@ export function placeInRotation(slides: readonly SlideDoc[], slideId: string): {
     return { number: shown.findIndex((s) => s.id === slideId) + 1, total: shown.length };
 }
 
+/** How long a slide stays at least after a viewer has paged to it (s); Plan.md 127 A, adjustable per screen later (127 B). */
+export const KIOSK_WAIT_SECONDS = 30;
+
 export function useRotation(slides: Readonly<Ref<SlideDoc[]>>, pages: () => Readonly<Record<string, number>>) {
     const index = ref(0);
     /** The preview can hold a slide; the player never pauses. */
@@ -26,30 +29,39 @@ export function useRotation(slides: Readonly<Ref<SlideDoc[]>>, pages: () => Read
     const startedAt = ref(Date.now());
     /** Milliseconds the slide had run when it was held; `null` while it runs. */
     const heldAt = ref<number | null>(null);
-    /** How long the slide on show stays (s); grows once a paged list has measured its pages. */
-    const seconds = computed(() => (current.value ? slideSeconds(current.value, pages()) : 0));
+    /** The least time (s) the slide on show stays after a viewer paged to it; 0 when the slide runs on its own time. */
+    const minimum = ref(0);
+    /** The slide a step landed on: a duration change caused by the step itself keeps the minimum. */
+    let steppedTo: string | undefined;
+    /** How long the slide on show stays (s); grows once a paged list has measured its pages, or by the minimum. */
+    const seconds = computed(() => (current.value ? Math.max(slideSeconds(current.value, pages()), minimum.value) : 0));
 
     let rotation: ReturnType<typeof setTimeout> | undefined;
     function scheduleNext(): void {
+        begin(0);
+    }
+    function begin(least: number): void {
         clearTimeout(rotation);
+        minimum.value = least;
+        if (least === 0) steppedTo = undefined;
         if (paused.value) return;
         const began = Date.now();
         startedAt.value = began;
         heldAt.value = null;
         const wait = (ms: number) => {
             rotation = setTimeout(() => {
-                const needed = (current.value ? slideSeconds(current.value, pages()) : 10) * 1000;
+                const needed = (current.value ? Math.max(slideSeconds(current.value, pages()), least) : 10) * 1000;
                 const left = needed - (Date.now() - began);
                 if (left > 100) return wait(left);
                 index.value = slides.value.length ? (index.value + 1) % slides.value.length : 0;
                 scheduleNext();
             }, ms);
         };
-        wait((current.value?.durationSeconds ?? 10) * 1000);
+        wait(Math.max(current.value?.durationSeconds ?? 10, least) * 1000);
     }
 
-    /** One slide forward or back, and the full time for it. */
-    function step(by: number): void {
+    /** One slide forward or back, and the full time for it – at least `minSeconds`, counted from now. */
+    function step(by: number, minSeconds = 0): void {
         const count = slides.value.length;
         if (!count) return;
         index.value = (((index.value + by) % count) + count) % count;
@@ -58,7 +70,8 @@ export function useRotation(slides: Readonly<Ref<SlideDoc[]>>, pages: () => Read
             startedAt.value = Date.now();
             heldAt.value = 0;
         }
-        scheduleNext();
+        steppedTo = minSeconds > 0 ? current.value?.id : undefined;
+        begin(minSeconds);
     }
 
     function setPaused(value: boolean): void {
@@ -70,7 +83,7 @@ export function useRotation(slides: Readonly<Ref<SlideDoc[]>>, pages: () => Read
     // A changed duration applies at once, not only after the current slide has run out.
     watch(
         () => current.value?.durationSeconds,
-        () => scheduleNext(),
+        () => begin(current.value?.id === steppedTo ? minimum.value : 0),
     );
     // After a change the rotation stays on the slide it shows; only if that slide is gone
     // (or another playlist took over) does it start from the beginning.

@@ -13,7 +13,7 @@ import { createMediaCache } from '../player/media-cache';
 import { createVideoCache } from '../player/video-cache';
 import { screenVideoUrls } from '../player/video';
 import { createPreloader } from '../player/preload';
-import { useRotation } from '../player/rotation';
+import { KIOSK_WAIT_SECONDS, useRotation } from '../player/rotation';
 import { activePlaylistId } from '../player/schedule';
 import { keepPlayerStorage, registerPlayerServiceWorker } from '../player/service-worker';
 import { fitStage } from '../player/stage';
@@ -30,6 +30,8 @@ import { tp } from '../i18n/player';
 
 const route = useRoute();
 const slug = typeof route.query.screen === 'string' ? route.query.screen : null;
+// Preliminary test switch until the screen setting exists (Plan.md 127 B).
+const interactive = route.query.interactive === '1';
 
 // Way B: the token sits in the fragment – ChurchTools has taken it out of the query, if it signed in (G9).
 const login = readDeviceLogin(new URL(window.location.href));
@@ -173,7 +175,7 @@ const banner = computed(() => {
     return bannerShown(band, context.now, context.timeZone) ? band : null;
 });
 
-const { index, current, scheduleNext, startedAt, heldAt, seconds } = useRotation(slides, () => context.pages ?? {});
+const { index, current, scheduleNext, startedAt, heldAt, seconds, step } = useRotation(slides, () => context.pages ?? {});
 
 const preload = createPreloader();
 watch(
@@ -285,6 +287,10 @@ onBeforeUnmount(() => {
                     :edge="playlist?.progressPlacement === 'edge'"
                     :segments="playlist?.progressStyle === 'segments'"
                 />
+                <template v-if="interactive">
+                    <div class="kiosk-zone kiosk-back" data-testid="kiosk-back" @click="step(-1, KIOSK_WAIT_SECONDS)" />
+                    <div class="kiosk-zone kiosk-forward" data-testid="kiosk-forward" @click="step(1, KIOSK_WAIT_SECONDS)" />
+                </template>
             </StageView>
             <!-- Old content with a discreet marker beats a black screen. -->
             <span v-if="state.staleSince" class="stale" data-testid="stale" :title="tp.noConnection" />
@@ -293,6 +299,24 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* Invisible halves of the stage above everything else: left pages back, right forward. */
+.kiosk-zone {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 50%;
+    z-index: 10;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+.kiosk-back {
+    left: 0;
+}
+.kiosk-forward {
+    right: 0;
+}
 .player {
     position: fixed;
     inset: 0;
