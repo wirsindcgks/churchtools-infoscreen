@@ -4,6 +4,23 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.64.0] – 2026-11-21
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach einem Bildschirm, an dem man selbst blättern
+kann, und für seine Antworten zu Wartezeit und Pfeilen ([#329](https://github.com/wirsindcgks/churchtools-infoscreen/issues/329)).
+
+### Neu
+
+- **Blättern am Touch-Bildschirm** (Plan.md 127). Ein Bildschirm mit Touch oder Maus lässt sich unter „…“ → „Einstellungen“
+  → „Bedienung“ interaktiv schalten. Wer davor steht, tippt links, um zurückzublättern, und rechts, um vorzublättern. Nach dem
+  letzten Tippen bleibt die Folie ihre eingestellte Zeit stehen, mindestens aber die Wartezeit (Vorgabe 30 Sekunden); danach
+  läuft die Präsentation von selbst weiter. Bildschirme ohne diese Einstellung laufen unverändert durch.
+- **Seiten vor Folien.** Auf Folien mit Bausteinen, die Seiten blättern (Termine, Gruppen, Personen, Räume, Beiträge,
+  Galerie), blättert ein Tippen zuerst die Seiten und erst an der letzten bzw. ersten Seite die Folie. Mehrere solche
+  Bausteine blättern gemeinsam.
+- **Pfeile am Rand** zeigen, dass man blättern kann – immer oder erst nach dem ersten Tippen, je nach Einstellung. Sie
+  folgen den Ecken des Designs, rund oder eckig. Der Mauszeiger zeigt sich nur, solange jemand am Bildschirm ist.
+
 ## [0.63.0] – 2026-11-20
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Blick auf seinen Steckbrief und die beiden Hinweise dazu
@@ -2037,3 +2054,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.62.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.62.0
 [0.62.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.62.1
 [0.63.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.63.0
+[0.64.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.64.0
