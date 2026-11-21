@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 65 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 66 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -890,6 +890,9 @@ export const ScheduleRule = v.variant('kind', [
     }),
 ]);
 
+/** How long a slide stays after a tap on an interactive screen unless the screen says otherwise (Plan.md 127; Bernhard, 2026-11-20). */
+export const INTERACTION_WAIT_SECONDS = 30;
+
 export const Slug = v.pipe(v.string(), v.regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/), v.maxLength(64));
 
 export const ScreenDoc = v.object({
@@ -899,6 +902,15 @@ export const ScreenDoc = v.object({
     name: v.pipe(v.string(), v.maxLength(100)),
     stage: Stage,
     overscanPercent: v.optional(v.pipe(v.number(), v.minValue(0), v.maxValue(20)), 0),
+    /**
+     * Since 1.66 (Plan.md 127 B): viewers page through the slides at the screen itself, by touch or mouse – the left half of the
+     * stage back, the right half forward. Missing = not interactive: screens without an input device run on as before.
+     */
+    interactive: v.optional(v.boolean()),
+    /** Since 1.66: after a tap, the slide stays at least this long without further input, counted from the last tap. Missing = `INTERACTION_WAIT_SECONDS`. */
+    interactionWaitSeconds: v.optional(v.pipe(v.number(), v.integer(), v.minValue(5), v.maxValue(300))),
+    /** Since 1.66: the arrows that show paging is possible – always, or only after the first tap until the wait has passed. Missing = `always`. */
+    interactionArrows: v.optional(v.picklist(['always', 'after-tap'])),
     /** Mandatory: "no rule matches" must never mean a black screen. */
     defaultPlaylistId: Id,
     /** Earlier rules win on overlap. */

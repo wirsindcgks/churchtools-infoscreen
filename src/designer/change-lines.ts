@@ -46,7 +46,12 @@ export function describeChange(doc: ChangeDoc): ChangeLine {
     }
     if (doc.action === 'settings' && doc.area === 'screen') {
         const old = detailsOf(doc, 'renamed')[0];
-        const parts = [...(old === undefined ? [] : [s.renamed(old)]), ...((doc.details ?? []).includes('overscan') ? [s.overscan] : [])];
+        const details = doc.details ?? [];
+        const parts = [
+            ...(old === undefined ? [] : [s.renamed(old)]),
+            ...(details.includes('overscan') ? [s.overscan] : []),
+            ...(details.includes('interaction') ? [s.interaction] : []),
+        ];
         return { text: parts.length ? `${s.screenSettings(name)}: ${parts.join(', ')}` : s.screenSettings(name), names: '' };
     }
     if (doc.area === 'theme') return { text: s.theme, names: '' };

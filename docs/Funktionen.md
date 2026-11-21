@@ -29,6 +29,11 @@ besteht aus **Bausteinen**. Ein **Zeitplan** legt fest, wann welche Präsentatio
 Jeder Fernseher ist eine Kachel mit dem, was er gerade zeigt, und der Angabe, ob er **„online"** ist. Ein Klick
 öffnet die laufende Präsentation im Editor; Adresse und Zeitplan stecken im Menü „…".
 
+Hat ein Bildschirm Touch-Bedienung oder eine Maus, lässt er sich unter „…“ → „Einstellungen“ → „Bedienung“
+**interaktiv** schalten: Tippen oder Klicken links blättert zurück, rechts vor. Nach der Wartezeit (Vorgabe 30
+Sekunden) ohne Eingabe läuft die Präsentation von selbst weiter. Die Pfeile sind immer sichtbar oder erscheinen erst
+nach dem ersten Tippen. Bildschirme ohne Eingabegerät bleiben aus.
+
 ![Startseite: zwei Bildschirme als Kacheln, quer und hochkant, jeweils mit der laufenden Folie](bilder/startseite.png)
 
 ## Der Editor

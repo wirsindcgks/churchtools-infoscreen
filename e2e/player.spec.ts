@@ -150,7 +150,15 @@ test('kiosk: the halves of the stage page back and forward, and only on an inter
     await expect(page.getByTestId('kiosk-forward')).toHaveCount(0);
     await expect(page.getByTestId('kiosk-back')).toHaveCount(0);
 
-    await page.goto('./player?screen=demo&interactive=1');
+    await page.goto('./');
+    await page.getByTestId('screen-menu').first().click();
+    await page.getByTestId('screen-settings-open').click();
+    await page.getByTestId('section-screen-interaction-toggle').click();
+    await page.getByTestId('settings-interactive').check();
+    await page.getByTestId('settings-save').click();
+    await expect(page.getByTestId('screen-settings')).toHaveCount(0);
+
+    await page.goto('./player?screen=demo');
     await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
     await page.getByTestId('kiosk-forward').click();
     await expect(page.getByText('Nächster Termin')).toBeVisible();

@@ -523,6 +523,27 @@ describe('ScreenRepository', () => {
             expect((await repo.loadScreen('foyer-links')).schedule?.revision).toBe(1); // schedule untouched
         });
 
+        it('stores the interaction settings and logs "interaction" only when they change (Plan.md 127 B)', async () => {
+            const { screen } = await created();
+            const record = vi.spyOn(repo.changelog, 'record');
+            const detailsOf = async () => {
+                await repo.changelogSettled();
+                return record.mock.calls.map(([entry]) => entry.details ?? []);
+            };
+            const renamed = await repo.saveScreenSettings(screen.id, { name: 'Neu' }, { expectedRevision: screen.revision, updatedBy: 'Admin' });
+            expect((await detailsOf()).flat()).not.toContain('interaction');
+            const on = await repo.saveScreenSettings(
+                screen.id,
+                { interactive: true, interactionWaitSeconds: 45, interactionArrows: 'after-tap' },
+                { expectedRevision: renamed.revision, updatedBy: 'Admin' },
+            );
+            expect(on).toMatchObject({ interactive: true, interactionWaitSeconds: 45, interactionArrows: 'after-tap' });
+            expect((await detailsOf()).flat()).toContain('interaction');
+            record.mockClear();
+            await repo.saveScreenSettings(screen.id, { name: 'Neu', interactive: true, interactionWaitSeconds: 45 }, { expectedRevision: on.revision, updatedBy: 'Admin' });
+            expect((await detailsOf()).flat()).not.toContain('interaction');
+        });
+
         it('collects the schedule of a deleted screen, but keeps its playlists', async () => {
             const { screen } = await created();
             await repo.saveSchedule(screen.id, { defaultPlaylistId: makePlaylist().id, rules: [] }, { expectedRevision: null, updatedBy: 'Gestalterin' });
@@ -849,7 +870,7 @@ describe('ScreenRepository', () => {
         it('saves new, updates against the revision and reports a conflict with the stored name', async () => {
             const first = await repo.saveTemplate(head, { expectedRevision: null, updatedBy: 'Anna' });
             expect(first).toMatchObject({ kind: 'template', revision: 1, updatedBy: 'Anna', name: 'Seitenkopf' });
-            expect(first.schema).toEqual({ major: 1, minor: 65 });
+            expect(first.schema).toEqual({ major: 1, minor: 66 });
             const second = await repo.saveTemplate({ ...head, name: 'Kopf' }, { expectedRevision: 1, updatedBy: 'Ben' });
             expect(second.revision).toBe(2);
             const error = await repo.saveTemplate({ ...head, name: 'Dritter' }, { expectedRevision: 1, updatedBy: 'Cleo' }).catch((e: unknown) => e);

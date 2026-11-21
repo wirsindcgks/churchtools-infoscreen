@@ -245,6 +245,7 @@ test('an administrator renames a screen from the tile menu (Plan.md 71)', async 
     const dialog = page.getByTestId('screen-rename');
     await expect(dialog.getByRole('heading', { name: 'Bildschirm umbenennen' })).toBeVisible();
     await expect(page.getByTestId('settings-overscan')).toHaveCount(0);
+    await expect(page.getByTestId('section-screen-interaction')).toHaveCount(0);
     const name = page.getByTestId('settings-name');
     await expect(name).toBeFocused();
     await name.fill('');

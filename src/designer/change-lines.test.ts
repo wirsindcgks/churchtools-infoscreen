@@ -19,6 +19,7 @@ describe('describeChange (Plan.md 100)', () => {
         expect(line({ ...base, area: 'screen', action: 'schedule', details: ['rules:3'] }).text).toBe('Zeitplan von „Foyer“ geändert: 3 Regeln');
         expect(line({ ...base, action: 'banners', details: ['banner:set'] }).text).toBe('Hinweisband von „Foyer“ gesetzt');
         expect(line({ ...base, area: 'screen', action: 'settings', details: ['renamed:Eingang'] }).text).toBe('Einstellungen von „Foyer“ geändert: vorher „Eingang“');
+        expect(line({ ...base, area: 'screen', action: 'settings', details: ['interaction'] }).text).toBe('Einstellungen von „Foyer“ geändert: Bedienung');
         expect(line({ ...base, area: 'theme', action: 'saved' }).text).toBe('Design geändert');
     });
 
