@@ -134,3 +134,34 @@ export function slideSeconds(slide: SlideDoc, pages: Readonly<Record<string, num
     }
     return seconds;
 }
+
+/** Where a block that turns pages stands: its page (from 0) and how many pages it has. */
+export interface PageTurn {
+    page: number;
+    count: number;
+}
+
+/**
+ * Whether a tap by `by` pages (forward > 0, back < 0) still turns a page on the slide: some paged block on it is not
+ * yet on its last page (forward) or not on its first (back). Only then the slide stays, else it changes (Plan.md 127 D).
+ */
+export function turnsWithin(slide: SlideDoc, turns: Readonly<Record<string, PageTurn>>, by: number): boolean {
+    if (!by) return false;
+    return slide.blocks.some((block) => {
+        const turn = turns[block.id];
+        if (!turn || turn.count < 2) return false;
+        return by > 0 ? turn.page < turn.count - 1 : turn.page > 0;
+    });
+}
+
+/** The page `by` pages from `page`, held within 0 … count - 1 – no wrap-around: whoever stands at the end stays there. */
+export function movePage(page: number, by: number, count: number): number {
+    return Math.min(Math.max(page + by, 0), Math.max(0, count - 1));
+}
+
+/** Enters or removes a block in `context.turns`: it counts while it turns (`count` 2 or more), else it leaves. */
+export function reportTurn(context: { turns?: Record<string, PageTurn> }, id: string, page: number, count: number, turning: boolean): void {
+    if (!context.turns) return;
+    if (turning && count > 1) context.turns[id] = { page, count };
+    else delete context.turns[id];
+}

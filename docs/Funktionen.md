@@ -32,7 +32,9 @@ Jeder Fernseher ist eine Kachel mit dem, was er gerade zeigt, und der Angabe, ob
 Hat ein Bildschirm Touch-Bedienung oder eine Maus, lässt er sich unter „…“ → „Einstellungen“ → „Bedienung“
 **interaktiv** schalten: Tippen oder Klicken links blättert zurück, rechts vor. Nach der Wartezeit (Vorgabe 30
 Sekunden) ohne Eingabe läuft die Präsentation von selbst weiter. Die Pfeile sind immer sichtbar oder erscheinen erst
-nach dem ersten Tippen. Bildschirme ohne Eingabegerät bleiben aus.
+nach dem ersten Tippen. Auf Folien, die Seiten blättern (Beiträge, Gruppen, Personen, Termine, Räume, Galerie),
+blättert ein Tippen zuerst die Seiten, erst an der letzten bzw. ersten Seite die Folie; mehrere blätternde Bausteine
+blättern gemeinsam. Bildschirme ohne Eingabegerät bleiben aus.
 
 ![Startseite: zwei Bildschirme als Kacheln, quer und hochkant, jeweils mit der laufenden Folie](bilder/startseite.png)
 

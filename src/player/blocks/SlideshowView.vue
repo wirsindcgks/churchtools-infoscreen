@@ -14,7 +14,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { isVideo, type Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { blockImageUrl } from '../images';
-import { pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown } from '../paging';
+import { movePage, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, reportTurn } from '../paging';
 import { effectiveTransition, pictureMotion, type PictureMotion } from '../slideshow';
 import PageProgress from './PageProgress.vue';
 
@@ -76,13 +76,15 @@ function prepareNext(): void {
     if (list.length > 1) next = preload(list[(index.value + 1) % list.length]!);
 }
 
-async function advance(): Promise<void> {
+/** Brings in the next picture, or the one at `target` (a tap back or forth, Plan.md 127 D). */
+async function advance(target?: number): Promise<void> {
     const list = urls.value;
     if (list.length < 2) return;
-    await next;
+    if (target === undefined) await next;
+    else await preload(list[target]!);
     // The list may have changed while waiting.
     if (urls.value !== list) return;
-    index.value = (index.value + 1) % list.length;
+    index.value = target ?? (index.value + 1) % list.length;
     const other = 1 - active.value;
     layers.value[other] = list[index.value]!;
     turn += 1;
@@ -113,6 +115,23 @@ function start(): void {
     turnSeconds.value = pageInterval(props.block.seconds ?? 6, props.slideSeconds ?? 0, count);
     timer = setInterval(() => void advance(), turnSeconds.value * 1000);
 }
+// A tap that pages within the slide: to the picture before or after, the timer starting anew from there (Plan.md 127 D).
+watch(
+    () => context.pageStep,
+    (step) => {
+        if (!step || !turnSeconds.value) return;
+        const target = movePage(index.value, step.by, urls.value.length);
+        if (target === index.value) return;
+        clearInterval(timer);
+        timer = setInterval(() => void advance(), turnSeconds.value * 1000);
+        void advance(target);
+    },
+);
+watch(
+    [index, turnSeconds, () => urls.value.length],
+    () => reportTurn(context, props.block.id, index.value, urls.value.length, turnSeconds.value > 0),
+    { immediate: true },
+);
 watch(
     [urls, () => props.block.seconds, () => props.slideSeconds, () => context.paging, () => props.block.transition, () => props.block.motion],
     (now, before) => {
@@ -124,6 +143,7 @@ watch(
 onMounted(start);
 onBeforeUnmount(() => {
     clearInterval(timer);
+    reportTurn(context, props.block.id, 0, 0, false);
     held?.removeAttribute('src');
 });
 

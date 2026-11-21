@@ -13,7 +13,7 @@ import { roomsShownInLayout, shownRoomNames, showsRoomsAt } from '../../appointm
 import type { Block } from '../../model/schema';
 import { themeOf, useStageContext } from '../context';
 import { textStyle } from '../format';
-import { PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, paginateByHeight, SHOW_ALL_CAP } from '../paging';
+import { PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, paginateByHeight, SHOW_ALL_CAP, movePage, reportTurn } from '../paging';
 import { listLayout } from '../theme';
 import AppointmentRow from './AppointmentRow.vue';
 import PageSegments from './PageSegments.vue';
@@ -84,15 +84,27 @@ const roomsShown = computed(() => roomsShownInLayout(props.block, layout.value))
 let timer: ReturnType<typeof setInterval> | undefined;
 /** Seconds one page shows while the pages turn; 0 while they do not (one page, or the designer's preview). */
 const turnSeconds = ref(0);
-function turnPages(): void {
+function turnPages(from = 0): void {
     clearInterval(timer);
-    page.value = 0;
+    page.value = from;
     turnSeconds.value = 0;
     const count = pages.value.length;
     if (!props.block.showAll || count < 2 || context.paging === false) return;
     turnSeconds.value = pageInterval(props.block.pageSeconds ?? PAGE_SECONDS, props.slideSeconds ?? 0, count);
     timer = setInterval(() => (page.value = (page.value + 1) % count), turnSeconds.value * 1000);
 }
+// A tap that pages within the slide: on from the page it moves to, the timer starting anew (Plan.md 127 D).
+watch(
+    () => context.pageStep,
+    (step) => {
+        if (step && turnSeconds.value) turnPages(movePage(page.value, step.by, pages.value.length));
+    },
+);
+watch(
+    [page, turnSeconds, () => pages.value.length],
+    () => reportTurn(context, props.block.id, page.value, pages.value.length, turnSeconds.value > 0),
+    { immediate: true },
+);
 
 // Separate sources, each compared by value: one getter returning a fresh array would count
 // as changed on every tick of the clock and start the pages over each second.
@@ -119,7 +131,10 @@ onMounted(() => {
     turnPages();
     void document.fonts?.ready.then(measure);
 });
-onBeforeUnmount(() => clearInterval(timer));
+onBeforeUnmount(() => {
+    clearInterval(timer);
+    reportTurn(context, props.block.id, 0, 0, false);
+});
 </script>
 
 <template>

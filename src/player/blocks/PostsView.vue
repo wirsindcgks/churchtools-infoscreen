@@ -17,7 +17,7 @@ import { selectPosts } from '../../posts/normalize';
 import { markdownText } from '../../ct/markdown';
 import { themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
-import { paginateByHeight, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, POST_SECONDS } from '../paging';
+import { paginateByHeight, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, POST_SECONDS, movePage, reportTurn } from '../paging';
 import CalendarBadge from './CalendarBadge.vue';
 import MdBlocks from './MdBlocks.vue';
 import PageProgress from './PageProgress.vue';
@@ -53,21 +53,36 @@ let timer: ReturnType<typeof setInterval> | undefined;
 const turnSeconds = ref(0);
 /** The designer's stage turns nothing: the progress then stands at 40 % (Plan.md 109). */
 const still = computed(() => context.paging === false);
-function turnPages(): void {
+function turnPages(from = 0): void {
     clearInterval(timer);
-    page.value = 0;
+    page.value = from;
     turnSeconds.value = 0;
     const count = items.value.length;
     if (props.block.layout !== 'card' || count < 2 || context.paging === false) return;
     turnSeconds.value = pageInterval(props.block.pageSeconds ?? POST_SECONDS, props.slideSeconds ?? 0, count);
     timer = setInterval(() => (page.value = (page.value + 1) % count), turnSeconds.value * 1000);
 }
+// A tap that pages within the slide: on from the page it moves to, the timer starting anew (Plan.md 127 D).
+watch(
+    () => context.pageStep,
+    (step) => {
+        if (step && turnSeconds.value) turnPages(movePage(page.value, step.by, items.value.length));
+    },
+);
+watch(
+    [page, turnSeconds, () => items.value.length],
+    () => reportTurn(context, props.block.id, page.value, items.value.length, turnSeconds.value > 0),
+    { immediate: true },
+);
 watch(
     [() => items.value.length, () => props.block.layout, () => props.block.pageSeconds, () => props.slideSeconds, () => context.paging],
     () => turnPages(),
 );
 onMounted(turnPages);
-onBeforeUnmount(() => clearInterval(timer));
+onBeforeUnmount(() => {
+    clearInterval(timer);
+    reportTurn(context, props.block.id, 0, 0, false);
+});
 
 // Landscape: image left over the full height; portrait: image on top over the full width –
 // like Instagram, not the theme's own image shape (Plan.md, "Nachgezogen am 2026-09-25").

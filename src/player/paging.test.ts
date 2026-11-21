@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { makeSlide } from '../model/testing';
 import type { Block } from '../model/schema';
-import { GROUP_SECONDS, PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressOn, paginateByHeight, PEOPLE_SECONDS, POST_SECONDS, slideSeconds } from './paging';
+import { GROUP_SECONDS, PAGE_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressOn, movePage, paginateByHeight, PEOPLE_SECONDS, POST_SECONDS, slideSeconds, turnsWithin } from './paging';
 
 const style = { fontFamily: 'sans', fontSize: 40, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
 const list = (overrides: Partial<Extract<Block, { type: 'appointment-list' }>> = {}): Block => ({
@@ -256,5 +256,42 @@ describe('paging a people block (Plan.md 112)', () => {
     it('shows the progress bar unless it is switched off, as the other lists do', () => {
         expect(pageProgressOn(people())).toBe(true);
         expect(pageProgressOn(people({ pageProgress: false }))).toBe(false);
+    });
+});
+
+describe('paging by a tap within the slide (Plan.md 127 D)', () => {
+    const slide = makeSlide({ blocks: [list({ id: 'a' }), posts({ id: 'b' }), groups({ id: 'c' })] });
+
+    it('turns forward while a block is not on its last page, back while one is not on its first', () => {
+        expect(turnsWithin(slide, { a: { page: 0, count: 3 } }, 1)).toBe(true);
+        expect(turnsWithin(slide, { a: { page: 0, count: 3 } }, -1)).toBe(false);
+        expect(turnsWithin(slide, { a: { page: 1, count: 3 } }, -1)).toBe(true);
+    });
+
+    it('does not turn at the end of the last page, nor at the start going back', () => {
+        expect(turnsWithin(slide, { a: { page: 2, count: 3 } }, 1)).toBe(false);
+        expect(turnsWithin(slide, { a: { page: 0, count: 3 } }, -1)).toBe(false);
+    });
+
+    it('turns while any of several blocks has pages left', () => {
+        const turns = { a: { page: 2, count: 3 }, b: { page: 1, count: 5 } };
+        expect(turnsWithin(slide, turns, 1)).toBe(true);
+        expect(turnsWithin(slide, { a: { page: 2, count: 3 }, b: { page: 4, count: 5 } }, 1)).toBe(false);
+        expect(turnsWithin(slide, turns, -1)).toBe(true);
+    });
+
+    it('ignores blocks without entry, blocks of other slides and a single page', () => {
+        expect(turnsWithin(slide, {}, 1)).toBe(false);
+        expect(turnsWithin(slide, { c: { page: 0, count: 1 } }, 1)).toBe(false);
+        expect(turnsWithin(slide, { other: { page: 0, count: 4 } }, 1)).toBe(false);
+        expect(turnsWithin(slide, { a: { page: 0, count: 3 } }, 0)).toBe(false);
+    });
+
+    it('moves a page within 0 … count - 1, without wrapping around', () => {
+        expect(movePage(1, 1, 3)).toBe(2);
+        expect(movePage(2, 1, 3)).toBe(2);
+        expect(movePage(0, -1, 3)).toBe(0);
+        expect(movePage(2, -1, 3)).toBe(1);
+        expect(movePage(0, 1, 1)).toBe(0);
     });
 });
