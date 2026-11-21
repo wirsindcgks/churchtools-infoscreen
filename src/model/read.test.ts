@@ -206,6 +206,15 @@ describe('readSlide – tolerant towards newer data', () => {
         expect(() => readScreen({ ...makeScreen(), schema: { major: 2, minor: 0 } })).toThrow(SchemaTooNewError);
     });
 
+    it('reads the interaction of a screen (schema 1.66, Plan.md 127): optional, old screens stay without', () => {
+        const on = readScreen({ ...makeScreen(), interactive: true, interactionWaitSeconds: 45, interactionArrows: 'after-tap' });
+        expect(on).toMatchObject({ interactive: true, interactionWaitSeconds: 45, interactionArrows: 'after-tap' });
+        const old = readScreen(makeScreen());
+        expect(old.interactive).toBeUndefined();
+        expect(old.interactionWaitSeconds).toBeUndefined();
+        expect(old.interactionArrows).toBeUndefined();
+    });
+
     it('fills defaults for optional fields', () => {
         const raw = makeSlide();
         delete (raw as { enabled?: boolean }).enabled;

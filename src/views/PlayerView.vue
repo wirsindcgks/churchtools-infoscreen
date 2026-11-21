@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, watch, watchEffect } from 'vue';
 import { useRoute } from 'vue-router';
 import { enableTokenLogin } from '../ct/client';
-import type { MediaDoc, SlideDoc } from '../model/schema';
+import { INTERACTION_WAIT_SECONDS, type MediaDoc, type SlideDoc } from '../model/schema';
 import { imageSource, provideStageContext, themeOf, type StageContext } from '../player/context';
 import { browserDeps, createPlayer } from '../player/controller';
 import { createChurchToolsPlayerData } from '../player/data';
@@ -13,7 +13,7 @@ import { createMediaCache } from '../player/media-cache';
 import { createVideoCache } from '../player/video-cache';
 import { screenVideoUrls } from '../player/video';
 import { createPreloader } from '../player/preload';
-import { KIOSK_WAIT_SECONDS, useRotation } from '../player/rotation';
+import { useRotation } from '../player/rotation';
 import { activePlaylistId } from '../player/schedule';
 import { keepPlayerStorage, registerPlayerServiceWorker } from '../player/service-worker';
 import { fitStage } from '../player/stage';
@@ -30,8 +30,6 @@ import { tp } from '../i18n/player';
 
 const route = useRoute();
 const slug = typeof route.query.screen === 'string' ? route.query.screen : null;
-// Preliminary test switch until the screen setting exists (Plan.md 127 B).
-const interactive = route.query.interactive === '1';
 
 // Way B: the token sits in the fragment – ChurchTools has taken it out of the query, if it signed in (G9).
 const login = readDeviceLogin(new URL(window.location.href));
@@ -198,6 +196,9 @@ const loadingStyle = computed(() => loadingVars(state?.screen?.theme));
 const loadingName = computed(() => state?.screen?.screen.name || slug);
 const stage = computed(() => state?.screen?.screen.stage ?? { width: 1920, height: 1080 });
 const fit = computed(() => fitStage(viewport, stage.value, state?.screen?.screen.overscanPercent ?? 0));
+/** Paging by touch or mouse (Plan.md 127): a setting of the screen, off unless an administrator switched it on. */
+const interactive = computed(() => state?.screen?.screen.interactive ?? false);
+const waitSeconds = computed(() => state?.screen?.screen.interactionWaitSeconds ?? INTERACTION_WAIT_SECONDS);
 function onResize(): void {
     viewport.width = window.innerWidth;
     viewport.height = window.innerHeight;
@@ -288,8 +289,8 @@ onBeforeUnmount(() => {
                     :segments="playlist?.progressStyle === 'segments'"
                 />
                 <template v-if="interactive">
-                    <div class="kiosk-zone kiosk-back" data-testid="kiosk-back" @click="step(-1, KIOSK_WAIT_SECONDS)" />
-                    <div class="kiosk-zone kiosk-forward" data-testid="kiosk-forward" @click="step(1, KIOSK_WAIT_SECONDS)" />
+                    <div class="kiosk-zone kiosk-back" data-testid="kiosk-back" @click="step(-1, waitSeconds)" />
+                    <div class="kiosk-zone kiosk-forward" data-testid="kiosk-forward" @click="step(1, waitSeconds)" />
                 </template>
             </StageView>
             <!-- Old content with a discreet marker beats a black screen. -->

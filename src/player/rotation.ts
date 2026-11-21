@@ -16,9 +16,6 @@ export function placeInRotation(slides: readonly SlideDoc[], slideId: string): {
     return { number: shown.findIndex((s) => s.id === slideId) + 1, total: shown.length };
 }
 
-/** How long a slide stays at least after a viewer has paged to it (s); Plan.md 127 A, adjustable per screen later (127 B). */
-export const KIOSK_WAIT_SECONDS = 30;
-
 export function useRotation(slides: Readonly<Ref<SlideDoc[]>>, pages: () => Readonly<Record<string, number>>) {
     const index = ref(0);
     /** The preview can hold a slide; the player never pauses. */

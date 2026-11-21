@@ -36,6 +36,7 @@ import { expandTemplates, templateIdsOf } from '../model/templates';
 import {
     blockCalendarIds,
     CUSTOM_FONT_PREFIX,
+    INTERACTION_WAIT_SECONDS,
     playlistIdsOf,
     sameStage,
     SCHEMA_VERSION,
@@ -87,6 +88,12 @@ export const STATUS_CATEGORY = {
 
 /** The one settings document of a module. */
 const SETTINGS_ID = 'settings';
+/**
+ * The settings of an interactive screen (Plan.md 127 B) with what a missing one means; a change to any of them is one word
+ * "Bedienung" in the history – compared with these, so the first save of an older screen does not count as one.
+ */
+const INTERACTION_DEFAULTS = { interactive: false, interactionWaitSeconds: INTERACTION_WAIT_SECONDS, interactionArrows: 'always' } as const;
+const INTERACTION_KEYS = Object.keys(INTERACTION_DEFAULTS) as (keyof typeof INTERACTION_DEFAULTS)[];
 
 /** Orphans younger than this may belong to a save in progress and are kept. */
 export const ORPHAN_GRACE_MS = 60 * 60 * 1000;
@@ -1237,7 +1244,7 @@ export class ScreenRepository {
      */
     async saveScreenSettings(
         screenId: string,
-        patch: { name?: string; overscanPercent?: number },
+        patch: Partial<Pick<ScreenDoc, 'name' | 'overscanPercent' | 'interactive' | 'interactionWaitSeconds' | 'interactionArrows'>>,
         options: SaveOptions,
     ): Promise<ScreenDoc> {
         const ids = await this.ensureCategories();
@@ -1261,6 +1268,9 @@ export class ScreenRepository {
             details: [
                 ...(patch.name !== undefined && patch.name !== existing.doc.name ? [`renamed:${existing.doc.name}`] : []),
                 ...(patch.overscanPercent !== undefined && patch.overscanPercent !== existing.doc.overscanPercent ? ['overscan'] : []),
+                ...(INTERACTION_KEYS.some((key) => patch[key] !== undefined && patch[key] !== (existing.doc[key] ?? INTERACTION_DEFAULTS[key]))
+                    ? ['interaction']
+                    : []),
             ],
             by: options.updatedBy,
             now: options.now,
