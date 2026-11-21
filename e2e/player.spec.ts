@@ -143,3 +143,18 @@ test('while loading, a slide is put together in the theme colours – and stands
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await expect(loading.locator('.piece.title')).toHaveCSS('animation-name', 'none');
 });
+
+test('kiosk: the halves of the stage page back and forward, and only on an interactive screen', async ({ page }) => {
+    await page.goto('./player?screen=demo');
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+    await expect(page.getByTestId('kiosk-forward')).toHaveCount(0);
+    await expect(page.getByTestId('kiosk-back')).toHaveCount(0);
+
+    await page.goto('./player?screen=demo&interactive=1');
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+    await page.getByTestId('kiosk-forward').click();
+    await expect(page.getByText('Nächster Termin')).toBeVisible();
+    await expect(page.getByText('Herzlich willkommen!')).toHaveCount(0);
+    await page.getByTestId('kiosk-back').click();
+    await expect(page.getByText('Herzlich willkommen!')).toBeVisible();
+});
