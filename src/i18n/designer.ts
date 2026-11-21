@@ -936,6 +936,15 @@ export const t = {
         /** The line under the playlist: where its times are set, with a link there. */
         scheduleBefore: 'Wann sie wo läuft, legt der Zeitplan des Bildschirms fest – unter',
         scheduleLink: 'Zeitpläne',
+        /** Where paging by touch is set (Plan.md 127): at the screen, not in the presentation – looked for here first. */
+        interactionBefore: 'Blättern per Touch oder Maus schaltet ein Administrator am Bildschirm ein – auf der',
+        interactionLink: 'Startseite',
+        interactionAfter: 'an der Kachel unter „…“ → „Einstellungen“ → „Bedienung“.',
+        interaction: 'Blättern am Bildschirm',
+        interactionInfo:
+            'Ob man an einem Bildschirm mit Touch oder Maus selbst blättern kann, gehört zum Bildschirm, nicht zur Präsentation: Ein ' +
+            'Administrator schaltet es auf der Startseite an der Kachel unter „…“ → „Einstellungen“ → „Bedienung“ ein. Die Folien ' +
+            'brauchen dafür nichts.',
         scheduleInfo:
             'Auf welchem Bildschirm sie wann läuft, legt der Zeitplan des Bildschirms fest – unter „Zeitpläne" oder an ' +
             'der Kachel des Bildschirms. Veröffentlichen ändert alle Bildschirme, die sie zeigen.',

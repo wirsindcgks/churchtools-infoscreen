@@ -982,6 +982,9 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await expect(page).toHaveURL(/playlists\/[\w-]+$/);
     await expect(page.getByTestId('slide-item')).toHaveCount(1);
     await expect(page.getByTestId('playlist-screens')).toHaveText('noch keinem Bildschirm');
+    // Paging by touch is looked for here first, but set at the screen (Plan.md 127): the line says where.
+    await expect(page.getByTestId('interaction-hint')).toContainText('„Einstellungen“ → „Bedienung“');
+    await expect(page.getByTestId('interaction-hint').locator('a')).toHaveText('Startseite');
     await page.getByTestId('leave-editor').click();
     await expect(page.getByTestId('playlist-card')).toHaveCount(2);
 
