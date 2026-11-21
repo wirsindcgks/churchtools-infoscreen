@@ -144,6 +144,7 @@ const progressHelp = { intro: t.inspector.progressSectionInfo, items: [{ term: t
 const playlistHelp = {
     items: [
         { term: t.inspector.schedule, text: t.inspector.scheduleInfo },
+        { term: t.inspector.interaction, text: t.inspector.interactionInfo },
     ],
 };
 
@@ -300,6 +301,11 @@ const backgroundColors = computed(() => {
                 <p class="hint" data-testid="schedule-hint">
                     {{ t.inspector.scheduleBefore }}
                     <RouterLink :to="{ name: 'schedules' }">{{ t.inspector.scheduleLink }}</RouterLink>
+                </p>
+                <p class="hint" data-testid="interaction-hint">
+                    {{ t.inspector.interactionBefore }}
+                    <RouterLink :to="{ name: 'designer' }">{{ t.inspector.interactionLink }}</RouterLink>
+                    {{ t.inspector.interactionAfter }}
                 </p>
                 <p v-if="bannerRunning" class="hint" data-testid="banner-status">
                     {{ t.inspector.bannerRunningBefore(editor.draft.playlist.banner!.text) }}
