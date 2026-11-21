@@ -133,4 +133,18 @@ describe('useRotation – a minimum time after paging (Plan.md 127 A)', () => {
         rotation.step(1, 30);
         expect(rotation.seconds.value).toBe(30);
     });
+
+    it('stays on the slide with step(0): the full time anew, at least the minimum from now', async () => {
+        const { rotation } = setup(three());
+        vi.advanceTimersByTime(3_000);
+        rotation.step(0, 30);
+        await nextTick();
+        expect(rotation.current.value?.id).toBe('a');
+        expect(rotation.seconds.value).toBe(30);
+        expect(rotation.startedAt.value).toBe(Date.now());
+        vi.advanceTimersByTime(29_000);
+        expect(rotation.current.value?.id).toBe('a');
+        vi.advanceTimersByTime(1_000);
+        expect(rotation.current.value?.id).toBe('b');
+    });
 });

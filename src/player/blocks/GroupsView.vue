@@ -12,7 +12,7 @@ import { homepageGroups, placesText, selectGroups, whenText, type Group } from '
 import { IMAGE_RATIOS, type Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
-import { GROUP_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, paginateByHeight } from '../paging';
+import { GROUP_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, paginateByHeight, movePage, reportTurn } from '../paging';
 import { qrShape } from '../qr';
 import MdBlocks from './MdBlocks.vue';
 import CalendarBadge from './CalendarBadge.vue';
@@ -79,15 +79,27 @@ watch(
 let timer: ReturnType<typeof setInterval> | undefined;
 /** Seconds of the page shown, for the progress bar; 0 while pages do not turn. */
 const turnSeconds = ref(0);
-function turnPages(): void {
+function turnPages(from = 0): void {
     clearInterval(timer);
-    page.value = 0;
+    page.value = from;
     turnSeconds.value = 0;
     const count = pages.value.length;
     if (count < 2 || context.paging === false) return;
     turnSeconds.value = pageInterval(props.block.pageSeconds ?? GROUP_SECONDS, props.slideSeconds ?? 0, count);
     timer = setInterval(() => (page.value = (page.value + 1) % count), turnSeconds.value * 1000);
 }
+// A tap that pages within the slide: on from the page it moves to, the timer starting anew (Plan.md 127 D).
+watch(
+    () => context.pageStep,
+    (step) => {
+        if (step && turnSeconds.value) turnPages(movePage(page.value, step.by, pages.value.length));
+    },
+);
+watch(
+    [page, turnSeconds, () => pages.value.length],
+    () => reportTurn(context, props.block.id, page.value, pages.value.length, turnSeconds.value > 0),
+    { immediate: true },
+);
 watch(
     [() => pages.value.length, () => props.block.layout, () => props.block.pageSeconds, () => props.slideSeconds, () => context.paging],
     () => turnPages(),
@@ -108,7 +120,10 @@ onMounted(() => {
     turnPages();
     void document.fonts?.ready.then(measure);
 });
-onBeforeUnmount(() => clearInterval(timer));
+onBeforeUnmount(() => {
+    clearInterval(timer);
+    reportTurn(context, props.block.id, 0, 0, false);
+});
 
 // --- card geometry: cells side by side in a wide block, stacked in a tall one ---
 

@@ -13,6 +13,7 @@ import { createMediaCache } from '../player/media-cache';
 import { createVideoCache } from '../player/video-cache';
 import { screenVideoUrls } from '../player/video';
 import { createPreloader } from '../player/preload';
+import { turnsWithin } from '../player/paging';
 import { useRotation } from '../player/rotation';
 import { activePlaylistId } from '../player/schedule';
 import { keepPlayerStorage, registerPlayerServiceWorker } from '../player/service-worker';
@@ -65,6 +66,7 @@ const context = reactive<StageContext>({
     media: new Map<string, MediaDoc>(),
     images: new Map<string, string>(),
     pages: {},
+    turns: {},
     paging: true,
 });
 provideStageContext(context);
@@ -212,8 +214,16 @@ function engage(): void {
     engagedTimer = setTimeout(() => (engaged.value = false), waitSeconds.value * 1000);
 }
 const arrowsShown = computed(() => interactive.value && (state?.screen?.screen.interactionArrows !== 'after-tap' || engaged.value));
+/** The arrows follow the corners of the design, round or square, like the cards on the slides. */
+const squareArrows = computed(() => themeOf(context).corners === 'square');
 function pageBy(by: number): void {
     engage();
+    // A paged block on the slide turns first; the slide stays with its full time (Plan.md 127 D).
+    if (current.value && turnsWithin(current.value, context.turns ?? {}, by)) {
+        context.pageStep = { by, at: Date.now() };
+        step(0, waitSeconds.value);
+        return;
+    }
     step(by, waitSeconds.value);
 }
 function onResize(): void {
@@ -309,14 +319,14 @@ onBeforeUnmount(() => {
                 <template v-if="interactive">
                     <div class="kiosk-zone kiosk-back" data-testid="kiosk-back" @click="pageBy(-1)">
                         <Transition name="fade">
-                            <span v-if="arrowsShown" class="kiosk-arrow" data-testid="kiosk-arrow-back" aria-hidden="true">
+                            <span v-if="arrowsShown" class="kiosk-arrow" :class="{ 'kiosk-arrow--square': squareArrows }" data-testid="kiosk-arrow-back" aria-hidden="true">
                                 <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></svg>
                             </span>
                         </Transition>
                     </div>
                     <div class="kiosk-zone kiosk-forward" data-testid="kiosk-forward" @click="pageBy(1)">
                         <Transition name="fade">
-                            <span v-if="arrowsShown" class="kiosk-arrow" data-testid="kiosk-arrow-forward" aria-hidden="true">
+                            <span v-if="arrowsShown" class="kiosk-arrow" :class="{ 'kiosk-arrow--square': squareArrows }" data-testid="kiosk-arrow-forward" aria-hidden="true">
                                 <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" /></svg>
                             </span>
                         </Transition>
@@ -359,6 +369,9 @@ onBeforeUnmount(() => {
     background: rgb(0 0 0 / 28%);
     opacity: 0.75;
     pointer-events: none;
+}
+.kiosk-arrow--square {
+    border-radius: 0;
 }
 .kiosk-back .kiosk-arrow {
     left: 24px;

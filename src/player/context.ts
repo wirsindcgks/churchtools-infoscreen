@@ -45,6 +45,10 @@ export interface StageContext {
      * so that its font can be judged. The player leaves it out: a stage shows nothing rather than an example.
      */
     songExample?: LiveItem;
+    /** Where the blocks that turn pages stand right now, by block id; a block enters while it turns (two pages or more, paging on) and leaves when it stops or goes (Plan.md 127 D). The designer sets none. */
+    turns?: Record<string, { page: number; count: number }>;
+    /** The last tap that pages within the slide: the player sets it, the turning blocks watch it and move by `by` pages (Plan.md 127 D). */
+    pageStep?: { by: number; at: number };
     /** Whether paged lists turn their pages; the designer preview holds page 1. */
     paging?: boolean;
     /** The presentation shows its own progress on this slide, so the blocks show none (Plan.md 109); missing = they do. */

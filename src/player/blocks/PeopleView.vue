@@ -11,7 +11,7 @@ import { composeName, groupOfBlock, peopleEntries, rightEntries, selectPeople, s
 import type { Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { formatNumericDate, formatTime, sizedImageUrl, textStyle } from '../format';
-import { PEOPLE_SECONDS, pageInterval, paginateByHeight, pageProgressEdge, pageProgressSegments, pageProgressShown } from '../paging';
+import { PEOPLE_SECONDS, pageInterval, paginateByHeight, pageProgressEdge, pageProgressSegments, pageProgressShown, movePage, reportTurn } from '../paging';
 import MdBlocks from './MdBlocks.vue';
 import PageSegments from './PageSegments.vue';
 import { tp } from '../../i18n/player';
@@ -86,15 +86,27 @@ watch(
 let timer: ReturnType<typeof setInterval> | undefined;
 /** Seconds of the page shown, for the progress bar; 0 while pages do not turn. */
 const turnSeconds = ref(0);
-function turnPages(): void {
+function turnPages(from = 0): void {
     clearInterval(timer);
-    page.value = 0;
+    page.value = from;
     turnSeconds.value = 0;
     const count = pages.value.length;
     if (count < 2 || context.paging === false) return;
     turnSeconds.value = pageInterval(props.block.pageSeconds ?? PEOPLE_SECONDS, props.slideSeconds ?? 0, count);
     timer = setInterval(() => (page.value = (page.value + 1) % count), turnSeconds.value * 1000);
 }
+// A tap that pages within the slide: on from the page it moves to, the timer starting anew (Plan.md 127 D).
+watch(
+    () => context.pageStep,
+    (step) => {
+        if (step && turnSeconds.value) turnPages(movePage(page.value, step.by, pages.value.length));
+    },
+);
+watch(
+    [page, turnSeconds, () => pages.value.length],
+    () => reportTurn(context, props.block.id, page.value, pages.value.length, turnSeconds.value > 0),
+    { immediate: true },
+);
 watch([() => pages.value.length, () => props.block.layout, () => props.block.pageSeconds, () => props.slideSeconds, () => context.paging], () => turnPages());
 watch(
     [
@@ -120,7 +132,10 @@ onMounted(() => {
         fitCards();
     });
 });
-onBeforeUnmount(() => clearInterval(timer));
+onBeforeUnmount(() => {
+    clearInterval(timer);
+    reportTurn(context, props.block.id, 0, 0, false);
+});
 
 // --- card geometry: every cell of a page has the same size, so a last page with fewer cards keeps it ---
 
