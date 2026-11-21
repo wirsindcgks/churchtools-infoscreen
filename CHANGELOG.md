@@ -4,6 +4,14 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.64.1] – 2026-11-21
+
+### Geändert
+
+- **Hinweis, wo das Blättern eingestellt wird** (Plan.md 127). Wer das Blättern per Touch oder Maus in der Präsentation
+  sucht, findet dort im Klappmenü „Präsentation“ jetzt den Weg: Eingestellt wird es am Bildschirm, auf der Startseite an der
+  Kachel unter „…“ → „Einstellungen“ → „Bedienung“. Dazu eine Zeile in der Hilfe.
+
 ## [0.64.0] – 2026-11-21
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Wunsch nach einem Bildschirm, an dem man selbst blättern
@@ -2055,3 +2063,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.62.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.62.1
 [0.63.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.63.0
 [0.64.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.64.0
+[0.64.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.64.1
