@@ -42,6 +42,7 @@ const RIGHT_LABELS = {
     [AUTH.eventView]: t.setup.provision.rightLabels.eventView,
     [AUTH.agendaView]: t.setup.provision.rightLabels.agendaView,
     [AUTH.resourceView]: t.setup.provision.rightLabels.resourceView,
+    [AUTH.serviceGroupView]: t.setup.provision.rightLabels.serviceGroupView,
 } as const;
 
 /**
@@ -50,7 +51,7 @@ const RIGHT_LABELS = {
  */
 export const MANAGED_RIGHTS: Record<GroupKey, { authId: number; label: string; global?: boolean }[]> = {
     device: [
-        ...[AUTH.calendarView, AUTH.eventView, AUTH.agendaView, AUTH.resourceView].map((authId) => ({ authId, label: RIGHT_LABELS[authId] })),
+        ...[AUTH.calendarView, AUTH.eventView, AUTH.agendaView, AUTH.resourceView, AUTH.serviceGroupView].map((authId) => ({ authId, label: RIGHT_LABELS[authId] })),
         // "Events" sehen has no data (G81): taken back as a whole once no block "Ablauf" needs it (`planRefresh`).
         { authId: AUTH.eventsView, label: t.setup.provision.grants.viewEvents, global: true },
         // The groups an administrator released for the block "Personen" (Plan.md 112, Stück 2a): taken back when the release ends.
@@ -123,6 +124,11 @@ export interface PlanInput {
      * device reads their live agenda with 301, 306 and 331. Missing: none.
      */
     agendaCalendarIds?: number[];
+    /**
+     * The service groups whose notes a block "Ablauf" shows (Plan.md 119, G84), only those that are not open and the administrator
+     * sees: the device reads their notes with 304. Missing: none.
+     */
+    agendaServiceGroupIds?: number[];
     /**
      * A slide shows the block "Liedblatt" (Plan.md 121, G82): the device sees all song categories (313, `[-1]`). "Rechte
      * aktualisieren" never takes it back – "all" may as well have been given by hand. Missing: none.
@@ -241,6 +247,11 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     if (agendaCalendars.length) {
         device.push({ authId: AUTH.eventsView, label: t.setup.provision.grants.viewEvents });
         device.push({ authId: AUTH.agendaView, dataId: agendaCalendars, label: RIGHT_LABELS[AUTH.agendaView] });
+    }
+    // The notes of a service group that is not open need 304 for it (G84); the musicians see those of their own group anyway.
+    const agendaServiceGroups = input.agendaServiceGroupIds ?? [];
+    if (agendaServiceGroups.length) {
+        device.push({ authId: AUTH.serviceGroupView, dataId: agendaServiceGroups, label: RIGHT_LABELS[AUTH.serviceGroupView] });
     }
     // The block "Liedblatt" reads the songs of the agenda and their files (G82): 313 for all song categories, "all" being `[-1]` (G68).
     if (input.songsheet) {
@@ -608,6 +619,8 @@ export interface RefreshGroup {
 export interface KnownData {
     calendarIds: number[];
     roomIds: number[];
+    /** The service groups the administrator sees – only for these 304 is taken back (Plan.md 119). Missing: none. */
+    serviceGroupIds?: number[];
     /** The groups released before and not any more – only for these 1104 is taken back (Stück 2a); a 1104 an administrator gave by hand stays. Missing: none. */
     groupIds?: number[];
 }
@@ -617,6 +630,7 @@ export interface DataNames {
     calendars?: ReadonlyMap<number, string>;
     rooms?: ReadonlyMap<number, string>;
     groups?: ReadonlyMap<number, string>;
+    serviceGroups?: ReadonlyMap<number, string>;
 }
 
 /**
@@ -632,15 +646,16 @@ export function planRefresh(
     names: DataNames = {},
 ): RefreshGroup[] {
     const nameOf = (authId: number, dataId: number): string | undefined =>
-        authId === AUTH.resourceView ? names.rooms?.get(dataId) : authId === AUTH.groupWithMembersView ? names.groups?.get(dataId) : names.calendars?.get(dataId);
+        authId === AUTH.resourceView ? names.rooms?.get(dataId) : authId === AUTH.groupWithMembersView ? names.groups?.get(dataId) : authId === AUTH.serviceGroupView ? names.serviceGroups?.get(dataId) : names.calendars?.get(dataId);
     const named = (authId: number, dataId: number, label: string): string => {
         const name = nameOf(authId, dataId);
         if (name) return t.setup.provision.named(label, name);
         if (authId === AUTH.groupWithMembersView) return t.setup.provision.groupFallback(label, dataId);
+        if (authId === AUTH.serviceGroupView) return t.setup.provision.serviceGroupFallback(label, dataId);
         return authId === AUTH.resourceView ? t.setup.provision.roomFallback(label, dataId) : t.setup.provision.calendarFallback(label, dataId);
     };
     const knownIds = (authId: number): Set<number> =>
-        new Set(authId === AUTH.resourceView ? known.roomIds : authId === AUTH.groupWithMembersView ? (known.groupIds ?? []) : known.calendarIds);
+        new Set(authId === AUTH.resourceView ? known.roomIds : authId === AUTH.groupWithMembersView ? (known.groupIds ?? []) : authId === AUTH.serviceGroupView ? (known.serviceGroupIds ?? []) : known.calendarIds);
 
     return plan.map((spec) => {
         const roles = held[spec.key] ?? [];

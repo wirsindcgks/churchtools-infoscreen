@@ -113,7 +113,8 @@ unbesetzte Dienste fallen weg) einschalten. Bei Liedern stehen die **Liedangaben
 Tempo aus dem Arrangement, dazu das Arrangement, wenn es nicht das Standard-Arrangement ist; sie sind von Anfang an
 eingeschaltet. „Dann“ lässt sich in beiden Ansichten ausblenden. In der Darstellung „Eigene“ lassen sich unter
 **Dienstgruppen** Gruppen wählen, deren Notizen aus dem Ablaufplan (etwa für Band oder Technik) unter dem laufenden Punkt
-erscheinen.
+erscheinen. Damit ein Bildschirm sie zeigt, in den Einstellungen „Rechte aktualisieren“ wählen; offene Dienstgruppen
+(„Ohne Berechtigung einsehbar“) brauchen das nicht.
 
 Die Rechte, die das Gerät dafür braucht, vergeben die Einrichtung und „Rechte aktualisieren“ für die Kalender der
 Ablauf-Bausteine und für die Kalender von Zeitplan-Regeln mit „Ende des Ablaufs“ (siehe [Zeitpläne](#zeitpläne));

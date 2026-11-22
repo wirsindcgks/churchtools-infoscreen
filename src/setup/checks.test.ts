@@ -341,6 +341,26 @@ describe('checkDeviceGroup', () => {
         expect(check([], [1], [1])[0]?.level).toBe('fail');
     });
 
+    it('checks that a device sees the notes of the service groups of the blocks "Ablauf" (Plan.md 119, G84)', () => {
+        const check = (grants: Grant[], agendaServiceGroupIds = [4, 5]) =>
+            checkDeviceGroup({
+                statusId: 1,
+                members: [{ label: 'Gerät A', grants }],
+                calendars,
+                usedCalendarIds: [],
+                publicCalendarIds: [],
+                agendaServiceGroupIds,
+                wikiCategoryId: WIKI,
+            }).filter((c) => c.text.startsWith('Notizen der Dienstgruppen') || c.text.startsWith('Die Geräte sehen die Notizen'));
+        expect(check([grant(AUTH.serviceGroupView, 4), grant(AUTH.serviceGroupView, 5)])).toEqual([
+            { level: 'ok', category: 'agenda', text: 'Die Geräte sehen die Notizen der gewählten Dienstgruppen.' },
+        ]);
+        const [fail] = check([grant(AUTH.serviceGroupView, 4)]);
+        expect(fail).toMatchObject({ level: 'fail', text: 'Notizen der Dienstgruppen: Gerät A sieht sie nicht.' });
+        expect(fail?.detail).toContain('304');
+        expect(check([], [])).toEqual([]);
+    });
+
     it('warns when a device does not see the steering of the musicians (Plan.md 121 E3)', () => {
         const controlRights = [{ authId: 2015, dataId: [36], label: 'Steuerung der Musiker sehen' }];
         const check = (grants: Grant[], extra: { songsheetInUse?: boolean; controlRights?: typeof controlRights } = {}) =>

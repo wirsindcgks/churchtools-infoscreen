@@ -332,6 +332,21 @@ describe('planRefresh (Plan.md 62)', () => {
         expect(result.add.some((i) => i.authId === AUTH.calendarView)).toBe(false);
     });
 
+    it('gives the device 304 for the service groups of the notes – and takes it back where no block shows them any more (Plan.md 119, G84)', () => {
+        const [d, v, , m] = planProvisioning({ ...input, agendaServiceGroupIds: [4, 2], musicianGroupId: 99, controlCategoryId: 5 });
+        expect(v!.grants.find((g) => g.authId === AUTH.serviceGroupView)).toEqual({ authId: 304, dataId: [4, 2], label: 'Dienste einzelner Dienstkategorien sehen' });
+        expect(d!.grants.some((g) => g.authId === AUTH.serviceGroupView)).toBe(false);
+        expect(m === undefined || !m.grants.some((g) => g.authId === AUTH.serviceGroupView)).toBe(true);
+        expect(plan.find((g) => g.key === 'device')!.grants.some((g) => g.authId === AUTH.serviceGroupView)).toBe(false);
+        const planWith = planProvisioning({ ...input, agendaServiceGroupIds: [4] });
+        const names = { serviceGroups: new Map([[4, 'Band']]) };
+        const result = planRefresh(planWith, { device: [[held(304, 4), held(304, 7), held(304, 9)]] }, { ...known, serviceGroupIds: [4, 7] }, names).find((g) => g.key === 'device')!;
+        expect(pairs(result.remove)).toEqual(['304:7']);
+        expect(result.remove[0]!.label).toBe('Dienste einzelner Dienstkategorien sehen: Dienstgruppe 7');
+        // Without a read of the service groups nothing is taken back.
+        expect(pairs(planRefresh(planWith, { device: [[held(304, 7)]] }, known).find((g) => g.key === 'device')!.remove)).toEqual([]);
+    });
+
     it('takes back 331 of a calendar no block "Ablauf" has any more, and 301 once there is none (G81)', () => {
         const without = device([[held(301, null), held(331, 1), held(331, 9)]]);
         expect(pairs(without.remove)).toEqual(['301:null', '331:1']);

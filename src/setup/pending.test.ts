@@ -15,6 +15,7 @@ vi.mock('../ct/api', () => ({
     fetchCalendars: vi.fn().mockResolvedValue([]),
     fetchPublicCalendars: vi.fn().mockResolvedValue([]),
     fetchResourceMasterdata: vi.fn().mockResolvedValue(null),
+    fetchServiceGroups: vi.fn().mockResolvedValue([]),
 }));
 vi.mock('../ct/client', () => ({ instanceBaseUrl: () => 'https://x' }));
 vi.mock('./catalog', () => ({ loadAuthCatalog: mocks.catalog }));
@@ -37,6 +38,7 @@ function repository() {
         appointmentRoomsInUse: vi.fn().mockResolvedValue([]),
         serviceCalendarIdsInUse: vi.fn().mockResolvedValue([]),
         agendaCalendarIdsInUse: vi.fn().mockResolvedValue([]),
+        agendaServiceGroupIdsInUse: vi.fn().mockResolvedValue([]),
         songsheetInUse: vi.fn().mockResolvedValue(false),
         visibleCategories: vi.fn().mockResolvedValue(visible),
         statusCategoryId: vi.fn().mockResolvedValue(2),

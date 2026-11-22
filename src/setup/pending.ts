@@ -5,8 +5,9 @@
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
 import { ref } from 'vue';
+import type { ServiceGroupResponse } from '../appointments/services';
 import { EXTENSION_KEY } from '../config';
-import { fetchCalendars, fetchPublicCalendars, fetchResourceMasterdata } from '../ct/api';
+import { fetchCalendars, fetchPublicCalendars, fetchResourceMasterdata, fetchServiceGroups } from '../ct/api';
 import { instanceBaseUrl } from '../ct/client';
 import { isAdministrator } from '../designer/administrator';
 import { pickCategory, type WikiCategory } from '../media/wiki';
@@ -14,6 +15,7 @@ import { roomsOf } from '../rooms/normalize';
 import { getRepository } from '../store/backend';
 import { CATEGORIES, type CategoryKey } from '../store/screen-repository';
 import { grantableCalendars } from './calendars';
+import { grantableServiceGroups } from './service-groups';
 import { loadAuthCatalog } from './catalog';
 import { churchToolsProvisionApi, loadGroups } from './load';
 import { readLocks } from './locks';
@@ -54,7 +56,7 @@ async function compute(): Promise<boolean> {
     if (handle.demo) return false;
     const repository = handle.repository;
     // Like SetupView.vue (arrival): the same reads, the categories only looked up.
-    const [groups, settings, wikiCategories, calendars, publicCalendars, resources, usedRooms, roomsAtAppointments, serviceCalendarIds, agendaCalendarIds, songsheet, visible, statusId, controlId, draftsId, changelogId, catalog] =
+    const [groups, settings, wikiCategories, calendars, publicCalendars, resources, usedRooms, roomsAtAppointments, serviceCalendarIds, agendaCalendarIds, agendaServiceGroupIds, serviceGroups, songsheet, visible, statusId, controlId, draftsId, changelogId, catalog] =
         await Promise.all([
             loadGroups(),
             repository.loadSettings(),
@@ -66,6 +68,8 @@ async function compute(): Promise<boolean> {
             repository.appointmentRoomsInUse(),
             repository.serviceCalendarIdsInUse(),
             repository.agendaCalendarIdsInUse(),
+            repository.agendaServiceGroupIdsInUse(),
+            fetchServiceGroups().catch((): ServiceGroupResponse[] => []),
             repository.songsheetInUse(),
             repository.visibleCategories(),
             repository.statusCategoryId().catch(() => null),
@@ -107,6 +111,7 @@ async function compute(): Promise<boolean> {
         appointmentRooms: roomsAtAppointments,
         serviceCalendarIds: grantableCalendars(serviceCalendarIds, publicIds, released),
         agendaCalendarIds: grantableCalendars(agendaCalendarIds, publicIds, released),
+        agendaServiceGroupIds: grantableServiceGroups(agendaServiceGroupIds, serviceGroups),
         songsheet,
         screenCalendarIds: released,
         peopleGroupIds: releasedPeople,
@@ -121,11 +126,12 @@ async function compute(): Promise<boolean> {
             people: created.includes(peopleGroupId ?? -1) ? peopleGroupId! : undefined,
             musician: created.includes(musicianGroupId ?? -1) ? musicianGroupId! : undefined,
         },
-        { calendarIds: calendars.map((c) => c.id), roomIds: rooms.map((r) => r.id) },
+        { calendarIds: calendars.map((c) => c.id), roomIds: rooms.map((r) => r.id), serviceGroupIds: serviceGroups.flatMap((g) => (typeof g.id === 'number' ? [g.id] : [])) },
         {
             calendars: new Map(calendars.map((c) => [c.id, c.name] as const)),
             rooms: new Map(rooms.map((r) => [r.id, r.name] as const)),
             groups: new Map(groups.map((g) => [g.id, g.name] as const)),
+            serviceGroups: new Map(serviceGroups.flatMap((g) => (typeof g.id === 'number' ? [[g.id, (g.name ?? '').trim()] as const] : []))),
         },
         churchToolsProvisionApi,
         settings?.peopleDeviceIds ?? [],

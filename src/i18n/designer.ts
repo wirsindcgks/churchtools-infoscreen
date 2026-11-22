@@ -2022,12 +2022,14 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             roomFallback: (label: string, id: number) => `${label}: Raum ${id}`,
             calendarFallback: (label: string, id: number) => `${label}: Kalender ${id}`,
             groupFallback: (label: string, id: number) => `${label}: Gruppe ${id}`,
+            serviceGroupFallback: (label: string, id: number) => `${label}: Dienstgruppe ${id}`,
             /** The wording of ChurchTools' own right, as the assistant labels it. */
             rightLabels: {
                 calendarView: 'Einzelnen Kalender sehen',
                 eventView: 'Events von einzelnen Kalendern sehen',
                 agendaView: 'Ablaufpläne für einzelne Kalender sehen',
                 resourceView: 'Ressource sehen',
+                serviceGroupView: 'Dienste einzelner Dienstkategorien sehen',
             },
             grants: {
                 viewModule: '„Infoscreen Designer" sehen',
@@ -2143,6 +2145,10 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             agendaBlindDetail:
                 'Der Baustein „Ablauf" braucht drei Rechte: „Events" sehen (301), „Events von einzelnen Kalendern sehen" (306) und „Ablaufpläne für einzelne Kalender sehen" (331), die beiden letzten für jeden Kalender. „Rechte aktualisieren" gibt sie der Gerätegruppe – nur für öffentliche oder freigegebene Kalender.',
             agendaVisible: 'Die Live-Agenda ist für den Baustein „Ablauf" lesbar.',
+            groupNotesBlind: (labels: string) => `Notizen der Dienstgruppen: ${labels} sieht sie nicht.`,
+            groupNotesBlindDetail:
+                'Der Baustein „Ablauf" zeigt Notizen von Dienstgruppen, die nicht offen sind; dafür braucht das Gerät „Dienste einzelner Dienstkategorien sehen" (304) für jede. In den Einstellungen „Rechte aktualisieren" wählen.',
+            groupNotesVisible: 'Die Geräte sehen die Notizen der gewählten Dienstgruppen.',
             songsBlind: (labels: string) => `Liedblatt: ${labels} fehlt „Einzelne Song-Kategorien sehen" – die Liedblätter bleiben leer.`,
             songsBlindDetail:
                 'Der Baustein „Liedblatt" liest die Lieder des Ablaufs und ihre Dateien; dafür braucht das Gerät „Einzelne Song-Kategorien sehen" (313). „Rechte aktualisieren" gibt es der Gerätegruppe für alle Song-Kategorien.',
