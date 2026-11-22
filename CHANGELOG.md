@@ -4,6 +4,19 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.65.0] – 2026-11-22
+
+### Neu
+
+- **Notizen der Dienstgruppen im Baustein „Ablauf“** (Plan.md 119). Wer im Ablaufplan an einem Punkt Notizen für eine
+  Dienstgruppe einträgt, etwa für Band oder Technik, sieht sie jetzt auf dem Bühnenmonitor: In der Darstellung „Eigene“
+  wählt man im neuen Klappmenü „Dienstgruppen“, welche erscheinen; unter dem laufenden Punkt steht dann je Gruppe eine
+  Zeile „Technik: …“. Die Vorschau im Designer zeigt Beispielnotizen. Ohne Auswahl bleibt der Baustein, wie er war.
+- **Recht für die Notizen.** Damit ein Bildschirm die Notizen einer Dienstgruppe lesen darf, gibt „Rechte aktualisieren“
+  der Gerätegruppe „Dienste einzelner Dienstkategorien sehen“ für genau diese Dienstgruppen und nimmt es zurück, wenn kein
+  Baustein sie mehr zeigt. Dienstgruppen, die in ChurchTools „Ohne Berechtigung einsehbar“ sind, brauchen das nicht. Der
+  Assistent meldet, wenn das Recht fehlt.
+
 ## [0.64.1] – 2026-11-21
 
 ### Geändert
@@ -2064,3 +2077,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.63.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.63.0
 [0.64.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.64.0
 [0.64.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.64.1
+[0.65.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.65.0
