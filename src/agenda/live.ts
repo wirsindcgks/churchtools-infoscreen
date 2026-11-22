@@ -16,6 +16,8 @@ export interface AgendaItemResponse {
     /** A song carries its name here; its `title` is empty (G81). Key and tempo are free or `null`; the arrangement is named (G82). */
     song?: { title?: string | null; arrangementId?: number | null; key?: string | null; bpm?: number | null; arrangement?: string | null; isDefault?: boolean | null } | null;
     note?: string | null;
+    /** The notes of the service groups (Plan.md 119); `[]` without. */
+    serviceGroupNotes?: { serviceGroupId?: number | null; note?: string | null }[] | null;
     /** `text` holds the services in square brackets and free text; `persons` the people by service, `person: null` = unfilled (G81). */
     responsible?: {
         text?: string | null;
@@ -32,6 +34,8 @@ export interface LiveItem {
     beforeEvent: boolean;
     /** Optional: the offline copy of the device may hold older events without them. */
     note?: string;
+    /** The notes the service groups left at the point (Plan.md 119); `name` is filled in by the player data, `''` where unknown. Travels with the offline copy. */
+    groupNotes?: GroupNote[];
     /** The first service of "Verantwortlich", without brackets. */
     service?: string;
     /** The ready line: "Predigt: Max Mustermann · Freitext". */
@@ -44,6 +48,13 @@ export interface LiveItem {
     arrangementDescription?: string;
     /** Only a song with a text file at its arrangement and a device that may read it; travels with the offline copy. */
     sheet?: SongSheet;
+}
+
+/** The note of one service group at an agenda point. */
+export interface GroupNote {
+    serviceGroupId: number;
+    name: string;
+    note: string;
 }
 
 /** Key, tempo and the arrangement of a song; the arrangement only where it is not the default one. */
@@ -121,6 +132,8 @@ export interface AgendaDisplay {
     number: number;
     count: number;
     note: string | null;
+    /** The notes of the service groups at the shown point. */
+    groupNotes: GroupNote[];
     service: string | null;
     responsible: string | null;
     song: boolean;
@@ -180,6 +193,17 @@ function songDetails(song: AgendaItemResponse['song']): SongDetails | undefined 
     return Object.keys(details).length ? details : undefined;
 }
 
+/** The notes of the service groups of a point: trimmed, the empty ones and those without a whole id left out. */
+function groupNotes(raw: AgendaItemResponse['serviceGroupNotes']): GroupNote[] {
+    const notes: GroupNote[] = [];
+    for (const entry of raw ?? []) {
+        const note = (entry?.note ?? '').trim();
+        if (!note || !Number.isInteger(entry?.serviceGroupId)) continue;
+        notes.push({ serviceGroupId: entry.serviceGroupId!, name: '', note });
+    }
+    return notes;
+}
+
 /** The list of the live view: the placeholder, then the points in the delivered order without headers. */
 export function liveItems(items: readonly AgendaItemResponse[]): LiveItem[] {
     const points = items
@@ -190,6 +214,7 @@ export function liveItems(items: readonly AgendaItemResponse[]): LiveItem[] {
             const note = (item.note ?? '').trim();
             const service = serviceName(/\[([^\]]*)\]/.exec(item.responsible?.text ?? '')?.[1]);
             const responsible = item.responsible ? responsibleLine(item.responsible) : '';
+            const notes = groupNotes(item.serviceGroupNotes);
             const details = song ? songDetails(item.song) : undefined;
             const arrangementId = song && Number.isInteger(item.song?.arrangementId) ? item.song!.arrangementId! : undefined;
             return {
@@ -198,6 +223,7 @@ export function liveItems(items: readonly AgendaItemResponse[]): LiveItem[] {
                 song,
                 beforeEvent: item.isBeforeEvent === true,
                 ...(note ? { note } : {}),
+                ...(notes.length ? { groupNotes: notes } : {}),
                 ...(service ? { service } : {}),
                 ...(responsible ? { responsible } : {}),
                 ...(details ? { songDetails: details } : {}),
@@ -340,6 +366,7 @@ export function agendaDisplay(pick: AgendaPick | null, deviceNowMs: number): Age
         number: Math.max(1, number),
         count,
         note: item.note ?? null,
+        groupNotes: item.groupNotes ?? [],
         service: item.service ?? null,
         responsible: item.responsible ?? null,
         song: item.song,

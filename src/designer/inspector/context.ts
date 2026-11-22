@@ -2,7 +2,7 @@ import { inject, provide, type InjectionKey } from 'vue';
 import type { AppointmentTag, Calendar, PostGroup } from '../../ct/api';
 import type { HomepageEntry } from '../../groups/normalize';
 import type { RoomInfo } from '../../rooms/normalize';
-import type { ServiceInfo } from '../../appointments/services';
+import type { ServiceGroupInfo, ServiceInfo } from '../../appointments/services';
 
 /** What the frame of the inspector knows and hands to the inspector of a block (Plan.md 79, B2). */
 export interface InspectorContext {
@@ -20,6 +20,8 @@ export interface InspectorContext {
     readonly services?: ServiceInfo[] | null;
     readonly allowedServices?: number[];
     readonly servicesFailed?: boolean;
+    /** The service groups, for the notes of the block "Ablauf" (Plan.md 119); null while not loaded and where unreadable. */
+    readonly serviceGroups?: ServiceGroupInfo[] | null;
     /** The appointment tags (Plan.md 82 C); null while they are not loaded and where they cannot be loaded – then no field. */
     readonly tags?: AppointmentTag[] | null;
 }
@@ -33,7 +35,7 @@ export function useInspectorContext(): InspectorContext {
 }
 
 /** The lists of the context, read through a function so they follow whatever they come from (props, refs). */
-export type InspectorLists = Pick<InspectorContext, 'calendars' | 'hiddenCalendars' | 'releasedCalendarIds' | 'groups' | 'homepages' | 'rooms' | 'roomTypeMissing' | 'services' | 'allowedServices' | 'servicesFailed' | 'tags'>;
+export type InspectorLists = Pick<InspectorContext, 'calendars' | 'hiddenCalendars' | 'releasedCalendarIds' | 'groups' | 'homepages' | 'rooms' | 'roomTypeMissing' | 'services' | 'allowedServices' | 'servicesFailed' | 'serviceGroups' | 'tags'>;
 
 /**
  * Hands the lists and the image picker to every inspector and short menu below the calling component (Plan.md 79, C1):
@@ -71,6 +73,9 @@ export function provideInspectorContext(lists: () => InspectorLists, pickImage: 
         },
         get servicesFailed() {
             return lists().servicesFailed;
+        },
+        get serviceGroups() {
+            return lists().serviceGroups;
         },
         get tags() {
             return lists().tags;

@@ -5,6 +5,7 @@
  * countdown and delay go to the short menu.
  */
 import { computed } from 'vue';
+import { useInspectorContext } from '../context';
 import { t } from '../../../i18n/designer';
 import { th } from '../../../i18n/help';
 import type { Block } from '../../../model/schema';
@@ -22,6 +23,7 @@ import { useBlockEdit } from '../use-block';
 const props = defineProps<{ block: Extract<Block, { type: 'agenda' }> }>();
 const { setBlock } = useBlockEdit(() => props.block);
 const { calendars, hidden, released, toggleCalendar } = useCalendarChoice(() => props.block);
+const context = useInspectorContext();
 const card = computed(() => props.block.layout === 'card');
 const tiles = [
     { value: 'time', label: t.inspector.agendaTileTime },
@@ -32,6 +34,20 @@ const countdowns = [
     { value: 'digits', label: t.inspector.agendaCountdownDigits },
     { value: 'ring', label: t.inspector.agendaCountdownRing },
 ];
+/** Service groups the notes of which show under the running point (Plan.md 119); the order of the choice is kept. */
+const groups = computed(() => context.serviceGroups ?? []);
+const chosenGroups = computed(() => props.block.serviceGroupIds ?? []);
+function toggleGroup(id: number, on: boolean): void {
+    // Saved in the order of the list, not of the clicks; a group the list does not know any more goes last.
+    const rank = (g: number) => (groups.value.some((x) => x.id === g) ? groups.value.findIndex((x) => x.id === g) : groups.value.length);
+    const chosen = on ? [...chosenGroups.value, id] : chosenGroups.value.filter((g) => g !== id);
+    const next = chosen.sort((a, b) => rank(a) - rank(b));
+    setBlock({ serviceGroupIds: next.length ? next : undefined });
+}
+const groupsSummary = computed(() => {
+    const names = chosenGroups.value.map((id) => groups.value.find((g) => g.id === id)?.name).filter(Boolean);
+    return names.length ? names.join(', ') : t.inspector.agendaGroupsNone;
+});
 const tile = computed(() => props.block.tile ?? 'time');
 /** The view first, then what is switched on. */
 const look = computed(() =>
@@ -59,6 +75,12 @@ const help = computed(() => ({
 
 <template>
     <CalendarField quick :calendars="calendars" :chosen-ids="block.calendarIds" :hidden="hidden" :released="released" :extra-intro="t.inspector.agendaInfo" @toggle="toggleCalendar" />
+    <!-- Plan.md 119: a choice with a technical name – after the calendars, before "Darstellung" (AGENTS.md, Ordnung im Inspektor). -->
+    <InspectorSection v-if="card" id="agenda-service-groups" :title="t.inspector.agendaGroups" :summary="groupsSummary" :help="{ intro: th.agenda.groupNotes }">
+        <div class="list" data-testid="agenda-service-groups">
+            <ToggleField v-for="g in groups" :key="g.id" :model-value="chosenGroups.includes(g.id)" :label="g.name" :testid="`agenda-service-group-${g.id}`" @update:model-value="toggleGroup(g.id, $event)" />
+        </div>
+    </InspectorSection>
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="look" :help="help">
         <TileField quick :model-value="block.layout ?? 'churchtools'" :options="AGENDA_TILES" :label="t.inspector.view" testid="agenda-layout" @update:model-value="setBlock({ layout: $event === 'card' ? 'card' : undefined })" />
         <SegmentField v-if="card" :model-value="tile" :options="tiles" :label="t.inspector.agendaTile" testid="agenda-tile-kind" @update:model-value="setBlock({ tile: $event === 'time' ? undefined : ($event as 'position' | 'none') })" />
@@ -76,3 +98,10 @@ const help = computed(() => ({
     </InspectorSection>
     <FontSection :block="block" effects="shadow" />
 </template>
+
+<style scoped>
+.list {
+    display: grid;
+    gap: 8px;
+}
+</style>

@@ -272,7 +272,17 @@ export const churchToolsPlayerData: PlayerData = {
                 }
             }),
         );
-        return parts.filter((p): p is AgendaEvent => p !== null);
+        const found = parts.filter((p): p is AgendaEvent => p !== null);
+        // The names of the service groups, read once for the notes of all points (Plan.md 119); without them the notes stand alone.
+        if (found.some((e) => e.items.some((i) => i.groupNotes?.length))) {
+            try {
+                const names = new Map((await withTimeout(fetchServiceGroups())).map((g) => [g.id, (g.name ?? '').trim()]));
+                for (const e of found) for (const i of e.items) for (const n of i.groupNotes ?? []) n.name = names.get(n.serviceGroupId) ?? '';
+            } catch (error) {
+                console.warn('Dienstgruppen der Ablaufpläne konnten nicht geladen werden:', error);
+            }
+        }
+        return found;
     },
     async upcomingAgendas(calendarIds, from, to, timeZone) {
         const wanted = new Set(calendarIds);

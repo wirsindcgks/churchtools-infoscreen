@@ -111,7 +111,9 @@ groß die Restzeit, unten „Dann“; die Titel richten sich nach der Breite und
 sie steht für alle sichtbar auf dem Bildschirm) und die **Verantwortlichen** (Dienst und Namen der Eingeteilten;
 unbesetzte Dienste fallen weg) einschalten. Bei Liedern stehen die **Liedangaben** in „Jetzt“ und „Dann“: Tonart und
 Tempo aus dem Arrangement, dazu das Arrangement, wenn es nicht das Standard-Arrangement ist; sie sind von Anfang an
-eingeschaltet. „Dann“ lässt sich in beiden Ansichten ausblenden.
+eingeschaltet. „Dann“ lässt sich in beiden Ansichten ausblenden. In der Darstellung „Eigene“ lassen sich unter
+**Dienstgruppen** Gruppen wählen, deren Notizen aus dem Ablaufplan (etwa für Band oder Technik) unter dem laufenden Punkt
+erscheinen.
 
 Die Rechte, die das Gerät dafür braucht, vergeben die Einrichtung und „Rechte aktualisieren“ für die Kalender der
 Ablauf-Bausteine und für die Kalender von Zeitplan-Regeln mit „Ende des Ablaufs“ (siehe [Zeitpläne](#zeitpläne));

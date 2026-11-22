@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 66 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 67 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -314,6 +314,11 @@ export const AgendaBlock = v.object({
      * often hangs above the stage TV anyway (user, 2026-11-11).
      */
     showClock: v.optional(v.boolean(), false),
+    /**
+     * Since 1.67, only `card` (Plan.md 119, G84): the service groups whose notes "Jetzt" shows, one line each under the note of the
+     * item, in this order. Missing = none. The device reads them with 304 for these groups unless they are open (`viewAll`).
+     */
+    serviceGroupIds: v.optional(v.array(v.pipe(v.number(), v.integer()))),
     style: TextStyle,
 });
 

@@ -153,6 +153,15 @@ describe('readSlide – tolerant towards newer data', () => {
         expect(read({ calendarIds: [] }).issues).not.toHaveLength(0);
     });
 
+    it('reads the service groups of the agenda block (schema 1.67, Plan.md 119): none by default, whole ids only', () => {
+        const old = makeSlide({ blocks: [textBlock('a')] });
+        const style = (old.blocks[0] as { style: object }).style;
+        const read = (extra: Record<string, unknown> = {}) => readSlide({ ...old, blocks: [{ id: 'a', type: 'agenda', x: 0, y: 0, width: 900, height: 360, calendarIds: [2], style, ...extra }] });
+        expect(read().doc.blocks[0]).not.toHaveProperty('serviceGroupIds');
+        expect(read({ serviceGroupIds: [3, 1] }).doc.blocks[0]).toMatchObject({ serviceGroupIds: [3, 1] });
+        expect(read({ serviceGroupIds: [1.5] }).issues).not.toHaveLength(0);
+    });
+
     it('reads the layout of the agenda block: churchtools by default, the card with tile, note and people optional', () => {
         const old = makeSlide({ blocks: [textBlock('a')] });
         const style = (old.blocks[0] as { style: object }).style;

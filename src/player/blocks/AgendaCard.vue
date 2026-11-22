@@ -35,6 +35,11 @@ const now = computed(() => props.display.kind === 'now');
 const showCountdown = computed(() => now.value && props.block.showCountdown && props.circle !== null);
 const showDelay = computed(() => now.value && props.block.showDelay && props.lateMinutes !== null);
 const showNote = computed(() => props.block.showNote && !!props.display.note);
+/** The notes of the chosen service groups (Plan.md 119), in the order of the choice; they do not depend on the switch "Notiz". */
+const groupNotes = computed(() => {
+    const byId = new Map(props.display.groupNotes.map((n) => [n.serviceGroupId, n]));
+    return (props.block.serviceGroupIds ?? []).flatMap((id) => byId.get(id) ?? []);
+});
 const showResponsible = computed(() => props.block.showResponsible && !!props.display.responsible);
 const showNext = computed(() => props.block.showNext && props.display.next !== null);
 /** Key first, then tempo and a named arrangement (Plan.md 121 A); `null` where the block leaves them out or there is none. */
@@ -102,7 +107,7 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
                     </template>
                 </div>
                 <!-- People and note at the bottom edge, the head at the top (user, 2026-11-10). -->
-                <div v-if="song || showResponsible || showNote" class="card-foot">
+                <div v-if="song || showResponsible || showNote || groupNotes.length" class="card-foot">
                     <!-- Key, tempo and arrangement of a song, with a note sign (Plan.md 121 A). -->
                     <div v-if="song" class="hero-meta">
                         <span data-testid="agenda-song">
@@ -121,6 +126,10 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
                         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h8.5l3.5 3.5v13.5H6z" /><path d="M14.5 3.5V7H18M9 11.5h6M9 15.5h6" /></svg>
                         <!-- A div, not a p: the host stylesheet sizes paragraphs (G43). -->
                         <div class="hero-note" data-testid="agenda-note">{{ display.note }}</div>
+                    </div>
+                    <!-- What a service group wrote at the point (Plan.md 119): the name like the labels of "Verantwortlich", then the note. -->
+                    <div v-for="n in groupNotes" :key="n.serviceGroupId" class="group-note" data-testid="agenda-group-note">
+                        <strong v-if="n.name">{{ n.name }}: </strong>{{ n.note }}
                     </div>
                 </div>
             </div>
@@ -403,6 +412,17 @@ const nextMinutes = computed(() => (props.display.nextDurationSeconds ? Math.rou
     opacity: 0.85;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
+}
+.group-note {
+    display: -webkit-box;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    font-size: 0.7em;
+    line-height: 1.45;
+    opacity: 0.85;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
 }
 .hero-meta {
     display: grid;

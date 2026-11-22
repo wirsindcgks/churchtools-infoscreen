@@ -39,6 +39,22 @@ export interface ServiceGroupResponse {
     id?: number;
     name?: string | null;
     viewAll?: boolean | null;
+    sortKey?: number | null;
+}
+
+/** A service group by name, for the notes of the block "Ablauf" (Plan.md 119). */
+export interface ServiceGroupInfo {
+    id: number;
+    name: string;
+}
+
+/** All service groups, in the order of ChurchTools (`sortKey`, where it has one; else as delivered). */
+export function serviceGroupChoices(groups: ServiceGroupResponse[]): ServiceGroupInfo[] {
+    return groups
+        .filter((g) => typeof g?.id === 'number')
+        .map((g, i) => ({ id: g.id!, name: (g.name ?? '').trim() || tp.appointments.fallbackService(g.id!), key: typeof g.sortKey === 'number' ? g.sortKey : i }))
+        .sort((a, b) => a.key - b.key)
+        .map(({ id, name }) => ({ id, name }));
 }
 
 /** One entry of `eventServices` of `GET /events?include=eventServices` – only what is read; the rest never leaves this file. */

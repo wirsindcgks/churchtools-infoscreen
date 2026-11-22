@@ -75,6 +75,41 @@ test('the own look of the agenda block shows cards, with tile, service, people a
     await expect(block.getByTestId('agenda-next-card')).toHaveCount(0);
 });
 
+test('the own look of the agenda block lets the service groups be chosen (Plan.md 119)', async ({ page }) => {
+    await page.route('**/api/services', (route) => route.fulfill({ json: { data: [] } }));
+    await page.route('**/api/servicegroups', (route) =>
+        route.fulfill({ json: { data: [{ id: 1, name: 'Programm', viewAll: true }, { id: 2, name: 'Technik', viewAll: true }, { id: 3, name: 'Musik', viewAll: true }] } }),
+    );
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await page.getByTestId('add-slide').click();
+
+    await addBlock(page, 'agenda');
+    // Only in the own look; after the calendars, before "Darstellung" (AGENTS.md, Ordnung im Inspektor).
+    await expect(page.getByTestId('section-agenda-service-groups')).toHaveCount(0);
+    await openSection(page, 'appearance');
+    const inspector = page.getByTestId('block-inspector');
+    await choose(inspector, 'agenda-layout', 'card');
+    const ids = await page.locator('[data-testid^="section-"]:not([data-testid$="-toggle"]):not([data-testid$="-help"])').evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
+    const order = ['section-calendars', 'section-agenda-service-groups', 'section-appearance', 'section-font'];
+    expect(ids.filter((id) => order.includes(id!))).toEqual(order);
+
+    await expect(page.getByTestId('section-agenda-service-groups')).toContainText('Keine');
+    await openSection(page, 'agenda-service-groups');
+    await inspector.getByTestId('agenda-service-group-2').check();
+    // Clicked in reverse, saved and shown in the order of the list; the preview gives each group an example note.
+    await inspector.getByTestId('agenda-service-group-2').uncheck();
+    await inspector.getByTestId('agenda-service-group-3').check();
+    await inspector.getByTestId('agenda-service-group-1').check();
+    await page.getByTestId('section-agenda-service-groups-toggle').click();
+    await expect(page.getByTestId('section-agenda-service-groups')).toContainText('Programm, Musik');
+    const notes = page.locator('.editor-stage .block--agenda').getByTestId('agenda-group-note');
+    await expect(notes).toHaveCount(2);
+    await expect(notes.first()).toContainText('Programm: Mikro 2');
+    await expect(notes.last()).toContainText('Musik: Nach dem Lied');
+});
+
 test('the block "Liedblatt" shows the next song of the example with chords, and the chords can be switched off (Plan.md 121 B)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();
