@@ -11,7 +11,7 @@ import { t } from '../i18n/designer';
 import { th } from '../i18n/help';
 import type { HomepageEntry } from '../groups/normalize';
 import type { RoomInfo } from '../rooms/normalize';
-import type { ServiceInfo } from '../appointments/services';
+import type { ServiceGroupInfo, ServiceInfo } from '../appointments/services';
 import { useEditorStore } from './editor-store';
 import ArrangeField from './ArrangeField.vue';
 import Icon from './Icon.vue';
@@ -32,7 +32,7 @@ import { KEYS, withKeys } from './shortcuts';
 import { vTip } from './tip';
 
 /** `rooms`: the rooms the designer may see; null while they are not loaded yet. */
-const props = defineProps<{ calendars: Calendar[]; hiddenCalendars?: Calendar[]; releasedCalendarIds?: number[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null; roomTypeMissing?: boolean; services?: ServiceInfo[] | null; allowedServices?: number[]; servicesFailed?: boolean; tags?: AppointmentTag[] | null }>();
+const props = defineProps<{ calendars: Calendar[]; hiddenCalendars?: Calendar[]; releasedCalendarIds?: number[]; groups: PostGroup[]; homepages: HomepageEntry[]; rooms: RoomInfo[] | null; roomTypeMissing?: boolean; services?: ServiceInfo[] | null; allowedServices?: number[]; servicesFailed?: boolean; serviceGroups?: ServiceGroupInfo[] | null; tags?: AppointmentTag[] | null }>();
 /** `picked`: a block was chosen from the list of the slide's blocks (on a phone the sheet closes then). */
 const emit = defineEmits<{ 'pick-image': ['block' | 'background' | 'logo' | 'slideshow' | 'video']; picked: [] }>();
 

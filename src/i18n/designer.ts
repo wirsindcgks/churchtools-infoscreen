@@ -629,6 +629,9 @@ export const t = {
         showSignal: 'Signalrahmen',
         agendaWarnMinutes: 'Gelb ab',
         agendaDark: 'Dunkle Kacheln',
+        /** The notes of the service groups at the agenda points (Plan.md 119). */
+        agendaGroups: 'Dienstgruppen',
+        agendaGroupsNone: 'Keine',
         showSong: 'Liedangaben',
         showChords: 'Akkorde',
         songsheetNoChords: 'Ohne Akkorde',

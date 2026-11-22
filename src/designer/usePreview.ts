@@ -33,6 +33,7 @@ export function usePreview(
     people: Ref<PeopleNeeds> = ref({ standard: false, groupIds: [], personFieldKeys: [] }),
     agenda: Ref<number[]> = ref([]),
     agendaSheets: Ref<boolean> = ref(false),
+    agendaGroups: Ref<{ id: number; name: string }[]> = ref([]),
 ) {
     const context = reactive<StageContext>({
         now: new Date(),
@@ -216,7 +217,7 @@ export function usePreview(
             context.agenda = undefined;
             return;
         }
-        context.agenda = sampleAgenda(Date.now(), ids);
+        context.agenda = sampleAgenda(Date.now(), ids, agendaGroups.value);
         agendaSample = true;
         try {
             const window = appointmentWindow(new Date(), context.timeZone, 1);
@@ -256,7 +257,7 @@ export function usePreview(
     watch(() => groupHomepages.value.join(), () => void loadGroupHomepages());
     watch(() => JSON.stringify(rooms.value), () => void loadRooms());
     watch(() => JSON.stringify(people.value), () => void loadPeople());
-    watch(() => `${agenda.value.join()}|${agendaSheets.value}`, () => void loadAgenda());
+    watch(() => `${agenda.value.join()}|${agendaSheets.value}|${JSON.stringify(agendaGroups.value)}`, () => void loadAgenda());
     // Appointments and rooms need the instance time zone.
     void loadBasics().then(() => {
         void loadAppointments();
@@ -269,7 +270,7 @@ export function usePreview(
 
     const ticker = setInterval(() => {
         context.now = new Date();
-        if (agendaSample && agenda.value.length) context.agenda = sampleAgenda(Date.now(), agenda.value);
+        if (agendaSample && agenda.value.length) context.agenda = sampleAgenda(Date.now(), agenda.value, agendaGroups.value);
     }, 30_000);
     onBeforeUnmount(() => clearInterval(ticker));
 

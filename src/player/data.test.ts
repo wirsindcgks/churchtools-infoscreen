@@ -515,6 +515,19 @@ describe('the live agenda (schema 1.61, Plan.md 118)', () => {
         expect(api.fetchAgenda).not.toHaveBeenCalledWith(5);
     });
 
+    it('writes the names of the service groups into the notes of the points, once; without the names the notes stay (Plan.md 119)', async () => {
+        vi.mocked(api.fetchEventList).mockResolvedValue([{ id: 1, startDate: '2026-11-10T10:00:00Z', endDate: '2026-11-10T11:00:00Z', calendar: { domainIdentifier: '2' } }]);
+        vi.mocked(api.fetchAgenda).mockResolvedValue({ items: [{ title: 'Lesung', duration: 60, serviceGroupNotes: [{ serviceGroupId: 7, note: 'Mikro 2' }] }] });
+        vi.mocked(api.fetchServiceGroups).mockClear();
+        vi.mocked(api.fetchServiceGroups).mockResolvedValue([{ id: 7, name: 'Technik' }]);
+        const day = [new Date('2026-11-10T00:00:00Z'), new Date('2026-11-11T00:00:00Z')] as const;
+        expect((await churchToolsPlayerData.agendaEvents([2], ...day, 'UTC'))[0]!.items[1]!.groupNotes).toEqual([{ serviceGroupId: 7, name: 'Technik', note: 'Mikro 2' }]);
+        expect(api.fetchServiceGroups).toHaveBeenCalledTimes(1);
+        vi.mocked(api.fetchServiceGroups).mockRejectedValue(new Error('offline'));
+        vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        expect((await churchToolsPlayerData.agendaEvents([2], ...day, 'UTC'))[0]!.items[1]!.groupNotes).toEqual([{ serviceGroupId: 7, name: '', note: 'Mikro 2' }]);
+    });
+
     describe('the text of the songs for the block "Liedblatt" (Plan.md 121 B)', () => {
         const day = [new Date('2026-11-10T00:00:00Z'), new Date('2026-11-11T00:00:00Z')] as const;
         const songBlock = (): Block => ({ id: 's', type: 'songsheet', x: 0, y: 0, width: 1400, height: 700, calendarIds: [2], showChords: true, pageByTime: false, style });

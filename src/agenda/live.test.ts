@@ -139,6 +139,21 @@ describe('note, services and people of a point', () => {
         expect(parsed({ note: '   ' })).not.toHaveProperty('note');
     });
 
+    it('takes the notes of the service groups trimmed; empty ones and those without a whole id fall away; none leaves no field (Plan.md 119)', () => {
+        expect(parsed({ serviceGroupNotes: [{ serviceGroupId: 3, note: '  Mikro 2  ' }, { serviceGroupId: 4, note: '   ' }, { serviceGroupId: null, note: 'x' }, { serviceGroupId: 1.5, note: 'y' }] }).groupNotes).toEqual([
+            { serviceGroupId: 3, name: '', note: 'Mikro 2' },
+        ]);
+        expect(parsed({ serviceGroupNotes: [] })).not.toHaveProperty('groupNotes');
+        expect(parsed({})).not.toHaveProperty('groupNotes');
+    });
+
+    it('hands the notes of the shown point to the display', () => {
+        const event = { eventId: 1, calendarId: 2, startMs: 0, endMs: 3_600_000, items: liveItems([{ title: 'Punkt', duration: 60, serviceGroupNotes: [{ serviceGroupId: 3, note: 'Mikro' }] }, { title: 'Zwei', duration: 60 }]) };
+        const display = (index: number) => agendaDisplay({ event, position: { index, set: true, switchMs: 0, addSeconds: 0, offsetMs: 0 }, phase: 'live' }, 0)!;
+        expect(display(1).groupNotes).toEqual([{ serviceGroupId: 3, name: '', note: 'Mikro' }]);
+        expect(display(2).groupNotes).toEqual([]);
+    });
+
     it('reads the first service from the brackets and the people by service (G81)', () => {
         const item = parsed({ responsible: { text: '[Predigt]', persons: [{ service: '[Predigt]', person: { title: 'Max Mustermann' } }] } });
         expect(item.service).toBe('Predigt');

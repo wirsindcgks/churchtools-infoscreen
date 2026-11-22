@@ -37,7 +37,7 @@ import { MEDIA_PAGE } from '../media/library';
 import { roomTypeIdsOf, roomsOf, type RoomInfo } from '../rooms/normalize';
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { needsAppointmentTags } from '../appointments/tags';
-import { allowedServiceIds, appointmentServicesInUse, serviceChoices, type ServiceInfo } from '../appointments/services';
+import { allowedServiceIds, appointmentServicesInUse, serviceChoices, serviceGroupChoices, type ServiceGroupInfo, type ServiceInfo } from '../appointments/services';
 import { agendaNeeds, groupNeeds, peopleNeeds, postNeeds, roomNeeds, sheetsNeeded } from '../player/data';
 import { getRepository } from '../store/backend';
 import { useOffsetTop } from '../designer/useOffsetTop';
@@ -95,6 +95,13 @@ providePalette(
 const calendarIds = computed(() => editor.calendarIds);
 /** The slides as the stage draws them: the blocks of a template count for the data to fetch. */
 const shownSlides = computed(() => editor.slides.map((s) => expandTemplates(s, editor.templateById)));
+/** Service groups for the notes of the block "Ablauf" (Plan.md 119); null until loaded and where unreadable. */
+const serviceGroups = ref<ServiceGroupInfo[] | null>(null);
+/** The service groups the blocks "Ablauf" chose, by name, for the example notes of the preview. */
+const agendaGroups = computed(() => {
+    const ids = shownSlides.value.flatMap((s) => s.blocks).flatMap((b) => (b.type === 'agenda' ? (b.serviceGroupIds ?? []) : []));
+    return [...new Set(ids)].map((id) => ({ id, name: serviceGroups.value?.find((g) => g.id === id)?.name ?? '' }));
+});
 const { context, calendars, hiddenCalendars, releasedCalendarIds, problem } = usePreview(
     calendarIds,
     computed(() => editor.media),
@@ -108,6 +115,7 @@ const { context, calendars, hiddenCalendars, releasedCalendarIds, problem } = us
     computed(() => peopleNeeds(shownSlides.value)),
     computed(() => agendaNeeds(shownSlides.value)),
     computed(() => sheetsNeeded(shownSlides.value)),
+    agendaGroups,
 );
 useTemplatesIn(context, computed(() => editor.templates));
 
@@ -159,6 +167,7 @@ provideInspectorContext(
         services: services.value,
         allowedServices: allowedServices.value,
         servicesFailed: servicesFailed.value,
+        serviceGroups: serviceGroups.value,
         tags: tags.value,
     }),
     (kind) => openLibrary(kind),
@@ -567,9 +576,15 @@ onMounted(async () => {
     } catch {
         rooms.value = [];
     }
+    // Apart from the services: a failure of the one must not empty the other.
     try {
-        const [list, serviceGroups] = await Promise.all([fetchServices(), fetchServiceGroups()]);
-        services.value = serviceChoices(list, serviceGroups);
+        serviceGroups.value = serviceGroupChoices(await fetchServiceGroups());
+    } catch {
+        serviceGroups.value = null;
+    }
+    try {
+        const [list, groupList] = await Promise.all([fetchServices(), fetchServiceGroups()]);
+        services.value = serviceChoices(list, groupList);
     } catch {
         services.value = [];
         servicesFailed.value = true;
@@ -1079,7 +1094,7 @@ function onKey(event: KeyboardEvent): void {
                     <span class="sheet-label">{{ sheetLabel }}</span>
                     <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
                 </button>
-                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :released-calendar-ids="releasedCalendarIds" :groups="groups" :homepages="homepages" :rooms="rooms" :room-type-missing="roomTypeMissing" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" :tags="tags" @pick-image="openLibrary" @picked="phone && (inspectorOpen = false)" />
+                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :released-calendar-ids="releasedCalendarIds" :groups="groups" :homepages="homepages" :rooms="rooms" :room-type-missing="roomTypeMissing" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" :service-groups="serviceGroups" :tags="tags" @pick-image="openLibrary" @picked="phone && (inspectorOpen = false)" />
             </div>
         </div>
 
