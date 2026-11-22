@@ -21,6 +21,8 @@ export const AUTH = {
     eventsView: 301, // churchservice: "Events" sehen – global, without data (the live agenda, G81)
     eventView: 306, // churchservice: "Events von einzelnen Kalendern sehen"
     agendaView: 331, // churchservice: "Ablaufpläne für einzelne Kalender sehen" (`view agenda`)
+    // The notes of the service groups in the block "Ablauf" (Plan.md 119, G84): per group, unless it is open (`viewAll`).
+    serviceGroupView: 304, // churchservice: "Dienste einzelner Dienstkategorien sehen" (`view servicegroup`)
     wikiView: 501, // churchwiki: "Wiki" sehen
     wikiCategoryView: 502, // churchwiki: "Einzelne Wiki-Kategorien sehen"
     wikiCategoryEdit: 503, // churchwiki: "Einzelne Wiki-Kategorien bearbeiten"
@@ -328,6 +330,8 @@ export interface DeviceGroupInput {
     serviceCalendarIds?: number[];
     /** The calendars of the blocks "Ablauf" (Plan.md 118): the device reads their live agenda. */
     agendaCalendarIds?: number[];
+    /** The service groups, not open, whose notes a block "Ablauf" shows (Plan.md 119, G84): the device must see them (304). Missing: none. */
+    agendaServiceGroupIds?: number[];
     /** A slide shows the block "Liedblatt" (Plan.md 121): the device must see the song categories, else the sheets stay empty. */
     songsheetInUse?: boolean;
     /**
@@ -386,7 +390,7 @@ export function excessRights(grants: Grant[], plannedAuthIds: readonly number[])
 }
 
 /** Rights whose scope the check leaves alone: the calendars, rooms and events a device sees are set elsewhere. */
-const SCOPE_FREE = new Set<number>([AUTH.calendarView, AUTH.resourceView, AUTH.eventView, AUTH.agendaView, AUTH.songCategoryView]);
+const SCOPE_FREE = new Set<number>([AUTH.calendarView, AUTH.resourceView, AUTH.eventView, AUTH.agendaView, AUTH.songCategoryView, AUTH.serviceGroupView]);
 
 /**
  * The data a device account holds beyond its plan, per right: for each planned right with data – except
@@ -583,6 +587,22 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
                       detail: t.setup.checks.agendaBlindDetail,
                   }
                 : { level: 'ok', category: 'agenda', text: t.setup.checks.agendaVisible },
+        );
+    }
+
+    // The notes of a service group that is not open need 304 for it (G84).
+    const serviceGroupIds = input.agendaServiceGroupIds ?? [];
+    if (serviceGroupIds.length) {
+        const blind = input.members.filter((m) => !serviceGroupIds.every((id) => has(m.grants, AUTH.serviceGroupView, id))).map((m) => m.label);
+        checks.push(
+            blind.length
+                ? {
+                      level: 'fail',
+                      category: 'agenda',
+                      text: t.setup.checks.groupNotesBlind(blind.join(', ')),
+                      detail: t.setup.checks.groupNotesBlindDetail,
+                  }
+                : { level: 'ok', category: 'agenda', text: t.setup.checks.groupNotesVisible },
         );
     }
 

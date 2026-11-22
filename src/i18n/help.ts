@@ -304,7 +304,7 @@ export const th = {
             term: i.agendaDark,
             text: 'Schwarze Kacheln mit weißer Schrift für den Bühnenmonitor. Gilt unabhängig von den Karten im Design und der Farbe unter „Schrift“.',
         },
-        groupNotes: 'Notizen, die im Ablaufplan für eine Dienstgruppe stehen (etwa für Band oder Technik), erscheinen unter dem laufenden Punkt. Nur in der Darstellung „Eigene“.',
+        groupNotes: 'Notizen, die im Ablaufplan für eine Dienstgruppe stehen (etwa für Band oder Technik), erscheinen unter dem laufenden Punkt. Nur in der Darstellung „Eigene“. Damit der Bildschirm sie zeigt, in den Einstellungen „Rechte aktualisieren“ wählen; offene Dienstgruppen brauchen das nicht.',
         next: { term: i.showNext, text: 'Zeigt unter dem laufenden Punkt, was danach kommt.' },
         note: { term: i.showNote, text: 'Die Notiz des Punktes aus dem Ablaufplan – Hinweise fürs Team auf der Bühne. Sie steht für alle sichtbar auf dem Bildschirm.' },
         responsible: { term: i.showResponsible, text: 'Zeigt Dienst und Namen der Eingeteilten, unbesetzte Dienste fallen weg.' },

@@ -1330,6 +1330,16 @@ export class ScreenRepository {
         return [...ids].sort((a, b) => a - b);
     }
 
+    /** The service groups whose notes a card-layout block "Ablauf" shows – what a device may need 304 for (Plan.md 119, G84). */
+    async agendaServiceGroupIdsInUse(): Promise<number[]> {
+        const slides = await this.readShownSlides();
+        const ids = new Set<number>();
+        for (const block of slides.flatMap((s) => s.blocks)) {
+            if (block.type === 'agenda' && block.layout === 'card') (block.serviceGroupIds ?? []).forEach((id) => ids.add(id));
+        }
+        return [...ids].sort((a, b) => a - b);
+    }
+
     /** Every room a screen's `rooms` blocks show – what a device must be able to see (G45). */
     async roomIdsInUse(): Promise<number[]> {
         const slides = await this.readShownSlides();

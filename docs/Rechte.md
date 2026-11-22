@@ -112,6 +112,7 @@ Das Gerät sieht damit nur zugesagte Dienste aus Dienstgruppen, die „Ohne Bere
 | Events sehen (für den Baustein „Ablauf") | Events (`view`, 301), ohne Daten | – | – | **ja, sobald ein Baustein „Ablauf" oder eine Zeitplan-Regel „Ende des Ablaufs" einen Kalender hat** |
 | Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | – | – | **jeden öffentlichen oder freigegebenen Kalender eines Bausteins „Ablauf" oder einer Zeitplan-Regel „Ende des Ablaufs"** |
 | Ablaufpläne für einzelne Kalender sehen | Ablaufpläne für einzelne Kalender sehen (`view agenda`, 331) | – | – | **jeden öffentlichen oder freigegebenen Kalender eines Bausteins „Ablauf" oder einer Zeitplan-Regel „Ende des Ablaufs"** |
+| Dienste einzelner Dienstkategorien sehen | Dienste einzelner Dienstkategorien sehen (`view servicegroup`, 304) | – | – | **jede Dienstgruppe, deren Notizen ein Baustein „Ablauf" zeigt, außer den offenen („Ohne Berechtigung einsehbar")** |
 
 Steuerrechte für den Ablauf (Programmpunkte weiterschalten, bearbeiten) vergibt der Assistent nie.
 
@@ -227,6 +228,7 @@ nur an Kalendern und Räumen, die du selbst siehst (das `1104` für Gruppen nimm
 | Einzelnen Kalender sehen | Einzelnen Kalender sehen (`view category`, 403) | Gerät, Gestalter | Der Kalender ist nicht mehr für Bildschirme freigegeben |
 | Events von einzelnen Kalendern sehen | Events von einzelnen Kalendern sehen (`view events`, 306) | Gerät, Musiker | Kein Baustein zeigt mehr Dienste oder Ablauf dieses Kalenders |
 | Ablaufpläne für einzelne Kalender sehen | Ablaufpläne für einzelne Kalender sehen (`view agenda`, 331) | Gerät, Musiker | Kein Baustein „Ablauf" und keine Zeitplan-Regel „Ende des Ablaufs" nutzt diesen Kalender mehr |
+| Dienste einzelner Dienstkategorien sehen | Dienste einzelner Dienstkategorien sehen (`view servicegroup`, 304) | Gerät | Kein Baustein „Ablauf" zeigt die Notizen dieser Dienstgruppe mehr |
 | Events sehen (für den Baustein „Ablauf") | Events (`view`, 301), ohne Daten | Gerät | Kein Baustein „Ablauf" und keine Zeitplan-Regel „Ende des Ablaufs" hat mehr einen Kalender |
 | Ressource sehen | Ressource sehen (`view resource`, 205) | Gerät, Gestalter | Der Raum wird nicht mehr gebraucht |
 | Freigegebene Gruppe inkl. ihrer Gruppenmitglieder sehen | Gruppe inkl. ihrer Gruppenmitglieder sehen (`1104`) | Gerät | Die Freigabe wird beim Speichern der Seite „Gruppen für Personen" zurückgenommen („Infoscreen-People" und ein von Hand vergebenes `1104` bleiben) |

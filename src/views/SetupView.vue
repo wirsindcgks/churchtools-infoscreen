@@ -9,7 +9,7 @@ import ModulePage from '../designer/ModulePage.vue';
 import PageHeader from '../designer/PageHeader.vue';
 import SelectMenu from '../designer/SelectMenu.vue';
 import { fetchCalendars, fetchPersonFields, fetchPublicCalendars, fetchResourceMasterdata, fetchSecurityLevels, fetchServiceGroups, fetchServices, type Calendar, type PersonFieldInfo, type SecurityLevel } from '../ct/api';
-import { serviceChoices, type ServiceInfo } from '../appointments/services';
+import { serviceChoices, type ServiceGroupResponse, type ServiceInfo } from '../appointments/services';
 import { currentPerson, httpStatus, instanceBaseUrl, personUrl, serverMessage } from '../ct/client';
 import { controlUrl, playerUrl } from '../designer/player-url';
 import QrCode from '../designer/QrCode.vue';
@@ -23,6 +23,7 @@ import { offeredPersonFields } from '../groups/person-fields';
 import { withDeviceLogin } from '../player/device-login';
 import { resourceTypesOf, roomTypeIdsOf, roomsOf, type ResourceMasterdata, type ResourceTypeInfo, type RoomInfo } from '../rooms/normalize';
 import { grantableCalendars as grantable } from '../setup/calendars';
+import { grantableServiceGroups } from '../setup/service-groups';
 import { loadAuthCatalog, type AuthCatalog } from '../setup/catalog';
 import { setRightsPending } from '../setup/pending';
 import { bindingLocks, LockedPermissionError, readLocks, withLockNames } from '../setup/locks';
@@ -204,6 +205,9 @@ let appointmentRooms = false;
 let serviceCalendarIds: number[] = [];
 /** The calendars of the blocks "Ablauf" (Plan.md 118). */
 let agendaCalendarIds: number[] = [];
+/** The service groups whose notes the blocks "Ablauf" show, not the open ones, and what the administrator sees of them (Plan.md 119). */
+let agendaServiceGroupIds: number[] = [];
+let serviceGroupList: ServiceGroupResponse[] = [];
 /** A screen shows a video (Plan.md 52). */
 let videoInUse = false;
 /** A slide shows the block "Personen" (Plan.md 112). */
@@ -363,6 +367,7 @@ function planInput(people?: 'new', musician?: 'new'): PlanInput {
         appointmentRooms,
         serviceCalendarIds: grantableCalendars(serviceCalendarIds),
         agendaCalendarIds: grantableCalendars(agendaCalendarIds),
+        agendaServiceGroupIds: grantableServiceGroups(agendaServiceGroupIds, serviceGroupList),
         songsheet: songsheetInUse,
         screenCalendarIds: releasedCalendars.value,
         peopleGroupIds: releasedPeopleGroups.value,
@@ -1038,11 +1043,16 @@ async function updateRights(): Promise<void> {
     assistant.running = true;
     assistant.error = null;
     try {
-        const known = { calendarIds: calendars.map((c) => c.id), roomIds: rooms.map((r) => r.id) };
+        const known = {
+            calendarIds: calendars.map((c) => c.id),
+            roomIds: rooms.map((r) => r.id),
+            serviceGroupIds: serviceGroupList.flatMap((g) => (typeof g.id === 'number' ? [g.id] : [])),
+        };
         const names = {
             calendars: new Map(calendars.map((c) => [c.id, c.name] as const)),
             rooms: new Map(rooms.map((r) => [r.id, r.name] as const)),
             groups: new Map(groups.value.map((g) => [g.id, g.name] as const)),
+            serviceGroups: new Map(serviceGroupList.flatMap((g) => (typeof g.id === 'number' ? [[g.id, (g.name ?? '').trim()] as const] : []))),
         };
         const state = await readRefresh(plan.value, groupIds, known, names, lockAwareApi(), peopleDeviceIds.value, await readLocks());
         if (state.blocked.length) {
@@ -1341,6 +1351,7 @@ async function check(side: Side): Promise<void> {
                 appointmentRooms,
                 serviceCalendarIds,
                 agendaCalendarIds,
+                agendaServiceGroupIds: grantableServiceGroups(agendaServiceGroupIds, serviceGroupList),
                 songsheetInUse,
                 controlRights: controlCategoryId === null ? undefined : (plan.value?.find((spec) => spec.key === 'device')?.grants.filter((g) => g.dataId?.length === 1 && g.dataId[0] === controlCategoryId) ?? []),
                 screenCalendarIds: releasedCalendars.value,
@@ -1413,7 +1424,7 @@ onMounted(async () => {
         if (page.value === 'people') void loadPersonFields();
         // The device check names a missing room type: it waits for this read below.
         const roomTypesRead = loadRoomTypes();
-        const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, resources, usedRooms, roomsAtAppointments, serviceCalendars, agendaCalendars, videos, people, songsheets, permissions, types] = await Promise.all([
+        const [list, settings, wikiCategories, calendarList, publicCalendars, used, screenList, resources, usedRooms, roomsAtAppointments, serviceCalendars, agendaCalendars, agendaGroups, serviceGroupRead, videos, people, songsheets, permissions, types] = await Promise.all([
             loadGroups(),
             repository.loadSettings(),
             churchtoolsClient.get<WikiCategory[]>('/wiki/categories'),
@@ -1426,6 +1437,8 @@ onMounted(async () => {
             repository.appointmentRoomsInUse(),
             repository.serviceCalendarIdsInUse(),
             repository.agendaCalendarIdsInUse(),
+            repository.agendaServiceGroupIdsInUse(),
+            fetchServiceGroups().catch((): ServiceGroupResponse[] => []),
             repository.videoInUse(),
             repository.peopleInUse(),
             repository.songsheetInUse(),
@@ -1462,6 +1475,8 @@ onMounted(async () => {
         appointmentRooms = roomsAtAppointments;
         serviceCalendarIds = serviceCalendars;
         agendaCalendarIds = agendaCalendars;
+        agendaServiceGroupIds = agendaGroups;
+        serviceGroupList = serviceGroupRead;
         videoInUse = videos;
         peopleInUse = people;
         songsheetInUse = songsheets;

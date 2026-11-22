@@ -684,6 +684,19 @@ describe('ScreenRepository', () => {
         expect(await repo.agendaCalendarIdsInUse()).toEqual([3, 7]);
     });
 
+    it('collects the service groups of the notes of the cards of the blocks "Ablauf", once and sorted (Plan.md 119)', async () => {
+        expect(await repo.agendaServiceGroupIdsInUse()).toEqual([]);
+        const style = { fontFamily: 'sans', fontSize: 44, fontWeight: 400 as const, color: '#fff', align: 'left' as const };
+        const frame = { x: 0, y: 0, width: 1400, height: 700, style, calendarIds: [1], showCountdown: true, showDelay: true, showNext: true, showNote: false, showResponsible: false, showSong: true, showSignal: true, showClock: false };
+        const blocks = [
+            { id: 'a', type: 'agenda' as const, ...frame, layout: 'card' as const, serviceGroupIds: [7, 3] },
+            { id: 'b', type: 'agenda' as const, ...frame, layout: 'card' as const, serviceGroupIds: [3, 5] },
+            { id: 'c', type: 'agenda' as const, ...frame, layout: 'churchtools' as const, serviceGroupIds: [9] },
+        ];
+        await repo.saveScreen(bundle({ slides: [makeSlide({ id: 'slide-1', blocks }), makeSlide({ id: 'slide-2' })] }), { ...save, expectedRevision: null });
+        expect(await repo.agendaServiceGroupIdsInUse()).toEqual([3, 5, 7]);
+    });
+
     it('throws for an unknown slug', async () => {
         await expect(repo.loadScreen('gibt-es-nicht')).rejects.toBeInstanceOf(ScreenNotFoundError);
     });
