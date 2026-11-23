@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ControlDoc, RehearsalDoc } from '../agenda/control';
+import type { ControlDoc, RehearsalCatalogDoc, RehearsalDoc } from '../agenda/control';
 import { MemoryKv } from './memory-kv';
 import { ScreenRepository } from './screen-repository';
 
@@ -52,5 +52,42 @@ describe('writeRehearsal', () => {
         await repo.writeControl(choice(3, new Date().toISOString(), 6));
         expect((await repo.readRehearsal())!.section).toBe(2);
         expect(Object.keys(await repo.readControls())).toEqual(['6']);
+    });
+});
+
+describe('writeRehearsalCatalog (Plan.md 125 A)', () => {
+    const catalog = (at: string, screens = [{ id: 's1', name: 'Probenraum' }]): RehearsalCatalogDoc => ({ kind: 'rehearsalCatalog', screens, playlists: [], at });
+
+    it('fails without the category and reads nothing', async () => {
+        const repo = new ScreenRepository(new MemoryKv());
+        await expect(repo.writeRehearsalCatalog(catalog('2026-11-23T10:00:00Z'))).rejects.toThrow();
+        expect(await repo.readRehearsalCatalog()).toBeNull();
+    });
+
+    it('changes the one value, writes empty lists too, and leaves every other value alone', async () => {
+        const kv = new MemoryKv();
+        const repo = new ScreenRepository(kv);
+        const id = (await repo.ensureControlCategory())!;
+        await repo.writeControl(choice(1, '2020-01-01T10:00:00Z'));
+        await repo.writeRehearsal({ kind: 'rehearsal', songId: 7, arrangementId: 3, section: 0, at: '2020-01-01T10:00:00Z' });
+        await kv.createValue(id, 'not ours');
+        await repo.writeRehearsalCatalog(catalog('2026-11-23T10:00:00Z'));
+        await repo.writeRehearsalCatalog(catalog('2026-11-23T10:05:00Z', []));
+        expect(await kv.listValues(id)).toHaveLength(4);
+        expect(await repo.readRehearsalCatalog()).toEqual(catalog('2026-11-23T10:05:00Z', []));
+        expect((await repo.readRehearsal())!.songId).toBe(7);
+        expect(Object.keys(await repo.readControls())).toEqual(['5']);
+    });
+
+    it('removes doubles and refuses a value that is too large', async () => {
+        const kv = new MemoryKv();
+        const repo = new ScreenRepository(kv);
+        const id = (await repo.ensureControlCategory())!;
+        await kv.createValue(id, JSON.stringify(catalog('2026-11-23T10:00:00Z')));
+        await kv.createValue(id, JSON.stringify(catalog('2026-11-23T10:01:00Z')));
+        await repo.writeRehearsalCatalog(catalog('2026-11-23T10:02:00Z'));
+        expect(await kv.listValues(id)).toHaveLength(1);
+        const big = Array.from({ length: 100 }, (_, i) => ({ id: `s${i}`, name: 'x'.repeat(100) }));
+        await expect(repo.writeRehearsalCatalog(catalog('2026-11-23T10:03:00Z', big))).rejects.toThrow();
     });
 });

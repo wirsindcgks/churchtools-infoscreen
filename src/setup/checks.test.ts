@@ -52,6 +52,17 @@ describe('checkDesignerGroup', () => {
         expect(fail?.text).toContain('bearbeiten');
     });
 
+    it('warns when the designers do not see steuerung for released rehearsal screens (Plan.md 125 A)', () => {
+        const controlRights = [{ authId: 2015, dataId: [36], label: 'Steuerung der Musiker sehen' }];
+        const check = (grants: Grant[], rights: typeof controlRights | null = controlRights) =>
+            checkDesignerGroup({ statusId: 1, roles: [role({ name: 'Leiter', grants: [...role().grants, ...grants] })], wikiCategoryId: WIKI, controlRights: rights ?? undefined }).filter((c) =>
+                c.text.includes('Steuerung der Musiker'),
+            );
+        expect(check([])).toMatchObject([{ level: 'warn', text: 'Rolle „Leiter" sieht die Steuerung der Musiker nicht.' }]);
+        expect(check([grant(2015, 36)])).toEqual([]);
+        expect(check([], null)).toEqual([]);
+    });
+
     it('names the wiki area as it is called now – it may have been renamed (Plan.md 84)', () => {
         const checks = checkDesignerGroup({ statusId: 1, roles: [role({ grants: [] })], wikiCategoryId: WIKI, wikiCategoryName: 'Bilder Foyer' });
         expect(checks.find((c) => c.level === 'fail')?.text).toContain('Wiki-Bereich „Bilder Foyer" bearbeiten');
@@ -380,6 +391,24 @@ describe('checkDeviceGroup', () => {
         // Without a song sheet, or without the category, nothing is said.
         expect(check([], { songsheetInUse: false })).toEqual([]);
         expect(check([], { controlRights: undefined })).toEqual([]);
+    });
+
+    it('warns for released rehearsal screens as well, without a block "Liedblatt" (Plan.md 125 A)', () => {
+        const controlRights = [{ authId: 2015, dataId: [36], label: 'Steuerung der Musiker sehen' }];
+        const check = (grants: Grant[], rehearsalScreens: boolean) =>
+            checkDeviceGroup({
+                statusId: 1,
+                members: [{ label: 'Gerät A', grants }],
+                calendars,
+                usedCalendarIds: [], publicCalendarIds: [2],
+                songsheetInUse: false,
+                rehearsalScreens,
+                controlRights,
+                wikiCategoryId: WIKI,
+            }).filter((c) => c.text.startsWith('Die Steuerung'));
+        expect(check([], true)).toHaveLength(1);
+        expect(check([grant(2015, 36)], true)).toEqual([]);
+        expect(check([], false)).toEqual([]);
     });
 
     it('checks that a device sees the song categories for the block "Liedblatt" (Plan.md 121, G82)', () => {

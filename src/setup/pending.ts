@@ -19,6 +19,7 @@ import { grantableServiceGroups } from './service-groups';
 import { loadAuthCatalog } from './catalog';
 import { churchToolsProvisionApi, loadGroups } from './load';
 import { readLocks } from './locks';
+import { releasedRehearsalScreens } from './settings-doc';
 import { planProvisioning, readRefresh, refreshIsEmpty } from './provision';
 
 const KEY = 'infoscreen-rights-pending';
@@ -56,7 +57,7 @@ async function compute(): Promise<boolean> {
     if (handle.demo) return false;
     const repository = handle.repository;
     // Like SetupView.vue (arrival): the same reads, the categories only looked up.
-    const [groups, settings, wikiCategories, calendars, publicCalendars, resources, usedRooms, roomsAtAppointments, serviceCalendarIds, agendaCalendarIds, agendaServiceGroupIds, serviceGroups, songsheet, visible, statusId, controlId, draftsId, changelogId, catalog] =
+    const [groups, settings, wikiCategories, calendars, publicCalendars, resources, usedRooms, roomsAtAppointments, serviceCalendarIds, agendaCalendarIds, agendaServiceGroupIds, serviceGroups, songsheet, visible, statusId, controlId, draftsId, changelogId, catalog, screenList] =
         await Promise.all([
             loadGroups(),
             repository.loadSettings(),
@@ -77,6 +78,7 @@ async function compute(): Promise<boolean> {
             repository.drafts.categoryId().catch(() => null),
             repository.changelog.categoryId().catch(() => null),
             loadAuthCatalog().catch(() => null),
+            repository.listScreens(),
         ]);
     if (!catalog) return false;
     const categories = {
@@ -113,6 +115,7 @@ async function compute(): Promise<boolean> {
         agendaCalendarIds: grantableCalendars(agendaCalendarIds, publicIds, released),
         agendaServiceGroupIds: grantableServiceGroups(agendaServiceGroupIds, serviceGroups),
         songsheet,
+        rehearsalScreens: releasedRehearsalScreens(settings, screenList).length > 0,
         screenCalendarIds: released,
         peopleGroupIds: releasedPeople,
     });

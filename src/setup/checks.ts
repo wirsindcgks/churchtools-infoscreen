@@ -208,6 +208,11 @@ export interface DesignerGroupInput {
     forbidden?: RequiredRight[] | null;
     /** Every room the administrator sees – designers choose among them for the block "Raumbelegung" (G45). */
     roomIds?: number[];
+    /**
+     * The rights on the category `steuerung` the designers need to see a rehearsal override on the card of a screen (Plan.md 125 A); given
+     * only where screens are released for it. Missing or empty: not checked.
+     */
+    controlRights?: RequiredRight[];
 }
 
 export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
@@ -262,6 +267,14 @@ export function checkDesignerGroup(input: DesignerGroupInput): Check[] {
                     detail: t.setup.checks.roleTooMuchDetail,
                 });
             }
+        }
+    }
+
+    // The card of a screen shows the override of the rehearsal, read from `steuerung` (Plan.md 125 A).
+    if (input.controlRights?.length) {
+        const blind = relevantRoles(input.roles).filter((role) => lacking(role.grants, input.controlRights!).length);
+        for (const role of blind) {
+            checks.push({ level: 'warn', category: 'module', text: t.setup.checks.designerControlBlind(role.name), detail: t.setup.checks.designerControlBlindDetail });
         }
     }
 
@@ -339,6 +352,8 @@ export interface DeviceGroupInput {
      * that category exists. Missing: not checked.
      */
     controlRights?: RequiredRight[];
+    /** Screens are released for the rehearsal override (Plan.md 125 A): the device reads `steuerung` for it, with or without a block "Liedblatt". */
+    rehearsalScreens?: boolean;
     /** A screen shows a video (Plan.md 52): the device must see the wiki category, else the video does not run. */
     videoInUse?: boolean;
     wikiCategoryId: number | null;
@@ -622,7 +637,7 @@ export function checkDeviceGroup(input: DeviceGroupInput): Check[] {
     }
 
     // The steering of the musicians is read from the category `steuerung`; the plan gives the device "Daten sehen" on it.
-    if (input.songsheetInUse && input.controlRights?.length) {
+    if ((input.songsheetInUse || input.rehearsalScreens) && input.controlRights?.length) {
         const blind = input.members.filter((m) => lacking(m.grants, input.controlRights!).length).map((m) => m.label);
         if (blind.length) {
             checks.push({ level: 'warn', category: 'agenda', text: t.setup.checks.controlBlind(blind.join(', ')), detail: t.setup.checks.controlBlindDetail });

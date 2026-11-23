@@ -275,6 +275,13 @@ So richtest du es ein:
 
    <img src="bilder/steuerung.png" alt="Handyseite „Steuerung“: oben „Jetzt“ und „Dann“, darunter das laufende Lied mit den Teil-Knöpfen, der Teil „Refrain“ ist angetippt" width="320">
 
+**Proben vom Handy freigeben.** Auf derselben Seite „Musiker" wählst du unter **„Bildschirme für Proben"** die Bildschirme, die die Musiker
+für eine Probe überschreiben dürfen, und unter **„Präsentationen für Proben"** die Präsentationen, die sie dafür wählen dürfen. Zur Wahl
+stehen nur Präsentationen mit einem Liedblatt der Quelle „Probe"; eine, die noch nicht freigegeben ist, nennt die Seite in einem Hinweis.
+Die Musiker sehen weder Bildschirme noch Präsentationen – beim „Speichern" schreibt die Seite deshalb eine Liste mit den Namen in die
+Kategorie „Steuerung". Danach auf „Rechte aktualisieren" tippen (siehe oben), damit Fernseher und Gestalter diese Kategorie lesen. Bisher
+nur die Freigabe: Die Handyseite nutzt diese Auswahl erst mit einem späteren Schritt.
+
 In ChurchTools siehst du das Ergebnis an der Gruppe „Infoscreen-Musiker" unter **Einstellungen → Automatische Mitgliedschaft**: Filter
 „Mitgliedschaft in einer Gruppe" mit deinen Bandgruppen, dazu „Person ist nicht archiviert" und „Person ist nicht verstorben".
 

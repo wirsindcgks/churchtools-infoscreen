@@ -684,6 +684,21 @@ describe('the released calendars of the settings (schema 1.40, Plan.md 85 b)', (
     });
 });
 
+describe('the rehearsal release of the settings (schema 1.68, Plan.md 125 A)', () => {
+    const settings = { schema: { ...SCHEMA_VERSION }, kind: 'settings' as const, id: 'settings' };
+
+    it('are lists of ids, and may be missing', () => {
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(68);
+        const doc = v.parse(SettingsDoc, { ...settings, rehearsalScreenIds: ['a'], rehearsalPlaylistIds: ['p', 'q'] });
+        expect(doc.rehearsalScreenIds).toEqual(['a']);
+        expect(doc.rehearsalPlaylistIds).toEqual(['p', 'q']);
+        expect(v.parse(SettingsDoc, settings).rehearsalScreenIds).toBeUndefined();
+        expect(v.parse(SettingsDoc, settings).rehearsalPlaylistIds).toBeUndefined();
+        expect(v.safeParse(SettingsDoc, { ...settings, rehearsalScreenIds: [3] }).success).toBe(false);
+        expect(v.safeParse(SettingsDoc, { ...settings, rehearsalPlaylistIds: Array.from({ length: 51 }, (_, i) => `p${i}`) }).success).toBe(false);
+    });
+});
+
 describe('readSlide – rooms off per room (schema 1.34, Plan.md 82)', () => {
     const style = { fontFamily: 'sans', fontSize: 44, color: '#fff' };
     const list = { id: 'l', type: 'appointment-list', x: 0, y: 0, width: 800, height: 400, calendarIds: [1], horizonDays: 14, limit: 5, layout: 'rows', showRooms: true, style };

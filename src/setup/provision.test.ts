@@ -421,6 +421,57 @@ describe('planRefresh (Plan.md 62)', () => {
     });
 });
 
+describe('the rights for the rehearsal override (Plan.md 125 A)', () => {
+    const withControl = { ...input, controlCategoryId: 36 };
+    const controlOf = (specs: ReturnType<typeof planProvisioning>, key: 'device' | 'designer') =>
+        specs.find((g) => g.key === key)!.grants.filter((g) => g.dataId?.length === 1 && g.dataId[0] === 36);
+    const known = { calendarIds: [], roomIds: [] };
+
+    it('gives the device "Daten sehen" on steuerung for released screens, even without a block "Liedblatt"', () => {
+        const device = controlOf(planProvisioning({ ...withControl, rehearsalScreens: true }), 'device');
+        expect(device.map((g) => g.authId)).toEqual([2011, 2015]);
+    });
+
+    it('gives the designers the same right, for released screens only', () => {
+        const designer = controlOf(planProvisioning({ ...withControl, rehearsalScreens: true }), 'designer');
+        expect(designer.map((g) => g.authId)).toEqual([2011, 2015]);
+        expect(controlOf(planProvisioning({ ...withControl, songsheet: true }), 'designer')).toEqual([]);
+        expect(controlOf(planProvisioning(withControl), 'designer')).toEqual([]);
+    });
+
+    it('keeps the device right for a block "Liedblatt" as before, and gives nothing without the category or a release', () => {
+        expect(controlOf(planProvisioning({ ...withControl, songsheet: true }), 'device').map((g) => g.authId)).toEqual([2011, 2015]);
+        expect(controlOf(planProvisioning(withControl), 'device')).toEqual([]);
+        expect(planProvisioning({ ...input, rehearsalScreens: true })).toEqual(planProvisioning(input));
+    });
+
+    it('asks for what is missing on both groups', () => {
+        const plan = planProvisioning({ ...withControl, rehearsalScreens: true });
+        for (const key of ['device', 'designer'] as const) {
+            const result = planRefresh(plan, { [key]: [[]] }, known).find((g) => g.key === key)!;
+            expect(pairs(result.add)).toEqual(expect.arrayContaining(['2011:36', '2015:36']));
+        }
+    });
+
+    it('takes it back from the device once the release ends – and keeps it for a block "Liedblatt"', () => {
+        const ended = planProvisioning(withControl);
+        const result = planRefresh(ended, { device: [[held(2011, 36), held(2015, 36), held(2011, 7)]] }, known).find((g) => g.key === 'device')!;
+        expect(pairs(result.remove)).toEqual(['2011:36', '2015:36']);
+        const withSheet = planProvisioning({ ...withControl, songsheet: true });
+        expect(planRefresh(withSheet, { device: [[held(2011, 36), held(2015, 36)]] }, known).find((g) => g.key === 'device')!.remove).toEqual([]);
+        const kept = planProvisioning({ ...withControl, rehearsalScreens: true });
+        for (const key of ['device', 'designer'] as const) {
+            expect(planRefresh(kept, { [key]: [[held(2011, 36), held(2015, 36)]] }, known).find((g) => g.key === key)!.remove).toEqual([]);
+        }
+    });
+
+    it('never takes it back from the designers – a right they hold may have been set by hand', () => {
+        const ended = planProvisioning(withControl);
+        const result = planRefresh(ended, { designer: [[held(2011, 36), held(2015, 36)]] }, known).find((g) => g.key === 'designer')!;
+        expect(result.remove).toEqual([]);
+    });
+});
+
 describe('released calendars (Plan.md 85 b)', () => {
     const plan = planProvisioning({ ...input, screenCalendarIds: [3, 4] });
     const known = { calendarIds: [1, 2, 3, 4, 5], roomIds: [] };

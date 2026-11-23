@@ -16,9 +16,12 @@
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { appointmentServiceIds } from '../appointments/services';
 import { httpStatus } from '../ct/client';
-import { CONTROL_CATEGORY, controlsByEvent, latestRehearsal, planControlWrite, planRehearsalWrite, type ControlDoc, type RehearsalDoc } from '../agenda/control';
+import { CONTROL_CATEGORY, controlsByEvent, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, type ControlDoc, type RehearsalCatalogDoc, type RehearsalDoc } from '../agenda/control';
+import { rehearsalPlaylists } from '../agenda/songsheet';
 import { heartbeatTime, readHeartbeat, type HeartbeatDoc } from '../model/heartbeat';
 import {
+    MAX_VALUE_LENGTH,
+    ValueTooLargeError,
     readMedia,
     withOwnAddresses,
     readPlaylistOrSchedule,
@@ -504,6 +507,50 @@ export class ScreenRepository {
                 console.warn('Eine alte Probenwahl konnte nicht entfernt werden:', error);
             }
         }
+    }
+
+    /** The list of the released screens and rehearsal presentations (Plan.md 125 A); `null` where there is none, the category is missing or unreadable (`403`). */
+    async readRehearsalCatalog(): Promise<RehearsalCatalogDoc | null> {
+        try {
+            const categoryId = await this.controlCategoryId();
+            if (categoryId === null) return null;
+            return latestRehearsalCatalog(await this.kv.listValues(categoryId));
+        } catch (error) {
+            if (httpStatus(error) === 403) return null;
+            throw error;
+        }
+    }
+
+    /**
+     * Writes the list for the musicians (Plan.md 125 A): changes the latest catalog value or creates it, doubles go. Every other value of
+     * `steuerung` stays. Throws where the category is missing or the value would be too large; a failed cleanup is only logged.
+     */
+    async writeRehearsalCatalog(doc: RehearsalCatalogDoc): Promise<void> {
+        const categoryId = await this.controlCategoryId();
+        if (categoryId === null) throw new Error(tr.controlUnavailable);
+        const text = JSON.stringify(doc);
+        if (text.length > MAX_VALUE_LENGTH) throw new ValueTooLargeError('rehearsalCatalog', text.length);
+        const plan = planRehearsalCatalogWrite(await this.kv.listValues(categoryId));
+        if (plan.updateId !== null) await this.kv.updateValue(categoryId, plan.updateId, text);
+        else await this.kv.createValue(categoryId, text);
+        for (const id of plan.removeIds) {
+            try {
+                await this.kv.deleteValue(categoryId, id);
+            } catch (error) {
+                console.warn('Eine alte Probenliste konnte nicht entfernt werden:', error);
+            }
+        }
+    }
+
+    /** The presentations with a song sheet of the source "Probe" in one of their slides (Plan.md 125 A), by name. */
+    async listRehearsalPlaylists(): Promise<{ id: string; name: string }[]> {
+        const [{ playlists }, slides] = await Promise.all([this.readPlaylistCategory(), this.readShownSlides()]);
+        return rehearsalPlaylists(
+            playlists.map((p) => p.doc),
+            slides,
+        )
+            .map((p) => ({ id: p.id, name: p.name }))
+            .sort((a, b) => a.name.localeCompare(b.name, LOCALE));
     }
 
     /**

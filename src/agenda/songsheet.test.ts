@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ControlDoc } from './control';
 import type { AgendaEvent, AgendaPick, LiveItem, LivePosition } from './live';
 import { liveItems } from './live';
-import { applyFlow, arrangementSheet, lineSegments, pickSheetFile, readChordPro, readFlow, readSng, readSongSheet, readTxt, sheetKind, sheetOf, sheetPage, songFileStatus, songsLeft, songsheetPick, rehearsalPick, isRehearsalSheet, REHEARSAL_MAX_AGE_MS, transposeSheet, type SheetSection, type SongSheet } from './songsheet';
+import { applyFlow, arrangementSheet, lineSegments, pickSheetFile, readChordPro, readFlow, readSng, readSongSheet, readTxt, sheetKind, sheetOf, sheetPage, songFileStatus, songsLeft, songsheetPick, rehearsalPick, isRehearsalSheet, rehearsalPlaylists, REHEARSAL_MAX_AGE_MS, transposeSheet, type SheetSection, type SongSheet } from './songsheet';
 
 // Own texts in the build of the files of SongSelect (G82): sections as `{comment: …}`, bar lines in brackets; `.sng` with byte order mark and `#` head;
 // `.txt` with title and authors above and the block with the CCLI numbers below.
@@ -449,5 +449,30 @@ describe('rehearsalPick – the song of the source "Probe" (Plan.md 121, "Proben
         expect(isRehearsalSheet({})).toBe(false);
         expect(isRehearsalSheet({ source: 'agenda' })).toBe(false);
         expect(isRehearsalSheet({ source: 'rehearsal' })).toBe(true);
+    });
+});
+
+describe('rehearsalPlaylists (Plan.md 125 A)', () => {
+    const sheet = (source?: 'agenda' | 'rehearsal') => ({ id: 'b', type: 'songsheet', x: 0, y: 0, width: 10, height: 10, ...(source ? { source } : {}) }) as never;
+    const text = { id: 't', type: 'text', x: 0, y: 0, width: 10, height: 10 } as never;
+    const slides = [
+        { id: 's-rehearsal', blocks: [text, sheet('rehearsal')] },
+        { id: 's-agenda', blocks: [sheet('agenda')] },
+        { id: 's-default', blocks: [sheet()] },
+        { id: 's-text', blocks: [text] },
+    ];
+
+    it('finds the presentations with a rehearsal sheet in one of their slides, in order', () => {
+        const playlists = [
+            { id: 'a', slideIds: ['s-agenda', 's-default', 's-text'] },
+            { id: 'b', slideIds: ['s-text', 's-rehearsal'] },
+            { id: 'c', slideIds: ['s-rehearsal'] },
+            { id: 'd', slideIds: [] },
+            { id: 'e', slideIds: ['gone'] },
+        ];
+        expect(rehearsalPlaylists(playlists, slides).map((p) => p.id)).toEqual(['b', 'c']);
+    });
+    it('finds none without slides', () => {
+        expect(rehearsalPlaylists([{ id: 'a', slideIds: ['s-rehearsal'] }], [])).toEqual([]);
     });
 });

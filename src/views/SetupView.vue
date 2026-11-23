@@ -18,6 +18,7 @@ import { GROUP_RIGHT_NAMES, settingsAbilities, type GroupPermissions, type Setti
 import RefreshRightsDialog from '../designer/RefreshRightsDialog.vue';
 import RemoveSetupDialog, { type DeviceAccountInfo, type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
 import { createCategory, pickCategory, setCategoryInMenu, wikiRestoreLogLine, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
+import { ValueTooLargeError } from '../model/read';
 import { LEGACY_PERSON_FIELD_KEYS, type ScreenDoc } from '../model/schema';
 import { offeredPersonFields } from '../groups/person-fields';
 import { withDeviceLogin } from '../player/device-login';
@@ -45,7 +46,7 @@ import {
     personGroups,
     type GroupSummary,
 } from '../setup/load';
-import { settingsToSave, type SettingsFields } from '../setup/settings-doc';
+import { releasedRehearsalScreens, settingsToSave, type SettingsFields } from '../setup/settings-doc';
 import { churchToolsMusicianApi, provisionMusicians, updateMusicianSources } from '../setup/musicians';
 import { wikiCategoryCreation } from '../setup/wiki-creation';
 import { createDeviceLogin } from '../setup/device-token';
@@ -248,6 +249,18 @@ watch([page, musicianGroupId], () => void loadMusicianMembers(), { immediate: tr
 /** Whether this person may "Personen verwalten" – the automatic membership needs it; `undefined` while unknown. */
 const personsAllowed = ref<boolean | undefined>(undefined);
 /** What the last run on the page „Musiker" reported. */
+/**
+ * The release for the rehearsal override (Plan.md 125 A): screens and rehearsal presentations the musicians may choose from the phone, as
+ * stored, and the choice on the page until „Speichern“. The presentations are read when the page opens – they take two reads.
+ */
+const rehearsalScreenIds = ref<string[]>([]);
+const rehearsalPlaylistIds = ref<string[]>([]);
+const draftRehearsalScreens = ref<string[]>([]);
+const draftRehearsalPlaylists = ref<string[]>([]);
+/** The presentations with a rehearsal sheet (`isRehearsalSheet`); null until read. */
+const rehearsalPlaylists = ref<{ id: string; name: string }[] | null>(null);
+/** `controlCategoryId` is no ref: this is set with it. */
+const hasControlCategory = ref(false);
 const musicianRun = reactive({ ran: false, log: [] as string[], error: null as string | null });
 /** The person ids of the device accounts in that group, from the settings: the player leaves them out of the cards (schema 1.52). */
 const peopleDeviceIds = ref<number[]>([]);
@@ -369,6 +382,7 @@ function planInput(people?: 'new', musician?: 'new'): PlanInput {
         agendaCalendarIds: grantableCalendars(agendaCalendarIds),
         agendaServiceGroupIds: grantableServiceGroups(agendaServiceGroupIds, serviceGroupList),
         songsheet: songsheetInUse,
+        rehearsalScreens: rehearsalScreenIds.value.length > 0,
         screenCalendarIds: releasedCalendars.value,
         peopleGroupIds: releasedPeopleGroups.value,
         controlCategoryId: controlCategoryId ?? undefined,
@@ -616,7 +630,7 @@ function dirtyOf(form: FormPage): boolean {
             return settingsLoaded.value && (!sameIds(draftPeopleGroups.value, releasedPeopleGroups.value) || !sameKeys(draftPersonFields.value, releasedPersonFields.value));
         case 'musicians':
             // Before the group exists the choice waits for „Musikergruppe anlegen“, not for „Speichern“.
-            return musicianGroupId.value !== null && !sameIds(draftMusicianSources.value, musicianSourceGroupIds.value);
+            return (musicianGroupId.value !== null && !sameIds(draftMusicianSources.value, musicianSourceGroupIds.value)) || rehearsalDirty();
     }
 }
 const formDirty = computed(() => (formPage.value ? dirtyOf(formPage.value) : false));
@@ -636,6 +650,8 @@ function discardForm(form: FormPage): void {
         draftPersonFields.value = [...releasedPersonFields.value];
     } else if (form === 'musicians') {
         draftMusicianSources.value = [...musicianSourceGroupIds.value];
+        draftRehearsalScreens.value = [...rehearsalScreenIds.value];
+        draftRehearsalPlaylists.value = [...rehearsalPlaylistIds.value];
     } else {
         draftRoomTypes.value = [...roomTypeIds.value];
     }
@@ -685,8 +701,14 @@ async function saveForm(): Promise<void> {
             // Other calendars need other rights: plan and check anew.
             computePlan();
             void Promise.all([check('designer'), check('device')]);
-        } else if (form === 'musicians' && musicianGroupId.value !== null) {
-            await saveMusicianSources();
+        } else if (form === 'musicians') {
+            if (musicianGroupId.value !== null && !sameIds(draftMusicianSources.value, musicianSourceGroupIds.value)) await saveMusicianSources();
+            if (rehearsalDirty()) {
+                await saveRehearsal();
+                // Other screens need other rights: plan and check anew.
+                computePlan();
+                void Promise.all([check('designer'), check('device')]);
+            }
         } else if (form === 'people' && settingsLoaded.value) {
             // A group that is gone leaves the release without a word.
             const next = sortedIds(draftPeopleGroups.value, new Set(groups.value.map((g) => g.id)));
@@ -718,7 +740,6 @@ async function saveForm(): Promise<void> {
         return;
     }
     // The people page has set the rights in the same step; only a failure of that part needs a word.
-    if (form === 'musicians') return;
     if (form === 'people') {
         if (rightsNotice) await notice(rightsNotice);
         return;
@@ -956,6 +977,87 @@ async function addMusicianGroup(): Promise<void> {
         assistant.running = false;
         musicianRun.ran = true;
     }
+}
+
+const sameStrings = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && a.every((id) => b.includes(id));
+
+/** Whether the choice of screens or presentations for the rehearsal differs from the stored one – only where the page lets it be changed. */
+function rehearsalDirty(): boolean {
+    return rehearsalReady.value && (!sameStrings(draftRehearsalScreens.value, rehearsalScreenIds.value) || !sameStrings(draftRehearsalPlaylists.value, rehearsalPlaylistIds.value));
+}
+
+/** The choice needs the musicians' group and the category `steuerung` (the list goes there), and the right to save the settings. */
+const rehearsalReady = computed(() => musicianGroupId.value !== null && hasControlCategory.value && settingsWritable.value !== false);
+
+const rehearsalScreenChoices = computed(() => screens.value.filter((sc) => !draftRehearsalScreens.value.includes(sc.id)).map((sc) => ({ value: sc.id, label: sc.name })));
+const rehearsalPlaylistChoices = computed(() => (rehearsalPlaylists.value ?? []).filter((p) => !draftRehearsalPlaylists.value.includes(p.id)).map((p) => ({ value: p.id, label: p.name })));
+/** Presentations with a rehearsal sheet that the musicians cannot choose yet. */
+const unreleasedRehearsalPlaylists = computed(() => (rehearsalPlaylists.value ?? []).filter((p) => !draftRehearsalPlaylists.value.includes(p.id)).map((p) => p.name));
+const screenNameById = (id: string): string => screens.value.find((sc) => sc.id === id)?.name ?? id;
+const rehearsalPlaylistNameById = (id: string): string => rehearsalPlaylists.value?.find((p) => p.id === id)?.name ?? id;
+
+function releaseRehearsalScreen(value: string | number): void {
+    const id = String(value);
+    if (draftRehearsalScreens.value.includes(id) || draftRehearsalScreens.value.length >= RELEASED_GROUPS_MAX) return;
+    draftRehearsalScreens.value = [...draftRehearsalScreens.value, id];
+}
+function withdrawRehearsalScreen(id: string): void {
+    draftRehearsalScreens.value = draftRehearsalScreens.value.filter((x) => x !== id);
+}
+function releaseRehearsalPlaylist(value: string | number): void {
+    const id = String(value);
+    if (draftRehearsalPlaylists.value.includes(id) || draftRehearsalPlaylists.value.length >= RELEASED_GROUPS_MAX) return;
+    draftRehearsalPlaylists.value = [...draftRehearsalPlaylists.value, id];
+}
+function withdrawRehearsalPlaylist(id: string): void {
+    draftRehearsalPlaylists.value = draftRehearsalPlaylists.value.filter((x) => x !== id);
+}
+
+async function loadRehearsalPlaylists(): Promise<void> {
+    if (!repository || demo.value || page.value !== 'musicians' || rehearsalPlaylists.value) return;
+    rehearsalPlaylists.value = await repository.listRehearsalPlaylists().catch((e: unknown) => {
+        console.warn('Die Probenpräsentationen konnten nicht gelesen werden:', e);
+        return null;
+    });
+    // A presentation that is gone, or has lost its rehearsal sheet, leaves the release like a screen that is gone.
+    const known = rehearsalPlaylists.value;
+    if (known) {
+        const kept = (ids: string[]): string[] => ids.filter((id) => known.some((p) => p.id === id));
+        rehearsalPlaylistIds.value = kept(rehearsalPlaylistIds.value);
+        draftRehearsalPlaylists.value = kept(draftRehearsalPlaylists.value);
+    }
+}
+watch(page, () => void loadRehearsalPlaylists());
+
+/**
+ * Saves the release and writes the list with the names into `steuerung` (Plan.md 125 A): screens and presentations that are gone drop out.
+ * The list goes first – the player trusts the settings, not the list, so a failure between the two does no harm and the page stays unsaved.
+ */
+async function saveRehearsal(): Promise<void> {
+    if (!repository) return;
+    const known = rehearsalPlaylists.value ?? (await repository.listRehearsalPlaylists());
+    rehearsalPlaylists.value = known;
+    const nextScreens = screens.value.filter((sc) => draftRehearsalScreens.value.includes(sc.id));
+    const nextPlaylists = known.filter((p) => draftRehearsalPlaylists.value.includes(p.id));
+    try {
+        await repository.writeRehearsalCatalog({
+            kind: 'rehearsalCatalog',
+            screens: nextScreens.map((sc) => ({ id: sc.id, name: sc.name })),
+            playlists: nextPlaylists.map((p) => ({ id: p.id, name: p.name })),
+            at: new Date().toISOString(),
+        });
+    } catch (e) {
+        if (e instanceof ValueTooLargeError) throw new Error(t.setup.musicians.rehearsal.tooLarge);
+        throw e;
+    }
+    await persistSettings({
+        rehearsalScreenIds: nextScreens.length ? nextScreens.map((sc) => sc.id) : undefined,
+        rehearsalPlaylistIds: nextPlaylists.length ? nextPlaylists.map((p) => p.id) : undefined,
+    });
+    rehearsalScreenIds.value = nextScreens.map((sc) => sc.id);
+    rehearsalPlaylistIds.value = nextPlaylists.map((p) => p.id);
+    draftRehearsalScreens.value = [...rehearsalScreenIds.value];
+    draftRehearsalPlaylists.value = [...rehearsalPlaylistIds.value];
 }
 
 /** „Speichern" on the page „Musiker": writes the rule anew and runs it, then keeps the band groups in the settings. Throws on failure. */
@@ -1304,6 +1406,7 @@ async function check(side: Side): Promise<void> {
                 moduleRights: moduleRights('designer'),
                 forbidden: forbiddenRights('designer'),
                 roomIds: rooms.map((r) => r.id),
+                controlRights: controlCategoryId === null || !rehearsalScreenIds.value.length ? undefined : (plan.value?.find((spec) => spec.key === 'designer')?.grants.filter((g) => g.dataId?.length === 1 && g.dataId[0] === controlCategoryId) ?? []),
             });
         } else {
             // The fields and the levels: without them the check runs as well, only blind to what a device reaches.
@@ -1353,6 +1456,7 @@ async function check(side: Side): Promise<void> {
                 agendaCalendarIds,
                 agendaServiceGroupIds: grantableServiceGroups(agendaServiceGroupIds, serviceGroupList),
                 songsheetInUse,
+                rehearsalScreens: rehearsalScreenIds.value.length > 0,
                 controlRights: controlCategoryId === null ? undefined : (plan.value?.find((spec) => spec.key === 'device')?.grants.filter((g) => g.dataId?.length === 1 && g.dataId[0] === controlCategoryId) ?? []),
                 screenCalendarIds: releasedCalendars.value,
                 videoInUse,
@@ -1459,6 +1563,7 @@ onMounted(async () => {
         }
         wikiCategoryIdKnown.value = wikiCategoryId !== null;
         settingsLoaded.value = true;
+        void loadRehearsalPlaylists();
         calendars = calendarList;
         publicCalendarIds = publicCalendars.map((c) => c.id);
         const publicIds = new Set(publicCalendarIds);
@@ -1486,6 +1591,10 @@ onMounted(async () => {
         musicianGroupId.value = settings?.musicianGroupId ?? null;
         musicianSourceGroupIds.value = sortedIds(settings?.musicianSourceGroupIds ?? [], new Set(list.map((g) => g.id)));
         draftMusicianSources.value = [...musicianSourceGroupIds.value];
+        rehearsalScreenIds.value = releasedRehearsalScreens(settings, screenList);
+        draftRehearsalScreens.value = [...rehearsalScreenIds.value];
+        rehearsalPlaylistIds.value = [...(settings?.rehearsalPlaylistIds ?? [])];
+        draftRehearsalPlaylists.value = [...rehearsalPlaylistIds.value];
         peopleDeviceIds.value = settings?.peopleDeviceIds ?? [];
         Object.assign(savedGroups, selected);
         createdGroupIds.value = settings?.createdGroupIds ?? [];
@@ -1508,6 +1617,7 @@ onMounted(async () => {
             const drafts = await draftsId;
             const changelog = await changelogId;
             controlCategoryId = await controlId;
+            hasControlCategory.value = controlCategoryId !== null;
             categories = {
                 ...visible,
                 ...(status === null ? {} : { status }),
@@ -2132,6 +2242,58 @@ const SIDES: { side: Side; title: string; purpose: string }[] = [
                                 </div>
                                 <QrCode :value="controlUrl()" :size="140" :label="t.controlQr.codeLabel" class="control-qr" />
                                 <p class="muted small">{{ t.setup.musicians.addressNote }}</p>
+                            </div>
+                            <div class="rehearsal-release" data-testid="rehearsal-release">
+                                <h3>{{ t.setup.musicians.rehearsal.title }}</h3>
+                                <p class="muted">{{ t.setup.musicians.rehearsal.lead }}</p>
+                                <p v-if="musicianGroupId === null" class="muted small" data-testid="rehearsal-needs-group">{{ t.setup.musicians.rehearsal.needsGroup }}</p>
+                                <p v-else-if="!hasControlCategory" class="muted small" data-testid="rehearsal-needs-control">{{ t.setup.musicians.rehearsal.needsControl }}</p>
+                                <p v-else-if="settingsWritable === false" class="muted small" data-testid="rehearsal-no-settings-right">{{ t.setup.groups.noSettingsRight }}</p>
+                                <label class="d-field">
+                                    {{ t.setup.musicians.rehearsal.screens }}
+                                    <SelectMenu
+                                        :model-value="undefined"
+                                        :options="rehearsalScreenChoices"
+                                        :placeholder="t.setup.musicians.rehearsal.screensChoose"
+                                        :disabled="!rehearsalReady || !rehearsalScreenChoices.length || draftRehearsalScreens.length >= RELEASED_GROUPS_MAX"
+                                        testid="rehearsal-screen-add"
+                                        @update:model-value="releaseRehearsalScreen"
+                                    />
+                                </label>
+                                <p v-if="!draftRehearsalScreens.length" class="muted" data-testid="rehearsal-screens-none">{{ t.setup.musicians.rehearsal.screensNone }}</p>
+                                <ul v-else class="released-groups">
+                                    <li v-for="id in draftRehearsalScreens" :key="id" data-testid="rehearsal-screen">
+                                        <span>{{ screenNameById(id) }}</span>
+                                        <button class="d-btn" type="button" :disabled="!rehearsalReady" :aria-label="t.setup.musicians.rehearsal.screenWithdraw(screenNameById(id))" data-testid="rehearsal-screen-remove" @click="withdrawRehearsalScreen(id)">
+                                            {{ t.common.remove }}
+                                        </button>
+                                    </li>
+                                </ul>
+                                <label class="d-field">
+                                    {{ t.setup.musicians.rehearsal.playlists }}
+                                    <SelectMenu
+                                        :model-value="undefined"
+                                        :options="rehearsalPlaylistChoices"
+                                        :placeholder="t.setup.musicians.rehearsal.playlistsChoose"
+                                        :disabled="!rehearsalReady || !rehearsalPlaylistChoices.length || draftRehearsalPlaylists.length >= RELEASED_GROUPS_MAX"
+                                        testid="rehearsal-playlist-add"
+                                        @update:model-value="releaseRehearsalPlaylist"
+                                    />
+                                </label>
+                                <p v-if="!rehearsalPlaylists" class="muted" data-testid="rehearsal-playlists-loading">{{ t.setup.musicians.rehearsal.playlistsLoading }}</p>
+                                <p v-else-if="!rehearsalPlaylists.length" class="muted" data-testid="rehearsal-playlists-none-available">{{ t.setup.musicians.rehearsal.playlistsNoneAvailable }}</p>
+                                <p v-else-if="!draftRehearsalPlaylists.length" class="muted" data-testid="rehearsal-playlists-none">{{ t.setup.musicians.rehearsal.playlistsNone }}</p>
+                                <ul v-if="draftRehearsalPlaylists.length" class="released-groups">
+                                    <li v-for="id in draftRehearsalPlaylists" :key="id" data-testid="rehearsal-playlist">
+                                        <span>{{ rehearsalPlaylistNameById(id) }}</span>
+                                        <button class="d-btn" type="button" :disabled="!rehearsalReady" :aria-label="t.setup.musicians.rehearsal.playlistWithdraw(rehearsalPlaylistNameById(id))" data-testid="rehearsal-playlist-remove" @click="withdrawRehearsalPlaylist(id)">
+                                            {{ t.common.remove }}
+                                        </button>
+                                    </li>
+                                </ul>
+                                <p v-if="unreleasedRehearsalPlaylists.length" class="muted small" data-testid="rehearsal-unreleased">{{ t.setup.musicians.rehearsal.unreleased(unreleasedRehearsalPlaylists) }}</p>
+                                <p class="muted small">{{ t.setup.musicians.rehearsal.note }}</p>
+                                <p class="muted small">{{ t.setup.musicians.rehearsal.gone }}</p>
                             </div>
                             <ul v-if="musicianRun.log.length" class="log" data-testid="musician-log">
                                 <li v-for="(line, i) in musicianRun.log" :key="i">{{ line }}</li>

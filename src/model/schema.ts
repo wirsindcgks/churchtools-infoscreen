@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 67 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 68 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -1117,6 +1117,14 @@ export const SettingsDoc = v.object({
      * Since 1.54: the released person fields, only those of `LEGACY_PERSON_FIELD_KEYS` – the mirror of `personFields` for older players.
      */
     personFieldKeys: v.optional(v.pipe(v.array(v.picklist(LEGACY_PERSON_FIELD_KEYS)), v.maxLength(7))),
+    /**
+     * Since 1.68 (Plan.md 125 A): the ids (`ScreenDoc.id`) of the screens the musicians may override from the phone for a rehearsal. The player
+     * follows an override only for a screen in this list. Saving gives the device and designer groups "Daten sehen" on the category `steuerung`
+     * as long as the list is not empty. Missing or empty = none released.
+     */
+    rehearsalScreenIds: v.optional(v.pipe(v.array(Id), v.maxLength(50))),
+    /** Since 1.68 (Plan.md 125 A): the ids (`PlaylistDoc.id`) of the rehearsal presentations (a song sheet with the source "Probe") the musicians may choose. Missing or empty = none released. */
+    rehearsalPlaylistIds: v.optional(v.pipe(v.array(Id), v.maxLength(50))),
     /** Since 1.40: calendars that are not public but released for screens by an administrator (Plan.md 85 b). Missing = none. */
     screenCalendarIds: v.optional(v.pipe(v.array(v.pipe(v.number(), v.integer())), v.maxLength(50))),
 });

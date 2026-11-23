@@ -535,6 +535,15 @@ export function isRehearsalSheet(block: Pick<Extract<Block, { type: 'songsheet' 
 }
 
 /**
+ * The rehearsal presentations (Plan.md 125 A): those with a song sheet of the source "Probe" in one of their slides, in the order of
+ * `playlists`. `slides` are the slides as devices show them (templates expanded).
+ */
+export function rehearsalPlaylists<P extends { slideIds: readonly string[] }>(playlists: readonly P[], slides: readonly { id: string; blocks: readonly Block[] }[]): P[] {
+    const rehearsal = new Set(slides.filter((s) => s.blocks.some((b) => b.type === 'songsheet' && isRehearsalSheet(b))).map((s) => s.id));
+    return playlists.filter((p) => p.slideIds.some((id) => rehearsal.has(id)));
+}
+
+/**
  * The song of the rehearsal, with the part the musicians chose, the same way {@link songsheetPick} hands it to the block; `null` without
  * a choice, without a song to draw, or once the choice is older than {@link REHEARSAL_MAX_AGE_MS}. No agenda is read here.
  */
