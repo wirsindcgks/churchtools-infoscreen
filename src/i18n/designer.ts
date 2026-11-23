@@ -632,6 +632,8 @@ export const t = {
         /** The notes of the service groups at the agenda points (Plan.md 119). */
         agendaGroups: 'Dienstgruppen',
         agendaGroupsNone: 'Keine',
+        agendaGroupFallback: (id: number) => `Dienstgruppe ${id}`,
+        agendaGroupsMissing: 'Die Dienstgruppen ließen sich gerade nicht laden. Später erneut öffnen.',
         showSong: 'Liedangaben',
         showChords: 'Akkorde',
         songsheetNoChords: 'Ohne Akkorde',

@@ -22,6 +22,8 @@ export interface InspectorContext {
     readonly servicesFailed?: boolean;
     /** The service groups, for the notes of the block "Ablauf" (Plan.md 119); null while not loaded and where unreadable. */
     readonly serviceGroups?: ServiceGroupInfo[] | null;
+    /** Loading the service groups failed – only then the menu says so; while loading and with an empty list it does not. */
+    readonly serviceGroupsFailed?: boolean;
     /** The appointment tags (Plan.md 82 C); null while they are not loaded and where they cannot be loaded – then no field. */
     readonly tags?: AppointmentTag[] | null;
 }
@@ -35,7 +37,7 @@ export function useInspectorContext(): InspectorContext {
 }
 
 /** The lists of the context, read through a function so they follow whatever they come from (props, refs). */
-export type InspectorLists = Pick<InspectorContext, 'calendars' | 'hiddenCalendars' | 'releasedCalendarIds' | 'groups' | 'homepages' | 'rooms' | 'roomTypeMissing' | 'services' | 'allowedServices' | 'servicesFailed' | 'serviceGroups' | 'tags'>;
+export type InspectorLists = Pick<InspectorContext, 'calendars' | 'hiddenCalendars' | 'releasedCalendarIds' | 'groups' | 'homepages' | 'rooms' | 'roomTypeMissing' | 'services' | 'allowedServices' | 'servicesFailed' | 'serviceGroups' | 'serviceGroupsFailed' | 'tags'>;
 
 /**
  * Hands the lists and the image picker to every inspector and short menu below the calling component (Plan.md 79, C1):
@@ -76,6 +78,9 @@ export function provideInspectorContext(lists: () => InspectorLists, pickImage: 
         },
         get serviceGroups() {
             return lists().serviceGroups;
+        },
+        get serviceGroupsFailed() {
+            return lists().serviceGroupsFailed;
         },
         get tags() {
             return lists().tags;

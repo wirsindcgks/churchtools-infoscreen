@@ -97,6 +97,8 @@ const calendarIds = computed(() => editor.calendarIds);
 const shownSlides = computed(() => editor.slides.map((s) => expandTemplates(s, editor.templateById)));
 /** Service groups for the notes of the block "Ablauf" (Plan.md 119); null until loaded and where unreadable. */
 const serviceGroups = ref<ServiceGroupInfo[] | null>(null);
+/** Loading the service groups failed (Plan.md 119) – not the same as not loaded yet or an empty list. */
+const serviceGroupsFailed = ref(false);
 /** The service groups the blocks "Ablauf" chose, by name, for the example notes of the preview. */
 const agendaGroups = computed(() => {
     const ids = shownSlides.value.flatMap((s) => s.blocks).flatMap((b) => (b.type === 'agenda' ? (b.serviceGroupIds ?? []) : []));
@@ -168,6 +170,7 @@ provideInspectorContext(
         allowedServices: allowedServices.value,
         servicesFailed: servicesFailed.value,
         serviceGroups: serviceGroups.value,
+        serviceGroupsFailed: serviceGroupsFailed.value,
         tags: tags.value,
     }),
     (kind) => openLibrary(kind),
@@ -581,6 +584,7 @@ onMounted(async () => {
         serviceGroups.value = serviceGroupChoices(await fetchServiceGroups());
     } catch {
         serviceGroups.value = null;
+        serviceGroupsFailed.value = true;
     }
     try {
         const [list, groupList] = await Promise.all([fetchServices(), fetchServiceGroups()]);
@@ -1094,7 +1098,7 @@ function onKey(event: KeyboardEvent): void {
                     <span class="sheet-label">{{ sheetLabel }}</span>
                     <Icon name="chevron-down" :size="16" :class="['sheet-chevron', { open: inspectorOpen }]" />
                 </button>
-                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :released-calendar-ids="releasedCalendarIds" :groups="groups" :homepages="homepages" :rooms="rooms" :room-type-missing="roomTypeMissing" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" :service-groups="serviceGroups" :tags="tags" @pick-image="openLibrary" @picked="phone && (inspectorOpen = false)" />
+                <Inspector id="inspector-panel" :calendars="calendars" :hidden-calendars="hiddenCalendars" :released-calendar-ids="releasedCalendarIds" :groups="groups" :homepages="homepages" :rooms="rooms" :room-type-missing="roomTypeMissing" :services="services" :allowed-services="allowedServices" :services-failed="servicesFailed" :service-groups="serviceGroups" :service-groups-failed="serviceGroupsFailed" :tags="tags" @pick-image="openLibrary" @picked="phone && (inspectorOpen = false)" />
             </div>
         </div>
 

@@ -110,6 +110,20 @@ test('the own look of the agenda block lets the service groups be chosen (Plan.m
     await expect(notes.last()).toContainText('Musik: Nach dem Lied');
 });
 
+test('without the list of service groups the menu says so instead of standing empty (Plan.md 119)', async ({ page }) => {
+    await page.route('**/api/servicegroups', (route) => route.fulfill({ status: 500, json: {} }));
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await page.getByTestId('add-slide').click();
+
+    await addBlock(page, 'agenda');
+    await openSection(page, 'appearance');
+    await choose(page.getByTestId('block-inspector'), 'agenda-layout', 'card');
+    await openSection(page, 'agenda-service-groups');
+    await expect(page.getByTestId('agenda-service-groups-missing')).toBeVisible();
+});
+
 test('the block "Liedblatt" shows the next song of the example with chords, and the chords can be switched off (Plan.md 121 B)', async ({ page }) => {
     await page.goto('./');
     await page.getByTestId('open-editor').first().click();

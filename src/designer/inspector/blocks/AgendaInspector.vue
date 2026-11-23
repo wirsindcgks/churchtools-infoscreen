@@ -18,6 +18,7 @@ import NumberField from '../fields/NumberField.vue';
 import ToggleField from '../fields/ToggleField.vue';
 import FontSection from '../FontSection.vue';
 import { AGENDA_TILES } from '../layouts';
+import { useInspectorMode } from '../mode';
 import { useBlockEdit } from '../use-block';
 
 const props = defineProps<{ block: Extract<Block, { type: 'agenda' }> }>();
@@ -36,6 +37,7 @@ const countdowns = [
 ];
 /** Service groups the notes of which show under the running point (Plan.md 119); the order of the choice is kept. */
 const groups = computed(() => context.serviceGroups ?? []);
+const mode = useInspectorMode();
 const chosenGroups = computed(() => props.block.serviceGroupIds ?? []);
 function toggleGroup(id: number, on: boolean): void {
     // Saved in the order of the list, not of the clicks; a group the list does not know any more goes last.
@@ -44,9 +46,10 @@ function toggleGroup(id: number, on: boolean): void {
     const next = chosen.sort((a, b) => rank(a) - rank(b));
     setBlock({ serviceGroupIds: next.length ? next : undefined });
 }
+/** Every chosen group is named – by its number where the list does not know it (not loaded, or gone), never "Keine". */
 const groupsSummary = computed(() => {
-    const names = chosenGroups.value.map((id) => groups.value.find((g) => g.id === id)?.name).filter(Boolean);
-    return names.length ? names.join(', ') : t.inspector.agendaGroupsNone;
+    if (!chosenGroups.value.length) return t.inspector.agendaGroupsNone;
+    return chosenGroups.value.map((id) => groups.value.find((g) => g.id === id)?.name || t.inspector.agendaGroupFallback(id)).join(', ');
 });
 const tile = computed(() => props.block.tile ?? 'time');
 /** The view first, then what is switched on. */
@@ -79,6 +82,7 @@ const help = computed(() => ({
     <InspectorSection v-if="card" id="agenda-service-groups" :title="t.inspector.agendaGroups" :summary="groupsSummary" :help="{ intro: th.agenda.groupNotes }">
         <div class="list" data-testid="agenda-service-groups">
             <ToggleField v-for="g in groups" :key="g.id" :model-value="chosenGroups.includes(g.id)" :label="g.name" :testid="`agenda-service-group-${g.id}`" @update:model-value="toggleGroup(g.id, $event)" />
+            <p v-if="mode === 'full' && context.serviceGroupsFailed" class="groups-missing" data-testid="agenda-service-groups-missing">{{ t.inspector.agendaGroupsMissing }}</p>
         </div>
     </InspectorSection>
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="look" :help="help">
@@ -103,5 +107,11 @@ const help = computed(() => ({
 .list {
     display: grid;
     gap: 8px;
+}
+/* The list of service groups could not be loaded: said in words, not left empty. */
+.groups-missing {
+    margin: 0;
+    color: var(--d-text-muted);
+    font-size: var(--d-size-sm);
 }
 </style>
