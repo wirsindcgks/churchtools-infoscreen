@@ -15,6 +15,7 @@ import PageProgressHint from '../PageProgressHint.vue';
 import PageProgressOptions from '../PageProgressOptions.vue';
 import PageProgressToggle from '../PageProgressToggle.vue';
 import InspectorSection from '../../InspectorSection.vue';
+import DetailsSection from '../DetailsSection.vue';
 import SelectMenu, { type SelectOption } from '../../SelectMenu.vue';
 import SelectField from '../fields/SelectField.vue';
 import QuickField from '../fields/QuickField.vue';
@@ -252,37 +253,6 @@ const appearanceHelp = computed(() => ({
         </template>
     </InspectorSection>
 
-    <!-- Choosing and ordering what stands under the name is one chip "Angaben 2 von 5" in the short menu (Plan.md 79, C5; 114 B). -->
-    <QuickField quick :label="t.inspector.peopleFields" :face="entriesFace">
-        <SelectMenu
-            :model-value="undefined"
-            :options="pickable"
-            :placeholder="t.inspector.addField"
-            :disabled="!pickable.length"
-            :aria-label="t.inspector.addFieldLabel"
-            testid="people-fields-add"
-            @update:model-value="addEntry"
-        />
-        <p v-if="!keys.length" class="hint">{{ loaded && !fields.length && !released.length ? t.inspector.noFieldsThere : t.inspector.noFieldsChosen }}</p>
-        <InspectorSection v-else id="people-fields" :title="t.inspector.peopleFields" :summary="entriesSummary" :help="th.people.fields">
-            <SortList :items="chosen" :remove-label="t.inspector.removeField" testid="people-field" @move="moveEntry" @remove="removeEntry">
-                <template #actions="{ item }">
-                    <button
-                        v-tip="t.inspector.pinRight"
-                        class="sort-action"
-                        type="button"
-                        :aria-label="t.inspector.pinRight"
-                        :aria-pressed="right.includes(String(item.key))"
-                        data-testid="people-field-pin"
-                        @click="togglePin(String(item.key))"
-                    >
-                        <Icon name="pin" :size="14" />
-                    </button>
-                </template>
-            </SortList>
-        </InspectorSection>
-    </QuickField>
-
     <InspectorSection id="people-name" :title="t.inspector.peopleName" :summary="nameSummary" :help="th.people.name">
         <SelectField
             :model-value="namePresetValue"
@@ -302,6 +272,37 @@ const appearanceHelp = computed(() => ({
             @update:model-value="insertPlaceholder"
         />
     </InspectorSection>
+
+    <!-- Choosing and ordering what stands under the name is one chip "Angaben 2 von 5" in the short menu (Plan.md 79, C5; 114 B); "+ Angabe" is the last row of the section (Plan.md 128). -->
+    <QuickField quick :label="t.inspector.peopleFields" :face="entriesFace">
+        <DetailsSection :summary="entriesSummary" :help="th.people.fields">
+            <SortList v-if="keys.length" :items="chosen" :remove-label="t.inspector.removeField" testid="people-field" @move="moveEntry" @remove="removeEntry">
+                <template #actions="{ item }">
+                    <button
+                        v-tip="t.inspector.pinRight"
+                        class="sort-action"
+                        type="button"
+                        :aria-label="t.inspector.pinRight"
+                        :aria-pressed="right.includes(String(item.key))"
+                        data-testid="people-field-pin"
+                        @click="togglePin(String(item.key))"
+                    >
+                        <Icon name="pin" :size="14" />
+                    </button>
+                </template>
+            </SortList>
+            <p v-else class="hint">{{ loaded && !fields.length && !released.length ? t.inspector.noFieldsThere : t.inspector.noFieldsChosen }}</p>
+            <SelectMenu
+                :model-value="undefined"
+                :options="pickable"
+                :placeholder="t.inspector.addField"
+                :disabled="!pickable.length"
+                :aria-label="t.inspector.addFieldLabel"
+                testid="people-fields-add"
+                @update:model-value="addEntry"
+            />
+        </DetailsSection>
+    </QuickField>
 
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="appearanceHelp">
         <TileField quick :model-value="block.layout" :options="PEOPLE_TILES" :label="t.inspector.view" testid="people-layout" @update:model-value="setBlock({ layout: $event })" />

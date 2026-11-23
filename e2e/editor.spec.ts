@@ -418,7 +418,7 @@ test.describe('with a finger, in both browsers', () => {
         await page.getByTestId('add-block-menu').click();
         const sheet = page.getByTestId('block-sheet');
         await expect(sheet).toBeVisible();
-        await expect(sheet.locator('[data-testid^="sheet-add-"]')).toHaveCount(19);
+        await expect(sheet.locator('[data-testid^="sheet-add-"]')).toHaveCount(20);
         await sheet.getByTestId('sheet-add-qr').click();
         await expect(sheet).toHaveCount(0);
 
@@ -2344,7 +2344,7 @@ test('the "+ Baustein" sheet describes each block and searches name and sentence
     await expect(sheet).toHaveCount(0);
     await page.getByTestId('add-block-menu').click();
     await expect(page.getByTestId('block-search')).toHaveValue('');
-    await expect(page.getByTestId('block-sheet').locator('[data-testid^="sheet-add-"]')).toHaveCount(19);
+    await expect(page.getByTestId('block-sheet').locator('[data-testid^="sheet-add-"]')).toHaveCount(20);
 });
 
 test('a new text begins as a heading; the text level sets size and weight in one step (Plan.md 79, C8)', async ({ page }) => {
@@ -2559,4 +2559,24 @@ test.describe('drafts (Plan.md 79, Paket E)', () => {
         await expect(flag).toHaveText('Entwurf');
         await expect(flag).toHaveAttribute('data-tip', /^Entwurf von .+, heute \d\d:\d\d – noch nicht veröffentlicht$/);
     });
+});
+
+// "Angaben" is the same section in groups, posts and people, right before "Darstellung"; with people the "+" stands inside (Plan.md 128).
+test('Angaben stands before Darstellung in groups, posts and people, with the plus inside for people', async ({ page }) => {
+    await page.goto('./');
+    await page.getByTestId('open-editor').first().click();
+    await expect(page.getByTestId('slide-item')).toHaveCount(3);
+    await page.getByTestId('add-slide').click();
+    for (const type of ['groups', 'posts', 'people']) {
+        await addBlock(page, type);
+        const ids = await page.locator('[data-testid^="section-"]:not([data-testid$="-toggle"])').evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
+        expect(ids.indexOf('section-fields')).toBeGreaterThan(-1);
+        expect(ids.indexOf('section-appearance')).toBe(ids.indexOf('section-fields') + 1);
+    }
+    await openSection(page, 'fields');
+    await page.getByTestId('people-field-remove').click();
+    await expect(page.getByTestId('people-field-row')).toHaveCount(0);
+    await expect(page.getByTestId('section-fields').getByTestId('people-fields-add')).toBeVisible();
+    // The hint stands inside the section too, not before it.
+    await expect(page.getByTestId('section-fields')).toContainText('Noch keine Angaben gewählt');
 });
