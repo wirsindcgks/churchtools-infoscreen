@@ -104,7 +104,7 @@ const agendaGroups = computed(() => {
     const ids = shownSlides.value.flatMap((s) => s.blocks).flatMap((b) => (b.type === 'agenda' ? (b.serviceGroupIds ?? []) : []));
     return [...new Set(ids)].map((id) => ({ id, name: serviceGroups.value?.find((g) => g.id === id)?.name ?? '' }));
 });
-const { context, calendars, hiddenCalendars, releasedCalendarIds, problem } = usePreview(
+const { context, calendars, hiddenCalendars, releasedCalendarIds, problem, reload: reloadPreview } = usePreview(
     calendarIds,
     computed(() => editor.media),
     computed(() => editor.theme),
@@ -528,32 +528,10 @@ const slideConflictText = computed(() => {
     return t.editor.slideConflict.text(c.slide.name, c.playlist, c.updatedBy ?? null, when);
 });
 
-onMounted(async () => {
-    window.addEventListener('keydown', onKey);
-    window.addEventListener('resize', onResize);
-    window.addEventListener('beforeunload', onBeforeUnload);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-    // Capture phase (see the comment on `pointerDown` above): it must run before a block's own
-    // `pointerdown` handler can stop the event from bubbling any further.
-    window.addEventListener('pointerdown', onPointerDown, true);
-    window.addEventListener('pointerup', onPointerUpOrCancel, true);
-    window.addEventListener('pointercancel', onPointerUpOrCancel, true);
-    let loadSettings: (() => Promise<SettingsDoc | null>) | null = null;
-    try {
-        const [handle, person] = await Promise.all([getRepository(), currentPerson()]);
-        loadSettings = () => handle.repository.loadSettings();
-        author.value = displayName(person);
-        demo.value = handle.demo;
-        editor.attach(handle.repository, author.value);
-        repository.value = handle.repository;
-        if (templatePage) await editor.openTemplate(playlistId);
-        else await editor.open(playlistId);
-        void refreshHeartbeats();
-        await editor.refreshMedia();
-    } catch (e) {
-        loadError.value = e instanceof Error ? e.message : String(e);
-    }
-    // After the playlist itself: a slower or failed groups fetch must not delay the editor.
+/** The choice lists of the inspector (groups, rooms, services, tags …); again on "Daten neu laden". */
+async function loadChoices(loadSettings: (() => Promise<SettingsDoc | null>) | null): Promise<void> {
+    serviceGroupsFailed.value = false;
+    servicesFailed.value = false;
     try {
         groups.value = await fetchPostGroups();
     } catch {
@@ -598,6 +576,46 @@ onMounted(async () => {
     } catch {
         tags.value = null;
     }
+}
+
+let loadSettingsFn: (() => Promise<SettingsDoc | null>) | null = null;
+const reloading = ref(false);
+/** "Daten neu laden": what ChurchTools changed meanwhile reaches the preview and the choice lists; draft, selection and undo stay. */
+async function reloadData(): Promise<void> {
+    moreMenuOpen.value = false;
+    reloading.value = true;
+    try {
+        await Promise.all([reloadPreview(), loadChoices(loadSettingsFn), editor.refreshMedia()]);
+    } finally {
+        reloading.value = false;
+    }
+}
+
+onMounted(async () => {
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('resize', onResize);
+    window.addEventListener('beforeunload', onBeforeUnload);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    // Capture phase (see the comment on `pointerDown` above): it must run before a block's own
+    // `pointerdown` handler can stop the event from bubbling any further.
+    window.addEventListener('pointerdown', onPointerDown, true);
+    window.addEventListener('pointerup', onPointerUpOrCancel, true);
+    window.addEventListener('pointercancel', onPointerUpOrCancel, true);
+    try {
+        const [handle, person] = await Promise.all([getRepository(), currentPerson()]);
+        loadSettingsFn = () => handle.repository.loadSettings();
+        author.value = displayName(person);
+        demo.value = handle.demo;
+        editor.attach(handle.repository, author.value);
+        repository.value = handle.repository;
+        if (templatePage) await editor.openTemplate(playlistId);
+        else await editor.open(playlistId);
+        void refreshHeartbeats();
+        await editor.refreshMedia();
+    } catch (e) {
+        loadError.value = e instanceof Error ? e.message : String(e);
+    }
+    await loadChoices(loadSettingsFn);
 });
 
 onBeforeUnmount(() => {
@@ -967,6 +985,15 @@ function onKey(event: KeyboardEvent): void {
                         >
                             <Icon name="clock" :size="16" /> {{ t.history.menuEntry }}
                         </RouterLink>
+                        <button
+                            role="menuitem"
+                            type="button"
+                            data-testid="more-reload"
+                            :disabled="reloading"
+                            @click="reloadData"
+                        >
+                            <Icon name="rotate" :size="16" /> {{ t.editor.reloadData }}
+                        </button>
                         <button
                             v-if="editor.draftsOn"
                             role="menuitem"

@@ -258,15 +258,17 @@ export function usePreview(
     watch(() => JSON.stringify(rooms.value), () => void loadRooms());
     watch(() => JSON.stringify(people.value), () => void loadPeople());
     watch(() => `${agenda.value.join()}|${agendaSheets.value}|${JSON.stringify(agendaGroups.value)}`, () => void loadAgenda());
-    // Appointments and rooms need the instance time zone.
-    void loadBasics().then(() => {
-        void loadAppointments();
-        void loadRooms();
-        void loadPeople();
-        void loadAgenda();
-    });
-    void loadPosts();
-    void loadGroupHomepages();
+    /** Fetches everything the preview shows again (the editor's "Daten neu laden"); the first load is the same call. */
+    async function reload(): Promise<void> {
+        problem.value = null;
+        await Promise.all([
+            // Appointments and rooms need the instance time zone.
+            loadBasics().then(() => Promise.all([loadAppointments(), loadRooms(), loadPeople(), loadAgenda()])),
+            loadPosts(),
+            loadGroupHomepages(),
+        ]);
+    }
+    void reload();
 
     const ticker = setInterval(() => {
         context.now = new Date();
@@ -274,5 +276,5 @@ export function usePreview(
     }, 30_000);
     onBeforeUnmount(() => clearInterval(ticker));
 
-    return { context, calendars, hiddenCalendars, releasedCalendarIds, problem };
+    return { context, calendars, hiddenCalendars, releasedCalendarIds, problem, reload };
 }
