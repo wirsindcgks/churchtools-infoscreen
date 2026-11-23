@@ -4,6 +4,18 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.66.0] – 2026-11-23
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Vorschlag, die Angaben überall gleich auswählen zu lassen
+([#296](https://github.com/wirsindcgks/churchtools-infoscreen/issues/296)).
+
+### Geändert
+
+- **Ein Klappmenü „Angaben“ für Gruppen, Beiträge und Personen** (Plan.md 128). Alle drei Bausteine wählen ihre Angaben
+  jetzt im selben Klappmenü, mit derselben Zusammenfassung („3 von 6“) und an derselben Stelle direkt vor „Darstellung“.
+  Bei „Personen“ steht „+ Angaben“ jetzt im Klappmenü unter der Liste statt davor, und das Klappmenü ist auch da, solange
+  noch nichts gewählt ist. Die Reihenfolge bei „Personen“: Gruppe, Rollen, Name, Angaben, Darstellung.
+
 ## [0.65.1] – 2026-11-23
 
 ### Geändert
@@ -2093,3 +2105,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.64.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.64.1
 [0.65.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.65.0
 [0.65.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.65.1
+[0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
