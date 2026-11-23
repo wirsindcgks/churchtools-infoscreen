@@ -89,6 +89,9 @@ und Iststand in `docs/Plan-Archiv.md`, Punkt 88; was offen ist, in `Plan.md`, Pu
 - **Wer beim Umsetzen auf eine offene Frage stößt, gibt sie zurück,** statt zu raten.
 - **Wiederkehrende Abläufe sind Skills, keine Agenten** *(seit 2026-11-23)*: ein Release mit dem persönlichen Skill `/release`,
   der den Abschnitt „Release“ unten liest.
+- **Vor jedem PR mit Code prüft der persönliche Agent `pruefer`** *(seit 2026-11-23)* den Diff gegen den Abschnitt „Prüfung“
+  unten – mit dem Plan-Punkt im Auftrag. Er liest nur; seine Befunde prüft Opus nach, bevor etwas geändert wird. Reine
+  Plan- und Doku-PRs brauchen ihn nicht.
 - **Tests gehen mit der Änderung.** Wer Verhalten ändert, passt im selben PR die Tests an, die es prüfen – auch die
   e2e-Tests, die die Pflichtprüfung `check` nicht fährt: per `grep` in `e2e/` nach testids und Texten suchen und die
   Treffer lokal laufen lassen. *(Seit 2026-10-07: `v0.17.1` ließ vier Tests in `e2e/rooms.spec.ts` unbemerkt rot.)*
@@ -114,6 +117,36 @@ nicht die Änderungen, sondern lange Sitzungen, Testläufe, Bilder und Berichte.
 - **Berichte des Umsetzers höchstens 25 Zeilen:** was gebaut, was vom Auftrag abweicht, was rot ist, offene Fragen.
 - **Bilder sparsam:** je Runde höchstens ein Bild ansehen, das die Änderung zeigt.
 - **Rückmeldungen gebündelt:** eine Liste je Runde statt einzelner Wünsche nacheinander.
+
+## Prüfung
+
+*Für den persönlichen Agenten `pruefer` (seit 2026-11-23): Pflichtpunkte zusätzlich zu seinen allgemeinen Prüfungen.*
+
+- **Ordnung im Inspektor** (Abschnitt oben): Platz des Feldes, Klappmenü statt lose, Zusammenfassung in Worten, Titel
+  höchstens drei Wörter, `(i)` am Ende der Zeile, ein Bedienelement je Art, eigene Gruppe für neue Seiten.
+- **Einheitlich über alle Bausteine:** Ändert sich etwas an einem Baustein (Feld, Verhalten, Schrift, Fortschritt), ist es
+  bei den anderen, für die es passt, mitgezogen – oder die Ausnahme ist begründet. Ein neuer Baustein bringt „Schrift“
+  und die übrigen üblichen Klappmenüs mit; das Kurzmenü/die Übersicht im Designer ist bedacht.
+- **Texte:** Oberfläche und Doku deutsch, Code und Bezeichner englisch; Texte stehen in `src/i18n/`, nicht in Vue-Dateien;
+  Hilfetexte (`src/i18n/help.ts`) für neue Felder.
+- **Schema:** Jede Änderung an gespeicherten Dokumenten hebt `SCHEMA_VERSION` (Minor), neue Felder sind optional mit
+  „fehlend = …“ im Kommentar, ältere Player kommen damit zurecht; Lesetest in `src/model/read.test.ts`.
+- **Rechte:** Der Assistent (`src/setup/`) vergibt so eng wie möglich (je Kalender, Raum, Dienstgruppe), nimmt nur zurück,
+  was er selbst verwaltet (`MANAGED_RIGHTS`) und der Administrator sieht; neue Rechte haben einen Check (`checks.ts`) und
+  eine Zeile in `docs/Rechte.md`. Was die Befunde (G-Nummern) sagen, gilt – ein Recht ohne Befund ist ein Fehler.
+- **Was öffentlich zu sehen ist:** Bildschirme zeigen nur, was ohne Anmeldung sichtbar sein darf (öffentliche oder
+  freigegebene Kalender, Dienste nur aus offenen Dienstgruppen) – auch wenn das Gerät mehr lesen kann. Ausnahmen wählt
+  ein Gestalter bewusst (etwa Notizen geschlossener Dienstgruppen im „Ablauf“, Punkt 119); dann sagt der Hilfetext, dass
+  sie für alle sichtbar auf dem Bildschirm stehen.
+- **Geheimnisse:** keine Instanz-URL, kein `*.church.tools`, keine Tokens, keine Personendaten in Code, Tests, Doku,
+  Kommentaren; `fixtures/` nicht versioniert; Datei- und Bild-Hashes sind Zugangsschlüssel.
+- **Bauregeln:** kein Inline-Skript (CSP), der Player lädt keine Chunks nach, Zeiten über `Intl`/Zeitzone der Instanz,
+  nie fester Offset; Timer und Listener werden beim Abbau entfernt (Kiosk-Tabs laufen wochenlang).
+- **Tests:** Unit-Tests für neue Logik; betroffene e2e-Tests per `grep` nach Testids und Texten in `e2e/` gefunden und
+  angepasst – die Pflichtprüfung `check` fährt keine e2e.
+- **Doku und Plan:** `docs/Funktionen.md` bzw. `docs/Rechte.md`/`docs/Einrichtung.md` für sichtbare Änderungen; in
+  `Plan.md` der Stand des Punktes; keine fremden Werkzeuge oder Anbieter im Plan; Nummern (Plan, G, Issues) nie ohne
+  Stichwort.
 
 ## Release
 
