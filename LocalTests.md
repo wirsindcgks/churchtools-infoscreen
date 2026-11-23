@@ -182,6 +182,9 @@ Nummern – sehen kann es erst, wer sie hat.
 
 ## Release veröffentlichen
 
+Für Agenten gibt es den Ablauf als Skill [`/release`](.claude/skills/release/SKILL.md) (neue Version) bzw. `/release prod`
+(Produktivversion im Plan nachtragen); er folgt diesen Schritten und den Regeln aus `AGENTS.md`.
+
 Ein Tag `vX.Y.Z` auf GitHub baut das Release von selbst (`.github/workflows/release.yml`). ChurchTools kann sich
 Updates nicht selbst holen; ein Administrator lädt das ZIP unter „Releases" herunter und in der Extension-Verwaltung
 hoch.

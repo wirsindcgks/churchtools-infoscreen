@@ -87,6 +87,8 @@ und Iststand in `docs/Plan-Archiv.md`, Punkt 88; was offen ist, in `Plan.md`, Pu
 - **Bei Opus bleibt,** was Urteil braucht: Messungen an ChurchTools samt Academy-Recherche, Schemaänderungen,
   Rechte, alles, was die Testinstanz berührt, und die Durchsicht des Ergebnisses.
 - **Wer beim Umsetzen auf eine offene Frage stößt, gibt sie zurück,** statt zu raten.
+- **Wiederkehrende Abläufe sind Skills, keine Agenten** *(seit 2026-11-23)*: ein Release mit [`/release`](.claude/skills/release/SKILL.md),
+  die Produktivversion im Plan mit `/release prod`.
 - **Tests gehen mit der Änderung.** Wer Verhalten ändert, passt im selben PR die Tests an, die es prüfen – auch die
   e2e-Tests, die die Pflichtprüfung `check` nicht fährt: per `grep` in `e2e/` nach testids und Texten suchen und die
   Treffer lokal laufen lassen. *(Seit 2026-10-07: `v0.17.1` ließ vier Tests in `e2e/rooms.spec.ts` unbemerkt rot.)*
