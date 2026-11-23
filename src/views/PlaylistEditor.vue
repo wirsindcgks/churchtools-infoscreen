@@ -578,6 +578,15 @@ async function loadChoices(loadSettings: (() => Promise<SettingsDoc | null>) | n
     }
 }
 
+/** Writes the chosen slide into the address – replacing, so "Zurück" stays; only after opening, so `folie` is not overwritten by the first slide. */
+let addressReady = false;
+function syncAddress(): void {
+    const id = editor.slide?.id;
+    if (!addressReady || templatePage || !id || route.query.folie === id) return;
+    void router.replace({ query: { ...route.query, folie: id } });
+}
+watch(() => editor.slide?.id, syncAddress);
+
 let loadSettingsFn: (() => Promise<SettingsDoc | null>) | null = null;
 const reloading = ref(false);
 /** "Daten neu laden": what ChurchTools changed meanwhile reaches the preview and the choice lists; draft, selection and undo stay. */
@@ -609,7 +618,14 @@ onMounted(async () => {
         editor.attach(handle.repository, author.value);
         repository.value = handle.repository;
         if (templatePage) await editor.openTemplate(playlistId);
-        else await editor.open(playlistId);
+        else {
+            await editor.open(playlistId);
+            // The address leads to the slide (Plan.md 129): an unknown one falls back to the first.
+            const wanted = String(route.query.folie ?? '');
+            if (wanted && editor.slides.some((slide) => slide.id === wanted)) editor.selectSlide(wanted);
+            addressReady = true;
+            syncAddress();
+        }
         void refreshHeartbeats();
         await editor.refreshMedia();
     } catch (e) {
