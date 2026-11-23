@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readSettings } from '../model/read';
 import { SCHEMA_VERSION, type SettingsDoc } from '../model/schema';
-import { settingsToSave } from './settings-doc';
+import { releasedRehearsalScreens, settingsToSave } from './settings-doc';
 
 const stored: SettingsDoc = {
     schema: { major: 1, minor: 19 },
@@ -53,5 +53,13 @@ describe('settingsToSave', () => {
         expect(settingsToSave(withRelease, { allowedServiceIds: [7] })).toMatchObject({ rehearsalScreenIds: ['s1'], rehearsalPlaylistIds: ['p1'] });
         expect(settingsToSave(withRelease, { rehearsalScreenIds: undefined }).rehearsalScreenIds).toBeUndefined();
         expect(readSettings({ ...stored }).rehearsalScreenIds).toBeUndefined();
+    });
+
+    it('reads the rehearsal release only for screens that still exist (Plan.md 125 A)', () => {
+        const settings = { rehearsalScreenIds: ['a', 'gone', 'b'] };
+        expect(releasedRehearsalScreens(settings, [{ id: 'a' }, { id: 'b' }, { id: 'c' }])).toEqual(['a', 'b']);
+        expect(releasedRehearsalScreens(settings, [])).toEqual([]);
+        expect(releasedRehearsalScreens({}, [{ id: 'a' }])).toEqual([]);
+        expect(releasedRehearsalScreens(null, [{ id: 'a' }])).toEqual([]);
     });
 });

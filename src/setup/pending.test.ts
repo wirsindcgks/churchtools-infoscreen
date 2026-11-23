@@ -40,6 +40,7 @@ function repository() {
         agendaCalendarIdsInUse: vi.fn().mockResolvedValue([]),
         agendaServiceGroupIdsInUse: vi.fn().mockResolvedValue([]),
         songsheetInUse: vi.fn().mockResolvedValue(false),
+        listScreens: vi.fn().mockResolvedValue([{ id: 's1' }]),
         visibleCategories: vi.fn().mockResolvedValue(visible),
         statusCategoryId: vi.fn().mockResolvedValue(2),
         controlCategoryId: vi.fn().mockResolvedValue(36),
@@ -80,6 +81,22 @@ describe('checkRightsPending (Plan.md 122)', () => {
         await checkRightsPending();
         expect(mocks.plan).toHaveBeenCalledWith(expect.objectContaining({ controlCategoryId: 36, musicianGroupId: 84 }));
         expect(mocks.refresh.mock.calls[0]![1]).toMatchObject({ musician: 84 });
+    });
+
+    it('counts only released rehearsal screens that still exist (Plan.md 125 A)', async () => {
+        const withRelease = (ids: string[]) => {
+            mocks.repo.mockResolvedValue({
+                repository: { ...repository(), loadSettings: vi.fn().mockResolvedValue({ rehearsalScreenIds: ids }) },
+                demo: false,
+            });
+        };
+        withRelease(['gone']);
+        await checkRightsPending();
+        expect(mocks.plan).toHaveBeenLastCalledWith(expect.objectContaining({ rehearsalScreens: false }));
+        window.sessionStorage.clear();
+        withRelease(['gone', 's1']);
+        await checkRightsPending();
+        expect(mocks.plan).toHaveBeenLastCalledWith(expect.objectContaining({ rehearsalScreens: true }));
     });
 
     it('is false when a right is locked', async () => {

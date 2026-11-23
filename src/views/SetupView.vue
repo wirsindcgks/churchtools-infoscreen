@@ -18,6 +18,7 @@ import { GROUP_RIGHT_NAMES, settingsAbilities, type GroupPermissions, type Setti
 import RefreshRightsDialog from '../designer/RefreshRightsDialog.vue';
 import RemoveSetupDialog, { type DeviceAccountInfo, type RemoveGroupInfo } from '../designer/RemoveSetupDialog.vue';
 import { createCategory, pickCategory, setCategoryInMenu, wikiRestoreLogLine, WIKI_CATEGORY_NAME, type WikiCategory } from '../media/wiki';
+import { ValueTooLargeError } from '../model/read';
 import { LEGACY_PERSON_FIELD_KEYS, type ScreenDoc } from '../model/schema';
 import { offeredPersonFields } from '../groups/person-fields';
 import { withDeviceLogin } from '../player/device-login';
@@ -45,7 +46,7 @@ import {
     personGroups,
     type GroupSummary,
 } from '../setup/load';
-import { settingsToSave, type SettingsFields } from '../setup/settings-doc';
+import { releasedRehearsalScreens, settingsToSave, type SettingsFields } from '../setup/settings-doc';
 import { churchToolsMusicianApi, provisionMusicians, updateMusicianSources } from '../setup/musicians';
 import { wikiCategoryCreation } from '../setup/wiki-creation';
 import { createDeviceLogin } from '../setup/device-token';
@@ -978,7 +979,6 @@ async function addMusicianGroup(): Promise<void> {
     }
 }
 
-/** „Speichern" on the page „Musiker": writes the rule anew and runs it, then keeps the band groups in the settings. Throws on failure. */
 const sameStrings = (a: readonly string[], b: readonly string[]): boolean => a.length === b.length && a.every((id) => b.includes(id));
 
 /** Whether the choice of screens or presentations for the rehearsal differs from the stored one – only where the page lets it be changed. */
@@ -1019,6 +1019,13 @@ async function loadRehearsalPlaylists(): Promise<void> {
         console.warn('Die Probenpräsentationen konnten nicht gelesen werden:', e);
         return null;
     });
+    // A presentation that is gone, or has lost its rehearsal sheet, leaves the release like a screen that is gone.
+    const known = rehearsalPlaylists.value;
+    if (known) {
+        const kept = (ids: string[]): string[] => ids.filter((id) => known.some((p) => p.id === id));
+        rehearsalPlaylistIds.value = kept(rehearsalPlaylistIds.value);
+        draftRehearsalPlaylists.value = kept(draftRehearsalPlaylists.value);
+    }
 }
 watch(page, () => void loadRehearsalPlaylists());
 
@@ -1032,12 +1039,17 @@ async function saveRehearsal(): Promise<void> {
     rehearsalPlaylists.value = known;
     const nextScreens = screens.value.filter((sc) => draftRehearsalScreens.value.includes(sc.id));
     const nextPlaylists = known.filter((p) => draftRehearsalPlaylists.value.includes(p.id));
-    await repository.writeRehearsalCatalog({
-        kind: 'rehearsalCatalog',
-        screens: nextScreens.map((sc) => ({ id: sc.id, name: sc.name })),
-        playlists: nextPlaylists.map((p) => ({ id: p.id, name: p.name })),
-        at: new Date().toISOString(),
-    });
+    try {
+        await repository.writeRehearsalCatalog({
+            kind: 'rehearsalCatalog',
+            screens: nextScreens.map((sc) => ({ id: sc.id, name: sc.name })),
+            playlists: nextPlaylists.map((p) => ({ id: p.id, name: p.name })),
+            at: new Date().toISOString(),
+        });
+    } catch (e) {
+        if (e instanceof ValueTooLargeError) throw new Error(t.setup.musicians.rehearsal.tooLarge);
+        throw e;
+    }
     await persistSettings({
         rehearsalScreenIds: nextScreens.length ? nextScreens.map((sc) => sc.id) : undefined,
         rehearsalPlaylistIds: nextPlaylists.length ? nextPlaylists.map((p) => p.id) : undefined,
@@ -1048,6 +1060,7 @@ async function saveRehearsal(): Promise<void> {
     draftRehearsalPlaylists.value = [...rehearsalPlaylistIds.value];
 }
 
+/** „Speichern" on the page „Musiker": writes the rule anew and runs it, then keeps the band groups in the settings. Throws on failure. */
 async function saveMusicianSources(): Promise<void> {
     const groupId = musicianGroupId.value;
     if (groupId === null) return;
@@ -1578,7 +1591,7 @@ onMounted(async () => {
         musicianGroupId.value = settings?.musicianGroupId ?? null;
         musicianSourceGroupIds.value = sortedIds(settings?.musicianSourceGroupIds ?? [], new Set(list.map((g) => g.id)));
         draftMusicianSources.value = [...musicianSourceGroupIds.value];
-        rehearsalScreenIds.value = (settings?.rehearsalScreenIds ?? []).filter((id) => screenList.some((sc) => sc.id === id));
+        rehearsalScreenIds.value = releasedRehearsalScreens(settings, screenList);
         draftRehearsalScreens.value = [...rehearsalScreenIds.value];
         rehearsalPlaylistIds.value = [...(settings?.rehearsalPlaylistIds ?? [])];
         draftRehearsalPlaylists.value = [...rehearsalPlaylistIds.value];

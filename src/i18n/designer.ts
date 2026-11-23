@@ -1915,6 +1915,7 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
                 needsGroup: 'Die Auswahl ist möglich, sobald die Musikergruppe angelegt ist.',
                 needsControl: 'Die Auswahl ist nicht möglich: Die Kategorie „Steuerung“ fehlt oder ist für dich nicht sichtbar.',
                 note: 'Beim Speichern landet die Liste mit den Namen in der Kategorie „Steuerung“, die die Musiker lesen. Der Bildschirm prüft die Freigabe selbst.',
+                tooLarge: 'Die Auswahl ist zu groß für die Liste der Musiker. Gib weniger Bildschirme oder Präsentationen frei oder kürze ihre Namen.',
                 gone: 'Bildschirme und Präsentationen, die es nicht mehr gibt, fallen beim Speichern aus der Freigabe.',
             },
         },

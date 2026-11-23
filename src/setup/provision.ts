@@ -92,7 +92,7 @@ export interface GroupSpec {
      */
     forbidden: GrantSpec[];
     /**
-     * Rights the plan grants only under a condition (Plan.md 125 A: "Daten sehen" on `steuerung`): "Rechte aktualisieren" takes them back
+     * Rights the plan grants only under a condition (Plan.md 125 A: the device's "Daten sehen" on `steuerung`): "Rechte aktualisieren" takes them back
      * where they are held but not planned. Missing: none.
      */
     conditional?: GrantSpec[];
@@ -279,6 +279,7 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
                   { authId: moduleRight('view custom data'), dataId: [control], label: t.setup.provision.grants.viewControl },
               ];
     if (input.songsheet || input.rehearsalScreens) device.push(...viewControl());
+    // Designers get it and keep it: the assistant never gave them a right on `steuerung` before, so one may be set by hand – never taken back.
     if (input.rehearsalScreens) designer.push(...viewControl());
 
     // The block "Personen" (Plan.md 112, G70): 1104 on exactly this group, at the device's own group – the people group stays
@@ -312,7 +313,7 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     }));
 
     const specs: GroupSpec[] = [
-        { key: 'designer', name: GROUP_NAMES.designer, grants: designer, forbidden: writing, conditional: viewControl() },
+        { key: 'designer', name: GROUP_NAMES.designer, grants: designer, forbidden: writing },
         { key: 'device', name: GROUP_NAMES.device, grants: device, forbidden: writing, postsOff: true, conditional: viewControl() },
     ];
     if (people !== undefined) {

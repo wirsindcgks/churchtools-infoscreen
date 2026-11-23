@@ -62,7 +62,9 @@ zeigt.
 ¹ Nur damit der Designer beim ersten Öffnen seine Kategorien anlegen kann.
 
 Die Kategorie **Steuerung** steht nicht in der Tabelle: Das Gerät bekommt dort „Kategorien sehen" und „Daten in Kategorie sehen", sobald ein
-Baustein „Liedblatt" gezeigt wird; schreiben dürfen nur die Musiker ([unten](#musiker--für-die-handysteuerung)).
+Baustein „Liedblatt" gezeigt wird **oder** Bildschirme für Proben vom Handy freigegeben sind (Einstellungen → Musiker); fällt beides weg,
+nimmt „Rechte aktualisieren" es wieder zurück. Gestalter bekommen dasselbe Leserecht, sobald Bildschirme für Proben freigegeben sind, und
+behalten es – ein Leserecht auf die Steuerung schadet ihnen nicht. Schreiben dürfen nur die Musiker ([unten](#musiker--für-die-handysteuerung)).
 
 Weil das Gerät die Entwürfe nicht sieht, kann ein Fernseher **nie einen Entwurf zeigen**. Wer die Adresse eines
 Fernsehers kennt, kann höchstens dessen Lebenszeichen ändern.

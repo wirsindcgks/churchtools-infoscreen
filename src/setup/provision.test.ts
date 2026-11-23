@@ -453,18 +453,22 @@ describe('the rights for the rehearsal override (Plan.md 125 A)', () => {
         }
     });
 
-    it('takes it back from both groups once the release ends – the device keeps it for a block "Liedblatt"', () => {
+    it('takes it back from the device once the release ends – and keeps it for a block "Liedblatt"', () => {
         const ended = planProvisioning(withControl);
-        for (const key of ['device', 'designer'] as const) {
-            const result = planRefresh(ended, { [key]: [[held(2011, 36), held(2015, 36), held(2011, 7)]] }, known).find((g) => g.key === key)!;
-            expect(pairs(result.remove)).toEqual(['2011:36', '2015:36']);
-        }
+        const result = planRefresh(ended, { device: [[held(2011, 36), held(2015, 36), held(2011, 7)]] }, known).find((g) => g.key === 'device')!;
+        expect(pairs(result.remove)).toEqual(['2011:36', '2015:36']);
         const withSheet = planProvisioning({ ...withControl, songsheet: true });
         expect(planRefresh(withSheet, { device: [[held(2011, 36), held(2015, 36)]] }, known).find((g) => g.key === 'device')!.remove).toEqual([]);
         const kept = planProvisioning({ ...withControl, rehearsalScreens: true });
         for (const key of ['device', 'designer'] as const) {
             expect(planRefresh(kept, { [key]: [[held(2011, 36), held(2015, 36)]] }, known).find((g) => g.key === key)!.remove).toEqual([]);
         }
+    });
+
+    it('never takes it back from the designers – a right they hold may have been set by hand', () => {
+        const ended = planProvisioning(withControl);
+        const result = planRefresh(ended, { designer: [[held(2011, 36), held(2015, 36)]] }, known).find((g) => g.key === 'designer')!;
+        expect(result.remove).toEqual([]);
     });
 });
 
