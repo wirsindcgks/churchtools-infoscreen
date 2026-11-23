@@ -89,6 +89,8 @@ und Iststand in `docs/Plan-Archiv.md`, Punkt 88; was offen ist, in `Plan.md`, Pu
 - **Wer beim Umsetzen auf eine offene Frage stößt, gibt sie zurück,** statt zu raten.
 - **Wiederkehrende Abläufe sind Skills, keine Agenten** *(seit 2026-11-23)*: ein Release mit dem persönlichen Skill `/release`,
   der den Abschnitt „Release“ unten liest.
+- **Rückmeldungen nach außen entwirft der persönliche Agent `kommunikation`** *(seit 2026-11-23)* nach dem Abschnitt
+  „Kommunikation“ unten – er liest den ganzen Verlauf und postet nie; gepostet wird erst nach dem OK des Nutzers.
 - **Vor jedem PR mit Code prüft der persönliche Agent `pruefer`** *(seit 2026-11-23)* den Diff gegen den Abschnitt „Prüfung“
   unten – mit dem Plan-Punkt im Auftrag. Er liest nur; seine Befunde prüft Opus nach, bevor etwas geändert wird. Reine
   Plan- und Doku-PRs brauchen ihn nicht.
@@ -117,6 +119,29 @@ nicht die Änderungen, sondern lange Sitzungen, Testläufe, Bilder und Berichte.
 - **Berichte des Umsetzers höchstens 25 Zeilen:** was gebaut, was vom Auftrag abweicht, was rot ist, offene Fragen.
 - **Bilder sparsam:** je Runde höchstens ein Bild ansehen, das die Änderung zeigt.
 - **Rückmeldungen gebündelt:** eine Liste je Runde statt einzelner Wünsche nacheinander.
+
+## Kommunikation
+
+*Für den persönlichen Agenten `kommunikation` (seit 2026-11-23).*
+
+- **Konto:** `gh` mit `GH_TOKEN=$(gh auth token -u cgksmedia)`, Repository `wirsindcgks/churchtools-infoscreen`.
+- **Sprache und Anrede:** Deutsch, „du“ – so schreiben die Ideengeber in den Issues selbst.
+- **Wertschätzend:** Wer etwas meldet oder vorschlägt, hat eine Lücke im Produkt gezeigt, keinen eigenen Fehler gemacht –
+  auch nicht zwischen den Zeilen. Das gilt ebenso für Zweig-, Commit- und PR-Namen: nach der Sache benennen, nie nach
+  der Person („Vorschläge von …“ statt „…-issues“).
+- **Dank:** Im Changelog ein Absatz direkt unter der Versionsüberschrift mit Link auf Profil und Issue; die Schreibweise
+  je Person steht in früheren Einträgen (in `CHANGELOG.md` nach „Danke an“ suchen). Im Commit, der einen Vorschlag
+  umsetzt, ein `Co-authored-by` mit der noreply-Adresse (`gh api users/<login>`). Woher ein Wunsch kommt, darf im Plan
+  stehen („Wunsch von …“); wo wir einen Vorschlag kritisch bewerten (ablehnen, parken, als Fehlgriff einordnen), steht
+  „Vorschlag #N“ statt des Namens.
+- **Verknüpfen:** Ein PR, der baut, schreibt „Teil von #N“; der Versions-PR „Closes #N“ für Issues, die mit dem Release ganz
+  erledigt sind. Bleibt etwas offen, bekommt das Issue einen Kommentar, was erschienen ist und was offen bleibt.
+- **Zurückgestelltes:** Kommentar mit Begründung, Label „geparkt“, Issue schließen. Das Feld „Priority“ ist intern und
+  wird nie erwähnt.
+- **Kein Issue bleibt ohne Antwort:** Jedes neue Issue bekommt zeitnah eine erste Rückmeldung, auch wenn noch kein
+  Bauplan steht (was wir daraus machen, was offen ist). Bei einer Triage zuerst nach Issues ohne Kommentar von uns suchen.
+- **Inhalt einer Rückmeldung:** die Version, der Weg in der Oberfläche („Startseite → Kachel → „…“ → „Einstellungen““), was
+  erschienen ist und was nicht, und nur Fragen, deren Antwort im Verlauf noch fehlt. Plan-Nummern nur mit Stichwort.
 
 ## Prüfung
 
