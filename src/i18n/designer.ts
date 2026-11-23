@@ -238,6 +238,7 @@ export const t = {
         draftsOff:
             'Entwürfe gibt es, sobald ein Administrator unter Einstellungen ‚Rechte aktualisieren‘ klickt. ' +
             'Bis dahin geht jede Änderung mit „Veröffentlichen“ direkt auf die Fernseher.',
+        reloadData: 'Daten neu laden',
         discardDraft: 'Entwurf verwerfen',
         discardDraftQuestion: 'Entwurf verwerfen? Alle Änderungen seit dem letzten Veröffentlichen gehen verloren.',
         discardDraftConfirm: 'Verwerfen',

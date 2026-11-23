@@ -2542,6 +2542,21 @@ test.describe('drafts (Plan.md 79, Paket E)', () => {
         await expect(page.getByTestId('save-status')).toHaveText('Alles veröffentlicht');
     });
 
+    test('"Daten neu laden" in the menu fetches the preview data again and keeps the selection', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await page.getByTestId('slide-item').nth(1).click();
+        await expect(page.getByTestId('slide-item').nth(1)).toHaveClass(/active/);
+
+        const again = page.waitForRequest(/\/api\/calendars(\?|$)/);
+        await page.getByTestId('editor-more').click();
+        await page.getByTestId('more-reload').click();
+        await again;
+        await expect(page.getByTestId('more-reload')).toHaveCount(0); // the menu closes
+        await expect(page.getByTestId('slide-item').nth(1)).toHaveClass(/active/);
+    });
+
     test('the playlists page marks a playlist with a draft', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();

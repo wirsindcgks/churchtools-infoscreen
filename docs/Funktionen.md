@@ -45,6 +45,9 @@ die Einstellungen. Ziehen, skalieren, drehen, ausrichten, kopieren, rückgängig
 Bildfläche die Abstände und rastet ein. Über dem gewählten Baustein steht ein **Kurzmenü** mit dem Wichtigsten, ein
 **Doppelklick** führt zum Inhalt: Text schreibt man direkt auf der Folie.
 
+Ändert man in ChurchTools etwas – einen Termin, einen Raum, eine Gruppe –, holt **„⋯“ → „Daten neu laden“** es in die
+Vorschau und in die Auswahllisten, ohne die Seite neu zu laden; Entwurf und Auswahl bleiben, wie sie sind.
+
 Neu hier? Eine kurze **Einführung** zeigt die wichtigsten Stellen, und das türkise **„?“** an jedem Bereich erklärt
 seine Einstellungen.
 
