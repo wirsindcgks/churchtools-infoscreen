@@ -4,6 +4,20 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.65.1] – 2026-11-23
+
+### Geändert
+
+- **Hinweis, wer die Notizen sieht** (Plan.md 119). Hilfetext und Anleitung zum Baustein „Ablauf“ sagen jetzt, dass die
+  Notizen der gewählten Dienstgruppen für alle sichtbar auf dem Bildschirm stehen – auch die von Dienstgruppen, die in
+  ChurchTools nicht jeder sehen darf.
+
+### Behoben
+
+- **Gewählte Dienstgruppen bleiben genannt.** Ließen sich die Namen der Dienstgruppen nicht laden, stand im Klappmenü
+  „Dienstgruppen“ „Keine“, obwohl Gruppen gewählt waren. Jetzt steht dort zur Not „Dienstgruppe 3“, und das Klappmenü
+  sagt, dass das Laden gescheitert ist, statt leer zu bleiben.
+
 ## [0.65.0] – 2026-11-22
 
 ### Neu
@@ -2078,3 +2092,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.64.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.64.0
 [0.64.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.64.1
 [0.65.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.65.0
+[0.65.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.65.1
