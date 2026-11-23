@@ -26,7 +26,7 @@ Ein ChurchTools Custom Module (CCM), mit dem angemeldete ChurchTools-Anwender In
 10. **Proben: Präsentation vom Handy wählen** (Punkt 125) – Musiker überschreiben für die Probe die Präsentation aus dem Zeitplan, auf freigegebenen Bildschirmen und für eine wählbare Dauer; Eckpunkte entschieden (2026-11-16), noch kein Bauplan.
 11. **Folie an ProPresenter senden** (Punkt 126) – entschieden: Weg A, Web-Element in ProPresenter mit der Adresse eines Players; testen beim Termin vor Ort (wie Punkt 121 F). Wege B bis D für später.
 12. **Kiosk am Touch-Bildschirm prüfen** (Punkt 127, #329) – veröffentlicht mit `v0.64.0`/`v0.64.1`, Punkt im Archiv. Offen: der Test am echten Touch-Bildschirm, sobald Bernhard einen beschafft hat (er nimmt fürs Foyer „erst nach dem ersten Tippen“, mit Schild). **Geparkt:** seine Idee getrennter Bedienelemente für Seite und Baustein (2026-11-22) – erst Erfahrungen im Betrieb sammeln, mehrere blätternde Bausteine auf einer Folie hält er selbst für unpraktisch.
-13. **Editor übernimmt Änderungen aus ChurchTools** (Punkt 129, #297) – Wunsch von Bernhard: geänderte Daten ohne Neuladen, dazu eine Adresse, die zur bearbeiteten Folie führt. Bernhard genügt ein Knopf (2026-11-23); **Bauplan steht**: A „Daten neu laden“ im Menü „⋯“, B `?folie=` in der Adresse, zwei PRs, ein Release. **Als Nächstes zu bauen.**
+13. **Editor übernimmt Änderungen aus ChurchTools** (Punkt 129, #297) – Wunsch von Bernhard: geänderte Daten ohne Neuladen, dazu eine Adresse, die zur bearbeiteten Folie führt. Bernhard genügt ein Knopf (2026-11-23); A „Daten neu laden“ im Menü „⋯“ und B `?folie=` in der Adresse **gebaut am 2026-11-23, unveröffentlicht**; als Nächstes das Release, danach Meldung in #297.
 14. **Bedienelement „Angaben“, Rest** (Archiv Punkt 128, #296) – veröffentlicht mit `v0.66.0`, Issue geschlossen. Offen: Termine und Ablauf als zweiter Schritt, wenn sich das Bedienelement bewährt.
 
 **Kleine Reste, kein Auftrag, bis jemand sie wählt** *(durchgesehen mit dem Nutzer am 2026-10-10: später; „Rechte aktualisieren“ echt ausprobiert, ohne Auffälligkeiten)*:
@@ -554,6 +554,7 @@ Hier stehen nur Punkte, die noch nicht veröffentlicht sind, mit vollem Text. Di
     - **Tests:** A – ein e2e in `e2e/editor.spec.ts`: Menü „⋯“ öffnen, „Daten neu laden“ wählen, die Anfragen der Vorschau gehen erneut raus (per `page.waitForRequest`) und die Folie bleibt gewählt. B – ein e2e: zweite Folie wählen, Adresse trägt `folie=`, `page.reload()`, die zweite Folie ist wieder gewählt. Vorher per `grep` nach `editor-more`/`more-history` in `e2e/` (heute `editor.spec.ts`, `verlauf.spec.ts`) prüfen, ob ein Test die Einträge des Menüs zählt.
     - **Doku:** `docs/Funktionen.md` beim Editor einen Satz zu „Daten neu laden“ und zur Adresse; Hilfetext des Menüs prüfen.
     - **Fertig, wenn** nach „Daten neu laden“ eine in ChurchTools geänderte Angabe ohne Neuladen der Seite in der Vorschau steht, ein Neuladen des Browsers auf derselben Folie landet und die e2e grün sind. Danach in #297 melden.
+    - **Gebaut am 2026-11-23, unveröffentlicht:** A mit PR 374 (`usePreview.reload()`, `loadChoices`, Icon `rotate`; ohne Bestätigung, weil der Editor kein Meldungssystem hat), B mit dem folgenden PR (Watch auf die gewählte Folie, `router.replace`, „Zurück“ im e2e mitgeprüft). Offen: Release, danach in #297 melden.
 
 ### Verzeichnis der erledigten Punkte
 

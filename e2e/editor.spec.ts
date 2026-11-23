@@ -2557,6 +2557,23 @@ test.describe('drafts (Plan.md 79, Paket E)', () => {
         await expect(page.getByTestId('slide-item').nth(1)).toHaveClass(/active/);
     });
 
+    test('the address carries the chosen slide and leads back to it (Plan.md 129 B)', async ({ page }) => {
+        await page.goto('./');
+        await page.getByTestId('open-editor').first().click();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await page.getByTestId('slide-item').nth(1).click();
+        await expect(page).toHaveURL(/folie=/);
+        await page.reload();
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('slide-item').nth(1)).toHaveClass(/active/);
+        // Replacing the address keeps "Zurück" on the screens, also after the reload.
+        await expect(page.getByTestId('leave-editor')).toHaveAttribute('href', /\/$|\/\?/);
+
+        await page.goto(page.url().replace(/folie=[^&]*/, 'folie=gibt-es-nicht'));
+        await expect(page.getByTestId('slide-item')).toHaveCount(3);
+        await expect(page.getByTestId('slide-item').first()).toHaveClass(/active/);
+    });
+
     test('the playlists page marks a playlist with a draft', async ({ page }) => {
         await page.goto('./');
         await page.getByTestId('open-editor').first().click();
