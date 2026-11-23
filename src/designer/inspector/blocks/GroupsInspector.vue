@@ -14,6 +14,7 @@ import PageProgressHint from '../PageProgressHint.vue';
 import PageProgressOptions from '../PageProgressOptions.vue';
 import PageProgressToggle from '../PageProgressToggle.vue';
 import InspectorSection from '../../InspectorSection.vue';
+import DetailsSection from '../DetailsSection.vue';
 import { useInspectorContext } from '../context';
 import NumberField from '../fields/NumberField.vue';
 import SegmentField from '../fields/SegmentField.vue';
@@ -184,6 +185,18 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
         </template>
     </InspectorSection>
 
+    <DetailsSection :summary="fieldsSummary" :help="help.details">
+        <ToggleField
+            v-for="key in GROUP_SHOW_KEYS"
+            :key="key"
+            :model-value="block.show[key]"
+            :label="GROUP_SHOW_LABELS[key]"
+            :disabled="(block.layout === 'list' && (key === 'note' || key === 'qr' || key === 'leaderImages')) || (key === 'leaderImages' && !block.show.leaders)"
+            :testid="`group-show-${key}`"
+            @update:model-value="setBlock({ show: { ...block.show, [key]: $event } })"
+        />
+    </DetailsSection>
+
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="appearanceHelp">
         <TileField quick :model-value="block.layout" :options="GROUPS_TILES" :label="t.inspector.view" testid="groups-layout" @update:model-value="setBlock({ layout: $event })" />
         <SegmentField
@@ -217,17 +230,6 @@ const fieldsSummary = computed(() => t.common.countOf(GROUP_SHOW_KEYS.filter((ke
         <PageProgressHint />
     </InspectorSection>
 
-    <InspectorSection id="fields" :title="t.inspector.details" :summary="fieldsSummary" :help="help.details">
-        <ToggleField
-            v-for="key in GROUP_SHOW_KEYS"
-            :key="key"
-            :model-value="block.show[key]"
-            :label="GROUP_SHOW_LABELS[key]"
-            :disabled="(block.layout === 'list' && (key === 'note' || key === 'qr' || key === 'leaderImages')) || (key === 'leaderImages' && !block.show.leaders)"
-            :testid="`group-show-${key}`"
-            @update:model-value="setBlock({ show: { ...block.show, [key]: $event } })"
-        />
-    </InspectorSection>
     <FontSection :block="block" effects="shadow" />
 </template>
 

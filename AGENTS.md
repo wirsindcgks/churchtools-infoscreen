@@ -64,7 +64,10 @@ seinen Platz nach diesen Regeln, statt lose angehängt zu werden; wer plant, leg
 und Iststand in `docs/Plan-Archiv.md`, Punkt 88; was offen ist, in `Plan.md`, Punkt 88.
 
 - **Reihenfolge:** Kopf → Inhalt (lose) → Auswahl-Klappmenüs mit Fachnamen (Kalender, Gruppen, Räume …) →
-  „Darstellung" → „Schrift" → Drehung und Deckkraft → Anordnen → Genaue Maße.
+  „Angaben" → „Darstellung" → „Schrift" → Drehung und Deckkraft → Anordnen → Genaue Maße.
+- **„Angaben" ist überall dasselbe Klappmenü** *(seit 2026-11-23, Plan.md 128)*: Titel „Angaben", Zusammenfassung
+  „n von m", immer da (auch leer). Feste Angaben als Schalter; offene Angaben als sortierbare Liste mit „+ Angabe" als
+  letzter Zeile im Klappmenü – nie außerhalb.
 - **Lose steht nur der Inhalt** (was den Baustein füllt), alles andere in einem Klappmenü, immer `InspectorSection`.
 - **„Darstellung" ist immer ein Klappmenü** (Kacheln zuerst, dann Zeitraum, Anzahl, Dauer, Schalter, Farben), nie die
   Beschriftung eines Feldes. **„Schrift"** enthält nur, was den Text betrifft.

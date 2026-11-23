@@ -12,6 +12,7 @@ import PageProgressHint from '../PageProgressHint.vue';
 import PageProgressOptions from '../PageProgressOptions.vue';
 import PageProgressToggle from '../PageProgressToggle.vue';
 import InspectorSection from '../../InspectorSection.vue';
+import DetailsSection from '../DetailsSection.vue';
 import { useInspectorContext } from '../context';
 import NumberField from '../fields/NumberField.vue';
 import SegmentField from '../fields/SegmentField.vue';
@@ -106,6 +107,17 @@ function toggleGroup(id: number, on: boolean): void {
             </p>
         </InspectorSection>
     </QuickField>
+    <DetailsSection :summary="fieldsSummary" :help="p.details">
+        <ToggleField
+            v-for="key in SHOW_KEYS"
+            :key="key"
+            :model-value="block[key]"
+            :label="SHOW_LABELS[key]"
+            :disabled="block.layout === 'list' && (key === 'showImage' || key === 'showAuthor')"
+            :testid="key === 'showImage' ? 'posts-image' : key === 'showAuthor' ? 'posts-author' : `posts-${key.slice(4).toLowerCase()}`"
+            @update:model-value="setBlock({ [key]: $event })"
+        />
+    </DetailsSection>
     <InspectorSection id="appearance" :title="t.inspector.appearance" :summary="summary" :help="appearanceHelp">
         <TileField quick :model-value="block.layout" :options="POSTS_TILES" :label="t.inspector.view" testid="posts-layout" @update:model-value="setBlock({ layout: $event })" />
         <NumberField :model-value="block.limit" :label="t.inspector.count" :min="1" :max="10" testid="posts-limit" @update:model-value="setBlock({ limit: $event })" />
@@ -143,17 +155,6 @@ function toggleGroup(id: number, on: boolean): void {
                 @update:model-value="setBlock({ imageFocus: $event })"
             />
         </template>
-    </InspectorSection>
-    <InspectorSection id="fields" :title="t.inspector.details" :summary="fieldsSummary" :help="p.details">
-        <ToggleField
-            v-for="key in SHOW_KEYS"
-            :key="key"
-            :model-value="block[key]"
-            :label="SHOW_LABELS[key]"
-            :disabled="block.layout === 'list' && (key === 'showImage' || key === 'showAuthor')"
-            :testid="key === 'showImage' ? 'posts-image' : key === 'showAuthor' ? 'posts-author' : `posts-${key.slice(4).toLowerCase()}`"
-            @update:model-value="setBlock({ [key]: $event })"
-        />
     </InspectorSection>
     <FontSection :block="block" effects="shadow" />
 </template>

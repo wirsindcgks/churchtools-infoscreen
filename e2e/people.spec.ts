@@ -18,13 +18,13 @@ test('the people block says the group is not set up, and its inspector keeps its
 
     // Group first, then roles, then the one list "Angaben", then "Darstellung", then "Schrift" (AGENTS.md, Ordnung im Inspektor); nothing is open at the start.
     const ids = await page.locator('[data-testid^="section-"]:not([data-testid$="-toggle"])').evaluateAll((els) => els.map((el) => el.getAttribute('data-testid')));
-    const order = ['section-people-group', 'section-people-roles', 'section-people-fields', 'section-people-name', 'section-appearance', 'section-font'];
+    const order = ['section-people-group', 'section-people-roles', 'section-people-name', 'section-fields', 'section-appearance', 'section-font'];
     expect(ids.filter((id) => order.includes(id!))).toEqual(order);
     await expect(page.getByTestId('section-people-roles')).not.toHaveAttribute('open', '');
 
     await expect(page.getByTestId('section-people-group')).not.toHaveAttribute('open', '');
     // One list "Angaben" (schema 1.56): a new block starts with the role; it can be taken out and put back (Plan.md 114 B).
-    await openSection(page, 'people-fields');
+    await openSection(page, 'fields');
     await expect(page.getByTestId('people-field-name')).toHaveText(['Rolle in der Gruppe']);
     await page.getByTestId('people-field-remove').click();
     await expect(page.getByTestId('people-field-row')).toHaveCount(0);
