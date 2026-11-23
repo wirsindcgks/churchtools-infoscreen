@@ -87,8 +87,8 @@ und Iststand in `docs/Plan-Archiv.md`, Punkt 88; was offen ist, in `Plan.md`, Pu
 - **Bei Opus bleibt,** was Urteil braucht: Messungen an ChurchTools samt Academy-Recherche, Schemaänderungen,
   Rechte, alles, was die Testinstanz berührt, und die Durchsicht des Ergebnisses.
 - **Wer beim Umsetzen auf eine offene Frage stößt, gibt sie zurück,** statt zu raten.
-- **Wiederkehrende Abläufe sind Skills, keine Agenten** *(seit 2026-11-23)*: ein Release mit [`/release`](.claude/skills/release/SKILL.md),
-  die Produktivversion im Plan mit `/release prod`.
+- **Wiederkehrende Abläufe sind Skills, keine Agenten** *(seit 2026-11-23)*: ein Release mit dem persönlichen Skill `/release`,
+  der den Abschnitt „Release“ unten liest.
 - **Tests gehen mit der Änderung.** Wer Verhalten ändert, passt im selben PR die Tests an, die es prüfen – auch die
   e2e-Tests, die die Pflichtprüfung `check` nicht fährt: per `grep` in `e2e/` nach testids und Texten suchen und die
   Treffer lokal laufen lassen. *(Seit 2026-10-07: `v0.17.1` ließ vier Tests in `e2e/rooms.spec.ts` unbemerkt rot.)*
@@ -114,6 +114,31 @@ nicht die Änderungen, sondern lange Sitzungen, Testläufe, Bilder und Berichte.
 - **Berichte des Umsetzers höchstens 25 Zeilen:** was gebaut, was vom Auftrag abweicht, was rot ist, offene Fragen.
 - **Bilder sparsam:** je Runde höchstens ein Bild ansehen, das die Änderung zeigt.
 - **Rückmeldungen gebündelt:** eine Liste je Runde statt einzelner Wünsche nacheinander.
+
+## Release
+
+*Für den persönlichen Skill `/release` (seit 2026-11-23); Grundlage ist [`LocalTests.md`](LocalTests.md), „Release
+veröffentlichen“.*
+
+- **Konto:** `cgksmedia` (Admin der Organisation `wirsindcgks`), Repository `wirsindcgks/churchtools-infoscreen`.
+  `gh` mit `GH_TOKEN=$(gh auth token -u cgksmedia)`; Git je Aufruf mit
+  `git -c credential.helper= -c 'credential.helper=!f() { test "$1" = get || exit 0; echo username=cgksmedia; echo "password=$(gh auth token -u cgksmedia)"; }; f' …`.
+- **Zweig und Betreff:** `version-X.Y.Z`, Commit und PR `Version X.Y.Z`. **Squash-Merge**, Prüfung `check` muss grün sein.
+- **Versionsdateien:** `npm version X.Y.Z --no-git-tag-version` (schreibt `package.json` und `package-lock.json`).
+- **Changelog:** `## [X.Y.Z] – JJJJ-MM-TT` (Gedankenstrich), Abschnitte „Neu“, „Geändert“, „Behoben“, je Eintrag die
+  Plan-Nummer; Link-Definition `[X.Y.Z]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/vX.Y.Z` am Ende.
+- **Plan:** In „Auf einen Blick“ die Zeile „Veröffentlicht sind `v0.1.0` bis …“ und ihre Klammer (`vX.Y.Z`: Kurzbeschreibung,
+  Punkt N); beim Punkt „gebaut (unveröffentlicht)“ → „veröffentlicht mit `vX.Y.Z`“ samt dem, was offen bleibt. Die Prod-Zeile
+  („dort läuft …“) nicht – das ist der Nachtrag.
+- **Prüfen:** `npm run release:check -- vX.Y.Z`.
+- **Tag:** leichtgewichtig, `git tag vX.Y.Z`. Workflow `release.yml`, Asset `churchtools-infoscreen-vX.Y.Z.zip`.
+- **Danach meldet der Agent:** Link aufs Release; **das ZIP lädt der Nutzer** in der Extension-Verwaltung hoch (Test- und
+  Produktivinstanz), nie der Agent. Fernseher hängen an Prod – geprüft wird dort erst nach dem Release.
+- **Nach der Auslieferung** (`/release nachtrag`, wenn der Nutzer „Prod läuft auf vX.Y.Z“ meldet): Zweig `plan-prod-X.Y.Z`;
+  in `Plan.md`, „Auf einen Blick“, die Prod-Zeile („dort läuft … (seit dem …; davor …)“) auf die neue Version und das heutige
+  Datum setzen und die bisherige Version vorn in die Liste „davor“ stellen – die Liste
+  bleibt vollständig; Commit und PR `Plan: Produktivinstanz auf vX.Y.Z`, Squash-Merge. Dann sagen, was an den
+  veröffentlichten Punkten offen ist; ins Archiv erst, wenn nichts mehr offen ist.
 
 ## Geheimnisse und Fixtures
 
