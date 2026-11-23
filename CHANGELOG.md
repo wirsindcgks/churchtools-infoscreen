@@ -4,6 +4,19 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.67.0] – 2026-11-23
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Hinweis, dass der Editor Änderungen aus ChurchTools erst nach
+dem Neuladen zeigt und dann die Folie verloren geht ([#297](https://github.com/wirsindcgks/churchtools-infoscreen/issues/297)).
+
+### Neu
+
+- **„Daten neu laden“ im Editor** (Plan.md 129). Wer in ChurchTools einen Termin, einen Raum oder eine Gruppe ändert,
+  holt die Änderung über „⋯“ → „Daten neu laden“ in die Vorschau und in die Auswahllisten, ohne die Seite neu zu laden.
+  Entwurf, gewählte Folie und Rückgängig bleiben, wie sie sind.
+- **Die Adresse des Editors führt zur Folie** (Plan.md 129). Die gewählte Folie steht in der Adresse; nach dem Neuladen
+  der Seite oder über einen geteilten Link öffnet der Editor wieder genau diese Folie.
+
 ## [0.66.0] – 2026-11-23
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Vorschlag, die Angaben überall gleich auswählen zu lassen
@@ -2105,4 +2118,5 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.64.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.64.1
 [0.65.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.65.0
 [0.65.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.65.1
+[0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
