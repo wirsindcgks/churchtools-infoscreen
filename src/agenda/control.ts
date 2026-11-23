@@ -202,6 +202,72 @@ export function planRehearsalWrite(values: readonly { id: number; value: string 
 }
 
 /**
+ * The list of what the musicians may override from the phone (Plan.md 125 A): the screens and rehearsal presentations an administrator
+ * released, with their names – the musicians' group sees neither screens nor presentations. One value in `steuerung`, written when the
+ * administrator saves the release. Tells itself apart from the other values by `kind`.
+ */
+export interface RehearsalCatalogDoc {
+    kind: 'rehearsalCatalog';
+    screens: { id: string; name: string }[];
+    playlists: { id: string; name: string }[];
+    /** ISO time of the write. */
+    at: string;
+}
+
+function namedIds(raw: unknown): { id: string; name: string }[] | null {
+    if (!Array.isArray(raw)) return null;
+    const out: { id: string; name: string }[] = [];
+    for (const entry of raw) {
+        if (typeof entry !== 'object' || entry === null) continue;
+        const e = entry as Record<string, unknown>;
+        if (typeof e.id !== 'string' || !e.id) continue;
+        out.push({ id: e.id, name: typeof e.name === 'string' ? e.name : '' });
+    }
+    return out;
+}
+
+/** Reads one value tolerantly: `null` for anything that is no catalog (the other values of `steuerung` included); never throws. Entries without an id are left out. */
+export function readRehearsalCatalog(raw: unknown): RehearsalCatalogDoc | null {
+    let value = raw;
+    if (typeof value === 'string') {
+        try {
+            value = JSON.parse(value);
+        } catch {
+            return null;
+        }
+    }
+    if (typeof value !== 'object' || value === null) return null;
+    const r = value as Record<string, unknown>;
+    if (r.kind !== 'rehearsalCatalog') return null;
+    if (typeof r.at !== 'string' || Number.isNaN(Date.parse(r.at))) return null;
+    const screens = namedIds(r.screens);
+    const playlists = namedIds(r.playlists);
+    if (!screens || !playlists) return null;
+    return { kind: 'rehearsalCatalog', screens, playlists, at: r.at };
+}
+
+/** The catalog with the latest `at`; `null` where there is none. */
+export function latestRehearsalCatalog(values: readonly { value: string }[]): RehearsalCatalogDoc | null {
+    let latest: RehearsalCatalogDoc | null = null;
+    for (const { value } of values) {
+        const doc = readRehearsalCatalog(value);
+        if (doc && (!latest || Date.parse(doc.at) > Date.parse(latest.at))) latest = doc;
+    }
+    return latest;
+}
+
+/** What a write of the catalog does: the latest catalog value is changed (none means create), further ones go. Nothing else is touched. */
+export function planRehearsalCatalogWrite(values: readonly { id: number; value: string }[]): { updateId: number | null; removeIds: number[] } {
+    const found: { id: number; at: number }[] = [];
+    for (const { id, value } of values) {
+        const read = readRehearsalCatalog(value);
+        if (read) found.push({ id, at: Date.parse(read.at) });
+    }
+    found.sort((a, b) => b.at - a.at);
+    return { updateId: found[0]?.id ?? null, removeIds: found.slice(1).map((v) => v.id) };
+}
+
+/**
  * The neighbour of `section` in `direction` within one song; `null` at its borders. Parts outside the flow (`extra`) are no steps: from
  * one of them forward leads to the next step after it, back to the last step before it (like `stepPart`).
  */

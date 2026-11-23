@@ -91,6 +91,11 @@ export interface GroupSpec {
      * one data id at a time, as ChurchTools stores them (G34).
      */
     forbidden: GrantSpec[];
+    /**
+     * Rights the plan grants only under a condition (Plan.md 125 A: "Daten sehen" on `steuerung`): "Rechte aktualisieren" takes them back
+     * where they are held but not planned. Missing: none.
+     */
+    conditional?: GrantSpec[];
     /** The devices of this group become members of the new group, in its default role, so that they read the member fields. */
     membersFrom?: GroupKey;
     /** Posts are switched off in this group (`postsEnabled` false at the group): nobody reads them there, and the type „Merkmal" would give the device the right to write them. */
@@ -136,6 +141,11 @@ export interface PlanInput {
     songsheet?: boolean;
     /** The non-public calendars released for screens (Plan.md 85 b), only those the administrator sees: device and designers may read them. */
     screenCalendarIds?: number[];
+    /**
+     * Screens are released for the rehearsal override (Plan.md 125 A, `SettingsDoc.rehearsalScreenIds` not empty): the device and the designers
+     * read the category `steuerung` – the device for the override, the designers for the card of the screen. Missing: none released.
+     */
+    rehearsalScreens?: boolean;
     /**
      * The people group of the block "Personen" (Plan.md 112): `'new'` while the assistant is about to create it, its id once
      * it exists. Missing: there is none (installations from before) – the plan then leaves it and the device's right on it out.
@@ -259,13 +269,17 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     }
 
     // The musicians steer the song sheet through the category `steuerung`; the device reads it (G83: 2011 and 2015).
+    // It reads the override of the rehearsal there as well (Plan.md 125 A), and the designers see it on the card of the screen.
     const control = input.controlCategoryId;
-    if (input.songsheet && control !== undefined) {
-        device.push(
-            { authId: moduleRight('view custom category'), dataId: [control], label: t.setup.provision.grants.viewControl },
-            { authId: moduleRight('view custom data'), dataId: [control], label: t.setup.provision.grants.viewControl },
-        );
-    }
+    const viewControl = (): GrantSpec[] =>
+        control === undefined
+            ? []
+            : [
+                  { authId: moduleRight('view custom category'), dataId: [control], label: t.setup.provision.grants.viewControl },
+                  { authId: moduleRight('view custom data'), dataId: [control], label: t.setup.provision.grants.viewControl },
+              ];
+    if (input.songsheet || input.rehearsalScreens) device.push(...viewControl());
+    if (input.rehearsalScreens) designer.push(...viewControl());
 
     // The block "Personen" (Plan.md 112, G70): 1104 on exactly this group, at the device's own group – the people group stays
     // untouched – the devices become members of the people group. The member fields (10126) are not
@@ -298,8 +312,8 @@ export function planProvisioning(input: PlanInput): GroupSpec[] {
     }));
 
     const specs: GroupSpec[] = [
-        { key: 'designer', name: GROUP_NAMES.designer, grants: designer, forbidden: writing },
-        { key: 'device', name: GROUP_NAMES.device, grants: device, forbidden: writing, postsOff: true },
+        { key: 'designer', name: GROUP_NAMES.designer, grants: designer, forbidden: writing, conditional: viewControl() },
+        { key: 'device', name: GROUP_NAMES.device, grants: device, forbidden: writing, postsOff: true, conditional: viewControl() },
     ];
     if (people !== undefined) {
         specs.push({
@@ -695,6 +709,14 @@ export function planRefresh(
                 const managed = MANAGED_RIGHTS[spec.key].find((m) => m.authId === g.authId);
                 if (!managed || planned(g.authId, g.dataId) || !knownIds(g.authId).has(g.dataId)) continue;
                 takeBack({ authId: g.authId, dataId: g.dataId, label: named(g.authId, g.dataId, managed.label) });
+            }
+            for (const c of spec.conditional ?? []) {
+                for (const dataId of c.dataId ?? []) {
+                    if (planned(c.authId, dataId)) continue;
+                    if (grants.some((g) => g.authId === c.authId && g.dataId === dataId && (g.type ?? 'grant') === 'grant')) {
+                        takeBack({ authId: c.authId, dataId, label: c.label });
+                    }
+                }
             }
             for (const f of spec.forbidden) {
                 for (const dataId of f.dataId ?? []) {

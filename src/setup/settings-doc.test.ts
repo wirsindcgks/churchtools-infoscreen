@@ -44,4 +44,14 @@ describe('settingsToSave', () => {
         expect(readSettings({ ...saved, id: 'settings', kind: 'settings' }).roomTypeIds).toEqual([3]);
         expect(readSettings({ ...stored }).roomTypeIds).toBeUndefined();
     });
+
+    it('keeps the rest when the rehearsal release is saved, and the release when the rest is (schema 1.68, Plan.md 125 A)', () => {
+        const saved = settingsToSave(stored, { rehearsalScreenIds: ['s1'], rehearsalPlaylistIds: ['p1', 'p2'] });
+        expect(saved).toMatchObject({ designerGroupId: 11, allowedServiceIds: [3, 7], rehearsalScreenIds: ['s1'], rehearsalPlaylistIds: ['p1', 'p2'] });
+        expect(readSettings({ ...saved, id: 'settings', kind: 'settings' }).rehearsalPlaylistIds).toEqual(['p1', 'p2']);
+        const withRelease: SettingsDoc = { ...stored, rehearsalScreenIds: ['s1'], rehearsalPlaylistIds: ['p1'] };
+        expect(settingsToSave(withRelease, { allowedServiceIds: [7] })).toMatchObject({ rehearsalScreenIds: ['s1'], rehearsalPlaylistIds: ['p1'] });
+        expect(settingsToSave(withRelease, { rehearsalScreenIds: undefined }).rehearsalScreenIds).toBeUndefined();
+        expect(readSettings({ ...stored }).rehearsalScreenIds).toBeUndefined();
+    });
 });

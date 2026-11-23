@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { controlsByEvent, latestRehearsal, planControlWrite, planRehearsalWrite, readControl, readRehearsal, stepPart, stepSection } from './control';
+import { controlsByEvent, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, readControl, readRehearsal, readRehearsalCatalog, stepPart, stepSection } from './control';
 import type { AgendaEvent, LiveItem } from './live';
 import type { SongSheet } from './songsheet';
 
@@ -130,6 +130,55 @@ describe('rehearsal choice (Plan.md 121, "Proben")', () => {
     it('is left standing by the write of a choice per event, even when old', () => {
         const old = { ...rehearsal, at: '2020-01-01T10:00:00Z' };
         expect(planControlWrite([{ id: 1, value: text(old) }], doc, now)).toEqual({ updateId: null, removeIds: [] });
+    });
+});
+
+describe('the rehearsal catalog (Plan.md 125 A)', () => {
+    const catalog = { kind: 'rehearsalCatalog', screens: [{ id: 's1', name: 'Probenraum' }], playlists: [{ id: 'p1', name: 'Probe' }], at: '2026-11-23T10:00:00Z' };
+    const text = (v: unknown): string => JSON.stringify(v);
+    const rehearsalValue = { kind: 'rehearsal', songId: 7, arrangementId: 3, section: 1, at: '2026-11-11T10:00:00Z' };
+    const now = Date.parse('2026-11-24T12:00:00Z');
+
+    it('reads a JSON string and an object', () => {
+        expect(readRehearsalCatalog(text(catalog))).toEqual(catalog);
+        expect(readRehearsalCatalog(catalog)).toEqual(catalog);
+    });
+    it('reads empty lists, and leaves out entries without an id', () => {
+        expect(readRehearsalCatalog({ ...catalog, screens: [], playlists: [] })).toEqual({ ...catalog, screens: [], playlists: [] });
+        expect(readRehearsalCatalog({ ...catalog, screens: [{ id: 's1' }, { name: 'x' }, 5, null, { id: '' }] })?.screens).toEqual([{ id: 's1', name: '' }]);
+    });
+    it('gives null for anything unusable and never throws', () => {
+        expect(readRehearsalCatalog('no json')).toBeNull();
+        expect(readRehearsalCatalog(null)).toBeNull();
+        expect(readRehearsalCatalog({ ...catalog, kind: 'rehearsal' })).toBeNull();
+        expect(readRehearsalCatalog({ ...catalog, screens: 'x' })).toBeNull();
+        expect(readRehearsalCatalog({ ...catalog, playlists: undefined })).toBeNull();
+        expect(readRehearsalCatalog({ ...catalog, at: 'gestern' })).toBeNull();
+    });
+    it('is skipped by the readers of the other values of steuerung', () => {
+        expect(readControl(text(catalog))).toBeNull();
+        expect(readRehearsal(text(catalog))).toBeNull();
+        expect(controlsByEvent([{ value: text(catalog) }])).toEqual({});
+        expect(latestRehearsal([{ value: text(catalog) }])).toBeNull();
+        expect(readRehearsalCatalog(text(doc))).toBeNull();
+        expect(readRehearsalCatalog(text(rehearsalValue))).toBeNull();
+    });
+    it('is left standing by the writes of the other values, even when old', () => {
+        const old = { ...catalog, at: '2020-01-01T10:00:00Z' };
+        expect(planControlWrite([{ id: 1, value: text(old) }], doc, now)).toEqual({ updateId: null, removeIds: [] });
+        expect(planRehearsalWrite([{ id: 1, value: text(old) }], now)).toEqual({ updateId: null, removeIds: [] });
+    });
+    it('plans a write: creates, changes the latest, drops doubles and touches nothing else', () => {
+        expect(planRehearsalCatalogWrite([{ id: 1, value: text(doc) }, { id: 2, value: text(rehearsalValue) }])).toEqual({ updateId: null, removeIds: [] });
+        const values = [
+            { id: 1, value: text(catalog) },
+            { id: 2, value: text({ ...catalog, at: '2026-11-23T10:05:00Z' }) },
+            { id: 3, value: text(doc) },
+            { id: 4, value: 'x' },
+        ];
+        expect(planRehearsalCatalogWrite(values)).toEqual({ updateId: 2, removeIds: [1] });
+        expect(latestRehearsalCatalog(values)?.at).toBe('2026-11-23T10:05:00Z');
+        expect(latestRehearsalCatalog([{ value: text(doc) }])).toBeNull();
     });
 });
 

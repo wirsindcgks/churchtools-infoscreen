@@ -113,6 +113,7 @@ async function compute(): Promise<boolean> {
         agendaCalendarIds: grantableCalendars(agendaCalendarIds, publicIds, released),
         agendaServiceGroupIds: grantableServiceGroups(agendaServiceGroupIds, serviceGroups),
         songsheet,
+        rehearsalScreens: (settings?.rehearsalScreenIds?.length ?? 0) > 0,
         screenCalendarIds: released,
         peopleGroupIds: releasedPeople,
     });
