@@ -70,6 +70,9 @@ test.describe('between designer and phone page on a desktop', () => {
         await expect(page.getByTestId('control-area-rehearsal')).toHaveCount(0);
         await expect(button).toContainText('Probe');
         await expect(button).toHaveAttribute('aria-expanded', 'false');
+        await expect(page.getByTestId('control-screen')).toBeVisible();
+        await page.getByTestId('control-screen').locator('summary').click();
+        await expect(page.getByTestId('control-screen-none')).toBeVisible();
 
         await button.click();
         await page.locator('.control').click({ position: { x: 5, y: 600 } });

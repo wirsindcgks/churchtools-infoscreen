@@ -12,10 +12,11 @@ import { t } from '../i18n/designer';
 import { loadArrangementSheet } from '../player/data';
 import type { ScreenRepository } from '../store/screen-repository';
 import Icon from '../designer/Icon.vue';
+import ControlScreen from './ControlScreen.vue';
 import ControlSong from './ControlSong.vue';
 import { arrangementLabels } from './arrangement-labels';
 
-const props = defineProps<{ repository: ScreenRepository; author: string }>();
+const props = defineProps<{ repository: ScreenRepository; author: string; timeZone: string }>();
 
 const POLL_MS = 2500;
 const SEARCH_MS = 300;
@@ -224,6 +225,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="rehearsal" data-testid="control-rehearsal">
+        <ControlScreen :repository="repository" :author="author" :time-zone="timeZone" />
         <p v-if="failure" class="warn" role="alert">{{ failure }}</p>
         <p v-if="notSaved" class="warn" role="alert">{{ t.control.notSaved }}</p>
         <template v-if="showSearch">

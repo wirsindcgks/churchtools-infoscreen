@@ -315,7 +315,7 @@ onBeforeUnmount(() => {
         <p v-if="loading" class="note">{{ t.control.loading }}</p>
         <p v-else-if="unavailable" class="note">{{ t.control.unavailable }}</p>
         <template v-else>
-            <ControlRehearsal v-if="area === 'rehearsal' && rehearsalRepository" :repository="rehearsalRepository" :author="author" />
+            <ControlRehearsal v-if="area === 'rehearsal' && rehearsalRepository" :repository="rehearsalRepository" :author="author" :time-zone="timeZone" />
             <template v-else-if="area === 'service'">
                 <p v-if="failure && !event" class="note" role="alert">{{ failure }}</p>
                 <p v-else-if="!events.length" class="note">{{ t.control.noEvents }}</p>

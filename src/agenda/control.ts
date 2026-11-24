@@ -245,6 +245,40 @@ export function latestOverride(values: readonly { value: string }[], screenId: s
     return latest;
 }
 
+/** By screen, the override with the latest `at` (an ended one counts); values that are no override are skipped. */
+export function overridesByScreen(values: readonly { value: string }[]): Record<string, OverrideDoc> {
+    const latest: Record<string, OverrideDoc> = {};
+    for (const { value } of values) {
+        const doc = readOverride(value);
+        if (!doc) continue;
+        const before = latest[doc.screenId];
+        if (!before || Date.parse(doc.at) > Date.parse(before.at)) latest[doc.screenId] = doc;
+    }
+    return latest;
+}
+
+/** An override of another screen that ended, or whose time ran out more than this ago, is cleaned up with the next write. */
+export const OVERRIDE_STALE_MS = 60 * 60 * 1000;
+
+/**
+ * What a write of an override for `screenId` does: of the readable overrides of the same screen the latest `at` is changed (none means
+ * create), the rest go – one value per screen. That also ends the limit of Plan.md 125 B: a phone with a fast clock wrote an `at` that
+ * hid all later values as the latest; the next write now replaces exactly that value. Overrides of other screens go when they ended or
+ * ran out more than an hour ago; running ones stay. Everything else (song choices, rehearsal choice, catalog, unreadable) stays.
+ */
+export function planOverrideWrite(values: readonly { id: number; value: string }[], screenId: string, nowMs: number): { updateId: number | null; removeIds: number[] } {
+    const same: { id: number; at: number }[] = [];
+    const removeIds: number[] = [];
+    for (const { id, value } of values) {
+        const read = readOverride(value);
+        if (!read) continue;
+        if (read.screenId === screenId) same.push({ id, at: Date.parse(read.at) });
+        else if (read.ended || Date.parse(read.until) < nowMs - OVERRIDE_STALE_MS) removeIds.push(id);
+    }
+    same.sort((a, b) => b.at - a.at);
+    return { updateId: same[0]?.id ?? null, removeIds: [...removeIds, ...same.slice(1).map((v) => v.id)] };
+}
+
 /** What a write of a rehearsal choice does: the latest rehearsal value is changed (none means create), further ones go. Nothing else is touched. */
 export function planRehearsalWrite(values: readonly { id: number; value: string }[], nowMs: number): { updateId: number | null; removeIds: number[] } {
     void nowMs;
