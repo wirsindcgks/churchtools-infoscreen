@@ -475,4 +475,11 @@ describe('rehearsalPlaylists (Plan.md 125 A)', () => {
     it('finds none without slides', () => {
         expect(rehearsalPlaylists([{ id: 'a', slideIds: ['s-rehearsal'] }], [])).toEqual([]);
     });
+    it('finds a presentation that embeds one (Plan.md 120)', () => {
+        const playlists = [
+            { id: 'outer', slideIds: ['s-text'], embeds: [{ playlistId: 'c', position: 1 }] },
+            { id: 'c', slideIds: ['s-rehearsal'] },
+        ];
+        expect(rehearsalPlaylists(playlists, slides).map((p) => p.id)).toEqual(['outer', 'c']);
+    });
 });

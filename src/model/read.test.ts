@@ -16,7 +16,7 @@ import {
     withOwnAddresses,
 } from './read';
 import { DEFAULT_FONT } from '../player/fonts';
-import { Block, isVideo, MediaDoc, PlaylistDoc, SCHEMA_VERSION, SettingsDoc, THEME_ID, type SlideDoc } from './schema';
+import { Block, isVideo, MediaDoc, PlaylistDoc, PlaylistDraftDoc, SCHEMA_VERSION, SettingsDoc, THEME_ID, type SlideDoc } from './schema';
 import { makePlaylist, makeSlide, makeScreen, makeTemplate, templateBlock, textBlock } from './testing';
 
 describe('readSlide – tolerant towards newer data', () => {
@@ -696,6 +696,20 @@ describe('the rehearsal release of the settings (schema 1.68, Plan.md 125 A)', (
         expect(v.parse(SettingsDoc, settings).rehearsalPlaylistIds).toBeUndefined();
         expect(v.safeParse(SettingsDoc, { ...settings, rehearsalScreenIds: [3] }).success).toBe(false);
         expect(v.safeParse(SettingsDoc, { ...settings, rehearsalPlaylistIds: Array.from({ length: 51 }, (_, i) => `p${i}`) }).success).toBe(false);
+    });
+});
+
+describe('embedded presentations (schema 1.69, Plan.md 120)', () => {
+    it('reads them on the playlist and its draft, and may be missing', () => {
+        expect(SCHEMA_VERSION.minor).toBeGreaterThanOrEqual(69);
+        const embeds = [{ playlistId: 'main', position: 0 }];
+        expect(v.parse(PlaylistDoc, makePlaylist({ embeds })).embeds).toEqual(embeds);
+        expect(v.parse(PlaylistDoc, makePlaylist({ schema: { major: 1, minor: 68 } })).embeds).toBeUndefined();
+        expect(v.safeParse(PlaylistDoc, makePlaylist({ embeds: [{ playlistId: 'main', position: -1 }] })).success).toBe(false);
+        expect(v.safeParse(PlaylistDoc, makePlaylist({ embeds: [{ playlistId: '', position: 0 }] })).success).toBe(false);
+        const draft = { schema: { ...SCHEMA_VERSION }, kind: 'playlist-draft', id: 'p', name: 'P', slideIds: [], revision: 1, updatedBy: 'Anna', updatedAt: '2026-11-24T10:00:00Z' };
+        expect(v.parse(PlaylistDraftDoc, { ...draft, embeds }).embeds).toEqual(embeds);
+        expect(v.parse(PlaylistDraftDoc, draft).embeds).toBeUndefined();
     });
 });
 

@@ -4,7 +4,7 @@
  * this is what the playlists page shows as "edited" and what a screen can report as the state it shows.
  */
 export function playlistStand(
-    playlist: { updatedAt?: string; slideIds: string[] },
+    playlist: { updatedAt?: string; slideIds: readonly string[] },
     slides: Iterable<{ id: string; updatedAt?: string }>,
 ): string | null {
     const own = new Set(playlist.slideIds);
