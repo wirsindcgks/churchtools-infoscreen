@@ -4,6 +4,21 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.68.0] – 2026-11-24
+
+### Neu
+
+- **Proben vom Handy auf einen Bildschirm holen** (Plan.md 125). Musiker wählen auf der Handyseite „Steuerung“ unter
+  „Probe“ → „Bildschirm“ einen Bildschirm, eine Probenpräsentation und die Dauer (1 bis 3 Stunden); der Bildschirm zeigt
+  sie statt der Präsentation aus dem Zeitplan. „Verlängern“ setzt die Dauer neu, „Probe beenden“ schaltet sofort zurück.
+  Nach der Dauer, spätestens nach 4 Stunden, gilt wieder der Zeitplan; beginnt vorher eine Terminregel, endet die Probe von
+  selbst – der Gottesdienst gewinnt.
+- **Freigabe auf der Seite „Musiker“** (Plan.md 125). Administratoren wählen dort, welche Bildschirme und welche
+  Präsentationen mit Probenblatt die Musiker wählen dürfen; ein Hinweis nennt Probenpräsentationen, die noch nicht
+  freigegeben sind. Danach „Rechte aktualisieren“, damit Fernseher und Gestalter die Kategorie „Steuerung“ lesen.
+- **Die Kachel zeigt die Probe** (Plan.md 125). Auf der Startseite steht bei einem Bildschirm mit laufender Probe
+  „Probe: <Präsentation> bis 19:30, von <Name>“ – so lange, wie der Fernseher sie zeigt.
+
 ## [0.67.0] – 2026-11-23
 
 Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für den Hinweis, dass der Editor Änderungen aus ChurchTools erst nach
@@ -2120,3 +2135,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.65.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.65.1
 [0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
+[0.68.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.68.0
