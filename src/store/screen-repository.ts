@@ -16,7 +16,7 @@
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { appointmentServiceIds } from '../appointments/services';
 import { httpStatus } from '../ct/client';
-import { CONTROL_CATEGORY, controlsByEvent, latestOverride, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, type ControlDoc, type OverrideDoc, type RehearsalCatalogDoc, type RehearsalDoc } from '../agenda/control';
+import { CONTROL_CATEGORY, controlsByEvent, latestOverride, overridesByScreen, planOverrideWrite, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, type ControlDoc, type OverrideDoc, type RehearsalCatalogDoc, type RehearsalDoc } from '../agenda/control';
 import { rehearsalPlaylists } from '../agenda/songsheet';
 import { heartbeatTime, readHeartbeat, type HeartbeatDoc } from '../model/heartbeat';
 import {
@@ -492,6 +492,42 @@ export class ScreenRepository {
         } catch (error) {
             if (httpStatus(error) === 403) return null;
             throw error;
+        }
+    }
+
+    /**
+     * The catalog and the latest override per screen (Plan.md 125 C), from one request; both empty where the category is missing or
+     * unreadable (`403`).
+     */
+    async readRehearsalScreens(): Promise<{ catalog: RehearsalCatalogDoc | null; overrides: Record<string, OverrideDoc> }> {
+        try {
+            const categoryId = await this.controlCategoryId();
+            if (categoryId === null) return { catalog: null, overrides: {} };
+            const values = await this.kv.listValues(categoryId);
+            return { catalog: latestRehearsalCatalog(values), overrides: overridesByScreen(values) };
+        } catch (error) {
+            if (httpStatus(error) === 403) return { catalog: null, overrides: {} };
+            throw error;
+        }
+    }
+
+    /**
+     * Writes the override of a screen: changes the latest value of that screen or creates it, doubles and old overrides of other screens
+     * go. Every other value of `steuerung` stays. Throws where the category is missing; a failed cleanup is only logged.
+     */
+    async writeOverride(doc: OverrideDoc): Promise<void> {
+        const categoryId = await this.controlCategoryId();
+        if (categoryId === null) throw new Error(tr.controlUnavailable);
+        const plan = planOverrideWrite(await this.kv.listValues(categoryId), doc.screenId, Date.now());
+        const text = JSON.stringify(doc);
+        if (plan.updateId !== null) await this.kv.updateValue(categoryId, plan.updateId, text);
+        else await this.kv.createValue(categoryId, text);
+        for (const id of plan.removeIds) {
+            try {
+                await this.kv.deleteValue(categoryId, id);
+            } catch (error) {
+                console.warn('Ein altes Überschreiben konnte nicht entfernt werden:', error);
+            }
         }
     }
 

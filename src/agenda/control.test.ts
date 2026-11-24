@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { controlsByEvent, latestOverride, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, readControl, readOverride, readRehearsal, readRehearsalCatalog, stepPart, stepSection } from './control';
+import { controlsByEvent, latestOverride, overridesByScreen, planOverrideWrite, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, readControl, readOverride, readRehearsal, readRehearsalCatalog, stepPart, stepSection } from './control';
 import type { AgendaEvent, LiveItem } from './live';
 import type { SongSheet } from './songsheet';
 
@@ -232,5 +232,51 @@ describe('readOverride and latestOverride (Plan.md 125 B)', () => {
         expect(latestOverride([v(o), v(ended)], 's1')?.ended).toBe(true);
         expect(latestOverride([v({ ...o, screenId: 's2', at: '2026-11-11T12:00:00Z' }), v(o)], 's1')?.screenId).toBe('s1');
         expect(latestOverride([v({ kind: 'rehearsal', songId: 1, arrangementId: 0, section: 0, at: o.at }), { value: 'x' }], 's1')).toBeNull();
+    });
+});
+
+describe('planOverrideWrite and overridesByScreen (Plan.md 125 C)', () => {
+    const now = Date.parse('2026-11-11T12:00:00Z');
+    const ov = (screenId: string, at: string, until: string, extra: object = {}) => JSON.stringify({ kind: 'override', screenId, playlistId: 'p1', until, at, ...extra });
+    const running = (screenId: string) => ov(screenId, '2026-11-11T11:00:00Z', '2026-11-11T13:00:00Z');
+
+    it('changes the latest of the same screen and removes the doubles, one with `at` in the future included', () => {
+        const values = [
+            { id: 1, value: ov('s1', '2026-11-11T10:00:00Z', '2026-11-11T11:00:00Z') },
+            { id: 2, value: ov('s1', '2026-11-11T11:30:00Z', '2026-11-11T13:00:00Z') },
+            { id: 3, value: ov('s1', '2026-11-11T15:00:00Z', '2026-11-11T16:00:00Z') },
+        ];
+        expect(planOverrideWrite(values, 's1', now)).toEqual({ updateId: 3, removeIds: [2, 1] });
+    });
+    it('creates where the screen has none', () => {
+        expect(planOverrideWrite([{ id: 1, value: running('s2') }], 's1', now)).toEqual({ updateId: null, removeIds: [] });
+    });
+    it('removes ended and long expired overrides of other screens, keeps running and just expired ones', () => {
+        const values = [
+            { id: 1, value: JSON.stringify({ kind: 'override', screenId: 's2', at: '2026-11-11T11:50:00Z', ended: true }) },
+            { id: 2, value: ov('s3', '2026-11-11T08:00:00Z', '2026-11-11T10:30:00Z') },
+            { id: 3, value: ov('s4', '2026-11-11T10:00:00Z', '2026-11-11T11:30:00Z') },
+            { id: 4, value: running('s5') },
+        ];
+        expect(planOverrideWrite(values, 's1', now)).toEqual({ updateId: null, removeIds: [1, 2] });
+    });
+    it('leaves the other values alone', () => {
+        const values = [
+            { id: 1, value: JSON.stringify({ kind: 'rehearsal', songId: 1, arrangementId: 0, section: 0, at: '2020-01-01T10:00:00Z' }) },
+            { id: 2, value: JSON.stringify({ kind: 'rehearsalCatalog', screens: [], playlists: [], at: '2020-01-01T10:00:00Z' }) },
+            { id: 3, value: JSON.stringify({ eventId: 5, itemIndex: 1, section: 0, at: '2020-01-01T10:00:00Z' }) },
+            { id: 4, value: 'no json' },
+        ];
+        expect(planOverrideWrite(values, 's1', now)).toEqual({ updateId: null, removeIds: [] });
+    });
+    it('overridesByScreen takes the latest per screen, the ended included', () => {
+        const by = overridesByScreen([
+            { value: ov('s1', '2026-11-11T10:00:00Z', '2026-11-11T11:00:00Z') },
+            { value: JSON.stringify({ kind: 'override', screenId: 's1', at: '2026-11-11T11:00:00Z', ended: true }) },
+            { value: running('s2') },
+            { value: 'x' },
+        ]);
+        expect(Object.keys(by).sort()).toEqual(['s1', 's2']);
+        expect(by.s1!.ended).toBe(true);
     });
 });

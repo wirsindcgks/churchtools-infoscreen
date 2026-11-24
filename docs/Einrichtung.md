@@ -279,8 +279,12 @@ So richtest du es ein:
 für eine Probe überschreiben dürfen, und unter **„Präsentationen für Proben"** die Präsentationen, die sie dafür wählen dürfen. Zur Wahl
 stehen nur Präsentationen mit einem Liedblatt der Quelle „Probe"; eine, die noch nicht freigegeben ist, nennt die Seite in einem Hinweis.
 Die Musiker sehen weder Bildschirme noch Präsentationen – beim „Speichern" schreibt die Seite deshalb eine Liste mit den Namen in die
-Kategorie „Steuerung". Danach auf „Rechte aktualisieren" tippen (siehe oben), damit Fernseher und Gestalter diese Kategorie lesen. Bisher
-nur die Freigabe: Die Handyseite nutzt diese Auswahl erst mit einem späteren Schritt.
+Kategorie „Steuerung". Danach auf „Rechte aktualisieren" tippen (siehe oben), damit Fernseher und Gestalter diese Kategorie lesen.
+
+Auf der Handyseite wählen die Musiker unter **„Probe" → „Bildschirm"** einen freigegebenen Bildschirm, eine freigegebene Präsentation und die
+Dauer (1 bis 3 Stunden) und tippen auf **„Auf Bildschirm zeigen"**. Läuft dort schon eine Probe, steht da, was bis wann und von wem läuft; mit
+**„Verlängern"** beginnt die gewählte Dauer neu, mit **„Probe beenden"** zeigt der Bildschirm sofort wieder, was der Zeitplan vorsieht. Das
+tut er auch, wenn die Dauer abläuft. Beginnt vorher eine Terminregel des Zeitplans, endet die Probe von selbst – der Gottesdienst gewinnt.
 
 In ChurchTools siehst du das Ergebnis an der Gruppe „Infoscreen-Musiker" unter **Einstellungen → Automatische Mitgliedschaft**: Filter
 „Mitgliedschaft in einer Gruppe" mit deinen Bandgruppen, dazu „Person ist nicht archiviert" und „Person ist nicht verstorben".

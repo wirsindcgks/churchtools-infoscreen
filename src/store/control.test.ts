@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ControlDoc, RehearsalCatalogDoc, RehearsalDoc } from '../agenda/control';
+import type { ControlDoc, OverrideDoc, RehearsalCatalogDoc, RehearsalDoc } from '../agenda/control';
 import { MemoryKv } from './memory-kv';
 import { ScreenRepository } from './screen-repository';
 
@@ -89,5 +89,31 @@ describe('writeRehearsalCatalog (Plan.md 125 A)', () => {
         expect(await kv.listValues(id)).toHaveLength(1);
         const big = Array.from({ length: 100 }, (_, i) => ({ id: `s${i}`, name: 'x'.repeat(100) }));
         await expect(repo.writeRehearsalCatalog(catalog('2026-11-23T10:03:00Z', big))).rejects.toThrow();
+    });
+});
+
+describe('writeOverride and readRehearsalScreens (Plan.md 125 C)', () => {
+    const override = (screenId: string, at: string, until: string): OverrideDoc => ({ kind: 'override', screenId, playlistId: 'p1', until, at });
+
+    it('fails without the category and reads nothing', async () => {
+        const repo = new ScreenRepository(new MemoryKv());
+        await expect(repo.writeOverride(override('s1', '2026-11-11T10:00:00Z', '2026-11-11T12:00:00Z'))).rejects.toThrow();
+        expect(await repo.readRehearsalScreens()).toEqual({ catalog: null, overrides: {} });
+    });
+
+    it('writes one value per screen and leaves the other values alone', async () => {
+        const kv = new MemoryKv();
+        const repo = new ScreenRepository(kv);
+        const id = (await repo.ensureControlCategory())!;
+        await repo.writeRehearsalCatalog({ kind: 'rehearsalCatalog', screens: [{ id: 's1', name: 'Probenraum' }], playlists: [], at: '2026-11-11T09:00:00Z' });
+        await repo.writeRehearsal({ kind: 'rehearsal', songId: 7, arrangementId: 3, section: 0, at: '2026-11-11T09:30:00Z' });
+        const soon = new Date(Date.now() + 3_600_000).toISOString();
+        await repo.writeOverride(override('s1', new Date().toISOString(), soon));
+        await repo.writeOverride(override('s1', new Date(Date.now() + 1000).toISOString(), soon));
+        expect(await kv.listValues(id)).toHaveLength(3);
+        const read = await repo.readRehearsalScreens();
+        expect(read.catalog?.screens[0]!.name).toBe('Probenraum');
+        expect(Object.keys(read.overrides)).toEqual(['s1']);
+        expect((await repo.readRehearsal())!.songId).toBe(7);
     });
 });
