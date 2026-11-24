@@ -842,6 +842,21 @@ describe('ScreenRepository', () => {
             expect((await repo.loadScreen('foyer-links')).allowedServiceIds).toEqual([3, 7]);
         });
 
+        it('adds the released rehearsal presentations of a released screen (Plan.md 125 B)', async () => {
+            const base = bundle({ playlists: [makePlaylist({ slideIds: ['slide-1'] }), makePlaylist({ id: 'probe', slideIds: ['slide-2'] })] });
+            await repo.saveScreen(base, { ...save, expectedRevision: null });
+            const none = await repo.loadScreen('foyer-links');
+            expect(none.rehearsalScreenIds).toBeUndefined();
+            expect(none.playlists.map((p) => p.id)).toEqual(['playlist-1']);
+            await repo.saveSettings({ schema: { major: 1, minor: 63 }, rehearsalScreenIds: ['screen-1'], rehearsalPlaylistIds: ['probe', 'gone'] });
+            const loaded = await repo.loadScreen('foyer-links');
+            expect(loaded.rehearsalScreenIds).toEqual(['screen-1']);
+            expect(loaded.rehearsalPlaylistIds).toEqual(['probe']);
+            expect(loaded.playlists.map((p) => p.id)).toEqual(['playlist-1', 'probe']);
+            expect(loaded.slides.map((s) => s.id).sort()).toEqual(['slide-1', 'slide-2']);
+            expect(loaded.issues).toEqual([]);
+        });
+
         it('is none when the settings cannot be read – the screen still loads', async () => {
             await repo.saveScreen(bundle(), { ...save, expectedRevision: null });
             await repo.saveSettings({ schema: { major: 1, minor: 20 }, allowedServiceIds: [3] });

@@ -159,6 +159,7 @@ function fakeData(overrides: Partial<PlayerData> = {}): PlayerData {
         agendaPosition: vi.fn(async () => null),
         controls: vi.fn(async () => ({})),
         rehearsal: vi.fn(async () => null),
+        override: vi.fn(async () => null),
         rehearsalItem: vi.fn(async () => null),
         rooms: vi.fn(async () => []),
         reportAlive: vi.fn(async () => {}),
@@ -1112,6 +1113,46 @@ describe('the sign of life (Plan.md 59)', () => {
     afterEach(() => {
         vi.useRealTimers();
         vi.restoreAllMocks();
+    });
+
+    describe('override by the musicians (Plan.md 125 B)', () => {
+        const releasedScreen = (): LoadedScreen => {
+            const base = loaded();
+            const probe = { ...base.playlists[0]!, id: 'probe', name: 'Probe' };
+            return { ...base, playlists: [...base.playlists, probe], rehearsalScreenIds: [base.screen.id], rehearsalPlaylistIds: ['probe'] };
+        };
+        const choice = () => ({
+            kind: 'override' as const,
+            screenId: 'demo-screen',
+            playlistId: 'probe',
+            at: new Date(NOW.getTime() - 60_000).toISOString(),
+            until: new Date(NOW.getTime() + 3_600_000).toISOString(),
+        });
+
+        it('reads it in the quick check for a released screen and reports the rehearsal presentation', async () => {
+            vi.spyOn(Math, 'random').mockReturnValue(0.5);
+            const reportAlive = vi.fn<PlayerData['reportAlive']>(async () => {});
+            const override = vi.fn<PlayerData['override']>(async () => choice());
+            const player = createPlayer('demo', fakeData({ reportAlive, override, loadScreen: vi.fn(async () => releasedScreen()) }), fakeDeps());
+            await player.start();
+            expect(reportAlive.mock.calls[0]![0].playlistId).toBe('demo-playlist');
+            await vi.advanceTimersByTimeAsync(INTERVALS.quickCheckMs * 1.5);
+            expect(override).toHaveBeenCalledWith('demo-screen');
+            expect(player.state.override?.playlistId).toBe('probe');
+            await vi.advanceTimersByTimeAsync(5_000);
+            expect(reportAlive.mock.calls.at(-1)![0].playlistId).toBe('probe');
+            player.stop();
+        });
+
+        it('never asks for a screen that is not released', async () => {
+            const override = vi.fn<PlayerData['override']>(async () => choice());
+            const player = createPlayer('demo', fakeData({ override }), fakeDeps());
+            await player.start();
+            await vi.advanceTimersByTimeAsync(INTERVALS.quickCheckMs * 3);
+            expect(override).not.toHaveBeenCalled();
+            expect(player.state.override).toBeNull();
+            player.stop();
+        });
     });
 
     const forbidden = () => Object.assign(new Error('Request failed with status code 403'), { response: { status: 403 } });
