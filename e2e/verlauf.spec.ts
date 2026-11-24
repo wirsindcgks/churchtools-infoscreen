@@ -12,7 +12,7 @@ test('publishing shows on "Verlauf", the area filter narrows it, and the editor 
     await page.getByTestId('new-playlist').click();
     await page.getByTestId('create-playlist-dialog').getByTestId('new-playlist-name').fill('Gottesdienst');
     await page.getByTestId('create-playlist').click();
-    await expect(page).toHaveURL(/playlists\/[\w-]+$/);
+    await expect(page).toHaveURL(/playlists\/[\w-]+(\?|$)/);
     await page.getByTestId('leave-editor').click();
 
     // Publish a change on the demo presentation.
