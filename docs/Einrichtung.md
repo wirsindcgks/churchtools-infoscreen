@@ -394,8 +394,12 @@ Player deshalb in einem **Inkognito-Fenster** oder eigenen Browserprofil öffnen
 3. Im Designer **Einstellungen → Gruppen und Rechte → „Rechte aktualisieren"** – neue Fassungen können neue Rechte
    brauchen.
 
-Die Fernseher übernehmen die neue Fassung spätestens beim nächtlichen Neuladen. Welche Fassung installiert ist, steht
-unten auf der Übersicht **Einstellungen**.
+Die Fernseher fragen alle 15 Minuten nach einer neuen Fassung und laden sich dann selbst neu – nach einem Update
+zeigen sie die neue Fassung also nach spätestens einer Viertelstunde. **Während einer Veranstaltung warten sie damit:**
+Zeigt ein Bildschirm einen „Ablauf“ oder ein „Liedblatt“, lädt er erst eine Stunde nach dem Ende der Veranstaltung neu,
+ebenso nach dem Ende einer Probe, die Musiker vom Handy gewählt haben. Bis dahin steht auf der Bildschirmkarte, dass
+der Player noch eine ältere Fassung zeigt. Spätestens das nächtliche Neuladen bringt die neue Fassung. Welche Fassung
+installiert ist, steht unten auf der Übersicht **Einstellungen**.
 
 **Löschen und neu hochladen ist kein Update** – eine neu installierte Extension beginnt leer.
 

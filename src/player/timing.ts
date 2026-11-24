@@ -37,6 +37,10 @@ export const INTERVALS = {
     newerDataReloadPauseMs: 10 * 60_000,
     /** The nightly reload waits this long when the page would not load (docs/Ausfall.md). */
     nightlyRetryMs: 60 * 60_000,
+    /** How often the player asks whether a newer version is installed (Plan.md 117): the TV shows it within a quarter of an hour. */
+    updateCheckMs: 15 * 60_000,
+    /** A newer version waits this long between two looks whether a service or a rehearsal is over (Plan.md 117). */
+    updateRetryMs: 60_000,
 } as const;
 
 /** Spreads an interval by ±`spread` so that many devices drift apart. */
