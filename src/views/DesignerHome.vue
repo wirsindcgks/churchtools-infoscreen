@@ -5,7 +5,8 @@
  * on the left, search, tiles with the first slide of each screen. Below
  * 48rem the filters become a row to swipe and the tiles one or two columns.
  */
-import { computed, onMounted, ref, shallowRef } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, shallowRef } from 'vue';
+import type { OverrideDoc } from '../agenda/control';
 import { applyCustomFonts } from '../player/custom-fonts';
 import { useRoute, useRouter } from 'vue-router';
 import { currentPerson, displayName, NotAuthenticatedError } from '../ct/client';
@@ -103,6 +104,33 @@ const aliveOf = (o: ScreenOverview) => {
     return aliveState(heartbeat, now.value, context.timeZone, published);
 };
 
+/** The latest override per screen id by the musicians (Plan.md 125 D); read only while a screen is released for rehearsals. */
+const overrides = ref<Record<string, OverrideDoc>>({});
+const OVERRIDE_REFRESH_MS = 60_000;
+
+/** A failure keeps the last state: the tile is a hint, not the source of truth. */
+async function refreshOverrides(): Promise<void> {
+    if (!repository.value) return;
+    const call = ++overrideCall;
+    if (!overviews.value.some((o) => o.rehearsalPlaylistIds?.length)) {
+        overrides.value = {};
+        return;
+    }
+    const read = await repository.value
+        .readRehearsalScreens()
+        .then((r) => r.overrides)
+        .catch(() => null);
+    // A slow read that a newer one overtook must not overwrite it.
+    if (read && call === overrideCall) overrides.value = read;
+}
+let overrideCall = 0;
+const overrideTimer = setInterval(() => void refreshOverrides(), OVERRIDE_REFRESH_MS);
+onBeforeUnmount(() => clearInterval(overrideTimer));
+
+/** What the player of this screen weighs: its override and the release from the settings, as `listScreenOverviews` read it. */
+const overrideOf = (o: ScreenOverview) =>
+    o.rehearsalPlaylistIds ? { doc: overrides.value[o.screen.id], release: { screenIds: [o.screen.id], playlistIds: o.rehearsalPlaylistIds } } : undefined;
+
 // The tiles are the player's components: they need the same live data as the editor preview –
 // and the appointments of the rule calendars, to know which playlist runs now (Plan.md 17).
 const { context } = usePreview(
@@ -136,6 +164,7 @@ async function refresh(): Promise<void> {
         refreshHeartbeats(),
     ]);
     overviews.value = list;
+    await refreshOverrides();
     setScreenCounts(list.map((o) => o.screen));
     theme.value = stored;
     void applyCustomFonts(stored);
@@ -283,7 +312,7 @@ async function remove(overview: ScreenOverview): Promise<void> {
                         :key="o.screen.id"
                         :overview="o"
                         :admin="screensAdmin"
-                        :running="runningNow(o.screen, context)"
+                        :running="runningNow(o.screen, context, overrideOf(o))"
                         :alive="aliveOf(o)"
                         @remove="remove(o)"
                         @settings="configuring = { screen: o.screen, mode: 'settings' }"

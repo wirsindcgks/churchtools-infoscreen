@@ -27,7 +27,8 @@ besteht aus **Bausteinen**. Ein **Zeitplan** legt fest, wann welche Präsentatio
 ## Die Bildschirme
 
 Jeder Fernseher ist eine Kachel mit dem, was er gerade zeigt, und der Angabe, ob er **„online"** ist. Ein Klick
-öffnet die laufende Präsentation im Editor; Adresse und Zeitplan stecken im Menü „…".
+öffnet die laufende Präsentation im Editor; Adresse und Zeitplan stecken im Menü „…". Haben die Musiker eine Probe vom Handy
+auf den Bildschirm geholt, steht dort **„Probe: <Präsentation> bis 19:30, von <Name>"** – so lange, wie der Fernseher sie zeigt.
 
 Hat ein Bildschirm Touch-Bedienung oder eine Maus, lässt er sich unter „…“ → „Einstellungen“ → „Bedienung“
 **interaktiv** schalten: Tippen oder Klicken links blättert zurück, rechts vor. Nach der Wartezeit (Vorgabe 30

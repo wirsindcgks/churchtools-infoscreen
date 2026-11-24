@@ -5,6 +5,7 @@ import { makeScreen } from '../model/testing';
 import { provideStageContext, type StageContext } from '../player/context';
 import type { ScreenOverview } from '../store/screen-repository';
 import type { AliveState } from './alive';
+import type { Running } from './running';
 import ScreenCard from './ScreenCard.vue';
 
 const overview: ScreenOverview = {
@@ -16,7 +17,7 @@ const overview: ScreenOverview = {
     playlists: {},
 };
 
-function card(alive?: AliveState | null) {
+function card(alive?: AliveState | null, running?: Running, shown: ScreenOverview = overview) {
     const context = reactive<StageContext>({
         now: new Date('2026-10-04T08:00:00Z'),
         timeZone: 'Europe/Berlin',
@@ -28,7 +29,7 @@ function card(alive?: AliveState | null) {
     const Host = defineComponent({
         setup() {
             provideStageContext(context);
-            return () => h(ScreenCard, { overview, alive });
+            return () => h(ScreenCard, { overview: shown, alive, running });
         },
     });
     return mount(Host, { global: { stubs: { RouterLink: true, SlideThumb: true } } });
@@ -95,3 +96,33 @@ describe('ScreenCard – software and state', () => {
     });
 });
 
+
+// An override by the musicians from the phone (Plan.md 125 D).
+describe('ScreenCard – rehearsal', () => {
+    const withProbe: ScreenOverview = {
+        ...overview,
+        playlists: { probe: { id: 'probe', name: 'Bandprobe', firstSlide: null, slideCount: 3, editedAt: null } },
+        rehearsalPlaylistIds: ['probe'],
+    };
+    const override = { kind: 'override' as const, screenId: 'screen-1', playlistId: 'probe', at: '2026-10-04T07:30:00Z', until: '2026-10-04T10:30:00Z' };
+
+    it('says what, until when and by whom', () => {
+        const line = card(null, { ruleIndex: -1, playlistId: 'probe', override: { ...override, by: 'Max' } }, withProbe).get('[data-testid="screen-playlist"]');
+        expect(line.text()).toBe('Probe: Bandprobe bis 12:30, von Max');
+        expect(line.attributes('data-tip')).toContain('3 Folien');
+    });
+
+    it('ends where the player ends: at most four hours after the choice', () => {
+        const long = { ...override, until: '2026-10-04T20:00:00Z' };
+        expect(card(null, { ruleIndex: -1, playlistId: 'probe', override: long }, withProbe).get('[data-testid="screen-rehearsal"]').text()).toBe(
+            'Probe: Bandprobe bis 13:30',
+        );
+    });
+
+    it('leaves the name out where the phone sent none, and has no line without an override', () => {
+        expect(card(null, { ruleIndex: -1, playlistId: 'probe', override }, withProbe).get('[data-testid="screen-rehearsal"]').text()).toBe(
+            'Probe: Bandprobe bis 12:30',
+        );
+        expect(card(null, { ruleIndex: -1, playlistId: 'probe' }, withProbe).find('[data-testid="screen-rehearsal"]').exists()).toBe(false);
+    });
+});

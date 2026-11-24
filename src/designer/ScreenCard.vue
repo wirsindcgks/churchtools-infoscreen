@@ -7,7 +7,9 @@
  */
 import { computed, ref } from 'vue';
 import { t } from '../i18n/designer';
+import { LOCALE } from '../i18n/player';
 import { useStageContext } from '../player/context';
+import { OVERRIDE_MAX_MS } from '../player/schedule';
 import type { ScreenOverview } from '../store/screen-repository';
 import Icon from './Icon.vue';
 import type { AliveState } from './alive';
@@ -38,6 +40,15 @@ const shown = computed(() => {
 });
 /** A rule decides right now – the tile says so, since it shows another playlist than the default. */
 const byRule = computed(() => (props.running?.ruleIndex ?? -1) >= 0);
+/** The musicians override the schedule from the phone (Plan.md 125 D): what, until when, by whom. */
+const rehearsal = computed(() => {
+    const override = props.running?.override;
+    if (!override || !shown.value) return null;
+    // The player's end: never later than the limit after the choice, whatever `until` says.
+    const end = Math.min(Date.parse(override.until), Date.parse(override.at) + OVERRIDE_MAX_MS);
+    const until = new Intl.DateTimeFormat(LOCALE, { timeZone: context.timeZone, hour: '2-digit', minute: '2-digit' }).format(new Date(end));
+    return t.home.card.rehearsal(shown.value.name, until, override.by);
+});
 
 const copied = ref(false);
 
@@ -130,7 +141,12 @@ const scheduleLabel = computed(() => {
         </section>
         <section class="d-tile-section">
             <ul class="d-facts">
+                <li v-if="rehearsal" v-tip="t.home.card.rehearsalTitle(shown?.slideCount ?? 0)" class="by-rule" data-testid="screen-playlist">
+                    <Icon name="list" :size="16" />
+                    <span data-testid="screen-rehearsal">{{ rehearsal }}</span>
+                </li>
                 <li
+                    v-else
                     v-tip="byRule ? t.home.card.byRuleTitle(shown?.slideCount ?? 0) : t.home.card.defaultTitle(shown?.slideCount ?? 0)"
                     :class="{ 'by-rule': byRule }"
                     data-testid="screen-playlist"
