@@ -4,6 +4,18 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.69.0] – 2026-11-24
+
+Danke an Bernhard ([@bwl21](https://github.com/bwl21)) für die Anregung, eine neue Player-Version früher auf die
+Bildschirme zu bringen ([#289](https://github.com/wirsindcgks/churchtools-infoscreen/issues/289)).
+
+### Neu
+
+- **Neue Fassung binnen einer Viertelstunde auf den Bildschirmen** (Plan.md 117). Nach einem Update zeigen die Fernseher
+  die neue Fassung nach spätestens 15 Minuten statt erst nach dem nächtlichen Neuladen. Zeigt ein Bildschirm einen
+  „Ablauf“ oder ein „Liedblatt“, wartet er damit bis eine Stunde nach dem Ende der Veranstaltung, ebenso bis zum Ende
+  einer Probe, die Musiker vom Handy gewählt haben.
+
 ## [0.68.0] – 2026-11-24
 
 ### Neu
@@ -2136,3 +2148,4 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
 [0.68.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.68.0
+[0.69.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.69.0
