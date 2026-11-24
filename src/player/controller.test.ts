@@ -999,6 +999,37 @@ describe('player controller', () => {
         }, 30_000);
     });
 
+    describe('a newer version (Plan.md 117)', () => {
+        it('reloads at once on a screen without a service, and only into a page that loads', async () => {
+            let loads = false;
+            const deps = { ...fakeDeps(), canReload: vi.fn(async () => loads) };
+            const player = createPlayer('demo', fakeData(), deps);
+            await player.start();
+            player.newVersion();
+            await vi.advanceTimersByTimeAsync(0);
+            expect(deps.reload).not.toHaveBeenCalled();
+            loads = true;
+            await vi.advanceTimersByTimeAsync(INTERVALS.updateRetryMs);
+            expect(deps.reload).toHaveBeenCalledTimes(1);
+            player.stop();
+        });
+
+        it('waits until an hour after the service of a shown agenda block', async () => {
+            vi.setSystemTime(NOW);
+            const deps = { ...fakeDeps(), now: () => new Date() };
+            // The service ran from half an hour ago to half an hour from now.
+            const player = createPlayer('demo', fakeData({ loadScreen: async () => withAgenda(), agendaEvents: async () => [agendaEvent(-30 * 60_000)], serverDate: async () => new Date().toUTCString() }), deps);
+            await player.start();
+            player.newVersion();
+            player.newVersion();
+            await vi.advanceTimersByTimeAsync(85 * 60_000);
+            expect(deps.reload).not.toHaveBeenCalled();
+            await vi.advanceTimersByTimeAsync(10 * 60_000);
+            expect(deps.reload).toHaveBeenCalledTimes(1);
+            player.stop();
+        }, 30_000);
+    });
+
     it('names an unknown slug', async () => {
         const player = createPlayer(
             'foyer',
@@ -1153,6 +1184,21 @@ describe('the sign of life (Plan.md 59)', () => {
             expect(player.state.override).toBeNull();
             player.stop();
         });
+
+        it('holds a newer version back until the rehearsal is over (Plan.md 117)', async () => {
+            vi.setSystemTime(NOW);
+            const deps = { ...fakeDeps(), now: () => new Date() };
+            const player = createPlayer('demo', fakeData({ override: async () => choice(), loadScreen: async () => releasedScreen(), serverDate: async () => new Date().toUTCString() }), deps);
+            await player.start();
+            await vi.advanceTimersByTimeAsync(INTERVALS.quickCheckMs * 1.5);
+            player.newVersion();
+            await vi.advanceTimersByTimeAsync(30 * 60_000);
+            expect(deps.reload).not.toHaveBeenCalled();
+            // The choice runs until an hour after NOW.
+            await vi.advanceTimersByTimeAsync(35 * 60_000);
+            expect(deps.reload).toHaveBeenCalledTimes(1);
+            player.stop();
+        }, 30_000);
     });
 
     const forbidden = () => Object.assign(new Error('Request failed with status code 403'), { response: { status: 403 } });

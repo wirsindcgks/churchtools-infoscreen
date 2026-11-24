@@ -16,7 +16,8 @@ import { createPreloader } from '../player/preload';
 import { turnsWithin } from '../player/paging';
 import { useRotation } from '../player/rotation';
 import { activePlaylistId } from '../player/schedule';
-import { keepPlayerStorage, registerPlayerServiceWorker } from '../player/service-worker';
+import { keepPlayerStorage, registerPlayerServiceWorker, watchForNewVersion } from '../player/service-worker';
+import { INTERVALS } from '../player/timing';
 import { fitStage } from '../player/stage';
 import { loadingVars } from '../player/theme';
 import { bandInset, bannerShown } from '../player/banner';
@@ -75,13 +76,18 @@ provideStageContext(context);
 // still leave a restart before that first success with the browser's error page, since nothing is cached
 // yet. The designer never reaches this view, so it never registers. Then there is something worth keeping, too.
 let serviceWorkerRegistered = false;
+let stopVersionWatch: () => void = () => {};
 watch(
     () => state?.phase,
     (phase) => {
         if (phase !== 'running' || serviceWorkerRegistered) return;
         serviceWorkerRegistered = true;
         registerPlayerServiceWorker(import.meta.env.BASE_URL);
-        if (import.meta.env.PROD) void keepPlayerStorage();
+        if (import.meta.env.PROD) {
+            void keepPlayerStorage();
+            // A newer version on the TV within a quarter of an hour, not only after the nightly reload (Plan.md 117).
+            if (player) stopVersionWatch = watchForNewVersion(import.meta.env.BASE_URL, player.newVersion, INTERVALS.updateCheckMs);
+        }
     },
 );
 
@@ -250,6 +256,7 @@ onBeforeUnmount(() => {
     clearTimeout(engagedTimer);
     player?.stop();
     unsubscribe();
+    stopVersionWatch();
 });
 </script>
 

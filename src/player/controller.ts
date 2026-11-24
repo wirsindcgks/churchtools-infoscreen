@@ -22,7 +22,7 @@ import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '.
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
 import { agendaNeeds, agendaRuleBufferMs, agendaRuleCalendars, appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readPeopleGroups, roomNeeds, sheetsNeeded, type PlayerData } from './data';
-import { activePlaylistId, type ScheduleContext } from './schedule';
+import { activeOverride, activePlaylistId, type ScheduleContext } from './schedule';
 import { askServiceWorkerHasPage } from './service-worker';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
 import { tp } from '../i18n/player';
@@ -647,6 +647,40 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         later(wait, controlCycle);
     }
 
+    /**
+     * Whether a reload would disturb now (Plan.md 117): while the musicians override the screen for a rehearsal, or while an event of
+     * the calendars of the shown `agenda` and `songsheet` blocks – or of an agenda rule – is in the window of {@link pollableEvents}.
+     */
+    function holdsUpdate(): boolean {
+        const loaded = state.screen;
+        if (!loaded) return false;
+        const now = deps.now();
+        const agenda = state.agenda ?? { events: [], positions: {} };
+        const release = { screenIds: loaded.rehearsalScreenIds ?? [], playlistIds: loaded.rehearsalPlaylistIds ?? [] };
+        if (activeOverride(loaded.screen, state.override, release, scheduleContext(loaded, now, agenda))) return true;
+        if (!agenda.events.length) return false;
+        const calendars = new Set([...agendaNeeds(shownSlides(loaded, now)), ...agendaRuleCalendars(loaded.screen)]);
+        const due = pollableEvents(
+            agenda.events.filter((e) => calendars.has(e.calendarId)),
+            now.getTime() + clockSkewMs,
+            Math.max(POLL_AFTER_MS, agendaRuleBufferMs(loaded.screen)),
+        );
+        return due.length > 0;
+    }
+
+    let updatePending = false;
+    /** A newer version is installed (Plan.md 117): reload now – after a service or rehearsal, and only into a page that loads. */
+    function newVersion(): void {
+        if (updatePending || stopped) return;
+        updatePending = true;
+        void updateReload();
+    }
+
+    async function updateReload(): Promise<void> {
+        if (!holdsUpdate() && (await deps.canReload())) deps.reload();
+        else later(INTERVALS.updateRetryMs, () => void updateReload());
+    }
+
     /** The nightly fresh start – only into a page that loads (docs/Ausfall.md); else another try in an hour. */
     async function nightlyReload(): Promise<void> {
         if (await deps.canReload()) deps.reload();
@@ -696,5 +730,5 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         timers.clear();
     }
 
-    return { state, start, stop, refreshNow };
+    return { state, start, stop, refreshNow, newVersion };
 }

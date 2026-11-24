@@ -28,10 +28,13 @@ flowchart LR
 <details>
 <summary>Für Entwickler: der Ablauf im Einzelnen</summary>
 
-Stand `v0.48.1`, abgelesen aus `src/player/controller.ts`, `src/player/timing.ts`, `src/sw/sw.ts` und
-`src/views/PlayerView.vue`. Neu geladen wird nur, wenn danach wieder der Player läuft – nach 30 Minuten nur Fehlern
+Stand `v0.48.1`, für das Neuladen nach einem Update ergänzt um Plan.md Punkt 117; abgelesen aus `src/player/controller.ts`,
+`src/player/timing.ts`, `src/player/service-worker.ts`, `src/sw/sw.ts` und `src/views/PlayerView.vue`. Neu geladen wird nur, wenn danach wieder der Player läuft – nach 30 Minuten nur Fehlern
 und jede Nacht gegen 3 Uhr. Findet der Player Daten einer neueren Version, lädt er höchstens alle zehn Minuten neu
-(Befunde G16).
+(Befunde G16). Er lädt auch neu, wenn eine neuere Fassung installiert ist: Alle 15 Minuten holt der
+Browser die Datei des Service Workers frisch, eine andere übernimmt die Seite, und der Player lädt neu – außer während
+einer Veranstaltung mit „Ablauf“ oder „Liedblatt“ oder einer Probe vom Handy, dann jede Minute erneut prüfend (Plan.md
+Punkt 117).
 
 ### Ablauf im Einzelnen
 

@@ -21,6 +21,41 @@ export function registerPlayerServiceWorker(base: string): void {
     });
 }
 
+/** The part of `navigator.serviceWorker` {@link watchForNewVersion} uses – a test passes its own. */
+export type VersionWatchContainer = Pick<ServiceWorkerContainer, 'controller' | 'getRegistration' | 'addEventListener' | 'removeEventListener'>;
+
+/**
+ * Tells `onNewVersion` when a newer player is installed (Plan.md 117). The worker carries the version (`sw.ts`), so its file differs with
+ * every release; every `everyMs` the browser fetches it afresh (`update()`), and a different one takes over this page at once
+ * (`skipWaiting`, `clients.claim`) – the `controllerchange`. The very first takeover, on a page that had no worker yet, is no new
+ * version. Without the API it does nothing; the nightly reload stays. Returns the function that stops it.
+ */
+export function watchForNewVersion(
+    base: string,
+    onNewVersion: () => void,
+    everyMs: number,
+    container: VersionWatchContainer | undefined = 'serviceWorker' in navigator ? navigator.serviceWorker : undefined,
+): () => void {
+    if (!container) return () => {};
+    let controlled = container.controller !== null;
+    const onChange = (): void => {
+        if (controlled) onNewVersion();
+        controlled = true;
+    };
+    container.addEventListener('controllerchange', onChange);
+    const timer = setInterval(() => {
+        container
+            .getRegistration(base)
+            .then((registration) => registration?.update())
+            // Offline or ChurchTools answering with its login page: the next try comes in `everyMs`.
+            .catch(() => undefined);
+    }, everyMs);
+    return () => {
+        clearInterval(timer);
+        container.removeEventListener('controllerchange', onChange);
+    };
+}
+
 /**
  * Asks the browser to keep the player's storage (`navigator.storage.persist()`). Without it, storage is
  * "best effort": on a full SD card Chromium may clear the origin – the worker's copy, IndexedDB and the
