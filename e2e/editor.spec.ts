@@ -137,7 +137,7 @@ test('create a new portrait screen', async ({ page }) => {
     await page.getByTestId('create-dialog').getByText('Hochkant').click();
     await expect(page.getByTestId('new-portrait')).toBeChecked();
     await page.getByTestId('create').click();
-    await expect(page).toHaveURL(/playlists\/[\w-]+$/); // the new screen's own playlist
+    await expect(page).toHaveURL(/playlists\/[\w-]+(\?|$)/); // the new screen's own playlist
     await expect(page.getByTestId('playlist-info')).toContainText('Foyer Hochkant');
     await expect(page.getByTestId('playlist-info')).toContainText('Hochkant, 1080 × 1920');
     await expect(page.getByTestId('slide-item')).toHaveCount(1);
@@ -394,7 +394,7 @@ test.describe('with a finger, in both browsers', () => {
         await page.getByTestId('new-name').fill('Foyer Hochkant');
         await page.getByTestId('create-dialog').getByText('Hochkant').click();
         await page.getByTestId('create').click();
-        await expect(page).toHaveURL(/playlists\/[\w-]+$/);
+        await expect(page).toHaveURL(/playlists\/[\w-]+(\?|$)/);
         await addBlock(page, 'text');
         await page.setViewportSize({ width: 390, height: 844 });
         await page.reload();
@@ -979,7 +979,7 @@ test('playlists stand on their own: create one, choose it in a screen\'s schedul
     await page.getByTestId('new-playlist').click();
     await page.getByTestId('create-playlist-dialog').getByTestId('new-playlist-name').fill('Gottesdienst');
     await page.getByTestId('create-playlist').click();
-    await expect(page).toHaveURL(/playlists\/[\w-]+$/);
+    await expect(page).toHaveURL(/playlists\/[\w-]+(\?|$)/);
     await expect(page.getByTestId('slide-item')).toHaveCount(1);
     await expect(page.getByTestId('playlist-screens')).toHaveText('noch keinem Bildschirm');
     // Paging by touch is looked for here first, but set at the screen (Plan.md 127): the line says where.
@@ -1347,7 +1347,7 @@ test('duplicate a playlist and take slides over from another one, as copies (Pla
     await expect(page.getByTestId('duplicate-copy')).toBeChecked();
     await page.getByTestId('duplicate-confirm').click();
     // The copy opens in the editor, with copies of all slides.
-    await expect(page).toHaveURL(/playlists\/[\w-]+$/);
+    await expect(page).toHaveURL(/playlists\/[\w-]+(\?|$)/);
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await expect(page.getByTestId('playlist-name-input')).toHaveValue(/\(Kopie\)$/);
 

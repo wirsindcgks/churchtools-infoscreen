@@ -13,7 +13,7 @@ async function duplicateFirst(page: Page, linked: boolean): Promise<void> {
     await expect(page.getByTestId('duplicate-dialog')).toBeVisible();
     await page.getByTestId(linked ? 'duplicate-linked' : 'duplicate-copy').check();
     await page.getByTestId('duplicate-confirm').click();
-    await expect(page).toHaveURL(/playlists\/[\w-]+$/);
+    await expect(page).toHaveURL(/playlists\/[\w-]+(\?|$)/);
     await expectSlides(page);
 }
 

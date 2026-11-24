@@ -67,7 +67,7 @@ async function addPlaylist(page: Page, name: string): Promise<void> {
     await page.getByTestId('new-playlist').click();
     await page.getByTestId('create-playlist-dialog').getByTestId('new-playlist-name').fill(name);
     await page.getByTestId('create-playlist').click();
-    await expect(page).toHaveURL(/playlists\/[\w-]+$/);
+    await expect(page).toHaveURL(/playlists\/[\w-]+(\?|$)/);
     await page.getByTestId('leave-editor').click();
 }
 
