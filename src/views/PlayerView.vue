@@ -149,6 +149,10 @@ const playlist = computed(() => {
         clockConfirmed: context.clockConfirmed,
         appointments: context.appointments,
         agenda: context.agenda ?? { events: [], positions: {} },
+        override: {
+            doc: state?.override,
+            release: { screenIds: loaded.rehearsalScreenIds ?? [], playlistIds: loaded.rehearsalPlaylistIds ?? [] },
+        },
     });
     return (
         loaded.playlists.find((p) => p.id === playlistId) ??

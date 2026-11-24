@@ -4,6 +4,7 @@
  */
 import type { Appointment } from '../appointments/normalize';
 import { zonedParts } from '../appointments/zoned';
+import type { OverrideDoc } from '../agenda/control';
 import { endReached, serverNow, type AgendaFeed } from '../agenda/live';
 import type { AppointmentEndPoint, AppointmentPoint, ScreenDoc } from '../model/schema';
 
@@ -18,11 +19,53 @@ export interface ScheduleContext {
      * ends with the appointment.
      */
     agenda?: AgendaFeed;
+    /** The override by the musicians (Plan.md 125 B) with the release from the settings; without it – the designer's preview – none applies. */
+    override?: { doc: OverrideDoc | null | undefined; release: OverrideRelease };
+}
+
+/** The longest an override runs, whatever `until` says. */
+export const OVERRIDE_MAX_MS = 4 * 60 * 60 * 1000;
+/** How far after `now` the time of a choice may lie (clocks differ); further and it would defeat the limit above. */
+export const OVERRIDE_CLOCK_TOLERANCE_MS = 5 * 60 * 1000;
+
+/** What the settings release for an override (Plan.md 125 A). */
+export interface OverrideRelease {
+    screenIds: readonly string[];
+    playlistIds: readonly string[];
 }
 
 export function activePlaylistId(screen: ScreenDoc, context: ScheduleContext): string {
+    if (context.override) {
+        const override = activeOverride(screen, context.override.doc, context.override.release, context);
+        if (override) return override.playlistId;
+    }
     const index = matchingRuleIndex(screen, context);
     return index < 0 ? screen.defaultPlaylistId : screen.schedule[index]!.playlistId;
+}
+
+/**
+ * The override that applies now, or `null` (Plan.md 125 B). The settings decide what is released – the list in `steuerung` can be
+ * forged by any musician. The service wins: an appointment rule whose window began after the choice ends the override for good.
+ */
+export function activeOverride(screen: ScreenDoc, doc: OverrideDoc | null | undefined, release: OverrideRelease, context: ScheduleContext): OverrideDoc | null {
+    if (!context.clockConfirmed || !doc || doc.ended || doc.screenId !== screen.id) return null;
+    if (!release.screenIds.includes(screen.id) || !release.playlistIds.includes(doc.playlistId)) return null;
+    const nowMs = context.now.getTime();
+    const at = Date.parse(doc.at);
+    if (at > nowMs + OVERRIDE_CLOCK_TOLERANCE_MS) return null;
+    if (!(nowMs < Math.min(Date.parse(doc.until), at + OVERRIDE_MAX_MS))) return null;
+    for (const rule of screen.schedule) {
+        if (rule.kind !== 'appointment') continue;
+        const calendars = new Set(rule.calendarIds);
+        const { from } = ruleWindow(rule);
+        const began = context.appointments.some((a) => {
+            if (!calendars.has(a.calendarId)) return false;
+            const start = instant(from, a);
+            return start > at && start <= nowMs;
+        });
+        if (began) return null;
+    }
+    return doc;
 }
 
 /** The rule that decides now, or -1 when the default playlist runs. */

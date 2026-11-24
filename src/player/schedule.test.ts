@@ -3,7 +3,8 @@ import { liveItems, type AgendaEvent, type AgendaFeed, type LivePosition } from 
 import type { Appointment } from '../appointments/normalize';
 import { makeScreen } from '../model/testing';
 import type { ScreenDoc } from '../model/schema';
-import { activePlaylistId, agendaRuleBufferMs, agendaRuleCalendars, matchingRuleIndex } from './schedule';
+import type { OverrideDoc } from '../agenda/control';
+import { activeOverride, activePlaylistId, agendaRuleBufferMs, agendaRuleCalendars, matchingRuleIndex, OVERRIDE_MAX_MS, type ScheduleContext } from './schedule';
 
 const START = Date.parse('2026-11-10T10:00:00Z');
 const MIN = 60_000;
@@ -97,5 +98,73 @@ describe('a rule that ends with the agenda', () => {
         expect(agendaRuleBufferMs(screenWith(30))).toBe(30 * MIN);
         expect(agendaRuleCalendars(makeScreen({ schedule: [] }))).toEqual([]);
         expect(agendaRuleBufferMs(makeScreen({ schedule: [] }))).toBe(0);
+    });
+});
+
+describe('an override by the musicians (Plan.md 125 B)', () => {
+    const release = { screenIds: ['screen-1'], playlistIds: ['probe'] };
+    const doc = (overrides: Partial<OverrideDoc> = {}): OverrideDoc => ({
+        kind: 'override',
+        screenId: 'screen-1',
+        playlistId: 'probe',
+        at: at(-10).toISOString(),
+        until: at(110).toISOString(),
+        ...overrides,
+    });
+    const rule = (kind: 'appointment' | 'time'): ScreenDoc['schedule'][number] =>
+        kind === 'appointment'
+            ? ({ kind, playlistId: 'gd', calendarIds: [2], minutesBefore: 30, minutesAfter: 0, from: { anchor: 'start', minutes: -30 }, to: { anchor: 'end', minutes: 0 } })
+            : ({ kind, playlistId: 'gd', weekdays: [1, 2, 3, 4, 5, 6, 7], from: '00:00', to: '23:59' });
+    const screen = (...rules: ScreenDoc['schedule']) => makeScreen({ defaultPlaylistId: 'standard', schedule: rules });
+    const ctx = (minutes: number, overrides: Partial<ScheduleContext> = {}): ScheduleContext => ({
+        now: at(minutes),
+        timeZone: 'Europe/Berlin',
+        clockConfirmed: true,
+        appointments: [appointment()],
+        ...overrides,
+    });
+    const id = (s: ScreenDoc, d: OverrideDoc | null | undefined, minutes: number, rel = release, extra: Partial<ScheduleContext> = {}) =>
+        activePlaylistId(s, ctx(minutes, { override: { doc: d, release: rel }, ...extra }));
+
+    it('applies when everything fits', () => {
+        expect(id(screen(), doc(), 0)).toBe('probe');
+        expect(activeOverride(screen(), doc(), release, ctx(0))).toEqual(doc());
+    });
+    it('does not apply without confirmed clock, release, or matching screen and presentation', () => {
+        expect(id(screen(), doc(), 0, release, { clockConfirmed: false })).toBe('standard');
+        expect(id(screen(), doc(), 0, { screenIds: [], playlistIds: ['probe'] })).toBe('standard');
+        expect(id(screen(), doc(), 0, { screenIds: ['screen-1'], playlistIds: ['other'] })).toBe('standard');
+        expect(id(screen(), doc({ screenId: 'screen-2' }), 0)).toBe('standard');
+        expect(id(screen(), doc({ ended: true, playlistId: '' }), 0)).toBe('standard');
+        expect(id(screen(), null, 0)).toBe('standard');
+        expect(id(screen(), undefined, 0)).toBe('standard');
+    });
+    it('ends with `until`, at the latest after four hours', () => {
+        expect(id(screen(), doc(), 109)).toBe('probe');
+        expect(id(screen(), doc(), 110)).toBe('standard');
+        const long = doc({ until: at(24 * 60).toISOString() });
+        const limit = (OVERRIDE_MAX_MS - 10 * MIN) / MIN;
+        expect(id(screen(), long, limit - 1)).toBe('probe');
+        expect(id(screen(), long, limit)).toBe('standard');
+    });
+    it('does not apply when the choice lies more than five minutes in the future', () => {
+        expect(id(screen(), doc({ at: at(10).toISOString() }), 0)).toBe('standard');
+        expect(id(screen(), doc({ at: at(4).toISOString() }), 0)).toBe('probe');
+    });
+    it('is ended for good by an appointment rule whose window began after the choice', () => {
+        const s = screen(rule('time'), rule('appointment'));
+        // window begins at -30 min of the appointment (START - 30 min = at(-30))
+        expect(id(s, doc({ at: at(-40).toISOString() }), 0)).toBe('gd'); // time rule matches first, but the override is gone
+        expect(id(s, doc({ at: at(-40).toISOString() }), 100)).toBe('gd');
+        expect(id(screen(rule('appointment')), doc({ at: at(-30).toISOString() }), 0)).toBe('probe'); // began exactly at `at`
+        expect(id(screen(rule('appointment')), doc({ at: at(-20).toISOString() }), 0)).toBe('probe');
+        // does not come back after the window ended
+        expect(id(screen(rule('appointment')), doc({ at: at(-40).toISOString(), until: at(500).toISOString() }), 200)).toBe('standard');
+    });
+    it('is not ended by a time rule', () => {
+        expect(id(screen(rule('time')), doc(), 0)).toBe('probe');
+    });
+    it('changes nothing without an override in the context', () => {
+        expect(activePlaylistId(screen(), ctx(0))).toBe('standard');
     });
 });

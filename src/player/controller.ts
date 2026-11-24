@@ -9,6 +9,7 @@ import { reactive } from 'vue';
 import { POLL_AFTER_MS, pollableEvents, type AgendaFeed, type LivePositions } from '../agenda/live';
 import { isRehearsalSheet, REHEARSAL_MAX_AGE_MS, type RehearsalState } from '../agenda/songsheet';
 import type { Appointment } from '../appointments/normalize';
+import type { OverrideDoc } from '../agenda/control';
 import { httpStatus, NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
 import type { SlideDoc } from '../model/schema';
@@ -21,7 +22,7 @@ import { ScreenNotFoundError, type ContentRevisions, type LoadedScreen } from '.
 import { loadCached, reviveAppointments, saveCached, type CachedState } from './cache';
 import { checkClock } from './clock';
 import { agendaNeeds, agendaRuleBufferMs, agendaRuleCalendars, appointmentNeeds, appointmentWindow, groupNeeds, mergePosts, peopleAny, peopleNeeds, postNeeds, readPeopleGroups, roomNeeds, sheetsNeeded, type PlayerData } from './data';
-import { activePlaylistId } from './schedule';
+import { activePlaylistId, type ScheduleContext } from './schedule';
 import { askServiceWorkerHasPage } from './service-worker';
 import { backoffDelay, INTERVALS, msUntilNightlyReload, withJitter, withTimeout } from './timing';
 import { tp } from '../i18n/player';
@@ -41,6 +42,8 @@ export interface PlayerState {
      * `undefined` = not read yet – the block then shows nothing rather than the QR code for a moment (user, 2026-11-13).
      */
     rehearsal?: RehearsalState | null;
+    /** The override of this screen by the musicians (Plan.md 125 B); `undefined` = not read, `null` = none. Not in the offline cache. */
+    override?: OverrideDoc | null;
     rooms: RoomBookings[];
     timeZone: string;
     churchName: string;
@@ -247,11 +250,50 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             if (state.screen && !blocked && state.phase === 'running') {
                 const revisions = await data.contentRevisions(state.screen.screen.id);
                 if (contentChanged(state.screen, revisions)) scheduleConfig(0);
+                await overrideCheck();
             }
             later(withJitter(INTERVALS.quickCheckMs), quickCycle);
         } catch (error) {
             later(Math.max(withJitter(INTERVALS.configMs), retryAfterMs(error) ?? 0), quickCycle);
         }
+    }
+
+    /** Reads the override of the musicians (Plan.md 125 B) – only for a released screen with released presentations; a failure keeps the last one. */
+    async function overrideCheck(): Promise<void> {
+        const loaded = state.screen;
+        if (!loaded) return;
+        if (!loaded.rehearsalScreenIds?.includes(loaded.screen.id) || !loaded.rehearsalPlaylistIds?.length) {
+            state.override = null;
+            return;
+        }
+        try {
+            const doc = await data.override(loaded.screen.id);
+            if (JSON.stringify(doc) === JSON.stringify(state.override)) return;
+            const before = playlistNow(loaded);
+            state.override = doc;
+            if (playlistNow(loaded) !== before) beatNow();
+        } catch {
+            // The last state stays; the revision check and the beat go on.
+        }
+    }
+
+    function playlistNow(loaded: LoadedScreen): string {
+        return activePlaylistId(loaded.screen, scheduleContext(loaded, deps.now(), state.agenda ?? { events: [], positions: {} }));
+    }
+
+    /** The context the schedule decides with, the override of the musicians included (Plan.md 125 B). */
+    function scheduleContext(loaded: LoadedScreen, now: Date, agenda: AgendaFeed): ScheduleContext {
+        return {
+            now,
+            timeZone: state.timeZone,
+            clockConfirmed: state.clockConfirmed,
+            appointments: state.appointments,
+            agenda,
+            override: {
+                doc: state.override,
+                release: { screenIds: loaded.rehearsalScreenIds ?? [], playlistIds: loaded.rehearsalPlaylistIds ?? [] },
+            },
+        };
     }
 
     function fail(error: unknown): void {
@@ -442,13 +484,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             const loaded = state.screen;
             if (loaded && !blocked) {
                 const now = deps.now();
-                const playlistId = activePlaylistId(loaded.screen, {
-                    now,
-                    timeZone: state.timeZone,
-                    clockConfirmed: state.clockConfirmed,
-                    appointments: state.appointments,
-                    agenda: state.agenda ?? { events: [], positions: {} },
-                });
+                const playlistId = activePlaylistId(loaded.screen, scheduleContext(loaded, now, state.agenda ?? { events: [], positions: {} }));
                 const playlist = loaded.playlists.find((p) => p.id === playlistId);
                 const contentAt = playlist ? playlistStand(playlist, loaded.slides) : null;
                 await data.reportAlive({
@@ -514,13 +550,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
             const feed = state.agenda;
             if (loaded && feed && !blocked && feed.events.length) {
                 const now = deps.now();
-                const playlistId = activePlaylistId(loaded.screen, {
-                    now,
-                    timeZone: state.timeZone,
-                    clockConfirmed: state.clockConfirmed,
-                    appointments: state.appointments,
-                    agenda: feed,
-                });
+                const playlistId = activePlaylistId(loaded.screen, scheduleContext(loaded, now, feed));
                 const playlist = loaded.playlists.find((p) => p.id === playlistId);
                 const shown = new Set(playlist?.slideIds ?? []);
                 const calendars = new Set([...agendaNeeds(loaded.slides.filter((s) => shown.has(s.id) && s.enabled)), ...agendaRuleCalendars(loaded.screen)]);
@@ -548,13 +578,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
 
     /** The enabled slides of the presentation that runs now. */
     function shownSlides(loaded: LoadedScreen, now: Date): SlideDoc[] {
-        const playlistId = activePlaylistId(loaded.screen, {
-            now,
-            timeZone: state.timeZone,
-            clockConfirmed: state.clockConfirmed,
-            appointments: state.appointments,
-            agenda: state.agenda ?? { events: [], positions: {} },
-        });
+        const playlistId = activePlaylistId(loaded.screen, scheduleContext(loaded, now, state.agenda ?? { events: [], positions: {} }));
         const playlist = loaded.playlists.find((p) => p.id === playlistId);
         const shown = new Set(playlist?.slideIds ?? []);
         return loaded.slides.filter((s) => shown.has(s.id) && s.enabled);
@@ -654,6 +678,8 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
         later(withJitter(INTERVALS.controlMs), controlCycle);
         later(withJitter(INTERVALS.controlMs), rehearsalCycle);
         await configCycle();
+        // A reload in the middle of a rehearsal (the nightly one included) keeps it, instead of showing the schedule until the first quick check.
+        await overrideCheck();
         // Cached content or a failed first load: fetch data now, not in ten minutes.
         if (state.staleSince !== null || state.phase !== 'running') await dataCycle();
         else later(withJitter(INTERVALS.dataMs), dataCycle);

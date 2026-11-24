@@ -186,6 +186,65 @@ export function latestRehearsal(values: readonly { value: string }[]): Rehearsal
     return latest;
 }
 
+/**
+ * The override of a screen by the musicians (Plan.md 125 B): they choose a presentation for a screen until a time. Tells itself apart
+ * from the other values by `kind`; the player follows it only where the settings release screen and presentation.
+ */
+export interface OverrideDoc {
+    kind: 'override';
+    /** `ScreenDoc.id`. */
+    screenId: string;
+    /** `PlaylistDoc.id`; empty at "Probe beenden". */
+    playlistId: string;
+    /** ISO time until which the override runs; at "Probe beenden" the same as `at`. */
+    until: string;
+    /** ISO time of the choice. */
+    at: string;
+    /** Name of the musician. */
+    by?: string;
+    /** "Probe beenden": no override any more. */
+    ended?: true;
+}
+
+function isoTime(value: unknown): value is string {
+    return typeof value === 'string' && !Number.isNaN(Date.parse(value));
+}
+
+/** Reads one value tolerantly: `null` for anything that is no override; never throws. */
+export function readOverride(raw: unknown): OverrideDoc | null {
+    let value = raw;
+    if (typeof value === 'string') {
+        try {
+            value = JSON.parse(value);
+        } catch {
+            return null;
+        }
+    }
+    if (typeof value !== 'object' || value === null) return null;
+    const r = value as Record<string, unknown>;
+    if (r.kind !== 'override') return null;
+    if (typeof r.screenId !== 'string' || !r.screenId || !isoTime(r.at)) return null;
+    let doc: OverrideDoc;
+    if (r.ended === true) {
+        doc = { kind: 'override', screenId: r.screenId, playlistId: '', until: r.at, at: r.at, ended: true };
+    } else {
+        if (typeof r.playlistId !== 'string' || !r.playlistId || !isoTime(r.until)) return null;
+        doc = { kind: 'override', screenId: r.screenId, playlistId: r.playlistId, until: r.until, at: r.at };
+    }
+    if (typeof r.by === 'string' && r.by) doc.by = r.by;
+    return doc;
+}
+
+/** The override of this screen with the latest `at` (an ended one counts); `null` where there is none. */
+export function latestOverride(values: readonly { value: string }[], screenId: string): OverrideDoc | null {
+    let latest: OverrideDoc | null = null;
+    for (const { value } of values) {
+        const doc = readOverride(value);
+        if (doc && doc.screenId === screenId && (!latest || Date.parse(doc.at) > Date.parse(latest.at))) latest = doc;
+    }
+    return latest;
+}
+
 /** What a write of a rehearsal choice does: the latest rehearsal value is changed (none means create), further ones go. Nothing else is touched. */
 export function planRehearsalWrite(values: readonly { id: number; value: string }[], nowMs: number): { updateId: number | null; removeIds: number[] } {
     void nowMs;

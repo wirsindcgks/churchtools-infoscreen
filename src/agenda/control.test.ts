@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { controlsByEvent, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, readControl, readRehearsal, readRehearsalCatalog, stepPart, stepSection } from './control';
+import { controlsByEvent, latestOverride, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, readControl, readOverride, readRehearsal, readRehearsalCatalog, stepPart, stepSection } from './control';
 import type { AgendaEvent, LiveItem } from './live';
 import type { SongSheet } from './songsheet';
 
@@ -203,5 +203,34 @@ describe('stepSection', () => {
         expect(stepSection(s, 1, -1)).toBe(0);
         expect(stepSection(s, 3, 1)).toBeNull();
         expect(stepSection(s, 3, -1)).toBe(2);
+    });
+});
+
+describe('readOverride and latestOverride (Plan.md 125 B)', () => {
+    const o = { kind: 'override', screenId: 's1', playlistId: 'p1', until: '2026-11-11T12:00:00Z', at: '2026-11-11T10:00:00Z', by: 'Max' };
+    it('reads a JSON string and an object', () => {
+        expect(readOverride(JSON.stringify(o))).toEqual(o);
+        expect(readOverride(o)).toEqual(o);
+    });
+    it('reads the end without presentation and time', () => {
+        expect(readOverride({ kind: 'override', screenId: 's1', at: o.at, ended: true })).toEqual({ kind: 'override', screenId: 's1', playlistId: '', until: o.at, at: o.at, ended: true });
+    });
+    it('gives null for anything unusable', () => {
+        expect(readOverride('no json')).toBeNull();
+        expect(readOverride(null)).toBeNull();
+        expect(readOverride({ ...o, kind: 'rehearsal' })).toBeNull();
+        expect(readOverride({ ...o, screenId: '' })).toBeNull();
+        expect(readOverride({ ...o, at: 'x' })).toBeNull();
+        expect(readOverride({ ...o, playlistId: '' })).toBeNull();
+        expect(readOverride({ ...o, until: 'x' })).toBeNull();
+        expect(readOverride({ ...o, until: undefined })).toBeNull();
+    });
+    it('takes the latest of the screen, the ended included, and ignores other screens and kinds', () => {
+        const v = (x: object) => ({ value: JSON.stringify(x) });
+        const ended = { kind: 'override', screenId: 's1', at: '2026-11-11T11:00:00Z', ended: true };
+        expect(latestOverride([v(o), v({ ...o, at: '2026-11-11T09:00:00Z', playlistId: 'old' })], 's1')?.playlistId).toBe('p1');
+        expect(latestOverride([v(o), v(ended)], 's1')?.ended).toBe(true);
+        expect(latestOverride([v({ ...o, screenId: 's2', at: '2026-11-11T12:00:00Z' }), v(o)], 's1')?.screenId).toBe('s1');
+        expect(latestOverride([v({ kind: 'rehearsal', songId: 1, arrangementId: 0, section: 0, at: o.at }), { value: 'x' }], 's1')).toBeNull();
     });
 });

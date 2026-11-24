@@ -16,7 +16,7 @@
 import { needsAppointmentRooms } from '../appointments/rooms';
 import { appointmentServiceIds } from '../appointments/services';
 import { httpStatus } from '../ct/client';
-import { CONTROL_CATEGORY, controlsByEvent, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, type ControlDoc, type RehearsalCatalogDoc, type RehearsalDoc } from '../agenda/control';
+import { CONTROL_CATEGORY, controlsByEvent, latestOverride, latestRehearsal, latestRehearsalCatalog, planControlWrite, planRehearsalCatalogWrite, planRehearsalWrite, type ControlDoc, type OverrideDoc, type RehearsalCatalogDoc, type RehearsalDoc } from '../agenda/control';
 import { rehearsalPlaylists } from '../agenda/songsheet';
 import { heartbeatTime, readHeartbeat, type HeartbeatDoc } from '../model/heartbeat';
 import {
@@ -258,6 +258,12 @@ export interface LoadedScreen extends ScreenBundle {
      */
     templates?: TemplateDoc[];
     /**
+     * The screens and presentations the musicians may override (Plan.md 125 B); missing = nothing released; an offline copy of an older
+     * player lacks them. Set only where this screen is released.
+     */
+    rehearsalScreenIds?: string[];
+    rehearsalPlaylistIds?: string[];
+    /**
      * The services an administrator allows on screens (schema 1.20, Plan.md 58); empty without settings.
      * An offline copy of an older player lacks it – read it with `?? []`.
      */
@@ -477,6 +483,18 @@ export class ScreenRepository {
         }
     }
 
+    /** The latest override of a screen by the musicians (Plan.md 125 B); `null` where there is none, the category is missing or unreadable (`403`). */
+    async readOverride(screenId: string): Promise<OverrideDoc | null> {
+        try {
+            const categoryId = await this.controlCategoryId();
+            if (categoryId === null) return null;
+            return latestOverride(await this.kv.listValues(categoryId), screenId);
+        } catch (error) {
+            if (httpStatus(error) === 403) return null;
+            throw error;
+        }
+    }
+
     /** The latest rehearsal choice of the musicians (Plan.md 121, "Proben"); `null` where there is none, the category is missing or unreadable (`403`). */
     async readRehearsal(): Promise<RehearsalDoc | null> {
         try {
@@ -676,11 +694,25 @@ export class ScreenRepository {
         const slidesRead = await this.readSlides();
         issues.push(...slidesRead.issues);
 
+        // Settings that cannot be read allow no service: the strict side. The rooms then follow the type "Raum".
+        const settings = await this.loadSettings().catch(() => null);
+        const released = !!settings?.rehearsalScreenIds?.includes(screen.id);
+
         const playlistIds = playlistIdsOf(screen);
         const byId = new Map(running.playlists.map((p) => [p.doc.id, p.doc]));
         const playlists = playlistIds.map((id) => byId.get(id)).filter((p): p is PlaylistDoc => !!p);
         for (const id of playlistIds) {
             if (!byId.has(id)) issues.push({ documentId: id, message: tr.playlistMissing });
+        }
+        // The released rehearsal presentations come along; stale ids in the settings are skipped without an issue.
+        const rehearsalPlaylistIds: string[] = [];
+        if (released) {
+            for (const id of settings?.rehearsalPlaylistIds ?? []) {
+                const playlist = byId.get(id);
+                if (!playlist) continue;
+                rehearsalPlaylistIds.push(id);
+                if (!playlists.some((p) => p.id === id)) playlists.push(playlist);
+            }
         }
 
         const slideIds = new Set(playlists.flatMap((p) => p.slideIds));
@@ -706,11 +738,9 @@ export class ScreenRepository {
             if (!media.some((m) => m.id === id)) issues.push({ documentId: id, message: tr.mediaMissing });
         }
 
-        // Settings that cannot be read allow no service: the strict side. The rooms then follow the type "Raum".
-        const settings = await this.loadSettings().catch(() => null);
         const allowedServiceIds = settings?.allowedServiceIds ?? [];
         const roomTypeIds = settings?.roomTypeIds;
-        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, templates, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, peopleGroupId: settings?.peopleGroupId, peopleDeviceIds: settings?.peopleDeviceIds, peopleGroupIds: settings?.peopleGroupIds, personFieldKeys: settings?.personFields ?? settings?.personFieldKeys, issues };
+        return { screen, schedule, playlists, slides, media, theme: running.theme?.doc ?? null, templates, allowedServiceIds, roomTypeIds, screenCalendarIds: settings?.screenCalendarIds, peopleGroupId: settings?.peopleGroupId, peopleDeviceIds: settings?.peopleDeviceIds, peopleGroupIds: settings?.peopleGroupIds, personFieldKeys: settings?.personFields ?? settings?.personFieldKeys, ...(released ? { rehearsalScreenIds: settings!.rehearsalScreenIds, rehearsalPlaylistIds } : {}), issues };
     }
 
     /**

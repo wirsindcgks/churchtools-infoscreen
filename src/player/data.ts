@@ -3,7 +3,7 @@
  * replaced in tests. Every request has a time limit.
  */
 import { churchtoolsClient } from '@churchtools/churchtools-client';
-import type { ControlDoc, RehearsalDoc } from '../agenda/control';
+import type { ControlDoc, OverrideDoc, RehearsalDoc } from '../agenda/control';
 import { liveItems, parsePosition, type AgendaEvent, type UpcomingAgenda, type LiveItem, type LivePosition } from '../agenda/live';
 import { arrangementSheet, isRehearsalSheet, pickSheetFile, readSongSheet, type SheetKind, type SongSheet } from '../agenda/songsheet';
 import { normalizeAppointments, type Appointment } from '../appointments/normalize';
@@ -108,6 +108,8 @@ export interface PlayerData {
     controls(): Promise<Record<number, ControlDoc>>;
     /** The latest rehearsal choice of the musicians (Plan.md 121, "Proben"); `null` where there is none or it is not readable (`403`). Other errors fail. */
     rehearsal(): Promise<RehearsalDoc | null>;
+    /** The latest override of a screen by the musicians (Plan.md 125 B); `null` where there is none or it is not readable (`403`). Other errors fail. */
+    override(screenId: string): Promise<OverrideDoc | null>;
     /**
      * The song of a rehearsal choice as a point the block "Liedblatt" draws: its arrangement with the raw file (`sheetOf` transposes and
      * applies the flow, as the phone page does, so the parts are the same on both). `null` where the song is gone or not readable (`403`/`404`);
@@ -325,6 +327,10 @@ export const churchToolsPlayerData: PlayerData = {
     async rehearsal() {
         const { repository } = await withTimeout(getRepository());
         return withTimeout(repository.readRehearsal());
+    },
+    async override(screenId) {
+        const { repository } = await withTimeout(getRepository());
+        return withTimeout(repository.readOverride(screenId));
     },
     async rehearsalItem(doc) {
         const memoKey = `${doc.songId}:${doc.arrangementId}`;
