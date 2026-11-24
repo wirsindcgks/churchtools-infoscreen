@@ -1048,6 +1048,10 @@ export const t = {
             byRuleTitle: (slides: number) => `Läuft jetzt nach Zeitplan – ${slides} ${slides === 1 ? 'Folie' : 'Folien'}`,
             defaultTitle: (slides: number) => `Standard-Präsentation – ${slides} ${slides === 1 ? 'Folie' : 'Folien'}`,
             now: 'jetzt',
+            /** An override by the musicians from the phone (Plan.md 125 D). */
+            rehearsal: (playlist: string, until: string, by: string | undefined) => `Probe: ${playlist} bis ${until}${by ? `, von ${by}` : ''}`,
+            rehearsalTitle: (slides: number) =>
+                `Von den Musikern auf dem Handy gewählt – ${slides} ${slides === 1 ? 'Folie' : 'Folien'}. Danach gilt wieder der Zeitplan.`,
             /** Opens the tooltips of the last change: the date below belongs to the screen, not to the presentation. */
             screenChanged: 'Bildschirm zuletzt geändert',
             scheduleTitle: 'Zeitplan: welche Präsentation wann läuft',

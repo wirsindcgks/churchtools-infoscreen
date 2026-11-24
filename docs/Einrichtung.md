@@ -285,6 +285,8 @@ Auf der Handyseite wählen die Musiker unter **„Probe" → „Bildschirm"** ei
 Dauer (1 bis 3 Stunden) und tippen auf **„Auf Bildschirm zeigen"**. Läuft dort schon eine Probe, steht da, was bis wann und von wem läuft; mit
 **„Verlängern"** beginnt die gewählte Dauer neu, mit **„Probe beenden"** zeigt der Bildschirm sofort wieder, was der Zeitplan vorsieht. Das
 tut er auch, wenn die Dauer abläuft. Beginnt vorher eine Terminregel des Zeitplans, endet die Probe von selbst – der Gottesdienst gewinnt.
+Im Designer zeigt die Kachel des Bildschirms die laufende Probe mit Präsentation, Endzeit und Namen, nach demselben Maßstab wie der
+Fernseher; das Handy sieht nicht, ob ein Gottesdienst die Probe schon beendet hat, die Kachel schon.
 
 In ChurchTools siehst du das Ergebnis an der Gruppe „Infoscreen-Musiker" unter **Einstellungen → Automatische Mitgliedschaft**: Filter
 „Mitgliedschaft in einer Gruppe" mit deinen Bandgruppen, dazu „Person ist nicht archiviert" und „Person ist nicht verstorben".

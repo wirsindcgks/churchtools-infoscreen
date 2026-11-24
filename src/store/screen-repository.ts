@@ -298,6 +298,11 @@ export interface ScreenOverview {
      * – by id, so the tile can show the one that runs now (Plan.md 17).
      */
     playlists: Record<string, ScreenPlaylist>;
+    /**
+     * The rehearsal presentations the settings release, only for a screen released for rehearsals (Plan.md 125 D); they are in
+     * `playlists` too, so the tile can show an override. Missing = the screen is not released.
+     */
+    rehearsalPlaylistIds?: string[];
 }
 
 /** A playlist of a screen, as its tile shows it. */
@@ -681,11 +686,16 @@ export class ScreenRepository {
         const screens = running.screens.map((s) => s.doc).sort((a, b) => a.name.localeCompare(b.name, LOCALE));
         if (!screens.length) return [];
         const playlists = new Map(running.playlists.map((p) => [p.doc.id, p.doc]));
-        const slides = new Map((await this.readSlides()).docs.map((s) => [s.doc.id, s.doc]));
+        const [slidesRead, settings] = await Promise.all([this.readSlides(), this.loadSettings().catch(() => null)]);
+        const slides = new Map(slidesRead.docs.map((s) => [s.doc.id, s.doc]));
 
         const overviews = screens.map((screen) => {
             const own: Record<string, ScreenPlaylist> = {};
-            for (const id of playlistIdsOf(screen)) {
+            // A released screen may show the released rehearsal presentations (Plan.md 125 D); stale ids are skipped, as in `loadScreen`.
+            const released = settings?.rehearsalScreenIds?.includes(screen.id)
+                ? (settings.rehearsalPlaylistIds ?? []).filter((id) => playlists.has(id))
+                : undefined;
+            for (const id of new Set([...playlistIdsOf(screen), ...(released ?? [])])) {
                 const playlist = playlists.get(id);
                 if (!playlist) continue;
                 const shown = playlist.slideIds.map((s) => slides.get(s)).filter((s): s is SlideDoc => s !== undefined);
@@ -705,6 +715,7 @@ export class ScreenRepository {
                 media: [] as MediaDoc[],
                 playlistName: standard?.name ?? null,
                 playlists: own,
+                ...(released ? { rehearsalPlaylistIds: released } : {}),
             };
         });
 

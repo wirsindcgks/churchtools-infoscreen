@@ -857,6 +857,18 @@ describe('ScreenRepository', () => {
             expect(loaded.issues).toEqual([]);
         });
 
+        it('gives the tile of a released screen the released rehearsal presentations (Plan.md 125 D)', async () => {
+            const base = bundle({ playlists: [makePlaylist({ slideIds: ['slide-1'] }), makePlaylist({ id: 'probe', name: 'Probe', slideIds: ['slide-2'] })] });
+            await repo.saveScreen(base, { ...save, expectedRevision: null });
+            const [none] = await repo.listScreenOverviews();
+            expect(none!.rehearsalPlaylistIds).toBeUndefined();
+            expect(Object.keys(none!.playlists)).toEqual(['playlist-1']);
+            await repo.saveSettings({ schema: { major: 1, minor: 68 }, rehearsalScreenIds: ['screen-1'], rehearsalPlaylistIds: ['probe', 'gone'] });
+            const [released] = await repo.listScreenOverviews();
+            expect(released!.rehearsalPlaylistIds).toEqual(['probe']);
+            expect(released!.playlists.probe).toMatchObject({ name: 'Probe', slideCount: 1 });
+        });
+
         it('is none when the settings cannot be read – the screen still loads', async () => {
             await repo.saveScreen(bundle(), { ...save, expectedRevision: null });
             await repo.saveSettings({ schema: { major: 1, minor: 20 }, allowedServiceIds: [3] });

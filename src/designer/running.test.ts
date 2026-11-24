@@ -28,6 +28,25 @@ describe('what a screen shows right now (Plan.md 17)', () => {
         });
     });
 
+    it('follows an override by the musicians as the player does (Plan.md 125 D)', () => {
+        const now = new Date('2026-10-04T08:00:00Z');
+        const doc = { kind: 'override' as const, screenId: screen.id, playlistId: 'probe', at: '2026-10-04T07:30:00Z', until: '2026-10-04T09:00:00Z', by: 'Max' };
+        const release = { screenIds: [screen.id], playlistIds: ['probe'] };
+        expect(runningNow(screen, { now, timeZone: BERLIN, appointments: [] }, { doc, release })).toEqual({
+            ruleIndex: 0,
+            playlistId: 'probe',
+            override: doc,
+        });
+        // Not released, ended or run out: the schedule decides.
+        for (const override of [
+            { doc, release: { screenIds: [screen.id], playlistIds: [] } },
+            { doc: { ...doc, ended: true as const }, release },
+            { doc: { ...doc, until: '2026-10-04T07:59:00Z' }, release },
+        ]) {
+            expect(runningNow(screen, { now, timeZone: BERLIN, appointments: [] }, override)).toEqual({ ruleIndex: 0, playlistId: 'gottesdienst' });
+        }
+    });
+
     it('names the calendars the rules react to, once each', () => {
         expect(ruleCalendarIds([screen, screen])).toEqual([2, 3]);
     });
