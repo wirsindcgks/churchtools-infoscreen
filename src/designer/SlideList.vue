@@ -144,12 +144,20 @@ async function remove(id: string, name: string): Promise<void> {
                             <SlideView :slide="entry.first" :width="editor.stage.width" :height="editor.stage.height" />
                         </StageView>
                     </div>
-                    <div class="meta">
+                    <div class="meta meta--stacked">
                         <span class="name">{{ entry.missing ? t.editor.slideList.embedMissing : entry.name }}</span>
                         <span class="duration">{{ t.editor.slideList.embedded(entry.slideCount) }}</span>
                     </div>
                     <div class="actions embed-actions" @click.stop>
-                        <button class="d-btn" type="button" :disabled="entry.missing" data-testid="embed-edit" @click="editEmbed(entry.playlistId)">
+                        <button
+                            v-tip="t.editor.slideList.editEmbedTitle"
+                            class="d-btn"
+                            type="button"
+                            :disabled="entry.missing"
+                            :aria-label="t.editor.slideList.editEmbedTitle"
+                            data-testid="embed-edit"
+                            @click="editEmbed(entry.playlistId)"
+                        >
                             {{ t.editor.slideList.editEmbed }}
                         </button>
                         <button
@@ -468,6 +476,14 @@ li.embed .num {
 .embed-actions {
     align-items: center;
     justify-content: space-between;
+}
+.embed-actions .d-btn {
+    white-space: nowrap;
+}
+/* The name of an embedded presentation gets its own line: next to the count it was cut to a letter. */
+.meta--stacked {
+    flex-direction: column;
+    gap: 2px;
 }
 li.disabled .thumb {
     opacity: 0.4;

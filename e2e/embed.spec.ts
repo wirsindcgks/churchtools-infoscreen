@@ -29,7 +29,8 @@ test('embeds a presentation as one entry, shows it in the preview, publishes and
     await expect(page.getByTestId('embed-item')).toHaveCount(1);
     await expect(page.getByTestId('slide-item')).toHaveCount(3);
     await expect(page.getByTestId('embed-item')).toContainText('3 Folien · eingebettet');
-    await expect(page.getByTestId('embed-item')).toContainText('Im Hauptteil bearbeiten');
+    await expect(page.getByTestId('embed-item')).toContainText('Bearbeiten');
+    await expect(page.getByTestId('embed-edit')).toHaveAttribute('aria-label', 'Im Hauptteil bearbeiten');
     await expect(page.getByTestId('embed-playlist')).toBeDisabled();
 
     // The number on the editor's progress bar counts the embedded slides in their place: the second own slide is 5 of 6.
