@@ -21,6 +21,8 @@ test('embeds a presentation as one entry, shows it in the preview, publishes and
     const dialog = page.getByTestId('embed-dialog');
     await expect(dialog.getByTestId('embed-candidate')).toHaveCount(1);
     await dialog.getByTestId('embed-candidate').first().click();
+    // The chosen tile wears the ring of the shared tile, like in the media library.
+    await expect(dialog.getByTestId('embed-candidate').first()).toHaveClass(/d-tile--selected/);
     await dialog.getByTestId('embed-take').click();
 
     // One entry behind the first slide; the own slides keep their numbers.

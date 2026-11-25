@@ -60,7 +60,7 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
             v-for="item in items"
             :key="item.fileId"
             as="figure"
-            :class="{ selected: (item.mediaId && item.mediaId === selectedMediaId) || numberOf(item) > 0 || selected?.includes(item.fileId) }"
+            :class="{ 'd-tile--selected': (item.mediaId && item.mediaId === selectedMediaId) || numberOf(item) > 0 || selected?.includes(item.fileId) }"
             :menu-label="t.home.card.actionsFor(item.name)"
             menu-testid="media-menu"
             data-testid="media-item"
@@ -92,7 +92,7 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
                 >
                     <Icon name="eye" :size="16" />
                 </button>
-                <label v-if="selectable" v-tip="t.media.grid.select(item.name)" class="tile-check">
+                <label v-if="selectable" v-tip="t.media.grid.select(item.name)" class="d-tile-check">
                     <input
                         type="checkbox"
                         :checked="selected?.includes(item.fileId)"
@@ -155,9 +155,6 @@ const places = computed(() => new Map(props.items.map((item) => [item.fileId, us
 
 <style scoped>
 /* The tile is `d-tile`; what only media tiles have follows. */
-figure.selected {
-    box-shadow: 0 0 0 2px var(--d-accent);
-}
 .pick {
     position: relative;
     width: 100%;
@@ -179,35 +176,6 @@ figure.selected {
     font-weight: var(--d-weight-normal);
     line-height: 20px;
     text-align: center;
-}
-/*
- * The checkbox lies on the picture, where the running number does – the two never show together.
- * Not named `select`: a stylesheet ChurchTools loads later gives that class `position: relative`,
- * which put the box under the picture (Befunde G43, Nachtrag).
- */
-.tile-check {
-    position: absolute;
-    top: 6px;
-    left: 6px;
-    z-index: 1;
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    margin: 0;
-    cursor: pointer;
-}
-/* No box around it (wish of the user, 2026-10-05): a shadow keeps it visible on light and dark pictures alike. */
-.tile-check input {
-    position: static;
-    flex: none;
-    width: 18px;
-    height: 18px;
-    margin: 0;
-    padding: 0;
-    accent-color: var(--d-accent);
-    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
-    cursor: pointer;
 }
 /* The eye sits on the figure, over the picture, top right – the running number is top left. */
 .look {

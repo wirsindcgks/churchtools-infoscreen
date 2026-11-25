@@ -93,39 +93,13 @@ async function picked(): Promise<void> {
 </script>
 
 <template>
-    <div class="backdrop" role="dialog" aria-modal="true" :aria-label="t.media.title" @click.self="onBackdrop">
-        <div class="library" :class="{ 'library--drop': dragOver }" data-testid="media-library" v-on="dropZone">
-            <header>
-                <h2>{{ t.media.title }}</h2>
-                <span class="hint">{{ t.media.dialog.hintBefore(noun) }} <code>{{ screen.slug }}</code>{{ t.media.dialog.hintAfter }}</span>
-                <span class="spacer" />
-                <button class="d-btn d-btn--create" type="button" :disabled="!!busy || loading" @click="input?.click()">
-                    {{ t.media.dialog.upload(noun) }}
-                </button>
-                <button
-                    v-if="multiple"
-                    class="d-btn d-btn--primary"
-                    type="button"
-                    :disabled="!marked.length || !!busy"
-                    data-testid="media-add"
-                    @click="addMarked"
-                >
-                    {{ t.media.dialog.add(marked.length) }}
-                </button>
-                <button class="d-btn" type="button" @click="emit('close')">{{ t.common.close }}</button>
-                <input
-                    ref="input"
-                    type="file"
-                    :accept="accept"
-                    multiple
-                    hidden
-                    data-testid="media-upload"
-                    @change="picked"
-                >
-            </header>
-            <p v-if="busy" class="banner">{{ busy }}</p>
-            <p v-if="problem" class="banner banner--error" role="alert">{{ problem }}</p>
-            <p v-if="limitHint" class="banner" role="status" data-testid="media-limit">{{ LIMIT_TEXT }}</p>
+    <div class="d-dialog-backdrop" role="dialog" aria-modal="true" aria-labelledby="library-title" @click.self="onBackdrop">
+        <div class="d-dialog library" :class="{ 'library--drop': dragOver }" data-testid="media-library" v-on="dropZone">
+            <h2 id="library-title">{{ t.media.title }}</h2>
+            <p class="hint">{{ t.media.dialog.hintBefore(noun) }} <code>{{ screen.slug }}</code>{{ t.media.dialog.hintAfter }}</p>
+            <p v-if="busy" class="d-banner">{{ busy }}</p>
+            <p v-if="problem" class="d-banner d-banner--error" role="alert">{{ problem }}</p>
+            <p v-if="limitHint" class="d-banner" role="status" data-testid="media-limit">{{ LIMIT_TEXT }}</p>
             <div class="body">
                 <p v-if="loading" class="empty">{{ t.media.dialog.loading(noun) }}</p>
                 <MediaGrid
@@ -141,6 +115,32 @@ async function picked(): Promise<void> {
                 />
                 <p v-else class="empty">{{ t.media.dialog.empty(noun) }}</p>
             </div>
+            <div class="d-dialog-actions">
+                <button class="d-btn d-btn--create" type="button" :disabled="!!busy || loading" @click="input?.click()">
+                    {{ t.media.dialog.upload(noun) }}
+                </button>
+                <span class="spacer" />
+                <button class="d-btn" type="button" @click="emit('close')">{{ t.common.close }}</button>
+                <button
+                    v-if="multiple"
+                    class="d-btn d-btn--primary"
+                    type="button"
+                    :disabled="!marked.length || !!busy"
+                    data-testid="media-add"
+                    @click="addMarked"
+                >
+                    {{ t.media.dialog.add(marked.length) }}
+                </button>
+                <input
+                    ref="input"
+                    type="file"
+                    :accept="accept"
+                    multiple
+                    hidden
+                    data-testid="media-upload"
+                    @change="picked"
+                >
+            </div>
         </div>
         <MediaPreview
             v-if="previewId !== null"
@@ -155,71 +155,40 @@ async function picked(): Promise<void> {
 </template>
 
 <style scoped>
-.backdrop {
-    position: fixed;
-    inset: 0;
-    /* Above ChurchTools' own top bar (z-index 1040), like every dialog. */
-    z-index: 1100;
-    display: grid;
-    place-items: center;
-    padding: 24px;
-    background: rgba(15, 23, 42, 0.45);
-}
 .library {
     display: flex;
     flex-direction: column;
+    gap: 12px;
     width: min(1100px, 100%);
-    max-height: 100%;
-    min-height: 0;
-    border-radius: var(--d-radius-lg);
-    background: var(--d-surface);
-    box-shadow: var(--d-shadow);
+    overflow: hidden;
 }
 .library--drop {
     outline: 2px dashed var(--d-accent);
     outline-offset: -2px;
 }
-header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--d-divider);
-}
-h2 {
+.library h2 {
     margin: 0;
-    font-size: 1.15em;
 }
 .hint {
+    margin: 0;
     color: var(--d-text-muted);
     font-size: var(--d-size-sm);
 }
 .spacer {
     flex: 1;
 }
-.banner {
-    margin: 0;
-    padding: 6px 16px;
-    background: var(--d-accent-pale);
-    font-size: var(--d-size-sm);
-}
-.banner--error {
-    background: var(--d-danger-pale);
-}
+/* Only the grid scrolls; the head and the buttons stay in view. Room for the ring and the shadow of the tiles. */
 .body {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 60vh;
     overflow-y: auto;
-    padding: 16px;
+    padding: 4px;
 }
 .empty {
     margin: 0;
     padding: 24px 0;
     color: var(--d-text-muted);
     text-align: center;
-}
-@media (max-width: 48rem) {
-    .backdrop {
-        padding: 8px;
-    }
 }
 </style>
