@@ -11,6 +11,7 @@ import {
     type Block,
     type BlockType,
     type ContentBlockType,
+    type PlaylistEmbed,
     type ScreenBundle,
     type SlideDoc,
     type TextStyle,
@@ -474,6 +475,31 @@ export function move<T>(items: T[], from: number, to: number): T[] {
     if (item === undefined) return items;
     result.splice(Math.max(0, Math.min(to, result.length)), 0, item);
     return result;
+}
+
+/** One line of a playlist as the list shows it: an own slide or an embedded presentation (Plan.md 120). */
+export type PlaylistEntry = { kind: 'slide'; id: string } | { kind: 'embed'; playlistId: string };
+
+/** The own slides with each embed at its place: before the slide of index `position`, at the end from `slideIds.length` on; several at one place keep their order. */
+export function playlistEntries(slideIds: readonly string[], embeds: readonly PlaylistEmbed[] = []): PlaylistEntry[] {
+    const entries: PlaylistEntry[] = [];
+    const embedsAt = (i: number) => embeds.filter((e) => (i < slideIds.length ? e.position === i : e.position >= i));
+    for (let i = 0; i <= slideIds.length; i++) {
+        entries.push(...embedsAt(i).map((e): PlaylistEntry => ({ kind: 'embed', playlistId: e.playlistId })));
+        if (i < slideIds.length) entries.push({ kind: 'slide', id: slideIds[i]! });
+    }
+    return entries;
+}
+
+/** The inverse of {@link playlistEntries}; `embeds` is undefined without one, so that the field can be left out. */
+export function fromEntries(entries: readonly PlaylistEntry[]): { slideIds: string[]; embeds: PlaylistEmbed[] | undefined } {
+    const slideIds: string[] = [];
+    const embeds: PlaylistEmbed[] = [];
+    for (const entry of entries) {
+        if (entry.kind === 'slide') slideIds.push(entry.id);
+        else embeds.push({ playlistId: entry.playlistId, position: slideIds.length });
+    }
+    return { slideIds, embeds: embeds.length ? embeds : undefined };
 }
 
 /** The order of `count` items when `from` is dropped at `to`; items `fixed` keep their place and the others pass them by. */

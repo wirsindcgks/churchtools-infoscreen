@@ -92,9 +92,9 @@ providePalette(
     computed(() => editor.slide),
 );
 
-const calendarIds = computed(() => editor.calendarIds);
-/** The slides as the stage draws them: the blocks of a template count for the data to fetch. */
-const shownSlides = computed(() => editor.slides.map((s) => expandTemplates(s, editor.templateById)));
+const calendarIds = computed(() => editor.shownCalendarIds);
+/** The slides as the stage draws them, the embedded presentations' too (Plan.md 120): the blocks of a template count for the data to fetch. */
+const shownSlides = computed(() => editor.shownSlides.map((s) => expandTemplates(s, editor.templateById)));
 /** Service groups for the notes of the block "Ablauf" (Plan.md 119); null until loaded and where unreadable. */
 const serviceGroups = ref<ServiceGroupInfo[] | null>(null);
 /** Loading the service groups failed (Plan.md 119) – not the same as not loaded yet or an empty list. */

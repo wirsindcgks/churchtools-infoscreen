@@ -382,6 +382,15 @@ export const t = {
             newSlide: 'Neue Folie',
             importTitle: 'Folien aus anderer Präsentation übernehmen',
             importLabel: 'Aus anderer Präsentation …',
+            embedTitle: 'Eine ganze Präsentation einbetten',
+            embedLabel: 'Präsentation einbetten …',
+            embedBlockedEmbeds: 'Diese Präsentation bettet schon eine andere ein – je Präsentation geht eine Einbettung.',
+            embedBlockedEmbedded: (names: string) => `Diese Präsentation ist selbst in ${names} eingebettet und kann deshalb nichts einbetten – es geht nur eine Ebene.`,
+            embedded: (n: number) => `${n} ${n === 1 ? 'Folie' : 'Folien'} · eingebettet`,
+            embedMissing: 'Präsentation nicht gefunden',
+            editEmbed: 'Im Hauptteil bearbeiten',
+            removeEmbed: 'Einbettung entfernen',
+            confirmRemoveEmbed: (name: string) => `Einbettung von „${name}" entfernen? Die Folien bleiben im Hauptteil.`,
         },
         thumbEmpty: 'Keine Folie',
         import: {
@@ -400,6 +409,15 @@ export const t = {
             alreadyHere: 'schon hier',
             link: (n: number) => (n === 1 ? '1 Folie verknüpfen' : `${n} Folien verknüpfen`),
             take: (n: number) => (n === 1 ? '1 Folie übernehmen' : `${n} Folien übernehmen`),
+        },
+        /** The dialog "Präsentation einbetten" (Plan.md 120). */
+        embed: {
+            title: 'Präsentation einbetten',
+            hint: 'Die Folien des Hauptteils laufen hier an dieser Stelle mit. Bearbeitet werden sie im Hauptteil – jede Änderung dort erscheint auch hier, sobald sie veröffentlicht ist.',
+            loading: 'Lade Präsentationen …',
+            none: 'Es gibt keine Präsentation in diesem Format, die sich einbetten lässt.',
+            slideCount: (n: number) => `${n} ${n === 1 ? 'Folie' : 'Folien'}`,
+            take: 'Einbetten',
         },
     },
 
