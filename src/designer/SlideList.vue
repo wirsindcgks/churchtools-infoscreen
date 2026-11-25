@@ -232,41 +232,43 @@ async function remove(id: string, name: string): Promise<void> {
             </template>
             <!-- Where one looks for the next slide: below the last (Plan.md, Nächste Schritte 11); in the sheet a tile of the grid. -->
             <li class="add-item">
-                <button
-                    v-tip="t.editor.slideList.newSlide"
-                    class="add"
-                    type="button"
-                    :aria-label="t.editor.slideList.newSlide"
-                    data-testid="add-slide"
-                    :style="{ minHeight: `${thumb.height}px` }"
-                    @click="editor.addSlide()"
-                >
-                    <Icon name="plus" :size="22" />
-                    <span class="add-label">{{ t.editor.slideList.newSlide }}</span>
-                </button>
-                <button
-                    v-tip="t.editor.slideList.importTitle"
-                    class="import"
-                    type="button"
-                    :aria-label="t.editor.slideList.importTitle"
-                    data-testid="import-slides"
-                    @click="importing = true"
-                >
-                    <Icon name="copy" :size="16" />
-                    <span class="import-label">{{ t.editor.slideList.importLabel }}</span>
-                </button>
-                <button
-                    v-tip="embedBlocked ?? t.editor.slideList.embedTitle"
-                    class="import"
-                    type="button"
-                    :aria-label="t.editor.slideList.embedTitle"
-                    :disabled="!!embedBlocked"
-                    data-testid="embed-playlist"
-                    @click="embedding = true"
-                >
-                    <Icon name="slides" :size="16" />
-                    <span class="import-label">{{ t.editor.slideList.embedLabel }}</span>
-                </button>
+                <div class="add-group">
+                    <button
+                        v-tip="t.editor.slideList.newSlide"
+                        class="add"
+                        type="button"
+                        :aria-label="t.editor.slideList.newSlide"
+                        data-testid="add-slide"
+                        :style="{ minHeight: `${thumb.height}px` }"
+                        @click="editor.addSlide()"
+                    >
+                        <Icon name="plus" :size="22" />
+                        <span class="add-label">{{ t.editor.slideList.newSlide }}</span>
+                    </button>
+                    <button
+                        v-tip="t.editor.slideList.importTitle"
+                        class="import"
+                        type="button"
+                        :aria-label="t.editor.slideList.importTitle"
+                        data-testid="import-slides"
+                        @click="importing = true"
+                    >
+                        <Icon name="copy" :size="16" />
+                        <span class="import-label">{{ t.editor.slideList.importLabel }}</span>
+                    </button>
+                    <button
+                        v-tip="embedBlocked ?? t.editor.slideList.embedTitle"
+                        class="import"
+                        type="button"
+                        :aria-label="t.editor.slideList.embedTitle"
+                        :disabled="!!embedBlocked"
+                        data-testid="embed-playlist"
+                        @click="embedding = true"
+                    >
+                        <Icon name="slides" :size="16" />
+                        <span class="import-label">{{ t.editor.slideList.embedLabel }}</span>
+                    </button>
+                </div>
             </li>
         </ol>
         <SlideImportDialog v-if="importing" @close="importing = false" />
@@ -396,6 +398,18 @@ li.add-item {
 li.add-item:hover {
     background: none;
 }
+/* The three ways to more slides in one frame: they belong together (user, 2026-11-25). */
+.add-group {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border: 2px dashed var(--d-interactive);
+    border-radius: var(--d-radius);
+    transition: border-color var(--d-transition);
+}
+.add-group:hover {
+    border-color: var(--d-accent);
+}
 .add {
     box-sizing: border-box;
     display: flex;
@@ -404,8 +418,7 @@ li.add-item:hover {
     justify-content: center;
     gap: 4px;
     width: 100%;
-    border: 2px dashed var(--d-interactive);
-    border-radius: var(--d-radius);
+    border: 0;
     background: none;
     color: var(--d-text-muted);
     font: inherit;
@@ -413,27 +426,28 @@ li.add-item:hover {
     transition: background-color var(--d-transition), border-color var(--d-transition);
 }
 .add:hover {
-    border-color: var(--d-accent);
     background: var(--d-accent-pale);
     color: var(--d-accent-strong);
 }
-/* The smaller way to a new slide: copies from another playlist. */
+/* The smaller ways: copy slides from another presentation, embed a whole one. */
 .import {
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 6px;
     width: 100%;
     min-height: var(--d-control-h);
-    margin-top: var(--d-space-2);
-    padding: 6px 12px;
+    padding: 6px 10px;
     border: 0;
-    border-radius: var(--d-radius);
+    border-top: 1px solid var(--d-divider);
+    text-align: left;
     background: none;
     color: var(--d-accent-strong);
     font: inherit;
     font-size: var(--d-size-sm);
     cursor: pointer;
+}
+.import > :first-child {
+    flex: none;
 }
 .import:disabled {
     cursor: default;
@@ -542,15 +556,8 @@ li.disabled .thumb {
     justify-content: space-between;
     margin-top: 6px;
 }
-.slide-list--sheet li.add-item {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
 .slide-list--sheet .import {
-    margin-top: 0;
     min-height: 44px;
-    text-align: center;
 }
 .slide-list--sheet .add {
     padding: 8px;
