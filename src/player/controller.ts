@@ -12,8 +12,8 @@ import type { Appointment } from '../appointments/normalize';
 import type { OverrideDoc } from '../agenda/control';
 import { httpStatus, NotAuthenticatedError, retryAfterMs, WrongPersonError } from '../ct/client';
 import { SchemaTooNewError } from '../model/read';
+import { shownSlideIds, shownStand } from '../model/embeds';
 import type { SlideDoc } from '../model/schema';
-import { playlistStand } from '../model/stand';
 import type { PeopleGroup } from '../groups/members';
 import type { HomepageGroups } from '../groups/normalize';
 import { revivePosts, type Post } from '../posts/normalize';
@@ -486,7 +486,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                 const now = deps.now();
                 const playlistId = activePlaylistId(loaded.screen, scheduleContext(loaded, now, state.agenda ?? { events: [], positions: {} }));
                 const playlist = loaded.playlists.find((p) => p.id === playlistId);
-                const contentAt = playlist ? playlistStand(playlist, loaded.slides) : null;
+                const contentAt = playlist ? shownStand(playlist, loaded.playlists, loaded.slides) : null;
                 await data.reportAlive({
                     kind: 'heartbeat',
                     screen: slug,
@@ -552,7 +552,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
                 const now = deps.now();
                 const playlistId = activePlaylistId(loaded.screen, scheduleContext(loaded, now, feed));
                 const playlist = loaded.playlists.find((p) => p.id === playlistId);
-                const shown = new Set(playlist?.slideIds ?? []);
+                const shown = new Set(playlist ? shownSlideIds(playlist, loaded.playlists) : []);
                 const calendars = new Set([...agendaNeeds(loaded.slides.filter((s) => shown.has(s.id) && s.enabled)), ...agendaRuleCalendars(loaded.screen)]);
                 const due = pollableEvents(
                     feed.events.filter((e) => calendars.has(e.calendarId)),
@@ -580,7 +580,7 @@ export function createPlayer(slug: string, data: PlayerData, deps: PlayerDeps = 
     function shownSlides(loaded: LoadedScreen, now: Date): SlideDoc[] {
         const playlistId = activePlaylistId(loaded.screen, scheduleContext(loaded, now, state.agenda ?? { events: [], positions: {} }));
         const playlist = loaded.playlists.find((p) => p.id === playlistId);
-        const shown = new Set(playlist?.slideIds ?? []);
+        const shown = new Set(playlist ? shownSlideIds(playlist, loaded.playlists) : []);
         return loaded.slides.filter((s) => shown.has(s.id) && s.enabled);
     }
 

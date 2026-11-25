@@ -3,7 +3,8 @@
  * from `.sng` and `.txt` – that make one `SongSheet` of it, the transposing of the chords, and what the block shows at a given
  * moment of the agenda. Pure functions – what is fetched lives in `src/player/data.ts`.
  */
-import type { Block } from '../model/schema';
+import { shownSlideIds } from '../model/embeds';
+import type { Block, PlaylistEmbed } from '../model/schema';
 import type { ControlDoc, RehearsalDoc } from './control';
 import { POLL_AFTER_MS, POLL_BEFORE_MS, type AgendaPick, type LiveItem } from './live';
 
@@ -536,11 +537,14 @@ export function isRehearsalSheet(block: Pick<Extract<Block, { type: 'songsheet' 
 
 /**
  * The rehearsal presentations (Plan.md 125 A): those with a song sheet of the source "Probe" in one of their slides, in the order of
- * `playlists`. `slides` are the slides as devices show them (templates expanded).
+ * `playlists`, also through an embedded presentation (Plan.md 120). `slides` are the slides as devices show them (templates expanded).
  */
-export function rehearsalPlaylists<P extends { slideIds: readonly string[] }>(playlists: readonly P[], slides: readonly { id: string; blocks: readonly Block[] }[]): P[] {
+export function rehearsalPlaylists<P extends { id: string; slideIds: readonly string[]; embeds?: readonly PlaylistEmbed[]; stage?: { width: number; height: number } }>(
+    playlists: readonly P[],
+    slides: readonly { id: string; blocks: readonly Block[] }[],
+): P[] {
     const rehearsal = new Set(slides.filter((s) => s.blocks.some((b) => b.type === 'songsheet' && isRehearsalSheet(b))).map((s) => s.id));
-    return playlists.filter((p) => p.slideIds.some((id) => rehearsal.has(id)));
+    return playlists.filter((p) => shownSlideIds(p, playlists).some((id) => rehearsal.has(id)));
 }
 
 /**

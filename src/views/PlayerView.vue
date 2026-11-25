@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch, watchEffect } from 'vue';
 import { useRoute } from 'vue-router';
 import { enableTokenLogin } from '../ct/client';
+import { shownSlideIds } from '../model/embeds';
 import { INTERACTION_WAIT_SECONDS, type MediaDoc, type SlideDoc } from '../model/schema';
 import { imageSource, provideStageContext, themeOf, type StageContext } from '../player/context';
 import { browserDeps, createPlayer } from '../player/controller';
@@ -176,7 +177,7 @@ const slides = computed<SlideDoc[]>(() => {
     const loaded = state?.screen;
     if (!loaded || !playlist.value) return [];
     const byId = new Map(loaded.slides.map((s) => [s.id, s]));
-    return playlist.value.slideIds.map((id) => byId.get(id)).filter((s): s is SlideDoc => !!s && s.enabled);
+    return shownSlideIds(playlist.value, loaded.playlists).map((id) => byId.get(id)).filter((s): s is SlideDoc => !!s && s.enabled);
 });
 
 /** The playlist's band (Plan.md 32), until its time is up. */

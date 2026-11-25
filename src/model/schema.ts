@@ -8,7 +8,7 @@
 import * as v from 'valibot';
 
 /** Bump `major` only for changes an older player cannot survive. */
-export const SCHEMA_VERSION = { major: 1, minor: 68 } as const;
+export const SCHEMA_VERSION = { major: 1, minor: 69 } as const;
 
 const Id = v.pipe(v.string(), v.minLength(1), v.maxLength(64));
 const Px = v.pipe(v.number(), v.finite());
@@ -766,6 +766,17 @@ export const SlideDoc = v.object({
 });
 
 /**
+ * Since 1.69 (Plan.md 120): another presentation shown inside this one, as one entry. `position` is the number of own slides before
+ * it (0 = at the very front, `slideIds.length` = at the very end; more counts as the end). Only one level: the player skips the
+ * embeds of an embedded presentation. Older players do not know the field and show only the own slides.
+ */
+const PlaylistEmbed = v.object({
+    playlistId: Id,
+    position: v.pipe(v.number(), v.integer(), v.minValue(0)),
+});
+const PlaylistEmbeds = v.pipe(v.array(PlaylistEmbed), v.maxLength(20));
+
+/**
  * Since 1.28 (Plan.md 79, Paket E): what a designer has changed in a playlist and not published yet.
  * One per playlist, in the category `drafts`, which devices cannot see. The player does not know it.
  */
@@ -776,6 +787,8 @@ export const PlaylistDraftDoc = v.object({
     id: Id,
     name: v.pipe(v.string(), v.maxLength(100)),
     slideIds: v.array(Id),
+    /** Since 1.69, as on the playlist. Missing = none. */
+    embeds: v.optional(PlaylistEmbeds),
     /** Since 1.39, as on the playlist. */
     progress: v.optional(v.boolean()),
     /** Since 1.48, as on the playlist. */
@@ -839,6 +852,8 @@ export const PlaylistDoc = v.object({
     kind: v.literal('playlist'),
     name: v.pipe(v.string(), v.maxLength(100)),
     slideIds: v.array(Id),
+    /** Since 1.69 (Plan.md 120): presentations shown inside this one, see {@link PlaylistEmbed}. Missing = none. */
+    embeds: v.optional(PlaylistEmbeds),
     stage: v.optional(Stage),
     /** Since 1.10: running text or a notice over every slide. */
     banner: v.optional(Banner),
@@ -1145,6 +1160,7 @@ export type SlideLayout = v.InferOutput<typeof SlideLayout>;
 export type SlideDoc = v.InferOutput<typeof SlideDoc>;
 export type PlaylistDoc = v.InferOutput<typeof PlaylistDoc>;
 export type PlaylistDraftDoc = v.InferOutput<typeof PlaylistDraftDoc>;
+export type PlaylistEmbed = v.InferOutput<typeof PlaylistEmbed>;
 export type SlideDraftDoc = v.InferOutput<typeof SlideDraftDoc>;
 export type Banner = v.InferOutput<typeof Banner>;
 export type ScreenDoc = v.InferOutput<typeof ScreenDoc>;

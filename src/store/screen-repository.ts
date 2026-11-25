@@ -33,6 +33,7 @@ import {
     type ReadIssue,
     type ReadResult,
 } from '../model/read';
+import { embeddedPlaylistIds, shownSlideIds, shownStand } from '../model/embeds';
 import { playlistStand } from '../model/stand';
 import { agendaRuleCalendars } from '../player/schedule';
 import { expandTemplates, templateIdsOf } from '../model/templates';
@@ -685,7 +686,8 @@ export class ScreenRepository {
         const running = await this.readRunningScreens();
         const screens = running.screens.map((s) => s.doc).sort((a, b) => a.name.localeCompare(b.name, LOCALE));
         if (!screens.length) return [];
-        const playlists = new Map(running.playlists.map((p) => [p.doc.id, p.doc]));
+        const all = running.playlists.map((p) => p.doc);
+        const playlists = new Map(all.map((p) => [p.id, p]));
         const [slidesRead, settings] = await Promise.all([this.readSlides(), this.loadSettings().catch(() => null)]);
         const slides = new Map(slidesRead.docs.map((s) => [s.doc.id, s.doc]));
 
@@ -698,13 +700,13 @@ export class ScreenRepository {
             for (const id of new Set([...playlistIdsOf(screen), ...(released ?? [])])) {
                 const playlist = playlists.get(id);
                 if (!playlist) continue;
-                const shown = playlist.slideIds.map((s) => slides.get(s)).filter((s): s is SlideDoc => s !== undefined);
+                const shown = shownSlideIds(playlist, all).map((s) => slides.get(s)).filter((s): s is SlideDoc => s !== undefined);
                 own[id] = {
                     id,
                     name: withPlaylistDefaults(playlist, screens).name,
                     firstSlide: shown.find((s) => s.enabled) ?? shown[0] ?? null,
                     slideCount: shown.length,
-                    editedAt: playlistStand(playlist, shown),
+                    editedAt: shownStand(playlist, all, shown),
                 };
             }
             const standard = own[screen.defaultPlaylistId];
@@ -760,6 +762,12 @@ export class ScreenRepository {
                 rehearsalPlaylistIds.push(id);
                 if (!playlists.some((p) => p.id === id)) playlists.push(playlist);
             }
+        }
+        // The presentations embedded in those (Plan.md 120) come along with their slides and media, also for the offline store.
+        for (const id of embeddedPlaylistIds(playlists)) {
+            const playlist = byId.get(id);
+            if (playlist) playlists.push(playlist);
+            else issues.push({ documentId: id, message: tr.playlistMissing });
         }
 
         const slideIds = new Set(playlists.flatMap((p) => p.slideIds));

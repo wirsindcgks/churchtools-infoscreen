@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ValueTooLargeError } from '../model/read';
 import { makePlaylist, makeScreen, makeSlide, makeTemplate, templateBlock, textBlock } from '../model/testing';
-import { DEFAULT_THEME, type Banner, type ContentBlock, type ScreenBundle } from '../model/schema';
+import { DEFAULT_THEME, SCHEMA_VERSION, type Banner, type ContentBlock, type ScreenBundle } from '../model/schema';
 import { createBlock } from '../designer/ops';
 import { MemoryKv } from './memory-kv';
 import {
@@ -70,6 +70,24 @@ describe('ScreenRepository', () => {
         expect(loaded.screen.updatedBy).toBe('Anna');
         expect(loaded.playlists[0]?.slideIds).toEqual(['slide-1', 'slide-2']);
         expect(loaded.slides.map((s) => s.id).sort()).toEqual(['slide-1', 'slide-2']);
+    });
+
+    it('loads an embedded presentation with its slides (Plan.md 120)', async () => {
+        await repo.saveScreen(
+            bundle({
+                playlists: [
+                    makePlaylist({ slideIds: ['slide-1'], embeds: [{ playlistId: 'main', position: 1 }, { playlistId: 'gone', position: 0 }] }),
+                    makePlaylist({ id: 'main', name: 'Hauptteil', slideIds: ['slide-2'] }),
+                ],
+            }),
+            { ...save, expectedRevision: null },
+        );
+        const loaded = await repo.loadScreen('foyer-links');
+        expect(loaded.playlists.map((p) => p.id)).toEqual(['playlist-1', 'main']);
+        expect(loaded.slides.map((s) => s.id).sort()).toEqual(['slide-1', 'slide-2']);
+        expect(loaded.issues.map((i) => i.documentId)).toEqual(['gone']);
+        const [overview] = await repo.listScreenOverviews();
+        expect(overview?.slideCount).toBe(2);
     });
 
     it('writes slides first, then playlists, the index last', async () => {
@@ -910,7 +928,7 @@ describe('ScreenRepository', () => {
         it('saves new, updates against the revision and reports a conflict with the stored name', async () => {
             const first = await repo.saveTemplate(head, { expectedRevision: null, updatedBy: 'Anna' });
             expect(first).toMatchObject({ kind: 'template', revision: 1, updatedBy: 'Anna', name: 'Seitenkopf' });
-            expect(first.schema).toEqual({ major: 1, minor: 68 });
+            expect(first.schema).toEqual({ ...SCHEMA_VERSION });
             const second = await repo.saveTemplate({ ...head, name: 'Kopf' }, { expectedRevision: 1, updatedBy: 'Ben' });
             expect(second.revision).toBe(2);
             const error = await repo.saveTemplate({ ...head, name: 'Dritter' }, { expectedRevision: 1, updatedBy: 'Cleo' }).catch((e: unknown) => e);
