@@ -123,6 +123,12 @@ describe('liveScreens (Plan.md 77)', () => {
         expect(liveScreens('p1', [left, right], beats, after(60_000))).toEqual([{ screen: left, at: AT }]);
     });
 
+    it('lists a screen that shows a presentation embedding this one, when asked with its ids (Plan.md 120)', () => {
+        const beats = map(beat({ screen: 'foyer-links', playlistId: 'outer' }));
+        expect(liveScreens(['main', 'outer'], [left, right], beats, after(60_000))).toEqual([{ screen: left, at: AT }]);
+        expect(liveScreens('main', [left, right], beats, after(60_000))).toEqual([]);
+    });
+
     it('skips an online screen that shows another playlist', () => {
         const beats = map(beat({ screen: 'foyer-links', playlistId: 'p2' }), beat({ screen: 'foyer-rechts', playlistId: null }));
         expect(liveScreens('p1', [left, right], beats, after(60_000))).toEqual([]);

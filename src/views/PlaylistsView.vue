@@ -60,7 +60,7 @@ const shown = computed(() => {
         (o) =>
             (format.value === 'all' || (format.value === 'portrait') === isPortrait(o)) &&
             (!needle ||
-                `${o.playlist.name} ${o.screens.map((s) => s.name).join(' ')}`.toLocaleLowerCase(LOCALE).includes(needle)),
+                `${o.playlist.name} ${[...o.screens, ...(o.embeddedScreens ?? [])].map((s) => s.name).join(' ')}`.toLocaleLowerCase(LOCALE).includes(needle)),
     );
 });
 

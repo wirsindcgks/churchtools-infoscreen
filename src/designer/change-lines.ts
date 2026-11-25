@@ -33,6 +33,8 @@ export function describeChange(doc: ChangeDoc): ChangeLine {
             ...(changed.length ? [s.slidesChanged(changed.length)] : []),
             ...(added.length ? [s.slidesAdded(added.length)] : []),
             ...(removed ? [s.slidesRemoved(removed)] : []),
+            ...detailsOf(doc, 'embedded').map((n) => s.embedded(n)),
+            ...detailsOf(doc, 'unembedded').map((n) => s.unembedded(n)),
         ];
         return { text: parts.length ? `${s.published(name)}: ${parts.join(', ')}` : s.published(name), names: namesLine };
     }

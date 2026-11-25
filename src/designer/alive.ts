@@ -95,7 +95,8 @@ export interface LiveScreen {
  * reporting this playlist's id. Unreadable signs of life (`null`) give none – no hint either way.
  */
 export function liveScreens(
-    playlistId: string,
+    /** The playlist – or, for a main part (Plan.md 120), it and the presentations embedding it. */
+    playlistId: string | readonly string[],
     screens: ScreenRef[],
     heartbeats: Map<string, HeartbeatDoc> | null,
     now: Date,
@@ -104,7 +105,8 @@ export function liveScreens(
     const live: LiveScreen[] = [];
     for (const screen of screens) {
         const heartbeat = heartbeats.get(screen.slug);
-        if (heartbeat?.playlistId !== playlistId) continue;
+        const ids: readonly string[] = typeof playlistId === 'string' ? [playlistId] : playlistId;
+        if (!heartbeat?.playlistId || !ids.includes(heartbeat.playlistId)) continue;
         // The kind does not depend on the time zone.
         if (aliveState(heartbeat, now, 'UTC').kind === 'online') live.push({ screen, at: heartbeat.at });
     }

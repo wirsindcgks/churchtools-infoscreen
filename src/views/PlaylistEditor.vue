@@ -140,7 +140,7 @@ function closeNaming(): void {
 /** The playlist is on a screen right now, by that screen's own sign of life (Plan.md 77). */
 const repository = shallowRef<ScreenRepository | null>(null);
 const { heartbeats, now, refreshHeartbeats } = useHeartbeats(repository);
-const live = computed(() => liveScreens(playlistId, editor.screens, heartbeats.value, now.value));
+const live = computed(() => liveScreens([playlistId, ...editor.embeddedIn.map((p) => p.id)], editor.screens, heartbeats.value, now.value));
 
 /** Groups with posts switched on, for the „Beiträge"-Baustein; loaded once. Unreadable → an empty list, the inspector says so. */
 const groups = ref<PostGroup[]>([]);

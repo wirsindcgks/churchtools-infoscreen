@@ -7,6 +7,7 @@ import { MemoryKv } from './memory-kv';
 import {
     ConflictError,
     ORPHAN_GRACE_MS,
+    PlaylistEmbeddedError,
     PlaylistInUseError,
     PlaylistNotFoundError,
     ScreenNotFoundError,
@@ -1134,6 +1135,67 @@ describe('embedded presentations (Plan.md 120)', () => {
         await expect(saveWith(third.id, [embed(outer.id)])).rejects.toThrow('bettet selbst eine Präsentation ein');
         await expect(saveWith(main.id, [embed(third.id)])).rejects.toThrow('eingebettet');
         expect((await repo.loadPlaylist(main.id)).playlist).not.toHaveProperty('embeds');
+    });
+
+    describe('where the main part runs, deleting, duplicating (Plan.md 120 C)', () => {
+        async function shown() {
+            const repo = new ScreenRepository(new MemoryKv());
+            const stage = { width: 1920, height: 1080 };
+            await repo.saveScreen(
+                {
+                    screen: makeScreen(),
+                    playlists: [
+                        makePlaylist({ slideIds: ['slide-1', 'slide-2'], stage, embeds: [{ playlistId: 'main', position: 1 }] }),
+                        makePlaylist({ id: 'main', name: 'Hauptteil', slideIds: ['slide-3'], stage }),
+                    ],
+                    slides: [makeSlide({ id: 'slide-1' }), makeSlide({ id: 'slide-2' }), makeSlide({ id: 'slide-3' })],
+                },
+                { ...save, expectedRevision: null },
+            );
+            return repo;
+        }
+
+        it('counts the screens of the presentations embedding it, and names those', async () => {
+            const repo = await shown();
+            const overviews = await repo.listPlaylists();
+            const main = overviews.find((o) => o.playlist.id === 'main')!;
+            // Its slides run there, its band does not: apart from the screens that choose it.
+            expect(main.screens).toEqual([]);
+            expect(main.embeddedScreens?.map((s) => s.slug)).toEqual(['foyer-links']);
+            expect(main.embeddedIn).toEqual([{ id: 'playlist-1', name: 'Standard' }]);
+            expect(overviews.find((o) => o.playlist.id === 'playlist-1')!.embeddedIn).toEqual([]);
+            expect((await repo.loadPlaylist('main')).screens.map((s) => s.slug)).toEqual(['foyer-links']);
+        });
+
+        it('refuses to delete it while it is embedded, naming the presentations', async () => {
+            const repo = await shown();
+            const refused = repo.deletePlaylist('main');
+            await expect(refused).rejects.toBeInstanceOf(PlaylistEmbeddedError);
+            await expect(refused).rejects.toThrow('„Standard"');
+            expect((await repo.listPlaylists()).map((o) => o.playlist.id)).toContain('main');
+        });
+
+        it('takes the embeds over into a copy', async () => {
+            const repo = await shown();
+            const copy = await repo.duplicatePlaylist('playlist-1', 'Ben');
+            expect(copy.embeds).toEqual([{ playlistId: 'main', position: 1 }]);
+            expect((await repo.duplicatePlaylist('main', 'Ben')).embeds).toBeUndefined();
+        });
+    });
+
+    it('writes embedding and removing it into the changelog', async () => {
+        const { repo, outer, main, embed, saveWith } = await twoPlaylists();
+        await repo.changelog.ensureCategory();
+        await saveWith(outer.id, [embed(main.id)]);
+        await repo.changelogSettled();
+        const published = async () => (await repo.changelog.list(new Date()))!.filter((c) => c.action === 'published').map((c) => c.details);
+        expect((await published()).flat()).toContain('embedded:Hauptteil');
+        const loaded = await repo.loadPlaylist(outer.id);
+        const without = { ...loaded.playlist };
+        delete without.embeds;
+        await repo.savePlaylist({ playlist: without, slides: loaded.slides }, { expectedRevision: loaded.playlist.revision, updatedBy: 'Anna' });
+        await repo.changelogSettled();
+        expect((await published()).flat()).toContain('unembedded:Hauptteil');
     });
 });
 

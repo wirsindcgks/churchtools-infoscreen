@@ -1138,6 +1138,10 @@ export const t = {
             slides: 'Folien',
             runsOn: 'Läuft auf diesen Bildschirmen',
             runsNowhere: 'Noch kein Bildschirm zeigt sie',
+            /** Plan.md 120: the presentations that embed this one. */
+            embeddedIn: (names: string) => `Eingebettet in ${names}`,
+            embeddedInTitle: 'Läuft als Teil dieser Präsentationen mit – bearbeitet wird sie hier',
+            deleteEmbedded: (names: string) => `Eingebettet in ${names} – erst dort die Einbettung entfernen`,
         },
         create: {
             title: 'Präsentation erstellen',
@@ -1498,6 +1502,8 @@ Damit er im Wiki nicht stört, lässt er sich in den Einstellungen des Designers
             slidesAdded: (n: number) => (n === 1 ? '1 neu' : `${n} neu`),
             slidesRemoved: (n: number) => (n === 1 ? '1 Folie entfernt' : `${n} Folien entfernt`),
             more: (n: number) => `und ${n} weitere`,
+            embedded: (name: string) => `„${name}“ eingebettet`,
+            unembedded: (name: string) => `Einbettung von „${name}“ entfernt`,
         },
     },
 

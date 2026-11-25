@@ -275,6 +275,11 @@ läuft sofort in jeder Schleife mit, die ihn einbettet – die Schleifen selbst 
 - **Ausgeschaltete Folien** des Hauptteils bleiben auch eingebettet aus.
 - **Fortschrittsbalken und Hinweisband** sind die der äußeren Präsentation; der Balken zählt alle gezeigten Folien.
 
+**Wo der Hauptteil läuft:** Auf der Seite „Präsentationen" zeigt seine Karte „Eingebettet in …" und bei den Bildschirmen
+auch die, auf denen er über eine Schleife läuft. **Löschen** lässt er sich erst, wenn ihn keine Präsentation mehr
+einbettet. Im **Verlauf** steht beim Veröffentlichen, wenn eine Präsentation eingebettet oder ihre Einbettung entfernt
+wurde. Wer eine Schleife **dupliziert**, bekommt die Einbettung mit.
+
 ## Zeitpläne
 
 Welche Präsentation ein Bildschirm wann zeigt: nach Uhrzeit („sonntags 9–12 Uhr") oder rund um Termine („30 Minuten
