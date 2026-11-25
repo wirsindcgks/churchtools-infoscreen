@@ -4,6 +4,22 @@ Alle nennenswerten Änderungen am Infoscreen Designer. Aufbau nach [Keep a Chang
 Versionen nach [Semantic Versioning](https://semver.org/lang/de/). Wie eine Version entsteht, steht in
 [`LocalTests.md`](LocalTests.md) unter „Release veröffentlichen".
 
+## [0.70.1] – 2026-11-25
+
+### Geändert
+
+- **Auswahl aus Vorschaubildern überall gleich.** „Folien übernehmen“, „Präsentation einbetten“ und die Mediathek im
+  Editor zeigen dieselben Kacheln wie die Seite „Medien“: Bild, Name, Zusatzzeile, das Kästchen oben links auf dem Bild
+  und ein Ring um die gewählte Kachel. Die Mediathek im Editor hat den Rahmen der übrigen Dialoge – Titel oben, Knöpfe
+  unten; bei vielen Medien scrollen nur die Kacheln.
+- **„Neue Folie“, „Folien übernehmen …“ und „Präsentation einbetten …“ in einem Rahmen** unter der Folienliste, damit
+  zu sehen ist, dass sie zusammengehören (Plan.md 120). „Aus anderer Präsentation …“ heißt jetzt „Folien übernehmen …“.
+
+### Behoben
+
+- **Dialog „Präsentation einbetten“:** Der Name stand als senkrechte Buchstabenspalte neben dem Bild (Plan.md 120).
+  Radio-Knöpfe behalten jetzt überall ihre Größe.
+
 ## [0.70.0] – 2026-11-25
 
 Danke an DJSudermann ([@DJSudermann](https://github.com/DJSudermann)) für den Wunsch, eine ganze Präsentation in einer
@@ -2165,5 +2181,6 @@ Die erste Version: Infoscreens für die Fernseher der Gemeinde, gestaltet direkt
 [0.67.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.67.0
 [0.66.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.66.0
 [0.68.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.68.0
+[0.70.1]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.70.1
 [0.70.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.70.0
 [0.69.0]: https://github.com/wirsindcgks/churchtools-infoscreen/releases/tag/v0.69.0
