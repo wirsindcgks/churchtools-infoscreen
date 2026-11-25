@@ -155,7 +155,7 @@
     background-repeat: no-repeat;
     appearance: none;
 }
-.infoscreen-designer :where(input[type='checkbox'], input[type='color']) {
+.infoscreen-designer :where(input[type='checkbox'], input[type='radio'], input[type='color']) {
     width: auto;
 }
 .infoscreen-designer :where(input[type='color']) {
