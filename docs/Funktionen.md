@@ -263,7 +263,7 @@ Namen und der Zahl seiner Folien – hinter der gewählten Folie, ohne Auswahl a
 Folie verschieben, mit dem Papierkorb wieder entfernen (die Folien bleiben im Hauptteil). Die Vorschau der ganzen
 Präsentation spielt die eingebetteten Folien an ihrer Stelle mit.
 
-**Bearbeitet wird nur im Hauptteil:** „Im Hauptteil bearbeiten" am Eintrag öffnet ihn. Was dort veröffentlicht wird,
+**Bearbeitet wird nur im Hauptteil:** „Bearbeiten" am Eintrag öffnet ihn. Was dort veröffentlicht wird,
 läuft sofort in jeder Schleife mit, die ihn einbettet – die Schleifen selbst müssen nicht neu veröffentlicht werden.
 
 **Die Regeln:**
