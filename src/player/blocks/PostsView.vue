@@ -233,7 +233,7 @@ onMounted(() => {
             </div>
         </template>
         <div v-else class="hero-text hero-subtitle" data-testid="posts-empty">{{ tp.posts.none }}</div>
-        <PageProgress v-if="(turnSeconds || (still && block.layout === 'card' && items.length > 1)) && pageProgressShown(block, context)" :key="page" :seconds="turnSeconds" :held="still" :segments="pageProgressSegments(block)" :size="block.style.fontSize * 0.165" :inset="block.style.fontSize * 0.8" :edge="pageProgressEdge(block)" :number="(page % items.length) + 1" :total="items.length" />
+        <PageProgress v-if="(turnSeconds || (still && block.layout === 'card' && items.length > 1)) && pageProgressShown(block, context)" :key="page" :seconds="turnSeconds" :held="still" :segments="pageProgressSegments(block)" :edge="pageProgressEdge(block)" :number="(page % items.length) + 1" :total="items.length" />
     </div>
 </template>
 

@@ -7,7 +7,13 @@
     display: flex;
     align-items: center;
     gap: 0.6em;
-    font-size: 0.55em;
+    /* The same fixed size as every progress bar, not the block's: keep equal to PROGRESS_FONT_PX (progress-size.ts, a test checks). */
+    font-size: 24px;
+    /* Air below and right so the number, which the block clips, is not cut off; PROGRESS_PAD_PX = 0.2em. */
+    padding: 0 0.2em 0.2em 0;
+}
+.pager--edge {
+    padding: 0;
 }
 .pager--edge .track {
     border-radius: 0;

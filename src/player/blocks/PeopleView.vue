@@ -12,6 +12,7 @@ import type { Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { formatNumericDate, formatTime, sizedImageUrl, textStyle } from '../format';
 import { PEOPLE_SECONDS, pageInterval, paginateByHeight, pageProgressEdge, pageProgressSegments, pageProgressShown, movePage, reportTurn } from '../paging';
+import { progressReserve } from '../progress-size';
 import MdBlocks from './MdBlocks.vue';
 import PageSegments from './PageSegments.vue';
 import { tp } from '../../i18n/player';
@@ -48,7 +49,7 @@ const edge = computed(() => pageProgressEdge(props.block));
 const segments = computed(() => pageProgressSegments(props.block));
 const held = computed(() => context.paging === false);
 /** Room kept free for the page bar; the edge line is thinner and has no number beside it. */
-const reserve = computed(() => (progressOn.value ? props.block.style.fontSize * (edge.value ? 0.365 : 0.9) : 0));
+const reserve = computed(() => (progressOn.value ? progressReserve(edge.value) : 0));
 
 const isList = computed(() => props.block.layout === 'list');
 

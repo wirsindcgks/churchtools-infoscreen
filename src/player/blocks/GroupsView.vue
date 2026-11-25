@@ -13,6 +13,7 @@ import { IMAGE_RATIOS, type Block } from '../../model/schema';
 import { imageSource, themeOf, useStageContext } from '../context';
 import { sizedImageUrl, textStyle } from '../format';
 import { GROUP_SECONDS, pageInterval, pageProgressEdge, pageProgressSegments, pageProgressShown, paginateByHeight, movePage, reportTurn } from '../paging';
+import { progressReserve } from '../progress-size';
 import { qrShape } from '../qr';
 import MdBlocks from './MdBlocks.vue';
 import CalendarBadge from './CalendarBadge.vue';
@@ -36,7 +37,7 @@ function hideOnError(event: Event): void {
 
 // --- pages: both layouts turn them the same way, with the same bar as AppointmentListView ---
 
-/** The page bar at the bottom: 0.55em text and a little air, like AppointmentListView's. */
+/** The page bar at the bottom: the number at a fixed size (progress-size.ts) and a little air, like AppointmentListView's. */
 const progressOn = computed(() => pageProgressShown(props.block, context));
 const edge = computed(() => pageProgressEdge(props.block));
 /** One segment per page instead of the bar with the number (Plan.md 109). */
@@ -44,7 +45,7 @@ const segments = computed(() => pageProgressSegments(props.block));
 /** The designer's stage turns no pages: the bar then stands at 40 % (Plan.md 109). */
 const held = computed(() => context.paging === false);
 /** Room kept free for the page bar; the edge line is thinner and has no number beside it. */
-const reserve = computed(() => (progressOn.value ? props.block.style.fontSize * (edge.value ? 0.365 : 0.9) : 0));
+const reserve = computed(() => (progressOn.value ? progressReserve(edge.value) : 0));
 
 /** Card: `perPage` groups a page (wish of the user, 2026-09-29). */
 const cardPages = computed(() => {
